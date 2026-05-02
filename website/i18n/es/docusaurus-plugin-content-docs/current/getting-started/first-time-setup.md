@@ -10,14 +10,13 @@ Inicia Rayforge desde el menú de aplicaciones o ejecutando `rayforge` en una te
 
 Ve a **Configuración → Máquinas** o presiona <kbd>ctrl+coma</kbd> para abrir el diálogo de configuración, luego selecciona la página **Máquinas**.
 
-Haz clic en **Añadir Máquina** para crear una nueva máquina. Puedes:
+![Configuración de Máquina](/screenshots/application-machines.png)
 
-1. **Elegir un perfil integrado** - Selecciona entre plantillas de máquina predefinidas
-2. **Seleccionar "Personalizada"** - Comienza con una configuración en blanco
+Haz clic en **Añadir Máquina** para crear una nueva máquina. Selecciona un perfil de dispositivo de la lista para usarlo como plantilla — cada perfil preconfigura los ajustes de la máquina y el dialecto de G-code.
+
+![Añadir Máquina](/screenshots/add-machine-dialog.png)
 
 Después de seleccionar, se abre el diálogo de Configuración de Máquina para tu nueva máquina.
-
-![Configuración de Máquina](/screenshots/application-machines.png)
 
 ## Paso 3: Configurar Ajustes Generales
 

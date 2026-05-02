@@ -16,6 +16,9 @@ mit einem Häkchen markiert.
 1. Klicke auf die Schaltfläche **Add Machine** am unteren Ende der Liste
 2. Wähle ein Geräteprofil aus der Liste als Vorlage — jedes Profil
    konfiguriert die Maschineneinstellungen und den G-Code-Dialekt vor
+
+![Maschine hinzufügen](/screenshots/add-machine-dialog.png)
+
 3. Der [Maschineneinstellungen-Dialog](../machine/general) öffnet sich, in
    dem du die Konfiguration anpassen kannst
 

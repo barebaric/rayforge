@@ -15,6 +15,9 @@ delete it. The currently active machine is marked with a check icon.
 1. Click the **Add Machine** button at the bottom of the list
 2. Select a device profile from the list to use as a template — each
    profile pre-configures the machine settings and G-code dialect
+
+![Add Machine Dialog](/screenshots/add-machine-dialog.png)
+
 3. The [machine settings dialog](../machine/general) opens where you can
    adjust the configuration
 
