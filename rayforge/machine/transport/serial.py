@@ -4,6 +4,7 @@ import asyncio
 import os
 import serial
 import threading
+import time
 from typing import Optional, List
 from serial.tools import list_ports
 from gettext import gettext as _
@@ -155,7 +156,7 @@ class SerialTransport(Transport):
             1843200,
         ]
 
-    _READ_TIMEOUT = 0.5
+    _READ_TIMEOUT = 0.3
 
     def __init__(self, port: str, baudrate: int):
         """
@@ -344,6 +345,12 @@ class SerialTransport(Transport):
                 break
 
             if not data:
+                # Yield to the OS to allow USB drivers to flush the
+                # transmit queue.
+                # Without this yield, the continuous blocking read loop can
+                # hold a hardware lock that prevents the OS TX buffer from
+                # physically transmitting data.
+                time.sleep(0.005)
                 continue
 
             logger.debug(f"Received data: {data!r}")
