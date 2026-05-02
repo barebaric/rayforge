@@ -16,9 +16,9 @@ Accéde à la vue 3D :
 
 ### Contrôles de la souris
 
-- **Rotation** : Clic gauche et glisser
-- **Panoramique** : Clic droit et glisser, ou clic milieu et glisser
-- **Zoom** : Molette de défilement, ou <kbd>ctrl</kbd> + clic gauche et glisser
+- **Rotation** : Clic gauche et glisser (axe Z), clic milieu et glisser (orbite 3 axes)
+- **Panoramique** : <kbd>shift</kbd> + clic milieu et glisser
+- **Zoom** : Molette de défilement
 
 ### Présélections de vue
 

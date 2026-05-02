@@ -16,9 +16,9 @@ Zugriff auf die 3D-Ansicht:
 
 ### Maussteuerung
 
-- **Drehen**: Linksklick und ziehen
-- **Verschieben**: Rechtsklick und ziehen, oder Mittelklick und ziehen
-- **Zoom**: Mausrad, oder <kbd>Strg</kbd> + Linksklick und ziehen
+- **Drehen**: Linksklick und ziehen (Z-Achse), Mittelklick und ziehen (3-Achsen-Orbit)
+- **Verschieben**: <kbd>Umschalt</kbd> + Mittelklick und ziehen
+- **Zoom**: Mausrad
 
 ### Ansicht-Presets
 
