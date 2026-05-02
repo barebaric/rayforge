@@ -316,9 +316,6 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self.view_stack.set_margin_start(12)
         self.view_stack.set_hexpand(True)
-        self.view_stack.connect(
-            "notify::visible-child-name", self._on_view_stack_changed
-        )
 
         # The view stack is the base child of the canvas overlay
         self._canvas_overlay.set_child(self.view_stack)
@@ -474,6 +471,10 @@ class MainWindow(Adw.ApplicationWindow):
         )
 
         self.bottom_panel.set_get_bounds_callback(self._get_selection_bounds)
+
+        self.view_stack.connect(
+            "notify::visible-child-name", self._on_view_stack_changed
+        )
 
         # Connect to position signal to remember user's chosen height
         self.vertical_paned.connect(
