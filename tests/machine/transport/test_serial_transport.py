@@ -61,6 +61,9 @@ class MockSerial:
     def close(self):
         self._closed = True
 
+    def flush(self):
+        pass
+
     def reset_input_buffer(self):
         while True:
             try:
