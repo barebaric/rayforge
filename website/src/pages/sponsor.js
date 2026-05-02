@@ -358,11 +358,11 @@ export default function Sponsor() {
               <thead>
                 <tr>
                   <th></th>
-                  <th>LightBurn</th>
-                  <th>LaserGRBL</th>
                   <th className={styles.comparisonHighlight}>
                     Rayforge
                   </th>
+                  <th>LightBurn</th>
+                  <th>LaserGRBL</th>
                 </tr>
               </thead>
               <tbody>
@@ -373,14 +373,14 @@ export default function Sponsor() {
                       message: 'Cost to User',
                     })}
                   </td>
-                  <td>$99–199</td>
-                  <td>
+                  <td className={styles.comparisonHighlight}>
                     {translate({
                       id: 'sponsor.comparison.free',
                       message: 'Free',
                     })}
                   </td>
-                  <td className={styles.comparisonHighlight}>
+                  <td>$99–199</td>
+                  <td>
                     {translate({
                       id: 'sponsor.comparison.free',
                       message: 'Free',
@@ -392,6 +392,12 @@ export default function Sponsor() {
                     {translate({
                       id: 'sponsor.comparison.costToBrand',
                       message: 'Cost to Brand',
+                    })}
+                  </td>
+                  <td className={styles.comparisonHighlight}>
+                    {translate({
+                      id: 'sponsor.comparison.rf.costToBrand',
+                      message: 'Optional Partnership',
                     })}
                   </td>
                   <td>
@@ -406,18 +412,19 @@ export default function Sponsor() {
                       message: 'No program',
                     })}
                   </td>
-                  <td className={styles.comparisonHighlight}>
-                    {translate({
-                      id: 'sponsor.comparison.rf.costToBrand',
-                      message: 'Optional Partnership',
-                    })}
-                  </td>
                 </tr>
                 <tr>
                   <td>
                     {translate({
                       id: 'sponsor.comparison.brandVisibility',
                       message: 'Brand Visibility',
+                    })}
+                  </td>
+                  <td className={styles.comparisonHighlight}>
+                    {translate({
+                      id: 'sponsor.comparison.rf.brandVisibility',
+                      message:
+                        'In-app first-run selector + showcase',
                     })}
                   </td>
                   <td>
@@ -432,19 +439,18 @@ export default function Sponsor() {
                       message: 'Affiliate coupons',
                     })}
                   </td>
-                  <td className={styles.comparisonHighlight}>
-                    {translate({
-                      id: 'sponsor.comparison.rf.brandVisibility',
-                      message:
-                        'In-app first-run selector + showcase',
-                    })}
-                  </td>
                 </tr>
                 <tr>
                   <td>
                     {translate({
                       id: 'sponsor.comparison.machineProfiles',
                       message: 'Machine Profiles',
+                    })}
+                  </td>
+                  <td className={styles.comparisonHighlight}>
+                    {translate({
+                      id: 'sponsor.comparison.rf.machineProfiles',
+                      message: 'Brand-specific, pre-tuned',
                     })}
                   </td>
                   <td>
@@ -459,12 +465,6 @@ export default function Sponsor() {
                       message: 'None',
                     })}
                   </td>
-                  <td className={styles.comparisonHighlight}>
-                    {translate({
-                      id: 'sponsor.comparison.rf.machineProfiles',
-                      message: 'Brand-specific, pre-tuned',
-                    })}
-                  </td>
                 </tr>
                 <tr>
                   <td>
@@ -473,22 +473,22 @@ export default function Sponsor() {
                       message: 'Linux Support',
                     })}
                   </td>
-                  <td>
-                    {translate({
-                      id: 'sponsor.comparison.no',
-                      message: 'No',
-                    })}
-                  </td>
-                  <td>
-                    {translate({
-                      id: 'sponsor.comparison.no',
-                      message: 'No',
-                    })}
-                  </td>
                   <td className={styles.comparisonHighlight}>
                     {translate({
                       id: 'sponsor.comparison.rf.linuxSupport',
                       message: 'Native (GTK4 / Flatpak / Snap)',
+                    })}
+                  </td>
+                  <td>
+                    {translate({
+                      id: 'sponsor.comparison.no',
+                      message: 'No',
+                    })}
+                  </td>
+                  <td>
+                    {translate({
+                      id: 'sponsor.comparison.no',
+                      message: 'No',
                     })}
                   </td>
                 </tr>
@@ -499,6 +499,9 @@ export default function Sponsor() {
                       message: 'Cross-Platform',
                     })}
                   </td>
+                  <td className={styles.comparisonHighlight}>
+                    Win + Mac + Linux
+                  </td>
                   <td>Win + Mac</td>
                   <td>
                     {translate({
@@ -506,15 +509,18 @@ export default function Sponsor() {
                       message: 'Windows only',
                     })}
                   </td>
-                  <td className={styles.comparisonHighlight}>
-                    Win + Mac + Linux
-                  </td>
                 </tr>
                 <tr>
                   <td>
                     {translate({
                       id: 'sponsor.comparison.devPace',
                       message: 'Development Pace',
+                    })}
+                  </td>
+                  <td className={styles.comparisonHighlight}>
+                    {translate({
+                      id: 'sponsor.comparison.rf.devPace',
+                      message: 'Weekly releases',
                     })}
                   </td>
                   <td>
@@ -527,12 +533,6 @@ export default function Sponsor() {
                     {translate({
                       id: 'sponsor.comparison.grbl.devPace',
                       message: 'Stalling',
-                    })}
-                  </td>
-                  <td className={styles.comparisonHighlight}>
-                    {translate({
-                      id: 'sponsor.comparison.rf.devPace',
-                      message: 'Weekly releases',
                     })}
                   </td>
                 </tr>
