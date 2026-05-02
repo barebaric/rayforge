@@ -571,6 +571,35 @@ class GrblSerialDriver(Driver):
                 return True
         return False
 
+    async def _poll_and_check_idle(self, transport) -> bool:
+        """
+        Send a realtime status poll and check if GRBL is idle.
+
+        Resets ``_raw_grbl_status`` to UNKNOWN, sends a ``?`` poll
+        (which bypasses the RX buffer), and waits briefly for a
+        fresh status report.  Returns True only if the fresh
+        response confirms GRBL is idle or buffer-desynchronized.
+
+        This avoids false deadlock detection when status polling is
+        disabled during jobs and ``_raw_grbl_status`` is stale.
+        """
+        self._raw_grbl_status = DeviceStatus.UNKNOWN
+        try:
+            async with self._cmd_lock:
+                if (
+                    not self.grbl_transport
+                    or not self.grbl_transport.is_connected
+                ):
+                    return False
+                await transport.send_poll(b"?")
+        except (ConnectionError, OSError):
+            return False
+        for _attempt in range(10):
+            await asyncio.sleep(0.1)
+            if self._raw_grbl_status != DeviceStatus.UNKNOWN:
+                break
+        return self._is_grbl_idle_or_desynced(transport)
+
     async def _wait_for_buffer_space(
         self, transport, command_len: int, timeout: float
     ) -> None:
@@ -588,7 +617,7 @@ class GrblSerialDriver(Driver):
                     transport.wait_for_space(), timeout=timeout
                 )
             except asyncio.TimeoutError:
-                if self._is_grbl_idle_or_desynced(transport):
+                if await self._poll_and_check_idle(transport):
                     logger.warning(
                         "Deadlock detected during streaming. "
                         "Attempting G4 P0.01 recovery."
@@ -658,7 +687,7 @@ class GrblSerialDriver(Driver):
                 logger.debug("All 'ok' responses received.")
                 break
             except asyncio.TimeoutError:
-                if self._is_grbl_idle_or_desynced(transport):
+                if await self._poll_and_check_idle(transport):
                     logger.warning(
                         "Deadlock detected at end of job. "
                         "Attempting G4 P0.01 recovery."
