@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-01 00:35+0200\n"
+"POT-Creation-Date: 2026-05-02 13:32+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -218,6 +218,8 @@ msgid "Serial Port"
 msgstr "串口"
 
 #: rayforge/core/capability.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/ui_gtk/doceditor/layer_column.py
 msgid "Cut"
 msgstr "切割"
 
@@ -1287,6 +1289,18 @@ msgid ""
 "connection."
 msgstr "无法连接到主机'{host}'。请检查IP地址和网络连接。"
 
+#: rayforge/machine/sanity/result.py rayforge/machine/models/zone.py
+msgid "No-Go Zone"
+msgstr "禁入区域"
+
+#: rayforge/machine/sanity/result.py
+msgid "Outside Work Area"
+msgstr "超出工作区域"
+
+#: rayforge/machine/sanity/result.py
+msgid "Machine Extent"
+msgstr "机器范围"
+
 #: rayforge/machine/device/profile.py
 #, python-brace-format
 msgid "{name} (device dialect)"
@@ -1312,10 +1326,6 @@ msgstr "默认机器"
 #: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Rotary Module"
 msgstr "旋转模块"
-
-#: rayforge/machine/models/zone.py
-msgid "No-Go Zone"
-msgstr "禁入区域"
 
 #: rayforge/machine/models/controller.py
 msgid "No driver selected for this machine."
@@ -1737,8 +1747,10 @@ msgstr "取消"
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
+#: rayforge/ui_gtk/doceditor/layer_column.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Delete"
 msgstr "删除"
@@ -2168,16 +2180,25 @@ msgid "Remove Tab"
 msgstr "移除标签"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
 msgid "New Sketch"
 msgstr "新建草图"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
 msgid "New Stock"
 msgstr "新建材料"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
 msgid "Import File…"
 msgstr "导入文件…"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/ui_gtk/doceditor/layer_column.py
+msgid "Paste"
+msgstr "粘贴"
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid "Drop files to import"
@@ -4631,6 +4652,44 @@ msgstr "选择模型"
 msgid "Select"
 msgstr "选择"
 
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "Job Sanity Check"
+msgstr "作业检查"
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py rayforge/ui_gtk/project_cmd.py
+msgid "_Cancel"
+msgstr "取消(_C)"
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "_Proceed"
+msgstr "_继续"
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "{} error(s)"
+msgstr "{} 个错误"
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "{} warning(s)"
+msgstr "{} 个警告"
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "No issues found."
+msgstr "未发现问题。"
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+#, python-brace-format
+msgid ""
+"Found {summary}. Proceeding may cause damage to your machine or workpiece."
+msgstr "发现{summary}。继续操作可能会损坏您的机器或工件。"
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "Errors"
+msgstr "错误"
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "Warnings"
+msgstr "警告"
+
 #: rayforge/ui_gtk/main_menu.py
 msgid "New"
 msgstr "新建"
@@ -4676,15 +4735,13 @@ msgstr "撤销"
 msgid "Redo"
 msgstr "重做"
 
-#: rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/ui_gtk/doceditor/layer_column.py
 msgid "Copy"
 msgstr "复制"
 
-#: rayforge/ui_gtk/main_menu.py
-msgid "Paste"
-msgstr "粘贴"
-
-#: rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/ui_gtk/doceditor/layer_column.py
 msgid "Duplicate"
 msgstr "创建副本"
 
@@ -4936,24 +4993,6 @@ msgid "Pause machine"
 msgstr "暂停机器"
 
 #: rayforge/ui_gtk/mainwindow.py
-msgid "No-Go Zone Collision"
-msgstr "禁入区域碰撞"
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid ""
-"The toolpath enters one or more enabled no-go zones. Proceeding may cause "
-"damage to your machine or workpiece."
-msgstr "刀具路径进入一个或多个已启用的禁入区域。继续可能会损坏您的机器或工件。"
-
-#: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/project_cmd.py
-msgid "_Cancel"
-msgstr "取消(_C)"
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid "_Proceed"
-msgstr "_继续"
-
-#: rayforge/ui_gtk/mainwindow.py
 msgid "Please select a single object to export."
 msgstr "请选择单个对象以导出。"
 
@@ -5101,6 +5140,34 @@ msgstr "添加资产"
 #: rayforge/ui_gtk/doceditor/asset_browser.py
 msgid "Add Sketch"
 msgstr "添加草图"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Create New Workpiece"
+msgstr "创建新工件"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Cut asset(s)"
+msgstr "剪切素材"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Cut asset"
+msgstr "剪切素材"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Paste asset(s)"
+msgstr "粘贴素材"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Paste asset"
+msgstr "粘贴素材"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Duplicate asset(s)"
+msgstr "复制素材"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Duplicate asset"
+msgstr "复制素材"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Map to Existing"

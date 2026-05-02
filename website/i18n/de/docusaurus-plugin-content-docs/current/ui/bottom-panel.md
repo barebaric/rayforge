@@ -272,6 +272,13 @@ Rohmaterial oder Erstellen einer neuen Skizze angezeigt. Du kannst Assets
 aus dieser Liste auf die Canvas ziehen, um sie zu platzieren. Ein
 Doppelklick auf ein Rohmaterial-Asset öffnet dessen Eigenschaften.
 
+Ein Rechtsklick auf ein Asset öffnet ein Kontextmenü mit Optionen zum
+Erstellen eines neuen Werkstücks aus dem Asset, Duplizieren, Kopieren,
+Ausschneiden oder Löschen. Ein Rechtsklick auf eine leere Stelle in der
+Asset-Liste bietet Optionen zum Erstellen einer neuen Skizze, Hinzufügen
+von Rohmaterial, Importieren einer Datei oder Einfügen aus der
+Zwischenablage.
+
 Wenn der Konsole- oder G-Code-Viewer-Tab aktiv ist, kannst du auch
 <kbd>Strg+F</kbd> drücken, um im Inhalt zu suchen.
 

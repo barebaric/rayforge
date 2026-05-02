@@ -270,6 +270,11 @@ When the asset list is empty, it displays buttons to add stock or create a new
 sketch. You can drag assets from this list onto the canvas to place them.
 Double-clicking a stock asset opens its properties.
 
+Right-clicking an asset opens a context menu with options to create a new
+workpiece from the asset, duplicate, copy, cut, or delete it. Right-clicking
+empty space in the asset list offers options to create a new sketch, add
+stock, import a file, or paste from the clipboard.
+
 When the Console or G-code Viewer tab is active, you can also press
 <kbd>Ctrl+F</kbd> to search within the content.
 

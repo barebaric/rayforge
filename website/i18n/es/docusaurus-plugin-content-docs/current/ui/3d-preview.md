@@ -127,11 +127,14 @@ Alterna la visibilidad de capas individuales:
 Antes de enviar a la máquina, verifica:
 
 - [ ] La trayectoria está completa sin segmentos faltantes
-- [ ] Las trayectorias permanecen dentro del área de trabajo de la máquina
 - [ ] Las operaciones de grabado se ejecutan antes que los cortes
-- [ ] Ninguna trayectoria entra en una zona prohibida
 - [ ] El trabajo comienza en la posición esperada
 - [ ] Las pestañas de sujeción están en las ubicaciones correctas
+
+Algunas comprobaciones adicionales se realizan automáticamente. Cuando ejecutas o
+exportas un trabajo, Rayforge ejecuta [comprobaciones de sanity](../features/sanity-checks)
+que verifican los límites de la máquina, las fronteras del área de trabajo y las
+colisiones con zonas prohibidas.
 
 ## Consejos de Rendimiento
 

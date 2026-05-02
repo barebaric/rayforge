@@ -45,6 +45,10 @@ TARGETS = {
     "machine-settings:maintenance": "machine_settings_maintenance",
     "machine-settings:nogo-zones": "machine_settings_nogo_zones",
     "material-test": "material_test",
+    "recipe-editor:general": "recipe_editor_general",
+    "recipe-editor:applicability": "recipe_editor_applicability",
+    "recipe-editor:settings": "recipe_editor_settings",
+    "sanity-check": "sanity_check",
     "step-settings:contour:general": "step_settings",
     "step-settings:contour:post": "step_settings",
     "step-settings:engrave:general:constant_power": "step_settings",
@@ -56,9 +60,6 @@ TARGETS = {
     "step-settings:frame-outline:post": "step_settings",
     "step-settings:shrink-wrap:general": "step_settings",
     "step-settings:shrink-wrap:post": "step_settings",
-    "recipe-editor:general": "recipe_editor_general",
-    "recipe-editor:applicability": "recipe_editor_applicability",
-    "recipe-editor:settings": "recipe_editor_settings",
 }
 
 

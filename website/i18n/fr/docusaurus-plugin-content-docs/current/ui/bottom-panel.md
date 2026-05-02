@@ -263,7 +263,12 @@ l'icône des actifs dans la bande d'onglets pour basculer vers cette vue.
 
 Lorsque la liste des actifs est vide, elle affiche des boutons pour ajouter du stock ou créer
 un nouveau croquis. Tu peux glisser les actifs depuis cette liste vers le canevas pour les
-placer. Double-cliquer sur un actif de stock ouvre ses propriétés.
+placer. Double-cliquer sur un actif de stock ouvre ses propriétés. Faire un clic
+droit sur un actif ouvre un menu contextuel avec des options pour créer
+une nouvelle pièce à partir de l'actif, le dupliquer, le copier, le
+couper ou le supprimer. Faire un clic droit sur un espace vide dans la
+liste des actifs offre des options pour créer un nouveau croquis, ajouter
+du stock, importer un fichier ou coller depuis le presse-papiers.
 
 Lorsque l'onglet Console ou Visualiseur G-code est actif, tu peux aussi appuyer sur
 <kbd>Ctrl+F</kbd> pour rechercher dans le contenu.

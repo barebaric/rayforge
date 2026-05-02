@@ -1,9 +1,9 @@
 # Zonas de Restrição
 
 Zonas de restrição definem áreas restritas na superfície de trabalho que o laser
-não deve entrar. Antes de executar ou exportar um trabalho, o Rayforge verifica
-se algum caminho de ferramenta entra em uma zona de restrição habilitada e avisa
-você se uma colisão é detectada.
+não deve entrar. Quando habilitadas, elas são verificadas como parte das
+[verificações de sanidade do trabalho](../features/sanity-checks) antes de
+executar ou exportar.
 
 ![Zonas de Restrição](/screenshots/machine-nogo-zones.png)
 
@@ -21,13 +21,6 @@ Cada zona tem as seguintes configurações:
 - **Posição (X, Y, Z)**: Onde a zona está colocada na superfície de trabalho
 - **Dimensões**: Largura, altura e profundidade (ou raio para cilindros)
 
-## Avisos de Colisão
-
-Quando você executa ou exporta um trabalho, o Rayforge verifica todos os
-caminhos de ferramenta contra as zonas de restrição habilitadas. Se um caminho
-de ferramenta passa por uma zona, um diálogo de aviso aparece com a opção de
-cancelar ou prosseguir por sua conta e risco.
-
 ## Visibilidade
 
 Zonas de restrição são exibidas tanto na tela 2D quanto na 3D como
@@ -40,4 +33,5 @@ de visibilidade é lembrada entre sessões.
 ## Páginas Relacionadas
 
 - [Configurações de Hardware](hardware) - Dimensões da máquina e configuração de eixos
+- [Verificações de Sanidade do Trabalho](../features/sanity-checks) - Validação pré-trabalho
 - [Visualização 3D](../ui/3d-preview) - Visualização de caminhos de ferramenta em 3D
