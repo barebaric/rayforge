@@ -81,6 +81,7 @@ class GrblSerialDriver(Driver):
         self._command_queue: asyncio.Queue[CommandRequest] = asyncio.Queue()
         self._command_task: Optional[asyncio.Task] = None
         self._is_cancelled = False
+        self._raw_grbl_status: DeviceStatus = DeviceStatus.UNKNOWN
         self._job_running = False
         self._on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
@@ -551,11 +552,18 @@ class GrblSerialDriver(Driver):
 
         During jobs, the IDLE status is overridden to RUN for the
         UI, so ``self.state.status == IDLE`` is never true.  Instead
-        we check: (1) the raw GRBL status before the override
-        (buffer_available == full), or (2) whether GRBL reports full
-        buffer availability while we still have pending commands.
+        we check: (1) the raw GRBL status before the override, (2)
+        whether GRBL reports full buffer availability while we still
+        have pending commands, or (3) whether a non-busy raw status
+        (IDLE/HOLD) has been seen repeatedly with a non-empty
+        pending queue — indicating a desync even without ``Bf:``.
         """
         if self.state.status == DeviceStatus.IDLE:
+            return True
+        if self._raw_grbl_status in (
+            DeviceStatus.IDLE,
+            DeviceStatus.HOLD,
+        ):
             return True
         buf_avail = self.state.buffer_available
         if buf_avail is not None and transport._rx_buffer_size > 0:
@@ -751,6 +759,7 @@ class GrblSerialDriver(Driver):
             if isinstance(e, asyncio.CancelledError):
                 raise
         finally:
+            self._raw_grbl_status = DeviceStatus.UNKNOWN
             self._job_running = False
             self._on_command_done = None
             if job_completed_successfully:
@@ -1273,6 +1282,8 @@ class GrblSerialDriver(Driver):
         state = parse_state(
             report, self.state, lambda message: logger.info(message)
         )
+
+        self._raw_grbl_status = state.status
 
         # If a job is active, 'Idle' state between commands should be
         # reported as 'Run' to the UI.
