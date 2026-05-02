@@ -20,9 +20,9 @@ Access the 3D view:
 
 ### Mouse Controls
 
-- **Rotate**: Left-click and drag
-- **Pan**: Right-click and drag, or middle-click and drag
-- **Zoom**: Scroll wheel, or <kbd>ctrl</kbd> + left-click and drag
+- **Rotate**: Left-click and drag (Z-axis), middle-click and drag (3-axis orbit)
+- **Pan**: <kbd>shift</kbd> + middle-click and drag
+- **Zoom**: Scroll wheel
 
 ### View Presets
 

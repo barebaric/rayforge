@@ -16,9 +16,9 @@ Accede a la vista 3D:
 
 ### Controles del Ratón
 
-- **Rotar**: Clic izquierdo y arrastrar
-- **Desplazar**: Clic derecho y arrastrar, o clic central y arrastrar
-- **Zoom**: Rueda de desplazamiento, o <kbd>ctrl</kbd> + clic izquierdo y arrastrar
+- **Rotar**: Clic izquierdo y arrastrar (eje Z), clic central y arrastrar (órbita de 3 ejes)
+- **Desplazar**: <kbd>shift</kbd> + clic central y arrastrar
+- **Zoom**: Rueda de desplazamiento
 
 ### Preajustes de Vista
 

@@ -16,9 +16,9 @@ Acesse a visualização 3D:
 
 ### Controles do Mouse
 
-- **Rotacionar**: Clique esquerdo e arraste
-- **Panorâmica**: Clique direito e arraste, ou clique do meio e arraste
-- **Zoom**: Roda do mouse, ou <kbd>ctrl</kbd> + clique esquerdo e arraste
+- **Rotacionar**: Clique esquerdo e arraste (eixo Z), clique do meio e arraste (órbita de 3 eixos)
+- **Panorâmica**: <kbd>shift</kbd> + clique do meio e arraste
+- **Zoom**: Roda do mouse
 
 ### Predefinições de Visualização
 
