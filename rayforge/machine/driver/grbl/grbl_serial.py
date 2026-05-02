@@ -528,6 +528,11 @@ class GrblSerialDriver(Driver):
         logger.info("Deadlock recovery: sending G4 P0.01 to drain planner.")
         try:
             async with self._cmd_lock:
+                if (
+                    not self.grbl_transport
+                    or not self.grbl_transport.is_connected
+                ):
+                    return
                 dwell = b"G4 P0.01\n"
                 await transport.send_gcode(dwell)
                 logger.debug(f"TX: {dwell!r} (deadlock recovery)")
@@ -618,6 +623,12 @@ class GrblSerialDriver(Driver):
                 )
             except asyncio.TimeoutError:
                 if await self._poll_and_check_idle(transport):
+                    if not transport.needs_space(command_len):
+                        logger.info(
+                            "Buffer freed during status poll. "
+                            "Continuing streaming."
+                        )
+                        continue
                     logger.warning(
                         "Deadlock detected during streaming. "
                         "Attempting G4 P0.01 recovery."
@@ -688,6 +699,11 @@ class GrblSerialDriver(Driver):
                 break
             except asyncio.TimeoutError:
                 if await self._poll_and_check_idle(transport):
+                    if transport.pending_queue.empty():
+                        logger.info(
+                            "Pending acks resolved during status poll."
+                        )
+                        break
                     logger.warning(
                         "Deadlock detected at end of job. "
                         "Attempting G4 P0.01 recovery."
