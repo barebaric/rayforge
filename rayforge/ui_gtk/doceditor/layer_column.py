@@ -61,8 +61,13 @@ css = """
 .layer-workpiece-list > row {
     background-color: transparent;
     border-radius: 4px;
-    margin: 1px 4px;
+    padding: 1px 4px;
+    margin: 0;
     border: none;
+}
+.layer-workpiece-list > row > * {
+    margin: -1px -4px;
+    padding: 1px 4px;
 }
 .layer-workpiece-list > row:drop(active) {
     background-color: transparent;
@@ -112,6 +117,7 @@ class LayerColumn(Gtk.Box):
         self._selected_uids: Set = set()
         self._selection_anchor = None
         self._potential_drop_index = -1
+        self._drop_shift_held = False
 
         self.edit_item_requested = Signal()
         self.select_items_requested = Signal()
@@ -125,9 +131,11 @@ class LayerColumn(Gtk.Box):
         self._click_gesture = Gtk.GestureClick()
         self._click_gesture.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
         self._click_gesture.connect("pressed", self._on_column_clicked)
+        self._click_gesture.connect("released", self._on_column_released)
         self.add_controller(self._click_gesture)
 
         self._context_popover: Optional[Gtk.PopoverMenu] = None
+        self._row_drag_happened: bool = False
 
         right_click = Gtk.GestureClick()
         right_click.set_button(Gdk.BUTTON_SECONDARY)
@@ -251,6 +259,13 @@ class LayerColumn(Gtk.Box):
         self.header.add_controller(drag_source)
 
     @staticmethod
+    def _setup_row_drag_source(row, item_row):
+        drag_source = Gtk.DragSource()
+        drag_source.set_actions(Gdk.DragAction.MOVE)
+        drag_source.connect("prepare", item_row._on_drag_prepare)
+        row.add_controller(drag_source)
+
+    @staticmethod
     def _on_layer_drag_begin(drag_source, drag):
         LayerColumn.dragging = True
 
@@ -306,6 +321,7 @@ class LayerColumn(Gtk.Box):
             row.set_child(item_row)
             self._row_items[row] = item
             self._ordered_items.append(item)
+            self._setup_row_drag_source(row, item_row)
             self.listbox.append(row)
 
     def update_row_selection(self, selected_uids: Set):
@@ -424,6 +440,7 @@ class LayerColumn(Gtk.Box):
         self.editor.layer.set_layer_visibility(self.layer, new_visibility)
 
     def _on_column_clicked(self, gesture, n_press, x, y):
+        self._pressed_clicked_item = None
         picked = self.pick(x, y, Gtk.PickFlags.DEFAULT)
         if picked is not None:
             widget = picked
@@ -446,6 +463,20 @@ class LayerColumn(Gtk.Box):
         if self.doc.active_layer is not self.layer:
             self.editor.layer.set_active_layer(self.layer)
 
+    def _on_column_released(self, gesture, n_press, x, y):
+        if (
+            self._pressed_clicked_item
+            and self._pressed_clicked_item.uid in self._selected_uids
+            and len(self._selected_uids) > 1
+        ):
+            self._selection_anchor = self._pressed_clicked_item
+            self.select_items_requested.send(
+                self,
+                items=[self._pressed_clicked_item],
+                extend=False,
+            )
+        self._pressed_clicked_item = None
+
     def _handle_item_click(self, item, gesture) -> bool:
         event = gesture.get_current_event()
         modifiers = (
@@ -461,9 +492,7 @@ class LayerColumn(Gtk.Box):
             ):
                 self._selection_anchor = item
             if item in self._ordered_items:
-                anchor_idx = self._ordered_items.index(
-                    self._selection_anchor
-                )
+                anchor_idx = self._ordered_items.index(self._selection_anchor)
                 click_idx = self._ordered_items.index(item)
                 lo = min(anchor_idx, click_idx)
                 hi = max(anchor_idx, click_idx)
@@ -471,30 +500,37 @@ class LayerColumn(Gtk.Box):
             else:
                 selected = [item]
             self.select_items_requested.send(
-                self, items=selected, extend=True,
+                self,
+                items=selected,
+                extend=True,
             )
             return True
         elif ctrl:
             self._selection_anchor = item
             selected = [
-                i
-                for i in self._ordered_items
-                if i.uid in self._selected_uids
+                i for i in self._ordered_items if i.uid in self._selected_uids
             ]
             if item in selected:
                 selected = [i for i in selected if i is not item]
             else:
                 selected.append(item)
             self.select_items_requested.send(
-                self, items=selected, extend=True,
+                self,
+                items=selected,
+                extend=True,
             )
             return True
         elif item.uid not in self._selected_uids:
             self._selection_anchor = item
             self.select_items_requested.send(
-                self, items=[item], extend=False,
+                self,
+                items=[item],
+                extend=False,
             )
             return True
+        elif len(self._selected_uids) > 1:
+            self._pressed_clicked_item = item
+            return False
         return False
 
     def _on_workpiece_double_clicked(self, wp):
@@ -522,7 +558,9 @@ class LayerColumn(Gtk.Box):
         else:
             if clicked_item.uid not in self._selected_uids:
                 self.select_items_requested.send(
-                    self, items=[clicked_item], extend=False
+                    self,
+                    items=[clicked_item],
+                    extend=False,
                 )
             self._show_item_context_menu(gesture)
 
@@ -571,12 +609,11 @@ class LayerColumn(Gtk.Box):
 
         drop_index = self._potential_drop_index
         self._remove_drop_markers()
+        self._drop_shift_held = False
 
         if dragged_item.uid in self._selected_uids:
             items_to_move = [
-                i
-                for i in self._ordered_items
-                if i.uid in self._selected_uids
+                i for i in self._ordered_items if i.uid in self._selected_uids
             ]
         else:
             items_to_move = [dragged_item]
