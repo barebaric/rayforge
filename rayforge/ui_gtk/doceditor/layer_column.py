@@ -210,7 +210,11 @@ class LayerColumn(Gtk.Box):
 
         self.visibility_button = Gtk.ToggleButton()
         self.visibility_button.set_active(self.layer.visible)
-        self.visibility_button.set_child(self.visibility_on_icon)
+        self.visibility_button.set_child(
+            self.visibility_on_icon
+            if self.layer.visible
+            else self.visibility_off_icon
+        )
         self.visibility_button.add_css_class("flat")
         self.visibility_button.set_tooltip_text(_("Toggle layer visibility"))
         self.visibility_button.connect("clicked", self._on_visibility_clicked)
