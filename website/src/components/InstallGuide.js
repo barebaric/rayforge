@@ -51,17 +51,14 @@ const osOptions = [
   {
     id: 'linux',
     label: 'Linux',
-    icon: '🐧',
   },
   {
     id: 'windows',
     label: 'Windows',
-    icon: '🪟',
   },
   {
     id: 'macos',
-    label: 'macOS',
-    icon: '🍎',
+    label: 'MacOS',
   },
 ];
 
