@@ -187,6 +187,7 @@ class SerialTransport(Transport):
                 port=self.port,
                 baudrate=self.baudrate,
                 timeout=self._READ_TIMEOUT,
+                exclusive=True,
             )
             logger.debug("serial.Serial opened successfully.")
             self._running = True
