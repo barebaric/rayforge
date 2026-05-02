@@ -256,16 +256,26 @@ class SerialTransport(Transport):
         """
         if not self._serial:
             raise ConnectionError("Serial port not open")
+        assert self._loop is not None
         logger.debug(f"Sending data: {data!r}")
+
         try:
-            self._serial.write(data)
-            self._serial.flush()
+            # Offloading to an executor prevents blocking C-level calls
+            # from tying up the asyncio event loop thread, which can cause
+            # deferred OS/kernel execution of the actual transmission.
+            await self._loop.run_in_executor(None, self._sync_send, data)
         except (serial.SerialException, OSError) as e:
             # Wrap low-level serial errors as ConnectionError so drivers
             # can handle them gracefully
             raise ConnectionError(
                 f"Failed to write to serial port: {e}"
             ) from e
+
+    def _sync_send(self, data: bytes) -> None:
+        """Synchronous wrapper for blocking write and flush operations."""
+        if self._serial:
+            self._serial.write(data)
+            self._serial.flush()
 
     async def purge(self) -> None:
         """
