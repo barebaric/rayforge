@@ -32,6 +32,7 @@ TARGETS = {
     "addon:projector-mode": "projector_mode",
     "bottom-panel:console": "bottom_panel",
     "bottom-panel:layers": "bottom_panel",
+    "add-machine-dialog": "add_machine_dialog",
     "import-dialog": "import_dialog",
     "machine-settings:general": "machine_settings_general",
     "machine-settings:hardware": "machine_settings_hardware",

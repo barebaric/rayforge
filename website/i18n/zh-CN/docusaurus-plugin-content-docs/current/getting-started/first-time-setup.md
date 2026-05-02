@@ -10,14 +10,13 @@
 
 导航到 **设置 → 机器** 或按 <kbd>ctrl+comma</kbd> 打开设置对话框，然后选择 **机器** 页面。
 
-点击 **添加机器** 创建新机器。您可以：
+![机器设置](/screenshots/application-machines.png)
 
-1. **选择内置配置文件** - 从预定义的机器模板中选择
-2. **选择"自定义"** - 从空白配置开始
+点击 **添加机器** 创建新机器。从列表中选择一个设备配置文件作为模板——每个配置文件会预设机器设置和 G-code 方言。
+
+![添加机器](/screenshots/add-machine-dialog.png)
 
 选择后，机器设置对话框将打开您的新机器。
-
-![机器设置](/screenshots/application-machines.png)
 
 ## 第 3 步：配置常规设置
 
