@@ -62,7 +62,7 @@
 
 html[data-theme='dark'] .footer {
   background: #1b1b1d;
-  border-top-color: rgba(255, 255, 255, 0.08);
+  border-top-color: rgba(255, 255, 255, 0.644);
 }
 
 .footer a {
