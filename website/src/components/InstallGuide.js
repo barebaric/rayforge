@@ -5,6 +5,177 @@ import Admonition from '@theme/Admonition';
 import './InstallGuide.css';
 
 const VERSION = typeof RAYFORGE_VERSION !== 'undefined' ? RAYFORGE_VERSION : '0.0.0';
+const GITHUB_REPO = 'barebaric/rayforge';
+
+function stripLeadingV(tag) {
+  if (typeof tag !== 'string') {
+    return tag;
+  }
+  return tag.startsWith('v') ? tag.slice(1) : tag;
+}
+
+function getOsLabel(os) {
+  if (os === 'windows') {
+    return 'Windows';
+  }
+  if (os === 'macos') {
+    return 'macOS';
+  }
+  if (os === 'linux') {
+    return 'Linux';
+  }
+  return 'Linux';
+}
+
+function getGithubLatestReleaseApiUrl(repo) {
+  return `https://api.github.com/repos/${repo}/releases/latest`;
+}
+
+function findReleaseAsset({ release, os, linuxMethod, windowsMethod, macosMethod }) {
+  if (!release?.assets?.length) {
+    return null;
+  }
+
+  const assets = release.assets;
+
+  if (os === 'windows') {
+    if (windowsMethod === 'installer') {
+      return (
+        assets.find((a) => a?.name?.endsWith('-installer.exe')) ||
+        assets.find((a) => a?.name?.endsWith('.exe'))
+      );
+    }
+    return null;
+  }
+
+  if (os === 'macos') {
+    if (macosMethod === 'universal') {
+      return assets.find((a) => a?.name?.endsWith('-universal.dmg'));
+    }
+    if (macosMethod === 'arm') {
+      return assets.find((a) => a?.name?.endsWith('-arm-app.zip'));
+    }
+    if (macosMethod === 'intel') {
+      return assets.find((a) => a?.name?.endsWith('-intel-app.zip'));
+    }
+    return null;
+  }
+
+  if (os === 'linux') {
+    if (linuxMethod === 'snap' || linuxMethod === 'flatpak') {
+      return null;
+    }
+    if (linuxMethod === 'ppa') {
+      return (
+        assets.find((a) => a?.name?.endsWith('_amd64.deb')) ||
+        assets.find((a) => a?.name?.includes('amd64') && a?.name?.endsWith('.deb')) ||
+        assets.find((a) => a?.name?.endsWith('.deb'))
+      );
+    }
+    return (
+      assets.find((a) => a?.name?.endsWith('.AppImage')) ||
+      assets.find((a) => a?.name?.endsWith('.deb')) ||
+      assets.find((a) => a?.name?.endsWith('.rpm'))
+    );
+  }
+
+  return null;
+}
+
+function useLatestGithubRelease(repo) {
+  const [state, setState] = useState(() => ({
+    status: 'loading',
+    release: null,
+    error: null,
+  }));
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setState({ status: 'loading', release: null, error: null });
+      try {
+        const response = await fetch(getGithubLatestReleaseApiUrl(repo), {
+          headers: { Accept: 'application/vnd.github+json' },
+        });
+        if (!response.ok) {
+          throw new Error(`GitHub API error: ${response.status}`);
+        }
+        const release = await response.json();
+        if (cancelled) {
+          return;
+        }
+        setState({ status: 'ready', release, error: null });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        setState({ status: 'error', release: null, error });
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [repo]);
+
+  return state;
+}
+
+function MainDownloadButton({
+  os,
+  linuxMethod,
+  windowsMethod,
+  macosMethod,
+  latestRelease,
+  latestReleaseStatus,
+}) {
+  if (os === 'linux') {
+    return null;
+  }
+
+  const osLabel = getOsLabel(os);
+  const asset = findReleaseAsset({
+    release: latestRelease,
+    os,
+    linuxMethod,
+    windowsMethod,
+    macosMethod,
+  });
+
+  const href = asset?.browser_download_url || latestRelease?.html_url || `https://github.com/${GITHUB_REPO}/releases/latest`;
+  const versionLabel = stripLeadingV(latestRelease?.tag_name);
+
+  let text = translate({ id: 'install.preparingDownload', message: 'Preparing download…' });
+  if (latestReleaseStatus === 'ready') {
+    if (asset) {
+      text = translate(
+        { id: 'install.downloadForOs', message: 'Download for {os} ({version})' },
+        { os: osLabel, version: versionLabel || latestRelease?.tag_name || '' },
+      );
+    } else {
+      text = translate(
+        { id: 'install.downloadsOnGithub', message: 'Downloads for {os} (GitHub)' },
+        { os: osLabel },
+      );
+    }
+  }
+  if (latestReleaseStatus === 'error') {
+    text = translate(
+      { id: 'install.downloadsOnGithub', message: 'Downloads for {os} (GitHub)' },
+      { os: osLabel },
+    );
+  }
+
+  return (
+    <p>
+      <a className="button button--primary" href={href} target="_blank" rel="noopener noreferrer">
+        {text}
+      </a>
+    </p>
+  );
+}
 
 function detectOs() {
   if (typeof window === 'undefined') {
@@ -478,7 +649,7 @@ sudo apt install python3-pip python3-gi gir1.2-gtk-3.0 gir1.2-adw-1 \\
   );
 }
 
-function WindowsInstall({ version, method, onMethodChange }) {
+function WindowsInstall({ version, method, onMethodChange, latestRelease }) {
   return (
     <>
       <div className="install-method-selector">
@@ -498,14 +669,24 @@ function WindowsInstall({ version, method, onMethodChange }) {
         </div>
       </div>
 
-      {method === 'installer' && <WindowsInstallerInstall version={version} />}
+      {method === 'installer' && (
+        <WindowsInstallerInstall version={version} latestRelease={latestRelease} />
+      )}
       {method === 'developer' && <WindowsDeveloperInstall />}
     </>
   );
 }
 
-function WindowsInstallerInstall({ version }) {
-  const downloadUrl = `https://github.com/barebaric/rayforge/releases/download/${version}/rayforge-v${version}-installer.exe`;
+function WindowsInstallerInstall({ version, latestRelease }) {
+  const latestAsset = findReleaseAsset({
+    release: latestRelease,
+    os: 'windows',
+    windowsMethod: 'installer',
+  });
+  const downloadUrl =
+    latestAsset?.browser_download_url ||
+    `https://github.com/barebaric/rayforge/releases/download/${version}/rayforge-v${version}-installer.exe`;
+  const versionLabel = stripLeadingV(latestRelease?.tag_name) || version;
   return (
     <div className="install-section">
       <h4><Translate id="install.windows.title">Windows Installation</Translate></h4>
@@ -520,7 +701,7 @@ function WindowsInstallerInstall({ version }) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version })}</strong>
+              <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version: versionLabel })}</strong>
             </a>
           </p>
         </div>
@@ -690,8 +871,9 @@ cd rayforge`}
   );
 }
 
-function MacosInstall({ version, method, onMethodChange }) {
-  const downloadUrl = `https://github.com/barebaric/rayforge/releases/download/${version}/rayforge-${version}-macos`;
+function MacosInstall({ version, method, onMethodChange, latestRelease }) {
+  const latestTag = stripLeadingV(latestRelease?.tag_name) || version;
+  const fallbackBaseUrl = `https://github.com/barebaric/rayforge/releases/download/${version}/rayforge-${version}-macos`;
   return (
     <div className="install-section">
       <div className="install-method-selector">
@@ -721,11 +903,17 @@ function MacosInstall({ version, method, onMethodChange }) {
                 <>
                   <p>
                     <a
-                      href={`${downloadUrl}-universal.dmg`}
+                      href={
+                        findReleaseAsset({
+                          release: latestRelease,
+                          os: 'macos',
+                          macosMethod: 'universal',
+                        })?.browser_download_url || `${fallbackBaseUrl}-universal.dmg`
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version })}</strong>
+                      <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version: latestTag })}</strong>
                     </a>
                   </p>
                   <p>
@@ -739,11 +927,17 @@ function MacosInstall({ version, method, onMethodChange }) {
                 <>
                   <p>
                     <a
-                      href={`${downloadUrl}-arm-app.zip`}
+                      href={
+                        findReleaseAsset({
+                          release: latestRelease,
+                          os: 'macos',
+                          macosMethod: 'arm',
+                        })?.browser_download_url || `${fallbackBaseUrl}-arm-app.zip`
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version })}</strong>
+                      <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version: latestTag })}</strong>
                     </a>
                   </p>
                   <p>
@@ -757,11 +951,17 @@ function MacosInstall({ version, method, onMethodChange }) {
                 <>
                   <p>
                     <a
-                      href={`${downloadUrl}-intel-app.zip`}
+                      href={
+                        findReleaseAsset({
+                          release: latestRelease,
+                          os: 'macos',
+                          macosMethod: 'intel',
+                        })?.browser_download_url || `${fallbackBaseUrl}-intel-app.zip`
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version })}</strong>
+                      <strong>{translate({ id: 'install.downloadRayforge', message: 'Download Rayforge' }, { version: latestTag })}</strong>
                     </a>
                   </p>
                   <p>
@@ -1087,6 +1287,7 @@ export default function InstallGuide() {
   const [linuxMethod, setLinuxMethod] = useState(() => hashState.method || 'snap');
   const [windowsMethod, setWindowsMethod] = useState(() => hashState.method || 'installer');
   const [macosMethod, setMacosMethod] = useState(() => hashState.method || 'universal');
+  const latestReleaseState = useLatestGithubRelease(GITHUB_REPO);
 
   useEffect(() => {
     const detected = detectOs();
@@ -1112,6 +1313,14 @@ export default function InstallGuide() {
   return (
     <div className="install-guide">
       <OsSelector selectedOs={selectedOs} onSelectOs={setSelectedOs} />
+      <MainDownloadButton
+        os={selectedOs}
+        linuxMethod={linuxMethod}
+        windowsMethod={windowsMethod}
+        macosMethod={macosMethod}
+        latestRelease={latestReleaseState.release}
+        latestReleaseStatus={latestReleaseState.status}
+      />
 
       <div className="install-content">
         {selectedOs === 'linux' && (
@@ -1125,6 +1334,7 @@ export default function InstallGuide() {
             version={VERSION}
             method={windowsMethod}
             onMethodChange={setWindowsMethod}
+            latestRelease={latestReleaseState.release}
           />
         )}
         {selectedOs === 'macos' && (
@@ -1132,6 +1342,7 @@ export default function InstallGuide() {
             version={VERSION}
             method={macosMethod}
             onMethodChange={setMacosMethod}
+            latestRelease={latestReleaseState.release}
           />
         )}
 
