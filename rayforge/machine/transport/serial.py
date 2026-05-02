@@ -241,13 +241,23 @@ class SerialTransport(Transport):
 
     async def send(self, data: bytes) -> None:
         """
-        Write data to serial port.
+        Write data to serial port and flush to ensure physical
+        transmission.
+
+        Without flush, data may sit in the kernel TTY buffer
+        indefinitely.  This causes GRBL to never receive commands
+        while the host believes they were sent, leading to false
+        deadlock detection.  When the deadlock recovery eventually
+        writes more data, the entire buffered payload is flushed at
+        once, overflowing the device's small RX buffer and causing
+        error responses.
         """
         if not self._serial:
             raise ConnectionError("Serial port not open")
         logger.debug(f"Sending data: {data!r}")
         try:
             self._serial.write(data)
+            self._serial.flush()
         except (serial.SerialException, OSError) as e:
             # Wrap low-level serial errors as ConnectionError so drivers
             # can handle them gracefully
