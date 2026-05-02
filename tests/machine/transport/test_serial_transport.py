@@ -250,7 +250,8 @@ class TestSerialTransportIntegration:
         await transport.connect()
         assert transport.is_connected
         mock_cls.assert_called_once_with(
-            port="/dev/mock", baudrate=9600, timeout=0.5
+            port="/dev/mock", baudrate=9600, timeout=0.5,
+            exclusive=True,
         )
 
         await transport.disconnect()
