@@ -2,12 +2,9 @@
 
 ![Paramètres généraux](/screenshots/application-general.png)
 
-Personnalise Rayforge pour correspondre à ton flux de travail et tes préférences.
-
-## Accéder aux paramètres
-
-- **Menu** : Édition → Paramètres
-- **Clavier** : <kbd>ctrl+virgule</kbd>
+Personnalise Rayforge pour correspondre à ton flux de travail et tes
+préférences. Ouvre les paramètres via **Édition → Paramètres** ou appuie sur
+<kbd>ctrl+virgule</kbd>.
 
 ## Général
 
@@ -15,88 +12,55 @@ La page Général contient les paramètres à l'échelle de l'application.
 
 ### Apparence
 
-- **Thème** : Choisis entre le thème Système, Clair ou Sombre
-
-### Opérations
-
-- **Mise à jour automatique des opérations** : Lorsqu'activé (par défaut), les opérations sont
-  recalculées automatiquement après chaque modification. Désactive cette option si tu préfères
-  déclencher le recalcul manuellement via le bouton de la barre d'outils — cela peut être
-  utile sur des machines plus lentes ou avec des documents très complexes.
+Choisis entre le thème **Système**, **Clair** ou **Sombre** pour correspondre
+à ton environnement de bureau ou ta préférence personnelle. Tu peux aussi
+configurer les **Couleurs d'opération** pour utiliser soit la couleur du
+laser, soit la couleur du calque comme distinction visuelle sur le canevas.
 
 ### Unités
 
-Configure les unités d'affichage pour diverses valeurs dans l'application :
+Configure les unités d'affichage utilisées dans l'application. Tu peux définir
+des unités séparées pour la **longueur** (millimètres, pouces, etc.), la
+**vitesse** (mm/min, mm/sec, pouces/min, etc.) et l'**accélération** (mm/s²,
+etc.).
 
-- **Longueur** : Millimètres, pouces et autres unités de longueur
-- **Vitesse** : mm/min, mm/sec, pouces/min et autres unités de vitesse
-- **Accélération** : mm/s² et autres unités d'accélération
+### Comportement
 
-### Démarrage
+Par défaut, les opérations sont recalculées automatiquement après chaque
+modification. Si tu travailles sur une machine plus lente ou avec des
+documents très complexes, tu peux désactiver la **Mise à jour automatique des
+opérations** et déclencher le recalcul manuellement via le bouton de la barre
+d'outils.
 
-Configure ce qui se passe au démarrage de l'application. Les fichiers spécifiés sur
-la ligne de commande remplaceront toujours ces paramètres.
+Rayforge peut **Vérifier les mises à jour** automatiquement au démarrage.
+Lorsqu'activé, tu seras informé lorsqu'une nouvelle version est disponible.
 
-- **Comportement au démarrage** :
-  - N'ouvrir rien
-  - Ouvrir le dernier projet
-  - Ouvrir un projet spécifique
-- **Chemin du projet** : Chemin vers le projet spécifique à ouvrir au démarrage
-  (visible uniquement lorsque « Ouvrir un projet spécifique » est sélectionné)
+Tu peux aussi configurer le **Comportement au démarrage** — démarrer avec un
+espace de travail vide, rouvrir le dernier projet ou toujours ouvrir un
+fichier de projet spécifique. Note que les fichiers spécifiés en ligne de
+commande remplaceront toujours ces paramètres.
 
-## Machines
+### Confidentialité
 
-La page Machines te permet de gérer tes configurations machine.
+Rayforge peut envoyer des données d'utilisation anonymes pour aider à
+améliorer l'application. Aucune information personnelle n'est collectée. Tu
+peux activer ou désactiver **Rapporter l'utilisation anonyme** à tout moment.
+Consulte la page
+[suivi d'utilisation](https://rayforge.org/docs/general-info/usage-tracking)
+pour en savoir plus sur les données collectées et leur utilisation.
 
-- **Ajouter une machine** : Créer une nouvelle configuration machine
-- **Supprimer une machine** : Supprimer une machine sélectionnée
-- **Liste des machines** : Affiche toutes les machines configurées avec leur état de connexion
+## Autres paramètres
 
-Pour une configuration détaillée de la machine, voir la section [Configuration machine](../machine/general).
+La boîte de dialogue des paramètres inclut également des pages pour gérer
+d'autres parties de l'application. Chacune possède sa propre documentation :
 
-## Matériaux
-
-La page Matériaux gère ta bibliothèque de matériaux.
-
-- **Ajouter une bibliothèque** : Créer une nouvelle bibliothèque de matériaux
-- **Éditer** : Renommer une bibliothèque sélectionnée
-- **Supprimer** : Supprimer une bibliothèque sélectionnée
-
-Voir [Matériaux](../application-settings/materials) pour plus de détails.
-
-## Recettes
-
-La page Recettes gère tes recettes d'opérations.
-
-- **Ajouter une recette** : Créer une nouvelle recette
-- **Éditer** : Modifier une recette sélectionnée
-- **Supprimer** : Supprimer une recette sélectionnée
-
-Voir [Recettes](../application-settings/recipes) pour plus de détails.
-
-## Addons
-
-La page Addons affiche les addons d'extension installés.
-
-- **Liste des addons** : Affiche tous les addons installés
-- **Détails des addons** : Voir des informations sur chaque addon
-
-## Confidentialité
-
-La page Confidentialité contrôle le rapport d'utilisation anonyme.
-
-- **Rapporter l'utilisation anonyme** : Lorsqu'activé, des données d'utilisation anonymes sont envoyées pour aider à améliorer Rayforge. Aucune information personnelle n'est collectée.
-
-## Licences
-
-La page Licences gère tes clés de licence pour les fonctionnalités premium et les addons.
-
-- **Lier le compte Patreon** : Connecte ton compte Patreon pour accéder aux avantages de supporteur
-- **Clés de licence d'addons** : Entre les clés de licence pour les addons premium
-
----
-
-## Sujets connexes
-
-- [Configuration machine](../machine/general) - Configure ton découpeur laser
-- [Raccourcis](../reference/shortcuts) - Raccourcis clavier
+- [Machines](../application-settings/machines) — ajouter, supprimer et
+  configurer tes découpeurs laser
+- [Matériaux](../application-settings/materials) — gérer tes bibliothèques
+  de matériaux
+- [Recettes](../application-settings/recipes) — gérer les recettes
+  d'opérations enregistrées
+- [Fournisseurs IA](../application-settings/ai-provider) — configurer les
+  fournisseurs IA pour les addons
+- [Addons](../application-settings/addons) — installer, mettre à jour et
+  supprimer les addons d'extension

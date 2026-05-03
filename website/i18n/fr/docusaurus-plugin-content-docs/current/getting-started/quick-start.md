@@ -13,7 +13,7 @@ Rayforge prend en charge divers formats de fichiers, notamment SVG, DXF, PDF, Ru
 ![Canevas avec design importé](/screenshots/main-standard.png)
 
 :::tip Vous n'avez pas encore de design ?
-Vous pouvez créer des formes simples en utilisant les outils du canevas ou télécharger des fichiers SVG gratuits depuis des sites comme [Flaticon](https://www.flaticon.com/) ou [SVG Repo](https://www.svgrepo.com/).
+Vous pouvez créer des formes simples en utilisant l'esquisseur ou télécharger des fichiers SVG gratuits depuis des sites comme [Flaticon](https://www.flaticon.com/) ou [SVG Repo](https://www.svgrepo.com/).
 :::
 
 
