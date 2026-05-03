@@ -62,9 +62,7 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
         content.set_margin_top(12)
 
         self.search_entry = Gtk.SearchEntry()
-        self.search_entry.set_placeholder_text(
-            _("Search devices…")
-        )
+        self.search_entry.set_placeholder_text(_("Search devices…"))
         self.search_entry.connect(
             "search-changed", lambda *_: self._filter_and_populate_list()
         )
@@ -107,8 +105,11 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
             self.profile_list_box.remove(child)
 
         for pkg in self._all_profiles:
-            if search_text and search_text not in pkg.name.lower() \
-               and search_text not in pkg.meta.description.lower():
+            if (
+                search_text
+                and search_text not in pkg.name.lower()
+                and search_text not in pkg.meta.description.lower()
+            ):
                 continue
             row = self._ProfileRow(
                 profile=pkg,
