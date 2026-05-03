@@ -366,8 +366,7 @@ def test_auto_constraint_horizontal(path_tool, mock_element):
         mock_element.execute_command.assert_called_once()
         cmd = mock_element.execute_command.call_args[0][0]
         horiz = [
-            c for c in cmd.constraints
-            if isinstance(c, HorizontalConstraint)
+            c for c in cmd.constraints if isinstance(c, HorizontalConstraint)
         ]
         assert len(horiz) == 1
         assert horiz[0].p1 == 0
@@ -398,17 +397,14 @@ def test_auto_constraint_vertical(path_tool, mock_element):
         mock_element.execute_command.assert_called_once()
         cmd = mock_element.execute_command.call_args[0][0]
         vert = [
-            c for c in cmd.constraints
-            if isinstance(c, VerticalConstraint)
+            c for c in cmd.constraints if isinstance(c, VerticalConstraint)
         ]
         assert len(vert) == 1
         assert vert[0].p1 == 0
 
 
 @pytest.mark.ui
-def test_auto_constraint_no_snap_no_constraint(
-    path_tool, mock_element
-):
+def test_auto_constraint_no_snap_no_constraint(path_tool, mock_element):
     """Line without snap result gets no axis constraint."""
     _setup_line_finalization(path_tool, mock_element)
     path_tool.current_snap_result = None
@@ -421,16 +417,15 @@ def test_auto_constraint_no_snap_no_constraint(
         mock_element.execute_command.assert_called_once()
         cmd = mock_element.execute_command.call_args[0][0]
         axis = [
-            c for c in cmd.constraints
+            c
+            for c in cmd.constraints
             if isinstance(c, (HorizontalConstraint, VerticalConstraint))
         ]
         assert len(axis) == 0
 
 
 @pytest.mark.ui
-def test_auto_constraint_from_any_existing_point(
-    path_tool, mock_element
-):
+def test_auto_constraint_from_any_existing_point(path_tool, mock_element):
     """Snap line from any point (not just start) creates constraint."""
     _setup_line_finalization(path_tool, mock_element, start_id=0)
     other_pt = SketchPoint(99, 50.0, 0.0)
@@ -456,17 +451,14 @@ def test_auto_constraint_from_any_existing_point(
         mock_element.execute_command.assert_called_once()
         cmd = mock_element.execute_command.call_args[0][0]
         horiz = [
-            c for c in cmd.constraints
-            if isinstance(c, HorizontalConstraint)
+            c for c in cmd.constraints if isinstance(c, HorizontalConstraint)
         ]
         assert len(horiz) == 1
         assert horiz[0].p1 == 99
 
 
 @pytest.mark.ui
-def test_auto_constraint_skips_duplicate(
-    path_tool, mock_element
-):
+def test_auto_constraint_skips_duplicate(path_tool, mock_element):
     """Does not add axis constraint if one already exists."""
     _setup_line_finalization(path_tool, mock_element, start_id=0)
     start_pt = SketchPoint(0, 0.0, 0.0)
@@ -493,16 +485,13 @@ def test_auto_constraint_skips_duplicate(
         mock_element.execute_command.assert_called_once()
         cmd = mock_element.execute_command.call_args[0][0]
         horiz = [
-            c for c in cmd.constraints
-            if isinstance(c, HorizontalConstraint)
+            c for c in cmd.constraints if isinstance(c, HorizontalConstraint)
         ]
         assert len(horiz) == 0
 
 
 @pytest.mark.ui
-def test_auto_constraint_skips_self_constraint(
-    path_tool, mock_element
-):
+def test_auto_constraint_skips_self_constraint(path_tool, mock_element):
     """Does not add constraint where source equals end point."""
     end_pt = SketchPoint(99, 100.0, 0.0)
     _setup_line_finalization(path_tool, mock_element, start_id=0)
@@ -536,7 +525,8 @@ def test_auto_constraint_skips_self_constraint(
         mock_element.execute_command.assert_called_once()
         cmd = mock_element.execute_command.call_args[0][0]
         axis = [
-            c for c in cmd.constraints
+            c
+            for c in cmd.constraints
             if isinstance(c, (HorizontalConstraint, VerticalConstraint))
         ]
         assert len(axis) == 0

@@ -55,9 +55,7 @@ RE_PROCESSED_OK = re.compile(
     rf"^{RE_TS}.*Processed 'ok', freed (\d+) bytes"
     r" \(buf: (\d+)/(\d+)"
 )
-RE_ERROR = re.compile(
-    rf"^{RE_TS}.*Extracted 'error:(\d+)' from raw buffer"
-)
+RE_ERROR = re.compile(rf"^{RE_TS}.*Extracted 'error:(\d+)' from raw buffer")
 RE_STATUS_POLL = re.compile(rf"^{RE_TS}.*STATUS_POLL.*- (<.+>)")
 RE_TIMEOUT = re.compile(rf"^{RE_TS}.*Timeout waiting for buffer space")
 RE_JOB_START = re.compile(r"Starting job")
