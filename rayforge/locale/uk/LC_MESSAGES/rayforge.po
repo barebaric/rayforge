@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-02 13:32+0200\n"
+"POT-Creation-Date: 2026-05-03 17:08+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -228,7 +228,7 @@ msgstr "Різання"
 msgid "Optionally force a specific laser head"
 msgstr "Опціонально примусово використовувати певну лазерну головку"
 
-#: rayforge/core/capability.py
+#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
 msgid "Power"
 msgstr "Потужність"
 
@@ -286,15 +286,15 @@ msgstr "Тест матеріалу"
 msgid "PWM"
 msgstr "ШІМ"
 
-#: rayforge/core/capability.py
+#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
 msgid "Frequency"
 msgstr "Частота"
 
-#: rayforge/core/capability.py
+#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
 msgid "PWM frequency in Hz"
 msgstr "Частота ШІМ у Гц"
 
-#: rayforge/core/capability.py
+#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Pulse Width"
 msgstr "Ширина імпульсу"
@@ -1424,6 +1424,7 @@ msgid "{label} (for {machine_name})"
 msgstr "{label} (для {machine_name})"
 
 #: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/laser_control_widget.py
 msgid "Laser Head"
 msgstr "Лазерна головка"
 
@@ -3506,6 +3507,36 @@ msgstr "Вибрати верстат"
 msgid "Select active machine"
 msgstr "Вибрати активний верстат"
 
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Toggle laser on/off"
+msgstr "Увімкнути/вимкнути лазер"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Laser power in percent"
+msgstr "Потужність лазера у відсотках"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Pulse width in µs"
+msgstr "Тривалість імпульсу в мкс"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Duration"
+msgstr "Тривалість"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Seconds (0 = continuous)"
+msgstr "Секунди (0 = безперервно)"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+#, python-brace-format
+msgid "Tool {tool_number}, max power {max_power}"
+msgstr "Інструмент {tool_number}, макс. потужність {max_power}"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+#, python-brace-format
+msgid "{seconds:.1f} s remaining"
+msgstr "{seconds:.1f} с залишилось"
+
 #: rayforge/ui_gtk/machine/gcode_settings_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "G-code"
@@ -3603,6 +3634,10 @@ msgstr "Додати новий верстат"
 #: rayforge/ui_gtk/machine/profile_selector.py
 msgid "Select a machine profile to use as a template."
 msgstr "Виберіть профіль верстата для використання як шаблону."
+
+#: rayforge/ui_gtk/machine/profile_selector.py
+msgid "Search devices…"
+msgstr "Пошук пристроїв…"
 
 #: rayforge/ui_gtk/machine/profile_selector.py
 msgid "Import from File…"
@@ -4265,6 +4300,7 @@ msgid "Report an issue"
 msgstr "Повідомити про проблему"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Laser"
 msgstr "Лазер"
 
