@@ -2,12 +2,9 @@
 
 ![Allgemeine Einstellungen](/screenshots/application-general.png)
 
-Passe Rayforge an deinen Workflow und deine Vorlieben an.
-
-## Zugriff auf Einstellungen
-
-- **Menü**: Bearbeiten → Einstellungen
-- **Tastatur**: <kbd>Strg+,</kbd>
+Passe Rayforge an deinen Workflow und deine Vorlieben an. Öffne die
+Einstellungen über **Bearbeiten → Einstellungen** oder drücke
+<kbd>Strg+,</kbd>.
 
 ## Allgemein
 
@@ -15,88 +12,55 @@ Die Seite Allgemein enthält anwendungsweite Einstellungen.
 
 ### Erscheinungsbild
 
-- **Design**: Wähle zwischen System, Hell oder Dunkel
-
-### Operationen
-
-- **Operationen automatisch aktualisieren**: Wenn aktiviert (Standard), werden
-  Operationen nach jeder Änderung automatisch neu berechnet. Deaktiviere dies,
-  wenn du die Neuberechnung lieber manuell über die Symbolleisten-Schaltfläche
-  auslösen möchtest — dies kann bei langsameren Maschinen oder sehr komplexen
-  Dokumenten hilfreich sein.
+Wähle zwischen dem **System**-, **Hell**- oder **Dunkel**-Design, um dich an
+deine Desktop-Umgebung oder persönliche Vorliebe anzupassen. Du kannst auch
+**Operationsfarben** konfigurieren und wählen, ob die Laserfarbe oder die
+Ebenenfarbe zur visuellen Unterscheidung auf der Arbeitsfläche verwendet wird.
 
 ### Einheiten
 
-Konfiguriere Anzeigeeinheiten für verschiedene Werte in der gesamten Anwendung:
+Konfiguriere die in der gesamten Anwendung verwendeten Anzeigeeinheiten. Du
+kannst separate Einheiten für **Länge** (Millimeter, Zoll usw.),
+**Geschwindigkeit** (mm/min, mm/sek, Zoll/min usw.) und **Beschleunigung**
+(mm/s² usw.) festlegen.
 
-- **Länge**: Millimeter, Zoll und andere Längeneinheiten
-- **Geschwindigkeit**: mm/min, mm/sek, Zoll/min und andere Geschwindigkeitseinheiten
-- **Beschleunigung**: mm/s² und andere Beschleunigungseinheiten
+### Verhalten
 
-### Start
+Standardmäßig werden Operationen nach jeder Änderung automatisch neu
+berechnet. Wenn du an einem langsameren Rechner arbeitest oder sehr komplexe
+Dokumente hast, kannst du **Operationen automatisch aktualisieren**
+deaktivieren und die Neuberechnung stattdessen manuell über die
+Symbolleisten-Schaltfläche auslösen.
 
-Konfiguriere, was passiert, wenn du die Anwendung startest. Auf der Kommandozeile angegebene Dateien setzen diese Einstellungen immer außer Kraft.
+Rayforge kann beim Start **automatisch nach Updates suchen**. Wenn
+aktiviert, wirst du benachrichtigt, wenn eine neue Version verfügbar ist.
 
-- **Startverhalten**:
-  - Nichts öffnen
-  - Letztes Projekt öffnen
-  - Bestimmtes Projekt öffnen
-- **Projektpfad**: Pfad zum spezifischen Projekt, das beim Start geöffnet werden soll
-  (nur sichtbar wenn "Bestimmtes Projekt öffnen" ausgewählt ist)
+Du kannst auch das **Startverhalten** konfigurieren — mit einem leeren
+Arbeitsbereich starten, das letzte Projekt erneut öffnen oder immer eine
+bestimmte Projektdatei öffnen. Beachte, dass auf der Kommandozeile angegebene
+Dateien diese Einstellungen immer außer Kraft setzen.
 
-## Maschinen
+### Datenschutz
 
-Die Seite Maschinen ermöglicht dir, deine Maschinenkonfigurationen zu verwalten.
+Rayforge kann anonyme Nutzungsdaten senden, um die Anwendung zu verbessern.
+Es werden keine persönlichen Informationen gesammelt. Du kannst **Anonyme
+Nutzung melden** jederzeit ein- oder ausschalten. Siehe die
+[Nutzungsverfolgung](https://rayforge.org/docs/general-info/usage-tracking)-Seite,
+um mehr darüber zu erfahren, welche Daten gesammelt und wie sie verwendet
+werden.
 
-- **Maschine hinzufügen**: Eine neue Maschinenkonfiguration erstellen
-- **Maschine entfernen**: Eine ausgewählte Maschine löschen
-- **Maschinenliste**: Zeigt alle konfigurierten Maschinen mit ihrem Verbindungsstatus
+## Weitere Einstellungen
 
-Für detaillierte Maschinenkonfiguration siehe den Abschnitt [Maschineneinrichtung](../machine/general).
+Der Einstellungsdialog enthält weitere Seiten zur Verwaltung anderer
+Teile der Anwendung. Jede verfügt über eine eigene Dokumentation:
 
-## Materialien
-
-Die Seite Materialien verwaltet deine Materialbibliothek.
-
-- **Bibliothek hinzufügen**: Eine neue Materialbibliothek erstellen
-- **Bearbeiten**: Eine ausgewählte Bibliothek umbenennen
-- **Löschen**: Eine ausgewählte Bibliothek entfernen
-
-Siehe [Materialien](../application-settings/materials) für weitere Details.
-
-## Rezepte
-
-Die Seite Rezepte verwaltet deine Operationsrezepte.
-
-- **Rezept hinzufügen**: Ein neues Rezept erstellen
-- **Bearbeiten**: Ein ausgewähltes Rezept bearbeiten
-- **Löschen**: Ein ausgewähltes Rezept entfernen
-
-Siehe [Rezepte](../application-settings/recipes) für weitere Details.
-
-## Addons
-
-Die Seite Addons zeigt installierte Erweiterungs-Addons.
-
-- **Addon-Liste**: Zeigt alle installierten Addons
-- **Addon-Details**: Informationen zu jedem Addon anzeigen
-
-## Datenschutz
-
-Die Seite Datenschutz steuert die anonyme Nutzungsberichterstattung.
-
-- **Anonyme Nutzung melden**: Wenn aktiviert, werden anonyme Nutzungsdaten gesendet, um Rayforge zu verbessern. Es werden keine persönlichen Informationen gesammelt.
-
-## Lizenzen
-
-Die Seite Lizenzen verwaltet deine Lizenzschlüssel für Premium-Funktionen und Addons.
-
-- **Patreon-Konto verknüpfen**: Verbinde dein Patreon-Konto, um Unterstützer-Vorteile zu erhalten
-- **Addon-Lizenzschlüssel**: Gib Lizenzschlüssel für Premium-Addons ein
-
----
-
-## Verwandte Themen
-
-- [Maschineneinrichtung](../machine/general) - Deinen Laserschneider konfigurieren
-- [Tastaturkürzel](../reference/shortcuts) - Tastaturkürzel
+- [Maschinen](../application-settings/machines) — Maschinen hinzufügen,
+  entfernen und konfigurieren
+- [Materialien](../application-settings/materials) — Materialbibliotheken
+  verwalten
+- [Rezepte](../application-settings/recipes) — gespeicherte
+  Operationsrezepte verwalten
+- [KI-Anbieter](../application-settings/ai-provider) — KI-Anbieter für
+  die Nutzung durch Addons konfigurieren
+- [Addons](../application-settings/addons) — Erweiterungs-Addons
+  installieren, aktualisieren und entfernen

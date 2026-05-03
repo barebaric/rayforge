@@ -3,11 +3,7 @@
 ![Ajustes Generales](/screenshots/application-general.png)
 
 Personaliza Rayforge para que coincida con tu flujo de trabajo y preferencias.
-
-## Accediendo a los Ajustes
-
-- **Menú**: Editar → Ajustes
-- **Teclado**: <kbd>ctrl+coma</kbd>
+Abre los ajustes vía **Editar → Ajustes** o presiona <kbd>ctrl+coma</kbd>.
 
 ## General
 
@@ -15,88 +11,53 @@ La página General contiene ajustes de toda la aplicación.
 
 ### Apariencia
 
-- **Tema**: Elige entre tema del Sistema, Claro u Oscuro
-
-### Operaciones
-
-- **Auto-actualizar operaciones**: Cuando está habilitado (por defecto), las operaciones
-  se recalculan automáticamente después de cada cambio. Deshabilita esto si prefieres
-  activar el recálculo manualmente vía el botón de la barra de herramientas — esto puede
-  ser útil en máquinas más lentas o con documentos muy complejos.
+Elige entre el tema **Sistema**, **Claro** u **Oscuro** para coincidir con tu
+entorno de escritorio o preferencia personal. También puedes configurar los
+**Colores de operación** para usar el color del láser o el color de la capa
+como distinción visual en el lienzo.
 
 ### Unidades
 
-Configura las unidades de pantalla para varios valores a lo largo de la aplicación:
+Configura las unidades de pantalla usadas en toda la aplicación. Puedes
+establecer unidades separadas para **longitud** (milímetros, pulgadas, etc.),
+**velocidad** (mm/min, mm/seg, pulgadas/min, etc.) y **aceleración** (mm/s²,
+etc.).
 
-- **Longitud**: Milímetros, pulgadas y otras unidades de longitud
-- **Velocidad**: mm/min, mm/seg, pulgadas/min y otras unidades de velocidad
-- **Aceleración**: mm/s² y otras unidades de aceleración
+### Comportamiento
 
-### Inicio
+Por defecto, las operaciones se recalculan automáticamente después de cada
+cambio. Si trabajas en una máquina más lenta o con documentos muy complejos,
+puedes deshabilitar **Auto-actualizar operaciones** y activar el recálculo
+manualmente vía el botón de la barra de herramientas.
 
-Configura qué sucede cuando inicias la aplicación. Los archivos especificados en
-la línea de comandos siempre anularán estos ajustes.
+Rayforge puede **Buscar actualizaciones** automáticamente al inicio. Cuando
+está habilitado, se te notificará cuando haya una nueva versión disponible.
 
-- **Comportamiento de inicio**:
-  - No abrir nada
-  - Abrir último proyecto
-  - Abrir proyecto específico
-- **Ruta del proyecto**: Ruta al proyecto específico a abrir al inicio
-  (solo visible cuando "Abrir proyecto específico" está seleccionado)
+También puedes configurar el **Comportamiento de inicio** — iniciar con un
+espacio de trabajo vacío, reabrir el último proyecto o abrir siempre un
+archivo de proyecto específico. Ten en cuenta que los archivos especificados
+en la línea de comandos siempre anularán estos ajustes.
 
-## Máquinas
+### Privacidad
 
-La página de Máquinas te permite gestionar tus configuraciones de máquina.
+Rayforge puede enviar datos de uso anónimos para ayudar a mejorar la
+aplicación. No se recopila información personal. Puedes activar o desactivar
+**Informar uso anónimo** en cualquier momento. Visita la página de
+[seguimiento de uso](https://rayforge.org/docs/general-info/usage-tracking)
+para obtener más información sobre qué datos se recopilan y cómo se usan.
 
-- **Añadir Máquina**: Crear una nueva configuración de máquina
-- **Eliminar Máquina**: Eliminar una máquina seleccionada
-- **Lista de Máquinas**: Muestra todas las máquinas configuradas con su estado de conexión
+## Otros ajustes
 
-Para configuración detallada de máquina, ver la sección [Configuración de Máquina](../machine/general).
+El diálogo de ajustes también incluye páginas para gestionar otras partes de
+la aplicación. Cada una tiene su propia documentación:
 
-## Materiales
-
-La página de Materiales gestiona tu biblioteca de materiales.
-
-- **Añadir Biblioteca**: Crear una nueva biblioteca de materiales
-- **Editar**: Renombrar una biblioteca seleccionada
-- **Eliminar**: Eliminar una biblioteca seleccionada
-
-Ver [Materiales](../application-settings/materials) para más detalles.
-
-## Recetas
-
-La página de Recetas gestiona tus recetas de operaciones.
-
-- **Añadir Receta**: Crear una nueva receta
-- **Editar**: Modificar una receta seleccionada
-- **Eliminar**: Eliminar una receta seleccionada
-
-Ver [Recetas](../application-settings/recipes) para más detalles.
-
-## Addons
-
-La página de Addons muestra los addons de extensión instalados.
-
-- **Lista de Addons**: Muestra todos los addons instalados
-- **Detalles del Addon**: Ver información sobre cada addon
-
-## Privacidad
-
-La página de Privacidad controla el informe de uso anónimo.
-
-- **Informar Uso Anónimo**: Cuando está habilitado, se envían datos de uso anónimos para ayudar a mejorar Rayforge. No se recopila información personal.
-
-## Licencias
-
-La página de Licencias gestiona tus claves de licencia para funciones premium y addons.
-
-- **Vincular Cuenta Patreon**: Conecta tu cuenta Patreon para acceder a beneficios de seguidor
-- **Claves de Licencia de Addons**: Ingresa claves de licencia para addons premium
-
----
-
-## Temas Relacionados
-
-- [Configuración de Máquina](../machine/general) - Configura tu cortador láser
-- [Atajos](../reference/shortcuts) - Atajos de teclado
+- [Máquinas](../application-settings/machines) — añadir, eliminar y
+  configurar tus cortadores láser
+- [Materiales](../application-settings/materials) — gestionar tus
+  bibliotecas de materiales
+- [Recetas](../application-settings/recipes) — gestionar las recetas de
+  operaciones guardadas
+- [Proveedores de IA](../application-settings/ai-provider) — configurar
+  proveedores de IA para uso de los addons
+- [Addons](../application-settings/addons) — instalar, actualizar y eliminar
+  addons de extensión
