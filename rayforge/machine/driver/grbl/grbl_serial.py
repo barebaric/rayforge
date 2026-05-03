@@ -518,7 +518,7 @@ class GrblSerialDriver(Driver):
         self._last_reported_op_index = -1
         self._job_exception = None
         if self.grbl_transport:
-            self.grbl_transport.reset()
+            self.grbl_transport.reset_flow_control()
 
     async def _recover_from_deadlock(self, transport) -> None:
         """
@@ -1474,6 +1474,10 @@ class GrblSerialDriver(Driver):
 
     def _handle_line(self, line: str):
         """Handle a parsed general line (status report, alarm, info)."""
+        if line.startswith("<") and not line.endswith(">"):
+            logger.debug(f"Ignoring fragmented status report: {line}")
+            return
+
         if "Pos:" in line and "|" in line and not line.startswith("<"):
             logger.debug(f"Ignoring fragmented status report: {line}")
             return
