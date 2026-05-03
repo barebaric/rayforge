@@ -351,13 +351,17 @@ class GrblSerialTransport:
         """
         return self._get()
 
-    def reset(self) -> None:
-        """Reset all buffer state (cancel, reconnect, cleanup)."""
+    def reset_flow_control(self) -> None:
+        """Reset flow-control state without clearing the parse buffer."""
         with self._lock:
             self._rx_buffer_count = 0
         self._pending = asyncio.Queue()
         self._space_available = asyncio.Event()
         self._space_available.set()
+
+    def reset(self) -> None:
+        """Reset all buffer state (cancel, reconnect, cleanup)."""
+        self.reset_flow_control()
         self._status_buffer = bytearray()
 
     def signal_space_available(self) -> None:
