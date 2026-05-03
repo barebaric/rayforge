@@ -229,13 +229,15 @@ html[data-theme='dark'] .theme-doc-sidebar-container .navbar__search [class*="dr
   color: inherit;
 }
 
+.blog-wrapper,
+.main-wrapper.blog-wrapper,
 .blog-list-page,
 .blog-post-page,
 .blog-list-page main,
 .blog-post-page main,
 .blog-list-page .container,
 .blog-post-page .container {
-  background: transparent;
+  background: var(--ifm-background-color);
 }
 
 .blog-list-page main,
@@ -270,15 +272,16 @@ html[data-theme='dark'] .blog-post-page aside {
 
 .blog-list-page article,
 .blog-post-page article {
-  background: transparent;
+  background: var(--ifm-background-surface-color);
   border: none;
-  border-radius: 0;
+  border-radius: 14px;
   padding: 1.75rem;
   box-shadow: none;
 }
 
 html[data-theme='dark'] .blog-list-page article,
 html[data-theme='dark'] .blog-post-page article {
+  background: #27272a;
   box-shadow: none;
 }
 
