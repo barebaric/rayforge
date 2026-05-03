@@ -17,13 +17,18 @@ mit einem Häkchen markiert.
 2. Wähle ein Geräteprofil aus der Liste als Vorlage — jedes Profil
    konfiguriert die Maschineneinstellungen und den G-Code-Dialekt vor
 
-![Maschine hinzufügen](/screenshots/add-machine-dialog.png)
+![Maschine hinzufügen](/screenshots/app-settings-machines-add.png)
 
 3. Der [Maschineneinstellungen-Dialog](../machine/general) öffnet sich, in
    dem du die Konfiguration anpassen kannst
 
-Alternativ kannst du auf **Import from File...** im Profil-Auswahldialog
-klicken, um eine Maschine aus einem zuvor exportierten Profil hinzuzufügen.
+Alternativ:
+
+- Klicke auf **Other Device…**, um den
+  [Konfigurations-Assistenten](../machine/config-wizard) zu starten, der
+  Einstellungen automatisch von einem verbundenen Gerät erkennt
+- Klicke auf **Import from File...** im Profil-Auswahldialog, um eine
+  Maschine aus einem zuvor exportierten Profil hinzuzufügen
 
 ## Eine Maschine bearbeiten
 

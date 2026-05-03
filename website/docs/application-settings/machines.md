@@ -16,13 +16,18 @@ delete it. The currently active machine is marked with a check icon.
 2. Select a device profile from the list to use as a template — each
    profile pre-configures the machine settings and G-code dialect
 
-![Add Machine Dialog](/screenshots/add-machine-dialog.png)
+![Add Machine Dialog](/screenshots/app-settings-machines-add.png)
 
 3. The [machine settings dialog](../machine/general) opens where you can
    adjust the configuration
 
-Alternatively, click **Import from File...** in the profile selector to
-add a machine from a previously exported profile.
+Alternatively:
+
+- Click **Other Device…** to launch the
+  [Configuration Wizard](../machine/config-wizard), which auto-detects
+  settings from a connected device
+- Click **Import from File…** to add a machine from a previously
+  exported profile
 
 ## Editing a Machine
 

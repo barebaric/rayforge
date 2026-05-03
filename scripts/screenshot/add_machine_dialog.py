@@ -2,7 +2,7 @@
 """
 Screenshot: Add Machine dialog.
 
-Usage: pixi run screenshot add-machine-dialog
+Usage: pixi run screenshot app-settings:machines:add
 """
 
 import time
@@ -40,8 +40,8 @@ def main():
 
     time.sleep(1.0)
 
-    logger.info("Taking screenshot: add-machine-dialog.png")
-    take_screenshot("add-machine-dialog.png")
+    logger.info("Taking screenshot: app-settings-machines-add.png")
+    take_screenshot("app-settings-machines-add.png")
 
     time.sleep(0.25)
 
