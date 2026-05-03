@@ -388,9 +388,9 @@
   border-radius: 0.75rem;
   display: grid;
   place-items: center;
-  background: rgba(148, 163, 184, 0.14);
-  border: 1px solid var(--ifm-color-emphasis-200);
-  color: var(--ifm-color-emphasis-800);
+  background: #ff9f43;
+  border: 1px solid #ff9f43;
+  color: #1b1b1d;
   font-weight: 800;
   font-size: 0.85rem;
 }
