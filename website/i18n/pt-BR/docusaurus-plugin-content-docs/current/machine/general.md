@@ -75,6 +75,8 @@ importado em outro sistema.
 
 ## Veja também
 
+- [Assistente de Configuração](config-wizard) - Detectar e configurar
+  automaticamente um dispositivo conectado
 - [Definições de hardware](hardware) - Dimensões da área de trabalho e
   configuração dos eixos
 - [Definições do dispositivo](device) - Ler e escrever definições do

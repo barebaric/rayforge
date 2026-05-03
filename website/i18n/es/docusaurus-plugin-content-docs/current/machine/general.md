@@ -76,6 +76,8 @@ sistema.
 
 ## Ver también
 
+- [Asistente de Configuración](config-wizard) - Detectar y configurar
+  automáticamente un dispositivo conectado
 - [Ajustes de hardware](hardware) - Dimensiones del área de trabajo y
   configuración de ejes
 - [Ajustes de dispositivo](device) - Leer y escribir ajustes del firmware en

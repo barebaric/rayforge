@@ -14,7 +14,10 @@
 
 点击 **添加机器** 创建新机器。从列表中选择一个设备配置文件作为模板——每个配置文件会预设机器设置和 G-code 方言。
 
-![添加机器](/screenshots/add-machine-dialog.png)
+![添加机器](/screenshots/app-settings-machines-add.png)
+
+如果您的设备已连接并开机，可以点击 **Other Device…** 使用
+[配置向导](../machine/config-wizard)自动检测和配置您的机器。
 
 选择后，机器设置对话框将打开您的新机器。
 
