@@ -1,7 +1,7 @@
 import re
 import asyncio
 from copy import copy, deepcopy
-from typing import Callable, Optional, List, Tuple, cast
+from typing import Callable, Dict, Optional, List, Tuple, cast
 from dataclasses import dataclass, field
 from gettext import gettext as _
 from ....core.varset import Var, VarSet
@@ -61,8 +61,6 @@ wcs_re = re.compile(r"\[(G5[4-9]):([\d\.-]+),([\d\.-]+)(?:,([\d\.-]+))?\]")
 prb_re = re.compile(r"\[PRB:([\d\.-]+),([\d\.-]+),([\d\.-]+):(\d)\]")
 # Regex to find the active WCS (G54-G59) from a $G parser state report
 grbl_parser_state_re = re.compile(r".*(G5[4-9]).*")
-# Regex to find the firmware version from a $I build info report
-grbl_version_re = re.compile(r"\[VER:(\d+\.\d+)([a-zA-Z]?)")
 # Regex to extract compile options and buffer sizes from OPT line
 # Format: [OPT:<flags>,<rx_buffer>,<tx_buffer>]
 grbl_opt_re = re.compile(r"\[OPT:([A-Z]+),(\d+),(\d+)\]")
@@ -504,23 +502,96 @@ def gcode_to_p_number(wcs_slot: str) -> Optional[int]:
 
 
 # GRBL State Parsers
-def parse_version(response_lines: List[str]) -> Optional[tuple[float, str]]:
+def parse_ver(line: str) -> Optional[Tuple[str, Optional[str]]]:
     """
-    Parses '$I' output to extract the GRBL version number and letter.
+    Parse a ``[VER:...]`` line into ``(version, build_name)``.
+
+    Handles both standard Grbl format (``1.1h.ORTUR``) and comma-
+    separated format (``1.0.15,20240923``).  Returns None if the
+    line is not a VER line.
+    """
+    if not line.startswith("[VER:"):
+        return None
+    content = line[5:].rstrip(":]")
+    if not content:
+        return None
+    if "," in content:
+        return (content.split(",")[0], None)
+    parts = content.split(".")
+    if len(parts) >= 3:
+        return (parts[0] + "." + parts[1], parts[2])
+    if len(parts) == 2:
+        return (parts[0] + "." + parts[1], None)
+    return (content, None)
+
+
+def parse_version(
+    response_lines: List[str],
+) -> Optional[str]:
+    """
+    Parses '$I' output to extract the GRBL firmware version string.
 
     Args:
         response_lines: List of response lines from a '$I' command
 
     Returns:
-        Tuple of (version_num, version_letter) or None if not found.
-        version_letter is an empty string if no letter is present.
+        The version string (e.g. ``"1.1h"``, ``"1.0.15"``),
+        or None if no VER line is found.
     """
     for line in response_lines:
-        match = grbl_version_re.search(line)
-        if match:
-            version_num_str, version_letter = match.groups()
-            return float(version_num_str), version_letter
+        ver = parse_ver(line)
+        if ver is not None:
+            return ver[0]
     return None
+
+
+def parse_grbl_settings(lines: List[str]) -> Dict[str, float]:
+    """Parse ``$$`` response lines into a ``{key: value}`` dict."""
+    settings: Dict[str, float] = {}
+    for line in lines:
+        match = grbl_setting_re.search(line)
+        if match:
+            settings[match.group(1)] = float(match.group(2))
+    return settings
+
+
+def parse_msg(line: str) -> Optional[Tuple[str, str]]:
+    """
+    Parse a ``[MSG:key:value]`` line into ``(key, value)``.
+
+    Returns None if the line is not an MSG line or has no colon
+    separator.
+    """
+    if not line.startswith("[MSG:"):
+        return None
+    content = line[5:].rstrip("]")
+    if ":" not in content:
+        return None
+    key, _, value = content.partition(":")
+    return (key.strip(), value.strip())
+
+
+def extract_device_name(build_info: List[str]) -> str:
+    """
+    Extract a human-readable device name from build info lines.
+
+    Checks ``[MSG:machine:...]`` / ``[MSG:mechine:...]`` lines first,
+    then falls back to the VER line's build-info field (e.g.
+    ``[VER:1.1h.ORTUR:]`` → ``"ORTUR"``).
+    """
+    for line in build_info:
+        msg = parse_msg(line)
+        if msg is not None:
+            key, value = msg
+            if key.lower() in ("machine", "mechine"):
+                return value
+    for line in build_info:
+        ver = parse_ver(line)
+        if ver is not None:
+            _, build_name = ver
+            if build_name:
+                return build_name
+    return "Unknown Grbl Device"
 
 
 def version_supports_single_axis_homing(

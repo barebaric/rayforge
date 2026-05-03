@@ -208,6 +208,8 @@ class MachineConfig:
     max_travel_speed: Optional[int] = None
     max_cut_speed: Optional[int] = None
     home_on_start: Optional[bool] = None
+    acceleration: Optional[int] = None
+    single_axis_homing_enabled: Optional[bool] = None
     rotary_enabled_default: Optional[bool] = None
     heads: Optional[List[Dict[str, Any]]] = None
     hookmacros: Optional[List[Dict[str, Any]]] = None
@@ -279,6 +281,8 @@ class MachineConfig:
             max_travel_speed=machine.max_travel_speed,
             max_cut_speed=machine.max_cut_speed,
             home_on_start=machine.home_on_start,
+            acceleration=machine.acceleration,
+            single_axis_homing_enabled=(machine.single_axis_homing_enabled),
             rotary_enabled_default=machine.rotary_enabled_default,
             heads=heads,
             hookmacros=hookmacros,
@@ -415,6 +419,10 @@ class DeviceProfile:
             m.max_cut_speed = cfg.max_cut_speed
         if cfg.home_on_start is not None:
             m.home_on_start = cfg.home_on_start
+        if cfg.acceleration is not None:
+            m.acceleration = cfg.acceleration
+        if cfg.single_axis_homing_enabled is not None:
+            m.single_axis_homing_enabled = cfg.single_axis_homing_enabled
         if cfg.rotary_enabled_default is not None:
             m.rotary_enabled_default = cfg.rotary_enabled_default
 

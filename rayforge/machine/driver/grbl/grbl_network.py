@@ -9,6 +9,7 @@ from typing import (
     Any,
     TYPE_CHECKING,
     List,
+    Tuple,
     Callable,
     Union,
     Awaitable,
@@ -30,6 +31,7 @@ from ..driver import (
     Axis,
     Pos,
 )
+from .grbl_probe import probe_grbl_device
 from .grbl_util import (
     parse_state,
     get_grbl_setting_varsets,
@@ -50,6 +52,7 @@ from .grbl_util import (
 
 if TYPE_CHECKING:
     from ....core.doc import Doc
+    from ...device.profile import DeviceProfile
     from ...models.machine import Machine
     from ...models.laser import Laser
 
@@ -66,6 +69,7 @@ class GrblNetworkDriver(Driver):
     label = _("GRBL (Network)")
     subtitle = _("Connect to a GRBL-compatible device over the network")
     supports_settings = True
+    supports_probing = True
     reports_granular_progress = False
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
@@ -79,6 +83,12 @@ class GrblNetworkDriver(Driver):
         self._connection_task: Optional[asyncio.Task] = None
         self._current_request: Optional[CommandRequest] = None
         self._cmd_lock = asyncio.Lock()
+
+    @classmethod
+    async def probe(
+        cls, context: "RayforgeContext", **kwargs: Any
+    ) -> Tuple["DeviceProfile", List[str]]:
+        return await probe_grbl_device(cls, context, **kwargs)
 
     @property
     def machine_space_wcs(self) -> str:
@@ -448,7 +458,7 @@ class GrblNetworkDriver(Driver):
         finally:
             self.job_finished.send(self)
 
-    async def _execute_command(self, command: str) -> List[str]:
+    async def execute_interactive_command(self, command: str) -> List[str]:
         """
         Sends a command via HTTP and waits for the full response from the
         WebSocket, including an 'ok' or 'error:'.
@@ -501,14 +511,14 @@ class GrblNetworkDriver(Driver):
 
         # Execute the homing command(s)
         if axes is None:
-            await self._execute_command(dialect.home_all)
+            await self.execute_interactive_command(dialect.home_all)
         else:
             for axis in Axis:
                 if axes & axis:
                     assert axis.name
                     axis_letter: str = axis.name.upper()
                     cmd = dialect.home_axis.format(axis_letter=axis_letter)
-                    await self._execute_command(cmd)
+                    await self.execute_interactive_command(cmd)
 
         # The following works around a quirk in some Grbl versions:
         # After homing, the machine is still in G54, but forgets its
@@ -519,28 +529,28 @@ class GrblNetworkDriver(Driver):
         temp_wcs = "G55" if active_wcs == "G54" else "G54"
 
         # Flush planner buffer
-        await self._execute_command("G4 P0.01")
+        await self.execute_interactive_command("G4 P0.01")
 
         # Toggle sequence
-        await self._execute_command(temp_wcs)
-        await self._execute_command(active_wcs)
+        await self.execute_interactive_command(temp_wcs)
+        await self.execute_interactive_command(active_wcs)
 
     async def move_to(self, pos_x, pos_y) -> None:
         dialect = self.dialect
         cmd = dialect.move_to.format(
             speed=1500, x=float(pos_x), y=float(pos_y)
         )
-        await self._execute_command(cmd)
+        await self.execute_interactive_command(cmd)
 
     async def select_tool(self, tool_number: int) -> None:
         """Sends a tool change command for the given tool number."""
         dialect = self.dialect
         cmd = dialect.tool_change.format(tool_number=tool_number)
-        await self._execute_command(cmd)
+        await self.execute_interactive_command(cmd)
 
     async def clear_alarm(self) -> None:
         dialect = self.dialect
-        response = await self._execute_command(dialect.clear_alarm)
+        response = await self.execute_interactive_command(dialect.clear_alarm)
         has_error = any(line.startswith("error:") for line in response)
         if not has_error:
             self.state.error = None
@@ -565,7 +575,7 @@ class GrblNetworkDriver(Driver):
             power_abs = percent * head.max_power
             cmd = dialect.laser_on.format(power=power_abs)
 
-        await self._execute_command(cmd)
+        await self.execute_interactive_command(cmd)
 
     async def set_focus_power(self, head: "Laser", percent: float) -> None:
         """
@@ -584,7 +594,7 @@ class GrblNetworkDriver(Driver):
             power_abs = percent * head.max_power
             cmd = dialect.focus_laser_on.format(power=power_abs)
 
-        await self._execute_command(cmd)
+        await self.execute_interactive_command(cmd)
 
     async def _wait_for_idle(self, timeout: float = 5.0):
         deadline = asyncio.get_event_loop().time() + timeout
@@ -620,7 +630,7 @@ class GrblNetworkDriver(Driver):
             return
 
         cmd = " ".join(cmd_parts)
-        await self._execute_command(cmd)
+        await self.execute_interactive_command(cmd)
 
     def on_http_data_received(self, sender, data: bytes):
         pass
@@ -691,7 +701,7 @@ class GrblNetworkDriver(Driver):
         return get_grbl_setting_varsets()
 
     async def read_settings(self) -> None:
-        response_lines = await self._execute_command("$$")
+        response_lines = await self.execute_interactive_command("$$")
         # Get the list of VarSets, which serve as our template
         known_varsets = self.get_setting_vars()
 
@@ -748,7 +758,7 @@ class GrblNetworkDriver(Driver):
         if isinstance(value, bool):
             value = 1 if value else 0
         cmd = f"${key}={value}"
-        await self._execute_command(cmd)
+        await self.execute_interactive_command(cmd)
 
     async def set_wcs_offset(
         self, wcs_slot: str, x: float, y: float, z: float
@@ -758,10 +768,10 @@ class GrblNetworkDriver(Driver):
             raise ValueError(f"Invalid WCS slot: {wcs_slot}")
         dialect = self.dialect
         cmd = dialect.set_wcs_offset.format(p_num=p_num, x=x, y=y, z=z)
-        await self._execute_command(cmd)
+        await self.execute_interactive_command(cmd)
 
     async def read_wcs_offsets(self) -> Dict[str, Pos]:
-        response_lines = await self._execute_command("$#")
+        response_lines = await self.execute_interactive_command("$#")
         offsets = {}
         for line in response_lines:
             match = wcs_re.match(line)
@@ -775,7 +785,7 @@ class GrblNetworkDriver(Driver):
     async def read_parser_state(self) -> Optional[str]:
         """Reads the $G parser state to determine the active WCS."""
         try:
-            response_lines = await self._execute_command("$G")
+            response_lines = await self.execute_interactive_command("$G")
             return parse_grbl_parser_state(response_lines)
         except DeviceConnectionError as e:
             logger.warning(f"Could not read parser state: {e}")
@@ -796,7 +806,7 @@ class GrblNetworkDriver(Driver):
         self.probe_status_changed.send(
             self, message=f"Probing {axis_letter}..."
         )
-        response_lines = await self._execute_command(cmd)
+        response_lines = await self.execute_interactive_command(cmd)
 
         for line in response_lines:
             match = prb_re.match(line)
