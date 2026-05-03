@@ -355,10 +355,14 @@ class GrblSerialDriver(Driver):
 
                 logger.info("Connection established successfully.")
 
+                self._apply_cached_rx_buffer_size()
+
                 try:
                     await self._execute_interactive_command("$I")
                 except (ConnectionError, asyncio.TimeoutError) as e:
                     logger.warning(f"Failed to retrieve build info: {e}")
+
+                self._warn_if_buffer_size_unknown()
 
                 self._update_connection_status(TransportStatus.CONNECTED)
 
@@ -1342,6 +1346,22 @@ class GrblSerialDriver(Driver):
 
         self._raw_grbl_status = state.status
 
+        if (
+            state.buffer_rx_available is not None
+            and state.status == DeviceStatus.IDLE
+            and self.grbl_transport
+        ):
+            total = state.buffer_rx_available
+            cur = self.grbl_transport._rx_buffer_size
+            if total > 0 and total != cur:
+                logger.info(
+                    f"Detected RX buffer size {total} from "
+                    f"Bf: status field (device idle, "
+                    f"available == total)"
+                )
+                self.grbl_transport.set_rx_buffer_size(total)
+                self._cache_rx_buffer_size(total)
+
         # If a job is active, 'Idle' state between commands should be
         # reported as 'Run' to the UI.
         if self._job_running and state.status == DeviceStatus.IDLE:
@@ -1356,6 +1376,30 @@ class GrblSerialDriver(Driver):
                     extra=self._log_extra("STATE_CHANGE"),
                 )
             self.state_changed.send(self, state=self.state)
+
+    def _apply_cached_rx_buffer_size(self) -> None:
+        if not self.grbl_transport:
+            return
+        cached = self.config.get("rx_buffer_size")
+        if cached and cached > 0:
+            logger.info(f"Applying cached RX buffer size: {cached} bytes")
+            self.grbl_transport.set_rx_buffer_size(cached)
+
+    def _cache_rx_buffer_size(self, size: int) -> None:
+        logger.info(f"Caching RX buffer size: {size} bytes")
+        self.config["rx_buffer_size"] = size
+        self.config_changed.send(self)
+
+    def _warn_if_buffer_size_unknown(self) -> None:
+        if "rx_buffer_size" in self.config:
+            return
+        logger.warning(
+            "Device did not report RX buffer size via $I. "
+            f"Using default {DEFAULT_GRBL_RX_BUFFER_SIZE} bytes. "
+            "If you experience errors, the device may have a "
+            "smaller buffer than expected.",
+            extra=self._log_extra("ERROR"),
+        )
 
     def _handle_ok(self, resp):
         """Handle a parsed 'ok' response."""
@@ -1472,6 +1516,7 @@ class GrblSerialDriver(Driver):
             rx_buffer_size = parse_opt_info(line)
             if rx_buffer_size and self.grbl_transport:
                 self.grbl_transport.set_rx_buffer_size(rx_buffer_size)
+                self._cache_rx_buffer_size(rx_buffer_size)
         elif line.startswith("Grbl "):
             self._handshake_received.set()
             logger.debug(f"Received Grbl welcome message: {line}")

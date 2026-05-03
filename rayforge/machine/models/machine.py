@@ -105,6 +105,7 @@ class Machine:
 
         self.driver_name: Optional[str] = None
         self.driver_args: Dict[str, Any] = {}
+        self.driver_config: Dict[str, Any] = {}
         self.precheck_error: Optional[str] = None
 
         self.auto_connect: bool = True
@@ -1520,6 +1521,7 @@ class Machine:
                 "name": self.name,
                 "driver": self.driver_name,
                 "driver_args": self.driver_args,
+                "driver_config": self.driver_config,
                 "auto_connect": self.auto_connect,
                 "clear_alarm_on_connect": self.clear_alarm_on_connect,
                 "home_on_start": self.home_on_start,
@@ -1652,6 +1654,7 @@ class Machine:
         ma.name = ma_data.get("name", ma.name)
         ma.driver_name = ma_data.get("driver")
         ma.driver_args = ma_data.get("driver_args", {})
+        ma.driver_config = ma_data.get("driver_config", {})
         ma.auto_connect = ma_data.get("auto_connect", ma.auto_connect)
         ma.clear_alarm_on_connect = ma_data.get(
             "clear_alarm_on_connect",
