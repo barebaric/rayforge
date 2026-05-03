@@ -57,12 +57,11 @@
 .footer {
   background: var(--ifm-background-color);
   color: var(--ifm-font-color-base);
-  border-top: 1px solid var(--ifm-color-emphasis-200);
+  border-top: 0;
 }
 
 html[data-theme='dark'] .footer {
   background: #1b1b1d;
-  border-top-color: rgba(255, 255, 255, 0.644);
 }
 
 .footer a {
