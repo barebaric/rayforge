@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-02 13:32+0200\n"
+"POT-Creation-Date: 2026-05-03 17:08+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -228,7 +228,7 @@ msgstr "Cortar"
 msgid "Optionally force a specific laser head"
 msgstr "Opcionalmente, forzar un cabezal láser específico."
 
-#: rayforge/core/capability.py
+#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
 msgid "Power"
 msgstr "Potencia"
 
@@ -286,15 +286,15 @@ msgstr "Prueba de material"
 msgid "PWM"
 msgstr "PWM"
 
-#: rayforge/core/capability.py
+#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
 msgid "Frequency"
 msgstr "Frecuencia"
 
-#: rayforge/core/capability.py
+#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
 msgid "PWM frequency in Hz"
 msgstr "Frecuencia PWM en Hz"
 
-#: rayforge/core/capability.py
+#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Pulse Width"
 msgstr "Ancho de pulso"
@@ -1445,6 +1445,7 @@ msgid "{label} (for {machine_name})"
 msgstr "{label} (para {machine_name})"
 
 #: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/laser_control_widget.py
 msgid "Laser Head"
 msgstr "Cabezal láser"
 
@@ -3547,6 +3548,36 @@ msgstr "Seleccionar máquina"
 msgid "Select active machine"
 msgstr "Seleccionar máquina activa"
 
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Toggle laser on/off"
+msgstr "Activar/desactivar láser"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Laser power in percent"
+msgstr "Potencia del láser en porcentaje"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Pulse width in µs"
+msgstr "Ancho de pulso en µs"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Duration"
+msgstr "Duración"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Seconds (0 = continuous)"
+msgstr "Segundos (0 = continuo)"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+#, python-brace-format
+msgid "Tool {tool_number}, max power {max_power}"
+msgstr "Herramienta {tool_number}, potencia máx. {max_power}"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+#, python-brace-format
+msgid "{seconds:.1f} s remaining"
+msgstr "{seconds:.1f} s restantes"
+
 #: rayforge/ui_gtk/machine/gcode_settings_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "G-code"
@@ -3644,6 +3675,10 @@ msgstr "Añadir nueva máquina"
 #: rayforge/ui_gtk/machine/profile_selector.py
 msgid "Select a machine profile to use as a template."
 msgstr "Selecciona un perfil de máquina para usar como plantilla."
+
+#: rayforge/ui_gtk/machine/profile_selector.py
+msgid "Search devices…"
+msgstr "Buscar dispositivos…"
 
 #: rayforge/ui_gtk/machine/profile_selector.py
 msgid "Import from File…"
@@ -4315,6 +4350,7 @@ msgid "Report an issue"
 msgstr "Informar de un problema"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Laser"
 msgstr "Láser"
 

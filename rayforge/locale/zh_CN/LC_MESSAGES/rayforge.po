@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-02 13:32+0200\n"
+"POT-Creation-Date: 2026-05-03 17:08+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -227,7 +227,7 @@ msgstr "切割"
 msgid "Optionally force a specific laser head"
 msgstr "可选地强制使用特定的激光头"
 
-#: rayforge/core/capability.py
+#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
 msgid "Power"
 msgstr "功率"
 
@@ -285,15 +285,15 @@ msgstr "材料测试"
 msgid "PWM"
 msgstr "PWM"
 
-#: rayforge/core/capability.py
+#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
 msgid "Frequency"
 msgstr "频率"
 
-#: rayforge/core/capability.py
+#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
 msgid "PWM frequency in Hz"
 msgstr "PWM频率（Hz）"
 
-#: rayforge/core/capability.py
+#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 msgid "Pulse Width"
 msgstr "脉冲宽度"
@@ -1313,6 +1313,7 @@ msgid "{label} (for {machine_name})"
 msgstr "{label}（用于{machine_name}）"
 
 #: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/laser_control_widget.py
 msgid "Laser Head"
 msgstr "激光头"
 
@@ -3330,6 +3331,36 @@ msgstr "选择机器"
 msgid "Select active machine"
 msgstr "选择活动机器"
 
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Toggle laser on/off"
+msgstr "开启/关闭激光"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Laser power in percent"
+msgstr "激光功率（百分比）"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Pulse width in µs"
+msgstr "脉冲宽度（µs）"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Duration"
+msgstr "持续时间"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Seconds (0 = continuous)"
+msgstr "秒（0 = 连续）"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+#, python-brace-format
+msgid "Tool {tool_number}, max power {max_power}"
+msgstr "工具 {tool_number}，最大功率 {max_power}"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+#, python-brace-format
+msgid "{seconds:.1f} s remaining"
+msgstr "剩余 {seconds:.1f} 秒"
+
 #: rayforge/ui_gtk/machine/gcode_settings_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "G-code"
@@ -3427,6 +3458,10 @@ msgstr "添加新机器"
 #: rayforge/ui_gtk/machine/profile_selector.py
 msgid "Select a machine profile to use as a template."
 msgstr "选择一个机器配置文件作为模板。"
+
+#: rayforge/ui_gtk/machine/profile_selector.py
+msgid "Search devices…"
+msgstr "搜索设备…"
 
 #: rayforge/ui_gtk/machine/profile_selector.py
 msgid "Import from File…"
@@ -4072,6 +4107,7 @@ msgid "Report an issue"
 msgstr "报告问题"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Laser"
 msgstr "激光"
 

@@ -5,6 +5,37 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.7.0-beta3
+
+### Added
+
+- Manual laser control dock with per-head power, frequency, pulse width,
+  and auto-off timer (#225)
+- Search field in the machine profile selector
+- Machine profiles for Sculpfun S30 Pro Max, S40 MAX, and S70 MAX,
+  and Elidor Z6
+
+### Changed
+
+- Dock layout: new dock items are now placed next to their buddy item
+  when restoring a saved layout that doesn't include them
+- Serial transport: switch to non-blocking read for improved OS lock
+  management (#231)
+- Serial transport: offload write operations to executor to prevent
+  blocking
+- Serial transport: open ports in exclusive mode to avoid clashes with
+  other apps
+- GRBL: flush serial buffer after every write
+
+### Fixed
+
+- GRBL: cache detected RX buffer size in the machine config file to
+  avoid buffer overflows on devices that do not report it via `$I`
+- GRBL: laser-off command (M5) no longer sent during active jog, which
+  caused error:9
+- Deadlock detection triggered incorrectly when status polling was off
+- Deadlock detection when GRBL doesn't report Bf: in status reports
+
 ## 1.7.0-beta2
 
 ### Added

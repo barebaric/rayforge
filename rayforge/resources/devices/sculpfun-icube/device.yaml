@@ -4,6 +4,8 @@ device:
   description: Compact diode laser engraver with 120x120mm work area
 machine:
   driver: GrblSerialDriver
+  driver_config:
+    rx_buffer_size: 31
   gcode_precision: 3
   axis_extents:
   - 120.0

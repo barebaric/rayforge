@@ -17,7 +17,7 @@ Rayforge supports various file formats including SVG, DXF, PDF, Ruida (.rd), and
 ![Canvas with imported design](/screenshots/main-standard.png)
 
 :::tip Don't have a design yet?
-You can create simple shapes using the canvas tools or download free SVG files from sites like [Flaticon](https://www.flaticon.com/) or [SVG Repo](https://www.svgrepo.com/).
+You can create simple shapes using the sketcher or download free SVG files from sites like [Flaticon](https://www.flaticon.com/) or [SVG Repo](https://www.svgrepo.com/).
 :::
 
 

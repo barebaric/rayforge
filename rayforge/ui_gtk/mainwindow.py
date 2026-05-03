@@ -1506,6 +1506,9 @@ class MainWindow(Adw.ApplicationWindow):
             self._current_machine.machine_hours.changed.disconnect(
                 self._on_machine_hours_changed
             )
+            self._current_machine.controller.laser_power_changed.disconnect(
+                self._on_laser_power_changed
+            )
 
         self._current_machine = config.machine
 
@@ -1522,6 +1525,9 @@ class MainWindow(Adw.ApplicationWindow):
             self._current_machine.changed.connect(self._refresh_gcode_preview)
             self._current_machine.machine_hours.changed.connect(
                 self._on_machine_hours_changed
+            )
+            self._current_machine.controller.laser_power_changed.connect(
+                self._on_laser_power_changed
             )
 
     def _update_canvas3d(self, new_machine):
@@ -2126,6 +2132,13 @@ class MainWindow(Adw.ApplicationWindow):
             self.toolbar.focus_button.set_child(self.toolbar.focus_off_icon)
         else:
             self.toolbar.focus_button.set_child(self.toolbar.focus_on_icon)
+
+    def _on_laser_power_changed(self, sender, *, head, percent):
+        focus_action = self.action_manager.get_action("toggle-focus")
+        if focus_action is None:
+            return
+        is_on = percent > 0
+        focus_action.set_state(GLib.Variant.new_boolean(is_on))
 
     def on_elements_deleted(self, sender, elements: List[CanvasElement]):
         """Handles the deletion signal from the WorkSurface."""

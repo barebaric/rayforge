@@ -13,7 +13,7 @@ Rayforge unterstützt verschiedene Dateiformate, darunter SVG, DXF, PDF, Ruida (
 ![Arbeitsfläche mit importiertem Design](/screenshots/main-standard.png)
 
 :::tip Noch kein Design?
-Du kannst einfache Formen mit den Arbeitsflächen-Werkzeugen erstellen oder kostenlose SVG-Dateien von Seiten wie [Flaticon](https://www.flaticon.com/) oder [SVG Repo](https://www.svgrepo.com/) herunterladen.
+Du kannst einfache Formen mit dem Skizzierer erstellen oder kostenlose SVG-Dateien von Seiten wie [Flaticon](https://www.flaticon.com/) oder [SVG Repo](https://www.svgrepo.com/) herunterladen.
 :::
 
 

@@ -152,9 +152,7 @@ class GrblSerialTransport:
                 + self._status_buffer[m.end() :]
             )
             pending = self._ack_ok()
-            responses.append(
-                GrblResponse(GrblResponseType.OK, "ok", pending)
-            )
+            responses.append(GrblResponse(GrblResponseType.OK, "ok", pending))
 
         # Detect NULL-byte corrupted 'ok' (hardware fault)
         null_ok = self._find_null_corrupted_ok()
@@ -211,11 +209,7 @@ class GrblSerialTransport:
                 j = i + 1
                 while j < len(buf) and buf[j] == 0:
                     j += 1
-                if (
-                    j < len(buf)
-                    and buf[j] == ord(b"k")
-                    and j > i + 1
-                ):
+                if j < len(buf) and buf[j] == ord(b"k") and j > i + 1:
                     k = j + 1
                     while k < len(buf) and buf[k] == ord(b"\r"):
                         k += 1
@@ -357,13 +351,17 @@ class GrblSerialTransport:
         """
         return self._get()
 
-    def reset(self) -> None:
-        """Reset all buffer state (cancel, reconnect, cleanup)."""
+    def reset_flow_control(self) -> None:
+        """Reset flow-control state without clearing the parse buffer."""
         with self._lock:
             self._rx_buffer_count = 0
         self._pending = asyncio.Queue()
         self._space_available = asyncio.Event()
         self._space_available.set()
+
+    def reset(self) -> None:
+        """Reset all buffer state (cancel, reconnect, cleanup)."""
+        self.reset_flow_control()
         self._status_buffer = bytearray()
 
     def signal_space_available(self) -> None:

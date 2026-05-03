@@ -66,6 +66,44 @@
   </screenshots>
 
   <releases>
+    <release version="1.7.0-beta3" date="2026-05-03">
+      <description>
+        <p>Manual Laser Control, Serial Transport Improvements, Machine
+        Profile Search</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Manual laser control dock with per-head power, frequency,
+          pulse width, and auto-off timer (#225)</li>
+          <li>Search field in the machine profile selector</li>
+          <li>Machine profiles for Sculpfun S30 Pro Max, S40 MAX, and
+          S70 MAX, and Elidor Z6</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Dock layout: new dock items are now placed next to their
+          buddy item when restoring a saved layout that doesn't include
+          them</li>
+          <li>Serial transport: non-blocking read for improved OS lock
+          management (#231)</li>
+          <li>Serial transport: write operations offloaded to executor to
+          prevent blocking</li>
+          <li>Serial transport: ports opened in exclusive mode to avoid
+          clashes with other apps</li>
+          <li>GRBL: serial buffer flushed after every write</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Fixed GRBL RX buffer size not cached, causing buffer
+          overflows on devices that do not report it via $I</li>
+          <li>Fixed GRBL laser-off command (M5) sent during active jog,
+          which caused error:9</li>
+          <li>Fixed deadlock detection triggered incorrectly when status
+          polling was off</li>
+          <li>Fixed deadlock detection when GRBL doesn't report Bf: in
+          status reports</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.7.0-beta2" date="2026-05-02">
       <description>
         <p>Job Sanity Checks, 10 New Device Profiles, Better Layer
