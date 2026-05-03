@@ -55,6 +55,7 @@ class MachineController:
         self.job_finished = Signal()
         self.command_status_changed = Signal()
         self.wcs_updated = Signal()
+        self.laser_power_changed = Signal()
 
         self.driver: Driver = NoDeviceDriver(context, machine)
         self._connect_driver_signals()
@@ -411,6 +412,9 @@ class MachineController:
             head = self.machine.get_default_head()
 
         await self.driver.set_power(head, percent)
+        self.laser_power_changed.send(
+            self, head=head, percent=percent
+        )
 
     async def set_focus_power(
         self, head: Optional["Laser"] = None, percent: float = 0.0
@@ -433,6 +437,9 @@ class MachineController:
             head = self.machine.get_default_head()
 
         await self.driver.set_focus_power(head, percent)
+        self.laser_power_changed.send(
+            self, head=head, percent=percent
+        )
 
     async def set_work_origin(
         self, x: float, y: float, z: float, wcs_slot: Optional[str] = None

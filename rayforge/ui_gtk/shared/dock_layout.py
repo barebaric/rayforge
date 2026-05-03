@@ -33,6 +33,7 @@ class DockLayout(Gtk.Widget):
         self.set_vexpand(True)
 
         self._items = {}
+        self._default_buddies = {}
         self._areas = []
         self._dividers = []
         self._orientation = orientation
@@ -57,6 +58,9 @@ class DockLayout(Gtk.Widget):
 
     def register_item(self, item):
         self._items[item.name] = item
+
+    def set_default_item_buddy(self, item_name, buddy_name):
+        self._default_buddies[item_name] = buddy_name
 
     def get_item(self, name):
         return self._items.get(name)
@@ -425,7 +429,16 @@ class DockLayout(Gtk.Widget):
         unplaced = [n for n in all_item_names if n not in placed]
         if unplaced and new_areas:
             for name in unplaced:
-                new_areas[0].add_item(self._items[name])
+                buddy = self._default_buddies.get(name)
+                target = None
+                if buddy:
+                    for area in new_areas:
+                        if area.has_item(buddy):
+                            target = area
+                            break
+                if target is None:
+                    target = new_areas[0]
+                target.add_item(self._items[name])
             saved_sizes.append(None)
         elif unplaced:
             area = DockArea(orientation=self._orientation)
