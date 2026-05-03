@@ -22,7 +22,7 @@ html[data-theme='dark'] .hero {
   background:
     radial-gradient(at 30% 0%, rgba(255, 159, 67, 0.06) 0px, transparent 50%),
     radial-gradient(at 70% 0%, rgba(95, 39, 205, 0.06) 0px, transparent 50%),
-    linear-gradient(180deg, #121212 0%, #1a1a1c 100%);
+    linear-gradient(180deg, var(--ifm-background-color) 0%, var(--ifm-background-color) 100%);
 }
 
 .heroInner {
@@ -106,6 +106,7 @@ html[data-theme='dark'] .statsSection {
   font-size: 2rem;
   font-weight: 800;
   margin-bottom: 0.25rem;
+  white-space: nowrap;
   background: linear-gradient(135deg, #ff9f43, #5f27cd);
   -webkit-background-clip: text;
   background-clip: text;
@@ -248,8 +249,10 @@ html[data-theme='dark'] .comparisonSection {
 
 .comparisonTableWrapper {
   border-radius: 16px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   border: 1px solid var(--ifm-color-emphasis-100);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.04);
 }
 
 html[data-theme='dark'] .comparisonTableWrapper {
@@ -259,6 +262,7 @@ html[data-theme='dark'] .comparisonTableWrapper {
 .comparisonTable {
   display: table;
   width: 100%;
+  min-width: 720px;
   border-collapse: separate;
   border-spacing: 0;
   margin-bottom: 0;
@@ -312,11 +316,14 @@ html[data-theme='dark'] .comparisonTable {
   letter-spacing: 0.5px;
   background: var(--ifm-color-emphasis-100);
   color: var(--ifm-color-emphasis-700);
+  border-right: 1px solid var(--ifm-color-emphasis-100);
+  vertical-align: top;
 }
 
 html[data-theme='dark'] .comparisonTable th {
   background: #252527;
   color: var(--ifm-color-emphasis-500);
+  border-right-color: #2a2a2c;
 }
 
 .comparisonTable td {
@@ -324,10 +331,23 @@ html[data-theme='dark'] .comparisonTable th {
   border-top: 1px solid var(--ifm-color-emphasis-100);
   font-size: 0.95rem;
   color: var(--ifm-color-emphasis-700);
+  border-right: 1px solid var(--ifm-color-emphasis-100);
+  vertical-align: top;
 }
 
 html[data-theme='dark'] .comparisonTable td {
   border-top-color: #2a2a2c;
+  border-right-color: #2a2a2c;
+}
+
+.comparisonTable th:last-child,
+.comparisonTable td:last-child {
+  border-right: none;
+}
+
+.comparisonTable th:not(:first-child),
+.comparisonTable td:not(:first-child) {
+  text-align: center;
 }
 
 .comparisonTable td:first-child {
@@ -335,16 +355,44 @@ html[data-theme='dark'] .comparisonTable td {
   color: var(--ifm-font-color-base);
 }
 
-.comparisonHighlight {
-  color: #ff9f43 !important;
-  font-weight: 700 !important;
+.comparisonTable th.comparisonHighlight {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 159, 67, 0.9),
+    rgba(95, 39, 205, 0.9)
+  );
+  color: #fff !important;
+  font-weight: 800;
+  border-right-color: rgba(255, 255, 255, 0.15);
 }
 
-.comparisonTable tr:hover td {
+.comparisonTable td.comparisonHighlight {
+  background: rgba(255, 159, 67, 0.08);
+  color: var(--ifm-font-color-base);
+  font-weight: 700;
+}
+
+html[data-theme='dark'] .comparisonTable td.comparisonHighlight {
+  background: rgba(255, 159, 67, 0.1);
+}
+
+.comparisonTable tbody tr:nth-child(odd) td:not(.comparisonHighlight) {
   background: var(--ifm-color-emphasis-50);
 }
 
-html[data-theme='dark'] .comparisonTable tr:hover td {
+html[data-theme='dark'] .comparisonTable tbody tr:nth-child(odd) td:not(.comparisonHighlight) {
+  background: #202022;
+}
+
+.comparisonTable tbody tr:hover td:not(.comparisonHighlight) {
+  background: var(--ifm-color-emphasis-100);
+}
+
+.comparisonTable tbody tr:hover td.comparisonHighlight {
+  background: rgba(255, 159, 67, 0.12);
+}
+
+html[data-theme='dark'] .comparisonTable tbody tr:hover td:not(.comparisonHighlight) {
   background: #252527;
 }
 
@@ -466,7 +514,7 @@ html[data-theme='dark'] .tierCard {
 html[data-theme='dark'] .ctaSection {
   background:
     radial-gradient(at 50% 100%, rgba(95, 39, 205, 0.05) 0px, transparent 50%),
-    #121212;
+    var(--ifm-background-color);
 }
 
 .ctaInner {

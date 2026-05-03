@@ -155,7 +155,7 @@
 }
 
 [data-theme='dark'] .install-os-btn {
-  border-color: var(--ifm-color-emphasis-200);
+  background: #3d3d3d;
 }
 
 [data-theme='dark'] .install-os-btn:hover {
@@ -165,9 +165,12 @@
 [data-theme='dark'] .install-os-btn--active {
   background: var(--ifm-color-primary-dark);
 }
+[data-theme='light'] .install-step {
+  background: #ebecec;
+}
 
 [data-theme='dark'] .install-step {
-  background: var(--ifm-color-emphasis-200);
+  background: #252528;
 }
 
 [data-theme='dark'] .install-troubleshoot {

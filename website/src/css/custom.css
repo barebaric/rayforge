@@ -30,7 +30,7 @@
 
 /* Dark Mode Specifics */
 [data-theme='dark'] {
-  --ifm-background-color: #121212;
+  --ifm-background-color: #1b1b1d;
   --ifm-navbar-background-color: rgba(30, 30, 32, 0.95);
   --ifm-color-primary: #a29bfe; /* Lighter purple for dark mode contrast */
   --ifm-link-color: #ff9f43; /* Orange pops well on dark */
@@ -55,8 +55,23 @@
 
 /* Footer styling */
 .footer {
-  background: #2d3436;
-  color: #dfe6e9;
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+html[data-theme='dark'] .footer {
+  background: #1b1b1d;
+  border-top-color: rgba(255, 255, 255, 0.644);
+}
+
+.footer a {
+  color: inherit;
+  opacity: 0.9;
+}
+
+.footer a:hover {
+  opacity: 1;
 }
 
 /* Hide the navbar search slot since search lives in the sidebar */
