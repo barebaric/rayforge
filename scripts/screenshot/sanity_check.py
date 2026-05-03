@@ -60,9 +60,7 @@ def main():
                 if isinstance(artifact, JobArtifact):
                     ops_result["ops"] = artifact.ops
                 else:
-                    ops_result["error"] = RuntimeError(
-                        "Not a JobArtifact"
-                    )
+                    ops_result["error"] = RuntimeError("Not a JobArtifact")
         except Exception as e:
             ops_result["error"] = e
         done_event.set()

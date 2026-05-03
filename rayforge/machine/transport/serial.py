@@ -156,7 +156,8 @@ class SerialTransport(Transport):
             1843200,
         ]
 
-    _READ_TIMEOUT = 0.3
+    # Non-blocking read to prevent holding OS driver locks.
+    _READ_TIMEOUT = 0
 
     def __init__(self, port: str, baudrate: int):
         """
@@ -308,10 +309,9 @@ class SerialTransport(Transport):
         Dedicated reader thread that continuously reads from the serial
         port and dispatches received data to the event loop.
 
-        Uses a blocking read with timeout so the thread can check the
-        stop event periodically. This ensures the OS-level serial buffer
-        is always being drained, preventing data loss on platforms (like
-        Windows) where the default COM input buffer is small (4096 bytes).
+        Uses a non-blocking read to allow the OS to manage the hardware
+        transmit locks freely, paired with a tiny CPU yield to prevent
+        busy-looping.
         """
         assert self._serial is not None
         ser = self._serial
@@ -355,11 +355,11 @@ class SerialTransport(Transport):
                 break
 
             if not data:
-                # Yield to the OS to allow USB drivers to flush the
-                # transmit queue.
-                # Without this yield, the continuous blocking read loop can
-                # hold a hardware lock that prevents the OS TX buffer from
-                # physically transmitting data.
+                # With timeout=0, this microscopic sleep prevents a 100% CPU
+                # busy-loop. Crucially, it ensures the Python thread spends
+                # almost all of its time OUTSIDE the kernel, keeping the OS
+                # serial lock free so that concurrent writes from the asyncio
+                # thread can physically transmit immediately.
                 time.sleep(0.005)
                 continue
 

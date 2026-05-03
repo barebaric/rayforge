@@ -197,6 +197,7 @@ def _copy_model_ref(
 class MachineConfig:
     driver: Optional[str] = None
     driver_args: Optional[Dict[str, Any]] = None
+    driver_config: Optional[Dict[str, Any]] = None
     gcode_precision: Optional[int] = None
     supports_arcs: Optional[bool] = None
     supports_curves: Optional[bool] = None
@@ -260,9 +261,14 @@ class MachineConfig:
         if machine.work_margins != (0, 0, 0, 0):
             work_margins = machine.work_margins
 
+        driver_config = None
+        if machine.driver_config:
+            driver_config = machine.driver_config.copy()
+
         return cls(
             driver=machine.driver_name or None,
             driver_args=machine.driver_args or None,
+            driver_config=driver_config,
             gcode_precision=machine.gcode_precision,
             supports_arcs=machine.supports_arcs,
             supports_curves=machine.supports_curves,
@@ -372,6 +378,9 @@ class DeviceProfile:
                     f"Failed to create driver {cfg.driver} "
                     f"for device '{self.name}': {exc}"
                 )
+
+        if cfg.driver_config is not None:
+            m.driver_config = cfg.driver_config.copy()
 
         if driver_uses_gcode and self.dialect_config:
             new_label = _("{name} (device dialect)").format(name=self.name)

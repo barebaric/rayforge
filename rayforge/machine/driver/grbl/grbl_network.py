@@ -22,6 +22,7 @@ from ....pipeline.encoder.base import OpsEncoder, EncodedOutput
 from ....pipeline.encoder.gcode import GcodeEncoder
 from ...transport import HttpTransport, WebSocketTransport, TransportStatus
 from ..driver import (
+    DeviceStatus,
     Driver,
     DriverSetupError,
     DriverPrecheckError,
@@ -577,12 +578,24 @@ class GrblNetworkDriver(Driver):
         dialect = self.dialect
 
         if percent <= 0:
+            await self._wait_for_idle()
             cmd = dialect.laser_off
         else:
             power_abs = percent * head.max_power
             cmd = dialect.focus_laser_on.format(power=power_abs)
 
         await self._execute_command(cmd)
+
+    async def _wait_for_idle(self, timeout: float = 5.0):
+        deadline = asyncio.get_event_loop().time() + timeout
+        while self.state.status == DeviceStatus.JOG:
+            if asyncio.get_event_loop().time() > deadline:
+                logger.warning(
+                    "Timed out waiting for JOG to finish before "
+                    "sending laser-off command."
+                )
+                break
+            await asyncio.sleep(0.05)
 
     def can_jog(self, axis: Optional[Axis] = None) -> bool:
         """GRBL supports jogging for all axes."""

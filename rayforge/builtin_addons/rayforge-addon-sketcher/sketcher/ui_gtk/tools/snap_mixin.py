@@ -201,17 +201,11 @@ class SnapMixin:
         if not snapped_to_existing and result.primary_snap_point:
             sp = result.primary_snap_point
             if sp.line_type == SnapLineType.MIDPOINT:
-                constraints.extend(
-                    self._build_midpoint_constraint(sp, pid)
-                )
+                constraints.extend(self._build_midpoint_constraint(sp, pid))
             elif sp.line_type == SnapLineType.ENTITY_POINT:
-                constraints.extend(
-                    self._build_coincident_constraint(sp, pid)
-                )
+                constraints.extend(self._build_coincident_constraint(sp, pid))
             elif sp.line_type == SnapLineType.ON_ENTITY:
-                constraints.extend(
-                    self._build_on_entity_constraint(sp, pid)
-                )
+                constraints.extend(self._build_on_entity_constraint(sp, pid))
 
         if end_pid is not None:
             constraints.extend(
@@ -228,9 +222,13 @@ class SnapMixin:
         line = sp.source
         if pid in (line.p1_idx, line.p2_idx):
             return []
-        return [SymmetryConstraint(
-            p1=line.p1_idx, p2=line.p2_idx, center=pid,
-        )]
+        return [
+            SymmetryConstraint(
+                p1=line.p1_idx,
+                p2=line.p2_idx,
+                center=pid,
+            )
+        ]
 
     def _build_coincident_constraint(self, sp, pid):
         if not isinstance(sp.source, Point):
@@ -242,20 +240,25 @@ class SnapMixin:
     def _build_on_entity_constraint(self, sp, pid):
         if not isinstance(sp.source, (Line, Arc, Circle)):
             return []
-        return [PointOnLineConstraint(
-            point_id=pid, shape_id=sp.source.id,
-        )]
+        return [
+            PointOnLineConstraint(
+                point_id=pid,
+                shape_id=sp.source.id,
+            )
+        ]
 
     def _build_axis_constraints(self, result, end_pid, existing):
         constraints: List[Any] = []
         seen: set = set()
         for ec in existing or []:
             if isinstance(ec, (HorizontalConstraint, VerticalConstraint)):
-                seen.add((
-                    type(ec).__name__,
-                    min(ec.p1, ec.p2),
-                    max(ec.p1, ec.p2),
-                ))
+                seen.add(
+                    (
+                        type(ec).__name__,
+                        min(ec.p1, ec.p2),
+                        max(ec.p1, ec.p2),
+                    )
+                )
 
         for sl in result.snap_lines:
             if not isinstance(sl.source, Point):
@@ -264,7 +267,8 @@ class SnapMixin:
             if src_id == end_pid:
                 continue
             key = (
-                "HorizontalConstraint" if sl.is_horizontal
+                "HorizontalConstraint"
+                if sl.is_horizontal
                 else "VerticalConstraint",
                 min(src_id, end_pid),
                 max(src_id, end_pid),
@@ -273,13 +277,9 @@ class SnapMixin:
                 continue
             seen.add(key)
             if sl.is_horizontal:
-                constraints.append(
-                    HorizontalConstraint(src_id, end_pid)
-                )
+                constraints.append(HorizontalConstraint(src_id, end_pid))
             else:
-                constraints.append(
-                    VerticalConstraint(src_id, end_pid)
-                )
+                constraints.append(VerticalConstraint(src_id, end_pid))
 
         return constraints
 

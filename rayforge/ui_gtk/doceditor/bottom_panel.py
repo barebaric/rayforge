@@ -15,6 +15,7 @@ from ..doceditor.layers_tab import LayersTab
 from ..icons import get_icon
 from ..machine.console import Console
 from ..machine.jog_widget import JogWidget
+from ..machine.laser_control_widget import LaserControlWidget
 from ..machine.wcs_dialog import WcsDialog
 from ..shared.dock_item import DockItem
 from ..shared.dock_layout import DockLayout
@@ -94,10 +95,30 @@ class BottomPanel(Gtk.Box):
         if machine and machine_cmd:
             self.jog_widget.set_machine(machine, machine_cmd)
 
+        self.laser_control = LaserControlWidget()
+        if machine and machine_cmd:
+            self.laser_control.set_machine(machine, machine_cmd)
+
+        self._laser_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self._laser_box.set_margin_start(9)
+        self._laser_box.set_margin_end(9)
+        self._laser_box.set_margin_top(9)
+        self._laser_box.set_margin_bottom(9)
+        self._laser_box.set_vexpand(True)
+        self._laser_box.set_hexpand(False)
+        self._laser_box.set_halign(Gtk.Align.START)
+        self._laser_box.append(self.laser_control)
+        self._jog_laser_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL, spacing=12
+        )
+        self._jog_laser_box.append(self.jog_widget)
+        self._jog_laser_box.set_vexpand(True)
+
         self._controls_widget = ResponsiveBox()
         self._controls_widget.set_halign(Gtk.Align.FILL)
         self._controls_widget.set_vexpand(True)
         self._controls_widget.set_valign(Gtk.Align.FILL)
+        self._controls_widget.set_margin_start(9)
         self._controls_widget.set_margin_end(9)
         self._controls_widget.set_margin_top(9)
         self._controls_widget.set_margin_bottom(9)
@@ -105,9 +126,11 @@ class BottomPanel(Gtk.Box):
         if machine:
             self._setup_wcs_controls()
             self._connect_machine_signals()
-            self._controls_widget.set_children(self.wcs_group, self.jog_widget)
+            self._controls_widget.set_children(
+                self.wcs_group, self._jog_laser_box
+            )
         else:
-            self._controls_widget.set_children(self.jog_widget)
+            self._controls_widget.set_children(self._jog_laser_box)
 
         self.dock_layout = DockLayout(orientation=Gtk.Orientation.HORIZONTAL)
         self.dock_layout.layout_changed.connect(self._on_dock_layout_changed)
@@ -159,6 +182,15 @@ class BottomPanel(Gtk.Box):
                 expands=False,
             )
         )
+        self.dock_layout.register_item(
+            DockItem(
+                name="laser",
+                icon_name="laser-on-symbolic",
+                widget=self._laser_box,
+                label=_("Laser"),
+                expands=False,
+            )
+        )
 
     def _build_default_layout(self):
         tabs_area = self.dock_layout.add_area()
@@ -169,6 +201,9 @@ class BottomPanel(Gtk.Box):
 
         controls_area = self.dock_layout.add_area()
         controls_area.add_item(self.dock_layout.get_item("controls"))
+        controls_area.add_item(self.dock_layout.get_item("laser"))
+
+        self.dock_layout.set_default_item_buddy("laser", "controls")
 
     def to_dict(self):
         return {
@@ -446,6 +481,7 @@ class BottomPanel(Gtk.Box):
 
         if self.machine and self.machine_cmd:
             self.jog_widget.set_machine(self.machine, self.machine_cmd)
+            self.laser_control.set_machine(self.machine, self.machine_cmd)
 
     def _on_wcs_selection_changed(self, combo_row, _pspec):
         if self._updating_wcs_ui:

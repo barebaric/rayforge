@@ -222,6 +222,8 @@ class Driver(ABC):
         self.job_finished = Signal()
         self.probe_status_changed = Signal()
         self.wcs_updated = Signal()
+        self.config_changed = Signal()
+        self.config: Dict[str, Any] = {}
         self.did_setup = False
         self.state: DeviceState = DeviceState()
 

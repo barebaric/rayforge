@@ -39,7 +39,7 @@ class MockSerial:
     def __init__(self, *args, **kwargs):
         self.port = kwargs.get("port", "")
         self.baudrate = kwargs.get("baudrate", 9600)
-        self.timeout = kwargs.get("timeout", 0.3)
+        self.timeout = kwargs.get("timeout", 0)
         self._read_queue = queue.Queue()
         self._closed = False
         self._written = []
@@ -252,7 +252,7 @@ class TestSerialTransportIntegration:
         mock_cls.assert_called_once_with(
             port="/dev/mock",
             baudrate=9600,
-            timeout=0.3,
+            timeout=0,
             exclusive=True,
         )
 

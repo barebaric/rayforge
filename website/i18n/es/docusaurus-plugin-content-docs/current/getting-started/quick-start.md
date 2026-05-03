@@ -13,7 +13,7 @@ Rayforge soporta varios formatos de archivo incluyendo SVG, DXF, PDF, Ruida (.rd
 ![Lienzo con diseño importado](/screenshots/main-standard.png)
 
 :::tip ¿No tienes un diseño todavía?
-Puedes crear formas simples usando las herramientas del lienzo o descargar archivos SVG gratuitos de sitios como [Flaticon](https://www.flaticon.com/) o [SVG Repo](https://www.svgrepo.com/).
+Puedes crear formas simples usando el diseñador o descargar archivos SVG gratuitos de sitios como [Flaticon](https://www.flaticon.com/) o [SVG Repo](https://www.svgrepo.com/).
 :::
 
 
