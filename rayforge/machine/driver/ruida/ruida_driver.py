@@ -158,6 +158,7 @@ class RuidaDriver(Driver):
         host = kwargs.get("host", "")
         port = kwargs.get("port", 50200)
         jog_port = kwargs.get("jog_port", 50207)
+        response_port = kwargs.get("response_port", self.RESPONSE_PORT)
         if not host:
             raise DriverSetupError(_("Hostname must be configured."))
 
@@ -166,7 +167,7 @@ class RuidaDriver(Driver):
         self.jog_port = jog_port
 
         self._udp_transport = UdpTransport(
-            host, port, local_port=self.RESPONSE_PORT
+            host, port, local_port=response_port
         )
         self._ruida_transport = RuidaTransport(self._udp_transport)
         self._jog_udp_transport = UdpTransport(host, jog_port)
