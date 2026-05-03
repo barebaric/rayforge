@@ -1,13 +1,45 @@
 /* --- START OF FILE src/pages/index.js --- */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
 import styles from './index.module.css';
 import Icon from '@mdi/react';
 import { mdiRocketLaunch, mdiViewDashboard, mdiFeatureSearch, mdiShareVariant } from '@mdi/js';
 
+function detectOs() {
+  if (typeof window === 'undefined') {
+    return 'linux';
+  }
+
+  const userAgent = window.navigator.userAgent.toLowerCase();
+
+  if (userAgent.includes('win')) {
+    return 'windows';
+  }
+  if (
+    userAgent.includes('mac') ||
+    userAgent.includes('iphone') ||
+    userAgent.includes('ipad')
+  ) {
+    return 'macos';
+  }
+  if (userAgent.includes('linux')) {
+    return 'linux';
+  }
+
+  return 'linux';
+}
+
 function HeroSection() {
+  const [os, setOs] = useState('linux');
+
+  useEffect(() => {
+    setOs(detectOs());
+  }, []);
+
+  const downloadTo = `/docs/getting-started/installation#${os}`;
+
   return (
     <section className={styles.hero}>
       <div className={styles.heroInner}>
@@ -23,10 +55,10 @@ function HeroSection() {
           </p>
           <div className={styles.heroCtaButtons}>
             <Link
-              to="/docs/getting-started/installation"
+              to={downloadTo}
               className={styles.buttonPrimary}
             >
-              Get Started
+              Download
             </Link>
             <a
               href="https://github.com/barebaric/rayforge"
@@ -150,26 +182,28 @@ function CommunitySection() {
   return (
     <section className={styles.communitySection}>
       <div className={styles.communityInner}>
-        <div className={styles.communityDecorations}>
-          <div className={styles.communityDot1}></div>
-          <div className={styles.communityDot2}></div>
-          <div className={styles.communityDot3}></div>
-          <div className={styles.communityDot4}></div>
-        </div>
-        <div className={styles.communityContent}>
-          <h2 className={styles.communityTitle}>Made with Rayforge</h2>
-          <p className={styles.communitySubtitle}>
-            See what creators around the world are making
-          </p>
-          <a
-            href="https://discord.gg/sTHNdTtpQJ"
-            className={styles.communityCta}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Icon path={mdiShareVariant} size={0.9} />
-            <span>Share your creations</span>
-          </a>
+        <div className={styles.communityPanel}>
+          <div className={styles.communityText}>
+            <div className={styles.communityBadge}>Community</div>
+            <h2 className={styles.communityTitle}>Made with Rayforge</h2>
+            <p className={styles.communitySubtitle}>
+              See what creators around the world are making
+            </p>
+            <a
+              href="https://discord.gg/sTHNdTtpQJ"
+              className={styles.communityCta}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Icon path={mdiShareVariant} size={0.9} />
+              <span>Share your creations</span>
+            </a>
+          </div>
+          <div className={styles.communityShowcase} aria-hidden="true">
+            <div className={`${styles.showcaseCard} ${styles.showcaseCard1}`}></div>
+            <div className={`${styles.showcaseCard} ${styles.showcaseCard2}`}></div>
+            <div className={`${styles.showcaseCard} ${styles.showcaseCard3}`}></div>
+          </div>
         </div>
       </div>
     </section>
