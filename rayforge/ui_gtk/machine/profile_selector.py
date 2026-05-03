@@ -3,11 +3,12 @@ from gettext import gettext as _
 from typing import Optional
 
 from blinker import Signal
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, GLib, Gtk
 
 from ..shared.gtk import apply_css
 from ...context import get_context
 from ...machine.device.profile import DeviceProfile
+from .config_wizard import ConfigWizard
 from .profile_importer import open_profile_zip
 
 logger = logging.getLogger(__name__)
@@ -83,11 +84,22 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
         self.profile_list_box.connect("row-activated", self._on_row_activated)
         scrolled_window.set_child(self.profile_list_box)
 
+        button_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=8,
+            halign=Gtk.Align.END,
+        )
+
+        other_button = Gtk.Button(label=_("Other Device…"))
+        other_button.connect("clicked", self._on_other_device_clicked)
+        button_box.append(other_button)
+
         import_button = Gtk.Button(label=_("Import from File…"))
         import_button.add_css_class("suggested-action")
         import_button.connect("clicked", self._on_import_clicked)
-        import_button.set_halign(Gtk.Align.END)
-        content.append(import_button)
+        button_box.append(import_button)
+
+        content.append(button_box)
 
         self.set_extra_child(content)
 
@@ -125,6 +137,19 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
 
     def _on_import_clicked(self, button):
         open_profile_zip(self, self._on_import_result)
+
+    def _on_other_device_clicked(self, button):
+        wizard = ConfigWizard(transient_for=self)
+        wizard.profile_created.connect(self._on_wizard_result)
+        wizard.present()
+
+    def _on_wizard_result(self, sender, *, profile: DeviceProfile):
+        self.close()
+        GLib.idle_add(self._emit_profile_selected, profile)
+
+    def _emit_profile_selected(self, profile: DeviceProfile):
+        self.profile_selected.send(self, profile=profile)
+        return GLib.SOURCE_REMOVE
 
     def _on_import_result(
         self, profile: Optional[DeviceProfile], error: Optional[str]

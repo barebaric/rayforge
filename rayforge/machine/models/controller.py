@@ -146,9 +146,7 @@ class MachineController:
         )
         self.driver.job_finished.connect(self._on_driver_job_finished)
         self.driver.wcs_updated.connect(self._on_driver_wcs_updated)
-        self.driver.config_changed.connect(
-            self._on_driver_config_changed
-        )
+        self.driver.config_changed.connect(self._on_driver_config_changed)
         self._on_driver_state_changed(self.driver, self.driver.state)
         self._reset_status()
 
@@ -164,9 +162,7 @@ class MachineController:
         )
         self.driver.job_finished.disconnect(self._on_driver_job_finished)
         self.driver.wcs_updated.disconnect(self._on_driver_wcs_updated)
-        self.driver.config_changed.disconnect(
-            self._on_driver_config_changed
-        )
+        self.driver.config_changed.disconnect(self._on_driver_config_changed)
 
     def _on_dialects_changed(self, sender=None, **kwargs):
         """
@@ -423,9 +419,7 @@ class MachineController:
             head = self.machine.get_default_head()
 
         await self.driver.set_power(head, percent)
-        self.laser_power_changed.send(
-            self, head=head, percent=percent
-        )
+        self.laser_power_changed.send(self, head=head, percent=percent)
 
     async def set_focus_power(
         self, head: Optional["Laser"] = None, percent: float = 0.0
@@ -448,9 +442,7 @@ class MachineController:
             head = self.machine.get_default_head()
 
         await self.driver.set_focus_power(head, percent)
-        self.laser_power_changed.send(
-            self, head=head, percent=percent
-        )
+        self.laser_power_changed.send(self, head=head, percent=percent)
 
     async def set_work_origin(
         self, x: float, y: float, z: float, wcs_slot: Optional[str] = None

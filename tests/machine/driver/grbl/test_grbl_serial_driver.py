@@ -566,7 +566,7 @@ class TestGrblSerialDriver:
 
         execute_command_mock = mocker.patch.object(
             driver,
-            "_execute_interactive_command",
+            "execute_interactive_command",
             side_effect=DeviceConnectionError("Connection lost"),
         )
 
