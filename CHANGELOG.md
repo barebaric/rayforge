@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Manual laser control dock with per-head power, frequency, pulse width,
   and auto-off timer (#225)
 - Search field in the machine profile selector
-- Machine profiles for Sculpfun S30 Pro Max, S40 MAX, and S70 MAX
+- Machine profiles for Sculpfun S30 Pro Max, S40 MAX, and S70 MAX,
+  and Elidor Z6
 
 ### Changed
 
