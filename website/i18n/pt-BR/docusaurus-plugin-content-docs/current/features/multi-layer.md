@@ -37,7 +37,13 @@ camadas são processadas da esquerda para a direita. Você pode usar
 ### Reordenar peças de trabalho
 
 Peças de trabalho dentro de uma camada podem ser reorganizadas
-arrastando e soltando para controlar sua ordem Z.
+arrastando e soltando para controlar sua ordem Z. Você pode selecionar
+múltiplas peças de trabalho com **Ctrl+clique** para alternar itens
+individuais, ou **Shift+clique** para selecionar um intervalo. Arrastar uma
+seleção move todos os itens selecionados de uma vez.
+
+Peças de trabalho selecionadas são destacadas na coluna da camada e a
+seleção permanece sincronizada com a tela.
 
 ### Excluir uma camada
 
@@ -94,10 +100,16 @@ interruptores para selecionar quais importar.
 ## Atribuir peças de trabalho a camadas
 
 **Arrastar e soltar:** Selecione peça(s) de trabalho na tela ou no
-painel de documento e arraste-as para a camada de destino.
+painel de camadas e arraste-as para a camada de destino. Seleção múltipla
+com Ctrl+clique e Shift+clique é suportada, e você pode arrastar itens
+entre camadas.
 
 **Recortar e colar:** Recorte uma peça de trabalho da camada atual
 (Ctrl+X), selecione a camada de destino e cole (Ctrl+V).
+
+**Menu de contexto:** Clique com o botão direito em uma peça de trabalho
+na aba de camadas para abrir um menu de contexto com opções para movê-la
+para outra camada, excluí-la ou abrir suas propriedades.
 
 ## Ordem de execução
 
@@ -116,3 +128,4 @@ permaneçam no lugar durante a gravação.
 - [Macros e Hooks](../machine/hooks-macros) - Hooks em nível de camada
   para automação
 - [Visualização 3D](../ui/3d-preview) - Visualizar pilha de camadas
+- [Navegador de Ativos](../ui/bottom-panel) - Gerenciando ativos com menus de contexto

@@ -177,9 +177,11 @@ hervorgehoben, wenn dein Cursor nahe an einem Einrast-Ziel ist.
 
 Viele Zeichenwerkzeuge wenden automatisch Einschränkungen an, während du Geometrie
 erstellst. Wenn du beispielsweise eine Linie nahe der Horizontalen oder Vertikalen
-zeichnest, bietet der Sketcher an, sie an Ort und Stelle zu fixieren. Dies hilft,
-deine Skizze von Anfang an ordentlich zu halten, anstatt nachträglich Korrekturen
-vorzunehmen.
+zeichnest, bietet der Sketcher an, sie an Ort und Stelle zu fixieren. Das
+Pfad-Werkzeug erstellt auch automatisch horizontale und vertikale
+Einschränkungen, wenn Einrast-Hilfslinien während des Zeichnens eine
+Ausrichtung anzeigen. Dies hilft, deine Skizze von Anfang an ordentlich zu
+halten, anstatt nachträglich Korrekturen vorzunehmen.
 
 ### Anzeigen/Verbergen-Steuerung
 

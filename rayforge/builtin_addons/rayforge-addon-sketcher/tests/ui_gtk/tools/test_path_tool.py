@@ -2,6 +2,9 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch
 from sketcher.ui_gtk.tools.path_tool import PathTool
 from sketcher.core.commands.bezier import BezierPreviewState
+from sketcher.core.constraints import HorizontalConstraint, VerticalConstraint
+from sketcher.core.entities import Point as SketchPoint
+from sketcher.core.snap.types import SnapLine, SnapLineType, SnapResult
 
 
 @pytest.fixture
@@ -310,3 +313,230 @@ def test_path_tool_on_hover_motion_skips_when_in_press(
 def test_path_tool_shortcut(path_tool):
     """Test that PathTool has correct shortcut."""
     assert PathTool.SHORTCUTS == ["gp", "gl"]
+
+
+def _setup_line_finalization(path_tool, mock_element, start_id=0):
+    path_tool._press_pos = (100.0, 200.0)
+    path_tool._dragging = False
+    path_tool._snapped_pid = None
+    path_tool._preview_state = BezierPreviewState(
+        start_id=start_id,
+        start_temp=True,
+        end_id=1,
+        end_temp=True,
+        temp_entity_id=2,
+        is_line_preview=True,
+    )
+    start_pt = SketchPoint(start_id, 0.0, 0.0)
+    end_pt = MagicMock(x=100.0, y=0.0)
+
+    def get_point(pid):
+        if pid == start_id:
+            return start_pt
+        return end_pt
+
+    mock_element.sketch.registry.get_point.side_effect = get_point
+    mock_element.sketch.registry._id_counter = 10
+    mock_element.sketch.constraints = []
+    return start_pt
+
+
+@pytest.mark.ui
+def test_auto_constraint_horizontal(path_tool, mock_element):
+    """Line snapped to horizontal guide gets a HorizontalConstraint."""
+    start_pt = _setup_line_finalization(path_tool, mock_element)
+    path_tool.current_snap_result = SnapResult(
+        snapped=True,
+        position=(100.0, 0.0),
+        snap_lines=[
+            SnapLine(
+                is_horizontal=True,
+                coordinate=0.0,
+                line_type=SnapLineType.ENTITY_POINT,
+                source=start_pt,
+            ),
+        ],
+    )
+
+    with patch(
+        "sketcher.ui_gtk.tools.path_tool.BezierCommand.cleanup_preview"
+    ):
+        path_tool.on_release(100.0, 200.0)
+
+        mock_element.execute_command.assert_called_once()
+        cmd = mock_element.execute_command.call_args[0][0]
+        horiz = [
+            c for c in cmd.constraints
+            if isinstance(c, HorizontalConstraint)
+        ]
+        assert len(horiz) == 1
+        assert horiz[0].p1 == 0
+
+
+@pytest.mark.ui
+def test_auto_constraint_vertical(path_tool, mock_element):
+    """Line snapped to vertical guide gets a VerticalConstraint."""
+    start_pt = _setup_line_finalization(path_tool, mock_element)
+    path_tool.current_snap_result = SnapResult(
+        snapped=True,
+        position=(0.0, 100.0),
+        snap_lines=[
+            SnapLine(
+                is_horizontal=False,
+                coordinate=0.0,
+                line_type=SnapLineType.ENTITY_POINT,
+                source=start_pt,
+            ),
+        ],
+    )
+
+    with patch(
+        "sketcher.ui_gtk.tools.path_tool.BezierCommand.cleanup_preview"
+    ):
+        path_tool.on_release(100.0, 200.0)
+
+        mock_element.execute_command.assert_called_once()
+        cmd = mock_element.execute_command.call_args[0][0]
+        vert = [
+            c for c in cmd.constraints
+            if isinstance(c, VerticalConstraint)
+        ]
+        assert len(vert) == 1
+        assert vert[0].p1 == 0
+
+
+@pytest.mark.ui
+def test_auto_constraint_no_snap_no_constraint(
+    path_tool, mock_element
+):
+    """Line without snap result gets no axis constraint."""
+    _setup_line_finalization(path_tool, mock_element)
+    path_tool.current_snap_result = None
+
+    with patch(
+        "sketcher.ui_gtk.tools.path_tool.BezierCommand.cleanup_preview"
+    ):
+        path_tool.on_release(100.0, 200.0)
+
+        mock_element.execute_command.assert_called_once()
+        cmd = mock_element.execute_command.call_args[0][0]
+        axis = [
+            c for c in cmd.constraints
+            if isinstance(c, (HorizontalConstraint, VerticalConstraint))
+        ]
+        assert len(axis) == 0
+
+
+@pytest.mark.ui
+def test_auto_constraint_from_any_existing_point(
+    path_tool, mock_element
+):
+    """Snap line from any point (not just start) creates constraint."""
+    _setup_line_finalization(path_tool, mock_element, start_id=0)
+    other_pt = SketchPoint(99, 50.0, 0.0)
+    mock_element.sketch.constraints = []
+    path_tool.current_snap_result = SnapResult(
+        snapped=True,
+        position=(100.0, 0.0),
+        snap_lines=[
+            SnapLine(
+                is_horizontal=True,
+                coordinate=0.0,
+                line_type=SnapLineType.ENTITY_POINT,
+                source=other_pt,
+            ),
+        ],
+    )
+
+    with patch(
+        "sketcher.ui_gtk.tools.path_tool.BezierCommand.cleanup_preview"
+    ):
+        path_tool.on_release(100.0, 200.0)
+
+        mock_element.execute_command.assert_called_once()
+        cmd = mock_element.execute_command.call_args[0][0]
+        horiz = [
+            c for c in cmd.constraints
+            if isinstance(c, HorizontalConstraint)
+        ]
+        assert len(horiz) == 1
+        assert horiz[0].p1 == 99
+
+
+@pytest.mark.ui
+def test_auto_constraint_skips_duplicate(
+    path_tool, mock_element
+):
+    """Does not add axis constraint if one already exists."""
+    _setup_line_finalization(path_tool, mock_element, start_id=0)
+    start_pt = SketchPoint(0, 0.0, 0.0)
+    existing = [HorizontalConstraint(0, 10)]
+    mock_element.sketch.constraints = existing
+    path_tool.current_snap_result = SnapResult(
+        snapped=True,
+        position=(100.0, 0.0),
+        snap_lines=[
+            SnapLine(
+                is_horizontal=True,
+                coordinate=0.0,
+                line_type=SnapLineType.ENTITY_POINT,
+                source=start_pt,
+            ),
+        ],
+    )
+
+    with patch(
+        "sketcher.ui_gtk.tools.path_tool.BezierCommand.cleanup_preview"
+    ):
+        path_tool.on_release(100.0, 200.0)
+
+        mock_element.execute_command.assert_called_once()
+        cmd = mock_element.execute_command.call_args[0][0]
+        horiz = [
+            c for c in cmd.constraints
+            if isinstance(c, HorizontalConstraint)
+        ]
+        assert len(horiz) == 0
+
+
+@pytest.mark.ui
+def test_auto_constraint_skips_self_constraint(
+    path_tool, mock_element
+):
+    """Does not add constraint where source equals end point."""
+    end_pt = SketchPoint(99, 100.0, 0.0)
+    _setup_line_finalization(path_tool, mock_element, start_id=0)
+    mock_element.sketch.constraints = []
+    path_tool._snapped_pid = 99
+
+    def get_point(pid):
+        if pid == 0:
+            return SketchPoint(0, 0.0, 0.0)
+        return end_pt
+
+    mock_element.sketch.registry.get_point.side_effect = get_point
+    path_tool.current_snap_result = SnapResult(
+        snapped=True,
+        position=(100.0, 0.0),
+        snap_lines=[
+            SnapLine(
+                is_horizontal=True,
+                coordinate=0.0,
+                line_type=SnapLineType.ENTITY_POINT,
+                source=end_pt,
+            ),
+        ],
+    )
+
+    with patch(
+        "sketcher.ui_gtk.tools.path_tool.BezierCommand.cleanup_preview"
+    ):
+        path_tool.on_release(100.0, 200.0)
+
+        mock_element.execute_command.assert_called_once()
+        cmd = mock_element.execute_command.call_args[0][0]
+        axis = [
+            c for c in cmd.constraints
+            if isinstance(c, (HorizontalConstraint, VerticalConstraint))
+        ]
+        assert len(axis) == 0

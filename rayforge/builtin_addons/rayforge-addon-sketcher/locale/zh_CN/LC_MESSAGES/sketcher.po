@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 14:52+0200\n"
+"POT-Creation-Date: 2026-05-02 14:59+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -546,6 +546,10 @@ msgstr "删除约束"
 #: sketcher/ui_gtk/conflicts_widget.py
 msgid "Delete Constraint"
 msgstr "删除约束"
+
+#: sketcher/ui_gtk/property_provider.py
+msgid "No parameters"
+msgstr "无参数"
 
 #: sketcher/ui_gtk/property_provider.py
 msgid "Mixed Values"

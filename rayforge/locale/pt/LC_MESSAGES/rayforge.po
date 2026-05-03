@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-01 00:35+0200\n"
+"POT-Creation-Date: 2026-05-02 13:32+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -218,6 +218,8 @@ msgid "Serial Port"
 msgstr "Porta Serial"
 
 #: rayforge/core/capability.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/ui_gtk/doceditor/layer_column.py
 msgid "Cut"
 msgstr "Cortar"
 
@@ -1414,6 +1416,18 @@ msgstr ""
 "Não foi possível conectar ao host '{host}'. Verifique o endereço IP e a "
 "conexão de rede."
 
+#: rayforge/machine/sanity/result.py rayforge/machine/models/zone.py
+msgid "No-Go Zone"
+msgstr "Zona proibida"
+
+#: rayforge/machine/sanity/result.py
+msgid "Outside Work Area"
+msgstr "Fora da área de trabalho"
+
+#: rayforge/machine/sanity/result.py
+msgid "Machine Extent"
+msgstr "Limites da máquina"
+
 #: rayforge/machine/device/profile.py
 #, python-brace-format
 msgid "{name} (device dialect)"
@@ -1439,10 +1453,6 @@ msgstr "Máquina Padrão"
 #: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Rotary Module"
 msgstr "Módulo rotativo"
-
-#: rayforge/machine/models/zone.py
-msgid "No-Go Zone"
-msgstr "Zona proibida"
 
 #: rayforge/machine/models/controller.py
 msgid "No driver selected for this machine."
@@ -1879,8 +1889,10 @@ msgstr "Cancelar"
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
+#: rayforge/ui_gtk/doceditor/layer_column.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Delete"
 msgstr "Excluir"
@@ -2325,16 +2337,25 @@ msgid "Remove Tab"
 msgstr "Remover Aba de Fixação"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
 msgid "New Sketch"
 msgstr "Novo esboço"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
 msgid "New Stock"
 msgstr "Novo material"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
 msgid "Import File…"
 msgstr "Importar arquivo…"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/ui_gtk/doceditor/layer_column.py
+msgid "Paste"
+msgstr "Colar"
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid "Drop files to import"
@@ -4857,6 +4878,46 @@ msgstr "Selecionar modelo"
 msgid "Select"
 msgstr "Selecionar"
 
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "Job Sanity Check"
+msgstr "Verificação do trabalho"
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py rayforge/ui_gtk/project_cmd.py
+msgid "_Cancel"
+msgstr "_Cancelar"
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "_Proceed"
+msgstr "_Continuar"
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "{} error(s)"
+msgstr "{} erro(s)"
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "{} warning(s)"
+msgstr "{} aviso(s)"
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "No issues found."
+msgstr "Nenhum problema encontrado."
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+#, python-brace-format
+msgid ""
+"Found {summary}. Proceeding may cause damage to your machine or workpiece."
+msgstr ""
+"Encontrado(s) {summary}. Continuar pode causar danos à sua máquina ou peça "
+"de trabalho."
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "Errors"
+msgstr "Erros"
+
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "Warnings"
+msgstr "Avisos"
+
 #: rayforge/ui_gtk/main_menu.py
 msgid "New"
 msgstr "Novo"
@@ -4902,15 +4963,13 @@ msgstr "Desfazer"
 msgid "Redo"
 msgstr "Refazer"
 
-#: rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/ui_gtk/doceditor/layer_column.py
 msgid "Copy"
 msgstr "Copiar"
 
-#: rayforge/ui_gtk/main_menu.py
-msgid "Paste"
-msgstr "Colar"
-
-#: rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/ui_gtk/doceditor/layer_column.py
 msgid "Duplicate"
 msgstr "Duplicar"
 
@@ -5163,26 +5222,6 @@ msgid "Pause machine"
 msgstr "Pausar máquina"
 
 #: rayforge/ui_gtk/mainwindow.py
-msgid "No-Go Zone Collision"
-msgstr "Colisão de zona proibida"
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid ""
-"The toolpath enters one or more enabled no-go zones. Proceeding may cause "
-"damage to your machine or workpiece."
-msgstr ""
-"A trajetória da ferramenta entra em uma ou mais zonas proibidas ativadas. "
-"Prosseguir pode causar danos à sua máquina ou peça de trabalho."
-
-#: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/project_cmd.py
-msgid "_Cancel"
-msgstr "_Cancelar"
-
-#: rayforge/ui_gtk/mainwindow.py
-msgid "_Proceed"
-msgstr "_Continuar"
-
-#: rayforge/ui_gtk/mainwindow.py
 msgid "Please select a single object to export."
 msgstr "Por favor, selecione um único objeto para exportar."
 
@@ -5333,6 +5372,34 @@ msgstr "Adicionar Recurso"
 #: rayforge/ui_gtk/doceditor/asset_browser.py
 msgid "Add Sketch"
 msgstr "Adicionar esboço"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Create New Workpiece"
+msgstr "Criar nova peça de trabalho"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Cut asset(s)"
+msgstr "Cortar elemento(s)"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Cut asset"
+msgstr "Cortar elemento"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Paste asset(s)"
+msgstr "Colar elemento(s)"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Paste asset"
+msgstr "Colar elemento"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Duplicate asset(s)"
+msgstr "Duplicar elemento(s)"
+
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+msgid "Duplicate asset"
+msgstr "Duplicar elemento"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Map to Existing"

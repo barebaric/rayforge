@@ -32,6 +32,7 @@ TARGETS = {
     "addon:projector-mode": "projector_mode",
     "bottom-panel:console": "bottom_panel",
     "bottom-panel:layers": "bottom_panel",
+    "add-machine-dialog": "add_machine_dialog",
     "import-dialog": "import_dialog",
     "machine-settings:general": "machine_settings_general",
     "machine-settings:hardware": "machine_settings_hardware",
@@ -45,6 +46,10 @@ TARGETS = {
     "machine-settings:maintenance": "machine_settings_maintenance",
     "machine-settings:nogo-zones": "machine_settings_nogo_zones",
     "material-test": "material_test",
+    "recipe-editor:general": "recipe_editor_general",
+    "recipe-editor:applicability": "recipe_editor_applicability",
+    "recipe-editor:settings": "recipe_editor_settings",
+    "sanity-check": "sanity_check",
     "step-settings:contour:general": "step_settings",
     "step-settings:contour:post": "step_settings",
     "step-settings:engrave:general:constant_power": "step_settings",
@@ -56,9 +61,6 @@ TARGETS = {
     "step-settings:frame-outline:post": "step_settings",
     "step-settings:shrink-wrap:general": "step_settings",
     "step-settings:shrink-wrap:post": "step_settings",
-    "recipe-editor:general": "recipe_editor_general",
-    "recipe-editor:applicability": "recipe_editor_applicability",
-    "recipe-editor:settings": "recipe_editor_settings",
 }
 
 

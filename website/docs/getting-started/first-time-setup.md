@@ -14,14 +14,15 @@ Start Rayforge from your application menu or by running `rayforge` in a terminal
 
 Navigate to **Settings → Machines** or press <kbd>ctrl+comma</kbd> to open the settings dialog, then select the **Machines** page.
 
-Click **Add Machine** to create a new machine. You can either:
+![Machine Settings](/screenshots/application-machines.png)
 
-1. **Choose a built-in profile** - Select from predefined machine templates
-2. **Select "Custom"** - Start with a blank configuration
+Click **Add Machine** to create a new machine. Select a device profile from
+the list to use as a template — each profile pre-configures the machine
+settings and G-code dialect.
+
+![Add Machine Dialog](/screenshots/add-machine-dialog.png)
 
 After selecting, the Machine Settings dialog opens for your new machine.
-
-![Machine Settings](/screenshots/application-machines.png)
 
 ## Step 3: Configure General Settings
 

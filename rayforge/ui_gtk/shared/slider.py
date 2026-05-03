@@ -1,3 +1,4 @@
+import locale
 from gi.repository import Gtk, Adw
 from typing import Callable, Optional
 
@@ -63,7 +64,7 @@ def create_slider_row(
         apply_css(_SLIDER_VALUE_ENTRY_CSS)
 
         def format_value(val):
-            text = f"%.{digits}f" % val
+            text = locale.format_string(f"%.{digits}f", val)
             if format_suffix:
                 text += format_suffix
             return text
@@ -79,7 +80,7 @@ def create_slider_row(
             if format_suffix and text.endswith(format_suffix):
                 text = text[: -len(format_suffix)]
             try:
-                adjustment.set_value(float(text))
+                adjustment.set_value(locale.atof(text))
             except ValueError:
                 update_entry(scale)
 

@@ -16,9 +16,9 @@ Accede a la vista 3D:
 
 ### Controles del Ratón
 
-- **Rotar**: Clic izquierdo y arrastrar
-- **Desplazar**: Clic derecho y arrastrar, o clic central y arrastrar
-- **Zoom**: Rueda de desplazamiento, o <kbd>ctrl</kbd> + clic izquierdo y arrastrar
+- **Rotar**: Clic izquierdo y arrastrar (eje Z), clic central y arrastrar (órbita de 3 ejes)
+- **Desplazar**: <kbd>shift</kbd> + clic central y arrastrar
+- **Zoom**: Rueda de desplazamiento
 
 ### Preajustes de Vista
 
@@ -127,11 +127,14 @@ Alterna la visibilidad de capas individuales:
 Antes de enviar a la máquina, verifica:
 
 - [ ] La trayectoria está completa sin segmentos faltantes
-- [ ] Las trayectorias permanecen dentro del área de trabajo de la máquina
 - [ ] Las operaciones de grabado se ejecutan antes que los cortes
-- [ ] Ninguna trayectoria entra en una zona prohibida
 - [ ] El trabajo comienza en la posición esperada
 - [ ] Las pestañas de sujeción están en las ubicaciones correctas
+
+Algunas comprobaciones adicionales se realizan automáticamente. Cuando ejecutas o
+exportas un trabajo, Rayforge ejecuta [comprobaciones de sanity](../features/sanity-checks)
+que verifican los límites de la máquina, las fronteras del área de trabajo y las
+colisiones con zonas prohibidas.
 
 ## Consejos de Rendimiento
 

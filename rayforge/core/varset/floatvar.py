@@ -79,8 +79,10 @@ class SliderFloatVar(FloatVar):
         max_val: Optional[float] = None,
         extra_validator: Optional[Callable[[float], None]] = None,
         show_value: bool = True,
+        format_suffix: Optional[str] = None,
     ):
         self.show_value = show_value
+        self.format_suffix = format_suffix
         super().__init__(
             key=key,
             label=label,
@@ -94,5 +96,10 @@ class SliderFloatVar(FloatVar):
 
     def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
         data = super().to_dict(include_value=include_value)
-        data.update({"show_value": self.show_value})
+        data.update(
+            {
+                "show_value": self.show_value,
+                "format_suffix": self.format_suffix,
+            }
+        )
         return data

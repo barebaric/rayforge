@@ -61,6 +61,15 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         content.set_margin_top(12)
 
+        self.search_entry = Gtk.SearchEntry()
+        self.search_entry.set_placeholder_text(
+            _("Search devices…")
+        )
+        self.search_entry.connect(
+            "search-changed", lambda *_: self._filter_and_populate_list()
+        )
+        content.append(self.search_entry)
+
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_policy(
             Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC
@@ -82,18 +91,25 @@ class MachineProfileSelectorDialog(Adw.MessageDialog):
         import_button.set_halign(Gtk.Align.END)
         content.append(import_button)
 
-        self._populate_profile_list()
-
         self.set_extra_child(content)
 
         self.add_response("cancel", _("Cancel"))
         self.set_default_response("cancel")
 
-    def _populate_profile_list(self):
-        """Fills the list box with available device profiles."""
-        profiles = get_context().device_profile_mgr.get_all()
+        self._all_profiles = get_context().device_profile_mgr.get_all()
+        self._filter_and_populate_list()
 
-        for pkg in profiles:
+    def _filter_and_populate_list(self):
+        """Clears and repopulates the list based on search text."""
+        search_text = self.search_entry.get_text().lower()
+
+        while child := self.profile_list_box.get_row_at_index(0):
+            self.profile_list_box.remove(child)
+
+        for pkg in self._all_profiles:
+            if search_text and search_text not in pkg.name.lower() \
+               and search_text not in pkg.meta.description.lower():
+                continue
             row = self._ProfileRow(
                 profile=pkg,
                 title=pkg.name,

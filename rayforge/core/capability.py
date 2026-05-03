@@ -154,6 +154,7 @@ class CutCapability(Capability):
                     min_val=0.0,
                     max_val=1.0,
                     show_value=True,
+                    format_suffix="%",
                 ),
                 SliderFloatVar(
                     key="tab_power",
@@ -165,6 +166,7 @@ class CutCapability(Capability):
                     min_val=0.0,
                     max_val=1.0,
                     show_value=True,
+                    format_suffix="%",
                 ),
                 SpeedVar(
                     key="cut_speed",
@@ -212,6 +214,7 @@ class EngraveCapability(Capability):
                     min_val=0.0,
                     max_val=1.0,
                     show_value=True,
+                    format_suffix="%",
                 ),
                 SpeedVar(
                     key="cut_speed",
@@ -259,6 +262,7 @@ class ScoreCapability(Capability):
                     min_val=0.0,
                     max_val=1.0,
                     show_value=True,
+                    format_suffix="%",
                 ),
                 SpeedVar(
                     key="cut_speed",

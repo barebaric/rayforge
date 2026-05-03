@@ -17,6 +17,9 @@ marcada con un icono de verificación.
 2. Selecciona un perfil de dispositivo de la lista para usarlo como
    plantilla — cada perfil preconfigura los ajustes de la máquina y el
    dialecto de G-code
+
+![Añadir Máquina](/screenshots/add-machine-dialog.png)
+
 3. Se abre el [diálogo de ajustes de máquina](../machine/general) donde
    puedes ajustar la configuración
 

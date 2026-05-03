@@ -4,6 +4,7 @@ import asyncio
 import os
 import serial
 import threading
+import time
 from typing import Optional, List
 from serial.tools import list_ports
 from gettext import gettext as _
@@ -155,7 +156,7 @@ class SerialTransport(Transport):
             1843200,
         ]
 
-    _READ_TIMEOUT = 0.5
+    _READ_TIMEOUT = 0.3
 
     def __init__(self, port: str, baudrate: int):
         """
@@ -187,6 +188,7 @@ class SerialTransport(Transport):
                 port=self.port,
                 baudrate=self.baudrate,
                 timeout=self._READ_TIMEOUT,
+                exclusive=True,
             )
             logger.debug("serial.Serial opened successfully.")
             self._running = True
@@ -241,19 +243,39 @@ class SerialTransport(Transport):
 
     async def send(self, data: bytes) -> None:
         """
-        Write data to serial port.
+        Write data to serial port and flush to ensure physical
+        transmission.
+
+        Without flush, data may sit in the kernel TTY buffer
+        indefinitely.  This causes GRBL to never receive commands
+        while the host believes they were sent, leading to false
+        deadlock detection.  When the deadlock recovery eventually
+        writes more data, the entire buffered payload is flushed at
+        once, overflowing the device's small RX buffer and causing
+        error responses.
         """
         if not self._serial:
             raise ConnectionError("Serial port not open")
+        assert self._loop is not None
         logger.debug(f"Sending data: {data!r}")
+
         try:
-            self._serial.write(data)
+            # Offloading to an executor prevents blocking C-level calls
+            # from tying up the asyncio event loop thread, which can cause
+            # deferred OS/kernel execution of the actual transmission.
+            await self._loop.run_in_executor(None, self._sync_send, data)
         except (serial.SerialException, OSError) as e:
             # Wrap low-level serial errors as ConnectionError so drivers
             # can handle them gracefully
             raise ConnectionError(
                 f"Failed to write to serial port: {e}"
             ) from e
+
+    def _sync_send(self, data: bytes) -> None:
+        """Synchronous wrapper for blocking write and flush operations."""
+        if self._serial:
+            self._serial.write(data)
+            self._serial.flush()
 
     async def purge(self) -> None:
         """
@@ -333,6 +355,12 @@ class SerialTransport(Transport):
                 break
 
             if not data:
+                # Yield to the OS to allow USB drivers to flush the
+                # transmit queue.
+                # Without this yield, the continuous blocking read loop can
+                # hold a hardware lock that prevents the OS TX buffer from
+                # physically transmitting data.
+                time.sleep(0.005)
                 continue
 
             logger.debug(f"Received data: {data!r}")

@@ -39,6 +39,14 @@ zu ändern. Ebenen werden von links nach rechts verarbeitet. Du kannst
 Werkstücke innerhalb einer Ebene können per Drag-and-Drop neu angeordnet
 werden, um ihre Z-Reihenfolge zu steuern.
 
+Du kannst mehrere Werkstücke mit **Strg+Klick** auswählen, um einzelne
+Elemente umzuschalten, oder **Umschalt+Klick**, um einen Bereich
+auszuwählen. Das Ziehen einer Auswahl verschiebt alle ausgewählten
+Elemente gleichzeitig.
+
+Ausgewählte Werkstücke werden in der Ebenenspalte hervorgehoben, und die
+Auswahl bleibt mit der Canvas synchronisiert.
+
 ### Ebene löschen
 
 Wähle die Ebene aus und klicke auf die Löschen-Schaltfläche. Alle
@@ -96,10 +104,16 @@ Schaltern, um auszuwählen, welche importiert werden sollen.
 ## Werkstücke Ebenen zuordnen
 
 **Drag-and-Drop:** Wähle Werkstück(e) auf der Arbeitsfläche oder im
-Dokument-Panel aus und ziehe sie auf die Zielebene.
+Ebenen-Panel aus und ziehe sie auf die Zielebene. Mehrfachauswahl mit
+Strg+Klick und Umschalt+Klick wird unterstützt, und du kannst Elemente
+über Ebenen hinweg ziehen.
 
 **Ausschneiden und Einfügen:** Schneide ein Werkstück aus der aktuellen
 Ebene aus (Ctrl+X), wähle die Zielebene und füge es ein (Ctrl+V).
+
+**Kontextmenü:** Rechtsklicke auf ein Werkstück im Ebenen-Tab, um ein
+Kontextmenü mit Optionen zu öffnen, um es in eine andere Ebene zu
+verschieben, zu löschen oder seine Eigenschaften zu öffnen.
 
 ## Ausführungsreihenfolge
 
@@ -118,3 +132,4 @@ Gravur an ihrem Platz bleiben.
 - [Makros & Hooks](../machine/hooks-macros) - Ebenenbezogene Hooks
   zur Automatisierung
 - [3D-Vorschau](../ui/3d-preview) - Ebenen-Stack visualisieren
+- [Asset-Browser](../ui/bottom-panel) - Assets mit Kontextmenüs verwalten

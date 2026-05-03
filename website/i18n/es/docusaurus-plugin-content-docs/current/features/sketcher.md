@@ -222,7 +222,10 @@ cerca de un objetivo de ajuste.
 
 Muchas herramientas de dibujo aplican restricciones automáticamente al crear
 geometría. Por ejemplo, al dibujar una línea cerca de la horizontal o vertical,
-el diseñador ofrecerá bloquearla en su posición. Esto ayuda a mantener el boceto
+el diseñador ofrecerá bloquearla en su posición. La herramienta de
+trazado también crea restricciones horizontales y verticales
+automáticamente cuando las guías de ajuste muestran alineación durante el
+dibujo. Esto ayuda a mantener el boceto
 ordenado desde el principio, en lugar de corregirlo después.
 
 ### Controles de mostrar/ocultar

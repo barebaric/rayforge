@@ -16,9 +16,9 @@ Accéde à la vue 3D :
 
 ### Contrôles de la souris
 
-- **Rotation** : Clic gauche et glisser
-- **Panoramique** : Clic droit et glisser, ou clic milieu et glisser
-- **Zoom** : Molette de défilement, ou <kbd>ctrl</kbd> + clic gauche et glisser
+- **Rotation** : Clic gauche et glisser (axe Z), clic milieu et glisser (orbite 3 axes)
+- **Panoramique** : <kbd>shift</kbd> + clic milieu et glisser
+- **Zoom** : Molette de défilement
 
 ### Présélections de vue
 
@@ -129,11 +129,15 @@ Bascule la visibilité des calques individuels :
 Avant d'envoyer à la machine, vérifie :
 
 - [ ] Le trajet d'outil est complet sans segments manquants
-- [ ] Les parcours restent dans la zone de travail de la machine
 - [ ] Les opérations de gravure s'exécutent avant les coupes
-- [ ] Aucun trajet d'outil n'entre dans une zone interdite
 - [ ] Le travail commence à la position attendue
 - [ ] Les onglets de maintien sont aux bons emplacements
+
+Certaines vérifications supplémentaires sont effectuées automatiquement.
+Lorsque tu exécutes ou exportes un travail, Rayforge effectue des
+[vérifications de cohérence](../features/sanity-checks) qui vérifient les
+limites de la machine, les contours de la zone de travail et les collisions
+avec les zones interdites.
 
 ## Conseils de performance
 
