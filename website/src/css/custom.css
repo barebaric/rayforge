@@ -740,6 +740,11 @@ html[data-theme='dark'] .theme-doc-markdown {
   text-decoration: none;
 }
 
+.theme-doc-markdown a.button,
+.theme-doc-markdown a.button:hover {
+  text-decoration: none !important;
+}
+
 .theme-doc-markdown h1,
 .theme-doc-markdown h2,
 .theme-doc-markdown h3,
