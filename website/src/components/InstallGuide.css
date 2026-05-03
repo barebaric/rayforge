@@ -172,10 +172,14 @@
   background: #ebecec;
 }
 
+[data-theme='light'] .install-troubleshoot {
+  background: #ebecec;
+}
+
 [data-theme='dark'] .install-step {
   background: #252528;
 }
 
 [data-theme='dark'] .install-troubleshoot {
-  background: var(--ifm-color-emphasis-200);
+  background: #252528;
 }
