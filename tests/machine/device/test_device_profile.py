@@ -610,6 +610,7 @@ class TestExportMachine:
         machine.name = name
         machine.driver_name = "GrblSerialDriver"
         machine.driver_args = {}
+        machine.driver_config = {}
         machine.axis_extents = (300.0, 200.0)
         machine.origin = Origin.BOTTOM_LEFT
         machine.supports_arcs = True
