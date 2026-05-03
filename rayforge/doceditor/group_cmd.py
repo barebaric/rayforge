@@ -3,18 +3,18 @@ import asyncio
 from typing import TYPE_CHECKING, List, Dict, Optional
 from collections import defaultdict
 from gettext import gettext as _
-from ..core.undo.command import Command
+from ..core.group import Group, GroupingResult
 from ..core.item import DocItem
 from ..core.layer import Layer
-from ..core.group import Group, GroupingResult
 from ..core.matrix import Matrix
+from ..core.undo.command import Command
 
 if TYPE_CHECKING:
-    from .editor import DocEditor
     from ..pipeline.pipeline import Pipeline
-    from ..shared.tasker.manager import TaskManager
     from ..shared.tasker.context import ExecutionContext
+    from ..shared.tasker.manager import TaskManager
     from ..shared.tasker.task import Task
+    from .editor import DocEditor
 
 logger = logging.getLogger(__name__)
 

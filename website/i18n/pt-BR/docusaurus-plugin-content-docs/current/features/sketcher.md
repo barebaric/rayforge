@@ -229,7 +229,9 @@ está próximo de um alvo de snap.
 
 Muitas ferramentas de desenho aplicam restrições automaticamente ao criar
 geometria. Por exemplo, ao desenhar uma linha próxima à horizontal ou vertical,
-o esboçador oferecerá para travá-la no lugar. Isso ajuda a manter seu esboço
+o esboçador oferecerá para travá-la no lugar. A ferramenta de caminho
+também cria restrições horizontais e verticais automaticamente quando as
+guias de snap mostram alinhamento durante o desenho. Isso ajuda a manter seu esboço
 organizado desde o início, em vez de corrigir as coisas depois.
 
 ### Controles mostrar/ocultar

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-20 14:52+0200\n"
+"POT-Creation-Date: 2026-05-02 14:59+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -547,6 +547,10 @@ msgstr "Видалити обмеження"
 #: sketcher/ui_gtk/conflicts_widget.py
 msgid "Delete Constraint"
 msgstr "Видалити обмеження"
+
+#: sketcher/ui_gtk/property_provider.py
+msgid "No parameters"
+msgstr "Немає параметрів"
 
 #: sketcher/ui_gtk/property_provider.py
 msgid "Mixed Values"

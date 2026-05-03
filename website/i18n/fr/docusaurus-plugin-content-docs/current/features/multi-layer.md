@@ -38,7 +38,12 @@ liste des calques.
 ### Réorganiser les pièces
 
 Les pièces au sein d'un calque peuvent être réorganisées par
-glisser-déposer pour contrôler leur ordre Z.
+glisser-déposer pour contrôler leur ordre Z. Vous pouvez sélectionner
+plusieurs pièces avec **Ctrl+clic** pour basculer des éléments
+individuels, ou **Maj+clic** pour sélectionner une plage. Glisser une
+sélection déplace tous les éléments sélectionnés en une seule fois. Les
+pièces sélectionnées sont mises en surbrillance dans la colonne du calque
+et la sélection reste synchronisée avec le canevas.
 
 ### Supprimer un calque
 
@@ -99,10 +104,16 @@ importer.
 ## Assigner des pièces aux calques
 
 **Glisser-déposer :** Sélectionnez les pièce(s) sur le canevas ou dans
-le panneau de document et glissez-les vers le calque cible.
+le panneau des calques et glissez-les vers le calque cible. La
+multi-sélection avec Ctrl+clic et Maj+clic est prise en charge, et vous
+pouvez glisser des éléments entre les calques.
 
 **Couper-coller :** Coupez une pièce du calque actuel (Ctrl+X),
 sélectionnez le calque cible et collez (Ctrl+V).
+
+**Menu contextuel :** Faites un clic droit sur une pièce dans l'onglet
+des calques pour ouvrir un menu contextuel avec des options pour la
+déplacer vers un autre calque, la supprimer ou ouvrir ses propriétés.
 
 ## Ordre d'exécution
 
@@ -120,4 +131,5 @@ pendant la gravure.
   multi-calques
 - [Macros et Hooks](../machine/hooks-macros) - Hooks au niveau du
   calque pour l'automatisation
+- [Navigateur d'actifs](../ui/bottom-panel) - Gérer les actifs avec les menus contextuels
 - [Aperçu 3D](../ui/3d-preview) - Visualiser la pile de calques

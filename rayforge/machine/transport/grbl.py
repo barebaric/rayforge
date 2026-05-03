@@ -1,4 +1,5 @@
 import asyncio
+import re
 import threading
 import logging
 from typing import Optional, NamedTuple, List
@@ -51,6 +52,8 @@ class GrblSerialTransport:
     Thread-safe: the buffer count is mutated from both async tasks and
     the serial receive callback.
     """
+
+    _ok_ack_re = re.compile(rb"ok\r+\n")
 
     def __init__(self, transport: Transport):
         self._transport = transport
@@ -129,23 +132,29 @@ class GrblSerialTransport:
 
     def _extract_acks_from_buffer(self, responses):
         """
-        Scan _status_buffer for 'ok\\r\\n' and 'error:...\\r\\n'
+        Scan _status_buffer for 'ok\\r+\\n' and 'error:...\\r+\\n'
         patterns and extract them before line-based processing.
 
         This ensures buffer accounting is always correct, even when
         the firmware interleaves these responses into other messages.
         Also detects NULL-byte corrupted 'ok' responses as a hardware
         fault indicator.
+
+        Handles \\r\\r\\n line endings that some serial layers
+        produce by collapsing double-CR sequences.
         """
-        ok_marker = b"ok\r\n"
-        while ok_marker in self._status_buffer:
-            idx = self._status_buffer.index(ok_marker)
+        while True:
+            m = self._ok_ack_re.search(self._status_buffer)
+            if m is None:
+                break
             self._status_buffer = (
-                self._status_buffer[:idx]
-                + self._status_buffer[idx + len(ok_marker) :]
+                self._status_buffer[: m.start()]
+                + self._status_buffer[m.end() :]
             )
             pending = self._ack_ok()
-            responses.append(GrblResponse(GrblResponseType.OK, "ok", pending))
+            responses.append(
+                GrblResponse(GrblResponseType.OK, "ok", pending)
+            )
 
         # Detect NULL-byte corrupted 'ok' (hardware fault)
         null_ok = self._find_null_corrupted_ok()
@@ -192,7 +201,7 @@ class GrblSerialTransport:
     def _find_null_corrupted_ok(self):
         """
         Search _status_buffer for a pattern like
-        b'o\\x00k\\r\\n' where NULL bytes are interspersed
+        b'o\\x00k\\r+\\n' where NULL bytes are interspersed
         in 'ok'. Returns (start, end) indices or None.
         """
         buf = self._status_buffer
@@ -205,12 +214,13 @@ class GrblSerialTransport:
                 if (
                     j < len(buf)
                     and buf[j] == ord(b"k")
-                    and j + 2 < len(buf)
-                    and buf[j + 1] == ord(b"\r")
-                    and buf[j + 2] == ord(b"\n")
                     and j > i + 1
                 ):
-                    return (i, j + 3)
+                    k = j + 1
+                    while k < len(buf) and buf[k] == ord(b"\r"):
+                        k += 1
+                    if k < len(buf) and buf[k] == ord(b"\n"):
+                        return (i, k + 1)
             i += 1
         return None
 

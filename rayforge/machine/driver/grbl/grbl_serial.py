@@ -81,6 +81,7 @@ class GrblSerialDriver(Driver):
         self._command_queue: asyncio.Queue[CommandRequest] = asyncio.Queue()
         self._command_task: Optional[asyncio.Task] = None
         self._is_cancelled = False
+        self._raw_grbl_status: DeviceStatus = DeviceStatus.UNKNOWN
         self._job_running = False
         self._on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
@@ -527,6 +528,11 @@ class GrblSerialDriver(Driver):
         logger.info("Deadlock recovery: sending G4 P0.01 to drain planner.")
         try:
             async with self._cmd_lock:
+                if (
+                    not self.grbl_transport
+                    or not self.grbl_transport.is_connected
+                ):
+                    return
                 dwell = b"G4 P0.01\n"
                 await transport.send_gcode(dwell)
                 logger.debug(f"TX: {dwell!r} (deadlock recovery)")
@@ -543,6 +549,61 @@ class GrblSerialDriver(Driver):
             transport.reset()
         except (ConnectionError, OSError) as e:
             logger.warning(f"Deadlock recovery failed: {e}")
+
+    def _is_grbl_idle_or_desynced(self, transport) -> bool:
+        """
+        Check if GRBL is actually idle or buffer tracking has
+        desynchronized.
+
+        During jobs, the IDLE status is overridden to RUN for the
+        UI, so ``self.state.status == IDLE`` is never true.  Instead
+        we check: (1) the raw GRBL status before the override, (2)
+        whether GRBL reports full buffer availability while we still
+        have pending commands, or (3) whether a non-busy raw status
+        (IDLE/HOLD) has been seen repeatedly with a non-empty
+        pending queue — indicating a desync even without ``Bf:``.
+        """
+        if self.state.status == DeviceStatus.IDLE:
+            return True
+        if self._raw_grbl_status in (
+            DeviceStatus.IDLE,
+            DeviceStatus.HOLD,
+        ):
+            return True
+        buf_avail = self.state.buffer_available
+        if buf_avail is not None and transport._rx_buffer_size > 0:
+            if buf_avail >= transport._rx_buffer_size:
+                return True
+        return False
+
+    async def _poll_and_check_idle(self, transport) -> bool:
+        """
+        Send a realtime status poll and check if GRBL is idle.
+
+        Resets ``_raw_grbl_status`` to UNKNOWN, sends a ``?`` poll
+        (which bypasses the RX buffer), and waits briefly for a
+        fresh status report.  Returns True only if the fresh
+        response confirms GRBL is idle or buffer-desynchronized.
+
+        This avoids false deadlock detection when status polling is
+        disabled during jobs and ``_raw_grbl_status`` is stale.
+        """
+        self._raw_grbl_status = DeviceStatus.UNKNOWN
+        try:
+            async with self._cmd_lock:
+                if (
+                    not self.grbl_transport
+                    or not self.grbl_transport.is_connected
+                ):
+                    return False
+                await transport.send_poll(b"?")
+        except (ConnectionError, OSError):
+            return False
+        for _attempt in range(10):
+            await asyncio.sleep(0.1)
+            if self._raw_grbl_status != DeviceStatus.UNKNOWN:
+                break
+        return self._is_grbl_idle_or_desynced(transport)
 
     async def _wait_for_buffer_space(
         self, transport, command_len: int, timeout: float
@@ -561,7 +622,13 @@ class GrblSerialDriver(Driver):
                     transport.wait_for_space(), timeout=timeout
                 )
             except asyncio.TimeoutError:
-                if self.state.status == DeviceStatus.IDLE:
+                if await self._poll_and_check_idle(transport):
+                    if not transport.needs_space(command_len):
+                        logger.info(
+                            "Buffer freed during status poll. "
+                            "Continuing streaming."
+                        )
+                        continue
                     logger.warning(
                         "Deadlock detected during streaming. "
                         "Attempting G4 P0.01 recovery."
@@ -631,7 +698,12 @@ class GrblSerialDriver(Driver):
                 logger.debug("All 'ok' responses received.")
                 break
             except asyncio.TimeoutError:
-                if self.state.status == DeviceStatus.IDLE:
+                if await self._poll_and_check_idle(transport):
+                    if transport.pending_queue.empty():
+                        logger.info(
+                            "Pending acks resolved during status poll."
+                        )
+                        break
                     logger.warning(
                         "Deadlock detected at end of job. "
                         "Attempting G4 P0.01 recovery."
@@ -732,6 +804,7 @@ class GrblSerialDriver(Driver):
             if isinstance(e, asyncio.CancelledError):
                 raise
         finally:
+            self._raw_grbl_status = DeviceStatus.UNKNOWN
             self._job_running = False
             self._on_command_done = None
             if job_completed_successfully:
@@ -1254,6 +1327,8 @@ class GrblSerialDriver(Driver):
         state = parse_state(
             report, self.state, lambda message: logger.info(message)
         )
+
+        self._raw_grbl_status = state.status
 
         # If a job is active, 'Idle' state between commands should be
         # reported as 'Run' to the UI.

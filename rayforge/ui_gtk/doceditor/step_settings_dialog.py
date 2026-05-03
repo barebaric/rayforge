@@ -129,6 +129,8 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
             return
 
         selected_index = combo_row.get_selected()
+        if selected_index >= len(machine.heads):
+            return
         selected_laser = machine.heads[selected_index]
         new_uid = selected_laser.uid
 

@@ -276,6 +276,12 @@ Cuando la lista de activos está vacía, muestra botones para añadir material o
 un nuevo bosquejo. Puedes arrastrar activos desde esta lista al lienzo para
 colocarlos. Hacer doble clic en un activo de material abre sus propiedades.
 
+Hacer clic derecho en un activo abre un menú contextual con opciones para
+crear una nueva pieza de trabajo a partir del activo, duplicarlo, copiarlo,
+cortarlo o eliminarlo. Hacer clic derecho en un espacio vacío en la lista de
+activos ofrece opciones para crear un nuevo bosquejo, añadir material,
+importar un archivo o pegar desde el portapapeles.
+
 Cuando la pestaña de Consola o Visor de Código G está activa, también puedes presionar
 <kbd>Ctrl+F</kbd> para buscar dentro del contenido.
 

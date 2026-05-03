@@ -5,6 +5,37 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.7.0-beta2
+
+### Added
+
+- Job sanity check system that reports machine extent violations, workarea
+  violations, and no-go zone collisions before sending or exporting
+- Device profiles for 10 popular laser cutters: Ortur LM3/LM4, Atomstack
+  X40 Pro/A70, TwoTrees TTS-55, NEJE Master 3 Max, Creality Falcon 2 Pro,
+  OMTech Polar 50W, Longer Ray5, and Thunder Laser Nova 35
+- Context menus for workpieces in the layer tab (move, delete, properties)
+- Context menus in the asset browser with copy, cut, paste, and duplicate
+- Paste action in the canvas background context menu
+- Visual selection state in layer columns synced with the canvas
+- Multi-item selection with Ctrl-click, Shift-click range, and cross-layer
+  drag
+- Horizontal and vertical auto-constraints from snap guides in the sketcher
+  path tool
+- Sketch parameters shown as a separate preferences group in the properties
+  panel
+- Locale-aware number formatting in sliders
+
+### Fixed
+
+- GRBL buffer deadlock from lost ok responses on \r\r\n line endings
+- Wrong visibility icon for initially invisible layers
+- IndexError when laser combo selection is out of sync with machine heads
+- AttributeError on startup from early view_stack signal connection
+- Circle and ellipse sketches missing preview thumbnails
+- Canvas stuck in shift-pressed state after layer interaction
+- Incorrect 3D view mouse controls in the documentation (#229)
+
 ## 1.7.0-beta1
 
 ### Added

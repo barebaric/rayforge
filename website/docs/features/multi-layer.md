@@ -34,7 +34,12 @@ pan within the layer list.
 ### Reordering Workpieces
 
 Workpieces within a layer can be rearranged by drag-and-drop to control
-their z-order.
+their z-order. You can select multiple workpieces with **Ctrl+click** to
+toggle individual items, or **Shift+click** to select a range. Dragging a
+selection moves all selected items at once.
+
+Selected workpieces are highlighted in the layer column and the selection
+stays in sync with the canvas.
 
 ### Deleting a Layer
 
@@ -85,11 +90,16 @@ select which ones to import.
 
 ## Assigning Workpieces to Layers
 
-**Drag and drop:** Select workpiece(s) in the canvas or Document panel
-and drag them to the target layer.
+**Drag and drop:** Select workpiece(s) in the canvas or layer panel and drag
+them to the target layer. Multi-selection with Ctrl+click and Shift-click is
+supported, and you can drag items across layers.
 
-**Cut and paste:** Cut a workpiece from the current layer (Ctrl+X),
-select the target layer, and paste (Ctrl+V).
+**Cut and paste:** Cut a workpiece from the current layer (Ctrl+X), select
+the target layer, and paste (Ctrl+V).
+
+**Context menu:** Right-click a workpiece in the layer tab to open a context
+menu with options to move it to another layer, delete it, or open its
+properties.
 
 ## Execution Order
 
@@ -106,3 +116,4 @@ place during engraving.
 - [Macros & Hooks](../machine/hooks-macros) - Layer-level hooks for
   automation
 - [3D Preview](../ui/3d-preview) - Visualize layer stack
+- [Asset Browser](../ui/bottom-panel) - Managing assets with context menus

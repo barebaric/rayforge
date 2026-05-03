@@ -207,8 +207,10 @@ is close to a snap target.
 
 Many drawing tools automatically apply constraints as you create geometry. For
 example, when drawing a line near the horizontal or vertical, the sketcher will
-offer to lock it in place. This helps keep your sketch tidy from the start,
-rather than fixing things up afterward.
+offer to lock it in place. The path tool also creates horizontal and vertical
+constraints automatically when snap guides show alignment during drawing. This
+helps keep your sketch tidy from the start, rather than fixing things up
+afterward.
 
 ### Show/Hide Controls
 

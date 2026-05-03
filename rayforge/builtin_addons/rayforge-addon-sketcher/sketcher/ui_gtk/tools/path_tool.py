@@ -414,9 +414,16 @@ class PathTool(SnapMixin, SketchTool):
         self._preview_state = None
         self._mirror_cp_offset = None
 
-        snap_constraints = self.build_snap_constraints(end_id)
-        if final_pid is not None:
-            snap_constraints = []
+        end_pid = final_pid
+        if end_pid is None:
+            end_pid = self.element.sketch.registry._id_counter
+
+        constraints = self.build_snap_constraints(
+            end_id,
+            end_pid=end_pid,
+            snapped_to_existing=(final_pid is not None),
+            existing_constraints=self.element.sketch.constraints,
+        )
 
         cmd = BezierCommand(
             self.element.sketch,
@@ -425,7 +432,7 @@ class PathTool(SnapMixin, SketchTool):
             end_pid=final_pid,
             is_start_temp=start_temp,
             is_line=not has_virtual_cp,
-            constraints=snap_constraints,
+            constraints=constraints,
         )
         self.element.execute_command(cmd)
 
@@ -518,9 +525,16 @@ class PathTool(SnapMixin, SketchTool):
         )
         self._preview_state = None
 
-        snap_constraints = self.build_snap_constraints(end_id)
-        if final_pid is not None:
-            snap_constraints = []
+        bz_end_pid = final_pid
+        if bz_end_pid is None:
+            bz_end_pid = self.element.sketch.registry._id_counter
+
+        snap_constraints = self.build_snap_constraints(
+            end_id,
+            end_pid=bz_end_pid,
+            snapped_to_existing=(final_pid is not None),
+            existing_constraints=self.element.sketch.constraints,
+        )
 
         cmd = BezierCommand(
             self.element.sketch,

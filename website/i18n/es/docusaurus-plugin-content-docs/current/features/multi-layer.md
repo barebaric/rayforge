@@ -36,7 +36,13 @@ con clic central** para desplazarte dentro de la lista de capas.
 ### Reordenar piezas de trabajo
 
 Las piezas de trabajo dentro de una capa se pueden reorganizar
-arrastrando y soltando para controlar su orden Z.
+arrastrando y soltando para controlar su orden Z. Puedes seleccionar
+múltiples piezas de trabajo con **Ctrl+clic** para alternar elementos
+individuales, o **Mayús+clic** para seleccionar un rango. Arrastrar una
+selección mueve todos los elementos seleccionados a la vez.
+
+Las piezas de trabajo seleccionadas se resaltan en la columna de capas y
+la selección se mantiene sincronizada con el lienzo.
 
 ### Eliminar una capa
 
@@ -95,10 +101,16 @@ para seleccionar cuáles importar.
 ## Asignar piezas de trabajo a capas
 
 **Arrastrar y soltar:** Selecciona pieza(s) de trabajo en el lienzo o
-panel de documento y arrástralas a la capa destino.
+panel de capas y arrástralas a la capa destino. La multi-selección con
+Ctrl+clic y Mayús+clic está soportada, y puedes arrastrar elementos
+entre capas.
 
 **Cortar y pegar:** Corta una pieza de trabajo de la capa actual
 (Ctrl+X), selecciona la capa destino y pega (Ctrl+V).
+
+**Menú contextual:** Haz clic derecho en una pieza de trabajo en la
+pestaña de capas para abrir un menú contextual con opciones para moverla
+a otra capa, eliminarla o abrir sus propiedades.
 
 ## Orden de ejecución
 
@@ -117,3 +129,4 @@ durante el grabado.
 - [Macros y Hooks](../machine/hooks-macros) - Hooks a nivel de capa
   para automatización
 - [Vista previa 3D](../ui/3d-preview) - Visualizar la pila de capas
+- [Navegador de activos](../ui/bottom-panel) - Gestión de activos con menús contextuales

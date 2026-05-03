@@ -20,9 +20,9 @@ Access the 3D view:
 
 ### Mouse Controls
 
-- **Rotate**: Left-click and drag
-- **Pan**: Right-click and drag, or middle-click and drag
-- **Zoom**: Scroll wheel, or <kbd>ctrl</kbd> + left-click and drag
+- **Rotate**: Left-click and drag (Z-axis), middle-click and drag (3-axis orbit)
+- **Pan**: <kbd>shift</kbd> + middle-click and drag
+- **Zoom**: Scroll wheel
 
 ### View Presets
 
@@ -132,11 +132,13 @@ Toggle visibility of individual layers:
 Before sending to machine, verify:
 
 - [ ] Toolpath is complete with no missing segments
-- [ ] Paths stay within the machine work area
 - [ ] Engrave operations run before cuts
-- [ ] No toolpath enters a no-go zone
 - [ ] Job starts at the expected position
 - [ ] Holding tabs are in the correct locations
+
+Some additional checks are performed automatically. When you run or export
+a job, Rayforge runs [sanity checks](../features/sanity-checks) that verify
+machine extents, workarea boundaries, and no-go zone collisions.
 
 ## Performance Tips
 

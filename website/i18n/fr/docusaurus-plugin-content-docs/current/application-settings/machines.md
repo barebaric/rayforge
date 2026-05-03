@@ -16,6 +16,9 @@ actuellement active est marquée d'une icône de coche.
 1. Cliquez sur le bouton **Add Machine** en bas de la liste
 2. Sélectionnez un profil d'appareil dans la liste comme modèle — chaque
    profil préconfigure les paramètres de la machine et le dialecte G-code
+
+![Ajouter une Machine](/screenshots/add-machine-dialog.png)
+
 3. Le [dialogue de paramètres de machine](../machine/general) s'ouvre pour
    vous permettre d'ajuster la configuration
 

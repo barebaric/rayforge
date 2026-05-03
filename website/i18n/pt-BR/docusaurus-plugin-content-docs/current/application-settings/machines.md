@@ -16,6 +16,9 @@ um ícone de verificação.
 1. Clique no botão **Add Machine** na parte inferior da lista
 2. Selecione um perfil de dispositivo da lista para usar como modelo — cada
    perfil pré-configura as definições da máquina e o dialeto de G-code
+
+![Adicionar Máquina](/screenshots/add-machine-dialog.png)
+
 3. O [diálogo de configurações da máquina](../machine/general) abre onde
    você pode ajustar a configuração
 
