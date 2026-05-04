@@ -251,16 +251,6 @@ module.exports = {
           type: 'localeDropdown',
           position: 'right',
         },
-        {
-          href: 'https://github.com/barebaric/rayforge',
-          label: 'GitHub',
-          position: 'right',
-        },
-        {
-          href: 'https://discord.gg/sTHNdTtpQJ',
-          label: 'Discord',
-          position: 'right',
-        },
       ],
     },
     footer: {
