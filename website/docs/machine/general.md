@@ -73,6 +73,8 @@ can be shared with other users or imported on another system.
 
 ## See Also
 
+- [Configuration Wizard](config-wizard) - Automatically detect and
+  configure a connected device
 - [Hardware Settings](hardware) - Work area dimensions and axis
   configuration
 - [Device Settings](device) - Read and write firmware settings on the

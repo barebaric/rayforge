@@ -8,6 +8,7 @@ from typing import (
     Any,
     List,
     Dict,
+    Tuple,
     cast,
     TYPE_CHECKING,
     Callable,
@@ -35,6 +36,7 @@ from ..driver import (
     Pos,
     DeviceError,
 )
+from .grbl_probe import probe_grbl_device
 from .grbl_util import (
     parse_state,
     get_grbl_setting_varsets,
@@ -53,6 +55,7 @@ from .grbl_util import (
 
 if TYPE_CHECKING:
     from ....core.doc import Doc
+    from ...device.profile import DeviceProfile
     from ...models.machine import Machine
     from ...models.laser import Laser
 
@@ -69,6 +72,7 @@ class GrblSerialDriver(Driver):
     subtitle = _("GRBL-compatible serial connection")
     supports_settings = True
     reports_granular_progress = True
+    supports_probing = True
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
@@ -148,6 +152,12 @@ class GrblSerialDriver(Driver):
         """Returns a GcodeEncoder configured for the machine's dialect."""
         assert machine.dialect is not None
         return GcodeEncoder(machine.dialect)
+
+    @classmethod
+    async def probe(
+        cls, context: "RayforgeContext", **kwargs: Any
+    ) -> Tuple["DeviceProfile", List[str]]:
+        return await probe_grbl_device(cls, context, **kwargs)
 
     def _setup_implementation(self, **kwargs: Any) -> None:
         port = cast(str, kwargs.get("port", ""))
@@ -358,7 +368,7 @@ class GrblSerialDriver(Driver):
                 self._apply_cached_rx_buffer_size()
 
                 try:
-                    await self._execute_interactive_command("$I")
+                    await self.execute_interactive_command("$I")
                 except (ConnectionError, asyncio.TimeoutError) as e:
                     logger.warning(f"Failed to retrieve build info: {e}")
 
@@ -922,7 +932,7 @@ class GrblSerialDriver(Driver):
             raise
         return request.response_lines
 
-    async def _execute_interactive_command(self, command: str) -> List[str]:
+    async def execute_interactive_command(self, command: str) -> List[str]:
         """
         Send a command and synchronously await its full response.
 
@@ -1132,7 +1142,7 @@ class GrblSerialDriver(Driver):
         return get_grbl_setting_varsets()
 
     async def read_settings(self) -> None:
-        response_lines = await self._execute_interactive_command("$$")
+        response_lines = await self.execute_interactive_command("$$")
         # Get the list of VarSets, which serve as our template
         known_varsets = self.get_setting_vars()
 
@@ -1201,7 +1211,7 @@ class GrblSerialDriver(Driver):
         await self._execute_command(cmd)
 
     async def read_wcs_offsets(self) -> Dict[str, Pos]:
-        response_lines = await self._execute_interactive_command("$#")
+        response_lines = await self.execute_interactive_command("$#")
         offsets = {}
         for line in response_lines:
             match = wcs_re.match(line)
@@ -1219,7 +1229,7 @@ class GrblSerialDriver(Driver):
     async def read_parser_state(self) -> Optional[str]:
         """Reads the $G parser state to determine the active WCS."""
         try:
-            response_lines = await self._execute_interactive_command("$G")
+            response_lines = await self.execute_interactive_command("$G")
             return parse_grbl_parser_state(response_lines)
         except DeviceConnectionError as e:
             logger.warning(f"Could not read parser state: {e}")
@@ -1241,7 +1251,7 @@ class GrblSerialDriver(Driver):
             self, message=f"Probing {axis_letter}..."
         )
         try:
-            response_lines = await self._execute_interactive_command(cmd)
+            response_lines = await self.execute_interactive_command(cmd)
         except DeviceConnectionError:
             self.probe_status_changed.send(
                 self, message="Probe failed: Timed out"
@@ -1512,10 +1522,9 @@ class GrblSerialDriver(Driver):
                 if self.grbl_transport:
                     self.grbl_transport.signal_space_available()
         elif line.startswith("[VER:"):
-            version_info = parse_version([line])
-            if version_info:
-                ver_num, ver_let = version_info
-                logger.info(f"Connected to GRBL version {ver_num}{ver_let}")
+            ver = parse_version([line])
+            if ver:
+                logger.info(f"Connected to GRBL version {ver}")
         elif line.startswith("[OPT:"):
             rx_buffer_size = parse_opt_info(line)
             if rx_buffer_size and self.grbl_transport:

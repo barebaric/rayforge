@@ -17,13 +17,18 @@ actuellement active est marquée d'une icône de coche.
 2. Sélectionnez un profil d'appareil dans la liste comme modèle — chaque
    profil préconfigure les paramètres de la machine et le dialecte G-code
 
-![Ajouter une Machine](/screenshots/add-machine-dialog.png)
+![Ajouter une Machine](/screenshots/app-settings-machines-add.png)
 
 3. Le [dialogue de paramètres de machine](../machine/general) s'ouvre pour
    vous permettre d'ajuster la configuration
 
-Alternativement, cliquez sur **Import from File...** dans le sélecteur de
-profil pour ajouter une machine à partir d'un profil précédemment exporté.
+Alternativement :
+
+- Cliquez sur **Other Device…** pour lancer l'
+  [Assistant de Configuration](../machine/config-wizard), qui détecte
+  automatiquement les paramètres d'un appareil connecté
+- Cliquez sur **Import from File...** dans le sélecteur de profil pour
+  ajouter une machine à partir d'un profil précédemment exporté
 
 ## Modifier une Machine
 

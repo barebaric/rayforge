@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from ...core.capability import Capability
     from ...core.varset import VarSet
     from ...pipeline.encoder.base import OpsEncoder, EncodedOutput
+    from ..device.profile import DeviceProfile
     from ..models.dialect import GcodeDialect
     from ..models.machine import Machine
     from ..models.laser import Laser
@@ -183,6 +184,7 @@ class Driver(ABC):
     reports_granular_progress: bool = False
     uses_gcode: bool = True
     maturity: DriverMaturity = DriverMaturity.STABLE
+    supports_probing: bool = False
 
     @property
     @abstractmethod
@@ -309,6 +311,19 @@ class Driver(ABC):
         driver class and the specific machine configuration.
         """
         pass
+
+    @classmethod
+    async def probe(
+        cls, context: "RayforgeContext", **kwargs: Any
+    ) -> Tuple["DeviceProfile", List[str]]:
+        """
+        Probe a device at the given connection parameters and return
+        an auto-populated ``(DeviceProfile, warnings)`` tuple.
+        Only called if supports_probing is True.
+
+        Raises on connection failure or timeout.
+        """
+        raise NotImplementedError
 
     def get_encoder(self) -> "OpsEncoder":
         """

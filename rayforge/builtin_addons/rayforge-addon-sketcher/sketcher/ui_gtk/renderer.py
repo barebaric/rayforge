@@ -557,14 +557,17 @@ class SketchRenderer:
         natural_geo = Geometry.from_text(entity.content, entity.font_config)
         natural_geo.flip_y()
 
-        _, descent, font_height = entity.get_font_metrics()
+        advance_width = entity.font_config.get_text_width(entity.content)
+        _, geo_min_y, _, geo_max_y = natural_geo.rect()
 
         transformed_geo = natural_geo.map_to_frame(
             (p_origin.x, p_origin.y),
             (p_width.x, p_width.y),
             (p_height.x, p_height.y),
-            anchor_y=-descent,
-            stable_src_height=font_height,
+            anchor_x=0.0,
+            stable_src_width=advance_width,
+            anchor_y=geo_min_y,
+            stable_src_height=geo_max_y - geo_min_y,
         )
 
         transformed_geo.to_cairo(ctx)

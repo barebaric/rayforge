@@ -95,17 +95,25 @@ class TextBoxEntity(Entity):
 
         If *content* is omitted, uses ``self.content``. An empty or
         None content yields a minimum width of 10.
+
+        The height is derived from the actual geometry bounding box
+        after flip_y, so the frame matches the ink extent exactly
+        and map_to_frame does not stretch the text.
         """
         text = content if content is not None else self.content
-        _, _, font_height = self.get_font_metrics()
 
         if not text:
-            return 10.0, font_height
+            return 10.0, self.font_config.font_size
 
         geo = Geometry.from_text(text, self.font_config)
         geo.flip_y()
-        min_x, _, max_x, _ = geo.rect()
-        return max(max_x - min_x, 1.0), font_height
+        _, geo_min_y, _, geo_max_y = geo.rect()
+        geo_height = geo_max_y - geo_min_y
+
+        return (
+            max(self.font_config.get_text_width(text), 1.0),
+            max(geo_height, 1.0),
+        )
 
     def get_fourth_corner_id(
         self, registry: "EntityRegistry"
@@ -213,20 +221,17 @@ class TextBoxEntity(Entity):
         Tuple[float, float],
         Tuple[float, float],
         Tuple[float, float],
-        float,
-        float,
     ]:
         """
-        Builds a frame (origin, p_width, p_height) whose width matches
+        Builds a frame (origin, p_width, p_height) whose dimensions match
         *content*'s natural size, preserving direction vectors from the
         current frame.
 
-        Returns (origin, p_width, p_height, descent, font_height).
+        Returns (origin, p_width, p_height).
         """
         p_origin = registry.get_point(self.origin_id)
         p_width = registry.get_point(self.width_id)
         p_height = registry.get_point(self.height_id)
-        _, descent, font_height = self.get_font_metrics()
 
         if content == self.content or not self.content:
             logger.debug(
@@ -237,11 +242,9 @@ class TextBoxEntity(Entity):
                 (p_origin.x, p_origin.y),
                 (p_width.x, p_width.y),
                 (p_height.x, p_height.y),
-                descent,
-                font_height,
             )
 
-        nat_w, _ = self.get_natural_size(content)
+        nat_w, nat_h = self.get_natural_size(content)
 
         dx = p_width.x - p_origin.x
         dy = p_width.y - p_origin.y
@@ -270,7 +273,7 @@ class TextBoxEntity(Entity):
         if frame_h < 1e-9:
             h_scale = 1.0
         else:
-            h_scale = font_height / frame_h
+            h_scale = nat_h / frame_h
 
         scaled_height = (
             p_origin.x + hx * h_scale,
@@ -281,8 +284,6 @@ class TextBoxEntity(Entity):
             (p_origin.x, p_origin.y),
             scaled_width,
             scaled_height,
-            descent,
-            font_height,
         )
 
     def to_geometry(
@@ -294,18 +295,20 @@ class TextBoxEntity(Entity):
         text = (
             resolved_content if resolved_content is not None else self.content
         )
-        origin, pw, ph, descent, fh = self._build_frame_for_content(
-            registry, text
-        )
+        origin, pw, ph = self._build_frame_for_content(registry, text)
+        advance_width = self.font_config.get_text_width(text) if text else 1.0
         txt_geo = Geometry.from_text(text, self.font_config)
         txt_geo.flip_y()
 
+        _, geo_min_y, _, geo_max_y = txt_geo.rect()
         return txt_geo.map_to_frame(
             origin,
             pw,
             ph,
-            anchor_y=-descent,
-            stable_src_height=fh,
+            anchor_x=0.0,
+            stable_src_width=advance_width,
+            anchor_y=geo_min_y,
+            stable_src_height=geo_max_y - geo_min_y,
         )
 
     def create_text_fill_geometry(
@@ -317,18 +320,20 @@ class TextBoxEntity(Entity):
         text = (
             resolved_content if resolved_content is not None else self.content
         )
-        origin, pw, ph, descent, fh = self._build_frame_for_content(
-            registry, text
-        )
+        origin, pw, ph = self._build_frame_for_content(registry, text)
+        advance_width = self.font_config.get_text_width(text) if text else 1.0
         txt_geo = Geometry.from_text(text, self.font_config)
         txt_geo.flip_y()
 
+        _, geo_min_y, _, geo_max_y = txt_geo.rect()
         return txt_geo.map_to_frame(
             origin,
             pw,
             ph,
-            anchor_y=-descent,
-            stable_src_height=fh,
+            anchor_x=0.0,
+            stable_src_width=advance_width,
+            anchor_y=geo_min_y,
+            stable_src_height=geo_max_y - geo_min_y,
         )
 
     def to_dict(self) -> Dict[str, Any]:

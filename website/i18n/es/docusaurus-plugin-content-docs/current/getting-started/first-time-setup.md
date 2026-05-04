@@ -14,7 +14,11 @@ Ve a **Configuración → Máquinas** o presiona <kbd>ctrl+coma</kbd> para abrir
 
 Haz clic en **Añadir Máquina** para crear una nueva máquina. Selecciona un perfil de dispositivo de la lista para usarlo como plantilla — cada perfil preconfigura los ajustes de la máquina y el dialecto de G-code.
 
-![Añadir Máquina](/screenshots/add-machine-dialog.png)
+![Añadir Máquina](/screenshots/app-settings-machines-add.png)
+
+Si tu dispositivo está conectado y encendido, puedes hacer clic en **Other Device…**
+para usar el [Asistente de Configuración](../machine/config-wizard), que detecta
+y configura automáticamente tu máquina.
 
 Después de seleccionar, se abre el diálogo de Configuración de Máquina para tu nueva máquina.
 

@@ -106,7 +106,9 @@ async def driver(
     lite_context.machine_mgr.add_machine(machine)
 
     driver = RuidaDriver(lite_context, machine)
-    driver._setup_implementation(host=host, port=port, jog_port=jog_port)
+    driver._setup_implementation(
+        host=host, port=port, jog_port=jog_port, response_port=0
+    )
 
     yield driver
 
@@ -764,7 +766,7 @@ async def test_disconnect_when_not_connected(driver):
 async def test_cleanup_resets_transport(driver, ruida_simulator):
     """Test that cleanup properly resets transport objects."""
     _, host, port, jog_port = ruida_simulator
-    driver._setup_implementation(host=host, port=port)
+    driver._setup_implementation(host=host, port=port, response_port=0)
 
     await driver.cleanup()
 
@@ -785,7 +787,9 @@ async def test_reconnect_after_disconnect(driver, ruida_simulator):
 
     assert not driver.is_connected
 
-    driver._setup_implementation(host=host, port=port, jog_port=jog_port)
+    driver._setup_implementation(
+        host=host, port=port, jog_port=jog_port, response_port=0
+    )
     assert await wait_for_connection(driver)
 
     assert driver.is_connected
