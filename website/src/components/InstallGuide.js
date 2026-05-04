@@ -170,7 +170,12 @@ function MainDownloadButton({
 
   return (
     <p>
-      <a className="button button--primary" href={href} target="_blank" rel="noopener noreferrer">
+      <a
+        className="rfButton rfButtonDownload"
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         {text}
       </a>
     </p>
@@ -261,8 +266,9 @@ function OsSelector({ selectedOs, onSelectOs }) {
         {osOptions.map((os) => (
           <button
             key={os.id}
-            className={`install-os-btn ${
-              selectedOs === os.id ? 'install-os-btn--active' : ''
+            type="button"
+            className={`rfButton rfButtonOs install-os-btn ${
+              selectedOs === os.id ? 'rfButtonOsActive' : ''
             }`}
             onClick={() => onSelectOs(os.id)}
           >
@@ -283,8 +289,9 @@ function LinuxInstall({ method, onMethodChange }) {
           {linuxMethods.map((m) => (
             <button
               key={m.id}
-              className={`install-method-btn ${
-                method === m.id ? 'install-method-btn--active' : ''
+              type="button"
+              className={`rfButton install-method-btn ${
+                method === m.id ? 'rfButtonPrimary' : 'rfButtonSecondary'
               }`}
               onClick={() => onMethodChange(m.id)}
             >
@@ -658,8 +665,9 @@ function WindowsInstall({ version, method, onMethodChange, latestRelease }) {
           {windowsMethods.map((m) => (
             <button
               key={m.id}
-              className={`install-method-btn ${
-                method === m.id ? 'install-method-btn--active' : ''
+              type="button"
+              className={`rfButton install-method-btn ${
+                method === m.id ? 'rfButtonPrimary' : 'rfButtonSecondary'
               }`}
               onClick={() => onMethodChange(m.id)}
             >
@@ -882,8 +890,9 @@ function MacosInstall({ version, method, onMethodChange, latestRelease }) {
           {macosMethods.map((m) => (
             <button
               key={m.id}
-              className={`install-method-btn ${
-                method === m.id ? 'install-method-btn--active' : ''
+              type="button"
+              className={`rfButton install-method-btn ${
+                method === m.id ? 'rfButtonPrimary' : 'rfButtonSecondary'
               }`}
               onClick={() => onMethodChange(m.id)}
             >

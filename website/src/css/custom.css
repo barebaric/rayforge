@@ -63,6 +63,107 @@
   letter-spacing: 0.5px;
 }
 
+.rfButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem 2.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 50px;
+  text-decoration: none;
+  border: 0;
+  cursor: pointer;
+  appearance: none;
+  background-clip: border-box;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.rfButton:hover {
+  transform: translateY(-3px);
+  text-decoration: none;
+}
+
+.rfButtonPrimary {
+  color: #fff !important;
+  background: linear-gradient(90deg, #ff9f43, #ee5253);
+  box-shadow: 0 10px 20px rgba(238, 82, 83, 0.3);
+}
+
+.rfButtonPrimary:hover {
+  box-shadow: 0 15px 30px rgba(238, 82, 83, 0.4);
+  color: #fff !important;
+}
+
+.rfButtonSecondary {
+  color: var(--ifm-color-primary);
+  background: transparent;
+  border: 2px solid var(--ifm-color-primary);
+}
+
+.rfButtonSecondary:hover {
+  background: rgba(95, 39, 205, 0.05);
+  color: var(--ifm-color-primary);
+}
+
+.rfButtonOrange {
+  color: #fff !important;
+  background: linear-gradient(
+    90deg,
+    var(--color-ray-orange),
+    var(--color-ray-orange-dark)
+  );
+  box-shadow: 0 10px 20px rgba(255, 159, 67, 0.28);
+}
+
+.rfButtonOrange:hover {
+  box-shadow: 0 15px 30px rgba(255, 159, 67, 0.36);
+  color: #fff !important;
+}
+
+.rfButtonDownload {
+  color: #fff !important;
+  background: linear-gradient(90deg, var(--color-ray-cyan), #0ea5e9);
+  box-shadow: 0 10px 20px rgba(14, 165, 233, 0.28);
+}
+
+.rfButtonDownload:hover {
+  box-shadow: 0 15px 30px rgba(14, 165, 233, 0.36);
+  color: #fff !important;
+}
+
+.rfButtonPurple {
+  color: #fff !important;
+  background: linear-gradient(90deg, var(--color-ray-purple), #a855f7);
+  box-shadow: 0 10px 20px rgba(95, 39, 205, 0.26);
+}
+
+.rfButtonPurple:hover {
+  box-shadow: 0 15px 30px rgba(95, 39, 205, 0.36);
+  color: #fff !important;
+}
+
+.rfButtonOs {
+  color: #fff !important;
+  background: #2d3436;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+}
+
+.rfButtonOs:hover {
+  background: #394245;
+  color: #fff !important;
+}
+
+.rfButtonOsActive {
+  border-color: var(--color-ray-orange);
+}
+
 /* Footer styling */
 .footer {
   background: var(--ifm-background-color);
