@@ -836,6 +836,8 @@ class Geometry:
         p_height: Point,
         anchor_y: Optional[float] = None,
         stable_src_height: Optional[float] = None,
+        anchor_x: Optional[float] = None,
+        stable_src_width: Optional[float] = None,
     ) -> T_Geometry:
         """
         Transforms the geometry to fit into an affine frame defined by three
@@ -861,6 +863,15 @@ class Geometry:
                               Useful for text where the height should remain
                               stable regardless of descenders. If None, uses
                               max_y - min_y from bounding box.
+            anchor_x: Optional x-coordinate to use as horizontal anchor
+                      instead of the bounding box minimum. Useful for text
+                      where the advance origin (x=0) should be the anchor.
+                      If None, uses min_x from bounding box.
+            stable_src_width: Optional stable source width to use for scaling
+                             instead of the bounding box width. Useful for
+                             text where the advance width should be used
+                             rather than the ink width. If None, uses
+                             max_x - min_x from bounding box.
 
         Returns:
             A new, transformed Geometry object.
@@ -874,6 +885,8 @@ class Geometry:
             p_height,
             anchor_y=anchor_y,
             stable_src_height=stable_src_height,
+            anchor_x=anchor_x,
+            stable_src_width=stable_src_width,
         )
 
     def split_inner_and_outer_contours(

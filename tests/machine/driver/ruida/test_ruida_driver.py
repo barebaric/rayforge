@@ -766,9 +766,7 @@ async def test_disconnect_when_not_connected(driver):
 async def test_cleanup_resets_transport(driver, ruida_simulator):
     """Test that cleanup properly resets transport objects."""
     _, host, port, jog_port = ruida_simulator
-    driver._setup_implementation(
-        host=host, port=port, response_port=0
-    )
+    driver._setup_implementation(host=host, port=port, response_port=0)
 
     await driver.cleanup()
 
