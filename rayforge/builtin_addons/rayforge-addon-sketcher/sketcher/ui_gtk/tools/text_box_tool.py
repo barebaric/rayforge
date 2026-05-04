@@ -783,10 +783,8 @@ class TextBoxTool(SketchTool):
         # alpha is the normalized coordinate (0..1) along the width axis
         alpha = (click_vec[0] * v_vec[1] - click_vec[1] * v_vec[0]) * inv_det
 
-        # 2. Get bounds of full text to determine coordinate space range
-        natural_geo = Geometry.from_text(self.text_buffer, entity.font_config)
-        natural_geo.flip_y()
-        min_x, _, max_x, _ = natural_geo.rect()
+        # 2. Map click position to advance-space x-coordinate
+        advance_width = entity.font_config.get_text_width(self.text_buffer)
 
         if not self.text_buffer:
             self.cursor_pos = 0
@@ -795,12 +793,11 @@ class TextBoxTool(SketchTool):
             self.cursor_moved.send(self)
             return
 
-        src_width = max_x - min_x
-        if src_width < 1e-9:
-            src_width = 1.0
+        if advance_width < 1e-9:
+            advance_width = 1.0
 
         # Map normalized alpha to geometry x-coordinate
-        target_x_natural = min_x + alpha * src_width
+        target_x_natural = alpha * advance_width
 
         # 3. Find closest character break
         best_i, min_dist = 0, float("inf")
@@ -808,14 +805,9 @@ class TextBoxTool(SketchTool):
         # Iterate through all possible cursor positions
         # (before first char ... after last char)
         for i in range(len(self.text_buffer) + 1):
-            if i == 0:
-                # The start of the text corresponds to min_x
-                sub_max_x = min_x
-            else:
-                # Measure width of substring including spaces
-                sub_max_x = entity.font_config.get_text_width(
-                    self.text_buffer[:i]
-                )
+            sub_max_x = entity.font_config.get_text_position(
+                self.text_buffer, i
+            )
 
             dist = abs(sub_max_x - target_x_natural)
             if dist < min_dist:
@@ -849,22 +841,27 @@ class TextBoxTool(SketchTool):
         natural_geo.flip_y()
         logger.debug(f"Natural geometry: {natural_geo.rect()}")
 
-        nat_min_x, nat_min_y, nat_max_x, nat_max_y = natural_geo.rect()
+        _, nat_min_y, _, nat_max_y = natural_geo.rect()
 
         # Handle empty text case for frame mapping logic
         if not self.text_buffer:
-            nat_min_x, nat_min_y = 0.0, 0.0
-            nat_max_x = 10.0
+            nat_min_y = 0.0
             nat_max_y = entity.font_config.font_size
 
-        _, descent, font_height = entity.get_font_metrics()
+        advance_width = (
+            entity.font_config.get_text_width(self.text_buffer)
+            if self.text_buffer
+            else 10.0
+        )
 
         transformed_geo = natural_geo.map_to_frame(
             (p_origin.x, p_origin.y),
             (p_width.x, p_width.y),
             (p_height.x, p_height.y),
-            anchor_y=-descent,
-            stable_src_height=font_height,
+            anchor_x=0.0,
+            stable_src_width=advance_width,
+            anchor_y=nat_min_y,
+            stable_src_height=nat_max_y - nat_min_y,
         )
         logger.debug(f"Transformed text geometry: {transformed_geo.rect()}")
 
@@ -882,7 +879,10 @@ class TextBoxTool(SketchTool):
         start, end = self._get_selection_range()
         if start != end:
             self._draw_selection_highlight(
-                ctx, nat_min_x, nat_min_y, nat_max_x, nat_max_y
+                ctx,
+                nat_min_y,
+                nat_max_y,
+                advance_width,
             )
 
         if self.cursor_visible:
@@ -894,13 +894,10 @@ class TextBoxTool(SketchTool):
                 scale = scale_x if scale_x > 1e-13 else 1.0
             cursor_width = 3.0 / scale
 
-            # Calculate cursor position using text width (includes spaces)
-            if self.cursor_pos == 0:
-                sub_max_x = nat_min_x
-            else:
-                sub_max_x = entity.font_config.get_text_width(
-                    self.text_buffer[: self.cursor_pos]
-                )
+            # Calculate cursor position (kerning-aware)
+            sub_max_x = entity.font_config.get_text_position(
+                self.text_buffer, self.cursor_pos
+            )
 
             cursor_height = nat_max_y - nat_min_y
             if cursor_height <= 0:
@@ -920,10 +917,7 @@ class TextBoxTool(SketchTool):
             ]
 
             # Prepare transformation to Model Space
-            src_w = nat_max_x - nat_min_x
             src_h = nat_max_y - nat_min_y
-            if abs(src_w) < 1e-9:
-                src_w = 1.0
             if abs(src_h) < 1e-9:
                 src_h = 1.0
 
@@ -932,7 +926,7 @@ class TextBoxTool(SketchTool):
             origin = (p_origin.x, p_origin.y)
 
             def trans(px, py):
-                xn = (px - nat_min_x) / src_w
+                xn = px / advance_width
                 yn = (py - nat_min_y) / src_h
                 return (
                     origin[0] + xn * u[0] + yn * v[0],
@@ -969,10 +963,9 @@ class TextBoxTool(SketchTool):
     def _draw_selection_highlight(
         self,
         ctx: cairo.Context,
-        nat_min_x: float,
         nat_min_y: float,
-        nat_max_x: float,
         nat_max_y: float,
+        advance_width: float,
     ):
         """Draws the selection highlight for selected text."""
         if self.editing_entity_id is None:
@@ -989,16 +982,11 @@ class TextBoxTool(SketchTool):
         p_width = self.element.sketch.registry.get_point(entity.width_id)
         p_height = self.element.sketch.registry.get_point(entity.height_id)
 
-        _, descent, font_height = entity.get_font_metrics()
-
         start, end = self._get_selection_range()
         if start == end:
             return
 
-        src_w = nat_max_x - nat_min_x
         src_h = nat_max_y - nat_min_y
-        if abs(src_w) < 1e-9:
-            src_w = 1.0
         if abs(src_h) < 1e-9:
             src_h = 1.0
 
@@ -1007,7 +995,7 @@ class TextBoxTool(SketchTool):
         origin = (p_origin.x, p_origin.y)
 
         def trans(px, py):
-            xn = (px - nat_min_x) / src_w
+            xn = px / advance_width
             yn = (py - nat_min_y) / src_h
             return (
                 origin[0] + xn * u[0] + yn * v[0],
@@ -1015,10 +1003,7 @@ class TextBoxTool(SketchTool):
             )
 
         def get_char_x(pos: int) -> float:
-            """Get the x-coordinate of a cursor position."""
-            if pos == 0:
-                return nat_min_x
-            return entity.font_config.get_text_width(self.text_buffer[:pos])
+            return entity.font_config.get_text_position(self.text_buffer, pos)
 
         start_x = get_char_x(start)
         end_x = get_char_x(end)

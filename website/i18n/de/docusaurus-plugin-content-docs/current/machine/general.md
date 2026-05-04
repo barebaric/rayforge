@@ -78,6 +78,8 @@ anderen System importiert werden.
 
 ## Siehe auch
 
+- [Konfigurations-Assistent](config-wizard) – Ein angeschlossenes Gerät
+  automatisch erkennen und konfigurieren
 - [Hardware-Einstellungen](hardware) – Arbeitsflächenabmessungen und
   Achsenkonfiguration
 - [Geräte-Einstellungen](device) – Firmware-Einstellungen auf dem Controller

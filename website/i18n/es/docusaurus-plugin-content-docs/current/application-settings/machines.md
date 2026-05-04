@@ -18,13 +18,18 @@ marcada con un icono de verificación.
    plantilla — cada perfil preconfigura los ajustes de la máquina y el
    dialecto de G-code
 
-![Añadir Máquina](/screenshots/add-machine-dialog.png)
+![Añadir Máquina](/screenshots/app-settings-machines-add.png)
 
 3. Se abre el [diálogo de ajustes de máquina](../machine/general) donde
    puedes ajustar la configuración
 
-Alternativamente, haz clic en **Import from File...** en el selector de
-perfiles para añadir una máquina desde un perfil exportado previamente.
+Alternativamente:
+
+- Haz clic en **Other Device…** para iniciar el
+  [Asistente de Configuración](../machine/config-wizard), que detecta
+  automáticamente los ajustes de un dispositivo conectado
+- Haz clic en **Import from File...** en el selector de perfiles para
+  añadir una máquina desde un perfil exportado previamente
 
 ## Editar una Máquina
 

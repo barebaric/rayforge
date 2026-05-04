@@ -619,6 +619,8 @@ class TestExportMachine:
         machine.max_cut_speed = 1000
         machine.gcode_precision = 3
         machine.home_on_start = False
+        machine.acceleration = None
+        machine.single_axis_homing_enabled = None
         machine.rotary_enabled_default = False
         machine.work_margins = (0, 0, 0, 0)
         machine.soft_limits = None

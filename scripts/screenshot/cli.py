@@ -15,24 +15,23 @@ PROJECT_ROOT = SCRIPTS_DIR.parent.parent
 TEST_CONFIG_DIR = PROJECT_ROOT / "tests" / "config"
 
 TARGETS = {
-    "main:standard": "main_standard",
-    "main:3d": "main_3d",
-    "main:3d-rotary": "main_3d_rotary",
-    "app-settings:general": "app_settings_general",
-    "app-settings:machines": "app_settings_machines",
-    "app-settings:materials": "app_settings_materials",
-    "app-settings:recipes": "app_settings_recipes",
-    "app-settings:addons": "app_settings_addons",
-    "app-settings:ai": "app_settings_ai",
     "addon:ai-workpiece-generator": "ai_workpiece_generator",
     "addon:deepnest": "deepnest",
     "addon:print-and-cut:pick": "print_and_cut",
     "addon:print-and-cut:jog": "print_and_cut",
     "addon:print-and-cut:apply": "print_and_cut",
     "addon:projector-mode": "projector_mode",
+    "app-settings:general": "app_settings_general",
+    "app-settings:machines": "app_settings_machines",
+    "app-settings:machines:add": "add_machine_dialog",
+    "app-settings:machines:wizard:connect": "config_wizard",
+    "app-settings:machines:wizard:review": "config_wizard",
+    "app-settings:materials": "app_settings_materials",
+    "app-settings:recipes": "app_settings_recipes",
+    "app-settings:addons": "app_settings_addons",
+    "app-settings:ai": "app_settings_ai",
     "bottom-panel:console": "bottom_panel",
     "bottom-panel:layers": "bottom_panel",
-    "add-machine-dialog": "add_machine_dialog",
     "import-dialog": "import_dialog",
     "machine-settings:general": "machine_settings_general",
     "machine-settings:hardware": "machine_settings_hardware",
@@ -45,6 +44,9 @@ TARGETS = {
     "machine-settings:camera": "machine_settings_camera",
     "machine-settings:maintenance": "machine_settings_maintenance",
     "machine-settings:nogo-zones": "machine_settings_nogo_zones",
+    "main:standard": "main_standard",
+    "main:3d": "main_3d",
+    "main:3d-rotary": "main_3d_rotary",
     "material-test": "material_test",
     "recipe-editor:general": "recipe_editor_general",
     "recipe-editor:applicability": "recipe_editor_applicability",
@@ -123,7 +125,6 @@ def generate_help_text() -> str:
     lines.append(
         "  addon, step-settings:engrave, step-settings:engrave:general"
     )
-    lines.append("  recipe-editor, etc.")
     lines.append("")
     lines.append("Use 'all' to run everything")
     lines.append("")

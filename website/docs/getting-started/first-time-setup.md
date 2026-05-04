@@ -20,7 +20,11 @@ Click **Add Machine** to create a new machine. Select a device profile from
 the list to use as a template — each profile pre-configures the machine
 settings and G-code dialect.
 
-![Add Machine Dialog](/screenshots/add-machine-dialog.png)
+![Add Machine Dialog](/screenshots/app-settings-machines-add.png)
+
+If your device is connected and powered on, you can click **Other Device…**
+to use the [Configuration Wizard](../machine/config-wizard), which
+automatically detects and configures your machine.
 
 After selecting, the Machine Settings dialog opens for your new machine.
 

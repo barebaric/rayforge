@@ -337,6 +337,8 @@ def map_geometry_to_frame(
     p_height: Point,
     anchor_y: Optional[float] = None,
     stable_src_height: Optional[float] = None,
+    anchor_x: Optional[float] = None,
+    stable_src_width: Optional[float] = None,
 ) -> T_Geometry:
     """
     Transforms a Geometry object to fit into an affine frame defined by three
@@ -362,6 +364,16 @@ def map_geometry_to_frame(
                           where the height should remain stable regardless of
                           descenders. If None, uses max_y - min_y from
                           bounding box.
+        anchor_x: Optional x-coordinate to use as horizontal anchor
+                  instead of the bounding box minimum. Useful for text
+                  where the advance origin (x=0) should be the anchor
+                  rather than the ink left edge. If None, uses min_x
+                  from bounding box.
+        stable_src_width: Optional stable source width to use for scaling
+                         instead of the bounding box width. Useful for
+                         text where the advance width should be used
+                         rather than the ink width. If None, uses
+                         max_x - min_x from bounding box.
 
     Returns:
         A new, transformed Geometry object.
@@ -371,12 +383,15 @@ def map_geometry_to_frame(
 
     # 1. Get the source geometry's bounding box
     min_x, min_y, max_x, max_y = geometry.rect()
-    src_width = max_x - min_x
+    src_width = (
+        stable_src_width if stable_src_width is not None else (max_x - min_x)
+    )
     src_height = (
         stable_src_height if stable_src_height is not None else (max_y - min_y)
     )
 
-    # Use anchor_y if provided, otherwise use bounding box min_y
+    # Use anchor values if provided, otherwise use bounding box edges
+    anchor_x_value = anchor_x if anchor_x is not None else min_x
     anchor_y_value = anchor_y if anchor_y is not None else min_y
 
     # Handle degenerate source geometry
@@ -388,14 +403,15 @@ def map_geometry_to_frame(
     v_vec = (p_height[0] - origin[0], p_height[1] - origin[1])
 
     # 3. Build the transformation matrix
-    # This matrix maps the source bounding box [min_x, min_y] -> [max_x, max_y]
+    # This matrix maps the source rect [anchor_x, anchor_y] ->
+    # [anchor_x + src_width, anchor_y + src_height]
     # to the target parallelogram.
     # We compose matrices: M = T_frame @ T_scale @ T_translate
 
     # T_translate: moves source rect's origin to (0,0)
     t1 = np.array(
         [
-            [1, 0, 0, -min_x],
+            [1, 0, 0, -anchor_x_value],
             [0, 1, 0, -anchor_y_value],
             [0, 0, 1, 0],
             [0, 0, 0, 1],
