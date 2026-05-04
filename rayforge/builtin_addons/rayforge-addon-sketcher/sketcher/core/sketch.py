@@ -384,7 +384,7 @@ class Sketch(IAsset, IGeometryProvider):
             c.status == ConstraintStatus.CONFLICTING for c in self.constraints
         )
 
-    def to_dict(self, include_input_values: bool = True) -> Dict[str, Any]:
+    def to_dict(self, include_input_values: bool = False) -> Dict[str, Any]:
         """Serializes the Sketch to a dictionary."""
         return {
             "uid": self.uid,
