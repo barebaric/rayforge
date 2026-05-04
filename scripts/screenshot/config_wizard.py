@@ -66,9 +66,7 @@ def main():
         take_screenshot("app-settings-machines-wizard-connect.png")
     elif target == "app-settings:machines:wizard:review":
         run_on_main_thread(
-            lambda: wizard._populate_review_page(
-                FAKE_PROFILE, FAKE_WARNINGS
-            )
+            lambda: wizard._populate_review_page(FAKE_PROFILE, FAKE_WARNINGS)
         )
         run_on_main_thread(
             lambda: wizard._stack.set_visible_child_name("review")

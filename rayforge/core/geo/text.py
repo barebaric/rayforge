@@ -1,11 +1,7 @@
 # flake8: noqa: E402
 import cairo
 import logging
-import gi
-
-gi.require_version("PangoCairo", "1.0")
-
-from gi.repository import PangoCairo
+from gi.repository import Pango, PangoCairo
 from .geometry import Geometry
 from .font_config import FontConfig
 from typing import Optional, List
@@ -82,9 +78,14 @@ def text_to_geometry(
     """
     Generates a Geometry object representing the vector path of the given text.
 
-    The geometry is generated starting at the origin (0, 0), which corresponds
-    to the beginning of the text baseline. The dimensions and coordinates are
-    determined by the font metrics and are not normalized.
+    Uses Pango for text layout so that kerning and other OpenType features
+    are applied correctly.  The geometry is generated starting at the
+    origin (0, 0), which corresponds to the beginning of the text
+    baseline.
+
+    To avoid Pango's integer-rounding hinting at small font sizes (which
+    causes glyph overlap), the layout is rendered at a larger internal
+    size and then scaled down.
 
     Args:
         text: The string content to render.
@@ -99,30 +100,27 @@ def text_to_geometry(
     if not text:
         return Geometry()
 
-    # Use a RecordingSurface since we only care about the path, not raster
-    # pixels. It also handles unbounded drawing operations gracefully.
+    # Render at a larger size to avoid hinting artifacts, then scale down.
+    render_scale = max(1.0, 100.0 / font_config.font_size)
+    render_size = font_config.font_size * render_scale
+
+    render_config = FontConfig(
+        font_family=font_config.font_family,
+        font_size=render_size,
+        bold=font_config.bold,
+        italic=font_config.italic,
+    )
+
     surface = cairo.RecordingSurface(cairo.CONTENT_COLOR_ALPHA, None)
     ctx = cairo.Context(surface)
 
-    # Configure font selection
-    slant = (
-        cairo.FONT_SLANT_ITALIC
-        if font_config.italic
-        else cairo.FONT_SLANT_NORMAL
-    )
-    weight = (
-        cairo.FONT_WEIGHT_BOLD
-        if font_config.bold
-        else cairo.FONT_WEIGHT_NORMAL
-    )
-    ctx.select_font_face(font_config.font_family, slant, weight)
-    ctx.set_font_size(font_config.font_size)
+    layout, _ = render_config._create_pango_layout(ctx)
+    layout.set_text(text, -1)
 
-    # Position at origin. Text is drawn relative to the baseline.
-    ctx.move_to(0, 0)
-    ctx.text_path(text)
+    baseline_y = layout.get_baseline() / Pango.SCALE
 
-    # Use copy_path() to retrieve the path with curves preserved.
+    PangoCairo.layout_path(ctx, layout)
+
     raw_path = list(ctx.copy_path())
 
     # Filter the path to remove redundant or non-geometric commands.
@@ -132,7 +130,7 @@ def text_to_geometry(
 
     clean_path = []
     for i, cmd in enumerate(raw_path):
-        type_, _ = cmd
+        type_, points = cmd
         if type_ == cairo.PATH_MOVE_TO:
             # If next command is also MOVE_TO, skip this one
             if (
@@ -147,26 +145,24 @@ def text_to_geometry(
     if clean_path and clean_path[-1][0] == cairo.PATH_MOVE_TO:
         clean_path.pop()
 
+    inv = 1.0 / render_scale
+    baseline_y_scaled = baseline_y * inv
+
     geo = Geometry()
 
     for type_, points in clean_path:
         if type_ == cairo.PATH_MOVE_TO:
-            geo.move_to(points[0], points[1])
+            geo.move_to(points[0] * inv, points[1] * inv - baseline_y_scaled)
         elif type_ == cairo.PATH_LINE_TO:
-            geo.line_to(points[0], points[1])
+            geo.line_to(points[0] * inv, points[1] * inv - baseline_y_scaled)
         elif type_ == cairo.PATH_CURVE_TO:
-            # Cairo curves are cubic Béziers.
-            # Points layout: (x1, y1, x2, y2, x3, y3)
-            # Control Point 1: (points[0], points[1])
-            # Control Point 2: (points[2], points[3])
-            # End Point:       (points[4], points[5])
             geo.bezier_to(
-                x=points[4],
-                y=points[5],
-                c1x=points[0],
-                c1y=points[1],
-                c2x=points[2],
-                c2y=points[3],
+                x=points[4] * inv,
+                y=points[5] * inv - baseline_y_scaled,
+                c1x=points[0] * inv,
+                c1y=points[1] * inv - baseline_y_scaled,
+                c2x=points[2] * inv,
+                c2y=points[3] * inv - baseline_y_scaled,
             )
         elif type_ == cairo.PATH_CLOSE_PATH:
             geo.close_path()

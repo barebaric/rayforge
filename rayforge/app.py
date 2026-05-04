@@ -481,6 +481,8 @@ def main():
     # Now, when gi.repository.cairo is loaded, it will know how to
     # interact with the already-imported standalone module.
     gi.require_version("cairo", "1.0")
+    gi.require_version("Pango", "1.0")
+    gi.require_version("PangoCairo", "1.0")
     gi.require_version("Gtk", "4.0")
     gi.require_version("GdkPixbuf", "2.0")
 
