@@ -59,92 +59,15 @@
   align-items: center;
 }
 
-.buttonPrimary,
-.buttonSecondary,
-.buttonTertiary,
-.buttonPatreon {
+.heroCtaButton {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.7rem 1rem;
-  border-radius: 0.9rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease,
-    background-color 160ms ease,
-    border-color 160ms ease;
-  border: 1px solid transparent;
-}
-
-.buttonPrimary {
-  color: #fff;
-  background: linear-gradient(90deg, #0ea5e9, #a855f7);
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.15);
-}
-
-.buttonBug {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.7rem 1rem;
-  border-radius: 0.9rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease,
-    background-color 160ms ease,
-    border-color 160ms ease,
-    filter 160ms ease;
-  border: 1px solid transparent;
-  color: #fff;
-  background: #0ea5e9;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
-}
-
-.buttonBug:hover {
-  color: #fff !important;
-  transform: translateY(-1px);
-  text-decoration: none;
-  filter: brightness(0.98);
-}
-
-.buttonSecondary {
-  color: #fff;
-  background: linear-gradient(90deg, #fb923c, #ef4444);
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
-}
-
-.buttonPatreon {
-  color: #fff !important;
-  background: #ff424d;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
-}
-
-.buttonTertiary {
-  color: var(--ifm-font-color-base);
-  background: var(--ifm-background-surface-color);
-  border-color: var(--ifm-color-emphasis-200);
-}
-
-.buttonPrimary:hover,
-.buttonSecondary:hover,
-.buttonTertiary:hover,
-.buttonPatreon:hover {
-  transform: translateY(-1px);
   text-decoration: none;
 }
 
-.buttonPatreon:hover {
-  color: #fff !important;
-  filter: brightness(0.98);
-}
-
-.buttonTertiary:hover {
-  border-color: var(--ifm-color-emphasis-300);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.08);
+.heroCtaButton:hover {
+  text-decoration: none;
 }
 
 .heroPanel {

@@ -14,28 +14,9 @@
 }
 
 .install-os-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border: 2px solid var(--ifm-color-emphasis-300);
-  border-radius: 8px;
-  background: var(--ifm-background-color);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-.install-os-btn:hover {
-  border-color: var(--color-ray-orange);
-  background: rgba(255, 159, 67, 0.14);
-}
-
-.install-os-btn--active {
-  border-color: var(--color-ray-orange);
-  background: var(--color-ray-orange);
-  color: #1b1b1d;
 }
 
 .install-os-icon {
@@ -54,23 +35,8 @@
 }
 
 .install-method-btn {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--ifm-color-emphasis-300);
-  border-radius: 6px;
-  background: var(--ifm-background-color);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.9rem;
-}
-
-.install-method-btn:hover {
-  border-color: var(--color-ray-orange);
-}
-
-.install-method-btn--active {
-  border-color: var(--color-ray-orange);
-  background: var(--color-ray-orange);
-  color: #1b1b1d;
+  display: inline-flex;
+  align-items: center;
 }
 
 .install-section {
@@ -154,20 +120,6 @@
   margin-bottom: 0.5rem;
 }
 
-[data-theme='dark'] .install-os-btn {
-  background: #3d3d3d;
-}
-
-[data-theme='dark'] .install-os-btn:hover {
-  border-color: var(--color-ray-orange);
-  background: rgba(255, 159, 67, 0.18);
-}
-
-[data-theme='dark'] .install-os-btn--active {
-  border-color: var(--color-ray-orange);
-  background: var(--color-ray-orange);
-  color: #1b1b1d;
-}
 [data-theme='light'] .install-step {
   background: #ebecec;
 }

@@ -64,7 +64,7 @@ export default function Contributing() {
               <div className={styles.heroCtas}>
                 <a
                   href="https://www.patreon.com/c/knipknap"
-                  className={styles.buttonPatreon}
+                  className={`rfButton rfButtonOrange ${styles.heroCtaButton}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -73,14 +73,17 @@ export default function Contributing() {
                 </a>
                 <a
                   href="https://github.com/barebaric/rayforge/issues/new"
-                  className={styles.buttonBug}
+                  className={`rfButton rfButtonDownload ${styles.heroCtaButton}`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <Icon path={mdiBugOutline} size={0.9} />
                   <span>Report a Bug</span>
                 </a>
-                <Link to="/docs/developer/getting-started" className={styles.buttonTertiary}>
+                <Link
+                  to="/docs/developer/getting-started"
+                  className={`rfButton rfButtonPurple ${styles.heroCtaButton}`}
+                >
                   <Icon path={mdiSourcePull} size={0.9} />
                   <span>Start Contributing</span>
                 </Link>
