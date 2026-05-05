@@ -251,6 +251,11 @@ module.exports = {
           type: 'localeDropdown',
           position: 'right',
         },
+        {
+          href: 'https://www.patreon.com/c/knipknap',
+          label: 'Patreon',
+          position: 'right',
+        },
       ],
     },
     footer: {
