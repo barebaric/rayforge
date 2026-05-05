@@ -22,3 +22,84 @@
     display: none;
   }
 }
+
+:global(html) {
+  --rayforge-social-fab-icon-filter: none;
+}
+
+:global(html[data-theme='dark']) {
+  --rayforge-social-fab-icon-filter: invert(1);
+}
+
+.floatingLinks {
+  position: fixed;
+  right: calc(1.25rem + env(safe-area-inset-right));
+  bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  z-index: 200;
+}
+
+.floatingLink {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  background: color-mix(
+    in srgb,
+    var(--ifm-background-surface-color) 90%,
+    transparent
+  );
+  border: 1px solid var(--ifm-color-emphasis-200);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.floatingLink:hover {
+  transform: translateY(-2px);
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.22);
+}
+
+.floatingLink:active {
+  transform: translateY(-1px);
+}
+
+.floatingLink:focus-visible {
+  outline: 3px solid var(--ifm-color-primary);
+  outline-offset: 4px;
+}
+
+.floatingIcon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  filter: var(--rayforge-social-fab-icon-filter);
+}
+
+.floatingIconPatreon {
+  filter: none;
+}
+
+@media (max-width: 996px) {
+  .floatingLinks {
+    right: calc(1rem + env(safe-area-inset-right));
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    gap: 0.625rem;
+  }
+
+  .floatingLink {
+    width: 42px;
+    height: 42px;
+  }
+}

@@ -1,7 +1,47 @@
 import React from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
+import Icon from '@mdi/react';
+import {
+  mdiBugOutline,
+  mdiLightbulbOnOutline,
+  mdiSourcePull,
+  mdiBookOpenPageVariantOutline,
+  mdiHandCoinOutline,
+  mdiGithub,
+} from '@mdi/js';
 import styles from './contributing.module.css';
+
+const quickActions = [
+  {
+    title: 'Report a Bug',
+    description: 'Open an issue with steps to reproduce and what you expected.',
+    href: 'https://github.com/barebaric/rayforge/issues/new',
+    icon: mdiBugOutline,
+    iconClass: styles.iconCyan,
+  },
+  {
+    title: 'Suggest a Feature',
+    description: 'Share a use case and what success looks like for you.',
+    href: 'https://github.com/barebaric/rayforge/issues/new?labels=enhancement',
+    icon: mdiLightbulbOnOutline,
+    iconClass: styles.iconOrange,
+  },
+  {
+    title: 'Submit Code',
+    description: 'Follow the developer guide and send a pull request.',
+    to: '/docs/developer/getting-started',
+    icon: mdiSourcePull,
+    iconClass: styles.iconPurple,
+  },
+  {
+    title: 'Improve Documentation',
+    description: 'Fix typos, add examples, and make the docs easier to follow.',
+    to: '/docs/getting-started/installation',
+    icon: mdiBookOpenPageVariantOutline,
+    iconClass: styles.iconCyan,
+  },
+];
 
 export default function Contributing() {
   return (
@@ -9,136 +49,247 @@ export default function Contributing() {
       title="Contributing"
       description="Learn how to contribute to Rayforge — report bugs, suggest features, submit code, improve docs, or support the project financially."
     >
-      <div className="container container--fluid margin-vert--lg">
-        <div className="row">
-          <div className="col col--8 col--offset-2">
-            <h1>Contributing to Rayforge</h1>
-
-            <div className={styles.supportSection}>
-              <h2>Support the Project</h2>
-              <a href="https://www.patreon.com/c/knipknap">
-                <img
-                  src="https://c5.patreon.com/external/logo/become_a_patron_button.png"
-                  alt="Become a Patron"
-                  height="55"
-                />
-              </a>
+      <main className={styles.pageWrapper}>
+        <section className={styles.hero}>
+          <div className={styles.heroInner}>
+            <div className={styles.heroContent}>
+              <h1 className={styles.heroTitle}>
+                Contributing to{' '}
+                <span className={styles.heroTitleGradient}>Rayforge</span>
+              </h1>
+              <p className={styles.heroSubtitle}>
+                Help improve Rayforge: report bugs, suggest features, submit
+                code, refine docs, or support the project financially.
+              </p>
+              <div className={styles.heroCtas}>
+                <a
+                  href="https://www.patreon.com/c/knipknap"
+                  className={`rfButton rfButtonOrange ${styles.heroCtaButton}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Icon path={mdiHandCoinOutline} size={0.9} />
+                  <span>Support on Patreon</span>
+                </a>
+                <a
+                  href="https://github.com/barebaric/rayforge/issues/new"
+                  className={`rfButton rfButtonDownload ${styles.heroCtaButton}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Icon path={mdiBugOutline} size={0.9} />
+                  <span>Report a Bug</span>
+                </a>
+                <Link
+                  to="/docs/developer/getting-started"
+                  className={`rfButton rfButtonPurple ${styles.heroCtaButton}`}
+                >
+                  <Icon path={mdiSourcePull} size={0.9} />
+                  <span>Start Contributing</span>
+                </Link>
+              </div>
             </div>
 
-            <h2>Community & Support</h2>
-
-            <ul>
-              <li>
-                <strong>Report Issues</strong>:{' '}
-                <a href="https://github.com/barebaric/rayforge/issues">
-                  GitHub Issues
+            <div className={styles.heroPanel}>
+              <div className={styles.panelHeader}>
+                <div className={styles.panelBadge}>
+                  <Icon path={mdiGithub} size={0.85} />
+                  <span>GitHub</span>
+                </div>
+                <h2 className={styles.panelTitle}>Community & Support</h2>
+              </div>
+              <div className={styles.panelLinks}>
+                <a
+                  href="https://github.com/barebaric/rayforge/issues"
+                  className={styles.panelLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className={styles.panelLinkLabel}>Report issues</span>
+                  <span className={styles.panelLinkMeta}>GitHub Issues</span>
                 </a>
-              </li>
-              <li>
-                <strong>Source Code</strong>:{' '}
-                <a href="https://github.com/barebaric/rayforge">
-                  GitHub Repository
+                <a
+                  href="https://github.com/barebaric/rayforge"
+                  className={styles.panelLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className={styles.panelLinkLabel}>Browse source</span>
+                  <span className={styles.panelLinkMeta}>GitHub repository</span>
                 </a>
-              </li>
-            </ul>
+                <Link to="/sponsor" className={styles.panelLink}>
+                  <span className={styles.panelLinkLabel}>
+                    Become a Sponsor
+                  </span>
+                  <span className={styles.panelLinkMeta}>Help us Improve</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
 
-            <p>
-              We welcome contributions of all kinds! Whether you're fixing
-              bugs, adding features, improving documentation, or helping with
-              packaging, your contributions make Rayforge better for everyone.
+        <section className={styles.section}>
+          <div className={styles.sectionInner}>
+            <h2 className={styles.sectionTitle}>Quick Actions</h2>
+            <div className={styles.cardGrid}>
+              {quickActions.map((action) => {
+                const cardInner = (
+                  <>
+                    <div className={`${styles.cardIcon} ${action.iconClass}`}>
+                      <Icon path={action.icon} size={1.1} />
+                    </div>
+                    <div className={styles.cardBody}>
+                      <h3 className={styles.cardTitle}>{action.title}</h3>
+                      <p className={styles.cardDescription}>
+                        {action.description}
+                      </p>
+                    </div>
+                  </>
+                );
+
+                if (action.to) {
+                  return (
+                    <Link key={action.title} to={action.to} className={styles.card}>
+                      {cardInner}
+                    </Link>
+                  );
+                }
+
+                return (
+                  <a
+                    key={action.title}
+                    href={action.href}
+                    className={styles.card}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {cardInner}
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionInner}>
+            <h2 className={styles.sectionTitle}>Ways to Contribute</h2>
+            <p className={styles.lead}>
+              We welcome contributions of all kinds. Every bug report, PR, and
+              documentation fix makes Rayforge better for everyone.
             </p>
 
-            <h2>Ways to Contribute</h2>
+            <div className={styles.twoCol}>
+              <div className={styles.block}>
+                <div className={styles.blockHeader}>
+                  <div className={`${styles.blockIcon} ${styles.iconCyan}`}>
+                    <Icon path={mdiBugOutline} size={0.95} />
+                  </div>
+                  <h3 className={styles.blockTitle}>Report Bugs</h3>
+                </div>
+                <ol className={styles.steps}>
+                  <li className={styles.step}>
+                    Check{' '}
+                    <a
+                      href="https://github.com/barebaric/rayforge/issues"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      existing issues
+                    </a>{' '}
+                    to avoid duplicates.
+                  </li>
+                  <li className={styles.step}>
+                    Create a{' '}
+                    <a
+                      href="https://github.com/barebaric/rayforge/issues/new"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      new issue
+                    </a>{' '}
+                    with a clear description, steps to reproduce, expected vs.
+                    actual behavior, system info, and screenshots if applicable.
+                  </li>
+                </ol>
+              </div>
 
-            <h3>Report Bugs</h3>
+              <div className={styles.block}>
+                <div className={styles.blockHeader}>
+                  <div className={`${styles.blockIcon} ${styles.iconOrange}`}>
+                    <Icon path={mdiLightbulbOnOutline} size={0.95} />
+                  </div>
+                  <h3 className={styles.blockTitle}>Suggest Features</h3>
+                </div>
+                <ol className={styles.steps}>
+                  <li className={styles.step}>
+                    Review{' '}
+                    <a
+                      href="https://github.com/barebaric/rayforge/issues?q=is%3Aissue+label%3Aenhancement"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      existing feature requests
+                    </a>
+                    .
+                  </li>
+                  <li className={styles.step}>
+                    Open a feature request describing the idea, use case,
+                    benefits, and (optionally) a possible approach.
+                  </li>
+                </ol>
+              </div>
 
-            <p>Found a bug? Help us fix it:</p>
+              <div className={styles.block}>
+                <div className={styles.blockHeader}>
+                  <div className={`${styles.blockIcon} ${styles.iconPurple}`}>
+                    <Icon path={mdiSourcePull} size={0.95} />
+                  </div>
+                  <h3 className={styles.blockTitle}>Submit Code</h3>
+                </div>
+                <p className={styles.blockBody}>
+                  For detailed information on submitting code contributions,
+                  follow the{' '}
+                  <Link to="/docs/developer/getting-started">
+                    Developer Documentation – Getting Started
+                  </Link>{' '}
+                  guide.
+                </p>
+              </div>
 
-            <ol>
-              <li>
-                Check{' '}
-                <a href="https://github.com/barebaric/rayforge/issues">
-                  existing issues
-                </a>{' '}
-                to avoid duplicates
-              </li>
-              <li>
-                Create a{' '}
-                <a href="https://github.com/barebaric/rayforge/issues/new">
-                  new issue
-                </a>{' '}
-                with:
-                <ul>
-                  <li>Clear description of the problem</li>
-                  <li>Steps to reproduce</li>
-                  <li>Expected vs. actual behavior</li>
-                  <li>System information (OS, Rayforge version)</li>
-                  <li>Screenshots or error messages if applicable</li>
+              <div className={styles.block}>
+                <div className={styles.blockHeader}>
+                  <div className={`${styles.blockIcon} ${styles.iconCyan}`}>
+                    <Icon path={mdiBookOpenPageVariantOutline} size={0.95} />
+                  </div>
+                  <h3 className={styles.blockTitle}>Improve Documentation</h3>
+                </div>
+                <ul className={styles.bullets}>
+                  <li>Fix typos or unclear explanations</li>
+                  <li>Add examples and screenshots</li>
+                  <li>Improve organization</li>
+                  <li>Translate to other languages</li>
                 </ul>
-              </li>
-            </ol>
+                <p className={styles.blockBody}>
+                  Use the “edit this page” button on any documentation page and
+                  submit PRs the same way as code contributions.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-            <h3>Suggest Features</h3>
-
-            <p>Have an idea for a new feature?</p>
-
-            <ol>
-              <li>
-                Check{' '}
-                <a href="https://github.com/barebaric/rayforge/issues?q=is%3Aissue+label%3Aenhancement">
-                  existing feature requests
-                </a>
-              </li>
-              <li>
-                Open a feature request issue with:
-                <ul>
-                  <li>Description of the feature</li>
-                  <li>Use case and benefits</li>
-                  <li>Possible implementation approach (optional)</li>
-                </ul>
-              </li>
-            </ol>
-
-            <h3>Submit Code</h3>
-
-            <p>
-              For detailed information on submitting code contributions,
-              please see the{' '}
-              <Link to="/docs/developer/getting-started">
-                Developer Documentation - Getting Started
-              </Link>{' '}
-              guide.
-            </p>
-
-            <h3>Improve Documentation</h3>
-
-            <p>Documentation contributions are highly valued:</p>
-
-            <ul>
-              <li>Fix typos or unclear explanations</li>
-              <li>Add examples and screenshots</li>
-              <li>Improve organization</li>
-              <li>Translate to other languages</li>
-            </ul>
-
-            <p>
-              You can click the "edit this page" button on any documentation
-              page, then submit PRs the same way as code contributions.
-            </p>
-
-            <h2>About This Documentation</h2>
-
-            <p>
-              This documentation is designed for end-users of Rayforge. If
-              you're looking for developer documentation, please see the{' '}
-              <Link to="/docs/developer/getting-started">
-                Developer Documentation
-              </Link>{' '}
-              guide.
+        <section className={styles.section}>
+          <div className={styles.sectionInner}>
+            <h2 className={styles.sectionTitle}>About This Documentation</h2>
+            <p className={styles.lead}>
+              This documentation is designed for end-users of Rayforge. For
+              developer docs, start here:{' '}
+              <Link to="/docs/developer/getting-started">Developer Documentation</Link>.
             </p>
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </Layout>
   );
 }
