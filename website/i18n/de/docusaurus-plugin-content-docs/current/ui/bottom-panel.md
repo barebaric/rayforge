@@ -282,6 +282,55 @@ Zwischenablage.
 Wenn der Konsole- oder G-Code-Viewer-Tab aktiv ist, kannst du auch
 <kbd>Strg+F</kbd> drücken, um im Inhalt zu suchen.
 
+## Laser-Steuerung
+
+Der Laser-Dock bietet manuelle Steuerung deines Lasers zum Testen,
+Ausrichten und Fokussieren. Er erscheint als Tab neben dem
+Steuerungs-Dock im unteren Panel.
+
+### Laserkopf-Auswahl
+
+Ein Dropdown-Menü listet alle konfigurierten Laserköpfe auf. Wenn deine
+Maschine mehrere Köpfe hat, wähle den aus, den du steuern möchtest. Der
+Untertitel zeigt die Werkzeugnummer und die maximale Leistung des
+ausgewählten Kopfs an.
+
+### Ein-/Aus-Schalter
+
+Der Umschalter neben der Kopfauswahl schaltet den Laser ein oder aus. Wenn
+der Laser aktiv ist, wird der Knopf rot als Sicherheitsanzeige. Der Laser
+kann auch über den Toolbar-Knopf in der Hauptfensterleiste umgeschaltet
+werden.
+
+### Leistung
+
+Ein Schieberegler und ein Texteingabefeld steuern die Laserleistung von 0
+bis 100 Prozent. Wenn du zu einem anderen Laserkopf wechselst, wird die
+Leistung auf die konfigurierte Fokusleistung dieses Kopfs zurückgesetzt.
+
+### Frequenz und Impulsbreite
+
+Diese Steuerungen erscheinen nur, wenn der ausgewählte Laserkopf vom Typ
+CO2 oder Fiber ist. Sie ermöglichen das Einstellen der PWM-Frequenz (Hz)
+und der Impulsbreite (Mikrosekunden) für den manuellen Laserbetrieb. Bei
+Diodenlasern sind diese Felder ausgeblendet.
+
+### Dauer (Auto-Aus-Timer)
+
+Stelle eine Dauer in Sekunden ein, nach der sich der Laser automatisch
+ausschaltet. Stelle 0 ein für Dauerbetrieb — der Laser bleibt an, bis du
+ihn manuell ausschaltest. Ein Countdown-Label erscheint unter den
+Steuerungen, während der Timer läuft.
+
+### Sicherheit
+
+- Alle Steuerungen sind deaktiviert, wenn keine Laserköpfe konfiguriert
+  sind
+- Der Umschalter erfordert eine aktive Maschinenverbindung
+- Wenn die Maschine die Verbindung trennt, während der Laser an ist, wird
+  der Laser automatisch ausgeschaltet und jeder laufende Timer wird
+  abgebrochen
+
 ## Maschinenkompatibilität
 
 Das untere Panel passt sich an die Fähigkeiten deiner Maschine an:

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-03 17:08+0200\n"
+"POT-Creation-Date: 2026-05-04 00:30+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -372,6 +372,7 @@ msgid ""
 msgstr ""
 
 #: rayforge/machine/driver/driver.py rayforge/machine/transport/transport.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/machine/machine_dropdown.py
 #: rayforge/ui_gtk/machine/status_widget.py
 msgid "Unknown"
@@ -1247,6 +1248,22 @@ msgstr ""
 msgid "Unknown setting from device"
 msgstr ""
 
+#: rayforge/machine/driver/grbl/grbl_probe.py
+msgid ""
+"Device is configured to report in inches ($13=1). All values shown are in "
+"machine units."
+msgstr ""
+
+#: rayforge/machine/driver/grbl/grbl_probe.py
+msgid ""
+"Laser mode is not enabled ($32=0). Enable it for best results with laser "
+"cutters."
+msgstr ""
+
+#: rayforge/machine/driver/grbl/grbl_probe.py
+msgid "Auto-configured via probe wizard"
+msgstr ""
+
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "GRBL (Network)"
 msgstr ""
@@ -1398,6 +1415,7 @@ msgid "User-facing name"
 msgstr ""
 
 #: rayforge/machine/models/dialect/base.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/varset/varset_editor.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Description"
@@ -1698,6 +1716,7 @@ msgstr ""
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/camera/calibration_wizard.py
 #: rayforge/ui_gtk/camera/alignment_dialog.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/hook_list.py rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/wcs_dialog.py
@@ -2052,16 +2071,19 @@ msgid "Length"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Speed"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Acceleration"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 msgid "Behavior"
 msgstr ""
 
@@ -2312,10 +2334,12 @@ msgid "Lens Calibration Wizard"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 msgid "Back"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 msgid "Next"
 msgstr ""
 
@@ -2714,6 +2738,136 @@ msgstr ""
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Stream a camera image directly onto the work surface."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Configure Device"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Create Machine"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Retry"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Connection"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Select a driver and enter the connection parameters for your device."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Select driver"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Discovering Device"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Connecting to the device and reading its configuration."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Device Info"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Device Name"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Firmware Version"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "RX Buffer Size"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Arc Tolerance"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Working Area"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Axis travel in machine units."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "X Travel"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Y Travel"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Speed limits in machine units per minute."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Max Travel Speed"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Max Cut Speed"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Machine units per second squared."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid "Laser"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Max Power (S-value)"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Maximum spindle speed / S-value range"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Home on Start"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Run homing cycle when machine connects"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Single-Axis Homing"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Allow homing individual axes"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "Warnings"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Probe failed"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Error: {}"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/macro_list.py
@@ -3425,6 +3579,10 @@ msgid "Search devices…"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/profile_selector.py
+msgid "Other Device…"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/profile_selector.py
 msgid "Import from File…"
 msgstr ""
 
@@ -4068,11 +4226,6 @@ msgid "Report an issue"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Laser"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/settings_dialog.py
 #, python-brace-format
 msgid "Exported to {path}"
 msgstr ""
@@ -4100,10 +4253,6 @@ msgid "Connection and communication settings for the machine driver."
 msgstr ""
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Select driver"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Speeds &amp; Acceleration"
 msgstr ""
 
@@ -4112,15 +4261,7 @@ msgid "Movement parameters used for job time estimation and path optimization."
 msgstr ""
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Max Travel Speed"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Maximum rapid movement speed"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Max Cut Speed"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
@@ -4670,10 +4811,6 @@ msgstr ""
 
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Errors"
-msgstr ""
-
-#: rayforge/ui_gtk/shared/sanity_check_dialog.py
-msgid "Warnings"
 msgstr ""
 
 #: rayforge/ui_gtk/main_menu.py

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-03 17:08+0200\n"
+"POT-Creation-Date: 2026-05-04 00:30+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -373,6 +373,7 @@ msgstr ""
 "此驱动程序为实验性质，几乎可以确定存在错误。可能无法可靠运行。使用风险自负。"
 
 #: rayforge/machine/driver/driver.py rayforge/machine/transport/transport.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/machine/machine_dropdown.py
 #: rayforge/ui_gtk/machine/status_widget.py
 msgid "Unknown"
@@ -1254,6 +1255,22 @@ msgstr "设备报告的设置不在标准列表中。"
 msgid "Unknown setting from device"
 msgstr "来自设备的未知设置"
 
+#: rayforge/machine/driver/grbl/grbl_probe.py
+msgid ""
+"Device is configured to report in inches ($13=1). All values shown are in "
+"machine units."
+msgstr "设备已配置为以英寸报告（$13=1）。所有显示的值均为机器单位。"
+
+#: rayforge/machine/driver/grbl/grbl_probe.py
+msgid ""
+"Laser mode is not enabled ($32=0). Enable it for best results with laser "
+"cutters."
+msgstr "激光模式未启用（$32=0）。建议启用以获得最佳激光切割效果。"
+
+#: rayforge/machine/driver/grbl/grbl_probe.py
+msgid "Auto-configured via probe wizard"
+msgstr "通过探测向导自动配置"
+
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "GRBL (Network)"
 msgstr "GRBL（网络）"
@@ -1409,6 +1426,7 @@ msgid "User-facing name"
 msgstr "面向用户的名称"
 
 #: rayforge/machine/models/dialect/base.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/varset/varset_editor.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Description"
@@ -1720,6 +1738,7 @@ msgstr "此机器配置文件及其所有设置将被永久删除。此操作无
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/camera/calibration_wizard.py
 #: rayforge/ui_gtk/camera/alignment_dialog.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/hook_list.py rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/wcs_dialog.py
@@ -2074,16 +2093,19 @@ msgid "Length"
 msgstr "长度"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Speed"
 msgstr "速度"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Acceleration"
 msgstr "加速度"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 msgid "Behavior"
 msgstr "行为"
 
@@ -2336,10 +2358,12 @@ msgid "Lens Calibration Wizard"
 msgstr "镜头校准向导"
 
 #: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 msgid "Back"
 msgstr "返回"
 
 #: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 msgid "Next"
 msgstr "下一步"
 
@@ -2749,6 +2773,136 @@ msgstr "摄像头"
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Stream a camera image directly onto the work surface."
 msgstr "将摄像头图像直接流式传输到工作台。"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Configure Device"
+msgstr "配置设备"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Create Machine"
+msgstr "创建机器"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Retry"
+msgstr "重试"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Connection"
+msgstr "连接"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Select a driver and enter the connection parameters for your device."
+msgstr "选择驱动程序并输入设备的连接参数。"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Select driver"
+msgstr "选择驱动程序"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Discovering Device"
+msgstr "正在发现设备"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Connecting to the device and reading its configuration."
+msgstr "正在连接设备并读取其配置。"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Device Info"
+msgstr "设备信息"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Device Name"
+msgstr "设备名称"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Firmware Version"
+msgstr "固件版本"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "RX Buffer Size"
+msgstr "RX 缓冲区大小"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Arc Tolerance"
+msgstr "圆弧公差"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Working Area"
+msgstr "工作区域"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Axis travel in machine units."
+msgstr "以机器单位表示的轴行程。"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "X Travel"
+msgstr "X 行程"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Y Travel"
+msgstr "Y 行程"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Speed limits in machine units per minute."
+msgstr "以每分钟机器单位表示的速度限制。"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Max Travel Speed"
+msgstr "最大移动速度"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Max Cut Speed"
+msgstr "最大切割速度"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Machine units per second squared."
+msgstr "每秒平方的机器单位。"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid "Laser"
+msgstr "激光"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Max Power (S-value)"
+msgstr "最大功率（S值）"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Maximum spindle speed / S-value range"
+msgstr "最大主轴转速 / S值范围"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Home on Start"
+msgstr "启动时归零"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Run homing cycle when machine connects"
+msgstr "机器连接时执行归零循环"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Single-Axis Homing"
+msgstr "单轴归零"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Allow homing individual axes"
+msgstr "允许单轴归零"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "Warnings"
+msgstr "警告"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Probe failed"
+msgstr "探测失败"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Error: {}"
+msgstr "错误：{}"
 
 #: rayforge/ui_gtk/machine/macro_list.py
 msgid "Add New Macro"
@@ -3464,6 +3618,10 @@ msgid "Search devices…"
 msgstr "搜索设备…"
 
 #: rayforge/ui_gtk/machine/profile_selector.py
+msgid "Other Device…"
+msgstr "其他设备…"
+
+#: rayforge/ui_gtk/machine/profile_selector.py
 msgid "Import from File…"
 msgstr "从文件导入…"
 
@@ -4107,11 +4265,6 @@ msgid "Report an issue"
 msgstr "报告问题"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Laser"
-msgstr "激光"
-
-#: rayforge/ui_gtk/machine/settings_dialog.py
 #, python-brace-format
 msgid "Exported to {path}"
 msgstr "已导出到 {path}"
@@ -4139,10 +4292,6 @@ msgid "Connection and communication settings for the machine driver."
 msgstr "机器驱动程序的连接和通信设置。"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Select driver"
-msgstr "选择驱动程序"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Speeds &amp; Acceleration"
 msgstr "速度和加速度"
 
@@ -4151,16 +4300,8 @@ msgid "Movement parameters used for job time estimation and path optimization."
 msgstr "用于作业时间估算和路径优化的运动参数。"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Max Travel Speed"
-msgstr "最大移动速度"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Maximum rapid movement speed"
 msgstr "最大快速移动速度"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Max Cut Speed"
-msgstr "最大切割速度"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Maximum cutting speed"
@@ -4721,10 +4862,6 @@ msgstr "发现{summary}。继续操作可能会损坏您的机器或工件。"
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Errors"
 msgstr "错误"
-
-#: rayforge/ui_gtk/shared/sanity_check_dialog.py
-msgid "Warnings"
-msgstr "警告"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "New"

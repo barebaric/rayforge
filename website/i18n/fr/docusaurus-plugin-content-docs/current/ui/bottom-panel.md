@@ -273,6 +273,55 @@ du stock, importer un fichier ou coller depuis le presse-papiers.
 Lorsque l'onglet Console ou Visualiseur G-code est actif, tu peux aussi appuyer sur
 <kbd>Ctrl+F</kbd> pour rechercher dans le contenu.
 
+## Contrôle Laser
+
+Le dock Laser offre un contrôle manuel de ton laser pour les tests,
+l'alignement et la mise au point. Il apparaît comme un onglet à côté du
+dock Contrôles dans le panneau inférieur.
+
+### Sélecteur de Tête Laser
+
+Un menu déroulant liste toutes les têtes laser configurées. Quand ta
+machine possède plusieurs têtes, choisis celle que tu veux contrôler. Le
+sous-titre indique le numéro d'outil et la puissance maximale de la tête
+sélectionnée.
+
+### Bouton de Bascule
+
+Le bouton de bascule à côté du sélecteur de tête allume ou éteint le laser.
+Quand le laser est actif, le bouton devient rouge comme indicateur de
+sécurité. Le laser peut aussi être basculé depuis le bouton de la barre
+d'outils dans l'en-tête de la fenêtre principale.
+
+### Puissance
+
+Un curseur et un champ de texte contrôlent la puissance du laser de 0 à
+100 pourcent. Quand tu passes à une tête laser différente, la puissance se
+réinitialise à la puissance de focalisation configurée pour cette tête.
+
+### Fréquence et Largeur d'Impulsion
+
+Ces contrôles apparaissent uniquement lorsque la tête laser sélectionnée
+est de type CO2 ou Fibre. Ils permettent de régler la fréquence PWM (Hz) et
+la largeur d'impulsion (microsecondes) pour le fonctionnement manuel du
+laser. Pour les lasers Diode, ces champs sont masqués.
+
+### Durée (Minuterie d'Arrêt Automatique)
+
+Définis une durée en secondes après laquelle le laser s'éteint
+automatiquement. Règle sur 0 pour un fonctionnement continu — le laser
+reste allumé jusqu'à ce que tu l'éteignes manuellement. Une étiquette de
+compte à rebours apparaît sous les contrôles pendant que la minuterie est
+en cours.
+
+### Sécurité
+
+- Tous les contrôles sont désactivés lorsqu'aucune tête laser n'est
+  configurée
+- Le bouton de bascule nécessite une connexion machine active
+- Si la machine se déconnecte alors que le laser est allumé, le laser est
+  éteint automatiquement et toute minuterie en cours est annulée
+
 ## Compatibilité machine
 
 Le panneau inférieur s'adapte aux capacités de ta machine :

@@ -66,6 +66,26 @@
   </screenshots>
 
   <releases>
+    <release version="1.7.1" date="2026-05-05">
+      <description>
+        <p>Updated translations</p>
+      </description>
+    </release>
+    <release version="1.7.0" date="2026-05-04">
+      <description>
+        <p>Configuration Wizard with GRBL Probing</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Configuration wizard that probes GRBL devices over serial or
+          network and creates a machine profile automatically</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Enhanced text rendering by integrating Pango for improved
+          layout and metrics</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.7.0-beta3" date="2026-05-03">
       <description>
         <p>Manual Laser Control, Serial Transport Improvements, Machine
