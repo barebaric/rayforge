@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-03 17:08+0200\n"
+"POT-Creation-Date: 2026-05-04 00:30+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -379,6 +379,7 @@ msgstr ""
 "працювати нестабільно. Використовуйте на власний ризик."
 
 #: rayforge/machine/driver/driver.py rayforge/machine/transport/transport.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/machine/machine_dropdown.py
 #: rayforge/ui_gtk/machine/status_widget.py
 msgid "Unknown"
@@ -1362,6 +1363,26 @@ msgstr "Налаштування, повідомлені пристроєм, в�
 msgid "Unknown setting from device"
 msgstr "Невідоме налаштування від пристрою"
 
+#: rayforge/machine/driver/grbl/grbl_probe.py
+msgid ""
+"Device is configured to report in inches ($13=1). All values shown are in "
+"machine units."
+msgstr ""
+"Пристрій налаштовано на звітування в дюймах ($13=1). Усі відображені "
+"значення – у машинних одиницях."
+
+#: rayforge/machine/driver/grbl/grbl_probe.py
+msgid ""
+"Laser mode is not enabled ($32=0). Enable it for best results with laser "
+"cutters."
+msgstr ""
+"Лазерний режим не увімкнено ($32=0). Увімкніть його для найкращих "
+"результатів з лазерними різаками."
+
+#: rayforge/machine/driver/grbl/grbl_probe.py
+msgid "Auto-configured via probe wizard"
+msgstr "Автоматично налаштовано через майстер зондування"
+
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "GRBL (Network)"
 msgstr "GRBL (Мережа)"
@@ -1524,6 +1545,7 @@ msgid "User-facing name"
 msgstr "Назва для користувача"
 
 #: rayforge/machine/models/dialect/base.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/varset/varset_editor.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Description"
@@ -1844,6 +1866,7 @@ msgstr ""
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/camera/calibration_wizard.py
 #: rayforge/ui_gtk/camera/alignment_dialog.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/hook_list.py rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/wcs_dialog.py
@@ -2207,16 +2230,19 @@ msgid "Length"
 msgstr "Довжина"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Speed"
 msgstr "Швидкість"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Acceleration"
 msgstr "Прискорення"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 msgid "Behavior"
 msgstr "Поведінка"
 
@@ -2473,10 +2499,12 @@ msgid "Lens Calibration Wizard"
 msgstr "Майстер калібрування об'єктива"
 
 #: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 msgid "Back"
 msgstr "Назад"
 
 #: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/machine/config_wizard.py
 msgid "Next"
 msgstr "Далі"
 
@@ -2897,6 +2925,136 @@ msgstr "Камери"
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Stream a camera image directly onto the work surface."
 msgstr "Транслювати зображення камери безпосередньо на робочу поверхню."
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Configure Device"
+msgstr "Налаштувати пристрій"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Create Machine"
+msgstr "Створити машину"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Retry"
+msgstr "Повторити"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Connection"
+msgstr "З'єднання"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Select a driver and enter the connection parameters for your device."
+msgstr "Виберіть драйвер і введіть параметри з'єднання для вашого пристрою."
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Select driver"
+msgstr "Виберіть драйвер"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Discovering Device"
+msgstr "Виявлення пристрою"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Connecting to the device and reading its configuration."
+msgstr "Підключення до пристрою та читання його конфігурації."
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Device Info"
+msgstr "Інформація про пристрій"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Device Name"
+msgstr "Назва пристрою"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Firmware Version"
+msgstr "Версія прошивки"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "RX Buffer Size"
+msgstr "Розмір буфера RX"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Arc Tolerance"
+msgstr "Допуск дуги"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Working Area"
+msgstr "Робоча зона"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Axis travel in machine units."
+msgstr "Хід осей у машинних одиницях."
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "X Travel"
+msgstr "Хід X"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Y Travel"
+msgstr "Хід Y"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Speed limits in machine units per minute."
+msgstr "Обмеження швидкості в машинних одиницях за хвилину."
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Max Travel Speed"
+msgstr "Макс. швидкість переміщення"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Max Cut Speed"
+msgstr "Макс. швидкість різання"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Machine units per second squared."
+msgstr "Машинні одиниці на секунду в квадраті."
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid "Laser"
+msgstr "Лазер"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Max Power (S-value)"
+msgstr "Макс. потужність (значення S)"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Maximum spindle speed / S-value range"
+msgstr "Максимальна швидкість шпинделя / діапазон значення S"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Home on Start"
+msgstr "Паркування при запуску"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Run homing cycle when machine connects"
+msgstr "Виконувати цикл паркування при підключенні машини"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Single-Axis Homing"
+msgstr "Паркування по одній осі"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Allow homing individual axes"
+msgstr "Дозволити паркування окремих осей"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "Warnings"
+msgstr "Попередження"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Probe failed"
+msgstr "Зондування не вдалося"
+
+#: rayforge/ui_gtk/machine/config_wizard.py
+msgid "Error: {}"
+msgstr "Помилка: {}"
 
 #: rayforge/ui_gtk/machine/macro_list.py
 msgid "Add New Macro"
@@ -3640,6 +3798,10 @@ msgid "Search devices…"
 msgstr "Пошук пристроїв…"
 
 #: rayforge/ui_gtk/machine/profile_selector.py
+msgid "Other Device…"
+msgstr "Інший пристрій…"
+
+#: rayforge/ui_gtk/machine/profile_selector.py
 msgid "Import from File…"
 msgstr "Імпортувати з файлу…"
 
@@ -4300,11 +4462,6 @@ msgid "Report an issue"
 msgstr "Повідомити про проблему"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Laser"
-msgstr "Лазер"
-
-#: rayforge/ui_gtk/machine/settings_dialog.py
 #, python-brace-format
 msgid "Exported to {path}"
 msgstr "Експортовано до {path}"
@@ -4332,10 +4489,6 @@ msgid "Connection and communication settings for the machine driver."
 msgstr "Налаштування підключення та зв'язку для драйвера верстата."
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Select driver"
-msgstr "Виберіть драйвер"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Speeds &amp; Acceleration"
 msgstr "Швидкості та прискорення"
 
@@ -4346,16 +4499,8 @@ msgstr ""
 "шляху."
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Max Travel Speed"
-msgstr "Макс. швидкість переміщення"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Maximum rapid movement speed"
 msgstr "Максимальна швидкість швидкого переміщення"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Max Cut Speed"
-msgstr "Макс. швидкість різання"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Maximum cutting speed"
@@ -4924,10 +5069,6 @@ msgstr ""
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Errors"
 msgstr "Помилки"
-
-#: rayforge/ui_gtk/shared/sanity_check_dialog.py
-msgid "Warnings"
-msgstr "Попередження"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "New"

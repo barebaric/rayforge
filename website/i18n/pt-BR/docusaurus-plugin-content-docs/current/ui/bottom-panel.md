@@ -281,6 +281,54 @@ um arquivo ou colar da área de transferência.
 Quando a aba do Console ou do Visualizador G-code está ativa, você também pode
 pressionar <kbd>Ctrl+F</kbd> para pesquisar dentro do conteúdo.
 
+## Controle do Laser
+
+O dock de Laser fornece controle manual sobre seu laser para teste,
+alinhamento e focagem. Ele aparece como uma aba ao lado do dock de
+Controles no painel inferior.
+
+### Seletor de Cabeça Laser
+
+Um menu suspenso lista todas as cabeças laser configuradas. Quando sua
+máquina possui múltiplas cabeças, selecione a que deseja controlar. O
+subtítulo mostra o número da ferramenta e a potência máxima da cabeça
+selecionada.
+
+### Botão de Ativação
+
+O botão de ativação ao lado do seletor de cabeça liga ou desliga o laser.
+Quando o laser está ativo, o botão fica vermelho como indicador de
+segurança. O laser também pode ser ativado pelo botão da barra de
+ferramentas no cabeçalho da janela principal.
+
+### Potência
+
+Um controle deslizante e um campo de texto controlam a potência do laser de
+0 a 100 por cento. Quando você alterna para uma cabeça laser diferente, a
+potência é redefinida para a potência de foco configurada dessa cabeça.
+
+### Frequência e Largura de Pulso
+
+Esses controles aparecem apenas quando a cabeça laser selecionada é do tipo
+CO2 ou Fibra. Eles permitem definir a frequência PWM (Hz) e a largura de
+pulso (microssegundos) para a operação manual do laser. Para lasers Diodo,
+esses campos estão ocultos.
+
+### Duração (Temporizador de Desligamento Automático)
+
+Defina uma duração em segundos após a qual o laser desliga automaticamente.
+Defina como 0 para operação contínua — o laser permanece aceso até você
+desligá-lo manualmente. Um rótulo de contagem regressiva aparece abaixo dos
+controles enquanto o temporizador está em execução.
+
+### Segurança
+
+- Todos os controles estão desabilitados quando nenhuma cabeça laser está
+  configurada
+- O botão de ativação requer uma conexão ativa com a máquina
+- Se a máquina se desconectar enquanto o laser está aceso, o laser é
+  desligado automaticamente e qualquer temporizador em execução é cancelado
+
 ## Compatibilidade de Máquina
 
 O Painel Inferior adapta-se às capacidades da sua máquina:

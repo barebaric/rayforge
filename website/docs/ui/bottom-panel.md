@@ -278,6 +278,50 @@ stock, import a file, or paste from the clipboard.
 When the Console or G-code Viewer tab is active, you can also press
 <kbd>Ctrl+F</kbd> to search within the content.
 
+## Laser Control
+
+The Laser dock provides manual control over your laser for testing, alignment,
+and focusing. It appears as a tab alongside the Controls dock in the bottom
+panel.
+
+### Laser Head Selector
+
+A dropdown lists all configured laser heads. When your machine has multiple
+heads, pick the one you want to control. The subtitle shows the tool number
+and maximum power for the selected head.
+
+### Toggle Button
+
+The toggle button next to the head selector turns the laser on or off. When
+the laser is active, the button turns red as a safety indicator. The laser
+can also be toggled from the toolbar button in the main window header.
+
+### Power
+
+A slider and text entry control the laser power from 0 to 100 percent. When
+you switch to a different laser head, the power resets to that head's
+configured focus power.
+
+### Frequency and Pulse Width
+
+These controls appear only when the selected laser head is a CO2 or Fiber
+type. They let you set the PWM frequency (Hz) and pulse width (microseconds)
+for manual laser operation. For Diode lasers, these fields are hidden.
+
+### Duration (Auto-Off Timer)
+
+Set a duration in seconds after which the laser automatically turns off. Set
+to 0 for continuous operation — the laser stays on until you manually turn
+it off. A countdown label appears below the controls while the timer is
+running.
+
+### Safety
+
+- All controls are disabled when no laser heads are configured
+- The toggle button requires an active machine connection
+- If the machine disconnects while the laser is on, the laser is turned off
+  automatically and any running timer is cancelled
+
 ## Machine Compatibility
 
 The Bottom Panel adapts to your machine's capabilities:

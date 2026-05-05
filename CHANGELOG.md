@@ -5,6 +5,21 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.7.1
+
+- Updated translations.
+
+## 1.7.0
+
+### Added
+
+- Configuration wizard with GRBL probing support for automatic device
+  detection and setup
+
+### Changed
+
+- Enhance text rendering by integrating Pango for improved layout and metrics
+
 ## 1.7.0-beta3
 
 ### Added

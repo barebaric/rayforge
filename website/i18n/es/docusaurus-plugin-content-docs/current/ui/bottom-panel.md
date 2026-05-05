@@ -285,6 +285,56 @@ importar un archivo o pegar desde el portapapeles.
 Cuando la pestaña de Consola o Visor de Código G está activa, también puedes presionar
 <kbd>Ctrl+F</kbd> para buscar dentro del contenido.
 
+## Control del Láser
+
+El dock de Láser proporciona control manual sobre tu láser para pruebas,
+alineación y enfoque. Aparece como una pestaña junto al dock de Controles
+en el panel inferior.
+
+### Selector de Cabeza Láser
+
+Un menú desplegable lista todas las cabezas láser configuradas. Cuando tu
+máquina tiene múltiples cabezas, selecciona la que deseas controlar. El
+subtítulo muestra el número de herramienta y la potencia máxima de la
+cabeza seleccionada.
+
+### Botón de Activación
+
+El botón de activación junto al selector de cabeza enciende o apaga el
+láser. Cuando el láser está activo, el botón se vuelve rojo como indicador
+de seguridad. El láser también se puede activar desde el botón de la barra
+de herramientas en la cabecera de la ventana principal.
+
+### Potencia
+
+Un control deslizante y una entrada de texto controlan la potencia del
+láser de 0 a 100 por ciento. Cuando cambias a una cabeza láser diferente,
+la potencia se restablece a la potencia de enfoque configurada de esa
+cabeza.
+
+### Frecuencia y Ancho de Pulso
+
+Estos controles aparecen solo cuando la cabeza láser seleccionada es de
+tipo CO2 o Fibra. Permiten configurar la frecuencia PWM (Hz) y el ancho de
+pulso (microsegundos) para la operación manual del láser. Para láseres de
+Diodo, estos campos están ocultos.
+
+### Duración (Temporizador de Apagado Automático)
+
+Establece una duración en segundos tras la cual el láser se apaga
+automáticamente. Establece en 0 para operación continua — el láser
+permanece encendido hasta que lo apagues manualmente. Una etiqueta de
+cuenta regresiva aparece debajo de los controles mientras el temporizador
+está en funcionamiento.
+
+### Seguridad
+
+- Todos los controles están deshabilitados cuando no hay cabezas láser
+  configuradas
+- El botón de activación requiere una conexión activa con la máquina
+- Si la máquina se desconecta mientras el láser está encendido, el láser se
+  apaga automáticamente y cualquier temporizador en ejecución se cancela
+
 ## Compatibilidad de Máquina
 
 El Panel Inferior se adapta a las capacidades de tu máquina:
