@@ -11,6 +11,7 @@ from typing import (
     Iterable,
     Type,
     Callable,
+    TYPE_CHECKING,
 )
 from copy import deepcopy
 import math
@@ -46,17 +47,17 @@ from .fitting import (
     fit_curves,
     optimize_path_from_array,
 )
-from .font_config import FontConfig
 from .linearize import linearize_geometry
-from .primitives import (
-    find_closest_point_on_line_segment,
-)
+from .primitives import find_closest_point_on_line_segment
 from .query import (
     get_bounding_rect_from_array,
     find_closest_point_on_path_from_array,
     get_total_distance_from_array,
 )
 from .types import Point, Point3D, Polygon, Rect
+
+if TYPE_CHECKING:
+    from .font_config import FontConfig
 
 
 logger = logging.getLogger(__name__)
@@ -1320,6 +1321,7 @@ class Geometry:
             A new Geometry instance representing the text path.
         """
         from .text import text_to_geometry
+        from .font_config import FontConfig
 
         if font_config is None:
             font_config = FontConfig()
