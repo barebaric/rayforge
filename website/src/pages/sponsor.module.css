@@ -85,8 +85,9 @@ html[data-theme='dark'] .hero {
 }
 
 html[data-theme='dark'] .statsSection {
-  background: #161618;
-  border-color: #2a2a2c;
+  background: var(--ifm-background-color);
+  border-top: none;
+  border-bottom: none;
 }
 
 .statsGrid {
@@ -238,8 +239,9 @@ html[data-theme='dark'] .benefitValue {
 }
 
 html[data-theme='dark'] .comparisonSection {
-  background: #161618;
-  border-color: #2a2a2c;
+  background: var(--ifm-background-color);
+  border-top: none;
+  border-bottom: none;
 }
 
 .comparisonInner {
@@ -370,10 +372,6 @@ html[data-theme='dark'] .comparisonTable td {
   background: rgba(255, 159, 67, 0.08);
   color: var(--ifm-font-color-base);
   font-weight: 700;
-}
-
-html[data-theme='dark'] .comparisonTable td.comparisonHighlight {
-  background: rgba(255, 159, 67, 0.1);
 }
 
 .comparisonTable tbody tr:nth-child(odd) td:not(.comparisonHighlight) {

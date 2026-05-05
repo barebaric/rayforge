@@ -7,7 +7,7 @@ export default function NavbarItemWrapper(props) {
   if (props.type === 'localeDropdown' || props.type === 'search') {
     return <DefaultNavbarItem {...props} />;
   }
-  if (props.label === 'GitHub') {
+  if (props.label === 'Patreon') {
     if (props.mobile) {
       return (
         <li className="menu__list-item">
@@ -27,33 +27,18 @@ export default function NavbarItemWrapper(props) {
       );
     }
     return (
-      <>
-        <a
-          href="https://www.patreon.com/c/knipknap"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.patreonLink}
-        >
-          <img
-            src="https://c5.patreon.com/external/logo/become_a_patron_button.png"
-            alt="Become a Patron"
-            className={styles.patreonImg}
-          />
-        </a>
-        <span className={styles.githubWrapper}>
-          <DefaultNavbarItem {...props} />
-        </span>
-      </>
-    );
-  }
-  if (props.label === 'Discord') {
-    if (props.mobile) {
-      return <DefaultNavbarItem {...props} />;
-    }
-    return (
-      <span className={styles.discordWrapper}>
-        <DefaultNavbarItem {...props} />
-      </span>
+      <a
+        href="https://www.patreon.com/c/knipknap"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.patreonLink}
+      >
+        <img
+          src="https://c5.patreon.com/external/logo/become_a_patron_button.png"
+          alt="Become a Patron"
+          className={styles.patreonImg}
+        />
+      </a>
     );
   }
   return <DefaultNavbarItem {...props} />;
