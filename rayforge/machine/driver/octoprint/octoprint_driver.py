@@ -330,7 +330,10 @@ class OctoPrintDriver(Driver):
 
             if self.keep_running:
                 self._update_connection_status(TransportStatus.SLEEPING)
-                await asyncio.sleep(_RECONNECT_INTERVAL)
+                try:
+                    await asyncio.sleep(_RECONNECT_INTERVAL)
+                except asyncio.CancelledError:
+                    return
 
     async def _run_websocket(self) -> None:
         ws_url = f"ws://{self.host}:{self.port}/sockjs/websocket"

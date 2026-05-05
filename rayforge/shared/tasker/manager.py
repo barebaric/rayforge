@@ -132,7 +132,25 @@ class TaskManager:
                 for t in pending:
                     t.cancel()
 
-                # 2. Explicitly close the loop to free the self-pipe file
+                # 2. Run the loop briefly so cancelled tasks can finish
+                # their __step and actually complete.  Without this,
+                # cancel() only sets a flag and the task remains in
+                # "cancelling" state until GC triggers the warning.
+                if pending:
+                    logger.debug(
+                        f"Waiting for {len(pending)} pending tasks to "
+                        f"complete after cancellation during event loop "
+                        f"shutdown..."
+                    )
+                    loop.run_until_complete(
+                        asyncio.wait(
+                            pending,
+                            timeout=2.0,
+                            return_when=asyncio.ALL_COMPLETED,
+                        )
+                    )
+
+                # 3. Explicitly close the loop to free the self-pipe file
                 # descriptors.
                 if not loop.is_closed():
                     loop.close()
