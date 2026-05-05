@@ -4,22 +4,6 @@ path-like data structures (such as Ops and Geometry). These functions are
 generic and have no knowledge of the high-level objects that use them.
 """
 
-from . import analysis
-from . import arc
-from . import bezier
-from . import circle
-from . import contours
-from . import fitting
-from . import intersect
-from . import linearize
-from . import minkowski
-from . import polygon
-from . import primitives
-from . import query
-from . import smooth
-from . import text
-from . import transform
-
 from .types import (
     CubicBezier,
     Edge,
@@ -51,7 +35,6 @@ from .constants import (
     COL_C2Y,
     GEO_ARRAY_COLS,
 )
-from .font_config import FontConfig
 from .geometry import Geometry
 
 __all__ = [
@@ -64,22 +47,6 @@ __all__ = [
     "Point3D",
     "Polygon",
     "Polygon3D",
-    "analysis",
-    "arc",
-    "bezier",
-    "circle",
-    "contours",
-    "fitting",
-    "intersect",
-    "linearize",
-    "minkowski",
-    "polygon",
-    "primitives",
-    "query",
-    "smooth",
-    "text",
-    "transform",
-    "FontConfig",
     "Geometry",
     "Rect",
     "Rect3D",
