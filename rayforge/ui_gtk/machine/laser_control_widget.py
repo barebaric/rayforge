@@ -11,7 +11,6 @@ from ..shared.slider import create_slider
 _POWER_CSS = """
 entry.power-value {
     min-width: 4em;
-    max-width: 4em;
 }
 """
 apply_css(_POWER_CSS)
