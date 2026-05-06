@@ -315,8 +315,6 @@ class BottomPanel(Gtk.Box):
         self.edit_offsets_btn.connect("clicked", self._on_edit_offsets_clicked)
         self.wcs_row.add_suffix(self.edit_offsets_btn)
 
-        self.wcs_group.add(self.wcs_row)
-
         self.position_row = Adw.ActionRow(title=_("Current Position"))
         self.wcs_group.add(self.position_row)
 
