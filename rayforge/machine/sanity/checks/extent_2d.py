@@ -6,6 +6,8 @@ from .base import BaseCheck
 if TYPE_CHECKING:
     from ..checker import SanityContext
 
+_BOUNDARY_TOLERANCE = 1e-6
+
 
 class ExtentCheck2D(BaseCheck):
     @property
@@ -38,9 +40,9 @@ class ExtentCheck2D(BaseCheck):
             ("Y-", point[1], 0),
             ("Y+", point[1], max_y),
         ):
-            if axis.endswith("-") and val >= limit:
+            if axis.endswith("-") and val >= limit - _BOUNDARY_TOLERANCE:
                 continue
-            if axis.endswith("+") and val <= limit:
+            if axis.endswith("+") and val <= limit + _BOUNDARY_TOLERANCE:
                 continue
             if axis in seen:
                 continue

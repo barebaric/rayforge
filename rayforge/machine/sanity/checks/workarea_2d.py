@@ -6,6 +6,8 @@ from .base import BaseCheck
 if TYPE_CHECKING:
     from ..checker import SanityContext
 
+_BOUNDARY_TOLERANCE = 1e-6
+
 
 class WorkareaCheck2D(BaseCheck):
     @property
@@ -41,9 +43,9 @@ class WorkareaCheck2D(BaseCheck):
             ("Y-", point[1], y_min),
             ("Y+", point[1], y_max),
         ):
-            if axis.endswith("-") and val >= limit:
+            if axis.endswith("-") and val >= limit - _BOUNDARY_TOLERANCE:
                 continue
-            if axis.endswith("+") and val <= limit:
+            if axis.endswith("+") and val <= limit + _BOUNDARY_TOLERANCE:
                 continue
             if axis in seen:
                 continue

@@ -41,6 +41,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_COORD_TOLERANCE = 1e-6
+
 
 class GcodeEncoder(OpsEncoder):
     """Converts Ops commands to G-code using instance state tracking"""
@@ -118,6 +120,8 @@ class GcodeEncoder(OpsEncoder):
         Returns:
             The formatted string with trailing zeros removed.
         """
+        if abs(value) < _COORD_TOLERANCE:
+            value = 0.0
         formatted = self._coord_format.format(value)
         if "." in formatted:
             formatted = formatted.rstrip("0").rstrip(".")
