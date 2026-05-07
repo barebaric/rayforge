@@ -66,8 +66,20 @@
   </screenshots>
 
   <releases>
-    <release version="1.7.1" date="2026-05-05">
+    <release version="1.7.1" date="2026-05-08">
       <description>
+        <p>New Features:</p>
+        <ul>
+          <li>Add a diode laser 3D model</li>
+          <li>Reset button for sketch parameters in the panel</li>
+          <li>Boundary tolerance checks for extent and workarea validations</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Fixed Gtk deprecation warning</li>
+          <li>Fixed Gtk warning from duplicate WCS row in BottomPanel</li>
+          <li>Improved GRBL command parsing and line ending handling</li>
+        </ul>
         <p>Updated translations</p>
       </description>
     </release>
