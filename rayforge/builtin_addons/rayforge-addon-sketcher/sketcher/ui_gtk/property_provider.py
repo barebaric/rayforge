@@ -55,7 +55,7 @@ class SketchPropertyProvider(PropertyProvider):
     def create_widgets(self) -> List[Gtk.Widget]:
         """Creates the VarSetRowList for sketch parameters."""
         logger.debug("Creating sketch property widgets.")
-        self.varset_widget = VarSetRowList()
+        self.varset_widget = VarSetRowList(show_reset=True)
         self.varset_widget.data_changed.connect(self._on_params_changed)
 
         self._empty_row = Adw.ActionRow(
