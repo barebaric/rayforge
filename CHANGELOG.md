@@ -7,7 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 1.7.1
 
-- Updated translations.
+### Added
+
+- Add a diode laser 3D model
+- Reset button for sketch parameters in the panel
+- Boundary tolerance checks for extent and workarea validations
+
+### Fixed
+
+- Fixed Gtk deprecation warning
+- Fixed Gtk warning from duplicate WCS row in BottomPanel
+- Improved GRBL command parsing and line ending handling
+
+### Changed
+
+- Updated translations
 
 ## 1.7.0
 
