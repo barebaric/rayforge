@@ -20,13 +20,17 @@ class _VarSetRowManager:
     ``_set_group_title`` and ``_set_group_description``.
     """
 
-    def _init_varset(self, explicit_apply=False, debounce_ms=0):
+    def _init_varset(
+        self, explicit_apply=False, debounce_ms=0, show_reset=False
+    ):
         self.explicit_apply = explicit_apply
         self.debounce_ms = debounce_ms
+        self.show_reset = show_reset
         self.widget_map: Dict[str, Tuple[Adw.PreferencesRow, Var]] = {}
         self._adapters: Dict[str, RowAdapter] = {}
         self._created_rows = []
         self._apply_buttons = []
+        self._reset_buttons = []
         self.data_changed = Signal()
         self._debounce_timer_id: Optional[int] = None
         self._pending_keys: set = set()
@@ -50,6 +54,7 @@ class _VarSetRowManager:
             self._remove_row(row)
         self._created_rows.clear()
         self._apply_buttons.clear()
+        self._reset_buttons.clear()
         self.widget_map.clear()
         self._adapters.clear()
 
@@ -162,6 +167,26 @@ class _VarSetRowManager:
         row.add_suffix(apply_button)
         self._apply_buttons.append(apply_button)
 
+    def _add_reset_button_if_needed(self, row, var, adapter):
+        if not self.show_reset:
+            return
+        reset_button = Gtk.Button(
+            child=get_icon("undo-symbolic"),
+            tooltip_text=_("Reset to Default"),
+        )
+        reset_button.add_css_class("flat")
+        reset_button.set_valign(Gtk.Align.CENTER)
+        reset_button.connect(
+            "clicked",
+            lambda b: (
+                adapter.set_value(var.default)
+                if var.default is not None
+                else None
+            ),
+        )
+        row.add_suffix(reset_button)
+        self._reset_buttons.append(reset_button)
+
     def _wire_up_row(
         self,
         row: Adw.PreferencesRow,
@@ -169,6 +194,7 @@ class _VarSetRowManager:
         adapter: Optional[RowAdapter],
     ):
         self._add_apply_button_if_needed(row, var.key)
+        self._add_reset_button_if_needed(row, var, adapter)
         if adapter is not None:
             if not self.explicit_apply or adapter.has_natural_commit:
                 adapter.changed.connect(
@@ -188,9 +214,11 @@ class VarSetWidget(Adw.PreferencesGroup, _VarSetRowManager):
     "Apply" buttons, with built-in debouncing for rapid value changes.
     """
 
-    def __init__(self, explicit_apply=False, debounce_ms=0, **kwargs):
+    def __init__(
+        self, explicit_apply=False, debounce_ms=0, show_reset=False, **kwargs
+    ):
         Adw.PreferencesGroup.__init__(self, **kwargs)
-        self._init_varset(explicit_apply, debounce_ms)
+        self._init_varset(explicit_apply, debounce_ms, show_reset)
 
     def _add_row(self, row):
         self.add(row)
@@ -212,10 +240,12 @@ class VarSetRowList(Gtk.ListBox, _VarSetRowManager):
     styling would be visually inconsistent.
     """
 
-    def __init__(self, explicit_apply=False, debounce_ms=0, **kwargs):
+    def __init__(
+        self, explicit_apply=False, debounce_ms=0, show_reset=False, **kwargs
+    ):
         Gtk.ListBox.__init__(self, **kwargs)
         self.set_selection_mode(Gtk.SelectionMode.NONE)
-        self._init_varset(explicit_apply, debounce_ms)
+        self._init_varset(explicit_apply, debounce_ms, show_reset)
 
     def _add_row(self, row):
         self.append(row)
