@@ -63,7 +63,7 @@ class LaserControlWidget(Gtk.Box):
         self._power_entry.set_halign(Gtk.Align.END)
         self._power_entry.set_alignment(1.0)
         self._power_entry.set_has_frame(False)
-        self._power_entry.get_style_context().add_class("power-value")
+        self._power_entry.add_css_class("power-value")
 
         def update_power_entry(s):
             self._power_entry.set_text(f"{s.get_value():.1f} %")
