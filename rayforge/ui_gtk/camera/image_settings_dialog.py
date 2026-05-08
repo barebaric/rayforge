@@ -261,9 +261,7 @@ class CameraImageSettingsDialog(PatchedDialogWindow):
             calibration_group.add(row)
 
         self.camera.settings_changed.connect(self._on_camera_settings_changed)
-        self.controller.resolutions_probed.connect(
-            self._on_resolutions_probed
-        )
+        self.controller.resolutions_probed.connect(self._on_resolutions_probed)
 
     def _on_camera_settings_changed(self, camera):
         for key, row in self._distortion_rows.items():

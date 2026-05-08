@@ -242,16 +242,14 @@ class Camera:
                 and isinstance(value[1], int)
             ):
                 raise ValueError(
-                    "Resolution must be a tuple of two ints (w, h) "
-                    "or None."
+                    "Resolution must be a tuple of two ints (w, h) or None."
                 )
             if value[0] <= 0 or value[1] <= 0:
                 raise ValueError("Resolution values must be positive.")
         if self._resolution == value:
             return
         logger.debug(
-            f"Camera resolution changed from "
-            f"{self._resolution} to {value}"
+            f"Camera resolution changed from {self._resolution} to {value}"
         )
         self._resolution = value
         self.changed.send(self)
@@ -508,8 +506,7 @@ class Camera:
             "distortion_p2": self.distortion_p2,
             "distortion_k3": self.distortion_k3,
             "resolution": (
-                list(self.resolution) if self.resolution is not None
-                else None
+                list(self.resolution) if self.resolution is not None else None
             ),
         }
         if self.image_to_world is not None:
