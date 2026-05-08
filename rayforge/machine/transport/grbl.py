@@ -241,11 +241,13 @@ class GrblSerialTransport:
         self, data: bytes, op_index: Optional[int] = None
     ) -> int:
         """
-        Send G-code with buffer accounting.  Does NOT wait for buffer
-        space; the caller should call wait_for_space() first.
-        Returns the buffer fill level after sending.
+        Send G-code with buffer accounting.  Waits for buffer space
+        if needed so the check and send are atomic within the
+        caller's lock.  Returns the buffer fill level after sending.
         """
         command_len = len(data)
+        while self.needs_space(command_len):
+            await self.wait_for_space()
         self._pending.put_nowait(PendingCommand(command_len, op_index))
         count = self._add(command_len)
         await self._transport.send(data)

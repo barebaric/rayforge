@@ -568,6 +568,7 @@ class GrblSerialDriver(Driver):
                     or not self.grbl_transport.is_connected
                 ):
                     return
+                transport.reset_flow_control()
                 dwell = b"G4 P0.01\n"
                 await transport.send_gcode(dwell)
                 logger.debug(f"TX: {dwell!r} (deadlock recovery)")
