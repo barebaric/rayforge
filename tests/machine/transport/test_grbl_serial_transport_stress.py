@@ -134,6 +134,8 @@ class TestBufferTrackingFuzz:
             while total < DEFAULT_GRBL_RX_BUFFER_SIZE - 2:
                 line_len = rng.randint(5, 20)
                 line = b"G0 " + b"A" * (line_len - 5) + b"\n"
+                if total + len(line) > DEFAULT_GRBL_RX_BUFFER_SIZE:
+                    break
                 await transport.send_gcode(line, op_index=None)
                 sent.append(len(line))
                 total += len(line)
@@ -300,6 +302,8 @@ class TestAckInterleavingFuzz:
         transport = _make_grbl_transport()
         rng = random.Random(2002)
 
+        transport.set_rx_buffer_size(50_000)
+
         total_bytes = 0
         for i in range(2000):
             line = f"G1 X{i} Y{i}\n".encode()
@@ -338,6 +342,8 @@ class TestAckInterleavingFuzz:
     async def test_error_interleaved_fragmented(self):
         transport = _make_grbl_transport()
         rng = random.Random(4004)
+
+        transport.set_rx_buffer_size(20_000)
 
         num_cmds = 500
         for i in range(num_cmds):
@@ -388,6 +394,8 @@ class TestAckInterleavingFuzz:
     async def test_mixed_ok_error_alarm_fragmented_stream(self):
         transport = _make_grbl_transport()
         rng = random.Random(7007)
+
+        transport.set_rx_buffer_size(10_000)
 
         for i in range(300):
             await transport.send_gcode(f"G0 X{i}\n".encode(), op_index=i)
