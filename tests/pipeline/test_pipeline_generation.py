@@ -702,27 +702,36 @@ class TestPipelineGeneration:
             generation_id=1,
         )
         wp_handle = get_context().artifact_store.put(wp_artifact)
+        expected_job_handle = None
         try:
             self._complete_all_tasks(mock_task_mgr, wp_handle)
             mock_task_mgr.run_process.reset_mock()
             mock_task_mgr.created_tasks.clear()
 
-            # Act
+            store = get_context().artifact_store
+            job_artifact = JobArtifact(ops=Ops(), distance=0, generation_id=1)
+            expected_job_handle = store.put(job_artifact)
+
             # Start the first generation, but don't complete it
             future1 = asyncio.create_task(
                 pipeline.generate_job_artifact_async()
             )
-            await asyncio.sleep(0)  # Allow the event loop to run
+            await asyncio.sleep(0)
 
             mock_task_mgr.run_process.assert_called_once()
 
-            # Try to start a second one while the first is 'running'
-            with pytest.raises(
-                RuntimeError, match="Job generation is already in progress."
-            ):
-                await pipeline.generate_job_artifact_async()
+            # Start a second call while the first is running.
+            # It should subscribe to the running generation rather
+            # than starting a duplicate or raising an error.
+            future2 = asyncio.create_task(
+                pipeline.generate_job_artifact_async()
+            )
+            await asyncio.sleep(0)
 
-            # Cleanup: complete the first task to avoid leaving it hanging
+            # No second task should have been created
+            mock_task_mgr.run_process.assert_called_once()
+
+            # Complete the running task
             job_task_info = next(
                 t
                 for t in mock_task_mgr.created_tasks
@@ -731,11 +740,31 @@ class TestPipelineGeneration:
             job_task_obj = job_task_info.returned_task_obj
             job_task_obj.key = job_task_info.key
             job_task_obj.get_status.return_value = "completed"
-            # Simulate an empty job result for cleanup
+            job_task_obj.result.return_value = None
+            gen_id = job_task_info.kwargs.get("generation_id")
+            job_key = job_task_info.kwargs.get("job_key")
+            job_task_info.when_event(
+                job_task_obj,
+                "artifact_created",
+                {
+                    "handle_dict": expected_job_handle.to_dict(),
+                    "generation_id": gen_id,
+                    "job_key": {"id": job_key.id, "group": job_key.group},
+                },
+            )
             job_task_info.when_done(job_task_obj)
-            await future1  # consume the result
+
+            # Both callers should receive the same result
+            result1 = await future1
+            result2 = await future2
+            assert result1 == expected_job_handle
+            assert result2 == expected_job_handle
         finally:
             get_context().artifact_store.release(wp_handle)
+            if expected_job_handle:
+                get_context().artifact_store.release(
+                    expected_job_handle
+                )
 
     @pytest.mark.asyncio
     async def test_rapid_step_change_emits_correct_final_signal(

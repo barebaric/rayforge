@@ -607,7 +607,7 @@ def test_no_context_no_error():
 
 
 def test_multiple_tasks_tracked():
-    """Test that multiple jobs are tracked in context.active_tasks."""
+    """Test that a second generate_job subscribes to the running one."""
     scheduler = _make_scheduler_for_job()
     ctx = GenerationContext(generation_id=1)
     scheduler.set_context(ctx)
@@ -619,7 +619,8 @@ def test_multiple_tasks_tracked():
     scheduler.generate_job(step_uids=[STEP_UID_JOB_1])
     scheduler.generate_job(step_uids=[STEP_UID_JOB_1])
 
-    assert len(ctx.active_tasks) == 2
+    # Only one task is created; the second call subscribes.
+    assert len(ctx.active_tasks) == 1
 
 
 def _create_job_handle():

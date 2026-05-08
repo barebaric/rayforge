@@ -1224,11 +1224,6 @@ class Pipeline:
         Returns:
             An error if validation fails, None otherwise.
         """
-        if self._scheduler.is_job_running:
-            msg = "Job generation is already in progress."
-            logger.warning(msg)
-            return RuntimeError(msg)
-
         if not self._machine:
             msg = "Cannot generate job: No machine is configured."
             logger.error(msg)
@@ -1353,15 +1348,15 @@ class Pipeline:
         This awaitable method is the preferred way to get a job artifact
         in an async context.
 
+        If a job generation is already in progress, this method hooks
+        into the running generation and returns its result.
+
         Returns:
             The JobArtifactHandle on success, or None if the job was empty.
 
         Raises:
-            RuntimeError: If job generation is already in progress.
             Exception: Propagates exceptions that occur during generation.
         """
-        # This method requires no changes, as it builds on top of the
-        # now-corrected generate_job_artifact method.
         logger.debug(f"[{id(self)}] Starting asynchronous job generation.")
         future = asyncio.get_running_loop().create_future()
 
