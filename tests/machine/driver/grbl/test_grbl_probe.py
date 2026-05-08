@@ -166,7 +166,7 @@ class TestBuildGrblProfile:
         assert profile.machine_config.driver_args is None
         dc = profile.machine_config.driver_config
         assert dc is not None
-        assert dc["rx_buffer_size"] == 63
+        assert dc["rx_buffer_size"] == 511
         assert dc["firmware_version"] == "1.1h"
         assert dc["arc_tolerance"] == 0.002
         assert profile.machine_config.axis_extents == (400.0, 300.0)
