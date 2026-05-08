@@ -675,9 +675,9 @@ class TestParseOptInfo:
     @pytest.mark.parametrize(
         "line, expected",
         [
-            ("[OPT:VMPH,63,511]", 63),
-            ("[OPT:VLPH,127,128]", 127),
-            ("[OPT:S,255,1024]", 255),
+            ("[OPT:VMPH,63,511]", 511),
+            ("[OPT:VLPH,127,128]", 128),
+            ("[OPT:S,255,1024]", 1024),
             ("[VER:1.1h.2023062602:]", None),
             ("", None),
             ("[Some other info]", None),

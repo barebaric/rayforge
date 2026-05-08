@@ -62,7 +62,7 @@ prb_re = re.compile(r"\[PRB:([\d\.-]+),([\d\.-]+),([\d\.-]+):(\d)\]")
 # Regex to find the active WCS (G54-G59) from a $G parser state report
 grbl_parser_state_re = re.compile(r".*(G5[4-9]).*")
 # Regex to extract compile options and buffer sizes from OPT line
-# Format: [OPT:<flags>,<block_buffer_size>,<rx_buffer_size>]
+# Format: [OPT:<flags>,<planner_buffer_blocks>,<rx_buffer_size>]
 grbl_opt_re = re.compile(r"\[OPT:([A-Z]+),(\d+),(\d+)\]")
 
 
@@ -655,7 +655,8 @@ def parse_opt_info(line: str) -> Optional[int]:
     Extract the RX buffer size from an OPT response line.
 
     Args:
-        line: A single ``[OPT:<flags>,<block_buffer_size>,<rx_buffer_size>]``
+        line: A single
+          ``[OPT:<flags>,<planner_buffer_blocks>,<rx_buffer_size>]``
           line.
 
     Returns:
@@ -665,7 +666,7 @@ def parse_opt_info(line: str) -> Optional[int]:
     match = grbl_opt_re.search(line)
     if match:
         try:
-            return int(match.group(2))
+            return int(match.group(3))
         except (ValueError, IndexError):
             pass
     return None
