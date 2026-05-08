@@ -762,9 +762,7 @@ class TestPipelineGeneration:
         finally:
             get_context().artifact_store.release(wp_handle)
             if expected_job_handle:
-                get_context().artifact_store.release(
-                    expected_job_handle
-                )
+                get_context().artifact_store.release(expected_job_handle)
 
     @pytest.mark.asyncio
     async def test_rapid_step_change_emits_correct_final_signal(

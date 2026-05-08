@@ -1563,10 +1563,7 @@ class GrblSerialDriver(Driver):
             rx_buffer_size = parse_opt_info(line)
             if rx_buffer_size:
                 self._cache_rx_buffer_size(rx_buffer_size)
-                if (
-                    self._rx_buffer_size_override <= 0
-                    and self.grbl_transport
-                ):
+                if self._rx_buffer_size_override <= 0 and self.grbl_transport:
                     self.grbl_transport.set_rx_buffer_size(rx_buffer_size)
         elif line.startswith("Grbl "):
             self._handshake_received.set()

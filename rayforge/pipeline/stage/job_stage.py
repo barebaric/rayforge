@@ -177,8 +177,7 @@ class JobPipelineStage(PipelineStage):
                         job_key, generation_id
                     ):
                         self.job_generation_failed.send(
-                            self, error=result_error,
-                            task_status=task_status
+                            self, error=result_error, task_status=task_status
                         )
         finally:
             self._job_running = False
@@ -257,9 +256,7 @@ class JobPipelineStage(PipelineStage):
         Start the asynchronous task to assemble and encode the final job.
         """
         if self._job_running:
-            logger.debug(
-                "Job generation already in progress, subscribing."
-            )
+            logger.debug("Job generation already in progress, subscribing.")
             if on_done is not None:
                 self._pending_on_dones.append(on_done)
             return

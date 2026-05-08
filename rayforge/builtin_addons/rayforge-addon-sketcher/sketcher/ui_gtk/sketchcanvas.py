@@ -1,11 +1,14 @@
 import logging
 import math
-from typing import Optional, cast
+from typing import Optional, cast, List
 from gettext import gettext as _
 from gi.repository import Adw, Gdk, Gtk
+from rayforge.camera.controller import CameraController
+from rayforge.context import get_context
 from rayforge.core.expression import ExpressionContext, safe_evaluate
 from rayforge.core.matrix import Matrix
 from rayforge.ui_gtk.canvas import WorldSurface
+from rayforge.ui_gtk.canvas2d.elements.camera_image import CameraImageElement
 from rayforge.ui_gtk.shared.expression_entry import ExpressionEntry
 from ..core.commands import ModifyConstraintCommand
 from ..core.constraints import (
@@ -66,6 +69,78 @@ class SketchCanvas(WorldSurface):
         # Permanently enter edit mode on the primary sketch element.
         self.edit_context = self.sketch_element
         self.sketch_editor.activate(self.sketch_element)
+
+        self._camera_elements: dict[CameraController, CameraImageElement] = {}
+        self._cam_visible: bool = False
+
+    def sync_camera_elements(self):
+        """Synchronizes camera elements with the current machine's cameras."""
+        context = get_context()
+        machine = context.config.machine
+        camera_mgr = context.camera_mgr
+
+        if not machine:
+            self.set_camera_controllers([])
+            return
+
+        current_elements = self._camera_elements
+        current_controllers = set(current_elements.keys())
+
+        machine_controllers: list[CameraController] = []
+        for camera_model in machine.cameras:
+            controller = camera_mgr.get_controller(camera_model.device_id)
+            if controller:
+                machine_controllers.append(controller)
+
+        new_controllers = set(machine_controllers)
+
+        for controller in current_controllers - new_controllers:
+            element = current_elements[controller]
+            element.remove()
+            controller.unsubscribe()
+            del self._camera_elements[controller]
+
+        for controller in new_controllers - current_controllers:
+            element = CameraImageElement(controller)
+            element.set_visible(
+                self._cam_visible and controller.config.enabled
+            )
+            self.root.insert(0, element)
+            controller.subscribe()
+            self._camera_elements[controller] = element
+
+        self.queue_draw()
+
+    def set_camera_controllers(self, controllers: List[CameraController]):
+        """Sets the camera controllers and creates/removes camera elements."""
+        current_elements = self._camera_elements
+        current_controllers = set(current_elements.keys())
+        new_controllers = set(controllers)
+
+        for controller in current_controllers - new_controllers:
+            element = current_elements[controller]
+            element.remove()
+            controller.unsubscribe()
+            del self._camera_elements[controller]
+
+        for controller in new_controllers - current_controllers:
+            element = CameraImageElement(controller)
+            element.set_visible(
+                self._cam_visible and controller.config.enabled
+            )
+            self.root.insert(0, element)
+            controller.subscribe()
+            self._camera_elements[controller] = element
+
+        self.queue_draw()
+
+    def set_camera_image_visibility(self, visible: bool):
+        """Sets the visibility of camera image overlays."""
+        self._cam_visible = visible
+        for elem in self.find_by_type(CameraImageElement):
+            camera_elem = cast(CameraImageElement, elem)
+            camera_elem.set_visible(visible and camera_elem.camera.enabled)
+        self.queue_draw()
 
     def set_sketch(self, sketch: "Sketch"):
         """
