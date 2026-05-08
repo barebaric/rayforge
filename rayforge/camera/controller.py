@@ -16,6 +16,22 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+COMMON_RESOLUTIONS = [
+    (320, 240),
+    (640, 480),
+    (800, 600),
+    (1024, 768),
+    (1280, 720),
+    (1280, 960),
+    (1280, 1024),
+    (1600, 1200),
+    (1920, 1080),
+    (2048, 1536),
+    (2592, 1944),
+    (3840, 2160),
+    (4096, 2160),
+]
+
 
 def _probe_camera_device(args):
     """Probe a single camera device. Runs in subprocess."""
@@ -215,9 +231,12 @@ class CameraController:
         self._running: bool = False
         self._settings_dirty: bool = True  # Flag to re-apply settings
         self._consecutive_failures: int = 0
+        self._available_resolutions: List[Tuple[int, int]] = []
+        self._resolutions_probed: bool = False
 
         # Signals
         self.image_captured = Signal()
+        self.resolutions_probed = Signal()
 
         self.config.changed.connect(self._on_config_changed)
         self.config.settings_changed.connect(self._on_config_changed)
@@ -309,6 +328,10 @@ class CameraController:
             return 640, 480
         height, width, _ = self._image_data.shape
         return width, height
+
+    @property
+    def available_resolutions(self) -> List[Tuple[int, int]]:
+        return self._available_resolutions
 
     @property
     def aspect(self) -> float:
@@ -482,9 +505,48 @@ class CameraController:
             logger.error(f"Failed to apply perspective warp: {e}")
             return None
 
+    def _probe_resolutions(self, cap: cv2.VideoCapture):
+        supported = []
+        original_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        original_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+        candidates = list(COMMON_RESOLUTIONS)
+        if (original_w, original_h) not in candidates:
+            candidates.append((original_w, original_h))
+
+        for w, h in candidates:
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, w)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
+            actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            if (actual_w, actual_h) not in supported:
+                supported.append((actual_w, actual_h))
+
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, original_w)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, original_h)
+
+        supported.sort(key=lambda r: r[0] * r[1], reverse=True)
+
+        self._available_resolutions = supported
+        self._resolutions_probed = True
+        logger.info(f"Available resolutions: {supported}")
+        idle_add(self.resolutions_probed.send, self)
+
     def _apply_settings(self, cap: cv2.VideoCapture):
         """Applies the current settings to the VideoCapture object."""
         try:
+            if self.config.resolution is not None:
+                w, h = self.config.resolution
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, w)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
+                actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                if actual_w != w or actual_h != h:
+                    logger.warning(
+                        f"Camera rejected resolution {w}x{h}, "
+                        f"got {actual_w}x{actual_h}"
+                    )
+
             if self.config.prefer_yuyv:
                 yuyv = cv2.VideoWriter_fourcc(*"YUYV")  # type: ignore
                 if not cap.set(cv2.CAP_PROP_FOURCC, yuyv):
@@ -619,6 +681,9 @@ class CameraController:
         self._settings_dirty = True
         self._consecutive_failures = 0
         self._accumulator = None
+
+        if not self._resolutions_probed:
+            self._probe_resolutions(cap)
 
         while self._running and cap is not None:
             if self._settings_dirty:

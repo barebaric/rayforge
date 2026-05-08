@@ -12,6 +12,7 @@ def test_camera_initialization():
     assert camera.device_id == "device123"
     assert not camera.enabled
     assert camera.image_to_world is None
+    assert camera.resolution is None
     assert camera.distortion_k1 == 0.0
     assert camera.distortion_k2 == 0.0
     assert camera.distortion_k3 == 0.0
@@ -281,3 +282,55 @@ def test_settings_changed_signal():
 
     camera.distortion_k1 = 0.2
     assert len(signal_received) == 3
+
+
+def test_resolution_property():
+    camera = Camera("Test", "0")
+    assert camera.resolution is None
+
+    camera.resolution = (1920, 1080)
+    assert camera.resolution == (1920, 1080)
+
+    camera.resolution = None
+    assert camera.resolution is None
+
+    with pytest.raises(ValueError):
+        camera.resolution = (0, 1080)
+
+    with pytest.raises(ValueError):
+        setattr(camera, "resolution", "invalid")
+
+
+def test_resolution_serialization():
+    camera = Camera("Test", "0")
+    camera.resolution = (1920, 1080)
+    data = camera.to_dict()
+    assert data["resolution"] == [1920, 1080]
+
+    restored = Camera.from_dict(data)
+    assert restored.resolution == (1920, 1080)
+
+    camera.resolution = None
+    data = camera.to_dict()
+    assert data["resolution"] is None
+    restored = Camera.from_dict(data)
+    assert restored.resolution is None
+
+
+def test_resolution_settings_changed_signal():
+    camera = Camera("Test", "0")
+    signal_received = []
+
+    def on_settings_changed(sender):
+        signal_received.append(sender)
+
+    camera.settings_changed.connect(on_settings_changed)
+
+    camera.resolution = (1280, 720)
+    assert len(signal_received) == 1
+
+    camera.resolution = (1280, 720)
+    assert len(signal_received) == 1
+
+    camera.resolution = None
+    assert len(signal_received) == 2
