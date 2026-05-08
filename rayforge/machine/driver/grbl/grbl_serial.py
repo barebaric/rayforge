@@ -16,7 +16,13 @@ from typing import (
     Awaitable,
 )
 from ....context import RayforgeContext
-from ....core.varset import Var, VarSet, SerialPortVar, BaudrateVar
+from ....core.varset import (
+    Var,
+    VarSet,
+    IntVar,
+    SerialPortVar,
+    BaudrateVar,
+)
 from ....pipeline.encoder.base import OpsEncoder, EncodedOutput
 from ....pipeline.encoder.gcode import GcodeEncoder
 from ...transport import TransportStatus, SerialTransport
@@ -93,6 +99,7 @@ class GrblSerialDriver(Driver):
         self._last_reported_op_index = -1
         self._job_exception: Optional[Exception] = None
         self._poll_status_while_running: bool = False
+        self._rx_buffer_size_override: int = 0
         self._handshake_received = asyncio.Event()
         self._loop: Optional[asyncio.AbstractEventLoop] = None
 
@@ -144,6 +151,17 @@ class GrblSerialDriver(Driver):
                     var_type=bool,
                     default=False,
                 ),
+                IntVar(
+                    key="rx_buffer_size_override",
+                    label=_("RX Buffer Size Override"),
+                    description=_(
+                        "Force a specific RX buffer size in bytes. "
+                        "Set to 0 to auto-detect from the device."
+                    ),
+                    default=0,
+                    min_val=0,
+                    max_val=1024,
+                ),
             ]
         )
 
@@ -164,6 +182,9 @@ class GrblSerialDriver(Driver):
         baudrate = kwargs.get("baudrate", 115200)
         self._poll_status_while_running = bool(
             kwargs.get("poll_status_while_running", False)
+        )
+        self._rx_buffer_size_override = int(
+            kwargs.get("rx_buffer_size_override", 0) or 0
         )
 
         if not port:
@@ -1360,6 +1381,7 @@ class GrblSerialDriver(Driver):
             state.buffer_rx_available is not None
             and state.status == DeviceStatus.IDLE
             and self.grbl_transport
+            and self._rx_buffer_size_override <= 0
         ):
             total = state.buffer_rx_available
             cur = self.grbl_transport._rx_buffer_size
@@ -1390,6 +1412,15 @@ class GrblSerialDriver(Driver):
     def _apply_cached_rx_buffer_size(self) -> None:
         if not self.grbl_transport:
             return
+        if self._rx_buffer_size_override > 0:
+            logger.info(
+                f"Applying RX buffer size override: "
+                f"{self._rx_buffer_size_override} bytes"
+            )
+            self.grbl_transport.set_rx_buffer_size(
+                self._rx_buffer_size_override
+            )
+            return
         cached = self.config.get("rx_buffer_size")
         if cached and cached > 0:
             logger.info(f"Applying cached RX buffer size: {cached} bytes")
@@ -1401,6 +1432,8 @@ class GrblSerialDriver(Driver):
         self.config_changed.send(self)
 
     def _warn_if_buffer_size_unknown(self) -> None:
+        if self._rx_buffer_size_override > 0:
+            return
         if "rx_buffer_size" in self.config:
             return
         logger.warning(
@@ -1527,9 +1560,13 @@ class GrblSerialDriver(Driver):
                 logger.info(f"Connected to GRBL version {ver}")
         elif line.startswith("[OPT:"):
             rx_buffer_size = parse_opt_info(line)
-            if rx_buffer_size and self.grbl_transport:
-                self.grbl_transport.set_rx_buffer_size(rx_buffer_size)
+            if rx_buffer_size:
                 self._cache_rx_buffer_size(rx_buffer_size)
+                if (
+                    self._rx_buffer_size_override <= 0
+                    and self.grbl_transport
+                ):
+                    self.grbl_transport.set_rx_buffer_size(rx_buffer_size)
         elif line.startswith("Grbl "):
             self._handshake_received.set()
             logger.debug(f"Received Grbl welcome message: {line}")
