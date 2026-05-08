@@ -1,4 +1,5 @@
 import logging
+from typing import List, Optional, Tuple
 from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from ...camera.controller import CameraController
@@ -75,6 +76,27 @@ class CameraImageSettingsDialog(PatchedDialogWindow):
             description=_("Adjust image quality and appearance parameters."),
         )
         settings_box.append(image_group)
+
+        self._resolution_values: List[Optional[Tuple[int, int]]] = [None]
+        resolution_labels = [_("Default")]
+        for w, h in self.controller.available_resolutions:
+            self._resolution_values.append((w, h))
+            resolution_labels.append(f"{w} × {h}")
+
+        self.resolution_store = Gtk.StringList.new(resolution_labels)
+        self.resolution_row = Adw.ComboRow(
+            title=_("Resolution"),
+            subtitle=_(
+                "Camera capture resolution. "
+                "Default uses the camera's native setting."
+            ),
+            model=self.resolution_store,
+        )
+        self._sync_resolution_selection()
+        self.resolution_row.connect(
+            "notify::selected", self._on_resolution_changed
+        )
+        image_group.add(self.resolution_row)
 
         self.yuyv_row = Adw.ActionRow(
             title=_("Prefer YUYV Format"),
@@ -239,10 +261,39 @@ class CameraImageSettingsDialog(PatchedDialogWindow):
             calibration_group.add(row)
 
         self.camera.settings_changed.connect(self._on_camera_settings_changed)
+        self.controller.resolutions_probed.connect(
+            self._on_resolutions_probed
+        )
 
     def _on_camera_settings_changed(self, camera):
         for key, row in self._distortion_rows.items():
             row.set_value(getattr(camera, key))
+
+    def _on_resolution_changed(self, combo_row, pspec):
+        idx = combo_row.get_selected()
+        if 0 <= idx < len(self._resolution_values):
+            self.camera.resolution = self._resolution_values[idx]
+
+    def _on_resolutions_probed(self, controller):
+        self._resolution_values = [None]
+        labels = [_("Default")]
+        for w, h in controller.available_resolutions:
+            self._resolution_values.append((w, h))
+            labels.append(f"{w} × {h}")
+        self.resolution_store = Gtk.StringList.new(labels)
+        self.resolution_row.set_model(self.resolution_store)
+        self._sync_resolution_selection()
+
+    def _sync_resolution_selection(self):
+        if self.camera.resolution is None:
+            self.resolution_row.set_selected(0)
+        else:
+            res = self.camera.resolution
+            try:
+                idx = self._resolution_values.index(res)
+                self.resolution_row.set_selected(idx)
+            except ValueError:
+                self.resolution_row.set_selected(0)
 
     def _create_slider_row(
         self,
@@ -343,6 +394,9 @@ class CameraImageSettingsDialog(PatchedDialogWindow):
         )
         self.camera.settings_changed.disconnect(
             self._on_camera_settings_changed
+        )
+        self.controller.resolutions_probed.disconnect(
+            self._on_resolutions_probed
         )
         self.camera_display.stop()
         return False

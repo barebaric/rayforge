@@ -30,6 +30,8 @@ class Camera:
 
         self._prefer_yuyv: bool = False
 
+        self._resolution: Optional[Tuple[int, int]] = None
+
         # Lens calibration parameters
         # Distortion coefficients: k1, k2, p1, p2, k3 (OpenCV order)
         self._distortion_k1: float = 0.0
@@ -223,6 +225,35 @@ class Camera:
             f"Camera prefer_yuyv changed from {self._prefer_yuyv} to {value}"
         )
         self._prefer_yuyv = value
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def resolution(self) -> Optional[Tuple[int, int]]:
+        return self._resolution
+
+    @resolution.setter
+    def resolution(self, value: Optional[Tuple[int, int]]):
+        if value is not None:
+            if not (
+                isinstance(value, tuple)
+                and len(value) == 2
+                and isinstance(value[0], int)
+                and isinstance(value[1], int)
+            ):
+                raise ValueError(
+                    "Resolution must be a tuple of two ints (w, h) "
+                    "or None."
+                )
+            if value[0] <= 0 or value[1] <= 0:
+                raise ValueError("Resolution values must be positive.")
+        if self._resolution == value:
+            return
+        logger.debug(
+            f"Camera resolution changed from "
+            f"{self._resolution} to {value}"
+        )
+        self._resolution = value
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -476,6 +507,10 @@ class Camera:
             "distortion_p1": self.distortion_p1,
             "distortion_p2": self.distortion_p2,
             "distortion_k3": self.distortion_k3,
+            "resolution": (
+                list(self.resolution) if self.resolution is not None
+                else None
+            ),
         }
         if self.image_to_world is not None:
             image_points, world_points = self.image_to_world
@@ -528,6 +563,7 @@ class Camera:
             "distortion_p1",
             "distortion_p2",
             "distortion_k3",
+            "resolution",
             "camera_matrix_fx",
             "camera_matrix_fy",
             "camera_matrix_cx",
@@ -553,6 +589,10 @@ class Camera:
         camera.distortion_p1 = data.get("distortion_p1", 0.0)
         camera.distortion_p2 = data.get("distortion_p2", 0.0)
         camera.distortion_k3 = data.get("distortion_k3", 0.0)
+
+        resolution_data = data.get("resolution")
+        if resolution_data is not None:
+            camera._resolution = tuple(resolution_data)
 
         image_to_world_data = data.get("image_to_world")
         if image_to_world_data is not None:
