@@ -1,7 +1,7 @@
 import logging
 from typing import Callable, TYPE_CHECKING, Any, Optional, cast
 from gettext import gettext as _
-from gi.repository import Gtk, Gio
+from gi.repository import GLib, Gtk, Gio
 from ... import const
 from ...image.registry import exporter_registry, importer_registry
 from ..shared.gtk import file_filter_to_gtk
@@ -124,7 +124,7 @@ def show_export_object_dialog(
         try:
             folder = Gio.File.new_for_path(str(workpiece.source_file.parent))
             dialog.set_initial_folder(folder)
-        except Exception:
+        except GLib.Error:
             logger.debug(
                 "Could not set initial folder for object export dialog"
             )

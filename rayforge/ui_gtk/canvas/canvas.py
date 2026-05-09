@@ -4,6 +4,7 @@ import logging
 from typing import Any, Generator, List, Tuple, Optional, Set, Union
 from enum import Enum, auto
 import cairo
+import numpy as np
 from gi.repository import Gtk, Gdk, Graphene
 from blinker import Signal
 from ...core.color import ColorRGBA
@@ -160,7 +161,7 @@ class Canvas(Gtk.DrawingArea):
             return self.view_transform.invert().transform_point(
                 (widget_x, widget_y)
             )
-        except Exception:
+        except np.linalg.LinAlgError:
             # Fallback to 1:1 if matrix is non-invertible
             return widget_x, widget_y
 

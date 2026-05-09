@@ -1349,13 +1349,8 @@ class Canvas3D(Gtk.GLArea):
 
     def _release_scene_shm(self, handle_dict: Dict):
         """Release a compiled scene SHM block from the artifact store."""
-        try:
-            handle = create_handle_from_dict(handle_dict)
-            self._context.artifact_store.release(handle)
-        except Exception:
-            logger.debug(
-                "[CANVAS3D] Failed to release scene SHM", exc_info=True
-            )
+        handle = create_handle_from_dict(handle_dict)
+        self._context.artifact_store.release(handle)
 
     def _release_pending_scene_handle(self):
         """Release the pending compiled scene SHM, if any."""
@@ -1396,7 +1391,7 @@ class Canvas3D(Gtk.GLArea):
                         f"{handle_dict.get('shm_name', '?')}"
                     )
                 except Exception as e:
-                    logger.error(
+                    logger.exception(
                         f"[CANVAS3D] Failed to adopt scene artifact: {e}"
                     )
                     self._pending_scene_handle_dict = None

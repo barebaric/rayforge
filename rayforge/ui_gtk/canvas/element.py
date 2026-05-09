@@ -12,6 +12,7 @@ from typing import (
     Set,
 )
 import cairo
+import numpy as np
 from gi.repository import GLib
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, Future
@@ -548,7 +549,7 @@ class CanvasElement:
         world_transform = self.get_world_transform()
         try:
             inv_world = world_transform.invert()
-        except Exception:
+        except np.linalg.LinAlgError:
             return ElementRegion.NONE
 
         local_x, local_y = inv_world.transform_point((x_abs, y_abs))
@@ -1047,7 +1048,7 @@ class CanvasElement:
             local_geom_x, local_geom_y = inv_world.transform_point(
                 (world_x, world_y)
             )
-        except Exception:
+        except np.linalg.LinAlgError:
             return (
                 None  # Cannot hit an element with a non-invertible transform
             )

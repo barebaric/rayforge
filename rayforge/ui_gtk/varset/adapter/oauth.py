@@ -216,7 +216,8 @@ class OAuthFlowAdapter(RowAdapter):
         try:
             result = flow.refresh(refresh_token)
             self._on_flow_complete(result)
-        except Exception:
+        except (KeyError, ValueError, AttributeError, OSError):
+            logger.exception("Error during token refresh")
             self._start_full_flow()
 
     def _start_full_flow(self) -> None:

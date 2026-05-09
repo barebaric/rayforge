@@ -115,7 +115,7 @@ def _on_file_selected(dialog, result, user_data):
             )
             # Optionally show an error dialog here
 
-    except Exception:
+    except (OSError, ValueError, KeyError):
         logger.exception("Error opening file")
 
 

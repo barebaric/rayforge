@@ -172,7 +172,7 @@ class MaterialLibrary:
                 if isinstance(meta_data, dict):
                     self._display_name = meta_data.get("name", "")
                     self._library_id = meta_data.get("id", "")
-            except Exception as e:
+            except (OSError, yaml.YAMLError) as e:
                 logger.warning(
                     f"Could not load library metadata from {meta_file}: {e}"
                 )
@@ -186,7 +186,7 @@ class MaterialLibrary:
                 material = Material.from_file(file_path)
                 self._materials[material.uid] = material
                 logger.debug(f"Loaded material: {material.uid}")
-            except Exception as e:
+            except (OSError, yaml.YAMLError) as e:
                 logger.warning(
                     f"Failed to load material from {file_path}: {e}"
                 )
@@ -257,7 +257,7 @@ class MaterialLibrary:
                 f"Added material {material.uid} to {self._directory.name}"
             )
             return True
-        except Exception as e:
+        except OSError as e:
             logger.error(f"Failed to save material {material.uid}: {e}")
             return False
 
@@ -291,7 +291,7 @@ class MaterialLibrary:
             try:
                 material.file_path.unlink()
                 logger.info(f"Removed material file: {material.file_path}")
-            except Exception as e:
+            except OSError as e:
                 logger.error(f"Failed to remove material file: {e}")
                 return False
 

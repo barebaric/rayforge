@@ -204,6 +204,36 @@ def test_get_descendants():
     assert root.get_descendants(of_type=Doc) == []
 
 
+def test_get_ancestor_by_type():
+    """Tests that get_ancestor_by_type correctly walks the parent chain."""
+    grandparent = GroupItem(name="grandparent")
+    parent = ConcreteItem(name="parent")
+    child = GroupItem(name="child")
+
+    grandparent.add_child(parent)
+    parent.add_child(child)
+
+    # Find first matching ancestor (direct parent)
+    assert child.get_ancestor_by_type(ConcreteItem) is parent
+
+    # Skip non-matching ancestor, find grandparent
+    assert child.get_ancestor_by_type(GroupItem) is grandparent
+
+    # First matching ancestor in chain is parent (ConcreteItem is a DocItem)
+    assert child.get_ancestor_by_type(DocItem) is parent
+
+    # No ancestor of this type in the chain
+    assert child.get_ancestor_by_type(Doc) is None
+
+    # Item with no parent returns None
+    standalone = GroupItem()
+    assert standalone.get_ancestor_by_type(GroupItem) is None
+    assert standalone.get_ancestor_by_type(DocItem) is None
+
+    # Root item with parent=None returns None
+    assert grandparent.get_ancestor_by_type(GroupItem) is None
+
+
 def test_find_descendant_by_uid():
     """Tests the recursive search for a descendant by its UID."""
     root = GroupItem(name="root")

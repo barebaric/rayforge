@@ -1,6 +1,7 @@
 from __future__ import annotations
 import math
 import cairo
+import numpy as np
 from typing import cast
 from gi.repository import GLib
 
@@ -104,7 +105,7 @@ class ShrinkWrapGroup(CanvasElement):
                 parent_world_transform.invert() @ new_group_world_transform
             )
             inv_new_group_world = new_group_world_transform.invert()
-        except Exception:
+        except np.linalg.LinAlgError:
             return
 
         self._set_transform_silent(new_group_local_transform)
