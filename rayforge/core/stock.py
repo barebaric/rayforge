@@ -231,7 +231,9 @@ class StockItem(DocItem):
         asset = self.stock_asset
         return asset.display_icon_name if asset else "error-symbolic"
 
-    def get_default_size(self, *args, **kwargs) -> tuple[float, float]:
+    def get_default_size(
+        self, _bounds_width: float = 0, _bounds_height: float = 0
+    ) -> Tuple[float, float]:
         """Delegates size calculation to the StockAsset."""
         asset = self.stock_asset
         if asset:

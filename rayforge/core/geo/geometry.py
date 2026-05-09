@@ -18,13 +18,10 @@ import math
 import numpy as np
 from .analysis import (
     is_closed,
-    get_path_winding_order_from_array,
     get_point_and_tangent_at_from_array,
     get_outward_normal_at_from_array,
     get_area_from_array,
 )
-from .arc import find_closest_point_on_arc
-from .bezier import find_closest_point_on_bezier
 from .constants import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
@@ -48,7 +45,6 @@ from .fitting import (
     optimize_path_from_array,
 )
 from .linearize import linearize_geometry
-from .primitives import find_closest_point_on_line_segment
 from .query import (
     get_bounding_rect_from_array,
     find_closest_point_on_path_from_array,
@@ -79,7 +75,6 @@ class Geometry:
         """Initializes a new, empty Geometry object."""
         self.last_move_to: Point3D = (0.0, 0.0, 0.0)
         self._uniform_scalable: bool = True
-        self._winding_cache: Dict[int, str] = {}
         self._pending_data: List[List[float]] = []
         self._data: Optional[np.ndarray] = None
 
@@ -188,7 +183,6 @@ class Geometry:
         """
         Clears all commands from the geometry and resets internal state.
         """
-        self._winding_cache.clear()
         self._pending_data = []
         self._data = None
         self._uniform_scalable = True
@@ -374,29 +368,6 @@ class Geometry:
             ]
         )
 
-    def append_numpy_data(self, new_data: np.ndarray) -> None:
-        """
-        Directly appends a block of command data (N, 8) to the internal
-        storage. This bypasses the overhead of Python list construction
-        for bulk operations.
-
-        Args:
-            new_data: A NumPy array of shape (N, 8) containing command data.
-
-        Note:
-            This is a low-level method that assumes the input data has already
-            been processed. It does NOT automatically convert arcs.
-        """
-        if new_data is None or len(new_data) == 0:
-            return
-
-        self._sync_to_numpy()
-
-        if self._data is None:
-            self._data = new_data.copy()
-        else:
-            self._data = np.vstack((self._data, new_data))
-
     def simplify(self: T_Geometry, tolerance: float = 0.01) -> T_Geometry:
         """
         Reduces the number of segments in any linear chains using the
@@ -414,7 +385,6 @@ class Geometry:
         self._data = optimize_path_from_array(
             self.data, tolerance, fit_arcs=False
         )
-        self._winding_cache.clear()
         return self
 
     def linearize(self: T_Geometry, tolerance: float) -> T_Geometry:
@@ -441,7 +411,6 @@ class Geometry:
                     self.last_move_to = (r[COL_X], r[COL_Y], r[COL_Z])
                     break
 
-        self._winding_cache.clear()
         self._uniform_scalable = True  # Lines are scalable
         return self
 
@@ -487,7 +456,6 @@ class Geometry:
                     self.last_move_to = (r[COL_X], r[COL_Y], r[COL_Z])
                     break
 
-        self._winding_cache.clear()
         self._uniform_scalable = False
         return self
 
@@ -556,7 +524,6 @@ class Geometry:
             self._data = np.vstack(new_rows)
 
         self._uniform_scalable = True
-        self._winding_cache.clear()
         return self
 
     def close_gaps(self: T_Geometry, tolerance: float = 1e-6) -> T_Geometry:
@@ -583,7 +550,6 @@ class Geometry:
 
         self.clear()
         self.extend(new_geo)
-        self._winding_cache.clear()
 
         return self
 
@@ -614,8 +580,6 @@ class Geometry:
         self._data = cleanup.remove_duplicate_segments(
             self._data, tolerance=tolerance
         )
-        self._winding_cache.clear()
-
         return self.close_gaps(tolerance=tolerance)
 
     def rect(self) -> Rect:
@@ -935,89 +899,6 @@ class Geometry:
         if self.data is None:
             return None
         return find_closest_point_on_path_from_array(self.data, x, y)
-
-    def find_closest_point_on_segment(
-        self, segment_index: int, x: float, y: float
-    ) -> Optional[Tuple[float, Point]]:
-        """
-        Finds the closest point on a specific segment to the given coordinates.
-
-        Args:
-            segment_index: The index of the command segment.
-            x: The x-coordinate of the query point.
-            y: The y-coordinate of the query point.
-
-        Returns:
-            A tuple (t, point) where t is the parameter along the segment
-            (0-1) and point is the (x, y) coordinates of the closest point.
-            Returns None if the segment is not a valid path command.
-        """
-        if self.data is None or segment_index >= len(self.data):
-            return None
-
-        row = self.data[segment_index]
-        cmd_type = row[COL_TYPE]
-        end_point_3d = (row[COL_X], row[COL_Y], row[COL_Z])
-
-        if cmd_type not in (CMD_TYPE_LINE, CMD_TYPE_ARC, CMD_TYPE_BEZIER):
-            return None
-
-        # Find start point
-        if segment_index > 0:
-            start_point = tuple(
-                self.data[segment_index - 1, COL_X : COL_Z + 1]
-            )
-        else:
-            start_point = (0.0, 0.0, 0.0)
-
-        if cmd_type == CMD_TYPE_LINE:
-            t, point, _ = find_closest_point_on_line_segment(
-                start_point[:2], end_point_3d[:2], x, y
-            )
-            return (t, point)
-        elif cmd_type == CMD_TYPE_ARC:
-            result = find_closest_point_on_arc(row, start_point, x, y)
-            if result:
-                t_arc, pt_arc, _ = result
-                return (t_arc, pt_arc)
-        elif cmd_type == CMD_TYPE_BEZIER:
-            result = find_closest_point_on_bezier(row, start_point, x, y)
-            if result:
-                t_bezier, pt_bezier, _ = result
-                return (t_bezier, pt_bezier)
-        return None
-
-    def get_winding_order(self, segment_index: int) -> str:
-        """
-        Determines the winding order ('cw', 'ccw', or 'unknown') for the
-        subpath containing the command at `segment_index`.
-
-        Args:
-            segment_index: The index of a command within the subpath.
-
-        Returns:
-            'cw' for clockwise, 'ccw' for counter-clockwise, or 'unknown'.
-        """
-        if self.data is None:
-            return "unknown"
-        # Caching is useful here because winding order is expensive to compute
-        # and may be requested multiple times for the same subpath.
-        subpath_start_index = -1
-        for i in range(segment_index, -1, -1):
-            if self.data[i, COL_TYPE] == CMD_TYPE_MOVE:
-                subpath_start_index = i
-                break
-        if subpath_start_index == -1:
-            subpath_start_index = 0
-
-        if subpath_start_index in self._winding_cache:
-            return self._winding_cache[subpath_start_index]
-
-        result = get_path_winding_order_from_array(
-            self.data, subpath_start_index
-        )
-        self._winding_cache[subpath_start_index] = result
-        return result
 
     def get_point_and_tangent_at(
         self, segment_index: int, t: float

@@ -64,6 +64,7 @@ class RuidaDriver(Driver):
     KEEPALIVE_INTERVAL = 1.0
     POSITION_POLL_INTERVAL = 0.5
     RESPONSE_PORT = 40200
+    CHUNK_SIZE = 1024
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
@@ -416,9 +417,8 @@ class RuidaDriver(Driver):
             logger.info(line, extra=self._log_extra("USER_COMMAND"))
 
         if binary_data and self._client:
-            CHUNK_SIZE = 1024
-            for i in range(0, len(binary_data), CHUNK_SIZE):
-                chunk = binary_data[i : i + CHUNK_SIZE]
+            for i in range(0, len(binary_data), self.CHUNK_SIZE):
+                chunk = binary_data[i : i + self.CHUNK_SIZE]
                 await self._client.send_command(chunk)
 
         self.job_finished.send(self)

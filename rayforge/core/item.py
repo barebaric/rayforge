@@ -241,7 +241,7 @@ class DocItem(ABC):
             return
 
         # Decompose the existing world transform to preserve its properties
-        tx, ty, angle, sx, sy, skew = world_transform_old.decompose()
+        _, _, angle, sx, sy, skew = world_transform_old.decompose()
 
         # Preserve any reflection by checking the sign of the original scale
         new_sx = width_mm * (1 if sx >= 0 else -1)
