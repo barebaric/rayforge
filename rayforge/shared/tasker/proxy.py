@@ -132,10 +132,13 @@ class ExecutionContextProxy(ThrottledProgressContext):
 
     def is_cancelled(self) -> bool:
         """
-        Provides a compatible API with ExecutionContext. The parent TaskManager
-        is responsible for terminating the process on cancellation.
+        Checks if the task has been cancelled by looking for a cancellation
+        flag in the shared adoption_signals dict. The main process sets a
+        ``"cancel:{task_id}"`` key when cancel() is called.
         """
-        return False
+        if self._adoption_signals is None:
+            return False
+        return f"cancel:{self._task_id}" in self._adoption_signals
 
     def flush(self):
         """
