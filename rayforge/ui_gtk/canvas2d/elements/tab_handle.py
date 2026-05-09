@@ -1,6 +1,7 @@
 import cairo
 import math
 import logging
+import numpy as np
 from typing import TYPE_CHECKING, cast, Optional, Tuple, List
 from gi.repository import Gdk
 from copy import deepcopy
@@ -148,7 +149,7 @@ class TabHandleElement(CanvasElement):
             local_x_norm, local_y_norm = inv_parent_world.transform_point(
                 (world_mouse_x, world_mouse_y)
             )
-        except Exception:
+        except np.linalg.LinAlgError:
             return world_dx, world_dy
 
         # 1. Find the closest point on the normalized geometry path.
@@ -267,7 +268,7 @@ class TabHandleElement(CanvasElement):
             inv_parent_world = parent_world_transform.invert()
             local_transform = inv_parent_world @ desired_world_transform
             self.set_transform(local_transform)
-        except Exception:
+        except np.linalg.LinAlgError:
             # Invert can fail if parent is scaled to zero
             pass
 

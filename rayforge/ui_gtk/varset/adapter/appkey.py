@@ -163,7 +163,7 @@ class AppKeyAdapter(RowAdapter):
             parsed = urlparse(request_url)
             scheme = parsed.scheme or "http"
             return f"{scheme}://{parsed.netloc}"
-        except Exception:
+        except ValueError:
             return None
 
     def _on_request(self, _btn) -> None:
@@ -183,7 +183,7 @@ class AppKeyAdapter(RowAdapter):
                 req = urllib.request.Request(probe_url, method="GET")
                 with urllib.request.urlopen(req, timeout=_REQUEST_TIMEOUT):
                     pass
-            except Exception:
+            except urllib.error.URLError:
                 self._row.set_subtitle(
                     _(
                         "Device not reachable or does not support "
@@ -264,7 +264,11 @@ class AppKeyAdapter(RowAdapter):
                 self._stop_polling()
                 return False
             return True
-        except Exception:
+        except (
+            urllib.error.URLError,
+            json.JSONDecodeError,
+            UnicodeDecodeError,
+        ):
             return True
 
         api_key = result.get("api_key")

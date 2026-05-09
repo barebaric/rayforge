@@ -797,3 +797,21 @@ class DocItem(ABC):
             parent_transform = self.parent.get_world_transform()
             return parent_transform @ self.matrix
         return self.matrix
+
+    def get_ancestor_by_type(self, ancestor_type: Type) -> Optional["DocItem"]:
+        """
+        Traverses the parent hierarchy to find the first ancestor of the
+        specified type.
+
+        Args:
+            ancestor_type: The class type to search for.
+
+        Returns:
+            The first ancestor matching the type, or None if not found.
+        """
+        p = self.parent
+        while p:
+            if isinstance(p, ancestor_type):
+                return p
+            p = p.parent
+        return None

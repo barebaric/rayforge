@@ -1927,7 +1927,7 @@ class MainWindow(Adw.ApplicationWindow):
                     if isinstance(artifact, JobArtifact):
                         _handle_ops(artifact.ops)
                         return
-            except Exception:
+            except (OSError, KeyError, ValueError, AttributeError):
                 logger.warning("Failed to run sanity check", exc_info=True)
             proceed_callback()
             return
@@ -1942,7 +1942,7 @@ class MainWindow(Adw.ApplicationWindow):
                     if isinstance(artifact, JobArtifact):
                         _handle_ops(artifact.ops)
                         return
-            except Exception:
+            except (OSError, KeyError, ValueError, AttributeError):
                 logger.warning("Failed to run sanity check", exc_info=True)
             proceed_callback()
 

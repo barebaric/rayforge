@@ -9,6 +9,7 @@ from typing import Dict, Optional, Tuple
 
 import numpy as np
 from OpenGL import GL
+import trimesh
 
 from ..gl_utils import BaseRenderer, RenderContext, Shader
 
@@ -28,30 +29,23 @@ class _CachedModelData:
 _model_cache: Dict[Path, _CachedModelData] = {}
 
 
-def _extract_color(mesh) -> Optional[np.ndarray]:
-    visual = getattr(mesh, "visual", None)
-    if visual is None:
+def _extract_color(mesh: trimesh.Trimesh) -> Optional[np.ndarray]:
+    if mesh.visual is None:
         return None
-    try:
-        vc = visual.vertex_colors
-        if vc is not None and len(vc) == len(mesh.vertices):
-            return np.array(vc, dtype=np.float32) / 255.0
-    except Exception:
-        pass
-    try:
-        mat = visual.material
-        base = getattr(mat, "baseColorFactor", None)
-        if base is None:
-            base = getattr(mat, "diffuse", None)
-        if base is not None:
-            c = np.array(base, dtype=np.float32)
-            if c.max() > 1.0:
-                c = c / 255.0
-            if c.shape[0] == 3:
-                c = np.append(c, 1.0)
-            return np.tile(c, (len(mesh.vertices), 1))
-    except Exception:
-        pass
+    vc = mesh.visual.vertex_colors
+    if vc is not None and len(vc) == len(mesh.vertices):
+        return np.array(vc, dtype=np.float32) / 255.0
+    mat = mesh.visual.material
+    base = mat.baseColorFactor
+    if base is None:
+        base = mat.diffuse
+    if base is not None:
+        c = np.array(base, dtype=np.float32)
+        if c.max() > 1.0:
+            c = c / 255.0
+        if c.shape[0] == 3:
+            c = np.append(c, 1.0)
+        return np.tile(c, (len(mesh.vertices), 1))
     return None
 
 

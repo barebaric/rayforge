@@ -2,6 +2,7 @@ import math
 import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 import cairo
+import numpy as np
 from ...core.geo import Point3D
 from ...core.matrix import Matrix
 from ...pipeline.coordspace import OriginCorner
@@ -194,7 +195,7 @@ class AxisRenderer:
 
         try:
             inv_view = view_transform.invert()
-        except Exception:
+        except np.linalg.LinAlgError:
             ctx.restore()
             return
 

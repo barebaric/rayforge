@@ -39,12 +39,8 @@ class Group(DocItem):
         """Traverses the hierarchy to find the parent Layer."""
         from .layer import Layer  # Local import to avoid circular dependency
 
-        p = self.parent
-        while p:
-            if isinstance(p, Layer):
-                return p
-            p = p.parent
-        return None
+        ancestor = self.get_ancestor_by_type(Layer)
+        return ancestor if isinstance(ancestor, Layer) else None
 
     @property
     def all_workpieces(self) -> List["WorkPiece"]:

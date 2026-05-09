@@ -167,26 +167,21 @@ class DragDropCmd:
 
             pos = (position_mm[0] + offset_x, position_mm[1] + offset_y)
 
-            try:
-                if isinstance(asset, StockAsset):
-                    new_item = self._create_stock_item_instance(asset_uid, pos)
-                elif isinstance(asset, SourceAsset):
-                    new_item = self._create_source_workpiece_instance(
-                        asset_uid, pos
-                    )
-                else:
-                    edit = self.main_window.doc_editor.edit
-                    new_item = edit.add_geometry_provider_instance(
-                        asset_uid, pos
-                    )
-                if new_item:
-                    logger.info(
-                        f"Created instance {new_item.uid[:8]} "
-                        f"from asset {asset_uid[:8]} at {pos}"
-                    )
-                success = True
-            except Exception:
-                logger.exception(f"Error handling asset drop: {asset_uid}")
+            if isinstance(asset, StockAsset):
+                new_item = self._create_stock_item_instance(asset_uid, pos)
+            elif isinstance(asset, SourceAsset):
+                new_item = self._create_source_workpiece_instance(
+                    asset_uid, pos
+                )
+            else:
+                edit = self.main_window.doc_editor.edit
+                new_item = edit.add_geometry_provider_instance(asset_uid, pos)
+            if new_item:
+                logger.info(
+                    f"Created instance {new_item.uid[:8]} "
+                    f"from asset {asset_uid[:8]} at {pos}"
+                )
+            success = True
 
         return success
 

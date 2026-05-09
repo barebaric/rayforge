@@ -170,7 +170,7 @@ class ArtifactStore:
                 f"terminates before adoption completes."
             )
             raise SharedMemoryNotFoundError(shm_name)
-        except Exception as e:
+        except OSError as e:
             logger.error(f"Error adopting shared memory block {shm_name}: {e}")
             raise
 
@@ -426,7 +426,7 @@ class ArtifactStore:
         except FileNotFoundError:
             # The block was already released externally, which is fine.
             logger.debug(f"SHM block {shm_name} was already unlinked.")
-        except Exception as e:
+        except OSError as e:
             logger.warning(
                 f"Error releasing shared memory block {shm_name}: {e}"
             )
@@ -501,7 +501,7 @@ class ArtifactStore:
             shm_obj.close()
             # Keep in managed_shms for garbage collection
             # but don't unlink yet
-        except Exception as e:
+        except OSError as e:
             logger.warning(
                 f"Error closing shared memory block {shm_name}: {e}"
             )
@@ -600,7 +600,7 @@ class ArtifactStore:
             logger.debug(f"Closing shared memory block: {shm_name}")
             shm_obj.close()
             logger.debug(f"Forgot shared memory block: {shm_name}")
-        except Exception as e:
+        except OSError as e:
             logger.warning(
                 f"Error forgetting shared memory block {shm_name}: {e}"
             )

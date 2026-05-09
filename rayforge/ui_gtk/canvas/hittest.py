@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 import cairo
+import numpy as np
 
 if TYPE_CHECKING:
     from ...core.matrix import Matrix
@@ -55,7 +56,7 @@ def check_pixel_hit(
             content_x, content_y = inv_content.transform_point(
                 (local_x, local_y)
             )
-        except Exception:
+        except np.linalg.LinAlgError:
             # If matrix is non-invertible, we can't do the hit-test.
             # Default to a hit, as the user is inside the bounding box.
             return True

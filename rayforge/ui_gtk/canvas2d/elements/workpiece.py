@@ -626,100 +626,6 @@ class WorkPieceElement(CanvasElement):
         registry.add(self.data.uid, "__composite__", self._composited_bytes)
         self._composited_dirty = False
 
-    def _composite_live_step(self, step_uid: str):
-        """Incrementally blits a live (progressive) step surface into the
-        existing composite without requiring a full rebuild.
-
-        Falls back to marking dirty if the composite doesn't exist yet
-        or if the step's bbox falls outside the current composite bounds.
-        """
-        if self._composited_surface is None or self._composited_dirty:
-            self._composited_dirty = True
-            return
-
-        meta = self._ops_metadata_cache.get(step_uid)
-        if meta is None:
-            return
-
-        view_handle = self.view_manager.get_view_handle(
-            self.data.uid, step_uid
-        )
-        if view_handle is None:
-            return
-        artifact = self.view_manager.store.get(view_handle)
-        if not isinstance(artifact, WorkPieceViewArtifact):
-            return
-
-        try:
-            new_data = artifact.bitmap_data
-            height, width, _ = new_data.shape
-            stride = cairo.ImageSurface.format_stride_for_width(
-                cairo.FORMAT_ARGB32, width
-            )
-            step_surf = cairo.ImageSurface.create_for_data(
-                new_data, cairo.FORMAT_ARGB32, width, height, stride
-            )
-            self._store_ops_surface(
-                step_uid,
-                step_surf,
-                new_data,
-                (artifact.bbox_mm, artifact.workpiece_size_mm),
-            )
-        except Exception:
-            self._composited_dirty = True
-            return
-
-        # Now blit into the composite.
-        bbox_mm = artifact.bbox_mm
-        wp_size_mm = artifact.workpiece_size_mm
-        world_w, world_h = self.data.size
-        ref_w, ref_h = wp_size_mm
-        sx = world_w / ref_w if ref_w > 1e-9 else 1.0
-        sy = world_h / ref_h if ref_h > 1e-9 else 1.0
-        vx, vy, vw, vh = bbox_mm
-        vx *= sx
-        vy *= sy
-        vw *= sx
-        vh *= sy
-
-        if vw < 1e-9 or vh < 1e-9:
-            return
-
-        step_ppm_x = (width - 2 * OPS_MARGIN_PX) / vw if vw > 1e-9 else 0
-        step_ppm_y = (height - 2 * OPS_MARGIN_PX) / vh if vh > 1e-9 else 0
-        if step_ppm_x <= 0 or step_ppm_y <= 0:
-            return
-
-        comp_bbox = self._composited_bbox_mm
-        if comp_bbox is None:
-            self._composited_dirty = True
-            return
-
-        # Reconstruct composite ppm from composite dimensions.
-        comp_ppm = (
-            (self._composited_surface.get_width()) / comp_bbox[2]
-            if comp_bbox[2] > 1e-9
-            else 0
-        )
-        if comp_ppm <= 0:
-            self._composited_dirty = True
-            return
-
-        step_origin_x = vx - OPS_MARGIN_PX / step_ppm_x
-        step_origin_y = vy - OPS_MARGIN_PX / step_ppm_y
-
-        dest_x = (step_origin_x - comp_bbox[0]) * comp_ppm
-        dest_y = (step_origin_y - comp_bbox[1]) * comp_ppm
-        scale_factor = comp_ppm / step_ppm_x
-
-        comp_ctx = cairo.Context(self._composited_surface)
-        comp_ctx.save()
-        comp_ctx.translate(dest_x, dest_y)
-        comp_ctx.scale(scale_factor, scale_factor)
-        comp_ctx.set_source_surface(step_surf, 0, 0)
-        comp_ctx.paint()
-        comp_ctx.restore()
-
     def _on_view_artifact_created(
         self,
         sender,
@@ -831,7 +737,7 @@ class WorkPieceElement(CanvasElement):
             local_x_norm, local_y_norm = inv_world_transform.transform_point(
                 (world_x, world_y)
             )
-        except Exception:
+        except np.linalg.LinAlgError:
             return None  # Transform not invertible
 
         natural_size = self.data.natural_size
@@ -988,7 +894,7 @@ class WorkPieceElement(CanvasElement):
         try:
             inv_world = self.get_world_transform().invert()
             local_x, local_y = inv_world.transform_point((world_x, world_y))
-        except Exception:
+        except np.linalg.LinAlgError:
             return None
 
         world_w, world_h = self.data.size
@@ -1040,7 +946,7 @@ class WorkPieceElement(CanvasElement):
         try:
             inv = self.get_world_transform().invert()
             return inv.transform_point((wx, wy))
-        except Exception:
+        except np.linalg.LinAlgError:
             return None
 
     def handle_edit_press(

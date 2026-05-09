@@ -5,7 +5,7 @@ from gettext import gettext as _
 
 import cairo
 from blinker import Signal
-from gi.repository import Adw, Gdk, GdkPixbuf, Gtk
+from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk
 
 from ...core.item import DocItem
 from ...core.layer import Layer
@@ -345,7 +345,7 @@ class ImportDialog(PatchedDialogWindow):
                 if not self._mode_visible:
                     self._mode_visible = True
                     self._mode_group.set_visible(True)
-        except Exception:
+        except (AttributeError, KeyError, TypeError):
             logger.error(
                 f"Failed to read import file {self.file_path}", exc_info=True
             )
@@ -519,7 +519,7 @@ class ImportDialog(PatchedDialogWindow):
                 loader.write(result.image_bytes)
                 loader.close()
                 self._background_pixbuf = loader.get_pixbuf()
-            except Exception:
+            except GLib.Error:
                 logger.error("Failed to create pixbuf from preview bytes.")
 
         self.preview_area.queue_draw()

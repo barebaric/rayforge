@@ -44,7 +44,7 @@ def rotation_4x4(axis: np.ndarray, angle: float) -> np.ndarray:
 def set_line_width(requested: float) -> None:
     try:
         width_range = GL.glGetFloatv(GL.GL_ALIASED_LINE_WIDTH_RANGE)
-    except Exception:
+    except GL.GLError:
         width_range = None
 
     if width_range is None or len(width_range) < 2:
@@ -303,5 +303,5 @@ class BaseRenderer:
             if self._owned_vbos:
                 GL.glDeleteBuffers(len(self._owned_vbos), self._owned_vbos)
                 self._owned_vbos.clear()
-        except Exception:
+        except GL.GLError:
             logger.exception("Error during renderer cleanup")

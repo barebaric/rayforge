@@ -296,17 +296,13 @@ class AddonListWidget(PreferencesGroupWithButton):
         )
 
         def _worker():
-            try:
-                logger.info(
-                    f"Starting addon installation: git_url={git_url}, "
-                    f"addon_id={addon_id}"
-                )
-                result = context.addon_mgr.install_addon(git_url, addon_id)
-                logger.info(f"Addon installation finished: result={result}")
-                return result
-            except Exception:
-                logger.exception("Unhandled exception in install worker")
-                return None
+            logger.info(
+                f"Starting addon installation: git_url={git_url}, "
+                f"addon_id={addon_id}"
+            )
+            result = context.addon_mgr.install_addon(git_url, addon_id)
+            logger.info(f"Addon installation finished: result={result}")
+            return result
 
         def _done(result_path):
             logger.info(f"Install _done callback: result={result_path}")

@@ -291,8 +291,8 @@ async def run_udp_simulator(
     await main_transport.connect()
     await jog_transport.connect()
 
-    print(f"Ruida simulator running on {host}:{port} (jog: {jog_port})")
-    print("Press Ctrl+C to stop")
+    logger.info(f"Ruida simulator running on {host}:{port} (jog: {jog_port})")
+    logger.info("Press Ctrl+C to stop")
 
     try:
         while True:

@@ -112,16 +112,10 @@ class AddonRegistryDialog(PatchedDialogWindow):
         context = get_context()
 
         def _worker():
-            try:
-                logger.info("Fetching addon registry in background thread")
-                result = context.addon_mgr.fetch_registry()
-                logger.info(f"Registry fetch complete: {len(result)} items")
-                return result
-            except Exception:
-                logger.exception(
-                    "Unhandled exception in registry fetch worker"
-                )
-                return []
+            logger.info("Fetching addon registry in background thread")
+            result = context.addon_mgr.fetch_registry()
+            logger.info(f"Registry fetch complete: {len(result)} items")
+            return result
 
         def _done(data):
             if data is not None:
