@@ -1,13 +1,17 @@
 import pytest
+from rayforge.machine.driver.grbl.grbl_util import strip_gcode_comments
 from rayforge.machine.driver.marlin.marlin_util import (
-    parse_m114_position,
-    parse_marlin_version,
-    is_ok_response,
-    is_error_response,
-    parse_error_message,
-    is_boot_message,
+    extract_marlin_device_name,
     gcode_to_p_number,
-    strip_gcode_comments,
+    is_boot_message,
+    is_error_response,
+    is_ok_response,
+    parse_error_message,
+    parse_marlin_version,
+    parse_m114_position,
+    parse_m115_firmware_info,
+    parse_m211_endstops,
+    parse_m503_settings,
 )
 
 
@@ -247,3 +251,106 @@ class TestStripGcodeComments:
     )
     def test_strip_comments(self, input_line, expected):
         assert strip_gcode_comments(input_line) == expected
+
+
+class TestParseM115FirmwareInfo:
+    def test_full_m115_response(self):
+        lines = [
+            "FIRMWARE_NAME:Marlin 2.1.2.7 "
+            "(Marlin 3D Printer Firmware) "
+            "SOURCE_CODE_URL:https://github.com/MarlinFirmware"
+            "/Marlin PROTOCOL_VERSION:1.0 "
+            "MACHINE_TYPE:Custom Laser "
+            "EXTRUDER_COUNT:1 UUID:abcdef",
+        ]
+        result = parse_m115_firmware_info(lines)
+        assert result["firmware_name"] == "Marlin"
+        assert result["machine_type"] == "Custom Laser"
+
+    def test_firmware_name_only(self):
+        lines = ["FIRMWARE_NAME:Marlin 2.1.2.7 PROTOCOL_VERSION:1.0"]
+        result = parse_m115_firmware_info(lines)
+        assert result["firmware_name"] == "Marlin"
+        assert "machine_type" not in result
+
+    def test_empty_lines(self):
+        assert parse_m115_firmware_info([]) == {}
+
+    def test_no_match(self):
+        assert parse_m115_firmware_info(["ok"]) == {}
+
+
+class TestParseM211Endstops:
+    def test_m211_output(self):
+        lines = ["echo: M211 S1 X200.00 Y200.00 Z200.00"]
+        result = parse_m211_endstops(lines)
+        assert result == (200.0, 200.0)
+
+    def test_m211_report_style(self):
+        lines = ["X: 300.00 Y: 300.00 Z: 200.00 S: 1 (Enabled)"]
+        result = parse_m211_endstops(lines)
+        assert result == (300.0, 300.0)
+
+    def test_no_match(self):
+        assert parse_m211_endstops(["ok"]) is None
+
+    def test_empty(self):
+        assert parse_m211_endstops([]) is None
+
+
+class TestParseM503Settings:
+    def test_full_m503(self):
+        lines = [
+            "echo:  G21    ; Units in mm",
+            "echo:; Steps per unit:",
+            "echo: M92 X80.00 Y80.00 Z400.00 E93.00",
+            "echo:; Maximum feedrates (units/s):",
+            "echo: M203 X300.00 Y300.00 Z5.00 E25.00",
+            "echo:; Maximum Acceleration (units/s2):",
+            "echo: M201 X3000.00 Y3000.00 Z100.00 E5000.00",
+            "echo:; Acceleration: S=acceleration",
+            "echo: M204 S3000.00 T3000.00",
+        ]
+        result = parse_m503_settings(lines)
+        assert result["max_feedrate_x"] == 300.0
+        assert result["max_feedrate_y"] == 300.0
+        assert result["acceleration"] == 3000.0
+
+    def test_different_feedrates(self):
+        lines = [
+            "echo: M203 X500.00 Y300.00 Z5.00 E25.00",
+            "echo: M204 S500.00 T500.00",
+        ]
+        result = parse_m503_settings(lines)
+        assert result["max_feedrate_x"] == 500.0
+        assert result["max_feedrate_y"] == 300.0
+        assert result["acceleration"] == 500.0
+
+    def test_no_match(self):
+        assert parse_m503_settings(["ok", "echo: M92 X80.00"]) == {}
+
+    def test_empty(self):
+        assert parse_m503_settings([]) == {}
+
+
+class TestExtractMarlinDeviceName:
+    def test_machine_type_from_m115(self):
+        lines = [
+            "FIRMWARE_NAME:Marlin 2.1.2.7 "
+            "MACHINE_TYPE:CustomCNC EXTRUDER_COUNT:1"
+        ]
+        assert extract_marlin_device_name(lines) == "CustomCNC"
+
+    def test_generic_machine_type_falls_back(self):
+        lines = [
+            "FIRMWARE_NAME:Marlin 2.1.2.7 "
+            "MACHINE_TYPE:3D Printer EXTRUDER_COUNT:1"
+        ]
+        assert extract_marlin_device_name(lines) == "Marlin"
+
+    def test_no_m115_uses_boot_lines(self):
+        result = extract_marlin_device_name([], boot_lines=["Marlin 2.1.2.7"])
+        assert result == "Marlin 2.1.2.7"
+
+    def test_no_info_returns_unknown(self):
+        assert extract_marlin_device_name([]) == ("Unknown Marlin Device")
