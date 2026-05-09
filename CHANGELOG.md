@@ -5,6 +5,27 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.7.2
+
+### Added
+
+- Experimental Marlin driver with probing/auto configuration support (#236)
+- Camera resolution selection in camera image settings (#233)
+- Camera visibility toggle in SketchStudio (#235)
+- RX buffer size override option for GRBL serial driver (#234)
+
+### Fixed
+
+- Fixed job generation stuck after cancellation
+- Fixed RX buffer size handling in GRBL serial (#234)
+- Fixed atomic buffer space checks and flow control in GrblSerialDriver (#234)
+- Fixed cooperative cancellation not working in worker subprocesses
+
+### Changed
+
+- Updated GitPython dependency to 3.1.50
+- Various code cleanups
+
 ## 1.7.1
 
 ### Added
