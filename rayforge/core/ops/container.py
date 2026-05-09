@@ -1187,7 +1187,7 @@ class Ops:
                 # linearization
                 start_point = last_point_untransformed or (0.0, 0.0, 0.0)
                 segments = linearize_arc(cmd, start_point)
-                for p1, p2 in segments:
+                for _, p2 in segments:
                     point_vec = np.array([p2[0], p2[1], p2[2], 1.0])
                     transformed_vec = matrix @ point_vec
                     transformed_commands.append(

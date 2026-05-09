@@ -117,18 +117,6 @@ class RuidaSimulator:
         return self.state.ref_point_mode
 
     @property
-    def _ref_point_mode(self):
-        return self.state.ref_point_mode
-
-    @property
-    def _jog_active(self):
-        return self.state.jog_active
-
-    @property
-    def _memory_values(self):
-        return self.state.memory_values
-
-    @property
     def filename(self):
         return self.state.filename
 
@@ -138,14 +126,6 @@ class RuidaSimulator:
 
     @jog_speed.setter
     def jog_speed(self, value):
-        self.state.jog_speed = value
-
-    @property
-    def _jog_speed(self):
-        return self.state.jog_speed
-
-    @_jog_speed.setter
-    def _jog_speed(self, value):
         self.state.jog_speed = value
 
     @property

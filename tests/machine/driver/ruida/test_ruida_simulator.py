@@ -603,17 +603,17 @@ class TestRefPointMode:
     def test_ref_point_mode_0_tracked(self):
         sim = RuidaSimulator()
         sim._process_single_command(b"\xd8\x12")
-        assert sim._ref_point_mode == 0
+        assert sim.ref_point_mode == 0
 
     def test_ref_point_mode_1_tracked(self):
         sim = RuidaSimulator()
         sim._process_single_command(b"\xd8\x11")
-        assert sim._ref_point_mode == 1
+        assert sim.ref_point_mode == 1
 
     def test_ref_point_mode_2_tracked(self):
         sim = RuidaSimulator()
         sim._process_single_command(b"\xd8\x10")
-        assert sim._ref_point_mode == 2
+        assert sim.ref_point_mode == 2
 
 
 class TestDA04Response:
@@ -737,82 +737,82 @@ class TestD8JogTracking:
     def test_keydown_x_left(self):
         sim = RuidaSimulator()
         sim._process_single_command(b"\xd8\x20")
-        assert sim._jog_active["x"] < 0
+        assert sim.jog_active["x"] < 0
 
     def test_keydown_x_right(self):
         sim = RuidaSimulator()
         sim._process_single_command(b"\xd8\x21")
-        assert sim._jog_active["x"] > 0
+        assert sim.jog_active["x"] > 0
 
     def test_keydown_y_top(self):
         sim = RuidaSimulator()
         sim._process_single_command(b"\xd8\x22")
-        assert sim._jog_active["y"] > 0
+        assert sim.jog_active["y"] > 0
 
     def test_keydown_y_bottom(self):
         sim = RuidaSimulator()
         sim._process_single_command(b"\xd8\x23")
-        assert sim._jog_active["y"] < 0
+        assert sim.jog_active["y"] < 0
 
     def test_keydown_z_up(self):
         sim = RuidaSimulator()
         sim._process_single_command(b"\xd8\x24")
-        assert sim._jog_active["z"] > 0
+        assert sim.jog_active["z"] > 0
 
     def test_keydown_z_down(self):
         sim = RuidaSimulator()
         sim._process_single_command(b"\xd8\x25")
-        assert sim._jog_active["z"] < 0
+        assert sim.jog_active["z"] < 0
 
     def test_keydown_u_forward(self):
         sim = RuidaSimulator()
         sim._process_single_command(b"\xd8\x26")
-        assert sim._jog_active["u"] > 0
+        assert sim.jog_active["u"] > 0
 
     def test_keydown_u_backward(self):
         sim = RuidaSimulator()
         sim._process_single_command(b"\xd8\x27")
-        assert sim._jog_active["u"] < 0
+        assert sim.jog_active["u"] < 0
 
     def test_keyup_x_stops_jog(self):
         sim = RuidaSimulator()
         sim._process_single_command(b"\xd8\x20")
-        assert sim._jog_active["x"] != 0
+        assert sim.jog_active["x"] != 0
         sim._process_single_command(b"\xd8\x30")
-        assert sim._jog_active["x"] == 0
+        assert sim.jog_active["x"] == 0
 
     def test_keyup_y_stops_jog(self):
         sim = RuidaSimulator()
         sim._process_single_command(b"\xd8\x22")
-        assert sim._jog_active["y"] != 0
+        assert sim.jog_active["y"] != 0
         sim._process_single_command(b"\xd8\x32")
-        assert sim._jog_active["y"] == 0
+        assert sim.jog_active["y"] == 0
 
     def test_keyup_z_stops_jog(self):
         sim = RuidaSimulator()
         sim._process_single_command(b"\xd8\x24")
-        assert sim._jog_active["z"] != 0
+        assert sim.jog_active["z"] != 0
         sim._process_single_command(b"\xd8\x34")
-        assert sim._jog_active["z"] == 0
+        assert sim.jog_active["z"] == 0
 
     def test_keyup_u_stops_jog(self):
         sim = RuidaSimulator()
         sim._process_single_command(b"\xd8\x26")
-        assert sim._jog_active["u"] != 0
+        assert sim.jog_active["u"] != 0
         sim._process_single_command(b"\xd8\x36")
-        assert sim._jog_active["u"] == 0
+        assert sim.jog_active["u"] == 0
 
     def test_jog_uses_jog_speed(self):
         sim = RuidaSimulator()
-        sim._jog_speed = 5000
+        sim.jog_speed = 5000
         sim._process_single_command(b"\xd8\x21")
-        assert sim._jog_active["x"] == 5000
+        assert sim.jog_active["x"] == 5000
 
     def test_jog_negative_direction(self):
         sim = RuidaSimulator()
-        sim._jog_speed = 8000
+        sim.jog_speed = 8000
         sim._process_single_command(b"\xd8\x20")
-        assert sim._jog_active["x"] == -8000
+        assert sim.jog_active["x"] == -8000
 
 
 class TestE7BYTest:

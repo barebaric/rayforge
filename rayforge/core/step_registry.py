@@ -48,7 +48,7 @@ class StepRegistry:
         """
         if name in self._steps:
             del self._steps[name]
-            for addon_name, items in self._addon_items.items():
+            for _, items in self._addon_items.items():
                 items.discard(name)
             return True
         return False

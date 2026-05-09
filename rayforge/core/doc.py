@@ -102,15 +102,15 @@ class Doc(DocItem):
 
         # Legacy Asset Loading (from separate dictionaries)
         stock_assets_data = data.get("stock_assets", {})
-        for uid, sa_data in stock_assets_data.items():
+        for _uid, sa_data in stock_assets_data.items():
             doc.add_asset(StockAsset.from_dict(sa_data))
         sketches_data = data.get("sketches", {})
-        for uid, s_data in sketches_data.items():
+        for _uid, s_data in sketches_data.items():
             sketch_cls = asset_type_registry.get("sketch")
             if sketch_cls:
                 doc.add_asset(sketch_cls.from_dict(s_data))
         source_assets_data = data.get("source_assets", {})
-        for uid, src_data in source_assets_data.items():
+        for _uid, src_data in source_assets_data.items():
             doc.add_asset(SourceAsset.from_dict(src_data))
 
         # Load children (Layers and StockItems) from unified list

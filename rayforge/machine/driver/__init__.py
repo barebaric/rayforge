@@ -19,7 +19,7 @@ drivers = [
     cast(Type[Driver], obj) for obj in list(locals().values()) if isdriver(obj)
 ]
 
-driver_by_classname = dict([(o.__name__, o) for o in drivers])
+driver_by_classname = {o.__name__: o for o in drivers}
 
 
 def get_driver_cls(classname: str, default=NoDeviceDriver):

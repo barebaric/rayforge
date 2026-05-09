@@ -185,54 +185,7 @@ class GrblNetworkDriver(Driver):
             self.http = None
         await super().cleanup()
 
-    async def _get_hardware_info(self):
-        url = f"{self.http_base}{hw_info_url}"
-        logger.debug(
-            f"GET {url}",
-            extra={
-                "log_category": "RAW_IO",
-                "direction": "TX",
-                "data": f"GET {url}",
-            },
-        )
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                data = await response.text()
-        logger.debug(
-            f"GET {url} response: {data}",
-            extra={
-                "log_category": "RAW_IO",
-                "direction": "RX",
-                "data": data.encode("utf-8"),
-            },
-        )
-        return data
-
-    async def _get_device_info(self):
-        url = f"{self.http_base}{fw_info_url}"
-        logger.debug(
-            f"GET {url}",
-            extra={
-                "log_category": "RAW_IO",
-                "direction": "TX",
-                "data": f"GET {url}",
-            },
-        )
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                data = await response.text()
-        logger.debug(
-            f"GET {url} response: {data}",
-            extra={
-                "log_category": "RAW_IO",
-                "direction": "RX",
-                "data": data.encode("utf-8"),
-            },
-        )
-        return data
-
-    async def _get_eeprom_info(self):
-        url = f"{self.http_base}{eeprom_info_url}"
+    async def _http_get(self, url: str) -> str:
         logger.debug(
             f"GET {url}",
             extra={
@@ -352,7 +305,6 @@ class GrblNetworkDriver(Driver):
                 "data": data.encode("utf-8"),
             },
         )
-        await session.close()
         return data
 
     async def _connect_implementation(self):
@@ -371,13 +323,13 @@ class GrblNetworkDriver(Driver):
             self._update_connection_status(TransportStatus.CONNECTING)
             try:
                 logger.info("Fetching hardware info...")
-                await self._get_hardware_info()
+                await self._http_get(f"{self.http_base}{hw_info_url}")
 
                 logger.info("Fetching device info...")
-                await self._get_device_info()
+                await self._http_get(f"{self.http_base}{fw_info_url}")
 
                 logger.info("Fetching EEPROM info...")
-                await self._get_eeprom_info()
+                await self._http_get(f"{self.http_base}{eeprom_info_url}")
 
                 logger.info("Starting HTTP and WebSocket transports...")
                 async with asyncio.TaskGroup() as tg:

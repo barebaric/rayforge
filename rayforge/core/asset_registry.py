@@ -68,7 +68,7 @@ class AssetTypeRegistry:
         """
         if type_name in self._types:
             del self._types[type_name]
-            for addon_name, items in self._addon_items.items():
+            for _, items in self._addon_items.items():
                 items.discard(type_name)
             return True
         return False

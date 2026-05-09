@@ -458,17 +458,6 @@ class _MockArcCmd:
         self.clockwise = clockwise
 
 
-class _MockBezierCmd:
-    """Helper to adapt array data for linearization."""
-
-    __slots__ = ("end", "c1", "c2")
-
-    def __init__(self, end, c1, c2):
-        self.end = end
-        self.c1 = c1
-        self.c2 = c2
-
-
 def apply_affine_transform_to_array(
     data: np.ndarray, matrix: np.ndarray
 ) -> np.ndarray:
