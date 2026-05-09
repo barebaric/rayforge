@@ -159,7 +159,7 @@ class TestMarlinSerialDriverProperties:
         assert driver.supports_settings is False
         assert driver.maturity == DriverMaturity.UNTESTED
         assert driver.reports_granular_progress is True
-        assert driver.supports_probing is False
+        assert driver.supports_probing is True
 
     def test_get_setup_vars(self):
         setup_vars = MarlinSerialDriver.get_setup_vars()

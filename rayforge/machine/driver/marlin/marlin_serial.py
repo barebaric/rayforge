@@ -9,6 +9,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     TYPE_CHECKING,
     Union,
     Awaitable,
@@ -35,6 +36,7 @@ from ..driver import (
     Axis,
     Pos,
 )
+from .marlin_probe import probe_marlin_device
 from .marlin_util import (
     gcode_to_p_number,
     m114_pos_re,
@@ -45,8 +47,9 @@ from .marlin_util import (
 
 if TYPE_CHECKING:
     from ....core.doc import Doc
-    from ...models.machine import Machine
     from ...models.laser import Laser
+    from ...models.machine import Machine
+    from ...device.profile import DeviceProfile
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +60,7 @@ class MarlinSerialDriver(Driver):
     supports_settings = False
     reports_granular_progress = True
     maturity = DriverMaturity.UNTESTED
-    supports_probing = False
+    supports_probing = True
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
@@ -77,6 +80,7 @@ class MarlinSerialDriver(Driver):
         self._response_lines: List[str] = []
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._rx_buffer = ""
+        self._boot_lines: List[str] = []
 
     @property
     def machine_space_wcs(self) -> str:
@@ -91,6 +95,10 @@ class MarlinSerialDriver(Driver):
         if self._port:
             return f"serial://{self._port}"
         return None
+
+    @property
+    def boot_lines(self) -> List[str]:
+        return self._boot_lines
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
@@ -122,6 +130,12 @@ class MarlinSerialDriver(Driver):
 
     def get_setting_vars(self) -> List["VarSet"]:
         return [VarSet()]
+
+    @classmethod
+    async def probe(
+        cls, context: "RayforgeContext", **kwargs: Any
+    ) -> Tuple["DeviceProfile", List[str]]:
+        return await probe_marlin_device(cls, context, **kwargs)
 
     def _setup_implementation(self, **kwargs: Any) -> None:
         port = cast(str, kwargs.get("port", ""))
@@ -324,6 +338,24 @@ class MarlinSerialDriver(Driver):
                 ) from e
 
         return self._response_lines
+
+    async def execute_interactive_command(self, command: str) -> List[str]:
+        """
+        Send a command and return its response lines.
+
+        Used during probing to query M115, M211, M503 etc.
+        Sets ``_job_running = True`` to suppress M114 status
+        polling while the command is in flight.
+        """
+        if not self._transport or not self._transport.is_connected:
+            raise ConnectionError("Serial transport not connected")
+
+        was_job_running = self._job_running
+        self._job_running = True
+        try:
+            return await self._send_and_wait(command)
+        finally:
+            self._job_running = was_job_running
 
     def _start_job(
         self,
@@ -607,6 +639,7 @@ class MarlinSerialDriver(Driver):
             return
 
         if is_boot_message(line):
+            self._boot_lines.append(line)
             logger.info(
                 line,
                 extra=self._log_extra("MACHINE_EVENT"),
