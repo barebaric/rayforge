@@ -66,6 +66,28 @@
   </screenshots>
 
   <releases>
+    <release version="1.7.2" date="2026-05-10">
+      <description>
+        <p>New Features:</p>
+        <ul>
+          <li>Experimental Marlin driver with probing/auto configuration
+          support (#236)</li>
+          <li>Camera resolution selection in camera image settings (#233)</li>
+          <li>Camera visibility toggle in SketchStudio (#235)</li>
+          <li>RX buffer size override option for GRBL serial driver (#234)</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Fixed job generation stuck after cancellation</li>
+          <li>Fixed RX buffer size handling in GRBL serial (#234)</li>
+          <li>Fixed atomic buffer space checks and flow control in
+          GrblSerialDriver (#234)</li>
+          <li>Fixed cooperative cancellation not working in worker
+          subprocesses</li>
+        </ul>
+        <p>Updated GitPython dependency; various code cleanups</p>
+      </description>
+    </release>
     <release version="1.7.1" date="2026-05-08">
       <description>
         <p>New Features:</p>
