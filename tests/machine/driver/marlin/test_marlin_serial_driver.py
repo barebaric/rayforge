@@ -1,7 +1,5 @@
-import fcntl
 import os
 import re
-import select
 import threading
 import time
 
@@ -19,9 +17,7 @@ from rayforge.machine.driver.driver import (
     DriverPrecheckError,
     DriverSetupError,
 )
-from rayforge.machine.driver.marlin.marlin_serial import (
-    MarlinSerialDriver,
-)
+from rayforge.machine.driver.marlin.marlin_serial import MarlinSerialDriver
 from rayforge.machine.transport import TransportStatus
 from rayforge.machine.transport.serial import SerialPortPermissionError
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
@@ -53,6 +49,7 @@ class MarlinSimulator:
         self._set_nonblocking()
 
     def _set_nonblocking(self):
+        import fcntl
 
         flags = fcntl.fcntl(self.fd, fcntl.F_GETFL)
         fcntl.fcntl(self.fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
@@ -102,6 +99,8 @@ class MarlinSimulator:
             time.sleep(0.01)
 
     def _process_input(self):
+        import select
+
         try:
             ready, _, _ = select.select([self.fd], [], [], 0.01)
         except (OSError, ValueError):
