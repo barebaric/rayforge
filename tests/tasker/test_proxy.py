@@ -145,10 +145,40 @@ class TestExecutionContextProxy:
         child.set_message("Sub-task update")
         assert mock_queue.get_nowait() == ("message", "Sub-task update")
 
-    def test_is_cancelled_always_false(self, mock_queue):
-        """The proxy cannot know about cancellation; it is a one-way street."""
+    def test_is_cancelled_default_false(self, mock_queue):
+        """The proxy returns False when no adoption_signals are provided."""
         proxy = ExecutionContextProxy(mock_queue)
         assert not proxy.is_cancelled()
+
+    def test_is_cancelled_with_adoption_signals(self, mock_queue, manager):
+        """The proxy checks adoption_signals for a cancel flag."""
+        adoption_signals = manager.dict()
+        task_id = 42
+        proxy = ExecutionContextProxy(
+            mock_queue,
+            adoption_signals=adoption_signals,
+            task_id=task_id,
+        )
+
+        assert not proxy.is_cancelled()
+
+        adoption_signals[f"cancel:{task_id}"] = True
+        assert proxy.is_cancelled()
+
+    def test_is_cancelled_ignores_other_tasks(self, mock_queue, manager):
+        """The proxy only checks its own task_id's cancel flag."""
+        adoption_signals = manager.dict()
+        proxy = ExecutionContextProxy(
+            mock_queue,
+            adoption_signals=adoption_signals,
+            task_id=42,
+        )
+
+        adoption_signals["cancel:99"] = True
+        assert not proxy.is_cancelled()
+
+        adoption_signals["cancel:42"] = True
+        assert proxy.is_cancelled()
 
     def test_flush_behavior(self, mock_queue):
         """

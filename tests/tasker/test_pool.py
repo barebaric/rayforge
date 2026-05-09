@@ -73,6 +73,21 @@ def worker_init(shared_state: dict, filepath: Path, init_queue: mp.Queue):
     init_queue.put(pid)
 
 
+def cancellable_long_task(proxy: ExecutionContextProxy):
+    """A task that sleeps in a loop, checking is_cancelled()."""
+    for _ in range(100):
+        if proxy.is_cancelled():
+            return "cancelled_early"
+        time.sleep(0.05)
+    return "completed_normally"
+
+
+def quick_cancel_task(proxy: ExecutionContextProxy):
+    """A quick task that just sleeps briefly."""
+    time.sleep(0.1)
+    return "done"
+
+
 # --- Fixtures ---
 
 
@@ -352,3 +367,54 @@ class TestWorkerPoolManager:
         assert len(lines) == num_workers
         # All PIDs should be unique
         assert len(set(lines)) == num_workers
+
+    def test_cancel_propagates_to_worker(self, pool: WorkerPoolManager):
+        """
+        Verify that cancel() sets a flag visible to the worker via
+        proxy.is_cancelled(), causing a long-running task to abort early.
+        """
+        completion_event = threading.Event()
+        result_holder = {}
+
+        def on_complete(sender, key, task_id, result):
+            if key == "cancel_task":
+                result_holder["result"] = result
+                completion_event.set()
+
+        def on_fail(sender, key, task_id, error):
+            if key == "cancel_task":
+                result_holder["error"] = error
+                completion_event.set()
+
+        pool.task_completed.connect(on_complete)
+        pool.task_failed.connect(on_fail)
+
+        pool.submit("cancel_task", 7777, cancellable_long_task)
+
+        time.sleep(0.3)
+        pool.cancel("cancel_task", 7777)
+
+        assert completion_event.wait(timeout=10), (
+            "Cancelled task did not complete"
+        )
+        assert result_holder.get("result") == "cancelled_early"
+
+    def test_cancel_cleanup_on_completion(self, pool: WorkerPoolManager):
+        """
+        Verify that the cancel flag in adoption_signals is cleaned up
+        after a cancelled task finishes.
+        """
+        completion_event = threading.Event()
+
+        def on_complete(sender, key, task_id, result):
+            if key == "cleanup_task":
+                completion_event.set()
+
+        pool.task_completed.connect(on_complete)
+
+        pool.submit("cleanup_task", 8888, quick_cancel_task)
+        time.sleep(0.05)
+        pool.cancel("cleanup_task", 8888)
+
+        assert completion_event.wait(timeout=5)
+        assert "cancel:8888" not in pool._adoption_signals

@@ -301,11 +301,14 @@ class WorkerPoolManager:
     def cancel(self, key: Any, task_id: int):
         """
         Registers a task ID as cancelled. The listener thread will ignore
-        any subsequent messages from this task ID.
+        any subsequent messages from this task ID. Also sets a flag in
+        shared adoption_signals so the worker subprocess can cooperatively
+        abort via ExecutionContextProxy.is_cancelled().
         """
         logger.debug(f"Registering task '{key}' (id: {task_id}) as cancelled.")
         with self._lock:
             self._cancelled_task_ids.add(task_id)
+        self._adoption_signals[f"cancel:{task_id}"] = True
 
     def _result_listener_loop(self):
         """
@@ -373,6 +376,7 @@ class WorkerPoolManager:
                         # It's the final message. Let it pass through for
                         # cleanup and remove the ID from the cancelled set.
                         self._cancelled_task_ids.remove(task_id)
+                        self._adoption_signals.pop(f"cancel:{task_id}", None)
                     else:
                         # It's an intermediate message. Ignore it.
                         logger.debug(
@@ -382,10 +386,12 @@ class WorkerPoolManager:
                         continue
 
             if msg_type == "done":
+                self._adoption_signals.pop(f"cancel:{task_id}", None)
                 self.task_completed.send(
                     self, key=key, task_id=task_id, result=value
                 )
             elif msg_type == "error":
+                self._adoption_signals.pop(f"cancel:{task_id}", None)
                 self.task_failed.send(
                     self, key=key, task_id=task_id, error=value
                 )
