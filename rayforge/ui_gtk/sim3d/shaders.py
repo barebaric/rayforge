@@ -31,6 +31,7 @@ uniform vec4 uColor;
 uniform float uUseVertexColor;
 uniform float uHasNormals;
 uniform vec3 uLightDir;
+uniform vec3 uLightDir2;
 uniform vec3 uCameraPos;
 uniform int uExecutedVertexCount;
 uniform float uAlphaPending;
@@ -51,7 +52,8 @@ void main() {
             int laserIdx = int(vColor.g + 0.5);
             float lutY = (float(laserIdx) + 0.5)
                          / float(max(uNumLaserLUTs, 1));
-            baseColor = texture(uColorLUT, vec2(power, lutY));
+            float lutX = 0.5 + 0.5 * power;
+            baseColor = texture(uColorLUT, vec2(lutX, lutY));
         }
     } else if (uUseVertexColor > 0.5) {
         baseColor = vColor;
@@ -62,7 +64,7 @@ void main() {
         vec3 n = normalize(vNormal);
         vec3 lightDir = normalize(uLightDir);
         float diff = max(dot(n, lightDir), 0.0);
-        float ambient = 0.25;
+        float ambient = 0.35;
         float diffuse = (1.0 - ambient) * diff;
 
         vec3 viewDir = normalize(uCameraPos - vPos);
@@ -70,7 +72,10 @@ void main() {
         float spec = pow(max(dot(n, halfDir), 0.0), 48.0);
         float specular = 0.35 * spec;
 
-        float light = ambient + diffuse + specular;
+        vec3 lightDir2 = normalize(uLightDir2);
+        float diff2 = max(dot(n, lightDir2), 0.0);
+
+        float light = ambient + diffuse + specular + 0.3 * diff2;
 
         if (uPointLightOn > 0.5) {
             // Point light from laser
@@ -236,7 +241,8 @@ void main() {
 
     float lutY = (float(uLaserIndex) + 0.5)
                  / float(max(uNumLaserLUTs, 1));
-    vec4 color = texture(uColorLUT, vec2(power, lutY));
+    float lutX = 0.5 + 0.5 * power;
+    vec4 color = texture(uColorLUT, vec2(lutX, lutY));
 
     FragColor = vec4(color.rgb, color.a * uAlpha);
 }

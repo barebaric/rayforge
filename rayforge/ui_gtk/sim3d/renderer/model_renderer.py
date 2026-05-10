@@ -10,6 +10,7 @@ from typing import Dict, Optional, Tuple
 import numpy as np
 from OpenGL import GL
 import trimesh
+from trimesh.visual.color import ColorVisuals
 
 from ..gl_utils import BaseRenderer, RenderContext, Shader
 
@@ -32,9 +33,11 @@ _model_cache: Dict[Path, _CachedModelData] = {}
 def _extract_color(mesh: trimesh.Trimesh) -> Optional[np.ndarray]:
     if mesh.visual is None:
         return None
-    vc = mesh.visual.vertex_colors
-    if vc is not None and len(vc) == len(mesh.vertices):
-        return np.array(vc, dtype=np.float32) / 255.0
+    if isinstance(mesh.visual, ColorVisuals):
+        vc = mesh.visual.vertex_colors
+        if vc is not None and len(vc) == len(mesh.vertices):
+            return np.array(vc, dtype=np.float32) / 255.0
+        return None
     mat = mesh.visual.material
     base = mat.baseColorFactor
     if base is None:
@@ -219,6 +222,7 @@ class ModelRenderer(BaseRenderer):
             return
 
         light_dir = np.array([0.5, 0.8, 1.0], dtype=np.float32)
+        fill_dir = np.array([-0.6, -0.4, 0.3], dtype=np.float32)
         camera_position = ctx.camera_position
 
         if model_matrix is not None and camera_position is not None:
@@ -239,6 +243,7 @@ class ModelRenderer(BaseRenderer):
         shader.set_vec4("uColor", (0.5, 0.6, 0.7, 1.0))
         shader.set_float("uHasNormals", 1.0)
         shader.set_vec3("uLightDir", light_dir)
+        shader.set_vec3("uLightDir2", fill_dir)
         shader.set_vec3("uCameraPos", cam_pos)
         if point_light_pos is not None:
             shader.set_vec3("uPointLightPos", point_light_pos)
