@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-04 00:30+0200\n"
+"POT-Creation-Date: 2026-05-10 11:23+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -342,6 +342,7 @@ msgstr "Sin conexión"
 
 #: rayforge/machine/driver/dummy.py
 #: rayforge/machine/driver/ruida/ruida_driver.py
+#: rayforge/machine/driver/marlin/marlin_serial.py
 msgid "Machine Coordinates"
 msgstr "Coordenadas de máquina"
 
@@ -495,6 +496,7 @@ msgstr "La dirección IP o el nombre de host del dispositivo"
 
 #: rayforge/machine/driver/smoothie.py
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "Port"
@@ -672,6 +674,45 @@ msgstr ""
 "Comando de sonda enviado. OctoPrint no informa resultados de la sonda a "
 "través de su API."
 
+#: rayforge/machine/driver/marlin/marlin_serial.py
+msgid "Marlin (Serial)"
+msgstr "Marlin (Serie)"
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+msgid "Marlin firmware via serial connection"
+msgstr "Firmware Marlin mediante conexión serie"
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Serial port for the device"
+msgstr "Puerto serie para el dispositivo"
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Port must be configured."
+msgstr "El puerto debe estar configurado."
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Baud rate must be configured."
+msgstr "La tasa de baudios debe estar configurada."
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Port not configured"
+msgstr "Puerto no configurado"
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "No response from device"
+msgstr "Sin respuesta del dispositivo"
+
+#: rayforge/machine/driver/marlin/marlin_probe.py
+#: rayforge/machine/driver/grbl/grbl_probe.py
+msgid "Auto-configured via probe wizard"
+msgstr "Autoconfigurado mediante el asistente de detección"
+
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "GRBL (Telnet)"
 msgstr "GRBL (Telnet)"
@@ -699,11 +740,6 @@ msgstr ""
 "Consultar periódicamente al dispositivo su posición y estado mientras se "
 "ejecuta un trabajo. ¡Advertencia: Algunos dispositivos tienen problemas para "
 "mantener una conexión estable si se usa esto!"
-
-#: rayforge/machine/driver/grbl/grbl_telnet.py
-#: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Port must be configured."
-msgstr "El puerto debe estar configurado."
 
 #: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Missing Command Letter"
@@ -1352,20 +1388,16 @@ msgid "GRBL-compatible serial connection"
 msgstr "Conexión serie compatible con GRBL"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Serial port for the device"
-msgstr "Puerto serie para el dispositivo"
+msgid "RX Buffer Size Override"
+msgstr "Anular tamaño del búfer RX"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Baud rate must be configured."
-msgstr "La tasa de baudios debe estar configurada."
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Port not configured"
-msgstr "Puerto no configurado"
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "No response from device"
-msgstr "Sin respuesta del dispositivo"
+msgid ""
+"Force a specific RX buffer size in bytes. Set to 0 to auto-detect from the "
+"device."
+msgstr ""
+"Forzar un tamaño específico del búfer RX en bytes. Establecer en 0 para "
+"detectar automáticamente desde el dispositivo."
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_network.py
@@ -1398,10 +1430,6 @@ msgid ""
 msgstr ""
 "El modo láser no está activado ($32=0). Actívalo para obtener mejores "
 "resultados con cortadores láser."
-
-#: rayforge/machine/driver/grbl/grbl_probe.py
-msgid "Auto-configured via probe wizard"
-msgstr "Autoconfigurado mediante el asistente de detección"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "GRBL (Network)"
@@ -2784,6 +2812,21 @@ msgid "Adjust image quality and appearance parameters."
 msgstr "Ajustar parámetros de calidad y apariencia de la imagen."
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Default"
+msgstr "Predeterminado"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Resolution"
+msgstr "Resolución"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Camera capture resolution. Default uses the camera's native setting."
+msgstr ""
+"Resolución de captura de la cámara. Por defecto usa la configuración nativa "
+"de la cámara."
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Prefer YUYV Format"
 msgstr "Preferir formato YUYV"
 
@@ -3282,7 +3325,7 @@ msgstr ""
 "Añadir G-code personalizado para ser ejecutado en puntos específicos del "
 "trabajo."
 
-#: rayforge/ui_gtk/machine/hook_list.py
+#: rayforge/ui_gtk/machine/hook_list.py rayforge/ui_gtk/varset/varsetwidget.py
 msgid "Reset to Default"
 msgstr "Restablecer a predeterminado"
 
@@ -5404,6 +5447,12 @@ msgid "Cannot export while other tasks are running"
 msgstr "No se puede exportar mientras hay otras tareas en ejecución"
 
 #: rayforge/ui_gtk/mainwindow.py
+msgid "Pipeline needs recalculation before export. Press F5 to recalculate."
+msgstr ""
+"La canalización necesita recalcularse antes de exportar. Presiona F5 para "
+"recalcular."
+
+#: rayforge/ui_gtk/mainwindow.py
 msgid "Add a workpiece to enable export"
 msgstr "Añade una pieza de trabajo para habilitar la exportación"
 
@@ -5418,6 +5467,12 @@ msgstr "Configura la potencia de encuadre para habilitar"
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Cycle laser head around the occupied area"
 msgstr "Encuadrar el área ocupada"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Pipeline needs recalculation before sending. Press F5 to recalculate."
+msgstr ""
+"La canalización necesita recalcularse antes de enviar. Presiona F5 para "
+"recalcular."
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Resume machine"
@@ -6509,10 +6564,6 @@ msgstr "Diámetro del objeto"
 #: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Diameter of the cylindrical object in machine units"
 msgstr "Diámetro del objeto cilíndrico en unidades de máquina"
-
-#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
-msgid "Default"
-msgstr "Predeterminado"
 
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "No materials in selected library."

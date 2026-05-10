@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-02 14:59+0200\n"
+"POT-Creation-Date: 2026-05-08 23:36+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -318,6 +318,10 @@ msgstr "Налаштувати назву ескізу та основні вл�
 #: sketcher/ui_gtk/studio.py
 msgid "Name"
 msgstr "Назва"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Toggle camera view"
+msgstr "Перемкнути перегляд камери"
 
 #: sketcher/ui_gtk/studio.py
 msgid "Rename Sketch"

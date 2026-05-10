@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-02 14:59+0200\n"
+"POT-Creation-Date: 2026-05-08 23:36+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -317,6 +317,10 @@ msgstr "Configurar el nombre y las propiedades básicas del boceto"
 #: sketcher/ui_gtk/studio.py
 msgid "Name"
 msgstr "Nombre"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Toggle camera view"
+msgstr "Alternar vista de cámara"
 
 #: sketcher/ui_gtk/studio.py
 msgid "Rename Sketch"

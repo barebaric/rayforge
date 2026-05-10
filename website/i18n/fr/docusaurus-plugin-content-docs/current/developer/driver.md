@@ -201,8 +201,8 @@ appelez les méthodes d'aide protégées de la classe de base `Driver`.
 La meilleure façon d'apprendre est de regarder les pilotes existants dans
 `rayforge/machine/driver/`, tels que :
 
-- `grbl.py` - Machines basées sur GRBL
-- `grbl_serial.py` - Communication GRBL basée sur série
+- `grbl/` - Machines basées sur GRBL (série, telnet, réseau)
+- `marlin/` - Machines basées sur le firmware Marlin (série)
 - `smoothie.py` - Machines basées sur Smoothieboard
 - `dummy.py` - Un pilote de test pour le développement
 

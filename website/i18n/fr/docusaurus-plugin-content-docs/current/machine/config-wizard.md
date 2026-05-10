@@ -32,6 +32,7 @@ les pilotes prenant en charge la détection sont listés. Typiquement :
 
 - **GRBL (Série)** — Appareils GRBL connectés via USB
 - **GRBL (Réseau)** — Appareils GRBL WiFi/Ethernet
+- **Marlin (Série)** — Appareils Marlin connectés via USB
 
 ### Paramètres de Connexion
 

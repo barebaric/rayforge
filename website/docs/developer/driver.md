@@ -200,8 +200,8 @@ Your driver may raise `ResourceBusyError` when attempting to use a resource that
 The best way to learn is to look at the existing drivers in
 `rayforge/machine/driver/`, such as:
 
-- `grbl.py` - GRBL-based machines
-- `grbl_serial.py` - Serial-based GRBL communication
+- `grbl/` - GRBL-based machines (serial, telnet, network)
+- `marlin/` - Marlin firmware-based machines (serial)
 - `smoothie.py` - Smoothieboard-based machines
 - `dummy.py` - A test driver for development
 

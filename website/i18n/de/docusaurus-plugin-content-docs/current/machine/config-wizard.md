@@ -32,6 +32,7 @@ nur Treiber angezeigt, die das Auslesen unterstützen. Typischerweise:
 
 - **GRBL (Seriell)** — USB-verbundene GRBL-Geräte
 - **GRBL (Netzwerk)** — WiFi/Ethernet GRBL-Geräte
+- **Marlin (Seriell)** — USB-verbundene Marlin-Geräte
 
 ### Verbindungsparameter
 

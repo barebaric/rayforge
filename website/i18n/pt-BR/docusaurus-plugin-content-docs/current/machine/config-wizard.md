@@ -31,6 +31,7 @@ drivers que suportam detecção são listados. Tipicamente:
 
 - **GRBL (Serial)** — Dispositivos GRBL conectados via USB
 - **GRBL (Network)** — Dispositivos GRBL WiFi/Ethernet
+- **Marlin (Serial)** — Dispositivos Marlin conectados via USB
 
 ### Parâmetros de Conexão
 

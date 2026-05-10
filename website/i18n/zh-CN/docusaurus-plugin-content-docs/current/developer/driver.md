@@ -134,8 +134,8 @@ class YourDriver(Driver):
 
 学习的最佳方式是查看 `rayforge/machine/driver/` 中的现有驱动程序，例如：
 
-- `grbl.py` - 基于 GRBL 的机器
-- `grbl_serial.py` - 基于串口的 GRBL 通信
+- `grbl/` - 基于 GRBL 的机器（串口、Telnet、网络）
+- `marlin/` - 基于 Marlin 固件的机器（串口）
 - `smoothie.py` - 基于 Smoothieboard 的机器
 - `dummy.py` - 用于开发的测试驱动程序
 

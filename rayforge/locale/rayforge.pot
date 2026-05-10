@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-04 00:30+0200\n"
+"POT-Creation-Date: 2026-05-10 11:23+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -341,6 +341,7 @@ msgstr ""
 
 #: rayforge/machine/driver/dummy.py
 #: rayforge/machine/driver/ruida/ruida_driver.py
+#: rayforge/machine/driver/marlin/marlin_serial.py
 msgid "Machine Coordinates"
 msgstr ""
 
@@ -486,6 +487,7 @@ msgstr ""
 
 #: rayforge/machine/driver/smoothie.py
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "Port"
@@ -644,6 +646,45 @@ msgid ""
 "Probe command sent. OctoPrint does not report probe results via its API."
 msgstr ""
 
+#: rayforge/machine/driver/marlin/marlin_serial.py
+msgid "Marlin (Serial)"
+msgstr ""
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+msgid "Marlin firmware via serial connection"
+msgstr ""
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Serial port for the device"
+msgstr ""
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Port must be configured."
+msgstr ""
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Baud rate must be configured."
+msgstr ""
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Port not configured"
+msgstr ""
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "No response from device"
+msgstr ""
+
+#: rayforge/machine/driver/marlin/marlin_probe.py
+#: rayforge/machine/driver/grbl/grbl_probe.py
+msgid "Auto-configured via probe wizard"
+msgstr ""
+
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "GRBL (Telnet)"
 msgstr ""
@@ -667,11 +708,6 @@ msgid ""
 "Periodically query the device for position and status while a job is "
 "running. Warning: Some devices have trouble maintaining a stable connection "
 "if this is used!"
-msgstr ""
-
-#: rayforge/machine/driver/grbl/grbl_telnet.py
-#: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Port must be configured."
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_util.py
@@ -1219,19 +1255,13 @@ msgid "GRBL-compatible serial connection"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Serial port for the device"
+msgid "RX Buffer Size Override"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Baud rate must be configured."
-msgstr ""
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Port not configured"
-msgstr ""
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "No response from device"
+msgid ""
+"Force a specific RX buffer size in bytes. Set to 0 to auto-detect from the "
+"device."
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
@@ -1259,10 +1289,6 @@ msgstr ""
 msgid ""
 "Laser mode is not enabled ($32=0). Enable it for best results with laser "
 "cutters."
-msgstr ""
-
-#: rayforge/machine/driver/grbl/grbl_probe.py
-msgid "Auto-configured via probe wizard"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_network.py
@@ -2577,6 +2603,19 @@ msgid "Adjust image quality and appearance parameters."
 msgstr ""
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Default"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Resolution"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Camera capture resolution. Default uses the camera's native setting."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Prefer YUYV Format"
 msgstr ""
 
@@ -3056,7 +3095,7 @@ msgstr ""
 msgid "Add custom G-code to be executed at specific points in the job."
 msgstr ""
 
-#: rayforge/ui_gtk/machine/hook_list.py
+#: rayforge/ui_gtk/machine/hook_list.py rayforge/ui_gtk/varset/varsetwidget.py
 msgid "Reset to Default"
 msgstr ""
 
@@ -5093,6 +5132,10 @@ msgid "Cannot export while other tasks are running"
 msgstr ""
 
 #: rayforge/ui_gtk/mainwindow.py
+msgid "Pipeline needs recalculation before export. Press F5 to recalculate."
+msgstr ""
+
+#: rayforge/ui_gtk/mainwindow.py
 msgid "Add a workpiece to enable export"
 msgstr ""
 
@@ -5106,6 +5149,10 @@ msgstr ""
 
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Cycle laser head around the occupied area"
+msgstr ""
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Pipeline needs recalculation before sending. Press F5 to recalculate."
 msgstr ""
 
 #: rayforge/ui_gtk/mainwindow.py
@@ -6167,10 +6214,6 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Diameter of the cylindrical object in machine units"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
-msgid "Default"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/material_list.py
