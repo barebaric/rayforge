@@ -1425,6 +1425,7 @@ class MainWindow(Adw.ApplicationWindow):
         hook for refreshing previews that depend on the final assembled job.
         """
         self.refresh_previews()
+        self._update_actions_and_ui()
 
     def _on_selection_changed(
         self,
@@ -1601,12 +1602,21 @@ class MainWindow(Adw.ApplicationWindow):
             active_driver = active_machine.driver
             is_dummy = isinstance(active_driver, NoDeviceDriver)
 
-            can_export = doc.has_result() and not task_mgr.has_tasks()
+            can_export = (
+                doc.has_result()
+                and not task_mgr.has_tasks()
+                and not self.doc_editor.pipeline.is_data_stale
+            )
             am.get_action("export").set_enabled(can_export)
             export_tooltip = _("Generate G-code")
             if task_mgr.has_tasks():
                 export_tooltip = _(
                     "Cannot export while other tasks are running"
+                )
+            elif self.doc_editor.pipeline.is_data_stale:
+                export_tooltip = _(
+                    "Pipeline needs recalculation before export. "
+                    "Press F5 to recalculate."
                 )
             elif not doc.has_workpiece():
                 export_tooltip = _("Add a workpiece to enable export")
@@ -1665,9 +1675,20 @@ class MainWindow(Adw.ApplicationWindow):
                 and conn_status == TransportStatus.CONNECTED
                 and doc.has_result()
                 and not is_job_or_task_active
+                and not self.doc_editor.pipeline.is_data_stale
             )
             am.get_action("machine-send").set_enabled(send_sensitive)
-            self.toolbar.send_button.set_tooltip_text(_("Send to machine"))
+            if self.doc_editor.pipeline.is_data_stale:
+                self.toolbar.send_button.set_tooltip_text(
+                    _(
+                        "Pipeline needs recalculation before sending. "
+                        "Press F5 to recalculate."
+                    )
+                )
+            else:
+                self.toolbar.send_button.set_tooltip_text(
+                    _("Send to machine")
+                )
 
             hold_sensitive = device_status in (
                 DeviceStatus.RUN,

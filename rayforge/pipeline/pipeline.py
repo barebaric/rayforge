@@ -300,6 +300,9 @@ class Pipeline:
             self._connect_signals()
             if self._auto_pipeline:
                 self.reconcile_data()
+            else:
+                self._data_stale_flag = True
+                self.data_stale.send(self)
 
     @property
     def is_busy(self) -> bool:
