@@ -5,6 +5,14 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.7.4
+
+### Fixed
+
+- Fixed crash when loading GLB models with texture visuals instead of vertex colors
+- Improved 3D model lighting with a fill light and raised ambient brightness
+- Remapped laser power LUT lookup so low-power paths remain visible
+
 ## 1.7.3
 
 ### Fixed
