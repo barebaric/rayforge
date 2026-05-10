@@ -201,8 +201,8 @@ chame os métodos auxiliares protegidos da classe base `Driver`.
 A melhor forma de aprender é olhar os drivers existentes em
 `rayforge/machine/driver/`, como:
 
-- `grbl.py` - Máquinas baseadas em GRBL
-- `grbl_serial.py` - Comunicação GRBL baseada em serial
+- `grbl/` - Máquinas baseadas em GRBL (serial, telnet, rede)
+- `marlin/` - Máquinas baseadas em firmware Marlin (serial)
 - `smoothie.py` - Máquinas baseadas em Smoothieboard
 - `dummy.py` - Um driver de teste para desenvolvimento
 

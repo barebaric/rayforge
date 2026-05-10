@@ -27,6 +27,7 @@ description: "使用配置向导通过探测已连接设备的固件设置来自
 
 - **GRBL (串口)** — 通过 USB 连接的 GRBL 设备
 - **GRBL (网络)** — WiFi/以太网 GRBL 设备
+- **Marlin (串口)** — 通过 USB 连接的 Marlin 设备
 
 ### 连接参数
 

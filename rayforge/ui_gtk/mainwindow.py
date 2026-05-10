@@ -1686,9 +1686,7 @@ class MainWindow(Adw.ApplicationWindow):
                     )
                 )
             else:
-                self.toolbar.send_button.set_tooltip_text(
-                    _("Send to machine")
-                )
+                self.toolbar.send_button.set_tooltip_text(_("Send to machine"))
 
             hold_sensitive = device_status in (
                 DeviceStatus.RUN,

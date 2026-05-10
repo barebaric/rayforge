@@ -132,8 +132,8 @@ Para comunicarse con la UI, tu driver debe emitir señales. Para asegurar loggin
 
 La mejor forma de aprender es mirar los drivers existentes en `rayforge/machine/driver/`, como:
 
-- `grbl.py` - Máquinas basadas en GRBL
-- `grbl_serial.py` - Comunicación GRBL basada en serial
+- `grbl/` - Máquinas basadas en GRBL (serial, telnet, red)
+- `marlin/` - Máquinas basadas en firmware Marlin (serial)
 - `smoothie.py` - Máquinas basadas en Smoothieboard
 - `dummy.py` - Un driver de prueba para desarrollo
 

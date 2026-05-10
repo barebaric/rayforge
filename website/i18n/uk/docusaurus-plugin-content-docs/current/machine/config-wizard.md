@@ -29,6 +29,7 @@ description: "Використовуйте майстер конфігураці
 
 - **GRBL (Serial)** — Пристрої GRBL, підключені через USB
 - **GRBL (Network)** — Пристрої GRBL з WiFi/Ethernet
+- **Marlin (Serial)** — Пристрої Marlin, підключені через USB
 
 ### Параметри з'єднання
 

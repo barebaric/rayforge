@@ -34,6 +34,7 @@ Típicamente:
 
 - **GRBL (Serial)** — Dispositivos GRBL conectados por USB
 - **GRBL (Network)** — Dispositivos GRBL WiFi/Ethernet
+- **Marlin (Serial)** — Dispositivos Marlin conectados por USB
 
 ### Parámetros de Conexión
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-02 14:59+0200\n"
+"POT-Creation-Date: 2026-05-08 23:36+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -317,6 +317,10 @@ msgstr "配置草图名称和基本属性"
 #: sketcher/ui_gtk/studio.py
 msgid "Name"
 msgstr "名称"
+
+#: sketcher/ui_gtk/studio.py
+msgid "Toggle camera view"
+msgstr "切换相机视图"
 
 #: sketcher/ui_gtk/studio.py
 msgid "Rename Sketch"

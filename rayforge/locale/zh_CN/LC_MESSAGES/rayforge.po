@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-04 00:30+0200\n"
+"POT-Creation-Date: 2026-05-10 11:23+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -340,6 +340,7 @@ msgstr "无连接"
 
 #: rayforge/machine/driver/dummy.py
 #: rayforge/machine/driver/ruida/ruida_driver.py
+#: rayforge/machine/driver/marlin/marlin_serial.py
 msgid "Machine Coordinates"
 msgstr "机器坐标"
 
@@ -486,6 +487,7 @@ msgstr "设备的IP地址或主机名"
 
 #: rayforge/machine/driver/smoothie.py
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "Port"
@@ -645,6 +647,45 @@ msgid ""
 "Probe command sent. OctoPrint does not report probe results via its API."
 msgstr "探测命令已发送。OctoPrint不通过其API报告探测结果。"
 
+#: rayforge/machine/driver/marlin/marlin_serial.py
+msgid "Marlin (Serial)"
+msgstr "Marlin (串行)"
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+msgid "Marlin firmware via serial connection"
+msgstr "通过串行连接的Marlin固件"
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Serial port for the device"
+msgstr "设备的串口"
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Port must be configured."
+msgstr "必须配置端口。"
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Baud rate must be configured."
+msgstr "必须配置波特率。"
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Port not configured"
+msgstr "端口未配置"
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "No response from device"
+msgstr "设备无响应"
+
+#: rayforge/machine/driver/marlin/marlin_probe.py
+#: rayforge/machine/driver/grbl/grbl_probe.py
+msgid "Auto-configured via probe wizard"
+msgstr "通过探测向导自动配置"
+
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "GRBL (Telnet)"
 msgstr "GRBL (Telnet)"
@@ -671,11 +712,6 @@ msgid ""
 msgstr ""
 "在作业运行时定期查询设备的位置和状态。警告：某些设备在使用此功能时可能无法保"
 "持稳定连接！"
-
-#: rayforge/machine/driver/grbl/grbl_telnet.py
-#: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Port must be configured."
-msgstr "必须配置端口。"
 
 #: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Missing Command Letter"
@@ -1225,20 +1261,14 @@ msgid "GRBL-compatible serial connection"
 msgstr "GRBL兼容的串口连接"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Serial port for the device"
-msgstr "设备的串口"
+msgid "RX Buffer Size Override"
+msgstr "RX缓冲区大小覆盖"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Baud rate must be configured."
-msgstr "必须配置波特率。"
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Port not configured"
-msgstr "端口未配置"
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "No response from device"
-msgstr "设备无响应"
+msgid ""
+"Force a specific RX buffer size in bytes. Set to 0 to auto-detect from the "
+"device."
+msgstr "强制指定RX缓冲区大小（字节）。设置为0以从设备自动检测。"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_network.py
@@ -1266,10 +1296,6 @@ msgid ""
 "Laser mode is not enabled ($32=0). Enable it for best results with laser "
 "cutters."
 msgstr "激光模式未启用（$32=0）。建议启用以获得最佳激光切割效果。"
-
-#: rayforge/machine/driver/grbl/grbl_probe.py
-msgid "Auto-configured via probe wizard"
-msgstr "通过探测向导自动配置"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "GRBL (Network)"
@@ -2607,6 +2633,19 @@ msgid "Adjust image quality and appearance parameters."
 msgstr "调整图像质量和外观参数。"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Default"
+msgstr "默认"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Resolution"
+msgstr "分辨率"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Camera capture resolution. Default uses the camera's native setting."
+msgstr "相机捕获分辨率。默认使用相机的原生设置。"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Prefer YUYV Format"
 msgstr "优先使用 YUYV 格式"
 
@@ -3091,7 +3130,7 @@ msgstr "G代码钩子"
 msgid "Add custom G-code to be executed at specific points in the job."
 msgstr "添加自定义G代码，在作业中的特定点执行。"
 
-#: rayforge/ui_gtk/machine/hook_list.py
+#: rayforge/ui_gtk/machine/hook_list.py rayforge/ui_gtk/varset/varsetwidget.py
 msgid "Reset to Default"
 msgstr "重置为默认值"
 
@@ -5142,6 +5181,10 @@ msgid "Cannot export while other tasks are running"
 msgstr "无法在其他任务运行时导出"
 
 #: rayforge/ui_gtk/mainwindow.py
+msgid "Pipeline needs recalculation before export. Press F5 to recalculate."
+msgstr "导出前需要重新计算流水线。按F5重新计算。"
+
+#: rayforge/ui_gtk/mainwindow.py
 msgid "Add a workpiece to enable export"
 msgstr "添加工件以启用导出"
 
@@ -5156,6 +5199,10 @@ msgstr "配置边框功率以启用"
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Cycle laser head around the occupied area"
 msgstr "沿占用区域循环移动激光头"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Pipeline needs recalculation before sending. Press F5 to recalculate."
+msgstr "发送前需要重新计算流水线。按F5重新计算。"
 
 #: rayforge/ui_gtk/mainwindow.py
 msgid "Resume machine"
@@ -6222,10 +6269,6 @@ msgstr "物体直径"
 #: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Diameter of the cylindrical object in machine units"
 msgstr "圆柱形物体的直径（机器单位）"
-
-#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
-msgid "Default"
-msgstr "默认"
 
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "No materials in selected library."

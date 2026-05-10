@@ -174,8 +174,8 @@ class YourDriver(Driver):
 Найкращий спосіб навчитися - подивитися на існуючі драйвери в
 `rayforge/machine/driver/`, такі як:
 
-- `grbl.py` - Машини на базі GRBL
-- `grbl_serial.py` - Послідовна комунікація GRBL
+- `grbl/` - Машини на базі GRBL (serial, telnet, мережа)
+- `marlin/` - Машини на базі прошивки Marlin (serial)
 - `smoothie.py` - Машини на базі Smoothieboard
 - `dummy.py` - Тестовий драйвер для розробки
 

@@ -197,8 +197,8 @@ rufst du die geschützten Hilfsmethoden aus der Basis-`Driver`-Klasse auf.
 Der beste Weg zu lernen ist, sich die bestehenden Treiber in
 `rayforge/machine/driver/` anzusehen, wie:
 
-- `grbl.py` - GRBL-basierte Maschinen
-- `grbl_serial.py` - Serielle GRBL-Kommunikation
+- `grbl/` - GRBL-basierte Maschinen (seriell, Telnet, Netzwerk)
+- `marlin/` - Marlin-Firmware-basierte Maschinen (seriell)
 - `smoothie.py` - Smoothieboard-basierte Maschinen
 - `dummy.py` - Ein Test-Treiber für die Entwicklung
 

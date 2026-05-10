@@ -29,6 +29,7 @@ support probing are listed. Typically:
 
 - **GRBL (Serial)** — USB-connected GRBL devices
 - **GRBL (Network)** — WiFi/Ethernet GRBL devices
+- **Marlin (Serial)** — USB-connected Marlin devices
 
 ### Connection Parameters
 

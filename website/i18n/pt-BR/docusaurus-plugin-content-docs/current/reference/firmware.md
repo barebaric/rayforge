@@ -4,7 +4,7 @@ Esta página documenta a compatibilidade de firmware para controladores de laser
 
 ## Visão Geral
 
-O Rayforge é projetado principalmente para **controladores baseados em GRBL** mas tem suporte experimental para outros tipos de firmware.
+O Rayforge é projetado principalmente para **controladores baseados em GRBL** mas também suporta Marlin, Smoothieware e outros tipos de firmware.
 
 ### Matriz de Compatibilidade
 
@@ -14,7 +14,7 @@ O Rayforge é projetado principalmente para **controladores baseados em GRBL** m
 | **grblHAL**      | 2023+   | Compatível             | GRBL Serial / GRBL Telnet | Fork moderno do GRBL        |
 | **GRBL**         | 0.9     | Limitado               | GRBL Serial               | Antigo, pode ter problemas  |
 | **Smoothieware** | Todos   | Compatível             | SmoothieDriver (Telnet)   | Baseado em rede             |
-| **Marlin**       | 2.0+    | Compatível             | Use driver GRBL           | Modo laser necessário       |
+| **Marlin**       | 2.0+    | Compatível             | Marlin Serial              | Modo laser necessário       |
 | **ESP3D**        | Todos   | Compatível             | GRBL Telnet               | Baseado em rede             |
 | **OctoPrint**    | Todos   | Experimental           | OctoPrint                 | Veja notas abaixo           |
 | **Outro**        | -       | Não suportado          | -                          | Solicite suporte            |
@@ -197,11 +197,25 @@ Smoothieware usa sintaxe G-code diferente:
 ## Marlin
 
 **Versões:** 2.0+ com suporte a laser
-**Driver:** GRBL Serial
+**Driver:** Marlin Serial
 
-### Marlin para Laser
+### Driver Marlin Serial
 
-Marlin 2.0+ pode controlar lasers quando configurado corretamente.
+O Rayforge inclui um MarlinSerialDriver dedicado que se conecta ao firmware Marlin
+via serial (USB). Marlin 2.0+ pode controlar lasers quando configurado corretamente.
+
+**Recursos:**
+
+- Comunicação serial (USB)
+- Protocolo de handshake Marlin (aguarda mensagem "start")
+- Streaming de G-code linha por linha com confirmação `ok`
+- Polling de posição M114
+- Execução de trabalhos com relatório de progresso granular
+- Referenciamento (G28), jogging, movimento, troca de ferramenta (T)
+- Configuração de offset WCS (G10 L2 P)
+- Controle de potência do laser via dialeto Marlin
+- Cancelamento via M410 (Quick Stop)
+- Auto-configuração (consultas M115, M211, M503)
 
 **Requisitos:**
 
@@ -216,22 +230,19 @@ Marlin 2.0+ pode controlar lasers quando configurado corretamente.
    #define SPEED_POWER_MAX 1000
    ```
 
-**Compatibilidade:**
-
-- Modo laser M4 suportado
-- G-code básico (G0, G1, G2, G3)
-- Relatório de status difere
-- Comandos de configurações diferentes
-- Assistente de ar (M8/M9) pode não funcionar
-
 **Usando Marlin com Rayforge:**
 
-1. **Selecione o dialeto Marlin** nas configurações da máquina > G-code > Dialeto
-2. **Configure o Marlin** para uso com laser
-3. **Teste o intervalo de potência** corresponde (0-1000 ou 0-255)
-4. **Teste limitado** - use com cautela
+1. **Selecione o driver "Marlin (Serial)"** nas configurações da máquina
+2. **Defina a porta serial** e a taxa de transmissão (tipicamente 115200)
+3. **Selecione o dialeto Marlin** nas configurações da máquina > G-code > Dialeto
+4. **Configure o Marlin** para uso com laser
+5. **Teste o intervalo de potência** (0-1000 ou 0-255)
 
-**Alternativa melhor:** Use firmware GRBL em máquinas a laser.
+**Limitações:**
+
+- Experimental — feedback bem-vindo
+- Leitura/gravação de configurações (como `$$` do GRBL) não suportada
+- Sem conectividade de rede (apenas USB)
 
 ---
 
