@@ -267,6 +267,7 @@ class SvgVectorImporter(SvgImporterBase):
                 for shape in self._flatten_group_shapes(element):
                     try:
                         path = SvgPath(shape)
+                        path.reify()
                         self._add_path_to_geometry(path, layer_geo)
                     except (AttributeError, TypeError):
                         pass
