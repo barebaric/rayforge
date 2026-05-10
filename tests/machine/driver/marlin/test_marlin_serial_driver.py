@@ -157,7 +157,7 @@ class TestMarlinSerialDriverProperties:
         assert driver.label == "Marlin (Serial)"
         assert driver.subtitle == ("Marlin firmware via serial connection")
         assert driver.supports_settings is False
-        assert driver.maturity == DriverMaturity.UNTESTED
+        assert driver.maturity == DriverMaturity.EXPERIMENTAL
         assert driver.reports_granular_progress is True
         assert driver.supports_probing is True
 
