@@ -66,6 +66,19 @@
   </screenshots>
 
   <releases>
+    <release version="1.7.4" date="2026-05-11">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>Fixed crash when loading GLB models with texture visuals
+          instead of vertex colors</li>
+          <li>Improved 3D model lighting with a fill light and raised
+          ambient brightness</li>
+          <li>Remapped laser power LUT lookup so low-power paths remain
+          visible</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.7.3" date="2026-05-10">
       <description>
         <p>Bug fix release</p>
