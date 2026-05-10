@@ -34,5 +34,9 @@
   "item.label.Sponsor": {
     "message": "赞助",
     "description": "Navbar item with label Sponsor"
+  },
+  "item.label.Devices": {
+    "message": "设备",
+    "description": "Navbar item with label Devices"
   }
 }

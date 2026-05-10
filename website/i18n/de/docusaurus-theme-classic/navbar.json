@@ -34,5 +34,9 @@
   "item.label.Sponsor": {
     "message": "Sponsor",
     "description": "Navbar item with label Sponsor"
+  },
+  "item.label.Devices": {
+    "message": "Geräte",
+    "description": "Navbar item with label Devices"
   }
 }

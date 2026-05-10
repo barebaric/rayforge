@@ -107,7 +107,6 @@
   "install.cloneRepo": {
     "message": "克隆仓库"
   },
-
   "install.installDependencies": {
     "message": "安装依赖项"
   },
@@ -887,5 +886,119 @@
   },
   "sponsor.cta.button": {
     "message": "打个招呼"
+  },
+  "page.devices.layout.title": {
+    "message": "支持的设备"
+  },
+  "page.devices.layout.description": {
+    "message": "浏览 Rayforge 支持的激光切割机、雕刻机和控制器列表 — 包括基于 GRBL、Smoothieware、Ruida 和 OctoPrint 的机器。"
+  },
+  "page.devices.hero.title": {
+    "message": "支持的设备"
+  },
+  "page.devices.hero.subtitle": {
+    "message": "Rayforge 可与各种激光切割机、雕刻机和控制器配合使用。以下是内置设备配置文件 — 选择一个匹配您的机器，或为自定义构建使用通用配置文件。"
+  },
+  "page.devices.hero.getStarted": {
+    "message": "开始使用"
+  },
+  "page.devices.hero.configGuide": {
+    "message": "配置指南"
+  },
+  "page.devices.card.shop": {
+    "message": "在 {shop} 购买"
+  },
+  "page.devices.note.grbl": {
+    "message": "任何基于 {grblLink} 的设备都受支持，即使没有内置配置文件。"
+  },
+  "page.devices.note.smoothieware": {
+    "message": "其他基于 {smoothieLink} 的设备也应受支持。"
+  },
+  "page.devices.note.marlin": {
+    "message": "Rayforge 通过 Marlin Serial 驱动程序支持 {marlinLink} 固件。在 {configWizard} 中选择 {marlinSerial} 以连接您的 Marlin 机器。"
+  },
+  "page.devices.note.octoprint": {
+    "message": "通过 {octoLink} 服务器连接您的激光器。"
+  },
+  "page.devices.note.ruida": {
+    "message": "Ruida 支持为实验性。对于基于 Ruida 的机器，请尝试使用 {genericRuida} 配置文件。"
+  },
+  "page.devices.generic.heading": {
+    "message": "通用配置文件"
+  },
+  "page.devices.generic.text": {
+    "message": "如果上面没有列出您的设备，请尝试通用配置文件 — {grblGeneric}、{ruidaGeneric}、{smoothieGeneric}。它们可与任何 {firmwareLink} 配合使用，并可通过 {configWizard} 进行配置。"
+  },
+  "page.devices.missing.heading": {
+    "message": "缺少设备？"
+  },
+  "page.devices.missing.text": {
+    "message": "Rayforge 使用 {profilesLink} — 无需更新应用程序即可添加新机器。如果您想为您的设备贡献配置文件，请查看 {devDocs} 或 {ghIssues}。"
+  },
+  "page.devices.device.acmer-s1.description": {
+    "message": "紧凑型二极管激光雕刻机，工作区域130x130mm"
+  },
+  "page.devices.device.atomstack-a70.description": {
+    "message": "70W二极管激光切割机，工作区域500x500mm，带光斑压缩"
+  },
+  "page.devices.device.atomstack-x40-pro.description": {
+    "message": "40W二极管激光雕刻机，工作区域400x400mm，带气辅"
+  },
+  "page.devices.device.carvera-air.description": {
+    "message": "桌面级激光雕刻机，配备Smoothieware控制器，工作区域300x200mm"
+  },
+  "page.devices.device.creality-falcon-2-pro.description": {
+    "message": "封闭式40W二极管激光雕刻机，工作区域300x300mm"
+  },
+  "page.devices.device.creality-falcon-a1.description": {
+    "message": "二极管激光雕刻机，工作区域381x305mm，带旋转轴"
+  },
+  "page.devices.device.elidor-z6.description": {
+    "message": "二极管激光雕刻机，工作区域300x300mm"
+  },
+  "page.devices.device.grbl-mks-dlc32.description": {
+    "message": "基于GRBL的控制板，用于定制激光设备"
+  },
+  "page.devices.device.longer-ray5.description": {
+    "message": "二极管激光雕刻机，工作区域375x375mm，带触摸屏"
+  },
+  "page.devices.device.neje-master-3-max.description": {
+    "message": "40W二极管激光雕刻机，工作区域460x460mm"
+  },
+  "page.devices.device.octoprint.description": {
+    "message": "通过OctoPrint服务器连接的激光器"
+  },
+  "page.devices.device.omtech-k40plus.description": {
+    "message": "CO2激光切割机，工作区域300x200mm"
+  },
+  "page.devices.device.ortur-laser-master-3.description": {
+    "message": "二极管激光雕刻机，工作区域400x400mm，带32位控制器"
+  },
+  "page.devices.device.ortur-laser-master-4.description": {
+    "message": "二极管激光雕刻机，工作区域400x400mm，具备高速能力"
+  },
+  "page.devices.device.sculpfun-icube.description": {
+    "message": "紧凑型二极管激光雕刻机，工作区域120x120mm"
+  },
+  "page.devices.device.sculpfun-icube-ultra.description": {
+    "message": "二极管激光雕刻机，带蓝牙功能，工作区域150x150mm"
+  },
+  "page.devices.device.sculpfun-s30.description": {
+    "message": "经济型二极管激光雕刻机，工作区域400x400mm"
+  },
+  "page.devices.device.sculpfun-s30-pro-max.description": {
+    "message": "20W二极管激光雕刻机，工作区域370x360mm，带自动气辅"
+  },
+  "page.devices.device.sculpfun-s40-max.description": {
+    "message": "48W二极管激光切割机，工作区域830x800mm，带自动对焦"
+  },
+  "page.devices.device.sculpfun-s70-max.description": {
+    "message": "70W二极管激光切割机，工作区域830x800mm，带自动对焦"
+  },
+  "page.devices.device.twotrees-tts55.description": {
+    "message": "55W二极管激光雕刻机，工作区域400x400mm"
+  },
+  "page.devices.device.xtool-d1-pro.description": {
+    "message": "二极管激光雕刻机，工作区域430x390mm，通过Wi-Fi连接"
   }
 }
