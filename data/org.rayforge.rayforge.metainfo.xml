@@ -120,7 +120,7 @@
         </ul>
       </description>
     </release>
-    <release version="1.7.0-beta3" date="2026-05-03">
+    <release version="1.7.0~beta3" date="2026-05-03">
       <description>
         <p>Manual Laser Control, Serial Transport Improvements, Machine
         Profile Search</p>
@@ -158,7 +158,7 @@
         </ul>
       </description>
     </release>
-    <release version="1.7.0-beta2" date="2026-05-02">
+    <release version="1.7.0~beta2" date="2026-05-02">
       <description>
         <p>Job Sanity Checks, 10 New Device Profiles, Better Layer
         Interaction</p>
@@ -198,7 +198,7 @@
         </ul>
       </description>
     </release>
-    <release version="1.7.0-beta1" date="2026-05-01">
+    <release version="1.7.0~beta1" date="2026-05-01">
       <description>
         <p>CO2 Laser Support, OctoPrint Driver, Parametric Text</p>
         <p>New Features:</p>
