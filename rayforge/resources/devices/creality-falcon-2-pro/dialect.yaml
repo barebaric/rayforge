@@ -20,6 +20,7 @@ probe_cycle: G38.2 {axis_letter}{max_travel} F{feed_rate}
 preamble:
 - G21 ;Set units to mm
 - G90 ;Absolute positioning
+- '; Bounds: X{job.extents[0]} Y{job.extents[1]} to X{job.extents[2]} Y{job.extents[3]}'
 postscript:
 - M5 ;Ensure laser is off
 - G0 X0 Y0 ;Return to origin
