@@ -59,7 +59,7 @@ class MarlinSerialDriver(Driver):
     subtitle = _("Marlin firmware via serial connection")
     supports_settings = False
     reports_granular_progress = True
-    maturity = DriverMaturity.UNTESTED
+    maturity = DriverMaturity.EXPERIMENTAL
     supports_probing = True
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
