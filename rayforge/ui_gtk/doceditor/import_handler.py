@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 from gettext import gettext as _
-from gi.repository import Gio, Adw
+from gi.repository import Gio, GLib, Adw
 from ...core.layer import Layer
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import VectorizationSpec, TraceSpec
@@ -87,7 +87,10 @@ def _on_file_selected(dialog, result, user_data):
         file = dialog.open_finish(result)
         if not file:
             return
+    except GLib.Error:
+        return
 
+    try:
         file_path = Path(file.get_path())
 
         # Get MIME type from Gio for accuracy
@@ -113,7 +116,6 @@ def _on_file_selected(dialog, result, user_data):
             logger.warning(
                 f"Unsupported file type: {mime_type} for {file_path}"
             )
-            # Optionally show an error dialog here
 
     except (OSError, ValueError, KeyError):
         logger.exception("Error opening file")
