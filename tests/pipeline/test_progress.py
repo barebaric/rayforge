@@ -1,5 +1,7 @@
 """Tests for the progress context abstraction."""
 
+import time
+
 from rayforge.shared.tasker.progress import (
     CallbackProgressContext,
     NoOpProgressContext,
@@ -36,19 +38,19 @@ class TestNoOpProgressContext:
 
 class TestCallbackProgressContext:
     def test_is_cancelled_calls_function(self):
-        cancelled = [False]
-
-        def is_cancelled_func():
-            return cancelled[0]
-
+        calls = []
         ctx = CallbackProgressContext(
-            is_cancelled_func,
+            lambda: (calls.append(1), False)[1],
             lambda x: None,
             lambda m: None,
         )
         assert ctx.is_cancelled() is False
-        cancelled[0] = True
-        assert ctx.is_cancelled() is True
+        assert len(calls) == 1
+        assert ctx.is_cancelled() is False
+        assert len(calls) == 1
+        time.sleep(ctx.CANCELLED_CHECK_INTERVAL_S + 0.01)
+        assert ctx.is_cancelled() is False
+        assert len(calls) == 2
 
     def test_set_progress_normalizes_and_calls_callback(self):
         progress_values = []
