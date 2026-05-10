@@ -66,6 +66,21 @@
   </screenshots>
 
   <releases>
+    <release version="1.7.3" date="2026-05-10">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>Fixed SVG vector extraction missing group transforms for basic
+          shapes (#237)</li>
+          <li>Fixed error when dismissing the import file dialog</li>
+          <li>Export and send buttons are now disabled when pipeline data is
+          stale</li>
+          <li>Updated MarlinSerialDriver maturity level to EXPERIMENTAL
+          (#236)</li>
+          <li>Updated translations</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.7.2" date="2026-05-10">
       <description>
         <p>New Features:</p>
