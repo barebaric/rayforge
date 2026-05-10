@@ -6,6 +6,7 @@ interface, with ThrottledProgressContext extending it for contexts
 that require throttling or debouncing of progress updates.
 """
 
+import time
 from abc import ABC, abstractmethod
 from typing import Callable, Optional
 
@@ -289,6 +290,8 @@ class CallbackProgressContext(ProgressContext):
     callback functions.
     """
 
+    CANCELLED_CHECK_INTERVAL_S = 0.05
+
     def __init__(
         self,
         is_cancelled_func: Callable[[], bool],
@@ -314,13 +317,21 @@ class CallbackProgressContext(ProgressContext):
         self._is_cancelled_func = is_cancelled_func
         self._progress_callback = progress_callback
         self._message_callback = message_callback
+        self._last_check_time = 0.0
 
     def is_cancelled(self) -> bool:
         """Check if the operation has been cancelled.
 
+        The check is throttled to avoid excessive IPC overhead when
+        called from tight loops in subprocess workers.
+
         Returns:
             The result of calling the is_cancelled_func callback.
         """
+        now = time.monotonic()
+        if now - self._last_check_time < self.CANCELLED_CHECK_INTERVAL_S:
+            return False
+        self._last_check_time = now
         return self._is_cancelled_func()
 
     def set_message(self, message: str) -> None:
