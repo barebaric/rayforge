@@ -107,7 +107,6 @@
   "install.cloneRepo": {
     "message": "Cloner le dépôt"
   },
-
   "install.installDependencies": {
     "message": "Installer les dépendances"
   },
@@ -887,5 +886,119 @@
   },
   "sponsor.cta.button": {
     "message": "Dites bonjour"
+  },
+  "page.devices.layout.title": {
+    "message": "Appareils pris en charge"
+  },
+  "page.devices.layout.description": {
+    "message": "Parcourez la liste des découpeuses laser, graveuses et contrôleurs pris en charge par Rayforge — y compris les machines basées sur GRBL, Smoothieware, Ruida et OctoPrint."
+  },
+  "page.devices.hero.title": {
+    "message": "Appareils pris en charge"
+  },
+  "page.devices.hero.subtitle": {
+    "message": "Rayforge fonctionne avec une large gamme de découpeuses laser, graveuses et contrôleurs. Vous trouverez ci-dessous les profils d'appareils intégrés — choisissez celui qui correspond à votre machine ou utilisez un profil générique pour les constructions personnalisées."
+  },
+  "page.devices.hero.getStarted": {
+    "message": "Commencer"
+  },
+  "page.devices.hero.configGuide": {
+    "message": "Guide de configuration"
+  },
+  "page.devices.card.shop": {
+    "message": "Acheter sur {shop}"
+  },
+  "page.devices.note.grbl": {
+    "message": "Tout appareil basé sur {grblLink} est pris en charge, même sans profil intégré."
+  },
+  "page.devices.note.smoothieware": {
+    "message": "D'autres appareils basés sur {smoothieLink} devraient également être pris en charge."
+  },
+  "page.devices.note.marlin": {
+    "message": "Rayforge prend en charge le firmware {marlinLink} via le pilote Marlin Serial. Sélectionnez {marlinSerial} dans l'{configWizard} pour connecter votre machine basée sur Marlin."
+  },
+  "page.devices.note.octoprint": {
+    "message": "Connectez votre laser via un serveur {octoLink}."
+  },
+  "page.devices.note.ruida": {
+    "message": "La prise en charge de Ruida est expérimentale. Pour les machines basées sur Ruida, essayez le profil {genericRuida}."
+  },
+  "page.devices.generic.heading": {
+    "message": "Profils génériques"
+  },
+  "page.devices.generic.text": {
+    "message": "Si votre appareil n'est pas listé ci-dessus, essayez l'un des profils génériques — {grblGeneric}, {ruidaGeneric}, {smoothieGeneric}. Ils fonctionnent avec n'importe quel {firmwareLink} et peuvent être configurés via l'{configWizard}."
+  },
+  "page.devices.missing.heading": {
+    "message": "Appareil manquant ?"
+  },
+  "page.devices.missing.text": {
+    "message": "Rayforge utilise {profilesLink} — de nouvelles machines peuvent être ajoutées sans mettre à jour l'application. Si vous souhaitez contribuer un profil pour votre appareil, consultez la {devDocs} ou {ghIssues}."
+  },
+  "page.devices.device.acmer-s1.description": {
+    "message": "Graveur laser à diode compact avec zone de travail de 130x130mm"
+  },
+  "page.devices.device.atomstack-a70.description": {
+    "message": "Découpeuse laser à diode 70W avec zone de travail de 500x500mm et compression ponctuelle"
+  },
+  "page.devices.device.atomstack-x40-pro.description": {
+    "message": "Graveur laser à diode 40W avec zone de travail de 400x400mm et assistance d'air"
+  },
+  "page.devices.device.carvera-air.description": {
+    "message": "Graveur laser de bureau avec contrôleur Smoothieware et zone de travail de 300x200mm"
+  },
+  "page.devices.device.creality-falcon-2-pro.description": {
+    "message": "Graveur laser à diode 40W fermé avec zone de travail de 300x300mm"
+  },
+  "page.devices.device.creality-falcon-a1.description": {
+    "message": "Graveur laser à diode avec zone de travail de 381x305mm et support rotatif"
+  },
+  "page.devices.device.elidor-z6.description": {
+    "message": "Graveur laser à diode avec zone de travail de 300x300mm"
+  },
+  "page.devices.device.grbl-mks-dlc32.description": {
+    "message": "Carte contrôleur basée sur GRBL pour constructions laser personnalisées"
+  },
+  "page.devices.device.longer-ray5.description": {
+    "message": "Graveur laser à diode avec zone de travail de 375x375mm et écran tactile"
+  },
+  "page.devices.device.neje-master-3-max.description": {
+    "message": "Graveur laser à diode 40W avec zone de travail de 460x460mm"
+  },
+  "page.devices.device.octoprint.description": {
+    "message": "Un laser connecté via un serveur OctoPrint"
+  },
+  "page.devices.device.omtech-k40plus.description": {
+    "message": "Découpeuse laser CO2 avec zone de travail de 300x200mm"
+  },
+  "page.devices.device.ortur-laser-master-3.description": {
+    "message": "Graveur laser à diode avec zone de travail de 400x400mm et contrôleur 32 bits"
+  },
+  "page.devices.device.ortur-laser-master-4.description": {
+    "message": "Graveur laser à diode avec zone de travail de 400x400mm et capacités haute vitesse"
+  },
+  "page.devices.device.sculpfun-icube.description": {
+    "message": "Graveur laser à diode compact avec zone de travail de 120x120mm"
+  },
+  "page.devices.device.sculpfun-icube-ultra.description": {
+    "message": "Graveur laser à diode avec Bluetooth et zone de travail de 150x150mm"
+  },
+  "page.devices.device.sculpfun-s30.description": {
+    "message": "Graveur laser à diode économique avec zone de travail de 400x400mm"
+  },
+  "page.devices.device.sculpfun-s30-pro-max.description": {
+    "message": "Graveur laser à diode 20W avec zone de travail de 370x360mm et assistance d'air automatique"
+  },
+  "page.devices.device.sculpfun-s40-max.description": {
+    "message": "Découpeuse laser à diode 48W avec zone de travail de 830x800mm et autofocus"
+  },
+  "page.devices.device.sculpfun-s70-max.description": {
+    "message": "Découpeuse laser à diode 70W avec zone de travail de 830x800mm et autofocus"
+  },
+  "page.devices.device.twotrees-tts55.description": {
+    "message": "Graveur laser à diode 55W avec zone de travail de 400x400mm"
+  },
+  "page.devices.device.xtool-d1-pro.description": {
+    "message": "Graveur laser à diode avec zone de travail de 430x390mm, connecté via Wi-Fi"
   }
 }

@@ -107,7 +107,6 @@
   "install.cloneRepo": {
     "message": "Clonar el repositorio"
   },
-
   "install.installDependencies": {
     "message": "Instalar dependencias"
   },
@@ -887,5 +886,119 @@
   },
   "sponsor.cta.button": {
     "message": "Saluda"
+  },
+  "page.devices.layout.title": {
+    "message": "Dispositivos compatibles"
+  },
+  "page.devices.layout.description": {
+    "message": "Explora la lista de cortadoras láser, grabadoras y controladores compatibles con Rayforge, incluyendo máquinas basadas en GRBL, Smoothieware, Ruida y OctoPrint."
+  },
+  "page.devices.hero.title": {
+    "message": "Dispositivos compatibles"
+  },
+  "page.devices.hero.subtitle": {
+    "message": "Rayforge funciona con una amplia variedad de cortadoras láser, grabadoras y controladores. A continuación se muestran los perfiles de dispositivo integrados: elige uno que coincida con tu máquina o usa un perfil genérico para construcciones personalizadas."
+  },
+  "page.devices.hero.getStarted": {
+    "message": "Comenzar"
+  },
+  "page.devices.hero.configGuide": {
+    "message": "Guía de configuración"
+  },
+  "page.devices.card.shop": {
+    "message": "Comprar en {shop}"
+  },
+  "page.devices.note.grbl": {
+    "message": "Cualquier dispositivo basado en {grblLink} es compatible, incluso sin un perfil integrado."
+  },
+  "page.devices.note.smoothieware": {
+    "message": "Otros dispositivos basados en {smoothieLink} también deberían ser compatibles."
+  },
+  "page.devices.note.marlin": {
+    "message": "Rayforge admite firmware {marlinLink} a través del controlador Marlin Serial. Selecciona {marlinSerial} en el {configWizard} para conectar tu máquina basada en Marlin."
+  },
+  "page.devices.note.octoprint": {
+    "message": "Conecta tu láser a través de un servidor {octoLink}."
+  },
+  "page.devices.note.ruida": {
+    "message": "El soporte para Ruida es experimental. Para máquinas basadas en Ruida, prueba el perfil {genericRuida}."
+  },
+  "page.devices.generic.heading": {
+    "message": "Perfiles genéricos"
+  },
+  "page.devices.generic.text": {
+    "message": "Si tu dispositivo no aparece arriba, prueba uno de los perfiles genéricos — {grblGeneric}, {ruidaGeneric}, {smoothieGeneric}. Funcionan con cualquier {firmwareLink} y se pueden configurar a través del {configWizard}."
+  },
+  "page.devices.missing.heading": {
+    "message": "¿Falta un dispositivo?"
+  },
+  "page.devices.missing.text": {
+    "message": "Rayforge usa {profilesLink} — se pueden añadir nuevas máquinas sin actualizar la aplicación. Si deseas contribuir con un perfil para tu dispositivo, consulta la {devDocs} o {ghIssues}."
+  },
+  "page.devices.device.acmer-s1.description": {
+    "message": "Grabador láser de diodo compacto con área de trabajo de 130x130mm"
+  },
+  "page.devices.device.atomstack-a70.description": {
+    "message": "Cortadora láser de diodo de 70W con área de trabajo de 500x500mm y compresión puntual"
+  },
+  "page.devices.device.atomstack-x40-pro.description": {
+    "message": "Grabador láser de diodo de 40W con área de trabajo de 400x400mm y asistencia de aire"
+  },
+  "page.devices.device.carvera-air.description": {
+    "message": "Grabador láser de escritorio con controlador Smoothieware y área de trabajo de 300x200mm"
+  },
+  "page.devices.device.creality-falcon-2-pro.description": {
+    "message": "Grabador láser de diodo de 40W cerrado con área de trabajo de 300x300mm"
+  },
+  "page.devices.device.creality-falcon-a1.description": {
+    "message": "Grabador láser de diodo con área de trabajo de 381x305mm y soporte rotatorio"
+  },
+  "page.devices.device.elidor-z6.description": {
+    "message": "Grabador láser de diodo con área de trabajo de 300x300mm"
+  },
+  "page.devices.device.grbl-mks-dlc32.description": {
+    "message": "Placa controladora basada en GRBL para construcciones láser personalizadas"
+  },
+  "page.devices.device.longer-ray5.description": {
+    "message": "Grabador láser de diodo con área de trabajo de 375x375mm y pantalla táctil"
+  },
+  "page.devices.device.neje-master-3-max.description": {
+    "message": "Grabador láser de diodo de 40W con área de trabajo de 460x460mm"
+  },
+  "page.devices.device.octoprint.description": {
+    "message": "Un láser conectado a través de un servidor OctoPrint"
+  },
+  "page.devices.device.omtech-k40plus.description": {
+    "message": "Cortadora láser de CO2 con área de trabajo de 300x200mm"
+  },
+  "page.devices.device.ortur-laser-master-3.description": {
+    "message": "Grabador láser de diodo con área de trabajo de 400x400mm y controlador de 32 bits"
+  },
+  "page.devices.device.ortur-laser-master-4.description": {
+    "message": "Grabador láser de diodo con área de trabajo de 400x400mm y capacidades de alta velocidad"
+  },
+  "page.devices.device.sculpfun-icube.description": {
+    "message": "Grabador láser de diodo compacto con área de trabajo de 120x120mm"
+  },
+  "page.devices.device.sculpfun-icube-ultra.description": {
+    "message": "Grabador láser de diodo con Bluetooth y área de trabajo de 150x150mm"
+  },
+  "page.devices.device.sculpfun-s30.description": {
+    "message": "Grabador láser de diodo económico con área de trabajo de 400x400mm"
+  },
+  "page.devices.device.sculpfun-s30-pro-max.description": {
+    "message": "Grabador láser de diodo de 20W con área de trabajo de 370x360mm y asistencia de aire automática"
+  },
+  "page.devices.device.sculpfun-s40-max.description": {
+    "message": "Cortadora láser de diodo de 48W con área de trabajo de 830x800mm y enfoque automático"
+  },
+  "page.devices.device.sculpfun-s70-max.description": {
+    "message": "Cortadora láser de diodo de 70W con área de trabajo de 830x800mm y enfoque automático"
+  },
+  "page.devices.device.twotrees-tts55.description": {
+    "message": "Grabador láser de diodo de 55W con área de trabajo de 400x400mm"
+  },
+  "page.devices.device.xtool-d1-pro.description": {
+    "message": "Grabador láser de diodo con área de trabajo de 430x390mm, conectado vía Wi-Fi"
   }
 }

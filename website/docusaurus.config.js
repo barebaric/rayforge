@@ -227,6 +227,11 @@ module.exports = {
           label: 'Documentation',
         },
         {
+          to: '/resources/devices',
+          label: 'Devices',
+          position: 'left',
+        },
+        {
           type: 'docSidebar',
           sidebarId: 'developerSidebar',
           position: 'left',

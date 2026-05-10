@@ -107,7 +107,6 @@
   "install.cloneRepo": {
     "message": "Clonar o Repositório"
   },
-
   "install.installDependencies": {
     "message": "Instalar Dependências"
   },
@@ -879,7 +878,6 @@
   "sponsor.comparison.rf.devPace": {
     "message": "Lançamentos semanais"
   },
-
   "sponsor.cta.title": {
     "message": "Vamos Conversar"
   },
@@ -888,5 +886,119 @@
   },
   "sponsor.cta.button": {
     "message": "Diga Olá"
+  },
+  "page.devices.layout.title": {
+    "message": "Dispositivos compatíveis"
+  },
+  "page.devices.layout.description": {
+    "message": "Navegue pela lista de cortadoras a laser, gravadoras e controladores compatíveis com Rayforge — incluindo máquinas baseadas em GRBL, Smoothieware, Ruida e OctoPrint."
+  },
+  "page.devices.hero.title": {
+    "message": "Dispositivos compatíveis"
+  },
+  "page.devices.hero.subtitle": {
+    "message": "Rayforge funciona com uma ampla variedade de cortadoras a laser, gravadoras e controladores. Abaixo estão os perfis de dispositivo integrados — escolha um que corresponda à sua máquina ou use um perfil genérico para montagens personalizadas."
+  },
+  "page.devices.hero.getStarted": {
+    "message": "Começar"
+  },
+  "page.devices.hero.configGuide": {
+    "message": "Guia de configuração"
+  },
+  "page.devices.card.shop": {
+    "message": "Comprar na {shop}"
+  },
+  "page.devices.note.grbl": {
+    "message": "Qualquer dispositivo baseado em {grblLink} é compatível, mesmo sem um perfil integrado."
+  },
+  "page.devices.note.smoothieware": {
+    "message": "Outros dispositivos baseados em {smoothieLink} também devem ser compatíveis."
+  },
+  "page.devices.note.marlin": {
+    "message": "Rayforge suporta firmware {marlinLink} através do driver Marlin Serial. Selecione {marlinSerial} no {configWizard} para conectar sua máquina baseada em Marlin."
+  },
+  "page.devices.note.octoprint": {
+    "message": "Conecte seu laser através de um servidor {octoLink}."
+  },
+  "page.devices.note.ruida": {
+    "message": "O suporte a Ruida é experimental. Para máquinas baseadas em Ruida, tente o perfil {genericRuida}."
+  },
+  "page.devices.generic.heading": {
+    "message": "Perfis genéricos"
+  },
+  "page.devices.generic.text": {
+    "message": "Se seu dispositivo não estiver listado acima, tente um dos perfis genéricos — {grblGeneric}, {ruidaGeneric}, {smoothieGeneric}. Eles funcionam com qualquer {firmwareLink} e podem ser configurados através do {configWizard}."
+  },
+  "page.devices.missing.heading": {
+    "message": "Falta um dispositivo?"
+  },
+  "page.devices.missing.text": {
+    "message": "Rayforge usa {profilesLink} — novas máquinas podem ser adicionadas sem atualizar o aplicativo. Se você quiser contribuir com um perfil para seu dispositivo, consulte a {devDocs} ou {ghIssues}."
+  },
+  "page.devices.device.acmer-s1.description": {
+    "message": "Gravador a laser de diodo compacto com área de trabalho de 130x130mm"
+  },
+  "page.devices.device.atomstack-a70.description": {
+    "message": "Cortadora a laser de diodo 70W com área de trabalho de 500x500mm e compressão pontual"
+  },
+  "page.devices.device.atomstack-x40-pro.description": {
+    "message": "Gravador a laser de diodo 40W com área de trabalho de 400x400mm e assistência de ar"
+  },
+  "page.devices.device.carvera-air.description": {
+    "message": "Gravador a laser de mesa com controlador Smoothieware e área de trabalho de 300x200mm"
+  },
+  "page.devices.device.creality-falcon-2-pro.description": {
+    "message": "Gravador a laser de diodo 40W fechado com área de trabalho de 300x300mm"
+  },
+  "page.devices.device.creality-falcon-a1.description": {
+    "message": "Gravador a laser de diodo com área de trabalho de 381x305mm e suporte rotativo"
+  },
+  "page.devices.device.elidor-z6.description": {
+    "message": "Gravador a laser de diodo com área de trabalho de 300x300mm"
+  },
+  "page.devices.device.grbl-mks-dlc32.description": {
+    "message": "Placa controladora baseada em GRBL para construções laser personalizadas"
+  },
+  "page.devices.device.longer-ray5.description": {
+    "message": "Gravador a laser de diodo com área de trabalho de 375x375mm e tela sensível ao toque"
+  },
+  "page.devices.device.neje-master-3-max.description": {
+    "message": "Gravador a laser de diodo 40W com área de trabalho de 460x460mm"
+  },
+  "page.devices.device.octoprint.description": {
+    "message": "Um laser conectado através de um servidor OctoPrint"
+  },
+  "page.devices.device.omtech-k40plus.description": {
+    "message": "Cortadora a laser CO2 com área de trabalho de 300x200mm"
+  },
+  "page.devices.device.ortur-laser-master-3.description": {
+    "message": "Gravador a laser de diodo com área de trabalho de 400x400mm e controlador de 32 bits"
+  },
+  "page.devices.device.ortur-laser-master-4.description": {
+    "message": "Gravador a laser de diodo com área de trabalho de 400x400mm e capacidades de alta velocidade"
+  },
+  "page.devices.device.sculpfun-icube.description": {
+    "message": "Gravador a laser de diodo compacto com área de trabalho de 120x120mm"
+  },
+  "page.devices.device.sculpfun-icube-ultra.description": {
+    "message": "Gravador a laser de diodo com Bluetooth e área de trabalho de 150x150mm"
+  },
+  "page.devices.device.sculpfun-s30.description": {
+    "message": "Gravador a laser de diodo econômico com área de trabalho de 400x400mm"
+  },
+  "page.devices.device.sculpfun-s30-pro-max.description": {
+    "message": "Gravador a laser de diodo 20W com área de trabalho de 370x360mm e assistência de ar automática"
+  },
+  "page.devices.device.sculpfun-s40-max.description": {
+    "message": "Cortadora a laser de diodo 48W com área de trabalho de 830x800mm e foco automático"
+  },
+  "page.devices.device.sculpfun-s70-max.description": {
+    "message": "Cortadora a laser de diodo 70W com área de trabalho de 830x800mm e foco automático"
+  },
+  "page.devices.device.twotrees-tts55.description": {
+    "message": "Gravador a laser de diodo 55W com área de trabalho de 400x400mm"
+  },
+  "page.devices.device.xtool-d1-pro.description": {
+    "message": "Gravador a laser de diodo com área de trabalho de 430x390mm, conectado via Wi-Fi"
   }
 }

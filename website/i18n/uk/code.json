@@ -107,7 +107,6 @@
   "install.cloneRepo": {
     "message": "Клонувати репозиторій"
   },
-
   "install.installDependencies": {
     "message": "Встановити залежності"
   },
@@ -887,5 +886,119 @@
   },
   "sponsor.cta.button": {
     "message": "Напишіть мені"
+  },
+  "page.devices.layout.title": {
+    "message": "Підтримувані пристрої"
+  },
+  "page.devices.layout.description": {
+    "message": "Перегляньте список лазерних різаків, граверів та контролерів, які підтримує Rayforge, зокрема машини на базі GRBL, Smoothieware, Ruida та OctoPrint."
+  },
+  "page.devices.hero.title": {
+    "message": "Підтримувані пристрої"
+  },
+  "page.devices.hero.subtitle": {
+    "message": "Rayforge працює з широким спектром лазерних різаків, граверів та контролерів. Нижче наведено вбудовані профілі пристроїв — виберіть той, що відповідає вашій машині, або скористайтеся загальним профілем для власних збірок."
+  },
+  "page.devices.hero.getStarted": {
+    "message": "Почати"
+  },
+  "page.devices.hero.configGuide": {
+    "message": "Посібник з налаштування"
+  },
+  "page.devices.card.shop": {
+    "message": "Купити на {shop}"
+  },
+  "page.devices.note.grbl": {
+    "message": "Будь-який пристрій на базі {grblLink} підтримується, навіть без вбудованого профілю."
+  },
+  "page.devices.note.smoothieware": {
+    "message": "Інші пристрої на базі {smoothieLink} також мають підтримуватися."
+  },
+  "page.devices.note.marlin": {
+    "message": "Rayforge підтримує прошивку {marlinLink} через драйвер Marlin Serial. Виберіть {marlinSerial} у {configWizard}, щоб під'єднати вашу машину на базі Marlin."
+  },
+  "page.devices.note.octoprint": {
+    "message": "Під'єднайте ваш лазер через сервер {octoLink}."
+  },
+  "page.devices.note.ruida": {
+    "message": "Підтримка Ruida є експериментальною. Для машин на базі Ruida спробуйте профіль {genericRuida}."
+  },
+  "page.devices.generic.heading": {
+    "message": "Загальні профілі"
+  },
+  "page.devices.generic.text": {
+    "message": "Якщо вашого пристрою немає у списку вище, спробуйте один із загальних профілів — {grblGeneric}, {ruidaGeneric}, {smoothieGeneric}. Вони працюють з будь-якою {firmwareLink} і можуть бути налаштовані через {configWizard}."
+  },
+  "page.devices.missing.heading": {
+    "message": "Не вистачає пристрою?"
+  },
+  "page.devices.missing.text": {
+    "message": "Rayforge використовує {profilesLink} — нові машини можна додавати без оновлення самого застосунку. Якщо ви хочете додати профіль для свого пристрою, перегляньте {devDocs} або {ghIssues}."
+  },
+  "page.devices.device.acmer-s1.description": {
+    "message": "Компактний діодний лазерний гравер з робочою областю 130x130mm"
+  },
+  "page.devices.device.atomstack-a70.description": {
+    "message": "70W діодний лазерний різак з робочою областю 500x500mm та точковим стисненням"
+  },
+  "page.devices.device.atomstack-x40-pro.description": {
+    "message": "40W діодний лазерний гравер з робочою областю 400x400mm та повітряною підтримкою"
+  },
+  "page.devices.device.carvera-air.description": {
+    "message": "Настільний лазерний гравер з контролером Smoothieware та робочою областю 300x200mm"
+  },
+  "page.devices.device.creality-falcon-2-pro.description": {
+    "message": "Закритий 40W діодний лазерний гравер з робочою областю 300x300mm"
+  },
+  "page.devices.device.creality-falcon-a1.description": {
+    "message": "Діодний лазерний гравер з робочою областю 381x305mm та ротаційною підтримкою"
+  },
+  "page.devices.device.elidor-z6.description": {
+    "message": "Діодний лазерний гравер з робочою областю 300x300mm"
+  },
+  "page.devices.device.grbl-mks-dlc32.description": {
+    "message": "Контролерна плата на базі GRBL для індивідуальних лазерних збірок"
+  },
+  "page.devices.device.longer-ray5.description": {
+    "message": "Діодний лазерний гравер з робочою областю 375x375mm та сенсорним дисплеєм"
+  },
+  "page.devices.device.neje-master-3-max.description": {
+    "message": "40W діодний лазерний гравер з робочою областю 460x460mm"
+  },
+  "page.devices.device.octoprint.description": {
+    "message": "Лазер, підключений через сервер OctoPrint"
+  },
+  "page.devices.device.omtech-k40plus.description": {
+    "message": "CO2 лазерний різак з робочою областю 300x200mm"
+  },
+  "page.devices.device.ortur-laser-master-3.description": {
+    "message": "Діодний лазерний гравер з робочою областю 400x400mm та 32-бітним контролером"
+  },
+  "page.devices.device.ortur-laser-master-4.description": {
+    "message": "Діодний лазерний гравер з робочою областю 400x400mm та високошвидкісними можливостями"
+  },
+  "page.devices.device.sculpfun-icube.description": {
+    "message": "Компактний діодний лазерний гравер з робочою областю 120x120mm"
+  },
+  "page.devices.device.sculpfun-icube-ultra.description": {
+    "message": "Діодний лазерний гравер з Bluetooth та робочою областю 150x150mm"
+  },
+  "page.devices.device.sculpfun-s30.description": {
+    "message": "Бюджетний діодний лазерний гравер з робочою областю 400x400mm"
+  },
+  "page.devices.device.sculpfun-s30-pro-max.description": {
+    "message": "20W діодний лазерний гравер з робочою областю 370x360mm та автоматичною повітряною підтримкою"
+  },
+  "page.devices.device.sculpfun-s40-max.description": {
+    "message": "48W діодний лазерний різак з робочою областю 830x800mm та автофокусом"
+  },
+  "page.devices.device.sculpfun-s70-max.description": {
+    "message": "70W діодний лазерний різак з робочою областю 830x800mm та автофокусом"
+  },
+  "page.devices.device.twotrees-tts55.description": {
+    "message": "55W діодний лазерний гравер з робочою областю 400x400mm"
+  },
+  "page.devices.device.xtool-d1-pro.description": {
+    "message": "Діодний лазерний гравер з робочою областю 430x390mm, підключений через Wi-Fi"
   }
 }

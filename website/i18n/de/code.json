@@ -750,7 +750,7 @@
     "message": "Ein fester Platz in der App und auf der Website — Partner-Maschinen mit Fotos, Specs und Kauf-Links."
   },
   "sponsor.benefit.badgeProgram.title": {
-    "message": "\u201eFunktioniert mit Rayforge\u201c"
+    "message": "„Funktioniert mit Rayforge“"
   },
   "sponsor.benefit.badgeProgram.description": {
     "message": "Erhalte gebrandete Badge-Grafiken für deine Website, Verpackung und Marktplatz-Einträge, die zurück zu Rayforge verlinken, um das Kundenvertrauen zu stärken."
@@ -783,7 +783,7 @@
     "message": "GitHub-Sichtbarkeit"
   },
   "sponsor.benefit.githubVisibility.description": {
-    "message": "Dein Logo im Rayforge README, gesehen von Entwicklern und Makern. Maschinenprofile werden mit \u201eBeigetragen von [Marke]\u201c committet."
+    "message": "Dein Logo im Rayforge README, gesehen von Entwicklern und Makern. Maschinenprofile werden mit „Beigetragen von [Marke]“ committet."
   },
   "sponsor.benefit.forumPresence.title": {
     "message": "Community-Präsenz"
@@ -886,5 +886,119 @@
   },
   "sponsor.cta.button": {
     "message": "Hallo sagen"
+  },
+  "page.devices.layout.title": {
+    "message": "Unterstützte Geräte"
+  },
+  "page.devices.layout.description": {
+    "message": "Eine Übersicht der Laser-Cutter, Graviermaschinen und Controller, die von Rayforge unterstützt werden — einschließlich GRBL-, Smoothieware-, Ruida- und OctoPrint-basierter Maschinen."
+  },
+  "page.devices.hero.title": {
+    "message": "Unterstützte Geräte"
+  },
+  "page.devices.hero.subtitle": {
+    "message": "Rayforge arbeitet mit einer Vielzahl von Laser-Cuttern, Graviermaschinen und Controllern. Nachfolgend findest du die integrierten Geräteprofile — wähle eines aus, das zu deiner Maschine passt, oder verwende ein generisches Profil für eigene Bauten."
+  },
+  "page.devices.hero.getStarted": {
+    "message": "Loslegen"
+  },
+  "page.devices.hero.configGuide": {
+    "message": "Konfigurationsanleitung"
+  },
+  "page.devices.card.shop": {
+    "message": "Shop auf {shop}"
+  },
+  "page.devices.note.grbl": {
+    "message": "Jedes {grblLink}-basierte Gerät wird unterstützt, auch ohne integriertes Profil."
+  },
+  "page.devices.note.smoothieware": {
+    "message": "Andere {smoothieLink}-basierte Geräte sollten ebenfalls unterstützt werden."
+  },
+  "page.devices.note.marlin": {
+    "message": "Rayforge unterstützt {marlinLink}-Firmware über den Marlin Serial Treiber. Wähle {marlinSerial} im {configWizard}, um deine Marlin-basierte Maschine zu verbinden."
+  },
+  "page.devices.note.octoprint": {
+    "message": "Verbinde deinen Laser über einen {octoLink}-Server."
+  },
+  "page.devices.note.ruida": {
+    "message": "Die Ruida-Unterstützung ist experimentell. Für Ruida-basierte Maschinen probiere das {genericRuida}-Profil."
+  },
+  "page.devices.generic.heading": {
+    "message": "Generische Profile"
+  },
+  "page.devices.generic.text": {
+    "message": "Wenn dein Gerät oben nicht aufgeführt ist, probiere eines der generischen Profile — {grblGeneric}, {ruidaGeneric}, {smoothieGeneric}. Sie funktionieren mit jeder {firmwareLink} und können über den {configWizard} konfiguriert werden."
+  },
+  "page.devices.missing.heading": {
+    "message": "Gerät fehlt?"
+  },
+  "page.devices.missing.text": {
+    "message": "Rayforge verwendet {profilesLink} — neue Maschinen können hinzugefügt werden, ohne die Anwendung selbst zu aktualisieren. Wenn du ein Profil für dein Gerät beitragen möchtest, wirf einen Blick in die {devDocs} oder {ghIssues}."
+  },
+  "page.devices.device.acmer-s1.description": {
+    "message": "Kompakter Diodenlasergravierer mit 130x130mm Arbeitsbereich"
+  },
+  "page.devices.device.atomstack-a70.description": {
+    "message": "70W Diodenlaserschneider mit 500x500mm Arbeitsbereich und Spot-Kompression"
+  },
+  "page.devices.device.atomstack-x40-pro.description": {
+    "message": "40W Diodenlasergravierer mit 400x400mm Arbeitsbereich und Luftunterstützung"
+  },
+  "page.devices.device.carvera-air.description": {
+    "message": "Desktop-Lasergravierer mit Smoothieware-Controller und 300x200mm Arbeitsbereich"
+  },
+  "page.devices.device.creality-falcon-2-pro.description": {
+    "message": "Geschlossener 40W Diodenlasergravierer mit 300x300mm Arbeitsbereich"
+  },
+  "page.devices.device.creality-falcon-a1.description": {
+    "message": "Diodenlasergravierer mit 381x305mm Arbeitsbereich und Rotationsunterstützung"
+  },
+  "page.devices.device.elidor-z6.description": {
+    "message": "Diodenlasergravierer mit 300x300mm Arbeitsbereich"
+  },
+  "page.devices.device.grbl-mks-dlc32.description": {
+    "message": "GRBL-basierte Controller-Platine für individuelle Laserbauten"
+  },
+  "page.devices.device.longer-ray5.description": {
+    "message": "Diodenlasergravierer mit 375x375mm Arbeitsbereich und Touchscreen-Display"
+  },
+  "page.devices.device.neje-master-3-max.description": {
+    "message": "40W Diodenlasergravierer mit 460x460mm Arbeitsbereich"
+  },
+  "page.devices.device.octoprint.description": {
+    "message": "Ein Laser, der über einen OctoPrint-Server verbunden ist"
+  },
+  "page.devices.device.omtech-k40plus.description": {
+    "message": "CO2-Laserschneider mit 300x200mm Arbeitsbereich"
+  },
+  "page.devices.device.ortur-laser-master-3.description": {
+    "message": "Diodenlasergravierer mit 400x400mm Arbeitsbereich und 32-Bit-Controller"
+  },
+  "page.devices.device.ortur-laser-master-4.description": {
+    "message": "Diodenlasergravierer mit 400x400mm Arbeitsbereich und Hochgeschwindigkeitsfunktionen"
+  },
+  "page.devices.device.sculpfun-icube.description": {
+    "message": "Kompakter Diodenlasergravierer mit 120x120mm Arbeitsbereich"
+  },
+  "page.devices.device.sculpfun-icube-ultra.description": {
+    "message": "Diodenlasergravierer mit Bluetooth und 150x150mm Arbeitsbereich"
+  },
+  "page.devices.device.sculpfun-s30.description": {
+    "message": "Preiswerter Diodenlasergravierer mit 400x400mm Arbeitsbereich"
+  },
+  "page.devices.device.sculpfun-s30-pro-max.description": {
+    "message": "20W Diodenlasergravierer mit 370x360mm Arbeitsbereich und automatischer Luftunterstützung"
+  },
+  "page.devices.device.sculpfun-s40-max.description": {
+    "message": "48W Diodenlaserschneider mit 830x800mm Arbeitsbereich und Autofokus"
+  },
+  "page.devices.device.sculpfun-s70-max.description": {
+    "message": "70W Diodenlaserschneider mit 830x800mm Arbeitsbereich und Autofokus"
+  },
+  "page.devices.device.twotrees-tts55.description": {
+    "message": "55W Diodenlasergravierer mit 400x400mm Arbeitsbereich"
+  },
+  "page.devices.device.xtool-d1-pro.description": {
+    "message": "Diodenlasergravierer mit 430x390mm Arbeitsbereich, über WLAN verbunden"
   }
 }
