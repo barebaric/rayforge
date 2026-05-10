@@ -82,7 +82,7 @@ class MainToolbar(Gtk.Box):
         self.append(view_3d_button)
 
         self.recalculate_button = Gtk.Button(
-            child=get_icon("view-refresh-symbolic"),
+            child=get_icon("refresh-symbolic"),
         )
         self.recalculate_button.set_tooltip_text(
             _("Recalculate (Shift+Click to force)")
