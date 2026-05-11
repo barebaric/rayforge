@@ -2,7 +2,6 @@ import logging
 import math
 from typing import List, Tuple, Optional, cast, Callable, Sequence
 import numpy as np
-from scipy.optimize import least_squares
 from .analysis import arc_direction_is_clockwise
 from .arc import get_arc_angles, linearize_arc
 from .bezier import linearize_bezier_from_array
@@ -107,7 +106,7 @@ def fit_circle_to_points(
     points: Sequence[Point2DOr3D],
 ) -> Optional[Tuple[Point, float, float]]:
     """
-    Fits a circle to a list of 2D points using the least squares method.
+    Fits a circle to a list of 2D points using the algebraic (Kasa) method.
 
     Args:
         points: A list of (x, y) or (x, y, z) tuples. Only x and y are used.
@@ -123,25 +122,19 @@ def fit_circle_to_points(
     x = np.array([p[0] for p in points])
     y = np.array([p[1] for p in points])
 
-    # Initial guess: mean center and average radius
-    x0, y0 = np.mean(x), np.mean(y)
-    r0 = np.mean(np.sqrt((x - x0) ** 2 + (y - y0) ** 2))
+    A = np.column_stack([2 * x, 2 * y, np.ones(len(x))])
+    b = x ** 2 + y ** 2
 
-    # Define the residual function for least squares
-    def residuals(p):
-        return np.sqrt((x - p[0]) ** 2 + (y - p[1]) ** 2) - p[2]
+    result, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
+    xc, yc, c = result
+    r = math.sqrt(xc ** 2 + yc ** 2 + c)
+    center = (float(xc), float(yc))
 
-    # Fit circle using least squares
-    try:
-        result = least_squares(residuals, [x0, y0, r0], method="lm")
-        xc, yc, r = result.x
-        center = (xc, yc)
-    except Exception:
+    if r < 1e-10:
         return None
 
-    # Calculate max deviation of points from the fitted circle's circumference
     distances = np.sqrt((x - xc) ** 2 + (y - yc) ** 2)
-    point_error = np.max(np.abs(distances - r))
+    point_error = float(np.max(np.abs(distances - r)))
 
     return center, r, point_error
 
