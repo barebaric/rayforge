@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-22 13:19+0200\n"
+"POT-Creation-Date: 2026-05-11 12:17+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -287,6 +287,17 @@ msgstr "Schnittreihenfolge"
 #: laser_essentials/widgets/contour_widget.py
 msgid "Processing order for nested paths"
 msgstr "Verarbeitungsreihenfolge für verschachtelte Pfade"
+
+#: laser_essentials/widgets/contour_widget.py
+msgid "Overcut"
+msgstr "Überschnitt"
+
+#: laser_essentials/widgets/contour_widget.py
+msgid ""
+"Extend closed contours past their start point so the cut overlaps itself"
+msgstr ""
+"Geschlossene Konturen über den Startpunkt hinaus verlängern, sodass sich der "
+"Schnitt überlappt"
 
 #: laser_essentials/widgets/contour_widget.py
 msgid "Rescan Content"

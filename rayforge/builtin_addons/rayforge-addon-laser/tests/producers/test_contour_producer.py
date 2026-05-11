@@ -386,3 +386,195 @@ def test_winding_normalization_on_import(laser, dummy_surface):
     # Expect hole to shrink (10x10 -> 9x9)
     # Bounds: 5.5 to 14.5
     assert hole == pytest.approx((5.5, 5.5, 14.5, 14.5), abs=0.05)
+
+
+def test_overcut_extends_closed_contour(laser, dummy_surface):
+    """Overcut extends a closed rectangle past its start point."""
+    rect = create_rect(0, 0, 1.0, 1.0, cw=False)
+    wp = WorkPiece(name="overcut_test")
+    wp._boundaries_cache = rect
+    wp.set_size(20, 20)
+
+    tracer = ContourProducer(
+        cut_side=CutSide.CENTERLINE,
+        overcut=5.0,
+    )
+
+    artifact = tracer.run(
+        laser,
+        dummy_surface,
+        (10, 10),
+        workpiece=wp,
+        generation_id=1,
+    )
+    geoms = get_geo_from_artifact(artifact)
+    assert len(geoms) == 1
+
+    data = geoms[0].data
+    assert data is not None
+    last_x = data[-1, 1]
+    last_y = data[-1, 2]
+    # First side goes (0,0)→(20,0), 20mm.  Overcut 5mm → (5,0).
+    assert last_x == pytest.approx(5.0, abs=0.01)
+    assert last_y == pytest.approx(0.0, abs=0.01)
+
+
+def test_overcut_zero_is_noop(laser, dummy_surface, vector_workpiece):
+    """overcut=0 must not change the output."""
+    tracer = ContourProducer(
+        cut_side=CutSide.CENTERLINE,
+        overcut=0.0,
+    )
+    artifact_a = tracer.run(
+        laser,
+        dummy_surface,
+        (10, 10),
+        workpiece=vector_workpiece,
+        generation_id=1,
+    )
+
+    tracer2 = ContourProducer(cut_side=CutSide.CENTERLINE)
+    artifact_b = tracer2.run(
+        laser,
+        dummy_surface,
+        (10, 10),
+        workpiece=vector_workpiece,
+        generation_id=1,
+    )
+
+    geo_a = Geometry.from_dict(artifact_a.ops.to_dict())
+    geo_b = Geometry.from_dict(artifact_b.ops.to_dict())
+    assert geo_a == geo_b
+
+
+def test_overcut_serialization():
+    """overcut is preserved through serialization."""
+    producer = ContourProducer(overcut=3.5)
+    data = producer.to_dict()
+    recreated = OpsProducer.from_dict(data)
+    assert isinstance(recreated, ContourProducer)
+    assert recreated.overcut == 3.5
+
+
+def test_overcut_with_remove_inner_paths(
+    laser, dummy_surface, vector_workpiece
+):
+    """Overcut works when remove_inner_paths=True."""
+    tracer = ContourProducer(
+        cut_side=CutSide.CENTERLINE,
+        remove_inner_paths=True,
+        overcut=5.0,
+    )
+    artifact = tracer.run(
+        laser,
+        dummy_surface,
+        (10, 10),
+        workpiece=vector_workpiece,
+        generation_id=1,
+    )
+    geoms = get_geo_from_artifact(artifact)
+    assert len(geoms) == 1
+
+    data = geoms[0].data
+    assert data is not None
+    last_x = data[-1, 1]
+    last_y = data[-1, 2]
+    assert last_x == pytest.approx(5.0, abs=0.01)
+    assert last_y == pytest.approx(0.0, abs=0.01)
+
+
+def test_overcut_applies_to_both_inner_and_outer(
+    laser, dummy_surface, vector_workpiece
+):
+    """Overcut is applied to both outer and inner (hole) contours."""
+    tracer = ContourProducer(
+        cut_side=CutSide.CENTERLINE,
+        overcut=5.0,
+    )
+    artifact = tracer.run(
+        laser,
+        dummy_surface,
+        (10, 10),
+        workpiece=vector_workpiece,
+        generation_id=1,
+    )
+    geoms = get_geo_from_artifact(artifact)
+    assert len(geoms) == 2
+
+    for geo in geoms:
+        data = geo.data
+        assert data is not None
+        start_x, start_y = data[0, 1], data[0, 2]
+        end_x, end_y = data[-1, 1], data[-1, 2]
+        # With overcut the path no longer ends at the start point
+        assert not (
+            abs(end_x - start_x) < 0.01 and abs(end_y - start_y) < 0.01
+        )
+
+
+def test_overcut_larger_than_one_side(laser, dummy_surface):
+    """Overcut that spans more than one segment still works."""
+    rect = create_rect(0, 0, 1.0, 1.0, cw=False)
+    wp = WorkPiece(name="overcut_large")
+    wp._boundaries_cache = rect
+    wp.set_size(20, 20)
+
+    # First side is 20mm, so 25mm overcut goes past it.
+    tracer = ContourProducer(
+        cut_side=CutSide.CENTERLINE,
+        overcut=25.0,
+    )
+    artifact = tracer.run(
+        laser,
+        dummy_surface,
+        (10, 10),
+        workpiece=wp,
+        generation_id=1,
+    )
+    geoms = get_geo_from_artifact(artifact)
+    assert len(geoms) == 1
+
+    data = geoms[0].data
+    assert data is not None
+    last_x = data[-1, 1]
+    last_y = data[-1, 2]
+    # 25mm: first side (20mm) fully traced, then 5mm into second side
+    # Second side: (20,0)→(20,20).  5mm/20mm → t=0.25 → (20, 5)
+    assert last_x == pytest.approx(20.0, abs=0.01)
+    assert last_y == pytest.approx(5.0, abs=0.01)
+
+
+def test_overcut_on_full_circle(laser, dummy_surface):
+    """Overcut works on a full-circle arc (start == end)."""
+    # Normalized circle: center (0.5,0.5), radius 0.5, start at (1,0.5)
+    geo = Geometry()
+    geo.move_to(1, 0.5)
+    geo.arc_to(1, 0.5, i=-0.5, j=0, clockwise=False)
+
+    wp = WorkPiece(name="circle_overcut")
+    wp._boundaries_cache = geo
+    wp.set_size(120, 120)
+
+    tracer = ContourProducer(
+        cut_side=CutSide.CENTERLINE,
+        overcut=3.0,
+    )
+    artifact = tracer.run(
+        laser,
+        dummy_surface,
+        (10, 10),
+        workpiece=wp,
+        generation_id=1,
+    )
+    geoms = get_geo_from_artifact(artifact)
+    assert len(geoms) == 1
+
+    data = geoms[0].data
+    assert data is not None
+    # After scaling: circle radius 60, center (60,60), start (120,60)
+    # Overcut 3mm → angle = 3/60 = 0.05 rad CCW from angle 0.
+    # x = 60 + 60·cos(0.05) ≈ 119.93, y = 60 + 60·sin(0.05) ≈ 63.0
+    last_x = data[-1, 1]
+    last_y = data[-1, 2]
+    assert last_x == pytest.approx(119.93, abs=0.05)
+    assert last_y == pytest.approx(63.0, abs=0.05)

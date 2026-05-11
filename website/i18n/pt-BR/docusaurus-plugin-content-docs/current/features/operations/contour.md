@@ -114,6 +114,38 @@ Controla onde o laser corta relativo ao caminho vetorial:
 - Reduz tempo de trabalho
 - Previne cortes perdidos
 
+### Recorte Excessivo (Overcut)
+
+Estende trajetórias de corte fechadas além do ponto inicial para que o
+feixe de laser se sobreponha ao início do corte:
+
+**Recorte Excessivo:**
+
+- Distância em unidades de máquina para estender o corte além da junção início/fim
+- Defina como **0** para desativar (padrão)
+- Valores típicos: 1–5 para a maioria dos materiais
+- Máximo: 100
+
+**Por que usar recorte excessivo:**
+
+No início e no fim de um contorno fechado, o laser pode não penetrar
+completamente devido à aceleração e desaceleração. O recorte excessivo
+garante que o feixe se sobreponha na junção, criando um corte limpo e
+completamente separado. Isto é especialmente útil para:
+
+- Materiais grossos onde a penetração completa é marginal
+- Cortes em alta velocidade onde os efeitos de aceleração são mais pronunciados
+- Peças que devem cair livres sem pós-processamento
+
+O recorte excessivo se aplica tanto a contornos externos quanto a furos internos.
+
+:::tip Lead-In/Out vs Recorte Excessivo
+[Lead-In/Out](../lead-in-out) adiciona movimentos de aproximação e saída
+com potência zero antes e depois do trajeto de corte. O recorte
+excessivo estende o próprio trajeto de corte além da junção. Eles podem
+ser usados juntos para qualidade de corte ideal.
+:::
+
 ## Pós-Processamento
 
 ![Configurações de pós-processamento de contorno](/screenshots/step-settings-contour-post.png)

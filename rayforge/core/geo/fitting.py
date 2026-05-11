@@ -123,11 +123,11 @@ def fit_circle_to_points(
     y = np.array([p[1] for p in points])
 
     A = np.column_stack([2 * x, 2 * y, np.ones(len(x))])
-    b = x ** 2 + y ** 2
+    b = x**2 + y**2
 
     result, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
     xc, yc, c = result
-    r = math.sqrt(xc ** 2 + yc ** 2 + c)
+    r = math.sqrt(xc**2 + yc**2 + c)
     center = (float(xc), float(yc))
 
     if r < 1e-10:

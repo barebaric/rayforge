@@ -118,6 +118,37 @@ Controls where the laser cuts relative to the vector path:
 - Reduces job time
 - Prevents missed cuts
 
+### Overcut
+
+Extends closed cutting paths past their start point so the laser beam
+overlaps with the beginning of the cut:
+
+**Overcut:**
+
+- Distance in machine units to extend the cut beyond the start/end junction
+- Set to **0** to disable (default)
+- Typical values: 1–5 for most materials
+- Maximum: 100
+
+**Why use overcut:**
+
+At the start and end of a closed contour, the laser may not fully penetrate
+due to acceleration and deceleration. Overcut ensures the beam overlaps at
+the junction, creating a clean, fully severed cut. This is especially useful
+for:
+
+- Thick materials where full penetration is marginal
+- High-speed cutting where acceleration effects are more pronounced
+- Parts that must fall free without post-processing
+
+Overcut applies to both outer contours and internal holes.
+
+:::tip Lead-In/Out vs Overcut
+[Lead-In/Out](../lead-in-out) adds zero-power approach and exit moves before
+and after the cut path. Overcut extends the cut path itself past the
+junction. They can be used together for optimal cut quality.
+:::
+
 ## Post-Processing
 
 ![Contour post-processing settings](/screenshots/step-settings-contour-post.png)

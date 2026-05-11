@@ -113,6 +113,40 @@ Steuert, wo der Laser relativ zum Vektorpfad schneidet:
 - Reduziert Job-Zeit
 - Verhindert verpasste Schnitte
 
+### Überlappungsschnitt (Overcut)
+
+Erweitert geschlossene Schnittpfade über ihren Startpunkt hinaus, sodass
+der Laserstrahl den Anfang des Schnitts überlappt:
+
+**Überlappungsschnitt:**
+
+- Distanz in Maschineneinheiten, um den Schnitt über die Start-/End-Verbindungsstelle hinaus zu verlängern
+- Auf **0** setzen, um die Funktion zu deaktivieren (Standard)
+- Typische Werte: 1–5 für die meisten Materialien
+- Maximum: 100
+
+**Warum Überlappungsschnitt verwenden:**
+
+Am Anfang und Ende einer geschlossenen Kontur dringt der Laser aufgrund
+von Beschleunigung und Verzögerung möglicherweise nicht vollständig ein.
+Der Überlappungsschnitt stellt sicher, dass der Strahl an der
+Verbindungsstelle überlappt und einen sauberen, vollständig durchtrennten
+Schnitt erzeugt. Dies ist besonders nützlich für:
+
+- Dicke Materialien, bei denen der vollständige Durchtritt knapp ist
+- Hochgeschwindigkeitsschnitte, bei denen Beschleunigungseffekte stärker ausgeprägt sind
+- Teile, die ohne Nachbearbeitung herausfallen müssen
+
+Der Überlappungsschnitt wird sowohl auf Außenkonturen als auch auf innere Löcher angewendet.
+
+:::tip Ein-/Auslauf vs. Überlappungsschnitt
+[Ein-/Auslauf](../lead-in-out) fügt Nullleistungs-An- und
+Abfahrtsbewegungen vor und nach dem Schnittpfad hinzu. Der
+Überlappungsschnitt verlängert den Schnittpfad selbst über die
+Verbindungsstelle hinaus. Beide können zusammen für optimale
+Schnittqualität verwendet werden.
+:::
+
 ## Nachbearbeitung
 
 ![Kontur-Nachbearbeitungseinstellungen](/screenshots/step-settings-contour-post.png)

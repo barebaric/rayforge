@@ -66,6 +66,18 @@
   </screenshots>
 
   <releases>
+    <release version="1.7.5" date="2026-05-11">
+      <description>
+        <p>Overcut support, performance improvements, and bug fixes</p>
+        <ul>
+          <li>Added overcut option for contour operations</li>
+          <li>Fixed operations preview misalignment when zooming past
+          the base image resolution cap</li>
+          <li>Massive performance improvements across geometry
+          processing and path optimization</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.7.4" date="2026-05-11">
       <description>
         <p>Bug fix release</p>

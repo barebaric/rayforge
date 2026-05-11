@@ -350,11 +350,11 @@ def linearize_bezier(
 
     points_np = np.array([p0, c1, c2, p1])
     t = np.linspace(0, 1, num_steps + 1)
-    t3 = t ** 3
-    t2 = t ** 2
+    t3 = t**3
+    t2 = t**2
     s = 1 - t
-    s3 = s ** 3
-    s2 = s ** 2
+    s3 = s**3
+    s2 = s**2
 
     interp = (
         s3[:, None] * points_np[0]
@@ -363,10 +363,7 @@ def linearize_bezier(
         + t3[:, None] * points_np[3]
     )
 
-    return [
-        (tuple(interp[i]), tuple(interp[i + 1]))
-        for i in range(num_steps)
-    ]
+    return [(tuple(interp[i]), tuple(interp[i + 1])) for i in range(num_steps)]
 
 
 def linearize_bezier_adaptive(

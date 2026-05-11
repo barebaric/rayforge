@@ -1,5 +1,5 @@
 import math
-from typing import Tuple, Optional
+from typing import List, Tuple, Optional
 import numpy as np
 from .arc import (
     find_closest_point_on_arc,
@@ -331,6 +331,172 @@ def find_closest_point_on_path_from_array(
         last_pos_3d = end_point_3d
 
     return closest_info
+
+
+def _segment_length_from_row(row: np.ndarray, start_point: Point3D) -> float:
+    cmd_type = row[COL_TYPE]
+    sx, sy = start_point[0], start_point[1]
+    ex, ey = row[COL_X], row[COL_Y]
+
+    if cmd_type in (CMD_TYPE_MOVE, CMD_TYPE_LINE):
+        return math.hypot(ex - sx, ey - sy)
+    elif cmd_type == CMD_TYPE_ARC:
+        i_off, j_off = row[COL_I], row[COL_J]
+        clockwise = bool(row[COL_CW])
+        cx = sx + i_off
+        cy = sy + j_off
+        radius = math.hypot(i_off, j_off)
+        if radius < 1e-9:
+            return 0.0
+        start_angle = math.atan2(sy - cy, sx - cx)
+        end_angle = math.atan2(ey - cy, ex - cx)
+        angle_span = end_angle - start_angle
+        if abs(angle_span) < 1e-9:
+            angle_span = -2 * math.pi if clockwise else 2 * math.pi
+        elif clockwise:
+            if angle_span > 1e-9:
+                angle_span -= 2 * math.pi
+        else:
+            if angle_span < -1e-9:
+                angle_span += 2 * math.pi
+        return abs(angle_span * radius)
+    elif cmd_type == CMD_TYPE_BEZIER:
+        segments = linearize_bezier_from_array(row, start_point)
+        return sum(
+            math.hypot(p2[0] - p1[0], p2[1] - p1[1]) for p1, p2 in segments
+        )
+    return 0.0
+
+
+def _partial_segment_from_row(
+    row: np.ndarray, start_point: Point3D, t: float
+) -> Optional[np.ndarray]:
+    cmd_type = row[COL_TYPE]
+    sx, sy, sz = start_point
+    ex, ey, ez = row[COL_X], row[COL_Y], row[COL_Z]
+
+    if cmd_type == CMD_TYPE_LINE:
+        nx = sx + t * (ex - sx)
+        ny = sy + t * (ey - sy)
+        nz = sz + t * (ez - sz)
+        return np.array([CMD_TYPE_LINE, nx, ny, nz, 0, 0, 0, 0])
+
+    elif cmd_type == CMD_TYPE_ARC:
+        i_off, j_off = row[COL_I], row[COL_J]
+        clockwise = bool(row[COL_CW])
+        cx = sx + i_off
+        cy = sy + j_off
+        radius_start = math.hypot(i_off, j_off)
+        radius_end = math.hypot(ex - cx, ey - cy)
+
+        start_angle = math.atan2(sy - cy, sx - cx)
+        end_angle = math.atan2(ey - cy, ex - cx)
+        angle_span = end_angle - start_angle
+        if abs(angle_span) < 1e-9:
+            angle_span = -2 * math.pi if clockwise else 2 * math.pi
+        elif clockwise:
+            if angle_span > 1e-9:
+                angle_span -= 2 * math.pi
+        else:
+            if angle_span < -1e-9:
+                angle_span += 2 * math.pi
+
+        mid_angle = start_angle + t * angle_span
+        radius = radius_start + t * (radius_end - radius_start)
+        nx = cx + radius * math.cos(mid_angle)
+        ny = cy + radius * math.sin(mid_angle)
+        nz = sz + t * (ez - sz)
+        return np.array(
+            [CMD_TYPE_ARC, nx, ny, nz, i_off, j_off, row[COL_CW], 0]
+        )
+
+    elif cmd_type == CMD_TYPE_BEZIER:
+        c1x, c1y = row[COL_C1X], row[COL_C1Y]
+        c2x, c2y = row[COL_C2X], row[COL_C2Y]
+
+        p01x = sx + t * (c1x - sx)
+        p01y = sy + t * (c1y - sy)
+        p12x = c1x + t * (c2x - c1x)
+        p12y = c1y + t * (c2y - c1y)
+        p23x = c2x + t * (ex - c2x)
+        p23y = c2y + t * (ey - c2y)
+        p012x = p01x + t * (p12x - p01x)
+        p012y = p01y + t * (p12y - p01y)
+        p123x = p12x + t * (p23x - p12x)
+        p123y = p12y + t * (p23y - p12y)
+        p0123x = p012x + t * (p123x - p012x)
+        p0123y = p012y + t * (p123y - p012y)
+
+        nz = sz + t * (ez - sz)
+        return np.array(
+            [
+                CMD_TYPE_BEZIER,
+                p0123x,
+                p0123y,
+                nz,
+                p01x,
+                p01y,
+                p012x,
+                p012y,
+            ]
+        )
+
+    return None
+
+
+def extract_overcut_rows(
+    data: Optional[np.ndarray], max_length: float
+) -> Optional[np.ndarray]:
+    """
+    Extract drawing command rows from the start of a closed contour's
+    drawing path, up to *max_length* distance.
+
+    For a closed contour (MoveTo at row 0, last endpoint ≈ MoveTo point)
+    the returned rows can be appended directly to the data array.  Because
+    the contour is closed the implicit start-point of every copied segment
+    aligns with the continuation of the original path.
+
+    Partial segments are interpolated when *max_length* does not fall on a
+    segment boundary.
+
+    Returns an (N, 8) array, or None if nothing to extract.
+    """
+    if data is None or len(data) < 2 or max_length <= 0:
+        return None
+
+    last_point: Point3D = (
+        data[0, COL_X],
+        data[0, COL_Y],
+        data[0, COL_Z],
+    )
+    accumulated = 0.0
+    collected: List[np.ndarray] = []
+
+    for i in range(1, len(data)):
+        row = data[i]
+        end_point: Point3D = (row[COL_X], row[COL_Y], row[COL_Z])
+
+        seg_length = _segment_length_from_row(row, last_point)
+        if seg_length < 1e-9:
+            last_point = end_point
+            continue
+
+        if accumulated + seg_length <= max_length + 1e-9:
+            collected.append(row.copy())
+            accumulated += seg_length
+            last_point = end_point
+        else:
+            remaining = max_length - accumulated
+            if remaining > 1e-9:
+                t = remaining / seg_length
+                partial = _partial_segment_from_row(row, last_point, t)
+                if partial is not None:
+                    collected.append(partial)
+            break
+
+    if not collected:
+        return None
+    return np.vstack(collected)
 
 
 def bboxes_intersect(bbox1: "Rect", bbox2: "Rect") -> bool:
