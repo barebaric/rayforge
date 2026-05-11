@@ -8,6 +8,7 @@ from ...core.doc import Doc
 from ...machine.models.machine import Machine
 from ...shared.tasker.progress import CallbackProgressContext
 from ...shared.tasker.proxy import ExecutionContextProxy
+from ...shared.util.profile import profile_if_enabled
 from ..artifact import (
     create_handle_from_dict,
     StepOpsArtifact,
@@ -65,13 +66,14 @@ def make_job_artifact_in_subprocess(
         message_callback=proxy.set_message,
     )
 
-    final_artifact = compute_job_artifact(
-        doc,
-        step_artifacts_by_uid,
-        machine,
-        generation_id,
-        context,
-    )
+    with profile_if_enabled("job", generation_id):
+        final_artifact = compute_job_artifact(
+            doc,
+            step_artifacts_by_uid,
+            machine,
+            generation_id,
+            context,
+        )
 
     proxy.set_message(_("Storing final job artifact..."))
     final_handle = artifact_store.put(final_artifact, creator_tag=creator_tag)

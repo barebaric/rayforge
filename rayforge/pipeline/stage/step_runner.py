@@ -7,6 +7,7 @@ from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import CallbackProgressContext
 from ...shared.tasker.proxy import ExecutionContextProxy
+from ...shared.util.profile import profile_if_enabled
 from ..artifact import (
     create_handle_from_dict,
     WorkPieceArtifact,
@@ -112,13 +113,14 @@ def make_step_artifact_in_subprocess(
         message_callback=proxy.set_message,
     )
 
-    ops_artifact = compute_step_artifacts(
-        artifacts=artifacts,
-        transformers=transformers,
-        generation_id=generation_id,
-        context=context,
-        stock_geometries=stock_geometries,
-    )
+    with profile_if_enabled("step", generation_id):
+        ops_artifact = compute_step_artifacts(
+            artifacts=artifacts,
+            transformers=transformers,
+            generation_id=generation_id,
+            context=context,
+            stock_geometries=stock_geometries,
+        )
 
     proxy.set_message(_("Storing step data..."))
 
