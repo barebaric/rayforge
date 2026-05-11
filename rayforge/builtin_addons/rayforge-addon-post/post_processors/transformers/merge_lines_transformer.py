@@ -43,6 +43,13 @@ class LineSegment:
         "dx",
         "dy",
         "length_sq",
+        "length",
+        "dir_x",
+        "dir_y",
+        "min_x",
+        "max_x",
+        "min_y",
+        "max_y",
     )
 
     def __init__(
@@ -64,15 +71,17 @@ class LineSegment:
         self.dx = end[0] - start[0]
         self.dy = end[1] - start[1]
         self.length_sq = self.dx * self.dx + self.dy * self.dy
-
-    def length(self) -> float:
-        return math.sqrt(self.length_sq)
-
-    def direction(self) -> Tuple[float, float]:
-        length = self.length()
-        if length < 1e-9:
-            return (0.0, 0.0)
-        return (self.dx / length, self.dy / length)
+        self.length = math.sqrt(self.length_sq)
+        if self.length > 1e-9:
+            self.dir_x = self.dx / self.length
+            self.dir_y = self.dy / self.length
+        else:
+            self.dir_x = 0.0
+            self.dir_y = 0.0
+        self.min_x = min(start[0], end[0])
+        self.max_x = max(start[0], end[0])
+        self.min_y = min(start[1], end[1])
+        self.max_y = max(start[1], end[1])
 
 
 class MergeLinesTransformer(OpsTransformer):
@@ -116,7 +125,8 @@ class MergeLinesTransformer(OpsTransformer):
     def description(self) -> str:
         return _("Merges overlapping lines to avoid double passing.")
 
-    def _z_overlap(self, seg1: LineSegment, seg2: LineSegment) -> bool:
+    @staticmethod
+    def _z_overlap(seg1: LineSegment, seg2: LineSegment) -> bool:
         """
         Ensures segments can only merge if they exist on the same Z plane.
         """
@@ -124,50 +134,51 @@ class MergeLinesTransformer(OpsTransformer):
         z1_end = seg1.end[2] if len(seg1.end) > 2 else 0.0
         z2_start = seg2.start[2] if len(seg2.start) > 2 else 0.0
         z2_end = seg2.end[2] if len(seg2.end) > 2 else 0.0
-
+        if z1_start == z1_end == z2_start == z2_end == 0.0:
+            return True
         min_z1 = min(z1_start, z1_end)
         max_z1 = max(z1_start, z1_end)
         min_z2 = min(z2_start, z2_end)
         max_z2 = max(z2_start, z2_end)
+        return min_z1 <= max_z2 and min_z2 <= max_z1
 
-        return (min_z1 <= max_z2 + self._tolerance) and (
-            min_z2 <= max_z1 + self._tolerance
-        )
-
-    def _are_parallel(
-        self,
-        seg1: LineSegment,
-        seg2: LineSegment,
-    ) -> bool:
-        d1 = seg1.direction()
-        d2 = seg2.direction()
-        dot = abs(d1[0] * d2[0] + d1[1] * d2[1])
+    @staticmethod
+    def _are_parallel(seg1: LineSegment, seg2: LineSegment) -> bool:
+        dot = abs(seg1.dir_x * seg2.dir_x + seg1.dir_y * seg2.dir_y)
         return dot > 0.9999
 
+    @staticmethod
     def _point_line_distance(
-        self, point: Tuple[float, ...], seg: LineSegment
+        point: Tuple[float, ...], seg: LineSegment
     ) -> float:
         x0, y0 = point[0], point[1]
         x1, y1 = seg.start[0], seg.start[1]
         x2, y2 = seg.end[0], seg.end[1]
-        dx = x2 - x1
-        dy = y2 - y1
-        length_sq = dx * dx + dy * dy
-        if length_sq < 1e-12:
+        if seg.length_sq < 1e-12:
             return math.hypot(x0 - x1, y0 - y1)
-        num = abs(dy * x0 - dx * y0 + x2 * y1 - y2 * x1)
-        return num / math.sqrt(length_sq)
+        num = abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1)
+        return num / seg.length
 
     def _are_collinear(
         self,
         seg1: LineSegment,
         seg2: LineSegment,
     ) -> bool:
+        tol = self._tolerance
+        if (
+            seg1.max_x < seg2.min_x - tol
+            or seg2.max_x < seg1.min_x - tol
+            or seg1.max_y < seg2.min_y - tol
+            or seg2.max_y < seg1.min_y - tol
+        ):
+            return False
         if not self._are_parallel(seg1, seg2):
             return False
         dist1 = self._point_line_distance(seg2.start, seg1)
+        if dist1 > tol:
+            return False
         dist2 = self._point_line_distance(seg2.end, seg1)
-        return dist1 <= self._tolerance and dist2 <= self._tolerance
+        return dist2 <= tol
 
     def _is_line_segment(self, segment: Sequence[Command]) -> bool:
         return (
@@ -179,14 +190,11 @@ class MergeLinesTransformer(OpsTransformer):
     def _get_cell_keys(
         self, seg: LineSegment, cell_size: float
     ) -> Set[Tuple[int, int]]:
-        min_x = min(seg.start[0], seg.end[0])
-        max_x = max(seg.start[0], seg.end[0])
-        min_y = min(seg.start[1], seg.end[1])
-        max_y = max(seg.start[1], seg.end[1])
-        cx1 = int(math.floor((min_x - self._tolerance) / cell_size))
-        cx2 = int(math.floor((max_x + self._tolerance) / cell_size))
-        cy1 = int(math.floor((min_y - self._tolerance) / cell_size))
-        cy2 = int(math.floor((max_y + self._tolerance) / cell_size))
+        tol = self._tolerance
+        cx1 = int(math.floor((seg.min_x - tol) / cell_size))
+        cx2 = int(math.floor((seg.max_x + tol) / cell_size))
+        cy1 = int(math.floor((seg.min_y - tol) / cell_size))
+        cy2 = int(math.floor((seg.max_y + tol) / cell_size))
         return {
             (cx, cy)
             for cx in range(cx1, cx2 + 1)
@@ -252,8 +260,8 @@ class MergeLinesTransformer(OpsTransformer):
                         continue
 
                     if self._are_collinear(seg1, seg2):
-                        len1 = seg1.length()
-                        len2 = seg2.length()
+                        len1 = seg1.length
+                        len2 = seg2.length
 
                         # Decide which line takes precedence (longer line
                         # covers shorter)
@@ -294,7 +302,7 @@ class MergeLinesTransformer(OpsTransformer):
                         # Apply horizontal tolerance: expand the covered
                         # interval to seamlessly bridge gaps (like the joints
                         # in a brick layout).
-                        L = coveree.length()
+                        L = coveree.length
                         t_tol = self._tolerance / L
 
                         t_min = max(0.0, t_min_raw - t_tol)
@@ -395,7 +403,7 @@ class MergeLinesTransformer(OpsTransformer):
                         uncovered = get_uncovered(line_seg.covered_intervals)
                         P1 = line_seg.start
                         P2 = line_seg.end
-                        seg_L = line_seg.length()
+                        seg_L = line_seg.length
 
                         # Drop tiny micro-segments that are smaller than
                         # tolerance
