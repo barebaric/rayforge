@@ -16,21 +16,70 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-COMMON_RESOLUTIONS = [
-    (320, 240),
-    (640, 480),
-    (800, 600),
-    (1024, 768),
-    (1280, 720),
-    (1280, 960),
-    (1280, 1024),
-    (1600, 1200),
-    (1920, 1080),
-    (2048, 1536),
-    (2592, 1944),
-    (3840, 2160),
-    (4096, 2160),
-]
+
+def generate_resolution_candidates() -> List[Tuple[int, int]]:
+    """Generate resolution candidates from common widths and aspect ratios.
+
+    This replaces a hardcoded preset list with a dynamic generator that
+    covers the vast majority of camera-supported resolutions.
+    """
+    candidates = set()
+
+    widths = [
+        160,
+        176,
+        192,
+        240,
+        320,
+        352,
+        384,
+        424,
+        480,
+        512,
+        544,
+        576,
+        608,
+        640,
+        720,
+        752,
+        800,
+        848,
+        864,
+        960,
+        1024,
+        1152,
+        1280,
+        1366,
+        1400,
+        1440,
+        1600,
+        1680,
+        1792,
+        1920,
+        2048,
+        2304,
+        2560,
+        2592,
+        2688,
+        2816,
+        3072,
+        3200,
+        3264,
+        3456,
+        3584,
+        3840,
+        4096,
+    ]
+
+    ratios = [(4, 3), (16, 9), (16, 10), (3, 2)]
+
+    for w in widths:
+        for num, den in ratios:
+            h = w * den // num
+            if 120 <= h <= 4096:
+                candidates.add((w, h))
+
+    return sorted(candidates, key=lambda r: r[0] * r[1])
 
 
 def _probe_camera_device(args):
@@ -510,7 +559,7 @@ class CameraController:
         original_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         original_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-        candidates = list(COMMON_RESOLUTIONS)
+        candidates = list(generate_resolution_candidates())
         if (original_w, original_h) not in candidates:
             candidates.append((original_w, original_h))
 
