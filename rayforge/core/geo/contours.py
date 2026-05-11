@@ -283,6 +283,9 @@ def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
     # 1. Pre-calculate data to avoid re-computing per iteration
     # Store: (geometry, start_point_2d, bounding_box, is_closed)
     contour_data: List[Optional[_NormalizeContourData]] = []
+    # Open paths are collected directly; only closed contours go through
+    # the O(n^2) nesting analysis below.
+    normalized_contours: List[Geometry] = []
 
     for c in contours:
         if c.is_empty():
@@ -292,12 +295,20 @@ def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
         if c.data is None:
             contour_data.append(None)
             continue
+
+        c_is_closed = is_closed(c.data)
+
+        # Open paths pass through unchanged - winding order only
+        # matters for closed contours (fill vs hole determination)
+        if not c_is_closed:
+            normalized_contours.append(c)
+            contour_data.append(None)
+            continue
+
         segments = c.segments()
         if not segments:
             contour_data.append(None)
             continue
-
-        c_is_closed = is_closed(c.data)
 
         # Get vertices for point-in-poly check
         verts_3d = segments[0]
@@ -315,21 +326,13 @@ def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
                 "verts": verts_2d,
                 "rect": rect,
                 "test_point": test_point,
-                "is_closed": c_is_closed,
+                "is_closed": True,
             }
         )
-
-    normalized_contours: List[Geometry] = []
 
     for i in range(count):
         current = contour_data[i]
         if current is None:
-            continue
-
-        # Open paths pass through unchanged - winding order only
-        # matters for closed contours (fill vs hole determination)
-        if not current["is_closed"]:
-            normalized_contours.append(current["geo"])
             continue
 
         nesting_level = 0
@@ -344,7 +347,10 @@ def normalize_winding_orders(contours: List[Geometry]) -> List[Geometry]:
                 continue
 
             other = contour_data[j]
-            if other is None or not other["is_closed"]:
+            # Open paths have None entries, and closed contours that
+            # were already processed are still present.  We skip None
+            # entries (open paths) here.
+            if other is None:
                 continue
 
             # Bounding Box Check:
