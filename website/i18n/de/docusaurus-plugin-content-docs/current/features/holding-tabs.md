@@ -172,4 +172,4 @@ Laschen ein/aus schalten, ohne sie zu löschen:
 - [Kontur-Schneiden](operations/contour) - Primäre Operation, die Laschen verwendet
 - [Mehrschicht-Workflow](multi-layer) - Laschen über mehrere Ebenen verwalten
 - [3D-Vorschau](../ui/3d-preview) - Laschen in der Vorschau visualisieren
-- [Simulationsmodus](simulation-mode) - Schnitte mit Laschen-Lücken vorschauen
+

@@ -176,7 +176,7 @@ precisão.
    - Rotacione/escalone conforme necessário
 
 4. **Pré-visualize o alinhamento:**
-   - Use o [Modo Simulação](../features/simulation-mode) para visualizar
+   - Use a [Visualização 3D](../ui/3d-preview) para visualizar
    - Verifique se cortes/gravações estarão onde você espera
 
 5. **Enquadre o trabalho** para verificar o posicionamento antes de executar
@@ -389,8 +389,7 @@ sudo lsof /dev/video0
 
 ## Páginas Relacionadas
 
-- [Modo Simulação](../features/simulation-mode) - Pré-visualizar execução com
-  sobreposição de câmera
+
 - [Visualização 3D](../ui/3d-preview) - Visualizar trabalhos em 3D
 - [Enquadramento de Trabalhos](../features/framing-your-job) - Verificar
   posição do trabalho

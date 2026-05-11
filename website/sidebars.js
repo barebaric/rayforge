@@ -82,7 +82,6 @@ module.exports = {
             'features/sketcher',
             'features/multi-layer',
             'features/stock-handling',
-            'features/simulation-mode',
             'features/framing-your-job',
             'features/sanity-checks',
             'features/workpiece-positioning',

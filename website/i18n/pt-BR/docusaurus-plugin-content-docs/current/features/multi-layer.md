@@ -123,8 +123,7 @@ permaneçam no lugar durante a gravação.
 
 - [Operações](./operations/contour) - Tipos de operações para fluxos
   de trabalho por camada
-- [Modo de simulação](./simulation-mode) - Visualizar execução
-  multicamadas
+
 - [Macros e Hooks](../machine/hooks-macros) - Hooks em nível de camada
   para automação
 - [Visualização 3D](../ui/3d-preview) - Visualizar pilha de camadas

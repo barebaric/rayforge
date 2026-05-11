@@ -172,4 +172,4 @@ Basculer les ponts on/off sans les supprimer :
 - [Coupe de Contour](operations/contour) - Opération principale qui utilise des ponts
 - [Flux de Travail Multi-Couches](multi-layer) - Gérer les ponts sur plusieurs calques
 - [Aperçu 3D](../ui/3d-preview) - Visualiser les ponts dans l'aperçu
-- [Mode Simulation](simulation-mode) - Prévisualiser les coupes avec des espaces de pont
+

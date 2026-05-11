@@ -126,4 +126,4 @@ la machine actuellement sélectionnée et de son dialecte G-code.
 - [Formats pris en charge](formats) - Détails des formats de fichiers
 - [Dialectes G-code](../reference/gcode-dialects) - Différences entre dialectes
 - [Hooks et Macros](../machine/hooks-macros) - Personnaliser la sortie
-- [Mode simulation](../features/simulation-mode) - Prévisualiser avant exportation
+- [Aperçu 3D](../ui/3d-preview) - Prévisualiser avant exportation

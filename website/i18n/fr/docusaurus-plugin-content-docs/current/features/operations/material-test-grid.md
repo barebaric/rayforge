@@ -241,6 +241,6 @@ Exécute la même configuration de grille sur différents matériaux pour constr
 
 ## Sujets Connexes
 
-- **[Mode Simulation](../simulation-mode)** - Prévisualiser l'exécution du test avant de l'exécuter
+- **[Aperçu 3D](../ui/3d-preview)** - Prévisualiser l'exécution du test avant de l'exécuter
 - **[Gravure](engrave)** - Comprendre les opérations de gravure
 - **[Coupe de Contour](contour)** - Comprendre les opérations de coupe

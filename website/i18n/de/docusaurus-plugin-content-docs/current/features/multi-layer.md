@@ -127,8 +127,7 @@ Gravur an ihrem Platz bleiben.
 
 - [Operationen](./operations/contour) - Operationstypen für
   Ebenen-Workflows
-- [Simulationsmodus](./simulation-mode) - Vorschau der
-  Multi-Ebenen-Ausführung
+
 - [Makros & Hooks](../machine/hooks-macros) - Ebenenbezogene Hooks
   zur Automatisierung
 - [3D-Vorschau](../ui/3d-preview) - Ebenen-Stack visualisieren

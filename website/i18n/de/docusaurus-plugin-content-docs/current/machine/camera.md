@@ -162,7 +162,7 @@ Sobald ausgerichtet, hilft das Kamera-Overlay beim präzisen Positionieren von J
    - Nach Bedarf drehen/skalieren
 
 4. **Ausrichtung überprüfen:**
-   - Verwende den [Simulationsmodus](../features/simulation-mode), um zu visualisieren
+   - Verwende die [3D-Vorschau](../ui/3d-preview), um zu visualisieren
    - Überprüfe, dass Schnitte/Gravuren dort sein werden, wo du sie erwartest
 
 5. **Job rahmen** um die Positionierung vor dem Ausführen zu verifizieren
@@ -369,7 +369,7 @@ sudo lsof /dev/video0
 
 ## Verwandte Seiten
 
-- [Simulationsmodus](../features/simulation-mode) - Ausführungsvorschau mit Kamera-Overlay
+
 - [3D-Vorschau](../ui/3d-preview) - Jobs in 3D visualisieren
 - [Jobs rahmen](../features/framing-your-job) - Job-Position verifizieren
 - [Allgemeine Einstellungen](general) - Maschinenkonfiguration

@@ -386,4 +386,4 @@ Certains raccourcis moins connus :
 - [Fenêtre principale](../ui/main-window) - Aperçu de l'interface
 - [Outils du canevas](../ui/canvas-tools) - Interaction avec le canevas
 - [Prévisualisation 3D](../ui/3d-preview) - Contrôles de la vue 3D
-- [Mode simulation](../features/simulation-mode) - Fonctionnalités de simulation
+

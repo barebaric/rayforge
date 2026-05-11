@@ -386,4 +386,4 @@ Rayforge 中键盘快捷键的完整参考。
 - [主窗口](../ui/main-window) - UI 概述
 - [画布工具](../ui/canvas-tools) - 画布交互
 - [3D 预览](../ui/3d-preview) - 3D 视图控制
-- [模拟模式](../features/simulation-mode) - 模拟功能
+

@@ -386,4 +386,4 @@ Einige weniger bekannte Kürzel:
 - [Hauptfenster](../ui/main-window) - UI-Übersicht
 - [Canvas-Werkzeuge](../ui/canvas-tools) - Canvas-Interaktion
 - [3D-Vorschau](../ui/3d-preview) - 3D-Ansicht-Steuerung
-- [Simulationsmodus](../features/simulation-mode) - Simulationsfunktionen
+

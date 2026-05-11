@@ -161,7 +161,7 @@ Rayforge 支持 USB 相机集成，用于精确的材料对齐和定位。相机
    - 根据需要旋转/缩放
 
 4. **预览对齐：**
-   - 使用[仿真模式](../features/simulation-mode)进行可视化
+   - 使用[3D 预览](../ui/3d-preview)进行可视化
    - 检查切割/雕刻将在您预期的位置
 
 5. **框选作业**以在运行前验证定位
@@ -351,7 +351,7 @@ sudo lsof /dev/video0
 
 ## 相关页面
 
-- [仿真模式](../features/simulation-mode) - 使用相机叠加预览执行
+
 - [3D 预览](../ui/3d-preview) - 在 3D 中可视化作业
 - [框选作业](../features/framing-your-job) - 验证作业位置
 - [常规设置](general) - 机器配置

@@ -258,6 +258,6 @@ ambos extremos
 
 ## Tópicos Relacionados
 
-- **[Modo Simulação](../simulation-mode)** - Pré-visualize execução do teste antes de rodar
+- **[Visualização 3D](../ui/3d-preview)** - Pré-visualize execução do teste antes de rodar
 - **[Gravação](engrave)** - Entendendo operações de gravação
 - **[Corte de Contorno](contour)** - Entendendo operações de corte

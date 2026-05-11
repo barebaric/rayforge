@@ -390,4 +390,4 @@ Some lesser-known shortcuts:
 - [Main Window](../ui/main-window) - UI overview
 - [Canvas Tools](../ui/canvas-tools) - Canvas interaction
 - [3D Preview](../ui/3d-preview) - 3D view controls
-- [Simulation Mode](../features/simulation-mode) - Simulation features
+- [3D Preview](../ui/3d-preview) - 3D view controls
