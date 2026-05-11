@@ -114,6 +114,38 @@ Controla dónde corta el láser en relación a la trayectoria vectorial:
 - Reduce tiempo de trabajo
 - Previene cortes perdidos
 
+### Sobrecorte (Overcut)
+
+Extiende las trayectorias de corte cerradas más allá de su punto de
+inicio para que el rayo láser se superponga con el inicio del corte:
+
+**Sobrecorte:**
+
+- Distancia en unidades de máquina para extender el corte más allá de la unión inicio/fin
+- Establecer en **0** para desactivar (predeterminado)
+- Valores típicos: 1–5 para la mayoría de los materiales
+- Máximo: 100
+
+**Por qué usar sobrecorte:**
+
+Al inicio y final de un contorno cerrado, es posible que el láser no
+penetre completamente debido a la aceleración y desaceleración. El
+sobrecorte asegura que el haz se superponga en la unión, creando un
+corte limpio y completamente separado. Esto es especialmente útil para:
+
+- Materiales gruesos donde la penetración completa es marginal
+- Cortes a alta velocidad donde los efectos de aceleración son más pronunciados
+- Piezas que deben caer libres sin post-procesamiento
+
+El sobrecorte se aplica tanto a contornos exteriores como a agujeros internos.
+
+:::tip Entrada/Salida vs Sobrecorte
+[Entrada/Salida](../lead-in-out) agrega movimientos de aproximación y
+salida con potencia cero antes y después de la trayectoria de corte. El
+sobrecorte extiende la propia trayectoria de corte más allá de la
+unión. Pueden usarse juntos para una calidad de corte óptima.
+:::
+
 ## Post-Procesamiento
 
 ![Configuración de post-procesamiento de contorno](/screenshots/step-settings-contour-post.png)

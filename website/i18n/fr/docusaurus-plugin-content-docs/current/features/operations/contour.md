@@ -114,6 +114,38 @@ Contrôle où le laser coupe par rapport au parcours vectoriel :
 - Réduit le temps de travail
 - Empêche les coupes manquées
 
+### Surcoupe (Overcut)
+
+Prolonge les trajectoires de coupe fermées au-delà de leur point de
+départ pour que le faisceau laser chevauche le début de la coupe :
+
+**Surcoupe :**
+
+- Distance en unités machine pour prolonger la coupe au-delà de la jonction début/fin
+- Mettre à **0** pour désactiver (par défaut)
+- Valeurs typiques : 1–5 pour la plupart des matériaux
+- Maximum : 100
+
+**Pourquoi utiliser la surcoupe :**
+
+Au début et à la fin d'un contour fermé, le laser peut ne pas pénétrer
+complètement en raison de l'accélération et de la décélération. La
+surcoupe garantit que le faisceau chevauche la jonction, créant une
+coupe nette et complète. Ceci est particulièrement utile pour :
+
+- Les matériaux épais où la pénétration complète est limite
+- Les coupes à grande vitesse où les effets d'accélération sont plus prononcés
+- Les pièces qui doivent tomber sans post-traitement
+
+La surcoupe s'applique à la fois aux contours extérieurs et aux trous intérieurs.
+
+:::tip Entrée/Sortie vs Surcoupe
+[L'entrée/sortie](../lead-in-out) ajoute des mouvements d'approche et de
+sortie à puissance nulle avant et après le trajet de coupe. La surcoupe
+prolonge le trajet de coupe lui-même au-delà de la jonction. Ils peuvent
+être utilisés ensemble pour une qualité de coupe optimale.
+:::
+
 ## Post-Traitement
 
 ![Paramètres de post-traitement du contour](/screenshots/step-settings-contour-post.png)

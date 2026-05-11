@@ -5,6 +5,22 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.7.5
+
+### Added
+
+- Overcut option for contour operations
+
+### Fixed
+
+- Fixed operations preview misalignment when zooming past the base image
+  resolution cap
+
+### Performance
+
+- Massive performance improvements across geometry processing, path
+  optimization, and vector operations
+
 ## 1.7.4
 
 ### Fixed

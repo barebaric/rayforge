@@ -5,6 +5,7 @@ from gettext import gettext as _
 
 from rayforge.image.tracing import trace_surface
 from rayforge.core.geo import contours, Geometry
+from rayforge.core.geo.query import extract_overcut_rows
 from rayforge.core.matrix import Matrix
 from rayforge.core.ops import Ops, SectionType
 from rayforge.core.vectorization_spec import TraceSpec
@@ -50,6 +51,7 @@ class ContourProducer(OpsProducer):
         cut_order: CutOrder = CutOrder.INSIDE_OUTSIDE,
         override_threshold: bool = False,
         threshold: float = 0.5,
+        overcut: float = 0.0,
     ):
         """
         Initializes the ContourProducer.
@@ -63,6 +65,8 @@ class ContourProducer(OpsProducer):
             override_threshold: If True, ignores source vectors and re-traces
                                 the rendered surface.
             threshold: The brightness threshold (0.0-1.0) for re-tracing.
+            overcut: Distance to extend closed contours past their start
+                        point so that the cut overlaps itself.
         """
         super().__init__()
         self.remove_inner_paths = remove_inner_paths
@@ -71,13 +75,27 @@ class ContourProducer(OpsProducer):
         self.cut_order = cut_order
         self.override_threshold = override_threshold
         self.threshold = threshold
+        self.overcut = overcut
 
     @property
     def requires_full_render(self) -> bool:
-        # If we are overriding the threshold, we rely on the tracer, which
-        # operates on a raster surface. We must force the pipeline to
-        # render one.
         return self.override_threshold
+
+    @staticmethod
+    def _apply_overcut(geo: Geometry, overcut: float) -> Geometry:
+        if overcut <= 0 or geo.is_empty():
+            return geo
+        data = geo.data
+        if data is None or len(data) < 2:
+            return geo
+        if not geo.is_closed():
+            return geo
+        rows = extract_overcut_rows(data, overcut)
+        if rows is None:
+            return geo
+        result = geo.copy()
+        result.append_data(rows)
+        return result
 
     def run(
         self,
@@ -226,6 +244,15 @@ class ContourProducer(OpsProducer):
                 # Simple case: remove inner paths and create one optimizable
                 # group
                 final_geometry = final_geometry.remove_inner_edges()
+                if self.overcut > 0:
+                    contour_list = final_geometry.split_into_contours()
+                    contour_list = [
+                        self._apply_overcut(c, self.overcut)
+                        for c in contour_list
+                    ]
+                    final_geometry = Geometry()
+                    for c in contour_list:
+                        final_geometry.extend(c)
                 final_ops.ops_section_start(
                     SectionType.VECTOR_OUTLINE, workpiece.uid
                 )
@@ -235,6 +262,16 @@ class ContourProducer(OpsProducer):
                 # Complex case: separate inner and outer paths into two groups
                 split_func = final_geometry.split_inner_and_outer_contours
                 inner_contours, outer_contours = split_func()
+
+                if self.overcut > 0:
+                    inner_contours = [
+                        self._apply_overcut(c, self.overcut)
+                        for c in inner_contours
+                    ]
+                    outer_contours = [
+                        self._apply_overcut(c, self.overcut)
+                        for c in outer_contours
+                    ]
 
                 # Combine the lists of contours into composite Geometry objects
                 outer_geo = Geometry()
@@ -291,6 +328,7 @@ class ContourProducer(OpsProducer):
                 "cut_order": self.cut_order.name,
                 "override_threshold": self.override_threshold,
                 "threshold": self.threshold,
+                "overcut": self.overcut,
             },
         }
 
@@ -321,4 +359,5 @@ class ContourProducer(OpsProducer):
             cut_order=cut_order,
             override_threshold=params.get("override_threshold", False),
             threshold=params.get("threshold", 0.5),
+            overcut=params.get("overcut", 0.0),
         )

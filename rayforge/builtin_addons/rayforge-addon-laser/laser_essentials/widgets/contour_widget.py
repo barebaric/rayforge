@@ -86,6 +86,25 @@ class ContourProducerSettingsWidget(
         offset_adj.set_value(producer.path_offset_mm)
         self.add(self.offset_row)
 
+        # Overcut
+        overcut_adj = Gtk.Adjustment(
+            lower=0.0,
+            upper=100.0,
+            step_increment=0.1,
+            page_increment=1.0,
+        )
+        self.overcut_row = Adw.SpinRow(
+            title=_("Overcut"),
+            subtitle=_(
+                "Extend closed contours past their start point "
+                "so the cut overlaps itself"
+            ),
+            adjustment=overcut_adj,
+            digits=2,
+        )
+        overcut_adj.set_value(producer.overcut)
+        self.add(self.overcut_row)
+
         # Threshold Override Toggle
         self.override_switch_row = Adw.SwitchRow(
             title=_("Rescan Content"),
@@ -125,6 +144,12 @@ class ContourProducerSettingsWidget(
             "changed",
             lambda r: self._debounce(
                 self._on_param_changed, "path_offset_mm", get_spinrow_float(r)
+            ),
+        )
+        self.overcut_row.connect(
+            "changed",
+            lambda r: self._debounce(
+                self._on_param_changed, "overcut", get_spinrow_float(r)
             ),
         )
         cut_side_row.connect("notify::selected", self._on_cut_side_changed)

@@ -564,9 +564,7 @@ class WorkPieceElement(CanvasElement):
             return
 
         # Effective PPM after capping surface dimensions
-        eff_ppm = (
-            comp_w_px / composite_w_mm if composite_w_mm > 1e-9 else ppm
-        )
+        eff_ppm = comp_w_px / composite_w_mm if composite_w_mm > 1e-9 else ppm
 
         if (
             self._composited_data is not None

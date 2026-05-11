@@ -10,7 +10,12 @@ from rayforge.core.geo.font_config import FontConfig
 from rayforge.core.geo import (
     Geometry,
 )
-from rayforge.core.geo.query import get_total_distance_from_array
+from rayforge.core.geo.query import (
+    get_total_distance_from_array,
+    _segment_length_from_row,
+    _partial_segment_from_row,
+    extract_overcut_rows,
+)
 
 # Constants needed for mocking numpy data structure
 from rayforge.core.geo.constants import (
@@ -22,6 +27,9 @@ from rayforge.core.geo.constants import (
     COL_X,
     COL_Y,
     COL_Z,
+    COL_I,
+    COL_J,
+    COL_CW,
     GEO_ARRAY_COLS,
 )
 
@@ -1281,3 +1289,405 @@ class TestToPng:
         assert small is not None
         assert large is not None
         assert len(large) > len(small)
+
+
+# --- append_data Tests ---
+
+
+class TestAppendData:
+    def test_appends_rows_to_existing_geometry(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo.line_to(10, 0)
+        geo._sync_to_numpy()
+        assert geo.data is not None
+        original_len = len(geo.data)
+
+        extra = np.array([[CMD_TYPE_LINE, 10.0, 10.0, 0.0, 0, 0, 0, 0]])
+        geo.append_data(extra)
+
+        assert geo.data is not None
+        assert len(geo.data) == original_len + 1
+        np.testing.assert_array_equal(geo.data[-1], extra[0])
+
+    def test_appends_multiple_rows(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo._sync_to_numpy()
+        assert geo.data is not None
+
+        rows = np.array(
+            [
+                [CMD_TYPE_LINE, 5.0, 0.0, 0.0, 0, 0, 0, 0],
+                [CMD_TYPE_LINE, 5.0, 5.0, 0.0, 0, 0, 0, 0],
+                [CMD_TYPE_LINE, 0.0, 5.0, 0.0, 0, 0, 0, 0],
+            ]
+        )
+        geo.append_data(rows)
+
+        assert geo.data is not None
+        assert len(geo.data) == 4
+
+    def test_sets_data_when_empty(self):
+        geo = Geometry()
+        rows = np.array([[CMD_TYPE_LINE, 1.0, 2.0, 0.0, 0, 0, 0, 0]])
+        geo.append_data(rows)
+
+        assert geo.data is not None
+        assert len(geo.data) == 1
+        np.testing.assert_array_equal(geo.data[0], rows[0])
+
+    def test_none_is_noop(self):
+        geo = Geometry()
+        geo.move_to(1, 1)
+        geo._sync_to_numpy()
+        assert geo.data is not None
+        original = geo.data.copy()
+
+        geo.append_data(None)
+
+        assert geo.data is not None
+        np.testing.assert_array_equal(geo.data, original)
+
+    def test_empty_array_is_noop(self):
+        geo = Geometry()
+        geo.move_to(1, 1)
+        geo._sync_to_numpy()
+        assert geo.data is not None
+        original = geo.data.copy()
+
+        geo.append_data(np.empty((0, GEO_ARRAY_COLS)))
+
+        assert geo.data is not None
+        np.testing.assert_array_equal(geo.data, original)
+
+    def test_does_not_mutate_input(self):
+        geo = Geometry()
+        geo.move_to(0, 0)
+        geo._sync_to_numpy()
+
+        rows = np.array([[CMD_TYPE_LINE, 5.0, 5.0, 0.0, 0, 0, 0, 0]])
+        original_rows = rows.copy()
+        geo.append_data(rows)
+
+        np.testing.assert_array_equal(rows, original_rows)
+
+
+# --- _segment_length_from_row Tests ---
+
+
+class TestSegmentLengthFromRow:
+    def test_move_length_is_euclidean(self):
+        row = np.array([CMD_TYPE_MOVE, 3.0, 4.0, 0.0, 0, 0, 0, 0])
+        length = _segment_length_from_row(row, (0.0, 0.0, 0.0))
+        assert length == pytest.approx(5.0)
+
+    def test_line_length(self):
+        row = np.array([CMD_TYPE_LINE, 3.0, 4.0, 0.0, 0, 0, 0, 0])
+        length = _segment_length_from_row(row, (0.0, 0.0, 0.0))
+        assert length == pytest.approx(5.0)
+
+    def test_arc_ccw_quarter_circle(self):
+        # Center at (0,0), start at (10,0), end at (0,10), CCW
+        row = np.array([CMD_TYPE_ARC, 0.0, 10.0, 0.0, -10.0, 0.0, 0.0, 0.0])
+        length = _segment_length_from_row(row, (10.0, 0.0, 0.0))
+        assert length == pytest.approx(math.pi * 10 / 2)
+
+    def test_arc_cw_quarter_circle(self):
+        # Center at (0,0), start at (0,10), end at (10,0), CW
+        row = np.array([CMD_TYPE_ARC, 10.0, 0.0, 0.0, 0.0, -10.0, 1.0, 0.0])
+        length = _segment_length_from_row(row, (0.0, 10.0, 0.0))
+        assert length == pytest.approx(math.pi * 10 / 2)
+
+    def test_arc_full_circle_ccw(self):
+        # Start and end at same point → full circle
+        row = np.array([CMD_TYPE_ARC, 10.0, 0.0, 0.0, -10.0, 0.0, 0.0, 0.0])
+        length = _segment_length_from_row(row, (10.0, 0.0, 0.0))
+        assert length == pytest.approx(2 * math.pi * 10)
+
+    def test_arc_full_circle_cw(self):
+        row = np.array([CMD_TYPE_ARC, 10.0, 0.0, 0.0, -10.0, 0.0, 1.0, 0.0])
+        length = _segment_length_from_row(row, (10.0, 0.0, 0.0))
+        assert length == pytest.approx(2 * math.pi * 10)
+
+    def test_arc_zero_radius_returns_zero(self):
+        row = np.array([CMD_TYPE_ARC, 5.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        length = _segment_length_from_row(row, (5.0, 5.0, 0.0))
+        assert length == 0.0
+
+    def test_bezier_length_approximates_true_length(self):
+        # Quadratic-like bezier: (0,0)→(10,0) with control points
+        row = np.array(
+            [
+                CMD_TYPE_BEZIER,
+                10.0,
+                0.0,
+                0.0,
+                5.0,
+                3.0,
+                5.0,
+                -3.0,
+            ]
+        )
+        length = _segment_length_from_row(row, (0.0, 0.0, 0.0))
+        assert length > 10.0
+        assert length < 20.0
+
+    def test_bezier_colinear_is_line_length(self):
+        # Control points on the line from (0,0) to (10,0)
+        row = np.array(
+            [
+                CMD_TYPE_BEZIER,
+                10.0,
+                0.0,
+                0.0,
+                3.0,
+                0.0,
+                7.0,
+                0.0,
+            ]
+        )
+        length = _segment_length_from_row(row, (0.0, 0.0, 0.0))
+        assert length == pytest.approx(10.0, abs=0.01)
+
+
+# --- _partial_segment_from_row Tests ---
+
+
+class TestPartialSegmentFromRow:
+    def test_line_at_halfway(self):
+        row = np.array([CMD_TYPE_LINE, 10.0, 10.0, 2.0, 0, 0, 0, 0])
+        result = _partial_segment_from_row(row, (0.0, 0.0, 0.0), 0.5)
+        assert result is not None
+        assert result[COL_TYPE] == CMD_TYPE_LINE
+        assert result[COL_X] == pytest.approx(5.0)
+        assert result[COL_Y] == pytest.approx(5.0)
+        assert result[COL_Z] == pytest.approx(1.0)
+
+    def test_line_at_zero(self):
+        row = np.array([CMD_TYPE_LINE, 10.0, 0.0, 0.0, 0, 0, 0, 0])
+        result = _partial_segment_from_row(row, (0.0, 0.0, 0.0), 0.0)
+        assert result is not None
+        assert result[COL_X] == pytest.approx(0.0)
+        assert result[COL_Y] == pytest.approx(0.0)
+
+    def test_line_at_one(self):
+        row = np.array([CMD_TYPE_LINE, 10.0, 20.0, 3.0, 0, 0, 0, 0])
+        result = _partial_segment_from_row(row, (0.0, 0.0, 0.0), 1.0)
+        assert result is not None
+        assert result[COL_X] == pytest.approx(10.0)
+        assert result[COL_Y] == pytest.approx(20.0)
+        assert result[COL_Z] == pytest.approx(3.0)
+
+    def test_arc_partial_ccw(self):
+        # Quarter circle CCW from (10,0) to (0,10), center (0,0)
+        row = np.array([CMD_TYPE_ARC, 0.0, 10.0, 0.0, -10.0, 0.0, 0.0, 0.0])
+        result = _partial_segment_from_row(row, (10.0, 0.0, 0.0), 0.5)
+        assert result is not None
+        assert result[COL_TYPE] == CMD_TYPE_ARC
+        assert result[COL_X] == pytest.approx(
+            10 * math.cos(math.pi / 4), abs=1e-6
+        )
+        assert result[COL_Y] == pytest.approx(
+            10 * math.sin(math.pi / 4), abs=1e-6
+        )
+
+    def test_arc_partial_cw(self):
+        # Quarter circle CW from (0,10) to (10,0), center (0,0)
+        row = np.array([CMD_TYPE_ARC, 10.0, 0.0, 0.0, 0.0, -10.0, 1.0, 0.0])
+        result = _partial_segment_from_row(row, (0.0, 10.0, 0.0), 0.5)
+        assert result is not None
+        cx, cy = 0.0, 0.0
+        start_angle = math.pi / 2
+        end_angle = 0.0
+        angle_span = end_angle - start_angle
+        mid_angle = start_angle + 0.5 * angle_span
+        assert result[COL_X] == pytest.approx(
+            cx + 10 * math.cos(mid_angle), abs=1e-6
+        )
+        assert result[COL_Y] == pytest.approx(
+            cy + 10 * math.sin(mid_angle), abs=1e-6
+        )
+
+    def test_arc_preserves_ij_and_cw(self):
+        row = np.array([CMD_TYPE_ARC, 0.0, 10.0, 0.0, -10.0, 0.0, 0.0, 0.0])
+        result = _partial_segment_from_row(row, (10.0, 0.0, 0.0), 0.3)
+        assert result is not None
+        assert result[COL_I] == pytest.approx(-10.0)
+        assert result[COL_J] == pytest.approx(0.0)
+        assert result[COL_CW] == pytest.approx(0.0)
+
+    def test_bezier_partial_midpoint(self):
+        # Simple bezier from (0,0) to (10,0) with symmetric controls
+        row = np.array(
+            [
+                CMD_TYPE_BEZIER,
+                10.0,
+                0.0,
+                0.0,
+                3.0,
+                3.0,
+                7.0,
+                3.0,
+            ]
+        )
+        result = _partial_segment_from_row(row, (0.0, 0.0, 0.0), 0.5)
+        assert result is not None
+        assert result[COL_TYPE] == CMD_TYPE_BEZIER
+        assert result[COL_X] == pytest.approx(5.0)
+        assert result[COL_Y] == pytest.approx(2.25)
+
+    def test_bezier_partial_z_interpolation(self):
+        row = np.array(
+            [
+                CMD_TYPE_BEZIER,
+                10.0,
+                0.0,
+                4.0,
+                3.0,
+                3.0,
+                7.0,
+                3.0,
+            ]
+        )
+        result = _partial_segment_from_row(row, (0.0, 0.0, 0.0), 0.5)
+        assert result is not None
+        assert result[COL_Z] == pytest.approx(2.0)
+
+    def test_move_returns_none(self):
+        row = np.array([CMD_TYPE_MOVE, 5.0, 5.0, 0.0, 0, 0, 0, 0])
+        result = _partial_segment_from_row(row, (0.0, 0.0, 0.0), 0.5)
+        assert result is None
+
+
+# --- extract_overcut_rows Tests ---
+
+
+class TestExtractOvercutRows:
+    @staticmethod
+    def _make_square(size=10.0):
+        return np.array(
+            [
+                [CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
+                [CMD_TYPE_LINE, size, 0.0, 0.0, 0, 0, 0, 0],
+                [CMD_TYPE_LINE, size, size, 0.0, 0, 0, 0, 0],
+                [CMD_TYPE_LINE, 0.0, size, 0.0, 0, 0, 0, 0],
+                [CMD_TYPE_LINE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
+            ]
+        )
+
+    def test_returns_none_for_none_data(self):
+        assert extract_overcut_rows(None, 5.0) is None
+
+    def test_returns_none_for_short_data(self):
+        data = np.array([[CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0]])
+        assert extract_overcut_rows(data, 5.0) is None
+
+    def test_returns_none_for_zero_length(self):
+        data = self._make_square()
+        assert extract_overcut_rows(data, 0.0) is None
+
+    def test_returns_none_for_negative_length(self):
+        data = self._make_square()
+        assert extract_overcut_rows(data, -1.0) is None
+
+    def test_exactly_one_side(self):
+        data = self._make_square(10.0)
+        result = extract_overcut_rows(data, 10.0)
+        assert result is not None
+        assert len(result) == 1
+        np.testing.assert_array_equal(result[0], data[1])
+
+    def test_two_full_sides(self):
+        data = self._make_square(10.0)
+        result = extract_overcut_rows(data, 20.0)
+        assert result is not None
+        assert len(result) == 2
+        np.testing.assert_array_equal(result[0], data[1])
+        np.testing.assert_array_equal(result[1], data[2])
+
+    def test_partial_second_side(self):
+        data = self._make_square(10.0)
+        result = extract_overcut_rows(data, 15.0)
+        assert result is not None
+        assert len(result) == 2
+        np.testing.assert_array_equal(result[0], data[1])
+        assert result[1][COL_TYPE] == CMD_TYPE_LINE
+        assert result[1][COL_X] == pytest.approx(10.0)
+        assert result[1][COL_Y] == pytest.approx(5.0)
+
+    def test_with_arc_segment(self):
+        # MoveTo(10,0), ArcTo CCW to (-10,0) via center (0,0), i=-10
+        # That's a semicircle of radius 10, length π·10 ≈ 31.4
+        data = np.array(
+            [
+                [CMD_TYPE_MOVE, 10.0, 0.0, 0.0, 0, 0, 0, 0],
+                [
+                    CMD_TYPE_ARC,
+                    -10.0,
+                    0.0,
+                    0.0,
+                    -10.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ],
+            ]
+        )
+        result = extract_overcut_rows(data, math.pi * 5)
+        assert result is not None
+        assert len(result) == 1
+        assert result[0][COL_TYPE] == CMD_TYPE_ARC
+        assert result[0][COL_X] == pytest.approx(0.0, abs=1e-6)
+        assert result[0][COL_Y] == pytest.approx(10.0, abs=1e-6)
+
+    def test_skips_zero_length_segments(self):
+        # Line to same point has zero length and should be skipped
+        data = np.array(
+            [
+                [CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
+                [CMD_TYPE_LINE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
+                [CMD_TYPE_LINE, 5.0, 0.0, 0.0, 0, 0, 0, 0],
+            ]
+        )
+        result = extract_overcut_rows(data, 3.0)
+        assert result is not None
+        assert len(result) == 1
+        assert result[0][COL_X] == pytest.approx(3.0)
+
+    def test_length_exceeds_perimeter(self):
+        data = self._make_square(10.0)
+        result = extract_overcut_rows(data, 999.0)
+        assert result is not None
+        assert len(result) == 4
+
+    def test_with_bezier_segment(self):
+        # Bezier from (0,0) to (10,0) with controls on the line
+        data = np.array(
+            [
+                [CMD_TYPE_MOVE, 0.0, 0.0, 0.0, 0, 0, 0, 0],
+                [
+                    CMD_TYPE_BEZIER,
+                    10.0,
+                    0.0,
+                    0.0,
+                    3.0,
+                    0.0,
+                    7.0,
+                    0.0,
+                ],
+            ]
+        )
+        result = extract_overcut_rows(data, 5.0)
+        assert result is not None
+        assert len(result) == 1
+        assert result[0][COL_TYPE] == CMD_TYPE_BEZIER
+        assert result[0][COL_X] == pytest.approx(5.0, abs=0.1)
+        assert result[0][COL_Y] == pytest.approx(0.0, abs=0.1)
+
+    def test_returns_stacked_array(self):
+        data = self._make_square(10.0)
+        result = extract_overcut_rows(data, 25.0)
+        assert result is not None
+        assert result.shape[1] == GEO_ARRAY_COLS
+        assert result.ndim == 2

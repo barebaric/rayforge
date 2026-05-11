@@ -208,6 +208,26 @@ class Geometry:
             self._uniform_scalable and other._uniform_scalable
         )
 
+    def append_data(self, rows: Optional[np.ndarray]) -> None:
+        """
+        Appends pre-built command rows (N×8 array) to this geometry.
+
+        This is a low-level escape hatch for callers that already have
+        valid geometry rows (e.g. from :func:`extract_overcut_rows`).
+        Each row must follow the ``(type, x, y, z, …)`` layout described
+        in :mod:`rayforge.core.geo.constants`.
+
+        Args:
+            rows: An (N, 8) float64 array of command rows.
+        """
+        if rows is None or len(rows) == 0:
+            return
+        self._sync_to_numpy()
+        if self._data is None:
+            self._data = rows.copy()
+        else:
+            self._data = np.vstack((self._data, rows))
+
     def move_to(self, x: float, y: float, z: float = 0.0) -> None:
         """
         Adds a move command to the geometry, starting a new subpath.
