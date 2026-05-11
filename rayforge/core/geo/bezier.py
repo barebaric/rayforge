@@ -349,21 +349,22 @@ def linearize_bezier(
         return []
 
     points_np = np.array([p0, c1, c2, p1])
-    t_values = np.linspace(0, 1, num_steps + 1)
+    t = np.linspace(0, 1, num_steps + 1)
+    t3 = t ** 3
+    t2 = t ** 2
+    s = 1 - t
+    s3 = s ** 3
+    s2 = s ** 2
 
-    interpolated_points_np = np.array(
-        [
-            (1 - t) ** 3 * points_np[0]
-            + 3 * (1 - t) ** 2 * t * points_np[1]
-            + 3 * (1 - t) * t**2 * points_np[2]
-            + t**3 * points_np[3]
-            for t in t_values
-        ]
+    interp = (
+        s3[:, None] * points_np[0]
+        + (3 * s2 * t)[:, None] * points_np[1]
+        + (3 * s * t2)[:, None] * points_np[2]
+        + t3[:, None] * points_np[3]
     )
-    interpolated_points = [tuple(p) for p in interpolated_points_np]
 
     return [
-        (interpolated_points[i], interpolated_points[i + 1])
+        (tuple(interp[i]), tuple(interp[i + 1]))
         for i in range(num_steps)
     ]
 
