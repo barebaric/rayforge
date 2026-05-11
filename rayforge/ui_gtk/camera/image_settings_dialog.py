@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple
 from gettext import gettext as _
 from gi.repository import Gtk, Adw
 from ...camera.controller import CameraController
+from ..shared.adwfix import get_spinrow_int
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.slider import create_slider_row
 from .display_widget import CameraDisplay
@@ -24,6 +25,9 @@ class CameraImageSettingsDialog(PatchedDialogWindow):
         )
         self.controller = controller
         self.camera = controller.config
+
+        # Guard to prevent signal loops when updating UI programmatically
+        self._updating_ui = False
 
         self._setup_ui()
 
@@ -83,6 +87,10 @@ class CameraImageSettingsDialog(PatchedDialogWindow):
             self._resolution_values.append((w, h))
             resolution_labels.append(f"{w} × {h}")
 
+        # Add custom resolution option
+        self._resolution_values.append((-1, -1))
+        resolution_labels.append(_("Custom..."))
+
         self.resolution_store = Gtk.StringList.new(resolution_labels)
         self.resolution_row = Adw.ComboRow(
             title=_("Resolution"),
@@ -92,11 +100,40 @@ class CameraImageSettingsDialog(PatchedDialogWindow):
             ),
             model=self.resolution_store,
         )
-        self._sync_resolution_selection()
         self.resolution_row.connect(
             "notify::selected", self._on_resolution_changed
         )
         image_group.add(self.resolution_row)
+
+        # Custom Resolution Inputs (Hidden by default)
+        self.custom_width_row = Adw.SpinRow(
+            title=_("Custom Width"),
+            adjustment=Gtk.Adjustment(
+                value=1920, lower=16, upper=16384, step_increment=1
+            ),
+            numeric=True,
+            visible=False,
+        )
+        self.custom_width_row.connect(
+            "notify::value", self._on_custom_res_changed
+        )
+        image_group.add(self.custom_width_row)
+
+        self.custom_height_row = Adw.SpinRow(
+            title=_("Custom Height"),
+            adjustment=Gtk.Adjustment(
+                value=1080, lower=16, upper=16384, step_increment=1
+            ),
+            numeric=True,
+            visible=False,
+        )
+        self.custom_height_row.connect(
+            "notify::value", self._on_custom_res_changed
+        )
+        image_group.add(self.custom_height_row)
+
+        # Apply current resolution selection after widgets exist
+        self._sync_resolution_selection()
 
         self.yuyv_row = Adw.ActionRow(
             title=_("Prefer YUYV Format"),
@@ -268,30 +305,76 @@ class CameraImageSettingsDialog(PatchedDialogWindow):
             row.set_value(getattr(camera, key))
 
     def _on_resolution_changed(self, combo_row, pspec):
+        if self._updating_ui:
+            return
+
         idx = combo_row.get_selected()
         if 0 <= idx < len(self._resolution_values):
-            self.camera.resolution = self._resolution_values[idx]
+            val = self._resolution_values[idx]
+
+            if val == (-1, -1):
+                # Custom Selected
+                self.custom_width_row.set_visible(True)
+                self.custom_height_row.set_visible(True)
+
+                w = get_spinrow_int(self.custom_width_row)
+                h = get_spinrow_int(self.custom_height_row)
+                self.camera.resolution = (w, h)
+            else:
+                # Standard Selected
+                self.custom_width_row.set_visible(False)
+                self.custom_height_row.set_visible(False)
+                self.camera.resolution = val
+
+    def _on_custom_res_changed(self, spin_row, pspec):
+        if self._updating_ui:
+            return
+
+        idx = self.resolution_row.get_selected()
+        if 0 <= idx < len(self._resolution_values):
+            if self._resolution_values[idx] == (-1, -1):
+                w = get_spinrow_int(self.custom_width_row)
+                h = get_spinrow_int(self.custom_height_row)
+                self.camera.resolution = (w, h)
 
     def _on_resolutions_probed(self, controller):
         self._resolution_values = [None]
         labels = [_("Default")]
+
         for w, h in controller.available_resolutions:
             self._resolution_values.append((w, h))
             labels.append(f"{w} × {h}")
+
+        self._resolution_values.append((-1, -1))
+        labels.append(_("Custom..."))
+
         self.resolution_store = Gtk.StringList.new(labels)
         self.resolution_row.set_model(self.resolution_store)
         self._sync_resolution_selection()
 
     def _sync_resolution_selection(self):
-        if self.camera.resolution is None:
-            self.resolution_row.set_selected(0)
-        else:
+        self._updating_ui = True
+        try:
             res = self.camera.resolution
-            try:
+            if res is None:
+                self.resolution_row.set_selected(0)
+                self.custom_width_row.set_visible(False)
+                self.custom_height_row.set_visible(False)
+            elif res in self._resolution_values:
                 idx = self._resolution_values.index(res)
                 self.resolution_row.set_selected(idx)
-            except ValueError:
-                self.resolution_row.set_selected(0)
+                self.custom_width_row.set_visible(False)
+                self.custom_height_row.set_visible(False)
+            else:
+                # It's a custom resolution not found in the probed list
+                idx = self._resolution_values.index((-1, -1))
+                self.resolution_row.set_selected(idx)
+                self.custom_width_row.set_value(res[0])
+                self.custom_height_row.set_value(res[1])
+                self.custom_width_row.set_visible(True)
+                self.custom_height_row.set_visible(True)
+        finally:
+            self._updating_ui = False
 
     def _create_slider_row(
         self,
