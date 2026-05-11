@@ -2,6 +2,7 @@ from typing import Any, List, Tuple, TYPE_CHECKING, Optional
 from ...core.geo import Geometry
 from ...shared.tasker.progress import CallbackProgressContext
 from ...shared.tasker.proxy import ExecutionContextProxy
+from ...shared.util.profile import profile_if_enabled
 from ..artifact.store import ArtifactStore
 from .workpiece_compute import compute_workpiece_artifact
 
@@ -114,19 +115,20 @@ def make_workpiece_artifact_in_subprocess(
             )
             artifact_store.release(chunk_handle)
 
-    final_artifact = compute_workpiece_artifact(
-        workpiece=workpiece,
-        opsproducer=opsproducer,
-        laser=laser,
-        transformers=opstransformers,
-        settings=settings,
-        pixels_per_mm=pixels_per_mm,
-        generation_size=generation_size,
-        generation_id=generation_id,
-        on_chunk=on_chunk_callback,
-        context=context,
-        stock_geometries=stock_geometries,
-    )
+    with profile_if_enabled("workpiece", generation_id):
+        final_artifact = compute_workpiece_artifact(
+            workpiece=workpiece,
+            opsproducer=opsproducer,
+            laser=laser,
+            transformers=opstransformers,
+            settings=settings,
+            pixels_per_mm=pixels_per_mm,
+            generation_size=generation_size,
+            generation_id=generation_id,
+            on_chunk=on_chunk_callback,
+            context=context,
+            stock_geometries=stock_geometries,
+        )
 
     if final_artifact is None:
         # If no artifact was produced (e.g., empty image), just return.
