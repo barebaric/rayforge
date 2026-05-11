@@ -398,4 +398,4 @@ Alguns atalhos menos conhecidos:
 - [Janela Principal](../ui/main-window) - Visão geral da UI
 - [Ferramentas da Tela](../ui/canvas-tools) - Interação com a tela
 - [Visualização 3D](../ui/3d-preview) - Controles de visão 3D
-- [Modo Simulação](../features/simulation-mode) - Recursos de simulação
+

@@ -256,7 +256,7 @@ Las operaciones de Envoltura Contraída soportan varias opciones de post-procesa
 
 - Verifica que el límite no se superponga con las partes
 - Verifica que el desplazamiento sea suficiente
-- Previsualiza en [Modo Simulación](../simulation-mode)
+- Previsualiza en [Vista Previa 3D](../ui/3d-preview)
 - Prueba en desecho primero
 
 **Busca:**
@@ -301,7 +301,7 @@ Envoltura contraída dentro de un límite más grande:
 Antes de la tanda de producción:
 
 1. Crear envoltura contraída
-2. Previsualizar con [Modo Simulación](../simulation-mode)
+2. Previsualizar con [Vista Previa 3D](../ui/3d-preview)
 3. Verificar que la holgura es adecuada
 4. Revisar que ninguna parte esté intersectada
 5. Ejecutar prueba en material de desecho
@@ -370,5 +370,5 @@ La trayectoria del límite se optimiza para:
 - **[Corte de Contorno](contour)** - Cortar contornos de objetos individuales
 - **[Flujo de Trabajo Multi-Capa](../multi-layer)** - Combinando operaciones efectivamente
 - **[Pestañas de Sujeción](../holding-tabs)** - Mantener partes aseguradas durante el corte
-- **[Modo Simulación](../simulation-mode)** - Previsualizando trayectorias de corte
+- **[Vista Previa 3D](../ui/3d-preview)** - Previsualizando trayectorias de corte
 - **[Cuadrícula de Prueba de Materiales](material-test-grid)** - Encontrar ajustes de corte óptimos

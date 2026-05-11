@@ -112,7 +112,7 @@ place during engraving.
 
 - [Operations](./operations/contour) - Operation types for layer
   workflows
-- [Simulation Mode](./simulation-mode) - Preview multi-layer execution
+
 - [Macros & Hooks](../machine/hooks-macros) - Layer-level hooks for
   automation
 - [3D Preview](../ui/3d-preview) - Visualize layer stack

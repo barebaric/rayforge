@@ -125,4 +125,4 @@ máquina atualmente selecionada e seu dialeto G-code.
 - [Formatos Suportados](formats) - Detalhes de formatos de arquivo
 - [Dialeto G-code](../reference/gcode-dialects) - Diferenças de dialeto
 - [Hooks & Macros](../machine/hooks-macros) - Personalizando a saída
-- [Modo de Simulação](../features/simulation-mode) - Visualizar antes de exportar
+- [Visualização 3D](../ui/3d-preview) - Visualizar antes de exportar

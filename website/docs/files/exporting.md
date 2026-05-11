@@ -130,4 +130,4 @@ the currently selected machine and its G-code dialect.
 - [Supported Formats](formats) - File format details
 - [G-code Dialects](../reference/gcode-dialects) - Dialect differences
 - [Hooks & Macros](../machine/hooks-macros) - Customizing output
-- [Simulation Mode](../features/simulation-mode) - Preview before export
+- [3D Preview](../ui/3d-preview) - Preview before export

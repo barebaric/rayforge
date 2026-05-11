@@ -162,7 +162,7 @@ Una vez alineada, la superposición de cámara ayuda a posicionar trabajos con p
    - Rota/escala según sea necesario
 
 4. **Previsualiza la alineación:**
-   - Usa el [Modo Simulación](../features/simulation-mode) para visualizar
+   - Usa la [Vista Previa 3D](../ui/3d-preview) para visualizar
    - Verifica que cortes/grabados estén donde esperas
 
 5. **Enmarca el trabajo** para verificar el posicionamiento antes de ejecutar
@@ -368,7 +368,7 @@ sudo lsof /dev/video0
 
 ## Páginas Relacionadas
 
-- [Modo Simulación](../features/simulation-mode) - Previsualizar ejecución con superposición de cámara
+
 - [Vista Previa 3D](../ui/3d-preview) - Visualizar trabajos en 3D
 - [Enmarcando Trabajos](../features/framing-your-job) - Verificar posición del trabajo
 - [Ajustes Generales](general) - Configuración de máquina

@@ -124,8 +124,7 @@ durante el grabado.
 
 - [Operaciones](./operations/contour) - Tipos de operaciones para
   flujos de trabajo por capa
-- [Modo de simulación](./simulation-mode) - Vista previa de ejecución
-  multicapa
+
 - [Macros y Hooks](../machine/hooks-macros) - Hooks a nivel de capa
   para automatización
 - [Vista previa 3D](../ui/3d-preview) - Visualizar la pila de capas

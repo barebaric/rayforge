@@ -169,7 +169,7 @@ Once aligned, the camera overlay helps position jobs accurately.
    - Rotate/scale as needed
 
 4. **Preview the alignment:**
-   - Use the [Simulation Mode](../features/simulation-mode) to visualize
+   - Use the [3D Preview](../ui/3d-preview) to visualize
    - Check that cuts/engravings will be where you expect
 
 5. **Frame the job** to verify positioning before running
@@ -373,7 +373,7 @@ sudo lsof /dev/video0
 
 ## Related Pages
 
-- [Simulation Mode](../features/simulation-mode) - Preview execution with camera overlay
+- [3D Preview](../ui/3d-preview) - Preview execution with camera overlay
 - [3D Preview](../ui/3d-preview) - Visualize jobs in 3D
 - [Framing Jobs](../features/framing-your-job) - Verify job position
 - [General Settings](general) - Machine configuration

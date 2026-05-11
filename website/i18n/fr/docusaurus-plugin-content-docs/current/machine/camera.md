@@ -162,7 +162,7 @@ Une fois alignée, la superposition caméra aide à positionner les travaux avec
    - Fais pivoter/mets à l'échelle si nécessaire
 
 4. **Prévisualise l'alignement :**
-   - Utilise le [Mode Simulation](../features/simulation-mode) pour visualiser
+   - Utilise la [Vue 3D](../ui/3d-preview) pour visualiser
    - Vérifie que les coupes/gravures seront où tu les attends
 
 5. **Cadre le travail** pour vérifier le positionnement avant d'exécuter
@@ -366,7 +366,7 @@ sudo lsof /dev/video0
 
 ## Pages Connexes
 
-- [Mode Simulation](../features/simulation-mode) - Prévisualiser l'exécution avec superposition caméra
+
 - [Vue 3D](../ui/3d-preview) - Visualiser les travaux en 3D
 - [Cadrer les Travaux](../features/framing-your-job) - Vérifier la position du travail
 - [Paramètres Généraux](general) - Configuration de la machine

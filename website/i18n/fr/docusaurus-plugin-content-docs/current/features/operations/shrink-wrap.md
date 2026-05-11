@@ -252,7 +252,7 @@ Les opérations Shrink Wrap supportent plusieurs options de post-traitement :
 
 - Vérifiez que la limite ne chevauche pas les pièces
 - Vérifiez que le décalage est suffisant
-- Prévisualisez en [Mode Simulation](../simulation-mode)
+- Prévisualisez en [Aperçu 3D](../ui/3d-preview)
 - Testez sur du rebut d'abord
 
 **Surveillez :**
@@ -297,7 +297,7 @@ Shrink wrap à l'intérieur d'une limite plus grande :
 Avant la production :
 
 1. Créez un shrink wrap
-2. Prévisualisez avec [Mode Simulation](../simulation-mode)
+2. Prévisualisez avec [Aperçu 3D](../ui/3d-preview)
 3. Vérifiez que le dégagement est adéquat
 4. Vérifiez qu'aucune pièce n'est intersectée
 5. Exécutez le test sur matériau de rebut
@@ -366,5 +366,5 @@ Le parcours de limite est optimisé pour :
 - **[Coupe de Contour](contour)** - Couper les contours d'objets individuels
 - **[Flux de Travail Multi-Couches](../multi-layer)** - Combiner efficacement les opérations
 - **[Ponts de Maintien](../holding-tabs)** - Maintenir les pièces sécurisées pendant la coupe
-- **[Mode Simulation](../simulation-mode)** - Prévisualiser les parcours de coupe
+- **[Aperçu 3D](../ui/3d-preview)** - Prévisualiser les parcours de coupe
 - **[Grille de Test de Matériau](material-test-grid)** - Trouver les paramètres de coupe optimaux

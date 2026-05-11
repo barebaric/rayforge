@@ -217,5 +217,5 @@ Der Grenzpfad wird optimiert für:
 - **[Kontur-Schneiden](contour)** - Individuelle Objektumrisse schneiden
 - **[Mehrschicht-Workflow](../multi-layer)** - Operationen effektiv kombinieren
 - **[Halte-Laschen](../holding-tabs)** - Teile während des Schneidens sichern
-- **[Simulationsmodus](../simulation-mode)** - Schneidepfade vorschauen
+- **[3D-Vorschau](../ui/3d-preview)** - Schneidepfade vorschauen
 - **[Materialtest-Raster](material-test-grid)** - Optimale Schneideeinstellungen finden

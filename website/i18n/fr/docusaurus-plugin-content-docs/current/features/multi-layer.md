@@ -127,8 +127,7 @@ pendant la gravure.
 
 - [Opérations](./operations/contour) - Types d'opérations pour les
   flux de travail par calque
-- [Mode simulation](./simulation-mode) - Aperçu de l'exécution
-  multi-calques
+
 - [Macros et Hooks](../machine/hooks-macros) - Hooks au niveau du
   calque pour l'automatisation
 - [Navigateur d'actifs](../ui/bottom-panel) - Gérer les actifs avec les menus contextuels

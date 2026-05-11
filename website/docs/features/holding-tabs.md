@@ -176,4 +176,4 @@ Toggle tabs on/off without deleting them:
 - [Contour Cutting](operations/contour) - Primary operation that uses tabs
 - [Multi-Layer Workflow](multi-layer) - Managing tabs across multiple layers
 - [3D Preview](../ui/3d-preview) - Visualizing tabs in preview
-- [Simulation Mode](simulation-mode) - Previewing cuts with tab gaps
+

@@ -122,4 +122,4 @@ Das genaue Format, die Befehle, numerische Präzision usw. hängen von den Einst
 - [Unterstützte Formate](formats) - Dateiformat-Details
 - [G-Code-Dialekte](../reference/gcode-dialects) - Dialekt-Unterschiede
 - [Hooks & Makros](../machine/hooks-macros) - Ausgabe anpassen
-- [Simulationsmodus](../features/simulation-mode) - Vor dem Export voranschauen
+- [3D-Vorschau](../ui/3d-preview) - Vor dem Export voranschauen
