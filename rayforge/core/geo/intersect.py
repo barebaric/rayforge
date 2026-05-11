@@ -16,6 +16,8 @@ from .constants import (
 from .primitives import line_segment_intersection
 from .types import Point3D
 
+_DRAW_CMDS = (CMD_TYPE_LINE, CMD_TYPE_ARC, CMD_TYPE_BEZIER)
+
 
 def _get_segments_for_row(
     data: np.ndarray, index: int
@@ -41,6 +43,22 @@ def _get_segments_for_row(
     return []
 
 
+def _precompute_row_segments(data: np.ndarray):
+    rows = []
+    for i in range(len(data)):
+        if data[i, COL_TYPE] not in _DRAW_CMDS:
+            continue
+        segments = _get_segments_for_row(data, i)
+        if not segments:
+            continue
+        all_x = [c for p1, p2 in segments for c in (p1[0], p2[0])]
+        all_y = [c for p1, p2 in segments for c in (p1[1], p2[1])]
+        rows.append(
+            (i, segments, (min(all_x), min(all_y), max(all_x), max(all_y)))
+        )
+    return rows
+
+
 def _data_intersect(
     data1: np.ndarray,
     data2: np.ndarray,
@@ -48,24 +66,26 @@ def _data_intersect(
     fail_on_t_junction: bool = False,
 ) -> bool:
     """Core logic to check for intersections between two numpy data arrays."""
-    for i in range(len(data1)):
-        cmd_type1 = data1[i, COL_TYPE]
-        if cmd_type1 not in (CMD_TYPE_LINE, CMD_TYPE_ARC, CMD_TYPE_BEZIER):
-            continue
+    rows1 = _precompute_row_segments(data1)
+    rows2 = _precompute_row_segments(data2)
 
-        start_idx_j = i + 1 if is_self_check else 0
-        for j in range(start_idx_j, len(data2)):
-            cmd_type2 = data2[j, COL_TYPE]
-            if cmd_type2 not in (CMD_TYPE_LINE, CMD_TYPE_ARC, CMD_TYPE_BEZIER):
+    for idx1, (i, segments1, bb1) in enumerate(rows1):
+        for idx2, (j, segments2, bb2) in enumerate(rows2):
+            if is_self_check and j <= i:
                 continue
 
-            segments1 = _get_segments_for_row(data1, i)
-            segments2 = _get_segments_for_row(data2, j)
+            if bb1[2] < bb2[0] or bb1[0] > bb2[2]:
+                continue
+            if bb1[3] < bb2[1] or bb1[1] > bb2[3]:
+                continue
 
             for seg1_p1, seg1_p2 in segments1:
                 for seg2_p1, seg2_p2 in segments2:
                     intersection = line_segment_intersection(
-                        seg1_p1[:2], seg1_p2[:2], seg2_p1[:2], seg2_p2[:2]
+                        seg1_p1[:2],
+                        seg1_p2[:2],
+                        seg2_p1[:2],
+                        seg2_p2[:2],
                     )
 
                     if intersection:

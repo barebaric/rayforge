@@ -211,6 +211,7 @@ def _two_opt_workpieces(
     iter_count = 0
     improved = True
     context.set_total(max_iter)
+    _hypot = math.hypot
 
     while improved and iter_count < max_iter:
         if context.is_cancelled():
@@ -230,15 +231,21 @@ def _two_opt_workpieces(
                 if j < n - 1:
                     f_entry = ordered[j + 1].entry_point
 
-                    curr_cost = _dist_2d(a_exit, b_entry) + _dist_2d(
-                        e_exit, f_entry
-                    )
-                    new_cost = _dist_2d(a_exit, e_exit) + _dist_2d(
-                        b_entry, f_entry
+                    curr_cost = _hypot(
+                        a_exit[0] - b_entry[0], a_exit[1] - b_entry[1]
+                    ) + _hypot(e_exit[0] - f_entry[0], e_exit[1] - f_entry[1])
+                    new_cost = _hypot(
+                        a_exit[0] - e_exit[0], a_exit[1] - e_exit[1]
+                    ) + _hypot(
+                        b_entry[0] - f_entry[0], b_entry[1] - f_entry[1]
                     )
                 else:
-                    curr_cost = _dist_2d(a_exit, b_entry)
-                    new_cost = _dist_2d(a_exit, e_exit)
+                    curr_cost = _hypot(
+                        a_exit[0] - b_entry[0], a_exit[1] - b_entry[1]
+                    )
+                    new_cost = _hypot(
+                        a_exit[0] - e_exit[0], a_exit[1] - e_exit[1]
+                    )
 
                 if new_cost < curr_cost:
                     sub = ordered[i + 1 : j + 1]
@@ -554,6 +561,7 @@ def two_opt(
     iter_count = 0
     improved = True
     context.set_total(max_iter)
+    _hypot = math.hypot
 
     while improved and iter_count < max_iter:
         if context.is_cancelled():
@@ -573,21 +581,19 @@ def two_opt(
                 if j < n - 1:
                     f_start = ordered[j + 1][0].end
 
-                    # Current path:
-                    # ... -> A_end -> B_start -> ... -> E_end -> F_start -> ...
-                    curr_cost = _dist_2d(a_end, b_start) + _dist_2d(
-                        e_end, f_start
-                    )
-
-                    # New path:
-                    # ... -> A_end -> E_end -> ... -> B_start -> F_start -> ...
-                    new_cost = _dist_2d(a_end, e_end) + _dist_2d(
-                        b_start, f_start
+                    curr_cost = _hypot(
+                        a_end[0] - b_start[0], a_end[1] - b_start[1]
+                    ) + _hypot(e_end[0] - f_start[0], e_end[1] - f_start[1])
+                    new_cost = _hypot(
+                        a_end[0] - e_end[0], a_end[1] - e_end[1]
+                    ) + _hypot(
+                        b_start[0] - f_start[0], b_start[1] - f_start[1]
                     )
                 else:
-                    # J is the last segment
-                    curr_cost = _dist_2d(a_end, b_start)
-                    new_cost = _dist_2d(a_end, e_end)
+                    curr_cost = _hypot(
+                        a_end[0] - b_start[0], a_end[1] - b_start[1]
+                    )
+                    new_cost = _hypot(a_end[0] - e_end[0], a_end[1] - e_end[1])
 
                 if new_cost < curr_cost:
                     # Decision made. Now perform the mutation.
