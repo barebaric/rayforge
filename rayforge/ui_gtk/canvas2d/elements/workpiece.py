@@ -563,6 +563,11 @@ class WorkPieceElement(CanvasElement):
             self._composited_dirty = False
             return
 
+        # Effective PPM after capping surface dimensions
+        eff_ppm = (
+            comp_w_px / composite_w_mm if composite_w_mm > 1e-9 else ppm
+        )
+
         if (
             self._composited_data is not None
             and self._composited_data.shape == (comp_h_px, comp_w_px, 4)
@@ -602,11 +607,11 @@ class WorkPieceElement(CanvasElement):
             )
             if step_ppm_x <= 0 or step_ppm_y <= 0:
                 continue
-            dest_x = (vx - OPS_MARGIN_PX / step_ppm_x - union_x) * ppm
-            dest_y = (vy - OPS_MARGIN_PX / step_ppm_y - union_y) * ppm
+            dest_x = (vx - OPS_MARGIN_PX / step_ppm_x - union_x) * eff_ppm
+            dest_y = (vy - OPS_MARGIN_PX / step_ppm_y - union_y) * eff_ppm
             comp_ctx.save()
             comp_ctx.translate(dest_x, dest_y)
-            scale_factor = ppm / step_ppm_x
+            scale_factor = eff_ppm / step_ppm_x
             comp_ctx.scale(scale_factor, scale_factor)
             comp_ctx.set_source_surface(surf, 0, 0)
             comp_ctx.paint()
