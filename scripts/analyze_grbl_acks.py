@@ -4,6 +4,9 @@
 Reads a rayforge session log and tracks the send/ack lifecycle of every
 gcode command, reporting which ones were never acknowledged by GRBL.
 
+Requires logs produced by rayforge >= 0.9 (where ack lines include
+the command text via ``PendingCommand.command``).
+
 Usage:
     python analyze_grbl_acks.py <logfile>
 """
@@ -18,11 +21,19 @@ from dataclasses import dataclass, field
 class PendingCmd:
     line: int
     timestamp: str
-    command: str
+    raw_command: str
     byte_len: int
     acked: bool = False
     ack_line: int | None = None
     ack_timestamp: str | None = None
+    interactive: bool = False
+    cancelled: bool = False
+
+    @property
+    def display(self):
+        return self.raw_command.replace("\\n", "").replace(
+            "\\r", ""
+        ).strip()
 
 
 @dataclass
@@ -51,15 +62,36 @@ RE_TX_RAW = re.compile(
     rf"^{RE_TS}.*\[RAW_IO\].*TX: b'(.+?)'"
     r" \(buf: (\d+)/(\d+)\)"
 )
+RE_TX_RAW_NOBUF = re.compile(
+    rf"^{RE_TS}.*\[RAW_IO\].*TX: b'(.+?)'$"
+)
 RE_PROCESSED_OK = re.compile(
     rf"^{RE_TS}.*Processed 'ok', freed (\d+) bytes"
+    r" for '(.+?)'"
     r" \(buf: (\d+)/(\d+)"
 )
-RE_ERROR = re.compile(rf"^{RE_TS}.*Extracted 'error:(\d+)' from raw buffer")
-RE_STATUS_POLL = re.compile(rf"^{RE_TS}.*STATUS_POLL.*- (<.+>)")
+RE_BUFFER_ACK = re.compile(
+    rf"^{RE_TS}.*Buffer ack: freeing (\d+) bytes for '(.+?)'"
+)
+RE_ERROR = re.compile(
+    rf"^{RE_TS}.*Extracted 'error:(\d+)' from raw buffer"
+)
 RE_TIMEOUT = re.compile(rf"^{RE_TS}.*Timeout waiting for buffer space")
+RE_QUEUE_CLEARED = re.compile(
+    r"Command queue cleared after cancel"
+    r"|Deadlock recovery: sending"
+)
 RE_JOB_START = re.compile(r"Starting job")
 RE_JOB_END = re.compile(r"_job_running = False|G-code streaming finished")
+
+
+def _payload_bytes(payload: str) -> int:
+    return len(payload.encode().decode("unicode_escape"))
+
+
+def _is_realtime(payload: str) -> bool:
+    stripped = payload.replace("\\n", "").replace("\\r", "").strip()
+    return stripped in ("?", "~", "!", "\x18")
 
 
 def parse(path: str) -> Report:
@@ -71,7 +103,6 @@ def parse(path: str) -> Report:
 
             m = RE_USER_CMD.match(line)
             if m:
-                ts = m.group(1)
                 r.job_start_line = r.job_start_line or lineno
                 continue
 
@@ -83,17 +114,30 @@ def parse(path: str) -> Report:
                     int(m.group(3)),
                     int(m.group(4)),
                 )
-                display = payload.replace("\\n", "").replace("\\r", "")
-                stripped = display.strip()
                 r.buf_tracking.append((lineno, ts, used, total))
-                if stripped in ("?", "~", "!", "\x18"):
+                if _is_realtime(payload):
                     continue
-                cmd_bytes = len(payload.encode().decode("unicode_escape"))
                 p = PendingCmd(
                     line=lineno,
                     timestamp=ts,
-                    command=display,
-                    byte_len=cmd_bytes,
+                    raw_command=payload,
+                    byte_len=_payload_bytes(payload),
+                )
+                r.pending.append(p)
+                r.all_cmds.append(p)
+                continue
+
+            m = RE_TX_RAW_NOBUF.match(line)
+            if m:
+                ts, payload = m.group(1), m.group(2)
+                if _is_realtime(payload):
+                    continue
+                p = PendingCmd(
+                    line=lineno,
+                    timestamp=ts,
+                    raw_command=payload,
+                    byte_len=_payload_bytes(payload),
+                    interactive=True,
                 )
                 r.pending.append(p)
                 r.all_cmds.append(p)
@@ -101,21 +145,29 @@ def parse(path: str) -> Report:
 
             m = RE_PROCESSED_OK.match(line)
             if m:
-                ts, freed, used, total = (
-                    m.group(1),
-                    int(m.group(2)),
-                    int(m.group(3)),
-                    int(m.group(4)),
-                )
+                ts = m.group(1)
+                freed = int(m.group(2))
+                ack_cmd = m.group(3)
+                used = int(m.group(4))
+                total = int(m.group(5))
                 matched = None
                 if r.pending:
                     matched = r.pending.popleft()
+                    if ack_cmd != matched.raw_command:
+                        r.anomalies.append(
+                            f"L{lineno} {ts}: ack desync - "
+                            f"ack references {ack_cmd!r} "
+                            f"but queue head is "
+                            f"{matched.raw_command!r} "
+                            f"(L{matched.line})"
+                        )
                     matched.acked = True
                     matched.ack_line = lineno
                     matched.ack_timestamp = ts
                 else:
                     r.anomalies.append(
-                        f"L{lineno} {ts}: ok (freed {freed} bytes) "
+                        f"L{lineno} {ts}: ok for "
+                        f"{ack_cmd!r} "
                         f"but pending queue is empty"
                     )
                 ev = AckEvent(
@@ -126,6 +178,18 @@ def parse(path: str) -> Report:
                     matched_cmd=matched,
                 )
                 r.acks.append(ev)
+                continue
+
+            m = RE_BUFFER_ACK.match(line)
+            if m:
+                ts = m.group(1)
+                ack_cmd = m.group(2)
+                if not r.pending:
+                    r.anomalies.append(
+                        f"L{lineno} {ts}: buffer ack for "
+                        f"{ack_cmd!r} "
+                        f"but pending queue is empty"
+                    )
                 continue
 
             m = RE_ERROR.match(line)
@@ -141,7 +205,7 @@ def parse(path: str) -> Report:
                     r.anomalies.append(
                         f"L{lineno} {ts}: error:{err_code} "
                         f"popped unacked "
-                        f"'{leaked.command}' (L{leaked.line})"
+                        f"{leaked.raw_command!r} (L{leaked.line})"
                     )
                 continue
 
@@ -150,6 +214,10 @@ def parse(path: str) -> Report:
                 ts = m.group(1)
                 r.anomalies.append(f"L{lineno} {ts}: buffer space timeout")
 
+            if RE_QUEUE_CLEARED.search(line):
+                while r.pending:
+                    r.pending.popleft().cancelled = True
+
             if RE_JOB_END.search(line):
                 r.job_end_line = r.job_end_line or lineno
 
@@ -157,13 +225,21 @@ def parse(path: str) -> Report:
 
 
 def fmt_report(r: Report):
-    total = len(r.all_cmds)
-    acked = sum(1 for c in r.all_cmds if c.acked)
-    unacked = [c for c in r.all_cmds if not c.acked]
+    streaming = [
+        c for c in r.all_cmds if not c.interactive and not c.cancelled
+    ]
+    total = len(streaming)
+    acked = sum(1 for c in streaming if c.acked)
+    cancelled = sum(
+        1 for c in r.all_cmds if c.cancelled and not c.interactive
+    )
+    unacked = [c for c in streaming if not c.acked]
 
     print(f"Commands sent:    {total}")
     print(f"Acked (ok):       {acked}")
     print(f"Unacked:          {len(unacked)}")
+    if cancelled:
+        print(f"Cancelled:        {cancelled}")
     print()
 
     if r.anomalies:
@@ -176,7 +252,8 @@ def fmt_report(r: Report):
         print("=== Unacked Commands ===")
         for c in unacked:
             print(
-                f"  L{c.line} {c.timestamp}  {c.command}  ({c.byte_len} bytes)"
+                f"  L{c.line} {c.timestamp}  {c.display}"
+                f"  ({c.byte_len} bytes)"
             )
         print()
 
@@ -200,14 +277,18 @@ def main():
     r = parse(sys.argv[1])
     fmt_report(r)
 
-    unacked = [c for c in r.all_cmds if not c.acked]
+    unacked = [
+        c
+        for c in r.all_cmds
+        if not c.acked and not c.interactive and not c.cancelled
+    ]
     if unacked:
         print()
         print("=" * 60)
         print("COMMANDS NOT ACKNOWLEDGED BY GRBL:")
         print("=" * 60)
         for c in unacked:
-            print(f"  [{c.timestamp}] line {c.line}: {c.command}")
+            print(f"  [{c.timestamp}] line {c.line}: {c.display}")
         print(f"\n  {len(unacked)} command(s) never received an ack.")
         sys.exit(1)
 

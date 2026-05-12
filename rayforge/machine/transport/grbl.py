@@ -19,6 +19,7 @@ DEFAULT_GRBL_RX_BUFFER_SIZE = 127
 class PendingCommand(NamedTuple):
     length: int
     op_index: Optional[int]
+    command: str = ""
 
 
 class GrblResponseType(Enum):
@@ -248,7 +249,10 @@ class GrblSerialTransport:
         command_len = len(data)
         while self.needs_space(command_len):
             await self.wait_for_space()
-        self._pending.put_nowait(PendingCommand(command_len, op_index))
+        cmd_text = data.decode("ascii", "replace")
+        self._pending.put_nowait(
+            PendingCommand(command_len, op_index, cmd_text)
+        )
         count = self._add(command_len)
         await self._transport.send(data)
         return count
@@ -281,7 +285,9 @@ class GrblSerialTransport:
                     "command. Sending anyway."
                 )
                 break
-        self._pending.put_nowait(PendingCommand(command_len, None))
+        self._pending.put_nowait(
+            PendingCommand(command_len, None, data.decode("ascii", "replace"))
+        )
         count = self._add(command_len)
         await self._transport.send(data)
         return count
@@ -336,8 +342,9 @@ class GrblSerialTransport:
             return None
         logger.debug(
             f"Buffer ack: freeing {pending.length} bytes for "
-            f"op_index={pending.op_index} "
-            f"(pending queue size: {self._pending.qsize()})"
+            f"{pending.command!r} "
+            f"(op_index={pending.op_index}, "
+            f"remaining: {self._pending.qsize()})"
         )
         self._sub(pending.length)
         self._pending.task_done()

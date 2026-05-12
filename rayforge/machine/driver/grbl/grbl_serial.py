@@ -1455,6 +1455,7 @@ class GrblSerialDriver(Driver):
             assert transport is not None
             logger.debug(
                 f"Processed 'ok', freed {pending.length} bytes "
+                f"for {pending.command!r} "
                 f"(buf: {transport.buffer_count}"
                 f"/{transport._rx_buffer_size}, "
                 f"op_index={pending.op_index})"
