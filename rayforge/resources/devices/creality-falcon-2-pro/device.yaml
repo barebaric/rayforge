@@ -6,6 +6,7 @@ machine:
   driver: GrblSerialDriver
   driver_args:
     baudrate: '115200'
+    rx_buffer_size_override: 127
   gcode_precision: 3
   supports_arcs: true
   axis_extents:
