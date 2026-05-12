@@ -2286,3 +2286,87 @@ def test_transform_layers_no_layers():
 
     ops.transform_layers(record)
     assert not called
+
+
+def test_transform_moving_endpoint():
+    ops = Ops()
+    ops.move_to(10.0, 20.0, 5.0)
+    ops.line_to(30.0, 40.0, 5.0)
+
+    def flip_xy(end, extra):
+        end[0] = -end[0]
+        end[1] = -end[1]
+
+    ops.transform_moving(flip_xy)
+    cmds = list(ops.commands)
+    assert cmds[0].end == (-10.0, -20.0, 5.0)
+    assert cmds[1].end == (-30.0, -40.0, 5.0)
+
+
+def test_transform_moving_extra_axes():
+    ops = Ops()
+    ops.move_to(0.0, 0.0, extra={Axis.A: 10.0})
+    ops.line_to(10.0, 10.0, extra={Axis.A: 20.0})
+
+    def scale_a(end, extra):
+        if Axis.A in extra:
+            extra[Axis.A] = extra[Axis.A] * 2
+
+    ops.transform_moving(scale_a)
+    cmds = list(ops.commands)
+    assert cmds[0].extra_axes == {Axis.A: 20.0}
+    assert cmds[1].extra_axes == {Axis.A: 40.0}
+
+
+def test_transform_moving_arc_center():
+    ops = Ops()
+    ops.arc_to(5.0, 0.0, 2.0, 3.0)
+
+    def scale_center(pt):
+        pt[0] = pt[0] * 2
+        pt[1] = pt[1] * 2
+
+    ops.transform_moving(lambda end, extra: None, scale_center)
+    cmd = list(ops.commands)[0]
+    assert isinstance(cmd, ArcToCommand)
+    assert cmd.center_offset == (4.0, 6.0)
+
+
+def test_transform_moving_bezier_controls():
+    ops = Ops()
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.bezier_to((1.0, 2.0, 0.0), (3.0, 4.0, 0.0), (5.0, 6.0, 0.0))
+
+    def flip_y(pt):
+        pt[1] = -pt[1]
+
+    ops.transform_moving(lambda end, extra: None, flip_y)
+    cmd = list(ops.commands)[1]
+    assert isinstance(cmd, BezierToCommand)
+    assert cmd.control1 == (1.0, -2.0, 0.0)
+    assert cmd.control2 == (3.0, -4.0, 0.0)
+    assert cmd.end == (5.0, 6.0, 0.0)
+
+
+def test_transform_moving_no_aux():
+    ops = Ops()
+    ops.move_to(1.0, 2.0)
+
+    def reset(end, extra):
+        end[:] = [0.0, 0.0, 0.0]
+
+    ops.transform_moving(reset)
+    assert list(ops.commands)[0].end == (0.0, 0.0, 0.0)
+
+
+def test_transform_moving_skips_markers():
+    ops = Ops()
+    ops.layer_start("lyr1")
+    ops.move_to(5.0, 5.0)
+    ops.layer_end("lyr1")
+
+    def reset(end, extra):
+        end[:] = [0.0, 0.0, 0.0]
+
+    ops.transform_moving(reset)
+    assert list(ops.commands)[1].end == (0.0, 0.0, 0.0)

@@ -1366,6 +1366,54 @@ class Ops:
             layer_ops._commands = collected
             callback(layer_uid, layer_ops)
 
+    def transform_moving(
+        self,
+        on_endpoint: Callable[[List[float], Dict[Axis, float]], None],
+        on_aux_point: Optional[Callable[[List[float]], None]] = None,
+    ) -> None:
+        """
+        Transform all moving commands via in-place callbacks.
+
+        Iterates over every ``MovingCommand`` in this ``Ops`` object.
+        For each one, *on_endpoint* is called with the endpoint as a
+        mutable ``List[float]`` and the ``extra_axes`` dict.
+        If *on_aux_point* is provided, it is called for each auxiliary
+        geometry point:
+
+        * ``ArcToCommand`` — center_offset as ``List[float]``.
+        * ``BezierToCommand`` — control1 and control2 each as
+          ``List[float]``.
+        * ``QuadraticBezierToCommand`` — control as ``List[float]``.
+
+        Both callbacks modify their arguments in-place.  After the
+        callback returns the values are written back to the underlying
+        command.  The time cache is invalidated automatically.
+        """
+        for cmd in self._commands:
+            if not isinstance(cmd, MovingCommand):
+                continue
+
+            end = list(cmd.end)
+            on_endpoint(end, cmd.extra_axes)
+            cmd.end = (end[0], end[1], end[2])
+
+            if on_aux_point is not None:
+                if isinstance(cmd, ArcToCommand):
+                    off = list(cmd.center_offset)
+                    on_aux_point(off)
+                    cmd.center_offset = (off[0], off[1])
+                elif isinstance(cmd, BezierToCommand):
+                    for attr in ("control1", "control2"):
+                        cp = list(getattr(cmd, attr))
+                        on_aux_point(cp)
+                        setattr(cmd, attr, (cp[0], cp[1], cp[2]))
+                elif isinstance(cmd, QuadraticBezierToCommand):
+                    cp = list(cmd.control)
+                    on_aux_point(cp)
+                    cmd.control = (cp[0], cp[1], cp[2])
+
+        self._invalidate_time_cache()
+
     def linearize_all(self) -> None:
         """
         Replaces all complex commands (e.g., Arcs) with simple LineToCommands.

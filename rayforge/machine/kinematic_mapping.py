@@ -1,19 +1,11 @@
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING
 
 import numpy as np
 
-from ..core.geo.types import Point3D
 from ..core.layer import Layer
 from ..core.ops.axis import Axis
-from ..core.ops.commands import (
-    ArcToCommand,
-    BezierToCommand,
-    LayerStartCommand,
-    MovingCommand,
-    QuadraticBezierToCommand,
-)
 from ..core.ops import Ops
 from .kinematic_math import KinematicMath
 from .models.rotary_module import RotaryMode, RotaryType
@@ -24,11 +16,9 @@ if TYPE_CHECKING:
     from .models.machine import Machine
 
 
-def _resolve_rotary_layer(cmd, doc):
-    """Return the Layer if *cmd* is a LayerStartCommand with rotary enabled."""
-    if not isinstance(cmd, LayerStartCommand):
-        return None
-    descendant = doc.find_descendant_by_uid(cmd.layer_uid)
+def _resolve_rotary_layer_by_uid(layer_uid: str, doc):
+    """Return the Layer if it has rotary enabled."""
+    descendant = doc.find_descendant_by_uid(layer_uid)
     if not isinstance(descendant, Layer):
         return None
     if not descendant.rotary_module_uid or not descendant.rotary_enabled:
@@ -48,22 +38,6 @@ def _is_valid_replacement_module(module):
     if module.mu_per_rotation > 0:
         return True
     return module.axis in KinematicMapping._AXIS_TO_INDEX
-
-
-def _collect_layer_commands(commands, start):
-    """Gather non-marker commands until the next LayerStartCommand.
-
-    Returns ``(layer_cmds, new_index)`` where *new_index* points to the
-    next unprocessed command (either a LayerStartCommand or past the
-    end of *commands*).
-    """
-    layer_cmds = []
-    i = start
-    while i < len(commands) and not isinstance(commands[i], LayerStartCommand):
-        if not commands[i].is_marker():
-            layer_cmds.append(commands[i])
-        i += 1
-    return layer_cmds, i
 
 
 class KinematicMapping:
@@ -160,60 +134,35 @@ class KinematicMapping:
             reverse=self.reverse,
         )
 
-    def _cylinder_center_y(self, cmd: MovingCommand) -> float:
-        d = cmd.end[0]
-        return float(self.axis_position_3d[1] + d * self.cylinder_dir[1])
-
-    _AXIS_TO_INDEX = {Axis.X: 0, Axis.Y: 1, Axis.Z: 2}
-
-    def _null_replaced_axis(self, end: Point3D) -> Point3D:
-        if self.replaced_axis is None:
-            return end
-        idx = self._AXIS_TO_INDEX.get(self.replaced_axis)
-        if idx is None:
-            return end
-        parts = list(end)
-        parts[idx] = 0.0
-        return (parts[0], parts[1], parts[2])
+    _AXIS_TO_INDEX: Dict[Axis, int] = {
+        Axis.X: 0,
+        Axis.Y: 1,
+        Axis.Z: 2,
+    }
 
     def apply(self, ops: Ops) -> None:
-        for cmd in ops._commands:
-            if not isinstance(cmd, MovingCommand):
-                continue
+        replaced_idx = (
+            self._AXIS_TO_INDEX.get(self.replaced_axis)
+            if self.replaced_axis is not None
+            else None
+        )
 
-            src_val = cmd.end[1]
-            degrees = self._mu_to_degrees(src_val)
+        def on_endpoint(
+            end: List[float],
+            extra_axes: Dict[Axis, float],
+        ) -> None:
+            degrees = self._mu_to_degrees(end[1])
+            extra_axes[self.rotary_axis] = degrees
+            end[1] = float(
+                self.axis_position_3d[1] + end[0] * self.cylinder_dir[1]
+            )
+            if replaced_idx is not None:
+                end[replaced_idx] = 0.0
 
-            cmd.extra_axes[self.rotary_axis] = degrees
-            cmd.end = self._replace_y(cmd.end, self._cylinder_center_y(cmd))
-            cmd.end = self._null_replaced_axis(cmd.end)
+        def on_aux_point(point: List[float]) -> None:
+            point[1] = self._mu_to_degrees(point[1])
 
-            if isinstance(cmd, ArcToCommand):
-                src_offset = cmd.center_offset[1]
-                src_deg = self._mu_to_degrees(src_offset)
-                new_offset = list(cmd.center_offset)
-                new_offset[1] = src_deg
-                cmd.center_offset = (
-                    new_offset[0],
-                    new_offset[1],
-                )
-            elif isinstance(cmd, BezierToCommand):
-                for attr in ("control1", "control2"):
-                    cp = list(getattr(cmd, attr))
-                    cp_deg = self._mu_to_degrees(cp[1])
-                    cp[1] = cp_deg
-                    setattr(cmd, attr, tuple(cp))
-            elif isinstance(cmd, QuadraticBezierToCommand):
-                cp = list(cmd.control)
-                cp_deg = self._mu_to_degrees(cp[1])
-                cp[1] = cp_deg
-                cmd.control = (cp[0], cp[1], cp[2])
-
-    @staticmethod
-    def _replace_y(end: Point3D, value: float) -> Point3D:
-        parts = list(end)
-        parts[1] = value
-        return (parts[0], parts[1], parts[2])
+        ops.transform_moving(on_endpoint, on_aux_point)
 
     @staticmethod
     def apply_to_job_ops(
@@ -254,107 +203,62 @@ class KinematicMapping:
                 the object geometry directly, without the roller
                 encoding.
         """
-        commands = ops._commands
-        i = 0
-        while i < len(commands):
-            cmd = commands[i]
-            if not isinstance(cmd, LayerStartCommand):
-                i += 1
-                continue
 
-            layer = _resolve_rotary_layer(cmd, doc)
+        def _on_layer(layer_uid: str, layer_ops: Ops) -> None:
+            layer = _resolve_rotary_layer_by_uid(layer_uid, doc)
             if layer is None:
-                i += 1
-                continue
-
+                return
             module = machine.rotary_modules.get(layer.rotary_module_uid or "")
-            if module is None:
-                i += 1
-                continue
-
-            if not _is_valid_replacement_module(module):
-                i += 1
-                continue
-
+            if module is None or not _is_valid_replacement_module(module):
+                return
             mapping = KinematicMapping.from_rotary_module(
                 module,
                 layer.rotary_diameter,
                 apply_gear_ratio=apply_gear_ratio,
             )
             if mapping is None:
-                i += 1
-                continue
-
-            layer_cmds, i = _collect_layer_commands(commands, i + 1)
-
-            layer_ops = Ops()
-            layer_ops._commands = layer_cmds
+                return
             mapping.apply(layer_ops)
-
             if apply_scaled_mu and module.mode == RotaryMode.AXIS_REPLACEMENT:
                 KinematicMapping.degrees_to_scaled_mu_pass(
-                    layer_cmds,
+                    layer_ops,
                     module.mu_per_rotation,
                     target_axis=module.axis,
                 )
 
+        ops.transform_layers(_on_layer)
+
     @staticmethod
     def degrees_to_scaled_mu_pass(
-        commands: list,
+        ops: Ops,
         mu_per_rotation: float,
         target_axis: Axis = Axis.Y,
     ) -> None:
         idx = KinematicMapping._AXIS_TO_INDEX.get(target_axis, 1)
-        cp_idx = idx
         null_source = (
             target_axis != Axis.Y
             and target_axis in KinematicMapping._AXIS_TO_INDEX
         )
-        for cmd in commands:
-            if not isinstance(cmd, MovingCommand):
-                continue
-            degrees = cmd.extra_axes.pop(Axis.Y, None)
+
+        def on_endpoint(
+            end: List[float],
+            extra_axes: Dict[Axis, float],
+        ) -> None:
+            degrees = extra_axes.pop(Axis.Y, None)
             if degrees is None:
-                continue
-            scaled = KinematicMath.degrees_to_scaled_mu(
+                return
+            end[idx] = KinematicMath.degrees_to_scaled_mu(
                 degrees, mu_per_rotation
             )
-            end = list(cmd.end)
-            end[idx] = scaled
             if null_source:
                 end[1] = 0.0
-            cmd.end = (end[0], end[1], end[2])
 
-            if isinstance(cmd, ArcToCommand):
-                if cp_idx < len(cmd.center_offset):
-                    cp_deg = cmd.center_offset[cp_idx]
-                    cp_scaled = KinematicMath.degrees_to_scaled_mu(
-                        cp_deg, mu_per_rotation
-                    )
-                    new_offset = list(cmd.center_offset)
-                    new_offset[cp_idx] = cp_scaled
-                    if null_source:
-                        new_offset[1] = 0.0
-                    cmd.center_offset = (
-                        new_offset[0],
-                        new_offset[1],
-                    )
-            elif isinstance(cmd, BezierToCommand):
-                for attr in ("control1", "control2"):
-                    cp = list(getattr(cmd, attr))
-                    cp_scaled = KinematicMath.degrees_to_scaled_mu(
-                        cp[cp_idx], mu_per_rotation
-                    )
-                    cp[cp_idx] = cp_scaled
-                    if null_source:
-                        cp[1] = 0.0
-                    setattr(cmd, attr, tuple(cp))
-            elif isinstance(cmd, QuadraticBezierToCommand):
-                cp = list(cmd.control)
-                cp_scaled = KinematicMath.degrees_to_scaled_mu(
-                    cp[cp_idx], mu_per_rotation
+        def on_aux_point(point: List[float]) -> None:
+            if idx < len(point):
+                point[idx] = KinematicMath.degrees_to_scaled_mu(
+                    point[idx], mu_per_rotation
                 )
-                cp[cp_idx] = cp_scaled
-                if null_source:
-                    cp[1] = 0.0
-                cmd.control = (cp[0], cp[1], cp[2])
+            if null_source:
+                point[1] = 0.0
+
+        ops.transform_moving(on_endpoint, on_aux_point)
