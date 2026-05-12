@@ -17,9 +17,7 @@ from ...core.layer import Layer
 from ...core.model import Model
 from ...core.ops import Axis, Ops
 from ...core.ops.commands import (
-    LayerEndCommand,
     LayerStartCommand,
-    MovingCommand,
 )
 from ...pipeline.coordspace import MachineSpace
 from ...pipeline.encoder.base import EncodedOutput
@@ -1329,43 +1327,24 @@ class Machine:
     def _apply_per_layer_wcs_offset(
         self, ops: "Ops", space: "MachineSpace", doc: "Doc"
     ) -> None:
-        """Apply per-layer WCS offsets using LayerStartCommand markers."""
+        """Apply per-layer WCS offsets."""
         default_offset = self.get_active_wcs_offset()
         default_cmd_offset = space.get_command_offset(
             wcs_offset=default_offset,
             wcs_is_workarea_origin=self.wcs_origin_is_workarea_origin,
         )
 
-        current_offset = default_cmd_offset
+        layer_offsets: Dict[str, Tuple[float, float, float]] = {}
+        for layer in doc.layers:
+            effective_wcs = layer.get_effective_wcs(self)
+            wcs_off = self.get_wcs_offset(effective_wcs)
+            layer_cmd_offset = space.get_command_offset(
+                wcs_offset=wcs_off,
+                wcs_is_workarea_origin=self.wcs_origin_is_workarea_origin,
+            )
+            layer_offsets[layer.uid] = layer_cmd_offset
 
-        for command in ops.commands:
-            if isinstance(command, LayerStartCommand):
-                descendant = doc.find_descendant_by_uid(command.layer_uid)
-                if isinstance(descendant, Layer):
-                    effective_wcs = descendant.get_effective_wcs(self)
-                    wcs_off = self.get_wcs_offset(effective_wcs)
-                    current_offset = space.get_command_offset(
-                        wcs_offset=wcs_off,
-                        wcs_is_workarea_origin=(
-                            self.wcs_origin_is_workarea_origin
-                        ),
-                    )
-                continue
-
-            if isinstance(command, LayerEndCommand):
-                current_offset = default_cmd_offset
-                continue
-
-            if isinstance(command, MovingCommand):
-                x_off, y_off, z_off = current_offset
-                if x_off == 0.0 and y_off == 0.0 and z_off == 0.0:
-                    continue
-                base_end = command.end or (0.0, 0.0, 0.0)
-                command.end = (
-                    base_end[0] - x_off,
-                    base_end[1] - y_off,
-                    base_end[2] - z_off,
-                )
+        ops.translate_layers(default_cmd_offset, layer_offsets)
 
     def _apply_replacement_downstream(self, ops: "Ops", doc: "Doc") -> None:
         """Run degrees→scaled-mu downstream pass for AXIS_REPLACEMENT layers.
