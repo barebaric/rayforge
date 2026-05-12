@@ -3,8 +3,8 @@ from rayforge.core.ops import (
     MoveToCommand,
     LineToCommand,
     ArcToCommand,
-    SetPowerCommand,
 )
+from rayforge.core.ops.commands import Command
 
 
 class TestSplitIntoSubpaths:
@@ -48,7 +48,8 @@ class TestSplitIntoSubpaths:
         result = ops.split_into_subpaths()
         assert len(result) == 1
         assert len(result[0]) == 3
-        assert isinstance(result[0][1], SetPowerCommand)
+        assert isinstance(result[0][1], Command)
+        assert result[0][1].is_state_command()
 
     def test_subpath_starting_with_lineto(self):
         ops = Ops()
