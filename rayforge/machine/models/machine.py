@@ -16,9 +16,6 @@ from ...core.geo import Point3D, Rect
 from ...core.layer import Layer
 from ...core.model import Model
 from ...core.ops import Axis, Ops
-from ...core.ops.commands import (
-    LayerStartCommand,
-)
 from ...pipeline.coordspace import MachineSpace
 from ...pipeline.encoder.base import EncodedOutput
 from ...shared.tasker import task_mgr
@@ -1352,49 +1349,28 @@ class Machine:
         This is called after world→machine + WCS has been applied, so that
         the scaled-mu values are placed into already-transformed commands.
         """
-        commands = ops._commands
-        i = 0
-        while i < len(commands):
-            cmd = commands[i]
-            if not isinstance(cmd, LayerStartCommand):
-                i += 1
-                continue
 
-            descendant = doc.find_descendant_by_uid(cmd.layer_uid)
+        def _on_layer(layer_uid: str, layer_ops: Ops) -> None:
+            descendant = doc.find_descendant_by_uid(layer_uid)
             if not isinstance(descendant, Layer):
-                i += 1
-                continue
-
+                return
             if (
                 not descendant.rotary_module_uid
                 or not descendant.rotary_enabled
             ):
-                i += 1
-                continue
-
+                return
             module = self.rotary_modules.get(descendant.rotary_module_uid)
             if module is None:
-                i += 1
-                continue
-
+                return
             if module.mode != RotaryMode.AXIS_REPLACEMENT:
-                i += 1
-                continue
-
-            mu_per_rotation = module.mu_per_rotation
-
-            layer_cmds = []
-            i += 1
-            while i < len(commands) and not isinstance(
-                commands[i], LayerStartCommand
-            ):
-                if not commands[i].is_marker():
-                    layer_cmds.append(commands[i])
-                i += 1
-
+                return
             KinematicMapping.degrees_to_scaled_mu_pass(
-                layer_cmds, mu_per_rotation, target_axis=module.axis
+                layer_ops,
+                module.mu_per_rotation,
+                target_axis=module.axis,
             )
+
+        ops.transform_layers(_on_layer)
 
     def encode_ops(
         self,
