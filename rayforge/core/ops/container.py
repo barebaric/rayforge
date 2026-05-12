@@ -1,7 +1,7 @@
 from __future__ import annotations
 import math
 import logging
-from copy import copy, deepcopy
+from copy import deepcopy
 from typing import (
     Iterator,
     List,
@@ -619,9 +619,9 @@ class Ops:
         return not self._commands
 
     def copy(self) -> Ops:
-        """Creates a deep copy of the Ops object."""
+        """Creates a copy of the Ops object."""
         new_ops = Ops()
-        new_ops._commands = deepcopy(self._commands)
+        new_ops._commands = [cmd.__copy__() for cmd in self._commands]
         new_ops.last_move_to = self.last_move_to
         new_ops._time_dirty = self._time_dirty
         new_ops._cached_time = self._cached_time
@@ -640,7 +640,7 @@ class Ops:
             if cmd.is_state_command():
                 cmd.apply_to_state(state)
             elif not cmd.is_marker():
-                cmd.state = copy(state)
+                cmd.state = state.__copy__()
 
     def clear(self) -> None:
         self._commands = []

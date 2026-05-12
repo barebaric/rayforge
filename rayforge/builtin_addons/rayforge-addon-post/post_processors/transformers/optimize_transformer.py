@@ -275,24 +275,18 @@ def _split_scanline(
     contains areas of zero power (blank space). An overscanned line (with
     zero-power padding at the ends) is treated as a single segment.
     """
-    if not scan_cmd.power_values or not np.any(scan_cmd.power_values):
+    pv = scan_cmd.power_values
+    if not pv or not any(pv):
         return []
 
-    # Find contiguous "on" segments.
-    is_on = np.array(scan_cmd.power_values) > 0
+    stripped = pv.strip(b"\x00")
+    if not stripped or 0 not in stripped:
+        return [[move_cmd, scan_cmd]]
+
+    is_on = np.array(pv) > 0
     padded = np.concatenate(([False], is_on, [False]))
     diffs = np.diff(padded.astype(int))
     starts = np.where(diffs == 1)[0]
-
-    # If there's only one "on" segment, it's either a fully "on" line or an
-    # overscanned line. In either case, we treat it as a single,
-    # non-splittable segment.
-    if len(starts) <= 1:
-        # Note: len(starts) == 0 is covered by the np.any() check above,
-        # but this condition is safer.
-        return [[move_cmd, scan_cmd]]
-
-    # If we reach here, there are multiple segments that need to be created.
     ends = np.where(diffs == -1)[0]
 
     p_start = np.array(move_cmd.end)

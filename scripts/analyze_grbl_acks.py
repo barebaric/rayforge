@@ -31,9 +31,7 @@ class PendingCmd:
 
     @property
     def display(self):
-        return self.raw_command.replace("\\n", "").replace(
-            "\\r", ""
-        ).strip()
+        return self.raw_command.replace("\\n", "").replace("\\r", "").strip()
 
 
 @dataclass
@@ -62,9 +60,7 @@ RE_TX_RAW = re.compile(
     rf"^{RE_TS}.*\[RAW_IO\].*TX: b'(.+?)'"
     r" \(buf: (\d+)/(\d+)\)"
 )
-RE_TX_RAW_NOBUF = re.compile(
-    rf"^{RE_TS}.*\[RAW_IO\].*TX: b'(.+?)'$"
-)
+RE_TX_RAW_NOBUF = re.compile(rf"^{RE_TS}.*\[RAW_IO\].*TX: b'(.+?)'$")
 RE_PROCESSED_OK = re.compile(
     rf"^{RE_TS}.*Processed 'ok', freed (\d+) bytes"
     r" for '(.+?)'"
@@ -73,9 +69,7 @@ RE_PROCESSED_OK = re.compile(
 RE_BUFFER_ACK = re.compile(
     rf"^{RE_TS}.*Buffer ack: freeing (\d+) bytes for '(.+?)'"
 )
-RE_ERROR = re.compile(
-    rf"^{RE_TS}.*Extracted 'error:(\d+)' from raw buffer"
-)
+RE_ERROR = re.compile(rf"^{RE_TS}.*Extracted 'error:(\d+)' from raw buffer")
 RE_TIMEOUT = re.compile(rf"^{RE_TS}.*Timeout waiting for buffer space")
 RE_QUEUE_CLEARED = re.compile(
     r"Command queue cleared after cancel"
@@ -230,9 +224,7 @@ def fmt_report(r: Report):
     ]
     total = len(streaming)
     acked = sum(1 for c in streaming if c.acked)
-    cancelled = sum(
-        1 for c in r.all_cmds if c.cancelled and not c.interactive
-    )
+    cancelled = sum(1 for c in r.all_cmds if c.cancelled and not c.interactive)
     unacked = [c for c in streaming if not c.acked]
 
     print(f"Commands sent:    {total}")
@@ -252,8 +244,7 @@ def fmt_report(r: Report):
         print("=== Unacked Commands ===")
         for c in unacked:
             print(
-                f"  L{c.line} {c.timestamp}  {c.display}"
-                f"  ({c.byte_len} bytes)"
+                f"  L{c.line} {c.timestamp}  {c.display}  ({c.byte_len} bytes)"
             )
         print()
 
