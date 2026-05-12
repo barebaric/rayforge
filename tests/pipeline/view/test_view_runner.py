@@ -27,18 +27,15 @@ def create_test_color_set(spec: dict) -> ColorSet:
     """Creates a mock resolved ColorSet for testing without GTK."""
     resolved_data = {}
     for key, colors in spec.items():
-        # This simplified resolver just creates a basic LUT for testing
         lut = np.zeros((256, 4), dtype=np.float32)
         if key == "cut":
-            # Black to Red gradient for 'cut'
             lut[:, 0] = np.linspace(0, 1, 256)
-            lut[:, 3] = 1.0
+            lut[:, 3] = np.linspace(0, 1, 256)
         elif key == "engrave":
-            # Black to White gradient for 'engrave'
             lut[:, 0] = np.linspace(0, 1, 256)
             lut[:, 1] = np.linspace(0, 1, 256)
             lut[:, 2] = np.linspace(0, 1, 256)
-            lut[:, 3] = 1.0
+            lut[:, 3] = np.linspace(0, 1, 256)
         resolved_data[key] = lut
     return ColorSet(_data=resolved_data)
 
@@ -191,12 +188,15 @@ def test_pixel_perfect_texture_chunk_alignment(
         assert artifact.bbox_mm == (0.0, 0.0, 50.0, 50.0)
         assert artifact.bitmap_data.shape == (50, 50, 4)
 
-        # Check pixel from the top chunk (power 128 -> gray)
+        # Check pixel from the top chunk (power 128 -> full white,
+        # normalized alpha)
+        # Alpha at index 128: 128/255*0.5+0.5 ≈ 0.751 → 192
+        # Premultiplied: 255 * 192/255 = 192 per channel
         gray_pixel = artifact.bitmap_data[10, 25]
-        assert abs(gray_pixel[0] - 128) <= 1
-        assert abs(gray_pixel[1] - 128) <= 1
-        assert abs(gray_pixel[2] - 128) <= 1
-        assert abs(gray_pixel[3] - 255) <= 1
+        assert abs(gray_pixel[0] - 192) <= 1
+        assert abs(gray_pixel[1] - 192) <= 1
+        assert abs(gray_pixel[2] - 192) <= 1
+        assert abs(gray_pixel[3] - 192) <= 1
 
         # Check pixel from the bottom chunk (power 255 -> white)
         white_pixel = artifact.bitmap_data[40, 25]

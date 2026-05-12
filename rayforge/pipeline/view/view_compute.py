@@ -558,7 +558,17 @@ def _draw_vertices(
         cut_lut = color_set.get_lut("cut")
 
         power_indices = (powered_c[::2, 0] * 255.0).astype(np.uint8)
-        themed_colors_per_segment = cut_lut[power_indices]
+        full_color = cut_lut[255]
+        power_alpha = cut_lut[power_indices, 3]
+        themed_colors_per_segment = np.broadcast_to(
+            full_color[:3], (len(power_indices), 3)
+        ).copy()
+        themed_colors_per_segment = np.column_stack(
+            [themed_colors_per_segment, power_alpha]
+        )
+        themed_colors_per_segment[:, 3] = np.clip(
+            themed_colors_per_segment[:, 3] * 0.5 + 0.5, 0, 1
+        )
         unique_colors, inverse_indices = np.unique(
             themed_colors_per_segment, axis=0, return_inverse=True
         )
@@ -641,7 +651,17 @@ def _prepare_powered_vertices_for_batching(
     cut_lut = color_set.get_lut("cut")
 
     power_indices = (powered_c[::2, 0] * 255.0).astype(np.uint8)
-    themed_colors_per_segment = cut_lut[power_indices]
+    full_color = cut_lut[255]
+    power_alpha = cut_lut[power_indices, 3]
+    themed_colors_per_segment = np.broadcast_to(
+        full_color[:3], (len(power_indices), 3)
+    ).copy()
+    themed_colors_per_segment = np.column_stack(
+        [themed_colors_per_segment, power_alpha]
+    )
+    themed_colors_per_segment[:, 3] = np.clip(
+        themed_colors_per_segment[:, 3] * 0.5 + 0.5, 0, 1
+    )
     unique_colors, inverse_indices = np.unique(
         themed_colors_per_segment, axis=0, return_inverse=True
     )
@@ -763,9 +783,15 @@ def _draw_texture(
 
     h, w = power_data.shape
     engrave_lut = color_set.get_lut("engrave")
-    lut_u8 = np.clip(engrave_lut * 255 + 0.5, 0, 255).astype(np.uint8)
+    full_color_u8 = np.clip(engrave_lut[255] * 255 + 0.5, 0, 255).astype(
+        np.uint8
+    )
+    alpha_lut = np.clip(engrave_lut[:, 3] * 0.5 + 0.5, 0, 1)
+    alpha_u8 = np.clip(alpha_lut * 255 + 0.5, 0, 255).astype(np.uint8)
 
-    rgba = lut_u8[power_data]
+    rgba = np.zeros((*power_data.shape, 4), dtype=np.uint8)
+    rgba[:, :, :3] = full_color_u8[:3]
+    rgba[:, :, 3] = alpha_u8[power_data]
     rgba[power_data == 0, 3] = 0
 
     texture_surface = rgba_to_cairo_surface(rgba)
