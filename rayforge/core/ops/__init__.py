@@ -5,6 +5,7 @@ and the Command classes that define those operations.
 
 from .axis import Axis
 from .container import Ops, OpsSection
+from .enums import CommandType, CommandCategory
 from . import flip
 from . import group
 from .commands import (
@@ -40,6 +41,8 @@ from .commands import (
 
 __all__ = [
     "Axis",
+    "CommandType",
+    "CommandCategory",
     "Ops",
     "OpsSection",
     "flip",

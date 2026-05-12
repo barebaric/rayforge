@@ -55,6 +55,7 @@ from .commands import (
     COMMAND_TYPE_MAP,
     COMMAND_CLASS_MAP,
 )
+from .enums import CommandType, CommandCategory
 from .timing import estimate_time
 
 
@@ -82,6 +83,37 @@ def _get_total_distance_legacy(commands: List[Command]) -> float:
         if hasattr(cmd, "end") and cmd.end is not None:
             last = cmd.end
     return total
+
+
+_CLASS_TO_COMMAND_TYPE: Dict[type, CommandType] = {
+    cls: CommandType(val) for cls, val in COMMAND_TYPE_MAP.items()
+}
+
+_COMMAND_TYPE_TO_CATEGORY: Dict[CommandType, CommandCategory] = {
+    CommandType.MOVE_TO: CommandCategory.MOVING,
+    CommandType.LINE_TO: CommandCategory.MOVING,
+    CommandType.ARC_TO: CommandCategory.MOVING,
+    CommandType.BEZIER_TO: CommandCategory.MOVING,
+    CommandType.QUADRATIC_BEZIER_TO: CommandCategory.MOVING,
+    CommandType.SCAN_LINE: CommandCategory.MOVING,
+    CommandType.DWELL: CommandCategory.STATE,
+    CommandType.SET_POWER: CommandCategory.STATE,
+    CommandType.SET_CUT_SPEED: CommandCategory.STATE,
+    CommandType.SET_TRAVEL_SPEED: CommandCategory.STATE,
+    CommandType.SET_FREQUENCY: CommandCategory.STATE,
+    CommandType.SET_PULSE_WIDTH: CommandCategory.STATE,
+    CommandType.ENABLE_AIR_ASSIST: CommandCategory.STATE,
+    CommandType.DISABLE_AIR_ASSIST: CommandCategory.STATE,
+    CommandType.SET_LASER: CommandCategory.STATE,
+    CommandType.JOB_START: CommandCategory.MARKER,
+    CommandType.JOB_END: CommandCategory.MARKER,
+    CommandType.LAYER_START: CommandCategory.MARKER,
+    CommandType.LAYER_END: CommandCategory.MARKER,
+    CommandType.WORKPIECE_START: CommandCategory.MARKER,
+    CommandType.WORKPIECE_END: CommandCategory.MARKER,
+    CommandType.OPS_SECTION_START: CommandCategory.MARKER,
+    CommandType.OPS_SECTION_END: CommandCategory.MARKER,
+}
 
 
 class Ops:
@@ -603,6 +635,114 @@ class Ops:
     def is_empty(self) -> bool:
         """Checks if the Ops object contains any commands."""
         return not self._commands
+
+    def len(self) -> int:
+        """Returns the number of commands in this Ops object."""
+        return len(self._commands)
+
+    def command_type(self, idx: int) -> CommandType:
+        """Returns the CommandType of the command at the given index."""
+        return _CLASS_TO_COMMAND_TYPE[type(self._commands[idx])]
+
+    def category(self, idx: int) -> CommandCategory:
+        """Returns the CommandCategory of the command at the given index."""
+        return _COMMAND_TYPE_TO_CATEGORY[self.command_type(idx)]
+
+    def endpoint(self, idx: int) -> Tuple[float, float, float]:
+        """Returns the endpoint of a MovingCommand at the given index."""
+        cmd = self._commands[idx]
+        if not isinstance(cmd, MovingCommand):
+            raise TypeError(f"Command at index {idx} is not a MovingCommand")
+        return cmd.end
+
+    def arc_params(self, idx: int) -> Tuple[float, float, bool]:
+        """
+        Returns the arc parameters (i, j, clockwise) for an ArcToCommand
+        at the given index.
+        """
+        cmd = self._commands[idx]
+        if not isinstance(cmd, ArcToCommand):
+            raise TypeError(f"Command at index {idx} is not an ArcToCommand")
+        return cmd.center_offset[0], cmd.center_offset[1], cmd.clockwise
+
+    def scanline_data(self, idx: int) -> memoryview:
+        """
+        Returns a memoryview of the power values for a ScanLinePowerCommand
+        at the given index.
+        """
+        cmd = self._commands[idx]
+        if not isinstance(cmd, ScanLinePowerCommand):
+            raise TypeError(
+                f"Command at index {idx} is not a ScanLinePowerCommand"
+            )
+        return memoryview(cmd.power_values)
+
+    def state_at(self, idx: int) -> Dict[str, Any]:
+        """Returns the effective machine state at the given command index."""
+        state = State()
+        for i in range(idx + 1):
+            cmd = self._commands[i]
+            if cmd.is_state_command():
+                cmd.apply_to_state(state)
+        return {
+            "power": state.power,
+            "air_assist": state.air_assist,
+            "cut_speed": state.cut_speed,
+            "travel_speed": state.travel_speed,
+            "active_laser_uid": state.active_laser_uid,
+            "frequency": state.frequency,
+            "pulse_width": state.pulse_width,
+        }
+
+    def inspect(self, idx: int) -> Dict[str, Any]:
+        """Returns a dictionary representation of the command at the given
+        index, for testing assertions."""
+        cmd = self._commands[idx]
+        cmd_type = self.command_type(idx)
+        result: Dict[str, Any] = {"type": cmd_type}
+        if isinstance(cmd, MovingCommand):
+            result["end"] = cmd.end
+            result["extra_axes"] = dict(cmd.extra_axes)
+            result["state"] = cmd.state
+        if isinstance(cmd, ArcToCommand):
+            result["center_offset"] = cmd.center_offset
+            result["clockwise"] = cmd.clockwise
+        elif isinstance(cmd, BezierToCommand):
+            result["control1"] = cmd.control1
+            result["control2"] = cmd.control2
+        elif isinstance(cmd, QuadraticBezierToCommand):
+            result["control"] = cmd.control
+        elif isinstance(cmd, ScanLinePowerCommand):
+            result["power_values"] = bytes(cmd.power_values)
+        elif isinstance(cmd, SetPowerCommand):
+            result["power"] = cmd.power
+        elif isinstance(cmd, SetCutSpeedCommand):
+            result["speed"] = cmd.speed
+        elif isinstance(cmd, SetTravelSpeedCommand):
+            result["speed"] = cmd.speed
+        elif isinstance(cmd, SetFrequencyCommand):
+            result["frequency"] = cmd.frequency
+        elif isinstance(cmd, SetPulseWidthCommand):
+            result["pulse_width"] = cmd.pulse_width
+        elif isinstance(cmd, SetLaserCommand):
+            result["laser_uid"] = cmd.laser_uid
+        elif isinstance(cmd, DwellCommand):
+            result["duration_ms"] = cmd.duration_ms
+        elif isinstance(cmd, (LayerStartCommand, LayerEndCommand)):
+            result["layer_uid"] = cmd.layer_uid
+        elif isinstance(cmd, (WorkpieceStartCommand, WorkpieceEndCommand)):
+            result["workpiece_uid"] = cmd.workpiece_uid
+        elif isinstance(cmd, OpsSectionStartCommand):
+            result["section_type"] = cmd.section_type.name
+            result["workpiece_uid"] = cmd.workpiece_uid
+        elif isinstance(cmd, OpsSectionEndCommand):
+            result["section_type"] = cmd.section_type.name
+        return result
+
+    def copy_command_from(self, source: "Ops", idx: int) -> None:
+        """Deep-copies a command from a source Ops into this Ops object."""
+        self._commands.append(deepcopy(source._commands[idx]))
+        self._invalidate_time_cache()
 
     def copy(self) -> Ops:
         """Creates a copy of the Ops object."""
