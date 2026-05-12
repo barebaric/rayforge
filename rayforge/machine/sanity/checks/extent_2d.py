@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, List, Set
 
+from ....core.ops import CommandCategory
 from ..result import IssueCategory, IssueSeverity, SanityIssue
 from .base import BaseCheck
 
@@ -18,10 +19,11 @@ class ExtentCheck2D(BaseCheck):
         max_x, max_y = context.axis_extents
         seen: Set[str] = set()
         issues: List[SanityIssue] = []
-        for cmd in context.ops.commands:
-            end = getattr(cmd, "end", None)
-            if end is None:
+        ops = context.ops
+        for i in range(ops.len()):
+            if ops.category(i) != CommandCategory.MOVING:
                 continue
+            end = ops.endpoint(i)
             for point in (end,):
                 self._check_point(issues, seen, point, max_x, max_y)
         return issues

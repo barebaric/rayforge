@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 from typing import Tuple, Union
 
-from ...core.ops import MoveToCommand, ScanLinePowerCommand
+from ...core.ops import CommandType
 
 MAX_TEXTURE_DIMENSION = 8192
 
@@ -153,19 +153,24 @@ def rasterize_scanlines(
     current_pos: Tuple[float, float, float] = (0.0, 0.0, 0.0)
     has_content = False
 
-    for cmd in ops.commands:
-        if isinstance(cmd, MoveToCommand):
-            if cmd.end is not None:
-                current_pos = cmd.end
+    for i in range(ops.len()):
+        ct = ops.command_type(i)
+        if ct == CommandType.MOVE_TO:
+            end = ops.endpoint(i)
+            if end is not None:
+                current_pos = end
             continue
 
-        if not isinstance(cmd, ScanLinePowerCommand):
-            continue
-        if cmd.end is None:
+        if ct != CommandType.SCAN_LINE:
             continue
 
-        end_mm = cmd.end
-        num_steps = len(cmd.power_values)
+        end = ops.endpoint(i)
+        if end is None:
+            continue
+
+        end_mm = end
+        power_values = ops.scanline_data(i)
+        num_steps = len(power_values)
         if num_steps == 0:
             current_pos = end_mm
             continue
@@ -190,7 +195,7 @@ def rasterize_scanlines(
                 width_px,
                 sx,
                 dx,
-                cmd.power_values,
+                power_values,
                 num_steps,
             )
         elif dx != 0.0 or dy != 0.0:
@@ -202,7 +207,7 @@ def rasterize_scanlines(
                 sy,
                 dx,
                 dy,
-                cmd.power_values,
+                power_values,
                 num_steps,
             )
 
