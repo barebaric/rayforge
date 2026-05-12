@@ -1,11 +1,14 @@
+import logging
 from gettext import gettext as _
 from gi.repository import Adw, Gtk
 
-from ..shared.unit_spin_row import UnitSpinRowHelper
-from ..varset.varsetwidget import VarSetWidget
 from ...machine.driver import drivers, get_driver_cls
 from ...machine.models.machine import Machine
 from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.unit_spin_row import UnitSpinRowHelper
+from ..varset.varsetwidget import VarSetWidget
+
+logger = logging.getLogger(__name__)
 
 
 class GeneralPreferencesPage(TrackedPreferencesPage):
@@ -87,6 +90,10 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         if driver_cls:
             initial_var_set = driver_cls.get_setup_vars()
             initial_var_set.set_values(self.machine.driver_args)
+            logger.debug(
+                f"GeneralPreferences: driver_args={self.machine.driver_args}, "
+                f"var_set values={initial_var_set.get_values()}"
+            )
             self.driver_group.populate(initial_var_set)
         else:
             # No driver selected yet, clear the widget

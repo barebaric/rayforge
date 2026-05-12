@@ -7,6 +7,7 @@ machine:
   driver_args:
     baudrate: '115200'
     poll_status_while_running: false
+    rx_buffer_size_override: 127
   gcode_precision: 3
   supports_arcs: true
   axis_extents:
