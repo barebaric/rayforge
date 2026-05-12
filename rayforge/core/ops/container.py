@@ -3,6 +3,7 @@ import math
 import logging
 from copy import deepcopy
 from typing import (
+    Callable,
     Iterator,
     List,
     NamedTuple,
@@ -1330,6 +1331,40 @@ class Ops:
                     cmd.end = (x - ox, y - oy, z - oz)
 
         self._invalidate_time_cache()
+
+    def transform_layers(self, callback: Callable[[str, Ops], None]) -> None:
+        """
+        Call *callback(layer_uid, layer_ops)* for each layer.
+
+        For each ``LayerStartCommand`` in the stream, collects all
+        commands from that marker through the matching
+        ``LayerEndCommand`` (inclusive) and passes them to *callback*
+        as a sub-``Ops``.  The callback may modify the commands in-place
+        via the ``Ops`` API — no splicing back is needed because the
+        commands are shared references.
+
+        Commands that are not inside any layer are never passed to the
+        callback.
+        """
+        i = 0
+        while i < len(self._commands):
+            cmd = self._commands[i]
+            if not isinstance(cmd, LayerStartCommand):
+                i += 1
+                continue
+
+            layer_uid = cmd.layer_uid
+            collected: List[Command] = []
+            while i < len(self._commands):
+                sub = self._commands[i]
+                collected.append(sub)
+                i += 1
+                if isinstance(sub, LayerEndCommand):
+                    break
+
+            layer_ops = Ops()
+            layer_ops._commands = collected
+            callback(layer_uid, layer_ops)
 
     def linearize_all(self) -> None:
         """
