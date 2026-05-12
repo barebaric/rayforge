@@ -19,8 +19,8 @@ from .kinematic_math import KinematicMath
 from .models.rotary_module import RotaryMode, RotaryType
 
 if TYPE_CHECKING:
-    from .models.rotary_module import RotaryModule
     from ..core.doc import Doc
+    from .models.rotary_module import RotaryModule
     from .models.machine import Machine
 
 

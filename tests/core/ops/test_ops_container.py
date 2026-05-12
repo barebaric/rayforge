@@ -2162,8 +2162,8 @@ def test_translate_layers_between_layers_gets_default():
     )
     cmds = list(ops.commands)
     assert cmds[1].end == (-10.0, -10.0, 0.0)  # layer A
-    assert cmds[3].end == (47.0, 47.0, 0.0)   # between layers
-    assert cmds[5].end == (9.0, 9.0, 0.0)     # layer B
+    assert cmds[3].end == (47.0, 47.0, 0.0)  # between layers
+    assert cmds[5].end == (9.0, 9.0, 0.0)  # layer B
 
 
 def test_translate_layers_after_last_layer_gets_default():
@@ -2206,3 +2206,83 @@ def test_translate_layers_commands_before_first_layer():
     cmds = list(ops.commands)
     assert cmds[0].end == (90.0, 90.0, 0.0)
     assert cmds[2].end == (-2.0, -2.0, 0.0)
+
+
+def test_transform_layers_callback_receives_layer_uid():
+    ops = Ops()
+    ops.layer_start("lyr1")
+    ops.move_to(0.0, 0.0)
+    ops.layer_end("lyr1")
+    ops.layer_start("lyr2")
+    ops.move_to(10.0, 10.0)
+    ops.layer_end("lyr2")
+
+    seen = []
+    ops.transform_layers(lambda uid, sub: seen.append(uid))
+    assert seen == ["lyr1", "lyr2"]
+
+
+def test_transform_layers_callback_receives_layer_commands():
+    ops = Ops()
+    ops.layer_start("lyr1")
+    ops.move_to(10.0, 20.0)
+    ops.line_to(30.0, 40.0)
+    ops.layer_end("lyr1")
+
+    def check(uid, sub):
+        cmds = list(sub.commands)
+        assert len(cmds) == 4
+        assert cmds[1].end[:2] == (10.0, 20.0)
+        assert cmds[2].end[:2] == (30.0, 40.0)
+
+    ops.transform_layers(check)
+
+
+def test_transform_layers_callback_modifies_in_place():
+    ops = Ops()
+    ops.layer_start("lyr1")
+    ops.move_to(100.0, 0.0)
+    ops.layer_end("lyr1")
+
+    def flip_y(uid, sub):
+        for cmd in sub.commands:
+            if hasattr(cmd, "end"):
+                x, y, z = cmd.end
+                cmd.end = (x, -y, z)
+
+    ops.transform_layers(flip_y)
+    assert list(ops.commands)[1].end == (100.0, 0.0, 0.0)
+
+
+def test_transform_layers_commands_before_first_layer_skipped():
+    ops = Ops()
+    ops.move_to(99.0, 99.0)
+    ops.layer_start("lyr1")
+    ops.move_to(10.0, 10.0)
+    ops.layer_end("lyr1")
+    ops.move_to(88.0, 88.0)  # between layers — collected with lyr1
+    ops.layer_start("lyr2")
+    ops.move_to(20.0, 20.0)
+    ops.layer_end("lyr2")
+    ops.move_to(77.0, 77.0)  # after last layer — collected with lyr2
+
+    counts = []
+
+    ops.transform_layers(
+        lambda uid, sub: counts.append(len(list(sub.commands)))
+    )
+    assert counts == [3, 3]
+
+
+def test_transform_layers_no_layers():
+    ops = Ops()
+    ops.move_to(0.0, 0.0)
+
+    called = False
+
+    def record(uid, sub):
+        nonlocal called
+        called = True
+
+    ops.transform_layers(record)
+    assert not called
