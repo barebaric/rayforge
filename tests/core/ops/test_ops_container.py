@@ -2109,3 +2109,100 @@ def test_scanline_count_with_scanlines():
     ops.line_to(20, 0)
     ops.scan_to(30, 0, 0, bytearray([50]))
     assert ops.scanline_count == 2
+
+
+def test_translate_layers_default_applied_to_all():
+    ops = Ops()
+    ops.move_to(10.0, 20.0, 0.0)
+    ops.line_to(30.0, 40.0, 5.0)
+    ops.translate_layers((1.0, 2.0, 3.0))
+    cmds = list(ops.commands)
+    assert cmds[0].end == (9.0, 18.0, -3.0)
+    assert cmds[1].end == (29.0, 38.0, 2.0)
+
+
+def test_translate_layers_layer_overrides_default():
+    ops = Ops()
+    ops.layer_start("lyr1")
+    ops.move_to(100.0, 0.0)
+    ops.layer_end("lyr1")
+    ops.translate_layers((5.0, 5.0, 0.0), {"lyr1": (1.0, 1.0, 0.0)})
+    assert list(ops.commands)[1].end == (99.0, -1.0, 0.0)
+
+
+def test_translate_layers_multiple_layers():
+    ops = Ops()
+    ops.layer_start("lyrA")
+    ops.move_to(0.0, 0.0)
+    ops.layer_end("lyrA")
+    ops.layer_start("lyrB")
+    ops.move_to(10.0, 10.0)
+    ops.layer_end("lyrB")
+    ops.translate_layers(
+        (2.0, 2.0, 0.0),
+        {"lyrA": (10.0, 10.0, 0.0), "lyrB": (2.0, 2.0, 0.0)},
+    )
+    cmds = list(ops.commands)
+    assert cmds[1].end == (-10.0, -10.0, 0.0)
+    assert cmds[4].end == (8.0, 8.0, 0.0)
+
+
+def test_translate_layers_between_layers_gets_default():
+    ops = Ops()
+    ops.layer_start("lyrA")
+    ops.move_to(0.0, 0.0)
+    ops.layer_end("lyrA")
+    ops.move_to(50.0, 50.0)
+    ops.layer_start("lyrB")
+    ops.move_to(10.0, 10.0)
+    ops.layer_end("lyrB")
+    ops.translate_layers(
+        (3.0, 3.0, 0.0),
+        {"lyrA": (10.0, 10.0, 0.0), "lyrB": (1.0, 1.0, 0.0)},
+    )
+    cmds = list(ops.commands)
+    assert cmds[1].end == (-10.0, -10.0, 0.0)  # layer A
+    assert cmds[3].end == (47.0, 47.0, 0.0)   # between layers
+    assert cmds[5].end == (9.0, 9.0, 0.0)     # layer B
+
+
+def test_translate_layers_after_last_layer_gets_default():
+    ops = Ops()
+    ops.layer_start("lyrA")
+    ops.move_to(0.0, 0.0)
+    ops.layer_end("lyrA")
+    ops.move_to(60.0, 60.0)
+    ops.translate_layers((5.0, 5.0, 0.0), {"lyrA": (2.0, 2.0, 0.0)})
+    cmds = list(ops.commands)
+    assert cmds[1].end == (-2.0, -2.0, 0.0)
+    assert cmds[3].end == (55.0, 55.0, 0.0)
+
+
+def test_translate_layers_empty_dict():
+    ops = Ops()
+    ops.layer_start("lyr1")
+    ops.move_to(10.0, 10.0)
+    ops.layer_end("lyr1")
+    ops.translate_layers((4.0, 4.0, 0.0), {})
+    assert list(ops.commands)[1].end == (6.0, 6.0, 0.0)
+
+
+def test_translate_layers_layer_not_in_dict_gets_default():
+    ops = Ops()
+    ops.layer_start("unknown")
+    ops.move_to(10.0, 10.0)
+    ops.layer_end("unknown")
+    ops.translate_layers((4.0, 4.0, 0.0), {"other": (1.0, 1.0, 0.0)})
+    assert list(ops.commands)[1].end == (6.0, 6.0, 0.0)
+
+
+def test_translate_layers_commands_before_first_layer():
+    ops = Ops()
+    ops.move_to(100.0, 100.0)
+    ops.layer_start("lyr1")
+    ops.move_to(0.0, 0.0)
+    ops.layer_end("lyr1")
+    ops.translate_layers((10.0, 10.0, 0.0), {"lyr1": (2.0, 2.0, 0.0)})
+    cmds = list(ops.commands)
+    assert cmds[0].end == (90.0, 90.0, 0.0)
+    assert cmds[2].end == (-2.0, -2.0, 0.0)

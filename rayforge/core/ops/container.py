@@ -1284,6 +1284,53 @@ class Ops:
         matrix = translate_back @ rotation_matrix @ translate_to_origin
         return self.transform(matrix)
 
+    def translate_layers(
+        self,
+        default_offset: Tuple[float, float, float],
+        layer_offsets: Optional[Dict[str, Tuple[float, float, float]]] = None,
+    ) -> None:
+        """
+        Apply per-layer coordinate offsets.
+
+        Commands outside any layer get *default_offset*.
+        When a LayerStartCommand is encountered, *layer_offsets* is checked
+        for that layer's offset.  If the layer is not in the dict the default
+        offset is used.
+
+        Each offset is subtracted from every MovingCommand's end point
+        (i.e. ``end = end - offset``).
+        """
+        dx0, dy0, dz0 = default_offset
+        active_offset = default_offset
+        in_named_layer = False
+
+        for cmd in self._commands:
+            if isinstance(cmd, LayerStartCommand):
+                if layer_offsets is not None:
+                    active_offset = layer_offsets.get(
+                        cmd.layer_uid, default_offset
+                    )
+                else:
+                    active_offset = default_offset
+                in_named_layer = True
+                continue
+
+            if isinstance(cmd, LayerEndCommand):
+                active_offset = default_offset
+                in_named_layer = False
+                continue
+
+            if not in_named_layer:
+                active_offset = default_offset
+
+            if isinstance(cmd, MovingCommand) and cmd.end is not None:
+                ox, oy, oz = active_offset
+                if ox != 0.0 or oy != 0.0 or oz != 0.0:
+                    x, y, z = cmd.end
+                    cmd.end = (x - ox, y - oy, z - oz)
+
+        self._invalidate_time_cache()
+
     def linearize_all(self) -> None:
         """
         Replaces all complex commands (e.g., Arcs) with simple LineToCommands.
