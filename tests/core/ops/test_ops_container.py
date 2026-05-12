@@ -2089,3 +2089,23 @@ def test_scan_to_with_extra():
     cmd = ops.commands[0]
     assert isinstance(cmd, ScanLinePowerCommand)
     assert cmd.extra_axes == {Axis.A: 45.0}
+
+
+def test_scanline_count_empty():
+    assert Ops().scanline_count == 0
+
+
+def test_scanline_count_no_scanlines():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 10)
+    assert ops.scanline_count == 0
+
+
+def test_scanline_count_with_scanlines():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.scan_to(10, 0, 0, bytearray([100, 200]))
+    ops.line_to(20, 0)
+    ops.scan_to(30, 0, 0, bytearray([50]))
+    assert ops.scanline_count == 2

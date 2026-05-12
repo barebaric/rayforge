@@ -184,13 +184,26 @@ def rasterize_scanlines(
 
         if dy == 0.0 and dx != 0.0:
             has_content |= _rasterize_horizontal(
-                buffer, round(sy), height_px, width_px,
-                sx, dx, cmd.power_values, num_steps,
+                buffer,
+                round(sy),
+                height_px,
+                width_px,
+                sx,
+                dx,
+                cmd.power_values,
+                num_steps,
             )
         elif dx != 0.0 or dy != 0.0:
             has_content |= _rasterize_diagonal(
-                buffer, width_px, height_px,
-                sx, sy, dx, dy, cmd.power_values, num_steps,
+                buffer,
+                width_px,
+                height_px,
+                sx,
+                sy,
+                dx,
+                dy,
+                cmd.power_values,
+                num_steps,
             )
 
         current_pos = end_mm
