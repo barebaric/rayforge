@@ -1,9 +1,7 @@
 from __future__ import annotations
 import math
 import logging
-import numpy as np
 from typing import Optional, List, Dict, Any, Sequence, TYPE_CHECKING
-from copy import deepcopy
 from gettext import gettext as _
 
 from rayforge.core.ops import (
@@ -196,35 +194,40 @@ class OverscanTransformer(OpsTransformer):
         content_start_3d = moving_cmds[0].end
         content_end_3d = moving_cmds[-1].end
 
-        p_start = np.array(content_start_3d[:2])
-        p_end = np.array(content_end_3d[:2])
+        start_x, start_y = content_start_3d[0], content_start_3d[1]
+        end_x, end_y = content_end_3d[0], content_end_3d[1]
 
-        if np.allclose(p_start, p_end):
+        if start_x == end_x and start_y == end_y:
             return buffer
 
-        v_dir = p_end - p_start
-        original_length = np.linalg.norm(v_dir)
+        dx = end_x - start_x
+        dy = end_y - start_y
+        original_length = math.hypot(dx, dy)
         if original_length < 1e-9:
             return buffer
-        v_dir_norm = v_dir / original_length
 
-        overscan_start_2d = p_start - self.distance_mm * v_dir_norm
-        overscan_end_2d = p_end + self.distance_mm * v_dir_norm
+        v_dir_norm_x = dx / original_length
+        v_dir_norm_y = dy / original_length
+
+        overscan_start_x = start_x - self.distance_mm * v_dir_norm_x
+        overscan_start_y = start_y - self.distance_mm * v_dir_norm_y
+        overscan_end_x = end_x + self.distance_mm * v_dir_norm_x
+        overscan_end_y = end_y + self.distance_mm * v_dir_norm_y
 
         overscan_start_3d = (
-            overscan_start_2d[0],
-            overscan_start_2d[1],
+            overscan_start_x,
+            overscan_start_y,
             content_start_3d[2],
         )
         overscan_end_3d = (
-            overscan_end_2d[0],
-            overscan_end_2d[1],
+            overscan_end_x,
+            overscan_end_y,
             content_end_3d[2],
         )
 
         # Case 1: Variable Power ScanLine - Handled by padding its data
         if len(buffer) == 2 and isinstance(buffer[1], ScanLinePowerCommand):
-            scan_cmd = deepcopy(buffer[1])
+            scan_cmd = buffer[1].__copy__()
             pixels_per_mm = (
                 len(scan_cmd.power_values) / original_length
                 if original_length > 0

@@ -326,26 +326,40 @@ class VertexEncoder(OpsEncoder):
         if cmd.end is None:
             return
 
-        p_start_vec = np.array(start_pos, dtype=np.float32)
-        p_end_vec = np.array(cmd.end, dtype=np.float32)
-        line_vec = p_end_vec - p_start_vec
         num_steps = len(cmd.power_values)
         if num_steps == 0:
             return
 
-        is_zero_power = np.frombuffer(cmd.power_values, dtype=np.uint8) == 0
+        sx, sy, sz = start_pos[0], start_pos[1], start_pos[2]
+        ex, ey, ez = cmd.end[0], cmd.end[1], cmd.end[2]
+        dx = ex - sx
+        dy = ey - sy
+        dz = ez - sz
+        inv_n = 1.0 / num_steps
+        pwr = cmd.power_values
+        run_start = -1
 
-        # Find contiguous chunks of zero-power pixels
-        padded = np.concatenate(([False], is_zero_power, [False]))
-        diffs = np.diff(padded.astype(int))
-        starts = np.where(diffs == 1)[0]
-        ends = np.where(diffs == -1)[0]
+        for i in range(num_steps):
+            if pwr[i] == 0:
+                if run_start < 0:
+                    run_start = i
+            else:
+                if run_start >= 0:
+                    t0 = run_start * inv_n
+                    t1 = i * inv_n
+                    zero_power_v.append(sx + t0 * dx)
+                    zero_power_v.append(sy + t0 * dy)
+                    zero_power_v.append(sz + t0 * dz)
+                    zero_power_v.append(sx + t1 * dx)
+                    zero_power_v.append(sy + t1 * dy)
+                    zero_power_v.append(sz + t1 * dz)
+                    run_start = -1
 
-        for start_idx, end_idx in zip(starts, ends):
-            # A chunk of zero-power pixels was found. Add it to vertices.
-            t_start = start_idx / num_steps
-            t_end = end_idx / num_steps
-            chunk_start_pt = p_start_vec + t_start * line_vec
-            chunk_end_pt = p_start_vec + t_end * line_vec
-            zero_power_v.extend(chunk_start_pt)
-            zero_power_v.extend(chunk_end_pt)
+        if run_start >= 0:
+            t0 = run_start * inv_n
+            zero_power_v.append(sx + t0 * dx)
+            zero_power_v.append(sy + t0 * dy)
+            zero_power_v.append(sz + t0 * dz)
+            zero_power_v.append(ex)
+            zero_power_v.append(ey)
+            zero_power_v.append(ez)

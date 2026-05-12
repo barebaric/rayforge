@@ -50,12 +50,20 @@ class ScanLine:
         px_mm = px / px_per_mm_x
         py_mm = py / px_per_mm_y
 
-        dx, dy = self.direction
-        cx = (self.start_mm[0] + self.end_mm[0]) / 2
-        cy = (self.start_mm[1] + self.end_mm[1]) / 2
+        dx = self.end_mm[0] - self.start_mm[0]
+        dy = self.end_mm[1] - self.start_mm[1]
+        length = math.sqrt(dx * dx + dy * dy)
+        if length < 1e-9:
+            return (self.start_mm[0], self.start_mm[1])
+        inv_len = 1.0 / length
+        dir_x = dx * inv_len
+        dir_y = dy * inv_len
 
-        t = (px_mm - cx) * dx + (py_mm - cy) * dy
-        return (cx + t * dx, cy + t * dy)
+        cx = (self.start_mm[0] + self.end_mm[0]) * 0.5
+        cy = (self.start_mm[1] + self.end_mm[1]) * 0.5
+
+        t = (px_mm - cx) * dir_x + (py_mm - cy) * dir_y
+        return (cx + t * dir_x, cy + t * dir_y)
 
 
 def find_bounding_box(
@@ -512,11 +520,21 @@ def downsample_power_values(
 
     pixel_spacing = segment_length / max(1, len(power_values) - 1)
     if sample_interval_mm <= pixel_spacing * 1.5:
-        t = np.linspace(0.0, 1.0, len(power_values))
-        x_pos = start_mm[0] + t * dx
-        y_pos = start_mm[1] + t * dy
+        n = len(power_values)
+        if n <= 1:
+            return (
+                np.asarray(power_values, dtype=np.uint8),
+                np.array([start_mm[0]]),
+                np.array([start_mm[1]]),
+            )
+        step_x = dx / (n - 1)
+        step_y = dy / (n - 1)
+        x_pos = np.arange(n, dtype=np.float64)
+        x_pos = x_pos * step_x + start_mm[0]
+        y_pos = np.arange(n, dtype=np.float64)
+        y_pos = y_pos * step_y + start_mm[1]
         return (
-            np.array(power_values, dtype=np.uint8),
+            np.asarray(power_values, dtype=np.uint8),
             x_pos,
             y_pos,
         )

@@ -21,6 +21,17 @@ class State:
     frequency: Optional[int] = None
     pulse_width: Optional[float] = None
 
+    def __copy__(self):
+        return State(
+            power=self.power,
+            air_assist=self.air_assist,
+            cut_speed=self.cut_speed,
+            travel_speed=self.travel_speed,
+            active_laser_uid=self.active_laser_uid,
+            frequency=self.frequency,
+            pulse_width=self.pulse_width,
+        )
+
     def allow_rapid_change(self, target_state: State) -> bool:
         """
         Returns True if a change to the target state should be allowed
@@ -51,6 +62,12 @@ class Command:
             state  # Intended state during execution
         )
         self.extra_axes: Dict[Axis, float] = extra_axes or {}
+
+    def __copy__(self):
+        new = self.__class__.__new__(self.__class__)
+        for key, value in self.__dict__.items():
+            object.__setattr__(new, key, value)
+        return new
 
     def __repr__(self) -> str:
         return f"<{super().__repr__()} {self.__dict__}"
@@ -549,6 +566,13 @@ class ScanLinePowerCommand(MovingCommand):
     ) -> None:
         super().__init__(end, extra_axes=extra_axes)
         self.power_values = power_values
+
+    def __copy__(self):
+        new = self.__class__.__new__(self.__class__)
+        for key, value in self.__dict__.items():
+            object.__setattr__(new, key, value)
+        object.__setattr__(new, "power_values", bytearray(self.power_values))
+        return new
 
     @property
     def normalized_power_values(self) -> np.ndarray:

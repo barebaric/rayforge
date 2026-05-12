@@ -5,6 +5,7 @@ from multiprocessing import shared_memory
 from typing import Optional, Dict, Any
 from ...shared.tasker.progress import CallbackProgressContext
 from ...shared.tasker.proxy import ExecutionContextProxy
+from ...shared.util.profile import profile_if_enabled
 from ..artifact import (
     WorkPieceArtifact,
     create_handle_from_dict,
@@ -239,14 +240,15 @@ def make_workpiece_view_artifact_in_subprocess(
             message_callback=proxy.set_message,
         )
 
-        result_bbox = compute_workpiece_view_to_buffer(
-            artifact,
-            context,
-            shm_bitmap,
-            progress_context,
-            laser_uid,
-            layer_uid,
-        )
+        with profile_if_enabled("view", generation_id):
+            result_bbox = compute_workpiece_view_to_buffer(
+                artifact,
+                context,
+                shm_bitmap,
+                progress_context,
+                laser_uid,
+                layer_uid,
+            )
 
         if result_bbox is None:
             logger.warning(
