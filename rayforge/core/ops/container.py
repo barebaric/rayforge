@@ -109,6 +109,15 @@ class Ops:
         """Returns the list of commands in this Ops object."""
         return self._commands
 
+    @property
+    def scanline_count(self) -> int:
+        """Number of ScanLinePowerCommand entries in this Ops object."""
+        return sum(
+            1
+            for cmd in self._commands
+            if isinstance(cmd, ScanLinePowerCommand)
+        )
+
     def _invalidate_time_cache(self) -> None:
         self._time_dirty = True
 

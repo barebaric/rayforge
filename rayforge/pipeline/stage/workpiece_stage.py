@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from copy import deepcopy
 from blinker import Signal
 from ...core.geo import Geometry
-from ...core.ops import Ops, ScanLinePowerCommand
+from ...core.ops import Ops
 from ...shared.tasker.task import Task
 from ...shared.util.size import sizes_are_close
 from ..artifact import WorkPieceArtifact
@@ -417,9 +417,7 @@ class WorkPiecePipelineStage(PipelineStage):
         if artifact.is_scalable:
             self._scale_ops_to_final_size(ops, artifact, final_size)
 
-        scanline_count = sum(
-            1 for cmd in ops.commands if isinstance(cmd, ScanLinePowerCommand)
-        )
+        scanline_count = ops.scanline_count
         logger.debug(
             f"Returning final ops for workpiece '{workpiece_uid}' with "
             f"{scanline_count} ScanLinePowerCommands."
