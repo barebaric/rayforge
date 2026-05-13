@@ -106,8 +106,15 @@ pre-commit-install = "pre-commit install"
 flake = "flake8 --ignore=E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504 --builtins=_ rayforge tests"
 pyflakes = { env = { PYFLAKES_BUILTINS = "_" }, cmd = "pyflakes rayforge tests" }
 pyright = "pyright"
-lint = { depends-on = ["flake", "pyflakes", "pyright"] }
-format = "ruff format rayforge tests scripts"
+lint = { depends-on = ["flake", "pyflakes", "pyright", "check-rust"] }
+format = { depends-on = ["format-rust"], cmd = "ruff format rayforge tests scripts" }
+format-rust = "cargo fmt -p rayforge-geo"
+check-rust = "cargo clippy -p rayforge-geo --tests"
+build-rust = "cargo build -p rayforge-geo"
+build-rust-release = "cargo build --release -p rayforge-geo"
+test-rust = "cargo test -p rayforge-geo"
+build-rust-py = "cargo build --manifest-path crates/rayforge-geo-py/Cargo.toml"
+deploy-rust-py = "cp target/debug/libgeo.so rayforge/core/geo.so"
 update-translations = "bash scripts/update_translations.sh"
 compile-translations = "bash scripts/update_translations.sh --compile-only"
 print-untranslated = "bash scripts/print_untranslated.sh"
