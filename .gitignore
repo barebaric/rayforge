@@ -31,3 +31,7 @@ website/build/
 .mac_env
 rayforge/private_addons
 rayforge/version.txt
+
+# Rust ops crate
+target/
+crates/rayforge-ops/Cargo.lock

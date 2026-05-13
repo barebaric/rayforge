@@ -1,0 +1,14 @@
+[package]
+name = "rayforge-geo-py"
+version = "0.1.0"
+edition = "2021"
+description = "PyO3 bindings for RayForge geometry engine"
+
+[dependencies]
+pyo3 = { version = "0.28", features = ["extension-module"] }
+rayforge-geo = { path = "../rayforge-geo" }
+numpy = "0.28"
+
+[lib]
+name = "geo"
+crate-type = ["cdylib"]
