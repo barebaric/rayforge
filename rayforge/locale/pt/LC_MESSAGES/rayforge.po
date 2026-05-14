@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-10 11:23+0200\n"
+"POT-Creation-Date: 2026-05-14 16:35+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -2805,6 +2805,10 @@ msgid "Default"
 msgstr "Padrão"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Custom..."
+msgstr "Personalizado..."
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Resolution"
 msgstr "Resolução"
 
@@ -2812,6 +2816,14 @@ msgstr "Resolução"
 msgid "Camera capture resolution. Default uses the camera's native setting."
 msgstr ""
 "Resolução de captura da câmera. O padrão usa a configuração nativa da câmera."
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Custom Width"
+msgstr "Largura personalizada"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Custom Height"
+msgstr "Altura personalizada"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Prefer YUYV Format"

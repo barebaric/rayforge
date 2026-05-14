@@ -66,6 +66,23 @@
   </screenshots>
 
   <releases>
+    <release version="1.7.6" date="2026-05-14">
+      <description>
+        <p>Canvas pan, camera enhancements, raster performance, and bug fixes</p>
+        <ul>
+          <li>Space+drag pan gesture for canvas navigation (#241)</li>
+          <li>Custom resolution option for camera image settings</li>
+          <li>Numerous performance improvements for raster engraving
+          operations</li>
+          <li>2D canvas laser path alpha normalization for better low-power
+          visibility</li>
+          <li>Fixed capability defaults being overwritten by duplicate step
+          keys (#239)</li>
+          <li>Fixed RX buffer override not applied in Creality Falcon device
+          profiles</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.7.5" date="2026-05-11">
       <description>
         <p>Overcut support, performance improvements, and bug fixes</p>
