@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-10 11:23+0200\n"
+"POT-Creation-Date: 2026-05-14 16:35+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -2786,6 +2786,10 @@ msgid "Default"
 msgstr "Типово"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Custom..."
+msgstr "Довільне..."
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Resolution"
 msgstr "Роздільна здатність"
 
@@ -2794,6 +2798,14 @@ msgid "Camera capture resolution. Default uses the camera's native setting."
 msgstr ""
 "Роздільна здатність захоплення камери. За замовчуванням використовується "
 "рідне налаштування камери."
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Custom Width"
+msgstr "Довільна ширина"
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Custom Height"
+msgstr "Довільна висота"
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Prefer YUYV Format"

@@ -5,6 +5,26 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.7.6
+
+### Added
+
+- Space+drag pan gesture for canvas navigation (#241)
+- Custom resolution option for camera image settings
+
+### Fixed
+
+- Fixed capability defaults being overwritten by duplicate step keys (#239)
+- Fixed RX buffer override not applied in Creality Falcon device profiles
+
+### Performance
+
+- Numerous performance improvements for raster engraving operations
+
+### Changed
+
+- 2D canvas laser path alpha normalization for improved visibility at low power
+
 ## 1.7.5
 
 ### Added

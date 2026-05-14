@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-10 11:23+0200\n"
+"POT-Creation-Date: 2026-05-14 16:35+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2608,11 +2608,23 @@ msgid "Default"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Custom..."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Resolution"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Camera capture resolution. Default uses the camera's native setting."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Custom Width"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/image_settings_dialog.py
+msgid "Custom Height"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
