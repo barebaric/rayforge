@@ -2,7 +2,7 @@ import asyncio
 import re
 import threading
 import logging
-from typing import Optional, NamedTuple, List
+from typing import Optional, NamedTuple, List, Callable, Awaitable
 from enum import Enum, auto
 
 from .serial import SerialTransport
@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 # safe limit 127). Custom firmwares may report a smaller size via
 # the $I OPT line.
 DEFAULT_GRBL_RX_BUFFER_SIZE = 127
+
+
+class BufferStallError(Exception):
+    """Raised when buffer space wait times out after recovery."""
 
 
 class PendingCommand(NamedTuple):
@@ -104,6 +108,7 @@ class GrblSerialTransport:
         Returns a list of GrblResponse for non-ok/error lines
         (status reports, alarms, info messages, etc.).
         """
+        self._log_rx(data)
         self._status_buffer.extend(data)
         responses: List[GrblResponse] = []
 
@@ -238,22 +243,111 @@ class GrblSerialTransport:
 
     # --- Flow-controlled sending ---
 
+    def _log_tx(self, data: bytes, buf_count: Optional[int] = None):
+        """Log a RAW_IO TX event with optional buffer info."""
+        if buf_count is not None:
+            buf_info = f"buf: {buf_count}/{self._rx_buffer_size}"
+            msg = f"TX: {data!r} ({buf_info})"
+        else:
+            msg = f"TX: {data!r}"
+        logger.debug(
+            msg,
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "TX",
+                "data": data,
+            },
+        )
+
+    def _log_rx(self, data: bytes):
+        """Log a RAW_IO RX event with buffer info."""
+        buf_info = f"buf: {self.buffer_count}/{self._rx_buffer_size}"
+        logger.debug(
+            f"RX: {data!r} ({buf_info})",
+            extra={
+                "log_category": "RAW_IO",
+                "direction": "RX",
+                "data": data,
+            },
+        )
+
     async def send_gcode(
-        self, data: bytes, op_index: Optional[int] = None
+        self,
+        data: bytes,
+        op_index: Optional[int] = None,
+        *,
+        timeout: float = 10.0,
+        on_stall: Optional[
+            Callable[
+                ["GrblSerialTransport", int],
+                Awaitable[bool],
+            ]
+        ] = None,
     ) -> int:
         """
-        Send G-code with buffer accounting.  Waits for buffer space
-        if needed so the check and send are atomic within the
-        caller's lock.  Returns the buffer fill level after sending.
+        Send G-code with buffer accounting.
+
+        Waits for buffer space if needed.  If the wait times out,
+        calls *on_stall(transport, command_len)* which may perform
+        deadlock recovery and return True to retry.  Raises
+        ``BufferStallError`` if recovery fails or no callback is
+        provided.  Returns the buffer fill level after sending.
         """
         command_len = len(data)
+        waited = False
         while self.needs_space(command_len):
-            await self.wait_for_space()
+            if not waited:
+                logger.info(
+                    f"Buffer full ({self.buffer_count}/"
+                    f"{self._rx_buffer_size}), waiting for "
+                    f"{command_len} bytes "
+                    f"(pending: {self._pending.qsize()})"
+                )
+                waited = True
+            try:
+                await asyncio.wait_for(self.wait_for_space(), timeout=timeout)
+            except asyncio.TimeoutError:
+                if on_stall:
+                    logger.warning(
+                        f"Buffer stall: timed out after "
+                        f"{timeout}s waiting for "
+                        f"{command_len} bytes "
+                        f"(buf: {self.buffer_count}/"
+                        f"{self._rx_buffer_size}, "
+                        f"pending: {self._pending.qsize()}). "
+                        f"Invoking recovery callback."
+                    )
+                    handled = await on_stall(self, command_len)
+                    if handled:
+                        logger.info(
+                            f"Recovery successful, retrying send "
+                            f"(buf: {self.buffer_count}/"
+                            f"{self._rx_buffer_size})"
+                        )
+                        continue
+                    logger.error(
+                        f"Recovery failed "
+                        f"(buf: {self.buffer_count}/"
+                        f"{self._rx_buffer_size})"
+                    )
+                raise BufferStallError(
+                    f"Buffer stall: cannot get {command_len} "
+                    f"bytes of space "
+                    f"(buf: {self.buffer_count}/"
+                    f"{self._rx_buffer_size})"
+                )
+        if waited:
+            logger.info(
+                f"Buffer space available, resuming "
+                f"(buf: {self.buffer_count}/"
+                f"{self._rx_buffer_size})"
+            )
         cmd_text = data.decode("ascii", "replace")
         self._pending.put_nowait(
             PendingCommand(command_len, op_index, cmd_text)
         )
         count = self._add(command_len)
+        self._log_tx(data, count)
         await self._transport.send(data)
         return count
 
@@ -265,8 +359,10 @@ class GrblSerialTransport:
         # From the GRBL docs: "Like all real-time commands, the '?'
         # character is intercepted and never enters the serial buffer"
         # https://github.com/gnea/grbl/blob/master/doc/markdown/interface.md
+        count = self.buffer_count
+        self._log_tx(data, count)
         await self._transport.send(data)
-        return self._get()
+        return count
 
     async def send_command(self, data: bytes) -> int:
         """
@@ -289,6 +385,7 @@ class GrblSerialTransport:
             PendingCommand(command_len, None, data.decode("ascii", "replace"))
         )
         count = self._add(command_len)
+        self._log_tx(data, count)
         await self._transport.send(data)
         return count
 
@@ -299,15 +396,17 @@ class GrblSerialTransport:
         GRBL before entering the RX buffer, so no space check is
         needed.
         """
+        self._log_tx(data)
         await self._transport.send(data)
 
     @property
     def buffer_count(self) -> int:
-        return self._get()
+        with self._lock:
+            return self._rx_buffer_count
 
     def needs_space(self, needed: int) -> bool:
         """Return True if *needed* bytes would overflow the RX buffer."""
-        return self._get() + needed > self._rx_buffer_size
+        return self.buffer_count + needed > self._rx_buffer_size
 
     def set_rx_buffer_size(self, size: int) -> None:
         """
@@ -357,7 +456,7 @@ class GrblSerialTransport:
         Since polls bypass the RX buffer, we do not decrement the
         buffer count here.
         """
-        return self._get()
+        return self.buffer_count
 
     def reset_flow_control(self) -> None:
         """Reset flow-control state without clearing the parse buffer."""
@@ -402,8 +501,4 @@ class GrblSerialTransport:
                     f"bytes. Clamping to 0."
                 )
                 self._rx_buffer_count = 0
-            return self._rx_buffer_count
-
-    def _get(self) -> int:
-        with self._lock:
             return self._rx_buffer_count

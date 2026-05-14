@@ -44,12 +44,26 @@ class AckEvent:
 
 
 @dataclass
+class BufferWaitEvent:
+    line: int
+    timestamp: str
+    buf_used: int
+    buf_total: int
+    needed: int
+    resume_line: int | None = None
+    resume_timestamp: str | None = None
+    resume_buf_used: int | None = None
+
+
+@dataclass
 class Report:
     pending: deque[PendingCmd] = field(default_factory=deque)
     all_cmds: list[PendingCmd] = field(default_factory=list)
     acks: list[AckEvent] = field(default_factory=list)
     anomalies: list[str] = field(default_factory=list)
     buf_tracking: list[tuple[int, str, int, int]] = field(default_factory=list)
+    buf_waits: list[BufferWaitEvent] = field(default_factory=list)
+    _open_wait: BufferWaitEvent | None = field(default=None, repr=False)
     job_start_line: int | None = None
     job_end_line: int | None = None
 
@@ -71,12 +85,29 @@ RE_BUFFER_ACK = re.compile(
 )
 RE_ERROR = re.compile(rf"^{RE_TS}.*Extracted 'error:(\d+)' from raw buffer")
 RE_TIMEOUT = re.compile(rf"^{RE_TS}.*Timeout waiting for buffer space")
+RE_BUFFER_STALL = re.compile(
+    rf"^{RE_TS}.*Buffer stall: timed out"
+    r".*waiting for (\d+) bytes"
+    r".*\(buf: (\d+)/(\d+)"
+)
+RE_BUFFER_WAIT = re.compile(
+    rf"^{RE_TS}.*Buffer full \((\d+)/(\d+)\), waiting for (\d+) bytes"
+)
+RE_BUFFER_RESUME = re.compile(
+    rf"^{RE_TS}.*Buffer space available, resuming"
+    r".*\(buf: (\d+)/(\d+)\)"
+)
 RE_QUEUE_CLEARED = re.compile(
     r"Command queue cleared after cancel"
     r"|Deadlock recovery: sending"
 )
-RE_JOB_START = re.compile(r"Starting job")
-RE_JOB_END = re.compile(r"_job_running = False|G-code streaming finished")
+RE_JOB_START = re.compile(r"Starting GRBL streaming job")
+RE_JOB_END = re.compile(
+    r"G-code streaming finished"
+    r"|G-code streaming cancelled"
+    r"|G-code streaming aborted"
+    r"|G-code streaming ended unexpectedly"
+)
 
 
 def _payload_bytes(payload: str) -> int:
@@ -208,6 +239,44 @@ def parse(path: str) -> Report:
                 ts = m.group(1)
                 r.anomalies.append(f"L{lineno} {ts}: buffer space timeout")
 
+            m = RE_BUFFER_STALL.match(line)
+            if m:
+                ts = m.group(1)
+                needed = int(m.group(2))
+                used = int(m.group(3))
+                total = int(m.group(4))
+                r.anomalies.append(
+                    f"L{lineno} {ts}: buffer stall - "
+                    f"timed out waiting for {needed} bytes "
+                    f"(buf: {used}/{total})"
+                )
+
+            m = RE_BUFFER_WAIT.match(line)
+            if m:
+                ts = m.group(1)
+                buf_used = int(m.group(2))
+                buf_total = int(m.group(3))
+                needed = int(m.group(4))
+                ev = BufferWaitEvent(
+                    line=lineno,
+                    timestamp=ts,
+                    buf_used=buf_used,
+                    buf_total=buf_total,
+                    needed=needed,
+                )
+                r.buf_waits.append(ev)
+                r._open_wait = ev
+
+            m = RE_BUFFER_RESUME.match(line)
+            if m:
+                ts = m.group(1)
+                resume_used = int(m.group(2))
+                if r._open_wait:
+                    r._open_wait.resume_line = lineno
+                    r._open_wait.resume_timestamp = ts
+                    r._open_wait.resume_buf_used = resume_used
+                    r._open_wait = None
+
             if RE_QUEUE_CLEARED.search(line):
                 while r.pending:
                     r.pending.popleft().cancelled = True
@@ -251,6 +320,28 @@ def fmt_report(r: Report):
     pending_bytes = sum(c.byte_len for c in unacked)
     if pending_bytes:
         print(f"  Total orphaned buffer: {pending_bytes} bytes")
+
+    if r.buf_waits:
+        print()
+        unresolved = [w for w in r.buf_waits if w.resume_line is None]
+        print(
+            "=== Buffer Waits "
+            f"({len(r.buf_waits)} total, "
+            f"{len(unresolved)} unresolved) ==="
+        )
+        for w in r.buf_waits[-50:]:
+            status = (
+                f"resumed L{w.resume_line} "
+                f"(buf: {w.resume_buf_used}/{w.buf_total})"
+                if w.resume_line
+                else "UNRESOLVED"
+            )
+            print(
+                f"  L{w.line:<6} {w.timestamp}  "
+                f"wait {w.needed}B "
+                f"(buf: {w.buf_used}/{w.buf_total})  "
+                f"{status}"
+            )
 
     print()
     print("=== Buffer Timeline (last 200 entries) ===")
