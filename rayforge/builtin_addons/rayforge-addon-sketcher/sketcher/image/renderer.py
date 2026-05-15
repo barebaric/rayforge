@@ -2,13 +2,8 @@ import logging
 import math
 from typing import Optional, TYPE_CHECKING, Tuple
 import warnings
-from rayforge.core.geo import Geometry
-from rayforge.core.geo.constants import (
-    CMD_TYPE_MOVE,
-    CMD_TYPE_LINE,
-    CMD_TYPE_ARC,
-    CMD_TYPE_BEZIER,
-)
+from raygeo import Geometry
+from raygeo.path import PyCommand
 from rayforge.image.base_renderer import Renderer, RenderSpecification
 from rayforge.image.structures import FillRenderData, FillStyle
 from rayforge.image.svg.svg_fallback import (
@@ -42,13 +37,16 @@ def _geometry_to_svg_path(
     scaled to the target pixel dimensions.
     """
     path_data = []
-    for cmd_type, x, y, z, p1, p2, p3, p4 in geometry.iter_commands():
-        if cmd_type == CMD_TYPE_MOVE:
+    for cmd in geometry.iter_typed_commands():
+        x, y = cmd.end[0], cmd.end[1]
+        if isinstance(cmd, PyCommand.Move):
             path_data.append(f"M {x * width:.3f} {height * (1 - y):.3f}")
-        elif cmd_type == CMD_TYPE_LINE:
+        elif isinstance(cmd, PyCommand.Line):
             path_data.append(f"L {x * width:.3f} {height * (1 - y):.3f}")
-        elif cmd_type == CMD_TYPE_ARC:
-            i, j, cw = p1, p2, p3
+        elif isinstance(cmd, PyCommand.Arc):
+            i = cmd.center_offset[0]
+            j = cmd.center_offset[1]
+            cw = cmd.clockwise
 
             ex_px = x * width
             ey_px = height * (1 - y)
@@ -65,8 +63,11 @@ def _geometry_to_svg_path(
                 f"A {radius_x_px:.3f} {radius_y_px:.3f} 0 {large_arc} {sweep} "
                 f"{ex_px:.3f} {ey_px:.3f}"
             )
-        elif cmd_type == CMD_TYPE_BEZIER:
-            c1x, c1y, c2x, c2y = p1, p2, p3, p4
+        elif isinstance(cmd, PyCommand.Bezier):
+            c1x = cmd.control1[0]
+            c1y = cmd.control1[1]
+            c2x = cmd.control2[0]
+            c2y = cmd.control2[1]
             c1x_px = c1x * width
             c1y_px = height * (1 - c1y)
             c2x_px = c2x * width

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from enum import Enum, auto
 from typing import Tuple, Union, Set, Optional
-from ...core.geo import Rect
+from raygeo import Rect
 
 
 class ElementRegion(Enum):

@@ -4,7 +4,7 @@ from pathlib import Path
 import ezdxf
 from typing import Optional, Union, cast
 from unittest.mock import Mock
-from rayforge.core.geo import CMD_TYPE_BEZIER, Geometry
+from raygeo import CMD_TYPE_BEZIER, Geometry
 from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec

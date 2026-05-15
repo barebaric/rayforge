@@ -3,7 +3,7 @@ import math
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Sequence, TYPE_CHECKING
 from blinker import Signal
-from ...core.geo import Rect
+from raygeo import Rect
 from ...core.group import Group
 from ...core.item import DocItem
 from ...core.layer import Layer

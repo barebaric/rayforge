@@ -1,7 +1,7 @@
 import json
 import pytest
 from pathlib import Path
-from rayforge.core.geo import Geometry
+from raygeo import Geometry
 from rayforge.core.asset_registry import asset_type_registry
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.svg.exporter import (

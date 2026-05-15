@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 import numpy as np
 
-from ..core.geo.arc import linearize_arc
+from raygeo.shape.arc import linearize_arc
 from ..core.ops import Ops
 from ..core.ops.commands import (
     ArcToCommand,

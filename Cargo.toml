@@ -1,3 +1,0 @@
-[workspace]
-members = ["crates/rayforge-geo", "crates/rayforge-geo-py"]
-resolver = "2"

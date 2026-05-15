@@ -2,9 +2,8 @@ import pytest
 from unittest.mock import MagicMock, patch
 import logging
 from pathlib import Path
-
+from raygeo import Geometry
 from rayforge.context import get_context
-from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
 from rayforge.core.ops import Ops
 from rayforge.core.step import Step

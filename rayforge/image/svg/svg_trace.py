@@ -4,7 +4,7 @@ import logging
 from typing import Optional, Dict, Any
 from gettext import gettext as _
 
-from ...core.geo import Geometry, Rect
+from raygeo import Geometry, Rect
 from ...core.matrix import Matrix
 from ...core.vectorization_spec import (
     TraceSpec,

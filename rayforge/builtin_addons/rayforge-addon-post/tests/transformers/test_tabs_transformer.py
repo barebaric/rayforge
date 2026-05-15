@@ -1,6 +1,6 @@
 import math
 
-from rayforge.core.geo.bezier import evaluate_bezier
+from raygeo.shape.bezier import get_bezier_point_at
 from rayforge.core.ops import (
     BezierToCommand,
     LineToCommand,
@@ -22,7 +22,7 @@ _P1 = (100.0, 0.0, 0.0)
 
 
 def _bezier_point_2d(t):
-    return evaluate_bezier(_P0[:2], _C1[:2], _C2[:2], _P1[:2], t)
+    return get_bezier_point_at(_P0[:2], _C1[:2], _C2[:2], _P1[:2], t)
 
 
 def _make_bezier_subpath():
@@ -154,7 +154,7 @@ def test_mixed_lines_and_bezier_gap():
     transformer = TabOpsTransformer()
     cmds = _make_mixed_subpath()
 
-    mid = evaluate_bezier(
+    mid = get_bezier_point_at(
         (30.0, 0.0), (40.0, 10.0), (60.0, 10.0), (70.0, 0.0), 0.5
     )
     clips = [_ClipPoint(x=mid[0], y=mid[1], width=10.0)]
@@ -228,7 +228,7 @@ def test_bezier_power_mode_no_overlap():
 def test_mixed_lines_and_bezier_power():
     cmds = _make_mixed_subpath()
 
-    mid = evaluate_bezier(
+    mid = get_bezier_point_at(
         (30.0, 0.0), (40.0, 10.0), (60.0, 10.0), (70.0, 0.0), 0.5
     )
     clips = [_ClipPoint(x=mid[0], y=mid[1], width=10.0)]

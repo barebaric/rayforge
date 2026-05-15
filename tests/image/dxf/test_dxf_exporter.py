@@ -2,7 +2,7 @@ import pytest
 import io
 import ezdxf
 from pathlib import Path
-from rayforge.core.geo import Geometry
+from raygeo import Geometry
 from rayforge.image.dxf.exporter import (
     GeometryDxfExporter,
     MultiGeometryDxfExporter,

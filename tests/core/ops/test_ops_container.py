@@ -5,7 +5,7 @@ import json
 import numpy as np
 from contextlib import redirect_stdout
 from typing import cast
-from rayforge.core.geo.geometry import Geometry
+from raygeo import Geometry
 from rayforge.core.ops import (
     Axis,
     Ops,

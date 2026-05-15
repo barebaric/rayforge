@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Sequence, TYPE_CHECKING, Optional
-from rayforge.core.geo import Geometry, Polygon, Rect
+from raygeo import Geometry, Polygon, Rect
 from ..types import EntityID
 
 if TYPE_CHECKING:

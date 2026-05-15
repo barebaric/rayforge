@@ -1,6 +1,6 @@
 import math
 from typing import List, Dict, Optional, Any, Sequence, Tuple, TYPE_CHECKING
-from rayforge.core.geo import Geometry, Point, Rect
+from raygeo import Geometry, Point, Rect
 from ..types import EntityID
 from .entity import Entity
 

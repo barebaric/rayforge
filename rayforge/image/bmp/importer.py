@@ -11,7 +11,7 @@ with warnings.catch_warnings():
     except ImportError:
         raise ImportError("The BMP importer requires the pyvips library.")
 
-from ...core.geo import Geometry
+from raygeo import Geometry
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
 from .. import util

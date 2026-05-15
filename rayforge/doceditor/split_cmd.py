@@ -3,7 +3,7 @@ import logging
 from typing import TYPE_CHECKING, List
 from abc import ABC, abstractmethod
 from gettext import gettext as _
-from ..core.geo import Geometry
+from raygeo import Geometry
 from ..core.item import DocItem
 from ..core.undo import ListItemCommand
 from ..core.workpiece import WorkPiece

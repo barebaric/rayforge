@@ -2,8 +2,8 @@ import math
 import uuid
 import pytest
 from pathlib import Path
-from rayforge.core.geo import Geometry
-from rayforge.core.geo.constants import (
+from raygeo import Geometry
+from raygeo import (
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,
     COL_TYPE,

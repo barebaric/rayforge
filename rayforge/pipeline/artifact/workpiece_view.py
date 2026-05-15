@@ -2,7 +2,7 @@ from __future__ import annotations
 import numpy as np
 from typing import Tuple, Dict, Any, Type, Union
 from dataclasses import dataclass, asdict, field
-from ...core.geo import Rect
+from raygeo import Rect
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
 

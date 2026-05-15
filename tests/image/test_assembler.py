@@ -1,7 +1,7 @@
 from typing import Dict
 from unittest.mock import MagicMock
 import pytest
-from rayforge.core.geo import Geometry
+from raygeo import Geometry
 from rayforge.core.matrix import Matrix
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.image.assembler import ItemAssembler

@@ -6,10 +6,9 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 
-from ..geo import clipping as geo_clipping
-from ..geo.arc import is_arc_fully_inside_regions
-from ..geo.bezier import is_bezier_fully_inside_regions
-from ..geo.constants import (
+from raygeo import (
+    Point3D,
+    Polygon,
     CMD_TYPE_ARC,
     CMD_TYPE_BEZIER,
     CMD_TYPE_LINE,
@@ -24,9 +23,11 @@ from ..geo.constants import (
     COL_X,
     COL_Y,
     COL_Z,
+    clip_line_segment_with_polygons,
+    is_arc_inside_polygons,
+    is_bezier_inside_polygons,
+    fit_points_with_primitives,
 )
-from ..geo.fitting import fit_points_to_primitives
-from ..geo.types import Point3D, Polygon
 from .commands import (
     ArcToCommand,
     BezierToCommand,
@@ -85,7 +86,7 @@ def clip_ops_to_regions(
             continue
 
         if isinstance(cmd, ArcToCommand):
-            if is_arc_fully_inside_regions(
+            if is_arc_inside_polygons(
                 (last_point[0], last_point[1]),
                 (cmd.end[0], cmd.end[1]),
                 cmd.center_offset,
@@ -115,7 +116,7 @@ def clip_ops_to_regions(
             end_2d = (cmd.end[0], cmd.end[1])
             c1_2d = (cmd.control1[0], cmd.control1[1])
             c2_2d = (cmd.control2[0], cmd.control2[1])
-            if is_bezier_fully_inside_regions(
+            if is_bezier_inside_polygons(
                 start_2d, c1_2d, c2_2d, end_2d, valid_regions
             ):
                 if pen_pos is None or math.dist(pen_pos, last_point) > 1e-6:
@@ -142,7 +143,7 @@ def clip_ops_to_regions(
             if l_cmd.end is None:
                 continue
             p_seg_end = l_cmd.end
-            kept_segments = geo_clipping.clip_line_segment_to_regions(
+            kept_segments = clip_line_segment_with_polygons(
                 p_seg_start,
                 p_seg_end,
                 valid_regions,
@@ -173,7 +174,7 @@ def _clip_scanline(
     pen_pos: Optional[Point3D],
     valid_regions: List[Polygon],
 ) -> Optional[Point3D]:
-    kept_segments = geo_clipping.clip_line_segment_to_regions(
+    kept_segments = clip_line_segment_with_polygons(
         last_point, cmd.end, valid_regions
     )
     num_values = len(cmd.power_values)
@@ -219,7 +220,7 @@ def _clip_and_refit_arc(
         if l_cmd.end is None:
             continue
         p_seg_end = l_cmd.end
-        segs = geo_clipping.clip_line_segment_to_regions(
+        segs = clip_line_segment_with_polygons(
             p_seg_start,
             p_seg_end,
             valid_regions,
@@ -235,7 +236,7 @@ def _clip_and_refit_arc(
             chains.append([p1, p2])
 
     for chain in chains:
-        primitives = fit_points_to_primitives(chain, tolerance)
+        primitives = fit_points_with_primitives(chain, tolerance)
         if not primitives:
             continue
         if pen_pos is None or math.dist(pen_pos, chain[0]) > 1e-6:
@@ -282,7 +283,7 @@ def _clip_and_refit_bezier(
         if l_cmd.end is None:
             continue
         p_seg_end = l_cmd.end
-        segs = geo_clipping.clip_line_segment_to_regions(
+        segs = clip_line_segment_with_polygons(
             p_seg_start,
             p_seg_end,
             valid_regions,
@@ -298,7 +299,7 @@ def _clip_and_refit_bezier(
             chains.append([p1, p2])
 
     for chain in chains:
-        primitives = fit_points_to_primitives(chain, tolerance)
+        primitives = fit_points_with_primitives(chain, tolerance)
         if not primitives:
             continue
         if pen_pos is None or math.dist(pen_pos, chain[0]) > 1e-6:

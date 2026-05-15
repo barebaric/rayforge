@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Dict, List, Optional, Any, Set
 
-from rayforge.core.geo import Point
+from raygeo import Point
 from rayforge.core.undo.command import Command
 
 if TYPE_CHECKING:

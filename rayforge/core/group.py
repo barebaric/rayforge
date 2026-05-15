@@ -3,7 +3,7 @@ import logging
 from typing import List, Dict, Optional, Sequence, TYPE_CHECKING, Any, Tuple
 from dataclasses import dataclass
 import cairo
-from .geo import Rect
+from raygeo import Rect
 from .item import DocItem
 from .matrix import Matrix
 from .workpiece import WorkPiece

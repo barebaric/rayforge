@@ -1,6 +1,6 @@
 import logging
 from typing import List, Dict, Optional
-from ..core.geo import Geometry, Rect
+from raygeo import Geometry, Rect
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.source_asset import SourceAsset

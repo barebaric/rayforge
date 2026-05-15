@@ -24,7 +24,7 @@ with warnings.catch_warnings():
     import pyvips
 
 from ..context import get_context
-from ..core.geo import Geometry, Point, Rect
+from raygeo import Geometry, Point, Rect
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.matrix import Matrix

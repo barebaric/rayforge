@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 from typing import Tuple, Optional, List
-from ..core.geo import Geometry, Point
+from raygeo import Geometry, Point
 
 
 def polygon_to_geometry(

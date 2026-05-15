@@ -3,7 +3,7 @@ from gettext import gettext as _
 import math
 from typing import TYPE_CHECKING, List, Optional, Set
 
-from rayforge.core.geo import Point as GeoPoint
+from raygeo import Point as GeoPoint
 from ..constraints import DiameterConstraint
 from ..entities import Circle, Point
 from ..types import EntityID

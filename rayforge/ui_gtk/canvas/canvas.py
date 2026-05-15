@@ -8,7 +8,7 @@ import numpy as np
 from gi.repository import Gtk, Gdk, Graphene
 from blinker import Signal
 from ...core.color import ColorRGBA
-from ...core.geo import Point, Rect
+from raygeo import Point, Rect
 from ...core.matrix import Matrix
 from ..shared.keyboard import is_primary_keyval
 from . import transform

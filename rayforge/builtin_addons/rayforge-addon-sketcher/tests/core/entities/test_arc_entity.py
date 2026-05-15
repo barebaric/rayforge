@@ -2,7 +2,7 @@ import pytest
 import math
 from sketcher.core.entities import Arc
 from sketcher.core.registry import EntityRegistry
-from rayforge.core.geo.geometry import Geometry
+from raygeo import Geometry
 
 
 @pytest.fixture

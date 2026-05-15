@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from rayforge.core.geo import Point
+from raygeo import Point
 
 
 @dataclass

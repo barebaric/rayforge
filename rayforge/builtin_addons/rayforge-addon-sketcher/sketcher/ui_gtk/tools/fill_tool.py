@@ -4,6 +4,7 @@ from typing import Optional
 import cairo
 
 from rayforge.core.color import ColorRGBA
+from rayforge.image.geo_renderer import geometry_to_cairo
 from ...core.commands import AddFillCommand, RemoveFillCommand
 from ...core.commands.fill import SetTextFillCommand
 from ...core.entities.text_box import TextBoxEntity
@@ -67,7 +68,7 @@ class FillTool(SketchTool):
             if text_geo is None or text_geo.is_empty():
                 continue
             ctx.new_path()
-            text_geo.to_cairo(ctx)
+            geometry_to_cairo(text_geo, ctx)
             if ctx.in_fill(mx, my):
                 return entity
         return None

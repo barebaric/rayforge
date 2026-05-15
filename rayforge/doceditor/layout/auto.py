@@ -20,12 +20,13 @@ import numpy as np
 from scipy.ndimage import binary_dilation
 from scipy.signal import fftconvolve
 from ...context import get_context
-from ...core.geo import Point, Rect
+from raygeo import Point, Rect
 from ...core.group import Group
 from ...core.matrix import Matrix
 from ...core.item import DocItem
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
+from ...image.geo_renderer import geometry_to_cairo
 from .base import LayoutStrategy
 
 if TYPE_CHECKING:
@@ -322,7 +323,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         ctx.scale(self.resolution, self.resolution)  # Scale context to mm
 
         # Draw path from geometry data.
-        geometry_for_render.to_cairo(ctx)
+        geometry_to_cairo(geometry_for_render, ctx)
         ctx.fill()
 
         # 4. Extract the pixel data into a NumPy array.

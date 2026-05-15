@@ -5,9 +5,9 @@ from typing import Optional, Tuple, Dict, Any, List
 from abc import ABC, abstractmethod
 import numpy as np
 import math
-from ..geo import linearize as geo_linearize
-from ..geo.bezier import linearize_bezier_segment
-from ..geo.types import Point3D
+from raygeo import Point3D, CMD_TYPE_ARC
+from raygeo.shape.arc import linearize_arc as geo_linearize_arc
+from raygeo.shape.bezier import linearize_bezier_segment
 from .axis import Axis
 
 
@@ -173,7 +173,17 @@ class ArcToCommand(MovingCommand):
 
     def linearize(self, start_point: Point3D) -> List[Command]:
         """Approximates the arc with a series of LineToCommands."""
-        segments = geo_linearize.linearize_arc(self, start_point)
+        arc_row = [
+            CMD_TYPE_ARC,
+            self.end[0],
+            self.end[1],
+            self.end[2],
+            self.center_offset[0],
+            self.center_offset[1],
+            1.0 if self.clockwise else 0.0,
+            0.0,
+        ]
+        segments = geo_linearize_arc(arc_row, start_point)
         new_cmds = []
         for _, end in segments:
             line_cmd = LineToCommand(end, extra_axes=dict(self.extra_axes))

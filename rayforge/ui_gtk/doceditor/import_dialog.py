@@ -20,6 +20,7 @@ from ...core.vectorization_spec import (
 from ...core.workpiece import WorkPiece
 from ...doceditor.file_cmd import PreviewResult
 from ...image.base_importer import ImporterFeature
+from ...image.geo_renderer import geometry_to_cairo
 from ...image.structures import ImportManifest
 from ...core.matrix import Matrix
 from ..shared.adwfix import get_spinrow_float
@@ -675,7 +676,7 @@ class ImportDialog(PatchedDialogWindow):
                 ctx.set_line_width(constant_line_width)
                 ctx.set_source_rgb(0.1, 0.5, 1.0)  # Blue for vectors
                 ctx.new_path()
-                world_geo.to_cairo(ctx)
+                geometry_to_cairo(world_geo, ctx)
                 ctx.stroke()
                 ctx.restore()
             elif isinstance(item, Layer):
