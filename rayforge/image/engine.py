@@ -1,6 +1,6 @@
 import logging
 from typing import List, Optional
-from ..core.geo import Rect
+from raygeo import Rect
 from ..core.matrix import Matrix
 from ..core.vectorization_spec import (
     LayerImportMode,

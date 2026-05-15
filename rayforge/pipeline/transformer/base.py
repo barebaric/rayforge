@@ -8,7 +8,7 @@ from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
-    from ...core.geo import Geometry
+    from raygeo import Geometry
 
 
 class ExecutionPhase(Enum):

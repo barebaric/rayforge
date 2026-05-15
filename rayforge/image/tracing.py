@@ -9,7 +9,7 @@ from typing import List, Optional, Tuple
 import logging
 import threading
 import sys
-from ..core.geo import Geometry, Point
+from raygeo import Geometry, Point
 from ..core.vectorization_spec import VectorizationSpec, TraceSpec
 from ..core.matrix import Matrix
 from .denoise import denoise_boolean_image

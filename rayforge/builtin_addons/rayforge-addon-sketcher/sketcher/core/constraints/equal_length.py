@@ -11,7 +11,7 @@ from typing import (
     cast,
 )
 from gettext import gettext as _
-from rayforge.core.geo import Point
+from raygeo import Point
 from ..entities import Line, Arc, Circle, Ellipse
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus

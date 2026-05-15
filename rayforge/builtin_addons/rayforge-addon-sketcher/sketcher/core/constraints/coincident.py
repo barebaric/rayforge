@@ -4,7 +4,7 @@ from __future__ import annotations
 import math
 from gettext import gettext as _
 from typing import Dict, Any, List, Callable, Optional, TYPE_CHECKING
-from rayforge.core.geo import Point
+from raygeo import Point
 from .base import Constraint, ConstraintStatus
 from ..types import EntityID
 

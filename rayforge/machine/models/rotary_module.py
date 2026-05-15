@@ -7,7 +7,7 @@ import numpy as np
 from blinker import Signal
 
 from ...core.matrix import euler_rotation_matrix
-from ...core.geo import Rect3D
+from raygeo import Rect3D
 from ...core.ops.axis import Axis
 
 

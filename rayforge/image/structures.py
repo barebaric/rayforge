@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Tuple, Optional, Dict, TYPE_CHECKING
-from ..core.geo import Geometry, Rect
+from raygeo import Geometry, Rect
 from ..core.matrix import Matrix
 from ..core.color import ColorRGBA
 

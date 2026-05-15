@@ -2,10 +2,12 @@ import logging
 from enum import Enum, auto
 from typing import Optional, TYPE_CHECKING, Dict, Any
 from gettext import gettext as _
-
+from raygeo import Geometry
+from raygeo.path import (
+    extract_overcut_rows,
+    normalize_winding_orders,
+)
 from rayforge.image.tracing import trace_surface
-from rayforge.core.geo import contours, Geometry
-from rayforge.core.geo.query import extract_overcut_rows
 from rayforge.core.matrix import Matrix
 from rayforge.core.ops import Ops, SectionType
 from rayforge.core.vectorization_spec import TraceSpec
@@ -181,7 +183,7 @@ class ContourProducer(OpsProducer):
         # 3. Normalize winding orders.
         target_contours = []
         if base_contours:
-            target_contours = contours.normalize_winding_orders(base_contours)
+            target_contours = normalize_winding_orders(base_contours)
 
         # 4. Apply offsets.
         composite_geo = Geometry()

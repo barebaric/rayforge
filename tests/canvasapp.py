@@ -12,10 +12,9 @@ from typing import Optional, Dict, List
 base_path = Path(__file__).parent
 logging.basicConfig(level=logging.DEBUG)
 
-
+from raygeo import Point
 from rayforge.ui_gtk.canvas import Canvas, CanvasElement, ShrinkWrapGroup
 from rayforge.core.matrix import Matrix
-from rayforge.core.geo import Point
 
 
 class ExampleElement(CanvasElement):

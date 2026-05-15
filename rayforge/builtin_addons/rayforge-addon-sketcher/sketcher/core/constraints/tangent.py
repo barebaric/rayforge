@@ -3,8 +3,8 @@ import math
 import cairo
 from typing import Dict, Any, List, Callable, Optional, TYPE_CHECKING
 from gettext import gettext as _
-from rayforge.core.geo import Point
-from rayforge.core.geo.primitives import find_closest_point_on_line
+from raygeo import Point
+from raygeo.shape.line import get_line_closest_point
 from ..entities import Line, Arc, Circle
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
@@ -238,7 +238,7 @@ class TangentConstraint(Constraint):
             return False
 
         # Find closest point on infinite line from center
-        tangent_mx, tangent_my = find_closest_point_on_line(
+        tangent_mx, tangent_my = get_line_closest_point(
             (p1.x, p1.y), (p2.x, p2.y), center.x, center.y
         )
 
@@ -281,7 +281,7 @@ class TangentConstraint(Constraint):
         center = registry.get_point(shape.center_idx)
 
         # Find closest point on infinite line from center (in model space)
-        tangent_mx, tangent_my = find_closest_point_on_line(
+        tangent_mx, tangent_my = get_line_closest_point(
             (p1.x, p1.y), (p2.x, p2.y), center.x, center.y
         )
 

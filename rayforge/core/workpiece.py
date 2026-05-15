@@ -24,9 +24,9 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
+from raygeo import Geometry, Rect, Point
 from ..context import get_context
 from .asset_registry import asset_type_registry
-from .geo import Geometry, Rect, Point
 from .geometry_provider import IGeometryProvider
 from .item import DocItem
 from .matrix import Matrix

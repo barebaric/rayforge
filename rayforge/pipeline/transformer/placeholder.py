@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Optional, List, Dict, Any
 from .base import OpsTransformer
 
 if TYPE_CHECKING:
-    from ...core.geo import Geometry
+    from raygeo import Geometry
     from ...core.ops import Ops
     from ...core.workpiece import WorkPiece
     from ...shared.tasker.progress import ProgressContext

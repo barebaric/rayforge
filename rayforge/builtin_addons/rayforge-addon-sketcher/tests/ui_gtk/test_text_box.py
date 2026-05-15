@@ -13,7 +13,7 @@ if sys.platform.startswith("linux"):
             allow_module_level=True,
         )
 
-from rayforge.core.geo.font_config import FontConfig
+from rayforge.core.font_config import FontConfig
 from sketcher.core import Sketch
 from sketcher.core.entities import TextBoxEntity
 from sketcher.ui_gtk.sketchelement import SketchElement

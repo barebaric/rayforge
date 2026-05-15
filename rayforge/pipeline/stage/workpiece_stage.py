@@ -4,7 +4,7 @@ import math
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from copy import deepcopy
 from blinker import Signal
-from ...core.geo import Geometry
+from raygeo import Geometry
 from ...core.ops import Ops
 from ...shared.tasker.task import Task
 from ...shared.util.size import sizes_are_close

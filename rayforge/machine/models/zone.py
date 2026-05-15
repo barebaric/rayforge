@@ -5,10 +5,15 @@ from typing import Any, Dict
 
 from blinker import Signal
 
-from ...core.geo.arc import arc_intersects_circle, arc_intersects_rect
-from ...core.geo.circle import line_segment_intersects_circle
-from ...core.geo.primitives import line_segment_intersects_rect
-from ...core.geo.types import Point
+from raygeo.shape.arc import (
+    does_arc_intersect_circle as arc_intersects_circle,
+    does_arc_intersect_rect as arc_intersects_rect,
+)
+from raygeo.shape.line import (
+    does_line_segment_intersect_circle as line_segment_intersects_circle,
+    does_line_segment_intersect_rect as line_segment_intersects_rect,
+)
+from raygeo import Point
 
 
 class ZoneShape(Enum):

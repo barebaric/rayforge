@@ -3,8 +3,8 @@ from typing import Optional, TYPE_CHECKING, Dict, Set, Tuple, cast, List
 import cairo
 import numpy as np
 from gi.repository import Gdk, GLib
-from ....core.geo import Geometry
-from ....core.geo.constants import (
+from raygeo import Geometry
+from raygeo import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,

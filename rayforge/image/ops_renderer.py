@@ -6,8 +6,9 @@ if TYPE_CHECKING:
     from ..core.source_asset_segment import SourceAssetSegment
     from ..core.workpiece import RenderContext
 
-from ..core.geo import Geometry
+from raygeo import Geometry
 from .base_renderer import Renderer, RenderSpecification
+from .geo_renderer import geometry_to_cairo
 import warnings
 
 with warnings.catch_warnings():
@@ -129,7 +130,7 @@ class OpsRenderer(Renderer):
 
         ctx.set_line_cap(cairo.LINE_CAP_SQUARE)
 
-        boundaries.to_cairo(ctx)
+        geometry_to_cairo(boundaries, ctx)
         ctx.stroke()
         logger.debug("Stroked geometry path to Cairo context.")
 

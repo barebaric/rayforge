@@ -3,7 +3,7 @@ from dataclasses import dataclass, field, replace
 from typing import Dict, Any, List, Optional
 from copy import deepcopy
 
-from .geo import Geometry, Rect
+from raygeo import Geometry, Rect
 from .matrix import Matrix
 from .vectorization_spec import VectorizationSpec
 

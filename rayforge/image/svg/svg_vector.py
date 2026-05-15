@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from typing import List, Optional, Dict, Any, Generator, Union
 from svgelements import Group, Path as SvgPath, SVG, Length
-from ...core.geo import Geometry
+from raygeo import Geometry
 from ...core.matrix import Matrix
 from ...core.vectorization_spec import (
     PassthroughSpec,

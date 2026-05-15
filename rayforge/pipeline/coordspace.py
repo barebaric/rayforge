@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Tuple
 
 import numpy as np
 
-from ..core.geo import Point, Point3D, Rect
+from raygeo import Point, Point3D, Rect
 
 if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine

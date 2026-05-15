@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from typing import List, Dict, Any, TYPE_CHECKING
 from gettext import gettext as _
-from ...core.geo import Geometry
+from raygeo import Geometry
 from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import CallbackProgressContext

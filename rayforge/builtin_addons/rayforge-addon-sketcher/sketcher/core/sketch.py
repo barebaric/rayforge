@@ -8,28 +8,14 @@ from collections import defaultdict
 import logging
 import math
 from gettext import gettext as _
+from raygeo import Geometry
+from raygeo.path import PyCommand
+from raygeo.shape.polygon import is_point_inside_polygon
 from rayforge.core.asset import IAsset
 from rayforge.core.expression import ExpressionMap
-from rayforge.core.geo import Geometry
-from rayforge.core.geo import primitives
-from rayforge.core.geo.constants import (
-    CMD_TYPE_MOVE,
-    CMD_TYPE_LINE,
-    CMD_TYPE_ARC,
-    CMD_TYPE_BEZIER,
-    COL_TYPE,
-    COL_X,
-    COL_Y,
-    COL_I,
-    COL_J,
-    COL_CW,
-    COL_C1X,
-    COL_C1Y,
-    COL_C2X,
-    COL_C2Y,
-)
 from rayforge.core.geometry_provider import IGeometryProvider
 from rayforge.core.varset import VarSet
+from rayforge.image.geo_renderer import render_geometry_to_png
 from rayforge.image.structures import FillRenderData, FillStyle
 from rayforge.core.color import ColorRGBA
 from .constraints import (
@@ -311,7 +297,7 @@ class Sketch(IAsset, IGeometryProvider):
     def get_thumbnail(self, size: int) -> Optional[bytes]:
         """Returns a PNG thumbnail of the sketch geometry."""
         try:
-            return self.to_geometry().to_png(size)
+            return render_geometry_to_png(self.to_geometry(), size)
         except Exception:
             logger.exception("Failed to generate sketch thumbnail")
             return None
@@ -465,9 +451,8 @@ class Sketch(IAsset, IGeometryProvider):
             A new Sketch instance with entities created from the geometry.
         """
         sketch = cls()
-        data = geometry.data
 
-        if data is None or len(data) == 0:
+        if geometry.data is None or len(geometry.data) == 0:
             return sketch
 
         point_map: Dict[Tuple[float, float], EntityID] = {}
@@ -481,27 +466,26 @@ class Sketch(IAsset, IGeometryProvider):
         current_x, current_y = 0.0, 0.0
         current_pid: Optional[EntityID] = None
 
-        for row in data:
-            cmd_type = row[COL_TYPE]
-            end_x, end_y = row[COL_X], row[COL_Y]
+        for cmd in geometry.iter_typed_commands():
+            end_x, end_y = cmd.end[0], cmd.end[1]
 
-            if cmd_type == CMD_TYPE_MOVE:
+            if isinstance(cmd, PyCommand.Move):
                 current_x, current_y = end_x, end_y
                 current_pid = get_or_add_point(end_x, end_y)
-            elif cmd_type == CMD_TYPE_LINE:
+            elif isinstance(cmd, PyCommand.Line):
                 if current_pid is None:
                     current_pid = get_or_add_point(current_x, current_y)
                 end_pid = get_or_add_point(end_x, end_y)
                 sketch.add_line(current_pid, end_pid)
                 current_pid = end_pid
                 current_x, current_y = end_x, end_y
-            elif cmd_type == CMD_TYPE_ARC:
+            elif isinstance(cmd, PyCommand.Arc):
                 if current_pid is None:
                     current_pid = get_or_add_point(current_x, current_y)
                 end_pid = get_or_add_point(end_x, end_y)
 
-                i_offset, j_offset = row[COL_I], row[COL_J]
-                clockwise = bool(row[COL_CW])
+                i_offset, j_offset = cmd.center_offset
+                clockwise = cmd.clockwise
 
                 center_x = current_x + i_offset
                 center_y = current_y + j_offset
@@ -512,14 +496,12 @@ class Sketch(IAsset, IGeometryProvider):
                 )
                 current_pid = end_pid
                 current_x, current_y = end_x, end_y
-            elif cmd_type == CMD_TYPE_BEZIER:
+            elif isinstance(cmd, PyCommand.Bezier):
                 if current_pid is None:
                     current_pid = get_or_add_point(current_x, current_y)
 
-                cp1_x = row[COL_C1X]
-                cp1_y = row[COL_C1Y]
-                cp2_x = row[COL_C2X]
-                cp2_y = row[COL_C2Y]
+                cp1_x, cp1_y = cmd.control1
+                cp2_x, cp2_y = cmd.control2
 
                 start_pt = sketch.registry.get_point(current_pid)
                 if start_pt:
@@ -1025,9 +1007,7 @@ class Sketch(IAsset, IGeometryProvider):
                                 is_hit = True
             else:
                 polygon = self._loop_to_polygon(loop)
-                if polygon and primitives.is_point_in_polygon(
-                    (mx, my), polygon
-                ):
+                if polygon and is_point_inside_polygon((mx, my), polygon):
                     is_hit = True
 
             if is_hit:

@@ -1,9 +1,10 @@
+raygeo==0.1.6
 aiohttp==3.13.5
 asyncudp==0.11.0
 blinker==1.9.0
 ezdxf==1.4.4b3
 GitPython==3.1.50
-numpy==2.4.3
+numpy~=2.4.3
 opencv_python
 platformdirs==4.3.6
 pluggy==1.6.0

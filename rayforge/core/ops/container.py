@@ -12,13 +12,16 @@ from typing import (
     Generator,
     Dict,
     Any,
-    TYPE_CHECKING,
 )
 import numpy as np
 import json
-from ..geo import clipping
-from ..geo.arc import get_arc_bounding_box, linearize_arc
-from ..geo.types import Point3D, Rect, Polygon
+from raygeo import Geometry, Point3D, Rect, Polygon, CMD_TYPE_ARC
+from raygeo.algo.clipping import (
+    clip_line_segment_with_rect,
+    subtract_polygons_from_line_segment,
+)
+from raygeo.path import PyCommand
+from raygeo.shape.arc import get_arc_bounds, linearize_arc
 from .axis import Axis
 from .commands import (
     ArcToCommand,
@@ -54,9 +57,6 @@ from .commands import (
 )
 from .timing import estimate_time
 
-
-if TYPE_CHECKING:
-    from ..geo.geometry import Geometry
 
 logger = logging.getLogger(__name__)
 
@@ -462,52 +462,30 @@ class Ops:
         """
         Creates an Ops object from a Geometry object, converting its path.
         """
-        from .. import geo
-
         new_ops = cls()
         if geometry.data is None:
             new_ops.last_move_to = geometry.last_move_to
             return new_ops
 
         last_pos = (0.0, 0.0, 0.0)
-        for row in geometry.data:
-            cmd_type = row[geo.constants.COL_TYPE]
-            x, y, z = row[geo.constants.COL_X : geo.constants.COL_Z + 1]
-            end = (x, y, z)
-
-            if cmd_type == geo.constants.CMD_TYPE_MOVE:
+        for cmd in geometry.iter_typed_commands():
+            end = cmd.end
+            if isinstance(cmd, PyCommand.Move):
                 new_ops.add(MoveToCommand(end))
-            elif cmd_type == geo.constants.CMD_TYPE_LINE:
+            elif isinstance(cmd, PyCommand.Line):
                 new_ops.add(LineToCommand(end))
-            elif cmd_type == geo.constants.CMD_TYPE_ARC:
-                i = row[geo.constants.COL_I]
-                j = row[geo.constants.COL_J]
-                cw = row[geo.constants.COL_CW]
-                center_offset = (i, j)
-                clockwise = bool(cw)
+            elif isinstance(cmd, PyCommand.Arc):
+                center_offset = cmd.center_offset
+                clockwise = cmd.clockwise
                 new_ops.add(ArcToCommand(end, center_offset, clockwise))
-            elif cmd_type == geo.constants.CMD_TYPE_BEZIER:
-                c1 = (
-                    row[geo.constants.COL_C1X],
-                    row[geo.constants.COL_C1Y],
-                )
-                c2 = (
-                    row[geo.constants.COL_C2X],
-                    row[geo.constants.COL_C2Y],
-                )
+            elif isinstance(cmd, PyCommand.Bezier):
+                c1 = cmd.control1
+                c2 = cmd.control2
                 z0, z1 = last_pos[2], end[2]
                 c1_3d = (c1[0], c1[1], z0 * (2 / 3) + z1 * (1 / 3))
                 c2_3d = (c2[0], c2[1], z0 * (1 / 3) + z1 * (2 / 3))
                 new_ops.add(BezierToCommand(end, c1_3d, c2_3d))
-
-            # Update last_pos with the endpoint of the original command
-            if cmd_type in (
-                geo.constants.CMD_TYPE_MOVE,
-                geo.constants.CMD_TYPE_LINE,
-                geo.constants.CMD_TYPE_ARC,
-                geo.constants.CMD_TYPE_BEZIER,
-            ):
-                last_pos = end
+            last_pos = end
 
         new_ops.last_move_to = geometry.last_move_to
         return new_ops
@@ -517,8 +495,6 @@ class Ops:
         Creates a Geometry path from this Ops object, including only the
         geometric commands.
         """
-        from ..geo.geometry import Geometry
-
         new_geo = Geometry()
         for op in self._commands:
             if isinstance(op, MoveToCommand):
@@ -1045,7 +1021,7 @@ class Ops:
                 min_y = min(min_y, cy - radius)
                 max_y = max(max_y, cy + radius)
             else:
-                abox = get_arc_bounding_box((ax, ay), (bx, by), (i, j), cw)
+                abox = get_arc_bounds((ax, ay), (bx, by), (i, j), cw)
                 min_x = min(min_x, abox[0])
                 min_y = min(min_y, abox[1])
                 max_x = max(max_x, abox[2])
@@ -1197,10 +1173,18 @@ class Ops:
             )
 
             if isinstance(cmd, ArcToCommand) and is_non_uniform:
-                # Use the last known untransformed point as the start for
-                # linearization
                 start_point = last_point_untransformed or (0.0, 0.0, 0.0)
-                segments = linearize_arc(cmd, start_point)
+                arc_row = [
+                    CMD_TYPE_ARC,
+                    cmd.end[0],
+                    cmd.end[1],
+                    cmd.end[2],
+                    cmd.center_offset[0],
+                    cmd.center_offset[1],
+                    1.0 if cmd.clockwise else 0.0,
+                    0.0,
+                ]
+                segments = linearize_arc(arc_row, start_point)
                 for _, p2 in segments:
                     point_vec = np.array([p2[0], p2[1], p2[2], 1.0])
                     transformed_vec = matrix @ point_vec
@@ -1750,7 +1734,7 @@ class Ops:
             # Special handling for ScanLinePowerCommand to prevent
             # linearization.
             if isinstance(cmd, ScanLinePowerCommand):
-                clipped_segment = clipping.clip_line_segment(
+                clipped_segment = clip_line_segment_with_rect(
                     last_point, cmd.end, rect
                 )
                 if clipped_segment:
@@ -1817,7 +1801,7 @@ class Ops:
                     continue
                 p_current_segment_end = l_cmd.end
 
-                clipped_segment = clipping.clip_line_segment(
+                clipped_segment = clip_line_segment_with_rect(
                     p_current_segment_start, p_current_segment_end, rect
                 )
                 clipped_pen_pos = self._add_clipped_segment_to_ops(
@@ -1875,7 +1859,7 @@ class Ops:
                 continue
 
             if isinstance(cmd, ScanLinePowerCommand):
-                kept_segments = clipping.subtract_regions_from_line_segment(
+                kept_segments = subtract_polygons_from_line_segment(
                     last_point, cmd.end, regions
                 )
                 num_values = len(cmd.power_values)
@@ -1923,7 +1907,7 @@ class Ops:
                     continue
                 p_current_segment_end = l_cmd.end
 
-                kept_segments = clipping.subtract_regions_from_line_segment(
+                kept_segments = subtract_polygons_from_line_segment(
                     p_current_segment_start, p_current_segment_end, regions
                 )
                 for sub_p1, sub_p2 in kept_segments:

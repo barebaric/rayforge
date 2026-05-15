@@ -1,13 +1,13 @@
 import pytest
 import logging
 from pathlib import Path
+from raygeo import Geometry
 from rayforge.image import SVG_RENDERER
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
-from rayforge.core.geo import Geometry
 from rayforge.core.ops import Ops
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.pipeline import Pipeline

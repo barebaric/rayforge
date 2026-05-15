@@ -1,8 +1,8 @@
 from typing import List, Dict, Any, Sequence, TYPE_CHECKING
-from rayforge.core.geo import Geometry, Polygon, Rect
-from rayforge.core.geo.primitives import (
-    find_closest_point_on_line_segment,
-    line_segment_intersects_rect,
+from raygeo import Geometry, Polygon, Rect
+from raygeo.shape.line import (
+    get_line_segment_closest_point,
+    does_line_segment_intersect_rect,
 )
 from ..types import EntityID
 from .entity import Entity
@@ -45,7 +45,7 @@ class Line(Entity):
         p2 = registry.get_point(self.p2_idx)
         if not (p1 and p2):
             return False
-        _, _, dist_sq = find_closest_point_on_line_segment(
+        _, _, dist_sq = get_line_segment_closest_point(
             (p1.x, p1.y), (p2.x, p2.y), mx, my
         )
         return dist_sq < threshold**2
@@ -73,7 +73,7 @@ class Line(Entity):
     ) -> bool:
         p1 = registry.get_point(self.p1_idx)
         p2 = registry.get_point(self.p2_idx)
-        return line_segment_intersects_rect(p1.pos(), p2.pos(), rect)
+        return does_line_segment_intersect_rect(p1.pos(), p2.pos(), rect)
 
     def to_geometry(self, registry: "EntityRegistry") -> Geometry:
         """Converts the line to a Geometry object."""

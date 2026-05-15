@@ -1,9 +1,8 @@
 import pytest
 import cairo
 from typing import List
-
+from raygeo import Geometry
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.geo import Geometry
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.pipeline.producer.base import OpsProducer, CutSide

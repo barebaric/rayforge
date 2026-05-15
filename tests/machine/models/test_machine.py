@@ -4,11 +4,10 @@ from typing import Tuple, Generator
 from unittest.mock import MagicMock
 
 import pytest
-
+from raygeo import Geometry
 import rayforge.machine.driver as driver_module
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
-from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
 from rayforge.core.ops import Ops, Axis
 from rayforge.core.source_asset import SourceAsset

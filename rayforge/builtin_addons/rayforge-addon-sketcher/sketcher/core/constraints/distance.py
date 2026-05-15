@@ -10,8 +10,8 @@ from typing import (
     TYPE_CHECKING,
 )
 from gettext import gettext as _
-from rayforge.core.geo import Point
-from rayforge.core.geo.primitives import find_closest_point_on_line_segment
+from raygeo import Point
+from raygeo.shape.line import get_line_segment_closest_point
 from ..entities import Line
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
@@ -192,9 +192,7 @@ class DistanceConstraint(Constraint):
                 s1 = to_screen((p1.x, p1.y))
                 s2 = to_screen((p2.x, p2.y))
 
-                _, _, dist_sq = find_closest_point_on_line_segment(
-                    s1, s2, sx, sy
-                )
+                _, _, dist_sq = get_line_segment_closest_point(s1, s2, sx, sy)
 
                 if dist_sq < threshold**2:
                     return True

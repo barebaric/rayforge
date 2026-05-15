@@ -28,7 +28,7 @@ from rayforge.core.ops import (
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
-    from rayforge.core.geo import Geometry
+    from raygeo import Geometry
 
 
 class LineSegment:

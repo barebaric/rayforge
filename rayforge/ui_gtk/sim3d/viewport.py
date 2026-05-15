@@ -3,7 +3,7 @@ from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 
-from ...core.geo import Point3D, Rect
+from raygeo import Point3D, Rect
 
 if TYPE_CHECKING:
     from ...machine.models.machine import Machine

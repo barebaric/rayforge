@@ -14,13 +14,14 @@ from ezdxf.lldxf.const import DXFStructureError
 from ezdxf.addons import text2path
 from ezdxf.path import Command
 
-from ...core.geo import Geometry, Rect
+from raygeo import Geometry, Rect
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
     VectorizationSpec,
     PassthroughSpec,
     LayerImportMode,
 )
+from ...image.geo_renderer import render_geometry_to_png
 from ..base_importer import (
     Importer,
     ImporterFeature,
@@ -130,7 +131,8 @@ class DxfImporter(Importer):
                 merged.extend(geo)
         if merged.is_empty():
             return None
-        return merged.to_png(
+        return render_geometry_to_png(
+            merged,
             size,
             line_width=2.0,
             color=(0.2, 0.2, 0.2, 1.0),

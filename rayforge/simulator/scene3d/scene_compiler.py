@@ -15,8 +15,8 @@ from typing import Callable, List, Optional, Tuple
 
 import numpy as np
 
-from ...core.geo.arc import linearize_arc
-from ...core.geo.bezier import linearize_bezier_segment
+from raygeo.shape.arc import linearize_arc
+from raygeo.shape.bezier import linearize_bezier_segment
 from ...core.ops import Ops
 from ...core.ops.commands import (
     ArcToCommand,
