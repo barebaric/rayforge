@@ -1,5 +1,6 @@
 import pytest
-from rayforge.core.ops import Axis
+from rayforge.core.ops import Axis, SectionType
+from rayforge.core.ops.state import State
 from rayforge.core.ops.commands import (
     ArcToCommand,
     BezierToCommand,
@@ -7,10 +8,8 @@ from rayforge.core.ops.commands import (
     CurveToCommand,
     MoveToCommand,
     LineToCommand,
-    State,
     OpsSectionStartCommand,
     OpsSectionEndCommand,
-    SectionType,
     ScanLinePowerCommand,
     SetPowerCommand,
     SetCutSpeedCommand,
