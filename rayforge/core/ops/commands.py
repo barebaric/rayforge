@@ -66,7 +66,10 @@ class Command:
     def __copy__(self):
         new = self.__class__.__new__(self.__class__)
         for key, value in self.__dict__.items():
-            object.__setattr__(new, key, value)
+            if key == "extra_axes":
+                object.__setattr__(new, key, dict(value))
+            else:
+                object.__setattr__(new, key, value)
         return new
 
     def __repr__(self) -> str:
