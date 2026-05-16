@@ -1,6 +1,5 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from enum import Enum, auto
 from typing import Optional, Tuple, Dict, Any, List
 from abc import ABC, abstractmethod
 import numpy as np
@@ -9,39 +8,8 @@ from raygeo import Point3D, CMD_TYPE_ARC
 from raygeo.shape.arc import linearize_arc as geo_linearize_arc
 from raygeo.shape.bezier import linearize_bezier_segment
 from .axis import Axis
-
-
-@dataclass
-class State:
-    power: float = 0.0  # Normalized power from 0.0 to 1.0
-    air_assist: bool = False
-    cut_speed: Optional[int] = None
-    travel_speed: Optional[int] = None
-    active_laser_uid: Optional[str] = None
-    frequency: Optional[int] = None
-    pulse_width: Optional[float] = None
-
-    def __copy__(self):
-        return State(
-            power=self.power,
-            air_assist=self.air_assist,
-            cut_speed=self.cut_speed,
-            travel_speed=self.travel_speed,
-            active_laser_uid=self.active_laser_uid,
-            frequency=self.frequency,
-            pulse_width=self.pulse_width,
-        )
-
-    def allow_rapid_change(self, target_state: State) -> bool:
-        """
-        Returns True if a change to the target state should be allowed
-        in a rapid manner, i.e. for each gcode instruction. For example,
-        changing air-assist should not be done too frequently, because
-        it could damage the air pump.
-
-        Changing the laser power rapidly is unproblematic.
-        """
-        return self.air_assist == target_state.air_assist
+from .enums import SectionType
+from .state import State
 
 
 class Command:
@@ -508,13 +476,6 @@ class WorkpieceEndCommand(Command):
         d = super().to_dict()
         d["workpiece_uid"] = self.workpiece_uid
         return d
-
-
-class SectionType(Enum):
-    """Defines the semantic type of a block of Ops commands."""
-
-    VECTOR_OUTLINE = auto()
-    RASTER_FILL = auto()
 
 
 @dataclass(frozen=True)

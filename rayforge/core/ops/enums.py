@@ -1,5 +1,5 @@
 from __future__ import annotations
-from enum import IntEnum, auto
+from enum import Enum, IntEnum, auto
 
 
 class CommandType(IntEnum):
@@ -32,3 +32,8 @@ class CommandCategory(IntEnum):
     MOVING = auto()
     STATE = auto()
     MARKER = auto()
+
+
+class SectionType(Enum):
+    VECTOR_OUTLINE = auto()
+    RASTER_FILL = auto()

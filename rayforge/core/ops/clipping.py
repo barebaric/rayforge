@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-from copy import deepcopy
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -28,9 +27,8 @@ from raygeo import (
     is_bezier_inside_polygons,
     fit_points_with_primitives,
 )
-from .commands import MoveToCommand, MovingCommand, State
-from .container import Ops
-from .enums import CommandType
+from .container import Ops, MachineState
+from .enums import CommandType, CommandCategory
 
 
 def clip_ops_to_regions(
@@ -50,20 +48,19 @@ def clip_ops_to_regions(
         (
             i
             for i in range(ops.len())
-            if isinstance(ops._commands[i], MovingCommand)
+            if ops.category(i) == CommandCategory.MOVING
         ),
         ops.len(),
     )
     for i in range(first_move_idx):
-        new_ops.add(deepcopy(ops._commands[i]))
+        new_ops.copy_command_from(ops, i)
 
     for i in range(first_move_idx, ops.len()):
-        cmd = ops._commands[i]
         ct = ops.command_type(i)
+        cat = ops.category(i)
 
-        if not isinstance(cmd, MovingCommand) or cmd.end is None:
-            if not new_ops._commands or new_ops._commands[-1] is not cmd:
-                new_ops.add(deepcopy(cmd))
+        if cat != CommandCategory.MOVING or ops.endpoint(i) is None:
+            new_ops.copy_command_from(ops, i)
             continue
 
         end = ops.endpoint(i)
@@ -161,29 +158,62 @@ def clip_ops_to_regions(
 
         last_point = end
 
-    ops._commands = new_ops._commands
-    ops._invalidate_time_cache()
-    if new_ops._commands:
-        for cmd_rev in reversed(new_ops._commands):
-            if isinstance(cmd_rev, MoveToCommand):
-                ops.last_move_to = cmd_rev.end
+    ops.replace_with(new_ops)
+    if new_ops.len() > 0:
+        for j in range(new_ops.len() - 1, -1, -1):
+            if new_ops.command_type(j) == CommandType.MOVE_TO:
+                ops.last_move_to = new_ops.endpoint(j)
                 break
     return ops
 
 
-def _get_state(ops: Ops, idx: int) -> Optional[State]:
-    cmd = ops._commands[idx]
-    if hasattr(cmd, "state") and cmd.state is not None:
-        return cmd.state
-    state = State()
+def _get_machine_state(ops: Ops, idx: int) -> Optional[MachineState]:
+    try:
+        return ops.preloaded_state(idx)
+    except ValueError:
+        pass
+
+    power = 0.0
+    air_assist = False
+    cut_speed = None
+    travel_speed = None
+    active_laser_uid = None
+    frequency = None
+    pulse_width = None
     found_any = False
+
     for j in range(idx - 1, -1, -1):
-        prev = ops._commands[j]
-        if prev.is_state_command():
-            prev.apply_to_state(state)
-            found_any = True
+        if ops.category(j) != CommandCategory.STATE:
+            continue
+        found_any = True
+        ct = ops.command_type(j)
+        if ct == CommandType.SET_POWER:
+            power = ops.power(j)
+        elif ct == CommandType.SET_CUT_SPEED:
+            cut_speed = int(ops.speed(j))
+        elif ct == CommandType.SET_TRAVEL_SPEED:
+            travel_speed = int(ops.speed(j))
+        elif ct == CommandType.ENABLE_AIR_ASSIST:
+            air_assist = True
+        elif ct == CommandType.DISABLE_AIR_ASSIST:
+            air_assist = False
+        elif ct == CommandType.SET_LASER:
+            active_laser_uid = ops.laser_uid(j)
+        elif ct == CommandType.SET_FREQUENCY:
+            frequency = ops.frequency(j)
+        elif ct == CommandType.SET_PULSE_WIDTH:
+            pulse_width = ops.pulse_width(j)
+
     if found_any:
-        return state
+        return MachineState(
+            power=power,
+            air_assist=air_assist,
+            cut_speed=cut_speed,
+            travel_speed=travel_speed,
+            active_laser_uid=active_laser_uid,
+            frequency=frequency,
+            pulse_width=pulse_width,
+        )
     return None
 
 
@@ -241,7 +271,7 @@ def _clip_and_refit_arc(
     valid_regions: List[Polygon],
     tolerance: float,
 ) -> Optional[Point3D]:
-    arc_state = _get_state(ops, idx)
+    arc_state = _get_machine_state(ops, idx)
     linearized = ops.linearize(idx, last_point)
     kept_pairs = []
     p_seg_start = last_point
@@ -291,7 +321,7 @@ def _clip_and_refit_arc(
             else:
                 continue
             if arc_state is not None:
-                new_ops._commands[-1].state = arc_state.__copy__()
+                new_ops.set_state_at(new_ops.len() - 1, arc_state)
         pen_pos = chain[-1]
 
     return pen_pos
@@ -306,7 +336,7 @@ def _clip_and_refit_bezier(
     valid_regions: List[Polygon],
     tolerance: float,
 ) -> Optional[Point3D]:
-    bezier_state = _get_state(ops, idx)
+    bezier_state = _get_machine_state(ops, idx)
     linearized = ops.linearize(idx, last_point)
     kept_pairs = []
     p_seg_start = last_point
@@ -356,7 +386,7 @@ def _clip_and_refit_bezier(
             else:
                 continue
             if bezier_state is not None:
-                new_ops._commands[-1].state = bezier_state.__copy__()
+                new_ops.set_state_at(new_ops.len() - 1, bezier_state)
         pen_pos = chain[-1]
 
     return pen_pos

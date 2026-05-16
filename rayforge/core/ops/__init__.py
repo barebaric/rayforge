@@ -1,12 +1,7 @@
-"""
-The ops module contains the core Ops class for representing machine operations
-and the Command classes that define those operations.
-"""
-
 from .axis import Axis
-from .commands import State, SectionType
 from .container import Ops, OpsSection, MachineState, CommandInfo
-from .enums import CommandType, CommandCategory
+from .enums import CommandType, CommandCategory, SectionType
+from .state import State
 
 __all__ = [
     "Axis",

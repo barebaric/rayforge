@@ -3,12 +3,6 @@ from typing import List, Tuple
 import pytest
 
 from rayforge.core.ops import Ops, CommandType, CommandCategory
-from rayforge.core.ops.commands import (
-    ArcToCommand,
-    BezierToCommand,
-    State,
-    SetPowerCommand,
-)
 from rayforge.core.ops.clipping import clip_ops_to_regions
 
 
@@ -151,9 +145,9 @@ class TestClipOpsToRegionsArcs:
     def test_arc_state_preserved_after_refit(self):
         ops = Ops()
         ops.move_to(1, 5)
-        arc = ArcToCommand((9, 5, 0), (4, 0), clockwise=True)
-        arc.state = State(power=0.8)
-        ops.add(arc)
+        ops.set_power(0.8)
+        ops.arc_to(9, 5, 4, 0, clockwise=True)
+        ops.preload_state()
         regions = [make_square_region(3, 0, 4, 10)]
         clip_ops_to_regions(ops, regions)
         arc_indices = ops.indices_of(CommandType.ARC_TO)
@@ -166,7 +160,7 @@ class TestClipOpsToRegionsArcs:
 class TestClipOpsToRegionsLeadingCommands:
     def test_state_commands_before_first_move_preserved(self):
         ops = Ops()
-        ops.add(SetPowerCommand(0.5))
+        ops.set_power(0.5)
         ops.move_to(2, 5)
         ops.line_to(8, 5)
         regions = [make_square_region(0, 0, 10, 10)]
@@ -212,9 +206,9 @@ class TestClipOpsToRegionsBezier:
     def test_bezier_state_preserved_after_refit(self):
         ops = Ops()
         ops.move_to(1, 5)
-        bezier = BezierToCommand((9, 5, 0), (3, 8, 0), (7, 8, 0))
-        bezier.state = State(power=0.8)
-        ops.add(bezier)
+        ops.set_power(0.8)
+        ops.bezier_to((3, 8, 0), (7, 8, 0), (9, 5, 0))
+        ops.preload_state()
         regions = [make_square_region(3, 0, 4, 10)]
         clip_ops_to_regions(ops, regions)
         for i in ops.indices_of(CommandType.ARC_TO) + ops.indices_of(
