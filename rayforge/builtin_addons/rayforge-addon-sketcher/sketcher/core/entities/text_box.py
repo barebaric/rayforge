@@ -1,10 +1,12 @@
 import logging
 import math
 from typing import List, Tuple, Dict, Any, Sequence, Optional, TYPE_CHECKING
+from raygeo import Geometry, Rect
+from raygeo.shape.line import does_line_segment_intersect_rect
+from raygeo.shape.polygon import is_point_inside_polygon
 from rayforge.core.color import ColorRGBA
-from rayforge.core.geo import primitives, Rect
-from rayforge.core.geo.geometry import Geometry
-from rayforge.core.geo.font_config import FontConfig
+from rayforge.core.geo_helpers import geometry_from_text
+from rayforge.core.font_config import FontConfig
 from ..types import EntityID
 from .entity import Entity
 from .line import Line
@@ -72,7 +74,7 @@ class TextBoxEntity(Entity):
             (p_height.x, p_height.y),
         ]
 
-        return primitives.is_point_in_polygon((mx, my), polygon)
+        return is_point_inside_polygon((mx, my), polygon)
 
     def get_all_frame_point_ids(
         self, registry: "EntityRegistry"
@@ -105,7 +107,7 @@ class TextBoxEntity(Entity):
         if not text:
             return 10.0, self.font_config.font_size
 
-        geo = Geometry.from_text(text, self.font_config)
+        geo = geometry_from_text(text, self.font_config)
         geo.flip_y()
         _, geo_min_y, _, geo_max_y = geo.rect()
         geo_height = geo_max_y - geo_min_y
@@ -205,7 +207,7 @@ class TextBoxEntity(Entity):
         for i in range(4):
             p1 = points[i]
             p2 = points[(i + 1) % 4]
-            if primitives.line_segment_intersects_rect(p1, p2, rect):
+            if does_line_segment_intersect_rect(p1, p2, rect):
                 return True
 
         return any(
@@ -297,7 +299,7 @@ class TextBoxEntity(Entity):
         )
         origin, pw, ph = self._build_frame_for_content(registry, text)
         advance_width = self.font_config.get_text_width(text) if text else 1.0
-        txt_geo = Geometry.from_text(text, self.font_config)
+        txt_geo = geometry_from_text(text, self.font_config)
         txt_geo.flip_y()
 
         _, geo_min_y, _, geo_max_y = txt_geo.rect()
@@ -322,7 +324,7 @@ class TextBoxEntity(Entity):
         )
         origin, pw, ph = self._build_frame_for_content(registry, text)
         advance_width = self.font_config.get_text_width(text) if text else 1.0
-        txt_geo = Geometry.from_text(text, self.font_config)
+        txt_geo = geometry_from_text(text, self.font_config)
         txt_geo.flip_y()
 
         _, geo_min_y, _, geo_max_y = txt_geo.rect()

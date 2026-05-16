@@ -1,8 +1,8 @@
 from typing import Optional, List, Dict, Any, TYPE_CHECKING
 from gettext import gettext as _
 
-from rayforge.core.geo import Point3D
-from rayforge.core.geo.smooth import (
+from raygeo import Point3D
+from raygeo.algo.smooth import (
     compute_gaussian_kernel,
     smooth_polyline,
 )
@@ -16,7 +16,7 @@ from rayforge.shared.tasker.progress import ProgressContext
 from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
 
 if TYPE_CHECKING:
-    from rayforge.core.geo import Geometry
+    from raygeo import Geometry
 
 
 class Smooth(OpsTransformer):

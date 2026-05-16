@@ -3,6 +3,7 @@ import pytest
 from pathlib import Path
 from typing import cast, Tuple
 from unittest.mock import Mock
+from raygeo import Geometry
 from rayforge.core.vectorization_spec import TraceSpec, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.source_asset import SourceAsset
@@ -11,7 +12,6 @@ from rayforge.image.jpg.importer import JpgImporter
 from rayforge.image.jpg.renderer import JPG_RENDERER
 from rayforge.image.registry import renderer_registry
 from rayforge.core.source_asset_segment import SourceAssetSegment
-from rayforge.core.geo import Geometry
 from rayforge.image.base_importer import ImporterFeature
 
 # Assume the test JPGs are in the same directory as this test file

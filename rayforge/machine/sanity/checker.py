@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Tuple, TYPE_CHECKING
 
-from ...core.geo.types import Rect
+from raygeo import Rect
 from ...core.ops.container import Ops
 from ..models.zone import Zone
 from .result import CheckMode, SanityReport

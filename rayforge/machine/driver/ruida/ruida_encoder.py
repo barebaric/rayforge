@@ -30,7 +30,7 @@ from ....core.ops import (
     WorkpieceStartCommand,
     WorkpieceEndCommand,
 )
-from ....core.geo.types import Point3D
+from raygeo import Point3D
 from ....pipeline.encoder.base import (
     OpsEncoder,
     MachineCodeOpMap,

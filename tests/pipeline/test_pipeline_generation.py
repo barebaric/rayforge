@@ -3,9 +3,9 @@ import logging
 from unittest.mock import MagicMock, ANY
 from pathlib import Path
 import asyncio
+from raygeo import Geometry
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
-from rayforge.core.geo import Geometry
 from rayforge.core.ops import Ops
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment

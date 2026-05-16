@@ -1,9 +1,9 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from pathlib import Path
+from raygeo import Geometry
 from rayforge.image.svg.svg_trace import SvgTraceImporter
 from rayforge.core.vectorization_spec import TraceSpec
-from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.structures import ParsingResult

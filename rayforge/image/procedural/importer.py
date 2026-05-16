@@ -5,7 +5,7 @@ from gettext import gettext as _
 from pathlib import Path
 from typing import Optional, Dict, Tuple
 
-from ...core.geo import Geometry
+from raygeo import Geometry
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import VectorizationSpec, ProceduralSpec
 from ...core.workpiece import WorkPiece

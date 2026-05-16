@@ -12,8 +12,8 @@ from typing import (
     Set,
 )
 from locale import format_string
+from raygeo import Point
 from rayforge.core.expression import safe_evaluate
-from rayforge.core.geo import Point
 from ..types import EntityID
 
 if TYPE_CHECKING:

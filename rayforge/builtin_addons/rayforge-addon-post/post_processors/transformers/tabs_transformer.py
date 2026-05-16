@@ -16,13 +16,9 @@ from typing import (
 
 from gettext import gettext as _
 
-from rayforge.core.geo.bezier import linearize_bezier
-from rayforge.core.geo.constants import (
-    CMD_TYPE_ARC,
-    CMD_TYPE_BEZIER,
-    CMD_TYPE_LINE,
-)
-from rayforge.core.geo.types import Point3D
+from raygeo.shape.bezier import linearize_bezier
+from raygeo.path import PyCommand
+from raygeo import Point3D
 from rayforge.core.ops import (
     BezierToCommand,
     Command,
@@ -40,7 +36,7 @@ from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
-    from rayforge.core.geo import Geometry
+    from raygeo import Geometry
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +116,7 @@ class TabOpsTransformer(OpsTransformer):
         )
 
         for tab in workpiece.tabs:
-            cmd = workpiece.boundaries.get_command_at(tab.segment_index)
+            cmd = workpiece.boundaries.get_typed_command_at(tab.segment_index)
             if cmd is None:
                 logger.warning(
                     f"Tab {tab.uid} has invalid segment_index "
@@ -128,38 +124,36 @@ class TabOpsTransformer(OpsTransformer):
                 )
                 continue
 
-            cmd_type, x, y, z, p1, p2, p3, p4 = cmd
-            end_point = (x, y, z)
+            end_point = cmd.end
 
-            if cmd_type not in (CMD_TYPE_LINE, CMD_TYPE_ARC, CMD_TYPE_BEZIER):
+            if isinstance(cmd, PyCommand.Move):
                 continue
 
             p_start_3d: Point3D = (0.0, 0.0, 0.0)
             if tab.segment_index > 0:
-                prev_cmd = workpiece.boundaries.get_command_at(
+                prev_cmd = workpiece.boundaries.get_typed_command_at(
                     tab.segment_index - 1
                 )
                 if prev_cmd:
-                    _, prev_x, prev_y, prev_z, _, _, _, _ = prev_cmd
-                    p_start_3d = (prev_x, prev_y, prev_z)
+                    p_start_3d = prev_cmd.end
 
             logger.debug(
                 f"Processing Tab UID {tab.uid} on segment "
                 f"{tab.segment_index} "
-                f"(type: {cmd_type}) starting from {p_start_3d}"
+                f"(type: {type(cmd).__name__}) starting from "
+                f"{p_start_3d}"
             )
 
             center_x, center_y = 0.0, 0.0
 
-            if cmd_type == CMD_TYPE_LINE:
+            if isinstance(cmd, PyCommand.Line):
                 p_start, p_end = p_start_3d[:2], end_point[:2]
                 center_x = p_start[0] + (p_end[0] - p_start[0]) * tab.pos
                 center_y = p_start[1] + (p_end[1] - p_start[1]) * tab.pos
 
-            elif cmd_type == CMD_TYPE_ARC:
-                i, j, cw = p1, p2, p3
-                center_offset = (i, j)
-                clockwise = bool(cw)
+            elif isinstance(cmd, PyCommand.Arc):
+                center_offset = cmd.center_offset
+                clockwise = cmd.clockwise
                 center = (
                     p_start_3d[0] + center_offset[0],
                     p_start_3d[1] + center_offset[1],
@@ -188,8 +182,9 @@ class TabOpsTransformer(OpsTransformer):
                 center_x = center[0] + radius * math.cos(tab_angle)
                 center_y = center[1] + radius * math.sin(tab_angle)
 
-            elif cmd_type == CMD_TYPE_BEZIER:
-                c1x, c1y, c2x, c2y = p1, p2, p3, p4
+            elif isinstance(cmd, PyCommand.Bezier):
+                c1x, c1y = cmd.control1
+                c2x, c2y = cmd.control2
                 t = tab.pos
                 t2 = t * t
                 t3 = t2 * t

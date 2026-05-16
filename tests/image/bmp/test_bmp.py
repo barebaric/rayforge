@@ -4,7 +4,7 @@ import struct
 from pathlib import Path
 from typing import cast
 from unittest.mock import Mock
-from rayforge.core.geo import Geometry
+from raygeo import Geometry
 from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment

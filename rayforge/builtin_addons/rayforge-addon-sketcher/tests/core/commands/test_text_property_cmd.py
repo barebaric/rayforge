@@ -3,7 +3,7 @@ from sketcher.core import Sketch
 from sketcher.core.commands import ModifyTextPropertyCommand
 from sketcher.core.entities.text_box import TextBoxEntity
 from rayforge.core.undo import HistoryManager
-from rayforge.core.geo.font_config import FontConfig
+from rayforge.core.font_config import FontConfig
 
 
 @pytest.fixture

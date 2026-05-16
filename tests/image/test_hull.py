@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from rayforge.core.geo import Geometry
+from raygeo import Geometry
 from rayforge.image.hull import (
     get_enclosing_hull,
     get_concave_hull,

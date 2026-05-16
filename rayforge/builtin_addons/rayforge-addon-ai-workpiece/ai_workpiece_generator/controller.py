@@ -5,9 +5,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Optional, Protocol, cast
 
 from svgelements import SVG, Path as SvgPath
-
+from raygeo import Geometry
 from rayforge.core.asset_registry import asset_type_registry
-from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
 from rayforge.image.svg.svgutil import PPI
 from rayforge.shared.tasker import task_mgr

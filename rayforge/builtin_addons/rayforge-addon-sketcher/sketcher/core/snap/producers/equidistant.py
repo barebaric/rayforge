@@ -1,6 +1,6 @@
 from typing import Iterator, List, Optional, Set, Tuple, TYPE_CHECKING
 
-from rayforge.core.geo.types import Point as GeoPoint
+from raygeo import Point as GeoPoint
 from ..types import SnapPoint, SnapLine, SnapLineType, DragContext
 from ..engine import SnapLineProducer
 

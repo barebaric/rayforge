@@ -2,7 +2,7 @@ import warnings
 import logging
 from typing import Optional, TYPE_CHECKING, List, Tuple
 from xml.etree import ElementTree as ET
-from ...core.geo import Rect
+from raygeo import Rect
 from ...core.vectorization_spec import TraceSpec
 from ..base_renderer import Renderer, RenderSpecification
 from .svgutil import filter_svg_layers

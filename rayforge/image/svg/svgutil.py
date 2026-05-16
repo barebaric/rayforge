@@ -7,7 +7,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
-from ...core.geo import Rect
+from raygeo import Rect
 from ..util import parse_length, to_mm
 from .svg_fallback import (
     SVG_LOAD_AVAILABLE,

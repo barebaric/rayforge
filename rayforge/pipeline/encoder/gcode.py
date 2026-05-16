@@ -1,7 +1,7 @@
 import logging
 import math
 from typing import TYPE_CHECKING, Dict, Optional, List, Tuple
-from ...core.geo import Point3D
+from raygeo import Point3D
 from ...core.layer import Layer
 from ...core.ops import (
     Axis,

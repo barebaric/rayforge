@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from rayforge.core.geo import Geometry
+from raygeo import Geometry
 from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.source_asset import SourceAsset

@@ -16,7 +16,7 @@ import numpy as np
 from gi.repository import GLib
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, Future
-from ...core.geo import Point, Rect
+from raygeo import Point, Rect
 from ...core.matrix import Matrix
 from .region import ElementRegion, get_region_rect, check_region_hit
 from .hittest import check_pixel_hit

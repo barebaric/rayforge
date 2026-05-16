@@ -12,7 +12,7 @@ from blinker import Signal
 
 from ...camera.models.camera import Camera
 from ...context import RayforgeContext, get_context
-from ...core.geo import Point3D, Rect
+from raygeo import Point3D, Rect
 from ...core.layer import Layer
 from ...core.model import Model
 from ...core.ops import Axis, Ops

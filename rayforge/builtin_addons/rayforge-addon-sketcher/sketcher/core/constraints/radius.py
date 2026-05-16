@@ -3,7 +3,7 @@ import math
 import cairo
 from typing import Union, Dict, Any, List, Optional, Callable, TYPE_CHECKING
 from gettext import gettext as _
-from rayforge.core.geo import Point
+from raygeo import Point
 from ..entities import Arc, Circle
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus

@@ -1,6 +1,6 @@
 from typing import List, Tuple, Optional, Dict
 import pytest
-
+from raygeo import Geometry, Rect
 from rayforge.core.matrix import Matrix
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.image.engine import NormalizationEngine
@@ -9,7 +9,6 @@ from rayforge.image.structures import (
     LayerGeometry,
     VectorizationResult,
 )
-from rayforge.core.geo import Geometry, Rect
 
 
 @pytest.fixture

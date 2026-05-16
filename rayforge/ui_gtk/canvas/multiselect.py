@@ -11,7 +11,7 @@ from typing import (
     Optional,
     Set,
 )
-from ...core.geo import Point, Rect
+from raygeo import Point, Rect
 from ...core.matrix import Matrix
 from . import element, transform
 from .region import ElementRegion, get_region_rect, check_region_hit

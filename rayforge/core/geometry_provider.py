@@ -11,9 +11,9 @@ from typing import (
 from blinker import Signal
 
 if TYPE_CHECKING:
+    from raygeo import Geometry
     from ..image.base_renderer import Renderer
     from ..image.structures import FillRenderData
-    from .geo import Geometry
 
 
 @runtime_checkable

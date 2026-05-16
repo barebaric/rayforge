@@ -1,5 +1,5 @@
 import pytest
-from rayforge.core.geo.font_config import FontConfig
+from rayforge.core.font_config import FontConfig
 
 
 class TestFontConfig:

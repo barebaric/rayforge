@@ -17,7 +17,7 @@ from svgelements import (
     Arc,
 )
 
-from ...core.geo import Geometry, Rect
+from raygeo import Geometry, Rect
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import PassthroughSpec
 from ..base_importer import (

@@ -5,8 +5,8 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
-from rayforge.core.geo.arc import normalize_angle
-from rayforge.core.geo.primitives import line_intersection
+from raygeo.shape.arc import normalize_angle
+from raygeo.shape.line import get_line_line_intersection
 from ..entities import Line
 from ..types import EntityID
 
@@ -47,7 +47,7 @@ class AngleConstraintCommand:
         if not (p1 and p2 and p3 and p4):
             return None
 
-        intersection = line_intersection(
+        intersection = get_line_line_intersection(
             (p1.x, p1.y), (p2.x, p2.y), (p3.x, p3.y), (p4.x, p4.y)
         )
 

@@ -5,7 +5,7 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
-from rayforge.core.geo.types import Point as GeoPoint
+from raygeo import Point as GeoPoint
 from .base import SketchChangeCommand
 from ..entities import Bezier, Line
 from ..entities.point import WaypointType

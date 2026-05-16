@@ -1,12 +1,12 @@
 import math
 from unittest.mock import Mock, patch
+from raygeo.algo.smooth import smooth_polyline
 from rayforge.core.ops import (
     ArcToCommand,
     LineToCommand,
     MoveToCommand,
     Ops,
 )
-from rayforge.core.geo.smooth import smooth_polyline
 from rayforge.core.ops.commands import BezierToCommand
 from tests.conftest import MockProgressContext
 from post_processors.transformers import Smooth

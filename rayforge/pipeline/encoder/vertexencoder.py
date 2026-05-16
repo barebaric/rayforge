@@ -2,9 +2,9 @@ from __future__ import annotations
 import math
 from typing import List, Optional
 import numpy as np
-from ...core.geo import Point3D
-from ...core.geo.arc import linearize_arc
-from ...core.geo.bezier import linearize_bezier_segment
+from raygeo import Point3D
+from raygeo.shape.arc import linearize_arc
+from raygeo.shape.bezier import linearize_bezier_segment
 from ...core.ops import Ops
 from ...machine.kinematic_math import KinematicMath
 from ...core.ops.commands import (

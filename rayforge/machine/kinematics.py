@@ -3,7 +3,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ..core.geo import Point3D
+from raygeo import Point3D
 from ..core.model import Model
 from ..core.ops.axis import Axis
 from .assembly import Assembly, JointType, Link, LinkRole

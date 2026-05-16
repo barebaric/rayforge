@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional, Iterator, Tuple
 
-from rayforge.core.geo.types import Point as GeoPoint
+from raygeo import Point as GeoPoint
 from ..registry import EntityRegistry
 from .types import (
     SnapLine,

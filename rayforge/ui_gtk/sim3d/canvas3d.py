@@ -6,7 +6,7 @@ import numpy as np
 from gi.repository import GLib, Gdk, Gtk, Pango
 from OpenGL import GL
 from ...context import RayforgeContext
-from ...core.geo import Point
+from raygeo import Point
 from ...core.ops import Ops
 from ...machine.assembly import LinkRole
 from ...machine.kinematic_mapping import KinematicMapping

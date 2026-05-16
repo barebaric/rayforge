@@ -3,12 +3,12 @@ import pytest
 from pathlib import Path
 from typing import cast, Tuple
 from unittest.mock import Mock
+from raygeo import Geometry
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset_segment import SourceAssetSegment
-from rayforge.core.geo import Geometry
 from rayforge.image.png.importer import PngImporter
 from rayforge.image.png.renderer import PNG_RENDERER
 from rayforge.image.registry import renderer_registry

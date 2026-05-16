@@ -2,7 +2,7 @@ from __future__ import annotations
 import logging
 from typing import Dict, Any, Optional, TYPE_CHECKING, Tuple, cast
 from gettext import gettext as _
-from .geo import Geometry, Rect
+from raygeo import Geometry, Rect
 from .item import DocItem
 from .matrix import Matrix
 

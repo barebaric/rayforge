@@ -3,7 +3,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 from gettext import gettext as _
 
-from rayforge.core.geo import Point as GeoPoint
+from raygeo import Point as GeoPoint
 from ..entities import Bezier, Line, Arc, Circle, Point
 from ..types import EntityID
 from .base import SketchChangeCommand

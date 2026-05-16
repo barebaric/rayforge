@@ -10,7 +10,7 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
-    from rayforge.core.geo import Geometry
+    from raygeo import Geometry
 
 logger = logging.getLogger(__name__)
 

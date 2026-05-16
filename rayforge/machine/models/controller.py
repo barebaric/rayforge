@@ -5,7 +5,7 @@ from gettext import gettext as _
 
 from blinker import Signal
 
-from ...core.geo import Point3D
+from raygeo import Point3D
 from ...core.varset import ValidationError
 from ...shared.tasker import task_mgr
 from ..driver import get_driver_cls

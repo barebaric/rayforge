@@ -1,7 +1,7 @@
 import numpy as np
 import cairo
 from unittest.mock import MagicMock, ANY
-from rayforge.core.geo.constants import COL_TYPE, CMD_TYPE_MOVE, CMD_TYPE_LINE
+from raygeo import COL_TYPE, CMD_TYPE_MOVE, CMD_TYPE_LINE
 from rayforge.image.tracing import (
     trace_surface,
     trace_color_image,
