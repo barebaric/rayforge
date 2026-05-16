@@ -3,7 +3,6 @@ Tests for timing estimation functionality.
 """
 
 from rayforge.core.ops import CommandCategory, Ops
-from rayforge.core.ops.timing import estimate_time
 
 
 class TestTiming:
@@ -11,7 +10,8 @@ class TestTiming:
 
     def test_empty_commands(self):
         """Test that empty command list returns 0 time."""
-        assert estimate_time([]) == 0.0
+        ops = Ops()
+        assert ops.estimate_time() == 0.0
 
     def test_single_move_command(self):
         """Test timing estimation for a single move command."""
@@ -20,7 +20,7 @@ class TestTiming:
         # MoveToCommand is not a cutting command, so it should use travel speed
         # Distance = sqrt(10^2 + 10^2) = 14.14mm
         # At 3000mm/min = 50mm/s, time = 14.14/50 = 0.283s + acceleration
-        actual_time = estimate_time(list(ops))
+        actual_time = ops.estimate_time()
         # Should be around 0.33s with acceleration
         assert 0.3 < actual_time < 0.4
 
@@ -31,7 +31,7 @@ class TestTiming:
         # LineToCommand is a cutting command, so it should use cut speed
         # Distance = 10mm
         # At 1000mm/min = 16.67mm/s, time = 10/16.67 = 0.6s + acceleration
-        actual_time = estimate_time(list(ops))
+        actual_time = ops.estimate_time()
         # Should be around 0.62s with acceleration
         assert 0.6 < actual_time < 0.65
 
@@ -41,7 +41,7 @@ class TestTiming:
         ops.line_to(60, 0, 0)
         # Distance = 60mm
         # At 1200mm/min = 20mm/s, time = 60/20 = 3s + acceleration
-        actual_time = estimate_time(list(ops), default_cut_speed=1200.0)
+        actual_time = ops.estimate_time(default_cut_speed=1200.0)
         # Should be around 3.02s with acceleration
         assert 3.0 < actual_time < 3.05
 
@@ -52,7 +52,7 @@ class TestTiming:
         ops.line_to(50, 0, 0)  # 5s at 10mm/s
         ops.set_travel_speed(1200)  # 20mm/s
         ops.move_to(50, 50, 0)  # 2.5s at 20mm/s
-        actual_time = estimate_time(list(ops))
+        actual_time = ops.estimate_time()
         # Should be around 7.53s with acceleration
         assert 7.5 < actual_time < 7.55
 
@@ -61,7 +61,7 @@ class TestTiming:
         ops = Ops()
         ops.line_to(10, 0, 0)
         # With acceleration=0, should use simple distance/speed calculation
-        actual_time = estimate_time(list(ops), acceleration=0)
+        actual_time = ops.estimate_time(acceleration=0)
         expected_time = 0.6  # 10mm / (1000mm/min / 60) = 0.6s
         assert abs(actual_time - expected_time) < 0.01
 
@@ -70,8 +70,8 @@ class TestTiming:
         ops = Ops()
         ops.line_to(10, 0, 0)
         # With acceleration, should be slightly longer due to acceleration
-        time_with_accel = estimate_time(list(ops), acceleration=1000.0)
-        time_without_accel = estimate_time(list(ops), acceleration=0.0)
+        time_with_accel = ops.estimate_time(acceleration=1000.0)
+        time_without_accel = ops.estimate_time(acceleration=0.0)
         assert time_with_accel > time_without_accel
 
     def test_scanline_power_command(self):
@@ -81,7 +81,7 @@ class TestTiming:
         # ScanLinePowerCommand is a cutting command
         # Distance = 100mm
         # At 1000mm/min = 16.67mm/s, time = 100/16.67 = 6s + acceleration
-        actual_time = estimate_time(list(ops))
+        actual_time = ops.estimate_time()
         # Should be around 6.02s with acceleration
         assert 6.0 < actual_time < 6.05
 
@@ -97,27 +97,25 @@ class TestTiming:
         # Cut movements: 20mm total at 1000mm/min = 16.67mm/s = 1.2s
         # Travel movements: 24.14mm total at 3000mm/min = 50mm/s = 0.48s
         # Plus acceleration effects
-        actual_time = estimate_time(list(ops))
+        actual_time = ops.estimate_time()
         # Should be around 1.73s with acceleration
         assert 1.7 < actual_time < 1.8
 
     def test_ops_integration(self):
-        """Test that Ops.estimate_time() uses the timing module correctly."""
+        """Test that Ops.estimate_time() produces consistent results."""
         ops = Ops()
         ops.move_to(0, 0)
         ops.line_to(10, 0)
         ops.line_to(10, 10)
 
-        # Should match direct timing module call
         ops_time = ops.estimate_time()
-        direct_time = estimate_time(list(ops))
-        assert abs(ops_time - direct_time) < 0.001
+        assert ops_time > 0
 
     def test_negligible_movement(self):
         """Test that very small movements are skipped."""
         ops = Ops()
         ops.line_to(0.000001, 0, 0)  # Very small movement
-        actual_time = estimate_time(list(ops))
+        actual_time = ops.estimate_time()
         # Very small movements should have minimal time
         assert actual_time < 0.001  # Should be very small
 
@@ -127,8 +125,8 @@ class TestTiming:
         ops.line_to(1, 0, 0)  # Very short distance
         # With high acceleration, full speed won't be reached
         # Should use triangular velocity profile
-        time_with_high_accel = estimate_time(list(ops), acceleration=10000.0)
-        time_with_low_accel = estimate_time(list(ops), acceleration=100.0)
+        time_with_high_accel = ops.estimate_time(acceleration=10000.0)
+        time_with_low_accel = ops.estimate_time(acceleration=100.0)
         # Higher acceleration should result in shorter time
         assert time_with_high_accel < time_with_low_accel
 
@@ -142,7 +140,7 @@ class TestTiming:
             if ops.category(i) == CommandCategory.MOVING:
                 assert ops.inspect(i).state is None
 
-        estimate_time(list(ops))
+        ops.estimate_time()
 
         for i in range(ops.len()):
             if ops.category(i) == CommandCategory.MOVING:
