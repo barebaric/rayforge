@@ -116,12 +116,12 @@ grep -Evi '^(PyOpenGL_accelerate|opencv[_-]python)' \
 if [ "$(uname -s)" = "Darwin" ]; then
     awk '
         BEGIN { done_numpy = 0; done_scipy = 0 }
-        /^numpy==/ {
+        /^numpy[=~><!]/ {
             print "numpy==1.26.4"
             done_numpy = 1
             next
         }
-        /^scipy==/ {
+        /^scipy[=~><!]/ {
             print "scipy==1.11.4"
             done_scipy = 1
             next
