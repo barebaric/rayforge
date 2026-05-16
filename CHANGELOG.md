@@ -5,6 +5,14 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.7.7
+
+### Fixed
+
+- Fixed shallow copy of extra_axes in Command causing rotary 3D preview
+  distortion (#243)
+- Fixed mirrored arcs rendered as full circles in G-code and 3D preview
+
 ## 1.7.6
 
 ### Added
