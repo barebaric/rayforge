@@ -3,7 +3,7 @@ import numpy as np
 from typing import Optional, TYPE_CHECKING, Dict, Any
 from gettext import gettext as _
 
-from rayforge.core.geo import contours
+from raygeo.path import normalize_winding_orders
 from rayforge.core.matrix import Matrix
 from rayforge.core.ops import (
     Ops,
@@ -112,9 +112,7 @@ class ShrinkWrapProducer(OpsProducer):
 
             # 4. Normalize winding order BEFORE offsetting (grow). This ensures
             #    that a positive offset correctly expands the shape.
-            normalized_geos = contours.normalize_winding_orders(
-                [hull_geometry]
-            )
+            normalized_geos = normalize_winding_orders([hull_geometry])
             if not normalized_geos:
                 hull_geometry = None
             else:

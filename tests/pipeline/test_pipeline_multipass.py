@@ -5,9 +5,9 @@ import pytest
 import logging
 import asyncio
 from pathlib import Path
+from raygeo import Geometry
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
-from rayforge.core.geo import Geometry
 from rayforge.core.layer import Layer
 from rayforge.core.ops import Ops
 from rayforge.core.source_asset import SourceAsset

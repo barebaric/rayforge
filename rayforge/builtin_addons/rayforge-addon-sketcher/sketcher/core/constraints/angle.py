@@ -12,9 +12,9 @@ from typing import (
     Callable,
     TYPE_CHECKING,
 )
-from rayforge.core.geo import Point
-from rayforge.core.geo.arc import normalize_angle
-from rayforge.core.geo.primitives import line_intersection
+from raygeo import Point
+from raygeo.shape.arc import normalize_angle
+from raygeo.shape.line import get_line_line_intersection
 from ..entities import Line
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
@@ -180,7 +180,7 @@ class AngleConstraint(Constraint):
 
         e1, e2, p1, p2, p3, p4 = result
 
-        intersection = line_intersection(
+        intersection = get_line_line_intersection(
             (p1.x, p1.y), (p2.x, p2.y), (p3.x, p3.y), (p4.x, p4.y)
         )
 
@@ -230,7 +230,7 @@ class AngleConstraint(Constraint):
 
         e1, e2, p1, p2, p3, p4 = result
 
-        intersection = line_intersection(
+        intersection = get_line_line_intersection(
             (p1.x, p1.y), (p2.x, p2.y), (p3.x, p3.y), (p4.x, p4.y)
         )
 
@@ -336,7 +336,7 @@ class AngleConstraint(Constraint):
 
         e1, e2, p1, p2, p3, p4 = result
 
-        intersection = line_intersection(
+        intersection = get_line_line_intersection(
             (p1.x, p1.y), (p2.x, p2.y), (p3.x, p3.y), (p4.x, p4.y)
         )
 

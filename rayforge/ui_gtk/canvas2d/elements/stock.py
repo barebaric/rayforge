@@ -3,6 +3,7 @@ import cairo
 from typing import Optional
 from ....core.stock import StockItem
 from ....core.matrix import Matrix
+from ....image.geo_renderer import geometry_to_cairo
 from ...canvas import CanvasElement
 
 
@@ -82,7 +83,7 @@ class StockElement(CanvasElement):
             ctx.translate(-min_x, -min_y)
 
         # Draw the geometry path using the standard method
-        self.data.geometry.to_cairo(ctx)
+        geometry_to_cairo(self.data.geometry, ctx)
 
         # Get the material color if available
         material = self.data.material

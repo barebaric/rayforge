@@ -1,13 +1,12 @@
 import pytest
 from unittest.mock import Mock, MagicMock
-
+from raygeo import Geometry
 from rayforge.core.ops import Ops
 from rayforge.core.ops.commands import (
     ArcToCommand,
     BezierToCommand,
     LineToCommand,
 )
-from rayforge.core.geo import Geometry
 from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
 from post_processors.transformers import CropTransformer

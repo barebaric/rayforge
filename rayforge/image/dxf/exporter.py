@@ -4,8 +4,8 @@ import math
 from typing import List
 from gettext import gettext as _
 import ezdxf
-from ...core.geo import Geometry
-from ...core.geo.constants import (
+from raygeo import Geometry
+from raygeo import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
     CMD_TYPE_ARC,

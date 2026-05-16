@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, TYPE_CHECKING, Dict, Any
 
-from rayforge.core.geo import Geometry
+from raygeo import Geometry
 from rayforge.core.ops import (
     Ops,
     OpsSectionStartCommand,

@@ -2,7 +2,7 @@ from __future__ import annotations
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
-from rayforge.core.geo import Point as GeoPoint
+from raygeo import Point as GeoPoint
 from ..constraints import (
     DistanceConstraint,
     EqualDistanceConstraint,

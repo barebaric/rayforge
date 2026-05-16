@@ -4,8 +4,9 @@ import uuid
 from typing import Dict, Any, Optional, TYPE_CHECKING, ClassVar
 from gettext import gettext as _
 from blinker import Signal
+from raygeo import Geometry
 from ..context import get_context
-from .geo import Geometry
+from ..image.geo_renderer import render_geometry_to_png
 from .asset import IAsset
 
 logger = logging.getLogger(__name__)
@@ -177,7 +178,7 @@ class StockAsset(IAsset):
     def get_thumbnail(self, size: int) -> Optional[bytes]:
         """Returns a PNG thumbnail of the stock geometry."""
         try:
-            return self.geometry.to_png(size)
+            return render_geometry_to_png(self.geometry, size)
         except Exception:
             logger.exception("Failed to generate stock thumbnail")
             return None

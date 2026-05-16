@@ -33,6 +33,7 @@ pkg-config = "*"
 rust = "*"
 
 [feature.app.pypi-dependencies]
+raygeo = "==0.1.7"
 rayforge = { editable = true, path = "." }
 aiohttp = "==3.13.5"
 asyncudp = "==0.11.0"
@@ -105,9 +106,9 @@ workdir = "."
 pre-commit-install = "pre-commit install"
 flake = "flake8 --ignore=E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504 --builtins=_ rayforge tests"
 pyflakes = { env = { PYFLAKES_BUILTINS = "_" }, cmd = "pyflakes rayforge tests" }
-pyright = "pyright"
+pyright = { env = { VIRTUAL_ENV = ".pixi/envs/default" }, cmd = "pyright" }
 lint = { depends-on = ["flake", "pyflakes", "pyright"] }
-format = "ruff format rayforge tests scripts"
+format = { depends-on = [], cmd = "ruff format rayforge tests scripts" }
 update-translations = "bash scripts/update_translations.sh"
 compile-translations = "bash scripts/update_translations.sh --compile-only"
 print-untranslated = "bash scripts/print_untranslated.sh"

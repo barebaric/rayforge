@@ -2,7 +2,8 @@ import math
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
-from rayforge.core.geo import Point as GeoPoint, Rect, primitives
+from raygeo import Point as GeoPoint, Rect
+from raygeo.shape.rect import is_point_inside_rect
 from ..types import EntityID
 from .bezier import Bezier
 
@@ -235,7 +236,7 @@ class Point:
         )
 
     def is_in_rect(self, rect: Rect) -> bool:
-        return primitives.is_point_in_rect(self.pos(), rect)
+        return is_point_inside_rect(self.pos(), rect)
 
     def __repr__(self) -> str:
         return (

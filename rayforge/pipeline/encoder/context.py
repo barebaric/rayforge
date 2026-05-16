@@ -2,7 +2,7 @@ from typing import Optional, List, Tuple, TYPE_CHECKING, Dict, Set
 from dataclasses import dataclass
 from gettext import gettext as _
 
-from ...core.geo import Point3D, Rect
+from raygeo import Point3D, Rect
 
 if TYPE_CHECKING:
     from ...core.doc import Doc

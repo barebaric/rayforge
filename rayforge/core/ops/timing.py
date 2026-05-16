@@ -8,7 +8,7 @@ as well as acceleration considerations.
 
 from typing import Optional, Sequence
 import math
-from ..geo.types import Point3D
+from raygeo import Point3D
 from .commands import MovingCommand, Command
 from .container import State
 

@@ -1,5 +1,5 @@
 import math
-from rayforge.core.geo.arc import determine_arc_direction
+from raygeo.shape.arc import get_arc_direction
 from sketcher.core import Sketch
 from sketcher.core.commands import ArcCommand, ArcPreviewState
 from sketcher.core.entities import Arc
@@ -290,7 +290,7 @@ def test_arc_direction_preserved_counter_clockwise():
     start_id = sketch.add_point(50, 0)
 
     # Mouse above the start-center line should give counter-clockwise
-    expected_clockwise = determine_arc_direction((0, 0), (50, 0), (25, 50))
+    expected_clockwise = get_arc_direction((0, 0), (50, 0), (25, 50))
     assert expected_clockwise is False
 
     cmd = ArcCommand(
@@ -316,7 +316,7 @@ def test_arc_direction_preserved_clockwise():
     start_id = sketch.add_point(50, 0)
 
     # Mouse below the start-center line should give clockwise
-    expected_clockwise = determine_arc_direction((0, 0), (50, 0), (25, -50))
+    expected_clockwise = get_arc_direction((0, 0), (50, 0), (25, -50))
     assert expected_clockwise is True
 
     cmd = ArcCommand(
@@ -344,7 +344,7 @@ def test_arc_direction_with_projected_endpoint():
     # End position is slightly off the circle - it will be projected
     # Mouse is below center-start line (clockwise direction)
     mouse_pos = (30, -40)
-    expected_clockwise = determine_arc_direction((0, 0), (50, 0), mouse_pos)
+    expected_clockwise = get_arc_direction((0, 0), (50, 0), mouse_pos)
     assert expected_clockwise is True
 
     cmd = ArcCommand(

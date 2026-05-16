@@ -1,7 +1,6 @@
 from typing import List, Dict, Optional, Any, Set
-
-from rayforge.core.geo.font_config import FontConfig
-from rayforge.core.geo.types import Point as GeoPoint
+from raygeo import Point as GeoPoint
+from rayforge.core.font_config import FontConfig
 from .entities.arc import Arc
 from .entities.bezier import Bezier
 from .entities.circle import Circle

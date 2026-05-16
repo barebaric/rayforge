@@ -4,12 +4,12 @@ from pathlib import Path
 from typing import Tuple, cast
 from dataclasses import asdict
 from blinker import Signal
+from raygeo import Geometry
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.item import DocItem
 from rayforge.core.matrix import Matrix
 from rayforge.core.tab import Tab
-from rayforge.core.geo import Geometry
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec

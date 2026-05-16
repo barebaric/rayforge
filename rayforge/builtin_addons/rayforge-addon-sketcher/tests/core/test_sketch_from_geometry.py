@@ -1,5 +1,5 @@
 import pytest
-from rayforge.core.geo import Geometry
+from raygeo import Geometry
 from sketcher.core import Sketch
 from sketcher.core.entities import Line, Arc, Bezier
 

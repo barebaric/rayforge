@@ -11,6 +11,7 @@ from typing import (
 )
 from gettext import gettext as _
 from blinker import Signal
+from raygeo import Geometry
 from ..core.undo import HistoryManager
 from ..pipeline.producer.registry import producer_registry
 from .asset import IAsset, UnknownAsset
@@ -61,7 +62,6 @@ class Doc(DocItem):
         from .stock import StockItem
         from .stock_asset import StockAsset
         from .source_asset import SourceAsset
-        from .geo import Geometry
         from .matrix import Matrix
         from .asset_registry import asset_type_registry
 

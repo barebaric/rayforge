@@ -19,9 +19,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, TYPE_CHECKING
 
 import pytest
-
+from raygeo import Geometry
 from rayforge.core.doc import Doc
-from rayforge.core.geo import Geometry
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec

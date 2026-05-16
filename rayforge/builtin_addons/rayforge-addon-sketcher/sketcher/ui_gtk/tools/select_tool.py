@@ -13,7 +13,7 @@ from typing import (
 from gettext import gettext as _
 import cairo
 
-from rayforge.core.geo import Point as GeoPoint
+from raygeo import Point as GeoPoint
 from rayforge.core.matrix import Matrix
 from ...core.commands import (
     CreateOrEditConstraintCommand,

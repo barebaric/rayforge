@@ -12,9 +12,14 @@ from typing import (
     cast,
 )
 from gettext import gettext as _
-from rayforge.core.geo import Point
-from rayforge.core.geo.circle import circle_circle_intersection
-from rayforge.core.geo.primitives import line_intersection, is_point_on_segment
+from raygeo import Point
+from raygeo.shape.circle import (
+    get_circle_circle_intersections,
+)
+from raygeo.shape.line import (
+    get_line_line_intersection,
+    is_point_on_line_segment,
+)
 from ..entities import Line, Arc, Circle
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
@@ -302,7 +307,7 @@ class PerpendicularConstraint(Constraint):
         p2 = reg.get_point(l1.p2_idx)
         p3 = reg.get_point(l2.p1_idx)
         p4 = reg.get_point(l2.p2_idx)
-        pt = line_intersection(
+        pt = get_line_line_intersection(
             (p1.x, p1.y), (p2.x, p2.y), (p3.x, p3.y), (p4.x, p4.y)
         )
         if not pt:
@@ -347,7 +352,7 @@ class PerpendicularConstraint(Constraint):
 
         valid_points = []
         for ix, iy in [(ix1, iy1), (ix2, iy2)]:
-            on_line = is_point_on_segment(
+            on_line = is_point_on_line_segment(
                 (ix, iy), (lp1.x, lp1.y), (lp2.x, lp2.y)
             )
             on_arc = True
@@ -396,7 +401,7 @@ class PerpendicularConstraint(Constraint):
             - c2.y,
         )
 
-        intersections = circle_circle_intersection(
+        intersections = get_circle_circle_intersections(
             (c1.x, c1.y), r1, (c2.x, c2.y), r2
         )
         if not intersections:

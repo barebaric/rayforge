@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Set
 
 import cairo
 
-from rayforge.core.geo import Point as GeoPoint
+from raygeo import Point as GeoPoint
 from ...core.constraints import (
     CoincidentConstraint,
     HorizontalConstraint,

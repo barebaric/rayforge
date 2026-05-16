@@ -3,7 +3,7 @@ import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 import cairo
 import numpy as np
-from ...core.geo import Point3D
+from raygeo import Point3D
 from ...core.matrix import Matrix
 from ...pipeline.coordspace import OriginCorner
 

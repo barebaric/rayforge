@@ -3,7 +3,7 @@ import logging
 from ..base_renderer import Renderer, RenderSpecification
 from ..ops_renderer import OPS_RENDERER
 import warnings
-from ...core.geo import Geometry
+from raygeo import Geometry
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)

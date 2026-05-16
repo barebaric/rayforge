@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Any, Optional, List, Tuple
 from gettext import gettext as _
-from rayforge.core.geo import Point as GeoPoint
-from rayforge.core.geo.font_config import FontConfig
+from raygeo import Point as GeoPoint
+from rayforge.core.font_config import FontConfig
 from ..constraints import (
     AspectRatioConstraint,
     EqualLengthConstraint,

@@ -3,13 +3,18 @@ import pluggy
 hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
-MINIMUM_API_VERSION = 1
-PLUGIN_API_VERSION = 12
+MINIMUM_API_VERSION = 13
+PLUGIN_API_VERSION = 13
 
 
 """
 API Changelog
 ============
+
+Version 13
+----------
+Ported geometry module from Python to Rust (raygeo). All addons that
+import from ``raygeo`` must update to the new API.
 
 Version 12
 ----------

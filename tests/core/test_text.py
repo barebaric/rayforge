@@ -1,13 +1,13 @@
 import numpy as np
-from rayforge.core.geo.constants import (
+from raygeo import (
     CMD_TYPE_MOVE,
     CMD_TYPE_LINE,
     CMD_TYPE_BEZIER,
     COL_TYPE,
     COL_Z,
 )
-from rayforge.core.geo.font_config import FontConfig
-from rayforge.core.geo.text import text_to_geometry
+from rayforge.core.font_config import FontConfig
+from rayforge.core.text import text_to_geometry
 
 
 def test_text_to_geometry_empty_string():

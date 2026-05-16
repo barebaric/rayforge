@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING, Optional, cast
 import cairo
 from blinker import Signal
 
-from rayforge.core.geo import Geometry, primitives
+from raygeo.shape.polygon import is_point_inside_polygon
+from rayforge.core.geo_helpers import geometry_from_text
+from rayforge.image.geo_renderer import geometry_to_cairo
 from ...core.commands import TextBoxCommand
 from ...core.commands.live_text_edit import LiveTextEditCommand
 from ...core.commands.text_property import ModifyTextPropertyCommand
@@ -286,7 +288,7 @@ class TextBoxTool(SketchTool):
 
         # Use point-in-polygon check for accurate hit testing (handles
         # rotation)
-        return primitives.is_point_in_polygon((mx, my), polygon)
+        return is_point_inside_polygon((mx, my), polygon)
 
     def _is_point_inside_any_text_box(self, mx: float, my: float) -> bool:
         for entity in self.element.sketch.registry.entities:
@@ -324,7 +326,7 @@ class TextBoxTool(SketchTool):
             (p_height.x, p_height.y),
         ]
 
-        return primitives.is_point_in_polygon((mx, my), polygon)
+        return is_point_inside_polygon((mx, my), polygon)
 
     def _select_word_at_cursor(self):
         """Selects the word at the current cursor position."""
@@ -837,7 +839,7 @@ class TextBoxTool(SketchTool):
         p_width = self.element.sketch.registry.get_point(entity.width_id)
         p_height = self.element.sketch.registry.get_point(entity.height_id)
 
-        natural_geo = Geometry.from_text(self.text_buffer, entity.font_config)
+        natural_geo = geometry_from_text(self.text_buffer, entity.font_config)
         natural_geo.flip_y()
         logger.debug(f"Natural geometry: {natural_geo.rect()}")
 
@@ -872,7 +874,7 @@ class TextBoxTool(SketchTool):
         cairo_mat = cairo.Matrix(*model_to_screen_matrix.for_cairo())
         ctx.transform(cairo_mat)
 
-        transformed_geo.to_cairo(ctx)
+        geometry_to_cairo(transformed_geo, ctx)
         self._set_text_color(ctx, entity)
         ctx.fill()
 

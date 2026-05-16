@@ -12,8 +12,8 @@ from typing import (
     cast,
 )
 from gettext import gettext as _
-from ..core.geo import Geometry
-from ..core.geo.constants import CMD_TYPE_MOVE, COL_TYPE
+from raygeo import Geometry
+from raygeo import CMD_TYPE_MOVE, COL_TYPE
 from ..core.item import DocItem
 from ..core.stock import StockItem
 from ..core.undo import (
@@ -389,11 +389,9 @@ class EditCmd:
             data[i] for i in range(len(data)) if i not in to_remove
         ]
 
-        if not remaining_rows:
-            new_geo = Geometry()
-        else:
-            new_geo = Geometry()
-            new_geo._data = np.array(remaining_rows, dtype=np.float64)
+        new_geo = Geometry()
+        if remaining_rows:
+            new_geo.data = np.array(remaining_rows, dtype=np.float64)
 
         old_value = workpiece._edited_boundaries
 

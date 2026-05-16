@@ -13,7 +13,7 @@ from ..artifact import (
 )
 
 if TYPE_CHECKING:
-    from ...core.geo import Geometry
+    from raygeo import Geometry
     from ..transformer import OpsTransformer
 
 logger = logging.getLogger(__name__)

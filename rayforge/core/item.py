@@ -15,7 +15,7 @@ from typing import (
 import logging
 import numpy as np
 from blinker import Signal
-from .geo import Rect, Point
+from raygeo import Rect, Point
 from .matrix import Matrix
 
 if TYPE_CHECKING:

@@ -2,7 +2,7 @@ from __future__ import annotations
 import math
 from gettext import gettext as _
 from typing import Union, Dict, Any, List, Optional, Callable, TYPE_CHECKING
-from rayforge.core.geo import Point
+from raygeo import Point
 from ..entities import Circle
 from .base import Constraint, ConstraintStatus
 from .radius import RadiusConstraint

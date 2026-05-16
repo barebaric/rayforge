@@ -3,13 +3,13 @@ import logging
 import asyncio
 from unittest.mock import MagicMock
 from pathlib import Path
+from raygeo import Geometry
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.workpiece import WorkPiece
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
-from rayforge.core.geo import Geometry
 from rayforge.core.ops import Ops
 from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact import (
