@@ -66,6 +66,17 @@
   </screenshots>
 
   <releases>
+    <release version="1.7.7" date="2026-05-16">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>Fixed shallow copy of extra_axes causing rotary 3D preview
+          distortion (#243)</li>
+          <li>Fixed mirrored arcs rendered as full circles in G-code and
+          3D preview</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.7.6" date="2026-05-14">
       <description>
         <p>Canvas pan, camera enhancements, raster performance, and bug fixes</p>
