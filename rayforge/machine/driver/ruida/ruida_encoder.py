@@ -10,25 +10,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 from ....core.ops import (
     Ops,
-    Command,
-    SetPowerCommand,
-    SetCutSpeedCommand,
-    SetTravelSpeedCommand,
-    SetFrequencyCommand,
-    SetPulseWidthCommand,
-    EnableAirAssistCommand,
-    DisableAirAssistCommand,
-    SetLaserCommand,
-    MoveToCommand,
-    LineToCommand,
-    ArcToCommand,
-    ScanLinePowerCommand,
-    JobStartCommand,
-    JobEndCommand,
-    LayerStartCommand,
-    LayerEndCommand,
-    WorkpieceStartCommand,
-    WorkpieceEndCommand,
+    CommandType,
 )
 from raygeo import Point3D
 from ....pipeline.encoder.base import (
@@ -91,9 +73,9 @@ class RuidaEncoder(OpsEncoder):
         text_lines: List[str] = []
         op_map = MachineCodeOpMap()
 
-        for i, cmd in enumerate(ops):
+        for i in range(ops.len()):
             start_line = len(text_lines)
-            self._handle_command(cmd, machine, binary_chunks, text_lines)
+            self._handle_command(ops, i, machine, binary_chunks, text_lines)
             end_line = len(text_lines)
 
             if end_line > start_line:
@@ -134,64 +116,68 @@ class RuidaEncoder(OpsEncoder):
 
     def _handle_command(
         self,
-        cmd: Command,
+        ops: Ops,
+        idx: int,
         machine: "Machine",
         binary: List[bytes],
         text: List[str],
     ) -> None:
         """Dispatch command to appropriate handler."""
-        match cmd:
-            case SetPowerCommand():
-                self._handle_set_power(cmd, binary, text)
-            case SetCutSpeedCommand():
-                self._handle_set_cut_speed(cmd, binary, text)
-            case SetTravelSpeedCommand():
-                self._handle_set_travel_speed(cmd, binary, text)
-            case SetFrequencyCommand():
-                self._handle_set_frequency(cmd, binary, text)
-            case SetPulseWidthCommand():
-                self._handle_set_pulse_width(cmd, binary, text)
-            case EnableAirAssistCommand():
-                self._handle_enable_air_assist(binary, text)
-            case DisableAirAssistCommand():
-                self._handle_disable_air_assist(binary, text)
-            case SetLaserCommand():
-                self._handle_set_laser(cmd, machine, binary, text)
-            case MoveToCommand():
-                self._handle_move_to(cmd, binary, text)
-                self.current_pos = cmd.end
-            case LineToCommand():
-                self._handle_line_to(cmd, binary, text)
-                self.current_pos = cmd.end
-            case ArcToCommand():
-                self._handle_arc_to(cmd, binary, text)
-                self.current_pos = cmd.end
-            case ScanLinePowerCommand():
-                self._handle_scan_line(cmd, binary, text)
-                self.current_pos = cmd.end
-            case JobStartCommand():
-                self._handle_job_start(machine, binary, text)
-            case JobEndCommand():
-                self._handle_job_end(binary, text)
-            case LayerStartCommand():
-                self._handle_layer_start(cmd, binary, text)
-            case LayerEndCommand():
-                self._handle_layer_end(cmd, binary, text)
-            case WorkpieceStartCommand():
-                self._handle_workpiece_start(cmd, text)
-            case WorkpieceEndCommand():
-                self._handle_workpiece_end(cmd, text)
+        ct = ops.command_type(idx)
+
+        if ct == CommandType.SET_POWER:
+            self._handle_set_power(ops, idx, binary, text)
+        elif ct == CommandType.SET_CUT_SPEED:
+            self._handle_set_cut_speed(ops, idx, binary, text)
+        elif ct == CommandType.SET_TRAVEL_SPEED:
+            self._handle_set_travel_speed(ops, idx, binary, text)
+        elif ct == CommandType.SET_FREQUENCY:
+            self._handle_set_frequency(ops, idx, binary, text)
+        elif ct == CommandType.SET_PULSE_WIDTH:
+            self._handle_set_pulse_width(ops, idx, binary, text)
+        elif ct == CommandType.ENABLE_AIR_ASSIST:
+            self._handle_enable_air_assist(binary, text)
+        elif ct == CommandType.DISABLE_AIR_ASSIST:
+            self._handle_disable_air_assist(binary, text)
+        elif ct == CommandType.SET_LASER:
+            self._handle_set_laser(ops, idx, machine, binary, text)
+        elif ct == CommandType.MOVE_TO:
+            self._handle_move_to(ops, idx, binary, text)
+            self.current_pos = ops.endpoint(idx)
+        elif ct == CommandType.LINE_TO:
+            self._handle_line_to(ops, idx, binary, text)
+            self.current_pos = ops.endpoint(idx)
+        elif ct == CommandType.ARC_TO:
+            self._handle_arc_to(ops, idx, binary, text)
+            self.current_pos = ops.endpoint(idx)
+        elif ct == CommandType.SCAN_LINE:
+            self._handle_scan_line(ops, idx, binary, text)
+            self.current_pos = ops.endpoint(idx)
+        elif ct == CommandType.JOB_START:
+            self._handle_job_start(machine, binary, text)
+        elif ct == CommandType.JOB_END:
+            self._handle_job_end(binary, text)
+        elif ct == CommandType.LAYER_START:
+            self._handle_layer_start(ops, idx, binary, text)
+        elif ct == CommandType.LAYER_END:
+            self._handle_layer_end(ops, idx, binary, text)
+        elif ct == CommandType.WORKPIECE_START:
+            self._handle_workpiece_start(ops, idx, text)
+        elif ct == CommandType.WORKPIECE_END:
+            self._handle_workpiece_end(ops, idx, text)
 
     def _handle_set_power(
         self,
-        cmd: SetPowerCommand,
+        ops: Ops,
+        idx: int,
         binary: List[bytes],
         text: List[str],
     ) -> None:
         """Handle SetPowerCommand - set laser power percentage."""
-        self.power = cmd.power
-        power_val = self._power_to_ruida(cmd.power)
-        power_percent = cmd.power * 100.0
+        power = ops.power(idx)
+        self.power = power
+        power_val = self._power_to_ruida(power)
+        power_percent = power * 100.0
 
         laser_cmd = {1: 0xC8, 2: 0xC1, 3: 0xC4, 4: 0xC5}
         cmd_byte = laser_cmd.get(self.active_laser, 0xC8)
@@ -200,55 +186,63 @@ class RuidaEncoder(OpsEncoder):
 
     def _handle_set_cut_speed(
         self,
-        cmd: SetCutSpeedCommand,
+        ops: Ops,
+        idx: int,
         binary: List[bytes],
         text: List[str],
     ) -> None:
         """Handle SetCutSpeedCommand - set cutting speed in mm/s."""
-        self.cut_speed = cmd.speed
-        speed_um = self._mm_to_um(cmd.speed)
+        speed = ops.speed(idx)
+        self.cut_speed = speed
+        speed_um = self._mm_to_um(speed)
         binary.append(b"\xc9\x02" + encode35(speed_um))
-        text.append(f"SPEED {cmd.speed:.1f}")
+        text.append(f"SPEED {speed:.1f}")
 
     def _handle_set_travel_speed(
         self,
-        cmd: SetTravelSpeedCommand,
+        ops: Ops,
+        idx: int,
         binary: List[bytes],
         text: List[str],
     ) -> None:
         """Handle SetTravelSpeedCommand - store for move operations."""
-        self.travel_speed = cmd.speed
+        speed = ops.speed(idx)
+        self.travel_speed = speed
         if self.travel_speed is not None:
-            speed_um = self._mm_to_um(cmd.speed)
+            speed_um = self._mm_to_um(speed)
             binary.append(b"\xc9\x02" + encode35(speed_um))
-        text.append(f"TRAVEL_SPEED {cmd.speed:.1f}")
+        text.append(f"TRAVEL_SPEED {speed:.1f}")
 
     def _handle_set_frequency(
         self,
-        cmd: SetFrequencyCommand,
+        ops: Ops,
+        idx: int,
         binary: List[bytes],
         text: List[str],
     ) -> None:
         """Handle SetFrequencyCommand - emit 0xC6 0x60 frequency."""
+        freq = ops.frequency(idx)
         binary.append(
             b"\xc6\x60"
             + bytes([self.active_laser, 0])
-            + encode35(cmd.frequency)
+            + encode35(freq)
         )
-        text.append(f"FREQUENCY {cmd.frequency}")
+        text.append(f"FREQUENCY {freq}")
 
     def _handle_set_pulse_width(
         self,
-        cmd: SetPulseWidthCommand,
+        ops: Ops,
+        idx: int,
         binary: List[bytes],
         text: List[str],
     ) -> None:
         """Handle SetPulseWidthCommand - emit 0xC6 0x10 interval."""
-        pulse_us = int(cmd.pulse_width)
+        pw = ops.pulse_width(idx)
+        pulse_us = int(pw)
         binary.append(
             b"\xc6\x10" + bytes([self.active_laser, 0]) + encode35(pulse_us)
         )
-        text.append(f"PULSE_WIDTH {cmd.pulse_width:.1f}")
+        text.append(f"PULSE_WIDTH {pw:.1f}")
 
     def _handle_enable_air_assist(
         self,
@@ -274,20 +268,22 @@ class RuidaEncoder(OpsEncoder):
 
     def _handle_set_laser(
         self,
-        cmd: SetLaserCommand,
+        ops: Ops,
+        idx: int,
         machine: "Machine",
         binary: List[bytes],
         text: List[str],
     ) -> None:
         """Handle SetLaserCommand - select active laser head."""
+        laser_uid = ops.laser_uid(idx)
         laser_head = next(
-            (head for head in machine.heads if head.uid == cmd.laser_uid),
+            (head for head in machine.heads if head.uid == laser_uid),
             None,
         )
 
         if laser_head is None:
             logger.warning(
-                f"Could not find laser with UID '{cmd.laser_uid}'. "
+                f"Could not find laser with UID '{laser_uid}'. "
                 "Using default laser 1."
             )
             self.active_laser = 1
@@ -300,65 +296,77 @@ class RuidaEncoder(OpsEncoder):
 
     def _handle_move_to(
         self,
-        cmd: MoveToCommand,
+        ops: Ops,
+        idx: int,
         binary: List[bytes],
         text: List[str],
     ) -> None:
         """Handle MoveToCommand - rapid move with laser off."""
-        x_um = self._mm_to_um(cmd.end[0])
-        y_um = self._mm_to_um(cmd.end[1])
+        end = ops.endpoint(idx)
+        x_um = self._mm_to_um(end[0])
+        y_um = self._mm_to_um(end[1])
         binary.append(b"\x88" + encode35(x_um) + encode35(y_um))
-        text.append(f"MOVE_ABS X:{cmd.end[0]:.3f} Y:{cmd.end[1]:.3f}")
+        text.append(f"MOVE_ABS X:{end[0]:.3f} Y:{end[1]:.3f}")
 
     def _handle_line_to(
         self,
-        cmd: LineToCommand,
+        ops: Ops,
+        idx: int,
         binary: List[bytes],
         text: List[str],
     ) -> None:
         """Handle LineToCommand - cutting move with laser on."""
-        x_um = self._mm_to_um(cmd.end[0])
-        y_um = self._mm_to_um(cmd.end[1])
+        end = ops.endpoint(idx)
+        x_um = self._mm_to_um(end[0])
+        y_um = self._mm_to_um(end[1])
         binary.append(b"\xa8" + encode35(x_um) + encode35(y_um))
-        text.append(f"CUT_ABS X:{cmd.end[0]:.3f} Y:{cmd.end[1]:.3f}")
+        text.append(f"CUT_ABS X:{end[0]:.3f} Y:{end[1]:.3f}")
 
     def _handle_arc_to(
         self,
-        cmd: ArcToCommand,
+        ops: Ops,
+        idx: int,
         binary: List[bytes],
         text: List[str],
     ) -> None:
         """Handle ArcToCommand - linearize arc to series of cuts."""
+        end = ops.endpoint(idx)
+        i_val, j_val, cw = ops.arc_params(idx)
         text.append(
-            f"; ARC to ({cmd.end[0]:.3f}, {cmd.end[1]:.3f}) "
-            f"{'CW' if cmd.clockwise else 'CCW'}"
+            f"; ARC to ({end[0]:.3f}, {end[1]:.3f}) "
+            f"{'CW' if cw else 'CCW'}"
         )
 
-        linear_cmds = cmd.linearize(self.current_pos)
-        for linear_cmd in linear_cmds:
-            if isinstance(linear_cmd, LineToCommand):
-                self._handle_line_to(linear_cmd, binary, text)
-            elif isinstance(linear_cmd, SetPowerCommand):
-                self._handle_set_power(linear_cmd, binary, text)
+        sub_ops = ops.linearize(idx, self.current_pos)
+        for j in range(sub_ops.len()):
+            sub_ct = sub_ops.command_type(j)
+            if sub_ct == CommandType.LINE_TO:
+                self._handle_line_to(sub_ops, j, binary, text)
+            elif sub_ct == CommandType.SET_POWER:
+                self._handle_set_power(sub_ops, j, binary, text)
 
     def _handle_scan_line(
         self,
-        cmd: ScanLinePowerCommand,
+        ops: Ops,
+        idx: int,
         binary: List[bytes],
         text: List[str],
     ) -> None:
         """Handle ScanLinePowerCommand - linearize to power/line segments."""
+        end = ops.endpoint(idx)
+        power_mv = ops.scanline_data(idx)
         text.append(
-            f"; SCAN_LINE to ({cmd.end[0]:.3f}, {cmd.end[1]:.3f}) "
-            f"({len(cmd.power_values)} samples)"
+            f"; SCAN_LINE to ({end[0]:.3f}, {end[1]:.3f}) "
+            f"({len(power_mv)} samples)"
         )
 
-        linear_cmds = cmd.linearize(self.current_pos)
-        for linear_cmd in linear_cmds:
-            if isinstance(linear_cmd, LineToCommand):
-                self._handle_line_to(linear_cmd, binary, text)
-            elif isinstance(linear_cmd, SetPowerCommand):
-                self._handle_set_power(linear_cmd, binary, text)
+        sub_ops = ops.linearize(idx, self.current_pos)
+        for j in range(sub_ops.len()):
+            sub_ct = sub_ops.command_type(j)
+            if sub_ct == CommandType.LINE_TO:
+                self._handle_line_to(sub_ops, j, binary, text)
+            elif sub_ct == CommandType.SET_POWER:
+                self._handle_set_power(sub_ops, j, binary, text)
 
     def _handle_job_start(
         self,
@@ -392,17 +400,20 @@ class RuidaEncoder(OpsEncoder):
 
     def _handle_layer_start(
         self,
-        cmd: LayerStartCommand,
+        ops: Ops,
+        idx: int,
         binary: List[bytes],
         text: List[str],
     ) -> None:
         """Handle LayerStartCommand - mark layer beginning."""
+        uid = ops.layer_uid(idx)
         binary.append(b"\xca\x00")
-        text.append(f"; --- Layer {cmd.layer_uid[:8]} ---")
+        text.append(f"; --- Layer {uid[:8]} ---")
 
     def _handle_layer_end(
         self,
-        cmd: LayerEndCommand,
+        ops: Ops,
+        idx: int,
         binary: List[bytes],
         text: List[str],
     ) -> None:
@@ -412,15 +423,18 @@ class RuidaEncoder(OpsEncoder):
 
     def _handle_workpiece_start(
         self,
-        cmd: WorkpieceStartCommand,
+        ops: Ops,
+        idx: int,
         text: List[str],
     ) -> None:
         """Handle WorkpieceStartCommand - mark workpiece beginning."""
-        text.append(f"; --- Workpiece {cmd.workpiece_uid[:8]} ---")
+        uid = ops.workpiece_uid(idx)
+        text.append(f"; --- Workpiece {uid[:8]} ---")
 
     def _handle_workpiece_end(
         self,
-        cmd: WorkpieceEndCommand,
+        ops: Ops,
+        idx: int,
         text: List[str],
     ) -> None:
         """Handle WorkpieceEndCommand - mark workpiece end."""

@@ -5,12 +5,8 @@ import cairo
 import logging
 from ...core.ops import (
     Ops,
-    MoveToCommand,
-    LineToCommand,
-    ArcToCommand,
-    BezierToCommand,
-    ScanLinePowerCommand,
-    SetPowerCommand,
+    CommandType,
+    CommandCategory,
 )
 from .base import OpsEncoder
 from ...core.color import ColorSet
@@ -85,124 +81,133 @@ class CairoEncoder(OpsEncoder):
                     ctx.stroke()
                     path_has_content = False
 
-            for cmd in ops:
+            for i in range(ops.len()):
+                ct = ops.command_type(i)
+
                 # Handle state change commands first
-                if isinstance(cmd, SetPowerCommand):
-                    current_power = cmd.power
+                if ct == CommandType.SET_POWER:
+                    current_power = ops.power(i)
                     continue
 
-                if cmd.is_marker() or cmd.end is None:
+                cat = ops.category(i)
+                if cat == CommandCategory.MARKER:
                     continue
 
-                x, y, _ = cmd.end
+                if cat != CommandCategory.MOVING:
+                    continue
+
+                end = ops.endpoint(i)
+                x, y, _ = end
                 adjusted_end = (x, ymax - y)
 
-                match cmd:
-                    case MoveToCommand():
-                        # A move command breaks any current path being built.
+                if ct == CommandType.MOVE_TO:
+                    # A move command breaks any current path being built.
+                    flush_path()
+                    current_path_color = None
+
+                    # Optionally draw the travel move. This is drawn
+                    # immediately as a single segment and is not batched.
+                    if show_travel_moves and not is_first_move:
+                        ctx.set_source_rgba(*travel_rgba)
+                        ctx.move_to(*prev_point_2d)
+                        ctx.line_to(*adjusted_end)
+                        ctx.stroke()
+
+                    prev_point_2d = adjusted_end
+                    is_first_move = False
+
+                elif ct in (
+                    CommandType.LINE_TO,
+                    CommandType.ARC_TO,
+                    CommandType.BEZIER_TO,
+                ):
+                    is_zero_power = math.isclose(current_power, 0.0)
+                    should_draw = (
+                        show_zero_power_moves
+                        if is_zero_power
+                        else show_cut_moves
+                    )
+
+                    if not should_draw:
+                        # If not drawing, this move still breaks the
+                        # current path.
                         flush_path()
                         current_path_color = None
-
-                        # Optionally draw the travel move. This is drawn
-                        # immediately as a single segment and is not batched.
-                        if show_travel_moves and not is_first_move:
-                            ctx.set_source_rgba(*travel_rgba)
-                            ctx.move_to(*prev_point_2d)
-                            ctx.line_to(*adjusted_end)
-                            ctx.stroke()
-
                         prev_point_2d = adjusted_end
-                        is_first_move = False
+                        continue
 
-                    case LineToCommand() | ArcToCommand() | BezierToCommand():
-                        is_zero_power = math.isclose(current_power, 0.0)
-                        should_draw = (
-                            show_zero_power_moves
-                            if is_zero_power
-                            else show_cut_moves
-                        )
+                    power_idx = min(255, int(current_power * 255.0))
+                    required_color = (
+                        tuple(cut_lut[power_idx])
+                        if not is_zero_power
+                        else zero_power_rgba
+                    )
 
-                        if not should_draw:
-                            # If not drawing, this move still breaks the
-                            # current path.
-                            flush_path()
-                            current_path_color = None
-                            prev_point_2d = adjusted_end
-                            continue
-
-                        power_idx = min(255, int(current_power * 255.0))
-                        required_color = (
-                            tuple(cut_lut[power_idx])
-                            if not is_zero_power
-                            else zero_power_rgba
-                        )
-
-                        # If color changes, flush the old path and start a
-                        # new one.
-                        if required_color != current_path_color:
-                            flush_path()
-                            ctx.set_source_rgba(*required_color)
-                            current_path_color = required_color
-                            # Start new subpath at the previous point.
-                            ctx.move_to(*prev_point_2d)
-
-                        # Add the command geometry to the current path.
-                        if isinstance(cmd, LineToCommand):
-                            ctx.line_to(*adjusted_end)
-                        elif isinstance(cmd, ArcToCommand):
-                            start_x, start_y = prev_point_2d
-                            i, j = cmd.center_offset
-                            center_x = start_x + i
-                            center_y = start_y - j
-                            radius = math.dist(
-                                (start_x, start_y), (center_x, center_y)
-                            )
-                            angle1 = math.atan2(
-                                start_y - center_y, start_x - center_x
-                            )
-                            angle2 = math.atan2(
-                                adjusted_end[1] - center_y,
-                                adjusted_end[0] - center_x,
-                            )
-                            if cmd.clockwise:
-                                ctx.arc(
-                                    center_x, center_y, radius, angle1, angle2
-                                )
-                            else:
-                                ctx.arc_negative(
-                                    center_x, center_y, radius, angle1, angle2
-                                )
-                        else:  # BezierToCommand
-                            c1x = cmd.control1[0]
-                            c1y = ymax - cmd.control1[1]
-                            c2x = cmd.control2[0]
-                            c2y = ymax - cmd.control2[1]
-                            ctx.curve_to(c1x, c1y, c2x, c2y, *adjusted_end)
-
-                        path_has_content = True
-                        prev_point_2d = adjusted_end
-
-                    case ScanLinePowerCommand():
-                        # Scanlines are complex and drawn immediately.
-                        # Flush any pending path.
+                    # If color changes, flush the old path and start a
+                    # new one.
+                    if required_color != current_path_color:
                         flush_path()
-                        current_path_color = None
+                        ctx.set_source_rgba(*required_color)
+                        current_path_color = required_color
+                        # Start new subpath at the previous point.
+                        ctx.move_to(*prev_point_2d)
 
-                        prev_point_2d = self._handle_scanline(
-                            ctx,
-                            cmd,
-                            ymax,
-                            prev_point_2d,
-                            engrave_lut,
-                            zero_power_rgba,
-                            show_engrave_moves,
-                            show_zero_power_moves,
+                    # Add the command geometry to the current path.
+                    if ct == CommandType.LINE_TO:
+                        ctx.line_to(*adjusted_end)
+                    elif ct == CommandType.ARC_TO:
+                        start_x, start_y = prev_point_2d
+                        i_val, j_val, cw = ops.arc_params(i)
+                        center_x = start_x + i_val
+                        center_y = start_y - j_val
+                        radius = math.dist(
+                            (start_x, start_y), (center_x, center_y)
                         )
-                        is_first_move = False
+                        angle1 = math.atan2(
+                            start_y - center_y, start_x - center_x
+                        )
+                        angle2 = math.atan2(
+                            adjusted_end[1] - center_y,
+                            adjusted_end[0] - center_x,
+                        )
+                        if cw:
+                            ctx.arc(
+                                center_x, center_y, radius, angle1, angle2
+                            )
+                        else:
+                            ctx.arc_negative(
+                                center_x, center_y, radius, angle1, angle2
+                            )
+                    else:  # BezierToCommand
+                        c1, c2 = ops.bezier_params(i)
+                        c1x = c1[0]
+                        c1y = ymax - c1[1]
+                        c2x = c2[0]
+                        c2y = ymax - c2[1]
+                        ctx.curve_to(c1x, c1y, c2x, c2y, *adjusted_end)
 
-                    case _:
-                        # Ignore unsupported operations
-                        pass
+                    path_has_content = True
+                    prev_point_2d = adjusted_end
+
+                elif ct == CommandType.SCAN_LINE:
+                    # Scanlines are complex and drawn immediately.
+                    # Flush any pending path.
+                    flush_path()
+                    current_path_color = None
+
+                    prev_point_2d = self._handle_scanline(
+                        ctx,
+                        ops,
+                        i,
+                        end,
+                        ymax,
+                        prev_point_2d,
+                        engrave_lut,
+                        zero_power_rgba,
+                        show_engrave_moves,
+                        show_zero_power_moves,
+                    )
+                    is_first_move = False
 
             # After the loop, flush any remaining path.
             flush_path()
@@ -246,7 +251,9 @@ class CairoEncoder(OpsEncoder):
     def _handle_scanline(
         self,
         ctx: cairo.Context,
-        cmd: ScanLinePowerCommand,
+        ops: Ops,
+        idx: int,
+        end: Tuple[float, float, float],
         ymax: float,
         prev_point_2d: Tuple[float, float],
         engrave_lut: np.ndarray,
@@ -258,19 +265,19 @@ class CairoEncoder(OpsEncoder):
         Handles a ScanLinePowerCommand by splitting it into chunks of
         zero-power and non-zero-power segments and drawing them accordingly.
         """
-        if cmd.end is None:
-            return prev_point_2d
-
-        end_x, end_y, _ = cmd.end
+        end_x, end_y, _ = end
         adjusted_end = (end_x, ymax - end_y)
 
-        if not cmd.power_values:
+        power_mv = ops.scanline_data(idx)
+        num_steps = len(power_mv)
+        if num_steps == 0:
             return adjusted_end
 
         start_x, start_y = prev_point_2d
 
         # Optimization: Handle case where entire scanline is at zero power
-        if all(p == 0 for p in cmd.power_values):
+        all_zero = all(power_mv[j] == 0 for j in range(num_steps))
+        if all_zero:
             if show_zero_power_moves:
                 ctx.set_source_rgba(*zero_power_rgba)
                 ctx.move_to(start_x, start_y)
@@ -281,16 +288,12 @@ class CairoEncoder(OpsEncoder):
         # Deconstruct scanline into zero and non-zero power chunks
         p_start_vec = (start_x, start_y)
         line_vec = (adjusted_end[0] - start_x, adjusted_end[1] - start_y)
-        num_steps = len(cmd.power_values)
-
-        if num_steps == 0:
-            return adjusted_end
 
         chunk_start_idx = 0
-        is_zero_chunk = cmd.power_values[0] == 0
+        is_zero_chunk = power_mv[0] == 0
 
-        for i in range(1, num_steps):
-            is_current_zero = cmd.power_values[i] == 0
+        for j in range(1, num_steps):
+            is_current_zero = power_mv[j] == 0
             if is_current_zero != is_zero_chunk:
                 # End of a chunk. Process it.
                 self._draw_scanline_chunk(
@@ -299,8 +302,8 @@ class CairoEncoder(OpsEncoder):
                     line_vec,
                     num_steps,
                     chunk_start_idx,
-                    i,
-                    cmd.power_values[chunk_start_idx:i],
+                    j,
+                    bytes(power_mv[chunk_start_idx:j]),
                     is_zero_chunk,
                     engrave_lut,
                     zero_power_rgba,
@@ -308,7 +311,7 @@ class CairoEncoder(OpsEncoder):
                     show_engrave_moves,
                 )
                 # Start a new chunk
-                chunk_start_idx = i
+                chunk_start_idx = j
                 is_zero_chunk = is_current_zero
 
         # Process the final chunk
@@ -319,7 +322,7 @@ class CairoEncoder(OpsEncoder):
             num_steps,
             chunk_start_idx,
             num_steps,
-            cmd.power_values[chunk_start_idx:num_steps],
+            bytes(power_mv[chunk_start_idx:num_steps]),
             is_zero_chunk,
             engrave_lut,
             zero_power_rgba,

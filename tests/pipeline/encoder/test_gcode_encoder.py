@@ -53,6 +53,20 @@ def _make_context() -> GcodeContext:
     return GcodeContext(machine=machine, doc=doc, job=JobInfo(extents=extents))
 
 
+def _build_ops(*commands) -> Ops:
+    """Build an Ops object from a list of Command objects."""
+    ops = Ops()
+    for cmd in commands:
+        ops.add(cmd)
+    return ops
+
+
+def _dispatch_all(gcode, ops, encoder, context):
+    """Dispatch all commands in an Ops object to the encoder."""
+    for i in range(ops.len()):
+        encoder._handle_command(gcode, ops, i, context)
+
+
 class TestHandleBezierTo:
     def test_bezier_with_g5_template(self):
         encoder = _make_encoder(MARLIN_DIALECT)
@@ -61,14 +75,15 @@ class TestHandleBezierTo:
         encoder.cut_speed = 1000.0
         context = _make_context()
 
-        cmd = BezierToCommand(
+        ops = _build_ops(BezierToCommand(
             end=(10.0, 10.0, 0.0),
             control1=(3.0, 0.0, 0.0),
             control2=(7.0, 10.0, 0.0),
-        )
+        ))
 
         gcode = []
-        encoder._handle_bezier_to(context, gcode, cmd)
+        ea = ops.extra_axes(0)
+        encoder._handle_bezier_to(context, gcode, ops, 0, ea)
 
         assert len(gcode) >= 1
         line = gcode[-1]
@@ -87,14 +102,15 @@ class TestHandleBezierTo:
         encoder.cut_speed = 1000.0
         context = _make_context()
 
-        cmd = BezierToCommand(
+        ops = _build_ops(BezierToCommand(
             end=(10.0, 10.0, 0.0),
             control1=(3.0, 0.0, 0.0),
             control2=(7.0, 10.0, 0.0),
-        )
+        ))
 
         gcode = []
-        encoder._handle_bezier_to(context, gcode, cmd)
+        ea = ops.extra_axes(0)
+        encoder._handle_bezier_to(context, gcode, ops, 0, ea)
 
         assert len(gcode) > 1
         motion_lines = [
@@ -109,14 +125,15 @@ class TestHandleBezierTo:
         encoder.cut_speed = 1000.0
         context = _make_context()
 
-        cmd = BezierToCommand(
+        ops = _build_ops(BezierToCommand(
             end=(15.0, 15.0, 0.0),
             control1=(8.0, 5.0, 0.0),
             control2=(12.0, 15.0, 0.0),
-        )
+        ))
 
         gcode = []
-        encoder._handle_bezier_to(context, gcode, cmd)
+        ea = ops.extra_axes(0)
+        encoder._handle_bezier_to(context, gcode, ops, 0, ea)
 
         line = gcode[-1]
         assert "I3" in line
@@ -131,14 +148,14 @@ class TestHandleBezierTo:
         encoder.cut_speed = 1000.0
         context = _make_context()
 
-        cmd = BezierToCommand(
+        ops = _build_ops(BezierToCommand(
             end=(10.0, 10.0, 0.0),
             control1=(3.0, 0.0, 0.0),
             control2=(7.0, 10.0, 0.0),
-        )
+        ))
 
         gcode = []
-        encoder._handle_command(gcode, cmd, context)
+        encoder._handle_command(gcode, ops, 0, context)
 
         assert any("G5" in line for line in gcode)
         assert math.isclose(encoder.current_pos[Axis.X], 10.0)
@@ -163,8 +180,7 @@ class TestHandleBezierTo:
         context = _make_context()
         gcode = []
 
-        for i, cmd in enumerate(ops):
-            encoder._handle_command(gcode, cmd, context)
+        _dispatch_all(gcode, ops, encoder, context)
 
         joined = "\n".join(gcode)
         assert "G5" in joined
@@ -183,8 +199,7 @@ class TestG0G1FeedrateSharing:
         encoder = _make_encoder(dialect)
         context = _make_context()
         gcode = []
-        for cmd in ops:
-            encoder._handle_command(gcode, cmd, context)
+        _dispatch_all(gcode, ops, encoder, context)
         return gcode
 
     def test_g1_re_emits_feedrate_after_g0_with_modal_feedrate(self):
@@ -250,9 +265,11 @@ class TestG0G1FeedrateSharing:
 def test_frequency_command_no_gcode_output():
     encoder = _make_encoder(GRBL_DIALECT)
     context = _make_context()
-    gcode = []
 
-    encoder._handle_command(gcode, SetFrequencyCommand(1000), context)
+    ops = _build_ops(SetFrequencyCommand(1000))
+
+    gcode = []
+    encoder._handle_command(gcode, ops, 0, context)
 
     assert len(gcode) == 0
     assert encoder.frequency == 1000
@@ -261,9 +278,11 @@ def test_frequency_command_no_gcode_output():
 def test_pulse_width_command_no_gcode_output():
     encoder = _make_encoder(GRBL_DIALECT)
     context = _make_context()
-    gcode = []
 
-    encoder._handle_command(gcode, SetPulseWidthCommand(50), context)
+    ops = _build_ops(SetPulseWidthCommand(50))
+
+    gcode = []
+    encoder._handle_command(gcode, ops, 0, context)
 
     assert len(gcode) == 0
     assert encoder.pulse_width == 50
@@ -272,16 +291,20 @@ def test_pulse_width_command_no_gcode_output():
 def test_frequency_and_pulse_width_sets_state():
     encoder = _make_encoder(GRBL_DIALECT)
     context = _make_context()
-    gcode = []
 
-    encoder._handle_command(gcode, JobStartCommand(), context)
-    encoder._handle_command(gcode, SetPowerCommand(1.0), context)
-    encoder._handle_command(gcode, SetCutSpeedCommand(1000), context)
-    encoder._handle_command(gcode, SetFrequencyCommand(2000), context)
-    encoder._handle_command(gcode, SetPulseWidthCommand(100), context)
-    encoder._handle_command(gcode, MoveToCommand((0.0, 0.0, 0.0)), context)
-    encoder._handle_command(gcode, LineToCommand((10.0, 10.0, 0.0)), context)
-    encoder._handle_command(gcode, JobEndCommand(), context)
+    ops = _build_ops(
+        JobStartCommand(),
+        SetPowerCommand(1.0),
+        SetCutSpeedCommand(1000),
+        SetFrequencyCommand(2000),
+        SetPulseWidthCommand(100),
+        MoveToCommand((0.0, 0.0, 0.0)),
+        LineToCommand((10.0, 10.0, 0.0)),
+        JobEndCommand(),
+    )
+
+    gcode = []
+    _dispatch_all(gcode, ops, encoder, context)
 
     assert encoder.frequency == 2000
     assert encoder.pulse_width == 100

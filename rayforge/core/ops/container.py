@@ -22,6 +22,7 @@ from raygeo.algo.clipping import (
 )
 from raygeo.path import PyCommand
 from raygeo.shape.arc import get_arc_bounds, linearize_arc
+from raygeo.shape.bezier import linearize_bezier_segment
 from .axis import Axis
 from .commands import (
     ArcToCommand,
@@ -743,6 +744,191 @@ class Ops:
         """Deep-copies a command from a source Ops into this Ops object."""
         self._commands.append(deepcopy(source._commands[idx]))
         self._invalidate_time_cache()
+
+    def bezier_params(
+        self, idx: int
+    ) -> Tuple[Point3D, Point3D]:
+        """Returns (control1, control2) for a BezierToCommand."""
+        cmd = self._commands[idx]
+        if not isinstance(cmd, BezierToCommand):
+            raise TypeError(
+                f"Command at index {idx} is not a BezierToCommand"
+            )
+        return cmd.control1, cmd.control2
+
+    def quadratic_bezier_params(self, idx: int) -> Tuple[Point3D]:
+        """Returns (control,) for a QuadraticBezierToCommand."""
+        cmd = self._commands[idx]
+        if not isinstance(cmd, QuadraticBezierToCommand):
+            raise TypeError(
+                f"Command at index {idx} is not a "
+                "QuadraticBezierToCommand"
+            )
+        return (cmd.control,)
+
+    def dwell_duration(self, idx: int) -> float:
+        """Returns the duration in ms for a DwellCommand."""
+        cmd = self._commands[idx]
+        if not isinstance(cmd, DwellCommand):
+            raise TypeError(
+                f"Command at index {idx} is not a DwellCommand"
+            )
+        return cmd.duration_ms
+
+    def power(self, idx: int) -> float:
+        """Returns the power value for a SetPowerCommand."""
+        cmd = self._commands[idx]
+        if not isinstance(cmd, SetPowerCommand):
+            raise TypeError(
+                f"Command at index {idx} is not a SetPowerCommand"
+            )
+        return cmd.power
+
+    def speed(self, idx: int) -> float:
+        """Returns the speed value for SetCutSpeedCommand or
+        SetTravelSpeedCommand."""
+        cmd = self._commands[idx]
+        if not isinstance(cmd, (SetCutSpeedCommand, SetTravelSpeedCommand)):
+            raise TypeError(
+                f"Command at index {idx} is not a speed command"
+            )
+        return cmd.speed
+
+    def frequency(self, idx: int) -> int:
+        """Returns the frequency for a SetFrequencyCommand."""
+        cmd = self._commands[idx]
+        if not isinstance(cmd, SetFrequencyCommand):
+            raise TypeError(
+                f"Command at index {idx} is not a SetFrequencyCommand"
+            )
+        return cmd.frequency
+
+    def pulse_width(self, idx: int) -> float:
+        """Returns the pulse width for a SetPulseWidthCommand."""
+        cmd = self._commands[idx]
+        if not isinstance(cmd, SetPulseWidthCommand):
+            raise TypeError(
+                f"Command at index {idx} is not a SetPulseWidthCommand"
+            )
+        return cmd.pulse_width
+
+    def laser_uid(self, idx: int) -> str:
+        """Returns the laser UID for a SetLaserCommand."""
+        cmd = self._commands[idx]
+        if not isinstance(cmd, SetLaserCommand):
+            raise TypeError(
+                f"Command at index {idx} is not a SetLaserCommand"
+            )
+        return cmd.laser_uid
+
+    def layer_uid(self, idx: int) -> str:
+        """Returns the layer UID for LayerStart/EndCommand."""
+        cmd = self._commands[idx]
+        if not isinstance(cmd, (LayerStartCommand, LayerEndCommand)):
+            raise TypeError(
+                f"Command at index {idx} is not a Layer command"
+            )
+        return cmd.layer_uid
+
+    def workpiece_uid(self, idx: int) -> str:
+        """Returns the workpiece UID for WorkpieceStart/EndCommand."""
+        cmd = self._commands[idx]
+        if not isinstance(
+            cmd, (WorkpieceStartCommand, WorkpieceEndCommand)
+        ):
+            raise TypeError(
+                f"Command at index {idx} is not a Workpiece command"
+            )
+        return cmd.workpiece_uid
+
+    def section_params(
+        self, idx: int
+    ) -> Tuple[SectionType, Optional[str]]:
+        """Returns (section_type, workpiece_uid) for
+        OpsSectionStartCommand, or (section_type, None) for
+        OpsSectionEndCommand."""
+        cmd = self._commands[idx]
+        if isinstance(cmd, OpsSectionStartCommand):
+            return cmd.section_type, cmd.workpiece_uid
+        elif isinstance(cmd, OpsSectionEndCommand):
+            return cmd.section_type, None
+        raise TypeError(
+            f"Command at index {idx} is not an OpsSection command"
+        )
+
+    def extra_axes(self, idx: int) -> Optional[Dict[Axis, float]]:
+        """Returns the extra axes dict for a MovingCommand, or None."""
+        cmd = self._commands[idx]
+        if not isinstance(cmd, MovingCommand):
+            raise TypeError(
+                f"Command at index {idx} is not a MovingCommand"
+            )
+        return cmd.extra_axes if cmd.extra_axes else None
+
+    def linearize(self, idx: int, start_point: Point3D) -> "Ops":
+        """Linearizes a geometric command into simple LineTo and
+        SetPower commands, returning a new Ops object.
+        Supports ArcToCommand, BezierToCommand, and
+        ScanLinePowerCommand."""
+        cmd = self._commands[idx]
+        if isinstance(cmd, ScanLinePowerCommand):
+            result = Ops()
+            num_steps = len(cmd.power_values)
+            if num_steps == 0:
+                return result
+            p_start = np.array(start_point)
+            p_end = np.array(cmd.end)
+            line_vec = p_end - p_start
+            seg_start_power = cmd.power_values[0]
+            result.set_power(seg_start_power / 255.0)
+            for i in range(1, num_steps):
+                cur_power = cmd.power_values[i]
+                if cur_power != seg_start_power:
+                    t_end = i / float(num_steps)
+                    seg_end = tuple(p_start + t_end * line_vec)
+                    result.line_to(*seg_end, extra=dict(cmd.extra_axes)
+                        if cmd.extra_axes else None)
+                    seg_start_power = cur_power
+                    result.set_power(seg_start_power / 255.0)
+            result.line_to(*cmd.end, extra=dict(cmd.extra_axes)
+                if cmd.extra_axes else None)
+            return result
+        elif isinstance(cmd, ArcToCommand):
+            arc_row = [
+                CMD_TYPE_ARC,
+                cmd.end[0], cmd.end[1], cmd.end[2],
+                cmd.center_offset[0], cmd.center_offset[1],
+                1.0 if cmd.clockwise else 0.0, 0.0,
+            ]
+            segments = linearize_arc(arc_row, start_point)
+            result = Ops()
+            for _, end in segments:
+                result.line_to(*end, extra=dict(cmd.extra_axes)
+                    if cmd.extra_axes else None)
+            return result
+        elif isinstance(cmd, BezierToCommand):
+            polyline = linearize_bezier_segment(
+                start_point, cmd.control1, cmd.control2, cmd.end
+            )
+            result = Ops()
+            for pt in polyline[1:]:
+                result.line_to(*pt, extra=dict(cmd.extra_axes)
+                    if cmd.extra_axes else None)
+            return result
+        elif isinstance(cmd, (MoveToCommand, LineToCommand)):
+            result = Ops()
+            if isinstance(cmd, MoveToCommand):
+                result.move_to(*cmd.end, extra=dict(cmd.extra_axes)
+                    if cmd.extra_axes else None)
+            else:
+                result.line_to(*cmd.end, extra=dict(cmd.extra_axes)
+                    if cmd.extra_axes else None)
+            return result
+        else:
+            raise TypeError(
+                f"Cannot linearize command at index {idx}: "
+                f"{type(cmd).__name__}"
+            )
 
     def copy(self) -> Ops:
         """Creates a copy of the Ops object."""
