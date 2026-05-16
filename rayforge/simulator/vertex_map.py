@@ -4,15 +4,7 @@ from typing import List, Tuple
 import numpy as np
 
 from raygeo.shape.arc import linearize_arc
-from ..core.ops import Ops
-from ..core.ops.commands import (
-    ArcToCommand,
-    Command,
-    LineToCommand,
-    MoveToCommand,
-    ScanLinePowerCommand,
-    SetPowerCommand,
-)
+from ..core.ops import Ops, CommandType, CommandCategory
 
 
 @dataclass
@@ -29,7 +21,7 @@ def build_vertex_map(ops: Ops) -> SceneVertexMap:
     command, producing cumulative offset arrays.
 
     command_vertex_offset[i] = powered vertex count for commands
-    0..i-1. Length is len(ops.commands) + 1.
+    0..i-1. Length is ops.len() + 1.
     """
     offsets: List[int] = []
     travel_offsets: List[int] = []
@@ -39,27 +31,22 @@ def build_vertex_map(ops: Ops) -> SceneVertexMap:
     current_pos = (0.0, 0.0, 0.0)
     is_initial_position = True
 
-    for cmd in ops.commands:
+    for i in range(ops.len()):
         offsets.append(cumulative)
         travel_offsets.append(travel_cumulative)
+        ct = ops.command_type(i)
         powered_count = _count_powered_vertices(
-            cmd, current_power, current_pos, is_initial_position
+            ops, i, ct, current_power, current_pos, is_initial_position
         )
-        travel_count = _count_travel_vertices(cmd, is_initial_position)
+        travel_count = _count_travel_vertices(ct, is_initial_position)
         cumulative += powered_count
         travel_cumulative += travel_count
-        if isinstance(cmd, SetPowerCommand):
-            current_power = cmd.power
-        elif isinstance(cmd, MoveToCommand):
-            current_pos = cmd.end
+        cat = ops.category(i)
+        if ct == CommandType.SET_POWER:
+            current_power = ops.power(i)
+        elif cat == CommandCategory.MOVING:
+            current_pos = ops.endpoint(i)
             is_initial_position = False
-        elif isinstance(cmd, (LineToCommand, ArcToCommand)):
-            current_pos = cmd.end
-            is_initial_position = False
-        elif isinstance(cmd, ScanLinePowerCommand):
-            if cmd.end is not None:
-                current_pos = cmd.end
-                is_initial_position = False
 
     offsets.append(cumulative)
     travel_offsets.append(travel_cumulative)
@@ -72,38 +59,39 @@ def build_vertex_map(ops: Ops) -> SceneVertexMap:
 
 
 def _count_powered_vertices(
-    cmd: Command,
+    ops: Ops,
+    idx: int,
+    ct: CommandType,
     current_power: float,
     current_pos: tuple,
     is_initial_position: bool,
 ) -> int:
     """Returns the number of powered vertices produced by a command."""
-    if isinstance(cmd, SetPowerCommand):
-        return 0
-
-    if isinstance(cmd, MoveToCommand):
-        return 0
-
-    if isinstance(cmd, LineToCommand):
+    if ct == CommandType.LINE_TO:
         if current_power > 0.0:
             return 2
         return 0
 
-    if isinstance(cmd, ArcToCommand):
+    if ct == CommandType.ARC_TO:
         if current_power > 0.0:
-            segments = linearize_arc(cmd, current_pos)
+            end = ops.endpoint(idx)
+            i_val, j_val, cw = ops.arc_params(idx)
+            arc_row = [
+                3,
+                end[0], end[1], end[2],
+                i_val, j_val,
+                1.0 if cw else 0.0, 0.0,
+            ]
+            segments = linearize_arc(arc_row, current_pos)
             return len(segments) * 2
-        return 0
-
-    if isinstance(cmd, ScanLinePowerCommand):
         return 0
 
     return 0
 
 
-def _count_travel_vertices(cmd: Command, is_initial_position: bool) -> int:
+def _count_travel_vertices(ct: CommandType, is_initial_position: bool) -> int:
     """Returns the number of travel vertices produced by a command."""
-    if isinstance(cmd, MoveToCommand) and not is_initial_position:
+    if ct == CommandType.MOVE_TO and not is_initial_position:
         return 2
     return 0
 
@@ -120,7 +108,7 @@ class ScanlineOverlay:
         SceneVertexMap.command_vertex_offset —
         cmd_vertex_offset[i] = overlay vertices for scanline commands
         0..global_cmd_index[i]-1.
-        Length == len(global_ops.commands) + 1.
+        Length == ops.len() + 1.
     total_overlay_vertices: total number of vertices in positions/colors.
     """
 
@@ -135,7 +123,8 @@ class ScanlineOverlay:
 
 
 def _encode_scanline_segments(
-    cmd: ScanLinePowerCommand,
+    end: Tuple[float, float, float],
+    power_mv: memoryview,
     start_pos: Tuple[float, float, float],
 ) -> Tuple[List[float], List[float], int]:
     """
@@ -146,15 +135,12 @@ def _encode_scanline_segments(
     Colors encode power as normalized float (0..1) in the red channel.
     The caller must apply a color LUT to produce final RGBA colors.
     """
-    if cmd.end is None:
-        return [], [], 0
-
-    num_steps = len(cmd.power_values)
+    num_steps = len(power_mv)
     if num_steps == 0:
         return [], [], 0
 
     sx, sy, sz = start_pos
-    ex, ey, ez = cmd.end
+    ex, ey, ez = end
     dx = (ex - sx) / num_steps
     dy = (ey - sy) / num_steps
     dz = (ez - sz) / num_steps
@@ -170,7 +156,7 @@ def _encode_scanline_segments(
     seg_power = 0.0
 
     for i in range(num_steps):
-        power_byte = cmd.power_values[i]
+        power_byte = power_mv[i]
         power_on = power_byte > 0
 
         if power_on and not prev_power_on:
@@ -222,25 +208,23 @@ def build_scanline_overlay(ops: Ops) -> ScanlineOverlay:
     current_pos = (0.0, 0.0, 0.0)
     is_initial_position = True
 
-    for cmd in ops.commands:
+    for i in range(ops.len()):
         cmd_offsets.append(cumulative)
-        if isinstance(cmd, ScanLinePowerCommand) and cmd.end is not None:
+        ct = ops.command_type(i)
+        if ct == CommandType.SCAN_LINE:
+            end = ops.endpoint(i)
             if not is_initial_position:
-                p, c, n = _encode_scanline_segments(cmd, current_pos)
+                p, c, n = _encode_scanline_segments(
+                    end, ops.scanline_data(i), current_pos
+                )
                 all_pos.extend(p)
                 all_col.extend(c)
                 cumulative += n
 
-        if isinstance(cmd, MoveToCommand):
-            current_pos = cmd.end
+        cat = ops.category(i)
+        if cat == CommandCategory.MOVING:
+            current_pos = ops.endpoint(i)
             is_initial_position = False
-        elif isinstance(cmd, (LineToCommand, ArcToCommand)):
-            current_pos = cmd.end
-            is_initial_position = False
-        elif isinstance(cmd, ScanLinePowerCommand):
-            if cmd.end is not None:
-                current_pos = cmd.end
-                is_initial_position = False
 
     cmd_offsets.append(cumulative)
 
