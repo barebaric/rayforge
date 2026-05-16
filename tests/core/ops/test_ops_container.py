@@ -450,6 +450,75 @@ def test_transform_uniform():
     assert arc_cmd.center_offset[1] == pytest.approx(-10)
 
 
+def test_transform_uniform_reflection_flips_cw():
+    """A uniform transform with negative determinant flips the CW flag."""
+    ops = Ops()
+    ops.move_to(10, 0)
+    ops.arc_to(0, 10, i=-10, j=0, clockwise=False)
+
+    # Mirror in X: det = -1
+    matrix = np.array(
+        [
+            [-1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+    ops.transform(matrix)
+
+    arc_cmd = ops.commands[1]
+    assert isinstance(arc_cmd, ArcToCommand)
+    assert arc_cmd.clockwise is True
+    assert arc_cmd.center_offset[0] == pytest.approx(10)
+    assert arc_cmd.center_offset[1] == pytest.approx(0)
+
+
+def test_transform_uniform_reflection_flips_ccw_to_cw():
+    """Mirroring a CW arc should make it CCW."""
+    ops = Ops()
+    ops.move_to(10, 0)
+    ops.arc_to(0, 10, i=-10, j=0, clockwise=True)
+
+    # Mirror in Y: det = -1
+    matrix = np.array(
+        [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, -1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+    ops.transform(matrix)
+
+    arc_cmd = ops.commands[1]
+    assert isinstance(arc_cmd, ArcToCommand)
+    assert arc_cmd.clockwise is False
+
+
+def test_transform_uniform_rotation_preserves_cw():
+    """A rotation (positive det) should preserve the CW flag."""
+    ops = Ops()
+    ops.move_to(10, 0)
+    ops.arc_to(0, 10, i=-10, j=0, clockwise=False)
+
+    angle_rad = math.radians(45)
+    cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
+    matrix = np.array(
+        [
+            [cos_a, -sin_a, 0, 0],
+            [sin_a, cos_a, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ]
+    )
+    ops.transform(matrix)
+
+    arc_cmd = ops.commands[1]
+    assert isinstance(arc_cmd, ArcToCommand)
+    assert arc_cmd.clockwise is False
+
+
 def test_transform_non_uniform():
     """Tests that a non-uniform scale linearizes arcs."""
     ops = Ops()

@@ -1184,6 +1184,10 @@ class Ops:
         len_y = np.linalg.norm(v_y[:2])
         is_non_uniform = not np.isclose(len_x, len_y)
 
+        # A reflection (negative determinant) reverses the arc direction.
+        det = matrix[0, 0] * matrix[1, 1] - matrix[0, 1] * matrix[1, 0]
+        flip_cw = det < 0
+
         transformed_commands: List[Command] = []
         last_point_untransformed: Optional[Point3D] = None
 
@@ -1220,6 +1224,8 @@ class Ops:
                         new_offset_vec_3d[0],
                         new_offset_vec_3d[1],
                     )
+                    if flip_cw:
+                        cmd.clockwise = not cmd.clockwise
                 elif isinstance(cmd, BezierToCommand):
                     c1_vec = np.array([*cmd.control1, 1.0])
                     transformed_c1 = matrix @ c1_vec
