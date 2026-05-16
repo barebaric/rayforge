@@ -1,9 +1,5 @@
 from rayforge.simulator.machine_state import MachineState
 from rayforge.core.ops import Ops, Axis
-from rayforge.core.ops.commands import (
-    MoveToCommand,
-    ScanLinePowerCommand,
-)
 from rayforge.machine.models.axis import (
     AxisConfig,
     AxisSet,
@@ -12,14 +8,18 @@ from rayforge.machine.models.axis import (
 )
 
 
+def _apply_all(state, ops):
+    for i in range(ops.len()):
+        state.apply_command(ops, i)
+
+
 def test_walk_movement_updates_axes():
     state = MachineState()
     ops = Ops()
     ops.move_to(10.0, 20.0, 0.0)
     ops.line_to(30.0, 40.0, 5.0)
 
-    for i, cmd in enumerate(ops):
-        state.apply_command(cmd, i)
+    _apply_all(state, ops)
 
     assert state.axes[Axis.X] == 30.0
     assert state.axes[Axis.Y] == 40.0
@@ -34,8 +34,7 @@ def test_state_commands_no_axis_change():
     ops.set_travel_speed(3000)
     ops.enable_air_assist()
 
-    for i, cmd in enumerate(ops):
-        state.apply_command(cmd, i)
+    _apply_all(state, ops)
 
     assert state.axes[Axis.X] == 0.0
     assert state.axes[Axis.Y] == 0.0
@@ -50,10 +49,9 @@ def test_scanline_tracked_in_reached_textures():
     state = MachineState()
     ops = Ops()
     ops.move_to(0.0, 0.0, 0.0)
-    ops.add(ScanLinePowerCommand((10.0, 0.0, 0.0), bytearray([100, 200])))
+    ops.scan_to(10.0, 0.0, 0.0, power_values=bytearray([100, 200]))
 
-    for i, cmd in enumerate(ops):
-        state.apply_command(cmd, i)
+    _apply_all(state, ops)
 
     assert 1 in state.reached_textures
     assert 0 not in state.reached_textures
@@ -65,8 +63,7 @@ def test_laser_on_during_cutting():
     ops.move_to(0.0, 0.0, 0.0)
     ops.line_to(10.0, 10.0, 0.0)
 
-    for i, cmd in enumerate(ops):
-        state.apply_command(cmd, i)
+    _apply_all(state, ops)
 
     assert state.laser_on is True
 
@@ -76,8 +73,7 @@ def test_laser_off_during_travel():
     ops = Ops()
     ops.move_to(10.0, 10.0, 0.0)
 
-    for i, cmd in enumerate(ops):
-        state.apply_command(cmd, i)
+    _apply_all(state, ops)
 
     assert state.laser_on is False
 
@@ -88,8 +84,7 @@ def test_markers_ignored():
     ops.set_power(0.5)
     ops.line_to(5.0, 5.0, 0.0)
 
-    for i, cmd in enumerate(ops):
-        state.apply_command(cmd, i)
+    _apply_all(state, ops)
 
     assert state.power == 0.5
     assert state.axes[Axis.X] == 5.0
@@ -129,23 +124,6 @@ def test_copy_preserves_state_fields():
     assert snapshot.active_laser_uid == "laser-1"
 
 
-def test_unknown_command_raises():
-    state = MachineState()
-
-    class WeirdCommand:
-        def is_state_command(self):
-            return False
-
-        def is_marker(self):
-            return False
-
-    try:
-        state.apply_command(WeirdCommand(), 0)  # type: ignore
-        assert False, "Should have raised TypeError"
-    except TypeError:
-        pass
-
-
 def test_mixed_ops_walk():
     ops = Ops()
     ops.set_power(0.5)
@@ -158,8 +136,7 @@ def test_mixed_ops_walk():
     ops.line_to(5.0, 5.0, 2.0)
 
     state = MachineState()
-    for i, cmd in enumerate(ops):
-        state.apply_command(cmd, i)
+    _apply_all(state, ops)
 
     assert state.axes[Axis.X] == 5.0
     assert state.axes[Axis.Y] == 5.0
@@ -204,11 +181,10 @@ def test_from_axis_set():
 
 def test_extra_axes_applied():
     state = MachineState()
-    cmd = MoveToCommand(
-        (10.0, 20.0, 5.0),
-        extra_axes={Axis.A: 45.0, Axis.B: 0.0},
-    )
-    state.apply_command(cmd, 0)
+    ops = Ops()
+    ops.move_to(10.0, 20.0, 5.0, extra={Axis.A: 45.0, Axis.B: 0.0})
+
+    state.apply_command(ops, 0)
 
     assert state.axes[Axis.X] == 10.0
     assert state.axes[Axis.Y] == 20.0
@@ -219,19 +195,20 @@ def test_extra_axes_applied():
 
 def test_empty_extra_axes_no_extra_keys():
     state = MachineState()
-    cmd = MoveToCommand((10.0, 20.0, 5.0))
-    state.apply_command(cmd, 0)
+    ops = Ops()
+    ops.move_to(10.0, 20.0, 5.0)
+
+    state.apply_command(ops, 0)
 
     assert set(state.axes.keys()) == {Axis.X, Axis.Y, Axis.Z}
 
 
 def test_copy_preserves_extra_axes():
     state = MachineState(axis_letters=[Axis.X, Axis.Y, Axis.Z, Axis.A])
-    cmd = MoveToCommand(
-        (10.0, 20.0, 5.0),
-        extra_axes={Axis.A: 90.0},
-    )
-    state.apply_command(cmd, 0)
+    ops = Ops()
+    ops.move_to(10.0, 20.0, 5.0, extra={Axis.A: 90.0})
+
+    state.apply_command(ops, 0)
 
     snapshot = state.copy()
 
