@@ -140,13 +140,13 @@ class TestTiming:
 
         for i in range(ops.len()):
             if ops.category(i) == CommandCategory.MOVING:
-                assert ops.inspect(i)["state"] is None
+                assert ops.inspect(i).state is None
 
         estimate_time(list(ops))
 
         for i in range(ops.len()):
             if ops.category(i) == CommandCategory.MOVING:
-                assert ops.inspect(i)["state"] is None
+                assert ops.inspect(i).state is None
 
     def test_estimate_time_caching(self):
         """Test that Ops.estimate_time() caches results."""

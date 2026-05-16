@@ -286,7 +286,7 @@ class LeadInOutTransformer(OpsTransformer):
         for j in moving_indices[1:]:
             if old_ops.command_type(j) == CommandType.LINE_TO:
                 state = old_ops.preloaded_state(j)
-                if state.get("power") is not None:
+                if state.power is not None:
                     first_cut_idx = j
                     break
 
@@ -295,7 +295,7 @@ class LeadInOutTransformer(OpsTransformer):
                 new_ops.transfer_command_from(old_ops, j)
             return
 
-        original_power = old_ops.preloaded_state(first_cut_idx)["power"]
+        original_power = old_ops.preloaded_state(first_cut_idx).power
         start_3d = old_ops.endpoint(moving_indices[0])
         end_3d = old_ops.endpoint(moving_indices[-1])
 
