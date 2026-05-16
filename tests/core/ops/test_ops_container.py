@@ -4,7 +4,6 @@ import io
 import json
 import numpy as np
 from contextlib import redirect_stdout
-from typing import cast
 from raygeo import Geometry
 from rayforge.core.ops import (
     Axis,
@@ -13,6 +12,7 @@ from rayforge.core.ops import (
     CommandType,
     CommandCategory,
     MoveToCommand,
+    ArcToCommand,
     BezierToCommand,
     State,
     SectionType,
