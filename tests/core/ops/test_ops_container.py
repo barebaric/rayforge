@@ -131,8 +131,8 @@ def test_preload_state(sample_ops):
     for i in range(sample_ops.len()):
         if sample_ops.category(i) != CommandCategory.STATE:
             info = sample_ops.inspect(i)
-            assert info.get("state") is not None
-            assert isinstance(info["state"], State)
+            assert info.state is not None
+            assert isinstance(info.state, State)
 
     # Verify that state commands are still present in the commands list
     state_count = sum(
@@ -188,9 +188,9 @@ def test_bezier_to():
     assert ops.command_type(0) == CommandType.MOVE_TO
     assert ops.command_type(1) == CommandType.BEZIER_TO
     info = ops.inspect(1)
-    assert info["end"] == (3.0, 0.0, 20.0)
-    assert info["control1"] == (1.0, 1.0, 10.0)
-    assert info["control2"] == (2.0, 1.0, 20.0)
+    assert info.end == (3.0, 0.0, 20.0)
+    assert info.control1 == (1.0, 1.0, 10.0)
+    assert info.control2 == (2.0, 1.0, 20.0)
 
 
 def test_bezier_to_no_start_point():
@@ -204,21 +204,21 @@ def test_set_power(sample_ops):
     sample_ops.set_power(0.8)
     last_idx = sample_ops.len() - 1
     assert sample_ops.command_type(last_idx) == CommandType.SET_POWER
-    assert sample_ops.inspect(last_idx)["power"] == 0.8
+    assert sample_ops.inspect(last_idx).power == 0.8
 
 
 def test_set_cut_speed(sample_ops):
     sample_ops.set_cut_speed(300)
     last_idx = sample_ops.len() - 1
     assert sample_ops.command_type(last_idx) == CommandType.SET_CUT_SPEED
-    assert sample_ops.inspect(last_idx)["speed"] == 300
+    assert sample_ops.inspect(last_idx).speed == 300
 
 
 def test_set_travel_speed(sample_ops):
     sample_ops.set_travel_speed(2000)
     last_idx = sample_ops.len() - 1
     assert sample_ops.command_type(last_idx) == CommandType.SET_TRAVEL_SPEED
-    assert sample_ops.inspect(last_idx)["speed"] == 2000.0
+    assert sample_ops.inspect(last_idx).speed == 2000.0
 
 
 def test_set_laser():
@@ -226,7 +226,7 @@ def test_set_laser():
     ops.set_laser("laser-abc")
     last_idx = ops.len() - 1
     assert ops.command_type(last_idx) == CommandType.SET_LASER
-    assert ops.inspect(last_idx)["laser_uid"] == "laser-abc"
+    assert ops.inspect(last_idx).laser_uid == "laser-abc"
 
 
 def test_set_frequency():
@@ -234,7 +234,7 @@ def test_set_frequency():
     ops.set_frequency(20000)
     last_idx = ops.len() - 1
     assert ops.command_type(last_idx) == CommandType.SET_FREQUENCY
-    assert ops.inspect(last_idx)["frequency"] == 20000
+    assert ops.inspect(last_idx).frequency == 20000
 
 
 def test_set_pulse_width():
@@ -242,7 +242,7 @@ def test_set_pulse_width():
     ops.set_pulse_width(5.0)
     last_idx = ops.len() - 1
     assert ops.command_type(last_idx) == CommandType.SET_PULSE_WIDTH
-    assert ops.inspect(last_idx)["pulse_width"] == 5.0
+    assert ops.inspect(last_idx).pulse_width == 5.0
 
 
 def test_enable_disable_air_assist(empty_ops):
@@ -375,7 +375,7 @@ def test_preload_state_application():
     ops.set_cut_speed(200)
     ops.preload_state()
 
-    state1 = ops.inspect(1)["state"]
+    state1 = ops.inspect(1).state
     assert state1 is not None
     assert state1.power == 0.3
 
@@ -387,8 +387,8 @@ def test_preload_state_application():
     for i in range(ops.len()):
         if ops.category(i) != CommandCategory.STATE:
             info = ops.inspect(i)
-            assert info.get("state") is not None
-            assert isinstance(info["state"], State)
+            assert info.state is not None
+            assert isinstance(info.state, State)
 
 
 def test_translate_3d():
@@ -456,7 +456,7 @@ def test_transform_uniform():
 
     # Original offset (-10, 0) should be rotated to (0, -10)
     _, _, cw = ops.arc_params(1)
-    assert ops.inspect(1)["center_offset"] == pytest.approx((0, -10))
+    assert ops.inspect(1).center_offset == pytest.approx((0, -10))
 
 
 def test_transform_uniform_reflection_flips_cw():
@@ -571,9 +571,9 @@ def test_transform_uniform_bezier():
 
     assert ops.command_type(1) == CommandType.BEZIER_TO
     info = ops.inspect(1)
-    assert info["end"] == pytest.approx((-5, 10, 0))
-    assert info["control1"] == pytest.approx((5, 20, 0))
-    assert info["control2"] == pytest.approx((-5, 20, 0))
+    assert info.end == pytest.approx((-5, 10, 0))
+    assert info.control1 == pytest.approx((5, 20, 0))
+    assert info.control2 == pytest.approx((-5, 20, 0))
 
 
 def test_transform_non_uniform_bezier():
@@ -587,9 +587,9 @@ def test_transform_non_uniform_bezier():
 
     assert ops.command_type(1) == CommandType.BEZIER_TO
     info = ops.inspect(1)
-    assert info["end"] == pytest.approx((0, 30, 0))
-    assert info["control1"] == pytest.approx((20, 0, 0))
-    assert info["control2"] == pytest.approx((20, 30, 0))
+    assert info.end == pytest.approx((0, 30, 0))
+    assert info.control1 == pytest.approx((20, 0, 0))
+    assert info.control2 == pytest.approx((20, 30, 0))
 
 
 def test_transform_bezier_linearize_matches():
@@ -664,8 +664,8 @@ def test_transform_preserves_extra_axes():
     )
     ops.transform(matrix)
 
-    assert ops.inspect(0)["extra_axes"] == {Axis.A: 45.0, Axis.Y: 0.0}
-    assert ops.inspect(1)["extra_axes"] == {Axis.A: 90.0, Axis.Y: 10.0}
+    assert ops.inspect(0).extra_axes == {Axis.A: 45.0, Axis.Y: 0.0}
+    assert ops.inspect(1).extra_axes == {Axis.A: 90.0, Axis.Y: 10.0}
 
     assert ops.endpoint(0) != pytest.approx((10, 20, 0))
     assert ops.endpoint(1) != pytest.approx((30, 40, 0))
@@ -680,8 +680,8 @@ def test_transform_preserves_extra_axes_with_identity():
     matrix = np.identity(4)
     ops.transform(matrix)
 
-    assert ops.inspect(0)["extra_axes"] == {Axis.B: 180.0}
-    assert ops.inspect(1)["extra_axes"] == {Axis.B: 270.0}
+    assert ops.inspect(0).extra_axes == {Axis.B: 180.0}
+    assert ops.inspect(1).extra_axes == {Axis.B: 270.0}
     assert ops.endpoint(0) == pytest.approx((5, 5, 0))
     assert ops.endpoint(1) == pytest.approx((15, 25, 0))
 
@@ -1706,14 +1706,14 @@ def test_numpy_serialization_bezier_round_trip():
     assert reconstructed.command_type(3) == CommandType.BEZIER_TO
 
     info1 = reconstructed.inspect(1)
-    assert info1["end"] == pytest.approx((7.5, 8.5, 9.5))
-    assert info1["control1"] == pytest.approx((1.5, 2.5, 3.5))
-    assert info1["control2"] == pytest.approx((4.5, 5.5, 6.5))
+    assert info1.end == pytest.approx((7.5, 8.5, 9.5))
+    assert info1.control1 == pytest.approx((1.5, 2.5, 3.5))
+    assert info1.control2 == pytest.approx((4.5, 5.5, 6.5))
 
     info3 = reconstructed.inspect(3)
-    assert info3["end"] == pytest.approx((70, 80, 90))
-    assert info3["control1"] == pytest.approx((10, 20, 30))
-    assert info3["control2"] == pytest.approx((40, 50, 60))
+    assert info3.end == pytest.approx((70, 80, 90))
+    assert info3.control1 == pytest.approx((10, 20, 30))
+    assert info3.control2 == pytest.approx((40, 50, 60))
 
 
 def test_linearize_curves():
@@ -1791,9 +1791,9 @@ def test_linearize_arcs_preserves_beziers():
     ]
     assert len(bezier_indices) == 1
     info = ops.inspect(bezier_indices[0])
-    assert info["control1"] == (10, 0, 0)
-    assert info["control2"] == (10, 10, 0)
-    assert info["end"] == (0, 10, 0)
+    assert info.control1 == (10, 0, 0)
+    assert info.control2 == (10, 10, 0)
+    assert info.end == (0, 10, 0)
 
 
 class TestIterSections:
@@ -1996,7 +1996,7 @@ def test_extra_axes_from_dict_no_extra_axes():
     }
     ops = Ops.from_dict(data)
     assert ops.command_type(0) == CommandType.MOVE_TO
-    assert ops.inspect(0)["extra_axes"] == {}
+    assert ops.inspect(0).extra_axes == {}
 
 
 def test_extra_axes_from_dict_with_extra_axes():
@@ -2012,7 +2012,7 @@ def test_extra_axes_from_dict_with_extra_axes():
     }
     ops = Ops.from_dict(data)
     assert ops.command_type(0) == CommandType.MOVE_TO
-    assert ops.inspect(0)["extra_axes"] == {Axis.A: 45.0}
+    assert ops.inspect(0).extra_axes == {Axis.A: 45.0}
 
 
 def test_extra_axes_round_trip_mixed():
@@ -2026,10 +2026,10 @@ def test_extra_axes_round_trip_mixed():
     restored = Ops.from_dict(data)
 
     assert len(restored) == 4
-    assert restored.inspect(0)["extra_axes"] == {}
-    assert restored.inspect(1)["extra_axes"] == {Axis.A: 45.0}
-    assert restored.inspect(2)["extra_axes"] == {}
-    assert restored.inspect(3)["extra_axes"] == {}
+    assert restored.inspect(0).extra_axes == {}
+    assert restored.inspect(1).extra_axes == {Axis.A: 45.0}
+    assert restored.inspect(2).extra_axes == {}
+    assert restored.inspect(3).extra_axes == {}
 
 
 # --- Extra Axes Numpy Serialization Tests ---
@@ -2061,10 +2061,10 @@ def test_extra_axes_numpy_round_trip_with_extra_axes():
 
     restored = Ops.from_numpy_arrays(arrays)
     assert len(restored) == 4
-    assert restored.inspect(0)["extra_axes"] == {}
-    assert restored.inspect(1)["extra_axes"] == {Axis.A: 45.0}
-    assert restored.inspect(2)["extra_axes"] == {Axis.B: 90.0}
-    assert restored.inspect(3)["extra_axes"] == {}
+    assert restored.inspect(0).extra_axes == {}
+    assert restored.inspect(1).extra_axes == {Axis.A: 45.0}
+    assert restored.inspect(2).extra_axes == {Axis.B: 90.0}
+    assert restored.inspect(3).extra_axes == {}
 
 
 def test_extra_axes_numpy_old_arrays_deserialize():
@@ -2077,7 +2077,7 @@ def test_extra_axes_numpy_old_arrays_deserialize():
     restored = Ops.from_numpy_arrays(arrays)
     for i in range(restored.len()):
         if restored.category(i) == CommandCategory.MOVING:
-            assert restored.inspect(i)["extra_axes"] == {}
+            assert restored.inspect(i).extra_axes == {}
 
 
 def test_extra_axes_numpy_round_trip_preserves_all_data():
@@ -2109,28 +2109,28 @@ def test_move_to_no_extra():
     ops.move_to(10, 20)
     assert ops.command_type(0) == CommandType.MOVE_TO
     assert ops.endpoint(0) == (10.0, 20.0, 0.0)
-    assert ops.inspect(0)["extra_axes"] == {}
+    assert ops.inspect(0).extra_axes == {}
 
 
 def test_move_to_with_extra():
     ops = Ops()
     ops.move_to(10, 20, 0, extra={Axis.A: 45.0})
     assert ops.command_type(0) == CommandType.MOVE_TO
-    assert ops.inspect(0)["extra_axes"] == {Axis.A: 45.0}
+    assert ops.inspect(0).extra_axes == {Axis.A: 45.0}
 
 
 def test_line_to_with_extra():
     ops = Ops()
     ops.line_to(10, 20, extra={Axis.A: 90.0})
     assert ops.command_type(0) == CommandType.LINE_TO
-    assert ops.inspect(0)["extra_axes"] == {Axis.A: 90.0}
+    assert ops.inspect(0).extra_axes == {Axis.A: 90.0}
 
 
 def test_arc_to_with_extra():
     ops = Ops()
     ops.arc_to(5, 5, 2, 3, extra={Axis.A: 45.0})
     assert ops.command_type(0) == CommandType.ARC_TO
-    assert ops.inspect(0)["extra_axes"] == {Axis.A: 45.0}
+    assert ops.inspect(0).extra_axes == {Axis.A: 45.0}
 
 
 def test_bezier_to_with_extra():
@@ -2143,7 +2143,7 @@ def test_bezier_to_with_extra():
         extra={Axis.A: 45.0},
     )
     assert ops.command_type(1) == CommandType.BEZIER_TO
-    assert ops.inspect(1)["extra_axes"] == {Axis.A: 45.0}
+    assert ops.inspect(1).extra_axes == {Axis.A: 45.0}
 
 
 def test_scan_to_with_extra():
@@ -2156,7 +2156,7 @@ def test_scan_to_with_extra():
         extra={Axis.A: 45.0},
     )
     assert ops.command_type(0) == CommandType.SCAN_LINE
-    assert ops.inspect(0)["extra_axes"] == {Axis.A: 45.0}
+    assert ops.inspect(0).extra_axes == {Axis.A: 45.0}
 
 
 def test_scanline_count_empty():
@@ -2372,8 +2372,8 @@ def test_transform_moving_extra_axes():
             extra[Axis.A] = extra[Axis.A] * 2
 
     ops.transform_moving(scale_a)
-    assert ops.inspect(0)["extra_axes"] == {Axis.A: 20.0}
-    assert ops.inspect(1)["extra_axes"] == {Axis.A: 40.0}
+    assert ops.inspect(0).extra_axes == {Axis.A: 20.0}
+    assert ops.inspect(1).extra_axes == {Axis.A: 40.0}
 
 
 def test_transform_moving_arc_center():
@@ -2387,7 +2387,7 @@ def test_transform_moving_arc_center():
     ops.transform_moving(lambda end, extra: None, scale_center)
     assert ops.command_type(0) == CommandType.ARC_TO
     info = ops.inspect(0)
-    assert info["center_offset"] == (4.0, 6.0)
+    assert info.center_offset == (4.0, 6.0)
 
 
 def test_transform_moving_bezier_controls():
@@ -2401,9 +2401,9 @@ def test_transform_moving_bezier_controls():
     ops.transform_moving(lambda end, extra: None, flip_y)
     assert ops.command_type(1) == CommandType.BEZIER_TO
     info = ops.inspect(1)
-    assert info["control1"] == (1.0, -2.0, 0.0)
-    assert info["control2"] == (3.0, -4.0, 0.0)
-    assert info["end"] == (5.0, 6.0, 0.0)
+    assert info.control1 == (1.0, -2.0, 0.0)
+    assert info.control2 == (3.0, -4.0, 0.0)
+    assert info.end == (5.0, 6.0, 0.0)
 
 
 def test_transform_moving_no_aux():

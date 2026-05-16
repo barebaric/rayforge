@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any, Tuple, TYPE_CHECKING
 from gettext import gettext as _
 from scipy.spatial import cKDTree  # type: ignore
 from rayforge.core.ops import Ops, CommandType, CommandCategory
+from rayforge.core.ops.container import MachineState
 from raygeo import Point3D
 from rayforge.core.workpiece import WorkPiece
 from rayforge.shared.tasker.progress import ProgressContext
@@ -704,50 +705,53 @@ def _prepare_optimization_jobs(
     return jobs
 
 
-_DEFAULT_STATE: Dict[str, Any] = {
-    "power": 0.0,
-    "air_assist": False,
-    "cut_speed": None,
-    "travel_speed": None,
-    "active_laser_uid": None,
-    "frequency": None,
-    "pulse_width": None,
-}
+_DEFAULT_STATE = MachineState(
+    power=0.0,
+    air_assist=False,
+    cut_speed=None,
+    travel_speed=None,
+    active_laser_uid=None,
+    frequency=None,
+    pulse_width=None,
+)
 
 
 def _sync_state_commands(
     ops: Ops,
-    state: Dict[str, Any],
-    prev: Dict[str, Any],
-) -> Dict[str, Any]:
+    state: MachineState,
+    prev: MachineState,
+) -> MachineState:
     """Emits state commands on ops for fields that differ from prev.
 
-    Returns the updated prev dict (mutated in place and returned).
+    Returns the updated prev state.
     """
-    if state["power"] != prev["power"]:
-        ops.set_power(state["power"])
-        prev["power"] = state["power"]
+    updates = {}
+    if state.power != prev.power:
+        ops.set_power(state.power)
+        updates["power"] = state.power
     if (
-        state["cut_speed"] is not None
-        and state["cut_speed"] != prev["cut_speed"]
+        state.cut_speed is not None
+        and state.cut_speed != prev.cut_speed
     ):
-        ops.set_cut_speed(state["cut_speed"])
-        prev["cut_speed"] = state["cut_speed"]
+        ops.set_cut_speed(state.cut_speed)
+        updates["cut_speed"] = state.cut_speed
     if (
-        state["travel_speed"] is not None
-        and state["travel_speed"] != prev["travel_speed"]
+        state.travel_speed is not None
+        and state.travel_speed != prev.travel_speed
     ):
-        ops.set_travel_speed(state["travel_speed"])
-        prev["travel_speed"] = state["travel_speed"]
-    if state["air_assist"] != prev["air_assist"]:
-        ops.enable_air_assist(state["air_assist"])
-        prev["air_assist"] = state["air_assist"]
+        ops.set_travel_speed(state.travel_speed)
+        updates["travel_speed"] = state.travel_speed
+    if state.air_assist != prev.air_assist:
+        ops.enable_air_assist(state.air_assist)
+        updates["air_assist"] = state.air_assist
     if (
-        state["active_laser_uid"] is not None
-        and state["active_laser_uid"] != prev["active_laser_uid"]
+        state.active_laser_uid is not None
+        and state.active_laser_uid != prev.active_laser_uid
     ):
-        ops.set_laser(state["active_laser_uid"])
-        prev["active_laser_uid"] = state["active_laser_uid"]
+        ops.set_laser(state.active_laser_uid)
+        updates["active_laser_uid"] = state.active_laser_uid
+    if updates:
+        prev = prev._replace(**updates)
     return prev
 
 
@@ -920,13 +924,13 @@ class Optimize(OpsTransformer):
 
         ops.clear()
 
-        prev = dict(_DEFAULT_STATE)
+        prev = _DEFAULT_STATE
         for meta in ordered_metas:
             ops.workpiece_start(meta.uid)
 
             for j in range(meta.ops.len()):
                 state = meta.ops.preloaded_state(j)
-                _sync_state_commands(ops, state, prev)
+                prev = _sync_state_commands(ops, state, prev)
                 ops.transfer_command_from(meta.ops, j)
 
             ops.workpiece_end(meta.uid)
@@ -1060,7 +1064,7 @@ class Optimize(OpsTransformer):
 
         reassemble_ctx.set_total(len(flat_result_segments))
         ops.clear()
-        prev = dict(_DEFAULT_STATE)
+        prev = _DEFAULT_STATE
         for i, segment_ops in enumerate(flat_result_segments):
             if segment_ops.is_empty():
                 continue
@@ -1071,7 +1075,7 @@ class Optimize(OpsTransformer):
 
             for j in range(segment_ops.len()):
                 state = segment_ops.preloaded_state(j)
-                _sync_state_commands(ops, state, prev)
+                prev = _sync_state_commands(ops, state, prev)
                 ops.transfer_command_from(segment_ops, j)
             reassemble_ctx.set_progress(i + 1)
 

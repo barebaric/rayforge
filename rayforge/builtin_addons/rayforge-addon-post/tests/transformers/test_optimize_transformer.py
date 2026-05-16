@@ -194,7 +194,7 @@ def test_run_with_air_assist_change(mock_progress_context):
     for i in range(ops.len()):
         if ops.category(i) == CommandCategory.MOVING:
             state = ops.preloaded_state(i)
-            if state["air_assist"]:
+            if state.air_assist:
                 air_on_idx = i
                 break
 
@@ -207,7 +207,7 @@ def test_run_with_air_assist_change(mock_progress_context):
                 "Points from Part 1 should be in first half"
             )
             state = ops.preloaded_state(i)
-            assert not state["air_assist"], "State should be air OFF"
+            assert not state.air_assist, "State should be air OFF"
 
     # All points from this index on should be from Part 2
     for i in range(air_on_idx, ops.len()):
@@ -216,7 +216,7 @@ def test_run_with_air_assist_change(mock_progress_context):
                 "Points from Part 2 should be second half"
             )
             state = ops.preloaded_state(i)
-            assert state["air_assist"], "State should be air ON"
+            assert state.air_assist, "State should be air ON"
 
 
 def test_run_preserves_markers(mock_progress_context):
@@ -494,15 +494,15 @@ def test_run_optimization_scanline_flip_preserves_state(
 
     # Check state on the new MoveTo for the flipped segment
     move_state = ops.preloaded_state(move_idx)
-    assert move_state["power"] == pytest.approx(0.85)
-    assert move_state["cut_speed"] == pytest.approx(1234)
-    assert move_state["air_assist"] is True
+    assert move_state.power == pytest.approx(0.85)
+    assert move_state.cut_speed == pytest.approx(1234)
+    assert move_state.air_assist is True
 
     # Check state on the flipped ScanLinePowerCommand
     scan_state = ops.preloaded_state(scan_idx)
-    assert scan_state["power"] == pytest.approx(0.85)
-    assert scan_state["cut_speed"] == pytest.approx(1234)
-    assert scan_state["air_assist"] is True
+    assert scan_state.power == pytest.approx(0.85)
+    assert scan_state.cut_speed == pytest.approx(1234)
+    assert scan_state.air_assist is True
 
 
 def test_run_optimization_scanline_split_preserves_state(
@@ -542,15 +542,15 @@ def test_run_optimization_scanline_split_preserves_state(
 
         # Verify state on the new MoveTo for the sub-segment
         move_state = ops.preloaded_state(move_idx)
-        assert move_state["power"] == pytest.approx(0.77)
-        assert move_state["travel_speed"] == pytest.approx(5678)
-        assert move_state["air_assist"] is False
+        assert move_state.power == pytest.approx(0.77)
+        assert move_state.travel_speed == pytest.approx(5678)
+        assert move_state.air_assist is False
 
         # Verify state on the new ScanLinePowerCommand for the sub-segment
         scan_state = ops.preloaded_state(scan_idx)
-        assert scan_state["power"] == pytest.approx(0.77)
-        assert scan_state["travel_speed"] == pytest.approx(5678)
-        assert scan_state["air_assist"] is False
+        assert scan_state.power == pytest.approx(0.77)
+        assert scan_state.travel_speed == pytest.approx(5678)
+        assert scan_state.air_assist is False
 
 
 def test_run_with_state_change_and_scanlines(mock_progress_context):
@@ -586,7 +586,7 @@ def test_run_with_state_change_and_scanlines(mock_progress_context):
     for i in range(ops.len()):
         if ops.category(i) == CommandCategory.MOVING:
             state = ops.preloaded_state(i)
-            if state["power"] == pytest.approx(0.9):
+            if state.power == pytest.approx(0.9):
                 power_change_idx = i
                 break
 
@@ -599,7 +599,7 @@ def test_run_with_state_change_and_scanlines(mock_progress_context):
             assert ops.endpoint(i)[0] < 50, (
                 "Points from Part 1 should be in first half"
             )
-            assert state["power"] == pytest.approx(0.4), (
+            assert state.power == pytest.approx(0.4), (
                 "State should be power 0.4"
             )
 
@@ -610,7 +610,7 @@ def test_run_with_state_change_and_scanlines(mock_progress_context):
             assert ops.endpoint(i)[0] > 50, (
                 "Points from Part 2 should be in second half"
             )
-            assert state["power"] == pytest.approx(0.9), (
+            assert state.power == pytest.approx(0.9), (
                 "State should be power 0.9"
             )
 
@@ -676,13 +676,13 @@ def test_run_optimization_with_overscan_and_flip_preserves_state(
 
     # Check state on the new MoveTo for the flipped segment
     move_state = ops.preloaded_state(move_idx)
-    assert move_state["power"] == pytest.approx(0.66)
-    assert move_state["cut_speed"] == pytest.approx(2000)
+    assert move_state.power == pytest.approx(0.66)
+    assert move_state.cut_speed == pytest.approx(2000)
 
     # Check state on the flipped ScanLinePowerCommand
     scan_state = ops.preloaded_state(flipped_scan_idx)
-    assert scan_state["power"] == pytest.approx(0.66)
-    assert scan_state["cut_speed"] == pytest.approx(2000)
+    assert scan_state.power == pytest.approx(0.66)
+    assert scan_state.cut_speed == pytest.approx(2000)
 
     # Verify the geometry and power values were flipped correctly
     assert ops.endpoint(move_idx) == pytest.approx(end_pt_overscan)

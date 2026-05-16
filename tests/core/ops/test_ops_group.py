@@ -1,5 +1,6 @@
 from typing import List
 from rayforge.core.ops import Ops, CommandType
+from rayforge.core.ops.container import MachineState
 
 
 def test_group_by_command_type_empty():
@@ -56,7 +57,18 @@ def _create_ops_with_states(states_config: List[bool]) -> Ops:
     for i, air_on in enumerate(states_config):
         ops.line_to(float(i), float(i))
     for i, air_on in enumerate(states_config):
-        ops.set_state_at(i, {"power": 1.0, "air_assist": air_on})
+        ops.set_state_at(
+            i,
+            MachineState(
+                power=1.0,
+                air_assist=air_on,
+                cut_speed=None,
+                travel_speed=None,
+                active_laser_uid=None,
+                frequency=None,
+                pulse_width=None,
+            ),
+        )
     return ops
 
 
@@ -96,8 +108,30 @@ def test_group_by_state_continuity():
     ops_marker.line_to(0, 0)
     ops_marker.job_start()
     ops_marker.line_to(1, 1)
-    ops_marker.set_state_at(0, {"power": 1.0, "air_assist": True})
-    ops_marker.set_state_at(2, {"power": 1.0, "air_assist": True})
+    ops_marker.set_state_at(
+        0,
+        MachineState(
+            power=1.0,
+            air_assist=True,
+            cut_speed=None,
+            travel_speed=None,
+            active_laser_uid=None,
+            frequency=None,
+            pulse_width=None,
+        ),
+    )
+    ops_marker.set_state_at(
+        2,
+        MachineState(
+            power=1.0,
+            air_assist=True,
+            cut_speed=None,
+            travel_speed=None,
+            active_laser_uid=None,
+            frequency=None,
+            pulse_width=None,
+        ),
+    )
     groups_m = ops_marker.group_by_state_continuity()
     assert len(groups_m) == 3
     assert [g.len() for g in groups_m] == [1, 1, 1]

@@ -552,6 +552,6 @@ class TestCropTransformerBezierPreservation:
             in (CommandType.LINE_TO, CommandType.BEZIER_TO)
         ]
         for i in cutting_indices:
-            state = ops.inspect(i)["state"]
+            state = ops.inspect(i).state
             assert state is not None
             assert state.power == 0.8

@@ -63,6 +63,38 @@ from .timing import estimate_time
 logger = logging.getLogger(__name__)
 
 
+class MachineState(NamedTuple):
+    power: float
+    air_assist: bool
+    cut_speed: Optional[int]
+    travel_speed: Optional[int]
+    active_laser_uid: Optional[str]
+    frequency: Optional[int]
+    pulse_width: Optional[float]
+
+
+class CommandInfo(NamedTuple):
+    type: CommandType
+    end: Optional[Any] = None
+    extra_axes: Optional[Dict[Any, float]] = None
+    state: Optional[Any] = None
+    center_offset: Optional[Any] = None
+    clockwise: Optional[bool] = None
+    control1: Optional[Any] = None
+    control2: Optional[Any] = None
+    control: Optional[Any] = None
+    power_values: Optional[bytes] = None
+    power: Optional[float] = None
+    speed: Optional[int] = None
+    frequency: Optional[int] = None
+    pulse_width: Optional[float] = None
+    laser_uid: Optional[str] = None
+    duration_ms: Optional[int] = None
+    layer_uid: Optional[str] = None
+    workpiece_uid: Optional[str] = None
+    section_type: Optional[str] = None
+
+
 class OpsSection(NamedTuple):
     """A parsed section of Ops commands, bounded by section markers."""
 
@@ -812,24 +844,25 @@ class Ops:
             )
         return memoryview(cmd.power_values)
 
-    def state_at(self, idx: int) -> Dict[str, Any]:
-        """Returns the effective machine state at the given command index."""
+    def state_at(self, idx: int) -> MachineState:
+        """Returns the effective machine state at the given command
+        index."""
         state = State()
         for i in range(idx + 1):
             cmd = self._commands[i]
             if cmd.is_state_command():
                 cmd.apply_to_state(state)
-        return {
-            "power": state.power,
-            "air_assist": state.air_assist,
-            "cut_speed": state.cut_speed,
-            "travel_speed": state.travel_speed,
-            "active_laser_uid": state.active_laser_uid,
-            "frequency": state.frequency,
-            "pulse_width": state.pulse_width,
-        }
+        return MachineState(
+            power=state.power,
+            air_assist=state.air_assist,
+            cut_speed=state.cut_speed,
+            travel_speed=state.travel_speed,
+            active_laser_uid=state.active_laser_uid,
+            frequency=state.frequency,
+            pulse_width=state.pulse_width,
+        )
 
-    def preloaded_state(self, idx: int) -> Dict[str, Any]:
+    def preloaded_state(self, idx: int) -> MachineState:
         """Returns the preloaded machine state at the given index.
         Requires preload_state() to have been called first."""
         cmd = self._commands[idx]
@@ -839,87 +872,103 @@ class Ops:
                 f"No preloaded state at index {idx}. "
                 "Call preload_state() first."
             )
-        return {
-            "power": state.power,
-            "air_assist": state.air_assist,
-            "cut_speed": state.cut_speed,
-            "travel_speed": state.travel_speed,
-            "active_laser_uid": state.active_laser_uid,
-            "frequency": state.frequency,
-            "pulse_width": state.pulse_width,
-        }
+        return MachineState(
+            power=state.power,
+            air_assist=state.air_assist,
+            cut_speed=state.cut_speed,
+            travel_speed=state.travel_speed,
+            active_laser_uid=state.active_laser_uid,
+            frequency=state.frequency,
+            pulse_width=state.pulse_width,
+        )
 
-    def set_state_on_moving(self, state_dict: Dict[str, Any]) -> None:
+    def set_state_on_moving(self, state_input: MachineState) -> None:
         """Sets state on all moving commands in this Ops."""
         state = State(
-            power=state_dict.get("power", 0.0),
-            air_assist=state_dict.get("air_assist", False),
-            cut_speed=state_dict.get("cut_speed"),
-            travel_speed=state_dict.get("travel_speed"),
-            active_laser_uid=state_dict.get("active_laser_uid"),
-            frequency=state_dict.get("frequency"),
-            pulse_width=state_dict.get("pulse_width"),
+            power=state_input.power,
+            air_assist=state_input.air_assist,
+            cut_speed=state_input.cut_speed,
+            travel_speed=state_input.travel_speed,
+            active_laser_uid=state_input.active_laser_uid,
+            frequency=state_input.frequency,
+            pulse_width=state_input.pulse_width,
         )
         for cmd in self._commands:
             if isinstance(cmd, MovingCommand):
                 cmd.state = state.__copy__()
 
-    def set_state_at(self, idx: int, state_dict: Dict[str, Any]) -> None:
+    def set_state_at(self, idx: int, state_input: MachineState) -> None:
         """Sets state on the moving command at the given index."""
         state = State(
-            power=state_dict.get("power", 0.0),
-            air_assist=state_dict.get("air_assist", False),
-            cut_speed=state_dict.get("cut_speed"),
-            travel_speed=state_dict.get("travel_speed"),
-            active_laser_uid=state_dict.get("active_laser_uid"),
-            frequency=state_dict.get("frequency"),
-            pulse_width=state_dict.get("pulse_width"),
+            power=state_input.power,
+            air_assist=state_input.air_assist,
+            cut_speed=state_input.cut_speed,
+            travel_speed=state_input.travel_speed,
+            active_laser_uid=state_input.active_laser_uid,
+            frequency=state_input.frequency,
+            pulse_width=state_input.pulse_width,
         )
         self._commands[idx].state = state
 
-    def inspect(self, idx: int) -> Dict[str, Any]:
-        """Returns a dictionary representation of the command at the given
+    def inspect(self, idx: int) -> CommandInfo:
+        """Returns a structured representation of the command at the given
         index, for testing assertions."""
         cmd = self._commands[idx]
         cmd_type = self.command_type(idx)
-        result: Dict[str, Any] = {"type": cmd_type}
         if isinstance(cmd, MovingCommand):
-            result["end"] = cmd.end
-            result["extra_axes"] = dict(cmd.extra_axes)
-            result["state"] = cmd.state
+            result = CommandInfo(
+                type=cmd_type,
+                end=cmd.end,
+                extra_axes=dict(cmd.extra_axes),
+                state=cmd.state,
+            )
+        else:
+            result = CommandInfo(type=cmd_type)
         if isinstance(cmd, ArcToCommand):
-            result["center_offset"] = cmd.center_offset
-            result["clockwise"] = cmd.clockwise
+            result = result._replace(
+                center_offset=cmd.center_offset,
+                clockwise=cmd.clockwise,
+            )
         elif isinstance(cmd, BezierToCommand):
-            result["control1"] = cmd.control1
-            result["control2"] = cmd.control2
+            result = result._replace(
+                control1=cmd.control1,
+                control2=cmd.control2,
+            )
         elif isinstance(cmd, QuadraticBezierToCommand):
-            result["control"] = cmd.control
+            result = result._replace(control=cmd.control)
         elif isinstance(cmd, ScanLinePowerCommand):
-            result["power_values"] = bytes(cmd.power_values)
+            result = result._replace(
+                power_values=bytes(cmd.power_values)
+            )
         elif isinstance(cmd, SetPowerCommand):
-            result["power"] = cmd.power
+            result = result._replace(power=cmd.power)
         elif isinstance(cmd, SetCutSpeedCommand):
-            result["speed"] = cmd.speed
+            result = result._replace(speed=cmd.speed)
         elif isinstance(cmd, SetTravelSpeedCommand):
-            result["speed"] = cmd.speed
+            result = result._replace(speed=cmd.speed)
         elif isinstance(cmd, SetFrequencyCommand):
-            result["frequency"] = cmd.frequency
+            result = result._replace(frequency=cmd.frequency)
         elif isinstance(cmd, SetPulseWidthCommand):
-            result["pulse_width"] = cmd.pulse_width
+            result = result._replace(pulse_width=cmd.pulse_width)
         elif isinstance(cmd, SetLaserCommand):
-            result["laser_uid"] = cmd.laser_uid
+            result = result._replace(laser_uid=cmd.laser_uid)
         elif isinstance(cmd, DwellCommand):
-            result["duration_ms"] = cmd.duration_ms
+            result = result._replace(duration_ms=cmd.duration_ms)
         elif isinstance(cmd, (LayerStartCommand, LayerEndCommand)):
-            result["layer_uid"] = cmd.layer_uid
-        elif isinstance(cmd, (WorkpieceStartCommand, WorkpieceEndCommand)):
-            result["workpiece_uid"] = cmd.workpiece_uid
+            result = result._replace(layer_uid=cmd.layer_uid)
+        elif isinstance(
+            cmd, (WorkpieceStartCommand, WorkpieceEndCommand)
+        ):
+            result = result._replace(workpiece_uid=cmd.workpiece_uid)
         elif isinstance(cmd, OpsSectionStartCommand):
-            result["section_type"] = cmd.section_type.name
-            result["workpiece_uid"] = cmd.workpiece_uid
+            result = result._replace(
+                section_type=cmd.section_type.name,
+                workpiece_uid=cmd.workpiece_uid,
+            )
         elif isinstance(cmd, OpsSectionEndCommand):
-            result["section_type"] = cmd.section_type.name
+            result = result._replace(
+                section_type=cmd.section_type.name
+            )
         return result
 
     def copy_command_from(self, source: "Ops", idx: int) -> None:

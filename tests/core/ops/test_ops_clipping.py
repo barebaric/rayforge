@@ -158,7 +158,7 @@ class TestClipOpsToRegionsArcs:
         clip_ops_to_regions(ops, regions)
         arc_indices = ops.indices_of(CommandType.ARC_TO)
         for idx in arc_indices:
-            state = ops.inspect(idx)["state"]
+            state = ops.inspect(idx).state
             assert state is not None
             assert abs(state.power - 0.8) < 1e-6
 
@@ -220,7 +220,7 @@ class TestClipOpsToRegionsBezier:
         for i in ops.indices_of(CommandType.ARC_TO) + ops.indices_of(
             CommandType.BEZIER_TO
         ):
-            state = ops.inspect(i)["state"]
+            state = ops.inspect(i).state
             assert state is not None
             assert abs(state.power - 0.8) < 1e-6
 
