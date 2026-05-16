@@ -2,7 +2,7 @@
 Tests for timing estimation functionality.
 """
 
-from rayforge.core.ops import Ops, MoveToCommand
+from rayforge.core.ops import CommandCategory, Ops
 from rayforge.core.ops.timing import estimate_time
 
 
@@ -138,13 +138,15 @@ class TestTiming:
         ops.set_cut_speed(500)
         ops.line_to(10, 0, 0)
 
-        for cmd in ops:
-            assert cmd.state is None
+        for i in range(ops.len()):
+            if ops.category(i) == CommandCategory.MOVING:
+                assert ops.inspect(i)["state"] is None
 
         estimate_time(list(ops))
 
-        for cmd in ops:
-            assert cmd.state is None
+        for i in range(ops.len()):
+            if ops.category(i) == CommandCategory.MOVING:
+                assert ops.inspect(i)["state"] is None
 
     def test_estimate_time_caching(self):
         """Test that Ops.estimate_time() caches results."""
@@ -186,7 +188,9 @@ class TestTiming:
         ops.estimate_time()
         assert not ops._time_dirty
 
-        ops.replace_all([MoveToCommand(end=(5, 5, 0))])
+        tmp = Ops()
+        tmp.move_to(5, 5, 0)
+        ops.replace_all(list(tmp))
         assert ops._time_dirty
 
     def test_cache_keyed_on_params(self):

@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
+from rayforge.core.ops import Ops
 from rayforge.machine.job_monitor import JobMonitor
 
 
@@ -11,9 +11,9 @@ class TestJobMonitor:
     def simple_ops(self):
         """Creates a simple Ops object with a few commands."""
         ops = Ops()
-        ops.add(MoveToCommand((10, 10, 0)))  # op 0, distance 0
-        ops.add(LineToCommand((20, 10, 0)))  # op 1, distance 10
-        ops.add(LineToCommand((20, 20, 0)))  # op 2, distance 10
+        ops.move_to(10, 10, 0)  # op 0, distance 0
+        ops.line_to(20, 10, 0)  # op 1, distance 10
+        ops.line_to(20, 20, 0)  # op 2, distance 10
         return ops
 
     @pytest.fixture

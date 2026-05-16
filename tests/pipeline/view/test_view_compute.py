@@ -1,13 +1,7 @@
 import cairo
 import numpy as np
 
-from rayforge.core.ops import (
-    Ops,
-    MoveToCommand,
-    LineToCommand,
-    SetPowerCommand,
-    ScanLinePowerCommand,
-)
+from rayforge.core.ops import Ops
 from rayforge.pipeline import CoordinateSystem
 from rayforge.pipeline.artifact import (
     RenderContext,
@@ -55,12 +49,12 @@ def test_compute_workpiece_view_vector_returns_valid_artifact():
     for vector data.
     """
     ops = Ops()
-    ops.add(SetPowerCommand(1.0))
-    ops.add(MoveToCommand((5.0, 5.0, 0.0)))
-    ops.add(LineToCommand((15.0, 5.0, 0.0)))
-    ops.add(LineToCommand((15.0, 15.0, 0.0)))
-    ops.add(LineToCommand((5.0, 15.0, 0.0)))
-    ops.add(LineToCommand((5.0, 5.0, 0.0)))
+    ops.set_power(1.0)
+    ops.move_to(5.0, 5.0, 0.0)
+    ops.line_to(15.0, 5.0, 0.0)
+    ops.line_to(15.0, 15.0, 0.0)
+    ops.line_to(5.0, 15.0, 0.0)
+    ops.line_to(5.0, 5.0, 0.0)
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
@@ -93,8 +87,8 @@ def test_compute_workpiece_view_texture_returns_valid_artifact():
     ops = Ops()
     for mm_y in range(1, 51):
         power_values = bytearray([128] * 50)
-        ops.add(MoveToCommand((0.0, float(mm_y), 0.0)))
-        ops.add(ScanLinePowerCommand((50.0, float(mm_y), 0.0), power_values))
+        ops.move_to(0.0, float(mm_y), 0.0)
+        ops.scan_to(50.0, float(mm_y), 0.0, power_values=power_values)
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=False,
@@ -122,9 +116,9 @@ def test_compute_workpiece_view_texture_returns_valid_artifact():
 def test_compute_workpiece_view_with_progress_callback(mock_progress_context):
     """Test that compute_workpiece_view calls progress callback."""
     ops = Ops()
-    ops.add(SetPowerCommand(1.0))
-    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 10.0, 0.0)))
+    ops.set_power(1.0)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 10.0, 0.0)
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
@@ -184,11 +178,11 @@ def test_compute_workpiece_view_empty_ops_returns_none():
 def test_compute_workpiece_view_travel_moves_shown():
     """Test that compute_workpiece_view renders travel moves when enabled."""
     ops = Ops()
-    ops.add(SetPowerCommand(0.0))
-    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 0.0, 0.0)))
-    ops.add(SetPowerCommand(1.0))
-    ops.add(LineToCommand((10.0, 10.0, 0.0)))
+    ops.set_power(0.0)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 0.0, 0.0)
+    ops.set_power(1.0)
+    ops.line_to(10.0, 10.0, 0.0)
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
@@ -215,9 +209,9 @@ def test_compute_workpiece_view_travel_moves_shown():
 def test_compute_view_dimensions_vector():
     """Test compute_view_dimensions with vector data."""
     ops = Ops()
-    ops.add(SetPowerCommand(1.0))
-    ops.add(MoveToCommand((5.0, 5.0, 0.0)))
-    ops.add(LineToCommand((15.0, 15.0, 0.0)))
+    ops.set_power(1.0)
+    ops.move_to(5.0, 5.0, 0.0)
+    ops.line_to(15.0, 15.0, 0.0)
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
@@ -251,8 +245,8 @@ def test_compute_view_dimensions_texture():
     ops = Ops()
     for mm_y in range(1, 11):
         power_values = bytearray([128] * 10)
-        ops.add(MoveToCommand((0.0, float(mm_y), 0.0)))
-        ops.add(ScanLinePowerCommand((10.0, float(mm_y), 0.0), power_values))
+        ops.move_to(0.0, float(mm_y), 0.0)
+        ops.scan_to(10.0, float(mm_y), 0.0, power_values=power_values)
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=False,
@@ -308,9 +302,9 @@ def test_compute_view_dimensions_empty_ops():
 def test_compute_workpiece_view_to_buffer():
     """Test compute_workpiece_view_to_buffer renders to buffer."""
     ops = Ops()
-    ops.add(SetPowerCommand(1.0))
-    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 10.0, 0.0)))
+    ops.set_power(1.0)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 10.0, 0.0)
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
@@ -344,9 +338,9 @@ def test_compute_workpiece_view_to_buffer_with_progress(
 ):
     """Test compute_workpiece_view_to_buffer with progress callback."""
     ops = Ops()
-    ops.add(SetPowerCommand(1.0))
-    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 10.0, 0.0)))
+    ops.set_power(1.0)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 10.0, 0.0)
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
@@ -403,9 +397,9 @@ def test_compute_workpiece_view_to_buffer_empty_ops():
 def test_render_chunk_to_buffer():
     """Test render_chunk_to_buffer renders chunk to buffer."""
     ops = Ops()
-    ops.add(SetPowerCommand(1.0))
-    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 10.0, 0.0)))
+    ops.set_power(1.0)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 10.0, 0.0)
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
@@ -435,8 +429,8 @@ def test_render_chunk_to_buffer_texture():
     ops = Ops()
     for mm_y in range(1, 6):
         power_values = bytearray([128] * 10)
-        ops.add(MoveToCommand((0.0, float(mm_y), 0.0)))
-        ops.add(ScanLinePowerCommand((10.0, float(mm_y), 0.0), power_values))
+        ops.move_to(0.0, float(mm_y), 0.0)
+        ops.scan_to(10.0, float(mm_y), 0.0, power_values=power_values)
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=False,
@@ -556,9 +550,9 @@ def test_get_content_bbox_empty():
 def test_encode_vertex_and_texture_data_vector():
     """Test _encode_vertex_and_texture_data with vector data."""
     ops = Ops()
-    ops.add(SetPowerCommand(1.0))
-    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 10.0, 0.0)))
+    ops.set_power(1.0)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 10.0, 0.0)
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
@@ -589,8 +583,8 @@ def test_encode_vertex_and_texture_data_texture():
     ops = Ops()
     for mm_y in range(1, 6):
         power_values = bytearray([128] * 10)
-        ops.add(MoveToCommand((0.0, float(mm_y), 0.0)))
-        ops.add(ScanLinePowerCommand((10.0, float(mm_y), 0.0), power_values))
+        ops.move_to(0.0, float(mm_y), 0.0)
+        ops.scan_to(10.0, float(mm_y), 0.0, power_values=power_values)
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=False,

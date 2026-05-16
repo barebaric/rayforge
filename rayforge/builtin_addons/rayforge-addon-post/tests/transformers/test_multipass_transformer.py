@@ -1,6 +1,5 @@
 import pytest
-from rayforge.core.ops import Ops, LineToCommand, MoveToCommand
-from rayforge.core.ops.commands import BezierToCommand
+from rayforge.core.ops import Ops, CommandType
 from post_processors.transformers import MultiPassTransformer
 
 
@@ -27,24 +26,24 @@ class TestMultiPassTransformer:
 
         # Assert
         # Original commands + 2 copies = 3 total passes
-        assert len(ops.commands) == 6
+        assert ops.len() == 6
 
         # Verify the sequence and types of commands
-        assert isinstance(ops.commands[0], MoveToCommand)
-        assert isinstance(ops.commands[1], LineToCommand)
-        assert isinstance(ops.commands[2], MoveToCommand)
-        assert isinstance(ops.commands[3], LineToCommand)
-        assert isinstance(ops.commands[4], MoveToCommand)
-        assert isinstance(ops.commands[5], LineToCommand)
+        assert ops.command_type(0) == CommandType.MOVE_TO
+        assert ops.command_type(1) == CommandType.LINE_TO
+        assert ops.command_type(2) == CommandType.MOVE_TO
+        assert ops.command_type(3) == CommandType.LINE_TO
+        assert ops.command_type(4) == CommandType.MOVE_TO
+        assert ops.command_type(5) == CommandType.LINE_TO
 
         # The first pass has original positions
-        assert ops.commands[0].end == (10, 10, 0)
-        assert ops.commands[1].end == (20, 20, 0)
+        assert ops.endpoint(0) == (10, 10, 0)
+        assert ops.endpoint(1) == (20, 20, 0)
         # All subsequent passes also have original positions (no z-step)
-        assert ops.commands[2].end == (10, 10, 0)
-        assert ops.commands[3].end == (20, 20, 0)
-        assert ops.commands[4].end == (10, 10, 0)
-        assert ops.commands[5].end == (20, 20, 0)
+        assert ops.endpoint(2) == (10, 10, 0)
+        assert ops.endpoint(3) == (20, 20, 0)
+        assert ops.endpoint(4) == (10, 10, 0)
+        assert ops.endpoint(5) == (20, 20, 0)
 
     def test_applies_z_step_down_for_each_pass(self):
         """
@@ -65,19 +64,19 @@ class TestMultiPassTransformer:
         transformer.run(ops)
 
         # Assert
-        assert len(ops.commands) == 3
+        assert ops.len() == 3
 
         # Add assertions to assure the type checker that .end is not None
-        assert ops.commands[0].end is not None
-        assert ops.commands[1].end is not None
-        assert ops.commands[2].end is not None
+        assert ops.endpoint(0) is not None
+        assert ops.endpoint(1) is not None
+        assert ops.endpoint(2) is not None
 
         # Pass 1 (original): Z should be untouched
-        assert ops.commands[0].end[2] == 5.0
+        assert ops.endpoint(0)[2] == 5.0
         # Pass 2: Z should be original_z - (1 * z_step)
-        assert ops.commands[1].end[2] == pytest.approx(5.0 - 0.5)
+        assert ops.endpoint(1)[2] == pytest.approx(5.0 - 0.5)
         # Pass 3: Z should be original_z - (2 * z_step)
-        assert ops.commands[2].end[2] == pytest.approx(5.0 - 1.0)
+        assert ops.endpoint(2)[2] == pytest.approx(5.0 - 1.0)
 
     def test_no_op_for_single_pass_and_no_z_step(self):
         """
@@ -87,8 +86,7 @@ class TestMultiPassTransformer:
         # Arrange
         ops = Ops()
         ops.move_to(0, 0, 0)
-        # Keep a reference to the original list object
-        original_commands_list = ops.commands
+        original_len = ops.len()
 
         transformer = MultiPassTransformer(passes=1, z_step_down=0.0)
 
@@ -96,9 +94,9 @@ class TestMultiPassTransformer:
         transformer.run(ops)
 
         # Assert
-        # The list object itself should not have been replaced.
-        assert ops.commands is original_commands_list
-        assert len(ops.commands) == 1
+        # The ops should not have been modified.
+        assert ops.len() == original_len
+        assert ops.len() == 1
 
     def test_no_op_for_empty_commands(self):
         """
@@ -113,7 +111,7 @@ class TestMultiPassTransformer:
         transformer.run(ops)
 
         # Assert
-        assert len(ops.commands) == 0
+        assert ops.len() == 0
 
     def test_passes_property_validation(self):
         """
@@ -163,45 +161,45 @@ class TestMultiPassTransformer:
     def test_bezier_duplicated_without_z_step(self):
         ops = Ops()
         ops.move_to(0, 0, 0)
-        ops.commands.append(
-            BezierToCommand(
-                end=(10.0, 0.0, 0.0),
-                control1=(3.0, 5.0, 0.0),
-                control2=(7.0, 5.0, 0.0),
-            )
+        ops.bezier_to(
+            (3.0, 5.0, 0.0), (7.0, 5.0, 0.0), (10.0, 0.0, 0.0)
         )
 
         transformer = MultiPassTransformer(passes=2, z_step_down=0.0)
         transformer.run(ops)
 
-        bezier_cmds = [
-            c for c in ops.commands if isinstance(c, BezierToCommand)
+        bezier_indices = [
+            i
+            for i in range(ops.len())
+            if ops.command_type(i) == CommandType.BEZIER_TO
         ]
-        assert len(bezier_cmds) == 2
-        assert bezier_cmds[0].control1 == (3.0, 5.0, 0.0)
-        assert bezier_cmds[1].control1 == (3.0, 5.0, 0.0)
+        assert len(bezier_indices) == 2
+        c1_0, _ = ops.bezier_params(bezier_indices[0])
+        c1_1, _ = ops.bezier_params(bezier_indices[1])
+        assert c1_0 == (3.0, 5.0, 0.0)
+        assert c1_1 == (3.0, 5.0, 0.0)
 
     def test_bezier_with_z_step_down(self):
         ops = Ops()
         ops.move_to(0, 0, 2.0)
-        ops.commands.append(
-            BezierToCommand(
-                end=(10.0, 0.0, 2.0),
-                control1=(3.0, 5.0, 2.0),
-                control2=(7.0, 5.0, 2.0),
-            )
+        ops.bezier_to(
+            (3.0, 5.0, 2.0), (7.0, 5.0, 2.0), (10.0, 0.0, 2.0)
         )
 
         transformer = MultiPassTransformer(passes=2, z_step_down=0.5)
         transformer.run(ops)
 
-        bezier_cmds = [
-            c for c in ops.commands if isinstance(c, BezierToCommand)
+        bezier_indices = [
+            i
+            for i in range(ops.len())
+            if ops.command_type(i) == CommandType.BEZIER_TO
         ]
-        assert len(bezier_cmds) == 2
-        assert bezier_cmds[0].control1[2] == pytest.approx(2.0)
-        assert bezier_cmds[1].control1[2] == pytest.approx(1.5)
-        assert bezier_cmds[0].control2[2] == pytest.approx(2.0)
-        assert bezier_cmds[1].control2[2] == pytest.approx(1.5)
-        assert bezier_cmds[0].end[2] == pytest.approx(2.0)
-        assert bezier_cmds[1].end[2] == pytest.approx(1.5)
+        assert len(bezier_indices) == 2
+        c1_0, c2_0 = ops.bezier_params(bezier_indices[0])
+        c1_1, c2_1 = ops.bezier_params(bezier_indices[1])
+        assert c1_0[2] == pytest.approx(2.0)
+        assert c1_1[2] == pytest.approx(1.5)
+        assert c2_0[2] == pytest.approx(2.0)
+        assert c2_1[2] == pytest.approx(1.5)
+        assert ops.endpoint(bezier_indices[0])[2] == pytest.approx(2.0)
+        assert ops.endpoint(bezier_indices[1])[2] == pytest.approx(1.5)

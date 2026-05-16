@@ -19,12 +19,7 @@ from rayforge import config
 from rayforge import context as context_module
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
-from rayforge.core.ops import (
-    Ops,
-    MoveToCommand,
-    LineToCommand,
-    BezierToCommand,
-)
+from rayforge.core.ops import Ops, CommandType
 from rayforge.core.ops.axis import Axis
 from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine, Origin
@@ -486,8 +481,8 @@ def rotary_doc(isolated_machine):
 
 def _encode_rotary_line(machine, doc):
     ops = Ops()
-    ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-    ops.add(LineToCommand((10.0, 10.0, 0.0)))
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 10.0, 0.0)
     for layer in doc.layers:
         rotary_axis = machine.get_rotary_axis_for_layer(layer)
         if rotary_axis is not None:
@@ -653,9 +648,13 @@ class TestRotaryAxisGcodeOutput:
         ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
         prepared = machine._prepare_ops_for_encoding(ops)
         assert not any(
-            isinstance(c, BezierToCommand) for c in prepared.commands
+            prepared.command_type(i) == CommandType.BEZIER_TO
+            for i in range(prepared.len())
         )
-        assert any(isinstance(c, LineToCommand) for c in prepared.commands)
+        assert any(
+            prepared.command_type(i) == CommandType.LINE_TO
+            for i in range(prepared.len())
+        )
 
     def test_prepare_ops_preserves_curves_when_enabled(self, lite_context):
         machine = Machine(lite_context)
@@ -664,7 +663,10 @@ class TestRotaryAxisGcodeOutput:
         ops.move_to(0, 0)
         ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
         prepared = machine._prepare_ops_for_encoding(ops)
-        assert any(isinstance(c, BezierToCommand) for c in prepared.commands)
+        assert any(
+            prepared.command_type(i) == CommandType.BEZIER_TO
+            for i in range(prepared.len())
+        )
 
     def test_true_4th_axis_top_left_origin(self, isolated_machine):
         """TRUE_4TH_AXIS degrees come from world-space Y regardless of

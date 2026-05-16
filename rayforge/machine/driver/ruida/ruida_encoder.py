@@ -223,9 +223,7 @@ class RuidaEncoder(OpsEncoder):
         """Handle SetFrequencyCommand - emit 0xC6 0x60 frequency."""
         freq = ops.frequency(idx)
         binary.append(
-            b"\xc6\x60"
-            + bytes([self.active_laser, 0])
-            + encode35(freq)
+            b"\xc6\x60" + bytes([self.active_laser, 0]) + encode35(freq)
         )
         text.append(f"FREQUENCY {freq}")
 
@@ -333,8 +331,7 @@ class RuidaEncoder(OpsEncoder):
         end = ops.endpoint(idx)
         i_val, j_val, cw = ops.arc_params(idx)
         text.append(
-            f"; ARC to ({end[0]:.3f}, {end[1]:.3f}) "
-            f"{'CW' if cw else 'CCW'}"
+            f"; ARC to ({end[0]:.3f}, {end[1]:.3f}) {'CW' if cw else 'CCW'}"
         )
 
         sub_ops = ops.linearize(idx, self.current_pos)

@@ -7,7 +7,7 @@ import pytest_asyncio
 import asyncio
 
 from rayforge.core.config import ConfigManager
-from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
+from rayforge.core.ops import Ops
 from rayforge.core.ops.axis import Axis
 from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.models.machine import Machine
@@ -66,9 +66,9 @@ def machine_cmd(doc_editor):
 def simple_ops():
     """Creates a simple Ops object with a few commands."""
     ops = Ops()
-    ops.add(MoveToCommand((10, 10, 0)))
-    ops.add(LineToCommand((20, 10, 0)))
-    ops.add(LineToCommand((20, 20, 0)))
+    ops.move_to(10, 10, 0)
+    ops.line_to(20, 10, 0)
+    ops.line_to(20, 20, 0)
     return ops
 
 

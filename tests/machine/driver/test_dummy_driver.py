@@ -2,7 +2,7 @@ import pytest
 import asyncio
 from unittest.mock import MagicMock, AsyncMock
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Axis, Ops, MoveToCommand, LineToCommand
+from rayforge.core.ops import Axis, Ops
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.models.machine import Machine
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
@@ -32,20 +32,20 @@ class TestDummyDriverCallback:
     def simple_ops(self):
         """Creates a simple Ops object with a few commands."""
         ops = Ops()
-        ops.add(MoveToCommand((10.0, 10.0, 0.0)))
-        ops.add(LineToCommand((20.0, 20.0, 0.0)))
-        ops.add(MoveToCommand((30.0, 30.0, 0.0)))
+        ops.move_to(10.0, 10.0, 0.0)
+        ops.line_to(20.0, 20.0, 0.0)
+        ops.move_to(30.0, 30.0, 0.0)
         return ops
 
     @pytest.fixture
     def complex_ops(self):
         """Creates a more complex Ops object with various command types."""
         ops = Ops()
-        ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-        ops.add(LineToCommand((10.0, 0.0, 0.0)))
-        ops.add(LineToCommand((10.0, 10.0, 0.0)))
-        ops.add(LineToCommand((0.0, 10.0, 0.0)))
-        ops.add(LineToCommand((0.0, 0.0, 0.0)))
+        ops.move_to(0.0, 0.0, 0.0)
+        ops.line_to(10.0, 0.0, 0.0)
+        ops.line_to(10.0, 10.0, 0.0)
+        ops.line_to(0.0, 10.0, 0.0)
+        ops.line_to(0.0, 0.0, 0.0)
         return ops
 
     def test_get_encoder(self, driver: NoDeviceDriver):
@@ -193,8 +193,8 @@ class TestDummyDriverCallback:
         """Test callback with a document context (no workpieces needed)."""
         # Create simple ops for testing with document context
         ops = Ops()
-        ops.add(MoveToCommand((5.0, 5.0, 0.0)))
-        ops.add(LineToCommand((15.0, 15.0, 0.0)))
+        ops.move_to(5.0, 5.0, 0.0)
+        ops.line_to(15.0, 15.0, 0.0)
 
         callback_mock = MagicMock()
 

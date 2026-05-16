@@ -1,6 +1,5 @@
 import math
-from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
-from rayforge.core.ops.commands import BezierToCommand
+from rayforge.core.ops import Ops, CommandType
 from post_processors.transformers import MergeLinesTransformer
 
 
@@ -14,18 +13,14 @@ def test_no_duplicate_lines():
     ops.move_to(20, 0)
     ops.line_to(30, 0)
 
-    original_move_count = sum(
-        1 for c in ops.commands if isinstance(c, MoveToCommand)
-    )
-    original_line_count = sum(
-        1 for c in ops.commands if isinstance(c, LineToCommand)
-    )
+    original_move_count = len(ops.indices_of(CommandType.MOVE_TO))
+    original_line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
     transformer.run(ops)
 
-    move_count = sum(1 for c in ops.commands if isinstance(c, MoveToCommand))
-    line_count = sum(1 for c in ops.commands if isinstance(c, LineToCommand))
+    move_count = len(ops.indices_of(CommandType.MOVE_TO))
+    line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     assert move_count == original_move_count
     assert line_count == original_line_count
@@ -45,7 +40,7 @@ def test_identical_duplicate_lines_removed():
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
     transformer.run(ops)
 
-    line_count = sum(1 for c in ops.commands if isinstance(c, LineToCommand))
+    line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     assert line_count == 1
 
@@ -64,7 +59,7 @@ def test_opposite_direction_duplicate_lines_removed():
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
     transformer.run(ops)
 
-    line_count = sum(1 for c in ops.commands if isinstance(c, LineToCommand))
+    line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     assert line_count == 1
 
@@ -83,16 +78,16 @@ def test_tolerance_affects_merging():
     transformer_tight = MergeLinesTransformer(enabled=True, tolerance=0.01)
     ops_copy_tight = ops.copy()
     transformer_tight.run(ops_copy_tight)
-    line_count_tight = sum(
-        1 for c in ops_copy_tight.commands if isinstance(c, LineToCommand)
+    line_count_tight = len(
+        ops_copy_tight.indices_of(CommandType.LINE_TO)
     )
     assert line_count_tight == 2
 
     transformer_loose = MergeLinesTransformer(enabled=True, tolerance=0.2)
     ops_copy_loose = ops.copy()
     transformer_loose.run(ops_copy_loose)
-    line_count_loose = sum(
-        1 for c in ops_copy_loose.commands if isinstance(c, LineToCommand)
+    line_count_loose = len(
+        ops_copy_loose.indices_of(CommandType.LINE_TO)
     )
     assert line_count_loose == 1
 
@@ -114,14 +109,12 @@ def test_adjacent_rectangles_shared_edge():
     ops.line_to(10, 10)
     ops.line_to(10, 0)
 
-    original_line_count = sum(
-        1 for c in ops.commands if isinstance(c, LineToCommand)
-    )
+    original_line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
     transformer.run(ops)
 
-    line_count = sum(1 for c in ops.commands if isinstance(c, LineToCommand))
+    line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     assert line_count < original_line_count
 
@@ -136,14 +129,12 @@ def test_disabled_transformer():
     ops.move_to(0, 0)
     ops.line_to(10, 0)
 
-    original_line_count = sum(
-        1 for c in ops.commands if isinstance(c, LineToCommand)
-    )
+    original_line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     transformer = MergeLinesTransformer(enabled=False)
     transformer.run(ops)
 
-    line_count = sum(1 for c in ops.commands if isinstance(c, LineToCommand))
+    line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     assert line_count == original_line_count
 
@@ -194,7 +185,7 @@ def test_overlapping_collinear_segments():
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
     transformer.run(ops)
 
-    line_count = sum(1 for c in ops.commands if isinstance(c, LineToCommand))
+    line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     # Under the 1D boolean union logic with horizontal tolerance expansion,
     # the second segment is trimmed so we have exactly two LineToCommands.
@@ -214,14 +205,12 @@ def test_perpendicular_lines_not_merged():
     ops.move_to(5, -5)
     ops.line_to(5, 5)
 
-    original_line_count = sum(
-        1 for c in ops.commands if isinstance(c, LineToCommand)
-    )
+    original_line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
     transformer.run(ops)
 
-    line_count = sum(1 for c in ops.commands if isinstance(c, LineToCommand))
+    line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     assert line_count == original_line_count
 
@@ -241,14 +230,12 @@ def test_triangle_shared_edge():
     ops.line_to(5, -10)
     ops.line_to(10, 0)
 
-    original_line_count = sum(
-        1 for c in ops.commands if isinstance(c, LineToCommand)
-    )
+    original_line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
     transformer.run(ops)
 
-    line_count = sum(1 for c in ops.commands if isinstance(c, LineToCommand))
+    line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     assert line_count < original_line_count
 
@@ -259,22 +246,20 @@ def test_bezier_passes_through_unchanged():
     ops.set_power(1.0)
 
     ops.move_to(0, 0, 0)
-    ops.commands.append(
-        BezierToCommand(
-            end=(10.0, 0.0, 0.0),
-            control1=(3.0, 5.0, 0.0),
-            control2=(7.0, 5.0, 0.0),
-        )
+    ops.bezier_to(
+        (3.0, 5.0, 0.0), (7.0, 5.0, 0.0), (10.0, 0.0, 0.0)
     )
 
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
     transformer.run(ops)
 
-    bezier_cmds = [c for c in ops.commands if isinstance(c, BezierToCommand)]
-    assert len(bezier_cmds) == 1
-    assert bezier_cmds[0].end == (10.0, 0.0, 0.0)
-    assert bezier_cmds[0].control1 == (3.0, 5.0, 0.0)
-    assert bezier_cmds[0].control2 == (7.0, 5.0, 0.0)
+    bezier_indices = ops.indices_of(CommandType.BEZIER_TO)
+    assert len(bezier_indices) == 1
+    idx = bezier_indices[0]
+    assert ops.endpoint(idx) == (10.0, 0.0, 0.0)
+    c1, c2 = ops.bezier_params(idx)
+    assert c1 == (3.0, 5.0, 0.0)
+    assert c2 == (7.0, 5.0, 0.0)
 
 
 def test_mixed_lines_and_bezier():
@@ -284,12 +269,8 @@ def test_mixed_lines_and_bezier():
 
     ops.move_to(0, 0)
     ops.line_to(10, 0)
-    ops.commands.append(
-        BezierToCommand(
-            end=(20.0, 0.0, 0.0),
-            control1=(12.0, 5.0, 0.0),
-            control2=(18.0, 5.0, 0.0),
-        )
+    ops.bezier_to(
+        (12.0, 5.0, 0.0), (18.0, 5.0, 0.0), (20.0, 0.0, 0.0)
     )
     ops.line_to(30, 0)
 
@@ -299,6 +280,8 @@ def test_mixed_lines_and_bezier():
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
     transformer.run(ops)
 
-    bezier_cmds = [c for c in ops.commands if isinstance(c, BezierToCommand)]
-    assert len(bezier_cmds) == 1
-    assert bezier_cmds[0].control1 == (12.0, 5.0, 0.0)
+    bezier_indices = ops.indices_of(CommandType.BEZIER_TO)
+    assert len(bezier_indices) == 1
+    idx = bezier_indices[0]
+    c1, _ = ops.bezier_params(idx)
+    assert c1 == (12.0, 5.0, 0.0)

@@ -9,7 +9,7 @@ import asyncio
 from unittest.mock import MagicMock
 
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
+from rayforge.core.ops import Ops
 from rayforge.machine.driver.driver import (
     Axis,
     DeviceStatus,
@@ -406,8 +406,8 @@ class TestMarlinSerialDriverRealSerial:
         driver.job_finished.connect(lambda sender: job_finished(), weak=False)
         machine.set_active_wcs("G54")
         ops = Ops()
-        ops.add(MoveToCommand((10, 10, 0)))
-        ops.add(LineToCommand((20, 20, 0)))
+        ops.move_to(10, 10, 0)
+        ops.line_to(20, 20, 0)
         doc = Doc()
         encoded = machine.encode_ops(ops, doc)
         await asyncio.wait_for(driver.run(encoded, doc), timeout=5.0)

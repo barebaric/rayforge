@@ -2,7 +2,6 @@ import pytest
 import numpy as np
 
 from rayforge.core.ops import Ops
-from rayforge.core.ops.commands import ScanLinePowerCommand
 from compile_scene_helper import (
     make_test_config,
     make_assembled_ops,
@@ -73,7 +72,7 @@ class TestCompileScanline:
         ops = Ops()
         ops.move_to(0.0, 0.0, 0.0)
         powers = bytearray([0, 0, 255, 255, 0, 0])
-        ops.add(ScanLinePowerCommand((6.0, 0.0, 0.0), powers))
+        ops.scan_to(6.0, 0.0, 0.0, powers)
 
         assembled = _single_layer_ops(ops)
         config = _flat_config()
@@ -94,7 +93,7 @@ class TestCompileScanline:
         ops = Ops()
         ops.move_to(0.0, 0.0, 0.0)
         powers = bytearray([128, 128])
-        ops.add(ScanLinePowerCommand((2.0, 0.0, 0.0), powers))
+        ops.scan_to(2.0, 0.0, 0.0, powers)
 
         assembled = _single_layer_ops(ops)
         config = _flat_config()
@@ -223,7 +222,7 @@ class TestPoweredOffsets:
 
         vl = artifact.vertex_layers[0]
         off = vl.powered_cmd_offsets
-        assert len(off) == len(assembled.commands) + 1
+        assert len(off) == assembled.len() + 1
         assert off[0] == 0
         assert off[-1] == 2
 
@@ -272,7 +271,7 @@ class TestPoweredOffsets:
 
         vl = artifact.vertex_layers[0]
         off = vl.travel_cmd_offsets
-        assert len(off) == len(assembled.commands) + 1
+        assert len(off) == assembled.len() + 1
         assert off[0] == 0
         assert off[-1] == 4
 
@@ -313,10 +312,10 @@ class TestOverlayOffsets:
         ops.set_power(0.5)
         ops.line_to(1.0, 0.0, 0.0)
         powers = bytearray([128, 128])
-        ops.add(ScanLinePowerCommand((3.0, 0.0, 0.0), powers))
+        ops.scan_to(3.0, 0.0, 0.0, powers)
         ops.line_to(4.0, 0.0, 0.0)
         powers2 = bytearray([64])
-        ops.add(ScanLinePowerCommand((5.0, 0.0, 0.0), powers2))
+        ops.scan_to(5.0, 0.0, 0.0, powers2)
 
         assembled = _single_layer_ops(ops)
         config = _flat_config()
@@ -332,18 +331,18 @@ class TestOverlayOffsets:
         off = ol.cmd_offsets
         assert off[0] == 0
         assert off[-1] == 4
-        assert len(off) == len(assembled.commands) + 1
+        assert len(off) == assembled.len() + 1
 
     def test_multi_layer_cumulative_offsets(self):
         ops1 = Ops()
         ops1.move_to(0.0, 0.0, 0.0)
         powers1 = bytearray([128, 128])
-        ops1.add(ScanLinePowerCommand((2.0, 0.0, 0.0), powers1))
+        ops1.scan_to(2.0, 0.0, 0.0, powers1)
 
         ops2 = Ops()
         ops2.move_to(0.0, 0.0, 0.0)
         powers2 = bytearray([64])
-        ops2.add(ScanLinePowerCommand((1.0, 0.0, 0.0), powers2))
+        ops2.scan_to(1.0, 0.0, 0.0, powers2)
 
         assembled = make_assembled_ops(
             [

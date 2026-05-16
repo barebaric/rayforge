@@ -78,9 +78,13 @@ def _count_powered_vertices(
             i_val, j_val, cw = ops.arc_params(idx)
             arc_row = [
                 3,
-                end[0], end[1], end[2],
-                i_val, j_val,
-                1.0 if cw else 0.0, 0.0,
+                end[0],
+                end[1],
+                end[2],
+                i_val,
+                j_val,
+                1.0 if cw else 0.0,
+                0.0,
             ]
             segments = linearize_arc(arc_row, current_pos)
             return len(segments) * 2

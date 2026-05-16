@@ -1,20 +1,7 @@
 import math
 from unittest.mock import MagicMock
 
-from rayforge.core.ops import (
-    Axis,
-    Ops,
-    BezierToCommand,
-    MoveToCommand,
-    LineToCommand,
-    SetPowerCommand,
-    SetCutSpeedCommand,
-    SetTravelSpeedCommand,
-    SetFrequencyCommand,
-    SetPulseWidthCommand,
-    JobStartCommand,
-    JobEndCommand,
-)
+from rayforge.core.ops import Axis, Ops
 from rayforge.machine.models.dialect.grbl import GRBL_DIALECT
 from rayforge.machine.models.dialect.grbl_raster import GRBL_RASTER_DIALECT
 from rayforge.machine.models.dialect.marlin import MARLIN_DIALECT
@@ -53,16 +40,7 @@ def _make_context() -> GcodeContext:
     return GcodeContext(machine=machine, doc=doc, job=JobInfo(extents=extents))
 
 
-def _build_ops(*commands) -> Ops:
-    """Build an Ops object from a list of Command objects."""
-    ops = Ops()
-    for cmd in commands:
-        ops.add(cmd)
-    return ops
-
-
 def _dispatch_all(gcode, ops, encoder, context):
-    """Dispatch all commands in an Ops object to the encoder."""
     for i in range(ops.len()):
         encoder._handle_command(gcode, ops, i, context)
 
@@ -75,15 +53,17 @@ class TestHandleBezierTo:
         encoder.cut_speed = 1000.0
         context = _make_context()
 
-        ops = _build_ops(BezierToCommand(
-            end=(10.0, 10.0, 0.0),
-            control1=(3.0, 0.0, 0.0),
-            control2=(7.0, 10.0, 0.0),
-        ))
+        ops = Ops()
+        ops.move_to(0.0, 0.0, 0.0)
+        ops.bezier_to(
+            (3.0, 0.0, 0.0),
+            (7.0, 10.0, 0.0),
+            (10.0, 10.0, 0.0),
+        )
 
         gcode = []
-        ea = ops.extra_axes(0)
-        encoder._handle_bezier_to(context, gcode, ops, 0, ea)
+        ea = ops.extra_axes(1)
+        encoder._handle_bezier_to(context, gcode, ops, 1, ea)
 
         assert len(gcode) >= 1
         line = gcode[-1]
@@ -102,15 +82,17 @@ class TestHandleBezierTo:
         encoder.cut_speed = 1000.0
         context = _make_context()
 
-        ops = _build_ops(BezierToCommand(
-            end=(10.0, 10.0, 0.0),
-            control1=(3.0, 0.0, 0.0),
-            control2=(7.0, 10.0, 0.0),
-        ))
+        ops = Ops()
+        ops.move_to(0.0, 0.0, 0.0)
+        ops.bezier_to(
+            (3.0, 0.0, 0.0),
+            (7.0, 10.0, 0.0),
+            (10.0, 10.0, 0.0),
+        )
 
         gcode = []
-        ea = ops.extra_axes(0)
-        encoder._handle_bezier_to(context, gcode, ops, 0, ea)
+        ea = ops.extra_axes(1)
+        encoder._handle_bezier_to(context, gcode, ops, 1, ea)
 
         assert len(gcode) > 1
         motion_lines = [
@@ -125,15 +107,17 @@ class TestHandleBezierTo:
         encoder.cut_speed = 1000.0
         context = _make_context()
 
-        ops = _build_ops(BezierToCommand(
-            end=(15.0, 15.0, 0.0),
-            control1=(8.0, 5.0, 0.0),
-            control2=(12.0, 15.0, 0.0),
-        ))
+        ops = Ops()
+        ops.move_to(5.0, 5.0, 0.0)
+        ops.bezier_to(
+            (8.0, 5.0, 0.0),
+            (12.0, 15.0, 0.0),
+            (15.0, 15.0, 0.0),
+        )
 
         gcode = []
-        ea = ops.extra_axes(0)
-        encoder._handle_bezier_to(context, gcode, ops, 0, ea)
+        ea = ops.extra_axes(1)
+        encoder._handle_bezier_to(context, gcode, ops, 1, ea)
 
         line = gcode[-1]
         assert "I3" in line
@@ -148,14 +132,16 @@ class TestHandleBezierTo:
         encoder.cut_speed = 1000.0
         context = _make_context()
 
-        ops = _build_ops(BezierToCommand(
-            end=(10.0, 10.0, 0.0),
-            control1=(3.0, 0.0, 0.0),
-            control2=(7.0, 10.0, 0.0),
-        ))
+        ops = Ops()
+        ops.move_to(0.0, 0.0, 0.0)
+        ops.bezier_to(
+            (3.0, 0.0, 0.0),
+            (7.0, 10.0, 0.0),
+            (10.0, 10.0, 0.0),
+        )
 
         gcode = []
-        encoder._handle_command(gcode, ops, 0, context)
+        encoder._handle_command(gcode, ops, 1, context)
 
         assert any("G5" in line for line in gcode)
         assert math.isclose(encoder.current_pos[Axis.X], 10.0)
@@ -163,18 +149,16 @@ class TestHandleBezierTo:
 
     def test_bezier_in_ops_encoding(self):
         ops = Ops()
-        ops.add(JobStartCommand())
-        ops.add(SetPowerCommand(1.0))
-        ops.add(SetCutSpeedCommand(1000))
-        ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-        ops.add(
-            BezierToCommand(
-                end=(10.0, 10.0, 0.0),
-                control1=(3.0, 0.0, 0.0),
-                control2=(7.0, 10.0, 0.0),
-            )
+        ops.job_start()
+        ops.set_power(1.0)
+        ops.set_cut_speed(1000)
+        ops.move_to(0.0, 0.0, 0.0)
+        ops.bezier_to(
+            (3.0, 0.0, 0.0),
+            (7.0, 10.0, 0.0),
+            (10.0, 10.0, 0.0),
         )
-        ops.add(JobEndCommand())
+        ops.job_end()
 
         encoder = _make_encoder(MARLIN_DIALECT)
         context = _make_context()
@@ -204,16 +188,16 @@ class TestG0G1FeedrateSharing:
 
     def test_g1_re_emits_feedrate_after_g0_with_modal_feedrate(self):
         ops = Ops()
-        ops.add(JobStartCommand())
-        ops.add(SetPowerCommand(1.0))
-        ops.add(SetCutSpeedCommand(3000))
-        ops.add(SetTravelSpeedCommand(1000))
-        ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-        ops.add(LineToCommand((10.0, 0.0, 0.0)))
-        ops.add(LineToCommand((10.0, 10.0, 0.0)))
-        ops.add(MoveToCommand((20.0, 0.0, 0.0)))
-        ops.add(LineToCommand((30.0, 0.0, 0.0)))
-        ops.add(JobEndCommand())
+        ops.job_start()
+        ops.set_power(1.0)
+        ops.set_cut_speed(3000)
+        ops.set_travel_speed(1000)
+        ops.move_to(0.0, 0.0, 0.0)
+        ops.line_to(10.0, 0.0, 0.0)
+        ops.line_to(10.0, 10.0, 0.0)
+        ops.move_to(20.0, 0.0, 0.0)
+        ops.line_to(30.0, 0.0, 0.0)
+        ops.job_end()
 
         gcode = self._encode_ops(ops, GRBL_RASTER_DIALECT)
 
@@ -224,15 +208,15 @@ class TestG0G1FeedrateSharing:
 
     def test_g1_omits_feedrate_when_no_g0_intervenes(self):
         ops = Ops()
-        ops.add(JobStartCommand())
-        ops.add(SetPowerCommand(1.0))
-        ops.add(SetCutSpeedCommand(3000))
-        ops.add(SetTravelSpeedCommand(1000))
-        ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-        ops.add(LineToCommand((10.0, 0.0, 0.0)))
-        ops.add(LineToCommand((10.0, 10.0, 0.0)))
-        ops.add(LineToCommand((0.0, 10.0, 0.0)))
-        ops.add(JobEndCommand())
+        ops.job_start()
+        ops.set_power(1.0)
+        ops.set_cut_speed(3000)
+        ops.set_travel_speed(1000)
+        ops.move_to(0.0, 0.0, 0.0)
+        ops.line_to(10.0, 0.0, 0.0)
+        ops.line_to(10.0, 10.0, 0.0)
+        ops.line_to(0.0, 10.0, 0.0)
+        ops.job_end()
 
         gcode = self._encode_ops(ops, GRBL_RASTER_DIALECT)
 
@@ -244,15 +228,15 @@ class TestG0G1FeedrateSharing:
 
     def test_non_modal_dialect_always_emits_feedrate(self):
         ops = Ops()
-        ops.add(JobStartCommand())
-        ops.add(SetPowerCommand(1.0))
-        ops.add(SetCutSpeedCommand(3000))
-        ops.add(SetTravelSpeedCommand(1000))
-        ops.add(MoveToCommand((0.0, 0.0, 0.0)))
-        ops.add(LineToCommand((10.0, 0.0, 0.0)))
-        ops.add(MoveToCommand((20.0, 0.0, 0.0)))
-        ops.add(LineToCommand((30.0, 0.0, 0.0)))
-        ops.add(JobEndCommand())
+        ops.job_start()
+        ops.set_power(1.0)
+        ops.set_cut_speed(3000)
+        ops.set_travel_speed(1000)
+        ops.move_to(0.0, 0.0, 0.0)
+        ops.line_to(10.0, 0.0, 0.0)
+        ops.move_to(20.0, 0.0, 0.0)
+        ops.line_to(30.0, 0.0, 0.0)
+        ops.job_end()
 
         gcode = self._encode_ops(ops, GRBL_DIALECT)
 
@@ -266,7 +250,8 @@ def test_frequency_command_no_gcode_output():
     encoder = _make_encoder(GRBL_DIALECT)
     context = _make_context()
 
-    ops = _build_ops(SetFrequencyCommand(1000))
+    ops = Ops()
+    ops.set_frequency(1000)
 
     gcode = []
     encoder._handle_command(gcode, ops, 0, context)
@@ -279,7 +264,8 @@ def test_pulse_width_command_no_gcode_output():
     encoder = _make_encoder(GRBL_DIALECT)
     context = _make_context()
 
-    ops = _build_ops(SetPulseWidthCommand(50))
+    ops = Ops()
+    ops.set_pulse_width(50)
 
     gcode = []
     encoder._handle_command(gcode, ops, 0, context)
@@ -292,16 +278,15 @@ def test_frequency_and_pulse_width_sets_state():
     encoder = _make_encoder(GRBL_DIALECT)
     context = _make_context()
 
-    ops = _build_ops(
-        JobStartCommand(),
-        SetPowerCommand(1.0),
-        SetCutSpeedCommand(1000),
-        SetFrequencyCommand(2000),
-        SetPulseWidthCommand(100),
-        MoveToCommand((0.0, 0.0, 0.0)),
-        LineToCommand((10.0, 10.0, 0.0)),
-        JobEndCommand(),
-    )
+    ops = Ops()
+    ops.job_start()
+    ops.set_power(1.0)
+    ops.set_cut_speed(1000)
+    ops.set_frequency(2000)
+    ops.set_pulse_width(100)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 10.0, 0.0)
+    ops.job_end()
 
     gcode = []
     _dispatch_all(gcode, ops, encoder, context)
@@ -327,8 +312,8 @@ def test_encode_resets_frequency_and_pulse_width():
     doc.find_descendant_by_uid.return_value = None
 
     ops = Ops()
-    ops.add(JobStartCommand())
-    ops.add(JobEndCommand())
+    ops.job_start()
+    ops.job_end()
 
     encoder.encode(ops, machine, doc)
 

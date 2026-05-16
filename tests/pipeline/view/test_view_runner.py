@@ -3,13 +3,7 @@ from typing import cast
 import numpy as np
 
 from rayforge.context import get_context
-from rayforge.core.ops import (
-    Ops,
-    MoveToCommand,
-    LineToCommand,
-    SetPowerCommand,
-    ScanLinePowerCommand,
-)
+from rayforge.core.ops import Ops
 from rayforge.pipeline import CoordinateSystem
 from rayforge.pipeline.artifact import (
     RenderContext,
@@ -45,12 +39,12 @@ def vector_artifact_handle(context_initializer):
     """Creates and stores a simple vector-based WorkPieceArtifact."""
     # A 10x10mm red square at (5,5)
     ops = Ops()
-    ops.add(SetPowerCommand(1.0))  # Full power (red)
-    ops.add(MoveToCommand((5.0, 5.0, 0.0)))
-    ops.add(LineToCommand((15.0, 5.0, 0.0)))
-    ops.add(LineToCommand((15.0, 15.0, 0.0)))
-    ops.add(LineToCommand((5.0, 15.0, 0.0)))
-    ops.add(LineToCommand((5.0, 5.0, 0.0)))
+    ops.set_power(1.0)
+    ops.move_to(5.0, 5.0, 0.0)
+    ops.line_to(15.0, 5.0, 0.0)
+    ops.line_to(15.0, 15.0, 0.0)
+    ops.line_to(5.0, 15.0, 0.0)
+    ops.line_to(5.0, 5.0, 0.0)
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
@@ -75,8 +69,8 @@ def texture_artifact_handle(context_initializer):
         pixel_y = 50 - mm_y
         power = 128 if pixel_y < 30 else 255
         power_values = bytearray([power] * 50)
-        ops.add(MoveToCommand((0.0, float(mm_y), 0.0)))
-        ops.add(ScanLinePowerCommand((50.0, float(mm_y), 0.0), power_values))
+        ops.move_to(0.0, float(mm_y), 0.0)
+        ops.scan_to(50.0, float(mm_y), 0.0, power_values=power_values)
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=False,

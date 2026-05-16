@@ -5,12 +5,7 @@ from gettext import gettext as _
 
 from raygeo.path import normalize_winding_orders
 from rayforge.core.matrix import Matrix
-from rayforge.core.ops import (
-    Ops,
-    OpsSectionStartCommand,
-    OpsSectionEndCommand,
-    SectionType,
-)
+from rayforge.core.ops import Ops, SectionType
 from rayforge.image.hull import get_concave_hull
 from rayforge.image.tracing import prepare_surface
 from rayforge.shared.tasker.progress import ProgressContext
@@ -146,14 +141,12 @@ class ShrinkWrapProducer(OpsProducer):
 
             # 7. Convert to Ops
             final_ops.set_laser(laser.uid)
-            final_ops.add(
-                OpsSectionStartCommand(
-                    SectionType.VECTOR_OUTLINE, workpiece.uid
-                )
+            final_ops.ops_section_start(
+                SectionType.VECTOR_OUTLINE, workpiece.uid
             )
             final_ops.set_power(settings.get("power", 0))
             final_ops.extend(Ops.from_geometry(hull_geometry))
-            final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
+            final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
         # 8. Create the artifact. The ops are pre-scaled, so they are not
         #    scalable in the pipeline cache sense.

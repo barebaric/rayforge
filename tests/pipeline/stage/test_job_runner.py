@@ -3,7 +3,7 @@ from dataclasses import asdict
 
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops, LineToCommand
+from rayforge.core.ops import Ops, CommandType
 from rayforge.machine.models.machine import Machine, Laser
 from rayforge.pipeline.artifact import (
     StepOpsArtifact,
@@ -90,13 +90,21 @@ def test_jobrunner_assembles_step_artifacts_correctly(
     assert isinstance(final_artifact, JobArtifact)
 
     final_ops = final_artifact.ops
-    line_cmds = [c for c in final_ops if isinstance(c, LineToCommand)]
+    line_indices = [
+        i
+        for i in range(final_ops.len())
+        if final_ops.command_type(i) == CommandType.LINE_TO
+    ]
 
     # The jobrunner should just aggregate the ops from the StepOpsArtifact.
     # No further transformation occurs.
-    assert len(line_cmds) == 2
-    assert line_cmds[0].end == pytest.approx((50.0, 50.0, 0.0))
-    assert line_cmds[1].end == pytest.approx((50.0, 50.0, 0.0))
+    assert len(line_indices) == 2
+    assert final_ops.endpoint(line_indices[0]) == pytest.approx(
+        (50.0, 50.0, 0.0)
+    )
+    assert final_ops.endpoint(line_indices[1]) == pytest.approx(
+        (50.0, 50.0, 0.0)
+    )
 
     # Assert comprehensive artifact content
     assert final_artifact.encoded_output_bytes is not None
