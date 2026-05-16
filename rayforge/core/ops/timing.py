@@ -6,15 +6,19 @@ taking into account different speeds for cutting and travel movements,
 as well as acceleration considerations.
 """
 
-from typing import Optional, Sequence
+from __future__ import annotations
+
 import math
-from raygeo import Point3D
-from .commands import MovingCommand, Command
-from .container import State
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .container import Ops
+
+from .enums import CommandType, CommandCategory
 
 
 def estimate_time(
-    commands: Sequence[Command],
+    ops: Ops,
     default_cut_speed: float = 1000.0,
     default_travel_speed: float = 3000.0,
     acceleration: float = 1000.0,
@@ -27,7 +31,7 @@ def estimate_time(
     as well as acceleration considerations.
 
     Args:
-        commands: List of commands to estimate time for.
+        ops: An Ops object whose commands to estimate time for.
         default_cut_speed: Default cutting speed in mm/min if not specified
                            by state commands.
         default_travel_speed: Default travel speed in mm/min if not
@@ -38,36 +42,38 @@ def estimate_time(
     Returns:
         The estimated execution time in seconds.
     """
-    if not commands:
+    if ops.len() == 0:
         return 0.0
 
     total_time = 0.0
-    last_point: Optional[Point3D] = (0.0, 0.0, 0.0)
-    current_state = State()
-    current_state.cut_speed = int(default_cut_speed)
-    current_state.travel_speed = int(default_travel_speed)
+    last_point = (0.0, 0.0, 0.0)
+    cut_speed = default_cut_speed
+    travel_speed = default_travel_speed
 
-    for cmd in commands:
-        if cmd.is_state_command():
-            cmd.apply_to_state(current_state)
+    for i in range(ops.len()):
+        if ops.is_state(i):
+            ct = ops.command_type(i)
+            if ct == CommandType.SET_CUT_SPEED:
+                cut_speed = ops.speed(i)
+            elif ct == CommandType.SET_TRAVEL_SPEED:
+                travel_speed = ops.speed(i)
             continue
 
-        if not isinstance(cmd, MovingCommand) or cmd.end is None:
+        if ops.category(i) != CommandCategory.MOVING:
             continue
 
-        # Calculate distance for this movement using the command's
-        # distance method
-        distance = cmd.distance(last_point)
+        end = ops.endpoint(i)
+        distance = math.hypot(end[0] - last_point[0], end[1] - last_point[1])
 
         if distance < 1e-9:  # Skip negligible movements
-            last_point = cmd.end
+            last_point = end
             continue
 
         # Determine speed based on movement type
-        if cmd.is_cutting_command():
-            speed = current_state.cut_speed or default_cut_speed
+        if ops.is_cutting(i):
+            speed = cut_speed
         else:  # Travel movement
-            speed = current_state.travel_speed or default_travel_speed
+            speed = travel_speed
 
         # Convert speed from mm/min to mm/s
         speed_mm_per_sec = speed / 60.0
@@ -78,7 +84,7 @@ def estimate_time(
             # Time to reach full speed
             accel_time = speed_mm_per_sec / acceleration
             # Distance covered during acceleration
-            accel_distance = 0.5 * acceleration * accel_time**2
+            accel_distance = 0.5 * acceleration * accel_time ** 2
 
             if distance < 2 * accel_distance:
                 # Can't reach full speed, triangular profile
@@ -95,6 +101,6 @@ def estimate_time(
             move_time = distance / speed_mm_per_sec
 
         total_time += move_time
-        last_point = cmd.end
+        last_point = end
 
     return total_time

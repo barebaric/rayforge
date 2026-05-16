@@ -1,7 +1,7 @@
 from __future__ import annotations
 import math
 import logging
-from copy import deepcopy
+from copy import copy, deepcopy
 from typing import (
     Callable,
     Iterator,
@@ -725,15 +725,61 @@ class Ops:
         return result
 
     def flip_ops(self) -> Ops:
-        """Returns a new Ops with moving commands reversed (flipped)."""
-        from .flip import flip_segment
+        """
+        Returns a new Ops with moving commands reversed (flipped).
 
+        The states attached to each point describe the intended machine state
+        while traveling TO that point. When flipping, states must be shifted
+        to maintain this relationship. Arcs must also have their parameters
+        recalculated relative to their new start point.
+        """
         moving = [
             cmd for cmd in self._commands if isinstance(cmd, MovingCommand)
         ]
-        if not moving:
-            return Ops()
-        flipped = flip_segment(moving)
+        if len(moving) <= 1:
+            result = Ops()
+            result._commands.extend(moving)
+            result._invalidate_time_cache()
+            return result
+
+        flipped: List[MovingCommand] = []
+
+        # The first command of the new segment is a MoveTo, created from the
+        # original segment's first MoveTo command.
+        first_cmd = MoveToCommand(end=moving[-1].end)
+        first_cmd.state = moving[0].state
+        flipped.append(first_cmd)
+
+        # Process the rest of the commands in reverse
+        for i in range(len(moving) - 2, -1, -1):
+            original_cmd = moving[i + 1]
+            new_cmd = copy(original_cmd)  # Copies type and state
+            new_cmd.end = moving[i].end
+
+            if isinstance(new_cmd, ScanLinePowerCommand):
+                # For a reversed scanline, we only need to reverse the power
+                # data. The geometry (start/end) is handled like any other
+                # MovingCommand.
+                new_cmd.power_values = new_cmd.power_values[::-1]
+            elif isinstance(new_cmd, BezierToCommand):
+                # A reversed cubic bezier P0→C1→C2→P3 becomes P3→C2→C1→P0,
+                # so the control points must be swapped.
+                new_cmd.control1, new_cmd.control2 = (
+                    new_cmd.control2,
+                    new_cmd.control1,
+                )
+            elif isinstance(new_cmd, ArcToCommand):
+                # The original arc's start point is the endpoint of the
+                # command before it in the original segment.
+                original_start = moving[i].end
+                assert original_start is not None
+                # Delegate the complex recalculation to the command itself.
+                new_cmd.reverse_geometry(
+                    original_start=original_start,
+                    original_end=original_cmd.end,
+                )
+            flipped.append(new_cmd)
+
         result = Ops()
         result._commands.extend(flipped)
         result._invalidate_time_cache()
@@ -1692,7 +1738,7 @@ class Ops:
             return self._cached_time
 
         self._cached_time = estimate_time(
-            self._commands,
+            self,
             default_cut_speed,
             default_travel_speed,
             acceleration,
@@ -1759,13 +1805,44 @@ class Ops:
 
     def group_by_state_continuity(self) -> List[Ops]:
         """Splits into segments based on state/marker boundaries."""
-        from .group import group_by_state_continuity
+        if not self._commands:
+            return []
 
-        segments = group_by_state_continuity(self._commands)
+        segment_indices: List[List[int]] = []
+        current: List[int] = []
+
+        for i in range(len(self._commands)):
+            cmd = self._commands[i]
+            if cmd.is_marker():
+                if current:
+                    segment_indices.append(current)
+                segment_indices.append([i])
+                current = []
+                continue
+
+            if not current:
+                current.append(i)
+                continue
+
+            last_state = self._commands[current[-1]].state
+            op_state = cmd.state
+            if (
+                last_state
+                and op_state
+                and last_state.air_assist == op_state.air_assist
+            ):
+                current.append(i)
+            else:
+                segment_indices.append(current)
+                current = [i]
+
+        if current:
+            segment_indices.append(current)
+
         result = []
-        for seg in segments:
+        for seg in segment_indices:
             ops = Ops()
-            ops._commands = seg
+            ops._commands = [self._commands[i] for i in seg]
             ops._invalidate_time_cache()
             result.append(ops)
         return result

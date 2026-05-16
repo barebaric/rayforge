@@ -14,6 +14,10 @@ from rayforge.core.ops import (
     State,
     SectionType,
 )
+from rayforge.core.ops.container import (
+    MachineState,
+    OpsSectionRange,
+)
 
 
 @pytest.fixture
@@ -2428,3 +2432,419 @@ def test_transform_moving_skips_markers():
 
     ops.transform_moving(reset)
     assert ops.endpoint(1) == (0.0, 0.0, 0.0)
+
+
+def test_to_geometry():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 10)
+    ops.arc_to(20, 0, 5, 0, False)
+    ops.set_power(1.0)
+    ops.bezier_to(
+        (15, 15, 0), (25, 15, 0), (30, 0, 0)
+    )
+    geo = ops.to_geometry()
+    assert isinstance(geo, Geometry)
+
+
+def test_to_geometry_empty():
+    ops = Ops()
+    geo = ops.to_geometry()
+    assert isinstance(geo, Geometry)
+
+
+def test_iter_section_ranges():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp1")
+    ops.move_to(5, 5)
+    ops.line_to(15, 5)
+    ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+    ops.move_to(20, 20)
+
+    ranges = list(ops.iter_section_ranges())
+    assert len(ranges) == 3
+    assert isinstance(ranges[0], OpsSectionRange)
+    assert ranges[0].section_type is None
+    assert ranges[0].content_indices == [0, 1]
+    assert ranges[1].section_type == SectionType.VECTOR_OUTLINE
+    assert ranges[1].marker_indices == [2, 5]
+    assert ranges[1].content_indices == [3, 4]
+    assert ranges[2].section_type is None
+    assert ranges[2].content_indices == [6]
+
+
+def test_iter_section_ranges_empty():
+    ops = Ops()
+    assert list(ops.iter_section_ranges()) == []
+
+
+def test_subpath_indices():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    ops.line_to(10, 10)
+    ops.move_to(100, 100)
+    ops.line_to(110, 100)
+
+    result = ops.subpath_indices()
+    assert len(result) == 2
+    assert result[0] == [0, 1, 2]
+    assert result[1] == [3, 4]
+
+
+def test_subpath_indices_empty():
+    ops = Ops()
+    assert ops.subpath_indices() == []
+
+
+def test_subpath_indices_single():
+    ops = Ops()
+    ops.move_to(0, 0)
+    assert ops.subpath_indices() == [[0]]
+
+
+def test_sub_ops():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    ops.line_to(20, 0)
+
+    sub = ops.sub_ops([0, 2])
+    assert sub.len() == 2
+    assert sub.command_type(0) == CommandType.MOVE_TO
+    assert sub.command_type(1) == CommandType.LINE_TO
+    assert sub.endpoint(1) == (20.0, 0.0, 0.0)
+
+
+def test_sub_ops_is_deep_copy():
+    ops = Ops()
+    ops.line_to(10, 0)
+    sub = ops.sub_ops([0])
+    sub.move_to(99, 99)
+    assert ops.len() == 1
+
+
+def test_is_scanline():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    ops.scan_to(20, 0, 0, power_values=bytearray([128] * 10))
+
+    assert not ops.is_scanline(0)
+    assert not ops.is_scanline(1)
+    assert ops.is_scanline(2)
+
+
+def test_distance_at():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+
+    assert ops.distance_at(1, (0.0, 0.0, 0.0)) == pytest.approx(10.0)
+
+
+def test_distance_at_diagonal():
+    ops = Ops()
+    ops.line_to(3, 4)
+    dist = ops.distance_at(0, (0.0, 0.0, 0.0))
+    assert dist == pytest.approx(5.0)
+
+
+def test_distance_at_state_command():
+    ops = Ops()
+    ops.set_power(1.0)
+    assert ops.distance_at(0, (0.0, 0.0, 0.0)) == 0.0
+
+
+def test_distance_at_none_last_point():
+    ops = Ops()
+    ops.line_to(10, 0)
+    assert ops.distance_at(0, None) == 0.0
+
+
+def test_state_at():
+    ops = Ops()
+    ops.set_power(0.5)
+    ops.set_cut_speed(800)
+    ops.enable_air_assist()
+    ops.move_to(0, 0)
+
+    state = ops.state_at(3)
+    assert state.power == 0.5
+    assert state.cut_speed == 800
+    assert state.air_assist is True
+
+
+def test_state_at_no_state_commands():
+    ops = Ops()
+    ops.move_to(0, 0)
+    state = ops.state_at(0)
+    assert state.power == 0.0
+    assert state.air_assist is False
+
+
+def test_state_at_mid_sequence():
+    ops = Ops()
+    ops.set_power(0.3)
+    ops.set_cut_speed(500)
+    ops.set_power(0.8)
+    ops.move_to(0, 0)
+
+    state_0 = ops.state_at(0)
+    assert state_0.power == 0.3
+    assert state_0.cut_speed is None
+
+    state_1 = ops.state_at(1)
+    assert state_1.cut_speed == 500
+
+    state_2 = ops.state_at(2)
+    assert state_2.power == 0.8
+    assert state_2.cut_speed == 500
+
+
+def test_set_state_on_moving():
+    ops = Ops()
+    ops.set_power(1.0)
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    ops.enable_air_assist()
+
+    ms = MachineState(
+        power=0.7,
+        air_assist=True,
+        cut_speed=600,
+        travel_speed=2000,
+        active_laser_uid=None,
+        frequency=None,
+        pulse_width=None,
+    )
+    ops.set_state_on_moving(ms)
+
+    state_1 = ops.inspect(1).state
+    state_2 = ops.inspect(2).state
+    assert state_1 is not None
+    assert state_1.power == 0.7
+    assert state_2 is not None
+    assert state_2.power == 0.7
+    assert state_2.air_assist is True
+    assert state_2.cut_speed == 600
+
+
+def test_copy_command_from():
+    src = Ops()
+    src.move_to(5, 5)
+    src.line_to(10, 10)
+
+    dst = Ops()
+    dst.copy_command_from(src, 1)
+    assert dst.len() == 1
+    assert dst.command_type(0) == CommandType.LINE_TO
+    assert dst.endpoint(0) == (10.0, 10.0, 0.0)
+
+
+def test_copy_command_from_is_deep():
+    src = Ops()
+    src.line_to(10, 0)
+    dst = Ops()
+    dst.copy_command_from(src, 0)
+    dst.move_to(99, 99)
+    assert src.len() == 1
+
+
+def test_transfer_command_from():
+    src = Ops()
+    src.move_to(5, 5)
+    src.line_to(10, 10)
+
+    dst = Ops()
+    dst.transfer_command_from(src, 1)
+    assert dst.len() == 1
+    assert dst.command_type(0) == CommandType.LINE_TO
+
+
+def test_dwell():
+    ops = Ops()
+    ops.dwell(250.0)
+    assert ops.len() == 1
+    assert ops.command_type(0) == CommandType.DWELL
+
+
+def test_dwell_duration():
+    ops = Ops()
+    ops.dwell(150.0)
+    assert ops.dwell_duration(0) == 150.0
+
+
+def test_dwell_duration_wrong_type():
+    ops = Ops()
+    ops.move_to(0, 0)
+    with pytest.raises(TypeError):
+        ops.dwell_duration(0)
+
+
+def test_speed_cut():
+    ops = Ops()
+    ops.set_cut_speed(1200)
+    assert ops.speed(0) == 1200
+
+
+def test_speed_travel():
+    ops = Ops()
+    ops.set_travel_speed(3000)
+    assert ops.speed(0) == 3000
+
+
+def test_speed_wrong_type():
+    ops = Ops()
+    ops.move_to(0, 0)
+    with pytest.raises(TypeError):
+        ops.speed(0)
+
+
+def test_laser_uid():
+    ops = Ops()
+    ops.set_laser("laser_42")
+    assert ops.laser_uid(0) == "laser_42"
+
+
+def test_laser_uid_wrong_type():
+    ops = Ops()
+    ops.move_to(0, 0)
+    with pytest.raises(TypeError):
+        ops.laser_uid(0)
+
+
+def test_layer_uid():
+    ops = Ops()
+    ops.layer_start("layer_a")
+    assert ops.layer_uid(0) == "layer_a"
+    ops.layer_end("layer_a")
+    assert ops.layer_uid(1) == "layer_a"
+
+
+def test_layer_uid_wrong_type():
+    ops = Ops()
+    ops.move_to(0, 0)
+    with pytest.raises(TypeError):
+        ops.layer_uid(0)
+
+
+def test_section_params_start():
+    ops = Ops()
+    ops.ops_section_start(SectionType.RASTER_FILL, "wp1")
+    st, uid = ops.section_params(0)
+    assert st == SectionType.RASTER_FILL
+    assert uid == "wp1"
+
+
+def test_section_params_end():
+    ops = Ops()
+    ops.ops_section_end(SectionType.RASTER_FILL)
+    st, uid = ops.section_params(0)
+    assert st == SectionType.RASTER_FILL
+    assert uid is None
+
+
+def test_section_params_wrong_type():
+    ops = Ops()
+    ops.move_to(0, 0)
+    with pytest.raises(TypeError):
+        ops.section_params(0)
+
+
+def test_linearize_arc():
+    ops = Ops()
+    ops.arc_to(10, 0, 5, 0, False)
+    result = ops.linearize(0, (0.0, 0.0, 0.0))
+    assert result.len() > 1
+    for i in range(result.len()):
+        assert result.command_type(i) == CommandType.LINE_TO
+
+
+def test_linearize_bezier():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.bezier_to(
+        (5, 0, 0), (10, 5, 0), (15, 0, 0)
+    )
+    result = ops.linearize(1, (0.0, 0.0, 0.0))
+    assert result.len() > 1
+    for i in range(result.len()):
+        assert result.command_type(i) == CommandType.LINE_TO
+
+
+def test_linearize_scanline():
+    ops = Ops()
+    ops.scan_to(
+        10, 0, 0, power_values=bytearray([100, 200, 100])
+    )
+    result = ops.linearize(0, (0.0, 0.0, 0.0))
+    assert result.len() > 1
+
+
+def test_linearize_line():
+    ops = Ops()
+    ops.line_to(10, 0)
+    result = ops.linearize(0, (0.0, 0.0, 0.0))
+    assert result.len() == 1
+    assert result.command_type(0) == CommandType.LINE_TO
+
+
+def test_linearize_move():
+    ops = Ops()
+    ops.move_to(5, 5)
+    result = ops.linearize(0, (0.0, 0.0, 0.0))
+    assert result.len() == 1
+    assert result.command_type(0) == CommandType.MOVE_TO
+
+
+def test_linearize_unsupported():
+    ops = Ops()
+    ops.set_power(1.0)
+    with pytest.raises(TypeError):
+        ops.linearize(0, (0.0, 0.0, 0.0))
+
+
+def test_replace_with():
+    src = Ops()
+    src.move_to(5, 5)
+    src.line_to(10, 10)
+    src.last_move_to = (5.0, 5.0, 0.0)
+
+    dst = Ops()
+    dst.move_to(0, 0)
+    dst.replace_with(src)
+    assert dst.len() == 2
+    assert dst.command_type(0) == CommandType.MOVE_TO
+    assert dst.endpoint(0) == (5.0, 5.0, 0.0)
+    assert dst.last_move_to == (5.0, 5.0, 0.0)
+
+
+def test_without_state():
+    ops = Ops()
+    ops.set_power(1.0)
+    ops.move_to(0, 0)
+    ops.set_cut_speed(800)
+    ops.line_to(10, 0)
+    ops.enable_air_assist()
+
+    filtered = ops.without_state()
+    assert filtered.len() == 2
+    assert filtered.command_type(0) == CommandType.MOVE_TO
+    assert filtered.command_type(1) == CommandType.LINE_TO
+
+
+def test_without_state_empty():
+    ops = Ops()
+    filtered = ops.without_state()
+    assert filtered.len() == 0
+
+
+def test_without_state_no_state_commands():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    filtered = ops.without_state()
+    assert filtered.len() == 2
