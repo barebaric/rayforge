@@ -402,7 +402,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/b7/6f/a05a317a66fee0aad270011461f1a63a453ed12471249f172f7d2e2bc7b4/python_discovery-1.3.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/4c/a2/d8ecd2f7ffa084870ba071a584aac44800a89f3c77b305999be7dc8b7bb3/pyvips-3.0.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/04/24/b7721e4845c2f162d26f50521b825fb061bc0a5afcf9a386840f23ea19fa/PyYAML-6.0.2-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/fd/c2/d3572e544d6021e50eff529f79c538d4c0fd2038da17ddfb139f73728eb0/raygeo-0.1.6-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/f5/66/a36f94e4ec5d666cd372f93aa483f68012830eae81f87b89049296c9c6af/raygeo-0.1.7-cp311-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/e8/31/bf1a0803d077e679cfeee5f2f67290a0fa79c7385b5d9a8c17b9db2c48f0/ruff-0.15.13-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/9a/77/0cc7a8a3bc7e53d07e8f47f147b92b0960e902b8254859f4aee5c4d7866b/semver-3.0.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c1/d4/59e74daffcb57a07668852eeeb6035af9f32cbfd7a1d2511f17d2fe6a738/smmap-5.0.3-py3-none-any.whl
@@ -4517,10 +4517,10 @@ packages:
   timestamp: 1772540833621
 - pypi: ./
   name: rayforge
-  version: 1.7.5.post13+git.57843974.dirty
+  version: 1.7.5.post13+git.34231d64.dirty
   sha256: 74b04a465818a8cdf6d0c3498fad3e33aa6769e8cb11b6058de42139344bd239
   requires_dist:
-  - raygeo==0.1.6
+  - raygeo==0.1.7
   - aiohttp==3.13.5
   - asyncudp==0.11.0
   - blinker==1.9.0
@@ -4553,10 +4553,10 @@ packages:
   - pygobject-stubs ; extra == 'test'
   requires_python: '>=3.10'
   editable: true
-- pypi: https://files.pythonhosted.org/packages/fd/c2/d3572e544d6021e50eff529f79c538d4c0fd2038da17ddfb139f73728eb0/raygeo-0.1.6-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+- pypi: https://files.pythonhosted.org/packages/f5/66/a36f94e4ec5d666cd372f93aa483f68012830eae81f87b89049296c9c6af/raygeo-0.1.7-cp311-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
   name: raygeo
-  version: 0.1.6
-  sha256: 1aba2902c73cac9ea35f4109b61c04b848c0748949c06364973aa2048e3e19a6
+  version: 0.1.7
+  sha256: 2b778a8fc45fd79fa983d1f5469be75fc5fcada4b582c285f8bdd234fdcd15a1
   requires_dist:
   - numpy>=1.20.0
   - pytest ; extra == 'test'
