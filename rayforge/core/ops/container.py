@@ -71,6 +71,14 @@ class OpsSection(NamedTuple):
     commands: List[Command]
 
 
+class OpsSectionRange(NamedTuple):
+    """Like OpsSection but with index ranges instead of command lists."""
+
+    section_type: Optional[SectionType]
+    marker_indices: List[int]
+    content_indices: List[int]
+
+
 def _get_total_distance_legacy(commands: List[Command]) -> float:
     """
     Calculates the total 2D path length for all moving commands in a list.
@@ -562,7 +570,7 @@ class Ops:
     def __iter__(self) -> Iterator[Command]:
         return iter(self._commands)
 
-    def split_into_subpaths(self) -> List[List[Command]]:
+    def split_into_subpaths(self) -> List["Ops"]:
         """
         Split commands into subpaths at MoveToCommand boundaries.
 
@@ -570,6 +578,8 @@ class Ops:
         more non-MoveTo commands. State commands and markers that
         appear between MoveTo commands are grouped with the subpath
         that precedes them.
+
+        Returns a list of Ops objects, one per subpath.
         """
         subpaths: List[List[Command]] = []
         current: List[Command] = []
@@ -582,7 +592,12 @@ class Ops:
             current.append(cmd)
         if current:
             subpaths.append(current)
-        return subpaths
+        result: List["Ops"] = []
+        for cmds in subpaths:
+            sub = Ops()
+            sub._commands = cmds
+            result.append(sub)
+        return result
 
     def iter_sections(self) -> Iterator[OpsSection]:
         """
@@ -617,6 +632,81 @@ class Ops:
         if content or markers:
             yield OpsSection(active_type, markers, content)
 
+    def iter_section_ranges(self) -> Iterator[OpsSectionRange]:
+        """
+        Like iter_sections() but yields index ranges instead of
+        command lists.
+        """
+        active_type: Optional[SectionType] = None
+        marker_indices: List[int] = []
+        content_indices: List[int] = []
+
+        for i in range(len(self._commands)):
+            cmd = self._commands[i]
+            if isinstance(cmd, OpsSectionStartCommand):
+                if content_indices or marker_indices:
+                    yield OpsSectionRange(
+                        active_type, marker_indices, content_indices
+                    )
+                    marker_indices = []
+                    content_indices = []
+                active_type = cmd.section_type
+                marker_indices = [i]
+            elif isinstance(cmd, OpsSectionEndCommand):
+                marker_indices.append(i)
+                yield OpsSectionRange(
+                    active_type, marker_indices, content_indices
+                )
+                active_type = None
+                marker_indices = []
+                content_indices = []
+            else:
+                content_indices.append(i)
+
+        if content_indices or marker_indices:
+            yield OpsSectionRange(active_type, marker_indices, content_indices)
+
+    def subpath_indices(self) -> List[List[int]]:
+        """
+        Like split_into_subpaths() but returns index ranges.
+        """
+        subpaths: List[List[int]] = []
+        current: List[int] = []
+        for i in range(len(self._commands)):
+            cmd = self._commands[i]
+            if isinstance(cmd, MoveToCommand) and any(
+                isinstance(self._commands[j], MoveToCommand) for j in current
+            ):
+                subpaths.append(current)
+                current = []
+            current.append(i)
+        if current:
+            subpaths.append(current)
+        return subpaths
+
+    def sub_ops(self, indices: List[int]) -> Ops:
+        """Creates a new Ops with copies of commands at the given indices."""
+        result = Ops()
+        for i in indices:
+            result._commands.append(deepcopy(self._commands[i]))
+        result._invalidate_time_cache()
+        return result
+
+    def flip_ops(self) -> Ops:
+        """Returns a new Ops with moving commands reversed (flipped)."""
+        from .flip import flip_segment
+
+        moving = [
+            cmd for cmd in self._commands if isinstance(cmd, MovingCommand)
+        ]
+        if not moving:
+            return Ops()
+        flipped = flip_segment(moving)
+        result = Ops()
+        result._commands.extend(flipped)
+        result._invalidate_time_cache()
+        return result
+
     def __add__(self, ops: Ops) -> Ops:
         result = Ops()
         result._commands = self._commands + ops._commands
@@ -649,12 +739,56 @@ class Ops:
         """Returns the CommandCategory of the command at the given index."""
         return _COMMAND_TYPE_TO_CATEGORY[self.command_type(idx)]
 
-    def endpoint(self, idx: int) -> Tuple[float, float, float]:
+    def is_travel(self, idx: int) -> bool:
+        """Returns True if the command at idx is a travel move (MoveTo)."""
+        return self.command_type(idx) == CommandType.MOVE_TO
+
+    def is_cutting(self, idx: int) -> bool:
+        """Returns True if the command at idx is a cutting move."""
+        return (
+            self.category(idx) == CommandCategory.MOVING
+            and self.command_type(idx) != CommandType.MOVE_TO
+        )
+
+    def is_state(self, idx: int) -> bool:
+        """Returns True if the command at idx is a state command."""
+        return self.category(idx) == CommandCategory.STATE
+
+    def is_marker(self, idx: int) -> bool:
+        """Returns True if the command at idx is a marker command."""
+        return self.category(idx) == CommandCategory.MARKER
+
+    def is_scanline(self, idx: int) -> bool:
+        """Returns True if the command at idx is a ScanLinePowerCommand."""
+        return self.command_type(idx) == CommandType.SCAN_LINE
+
+    def indices_of(self, ct: CommandType) -> List[int]:
+        """Returns all indices whose command_type matches *ct*."""
+        return [
+            i for i in range(len(self._commands)) if self.command_type(i) == ct
+        ]
+
+    def endpoint(self, idx: int) -> Point3D:
         """Returns the endpoint of a MovingCommand at the given index."""
         cmd = self._commands[idx]
         if not isinstance(cmd, MovingCommand):
             raise TypeError(f"Command at index {idx} is not a MovingCommand")
         return cmd.end
+
+    def distance_at(self, idx: int, last_point: Optional[Point3D]) -> float:
+        """
+        Returns the 2D distance covered by the command at the given index.
+
+        For moving commands this is hypot(end - last_point).  For all
+        other commands the result is 0.0.  If last_point is None the
+        result is also 0.0.
+        """
+        if self.category(idx) != CommandCategory.MOVING:
+            return 0.0
+        if last_point is None:
+            return 0.0
+        end = self.endpoint(idx)
+        return math.hypot(end[0] - last_point[0], end[1] - last_point[1])
 
     def arc_params(self, idx: int) -> Tuple[float, float, bool]:
         """
@@ -694,6 +828,54 @@ class Ops:
             "frequency": state.frequency,
             "pulse_width": state.pulse_width,
         }
+
+    def preloaded_state(self, idx: int) -> Dict[str, Any]:
+        """Returns the preloaded machine state at the given index.
+        Requires preload_state() to have been called first."""
+        cmd = self._commands[idx]
+        state = getattr(cmd, "state", None)
+        if state is None:
+            raise ValueError(
+                f"No preloaded state at index {idx}. "
+                "Call preload_state() first."
+            )
+        return {
+            "power": state.power,
+            "air_assist": state.air_assist,
+            "cut_speed": state.cut_speed,
+            "travel_speed": state.travel_speed,
+            "active_laser_uid": state.active_laser_uid,
+            "frequency": state.frequency,
+            "pulse_width": state.pulse_width,
+        }
+
+    def set_state_on_moving(self, state_dict: Dict[str, Any]) -> None:
+        """Sets state on all moving commands in this Ops."""
+        state = State(
+            power=state_dict.get("power", 0.0),
+            air_assist=state_dict.get("air_assist", False),
+            cut_speed=state_dict.get("cut_speed"),
+            travel_speed=state_dict.get("travel_speed"),
+            active_laser_uid=state_dict.get("active_laser_uid"),
+            frequency=state_dict.get("frequency"),
+            pulse_width=state_dict.get("pulse_width"),
+        )
+        for cmd in self._commands:
+            if isinstance(cmd, MovingCommand):
+                cmd.state = state.__copy__()
+
+    def set_state_at(self, idx: int, state_dict: Dict[str, Any]) -> None:
+        """Sets state on the moving command at the given index."""
+        state = State(
+            power=state_dict.get("power", 0.0),
+            air_assist=state_dict.get("air_assist", False),
+            cut_speed=state_dict.get("cut_speed"),
+            travel_speed=state_dict.get("travel_speed"),
+            active_laser_uid=state_dict.get("active_laser_uid"),
+            frequency=state_dict.get("frequency"),
+            pulse_width=state_dict.get("pulse_width"),
+        )
+        self._commands[idx].state = state
 
     def inspect(self, idx: int) -> Dict[str, Any]:
         """Returns a dictionary representation of the command at the given
@@ -745,15 +927,17 @@ class Ops:
         self._commands.append(deepcopy(source._commands[idx]))
         self._invalidate_time_cache()
 
-    def bezier_params(
-        self, idx: int
-    ) -> Tuple[Point3D, Point3D]:
+    def transfer_command_from(self, source: "Ops", idx: int) -> None:
+        """Transfers a command reference from source into this Ops object.
+        Use when the source Ops will not outlive this one."""
+        self._commands.append(source._commands[idx])
+        self._invalidate_time_cache()
+
+    def bezier_params(self, idx: int) -> Tuple[Point3D, Point3D]:
         """Returns (control1, control2) for a BezierToCommand."""
         cmd = self._commands[idx]
         if not isinstance(cmd, BezierToCommand):
-            raise TypeError(
-                f"Command at index {idx} is not a BezierToCommand"
-            )
+            raise TypeError(f"Command at index {idx} is not a BezierToCommand")
         return cmd.control1, cmd.control2
 
     def quadratic_bezier_params(self, idx: int) -> Tuple[Point3D]:
@@ -761,8 +945,7 @@ class Ops:
         cmd = self._commands[idx]
         if not isinstance(cmd, QuadraticBezierToCommand):
             raise TypeError(
-                f"Command at index {idx} is not a "
-                "QuadraticBezierToCommand"
+                f"Command at index {idx} is not a QuadraticBezierToCommand"
             )
         return (cmd.control,)
 
@@ -770,18 +953,14 @@ class Ops:
         """Returns the duration in ms for a DwellCommand."""
         cmd = self._commands[idx]
         if not isinstance(cmd, DwellCommand):
-            raise TypeError(
-                f"Command at index {idx} is not a DwellCommand"
-            )
+            raise TypeError(f"Command at index {idx} is not a DwellCommand")
         return cmd.duration_ms
 
     def power(self, idx: int) -> float:
         """Returns the power value for a SetPowerCommand."""
         cmd = self._commands[idx]
         if not isinstance(cmd, SetPowerCommand):
-            raise TypeError(
-                f"Command at index {idx} is not a SetPowerCommand"
-            )
+            raise TypeError(f"Command at index {idx} is not a SetPowerCommand")
         return cmd.power
 
     def speed(self, idx: int) -> float:
@@ -789,9 +968,7 @@ class Ops:
         SetTravelSpeedCommand."""
         cmd = self._commands[idx]
         if not isinstance(cmd, (SetCutSpeedCommand, SetTravelSpeedCommand)):
-            raise TypeError(
-                f"Command at index {idx} is not a speed command"
-            )
+            raise TypeError(f"Command at index {idx} is not a speed command")
         return cmd.speed
 
     def frequency(self, idx: int) -> int:
@@ -816,34 +993,26 @@ class Ops:
         """Returns the laser UID for a SetLaserCommand."""
         cmd = self._commands[idx]
         if not isinstance(cmd, SetLaserCommand):
-            raise TypeError(
-                f"Command at index {idx} is not a SetLaserCommand"
-            )
+            raise TypeError(f"Command at index {idx} is not a SetLaserCommand")
         return cmd.laser_uid
 
     def layer_uid(self, idx: int) -> str:
         """Returns the layer UID for LayerStart/EndCommand."""
         cmd = self._commands[idx]
         if not isinstance(cmd, (LayerStartCommand, LayerEndCommand)):
-            raise TypeError(
-                f"Command at index {idx} is not a Layer command"
-            )
+            raise TypeError(f"Command at index {idx} is not a Layer command")
         return cmd.layer_uid
 
     def workpiece_uid(self, idx: int) -> str:
         """Returns the workpiece UID for WorkpieceStart/EndCommand."""
         cmd = self._commands[idx]
-        if not isinstance(
-            cmd, (WorkpieceStartCommand, WorkpieceEndCommand)
-        ):
+        if not isinstance(cmd, (WorkpieceStartCommand, WorkpieceEndCommand)):
             raise TypeError(
                 f"Command at index {idx} is not a Workpiece command"
             )
         return cmd.workpiece_uid
 
-    def section_params(
-        self, idx: int
-    ) -> Tuple[SectionType, Optional[str]]:
+    def section_params(self, idx: int) -> Tuple[SectionType, Optional[str]]:
         """Returns (section_type, workpiece_uid) for
         OpsSectionStartCommand, or (section_type, None) for
         OpsSectionEndCommand."""
@@ -852,17 +1021,13 @@ class Ops:
             return cmd.section_type, cmd.workpiece_uid
         elif isinstance(cmd, OpsSectionEndCommand):
             return cmd.section_type, None
-        raise TypeError(
-            f"Command at index {idx} is not an OpsSection command"
-        )
+        raise TypeError(f"Command at index {idx} is not an OpsSection command")
 
     def extra_axes(self, idx: int) -> Optional[Dict[Axis, float]]:
         """Returns the extra axes dict for a MovingCommand, or None."""
         cmd = self._commands[idx]
         if not isinstance(cmd, MovingCommand):
-            raise TypeError(
-                f"Command at index {idx} is not a MovingCommand"
-            )
+            raise TypeError(f"Command at index {idx} is not a MovingCommand")
         return cmd.extra_axes if cmd.extra_axes else None
 
     def linearize(self, idx: int, start_point: Point3D) -> "Ops":
@@ -886,25 +1051,35 @@ class Ops:
                 if cur_power != seg_start_power:
                     t_end = i / float(num_steps)
                     seg_end = tuple(p_start + t_end * line_vec)
-                    result.line_to(*seg_end, extra=dict(cmd.extra_axes)
-                        if cmd.extra_axes else None)
+                    result.line_to(
+                        *seg_end,
+                        extra=dict(cmd.extra_axes) if cmd.extra_axes else None,
+                    )
                     seg_start_power = cur_power
                     result.set_power(seg_start_power / 255.0)
-            result.line_to(*cmd.end, extra=dict(cmd.extra_axes)
-                if cmd.extra_axes else None)
+            result.line_to(
+                *cmd.end,
+                extra=dict(cmd.extra_axes) if cmd.extra_axes else None,
+            )
             return result
         elif isinstance(cmd, ArcToCommand):
             arc_row = [
                 CMD_TYPE_ARC,
-                cmd.end[0], cmd.end[1], cmd.end[2],
-                cmd.center_offset[0], cmd.center_offset[1],
-                1.0 if cmd.clockwise else 0.0, 0.0,
+                cmd.end[0],
+                cmd.end[1],
+                cmd.end[2],
+                cmd.center_offset[0],
+                cmd.center_offset[1],
+                1.0 if cmd.clockwise else 0.0,
+                0.0,
             ]
             segments = linearize_arc(arc_row, start_point)
             result = Ops()
             for _, end in segments:
-                result.line_to(*end, extra=dict(cmd.extra_axes)
-                    if cmd.extra_axes else None)
+                result.line_to(
+                    *end,
+                    extra=dict(cmd.extra_axes) if cmd.extra_axes else None,
+                )
             return result
         elif isinstance(cmd, BezierToCommand):
             polyline = linearize_bezier_segment(
@@ -912,17 +1087,22 @@ class Ops:
             )
             result = Ops()
             for pt in polyline[1:]:
-                result.line_to(*pt, extra=dict(cmd.extra_axes)
-                    if cmd.extra_axes else None)
+                result.line_to(
+                    *pt, extra=dict(cmd.extra_axes) if cmd.extra_axes else None
+                )
             return result
         elif isinstance(cmd, (MoveToCommand, LineToCommand)):
             result = Ops()
             if isinstance(cmd, MoveToCommand):
-                result.move_to(*cmd.end, extra=dict(cmd.extra_axes)
-                    if cmd.extra_axes else None)
+                result.move_to(
+                    *cmd.end,
+                    extra=dict(cmd.extra_axes) if cmd.extra_axes else None,
+                )
             else:
-                result.line_to(*cmd.end, extra=dict(cmd.extra_axes)
-                    if cmd.extra_axes else None)
+                result.line_to(
+                    *cmd.end,
+                    extra=dict(cmd.extra_axes) if cmd.extra_axes else None,
+                )
             return result
         else:
             raise TypeError(
@@ -960,6 +1140,12 @@ class Ops:
 
     def replace_all(self, commands: List[Command]) -> None:
         self._commands = commands
+        self._invalidate_time_cache()
+
+    def replace_with(self, source: "Ops") -> None:
+        """Replaces all commands with those from source Ops."""
+        self._commands = source._commands
+        self.last_move_to = source.last_move_to
         self._invalidate_time_cache()
 
     def add(self, command: Command) -> None:
@@ -1040,11 +1226,33 @@ class Ops:
         The curve starts from the current last point in the path. This method
         requires full 3D coordinates for all control and end points.
         """
-        if not self._commands or self._commands[-1].end is None:
+        if not self._commands:
+            logger.warning("bezier_to called without a starting point.")
+            return
+        last_end = None
+        for cmd_rev in reversed(self._commands):
+            if isinstance(cmd_rev, MovingCommand) and cmd_rev.end is not None:
+                last_end = cmd_rev.end
+                break
+        if last_end is None:
             logger.warning("bezier_to called without a starting point.")
             return
 
         self._commands.append(BezierToCommand(end, c1, c2, extra_axes=extra))
+        self._invalidate_time_cache()
+
+    def quadratic_bezier_to(
+        self,
+        control: Point3D,
+        end: Point3D,
+        extra: Optional[Dict[Axis, float]] = None,
+    ) -> None:
+        """
+        Adds a quadratic Bézier curve command.
+        """
+        self._commands.append(
+            QuadraticBezierToCommand(end, control, extra_axes=extra)
+        )
         self._invalidate_time_cache()
 
     def set_power(self, power: float) -> None:
@@ -1465,6 +1673,53 @@ class Ops:
 
         if segment:
             yield segment
+
+    def segment_indices(self) -> Generator[List[int], None, None]:
+        """
+        Like segments() but yields lists of command indices instead of
+        command objects.
+        """
+        segment: List[int] = []
+        for i in range(len(self._commands)):
+            if not segment:
+                segment.append(i)
+                continue
+
+            cmd = self._commands[i]
+            if cmd.is_travel_command():
+                yield segment
+                segment = [i]
+            elif cmd.is_cutting_command():
+                segment.append(i)
+            elif cmd.is_state_command() or cmd.is_marker():
+                yield segment
+                yield [i]
+                segment = []
+
+        if segment:
+            yield segment
+
+    def without_state(self) -> Ops:
+        """Returns new Ops containing only moving and marker commands."""
+        result = Ops()
+        result._commands = [
+            cmd for cmd in self._commands if not cmd.is_state_command()
+        ]
+        result._invalidate_time_cache()
+        return result
+
+    def group_by_state_continuity(self) -> List[Ops]:
+        """Splits into segments based on state/marker boundaries."""
+        from .group import group_by_state_continuity
+
+        segments = group_by_state_continuity(self._commands)
+        result = []
+        for seg in segments:
+            ops = Ops()
+            ops._commands = seg
+            ops._invalidate_time_cache()
+            result.append(ops)
+        return result
 
     def transform(self, matrix: "np.ndarray") -> "Ops":
         """

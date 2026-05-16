@@ -2,12 +2,7 @@ import logging
 from typing import Optional, TYPE_CHECKING, Dict, Any
 
 from raygeo import Geometry
-from rayforge.core.ops import (
-    Ops,
-    OpsSectionStartCommand,
-    OpsSectionEndCommand,
-    SectionType,
-)
+from rayforge.core.ops import Ops, SectionType
 from rayforge.shared.tasker.progress import ProgressContext
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
@@ -103,14 +98,12 @@ class FrameProducer(OpsProducer):
             )
             # Build the final Ops object
             final_ops.set_laser(laser.uid)
-            final_ops.add(
-                OpsSectionStartCommand(
-                    SectionType.VECTOR_OUTLINE, workpiece.uid
-                )
+            final_ops.ops_section_start(
+                SectionType.VECTOR_OUTLINE, workpiece.uid
             )
             final_ops.set_power((settings or {}).get("power", 0))
             final_ops.extend(frame_ops)
-            final_ops.add(OpsSectionEndCommand(SectionType.VECTOR_OUTLINE))
+            final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
         # 5. Return a NON-SCALABLE artifact. The ops are already at the correct
         #    final size, ready for positioning.

@@ -3,7 +3,7 @@ import pytest_asyncio
 import asyncio
 from unittest.mock import MagicMock, AsyncMock, PropertyMock
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops, MoveToCommand, LineToCommand
+from rayforge.core.ops import Ops
 from rayforge.core.varset import VarSet, Var
 from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
 from rayforge.machine.transport.grbl import GrblSerialTransport
@@ -207,8 +207,8 @@ class TestGrblSerialDriver:
         driver._machine.set_active_wcs("G54")
 
         ops = Ops()
-        ops.add(MoveToCommand((10, 10, 0)))
-        ops.add(LineToCommand((20, 20, 0)))
+        ops.move_to(10, 10, 0)
+        ops.line_to(20, 20, 0)
 
         job_finished_mock = MagicMock()
         driver.job_finished.send = job_finished_mock
@@ -772,9 +772,9 @@ class TestGrblSerialDriver:
         driver._machine.set_active_wcs("G54")
 
         ops = Ops()
-        ops.add(MoveToCommand((10, 10, 0)))
-        ops.add(LineToCommand((20, 20, 0)))
-        ops.add(LineToCommand((30, 30, 0)))
+        ops.move_to(10, 10, 0)
+        ops.line_to(20, 20, 0)
+        ops.line_to(30, 30, 0)
 
         encoded = driver._machine.encode_ops(ops, doc)
         run_task = asyncio.create_task(driver.run(encoded, doc, callback_mock))

@@ -403,7 +403,7 @@ class TestTextureEncoder:
         ops = Ops()
         ops.move_to(0.0, safe_y_mm, 0.0)
         move_cmd = MoveToCommand(end=None)
-        ops.commands.append(move_cmd)
+        ops.add(move_cmd)
         ops.scan_to(5.0, safe_y_mm, 0.0, bytearray([100]))
 
         result = encoder.encode(

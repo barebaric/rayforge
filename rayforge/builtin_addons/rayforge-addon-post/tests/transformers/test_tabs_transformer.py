@@ -2,15 +2,10 @@ import math
 
 from raygeo.shape.bezier import get_bezier_point_at
 from rayforge.core.ops import (
-    BezierToCommand,
-    LineToCommand,
-    MoveToCommand,
     Ops,
-    OpsSectionEndCommand,
-    OpsSectionStartCommand,
     SectionType,
-    SetPowerCommand,
 )
+from rayforge.core.ops.enums import CommandType, CommandCategory
 from post_processors.transformers import TabOpsTransformer
 from post_processors.transformers.tabs_transformer import _ClipPoint
 
@@ -26,39 +21,35 @@ def _bezier_point_2d(t):
 
 
 def _make_bezier_subpath():
-    return [
-        MoveToCommand(_P0),
-        BezierToCommand(end=_P1, control1=_C1, control2=_C2),
-    ]
+    ops = Ops()
+    ops.move_to(*_P0)
+    ops.bezier_to(_C1, _C2, _P1)
+    return ops
 
 
 def _make_mixed_subpath():
-    return [
-        MoveToCommand((0.0, 0.0, 0.0)),
-        LineToCommand((30.0, 0.0, 0.0)),
-        BezierToCommand(
-            end=(70.0, 0.0, 0.0),
-            control1=(40.0, 10.0, 0.0),
-            control2=(60.0, 10.0, 0.0),
-        ),
-        LineToCommand((100.0, 0.0, 0.0)),
-    ]
+    ops = Ops()
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(30.0, 0.0, 0.0)
+    ops.bezier_to(
+        (40.0, 10.0, 0.0),
+        (60.0, 10.0, 0.0),
+        (70.0, 0.0, 0.0),
+    )
+    ops.line_to(100.0, 0.0, 0.0)
+    return ops
 
 
 def _make_sectioned_bezier_ops():
     ops = Ops()
     uid = "test-wp"
-    ops.commands.append(
-        OpsSectionStartCommand(
-            section_type=SectionType.VECTOR_OUTLINE,
-            workpiece_uid=uid,
-        )
+    ops.ops_section_start(
+        section_type=SectionType.VECTOR_OUTLINE,
+        workpiece_uid=uid,
     )
     ops.move_to(*_P0)
-    ops.commands.append(BezierToCommand(end=_P1, control1=_C1, control2=_C2))
-    ops.commands.append(
-        OpsSectionEndCommand(section_type=SectionType.VECTOR_OUTLINE)
-    )
+    ops.bezier_to(_C1, _C2, _P1)
+    ops.ops_section_end(section_type=SectionType.VECTOR_OUTLINE)
     return ops
 
 
@@ -69,54 +60,63 @@ def _make_sectioned_bezier_ops():
 
 def test_bezier_no_clips_passes_through():
     transformer = TabOpsTransformer()
-    cmds = _make_bezier_subpath()
-    result = transformer._clip_subpath_with_gaps(cmds, [])
+    sub_ops = _make_bezier_subpath()
+    result = transformer._clip_subpath_with_gaps(sub_ops, [])
 
-    assert len(result) == len(cmds)
-    assert isinstance(result[0], MoveToCommand)
-    assert isinstance(result[1], BezierToCommand)
-    assert result[1].end == _P1
-    assert result[1].control1 == _C1
-    assert result[1].control2 == _C2
+    assert result.len() == sub_ops.len()
+    assert result.command_type(0) == CommandType.MOVE_TO
+    assert result.command_type(1) == CommandType.BEZIER_TO
+    assert result.endpoint(1) == _P1
+    c1, c2 = result.bezier_params(1)
+    assert c1 == _C1
+    assert c2 == _C2
 
 
 def test_bezier_gap_splits_into_two_beziers():
     transformer = TabOpsTransformer()
-    cmds = _make_bezier_subpath()
+    sub_ops = _make_bezier_subpath()
     mid = _bezier_point_2d(0.5)
     clip_width = 10.0
 
     clips = [_ClipPoint(x=mid[0], y=mid[1], width=clip_width)]
-    result = transformer._clip_subpath_with_gaps(cmds, clips)
+    result = transformer._clip_subpath_with_gaps(sub_ops, clips)
 
-    bezier_cmds = [c for c in result if isinstance(c, BezierToCommand)]
-    move_cmds = [c for c in result if isinstance(c, MoveToCommand)]
+    bezier_indices = [
+        i
+        for i in range(result.len())
+        if result.command_type(i) == CommandType.BEZIER_TO
+    ]
+    move_indices = [
+        i
+        for i in range(result.len())
+        if result.command_type(i) == CommandType.MOVE_TO
+    ]
 
-    assert len(bezier_cmds) == 2, (
-        f"Expected 2 bezier segments, got {len(bezier_cmds)}"
+    assert len(bezier_indices) == 2, (
+        f"Expected 2 bezier segments, got {len(bezier_indices)}"
     )
-    assert len(move_cmds) >= 2
+    assert len(move_indices) >= 2
 
-    first_end_x = bezier_cmds[0].end[0]
+    first_end_x = result.endpoint(bezier_indices[0])[0]
     assert first_end_x < mid[0]
 
 
 def test_bezier_gap_preserves_start_and_end():
     transformer = TabOpsTransformer()
-    cmds = _make_bezier_subpath()
+    sub_ops = _make_bezier_subpath()
     mid = _bezier_point_2d(0.5)
 
     clips = [_ClipPoint(x=mid[0], y=mid[1], width=10.0)]
-    result = transformer._clip_subpath_with_gaps(cmds, clips)
+    result = transformer._clip_subpath_with_gaps(sub_ops, clips)
 
     first_moving = None
     last_moving = None
-    for cmd in result:
-        if isinstance(cmd, (MoveToCommand, LineToCommand, BezierToCommand)):
-            if cmd.end:
-                if first_moving is None:
-                    first_moving = cmd.end
-                last_moving = cmd.end
+    for i in range(result.len()):
+        if result.category(i) == CommandCategory.MOVING:
+            pt = result.endpoint(i)
+            if first_moving is None:
+                first_moving = pt
+            last_moving = pt
 
     assert first_moving is not None
     assert math.dist(first_moving[:2], _P0[:2]) < 1e-3
@@ -127,7 +127,7 @@ def test_bezier_gap_preserves_start_and_end():
 
 def test_bezier_gap_multiple_clips():
     transformer = TabOpsTransformer()
-    cmds = _make_bezier_subpath()
+    sub_ops = _make_bezier_subpath()
 
     pt25 = _bezier_point_2d(0.25)
     pt75 = _bezier_point_2d(0.75)
@@ -136,15 +136,20 @@ def test_bezier_gap_multiple_clips():
         _ClipPoint(x=pt75[0], y=pt75[1], width=6.0),
     ]
 
-    result = transformer._clip_subpath_with_gaps(cmds, clips)
+    result = transformer._clip_subpath_with_gaps(sub_ops, clips)
 
-    bezier_cmds = [c for c in result if isinstance(c, BezierToCommand)]
-    assert len(bezier_cmds) >= 3
+    bezier_indices = [
+        i
+        for i in range(result.len())
+        if result.command_type(i) == CommandType.BEZIER_TO
+    ]
+    assert len(bezier_indices) >= 3
 
     last_end = None
-    for c in reversed(result):
-        if isinstance(c, (BezierToCommand, LineToCommand)):
-            last_end = c.end
+    for ri in range(result.len() - 1, -1, -1):
+        ct = result.command_type(ri)
+        if ct in (CommandType.BEZIER_TO, CommandType.LINE_TO):
+            last_end = result.endpoint(ri)
             break
     assert last_end is not None
     assert math.dist(last_end[:2], _P1[:2]) < 1e-3
@@ -152,17 +157,23 @@ def test_bezier_gap_multiple_clips():
 
 def test_mixed_lines_and_bezier_gap():
     transformer = TabOpsTransformer()
-    cmds = _make_mixed_subpath()
+    sub_ops = _make_mixed_subpath()
 
     mid = get_bezier_point_at(
         (30.0, 0.0), (40.0, 10.0), (60.0, 10.0), (70.0, 0.0), 0.5
     )
     clips = [_ClipPoint(x=mid[0], y=mid[1], width=10.0)]
 
-    result = transformer._clip_subpath_with_gaps(cmds, clips)
+    result = transformer._clip_subpath_with_gaps(sub_ops, clips)
 
-    has_bezier = any(isinstance(c, BezierToCommand) for c in result)
-    has_line = any(isinstance(c, LineToCommand) for c in result)
+    has_bezier = any(
+        result.command_type(i) == CommandType.BEZIER_TO
+        for i in range(result.len())
+    )
+    has_line = any(
+        result.command_type(i) == CommandType.LINE_TO
+        for i in range(result.len())
+    )
     assert has_bezier
     assert has_line
 
@@ -175,8 +186,12 @@ def test_bezier_gap_via_apply_tab_gaps():
     transformer = TabOpsTransformer()
     transformer._apply_tab_gaps(ops, clips)
 
-    bezier_cmds = [c for c in ops.commands if isinstance(c, BezierToCommand)]
-    assert len(bezier_cmds) == 2
+    bezier_count = sum(
+        1
+        for i in range(ops.len())
+        if ops.command_type(i) == CommandType.BEZIER_TO
+    )
+    assert bezier_count == 2
 
 
 # ------------------------------------------------------------------
@@ -185,7 +200,7 @@ def test_bezier_gap_via_apply_tab_gaps():
 
 
 def test_bezier_power_mode_splits_and_inserts_power():
-    cmds = _make_bezier_subpath()
+    sub_ops = _make_bezier_subpath()
     mid = _bezier_point_2d(0.5)
     clips = [_ClipPoint(x=mid[0], y=mid[1], width=10.0)]
     tab_power = 0.3
@@ -193,40 +208,53 @@ def test_bezier_power_mode_splits_and_inserts_power():
 
     transformer = TabOpsTransformer()
     result = transformer._insert_power_commands(
-        cmds, clips, tab_power, original_power
+        sub_ops, clips, tab_power, original_power
     )
 
-    bezier_cmds = [c for c in result if isinstance(c, BezierToCommand)]
-    power_cmds = [c for c in result if isinstance(c, SetPowerCommand)]
+    bezier_indices = [
+        i
+        for i in range(result.len())
+        if result.command_type(i) == CommandType.BEZIER_TO
+    ]
+    power_indices = [
+        i
+        for i in range(result.len())
+        if result.command_type(i) == CommandType.SET_POWER
+    ]
 
-    assert len(bezier_cmds) >= 2
-    assert len(power_cmds) >= 2
+    assert len(bezier_indices) >= 2
+    assert len(power_indices) >= 2
 
-    powers = [c.power for c in power_cmds]
+    powers = [result.power(i) for i in power_indices]
     assert tab_power in powers
     assert original_power in powers
 
 
 def test_bezier_power_mode_no_overlap():
-    cmds = _make_bezier_subpath()
+    sub_ops = _make_bezier_subpath()
     clips = [_ClipPoint(x=200.0, y=200.0, width=10.0)]
     tab_power = 0.3
     original_power = 1.0
 
     transformer = TabOpsTransformer()
     result = transformer._insert_power_commands(
-        cmds, clips, tab_power, original_power
+        sub_ops, clips, tab_power, original_power
     )
 
-    bezier_cmds = [c for c in result if isinstance(c, BezierToCommand)]
-    assert len(bezier_cmds) == 1
-    assert bezier_cmds[0].end == _P1
-    assert bezier_cmds[0].control1 == _C1
-    assert bezier_cmds[0].control2 == _C2
+    bezier_indices = [
+        i
+        for i in range(result.len())
+        if result.command_type(i) == CommandType.BEZIER_TO
+    ]
+    assert len(bezier_indices) == 1
+    assert result.endpoint(bezier_indices[0]) == _P1
+    c1, c2 = result.bezier_params(bezier_indices[0])
+    assert c1 == _C1
+    assert c2 == _C2
 
 
 def test_mixed_lines_and_bezier_power():
-    cmds = _make_mixed_subpath()
+    sub_ops = _make_mixed_subpath()
 
     mid = get_bezier_point_at(
         (30.0, 0.0), (40.0, 10.0), (60.0, 10.0), (70.0, 0.0), 0.5
@@ -237,14 +265,22 @@ def test_mixed_lines_and_bezier_power():
 
     transformer = TabOpsTransformer()
     result = transformer._insert_power_commands(
-        cmds, clips, tab_power, original_power
+        sub_ops, clips, tab_power, original_power
     )
 
-    bezier_cmds = [c for c in result if isinstance(c, BezierToCommand)]
-    power_cmds = [c for c in result if isinstance(c, SetPowerCommand)]
+    bezier_count = sum(
+        1
+        for i in range(result.len())
+        if result.command_type(i) == CommandType.BEZIER_TO
+    )
+    power_count = sum(
+        1
+        for i in range(result.len())
+        if result.command_type(i) == CommandType.SET_POWER
+    )
 
-    assert len(bezier_cmds) >= 1
-    assert len(power_cmds) >= 1
+    assert bezier_count >= 1
+    assert power_count >= 1
 
 
 # ------------------------------------------------------------------
@@ -304,25 +340,29 @@ def test_bezier_distance_to_t():
 
 def test_non_curve_path_unchanged_behavior():
     ops = Ops()
-    ops.commands.append(
-        OpsSectionStartCommand(
-            section_type=SectionType.VECTOR_OUTLINE,
-            workpiece_uid="test",
-        )
+    ops.ops_section_start(
+        section_type=SectionType.VECTOR_OUTLINE,
+        workpiece_uid="test",
     )
     ops.move_to(0, 0)
     ops.line_to(100, 0)
-    ops.commands.append(
-        OpsSectionEndCommand(section_type=SectionType.VECTOR_OUTLINE)
-    )
+    ops.ops_section_end(section_type=SectionType.VECTOR_OUTLINE)
 
     clips = [_ClipPoint(x=50.0, y=0.0, width=10.0)]
 
     transformer = TabOpsTransformer()
     transformer._apply_tab_gaps(ops, clips)
 
-    line_cmds = [c for c in ops.commands if isinstance(c, LineToCommand)]
-    move_cmds = [c for c in ops.commands if isinstance(c, MoveToCommand)]
+    line_count = sum(
+        1
+        for i in range(ops.len())
+        if ops.command_type(i) == CommandType.LINE_TO
+    )
+    move_count = sum(
+        1
+        for i in range(ops.len())
+        if ops.command_type(i) == CommandType.MOVE_TO
+    )
 
-    assert len(line_cmds) == 2
-    assert len(move_cmds) >= 2
+    assert line_count == 2
+    assert move_count >= 2

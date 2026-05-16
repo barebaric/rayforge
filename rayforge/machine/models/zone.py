@@ -14,6 +14,7 @@ from raygeo.shape.line import (
     does_line_segment_intersect_rect as line_segment_intersects_rect,
 )
 from raygeo import Point
+from ...core.ops.enums import CommandType
 
 
 class ZoneShape(Enum):
@@ -162,26 +163,31 @@ class Zone:
 
 def check_ops_collides_with_zones(ops, zones):
     pos = None
-    for cmd in ops.commands:
-        if getattr(cmd, "end", None) is not None and pos is not None:
+    for i in range(ops.len()):
+        if ops.category(i).value == 0:
+            continue
+        end = ops.endpoint(i)
+        ct = ops.command_type(i)
+        if end is not None and pos is not None:
             start_2d = (pos[0], pos[1])
-            end_2d = (cmd.end[0], cmd.end[1])
+            end_2d = (end[0], end[1])
             for zone in zones.values():
-                if hasattr(cmd, "center_offset"):
+                if ct == CommandType.ARC_TO:
+                    arc_i, arc_j, arc_cw = ops.arc_params(i)
                     arc_center = (
-                        start_2d[0] + cmd.center_offset[0],
-                        start_2d[1] + cmd.center_offset[1],
+                        start_2d[0] + arc_i,
+                        start_2d[1] + arc_j,
                     )
                     if zone.collides_with_arc(
                         start_2d,
                         end_2d,
                         arc_center,
-                        cmd.clockwise,
+                        arc_cw,
                     ):
                         return True
                 else:
                     if zone.collides_with_line(start_2d, end_2d):
                         return True
-        if getattr(cmd, "end", None) is not None:
-            pos = cmd.end
+        if end is not None:
+            pos = end
     return False

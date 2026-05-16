@@ -154,8 +154,8 @@ class TestCoordinateSpaces:
 
         # Get encoder output
         prepared = machine._prepare_ops_for_encoding(ops)
-        cmd = list(prepared.commands)[0]
-        encoder_result = (cmd.end[0], cmd.end[1])
+        end = prepared.endpoint(0)
+        encoder_result = (end[0], end[1])
 
         # Get world_point_to_machine output
         space = machine.get_coordinate_space()

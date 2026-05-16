@@ -5,7 +5,7 @@ import pytest
 import pytest_asyncio
 from unittest.mock import MagicMock
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Axis, Ops, MoveToCommand, LineToCommand
+from rayforge.core.ops import Axis, Ops
 from rayforge.machine.driver.driver import DeviceStatus
 from rayforge.machine.driver.smoothie import SmoothieDriver
 from rayforge.machine.transport import TransportStatus
@@ -306,8 +306,8 @@ class TestSmoothieDriver:
         driver = connected_driver
         doc = Doc()
         ops = Ops()
-        ops.add(MoveToCommand((10, 10, 0)))
-        ops.add(LineToCommand((20, 20, 0)))
+        ops.move_to(10, 10, 0)
+        ops.line_to(20, 20, 0)
 
         job_finished_mock = MagicMock()
         driver.job_finished.send = job_finished_mock

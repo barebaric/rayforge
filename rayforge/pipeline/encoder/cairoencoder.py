@@ -171,9 +171,7 @@ class CairoEncoder(OpsEncoder):
                             adjusted_end[0] - center_x,
                         )
                         if cw:
-                            ctx.arc(
-                                center_x, center_y, radius, angle1, angle2
-                            )
+                            ctx.arc(center_x, center_y, radius, angle1, angle2)
                         else:
                             ctx.arc_negative(
                                 center_x, center_y, radius, angle1, angle2

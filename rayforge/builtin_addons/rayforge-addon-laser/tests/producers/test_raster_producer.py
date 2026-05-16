@@ -2,13 +2,7 @@ import pytest
 import cairo
 from unittest.mock import MagicMock
 
-from rayforge.core.ops import (
-    OpsSectionStartCommand,
-    OpsSectionEndCommand,
-    SectionType,
-    LineToCommand,
-    ScanLinePowerCommand,
-)
+from rayforge.core.ops import CommandType, SectionType
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.machine.models.laser import Laser
@@ -239,14 +233,15 @@ def test_run_wraps_ops_in_section_markers(
         generation_id=1,
     )
 
-    cmds = list(artifact.ops)
-    assert len(cmds) == 2
-    start_cmd, end_cmd = cmds
-    assert isinstance(start_cmd, OpsSectionStartCommand)
-    assert start_cmd.section_type == SectionType.RASTER_FILL
-    assert start_cmd.workpiece_uid == "wp_123"
-    assert isinstance(end_cmd, OpsSectionEndCommand)
-    assert end_cmd.section_type == SectionType.RASTER_FILL
+    ops = artifact.ops
+    assert ops.len() == 2
+    assert ops.command_type(0) == CommandType.OPS_SECTION_START
+    sec_type, wp_uid = ops.section_params(0)
+    assert sec_type == SectionType.RASTER_FILL
+    assert wp_uid == "wp_123"
+    assert ops.command_type(1) == CommandType.OPS_SECTION_END
+    sec_type_end, _ = ops.section_params(1)
+    assert sec_type_end == SectionType.RASTER_FILL
 
 
 def test_run_with_empty_surface_returns_empty_ops(
@@ -263,11 +258,10 @@ def test_run_with_empty_surface_returns_empty_ops(
         workpiece=mock_workpiece,
         generation_id=1,
     )
-    # Should only contain the start/SetLaser/end markers
-    cmds = list(artifact.ops)
-    assert len(cmds) == 2
-    assert isinstance(cmds[0], OpsSectionStartCommand)
-    assert isinstance(cmds[1], OpsSectionEndCommand)
+    ops = artifact.ops
+    assert ops.len() == 2
+    assert ops.command_type(0) == CommandType.OPS_SECTION_START
+    assert ops.command_type(1) == CommandType.OPS_SECTION_END
 
 
 def test_power_modulation_generates_correct_ops(
@@ -309,10 +303,9 @@ def test_power_modulation_generates_correct_ops(
     # White (gray_factor=0.0): low power ~26
     # With downsampling, exact values may vary but should be in range
 
-    scan_cmd = next(
-        c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
-    )
-    power_vals = scan_cmd.power_values
+    ops = artifact.ops
+    scan_indices = ops.indices_of(CommandType.SCAN_LINE)
+    power_vals = ops.scanline_data(scan_indices[0])
     assert len(power_vals) >= 2
 
     # Check that we have a mix of power values (not all same)
@@ -356,10 +349,11 @@ def test_multi_pass_generates_correct_ops(
     assert isinstance(artifact, WorkPieceArtifact)
 
     # -- Assert Ops Data (Z-stepping) --
+    ops = artifact.ops
     lines_by_z = {}
-    for cmd in artifact.ops.commands:
-        if isinstance(cmd, LineToCommand):
-            z = round(cmd.end[2], 2)
+    for i in range(ops.len()):
+        if ops.command_type(i) == CommandType.LINE_TO:
+            z = round(ops.endpoint(i)[2], 2)
             lines_by_z.setdefault(z, 0)
             lines_by_z[z] += 1
 
@@ -390,9 +384,7 @@ def test_multi_pass_with_scan_angle(laser: Laser, mock_workpiece: WorkPiece):
     artifact_horizontal = producer_horizontal.run(
         laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
-    lines_horizontal = [
-        c for c in artifact_horizontal.ops if isinstance(c, LineToCommand)
-    ]
+    assert len(artifact_horizontal.ops.indices_of(CommandType.LINE_TO)) >= 1
 
     producer_angled = Rasterizer(
         depth_mode=DepthMode.MULTI_PASS,
@@ -402,12 +394,7 @@ def test_multi_pass_with_scan_angle(laser: Laser, mock_workpiece: WorkPiece):
     artifact_angled = producer_angled.run(
         laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
-    lines_angled = [
-        c for c in artifact_angled.ops if isinstance(c, LineToCommand)
-    ]
-
-    assert len(lines_horizontal) >= 1
-    assert len(lines_angled) >= 1
+    assert len(artifact_angled.ops.indices_of(CommandType.LINE_TO)) >= 1
 
 
 def test_multi_pass_with_cross_hatch(laser: Laser, mock_workpiece: WorkPiece):
@@ -430,9 +417,7 @@ def test_multi_pass_with_cross_hatch(laser: Laser, mock_workpiece: WorkPiece):
     artifact_no_cross = producer_no_cross.run(
         laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
-    lines_no_cross = [
-        c for c in artifact_no_cross.ops if isinstance(c, LineToCommand)
-    ]
+    lines_no_cross = artifact_no_cross.ops.indices_of(CommandType.LINE_TO)
 
     producer_cross = Rasterizer(
         depth_mode=DepthMode.MULTI_PASS,
@@ -442,9 +427,7 @@ def test_multi_pass_with_cross_hatch(laser: Laser, mock_workpiece: WorkPiece):
     artifact_cross = producer_cross.run(
         laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
-    lines_cross = [
-        c for c in artifact_cross.ops if isinstance(c, LineToCommand)
-    ]
+    lines_cross = artifact_cross.ops.indices_of(CommandType.LINE_TO)
 
     assert len(lines_no_cross) >= 1
     assert len(lines_cross) > len(lines_no_cross)
@@ -496,10 +479,9 @@ def test_power_modulation_respects_step_power_setting(
     # Gray: 127 * 0.2 = 25.4
     # White: 0 * 0.2 = 0 (filtered out)
 
-    scan_cmd = next(
-        c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
-    )
-    power_vals = scan_cmd.power_values
+    ops = artifact.ops
+    scan_indices = ops.indices_of(CommandType.SCAN_LINE)
+    power_vals = ops.scanline_data(scan_indices[0])
     assert len(power_vals) >= 2
 
     # Check that power values are scaled by step_power (~20%)
@@ -531,12 +513,11 @@ def test_invert_inverts_grayscale_values(
     )
 
     assert isinstance(artifact, WorkPieceArtifact)
-    scan_cmds = [
-        c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
-    ]
-    assert len(scan_cmds) >= 1
-    for cmd in scan_cmds:
-        for val in cmd.power_values:
+    ops = artifact.ops
+    scan_indices = ops.indices_of(CommandType.SCAN_LINE)
+    assert len(scan_indices) >= 1
+    for i in scan_indices:
+        for val in ops.scanline_data(i):
             assert val == pytest.approx(26, 1)
 
 
@@ -564,12 +545,11 @@ def test_invert_respects_alpha(laser: Laser, mock_workpiece: WorkPiece):
     )
 
     assert isinstance(artifact, WorkPieceArtifact)
-    scan_cmds = [
-        c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
-    ]
-    assert len(scan_cmds) >= 1
-    for cmd in scan_cmds:
-        for val in cmd.power_values:
+    ops = artifact.ops
+    scan_indices = ops.indices_of(CommandType.SCAN_LINE)
+    assert len(scan_indices) >= 1
+    for i in scan_indices:
+        for val in ops.scanline_data(i):
             assert val > 0
 
 
@@ -603,12 +583,11 @@ def test_constant_power_threshold_mode(
     )
 
     assert isinstance(artifact, WorkPieceArtifact)
-    scan_cmds = [
-        c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
-    ]
-    assert len(scan_cmds) >= 1
-    for cmd in scan_cmds:
-        for val in cmd.power_values:
+    ops = artifact.ops
+    scan_indices = ops.indices_of(CommandType.SCAN_LINE)
+    assert len(scan_indices) >= 1
+    for i in scan_indices:
+        for val in ops.scanline_data(i):
             assert val == 255
 
 
@@ -634,10 +613,8 @@ def test_constant_power_threshold_parameter(
     artifact_low = producer_low_threshold.run(
         laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
-    scan_cmds_low = [
-        c for c in artifact_low.ops if isinstance(c, ScanLinePowerCommand)
-    ]
-    assert len(scan_cmds_low) == 0
+    scan_indices_low = artifact_low.ops.indices_of(CommandType.SCAN_LINE)
+    assert len(scan_indices_low) == 0
 
     producer_high_threshold = Rasterizer(
         depth_mode=DepthMode.CONSTANT_POWER,
@@ -646,10 +623,8 @@ def test_constant_power_threshold_parameter(
     artifact_high = producer_high_threshold.run(
         laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
-    scan_cmds_high = [
-        c for c in artifact_high.ops if isinstance(c, ScanLinePowerCommand)
-    ]
-    assert len(scan_cmds_high) >= 1
+    scan_indices_high = artifact_high.ops.indices_of(CommandType.SCAN_LINE)
+    assert len(scan_indices_high) >= 1
 
 
 def test_constant_power_invert(laser: Laser, mock_workpiece: WorkPiece):
@@ -677,10 +652,8 @@ def test_constant_power_invert(laser: Laser, mock_workpiece: WorkPiece):
     artifact_normal = producer_normal.run(
         laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
-    scan_cmds_normal = [
-        c for c in artifact_normal.ops if isinstance(c, ScanLinePowerCommand)
-    ]
-    assert len(scan_cmds_normal) >= 1
+    scan_indices_normal = artifact_normal.ops.indices_of(CommandType.SCAN_LINE)
+    assert len(scan_indices_normal) >= 1
 
     producer_invert = Rasterizer(
         depth_mode=DepthMode.DITHER,
@@ -691,10 +664,8 @@ def test_constant_power_invert(laser: Laser, mock_workpiece: WorkPiece):
     artifact_invert = producer_invert.run(
         laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
-    scan_cmds_invert = [
-        c for c in artifact_invert.ops if isinstance(c, ScanLinePowerCommand)
-    ]
-    assert len(scan_cmds_invert) >= 1
+    scan_indices_invert = artifact_invert.ops.indices_of(CommandType.SCAN_LINE)
+    assert len(scan_indices_invert) >= 1
 
 
 def test_constant_power_respects_alpha(
@@ -724,10 +695,8 @@ def test_constant_power_respects_alpha(
     )
 
     assert isinstance(artifact, WorkPieceArtifact)
-    scan_cmds = [
-        c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
-    ]
-    assert len(scan_cmds) >= 1
+    scan_indices = artifact.ops.indices_of(CommandType.SCAN_LINE)
+    assert len(scan_indices) >= 1
 
 
 def test_dither_serialization():
@@ -777,12 +746,11 @@ def test_dither_mode_with_floyd_steinberg(
     )
 
     assert isinstance(artifact, WorkPieceArtifact)
-    scan_cmds = [
-        c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
-    ]
-    assert len(scan_cmds) >= 1
-    for cmd in scan_cmds:
-        for val in cmd.power_values:
+    ops = artifact.ops
+    scan_indices = ops.indices_of(CommandType.SCAN_LINE)
+    assert len(scan_indices) >= 1
+    for i in scan_indices:
+        for val in ops.scanline_data(i):
             assert val == 255
 
 
@@ -808,11 +776,9 @@ def test_cross_hatch_generates_two_passes(
     artifact_no_cross_hatch = producer_no_cross_hatch.run(
         laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
-    scan_cmds_no_cross = [
-        c
-        for c in artifact_no_cross_hatch.ops
-        if isinstance(c, ScanLinePowerCommand)
-    ]
+    scan_indices_no_cross = artifact_no_cross_hatch.ops.indices_of(
+        CommandType.SCAN_LINE
+    )
 
     producer_cross_hatch = Rasterizer(
         depth_mode=DepthMode.DITHER,
@@ -822,13 +788,11 @@ def test_cross_hatch_generates_two_passes(
     artifact_cross_hatch = producer_cross_hatch.run(
         laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
-    scan_cmds_cross = [
-        c
-        for c in artifact_cross_hatch.ops
-        if isinstance(c, ScanLinePowerCommand)
-    ]
+    scan_indices_cross = artifact_cross_hatch.ops.indices_of(
+        CommandType.SCAN_LINE
+    )
 
-    assert len(scan_cmds_cross) > len(scan_cmds_no_cross)
+    assert len(scan_indices_cross) > len(scan_indices_no_cross)
 
 
 def test_cross_hatch_perpendicular_angles(
@@ -857,10 +821,8 @@ def test_cross_hatch_perpendicular_angles(
     )
 
     assert isinstance(artifact, WorkPieceArtifact)
-    scan_cmds = [
-        c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
-    ]
-    assert len(scan_cmds) >= 2
+    scan_indices = artifact.ops.indices_of(CommandType.SCAN_LINE)
+    assert len(scan_indices) >= 2
 
 
 def test_cross_hatch_serialization():
@@ -902,9 +864,9 @@ def test_cross_hatch_with_power_modulation(
     artifact_no_cross = producer_no_cross.run(
         laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
-    scan_cmds_no_cross = [
-        c for c in artifact_no_cross.ops if isinstance(c, ScanLinePowerCommand)
-    ]
+    scan_indices_no_cross = artifact_no_cross.ops.indices_of(
+        CommandType.SCAN_LINE
+    )
 
     producer_cross = Rasterizer(
         depth_mode=DepthMode.POWER_MODULATION,
@@ -913,11 +875,9 @@ def test_cross_hatch_with_power_modulation(
     artifact_cross = producer_cross.run(
         laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
-    scan_cmds_cross = [
-        c for c in artifact_cross.ops if isinstance(c, ScanLinePowerCommand)
-    ]
+    scan_indices_cross = artifact_cross.ops.indices_of(CommandType.SCAN_LINE)
 
-    assert len(scan_cmds_cross) > len(scan_cmds_no_cross)
+    assert len(scan_indices_cross) > len(scan_indices_no_cross)
 
 
 def test_constant_power_bayer_dithering(
@@ -945,14 +905,16 @@ def test_constant_power_bayer_dithering(
         )
 
         artifact = producer.run(
-            laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+            laser,
+            surface,
+            (10, 10),
+            workpiece=mock_workpiece,
+            generation_id=1,
         )
 
         assert isinstance(artifact, WorkPieceArtifact)
-        scan_cmds = [
-            c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
-        ]
-        assert len(scan_cmds) >= 1
+        scan_indices = artifact.ops.indices_of(CommandType.SCAN_LINE)
+        assert len(scan_indices) >= 1
 
 
 def test_prepare_computes_global_auto_levels():
@@ -1050,8 +1012,7 @@ def test_multi_pass_with_angle_increment(
     )
 
     assert isinstance(artifact, WorkPieceArtifact)
-    line_cmds = [c for c in artifact.ops if isinstance(c, LineToCommand)]
-    assert len(line_cmds) >= 1
+    assert len(artifact.ops.indices_of(CommandType.LINE_TO)) >= 1
 
 
 def test_angle_increment_serialization():
@@ -1098,10 +1059,8 @@ def test_dithering_respects_alpha(laser: Laser, mock_workpiece: WorkPiece):
     )
 
     assert isinstance(artifact, WorkPieceArtifact)
-    scan_cmds = [
-        c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
-    ]
-    assert len(scan_cmds) >= 1
+    scan_indices = artifact.ops.indices_of(CommandType.SCAN_LINE)
+    assert len(scan_indices) >= 1
 
 
 def test_dithering_adapts_to_spot_size(mock_workpiece: WorkPiece):
@@ -1137,9 +1096,7 @@ def test_dithering_adapts_to_spot_size(mock_workpiece: WorkPiece):
         workpiece=mock_workpiece,
         generation_id=1,
     )
-    scan_cmds_small = [
-        c for c in artifact_small.ops if isinstance(c, ScanLinePowerCommand)
-    ]
+    scan_indices_small = artifact_small.ops.indices_of(CommandType.SCAN_LINE)
 
     artifact_large = producer.run(
         laser_large_spot,
@@ -1148,12 +1105,10 @@ def test_dithering_adapts_to_spot_size(mock_workpiece: WorkPiece):
         workpiece=mock_workpiece,
         generation_id=1,
     )
-    scan_cmds_large = [
-        c for c in artifact_large.ops if isinstance(c, ScanLinePowerCommand)
-    ]
+    scan_indices_large = artifact_large.ops.indices_of(CommandType.SCAN_LINE)
 
-    assert len(scan_cmds_small) >= 1
-    assert len(scan_cmds_large) >= 1
+    assert len(scan_indices_small) >= 1
+    assert len(scan_indices_large) >= 1
 
 
 def test_constant_power_with_scan_angle(
@@ -1178,11 +1133,9 @@ def test_constant_power_with_scan_angle(
     artifact_horizontal = producer_horizontal.run(
         laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
-    scan_cmds_horizontal = [
-        c
-        for c in artifact_horizontal.ops
-        if isinstance(c, ScanLinePowerCommand)
-    ]
+    scan_indices_horizontal = artifact_horizontal.ops.indices_of(
+        CommandType.SCAN_LINE
+    )
 
     producer_angled = Rasterizer(
         depth_mode=DepthMode.DITHER,
@@ -1192,12 +1145,10 @@ def test_constant_power_with_scan_angle(
     artifact_angled = producer_angled.run(
         laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
     )
-    scan_cmds_angled = [
-        c for c in artifact_angled.ops if isinstance(c, ScanLinePowerCommand)
-    ]
+    scan_indices_angled = artifact_angled.ops.indices_of(CommandType.SCAN_LINE)
 
-    assert len(scan_cmds_horizontal) >= 1
-    assert len(scan_cmds_angled) >= 1
+    assert len(scan_indices_horizontal) >= 1
+    assert len(scan_indices_angled) >= 1
 
 
 def test_power_modulation_with_scan_angle(
@@ -1224,7 +1175,5 @@ def test_power_modulation_with_scan_angle(
     )
 
     assert isinstance(artifact, WorkPieceArtifact)
-    scan_cmds = [
-        c for c in artifact.ops if isinstance(c, ScanLinePowerCommand)
-    ]
-    assert len(scan_cmds) >= 1
+    scan_indices = artifact.ops.indices_of(CommandType.SCAN_LINE)
+    assert len(scan_indices) >= 1

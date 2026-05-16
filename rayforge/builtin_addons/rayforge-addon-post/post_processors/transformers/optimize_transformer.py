@@ -2,21 +2,11 @@ import numpy as np
 import math
 import logging
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any, Tuple, cast, TYPE_CHECKING
+from typing import Optional, List, Dict, Any, Tuple, TYPE_CHECKING
 from gettext import gettext as _
 from scipy.spatial import cKDTree  # type: ignore
-from rayforge.core.ops import (
-    Ops,
-    State,
-    MovingCommand,
-    MoveToCommand,
-    ScanLinePowerCommand,
-    Command,
-    WorkpieceStartCommand,
-    WorkpieceEndCommand,
-)
-from rayforge.core.ops.flip import flip_segment
-from rayforge.core.ops.group import group_by_state_continuity
+from rayforge.core.ops import Ops, CommandType, CommandCategory
+from raygeo import Point3D
 from rayforge.core.workpiece import WorkPiece
 from rayforge.shared.tasker.progress import ProgressContext
 from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
@@ -36,75 +26,74 @@ def _dist_2d(p1: Tuple[float, ...], p2: Tuple[float, ...]) -> float:
 @dataclass
 class WorkpieceMeta:
     uid: str
-    commands: List[MovingCommand]
-    entry_point: Tuple[float, float, float]
-    exit_point: Tuple[float, float, float]
+    ops: Ops
+    entry_point: Point3D
+    exit_point: Point3D
     can_flip: bool = True
 
 
 def _split_by_workpiece_markers(
     ops: Ops,
-) -> List[Tuple[str, List[MovingCommand]]]:
-    blocks: List[Tuple[str, List[MovingCommand]]] = []
+) -> List[Tuple[str, Ops]]:
+    blocks: List[Tuple[str, Ops]] = []
     current_uid: Optional[str] = None
-    current_block: List[MovingCommand] = []
+    current_block = Ops()
 
-    for cmd in ops:
-        if isinstance(cmd, WorkpieceStartCommand):
-            current_uid = cmd.workpiece_uid
-            current_block = []
-        elif isinstance(cmd, WorkpieceEndCommand):
+    for i in range(ops.len()):
+        ct = ops.command_type(i)
+        if ct == CommandType.WORKPIECE_START:
+            current_uid = ops.workpiece_uid(i)
+            current_block = Ops()
+        elif ct == CommandType.WORKPIECE_END:
             if current_uid is not None:
                 blocks.append((current_uid, current_block))
             current_uid = None
-            current_block = []
-        elif isinstance(cmd, MovingCommand) and current_uid is not None:
-            current_block.append(cmd)
+            current_block = Ops()
+        elif ops.category(i) == CommandCategory.MOVING:
+            if current_uid is not None:
+                current_block.transfer_command_from(ops, i)
 
-    if current_uid is not None and current_block:
+    if current_uid is not None and not current_block.is_empty():
         blocks.append((current_uid, current_block))
 
     return blocks
 
 
-def _extract_workpiece_meta(
-    uid: str, commands: List[MovingCommand]
-) -> Optional[WorkpieceMeta]:
-    if not commands:
+def _extract_workpiece_meta(uid: str, ops: Ops) -> Optional[WorkpieceMeta]:
+    if ops.is_empty():
         return None
 
-    entry_point: Optional[Tuple[float, float, float]] = None
-    exit_point: Optional[Tuple[float, float, float]] = None
+    entry_point: Optional[Point3D] = None
+    exit_point: Optional[Point3D] = None
 
-    for cmd in commands:
-        if isinstance(cmd, MoveToCommand):
-            entry_point = cmd.end
+    for i in range(ops.len()):
+        if ops.is_travel(i):
+            entry_point = ops.endpoint(i)
             break
 
     if entry_point is None:
-        for cmd in commands:
-            if cmd.end is not None:
-                entry_point = cmd.end
+        for i in range(ops.len()):
+            if ops.category(i) == CommandCategory.MOVING:
+                entry_point = ops.endpoint(i)
                 break
 
-    for cmd in reversed(commands):
-        if cmd.end is not None:
-            exit_point = cmd.end
+    for i in range(ops.len() - 1, -1, -1):
+        if ops.category(i) == CommandCategory.MOVING:
+            exit_point = ops.endpoint(i)
             break
 
     if entry_point is None or exit_point is None:
         return None
 
-    can_flip = True
-    for cmd in commands:
-        if cmd.is_travel_command():
-            continue
-        can_flip = True
-        break
+    can_flip = False
+    for i in range(ops.len()):
+        if ops.is_cutting(i):
+            can_flip = True
+            break
 
     return WorkpieceMeta(
         uid=uid,
-        commands=commands,
+        ops=ops,
         entry_point=entry_point,
         exit_point=exit_point,
         can_flip=can_flip,
@@ -167,7 +156,7 @@ def _kdtree_order_workpieces(
                     if next_meta.can_flip and is_exit_point:
                         next_meta = WorkpieceMeta(
                             uid=next_meta.uid,
-                            commands=flip_segment(next_meta.commands),
+                            ops=next_meta.ops.flip_ops(),
                             entry_point=next_meta.exit_point,
                             exit_point=next_meta.entry_point,
                             can_flip=next_meta.can_flip,
@@ -253,7 +242,7 @@ def _two_opt_workpieces(
                         if sub[k].can_flip:
                             sub[k] = WorkpieceMeta(
                                 uid=sub[k].uid,
-                                commands=flip_segment(sub[k].commands),
+                                ops=sub[k].ops.flip_ops(),
                                 entry_point=sub[k].exit_point,
                                 exit_point=sub[k].entry_point,
                                 can_flip=sub[k].can_flip,
@@ -268,20 +257,23 @@ def _two_opt_workpieces(
 
 
 def _split_scanline(
-    move_cmd: MovingCommand, scan_cmd: ScanLinePowerCommand
-) -> List[List[MovingCommand]]:
+    move_idx: int, scan_idx: int, source_ops: Ops
+) -> List[Ops]:
     """
     Splits a single ScanLinePowerCommand into multiple segments if it
     contains areas of zero power (blank space). An overscanned line (with
     zero-power padding at the ends) is treated as a single segment.
     """
-    pv = scan_cmd.power_values
+    pv = bytearray(source_ops.scanline_data(scan_idx))
     if not pv or not any(pv):
         return []
 
     stripped = pv.strip(b"\x00")
     if not stripped or 0 not in stripped:
-        return [[move_cmd, scan_cmd]]
+        result = Ops()
+        result.transfer_command_from(source_ops, move_idx)
+        result.transfer_command_from(source_ops, scan_idx)
+        return [result]
 
     is_on = np.array(pv) > 0
     padded = np.concatenate(([False], is_on, [False]))
@@ -289,102 +281,96 @@ def _split_scanline(
     starts = np.where(diffs == 1)[0]
     ends = np.where(diffs == -1)[0]
 
-    p_start = np.array(move_cmd.end)
-    p_end = np.array(scan_cmd.end)
+    p_start = np.array(source_ops.endpoint(move_idx))
+    p_end = np.array(source_ops.endpoint(scan_idx))
     line_vec = p_end - p_start
-    num_steps = len(scan_cmd.power_values)
+    num_steps = len(pv)
+
+    state = source_ops.preloaded_state(scan_idx)
 
     segments = []
     for start_idx, end_idx in zip(starts, ends):
         t_start = start_idx / num_steps
         t_end = end_idx / num_steps
 
-        seg_start_pt = p_start + t_start * line_vec
-        seg_end_pt = p_start + t_end * line_vec
-        power_slice = scan_cmd.power_values[start_idx:end_idx]
+        seg_start_pt = tuple(p_start + t_start * line_vec)
+        seg_end_pt = tuple(p_start + t_end * line_vec)
+        power_slice = bytearray(pv[start_idx:end_idx])
 
-        new_move = MoveToCommand(tuple(seg_start_pt))
-        new_scan = ScanLinePowerCommand(
-            tuple(seg_end_pt), power_values=power_slice
-        )
+        new_ops = Ops()
+        new_ops.move_to(*seg_start_pt)
+        new_ops.scan_to(*seg_end_pt, power_values=power_slice)
+        new_ops.set_state_on_moving(state)
 
-        if scan_cmd.state:
-            new_move.state = scan_cmd.state
-            new_scan.state = scan_cmd.state
-
-        segments.append([new_move, new_scan])
+        segments.append(new_ops)
     return segments
 
 
 def _group_paths_power_agnostic(
-    commands: List[MovingCommand],
-) -> List[List[MovingCommand]]:
+    ops: Ops,
+) -> List[Ops]:
     """
     Groups commands into continuous path segments. This is used to
     handle zero-power LineTo commands created by transformers like Overscan.
     It defines a segment as a MoveTo followed by any number of non-travel
     moves, ignoring their power state for grouping purposes.
     """
-    segments: List[List[MovingCommand]] = []
-    if not commands:
+    segments: List[Ops] = []
+    if ops.is_empty():
         return []
     i = 0
-    while i < len(commands):
-        start_cmd = commands[i]
-        if not start_cmd.is_travel_command():
+    while i < ops.len():
+        if not ops.is_travel(i):
             i += 1
             continue
-        current_segment = [start_cmd]
+        current_segment = Ops()
+        current_segment.transfer_command_from(ops, i)
         i += 1
         # Consume all subsequent drawing commands (LineTo, ArcTo) regardless
         # of power.
-        while i < len(commands) and not commands[i].is_travel_command():
-            current_segment.append(commands[i])
+        while i < ops.len() and not ops.is_travel(i):
+            current_segment.transfer_command_from(ops, i)
             i += 1
         segments.append(current_segment)
     return segments
 
 
 def group_mixed_continuity(
-    commands: List[MovingCommand],
-) -> List[List[MovingCommand]]:
+    ops: Ops,
+) -> List[Ops]:
     """
     Splits a command list into continuous path segments. It correctly pairs
     a MoveTo command with a subsequent ScanLinePowerCommand, splitting it if
     necessary, to form optimizable raster segments.
     """
-    segments: List[List[MovingCommand]] = []
-    if not commands:
+    segments: List[Ops] = []
+    if ops.is_empty():
         return []
 
     i = 0
-    while i < len(commands):
+    while i < ops.len():
         # A segment must start with a travel command (MoveTo).
-        start_cmd = commands[i]
-        if not start_cmd.is_travel_command():
+        if not ops.is_travel(i):
             # This handles malformed lists or finds the next MoveTo.
             i += 1
             continue
 
         # Check what follows the travel move
-        if (i + 1) < len(commands) and isinstance(
-            commands[i + 1], ScanLinePowerCommand
-        ):
-            move = start_cmd
-            scan = cast(ScanLinePowerCommand, commands[i + 1])
-            sub_segments = _split_scanline(move, scan)
+        if (i + 1) < ops.len() and ops.is_scanline(i + 1):
+            sub_segments = _split_scanline(i, i + 1, ops)
             if sub_segments:
                 segments.extend(sub_segments)
-            i += 2  # Consume both commands
+            i += 2
         else:
             # Fallback to power-agnostic grouping for vector paths.
-            current_segment = [start_cmd]
+            current_segment = Ops()
+            current_segment.transfer_command_from(ops, i)
             i += 1
-            while i < len(commands) and not commands[i].is_travel_command():
+            while i < ops.len() and not ops.is_travel(i):
                 # Defensively handle mixed vector/raster types
-                if isinstance(commands[i], ScanLinePowerCommand):
+                if ops.is_scanline(i):
                     break
-                current_segment.append(commands[i])
+                current_segment.transfer_command_from(ops, i)
                 i += 1
             segments.append(current_segment)
 
@@ -392,8 +378,8 @@ def group_mixed_continuity(
 
 
 def kdtree_order_segments(
-    context: ProgressContext, segments: List[List[MovingCommand]]
-) -> List[List[MovingCommand]]:
+    context: ProgressContext, segments: List[Ops]
+) -> List[Ops]:
     """
     Orders segments using a nearest-neighbor search accelerated by a k-d tree.
     This provides a fast and robust O(N log N) implementation.
@@ -409,11 +395,11 @@ def kdtree_order_segments(
     # segment i, and point 2*i+1 is the end.
     all_points = np.zeros((n * 2, 2))
     for i, seg in enumerate(segments):
-        all_points[2 * i] = seg[0].end[:2]
-        all_points[2 * i + 1] = seg[-1].end[:2]
+        all_points[2 * i] = seg.endpoint(0)[:2]
+        all_points[2 * i + 1] = seg.endpoint(seg.len() - 1)[:2]
 
     kdtree = cKDTree(all_points)
-    ordered_segments = []
+    ordered_segments: List[Ops] = []
     visited_mask = np.zeros(n, dtype=bool)
 
     # 2. Pick a starting point and initialize.
@@ -421,7 +407,7 @@ def kdtree_order_segments(
     current_seg = segments[current_segment_idx]
     ordered_segments.append(current_seg)
     visited_mask[current_segment_idx] = True
-    current_pos = np.array(current_seg[-1].end[:2])
+    current_pos = np.array(current_seg.endpoint(current_seg.len() - 1)[:2])
     context.set_progress(1)
 
     # 3. Iteratively find the closest unvisited segment.
@@ -454,11 +440,13 @@ def kdtree_order_segments(
                     is_end_point = point_idx % 2 == 1
 
                     if is_end_point:
-                        next_seg = flip_segment(next_seg)
+                        next_seg = next_seg.flip_ops()
 
                     ordered_segments.append(next_seg)
                     visited_mask[segment_idx] = True
-                    current_pos = np.array(next_seg[-1].end[:2])
+                    current_pos = np.array(
+                        next_seg.endpoint(next_seg.len() - 1)[:2]
+                    )
                     found_next = True
                     break  # break `for point_idx` loop
 
@@ -486,16 +474,15 @@ def kdtree_order_segments(
 
 def greedy_order_segments(
     context: ProgressContext,
-    segments: List[List[MovingCommand]],
-) -> List[List[MovingCommand]]:
+    segments: List[Ops],
+) -> List[Ops]:
     """
     Greedy ordering using vectorized math.dist computations.
     O(N^2) complexity.
 
-    It is assumed that the input segments contain only Command objects
-    that are NOT state commands (such as 'set_power'), so it is
-    ensured that each Command performs a position change (i.e. it has
-    x,y coordinates).
+    It is assumed that the input segments contain only Ops objects
+    with moving commands, so it is ensured that each command has
+    x,y coordinates.
     """
     if not segments:
         return []
@@ -504,12 +491,12 @@ def greedy_order_segments(
     remaining = list(segments)
 
     context.set_total(len(remaining))
-    ordered: List[List[MovingCommand]] = []
+    ordered: List[Ops] = []
 
     # Take the first segment as is
     current_seg = remaining.pop(0)
     ordered.append(current_seg)
-    current_pos = np.array(current_seg[-1].end)
+    current_pos = np.array(current_seg.endpoint(current_seg.len() - 1))
     context.set_progress(1)
 
     while remaining:
@@ -517,8 +504,8 @@ def greedy_order_segments(
             return ordered
 
         # Vectorized distance calculation to all start and end points
-        starts = np.array([seg[0].end for seg in remaining])
-        ends = np.array([seg[-1].end for seg in remaining])
+        starts = np.array([seg.endpoint(0) for seg in remaining])
+        ends = np.array([seg.endpoint(seg.len() - 1) for seg in remaining])
 
         d_starts = np.linalg.norm(starts[:, :2] - current_pos[:2], axis=1)
         d_ends = np.linalg.norm(ends[:, :2] - current_pos[:2], axis=1)
@@ -531,10 +518,10 @@ def greedy_order_segments(
 
         # If the end was closer, flip the segment
         if d_ends[best_idx] < d_starts[best_idx]:
-            best_seg = flip_segment(best_seg)
+            best_seg = best_seg.flip_ops()
 
         ordered.append(best_seg)
-        current_pos = np.array(best_seg[-1].end)
+        current_pos = np.array(best_seg.endpoint(best_seg.len() - 1))
         context.set_progress(len(ordered))
 
     return ordered
@@ -542,9 +529,9 @@ def greedy_order_segments(
 
 def two_opt(
     context: ProgressContext,
-    ordered: List[List[MovingCommand]],
+    ordered: List[Ops],
     max_iter: int,
-) -> List[List[MovingCommand]]:
+) -> List[Ops]:
     """
     2-opt: try reversing entire sub-sequences if that lowers the travel cost.
     """
@@ -568,12 +555,12 @@ def two_opt(
                 if context.is_cancelled():
                     return ordered
 
-                a_end = ordered[i][-1].end
-                b_start = ordered[i + 1][0].end
-                e_end = ordered[j][-1].end
+                a_end = ordered[i].endpoint(ordered[i].len() - 1)
+                b_start = ordered[i + 1].endpoint(0)
+                e_end = ordered[j].endpoint(ordered[j].len() - 1)
 
                 if j < n - 1:
-                    f_start = ordered[j + 1][0].end
+                    f_start = ordered[j + 1].endpoint(0)
 
                     curr_cost = _hypot(
                         a_end[0] - b_start[0], a_end[1] - b_start[1]
@@ -594,7 +581,7 @@ def two_opt(
                     sub = ordered[i + 1 : j + 1]
                     # Reverse order and flip each segment.
                     for k in range(len(sub)):
-                        sub[k] = flip_segment(sub[k])
+                        sub[k] = sub[k].flip_ops()
                     ordered[i + 1 : j + 1] = sub[::-1]
                     improved = True
         iter_count += 1
@@ -604,7 +591,7 @@ def two_opt(
 
 
 def _prepare_optimization_jobs(
-    long_segments: List[List[Command]],
+    long_segments: List[Ops],
     two_opt_segment_threshold: int,
     two_opt_command_limit: int,
 ) -> List[Dict[str, Any]]:
@@ -627,7 +614,7 @@ def _prepare_optimization_jobs(
 
     for i, long_segment in enumerate(long_segments):
         # Handle passthrough segments like markers
-        if not long_segment or long_segment[0].is_marker():
+        if long_segment.is_empty() or long_segment.is_marker(0):
             jobs.append(
                 {
                     "type": "passthrough",
@@ -638,18 +625,14 @@ def _prepare_optimization_jobs(
             )
             continue
 
-        # Split the long segment into its reorderable sub-segments
         contains_scanline = any(
-            isinstance(c, ScanLinePowerCommand) for c in long_segment
+            long_segment.is_scanline(j) for j in range(long_segment.len())
         )
+        # Split the long segment into its reorderable sub-segments
         if contains_scanline:
-            sub_segments = group_mixed_continuity(
-                cast(List[MovingCommand], long_segment)
-            )
+            sub_segments = group_mixed_continuity(long_segment)
         else:
-            sub_segments = _group_paths_power_agnostic(
-                cast(List[MovingCommand], long_segment)
-            )
+            sub_segments = _group_paths_power_agnostic(long_segment)
 
         num_sub_segments = len(sub_segments)
 
@@ -678,7 +661,7 @@ def _prepare_optimization_jobs(
             )
         else:
             # Otherwise, it's a candidate for 2-opt
-            command_count = sum(len(s) for s in sub_segments)
+            command_count = sum(seg.len() for seg in sub_segments)
             two_opt_candidates.append(
                 {
                     "original_index": i,
@@ -719,6 +702,53 @@ def _prepare_optimization_jobs(
             )
 
     return jobs
+
+
+_DEFAULT_STATE: Dict[str, Any] = {
+    "power": 0.0,
+    "air_assist": False,
+    "cut_speed": None,
+    "travel_speed": None,
+    "active_laser_uid": None,
+    "frequency": None,
+    "pulse_width": None,
+}
+
+
+def _sync_state_commands(
+    ops: Ops,
+    state: Dict[str, Any],
+    prev: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Emits state commands on ops for fields that differ from prev.
+
+    Returns the updated prev dict (mutated in place and returned).
+    """
+    if state["power"] != prev["power"]:
+        ops.set_power(state["power"])
+        prev["power"] = state["power"]
+    if (
+        state["cut_speed"] is not None
+        and state["cut_speed"] != prev["cut_speed"]
+    ):
+        ops.set_cut_speed(state["cut_speed"])
+        prev["cut_speed"] = state["cut_speed"]
+    if (
+        state["travel_speed"] is not None
+        and state["travel_speed"] != prev["travel_speed"]
+    ):
+        ops.set_travel_speed(state["travel_speed"])
+        prev["travel_speed"] = state["travel_speed"]
+    if state["air_assist"] != prev["air_assist"]:
+        ops.enable_air_assist(state["air_assist"])
+        prev["air_assist"] = state["air_assist"]
+    if (
+        state["active_laser_uid"] is not None
+        and state["active_laser_uid"] != prev["active_laser_uid"]
+    ):
+        ops.set_laser(state["active_laser_uid"])
+        prev["active_laser_uid"] = state["active_laser_uid"]
+    return prev
 
 
 class Optimize(OpsTransformer):
@@ -802,19 +832,19 @@ class Optimize(OpsTransformer):
     def _optimize_workpiece_order(
         self,
         ops: Ops,
-        blocks: List[Tuple[str, List[MovingCommand]]],
+        blocks: List[Tuple[str, Ops]],
         context: ProgressContext,
     ) -> None:
         context.set_message(_("Analyzing workpieces..."))
 
         metas: List[WorkpieceMeta] = []
-        for uid, commands in blocks:
-            meta = _extract_workpiece_meta(uid, commands)
+        for uid, block_ops in blocks:
+            meta = _extract_workpiece_meta(uid, block_ops)
             if meta is not None:
                 if not self.allow_flip:
                     meta = WorkpieceMeta(
                         uid=meta.uid,
-                        commands=meta.commands,
+                        ops=meta.ops,
                         entry_point=meta.entry_point,
                         exit_point=meta.exit_point,
                         can_flip=False,
@@ -888,50 +918,16 @@ class Optimize(OpsTransformer):
     ) -> None:
         ops.preload_state()
 
-        state_commands: List[Any] = []
-        for cmd in ops:
-            if cmd.is_state_command() and not isinstance(
-                cmd, (WorkpieceStartCommand, WorkpieceEndCommand)
-            ):
-                state_commands.append(cmd)
-
         ops.clear()
 
-        prev_state = State()
+        prev = dict(_DEFAULT_STATE)
         for meta in ordered_metas:
             ops.workpiece_start(meta.uid)
 
-            for cmd in meta.commands:
-                if hasattr(cmd, "state") and cmd.state:
-                    if cmd.state.power != prev_state.power:
-                        ops.set_power(cmd.state.power)
-                        prev_state.power = cmd.state.power
-                    if (
-                        cmd.state.cut_speed is not None
-                        and cmd.state.cut_speed != prev_state.cut_speed
-                    ):
-                        ops.set_cut_speed(cmd.state.cut_speed)
-                        prev_state.cut_speed = cmd.state.cut_speed
-                    if (
-                        cmd.state.travel_speed is not None
-                        and cmd.state.travel_speed != prev_state.travel_speed
-                    ):
-                        ops.set_travel_speed(cmd.state.travel_speed)
-                        prev_state.travel_speed = cmd.state.travel_speed
-                    if cmd.state.air_assist != prev_state.air_assist:
-                        ops.enable_air_assist(cmd.state.air_assist)
-                        prev_state.air_assist = cmd.state.air_assist
-                    if (
-                        cmd.state.active_laser_uid is not None
-                        and cmd.state.active_laser_uid
-                        != prev_state.active_laser_uid
-                    ):
-                        ops.set_laser(cmd.state.active_laser_uid)
-                        prev_state.active_laser_uid = (
-                            cmd.state.active_laser_uid
-                        )
-
-                ops.add(cmd)
+            for j in range(meta.ops.len()):
+                state = meta.ops.preloaded_state(j)
+                _sync_state_commands(ops, state, prev)
+                ops.transfer_command_from(meta.ops, j)
 
             ops.workpiece_end(meta.uid)
 
@@ -943,11 +939,11 @@ class Optimize(OpsTransformer):
         # Step 1: Preprocessing
         context.set_message(_("Preprocessing for optimization..."))
 
-        commands = [c for c in ops if not c.is_state_command()]
-        logger.debug(f"Optimizing {len(commands)} moving commands.")
+        nons = ops.without_state()
+        logger.debug(f"Optimizing {nons.len()} moving commands.")
 
         # Step 2: Splitting into non-reorderable long segments
-        long_segments = group_by_state_continuity(commands)
+        long_segments = nons.group_by_state_continuity()
         if context.is_cancelled():
             return
 
@@ -1055,45 +1051,28 @@ class Optimize(OpsTransformer):
             if i in processed_results
         ]
 
-        flat_result_segments = []
+        flat_result_segments: List[Ops] = []
         for item in result:
-            if item and isinstance(item[0], list):
+            if isinstance(item, list):
                 flat_result_segments.extend(item)
             else:
                 flat_result_segments.append(item)
 
         reassemble_ctx.set_total(len(flat_result_segments))
         ops.clear()
-        prev_state = State()
-        for i, segment in enumerate(flat_result_segments):
-            if not segment:
+        prev = dict(_DEFAULT_STATE)
+        for i, segment_ops in enumerate(flat_result_segments):
+            if segment_ops.is_empty():
                 continue
 
-            if segment[0].is_marker():
-                ops.add(segment[0])
+            if segment_ops.is_marker(0):
+                ops.transfer_command_from(segment_ops, 0)
                 continue
 
-            for cmd in segment:
-                if cmd.state.air_assist != prev_state.air_assist:
-                    ops.enable_air_assist(cmd.state.air_assist)
-                    prev_state.air_assist = cmd.state.air_assist
-                if cmd.state.power != prev_state.power:
-                    ops.set_power(cmd.state.power)
-                    prev_state.power = cmd.state.power
-                if cmd.state.cut_speed != prev_state.cut_speed:
-                    ops.set_cut_speed(cmd.state.cut_speed)
-                    prev_state.cut_speed = cmd.state.cut_speed
-                if cmd.state.travel_speed != prev_state.travel_speed:
-                    ops.set_travel_speed(cmd.state.travel_speed)
-                    prev_state.travel_speed = cmd.state.travel_speed
-                if cmd.state.active_laser_uid != prev_state.active_laser_uid:
-                    ops.set_laser(cmd.state.active_laser_uid)
-                    prev_state.active_laser_uid = cmd.state.active_laser_uid
-
-                if not cmd.is_state_command():
-                    ops.add(cmd)
-                else:
-                    raise ValueError(f"unexpected command {cmd}")
+            for j in range(segment_ops.len()):
+                state = segment_ops.preloaded_state(j)
+                _sync_state_commands(ops, state, prev)
+                ops.transfer_command_from(segment_ops, j)
             reassemble_ctx.set_progress(i + 1)
 
         logger.debug("Optimization finished")

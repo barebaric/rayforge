@@ -13,7 +13,7 @@ Tests cover:
 import pytest
 import base64
 
-from rayforge.core.ops import Ops, SetFrequencyCommand, SetPulseWidthCommand
+from rayforge.core.ops import Ops
 from rayforge.core.doc import Doc
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.driver.ruida.ruida_encoder import RuidaEncoder
@@ -788,7 +788,7 @@ class TestSetFrequencyCommand:
 
     def test_frequency_encoding(self, encoder, mock_machine, doc):
         ops = Ops()
-        ops.add(SetFrequencyCommand(1000))
+        ops.set_frequency(1000)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -801,7 +801,7 @@ class TestSetFrequencyCommand:
     def test_frequency_with_laser_2(self, encoder, mock_machine, doc):
         ops = Ops()
         ops.set_laser("laser-2")
-        ops.add(SetFrequencyCommand(5000))
+        ops.set_frequency(5000)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -811,7 +811,7 @@ class TestSetFrequencyCommand:
 
     def test_frequency_command_structure(self, encoder, mock_machine, doc):
         ops = Ops()
-        ops.add(SetFrequencyCommand(2000))
+        ops.set_frequency(2000)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -825,7 +825,7 @@ class TestSetPulseWidthCommand:
 
     def test_pulse_width_encoding(self, encoder, mock_machine, doc):
         ops = Ops()
-        ops.add(SetPulseWidthCommand(50))
+        ops.set_pulse_width(50)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -838,7 +838,7 @@ class TestSetPulseWidthCommand:
     def test_pulse_width_with_laser_2(self, encoder, mock_machine, doc):
         ops = Ops()
         ops.set_laser("laser-2")
-        ops.add(SetPulseWidthCommand(100))
+        ops.set_pulse_width(100)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -847,7 +847,7 @@ class TestSetPulseWidthCommand:
 
     def test_pulse_width_command_structure(self, encoder, mock_machine, doc):
         ops = Ops()
-        ops.add(SetPulseWidthCommand(25))
+        ops.set_pulse_width(25)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -864,8 +864,8 @@ class TestFrequencyAndPulseWidthInJob:
         ops.job_start()
         ops.set_power(0.8)
         ops.set_cut_speed(200)
-        ops.add(SetFrequencyCommand(1000))
-        ops.add(SetPulseWidthCommand(50))
+        ops.set_frequency(1000)
+        ops.set_pulse_width(50)
         ops.move_to(0.0, 0.0, 0.0)
         ops.line_to(10.0, 10.0, 0.0)
         ops.job_end()

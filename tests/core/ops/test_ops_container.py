@@ -11,9 +11,6 @@ from rayforge.core.ops import (
     OpsSection,
     CommandType,
     CommandCategory,
-    MoveToCommand,
-    ArcToCommand,
-    BezierToCommand,
     State,
     SectionType,
 )
@@ -365,10 +362,10 @@ def test_cut_distance(sample_ops):
 
 def test_segments(sample_ops):
     sample_ops.move_to(5, 5)  # Travel command
-    segments = list(sample_ops.segments())
+    segments = list(sample_ops.segment_indices())
     assert len(segments) > 0
     # First segment should end before the travel command
-    assert segments[0][-1].is_cutting_command()
+    assert sample_ops.is_cutting(segments[0][-1])
 
 
 def test_preload_state_application():
@@ -479,11 +476,11 @@ def test_transform_uniform_reflection_flips_cw():
     )
     ops.transform(matrix)
 
-    arc_cmd = ops.commands[1]
-    assert isinstance(arc_cmd, ArcToCommand)
-    assert arc_cmd.clockwise is True
-    assert arc_cmd.center_offset[0] == pytest.approx(10)
-    assert arc_cmd.center_offset[1] == pytest.approx(0)
+    assert ops.command_type(1) == CommandType.ARC_TO
+    i, j, cw = ops.arc_params(1)
+    assert cw is True
+    assert i == pytest.approx(10)
+    assert j == pytest.approx(0)
 
 
 def test_transform_uniform_reflection_flips_ccw_to_cw():
@@ -503,9 +500,9 @@ def test_transform_uniform_reflection_flips_ccw_to_cw():
     )
     ops.transform(matrix)
 
-    arc_cmd = ops.commands[1]
-    assert isinstance(arc_cmd, ArcToCommand)
-    assert arc_cmd.clockwise is False
+    assert ops.command_type(1) == CommandType.ARC_TO
+    _, _, cw = ops.arc_params(1)
+    assert cw is False
 
 
 def test_transform_uniform_rotation_preserves_cw():
@@ -526,9 +523,9 @@ def test_transform_uniform_rotation_preserves_cw():
     )
     ops.transform(matrix)
 
-    arc_cmd = ops.commands[1]
-    assert isinstance(arc_cmd, ArcToCommand)
-    assert arc_cmd.clockwise is False
+    assert ops.command_type(1) == CommandType.ARC_TO
+    _, _, cw = ops.arc_params(1)
+    assert cw is False
 
 
 def test_transform_non_uniform():
@@ -749,8 +746,10 @@ def test_clip_with_arc():
     clipped_ops = ops.clip_rect(clip_rect)
 
     # Check that there are drawing commands left
-    drawing_cmds = [c for c in clipped_ops if c.is_cutting_command()]
-    assert len(drawing_cmds) > 0
+    cutting_count = sum(
+        1 for i in range(clipped_ops.len()) if clipped_ops.is_cutting(i)
+    )
+    assert cutting_count > 0
 
     # Check that all remaining points are within the rect bounds
     for i in range(clipped_ops.len()):
@@ -1071,8 +1070,8 @@ class TestClipToCircleRegions:
         ops.clip_to_regions([circle])
 
         assert ops.len() > 0
-        drawing_cmds = [c for c in ops if c.is_cutting_command()]
-        assert len(drawing_cmds) > 0
+        cutting_count = sum(1 for i in range(ops.len()) if ops.is_cutting(i))
+        assert cutting_count > 0
         for i in range(ops.len()):
             if ops.category(i) == CommandCategory.MOVING:
                 x, y, z = ops.endpoint(i)
@@ -1691,12 +1690,10 @@ def test_numpy_serialization_bezier_round_trip():
     ops.move_to(0, 0, 0)
     ops.bezier_to(c1=(1.5, 2.5, 3.5), c2=(4.5, 5.5, 6.5), end=(7.5, 8.5, 9.5))
     ops.set_power(0.5)
-    ops.add(
-        BezierToCommand(
-            end=(70, 80, 90),
-            control1=(10, 20, 30),
-            control2=(40, 50, 60),
-        )
+    ops.bezier_to(
+        c1=(10, 20, 30),
+        c2=(40, 50, 60),
+        end=(70, 80, 90),
     )
 
     arrays = ops.to_numpy_arrays()
@@ -1977,15 +1974,17 @@ class TestIterSections:
 
 
 def test_extra_axes_to_dict_no_extra_axes():
-    cmd = MoveToCommand((1, 2, 3))
-    data = cmd.to_dict()
-    assert "extra_axes" not in data
+    ops = Ops()
+    ops.move_to(1, 2, 3)
+    data = ops.to_dict()
+    assert "extra_axes" not in data["commands"][0]
 
 
 def test_extra_axes_to_dict_with_extra_axes():
-    cmd = MoveToCommand((1, 2, 3), extra_axes={Axis.A: 45.0})
-    data = cmd.to_dict()
-    assert data["extra_axes"] == {"A": 45.0}
+    ops = Ops()
+    ops.move_to(1, 2, 3, extra={Axis.A: 45.0})
+    data = ops.to_dict()
+    assert data["commands"][0]["extra_axes"] == {"A": 45.0}
 
 
 def test_extra_axes_from_dict_no_extra_axes():
@@ -2308,10 +2307,10 @@ def test_transform_layers_callback_modifies_in_place():
     ops.layer_end("lyr1")
 
     def flip_y(uid, sub):
-        for cmd in sub.commands:
-            if hasattr(cmd, "end"):
-                x, y, z = cmd.end
-                cmd.end = (x, -y, z)
+        def _flip(end, extra):
+            end[1] = -end[1]
+
+        sub.transform_moving(_flip)
 
     ops.transform_layers(flip_y)
     assert ops.endpoint(1) == (100.0, 0.0, 0.0)

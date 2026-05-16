@@ -88,8 +88,11 @@ def reconstruct_mu_bezier(
     idx: int,
     diameter: float,
     reverse: bool,
-) -> Tuple[Tuple[float, float, float], Tuple[float, float, float],
-            Tuple[float, float, float]]:
+) -> Tuple[
+    Tuple[float, float, float],
+    Tuple[float, float, float],
+    Tuple[float, float, float],
+]:
     """Reconstructs bezier parameters in mu coordinates.
 
     Returns (end, control1, control2).
@@ -136,25 +139,31 @@ def bake_visual_positions(
             new_end = (end[0], degrees, end[2])
             if ct == CommandType.SCAN_LINE:
                 baked.scan_to(
-                    new_end[0], new_end[1], new_end[2],
+                    new_end[0],
+                    new_end[1],
+                    new_end[2],
                     power_values=bytearray(ops.scanline_data(i)),
                     extra=ea if ea else None,
                 )
             elif ct == CommandType.ARC_TO:
                 i_val, j_val, cw = ops.arc_params(i)
                 baked.arc_to(
-                    new_end[0], new_end[1],
-                    i_val, j_val, cw,
+                    new_end[0],
+                    new_end[1],
+                    i_val,
+                    j_val,
+                    cw,
                     new_end[2],
                     extra=ea if ea else None,
                 )
             elif ct == CommandType.BEZIER_TO:
                 c1, c2 = ops.bezier_params(i)
-                baked.bezier_to(c1, c2, new_end,
-                                extra=ea if ea else None)
+                baked.bezier_to(c1, c2, new_end, extra=ea if ea else None)
             elif ct == CommandType.MOVE_TO:
                 baked.move_to(
-                    new_end[0], new_end[1], new_end[2],
+                    new_end[0],
+                    new_end[1],
+                    new_end[2],
                     extra=ea if ea else None,
                 )
             else:

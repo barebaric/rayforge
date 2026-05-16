@@ -2,20 +2,14 @@ from __future__ import annotations
 
 import math
 import logging
-from typing import Optional, List, Dict, Any, Sequence, TYPE_CHECKING
+from typing import Optional, List, Dict, Any, TYPE_CHECKING
 from gettext import gettext as _
 
 from rayforge.core.ops import (
     Ops,
-    Command,
-    MovingCommand,
-    MoveToCommand,
-    LineToCommand,
-    SetPowerCommand,
     SectionType,
-    OpsSectionStartCommand,
-    OpsSectionEndCommand,
 )
+from rayforge.core.ops.enums import CommandType, CommandCategory
 from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
 from rayforge.shared.tasker.progress import ProgressContext
 
@@ -139,51 +133,55 @@ class LeadInOutTransformer(OpsTransformer):
 
         ops.preload_state()
 
-        new_commands: List[Command] = []
-        line_buffer: List[Command] = []
+        new_ops = Ops()
+        line_buffer: List[int] = []
         in_vector_section = False
 
         def _process_buffer():
             nonlocal line_buffer
             if line_buffer:
-                rewritten = self._rewrite_buffered_contour(line_buffer)
-                new_commands.extend(rewritten)
+                self._rewrite_buffered_contour(new_ops, ops, line_buffer)
                 line_buffer = []
 
-        for cmd in ops:
-            is_start = (
-                isinstance(cmd, OpsSectionStartCommand)
-                and cmd.section_type == SectionType.VECTOR_OUTLINE
-            )
-            is_end = (
-                isinstance(cmd, OpsSectionEndCommand)
-                and cmd.section_type == SectionType.VECTOR_OUTLINE
-            )
+        for i in range(ops.len()):
+            ct = ops.command_type(i)
+
+            is_start = ct == CommandType.OPS_SECTION_START
+            if is_start:
+                sec_type, _ = ops.section_params(i)
+                is_start = sec_type == SectionType.VECTOR_OUTLINE
+
+            is_end = ct == CommandType.OPS_SECTION_END
+            if is_end:
+                sec_type, _ = ops.section_params(i)
+                is_end = sec_type == SectionType.VECTOR_OUTLINE
 
             if is_start:
                 _process_buffer()
                 in_vector_section = True
-                new_commands.append(cmd)
+                new_ops.transfer_command_from(ops, i)
             elif is_end:
                 _process_buffer()
                 in_vector_section = False
-                new_commands.append(cmd)
+                new_ops.transfer_command_from(ops, i)
             elif not in_vector_section:
-                new_commands.append(cmd)
+                new_ops.transfer_command_from(ops, i)
             else:
-                if isinstance(cmd, MoveToCommand):
+                if ct == CommandType.MOVE_TO:
                     _process_buffer()
-                    line_buffer = [cmd]
+                    line_buffer = [i]
                 elif line_buffer:
-                    line_buffer.append(cmd)
+                    line_buffer.append(i)
                 else:
                     _process_buffer()
-                    new_commands.append(cmd)
+                    new_ops.transfer_command_from(ops, i)
 
         _process_buffer()
-        ops.replace_all(new_commands)
+        ops.replace_with(new_ops)
 
-    def _get_tangent_at_start(self, buffer: List[Command]) -> Optional[tuple]:
+    def _get_tangent_at_start(
+        self, old_ops: Ops, indices: List[int]
+    ) -> Optional[tuple]:
         """
         Compute the normalized tangent direction at the start of a
         contour using the geometry module. Converts the ops buffer to a
@@ -193,7 +191,8 @@ class LeadInOutTransformer(OpsTransformer):
         Returns None if the first segment has zero length.
         """
         sub_ops = Ops()
-        sub_ops.replace_all(buffer)
+        for j in indices:
+            sub_ops.transfer_command_from(old_ops, j)
         geo = sub_ops.to_geometry()
         if geo.data is None or len(geo.data) < 2:
             return None
@@ -208,7 +207,9 @@ class LeadInOutTransformer(OpsTransformer):
         _, tangent = result
         return tangent
 
-    def _get_tangent_at_end(self, buffer: List[Command]) -> Optional[tuple]:
+    def _get_tangent_at_end(
+        self, old_ops: Ops, indices: List[int]
+    ) -> Optional[tuple]:
         """
         Compute the normalized tangent direction at the end of a contour
         using the geometry module. Converts the ops buffer to a Geometry
@@ -217,7 +218,8 @@ class LeadInOutTransformer(OpsTransformer):
         Returns None if the last segment has zero length.
         """
         sub_ops = Ops()
-        sub_ops.replace_all(buffer)
+        for j in indices:
+            sub_ops.transfer_command_from(old_ops, j)
         geo = sub_ops.to_geometry()
         if geo.data is None or len(geo.data) < 2:
             return None
@@ -234,54 +236,68 @@ class LeadInOutTransformer(OpsTransformer):
         return tangent
 
     def _rewrite_buffered_contour(
-        self, buffer: List[Command]
-    ) -> Sequence[Command]:
+        self,
+        new_ops: Ops,
+        old_ops: Ops,
+        indices: List[int],
+    ) -> None:
         """
         Rewrites a single contour path to include lead-in and/or lead-out
         zero-power segments, computed from the proper tangent direction
         at the path start and end.
         """
-        moving_cmds = [c for c in buffer if isinstance(c, MovingCommand)]
+        moving_indices = [
+            j for j in indices if old_ops.category(j) == CommandCategory.MOVING
+        ]
 
-        if len(moving_cmds) < 2 or not isinstance(
-            moving_cmds[0], MoveToCommand
+        if len(moving_indices) < 2 or (
+            old_ops.command_type(moving_indices[0]) != CommandType.MOVE_TO
         ):
-            return buffer
+            for j in indices:
+                new_ops.transfer_command_from(old_ops, j)
+            return
 
         has_lead_in = not math.isclose(self.lead_in_mm, 0.0)
         has_lead_out = not math.isclose(self.lead_out_mm, 0.0)
 
         if not has_lead_in and not has_lead_out:
-            return buffer
+            for j in indices:
+                new_ops.transfer_command_from(old_ops, j)
+            return
 
         lead_in_tangent = None
         if has_lead_in:
-            lead_in_tangent = self._get_tangent_at_start(buffer)
+            lead_in_tangent = self._get_tangent_at_start(old_ops, indices)
             if lead_in_tangent is None:
                 has_lead_in = False
 
         lead_out_tangent = None
         if has_lead_out:
-            lead_out_tangent = self._get_tangent_at_end(buffer)
+            lead_out_tangent = self._get_tangent_at_end(old_ops, indices)
             if lead_out_tangent is None:
                 has_lead_out = False
 
         if not has_lead_in and not has_lead_out:
-            return buffer
+            for j in indices:
+                new_ops.transfer_command_from(old_ops, j)
+            return
 
-        first_cut = next(
-            (c for c in moving_cmds[1:] if c.is_cutting_command() and c.state),
-            None,
-        )
-        if not first_cut:
-            return buffer
+        first_cut_idx = None
+        for j in moving_indices[1:]:
+            if old_ops.command_type(j) == CommandType.LINE_TO:
+                state = old_ops.preloaded_state(j)
+                if state.get("power") is not None:
+                    first_cut_idx = j
+                    break
 
-        assert first_cut.state is not None
-        original_power = first_cut.state.power
-        start_3d = moving_cmds[0].end
-        end_3d = moving_cmds[-1].end
+        if first_cut_idx is None:
+            for j in indices:
+                new_ops.transfer_command_from(old_ops, j)
+            return
 
-        rewritten: List[Command] = []
+        original_power = old_ops.preloaded_state(first_cut_idx)["power"]
+        start_3d = old_ops.endpoint(moving_indices[0])
+        end_3d = old_ops.endpoint(moving_indices[-1])
 
         if has_lead_in and lead_in_tangent is not None:
             tx, ty = lead_in_tangent
@@ -290,17 +306,19 @@ class LeadInOutTransformer(OpsTransformer):
                 start_3d[1] - ty * self.lead_in_mm,
                 start_3d[2],
             )
-            rewritten.append(MoveToCommand(lead_in_start_3d))
-            rewritten.extend([SetPowerCommand(0), LineToCommand(start_3d)])
+            new_ops.move_to(*lead_in_start_3d)
+            new_ops.set_power(0)
+            new_ops.line_to(*start_3d)
         else:
-            rewritten.append(buffer[0])
+            new_ops.transfer_command_from(old_ops, indices[0])
 
-        content_cmds = buffer[1:]
-        if not content_cmds or not isinstance(
-            content_cmds[0], SetPowerCommand
+        content_indices = indices[1:]
+        if not content_indices or (
+            old_ops.command_type(content_indices[0]) != CommandType.SET_POWER
         ):
-            rewritten.append(SetPowerCommand(original_power))
-        rewritten.extend(content_cmds)
+            new_ops.set_power(original_power)
+        for j in content_indices:
+            new_ops.copy_command_from(old_ops, j)
 
         if has_lead_out and lead_out_tangent is not None:
             tx, ty = lead_out_tangent
@@ -309,11 +327,8 @@ class LeadInOutTransformer(OpsTransformer):
                 end_3d[1] + ty * self.lead_out_mm,
                 end_3d[2],
             )
-            rewritten.extend(
-                [SetPowerCommand(0), LineToCommand(lead_out_end_3d)]
-            )
-
-        return rewritten
+            new_ops.set_power(0)
+            new_ops.line_to(*lead_out_end_3d)
 
     def to_dict(self) -> Dict[str, Any]:
         return {

@@ -3,7 +3,6 @@ import math
 import pytest
 from rayforge.simulator.op_player import OpPlayer
 from rayforge.core.ops import Ops
-from rayforge.core.ops.commands import LayerStartCommand, ScanLinePowerCommand
 from rayforge.core.ops.axis import Axis
 from rayforge.core.doc import Doc
 from rayforge.machine.models.machine import Machine
@@ -134,7 +133,7 @@ def test_random_access_matches_sequential():
 def test_scanline_tracked():
     ops = Ops()
     ops.move_to(0.0, 0.0, 0.0)
-    ops.add(ScanLinePowerCommand((10.0, 0.0, 0.0), bytearray([100, 200])))
+    ops.scan_to(10.0, 0.0, 0.0, bytearray([100, 200]))
     ops.line_to(20.0, 0.0, 0.0)
 
     player = OpPlayer(ops, _make_machine(), Doc())
@@ -167,7 +166,7 @@ def test_replacement_mode_no_rotary_mapping():
 
     ops = Ops()
     ops.move_to(0, 0, 0)
-    ops.add(LayerStartCommand(layer_uid="test"))
+    ops.layer_start("test")
     ops.line_to(10, 20, 0)
 
     doc = Doc()
@@ -192,7 +191,7 @@ def test_true_4th_axis_copies_to_rotary():
 
     ops = Ops()
     ops.move_to(0, 0, 0)
-    ops.add(LayerStartCommand(layer_uid="test"))
+    ops.layer_start("test")
     ops.line_to(10, 20, 0)
 
     mapping = KinematicMapping(

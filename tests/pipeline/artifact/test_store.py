@@ -92,9 +92,7 @@ def test_put_get_release_vertex_artifact(handles_to_release):
 
     assert isinstance(retrieved_artifact, WorkPieceArtifact)
     assert retrieved_artifact.artifact_type == "WorkPieceArtifact"
-    assert len(original_artifact.ops.commands) == len(
-        retrieved_artifact.ops.commands
-    )
+    assert original_artifact.ops.len() == retrieved_artifact.ops.len()
     assert (
         original_artifact.generation_size == retrieved_artifact.generation_size
     )
@@ -120,9 +118,7 @@ def test_put_get_release_hybrid_artifact(handles_to_release):
 
     assert isinstance(retrieved_artifact, WorkPieceArtifact)
     assert retrieved_artifact.artifact_type == "WorkPieceArtifact"
-    assert len(original_artifact.ops.commands) == len(
-        retrieved_artifact.ops.commands
-    )
+    assert original_artifact.ops.len() == retrieved_artifact.ops.len()
 
     get_context().artifact_store.release(handle)
 

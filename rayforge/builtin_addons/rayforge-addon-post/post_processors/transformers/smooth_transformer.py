@@ -1,16 +1,9 @@
 from typing import Optional, List, Dict, Any, TYPE_CHECKING
 from gettext import gettext as _
 
-from raygeo import Point3D
-from raygeo.algo.smooth import (
-    compute_gaussian_kernel,
-    smooth_polyline,
-)
-from rayforge.core.ops import (
-    Ops,
-    LineToCommand,
-    MoveToCommand,
-)
+from raygeo.algo.smooth import compute_gaussian_kernel, smooth_polyline
+from rayforge.core.ops import Ops
+from rayforge.core.ops.enums import CommandType
 from rayforge.core.workpiece import WorkPiece
 from rayforge.shared.tasker.progress import ProgressContext
 from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
@@ -116,19 +109,17 @@ class Smooth(OpsTransformer):
             return
 
         ops.linearize_arcs()
-        segments = list(ops.segments())
+        all_indices = list(ops.segment_indices())
+        source = ops.copy()
         ops.clear()
-        total_segments = len(segments)
+        total_segments = len(all_indices)
 
-        for i, segment in enumerate(segments):
+        for i, indices in enumerate(all_indices):
             if context and context.is_cancelled():
                 break
-            points_to_smooth: Optional[List[Point3D]] = None
-            if self._is_line_only_segment(segment):
+            if self._is_line_only_segment(source, indices):
                 # Extract points. The `end` property may be typed as Optional.
-                points_to_smooth = [
-                    cmd.end for cmd in segment if cmd.end is not None
-                ]
+                points_to_smooth = [source.endpoint(idx) for idx in indices]
                 smoothed = smooth_polyline(
                     points_to_smooth,
                     self.amount,
@@ -141,18 +132,21 @@ class Smooth(OpsTransformer):
             else:
                 # For complex segments (e.g., with curves) or malformed ones,
                 # add them back without modification.
-                for command in segment:
-                    ops.add(command)
+                for idx in indices:
+                    ops.transfer_command_from(source, idx)
 
             if context and total_segments > 0:
                 context.set_progress((i + 1) / total_segments)
 
-    def _is_line_only_segment(self, segment: List) -> bool:
+    def _is_line_only_segment(self, ops: Ops, indices: List[int]) -> bool:
         """Checks if a segment contains only MoveTo and LineTo commands."""
         return (
-            len(segment) > 1
-            and isinstance(segment[0], MoveToCommand)
-            and all(isinstance(c, LineToCommand) for c in segment[1:])
+            len(indices) > 1
+            and ops.command_type(indices[0]) == CommandType.MOVE_TO
+            and all(
+                ops.command_type(idx) == CommandType.LINE_TO
+                for idx in indices[1:]
+            )
         )
 
     def to_dict(self) -> Dict[str, Any]:
