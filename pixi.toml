@@ -33,7 +33,7 @@ pkg-config = "*"
 rust = "*"
 
 [feature.app.pypi-dependencies]
-raygeo = "==0.1.7"
+raygeo = "==0.1.9"
 rayforge = { editable = true, path = "." }
 aiohttp = "==3.13.5"
 asyncudp = "==0.11.0"
