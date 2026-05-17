@@ -66,6 +66,20 @@
   </screenshots>
 
   <releases>
+    <release version="1.7.8" date="2026-05-17">
+      <description>
+        <p>Performance improvements and bug fixes</p>
+        <ul>
+          <li>Migrated geometry processing from Python to Rust (raygeo)
+          for improved performance</li>
+          <li>Added distance preset buttons in Print and Cut wizard for
+          quick selection</li>
+          <li>Fixed WCS offset applied twice in Move to Selection buttons
+          (#245)</li>
+          <li>Updated addon API version to 13</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.7.7" date="2026-05-16">
       <description>
         <p>Bug fix release</p>
