@@ -5,6 +5,13 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.7.10
+
+### Fixed
+
+- Fixed contour offset producing hundreds of garbage micro-contours on shapes
+  with multiple holes (raygeo v0.2.0)
+
 ## 1.7.9
 
 ### Added
