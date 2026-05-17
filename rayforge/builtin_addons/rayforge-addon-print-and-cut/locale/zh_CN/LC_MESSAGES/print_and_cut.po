@@ -1,0 +1,199 @@
+# Chinese translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-17 02:10+0200\n"
+"PO-Revision-Date: 2026-05-17 02:10+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: print_and_cut/frontend.py
+msgid "Align to Physical Position"
+msgstr "对齐到物理位置"
+
+#: print_and_cut/wizard.py
+msgid "Print & Cut"
+msgstr "打印与切割"
+
+#: print_and_cut/wizard.py
+msgid "Back"
+msgstr "返回"
+
+#: print_and_cut/wizard.py
+msgid "Reset"
+msgstr "重置"
+
+#: print_and_cut/wizard.py
+msgid "Cancel"
+msgstr "取消"
+
+#: print_and_cut/wizard.py
+msgid "Next"
+msgstr "下一步"
+
+#: print_and_cut/wizard.py
+msgid "Apply"
+msgstr "应用"
+
+#: print_and_cut/wizard.py
+msgid "Instructions"
+msgstr "说明"
+
+#: print_and_cut/wizard.py
+msgid ""
+"Click on two alignment points on the design. These will be matched to "
+"physical locations in the next step."
+msgstr "在设计中点击两个对齐点。这些点将在下一步中与物理位置匹配。"
+
+#: print_and_cut/wizard.py
+msgid "Picked Points"
+msgstr "已选点"
+
+#: print_and_cut/wizard.py
+msgid "Point 1"
+msgstr "点 1"
+
+#: print_and_cut/wizard.py
+msgid "No point picked"
+msgstr "未选取点"
+
+#: print_and_cut/wizard.py
+msgid "Point 2"
+msgstr "点 2"
+
+#: print_and_cut/wizard.py
+msgid "Status"
+msgstr "状态"
+
+#: print_and_cut/wizard.py
+msgid "Click on the first alignment point on the design."
+msgstr "在设计中点击第一个对齐点。"
+
+#: print_and_cut/wizard.py
+msgid ""
+"Jog the laser to the physical location of each point, then record the "
+"position."
+msgstr "将激光移动到每个点的物理位置，然后记录该位置。"
+
+#: print_and_cut/wizard.py
+msgid "Jog Distance"
+msgstr "移动距离"
+
+#: print_and_cut/wizard.py
+msgid "Distance in machine units"
+msgstr "以机器单位计的距离"
+
+#: print_and_cut/wizard.py
+msgid "Distance Presets"
+msgstr "距离预设"
+
+#: print_and_cut/wizard.py
+msgid "Toggle focus laser"
+msgstr "切换聚焦激光"
+
+#: print_and_cut/wizard.py
+msgid "Focus Laser"
+msgstr "聚焦激光"
+
+#: print_and_cut/wizard.py
+msgid "Positions"
+msgstr "位置"
+
+#: print_and_cut/wizard.py
+msgid "Record"
+msgstr "记录"
+
+#: print_and_cut/wizard.py
+msgid "Go to recorded position"
+msgstr "前往已记录的位置"
+
+#: print_and_cut/wizard.py
+msgid "Position 1"
+msgstr "位置 1"
+
+#: print_and_cut/wizard.py
+msgid "Not recorded"
+msgstr "未记录"
+
+#: print_and_cut/wizard.py
+msgid "Position 2"
+msgstr "位置 2"
+
+#: print_and_cut/wizard.py
+msgid "Laser Position"
+msgstr "激光位置"
+
+#: print_and_cut/wizard.py
+msgid "X: --- Y: ---"
+msgstr "X: --- Y: ---"
+
+#: print_and_cut/wizard.py
+msgid "Transform Preview"
+msgstr "变换预览"
+
+#: print_and_cut/wizard.py
+msgid "Review the computed alignment transform before applying it."
+msgstr "在应用之前检查计算的对齐变换。"
+
+#: print_and_cut/wizard.py
+msgid "Transform"
+msgstr "变换"
+
+#: print_and_cut/wizard.py
+msgid "Translation"
+msgstr "平移"
+
+#: print_and_cut/wizard.py
+msgid "Rotation"
+msgstr "旋转"
+
+#: print_and_cut/wizard.py
+msgid "Allow scaling"
+msgstr "允许缩放"
+
+#: print_and_cut/wizard.py
+msgid "Scale"
+msgstr "缩放"
+
+#: print_and_cut/wizard.py
+msgid "Point picked"
+msgstr "已选取点"
+
+#: print_and_cut/wizard.py
+msgid "Click on the second alignment point on the design."
+msgstr "在设计中点击第二个对齐点。"
+
+#: print_and_cut/wizard.py
+msgid "Both points selected. Click Next to continue."
+msgstr "两个点均已选取。点击下一步继续。"
+
+#: print_and_cut/wizard.py
+msgid "Points are too close. Pick points further apart."
+msgstr "点之间距离太近。请选择距离更远的点。"
+
+#: print_and_cut/wizard.py
+msgid "Turn on laser at focus power to locate position"
+msgstr "以聚焦功率开启激光以定位"
+
+#: print_and_cut/wizard.py
+msgid "Set a focus power in laser preferences to enable"
+msgstr "在激光偏好设置中设定聚焦功率以启用"
+
+#: print_and_cut/wizard.py
+msgid ""
+"Note: Scale is locked. Point 2 may not align exactly if the physical "
+"distance differs from the design distance."
+msgstr "注意：缩放已锁定。如果物理距离与设计距离不同，点2可能无法精确对齐。"
+
+#: print_and_cut/wizard.py
+msgid "Alignment applied"
+msgstr "对齐已应用"
