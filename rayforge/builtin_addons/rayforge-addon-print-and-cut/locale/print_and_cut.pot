@@ -1,0 +1,200 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-17 02:10+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: print_and_cut/frontend.py
+msgid "Align to Physical Position"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Print & Cut"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Back"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Reset"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Cancel"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Next"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Apply"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Instructions"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid ""
+"Click on two alignment points on the design. These will be matched to "
+"physical locations in the next step."
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Picked Points"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Point 1"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "No point picked"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Point 2"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Status"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Click on the first alignment point on the design."
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid ""
+"Jog the laser to the physical location of each point, then record the "
+"position."
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Jog Distance"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Distance in machine units"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Distance Presets"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Toggle focus laser"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Focus Laser"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Positions"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Record"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Go to recorded position"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Position 1"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Not recorded"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Position 2"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Laser Position"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "X: --- Y: ---"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Transform Preview"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Review the computed alignment transform before applying it."
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Transform"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Translation"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Rotation"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Allow scaling"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Scale"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Point picked"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Click on the second alignment point on the design."
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Both points selected. Click Next to continue."
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Points are too close. Pick points further apart."
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Turn on laser at focus power to locate position"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Set a focus power in laser preferences to enable"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid ""
+"Note: Scale is locked. Point 2 may not align exactly if the physical "
+"distance differs from the design distance."
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Alignment applied"
+msgstr ""
