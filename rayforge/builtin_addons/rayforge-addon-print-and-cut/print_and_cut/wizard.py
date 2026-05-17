@@ -62,7 +62,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
         super().__init__(
             transient_for=parent,
             default_width=1150,
-            default_height=750,
+            default_height=780,
             title=_("Print & Cut"),
             **kwargs,
         )
@@ -282,6 +282,14 @@ class PrintAndCutWizard(PatchedDialogWindow):
         )
         self._distance_row.connect("changed", self._on_distance_changed)
         controls_group.add(self._distance_row)
+
+        presets_row = Adw.ActionRow(title=_("Distance Presets"))
+        controls_group.add(presets_row)
+
+        for value in [0.1, 1.0, 10.0]:
+            btn = Gtk.Button(label=str(value), valign=Gtk.Align.CENTER)
+            btn.connect("clicked", self._on_preset_clicked, value)
+            presets_row.add_suffix(btn)
 
         self._focus_active = False
         self._focus_on_icon = get_icon("laser-on-symbolic")
@@ -601,6 +609,10 @@ class PrintAndCutWizard(PatchedDialogWindow):
 
     def _on_distance_changed(self, spin_row):
         self._jog_widget.jog_distance = get_spinrow_float(spin_row)
+
+    def _on_preset_clicked(self, button, value):
+        self._distance_row.get_adjustment().set_value(value)
+        self._on_distance_changed(self._distance_row)
 
     def _on_focus_toggled(self, button):
         if not self._machine or not self._machine_cmd:
