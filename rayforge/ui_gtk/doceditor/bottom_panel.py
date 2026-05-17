@@ -554,7 +554,14 @@ class BottomPanel(Gtk.Box):
 
         space = self.machine.get_coordinate_space()
         machine_x, machine_y = space.world_point_to_machine(world_x, world_y)
-        self.machine_cmd.move_to(self.machine, machine_x, machine_y)
+        wcs_offset = self.machine.get_active_wcs_offset()
+        x_off, y_off, _ = space.get_command_offset(
+            wcs_offset=wcs_offset,
+            wcs_is_workarea_origin=self.machine.wcs_origin_is_workarea_origin,
+        )
+        self.machine_cmd.move_to(
+            self.machine, machine_x - x_off, machine_y - y_off
+        )
 
     def _on_click_to_zero_toggled(self, button):
         self.set_click_to_zero_mode(not self._click_to_zero_mode)
