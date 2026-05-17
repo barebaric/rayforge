@@ -66,6 +66,15 @@
   </screenshots>
 
   <releases>
+    <release version="1.7.10" date="2026-05-18">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>Fixed contour offset producing hundreds of garbage
+          micro-contours on shapes with multiple holes</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.7.9" date="2026-05-17">
       <description>
         <p>Bug fix release</p>
