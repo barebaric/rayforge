@@ -99,17 +99,11 @@ def test_square_contour_with_both_lead_in_out(
     # Lead-in start: 10-5=5, 10 (opposite of first segment direction)
     assert ops.endpoint(2) == pytest.approx((5.0, 10.0, 0.0))
     # Lead-in line to original start
-    assert (
-        ops.command_type(3) == CommandType.SET_POWER
-        and ops.power(3) == 0
-    )
+    assert ops.command_type(3) == CommandType.SET_POWER and ops.power(3) == 0
     assert ops.command_type(4) == CommandType.LINE_TO
     assert ops.endpoint(4) == pytest.approx((10.0, 10.0, 0.0))
     # Content
-    assert (
-        ops.command_type(5) == CommandType.SET_POWER
-        and ops.power(5) == 0.8
-    )
+    assert ops.command_type(5) == CommandType.SET_POWER and ops.power(5) == 0.8
     # Lead-out at end
     lead_out_idx = ops.len() - 2
     assert ops.command_type(lead_out_idx) == CommandType.LINE_TO
@@ -177,9 +171,7 @@ def test_diagonal_contour(transformer: LeadInOutTransformer):
     # Lead-in start: (0,0) - 5*(1/√2, 1/√2) = (-5/√2, -5/√2)
     assert ops.command_type(2) == CommandType.MOVE_TO
     norm = 1.0 / math.sqrt(2)
-    assert ops.endpoint(2) == pytest.approx(
-        (-5.0 * norm, -5.0 * norm, 0.0)
-    )
+    assert ops.endpoint(2) == pytest.approx((-5.0 * norm, -5.0 * norm, 0.0))
 
     lead_out_idx = ops.len() - 2
     assert ops.command_type(lead_out_idx) == CommandType.LINE_TO

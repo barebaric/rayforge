@@ -161,9 +161,7 @@ class TestMultiPassTransformer:
     def test_bezier_duplicated_without_z_step(self):
         ops = Ops()
         ops.move_to(0, 0, 0)
-        ops.bezier_to(
-            (3.0, 5.0, 0.0), (7.0, 5.0, 0.0), (10.0, 0.0, 0.0)
-        )
+        ops.bezier_to((3.0, 5.0, 0.0), (7.0, 5.0, 0.0), (10.0, 0.0, 0.0))
 
         transformer = MultiPassTransformer(passes=2, z_step_down=0.0)
         transformer.run(ops)
@@ -182,9 +180,7 @@ class TestMultiPassTransformer:
     def test_bezier_with_z_step_down(self):
         ops = Ops()
         ops.move_to(0, 0, 2.0)
-        ops.bezier_to(
-            (3.0, 5.0, 2.0), (7.0, 5.0, 2.0), (10.0, 0.0, 2.0)
-        )
+        ops.bezier_to((3.0, 5.0, 2.0), (7.0, 5.0, 2.0), (10.0, 0.0, 2.0))
 
         transformer = MultiPassTransformer(passes=2, z_step_down=0.5)
         transformer.run(ops)

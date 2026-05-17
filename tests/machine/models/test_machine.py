@@ -2103,9 +2103,7 @@ class TestPrepareOpsForEncoding:
 
         result = machine._prepare_ops_for_encoding(ops)
 
-        assert result.endpoint(0) == pytest.approx(
-            expected_cmd, abs=0.001
-        )
+        assert result.endpoint(0) == pytest.approx(expected_cmd, abs=0.001)
 
     WORKAREA_WCS_MODE_SCENARIOS = [
         # (origin, reverse_x, reverse_y, world_point, expected_cmd)
@@ -2146,9 +2144,7 @@ class TestPrepareOpsForEncoding:
 
         result = machine._prepare_ops_for_encoding(ops)
 
-        assert result.endpoint(0) == pytest.approx(
-            expected_cmd, abs=0.001
-        )
+        assert result.endpoint(0) == pytest.approx(expected_cmd, abs=0.001)
 
     def test_wcs_z_offset_not_subtracted(self, isolated_machine: Machine):
         """
@@ -2170,12 +2166,8 @@ class TestPrepareOpsForEncoding:
 
         result = machine._prepare_ops_for_encoding(ops)
 
-        assert result.endpoint(0) == pytest.approx(
-            (40, 40, 0), abs=0.001
-        )
-        assert result.endpoint(1) == pytest.approx(
-            (40, 40, -5), abs=0.001
-        )
+        assert result.endpoint(0) == pytest.approx((40, 40, 0), abs=0.001)
+        assert result.endpoint(1) == pytest.approx((40, 40, -5), abs=0.001)
 
     @pytest.mark.parametrize(
         "reverse_z,input_z,expected_z",

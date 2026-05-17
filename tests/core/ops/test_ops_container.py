@@ -1816,8 +1816,8 @@ class TestIterSections:
         sections = list(ops.iter_sections())
         assert len(sections) == 1
         assert sections[0].section_type is None
-        assert sections[0].markers == []
-        assert len(sections[0].commands) == 3
+        assert sections[0].marker_indices == []
+        assert len(sections[0].content_indices) == 3
 
     def test_single_section(self):
         ops = Ops()
@@ -1829,10 +1829,10 @@ class TestIterSections:
         sections = list(ops.iter_sections())
         assert len(sections) == 1
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
-        assert len(sections[0].markers) == 2
-        assert sections[0].markers[0].is_marker()
-        assert sections[0].markers[1].is_marker()
-        assert len(sections[0].commands) == 2
+        assert len(sections[0].marker_indices) == 2
+        assert ops.is_marker(sections[0].marker_indices[0])
+        assert ops.is_marker(sections[0].marker_indices[1])
+        assert len(sections[0].content_indices) == 2
 
     def test_multiple_sections(self):
         ops = Ops()
@@ -1850,8 +1850,8 @@ class TestIterSections:
         assert len(sections) == 2
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
         assert sections[1].section_type == SectionType.RASTER_FILL
-        assert len(sections[0].commands) == 2
-        assert len(sections[1].commands) == 2
+        assert len(sections[0].content_indices) == 2
+        assert len(sections[1].content_indices) == 2
 
     def test_commands_before_section(self):
         ops = Ops()
@@ -1864,8 +1864,8 @@ class TestIterSections:
         sections = list(ops.iter_sections())
         assert len(sections) == 2
         assert sections[0].section_type is None
-        assert sections[0].markers == []
-        assert len(sections[0].commands) == 1
+        assert sections[0].marker_indices == []
+        assert len(sections[0].content_indices) == 1
         assert ops.category(0) == CommandCategory.STATE
         assert sections[1].section_type == SectionType.VECTOR_OUTLINE
 
@@ -1881,8 +1881,8 @@ class TestIterSections:
         assert len(sections) == 2
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
         assert sections[1].section_type is None
-        assert sections[1].markers == []
-        assert len(sections[1].commands) == 1
+        assert sections[1].marker_indices == []
+        assert len(sections[1].content_indices) == 1
         assert ops.category(4) == CommandCategory.STATE
 
     def test_commands_between_sections(self):
@@ -1903,7 +1903,7 @@ class TestIterSections:
         assert len(sections) == 3
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
         assert sections[1].section_type is None
-        assert sections[1].markers == []
+        assert sections[1].marker_indices == []
         assert ops.category(4) == CommandCategory.STATE
         assert sections[2].section_type == SectionType.RASTER_FILL
 
@@ -1917,8 +1917,8 @@ class TestIterSections:
         sections = list(ops.iter_sections())
         assert len(sections) == 1
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
-        assert len(sections[0].commands) == 2
-        assert len(sections[0].markers) == 2
+        assert len(sections[0].content_indices) == 2
+        assert len(sections[0].marker_indices) == 2
 
     def test_empty_section(self):
         ops = Ops()
@@ -1928,8 +1928,8 @@ class TestIterSections:
         sections = list(ops.iter_sections())
         assert len(sections) == 1
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
-        assert sections[0].commands == []
-        assert len(sections[0].markers) == 2
+        assert sections[0].content_indices == []
+        assert len(sections[0].marker_indices) == 2
 
     def test_consecutive_empty_sections(self):
         ops = Ops()
@@ -1941,9 +1941,9 @@ class TestIterSections:
         sections = list(ops.iter_sections())
         assert len(sections) == 2
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
-        assert sections[0].commands == []
+        assert sections[0].content_indices == []
         assert sections[1].section_type == SectionType.RASTER_FILL
-        assert sections[1].commands == []
+        assert sections[1].content_indices == []
 
     def test_commands_reconstructed_correctly(self):
         ops = Ops()
@@ -1958,11 +1958,11 @@ class TestIterSections:
         sections = list(ops.iter_sections())
         assert len(sections) == 3
         assert sections[0].section_type is None
-        assert len(sections[0].commands) == 1
+        assert len(sections[0].content_indices) == 1
         assert sections[1].section_type == SectionType.VECTOR_OUTLINE
-        assert len(sections[1].commands) == 3
+        assert len(sections[1].content_indices) == 3
         assert sections[2].section_type is None
-        assert len(sections[2].commands) == 1
+        assert len(sections[2].content_indices) == 1
 
     def test_returns_ops_section_namedtuple(self):
         ops = Ops()
@@ -1970,8 +1970,8 @@ class TestIterSections:
         section = list(ops.iter_sections())[0]
         assert isinstance(section, OpsSection)
         assert hasattr(section, "section_type")
-        assert hasattr(section, "markers")
-        assert hasattr(section, "commands")
+        assert hasattr(section, "marker_indices")
+        assert hasattr(section, "content_indices")
 
 
 # --- Extra Axes Dict Serialization Tests ---
@@ -2000,7 +2000,7 @@ def test_extra_axes_from_dict_no_extra_axes():
     }
     ops = Ops.from_dict(data)
     assert ops.command_type(0) == CommandType.MOVE_TO
-    assert ops.inspect(0).extra_axes == {}
+    assert ops.inspect(0).extra_axes is None
 
 
 def test_extra_axes_from_dict_with_extra_axes():
@@ -2030,10 +2030,10 @@ def test_extra_axes_round_trip_mixed():
     restored = Ops.from_dict(data)
 
     assert len(restored) == 4
-    assert restored.inspect(0).extra_axes == {}
+    assert restored.inspect(0).extra_axes is None
     assert restored.inspect(1).extra_axes == {Axis.A: 45.0}
-    assert restored.inspect(2).extra_axes == {}
-    assert restored.inspect(3).extra_axes == {}
+    assert restored.inspect(2).extra_axes is None
+    assert restored.inspect(3).extra_axes is None
 
 
 # --- Extra Axes Numpy Serialization Tests ---
@@ -2065,10 +2065,10 @@ def test_extra_axes_numpy_round_trip_with_extra_axes():
 
     restored = Ops.from_numpy_arrays(arrays)
     assert len(restored) == 4
-    assert restored.inspect(0).extra_axes == {}
+    assert restored.inspect(0).extra_axes is None
     assert restored.inspect(1).extra_axes == {Axis.A: 45.0}
     assert restored.inspect(2).extra_axes == {Axis.B: 90.0}
-    assert restored.inspect(3).extra_axes == {}
+    assert restored.inspect(3).extra_axes is None
 
 
 def test_extra_axes_numpy_old_arrays_deserialize():
@@ -2081,7 +2081,7 @@ def test_extra_axes_numpy_old_arrays_deserialize():
     restored = Ops.from_numpy_arrays(arrays)
     for i in range(restored.len()):
         if restored.category(i) == CommandCategory.MOVING:
-            assert restored.inspect(i).extra_axes == {}
+            assert restored.inspect(i).extra_axes is None
 
 
 def test_extra_axes_numpy_round_trip_preserves_all_data():
@@ -2113,7 +2113,7 @@ def test_move_to_no_extra():
     ops.move_to(10, 20)
     assert ops.command_type(0) == CommandType.MOVE_TO
     assert ops.endpoint(0) == (10.0, 20.0, 0.0)
-    assert ops.inspect(0).extra_axes == {}
+    assert ops.inspect(0).extra_axes is None
 
 
 def test_move_to_with_extra():
@@ -2440,9 +2440,7 @@ def test_to_geometry():
     ops.line_to(10, 10)
     ops.arc_to(20, 0, 5, 0, False)
     ops.set_power(1.0)
-    ops.bezier_to(
-        (15, 15, 0), (25, 15, 0), (30, 0, 0)
-    )
+    ops.bezier_to((15, 15, 0), (25, 15, 0), (30, 0, 0))
     geo = ops.to_geometry()
     assert isinstance(geo, Geometry)
 
@@ -2766,9 +2764,7 @@ def test_linearize_arc():
 def test_linearize_bezier():
     ops = Ops()
     ops.move_to(0, 0)
-    ops.bezier_to(
-        (5, 0, 0), (10, 5, 0), (15, 0, 0)
-    )
+    ops.bezier_to((5, 0, 0), (10, 5, 0), (15, 0, 0))
     result = ops.linearize(1, (0.0, 0.0, 0.0))
     assert result.len() > 1
     for i in range(result.len()):
@@ -2777,9 +2773,7 @@ def test_linearize_bezier():
 
 def test_linearize_scanline():
     ops = Ops()
-    ops.scan_to(
-        10, 0, 0, power_values=bytearray([100, 200, 100])
-    )
+    ops.scan_to(10, 0, 0, power_values=bytearray([100, 200, 100]))
     result = ops.linearize(0, (0.0, 0.0, 0.0))
     assert result.len() > 1
 

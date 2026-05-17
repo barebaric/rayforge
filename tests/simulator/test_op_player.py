@@ -119,11 +119,11 @@ def test_random_access_matches_sequential():
     ops.line_to(50.0, 60.0, 0.0)
 
     sequential = OpPlayer(ops, machine, doc)
-    sequential.seek(len(list(ops)) - 1)
+    sequential.seek(ops.len() - 1)
 
     player = OpPlayer(ops, machine, doc)
     player.seek(1)
-    player.seek(len(list(ops)) - 1)
+    player.seek(ops.len() - 1)
 
     assert player.state.axes == sequential.state.axes
     assert player.state.power == sequential.state.power
@@ -175,7 +175,7 @@ def test_replacement_mode_no_rotary_mapping():
     doc.active_layer.set_rotary_module_uid(rm.uid)
 
     player = OpPlayer(ops, machine, doc)
-    player.seek(len(list(ops)) - 1)
+    player.seek(ops.len() - 1)
 
     assert player.state.axes.get(Axis.A, 0.0) == pytest.approx(0.0)
 
@@ -206,7 +206,7 @@ def test_true_4th_axis_copies_to_rotary():
     doc.active_layer.set_rotary_module_uid(rm.uid)
 
     player = OpPlayer(ops, machine, doc)
-    player.seek(len(list(ops)) - 1)
+    player.seek(ops.len() - 1)
 
     diameter = 25.0
     expected_deg = (20.0 / (diameter * math.pi)) * 360.0

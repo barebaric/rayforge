@@ -88,9 +88,7 @@ def test_group_by_state_continuity():
     assert groups[1].len() == 1
 
     # Multiple state changes
-    ops3 = _create_ops_with_states(
-        [False, True, True, False, False, True]
-    )
+    ops3 = _create_ops_with_states([False, True, True, False, False, True])
     groups = ops3.group_by_state_continuity()
     assert len(groups) == 4
     assert [g.len() for g in groups] == [1, 2, 2, 1]

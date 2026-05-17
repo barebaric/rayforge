@@ -188,7 +188,7 @@ class TestTiming:
 
         tmp = Ops()
         tmp.move_to(5, 5, 0)
-        ops.replace_all(list(tmp))
+        ops.replace_all(tmp)
         assert ops._time_dirty
 
     def test_cache_keyed_on_params(self):

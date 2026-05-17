@@ -19,7 +19,7 @@ def test_single_line():
     ops.line_to(10.0, 0.0, 0.0)
     m = build_vertex_map(ops)
     assert m.total_powered_vertices == 2
-    assert len(m.command_vertex_offset) == len(list(ops)) + 1
+    assert len(m.command_vertex_offset) == ops.len() + 1
 
 
 def test_multiple_lines():
@@ -149,7 +149,7 @@ def test_scanline_overlay_multiple_scanlines():
     ops.scan_to(10.0, 5.0, 0.0, bytearray([200]))
     overlay = build_scanline_overlay(ops)
     assert overlay.total_overlay_vertices == 4
-    assert len(overlay.cmd_vertex_offset) == len(list(ops)) + 1
+    assert len(overlay.cmd_vertex_offset) == ops.len() + 1
 
 
 def test_scanline_overlay_positions_match_ops():
