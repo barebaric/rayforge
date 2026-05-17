@@ -66,6 +66,18 @@
   </screenshots>
 
   <releases>
+    <release version="1.7.9" date="2026-05-17">
+      <description>
+        <p>Bug fix release</p>
+        <ul>
+          <li>Raygeo version info in about dialog</li>
+          <li>Fixed mirrored bezier control points and arc parameters in
+          raygeo</li>
+          <li>Fixed raster and frame icons not showing on some GTK
+          versions</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.7.8" date="2026-05-17">
       <description>
         <p>Performance improvements and bug fixes</p>
