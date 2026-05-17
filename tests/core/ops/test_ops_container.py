@@ -1401,8 +1401,8 @@ def test_dump(sample_ops):
     with redirect_stdout(f):
         sample_ops.dump()
     output = f.getvalue()
-    assert "MOVE_TO" in output or "MoveToCommand" in output
-    assert "LINE_TO" in output or "LineToCommand" in output
+    assert "MOVE_TO" in output
+    assert "LINE_TO" in output
 
 
 def test_estimate_time_empty(empty_ops):
@@ -1629,7 +1629,7 @@ def test_numpy_serialization_structure_hybrid():
     assert "1" in data
     assert "0" not in data
     assert "2" not in data
-    assert data["1"]["type"] == "SetPowerCommand"
+    assert data["1"]["type"] == "SET_POWER"
     assert data["1"]["power"] == 0.5
 
     # Verify that geometric data is still correctly placed
@@ -1994,7 +1994,7 @@ def test_extra_axes_to_dict_with_extra_axes():
 def test_extra_axes_from_dict_no_extra_axes():
     data = {
         "commands": [
-            {"type": "MoveToCommand", "end": [1, 2, 3]},
+            {"type": "MOVE_TO", "end": [1, 2, 3]},
         ],
         "last_move_to": [0, 0, 0],
     }
@@ -2007,7 +2007,7 @@ def test_extra_axes_from_dict_with_extra_axes():
     data = {
         "commands": [
             {
-                "type": "MoveToCommand",
+                "type": "MOVE_TO",
                 "end": [1, 2, 3],
                 "extra_axes": {"A": 45.0},
             },

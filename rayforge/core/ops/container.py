@@ -23,36 +23,7 @@ from raygeo.path import PyCommand
 from raygeo.shape.arc import get_arc_bounds, linearize_arc
 from raygeo.shape.bezier import linearize_bezier_segment
 from .axis import Axis
-from .commands import (
-    ArcToCommand,
-    BezierToCommand,
-    Command,
-    DwellCommand,
-    LineToCommand,
-    MoveToCommand,
-    OpsSectionEndCommand,
-    OpsSectionStartCommand,
-    QuadraticBezierToCommand,
-    ScanLinePowerCommand,
-    SectionType,
-    COMMAND_CLASS_MAP,
-    COMMAND_TYPE_MAP,
-    EnableAirAssistCommand,
-    DisableAirAssistCommand,
-    SetCutSpeedCommand,
-    SetTravelSpeedCommand,
-    SetPowerCommand,
-    SetFrequencyCommand,
-    SetPulseWidthCommand,
-    SetLaserCommand,
-    JobStartCommand,
-    JobEndCommand,
-    LayerStartCommand,
-    LayerEndCommand,
-    WorkpieceStartCommand,
-    WorkpieceEndCommand,
-)
-from .enums import CommandType, CommandCategory
+from .enums import CommandType, CommandCategory, SectionType
 from .state import State
 from .timing import estimate_time
 
@@ -499,7 +470,7 @@ class Ops:
 
     def _cmd_to_dict(self, idx: int) -> Dict[str, Any]:
         ct = self._soa.command_type(idx)
-        d: Dict[str, Any] = {"type": COMMAND_CLASS_MAP[ct.value].__name__}
+        d: Dict[str, Any] = {"type": ct.name}
         cat = _category(ct)
         if cat == CommandCategory.MOVING:
             d["end"] = self._soa.endpoint(idx)
@@ -555,137 +526,123 @@ class Ops:
     def _invalidate_time_cache(self) -> None:
         self._time_dirty = True
 
-    @staticmethod
+    _LEGACY_TYPE_NAMES: Dict[str, str] = {
+        "MoveToCommand": "MOVE_TO",
+        "LineToCommand": "LINE_TO",
+        "ArcToCommand": "ARC_TO",
+        "BezierToCommand": "BEZIER_TO",
+        "QuadraticBezierToCommand": "QUADRATIC_BEZIER_TO",
+        "DwellCommand": "DWELL",
+        "ScanLinePowerCommand": "SCAN_LINE",
+        "SetPowerCommand": "SET_POWER",
+        "SetCutSpeedCommand": "SET_CUT_SPEED",
+        "SetTravelSpeedCommand": "SET_TRAVEL_SPEED",
+        "SetFrequencyCommand": "SET_FREQUENCY",
+        "SetPulseWidthCommand": "SET_PULSE_WIDTH",
+        "EnableAirAssistCommand": "ENABLE_AIR_ASSIST",
+        "DisableAirAssistCommand": "DISABLE_AIR_ASSIST",
+        "SetLaserCommand": "SET_LASER",
+        "JobStartCommand": "JOB_START",
+        "JobEndCommand": "JOB_END",
+        "LayerStartCommand": "LAYER_START",
+        "LayerEndCommand": "LAYER_END",
+        "WorkpieceStartCommand": "WORKPIECE_START",
+        "WorkpieceEndCommand": "WORKPIECE_END",
+        "OpsSectionStartCommand": "OPS_SECTION_START",
+        "OpsSectionEndCommand": "OPS_SECTION_END",
+    }
+
+    @classmethod
     def _create_command_from_dict(
+        cls,
         cmd_data: Dict[str, Any],
     ) -> Dict[str, Any]:
-        cmd_type = cmd_data.get("type")
+        cmd_type: str = cmd_data["type"]
+        enum_name = cls._LEGACY_TYPE_NAMES.get(cmd_type, cmd_type)
+        ct = CommandType[enum_name]
         ea_raw = cmd_data.get("extra_axes")
         extra_axes = None
         if ea_raw:
             extra_axes = {Axis[k]: v for k, v in ea_raw.items()}
-        if cmd_type == "MoveToCommand":
-            return {
-                "ct": CommandType.MOVE_TO,
+        cat = _category(ct)
+        if cat == CommandCategory.MOVING:
+            kwargs: Dict[str, Any] = {
+                "ct": ct,
                 "end": tuple(cmd_data["end"]),
                 "extra_axes": extra_axes,
             }
-        elif cmd_type == "LineToCommand":
-            return {
-                "ct": CommandType.LINE_TO,
-                "end": tuple(cmd_data["end"]),
-                "extra_axes": extra_axes,
-            }
-        elif cmd_type == "ArcToCommand":
-            return {
-                "ct": CommandType.ARC_TO,
-                "end": tuple(cmd_data["end"]),
-                "arc_params": (
+            if ct == CommandType.ARC_TO:
+                kwargs["arc_params"] = (
                     cmd_data["center_offset"][0],
                     cmd_data["center_offset"][1],
                     cmd_data["clockwise"],
-                ),
-                "extra_axes": extra_axes,
-            }
-        elif cmd_type == "BezierToCommand":
-            return {
-                "ct": CommandType.BEZIER_TO,
-                "end": tuple(cmd_data["end"]),
-                "bezier_params": (
+                )
+            elif ct == CommandType.BEZIER_TO:
+                kwargs["bezier_params"] = (
                     tuple(cmd_data["control1"]),
                     tuple(cmd_data["control2"]),
-                ),
-                "extra_axes": extra_axes,
-            }
-        elif cmd_type == "QuadraticBezierToCommand":
-            return {
-                "ct": CommandType.QUADRATIC_BEZIER_TO,
-                "end": tuple(cmd_data["end"]),
-                "quad_params": tuple(cmd_data["control"]),
-                "extra_axes": extra_axes,
-            }
-        elif cmd_type == "DwellCommand":
-            return {
-                "ct": CommandType.DWELL,
+                )
+            elif ct == CommandType.QUADRATIC_BEZIER_TO:
+                kwargs["quad_params"] = tuple(cmd_data["control"])
+            elif ct == CommandType.SCAN_LINE:
+                kwargs["scanline"] = bytearray(cmd_data["power_values"])
+        elif ct == CommandType.DWELL:
+            kwargs = {
+                "ct": ct,
                 "dwell_duration": cmd_data["duration_ms"],
             }
-        elif cmd_type == "SetPowerCommand":
-            return {"ct": CommandType.SET_POWER, "power": cmd_data["power"]}
-        elif cmd_type == "SetCutSpeedCommand":
-            return {
-                "ct": CommandType.SET_CUT_SPEED,
-                "speed": cmd_data["speed"],
-            }
-        elif cmd_type == "SetTravelSpeedCommand":
-            return {
-                "ct": CommandType.SET_TRAVEL_SPEED,
-                "speed": cmd_data["speed"],
-            }
-        elif cmd_type == "EnableAirAssistCommand":
-            return {"ct": CommandType.ENABLE_AIR_ASSIST}
-        elif cmd_type == "DisableAirAssistCommand":
-            return {"ct": CommandType.DISABLE_AIR_ASSIST}
-        elif cmd_type == "SetLaserCommand":
-            return {
-                "ct": CommandType.SET_LASER,
-                "laser_uid": cmd_data["laser_uid"],
-            }
-        elif cmd_type == "SetFrequencyCommand":
-            return {
-                "ct": CommandType.SET_FREQUENCY,
+        elif ct == CommandType.SET_POWER:
+            kwargs = {"ct": ct, "power": cmd_data["power"]}
+        elif ct in (
+            CommandType.SET_CUT_SPEED,
+            CommandType.SET_TRAVEL_SPEED,
+        ):
+            kwargs = {"ct": ct, "speed": cmd_data["speed"]}
+        elif ct == CommandType.SET_FREQUENCY:
+            kwargs = {
+                "ct": ct,
                 "frequency": cmd_data["frequency"],
             }
-        elif cmd_type == "SetPulseWidthCommand":
-            return {
-                "ct": CommandType.SET_PULSE_WIDTH,
+        elif ct == CommandType.SET_PULSE_WIDTH:
+            kwargs = {
+                "ct": ct,
                 "pulse_width": cmd_data["pulse_width"],
             }
-        elif cmd_type == "JobStartCommand":
-            return {"ct": CommandType.JOB_START}
-        elif cmd_type == "JobEndCommand":
-            return {"ct": CommandType.JOB_END}
-        elif cmd_type == "LayerStartCommand":
-            return {
-                "ct": CommandType.LAYER_START,
+        elif ct == CommandType.SET_LASER:
+            kwargs = {
+                "ct": ct,
+                "laser_uid": cmd_data["laser_uid"],
+            }
+        elif ct in (
+            CommandType.LAYER_START,
+            CommandType.LAYER_END,
+        ):
+            kwargs = {
+                "ct": ct,
                 "layer_uid": cmd_data["layer_uid"],
             }
-        elif cmd_type == "LayerEndCommand":
-            return {
-                "ct": CommandType.LAYER_END,
-                "layer_uid": cmd_data["layer_uid"],
-            }
-        elif cmd_type == "WorkpieceStartCommand":
-            return {
-                "ct": CommandType.WORKPIECE_START,
+        elif ct in (
+            CommandType.WORKPIECE_START,
+            CommandType.WORKPIECE_END,
+        ):
+            kwargs = {
+                "ct": ct,
                 "workpiece_uid": cmd_data["workpiece_uid"],
             }
-        elif cmd_type == "WorkpieceEndCommand":
-            return {
-                "ct": CommandType.WORKPIECE_END,
-                "workpiece_uid": cmd_data["workpiece_uid"],
-            }
-        elif cmd_type == "OpsSectionStartCommand":
-            return {
-                "ct": CommandType.OPS_SECTION_START,
+        elif ct == CommandType.OPS_SECTION_START:
+            kwargs = {
+                "ct": ct,
                 "section_type": SectionType[cmd_data["section_type"]],
                 "section_workpiece_uid": cmd_data["workpiece_uid"],
             }
-        elif cmd_type == "OpsSectionEndCommand":
-            return {
-                "ct": CommandType.OPS_SECTION_END,
+        elif ct == CommandType.OPS_SECTION_END:
+            kwargs = {
+                "ct": ct,
                 "section_type": SectionType[cmd_data["section_type"]],
             }
-        elif cmd_type == "ScanLinePowerCommand":
-            return {
-                "ct": CommandType.SCAN_LINE,
-                "end": tuple(cmd_data["end"]),
-                "scanline": bytearray(cmd_data["power_values"]),
-                "extra_axes": extra_axes,
-            }
         else:
-            raise TypeError(
-                f"Unknown command type for dict creation: {cmd_type}"
-            )
+            kwargs = {"ct": ct}
+        return kwargs
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Ops:
@@ -1724,16 +1681,11 @@ class Ops:
         self._soa = _SoA()
         self._invalidate_time_cache()
 
-    def replace_all(self, commands_or_ops: Any) -> None:
-        if isinstance(commands_or_ops, Ops):
-            self._soa = _SoA()
-            for i in range(len(commands_or_ops._soa)):
-                kw = commands_or_ops._soa.deep_copy_entry(i)
-                self._soa.append(**kw)
-        else:
-            self._soa = _SoA()
-            for cmd in commands_or_ops:
-                self._soa.append(**self._cmd_to_soa_kwargs(cmd))
+    def replace_all(self, source: "Ops") -> None:
+        self._soa = _SoA()
+        for i in range(len(source._soa)):
+            kw = source._soa.deep_copy_entry(i)
+            self._soa.append(**kw)
         self._invalidate_time_cache()
 
     def replace_with(self, source: "Ops") -> None:
@@ -1743,86 +1695,6 @@ class Ops:
             kwargs = source._soa.deep_copy_entry(i)
             self._soa.append(**kwargs)
         self.last_move_to = source.last_move_to
-        self._invalidate_time_cache()
-
-    @staticmethod
-    def _cmd_to_soa_kwargs(cmd: Command) -> Dict[str, Any]:
-        ct = COMMAND_TYPE_MAP[type(cmd)]
-        kwargs: Dict[str, Any] = {"ct": CommandType(ct)}
-        if isinstance(cmd, MoveToCommand):
-            kwargs["end"] = cmd.end
-            if cmd.extra_axes:
-                kwargs["extra_axes"] = cmd.extra_axes
-        elif isinstance(cmd, LineToCommand):
-            kwargs["end"] = cmd.end
-            if cmd.extra_axes:
-                kwargs["extra_axes"] = cmd.extra_axes
-        elif isinstance(cmd, ArcToCommand):
-            kwargs["end"] = cmd.end
-            kwargs["arc_params"] = (
-                cmd.center_offset[0],
-                cmd.center_offset[1],
-                cmd.clockwise,
-            )
-            if cmd.extra_axes:
-                kwargs["extra_axes"] = cmd.extra_axes
-        elif isinstance(cmd, BezierToCommand):
-            kwargs["end"] = cmd.end
-            kwargs["bezier_params"] = (cmd.control1, cmd.control2)
-            if cmd.extra_axes:
-                kwargs["extra_axes"] = cmd.extra_axes
-        elif isinstance(cmd, QuadraticBezierToCommand):
-            kwargs["end"] = cmd.end
-            kwargs["quad_params"] = cmd.control
-            if cmd.extra_axes:
-                kwargs["extra_axes"] = cmd.extra_axes
-        elif isinstance(cmd, ScanLinePowerCommand):
-            kwargs["end"] = cmd.end
-            kwargs["scanline"] = cmd.power_values
-            if cmd.extra_axes:
-                kwargs["extra_axes"] = cmd.extra_axes
-        elif isinstance(cmd, DwellCommand):
-            kwargs["dwell_duration"] = cmd.duration_ms
-        elif isinstance(cmd, SetPowerCommand):
-            kwargs["power"] = cmd.power
-        elif isinstance(cmd, SetCutSpeedCommand):
-            kwargs["speed"] = cmd.speed
-        elif isinstance(cmd, SetTravelSpeedCommand):
-            kwargs["speed"] = cmd.speed
-        elif isinstance(cmd, EnableAirAssistCommand):
-            pass
-        elif isinstance(cmd, DisableAirAssistCommand):
-            pass
-        elif isinstance(cmd, SetLaserCommand):
-            kwargs["laser_uid"] = cmd.laser_uid
-        elif isinstance(cmd, SetFrequencyCommand):
-            kwargs["frequency"] = cmd.frequency
-        elif isinstance(cmd, SetPulseWidthCommand):
-            kwargs["pulse_width"] = cmd.pulse_width
-        elif isinstance(cmd, JobStartCommand):
-            pass
-        elif isinstance(cmd, JobEndCommand):
-            pass
-        elif isinstance(cmd, LayerStartCommand):
-            kwargs["layer_uid"] = cmd.layer_uid
-        elif isinstance(cmd, LayerEndCommand):
-            kwargs["layer_uid"] = cmd.layer_uid
-        elif isinstance(cmd, WorkpieceStartCommand):
-            kwargs["workpiece_uid"] = cmd.workpiece_uid
-        elif isinstance(cmd, WorkpieceEndCommand):
-            kwargs["workpiece_uid"] = cmd.workpiece_uid
-        elif isinstance(cmd, OpsSectionStartCommand):
-            kwargs["section_type"] = cmd.section_type
-            kwargs["section_workpiece_uid"] = cmd.workpiece_uid
-        elif isinstance(cmd, OpsSectionEndCommand):
-            kwargs["section_type"] = cmd.section_type
-            kwargs["section_workpiece_uid"] = None
-        if hasattr(cmd, "state") and cmd.state is not None:
-            kwargs["state"] = cmd.state.__copy__()
-        return kwargs
-
-    def add(self, command: Command) -> None:
-        self._soa.append(**self._cmd_to_soa_kwargs(command))
         self._invalidate_time_cache()
 
     def extend(self, other_ops: "Ops") -> None:

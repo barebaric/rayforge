@@ -402,7 +402,6 @@ def test_capability_defaults_applied_in_constructor():
 
 
 def test_capability_defaults_with_combined_capabilities():
-
     class CutKerfStep(Step):
         CAPABILITIES = (CUT, WITH_KERF)
 
