@@ -1,8 +1,10 @@
+import hashlib
 import logging
+import os
 import platform
 import sys
 import webbrowser
-from importlib.metadata import PackageNotFoundError, version
+from importlib.metadata import PackageNotFoundError, distribution, version
 from gettext import gettext as _
 
 from gi.repository import Adw, GLib, Gtk
@@ -22,6 +24,35 @@ def _get_version(package_name: str) -> str:
         return version(package_name)
     except PackageNotFoundError:
         return _not_found_str
+
+
+def _is_dev_build(package_name: str, module) -> bool:
+    """Check if a compiled module's .so file has been modified
+    relative to the released package (e.g. via maturin develop)."""
+    try:
+        dist = distribution(package_name)
+        record = dist.read_text("RECORD")
+        if record is None:
+            return True
+        site_dir = str(dist.locate_file(""))
+        for line in record.splitlines():
+            parts = line.split(",")
+            if not parts[0].endswith(".so"):
+                continue
+            so_path = os.path.join(site_dir, parts[0])
+            if not os.path.exists(so_path):
+                continue
+            if len(parts) >= 2 and "=" in parts[1]:
+                algo, expected_hash = parts[1].split("=", 1)
+                h = hashlib.new(algo)
+                with open(so_path, "rb") as f:
+                    for chunk in iter(lambda: f.read(8192), b""):
+                        h.update(chunk)
+                if h.hexdigest() != expected_hash:
+                    return True
+    except Exception:
+        logger.exception(f"Error checking if {package_name} is a dev build")
+    return False
 
 
 def get_dependency_info() -> dict:
@@ -107,6 +138,19 @@ def get_dependency_info() -> dict:
 
     if graphics_deps:
         info[_("Graphics & Imaging")] = graphics_deps
+
+    geo_deps = []
+    try:
+        import raygeo
+
+        geo_ver = _get_version("raygeo")
+        if _is_dev_build("raygeo", raygeo):
+            geo_ver += " (dev)"
+        geo_deps.append(("raygeo", geo_ver))
+    except (ImportError, PackageNotFoundError):
+        geo_deps.append(("raygeo", _not_found_str))
+    if geo_deps:
+        info[_("Geometry")] = geo_deps
 
     comm_deps = []
     for pkg in [
