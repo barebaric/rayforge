@@ -78,17 +78,13 @@ def test_tolerance_affects_merging():
     transformer_tight = MergeLinesTransformer(enabled=True, tolerance=0.01)
     ops_copy_tight = ops.copy()
     transformer_tight.run(ops_copy_tight)
-    line_count_tight = len(
-        ops_copy_tight.indices_of(CommandType.LINE_TO)
-    )
+    line_count_tight = len(ops_copy_tight.indices_of(CommandType.LINE_TO))
     assert line_count_tight == 2
 
     transformer_loose = MergeLinesTransformer(enabled=True, tolerance=0.2)
     ops_copy_loose = ops.copy()
     transformer_loose.run(ops_copy_loose)
-    line_count_loose = len(
-        ops_copy_loose.indices_of(CommandType.LINE_TO)
-    )
+    line_count_loose = len(ops_copy_loose.indices_of(CommandType.LINE_TO))
     assert line_count_loose == 1
 
 
@@ -246,9 +242,7 @@ def test_bezier_passes_through_unchanged():
     ops.set_power(1.0)
 
     ops.move_to(0, 0, 0)
-    ops.bezier_to(
-        (3.0, 5.0, 0.0), (7.0, 5.0, 0.0), (10.0, 0.0, 0.0)
-    )
+    ops.bezier_to((3.0, 5.0, 0.0), (7.0, 5.0, 0.0), (10.0, 0.0, 0.0))
 
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
     transformer.run(ops)
@@ -269,9 +263,7 @@ def test_mixed_lines_and_bezier():
 
     ops.move_to(0, 0)
     ops.line_to(10, 0)
-    ops.bezier_to(
-        (12.0, 5.0, 0.0), (18.0, 5.0, 0.0), (20.0, 0.0, 0.0)
-    )
+    ops.bezier_to((12.0, 5.0, 0.0), (18.0, 5.0, 0.0), (20.0, 0.0, 0.0))
     ops.line_to(30, 0)
 
     ops.move_to(0, 0)

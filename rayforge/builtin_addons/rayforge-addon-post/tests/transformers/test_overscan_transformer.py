@@ -126,22 +126,13 @@ def test_preserves_state_for_constant_power_lines(
     # Expected sequence: Move, SP(0), Line, SP(0.8), Line, SP(0), Line
     assert ops.command_type(3) == CommandType.MOVE_TO
     assert ops.endpoint(3) == pytest.approx((5.0, 20.0, 0.0))
-    assert (
-        ops.command_type(4) == CommandType.SET_POWER
-        and ops.power(4) == 0
-    )
+    assert ops.command_type(4) == CommandType.SET_POWER and ops.power(4) == 0
     assert ops.command_type(5) == CommandType.LINE_TO
     assert ops.endpoint(5) == pytest.approx((10.0, 20.0, 0.0))
-    assert (
-        ops.command_type(6) == CommandType.SET_POWER
-        and ops.power(6) == 0.8
-    )
+    assert ops.command_type(6) == CommandType.SET_POWER and ops.power(6) == 0.8
     assert ops.command_type(7) == CommandType.LINE_TO
     assert ops.endpoint(7) == pytest.approx((20.0, 20.0, 0.0))
-    assert (
-        ops.command_type(8) == CommandType.SET_POWER
-        and ops.power(8) == 0
-    )
+    assert ops.command_type(8) == CommandType.SET_POWER and ops.power(8) == 0
     assert ops.command_type(9) == CommandType.LINE_TO
     assert ops.endpoint(9) == pytest.approx((25.0, 20.0, 0.0))
 
@@ -151,10 +142,7 @@ def test_preserves_state_for_constant_power_lines(
     # Expected sequence: Move, SP(0), Line, SP(0.4), Line, SP(0), Line
     assert ops.command_type(10) == CommandType.MOVE_TO
     assert ops.endpoint(10) == pytest.approx((25.0, 20.0, 0.0))
-    assert (
-        ops.command_type(11) == CommandType.SET_POWER
-        and ops.power(11) == 0
-    )
+    assert ops.command_type(11) == CommandType.SET_POWER and ops.power(11) == 0
     assert ops.command_type(12) == CommandType.LINE_TO
     assert ops.endpoint(12) == pytest.approx((30.0, 20.0, 0.0))
     # This is the critical check: the original intermediate SetPower
@@ -162,15 +150,11 @@ def test_preserves_state_for_constant_power_lines(
     # Note: Because the original buffer is extended, the power command is at
     # index 3, and the original LineTo is at index 4.
     assert (
-        ops.command_type(13) == CommandType.SET_POWER
-        and ops.power(13) == 0.4
+        ops.command_type(13) == CommandType.SET_POWER and ops.power(13) == 0.4
     )
     assert ops.command_type(14) == CommandType.LINE_TO
     assert ops.endpoint(14) == pytest.approx((40.0, 20.0, 0.0))
-    assert (
-        ops.command_type(15) == CommandType.SET_POWER
-        and ops.power(15) == 0
-    )
+    assert ops.command_type(15) == CommandType.SET_POWER and ops.power(15) == 0
     assert ops.command_type(16) == CommandType.LINE_TO
     assert ops.endpoint(16) == pytest.approx((45.0, 20.0, 0.0))
 
@@ -178,10 +162,7 @@ def test_preserves_state_for_constant_power_lines(
     # Total commands:
     # 2 (header) + 1 (start) + 7 (line 1) + 7 (line 2) + 1 (end) = 18
     assert ops.len() == 18
-    assert (
-        ops.command_type(0) == CommandType.SET_POWER
-        and ops.power(0) == 0.8
-    )
+    assert ops.command_type(0) == CommandType.SET_POWER and ops.power(0) == 0.8
     assert ops.command_type(1) == CommandType.ENABLE_AIR_ASSIST
     assert ops.command_type(2) == CommandType.OPS_SECTION_START
     assert ops.command_type(17) == CommandType.OPS_SECTION_END
@@ -345,19 +326,11 @@ def test_handles_multiple_bidirectional_lines(
 
     # Check endpoints of the rewritten lines
     # Line 1
-    assert ops.endpoint(move_indices[0]) == pytest.approx(
-        (10 - dist, 20, 0)
-    )
-    assert ops.endpoint(line_indices[2]) == pytest.approx(
-        (30 + dist, 20, 0)
-    )
+    assert ops.endpoint(move_indices[0]) == pytest.approx((10 - dist, 20, 0))
+    assert ops.endpoint(line_indices[2]) == pytest.approx((30 + dist, 20, 0))
     # Line 2
-    assert ops.endpoint(move_indices[1]) == pytest.approx(
-        (30 + dist, 22, 0)
-    )
-    assert ops.endpoint(line_indices[5]) == pytest.approx(
-        (10 - dist, 22, 0)
-    )
+    assert ops.endpoint(move_indices[1]) == pytest.approx((30 + dist, 22, 0))
+    assert ops.endpoint(line_indices[5]) == pytest.approx((10 - dist, 22, 0))
     # Line 3 (diagonal)
     norm_v = 1 / math.sqrt(2)
     offset_x = offset_y = dist * norm_v

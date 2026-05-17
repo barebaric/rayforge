@@ -729,10 +729,7 @@ def _sync_state_commands(
     if state.power != prev.power:
         ops.set_power(state.power)
         updates["power"] = state.power
-    if (
-        state.cut_speed is not None
-        and state.cut_speed != prev.cut_speed
-    ):
+    if state.cut_speed is not None and state.cut_speed != prev.cut_speed:
         ops.set_cut_speed(state.cut_speed)
         updates["cut_speed"] = state.cut_speed
     if (

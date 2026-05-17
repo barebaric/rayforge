@@ -84,7 +84,7 @@ def estimate_time(
             # Time to reach full speed
             accel_time = speed_mm_per_sec / acceleration
             # Distance covered during acceleration
-            accel_distance = 0.5 * acceleration * accel_time ** 2
+            accel_distance = 0.5 * acceleration * accel_time**2
 
             if distance < 2 * accel_distance:
                 # Can't reach full speed, triangular profile
