@@ -16,5 +16,5 @@ machine:
     frame_power_percent: 0.25
     focus_power_percent: 0.25
     spot_size_mm:
-    - 0.1
-    - 0.1
+    - 0.04
+    - 0.04
