@@ -1,0 +1,20 @@
+api_version: 1
+device:
+  name: Sculpfun C1
+  description: Budget diode laser engraver with 150x130mm work area
+machine:
+  driver: GrblSerialDriver
+  gcode_precision: 3
+  axis_extents:
+  - 150.0
+  - 130.0
+  origin: bottom_left
+  max_travel_speed: 10000
+  max_cut_speed: 10000
+  heads:
+  - max_power: 1000
+    frame_power_percent: 0.25
+    focus_power_percent: 0.25
+    spot_size_mm:
+    - 0.04
+    - 0.04
