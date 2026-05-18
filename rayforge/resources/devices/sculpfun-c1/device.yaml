@@ -13,8 +13,8 @@ machine:
   max_cut_speed: 10000
   heads:
   - max_power: 1000
-    frame_power_percent: 0.0
-    focus_power_percent: 0.0
+    frame_power_percent: 0.25
+    focus_power_percent: 0.25
     spot_size_mm:
     - 0.1
     - 0.1
