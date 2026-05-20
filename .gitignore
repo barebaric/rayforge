@@ -27,6 +27,7 @@ debian/.debhelper
 website/node_modules/
 website/.docusaurus/
 website/build/
+website/docs/developer/raygeo-api/
 
 .mac_env
 rayforge/private_addons

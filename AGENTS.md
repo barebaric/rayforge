@@ -18,6 +18,16 @@
 - Never mark your changes with inline comments. Code is for clean, final implementation only
 - Retain exiting formatting, docstrings, and comments
 
+## Raygeo (Rust/PyO3 geometry library)
+
+- Location: a separate repository in `external/raygeo/` that you may also edit
+- Has its own self-contained pixi environment — run all pixi commands from within `external/raygeo/`
+   o `pixi run check` (in `external/raygeo/`): Check Raygeo changes before compilation
+   o `pixi run build` (in `external/raygeo/`): Build and install the raygeo Rust extension
+   o `pixi run test` (in `external/raygeo/`): Run raygeo tests
+   o `pixi run gen-stubs` (in `external/raygeo/`): Re-generate stub files (.pyi)
+- The pixi environment includes `maturin`, `cargo`, and `rustc` — never install these separately
+
 ## Other rules
 
 - Do not run the full test suite prematurely. Fix all linter errors first. Run targeted tests.
