@@ -166,7 +166,7 @@ site-gen-api = "python3 scripts/update_api_docs.py"
 site-install = { cmd = "npm install", cwd = "website" }
 site-serve = { cmd = "npm start", cwd = "website", depends-on = ["update-api-docs"] }
 site-build = { cmd = "npm run build", cwd = "website", depends-on = ["site-gen-api"] }
-site-deploy = "bash scripts/deploy_website.sh"
+site-deploy = { cmd = "bash scripts/deploy_website.sh", depends-on = ["site-gen-api"] }
 
 [tasks.update-api-docs]
 cmd = "python3 scripts/update_api_docs.py"
