@@ -31,9 +31,10 @@ PyOpenGL-accelerate = "==3.1.10"
 PyGObject = "==3.50.0"
 pkg-config = "*"
 rust = "*"
+patchelf = "*"
 
 [feature.app.pypi-dependencies]
-raygeo = "==0.2.0"
+raygeo = ">=0.2.0"
 rayforge = { editable = true, path = "." }
 aiohttp = "==3.13.5"
 asyncudp = "==0.11.0"
@@ -161,10 +162,14 @@ pyright = ">=1.1.409,<2"
 
 # Tasks for developing and generating the website
 [feature.website.tasks]
+site-gen-api = "python3 scripts/update_api_docs.py"
 site-install = { cmd = "npm install", cwd = "website" }
-site-serve = { cmd = "npm start", cwd = "website" }
-site-build = { cmd = "npm run build", cwd = "website" }
-site-deploy = "bash scripts/deploy_website.sh"
+site-serve = { cmd = "npm start", cwd = "website", depends-on = ["update-api-docs"] }
+site-build = { cmd = "npm run build", cwd = "website", depends-on = ["site-gen-api"] }
+site-deploy = { cmd = "bash scripts/deploy_website.sh", depends-on = ["site-gen-api"] }
+
+[tasks.update-api-docs]
+cmd = "python3 scripts/update_api_docs.py"
 
 # Tasks for video processing
 [feature.video-tools.tasks]
