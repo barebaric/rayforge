@@ -1,5 +1,6 @@
 import logging
-from typing import cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
+
 from ....core.workflow import Step
 from ...canvas import CanvasElement
 from .group import GroupElement

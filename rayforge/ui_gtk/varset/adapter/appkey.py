@@ -1,7 +1,7 @@
 import json
 import logging
-import urllib.request
 import urllib.error
+import urllib.request
 from gettext import gettext as _
 from typing import Any, Optional, Tuple
 

@@ -18,15 +18,14 @@ Output options:
 
 import argparse
 import base64
+import json
 import os
 import subprocess
 import sys
 from collections import defaultdict
-from datetime import datetime, UTC
-from urllib.request import Request, urlopen
+from datetime import UTC, datetime
 from urllib.error import HTTPError, URLError
-import json
-
+from urllib.request import Request, urlopen
 
 METRICS_URL = os.environ.get("METRICS_URL", "")
 METRICS_API_USER = os.environ.get("METRICS_API_USER", "")

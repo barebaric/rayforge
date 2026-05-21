@@ -1,9 +1,10 @@
+import warnings
+from pathlib import Path
+from typing import Tuple
+
 import cairo
 import numpy as np
 import pytest
-from pathlib import Path
-from typing import Tuple
-import warnings
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -11,7 +12,6 @@ with warnings.catch_warnings():
     from pyvips import GValue
 
 from rayforge.image.util import vips
-
 
 TEST_DATA_DIR = Path(__file__).parent.parent / "png"
 

@@ -1,19 +1,20 @@
 import logging
 import threading
-from typing import Callable, cast, Optional, Tuple
 from gettext import gettext as _
-from gi.repository import Adw, Gtk, GLib
+from typing import Callable, Optional, Tuple, cast
+
 from blinker import Signal
+from gi.repository import Adw, GLib, Gtk
+
 from ... import __version__
-from ...context import get_context
 from ...addon_mgr.addon import Addon, AddonMetadata
 from ...addon_mgr.addon_manager import AddonState
+from ...context import get_context
 from ...shared.util.versioning import UnknownVersion
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
 from .addon_dialog import AddonRegistryDialog
 from .license_dialog import LicenseRequiredDialog
-
 
 logger = logging.getLogger(__name__)
 

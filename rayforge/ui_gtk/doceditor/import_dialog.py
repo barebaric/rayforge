@@ -1,15 +1,16 @@
 import logging
+from gettext import gettext as _
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Set
-from gettext import gettext as _
 
 import cairo
 from blinker import Signal
 from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk
 
+from ...context import get_context
 from ...core.item import DocItem
 from ...core.layer import Layer
-from ...context import get_context
+from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
     LayerImportMode,
@@ -22,7 +23,6 @@ from ...doceditor.file_cmd import PreviewResult
 from ...image.base_importer import ImporterFeature
 from ...image.geo_renderer import geometry_to_cairo
 from ...image.structures import ImportManifest
-from ...core.matrix import Matrix
 from ..shared.adwfix import get_spinrow_float
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.slider import create_slider

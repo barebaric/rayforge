@@ -1,4 +1,5 @@
 import re
+
 from gi.repository import Adw, Gdk, Gtk
 
 from ...usage import get_usage_tracker

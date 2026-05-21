@@ -1,15 +1,17 @@
 """Test that multipass transformer changes trigger re-generation."""
 
-from unittest.mock import MagicMock, patch
-import pytest
-import logging
 import asyncio
+import logging
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
 from raygeo import Geometry
+from raygeo.ops import Ops
+
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
-from rayforge.core.ops import Ops
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.step import Step
@@ -17,9 +19,9 @@ from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact import (
-    WorkPieceArtifact,
-    StepOpsArtifact,
     JobArtifact,
+    StepOpsArtifact,
+    WorkPieceArtifact,
 )
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.pipeline import Pipeline
@@ -30,7 +32,6 @@ from rayforge.pipeline.stage.step_runner import (
 from rayforge.pipeline.stage.workpiece_runner import (
     make_workpiece_artifact_in_subprocess,
 )
-
 
 logger = logging.getLogger(__name__)
 

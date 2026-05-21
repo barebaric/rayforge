@@ -5,7 +5,6 @@ from gi.repository import Gdk, Gtk
 from ..icons import get_icon
 from .gtk import apply_css
 
-
 css = """
 .visibility-overlay {
     background-color: alpha(@theme_bg_color, 0.75);

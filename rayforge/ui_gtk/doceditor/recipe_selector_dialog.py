@@ -1,10 +1,12 @@
 import logging
-from typing import List, Callable, Tuple, TYPE_CHECKING
 from gettext import gettext as _
-from gi.repository import Gtk, Adw
+from typing import TYPE_CHECKING, Callable, List, Tuple
+
+from gi.repository import Adw, Gtk
+
 from ...context import get_context
-from ...core.recipe import Recipe
 from ...core.capability import Capability
+from ...core.recipe import Recipe
 from ..icons import get_icon
 from ..shared.gtk import apply_css
 

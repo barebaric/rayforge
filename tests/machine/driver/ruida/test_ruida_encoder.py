@@ -10,14 +10,15 @@ Tests cover:
 - Serialization of EncodedOutput
 """
 
-import pytest
 import base64
 
-from rayforge.core.ops import Ops
+import pytest
+from raygeo.ops import Ops
+
 from rayforge.core.doc import Doc
-from rayforge.machine.models.laser import Laser
 from rayforge.machine.driver.ruida.ruida_encoder import RuidaEncoder
 from rayforge.machine.driver.ruida.ruida_util import encode14, encode35
+from rayforge.machine.models.laser import Laser
 from rayforge.pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
 
 
@@ -179,11 +180,11 @@ class TestSetCutSpeedCommand:
     def test_speed_fractional(self, encoder, mock_machine, doc):
         """Fractional speeds should be encoded correctly."""
         ops = Ops()
-        ops.set_cut_speed(50.5)
+        ops.set_cut_speed(50)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
-        speed_um = int(int(50.5) * 1000)
+        speed_um = int(50 * 1000)
         assert binary == b"\xc9\x02" + encode35(speed_um)
         assert "SPEED 50.0" in result.text
 

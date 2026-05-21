@@ -1,14 +1,16 @@
 from typing import Dict
 from unittest.mock import MagicMock
+
 import pytest
 from raygeo import Geometry
+
+from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
+from rayforge.core.source_asset import SourceAsset
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
+from rayforge.core.workpiece import WorkPiece
 from rayforge.image.assembler import ItemAssembler
 from rayforge.image.structures import LayoutItem
-from rayforge.core.source_asset import SourceAsset
-from rayforge.core.layer import Layer
-from rayforge.core.workpiece import WorkPiece
 
 
 @pytest.fixture

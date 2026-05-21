@@ -1,5 +1,5 @@
-from ..types import SnapLine, SnapPoint
 from ..engine import SnapLineProducer
+from ..types import SnapLine, SnapPoint
 from .centers import CentersProducer
 from .entity_points import EntityPointsProducer
 from .equidistant import EquidistantLinesProducer

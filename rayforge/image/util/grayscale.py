@@ -3,10 +3,11 @@ Grayscale and binary image conversion utilities for Cairo surfaces.
 """
 
 from typing import Tuple
+
 import cairo
 import numpy
 
-from .srgb import srgb_to_linear, linear_to_srgb
+from .srgb import linear_to_srgb, srgb_to_linear
 
 
 def compute_auto_levels(

@@ -1,17 +1,19 @@
 from __future__ import annotations
+
 import logging
 import math
-from typing import TYPE_CHECKING, List, Tuple, Optional
 from copy import deepcopy
 from dataclasses import replace
 from gettext import gettext as _
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
-from raygeo import Geometry
 from raygeo import (
-    CMD_TYPE_MOVE,
-    CMD_TYPE_LINE,
     CMD_TYPE_ARC,
+    CMD_TYPE_LINE,
+    CMD_TYPE_MOVE,
+    Geometry,
 )
+
 from ..core.tab import Tab
 from ..core.undo import Command
 from ..core.workpiece import WorkPiece

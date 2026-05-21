@@ -1,10 +1,9 @@
 import pytest
-
 from sketcher.core import Sketch
 from sketcher.core.commands import AddItemsCommand
 from sketcher.core.commands.items import RemoveItemsCommand
-from sketcher.core.entities import Point, Line
 from sketcher.core.constraints import DistanceConstraint
+from sketcher.core.entities import Line, Point
 
 
 @pytest.fixture

@@ -1,9 +1,11 @@
-import pytest
 from pathlib import Path
-from rayforge.image.svg.svg_vector import SvgVectorImporter
+
+import pytest
+
+from rayforge.core.layer import Layer
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.layer import Layer
+from rayforge.image.svg.svg_vector import SvgVectorImporter
 
 SVG_BASIC = b"""
 <svg width="100mm" height="100mm" viewBox="0 0 100 100"

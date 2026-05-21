@@ -3,27 +3,30 @@ Implements a pixel-based layout strategy for dense packing of workpieces.
 """
 
 from __future__ import annotations
-import math
+
 import logging
-from typing import (
-    List,
-    Sequence,
-    Dict,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-)
+import math
 from dataclasses import dataclass
 from gettext import gettext as _
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
+
 import cairo
 import numpy as np
+from raygeo.geo.types import Point, Rect
 from scipy.ndimage import binary_dilation
 from scipy.signal import fftconvolve
+
 from ...context import get_context
-from raygeo import Point, Rect
 from ...core.group import Group
-from ...core.matrix import Matrix
 from ...core.item import DocItem
+from ...core.matrix import Matrix
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
 from ...image.geo_renderer import geometry_to_cairo

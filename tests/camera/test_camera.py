@@ -1,9 +1,10 @@
-import pytest
-import numpy as np
 from datetime import datetime
 
-from rayforge.camera.models.camera import Camera
+import numpy as np
+import pytest
+
 from rayforge.camera.calibration.result import CalibrationResult
+from rayforge.camera.models.camera import Camera
 
 
 def test_camera_initialization():

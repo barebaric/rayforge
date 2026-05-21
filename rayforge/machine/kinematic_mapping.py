@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 import numpy as np
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
 
 from ..core.layer import Layer
-from ..core.ops.axis import Axis
-from ..core.ops import Ops
 from .kinematic_math import KinematicMath
 from .models.rotary_module import RotaryMode, RotaryType
 
 if TYPE_CHECKING:
     from ..core.doc import Doc
-    from .models.rotary_module import RotaryModule
     from .models.machine import Machine
+    from .models.rotary_module import RotaryModule
 
 
 def _resolve_rotary_layer_by_uid(layer_uid: str, doc):

@@ -15,11 +15,11 @@ import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import GLib, Gtk
 
-from rayforge.ui_gtk.canvas.worldsurface import WorldSurface
-from rayforge.ui_gtk.canvas2d.elements.dot import DotElement
 from rayforge.machine.driver.ruida.ruida_simulator import RuidaSimulator
 from rayforge.machine.driver.ruida.ruida_transport import RuidaCodec
 from rayforge.machine.driver.ruida.ruida_util import validate_packet
+from rayforge.ui_gtk.canvas.worldsurface import WorldSurface
+from rayforge.ui_gtk.canvas2d.elements.dot import DotElement
 
 logger = logging.getLogger(__name__)
 

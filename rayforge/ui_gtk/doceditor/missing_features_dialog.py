@@ -1,5 +1,6 @@
-from typing import Set
 from gettext import gettext as _
+from typing import Set
+
 from gi.repository import Adw, Gtk
 
 

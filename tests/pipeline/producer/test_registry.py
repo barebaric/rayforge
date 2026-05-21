@@ -1,10 +1,10 @@
 import pytest
+from raygeo.ops import Ops
 
-from rayforge.pipeline.producer.registry import ProducerRegistry
+from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.producer import OpsProducer
 from rayforge.pipeline.producer.placeholder import PlaceholderProducer
-from rayforge.core.ops import Ops
-from rayforge.pipeline.coord import CoordinateSystem
+from rayforge.pipeline.producer.registry import ProducerRegistry
 
 
 class MockProducer(OpsProducer):

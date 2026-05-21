@@ -1,7 +1,10 @@
 from __future__ import annotations
-from typing import List, Optional, Iterator
-from blinker import Signal
+
 from contextlib import contextmanager
+from typing import Iterator, List, Optional
+
+from blinker import Signal
+
 from .command import Command
 from .composite_cmd import CompositeCommand
 

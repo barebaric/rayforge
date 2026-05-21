@@ -1,28 +1,30 @@
 import math
 import uuid
-import pytest
 from pathlib import Path
-from raygeo import Geometry
+
+import pytest
 from raygeo import (
-    CMD_TYPE_LINE,
     CMD_TYPE_ARC,
+    CMD_TYPE_LINE,
+    COL_CW,
+    COL_I,
+    COL_J,
     COL_TYPE,
     COL_X,
     COL_Z,
-    COL_I,
-    COL_J,
-    COL_CW,
+    Geometry,
 )
 from sketcher.core import Sketch
-from sketcher.core.sketch import Fill
 from sketcher.core.constraints import (
     CoincidentConstraint,
     EqualDistanceConstraint,
-    PointOnLineConstraint,
-    PerpendicularConstraint,
     EqualLengthConstraint,
+    PerpendicularConstraint,
+    PointOnLineConstraint,
     SymmetryConstraint,
 )
+from sketcher.core.sketch import Fill
+
 from rayforge.core.varset import FloatVar
 
 

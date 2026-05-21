@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import enum
-from typing import Optional, Type
 from gettext import gettext as _
+from typing import Optional, Type
 
 
 class ValidationStatus(enum.Enum):

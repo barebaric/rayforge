@@ -1,12 +1,12 @@
 from unittest.mock import MagicMock
 
 import pytest
+from laser_essentials.steps import ContourStep
 
 from rayforge.core.capability import CUT, SCORE, WITH_KERF
 from rayforge.core.matrix import Matrix
 from rayforge.core.step import Step
 from rayforge.core.step_registry import step_registry
-from laser_essentials.steps import ContourStep
 
 
 @pytest.fixture

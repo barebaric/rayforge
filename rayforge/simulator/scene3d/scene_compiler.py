@@ -14,10 +14,17 @@ from dataclasses import dataclass, field
 from typing import Callable, List, Optional, Tuple
 
 import numpy as np
+from raygeo.geo.shape.arc import linearize_arc
+from raygeo.geo.shape.bezier import linearize_bezier_segment
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandType
 
-from raygeo.shape.arc import linearize_arc
-from raygeo.shape.bezier import linearize_bezier_segment
-from ...core.ops import Ops, CommandType
+from ...pipeline.encoder.scanline_rasterizer import (
+    MAX_TEXTURE_DIMENSION,
+)
+from ...pipeline.encoder.scanline_rasterizer import (
+    rasterize_scanlines as _rasterize_scanlines_shared,
+)
 from ...pipeline.encoder.vertexencoder import transform_to_cylinder
 from .compiled_scene import (
     CompiledSceneArtifact,
@@ -25,18 +32,24 @@ from .compiled_scene import (
     TextureLayer,
     VertexLayer,
 )
-from ...pipeline.encoder.scanline_rasterizer import (
-    MAX_TEXTURE_DIMENSION,
-    rasterize_scanlines as _rasterize_scanlines_shared,
-)
 from .cylinder_compiler import generate_cylinder_vertices
 from .render_config import RenderConfig3D
 from .rotary_coords import (
     bake_visual_positions as _bake_visual_positions,
+)
+from .rotary_coords import (
     mu_to_visual as _mu_to_visual,
+)
+from .rotary_coords import (
     reconstruct_mu_arc as _reconstruct_mu_arc,
+)
+from .rotary_coords import (
     reconstruct_mu_bezier as _reconstruct_mu_bezier,
+)
+from .rotary_coords import (
     reconstruct_mu_pos as _reconstruct_mu_pos,
+)
+from .rotary_coords import (
     visual_end as _visual_end,
 )
 

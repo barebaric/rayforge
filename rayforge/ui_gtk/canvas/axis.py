@@ -1,9 +1,11 @@
-import math
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+import math
+from typing import TYPE_CHECKING, Optional, Tuple
+
 import cairo
 import numpy as np
-from raygeo import Point3D
+from raygeo.geo.types import Point3D
+
 from ...core.matrix import Matrix
 from ...pipeline.coordspace import OriginCorner
 

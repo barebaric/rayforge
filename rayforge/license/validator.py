@@ -14,7 +14,6 @@ from .provider import (
     LicenseStatus,
 )
 
-
 logger = logging.getLogger(__name__)
 
 

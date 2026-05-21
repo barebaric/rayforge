@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional, Callable, Tuple
 from asyncio.exceptions import CancelledError
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
+
 from blinker import Signal
+
 from ...shared.tasker.task import Task
 from ..artifact import JobArtifactHandle
 from ..artifact.key import ArtifactKey
@@ -14,9 +17,9 @@ if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...machine.models.machine import Machine
     from ...shared.tasker.manager import TaskManager
-    from ..context import GenerationContext
     from ..artifact import BaseArtifactHandle
     from ..artifact.manager import ArtifactManager
+    from ..context import GenerationContext
 
 
 logger = logging.getLogger(__name__)

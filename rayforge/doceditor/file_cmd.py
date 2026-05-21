@@ -13,18 +13,20 @@ from typing import (
     Callable,
     List,
     Optional,
-    Tuple,
-    cast,
     Set,
+    Tuple,
     Type,
+    cast,
 )
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
+from raygeo import Geometry
+from raygeo.geo.types import Point, Rect
+
 from ..context import get_context
-from raygeo import Geometry, Point, Rect
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.matrix import Matrix
@@ -38,16 +40,16 @@ from ..core.vectorization_spec import (
 )
 from ..core.workpiece import WorkPiece
 from ..image import (
-    exporter_registry,
-    importer_registry,
+    Importer,
     ImporterFeature,
     ImportManifest,
-    Importer,
+    exporter_registry,
+    importer_registry,
 )
 from ..image.base_exporter import Exporter
 from ..image.dxf.exporter import GeometryDxfExporter
-from ..image.svg.exporter import GeometrySvgExporter
 from ..image.structures import ImportPayload, ImportResult, ParsingResult
+from ..image.svg.exporter import GeometrySvgExporter
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from .layout.align import PositionAtStrategy
 
@@ -1147,8 +1149,8 @@ class FileCmd:
             file_content = self._read_project_content(file_path)
             doc_dict = json.loads(file_content)
 
-            from ..core.doc import Doc
             from ..core.asset import UnknownAsset
+            from ..core.doc import Doc
 
             new_doc = Doc.from_dict(doc_dict)
 

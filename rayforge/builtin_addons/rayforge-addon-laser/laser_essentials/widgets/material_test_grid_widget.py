@@ -4,10 +4,10 @@ Material Test Grid Settings Widget
 Provides UI for configuring material test array parameters.
 """
 
-from typing import Any, TYPE_CHECKING, cast
+from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, cast
 
 from gi.repository import Adw, GLib, GObject, Gtk
-from gettext import gettext as _
 
 from rayforge.core.undo import DictItemCommand
 from rayforge.shared.util.glib import DebounceMixin
@@ -16,6 +16,7 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
 from rayforge.ui_gtk.shared.slider import create_slider_row
+
 from ..producers import MaterialTestGridProducer
 
 if TYPE_CHECKING:

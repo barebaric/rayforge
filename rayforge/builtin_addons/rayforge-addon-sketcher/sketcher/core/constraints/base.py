@@ -1,23 +1,28 @@
 from __future__ import annotations
+
 from enum import Enum, auto
-from typing import (
-    Union,
-    Tuple,
-    Dict,
-    Any,
-    List,
-    Callable,
-    Optional,
-    TYPE_CHECKING,
-    Set,
-)
 from locale import format_string
-from raygeo import Point
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
+
+from raygeo.geo.types import Point
+
 from rayforge.core.expression import safe_evaluate
+
 from ..types import EntityID
 
 if TYPE_CHECKING:
     import cairo
+
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection

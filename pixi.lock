@@ -360,12 +360,12 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.15.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - pypi: .
+      - pypi: external/raygeo
       - pypi: https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0c/c3/44f3fbbfa403ea2a7c779186dc20772604442dde72947e7d01069cbe98e3/pycparser-3.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0c/d6/1d5c60cc17bbdf37c1552d9c03862fc6d32c5836732a0415b2d637edc2d0/pypdf-6.10.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0d/fe/6bea5c9162869c5beba5d9c8abbed835ec85bf1ec1fba05a3822325c45f3/build-1.5.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/0e/c1/0ccc7ffa7f6734ca8e6050000d0da059d461421be5451e0283b342d055ba/raygeo-0.2.0-cp311-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/0f/15/5bf3b99495fb160b63f95972b81750f18f7f4e02ad051373b669d17d44f2/aiohappyeyeballs-2.6.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/10/bd/c038d7cc38edc1aa5bf91ab8068b63d4308c66c4c8bb3cbba7dfbc049f9c/pyparsing-3.3.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/10/cb/f2ad4230dc2eb1a74edf38f1a38b9b52277f75bef262d8908e60d957e13c/blinker-1.9.0-py3-none-any.whl
@@ -4717,7 +4717,7 @@ packages:
 - pypi: .
   name: rayforge
   requires_dist:
-  - raygeo>=0.2.0
+  - raygeo
   - aiohttp==3.13.5
   - asyncudp==0.11.0
   - blinker==1.9.0
@@ -4748,6 +4748,13 @@ packages:
   - pytest-mock ; extra == 'test'
   - pytest-cov ; extra == 'test'
   - pygobject-stubs ; extra == 'test'
+  requires_python: '>=3.10'
+- pypi: external/raygeo
+  name: raygeo
+  requires_dist:
+  - numpy>=1.20.0
+  - pytest ; extra == 'test'
+  - pytest-mock ; extra == 'test'
   requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl
   name: defusedxml
@@ -4802,15 +4809,6 @@ packages:
   - uv>=0.1.18 ; extra == 'uv'
   - virtualenv>=20.17 ; python_full_version >= '3.10' and python_full_version < '3.14' and extra == 'virtualenv'
   - virtualenv>=20.31 ; python_full_version >= '3.14' and extra == 'virtualenv'
-  requires_python: '>=3.10'
-- pypi: https://files.pythonhosted.org/packages/0e/c1/0ccc7ffa7f6734ca8e6050000d0da059d461421be5451e0283b342d055ba/raygeo-0.2.0-cp311-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-  name: raygeo
-  version: 0.2.0
-  sha256: ed1f462958fc01f36d607e1d9e61d35947dce0622466b39c4df0b059f248927a
-  requires_dist:
-  - numpy>=1.20.0
-  - pytest ; extra == 'test'
-  - pytest-mock ; extra == 'test'
   requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/0f/15/5bf3b99495fb160b63f95972b81750f18f7f4e02ad051373b669d17d44f2/aiohappyeyeballs-2.6.1-py3-none-any.whl
   name: aiohappyeyeballs

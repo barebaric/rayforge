@@ -1,10 +1,12 @@
 from __future__ import annotations
-from typing import Dict, Optional, TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Dict, Optional
+
 from .base import LayoutStrategy
 
 if TYPE_CHECKING:
-    from ...core.matrix import Matrix
     from ...core.item import DocItem
+    from ...core.matrix import Matrix
     from ...shared.tasker.context import ExecutionContext
 
 

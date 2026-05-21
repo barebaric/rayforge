@@ -26,6 +26,7 @@
    o `pixi run build` (in `external/raygeo/`): Build and install the raygeo Rust extension
    o `pixi run test` (in `external/raygeo/`): Run raygeo tests
    o `pixi run gen-stubs` (in `external/raygeo/`): Re-generate stub files (.pyi)
+   o `pixi run reinstall-raygeo`: Reinstall the raygeo Rust extension after changes
 - The pixi environment includes `maturin`, `cargo`, and `rustc` — never install these separately
 
 ## Other rules

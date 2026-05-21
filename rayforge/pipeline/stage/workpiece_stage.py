@@ -1,11 +1,14 @@
 from __future__ import annotations
+
 import logging
 import math
-from typing import TYPE_CHECKING, Dict, Optional, Tuple
 from copy import deepcopy
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
+
 from blinker import Signal
 from raygeo import Geometry
-from ...core.ops import Ops
+from raygeo.ops import Ops
+
 from ...shared.tasker.task import Task
 from ...shared.util.size import sizes_are_close
 from ..artifact import WorkPieceArtifact

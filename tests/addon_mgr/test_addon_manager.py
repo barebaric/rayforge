@@ -1,28 +1,31 @@
 import io
 import sys
 import tempfile
-import yaml
 import zipfile
 from pathlib import Path
 from typing import List, Optional
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from rayforge.addon_mgr.addon_manager import (
-    AddonManager,
-    UpdateStatus,
-    AddonState,
-)
+import yaml
+
 from rayforge.addon_mgr.addon import (
     Addon,
-    AddonValidationError,
     AddonMetadata,
+    AddonValidationError,
+)
+from rayforge.addon_mgr.addon_manager import (
+    AddonManager,
+    AddonState,
+    UpdateStatus,
 )
 from rayforge.core.addon_config import (
     AddonConfig,
+)
+from rayforge.core.addon_config import (
     AddonState as ConfigAddonState,
 )
-from rayforge.shared.util.versioning import UnknownVersion
-from rayforge.shared.util.versioning import parse_requirement
+from rayforge.shared.util.versioning import UnknownVersion, parse_requirement
 
 
 def create_addon_files(

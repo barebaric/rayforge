@@ -4,9 +4,9 @@ from gi.repository import Gio
 
 from rayforge.core.hooks import hookimpl
 from rayforge.ui_gtk.action_registry import MenuPlacement
+
 from .controller import controller
 from .widgets import AIWorkpieceGeneratorDialog
-
 
 ADDON_NAME = "ai_workpiece_generator"
 

@@ -1,10 +1,13 @@
 from __future__ import annotations
+
 import logging
 import uuid
-from typing import Dict, Any, Optional, TYPE_CHECKING, ClassVar
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
+
 from blinker import Signal
 from raygeo import Geometry
+
 from ..context import get_context
 from ..image.geo_renderer import render_geometry_to_png
 from .asset import IAsset

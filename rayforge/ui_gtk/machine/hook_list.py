@@ -1,9 +1,11 @@
-from typing import cast, Dict, Tuple
 from gettext import gettext as _
-from gi.repository import Gtk, Adw
-from ..icons import get_icon
+from typing import Dict, Tuple, cast
+
+from gi.repository import Adw, Gtk
+
 from ...machine.models.machine import Machine
 from ...machine.models.macro import Macro, MacroTrigger
+from ..icons import get_icon
 from .gcode_editor import GcodeEditorDialog
 
 

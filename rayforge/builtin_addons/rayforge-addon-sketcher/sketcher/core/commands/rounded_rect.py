@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
-from raygeo import Point as GeoPoint
+from raygeo.geo.types import Point as GeoPoint
+
 from ..constraints import (
     DistanceConstraint,
     EqualDistanceConstraint,

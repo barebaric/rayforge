@@ -1,8 +1,10 @@
 import asyncio
-import asyncudp
-import socket
 import logging
+import socket
 from typing import Optional
+
+import asyncudp
+
 from .transport import Transport, TransportStatus
 
 logger = logging.getLogger(__name__)

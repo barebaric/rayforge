@@ -1,7 +1,7 @@
+from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gtk
-from gettext import gettext as _
 
 from rayforge.core.undo import DictItemCommand
 from rayforge.shared.util.glib import DebounceMixin
@@ -9,6 +9,7 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
+
 from ..transformers import MergeLinesTransformer
 
 if TYPE_CHECKING:

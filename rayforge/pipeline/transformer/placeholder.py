@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, List, Dict, Any
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from .base import OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo import Geometry
-    from ...core.ops import Ops
+    from raygeo.ops import Ops
+
     from ...core.workpiece import WorkPiece
     from ...shared.tasker.progress import ProgressContext
 

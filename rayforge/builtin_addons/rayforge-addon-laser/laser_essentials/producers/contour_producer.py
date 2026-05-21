@@ -1,21 +1,20 @@
 import logging
 from enum import Enum, auto
-from typing import Optional, TYPE_CHECKING, Dict, Any
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
 from raygeo import Geometry
-from raygeo.path import (
-    extract_overcut_rows,
-    normalize_winding_orders,
-)
-from rayforge.image.tracing import trace_surface
+from raygeo.geo.algo.overcut import apply_overcut
+from raygeo.ops import Ops
+from raygeo.ops.types import SectionType
+
 from rayforge.core.matrix import Matrix
-from rayforge.core.ops import Ops, SectionType
 from rayforge.core.vectorization_spec import TraceSpec
-from rayforge.shared.tasker.progress import ProgressContext
+from rayforge.image.tracing import trace_surface
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.producer.base import OpsProducer, CutSide
-
+from rayforge.pipeline.producer.base import CutSide, OpsProducer
+from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
     from rayforge.core.workpiece import WorkPiece
@@ -82,22 +81,6 @@ class ContourProducer(OpsProducer):
     @property
     def requires_full_render(self) -> bool:
         return self.override_threshold
-
-    @staticmethod
-    def _apply_overcut(geo: Geometry, overcut: float) -> Geometry:
-        if overcut <= 0 or geo.is_empty():
-            return geo
-        data = geo.data
-        if data is None or len(data) < 2:
-            return geo
-        if not geo.is_closed():
-            return geo
-        rows = extract_overcut_rows(data, overcut)
-        if rows is None:
-            return geo
-        result = geo.copy()
-        result.append_data(rows)
-        return result
 
     def run(
         self,
@@ -183,7 +166,10 @@ class ContourProducer(OpsProducer):
         # 3. Normalize winding orders.
         target_contours = []
         if base_contours:
-            target_contours = normalize_winding_orders(base_contours)
+            merged = Geometry()
+            for g in base_contours:
+                merged.extend(g)
+            target_contours = merged.normalize_winding_orders()
 
         # 4. Apply offsets.
         composite_geo = Geometry()
@@ -249,7 +235,7 @@ class ContourProducer(OpsProducer):
                 if self.overcut > 0:
                     contour_list = final_geometry.split_into_contours()
                     contour_list = [
-                        self._apply_overcut(c, self.overcut)
+                        apply_overcut(c, self.overcut)
                         for c in contour_list
                     ]
                     final_geometry = Geometry()
@@ -267,11 +253,11 @@ class ContourProducer(OpsProducer):
 
                 if self.overcut > 0:
                     inner_contours = [
-                        self._apply_overcut(c, self.overcut)
+                        apply_overcut(c, self.overcut)
                         for c in inner_contours
                     ]
                     outer_contours = [
-                        self._apply_overcut(c, self.overcut)
+                        apply_overcut(c, self.overcut)
                         for c in outer_contours
                     ]
 

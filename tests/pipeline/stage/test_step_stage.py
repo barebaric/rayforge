@@ -1,6 +1,8 @@
 import uuid
-import pytest
 from unittest.mock import MagicMock, PropertyMock
+
+import pytest
+
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step

@@ -2,19 +2,19 @@ import asyncio
 import logging
 import webbrowser
 from concurrent.futures import Future
+from gettext import gettext as _
 from pathlib import Path
 from typing import Callable, Coroutine, List, Optional, Tuple
-from gettext import gettext as _
-from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
-from .. import __version__
-from .. import const
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk
+from raygeo.ops.axis import Axis
+
+from .. import __version__, const
 from ..addon_mgr.update_cmd import UpdateCommand
 from ..context import get_context
 from ..core.asset_registry import asset_type_registry
 from ..core.group import Group
 from ..core.item import DocItem
-from ..core.ops.axis import Axis
 from ..core.registration import call_registration_hooks
 from ..core.step_registry import step_registry
 from ..core.undo import Command, HistoryManager
@@ -35,8 +35,8 @@ from ..usage import get_usage_tracker
 from .about import AboutDialog
 from .action_registry import action_registry
 from .actions import (
-    ActionManager,
     SHORTCUTS,
+    ActionManager,
     action_extension_registry,
 )
 from .canvas import CanvasElement
@@ -54,21 +54,21 @@ from .doceditor.workflow_view import WorkflowView
 from .machine.machine_dropdown import MachineDropdown
 from .machine.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
-from .settings.settings_dialog import SettingsWindow
 from .project_cmd import ProjectCmd
+from .settings.settings_dialog import SettingsWindow
 from .shared.gtk import get_monitor_geometry
 from .shared.playback_overlay import PlaybackOverlay
 from .shared.progress_bar import ProgressBar
 from .shared.sanity_check_dialog import SanityCheckDialog
-from .shared.usage_consent_dialog import UsageConsentDialog
 from .shared.time_estimate_overlay import TimeEstimateOverlay
+from .shared.usage_consent_dialog import UsageConsentDialog
 from .shared.visibility_overlay import VisibilityOverlay
-from .sim3d import Canvas3D, initialized as canvas3d_initialized
+from .sim3d import Canvas3D
+from .sim3d import initialized as canvas3d_initialized
 from .sim3d.camera import ViewDirection
 from .sim3d.viewport import ViewportConfig
 from .toolbar import MainToolbar
 from .view_mode_cmd import ViewModeCmd
-
 
 logger = logging.getLogger(__name__)
 

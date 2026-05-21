@@ -1,7 +1,7 @@
 # flake8: noqa:F401
-from .base import OpsProducer, CutSide
+from .base import CutSide, OpsProducer
 from .placeholder import PlaceholderProducer
-from .registry import producer_registry, ProducerRegistry
+from .registry import ProducerRegistry, producer_registry
 
 __all__ = [
     "OpsProducer",

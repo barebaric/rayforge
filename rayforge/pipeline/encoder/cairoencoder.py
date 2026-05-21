@@ -1,16 +1,14 @@
-import math
-from typing import Tuple, Optional, Union
-import numpy as np
-import cairo
 import logging
-from ...core.ops import (
-    Ops,
-    CommandType,
-    CommandCategory,
-)
-from .base import OpsEncoder
-from ...core.color import ColorSet
+import math
+from typing import Optional, Tuple, Union
 
+import cairo
+import numpy as np
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandCategory, CommandType
+
+from ...core.color import ColorSet
+from .base import OpsEncoder
 
 logger = logging.getLogger(__name__)
 

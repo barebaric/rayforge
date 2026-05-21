@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
-from gi.repository import Gtk, GLib, Gdk
+
 from blinker import Signal
+from gi.repository import Gdk, GLib, Gtk
+
 from .highlighter import GcodeHighlighter
 
 if TYPE_CHECKING:

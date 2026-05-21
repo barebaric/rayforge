@@ -1,32 +1,34 @@
 import io
 import logging
-from typing import Optional, Tuple
-from pathlib import Path
-from pypdf import PdfReader
-from pypdf.errors import PdfReadError
 import warnings
 from gettext import gettext as _
+from pathlib import Path
+from typing import Optional, Tuple
+
+from pypdf import PdfReader
+from pypdf.errors import PdfReadError
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
 from raygeo import Geometry
+
 from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
 from .. import util
 from ..base_importer import Importer, ImporterFeature
+from ..engine import NormalizationEngine
 from ..structures import (
-    ParsingResult,
-    LayerGeometry,
-    VectorizationResult,
     ImportManifest,
+    LayerGeometry,
+    ParsingResult,
+    VectorizationResult,
 )
 from ..tracing import trace_surface
 from ..util import to_mm
 from .renderer import PDF_RENDERER
-from ..engine import NormalizationEngine
 
 logger = logging.getLogger(__name__)
 

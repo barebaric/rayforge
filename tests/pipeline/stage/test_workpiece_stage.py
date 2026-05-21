@@ -1,6 +1,7 @@
 import uuid
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from rayforge.core.doc import Doc
 from rayforge.pipeline.artifact.key import ArtifactKey

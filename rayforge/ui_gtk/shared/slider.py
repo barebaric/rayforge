@@ -1,9 +1,9 @@
 import locale
-from gi.repository import Gtk, Adw
 from typing import Callable, Optional
 
-from .gtk import apply_css
+from gi.repository import Adw, Gtk
 
+from .gtk import apply_css
 
 SLIDER_TRACK_WIDTH = 200
 VALUE_LABEL_WIDTH = 60

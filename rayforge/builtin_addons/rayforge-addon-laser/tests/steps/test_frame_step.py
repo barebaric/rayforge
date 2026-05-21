@@ -1,9 +1,9 @@
 from unittest.mock import MagicMock
 
 import pytest
+from laser_essentials.steps import FrameStep
 
 from rayforge.core.capability import CUT, SCORE, WITH_KERF
-from laser_essentials.steps import FrameStep
 
 
 @pytest.fixture

@@ -1,8 +1,9 @@
-import pytest
 import math
+
+import pytest
+from raygeo import Geometry
 from sketcher.core.entities import Arc
 from sketcher.core.registry import EntityRegistry
-from raygeo import Geometry
 
 
 @pytest.fixture

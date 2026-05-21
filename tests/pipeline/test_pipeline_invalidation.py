@@ -1,21 +1,22 @@
 """Tests for pipeline invalidation logic and signal handlers."""
 
 import uuid
+from unittest.mock import MagicMock, patch
 
 import pytest
-from unittest.mock import MagicMock, patch
+
 from rayforge.core.doc import Doc
 from rayforge.core.group import Group
+from rayforge.core.matrix import Matrix
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.matrix import Matrix
-from rayforge.pipeline.pipeline import Pipeline
 from rayforge.pipeline.artifact import (
     ArtifactKey,
     StepOpsArtifactHandle,
     WorkPieceArtifactHandle,
 )
 from rayforge.pipeline.artifact.manager import ArtifactManager
+from rayforge.pipeline.pipeline import Pipeline
 
 
 @pytest.fixture(autouse=True)

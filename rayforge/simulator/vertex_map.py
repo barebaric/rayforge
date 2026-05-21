@@ -2,9 +2,9 @@ from dataclasses import dataclass, field
 from typing import List, Tuple
 
 import numpy as np
-
-from raygeo.shape.arc import linearize_arc
-from ..core.ops import Ops, CommandType, CommandCategory
+from raygeo.geo.shape.arc import linearize_arc
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandCategory, CommandType
 
 
 @dataclass

@@ -1,6 +1,8 @@
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+import pytest
+
 from rayforge.core.doc import Doc
 from rayforge.core.group import Group
 from rayforge.core.layer import Layer
@@ -10,20 +12,20 @@ from rayforge.core.stock_asset import StockAsset
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
-from rayforge.doceditor.file_cmd import FileCmd, PreviewResult, ImportAction
+from rayforge.doceditor.file_cmd import FileCmd, ImportAction, PreviewResult
 from rayforge.image import (
-    ImportPayload,
-    ImportResult,
-    ParsingResult,
     ImporterFeature,
     ImportManifest,
+    ImportPayload,
+    ImportResult,
     LayerInfo,
+    ParsingResult,
 )
 from rayforge.image.svg.renderer import SVG_RENDERER
 from rayforge.pipeline.coordspace import (
+    AxisDirection,
     MachineSpace,
     OriginCorner,
-    AxisDirection,
 )
 from rayforge.shared.tasker.manager import TaskManager
 

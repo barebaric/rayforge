@@ -1,13 +1,14 @@
-import yaml
 import logging
-from blinker import Signal
 from dataclasses import dataclass, fields
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Any, Optional
-from ..machine.models.machine import Machine
+from typing import Any, Dict, Optional
 
+import yaml
+from blinker import Signal
+
+from ..machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
 

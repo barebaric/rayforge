@@ -1,4 +1,4 @@
-from rayforge.shared.util.glib import falsify, DebounceMixin
+from rayforge.shared.util.glib import DebounceMixin, falsify
 
 
 class TestFalsify:

@@ -14,7 +14,6 @@ from rayforge.machine.driver.ruida.ruida_maps import (
     DA_VARIABLE_4_BYTE_SUBCOMMANDS,
 )
 
-
 UM_PER_MM = 1000.0
 
 

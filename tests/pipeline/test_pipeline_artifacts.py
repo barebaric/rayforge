@@ -1,22 +1,23 @@
-import pytest
 import logging
 from pathlib import Path
+
+import pytest
 from raygeo import Geometry
-from rayforge.image import SVG_RENDERER
+from raygeo.ops import Ops
+
+from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
-from rayforge.core.workpiece import WorkPiece
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
-from rayforge.core.ops import Ops
-from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.pipeline import Pipeline
+from rayforge.core.workpiece import WorkPiece
+from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
 )
-from rayforge.context import get_context
-
+from rayforge.pipeline.coord import CoordinateSystem
+from rayforge.pipeline.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 

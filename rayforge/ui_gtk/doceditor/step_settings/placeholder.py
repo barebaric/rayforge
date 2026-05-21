@@ -1,11 +1,12 @@
+from gettext import gettext as _
 from typing import TYPE_CHECKING, Union
 
 from gi.repository import Adw
-from gettext import gettext as _
 
-from .base import StepComponentSettingsWidget
 from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.pipeline.transformer.base import OpsTransformer
+
+from .base import StepComponentSettingsWidget
 
 if TYPE_CHECKING:
     from ....core.step import Step

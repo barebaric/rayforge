@@ -1,9 +1,11 @@
 import logging
-from typing import Optional, List, Callable, cast, TYPE_CHECKING
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Callable, List, Optional, cast
+
 from gi.repository import Gtk
-from ...core.workflow import Workflow
+
 from ...core.undo.list_cmd import ListItemCommand, ReorderListCommand
+from ...core.workflow import Workflow
 from ..shared.draglist import DragListBox
 from ..shared.expander import ExpanderWithButton
 from ..shared.popover_menu import PopoverMenu

@@ -1,23 +1,27 @@
 from __future__ import annotations
+
 import math
+from gettext import gettext as _
 from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
     Optional,
     Union,
-    Dict,
-    Any,
-    List,
-    Callable,
-    TYPE_CHECKING,
     cast,
 )
-from gettext import gettext as _
-from raygeo import Point
-from ..entities import Line, Arc, Circle, Ellipse
+
+from raygeo.geo.types import Point
+
+from ..entities import Arc, Circle, Ellipse, Line
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
     import cairo
+
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection

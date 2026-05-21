@@ -1,10 +1,11 @@
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, MagicMock, patch
-from sketcher.ui_gtk.tools.path_tool import PathTool
 from sketcher.core.commands.bezier import BezierPreviewState
 from sketcher.core.constraints import HorizontalConstraint, VerticalConstraint
 from sketcher.core.entities import Point as SketchPoint
 from sketcher.core.snap.types import SnapLine, SnapLineType, SnapResult
+from sketcher.ui_gtk.tools.path_tool import PathTool
 
 
 @pytest.fixture

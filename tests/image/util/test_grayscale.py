@@ -1,6 +1,6 @@
 import cairo
-import pytest
 import numpy as np
+import pytest
 
 from rayforge.image.util import grayscale
 

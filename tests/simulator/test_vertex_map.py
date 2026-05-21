@@ -1,7 +1,8 @@
-from rayforge.core.ops import Ops
+from raygeo.ops import Ops
+
 from rayforge.simulator.vertex_map import (
-    build_vertex_map,
     build_scanline_overlay,
+    build_vertex_map,
 )
 
 

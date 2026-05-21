@@ -1,4 +1,3 @@
-from .render_config import LayerRenderConfig, RenderConfig3D
 from .compiled_scene import (
     CompiledSceneArtifact,
     CompiledSceneArtifactHandle,
@@ -6,6 +5,7 @@ from .compiled_scene import (
     TextureLayer,
     VertexLayer,
 )
+from .render_config import LayerRenderConfig, RenderConfig3D
 from .scene_compiler import compile_scene
 from .scene_compiler_runner import compile_scene_in_subprocess
 

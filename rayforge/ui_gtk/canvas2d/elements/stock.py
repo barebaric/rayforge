@@ -1,11 +1,12 @@
 import logging
-import cairo
 from typing import Optional
-from ....core.stock import StockItem
+
+import cairo
+
 from ....core.matrix import Matrix
+from ....core.stock import StockItem
 from ....image.geo_renderer import geometry_to_cairo
 from ...canvas import CanvasElement
-
 
 logger = logging.getLogger(__name__)
 

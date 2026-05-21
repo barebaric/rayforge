@@ -1,13 +1,13 @@
-import pytest
 import numpy as np
-
-from rayforge.core.ops import Ops
+import pytest
 from compile_scene_helper import (
-    make_test_config,
     make_assembled_ops,
     make_flat_layer_config,
     make_rotary_layer_config,
+    make_test_config,
 )
+from raygeo.ops import Ops
+
 from rayforge.simulator.scene3d.scene_compiler import compile_scene
 
 

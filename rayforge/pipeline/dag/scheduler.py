@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, List, Optional
+
 from ...core.step import Step
 from ...core.workpiece import WorkPiece
 from ..artifact.key import ArtifactKey
 from ..context import GenerationContext
 from .graph import PipelineGraph
 from .node import ArtifactNode, NodeState
-
 
 if TYPE_CHECKING:
     from ...core.doc import Doc

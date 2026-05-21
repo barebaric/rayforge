@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any, TYPE_CHECKING
-from blinker import Signal
 from enum import Enum, auto
-from ...core.ops import Ops
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+from blinker import Signal
+from raygeo.ops import Ops
+
 from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import ProgressContext
 

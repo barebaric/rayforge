@@ -1,20 +1,19 @@
 from __future__ import annotations
 
-import math
 import logging
-from typing import Optional, List, Dict, Any, TYPE_CHECKING
+import math
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from rayforge.core.ops import (
-    Ops,
-    SectionType,
-)
-from rayforge.core.ops.enums import CommandType, CommandCategory
-from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandCategory, CommandType, SectionType
+
+from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
     from raygeo import Geometry
+
     from rayforge.core.workpiece import WorkPiece
 
 logger = logging.getLogger(__name__)

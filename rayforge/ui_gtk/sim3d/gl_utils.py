@@ -7,6 +7,7 @@ import logging
 import math
 from dataclasses import dataclass
 from typing import Optional, Protocol, Union, final
+
 import numpy as np
 from OpenGL import GL
 from OpenGL.GL import shaders

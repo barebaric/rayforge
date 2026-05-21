@@ -4,7 +4,7 @@ from gettext import gettext as _
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw, GLib, Gdk, Gtk
+from gi.repository import Adw, Gdk, GLib, Gtk
 
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
@@ -12,6 +12,7 @@ from rayforge.ui_gtk.shared.patched_dialog_window import PatchedDialogWindow
 
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
+
     from ..controller import AISvgGeneratorController, GenerationResult
 
 logger = logging.getLogger(__name__)

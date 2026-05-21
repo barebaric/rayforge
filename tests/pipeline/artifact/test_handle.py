@@ -1,7 +1,8 @@
 from typing import cast
+
 from rayforge.pipeline.artifact import (
-    WorkPieceArtifactHandle,
     StepOpsArtifactHandle,
+    WorkPieceArtifactHandle,
     create_handle_from_dict,
 )
 

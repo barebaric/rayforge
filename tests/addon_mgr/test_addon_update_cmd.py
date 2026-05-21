@@ -1,8 +1,10 @@
-from unittest.mock import MagicMock, patch, call
-import pytest
 from gettext import gettext as _
-from rayforge.addon_mgr.update_cmd import UpdateCommand
+from unittest.mock import MagicMock, call, patch
+
+import pytest
+
 from rayforge.addon_mgr.addon import Addon, AddonMetadata
+from rayforge.addon_mgr.update_cmd import UpdateCommand
 
 # Mark all tests in this file as asyncio
 pytestmark = pytest.mark.asyncio

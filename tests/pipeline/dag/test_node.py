@@ -3,9 +3,9 @@ Tests for the ArtifactNode class.
 """
 
 from unittest.mock import Mock
-from rayforge.pipeline.dag.node import ArtifactNode, NodeState
-from rayforge.pipeline.artifact.key import ArtifactKey
 
+from rayforge.pipeline.artifact.key import ArtifactKey
+from rayforge.pipeline.dag.node import ArtifactNode, NodeState
 
 WP_UID_1 = "550e8400-e29b-41d4-a716-446655440001"
 WP_UID_2 = "550e8400-e29b-41d4-a716-446655440002"

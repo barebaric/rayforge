@@ -1,7 +1,9 @@
 import logging
 from gettext import gettext as _
 from typing import Optional, Tuple, cast
-from gi.repository import Gtk, Gdk
+
+from gi.repository import Gdk, Gtk
+
 from ...image.registry import FileFilter
 from ...shared.util.once import once_per_object
 

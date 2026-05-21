@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ...core.ops.axis import Axis
+from raygeo.ops.axis import Axis
 
 
 @dataclass(frozen=True)

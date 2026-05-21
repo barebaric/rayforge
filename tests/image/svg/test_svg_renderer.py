@@ -1,7 +1,9 @@
-import pytest
 from unittest.mock import MagicMock
-from rayforge.image.svg.renderer import SvgRenderer
+
+import pytest
+
 from rayforge.core.vectorization_spec import PassthroughSpec, TraceSpec
+from rayforge.image.svg.renderer import SvgRenderer
 
 
 @pytest.fixture

@@ -1,4 +1,5 @@
 import pytest
+
 from rayforge.core.varset.choicevar import ChoiceVar
 from rayforge.core.varset.var import ValidationError
 from rayforge.core.varset.varset import VarSet

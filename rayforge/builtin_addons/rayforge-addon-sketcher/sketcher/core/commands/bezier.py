@@ -4,7 +4,8 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, List, Optional
 
-from raygeo import Point as GeoPoint
+from raygeo.geo.types import Point as GeoPoint
+
 from ..entities import Bezier, Line, Point
 from ..entities.point import WaypointType
 from ..types import EntityID

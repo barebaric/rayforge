@@ -1,8 +1,9 @@
 import numpy as np
+
 from rayforge.image.denoise import (
-    _get_component_areas,
-    _find_adaptive_area_threshold,
     _filter_image_by_component_area,
+    _find_adaptive_area_threshold,
+    _get_component_areas,
     denoise_boolean_image,
 )
 

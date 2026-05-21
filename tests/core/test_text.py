@@ -1,11 +1,12 @@
 import numpy as np
 from raygeo import (
-    CMD_TYPE_MOVE,
-    CMD_TYPE_LINE,
     CMD_TYPE_BEZIER,
+    CMD_TYPE_LINE,
+    CMD_TYPE_MOVE,
     COL_TYPE,
     COL_Z,
 )
+
 from rayforge.core.font_config import FontConfig
 from rayforge.core.text import text_to_geometry
 

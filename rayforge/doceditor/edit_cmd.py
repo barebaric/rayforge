@@ -1,19 +1,20 @@
-import uuid
 import logging
-import numpy as np
+import uuid
+from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
-    List,
     Dict,
+    List,
+    Optional,
+    Sequence,
     Set,
     Tuple,
-    Sequence,
-    Optional,
     cast,
 )
-from gettext import gettext as _
-from raygeo import Geometry
-from raygeo import CMD_TYPE_MOVE, COL_TYPE
+
+import numpy as np
+from raygeo import CMD_TYPE_MOVE, COL_TYPE, Geometry
+
 from ..core.item import DocItem
 from ..core.stock import StockItem
 from ..core.undo import (
@@ -21,8 +22,8 @@ from ..core.undo import (
     ListItemCommand,
     ReorderListCommand,
 )
-from ..core.workpiece import WorkPiece
 from ..core.workflow import Workflow
+from ..core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
     from ..core.asset import IAsset

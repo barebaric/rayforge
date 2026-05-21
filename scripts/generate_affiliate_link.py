@@ -1,12 +1,12 @@
-import sys
-import os
-import json
-import time
-import hashlib
 import argparse
 import configparser
-import urllib.request
+import hashlib
+import json
+import os
+import sys
+import time
 import urllib.parse
+import urllib.request
 from typing import Any
 
 API_DOMAIN = "api-sg.aliexpress.com"

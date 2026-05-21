@@ -1,6 +1,7 @@
 import pytest
-from rayforge.core.ops import Ops, CommandType
 from post_processors.transformers import MultiPassTransformer
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandType
 
 
 class TestMultiPassTransformer:

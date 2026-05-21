@@ -12,6 +12,7 @@ from gi.repository import Gio
 from rayforge.core.hooks import hookimpl
 from rayforge.ui_gtk.action_registry import MenuPlacement
 from rayforge.ui_gtk.icons import register_icon_path
+
 from .commands import MaterialTestCmd
 from .widgets import PRODUCER_WIDGETS
 

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from rayforge.core.varset import VarSet, Var
+from rayforge.core.varset import Var, VarSet
 from rayforge.core.varset.appkeyvar import AppKeyVar
 
 

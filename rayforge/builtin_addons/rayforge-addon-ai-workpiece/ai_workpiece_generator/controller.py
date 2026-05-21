@@ -4,12 +4,15 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Optional, Protocol, cast
 
-from svgelements import SVG, Path as SvgPath
 from raygeo import Geometry
+from svgelements import SVG
+from svgelements import Path as SvgPath
+
 from rayforge.core.asset_registry import asset_type_registry
 from rayforge.core.matrix import Matrix
 from rayforge.image.svg.svgutil import PPI
 from rayforge.shared.tasker import task_mgr
+
 from .generator import generate_svg
 
 if TYPE_CHECKING:
@@ -109,12 +112,12 @@ def _to_float(value, default: float = 0.0) -> float:
 def _add_path_to_geometry(path: SvgPath, geo: Geometry) -> None:
     """Add SVG path segments to Geometry."""
     from svgelements import (
-        Close,
-        Move,
-        Line,
-        CubicBezier,
-        QuadraticBezier,
         Arc,
+        Close,
+        CubicBezier,
+        Line,
+        Move,
+        QuadraticBezier,
     )
 
     for seg in path:

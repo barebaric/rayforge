@@ -2,11 +2,11 @@ import copy
 import json
 import logging
 import uuid
+from gettext import gettext as _
 from typing import TYPE_CHECKING, Dict, List, Optional, cast
 
-from gi.repository import Gdk, Gio, GLib, Graphene, Gtk, Pango
 from blinker import Signal
-from gettext import gettext as _
+from gi.repository import Gdk, Gio, GLib, Graphene, Gtk, Pango
 
 from ...core.asset import IAsset
 from ...core.asset_registry import asset_type_registry

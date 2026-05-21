@@ -5,14 +5,15 @@ This test suite runs against a real RuidaSimulator instance via UDP,
 not mocks, ensuring end-to-end protocol compliance.
 """
 
-import logging
-import pytest
-import pytest_asyncio
 import asyncio
+import logging
 from typing import AsyncGenerator
 
+import pytest
+import pytest_asyncio
+from raygeo.ops import Ops
+
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops
 from rayforge.core.varset import IntVar
 from rayforge.machine.driver.driver import Axis
 from rayforge.machine.driver.ruida.ruida_driver import RuidaDriver

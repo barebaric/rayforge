@@ -1,15 +1,17 @@
 import json
-import pytest
 from pathlib import Path
+
+import pytest
 from raygeo import Geometry
+
 from rayforge.core.asset_registry import asset_type_registry
+from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.svg.exporter import (
     GeometrySvgExporter,
     MultiGeometrySvgExporter,
 )
 from rayforge.image.svg.importer import SvgImporter
-from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 
 
 @pytest.fixture

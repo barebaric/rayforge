@@ -1,36 +1,36 @@
-import logging
 import asyncio
 import inspect
+import logging
 from dataclasses import replace
+from gettext import gettext as _
 from typing import (
-    Any,
     TYPE_CHECKING,
-    Optional,
-    Callable,
-    Union,
+    Any,
     Awaitable,
+    Callable,
     Dict,
     List,
+    Optional,
+    Union,
 )
-from gettext import gettext as _
 
 from ....context import RayforgeContext
 from ....core.capability import PWMCapability
-from ....core.varset import VarSet, HostnameVar, PortVar
+from ....core.varset import HostnameVar, PortVar, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
-from ....pipeline.encoder.base import OpsEncoder, EncodedOutput
+from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ...models.coordinate_system import CoordinateSystem
 from ...models.laser import LaserType
 from ...transport import TransportStatus
 from ...transport.udp import UdpTransport
 from ..driver import (
-    Driver,
-    DriverSetupError,
-    DriverPrecheckError,
-    DriverMaturity,
     Axis,
-    Pos,
     DeviceStatus,
+    Driver,
+    DriverMaturity,
+    DriverPrecheckError,
+    DriverSetupError,
+    Pos,
 )
 from .ruida_client import RuidaClient
 from .ruida_encoder import RuidaEncoder
@@ -38,8 +38,8 @@ from .ruida_transport import RuidaTransport
 
 if TYPE_CHECKING:
     from ....core.doc import Doc
-    from ...models.machine import Machine
     from ...models.laser import Laser
+    from ...models.machine import Machine
 
 
 logger = logging.getLogger(__name__)

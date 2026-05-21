@@ -1,4 +1,4 @@
-from typing import Dict, Type, Callable, Optional
+from typing import Callable, Dict, Optional, Type
 
 
 class ExpressionContext:

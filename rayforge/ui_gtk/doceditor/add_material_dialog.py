@@ -1,9 +1,11 @@
 """A dialog for adding a new material."""
 
 import logging
-from typing import Dict, Any, Optional
 from gettext import gettext as _
-from gi.repository import Gtk, Adw, Gdk
+from typing import Any, Dict, Optional
+
+from gi.repository import Adw, Gdk, Gtk
+
 from ...core.material import Material
 
 logger = logging.getLogger(__name__)

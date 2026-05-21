@@ -1,12 +1,13 @@
-from gi.repository import Gtk, Adw
-from typing import Optional
 import logging
 from gettext import gettext as _
-from ...camera.models.camera import Camera
-from ...camera.controller import CameraController
-from .image_settings_dialog import CameraImageSettingsDialog
-from .alignment_dialog import CameraAlignmentDialog
+from typing import Optional
 
+from gi.repository import Adw, Gtk
+
+from ...camera.controller import CameraController
+from ...camera.models.camera import Camera
+from .alignment_dialog import CameraAlignmentDialog
+from .image_settings_dialog import CameraImageSettingsDialog
 
 logger = logging.getLogger(__name__)
 

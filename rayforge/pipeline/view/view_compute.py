@@ -1,15 +1,18 @@
 from __future__ import annotations
-import cairo
+
 import logging
 import math
-import numpy as np
-from typing import Optional, Tuple, Iterator, TYPE_CHECKING
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Iterator, Optional, Tuple
+
+import cairo
+import numpy as np
+from raygeo.geo.types import Rect
+
+from ...core.color import ColorSet
 from ...core.config import OpsColorMode
-from raygeo import Rect
 from ...image.util.cairo_util import rgba_to_cairo_surface
 from ...shared.tasker.progress import ProgressContext
-from ...core.color import ColorSet
 from ..artifact import WorkPieceArtifact
 from ..artifact.base import TextureData, VertexData
 from ..artifact.workpiece_view import (

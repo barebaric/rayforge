@@ -1,12 +1,13 @@
 import json
-import yaml
 import logging
-import tempfile
 import shutil
+import tempfile
 import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+import yaml
 
 from . import const
 
@@ -32,10 +33,10 @@ class DebugDumpManager:
         If editor is given, the current project is serialized and included
         in the archive (regardless of whether it has been saved to disk).
         """
+        from . import __version__
         from .config import LOG_DIR
         from .context import get_context
         from .ui_gtk.about import get_dependency_info
-        from . import __version__
 
         logger.info("Creating debug dump archive...")
         try:

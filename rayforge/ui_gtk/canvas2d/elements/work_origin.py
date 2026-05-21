@@ -1,6 +1,9 @@
 from __future__ import annotations
-import cairo
+
 from typing import TYPE_CHECKING
+
+import cairo
+
 from ....pipeline.coordspace import OriginCorner
 from ...canvas import CanvasElement
 

@@ -9,8 +9,9 @@ instance have been fully executed the texture is un-dimmed and those ring
 slots become available for recycling.
 """
 
-import numpy as np
 from typing import Optional
+
+import numpy as np
 from OpenGL import GL
 
 from ..gl_utils import BaseRenderer, RenderContext, Shader, set_line_width

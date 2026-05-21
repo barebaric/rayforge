@@ -1,8 +1,11 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
+
 from gettext import gettext as _
-from gi.repository import Gtk, Pango
+from typing import TYPE_CHECKING, Optional
+
 from blinker import Signal
+from gi.repository import Gtk, Pango
+
 from ...shared.util.size import format_byte_size
 from ...ui_gtk.shared.gtk import apply_css
 from .editor import GcodeEditor

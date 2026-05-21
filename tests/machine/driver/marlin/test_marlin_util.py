@@ -1,4 +1,5 @@
 import pytest
+
 from rayforge.machine.driver.grbl.grbl_util import strip_gcode_comments
 from rayforge.machine.driver.marlin.marlin_util import (
     extract_marlin_device_name,
@@ -7,11 +8,11 @@ from rayforge.machine.driver.marlin.marlin_util import (
     is_error_response,
     is_ok_response,
     parse_error_message,
-    parse_marlin_version,
     parse_m114_position,
     parse_m115_firmware_info,
     parse_m211_endstops,
     parse_m503_settings,
+    parse_marlin_version,
 )
 
 

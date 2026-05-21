@@ -1,15 +1,18 @@
 import logging
 from gettext import gettext as _
-from gi.repository import Gtk, Gio, Adw, GLib, Gdk
+
 from blinker import Signal
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk
+
 from rayforge.core.undo.property_cmd import ChangePropertyCommand
 from rayforge.core.varset import FloatVar, IntVar, SliderFloatVar, Var
 from rayforge.ui_gtk.icons import get_icon
 from rayforge.ui_gtk.shared.keyboard import PRIMARY_ACCEL
 from rayforge.ui_gtk.shared.status_bar import StatusBar
 from rayforge.ui_gtk.varset.varset_editor import VarSetEditorWidget
-from ..core.sketch import Sketch, DEFAULT_FILL_COLOR
+
 from ..core.entities.text_box import TextBoxEntity
+from ..core.sketch import DEFAULT_FILL_COLOR, Sketch
 from .conflicts_widget import ConflictingConstraintsWidget
 from .font_properties import FontPropertiesWidget
 from .menu import SketchMenu

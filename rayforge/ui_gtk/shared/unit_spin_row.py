@@ -1,7 +1,9 @@
 import logging
 from typing import Optional
-from gi.repository import Adw, Gtk
+
 from blinker import Signal
+from gi.repository import Adw, Gtk
+
 from ...context import get_context
 from ...shared.units.definitions import Unit, get_unit, get_units_for_quantity
 from .adwfix import get_spinrow_float

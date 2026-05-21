@@ -1,21 +1,24 @@
 from __future__ import annotations
+
+import logging
 import uuid
 from abc import ABC, abstractmethod
 from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Iterable,
     List,
     Optional,
     Tuple,
     Type,
     TypeVar,
-    Iterable,
-    TYPE_CHECKING,
     overload,
-    Dict,
 )
-import logging
+
 import numpy as np
 from blinker import Signal
-from raygeo import Rect, Point
+from raygeo.geo.types import Point, Rect
+
 from .matrix import Matrix
 
 if TYPE_CHECKING:

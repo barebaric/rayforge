@@ -1,7 +1,9 @@
 import logging
-from typing import TYPE_CHECKING, Dict, Callable, List, Optional, cast
-from gi.repository import Gtk, Gio, GLib
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, cast
+
+from gi.repository import Gio, GLib, Gtk
+
 from ..context import get_context
 from ..core.group import Group
 from ..core.item import DocItem
@@ -9,11 +11,10 @@ from ..core.layer import Layer
 from ..core.stock import StockItem
 from ..core.workpiece import WorkPiece
 from ..doceditor.layout.registry import layout_registry
-from .action_registry import action_registry, MenuPlacement, ToolbarPlacement
+from .action_registry import MenuPlacement, ToolbarPlacement, action_registry
 from .doceditor.add_tabs_popover import AddTabsPopover
 from .doceditor.stock_properties_dialog import StockPropertiesDialog
 from .shared.keyboard import PRIMARY_ACCEL
-
 
 if TYPE_CHECKING:
     from .mainwindow import MainWindow

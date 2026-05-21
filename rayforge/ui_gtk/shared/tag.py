@@ -1,6 +1,6 @@
 from gi.repository import Gtk
-from .gtk import apply_css
 
+from .gtk import apply_css
 
 css = """
 .tag {

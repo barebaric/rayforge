@@ -1,12 +1,12 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional
 
-from gi.repository import GObject, Gdk, Gtk
+from gi.repository import Gdk, GObject, Gtk
 
+from ...context import get_context
 from ...core.capability import ENGRAVE
 from ...core.step_registry import step_registry
 from ...core.undo.list_cmd import ListItemCommand, ReorderListCommand
-from ...context import get_context
 from ..icons import get_icon
 from ..shared.gtk import apply_css
 from ..shared.popover_menu import PopoverMenu

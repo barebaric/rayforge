@@ -1,22 +1,23 @@
 import pytest
+
+from rayforge.machine.driver.driver import DeviceState, DeviceStatus
 from rayforge.machine.driver.grbl.grbl_util import (
-    _split_status_line,
-    _parse_status_part,
-    _parse_position_attribute,
-    _parse_feed_rate,
     _parse_buffer_state,
-    _recalculate_positions,
-    parse_state,
-    error_code_to_device_error,
-    parse_grbl_parser_state,
-    gcode_to_p_number,
+    _parse_feed_rate,
     _parse_pos,
-    parse_version,
-    version_supports_single_axis_homing,
-    strip_gcode_comments,
+    _parse_position_attribute,
+    _parse_status_part,
+    _recalculate_positions,
+    _split_status_line,
+    error_code_to_device_error,
+    gcode_to_p_number,
+    parse_grbl_parser_state,
     parse_opt_info,
+    parse_state,
+    parse_version,
+    strip_gcode_comments,
+    version_supports_single_axis_homing,
 )
-from rayforge.machine.driver.driver import DeviceStatus, DeviceState
 
 
 class TestSplitStatusLine:

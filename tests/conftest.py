@@ -1,7 +1,7 @@
 # flake8: noqa: E402
-import sys
 import multiprocessing
 import os
+import sys
 import tempfile
 from pathlib import Path
 
@@ -19,18 +19,20 @@ try:
 except ValueError:
     pass
 
-import pytest
 import asyncio
-import logging
 import gc
+import logging
 from functools import partial
-import pytest_asyncio
 from typing import TYPE_CHECKING, AsyncGenerator
-from unittest.mock import patch, MagicMock
-from rayforge.worker_init import initialize_worker
+from unittest.mock import MagicMock, patch
+
+import pytest
+import pytest_asyncio
+
 from rayforge import context as rayforge_context
 from rayforge.shared.tasker.progress import ProgressContext
 from rayforge.shared.tasker.task import Task
+from rayforge.worker_init import initialize_worker
 
 
 class PyvipsLogFilter(logging.Filter):
@@ -238,8 +240,8 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
     A fixture that initializes the application context.
     """
     from rayforge import config
-    from rayforge.context import get_context
     from rayforge import context as context_module
+    from rayforge.context import get_context
     from rayforge.shared import tasker
 
     # 1. Isolate test configuration files
@@ -322,10 +324,10 @@ def lite_context(tmp_path, task_mgr, monkeypatch):
     Much faster than the full context_initializer.
     """
     from rayforge import config
-    from rayforge.context import get_context
     from rayforge import context as context_module
-    from rayforge.shared import tasker
+    from rayforge.context import get_context
     from rayforge.machine.models.dialect_manager import DialectManager
+    from rayforge.shared import tasker
 
     temp_config_dir = tmp_path / "config"
     temp_dialect_dir = temp_config_dir / "dialects"
@@ -378,6 +380,7 @@ class MockDialectManager:
 
     def __init__(self):
         from blinker import Signal
+
         from rayforge.machine.models.dialect import GRBL_DIALECT
 
         self.dialects_changed = Signal()
@@ -965,8 +968,9 @@ def adopting_mock_proxy():
     the artifact before the runner forgets it.
     """
     from unittest.mock import MagicMock
-    from rayforge.pipeline.artifact import create_handle_from_dict
+
     from rayforge.context import get_context
+    from rayforge.pipeline.artifact import create_handle_from_dict
 
     artifact_store = get_context().artifact_store
 

@@ -1,16 +1,19 @@
-import numpy as np
-import math
 import logging
+import math
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any, Tuple, TYPE_CHECKING
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+import numpy as np
+from raygeo.geo.types import Point3D
+from raygeo.ops import Ops
+from raygeo.ops.state import State
+from raygeo.ops.types import CommandCategory, CommandType
 from scipy.spatial import cKDTree  # type: ignore
-from rayforge.core.ops import Ops, CommandType, CommandCategory
-from rayforge.core.ops.container import MachineState
-from raygeo import Point3D
+
 from rayforge.core.workpiece import WorkPiece
+from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
 from rayforge.shared.tasker.progress import ProgressContext
-from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
 
 if TYPE_CHECKING:
     from raygeo import Geometry
@@ -705,7 +708,7 @@ def _prepare_optimization_jobs(
     return jobs
 
 
-_DEFAULT_STATE = MachineState(
+_DEFAULT_STATE = State(
     power=0.0,
     air_assist=False,
     cut_speed=None,
@@ -718,37 +721,37 @@ _DEFAULT_STATE = MachineState(
 
 def _sync_state_commands(
     ops: Ops,
-    state: MachineState,
-    prev: MachineState,
-) -> MachineState:
+    state: State,
+    prev: State,
+) -> State:
     """Emits state commands on ops for fields that differ from prev.
 
     Returns the updated prev state.
     """
-    updates = {}
     if state.power != prev.power:
         ops.set_power(state.power)
-        updates["power"] = state.power
+        prev.power = state.power
     if state.cut_speed is not None and state.cut_speed != prev.cut_speed:
         ops.set_cut_speed(state.cut_speed)
-        updates["cut_speed"] = state.cut_speed
+        prev.cut_speed = state.cut_speed
     if (
         state.travel_speed is not None
         and state.travel_speed != prev.travel_speed
     ):
         ops.set_travel_speed(state.travel_speed)
-        updates["travel_speed"] = state.travel_speed
+        prev.travel_speed = state.travel_speed
     if state.air_assist != prev.air_assist:
-        ops.enable_air_assist(state.air_assist)
-        updates["air_assist"] = state.air_assist
+        if state.air_assist:
+            ops.enable_air_assist()
+        else:
+            ops.disable_air_assist()
+        prev.air_assist = state.air_assist
     if (
         state.active_laser_uid is not None
         and state.active_laser_uid != prev.active_laser_uid
     ):
         ops.set_laser(state.active_laser_uid)
-        updates["active_laser_uid"] = state.active_laser_uid
-    if updates:
-        prev = prev._replace(**updates)
+        prev.active_laser_uid = state.active_laser_uid
     return prev
 
 

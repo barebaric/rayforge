@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 import math
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Sequence, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Optional, Sequence
+
 from blinker import Signal
-from raygeo import Rect
+from raygeo.geo.types import Rect
+
 from ...core.group import Group
 from ...core.item import DocItem
 from ...core.layer import Layer

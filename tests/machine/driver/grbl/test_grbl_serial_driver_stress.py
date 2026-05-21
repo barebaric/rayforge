@@ -8,17 +8,17 @@ in arbitrary-sized chunks.
 Run with:  pixi run test -m "stress"
 """
 
+import asyncio
 import random
+from unittest.mock import AsyncMock, MagicMock, PropertyMock
+
 import pytest
 import pytest_asyncio
-import asyncio
-from unittest.mock import MagicMock, AsyncMock, PropertyMock
 
-from rayforge.machine.transport.grbl import GrblSerialTransport
-from rayforge.machine.transport import SerialTransport, TransportStatus
-from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
 from rayforge.machine.driver.driver import DeviceConnectionError
-
+from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
+from rayforge.machine.transport import SerialTransport, TransportStatus
+from rayforge.machine.transport.grbl import GrblSerialTransport
 
 pytestmark = pytest.mark.stress
 

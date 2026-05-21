@@ -1,13 +1,15 @@
 """Tests for the Recipe class."""
 
-from unittest.mock import Mock
 from typing import Optional
+from unittest.mock import Mock
+
 import pytest
+
+from rayforge.core.capability import CUT, ENGRAVE
 from rayforge.core.doc import Doc
 from rayforge.core.recipe import Recipe
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
-from rayforge.core.capability import CUT, ENGRAVE
 
 
 class TestRecipe:

@@ -1,13 +1,14 @@
 import pytest
-from rayforge.core.font_config import FontConfig
 from sketcher.core.entities import (
-    Point,
-    Line,
     Arc,
     Circle,
+    Line,
+    Point,
     TextBoxEntity,
 )
 from sketcher.core.registry import EntityRegistry
+
+from rayforge.core.font_config import FontConfig
 
 
 @pytest.fixture

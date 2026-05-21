@@ -1,7 +1,8 @@
 import math
-from typing import Tuple, Any, Optional, Union, Sequence, List, cast
+from typing import Any, List, Optional, Sequence, Tuple, Union, cast
+
 import numpy as np
-from raygeo import Rect, Point
+from raygeo.geo.types import Point, Rect
 
 
 def euler_rotation_matrix(rx: float, ry: float, rz: float) -> np.ndarray:

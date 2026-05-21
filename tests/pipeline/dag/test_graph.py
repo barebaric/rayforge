@@ -2,15 +2,14 @@
 Tests for the PipelineGraph class.
 """
 
+from rayforge.core.doc import Doc
+from rayforge.core.group import Group
+from rayforge.core.layer import Layer
+from rayforge.core.step import Step
+from rayforge.core.workpiece import WorkPiece
+from rayforge.pipeline.artifact.key import ArtifactKey
 from rayforge.pipeline.dag.graph import PipelineGraph
 from rayforge.pipeline.dag.node import ArtifactNode
-from rayforge.pipeline.artifact.key import ArtifactKey
-from rayforge.core.doc import Doc
-from rayforge.core.layer import Layer
-from rayforge.core.workpiece import WorkPiece
-from rayforge.core.group import Group
-from rayforge.core.step import Step
-
 
 WP_UID_1 = "550e8400-e29b-41d4-a716-446655440001"
 WP_UID_2 = "550e8400-e29b-41d4-a716-446655440002"

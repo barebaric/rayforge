@@ -1,13 +1,14 @@
+from typing import TYPE_CHECKING
+
 import pytest
 import pytest_asyncio
+from raygeo.ops import Ops
 
-from typing import TYPE_CHECKING
+from rayforge.config import BUILTIN_DEVICES_DIR
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops
-from rayforge.machine.models.machine import Machine
 from rayforge.machine.device.profile import DeviceProfile
 from rayforge.machine.driver import get_driver_cls
-from rayforge.config import BUILTIN_DEVICES_DIR
+from rayforge.machine.models.machine import Machine
 from rayforge.shared import tasker
 
 if TYPE_CHECKING:

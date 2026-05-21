@@ -15,11 +15,11 @@ Coordinate Spaces:
 import gc
 
 import pytest
+from raygeo.ops import Ops
 
 from rayforge import config
 from rayforge import context as context_module
 from rayforge.context import get_context
-from rayforge.core.ops import Ops
 from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine, Origin
 

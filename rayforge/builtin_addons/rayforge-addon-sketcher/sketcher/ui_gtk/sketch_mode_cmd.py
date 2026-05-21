@@ -1,15 +1,16 @@
 import logging
+from gettext import gettext as _
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, cast
-from gettext import gettext as _
 
 from gi.repository import GLib
 
 from rayforge.core.undo import ListItemCommand
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.asset_cmd import UpdateAssetCommand
-from rayforge.usage import get_usage_tracker
 from rayforge.ui_gtk.doceditor import file_dialogs
+from rayforge.usage import get_usage_tracker
+
 from ..core.sketch import Sketch
 
 if TYPE_CHECKING:

@@ -1,9 +1,12 @@
 from __future__ import annotations
-from dataclasses import dataclass, field, replace
-from typing import Dict, Any, List, Optional
-from copy import deepcopy
 
-from raygeo import Geometry, Rect
+from copy import deepcopy
+from dataclasses import dataclass, field, replace
+from typing import Any, Dict, List, Optional
+
+from raygeo import Geometry
+from raygeo.geo.types import Rect
+
 from .matrix import Matrix
 from .vectorization_spec import VectorizationSpec
 

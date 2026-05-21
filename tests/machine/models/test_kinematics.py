@@ -1,6 +1,7 @@
 import math
 
-from rayforge.core.ops.axis import Axis
+from raygeo.ops.axis import Axis
+
 from rayforge.machine.kinematics import (
     Kinematics,
     create_kinematics,

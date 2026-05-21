@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Set, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Optional, Set, Type
 
 if TYPE_CHECKING:
     from .asset import IAsset

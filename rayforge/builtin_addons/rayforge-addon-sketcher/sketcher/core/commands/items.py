@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, List, Optional, Sequence, Dict, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple
+
 from ..entities import Arc, Ellipse, TextBoxEntity
 from .base import SketchChangeCommand
 

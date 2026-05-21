@@ -1,15 +1,18 @@
-import cairo
 import logging
 import math
 from collections import defaultdict
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Optional, Set
 
-from raygeo import Geometry, Point as GeoPoint
+import cairo
+from raygeo import Geometry
+from raygeo.geo.types import Point as GeoPoint
+
 from rayforge.core.geo_helpers import geometry_from_text
 from rayforge.core.matrix import Matrix
 from rayforge.image.geo_renderer import geometry_to_cairo
 from rayforge.ui_gtk.canvas import WorldSurface
+
 from ..core.commands import BezierPreviewState
 from ..core.commands.dimension import DimensionData
 from ..core.constraints import (
@@ -26,8 +29,8 @@ from ..core.entities import (
     Point,
     TextBoxEntity,
 )
-from ..core.types import EntityID
 from ..core.sketch import FillStyle
+from ..core.types import EntityID
 from .tools import PathTool, TextBoxTool
 
 if TYPE_CHECKING:

@@ -18,8 +18,7 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING, Tuple
 
 import numpy as np
-
-from raygeo import Point, Point3D, Rect
+from raygeo.geo.types import Point, Point3D, Rect
 
 if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine

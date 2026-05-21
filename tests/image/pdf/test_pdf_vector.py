@@ -1,9 +1,11 @@
-import pytest
 import io
-import cairo
 from pathlib import Path
-from rayforge.image.pdf.pdf_vector import PdfVectorImporter
+
+import cairo
+import pytest
+
 from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.image.pdf.pdf_vector import PdfVectorImporter
 
 
 def create_pdf_with_line() -> bytes:

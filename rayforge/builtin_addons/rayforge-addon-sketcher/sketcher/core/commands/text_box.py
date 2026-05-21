@@ -1,15 +1,17 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Dict, Any
-from gettext import gettext as _
 
-from raygeo import Point as GeoPoint
+from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+from raygeo.geo.types import Point as GeoPoint
+
 from ..constraints import (
     AspectRatioConstraint,
     HorizontalConstraint,
-    PerpendicularConstraint,
     ParallelogramConstraint,
+    PerpendicularConstraint,
 )
-from ..entities import Point, Line, TextBoxEntity
+from ..entities import Line, Point, TextBoxEntity
 from .base import SketchChangeCommand
 from .items import AddItemsCommand
 

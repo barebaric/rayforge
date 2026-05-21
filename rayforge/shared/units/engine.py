@@ -1,5 +1,5 @@
 import re
-from typing import Tuple, Optional, Dict
+from typing import Dict, Optional, Tuple
 
 meters_to_inch = 39.37007874
 meters_to_feet = 3.280839895

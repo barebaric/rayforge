@@ -4,9 +4,8 @@ import math
 from typing import Optional, Tuple
 
 import cairo
-
 from raygeo import Geometry
-from raygeo.path import PyCommand
+from raygeo.geo import PyCommand
 
 
 def geometry_to_cairo(
@@ -20,7 +19,6 @@ def geometry_to_cairo(
         geometry: The geometry to render.
         ctx: The Cairo context to draw to.
     """
-    geometry.sync_to_data()
     last_point = (0.0, 0.0)
 
     for cmd in geometry.iter_typed_commands():

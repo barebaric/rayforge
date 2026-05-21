@@ -1,7 +1,7 @@
 import pytest
+from raygeo import Geometry
 from sketcher.core.entities import Line
 from sketcher.core.registry import EntityRegistry
-from raygeo import Geometry
 
 
 @pytest.fixture

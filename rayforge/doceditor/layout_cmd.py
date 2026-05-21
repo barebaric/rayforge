@@ -1,17 +1,19 @@
 from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, List, Tuple
 from gettext import gettext as _
+from typing import TYPE_CHECKING, List, Tuple
+
 from ..core.item import DocItem
 from ..core.undo import ChangePropertyCommand
 from ..usage import get_usage_tracker
 from .layout import (
-    BboxAlignLeftStrategy,
+    BboxAlignBottomStrategy,
     BboxAlignCenterStrategy,
+    BboxAlignLeftStrategy,
+    BboxAlignMiddleStrategy,
     BboxAlignRightStrategy,
     BboxAlignTopStrategy,
-    BboxAlignMiddleStrategy,
-    BboxAlignBottomStrategy,
     LayoutStrategy,
     PixelPerfectLayoutStrategy,
     PositionAtStrategy,

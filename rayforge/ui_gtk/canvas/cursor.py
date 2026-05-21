@@ -1,11 +1,13 @@
-import math
 import logging
+import math
 from typing import Dict, Optional, Tuple
+
 import cairo
 from gi.repository import Gdk, GLib
+
 from ...core.color import ColorRGBA
 from ..icons import get_icon_pixbuf
-from .region import ElementRegion, ROTATE_HANDLES
+from .region import ROTATE_HANDLES, ElementRegion
 
 logger = logging.getLogger(__name__)
 

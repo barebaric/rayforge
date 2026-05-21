@@ -2,7 +2,7 @@ import asyncio
 import logging
 import webbrowser
 from gettext import gettext as _
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import aiohttp
 from blinker import Signal

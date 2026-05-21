@@ -1,4 +1,5 @@
 import pytest
+
 from rayforge.core.varset.serialportvar import SerialPortVar, ValidationError
 from rayforge.core.varset.varset import VarSet
 

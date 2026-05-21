@@ -1,15 +1,16 @@
-import pytest
 import json
 
-# Core components
-from rayforge.core.doc import Doc
-from rayforge.core.workpiece import WorkPiece
+import pytest
 
 # Sketcher components
 from sketcher.core import Sketch
 
 # Exporter to test
 from sketcher.image.exporter import SketchExporter
+
+# Core components
+from rayforge.core.doc import Doc
+from rayforge.core.workpiece import WorkPiece
 
 
 @pytest.fixture

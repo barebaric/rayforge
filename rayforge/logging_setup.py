@@ -1,9 +1,11 @@
 import logging
 import sys
 from datetime import datetime
-from typing import Optional, List
 from pathlib import Path
+from typing import List, Optional
+
 from blinker import Signal
+
 from .config import LOG_DIR
 
 _ui_formatter_instance: Optional[logging.Formatter] = None

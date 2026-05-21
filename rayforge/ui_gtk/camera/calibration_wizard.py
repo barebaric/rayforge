@@ -1,7 +1,7 @@
 import logging
 import os
 from gettext import gettext as _
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -10,7 +10,7 @@ try:
     import pymupdf
 except ImportError:
     import fitz as pymupdf
-from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk, Graphene
+from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Graphene, Gtk
 
 from ...camera.calibration.calibrator import CameraCalibrator
 from ...camera.calibration.charuco import CharucoBoard

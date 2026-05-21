@@ -1,12 +1,14 @@
 import logging
 from gettext import gettext as _
-from typing import List, Set, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Set
+
 from blinker import Signal
 from gi.repository import Gdk, GObject, Gtk
+
 from ...core.doc import Doc
 from ...core.layer import Layer
 from ..icons import get_icon
-from .layer_column import LayerColumn, _LAYER_UID_PREFIX
+from .layer_column import _LAYER_UID_PREFIX, LayerColumn
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor

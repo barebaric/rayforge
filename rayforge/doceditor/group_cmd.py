@@ -1,8 +1,9 @@
-import logging
 import asyncio
-from typing import TYPE_CHECKING, List, Dict, Optional
+import logging
 from collections import defaultdict
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Dict, List, Optional
+
 from ..core.group import Group, GroupingResult
 from ..core.item import DocItem
 from ..core.layer import Layer

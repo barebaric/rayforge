@@ -1,9 +1,10 @@
 import logging
 import shutil
-from dataclasses import asdict, dataclass, fields as dc_fields
+from dataclasses import asdict, dataclass
+from dataclasses import fields as dc_fields
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import yaml
 

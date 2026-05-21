@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Any, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 
 class ParameterContext:

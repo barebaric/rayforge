@@ -5,8 +5,10 @@ Renders a sphere composed of triangle strips using modern OpenGL.
 import logging
 import math
 from typing import Union
+
 import numpy as np
 from OpenGL import GL
+
 from ..gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)

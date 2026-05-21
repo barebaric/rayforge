@@ -1,19 +1,18 @@
 import logging
 import math
-from typing import TYPE_CHECKING, Dict, Optional, List, Tuple
-from raygeo import Point3D
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+
+from raygeo.geo.types import Point3D
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
+from raygeo.ops.types import CommandCategory, CommandType
+
 from ...core.layer import Layer
-from ...core.ops import (
-    Axis,
-    Ops,
-    CommandType,
-    CommandCategory,
-)
 from ...core.workpiece import WorkPiece
 from ...machine.models.dialect import GcodeDialect
 from ...machine.models.macro import MacroTrigger
 from ...shared.util.template import TemplateFormatter
-from .base import OpsEncoder, MachineCodeOpMap, EncodedOutput
+from .base import EncodedOutput, MachineCodeOpMap, OpsEncoder
 from .context import GcodeContext, JobInfo
 
 if TYPE_CHECKING:

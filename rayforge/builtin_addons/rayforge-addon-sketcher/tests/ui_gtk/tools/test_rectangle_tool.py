@@ -1,13 +1,13 @@
 from unittest.mock import MagicMock, patch
-import pytest
 
+import pytest
 from sketcher.core.commands import (
     RectangleCommand,
     RectanglePreviewState,
 )
 from sketcher.core.entities import Point
-from sketcher.core.snap import SnapLineType
 from sketcher.core.entities import Point as SketchPoint
+from sketcher.core.snap import SnapLineType
 from sketcher.ui_gtk.tools import RectangleTool
 
 

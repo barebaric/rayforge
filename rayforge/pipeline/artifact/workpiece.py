@@ -1,13 +1,16 @@
 from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
+
 import numpy as np
-from typing import Optional, Tuple, Dict, Any, Type, TYPE_CHECKING, cast
+
 from ..coord import CoordinateSystem
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
-    from ...core.ops import Ops
+    from raygeo.ops import Ops
 
 
 class WorkPieceArtifactHandle(BaseArtifactHandle):
@@ -103,7 +106,7 @@ class WorkPieceArtifact(BaseArtifact):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "WorkPieceArtifact":
         """Creates an artifact from a dictionary."""
-        from ...core.ops import Ops
+        from raygeo.ops import Ops
 
         cls.logger.debug(
             f"WorkPieceArtifact.from_dict: data.source_dimensions="
@@ -170,7 +173,7 @@ class WorkPieceArtifact(BaseArtifact):
             raise TypeError(
                 "WorkPieceArtifact requires a WorkPieceArtifactHandle"
             )
-        from ...core.ops import Ops
+        from raygeo.ops import Ops
 
         # Create a deep copy of the arrays to break the link to shared memory
         copied_arrays = {k: v.copy() for k, v in arrays.items()}

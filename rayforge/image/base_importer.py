@@ -1,21 +1,23 @@
 from __future__ import annotations
-from abc import ABC, abstractmethod
+
 import enum
+from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, Tuple, TYPE_CHECKING, Set, List
+from typing import TYPE_CHECKING, List, Optional, Set, Tuple
+
 from ..core.vectorization_spec import PassthroughSpec, TraceSpec
 from .assembler import ItemAssembler
 from .engine import NormalizationEngine
 
 if TYPE_CHECKING:
-    from ..core.vectorization_spec import VectorizationSpec
     from ..core.source_asset import SourceAsset
+    from ..core.vectorization_spec import VectorizationSpec
     from .structures import (
-        ParsingResult,
-        VectorizationResult,
+        ImportManifest,
         ImportPayload,
         ImportResult,
-        ImportManifest,
+        ParsingResult,
+        VectorizationResult,
     )
 
 

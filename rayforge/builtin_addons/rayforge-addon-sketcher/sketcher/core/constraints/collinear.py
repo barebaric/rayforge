@@ -1,9 +1,12 @@
 from __future__ import annotations
-from typing import Dict, Any, List, Optional, TYPE_CHECKING
+
 from gettext import gettext as _
-from raygeo import Point
-from .base import Constraint
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+from raygeo.geo.types import Point
+
 from ..types import EntityID
+from .base import Constraint
 
 if TYPE_CHECKING:
     from ..params import ParameterContext

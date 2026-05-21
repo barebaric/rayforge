@@ -1,5 +1,7 @@
-from typing import Any, List, Tuple, TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple
+
 from raygeo import Geometry
+
 from ...shared.tasker.progress import CallbackProgressContext
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ...shared.util.profile import profile_if_enabled

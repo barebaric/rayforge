@@ -1,25 +1,26 @@
 import io
 import logging
 import math
-from gettext import gettext as _
-from typing import Optional, List, Dict, Tuple, DefaultDict, Iterable
-from pathlib import Path
 from collections import defaultdict
 from dataclasses import replace
+from gettext import gettext as _
+from pathlib import Path
+from typing import DefaultDict, Dict, Iterable, List, Optional, Tuple
 
 import ezdxf
 import ezdxf.math
 from ezdxf import bbox
-from ezdxf.lldxf.const import DXFStructureError
 from ezdxf.addons import text2path
+from ezdxf.lldxf.const import DXFStructureError
 from ezdxf.path import Command
+from raygeo import Geometry
+from raygeo.geo.types import Rect
 
-from raygeo import Geometry, Rect
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
-    VectorizationSpec,
-    PassthroughSpec,
     LayerImportMode,
+    PassthroughSpec,
+    VectorizationSpec,
 )
 from ...image.geo_renderer import render_geometry_to_png
 from ..base_importer import (
@@ -28,11 +29,11 @@ from ..base_importer import (
 )
 from ..engine import NormalizationEngine
 from ..structures import (
-    ParsingResult,
-    LayerGeometry,
-    VectorizationResult,
     ImportManifest,
+    LayerGeometry,
     LayerInfo,
+    ParsingResult,
+    VectorizationResult,
 )
 from .renderer import DXF_RENDERER
 

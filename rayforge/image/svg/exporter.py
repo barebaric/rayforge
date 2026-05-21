@@ -1,14 +1,17 @@
 from __future__ import annotations
+
 import math
-from typing import List
 from gettext import gettext as _
-from raygeo import Geometry
+from typing import List
+
 from raygeo import (
-    CMD_TYPE_MOVE,
-    CMD_TYPE_LINE,
     CMD_TYPE_ARC,
     CMD_TYPE_BEZIER,
+    CMD_TYPE_LINE,
+    CMD_TYPE_MOVE,
+    Geometry,
 )
+
 from ..base_exporter import BaseExporter
 
 

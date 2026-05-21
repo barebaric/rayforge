@@ -5,9 +5,9 @@ from typing import Optional
 from blinker import Signal
 from gi.repository import Adw, GLib, Gtk
 
-from ..shared.gtk import apply_css
 from ...context import get_context
 from ...machine.device.profile import DeviceProfile
+from ..shared.gtk import apply_css
 from .config_wizard import ConfigWizard
 from .profile_importer import open_profile_zip
 

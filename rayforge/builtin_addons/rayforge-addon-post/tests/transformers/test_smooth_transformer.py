@@ -1,9 +1,12 @@
 import math
 from unittest.mock import Mock, patch
-from raygeo.algo.smooth import smooth_polyline
-from rayforge.core.ops import CommandType, Ops
-from tests.conftest import MockProgressContext
+
 from post_processors.transformers import Smooth
+from raygeo.geo.algo.smooth import smooth_polyline
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandType
+
+from tests.conftest import MockProgressContext
 
 
 def assert_points_almost_equal(p1: tuple, p2: tuple, places=5, msg=None):

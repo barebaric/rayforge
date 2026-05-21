@@ -1,34 +1,34 @@
 import logging
 import webbrowser
+from gettext import gettext as _
 from pathlib import Path
 from typing import Optional
-from gettext import gettext as _
 
 from gi.repository import Adw, Gdk, GLib, Gtk
 
+from ... import const
 from ...camera.models import Camera
 from ...context import get_context
-from ... import const
 from ...machine.driver import (
-    get_driver_cls,
-    DriverMaturity,
     DRIVER_MATURITY_LABELS,
+    DriverMaturity,
+    get_driver_cls,
 )
 from ...machine.models.machine import Machine
 from ..camera.camera_preferences_page import CameraPreferencesPage
 from ..icons import get_icon
-from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.gtk import apply_css
+from ..shared.patched_dialog_window import PatchedDialogWindow
 from .advanced_preferences_page import AdvancedPreferencesPage
 from .device_settings_page import DeviceSettingsPage
-from .general_preferences_page import GeneralPreferencesPage
 from .gcode_settings_page import GcodeSettingsPage
+from .general_preferences_page import GeneralPreferencesPage
 from .hardware_page import HardwarePage
 from .hooks_macros_page import HooksMacrosPage
 from .laser_preferences_page import LaserPreferencesPage
 from .maintenance_page import MaintenancePage
-from .rotary_module_page import RotaryModulePage
 from .nogo_zones_page import NogoZonesPage
+from .rotary_module_page import RotaryModulePage
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,9 @@ import asyncio
 import inspect
 import json
 import logging
+from gettext import gettext as _
 from typing import (
+    TYPE_CHECKING,
     Any,
     Awaitable,
     Callable,
@@ -11,14 +13,12 @@ from typing import (
     Optional,
     Union,
     cast,
-    TYPE_CHECKING,
 )
-from gettext import gettext as _
 
 import aiohttp
+from raygeo.ops.axis import Axis
 
 from ....context import RayforgeContext
-from ....core.ops.axis import Axis
 from ....core.varset import (
     AppKeyVar,
     HostnameVar,
@@ -713,11 +713,7 @@ class OctoPrintDriver(Driver):
         if axes is None:
             axis_list = ["x", "y", "z"]
         else:
-            axis_list = []
-            for a in Axis:
-                if axes & a:
-                    assert a.name
-                    axis_list.append(a.name.lower())
+            axis_list = [a.label.lower() for a in axes]
 
         await self._api_request(
             "POST",

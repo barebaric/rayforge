@@ -1,16 +1,17 @@
+from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gtk
-from gettext import gettext as _
 
 from rayforge.core.undo import DictItemCommand
-from ..transformers import Smooth
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_int
 from rayforge.ui_gtk.shared.slider import create_slider_row
+
+from ..transformers import Smooth
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step

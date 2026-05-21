@@ -1,12 +1,12 @@
 import pytest
-from rayforge.core.ops import Ops
-from rayforge.core.ops.enums import CommandType, CommandCategory
 from post_processors.transformers import (
     Optimize,
     greedy_order_segments,
-    two_opt,
     kdtree_order_segments,
+    two_opt,
 )
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandCategory, CommandType
 
 
 def _make_seg(start: tuple, end: tuple) -> Ops:

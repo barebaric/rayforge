@@ -1,12 +1,13 @@
 from __future__ import annotations
+
 import logging
-from typing import Dict, Any, TYPE_CHECKING
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict
 
 from ..core.asset import IAsset
 from ..core.asset_registry import asset_type_registry
 from ..core.stock_asset import StockAsset
-from ..core.undo import ListItemCommand, ChangePropertyCommand, Command
+from ..core.undo import ChangePropertyCommand, Command, ListItemCommand
 
 if TYPE_CHECKING:
     from ..core.doc import Doc

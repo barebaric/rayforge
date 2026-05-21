@@ -1,14 +1,15 @@
-from typing import Optional, Callable, Tuple, TYPE_CHECKING
 import logging
 from gettext import gettext as _
-from gi.repository import Gtk, Adw
+from typing import TYPE_CHECKING, Callable, Optional, Tuple
+
 from blinker import Signal
-from ...core.ops.axis import Axis
+from gi.repository import Adw, Gtk
+from raygeo.ops.axis import Axis
+
 from ...logging_setup import ui_log_event_received
-from ...machine.models.machine import Machine
-from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.cmd import MachineCmd
-from ..shared.adwfix import get_spinrow_float
+from ...machine.driver.dummy import NoDeviceDriver
+from ...machine.models.machine import Machine
 from ...shared.gcodeedit.viewer import GcodeViewer
 from ...shared.tasker import task_mgr
 from ..doceditor.layers_tab import LayersTab
@@ -17,6 +18,7 @@ from ..machine.console import Console
 from ..machine.jog_widget import JogWidget
 from ..machine.laser_control_widget import LaserControlWidget
 from ..machine.wcs_dialog import WcsDialog
+from ..shared.adwfix import get_spinrow_float
 from ..shared.dock_item import DockItem
 from ..shared.dock_layout import DockLayout
 from ..shared.gtk import apply_css

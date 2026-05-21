@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from typing import List, Optional, Tuple, TYPE_CHECKING
 from gettext import gettext as _
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from rayforge.core.capability import CUT, SCORE, WITH_KERF, Capability
 from rayforge.core.step import Step
-from rayforge.pipeline.transformer.registry import transformer_registry
 from rayforge.pipeline.producer.base import CutSide
-from ..producers import ContourProducer
+from rayforge.pipeline.transformer.registry import transformer_registry
 
+from ..producers import ContourProducer
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext

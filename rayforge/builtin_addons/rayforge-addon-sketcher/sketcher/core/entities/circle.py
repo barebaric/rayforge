@@ -1,10 +1,13 @@
 import math
-from typing import List, Dict, Optional, Any, Sequence, TYPE_CHECKING
-from raygeo import Geometry, Point, Rect
-from raygeo.shape.circle import (
-    is_circle_inside_rect,
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+
+from raygeo import Geometry
+from raygeo.geo.shape.circle import (
     does_circle_intersect_rect,
+    is_circle_inside_rect,
 )
+from raygeo.geo.types import Point, Rect
+
 from ..types import EntityID
 from .entity import Entity
 

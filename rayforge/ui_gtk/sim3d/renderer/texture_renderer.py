@@ -4,12 +4,13 @@ A renderer for visualizing texture-based artifacts using GPU texture rendering.
 
 import logging
 import time
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 from OpenGL import GL
-from ..gl_utils import BaseRenderer, RenderContext, Shader
-from ....pipeline.artifact.base import TextureData
 
+from ....pipeline.artifact.base import TextureData
+from ..gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)
 

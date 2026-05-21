@@ -1,8 +1,10 @@
 import logging
 import threading
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
+    import pluggy
+
     from .addon_mgr.addon_manager import AddonManager
     from .camera.manager import CameraManager
     from .core.addon_config import AddonConfig
@@ -15,10 +17,9 @@ if TYPE_CHECKING:
     from .debug import DebugDumpManager
     from .license import LicenseValidator
     from .machine.device.manager import DeviceProfileManager
+    from .machine.models.dialect_manager import DialectManager
     from .machine.models.machine import Machine
     from .machine.models.manager import MachineManager
-    from .machine.models.dialect_manager import DialectManager
-    import pluggy
 
 
 logger = logging.getLogger(__name__)
@@ -39,8 +40,8 @@ class RayforgeContext:
         to call from any process. Only ArtifactStore is created eagerly
         to ensure it's available before any subtask starts.
         """
-        from .pipeline.artifact.store import ArtifactStore
         from .debug import DebugDumpManager
+        from .pipeline.artifact.store import ArtifactStore
         from .shared.util.localized import get_system_language
 
         self.artifact_store = ArtifactStore()
@@ -89,6 +90,7 @@ class RayforgeContext:
         """Returns the plugin manager."""
         if self._plugin_mgr is None:
             import pluggy
+
             from .core.hooks import RayforgeSpecs
 
             self._plugin_mgr = pluggy.PluginManager("rayforge")
@@ -122,12 +124,12 @@ class RayforgeContext:
     def addon_mgr(self) -> "AddonManager":
         """Returns the addon manager."""
         if self._addon_mgr is None:
+            from .addon_mgr.addon_manager import AddonManager
             from .config import (
                 ADDONS_DIR,
                 BUILTIN_ADDONS_DIR,
                 PRIVATE_ADDONS_DIR,
             )
-            from .addon_mgr.addon_manager import AddonManager
 
             self._addon_mgr = AddonManager(
                 [BUILTIN_ADDONS_DIR, PRIVATE_ADDONS_DIR, ADDONS_DIR],
@@ -340,6 +342,7 @@ class RayforgeContext:
         and Config without cameras, materials, recipes, or addons.
         """
         from pathlib import Path
+
         from .core.config import ConfigManager as CoreConfigManager
         from .machine.models.manager import MachineManager
 

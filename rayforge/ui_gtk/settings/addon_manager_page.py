@@ -1,6 +1,8 @@
 import logging
 from gettext import gettext as _
+
 from gi.repository import Adw, Gtk
+
 from ..addon_manager.addon_list import AddonListWidget
 from ..shared.preferences_page import TrackedPreferencesPage
 

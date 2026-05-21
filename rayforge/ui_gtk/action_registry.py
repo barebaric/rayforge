@@ -5,7 +5,6 @@ from typing import Dict, List, Optional, Set
 from blinker import Signal
 from gi.repository import Gio, Gtk
 
-
 logger = logging.getLogger(__name__)
 
 

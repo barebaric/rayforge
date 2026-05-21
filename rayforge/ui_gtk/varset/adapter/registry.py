@@ -5,19 +5,18 @@ from typing import Dict, Optional, Tuple, Type
 from gi.repository import Adw
 
 from ....core.varset import Var
-from .base import RowAdapter, _ADAPTER_REGISTRY, escape_title
-from .entry import EntryAdapter
-from .spin_row import SpinRowAdapter
-from .switch import SwitchAdapter
 
 # Trigger @register_adapter decorators. Every adapter module must be
 # imported here so that its class registers itself in _ADAPTER_REGISTRY.
 from .appkey import AppKeyAdapter
+from .base import _ADAPTER_REGISTRY, RowAdapter, escape_title
 from .combo import BaudRateAdapter, ComboAdapter, SerialPortAdapter
-from .entry import HostnameAdapter
+from .entry import EntryAdapter, HostnameAdapter
 from .oauth import OAuthFlowAdapter
 from .slider import SliderAdapter
 from .speed import SpeedRowAdapter
+from .spin_row import SpinRowAdapter
+from .switch import SwitchAdapter
 from .textarea import TextAreaAdapter
 
 _ALL_ADAPTERS = (

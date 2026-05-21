@@ -9,10 +9,11 @@ sys.path.insert(0, str(addon_dir))
 project_root = Path(__file__).parents[5]
 sys.path.insert(0, str(project_root))
 
-import gi
-import logging
 import json
+import logging
 from typing import Optional
+
+import gi
 
 # -- Setup Logging --
 logging.basicConfig(
@@ -24,10 +25,9 @@ base_path = Path(__file__).parent
 
 gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, Adw, Gio, GLib
-
-from sketcher.ui_gtk.studio import SketchStudio
+from gi.repository import Adw, Gio, GLib, Gtk
 from sketcher.core import Sketch
+from sketcher.ui_gtk.studio import SketchStudio
 
 
 class SketcherApp(Adw.Application):

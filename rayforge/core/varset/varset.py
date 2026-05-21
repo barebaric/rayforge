@@ -1,7 +1,9 @@
 import importlib
 import logging
-from typing import Dict, Optional, Iterator, Any, List, KeysView
+from typing import Any, Dict, Iterator, KeysView, List, Optional
+
 from blinker import Signal
+
 from .var import Var
 
 logger = logging.getLogger(__name__)

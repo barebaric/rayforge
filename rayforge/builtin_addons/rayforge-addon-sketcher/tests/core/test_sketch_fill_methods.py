@@ -1,8 +1,7 @@
 import pytest
-
 from sketcher.core import Sketch
-from sketcher.core.sketch import Fill
 from sketcher.core.entities import Line
+from sketcher.core.sketch import Fill
 
 
 @pytest.fixture

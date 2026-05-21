@@ -14,8 +14,8 @@ from typing import Any, Callable
 
 import pytest
 
-from rayforge.context import get_context
 from rayforge import context as context_module
+from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
