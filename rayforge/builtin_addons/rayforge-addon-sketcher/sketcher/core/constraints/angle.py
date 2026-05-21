@@ -1,26 +1,30 @@
 from __future__ import annotations
+
 import logging
 import math
 from gettext import gettext as _
 from typing import (
-    Union,
-    Tuple,
-    Dict,
+    TYPE_CHECKING,
     Any,
+    Callable,
+    Dict,
     List,
     Optional,
-    Callable,
-    TYPE_CHECKING,
+    Tuple,
+    Union,
 )
-from raygeo import Point
-from raygeo.shape.arc import normalize_angle
-from raygeo.shape.line import get_line_line_intersection
+
+from raygeo.geo.shape.arc import normalize_angle
+from raygeo.geo.shape.line import get_line_line_intersection
+from raygeo.geo.types import Point
+
 from ..entities import Line
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
     import cairo
+
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection

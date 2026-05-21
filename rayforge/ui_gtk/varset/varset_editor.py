@@ -1,26 +1,28 @@
 import logging
 import re
+from gettext import gettext as _
 from typing import (
-    Any,
-    Optional,
-    Iterable,
-    Type,
     TYPE_CHECKING,
+    Any,
+    Iterable,
     Literal,
+    Optional,
     Tuple,
+    Type,
     cast,
 )
-from gettext import gettext as _
-from gi.repository import GLib, Gtk, Adw, Gdk
+
 from blinker import Signal
+from gi.repository import Adw, Gdk, GLib, Gtk
+
 from ...core.undo.property_cmd import ChangePropertyCommand
 from ...core.varset import (
-    Var,
-    VarSet,
     ChoiceVar,
     FloatVar,
     IntVar,
     SliderFloatVar,
+    Var,
+    VarSet,
     get_editable_var_types,
 )
 from ..icons import get_icon

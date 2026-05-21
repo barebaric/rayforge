@@ -12,17 +12,18 @@ Tests the material test grid generation including:
 from unittest.mock import MagicMock, patch
 
 import pytest
-from rayforge.core.ops import CommandType
-from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline import CoordinateSystem
-from rayforge.pipeline.producer.base import OpsProducer
-from rayforge.machine.models.machine import Laser
 from laser_essentials.producers import (
     MaterialTestGridProducer,
     MaterialTestGridType,
-    get_material_test_proportional_size,
     draw_material_test_preview,
+    get_material_test_proportional_size,
 )
+from raygeo.ops.types import CommandType
+
+from rayforge.core.workpiece import WorkPiece
+from rayforge.machine.models.machine import Laser
+from rayforge.pipeline import CoordinateSystem
+from rayforge.pipeline.producer.base import OpsProducer
 
 
 @pytest.fixture

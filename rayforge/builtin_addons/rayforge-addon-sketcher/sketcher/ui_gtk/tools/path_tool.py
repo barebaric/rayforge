@@ -1,12 +1,14 @@
-from gettext import gettext as _
 import logging
+from gettext import gettext as _
 from typing import Callable, List, Optional, Tuple, Union
+
 import cairo
 
 from rayforge.ui_gtk.shared.keyboard import PRIMARY_KEY_NAME
+
 from ...core.commands import BezierCommand, BezierPreviewState
 from ...core.entities import Bezier
-from .base import SketchTool, SketcherKey
+from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin
 
 logger = logging.getLogger(__name__)

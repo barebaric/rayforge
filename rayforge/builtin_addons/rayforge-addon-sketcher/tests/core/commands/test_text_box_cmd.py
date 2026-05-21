@@ -3,8 +3,8 @@ from sketcher.core.commands import TextBoxCommand
 from sketcher.core.constraints import (
     AspectRatioConstraint,
     HorizontalConstraint,
-    PerpendicularConstraint,
     ParallelogramConstraint,
+    PerpendicularConstraint,
 )
 from sketcher.core.entities import Line, TextBoxEntity
 

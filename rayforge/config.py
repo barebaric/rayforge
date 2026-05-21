@@ -1,8 +1,8 @@
+import logging
 import os
 from pathlib import Path
-from platformdirs import user_config_dir, user_log_dir
-import logging
 
+from platformdirs import user_config_dir, user_log_dir
 
 logger = logging.getLogger(__name__)
 

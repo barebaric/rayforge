@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """Screenshot: Step settings dialog."""
 
+import logging
 import os
 import time
-import logging
-from rayforge.uiscript import app, win
+
 from utils import (
+    find_step_by_type,
     load_project,
     open_step_settings,
-    find_step_by_type,
-    take_screenshot,
     run_on_main_thread,
     set_window_size,
+    take_screenshot,
 )
+
+from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 

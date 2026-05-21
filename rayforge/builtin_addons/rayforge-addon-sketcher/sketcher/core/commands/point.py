@@ -1,15 +1,18 @@
 from __future__ import annotations
-import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
-from gettext import gettext as _
 
-from raygeo import Point as GeoPoint
-from ..entities import Bezier, Line, Arc, Circle, Point
+import logging
+from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+from raygeo.geo.types import Point as GeoPoint
+
+from ..entities import Arc, Bezier, Circle, Line, Point
 from ..types import EntityID
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
     from rayforge.core.undo.command import Command
+
     from ..constraints import Constraint
     from ..sketch import Sketch
 

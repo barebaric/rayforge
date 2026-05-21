@@ -1,13 +1,14 @@
+from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from gi.repository import Adw
-from gettext import gettext as _
 
 from rayforge.core.undo import DictItemCommand
-from ..transformers import Optimize
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
+
+from ..transformers import Optimize
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step

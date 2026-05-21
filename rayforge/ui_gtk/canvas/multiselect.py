@@ -1,21 +1,23 @@
 from __future__ import annotations
-import math
+
 import logging
+import math
 from typing import (
     TYPE_CHECKING,
-    List,
-    Tuple,
-    Dict,
     Any,
-    Union,
+    Dict,
+    List,
     Optional,
     Set,
+    Tuple,
+    Union,
 )
-from raygeo import Point, Rect
+
+from raygeo.geo.types import Point, Rect
+
 from ...core.matrix import Matrix
 from . import element, transform
-from .region import ElementRegion, get_region_rect, check_region_hit
-
+from .region import ElementRegion, check_region_hit, get_region_rect
 
 # Forward declaration for type hinting to avoid circular imports
 if TYPE_CHECKING:

@@ -6,8 +6,8 @@ import uuid
 from gettext import gettext as _
 from typing import Optional, cast
 
-from gi.repository import Adw, GLib, Gtk
 from blinker import Signal
+from gi.repository import Adw, GLib, Gtk
 
 from ...context import get_context
 from ...core.ai.provider import AIProviderConfig, AIProviderType

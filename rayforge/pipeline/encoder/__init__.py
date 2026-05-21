@@ -1,4 +1,4 @@
-from .base import OpsEncoder, MachineCodeOpMap
+from .base import MachineCodeOpMap, OpsEncoder
 from .cairoencoder import CairoEncoder
 from .context import GcodeContext
 from .gcode import GcodeEncoder

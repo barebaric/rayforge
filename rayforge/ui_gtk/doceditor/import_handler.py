@@ -1,20 +1,23 @@
 from __future__ import annotations
+
 import logging
+from gettext import gettext as _
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
-from gettext import gettext as _
-from gi.repository import Gio, GLib, Adw
+
+from gi.repository import Adw, Gio, GLib
+
 from ...core.layer import Layer
 from ...core.source_asset import SourceAsset
-from ...core.vectorization_spec import VectorizationSpec, TraceSpec
+from ...core.vectorization_spec import TraceSpec, VectorizationSpec
 from ...doceditor.file_cmd import ImportAction
 from ...image.registry import importer_registry
 from . import file_dialogs
 from .import_dialog import ImportDialog
 
 if TYPE_CHECKING:
-    from ..mainwindow import MainWindow
     from ...doceditor.editor import DocEditor
+    from ..mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
 

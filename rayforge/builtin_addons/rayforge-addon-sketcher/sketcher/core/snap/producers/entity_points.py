@@ -1,8 +1,9 @@
-from typing import Iterator, TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterator
 
-from raygeo import Point as GeoPoint
-from ..types import SnapLine, SnapPoint, SnapLineType, DragContext
+from raygeo.geo.types import Point as GeoPoint
+
 from ..engine import SnapLineProducer
+from ..types import DragContext, SnapLine, SnapLineType, SnapPoint
 
 if TYPE_CHECKING:
     from ...registry import EntityRegistry

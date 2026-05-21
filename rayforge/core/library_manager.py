@@ -5,7 +5,9 @@ import shutil
 import uuid
 from pathlib import Path
 from typing import Dict, List, Optional
+
 from blinker import Signal
+
 from .material import Material
 from .material_library import MaterialLibrary
 

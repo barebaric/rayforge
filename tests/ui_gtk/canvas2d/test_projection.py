@@ -1,4 +1,5 @@
-from rayforge.core.ops.axis import Axis
+from raygeo.ops.axis import Axis
+
 from rayforge.ui_gtk.canvas2d.projection import CanvasProjection
 
 

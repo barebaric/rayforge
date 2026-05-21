@@ -1,10 +1,11 @@
 from __future__ import annotations
+
 import logging
-import re
 import math
-from typing import Optional, Dict, Any, List, Tuple, cast
-from pathlib import Path
+import re
 from gettext import gettext as _
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 try:
     import pymupdf
@@ -12,6 +13,7 @@ except ImportError:
     import fitz as pymupdf
 
 from raygeo import Geometry
+
 from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
@@ -20,16 +22,16 @@ from ...core.vectorization_spec import (
     VectorizationSpec,
 )
 from ..base_importer import Importer, ImporterFeature
+from ..engine import NormalizationEngine
 from ..structures import (
-    ParsingResult,
+    ImportManifest,
     LayerGeometry,
     LayerInfo,
+    ParsingResult,
     VectorizationResult,
-    ImportManifest,
 )
 from ..util import to_mm
 from .renderer import PDF_RENDERER
-from ..engine import NormalizationEngine
 
 logger = logging.getLogger(__name__)
 

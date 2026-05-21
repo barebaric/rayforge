@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
-import pytest
 
+import pytest
 from sketcher.core.commands import GridCommand
 from sketcher.ui_gtk.tools import GridTool
 

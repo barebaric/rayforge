@@ -5,11 +5,12 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
-from raygeo import Point as GeoPoint
-from .base import SketchChangeCommand
+from raygeo.geo.types import Point as GeoPoint
+
 from ..entities import Bezier, Line
 from ..entities.point import WaypointType
 from ..types import EntityID
+from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
     from ..entities.point import Point

@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Optional, Callable, List, Dict
 from gettext import gettext as _
-from gi.repository import Gtk, Gio
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
+
+from gi.repository import Gio, Gtk
 
 if TYPE_CHECKING:
     from ...core.item import DocItem

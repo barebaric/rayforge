@@ -1,12 +1,16 @@
 import logging
 import math
-from typing import List, Tuple, Dict, Any, Sequence, Optional, TYPE_CHECKING
-from raygeo import Geometry, Rect
-from raygeo.shape.line import does_line_segment_intersect_rect
-from raygeo.shape.polygon import is_point_inside_polygon
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
+
+from raygeo import Geometry
+from raygeo.geo.shape.line import does_line_segment_intersect_rect
+from raygeo.geo.shape.polygon import is_point_inside_polygon
+from raygeo.geo.types import Rect
+
 from rayforge.core.color import ColorRGBA
-from rayforge.core.geo_helpers import geometry_from_text
 from rayforge.core.font_config import FontConfig
+from rayforge.core.geo_helpers import geometry_from_text
+
 from ..types import EntityID
 from .entity import Entity
 from .line import Line

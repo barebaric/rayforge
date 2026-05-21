@@ -1,14 +1,16 @@
 from __future__ import annotations
+
 import logging
 import time
-from typing import TYPE_CHECKING, Dict, Any, Optional
 from collections import deque
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
 from blinker import Signal
-from raygeo import Point3D
-from ..core.ops.enums import CommandCategory
+from raygeo.geo.types import Point3D
+from raygeo.ops.types import CommandCategory
 
 if TYPE_CHECKING:
-    from ..core.ops import Ops
+    from raygeo.ops import Ops
 
 
 logger = logging.getLogger(__name__)

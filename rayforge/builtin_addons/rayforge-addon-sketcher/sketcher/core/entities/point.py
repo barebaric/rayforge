@@ -1,9 +1,11 @@
 import math
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-from raygeo import Point as GeoPoint, Rect
-from raygeo.shape.rect import is_point_inside_rect
+from raygeo.geo.shape.rect import is_point_inside_rect
+from raygeo.geo.types import Point as GeoPoint
+from raygeo.geo.types import Rect
+
 from ..types import EntityID
 from .bezier import Bezier
 

@@ -2,13 +2,14 @@ import math
 
 import numpy as np
 import pytest
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
+from raygeo.ops.types import CommandType
 
-from rayforge.core.ops.axis import Axis
-from rayforge.core.ops import Ops, CommandType
 from rayforge.machine.kinematic_mapping import KinematicMapping
 from rayforge.machine.models.rotary_module import (
-    RotaryModule,
     RotaryMode,
+    RotaryModule,
     RotaryType,
 )
 

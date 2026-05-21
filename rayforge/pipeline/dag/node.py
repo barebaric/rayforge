@@ -6,10 +6,9 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 from ..artifact.key import ArtifactKey
-
 
 if TYPE_CHECKING:
     from ..artifact.manager import ArtifactManager

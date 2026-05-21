@@ -1,9 +1,10 @@
 import pytest
 import yaml
+
 from rayforge.core.addon_config import (
     AddonConfig,
-    AddonState,
     AddonConfigEntry,
+    AddonState,
 )
 
 

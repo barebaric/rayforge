@@ -3,9 +3,10 @@ Geometric constraints for the 2D CAD sketcher.
 """
 
 from typing import Dict, Type
-from .base import Constraint, ConstraintStatus
-from .angle import AngleConstraint, ANGLE_WEIGHT
+
+from .angle import ANGLE_WEIGHT, AngleConstraint
 from .aspect_ratio import AspectRatioConstraint
+from .base import Constraint, ConstraintStatus
 from .coincident import CoincidentConstraint
 from .collinear import CollinearConstraint
 from .diameter import DiameterConstraint
@@ -21,7 +22,6 @@ from .radius import RadiusConstraint
 from .symmetry import SymmetryConstraint
 from .tangent import TangentConstraint
 from .vertical import VerticalConstraint
-
 
 CONSTRAINT_TYPE_MAP: Dict[str, Type[Constraint]] = {
     "horiz": HorizontalConstraint,

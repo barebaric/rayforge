@@ -4,12 +4,16 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 13
-PLUGIN_API_VERSION = 13
+PLUGIN_API_VERSION = 14
 
 
 """
 API Changelog
 ============
+
+Version 14
+----------
+New raygeo API replaces old rayforge.core.ops.
 
 Version 13
 ----------

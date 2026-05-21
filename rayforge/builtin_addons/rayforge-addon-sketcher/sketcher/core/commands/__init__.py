@@ -4,9 +4,9 @@ from .base import PreviewState, SketchChangeCommand
 from .bezier import BezierCommand, BezierPreviewState
 from .chamfer import ChamferCommand
 from .circle import CircleCommand, CirclePreviewState
-from .construction import ToggleConstructionCommand
 from .constraint import ModifyConstraintCommand
 from .constraint_create import CreateOrEditConstraintCommand
+from .construction import ToggleConstructionCommand
 from .dimension import DimensionData
 from .distance_constraint import (
     DistanceConstraintCommand,
@@ -17,8 +17,8 @@ from .equal_constraint import (
     EqualConstraintCommand,
     EqualConstraintMergeResult,
 )
-from .fillet import FilletCommand
 from .fill import AddFillCommand, RemoveFillCommand, SetTextFillCommand
+from .fillet import FilletCommand
 from .grid import GridCommand
 from .items import AddItemsCommand
 from .line import LineCommand, LinePreviewState
@@ -42,7 +42,6 @@ from .tangent_constraint import (
 from .text_box import TextBoxCommand
 from .text_property import ModifyTextPropertyCommand
 from .waypoint import SetWaypointTypeCommand
-
 
 __all__ = [
     "AddFillCommand",

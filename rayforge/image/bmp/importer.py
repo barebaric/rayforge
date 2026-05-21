@@ -1,8 +1,8 @@
-import warnings
-from typing import Optional
 import logging
-from pathlib import Path
+import warnings
 from gettext import gettext as _
+from pathlib import Path
+from typing import Optional
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -12,6 +12,7 @@ with warnings.catch_warnings():
         raise ImportError("The BMP importer requires the pyvips library.")
 
 from raygeo import Geometry
+
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
 from .. import util
@@ -20,13 +21,13 @@ from ..base_importer import (
     ImporterFeature,
 )
 from ..engine import NormalizationEngine
-from ..tracing import trace_surface
 from ..structures import (
-    ParsingResult,
-    LayerGeometry,
-    VectorizationResult,
     ImportManifest,
+    LayerGeometry,
+    ParsingResult,
+    VectorizationResult,
 )
+from ..tracing import trace_surface
 from .parser import parse_bmp
 from .renderer import BMP_RENDERER
 

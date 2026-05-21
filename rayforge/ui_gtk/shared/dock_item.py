@@ -1,6 +1,5 @@
 from .gtk import apply_css
 
-
 dock_css = """
 box.dock-edge-zone {
     min-width: 6px;

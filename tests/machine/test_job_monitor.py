@@ -1,6 +1,8 @@
-import pytest
 from unittest.mock import MagicMock
-from rayforge.core.ops import Ops
+
+import pytest
+from raygeo.ops import Ops
+
 from rayforge.machine.job_monitor import JobMonitor
 
 

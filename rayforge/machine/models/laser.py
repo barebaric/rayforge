@@ -1,9 +1,10 @@
-from typing import Dict, Any, Optional, Tuple
-from blinker import Signal
 import uuid
-from gettext import gettext as _
 from enum import Enum
+from gettext import gettext as _
+from typing import Any, Dict, Optional, Tuple
+
 import numpy as np
+from blinker import Signal
 
 from ...core.matrix import euler_rotation_matrix
 

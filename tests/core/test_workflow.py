@@ -1,8 +1,10 @@
-import pytest
 from unittest.mock import MagicMock, patch
-from rayforge.core.workflow import Workflow
-from rayforge.core.step import Step
+
+import pytest
+
 from rayforge.core.matrix import Matrix
+from rayforge.core.step import Step
+from rayforge.core.workflow import Workflow
 
 
 @pytest.fixture

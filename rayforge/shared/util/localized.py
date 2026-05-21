@@ -5,8 +5,8 @@ This module provides the LocalizedField class which extends str to provide
 transparent localization of text content.
 """
 
-import os
 import locale
+import os
 from typing import Dict, Optional, Union
 
 SUPPORTED_LANGUAGES = ["en", "de", "es", "fr", "pt", "uk", "zh_CN"]

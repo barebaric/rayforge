@@ -1,13 +1,13 @@
 import logging
-from typing import Any, Optional, cast
 from gettext import gettext as _
-from ....core.varset import Var, VarSet, HostnameVar, PortVar
+from typing import Any, Optional, cast
+
+from ....core.varset import HostnameVar, PortVar, Var, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ...transport import TelnetTransport
 from ...transport.grbl import GrblSerialTransport
 from ..driver import DriverPrecheckError, DriverSetupError
 from .grbl_serial import GrblSerialDriver
-
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,8 @@
 import cairo
 import numpy as np
+from raygeo.ops import Ops
 
-from rayforge.core.ops import Ops
+from rayforge.core.color import ColorSet
 from rayforge.pipeline import CoordinateSystem
 from rayforge.pipeline.artifact import (
     RenderContext,
@@ -10,20 +11,19 @@ from rayforge.pipeline.artifact import (
 )
 from rayforge.pipeline.artifact.base import TextureData, VertexData
 from rayforge.pipeline.view.view_compute import (
+    _draw_powered_vertices_batch,
+    _draw_travel_vertices,
+    _draw_zero_power_vertices,
+    _encode_vertex_and_texture_data,
+    _get_content_bbox,
+    _prepare_powered_vertices_for_batching,
+    _setup_cairo_context,
+    calculate_render_dimensions,
     compute_view_dimensions,
     compute_workpiece_view,
     compute_workpiece_view_to_buffer,
-    _get_content_bbox,
     render_chunk_to_buffer,
-    _encode_vertex_and_texture_data,
-    calculate_render_dimensions,
-    _setup_cairo_context,
-    _draw_travel_vertices,
-    _draw_zero_power_vertices,
-    _prepare_powered_vertices_for_batching,
-    _draw_powered_vertices_batch,
 )
-from rayforge.core.color import ColorSet
 
 
 def create_test_color_set(spec: dict) -> ColorSet:

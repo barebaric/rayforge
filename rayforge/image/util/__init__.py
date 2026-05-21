@@ -24,7 +24,6 @@ from .srgb import (
     resize_linear_nd,
     srgb_to_linear,
 )
-
 from .transparency import (
     make_surface_transparent,
     make_transparent_except_color,

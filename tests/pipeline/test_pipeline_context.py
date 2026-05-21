@@ -1,9 +1,12 @@
-import pytest
 import logging
 import uuid
-from unittest.mock import MagicMock
 from pathlib import Path
+from unittest.mock import MagicMock
+
+import pytest
 from raygeo import Geometry
+
+from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
@@ -13,8 +16,6 @@ from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact.key import ArtifactKey
 from rayforge.pipeline.context import GenerationContext
 from rayforge.pipeline.pipeline import Pipeline
-from rayforge.context import get_context
-
 
 logger = logging.getLogger(__name__)
 

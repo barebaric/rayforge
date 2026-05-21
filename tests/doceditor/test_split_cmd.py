@@ -1,12 +1,14 @@
-import pytest
-from unittest.mock import MagicMock
 from typing import List
+from unittest.mock import MagicMock
+
+import pytest
 from raygeo import Geometry
-from rayforge.doceditor.split_cmd import SplitCmd, SplitStrategy
-from rayforge.core.workpiece import WorkPiece
+
 from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.workpiece import WorkPiece
+from rayforge.doceditor.split_cmd import SplitCmd, SplitStrategy
 
 
 class MockSplitStrategy(SplitStrategy):

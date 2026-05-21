@@ -6,8 +6,8 @@ a Cairo-based fallback renderer using PyGObject's Rsvg binding.
 """
 
 import logging
-from typing import Optional, TYPE_CHECKING
 import warnings
+from typing import TYPE_CHECKING, Optional
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)

@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 import math
 from typing import Tuple
-from raygeo import Point, Rect
+
+from raygeo.geo.types import Point, Rect
+
 from ...core.matrix import Matrix
 from .element import CanvasElement
 from .region import ElementRegion

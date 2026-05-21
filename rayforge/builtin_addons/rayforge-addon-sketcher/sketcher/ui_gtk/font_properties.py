@@ -1,10 +1,13 @@
 import logging
-from typing import Optional, TYPE_CHECKING
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Optional
+
 from gi.repository import Adw, Gtk, Pango
+
 from rayforge.core.font_config import FontConfig
 from rayforge.ui_gtk.icons import get_icon
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
+
 from ..core.commands.text_property import (
     ModifyTextPropertyCommand,
 )

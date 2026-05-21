@@ -1,17 +1,19 @@
 from __future__ import annotations
-import logging
+
 import asyncio
+import logging
 import threading
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Tuple, Dict, Any
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 from blinker import Signal
+
 from ..core.asset import UnknownAsset
 from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.vectorization_spec import VectorizationSpec
-from ..pipeline.artifact import JobArtifactHandle, JobArtifact
+from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from ..pipeline.pipeline import Pipeline
 from ..pipeline.view import ViewManager
 from .asset_cmd import AssetCmd
@@ -29,8 +31,8 @@ from .transform_cmd import TransformCmd
 
 if TYPE_CHECKING:
     from ..context import RayforgeContext
-    from ..core.undo import HistoryManager
     from ..core.tab import Tab
+    from ..core.undo import HistoryManager
     from ..core.workpiece import WorkPiece
     from ..shared.tasker.manager import TaskManager
 

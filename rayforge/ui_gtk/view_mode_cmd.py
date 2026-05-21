@@ -1,12 +1,15 @@
 import logging
-from typing import TYPE_CHECKING, Optional
 from gettext import gettext as _
-from gi.repository import GLib, Adw
+from typing import TYPE_CHECKING, Optional
+
+from gi.repository import Adw, GLib
+
 from ..context import get_context
 from ..usage import get_usage_tracker
 
 if TYPE_CHECKING:
     from gi.repository import Gio
+
     from ..doceditor.editor import DocEditor
     from ..ui_gtk.mainwindow import MainWindow
     from .sim3d import Canvas3D

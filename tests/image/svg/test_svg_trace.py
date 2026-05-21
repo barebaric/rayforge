@@ -1,12 +1,14 @@
-import pytest
-from unittest.mock import MagicMock, patch
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
 from raygeo import Geometry
-from rayforge.image.svg.svg_trace import SvgTraceImporter
-from rayforge.core.vectorization_spec import TraceSpec
+
 from rayforge.core.matrix import Matrix
+from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.structures import ParsingResult
+from rayforge.image.svg.svg_trace import SvgTraceImporter
 
 SVG_CONTENT = b"""
 <svg width="100mm" height="100mm" viewBox="0 0 100 100"

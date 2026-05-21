@@ -1,8 +1,11 @@
 from __future__ import annotations
-import numpy as np
-from typing import Tuple, Dict, Any, Type
-from dataclasses import dataclass, field
+
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import Any, Dict, Tuple, Type
+
+import numpy as np
+
 from .handle import BaseArtifactHandle
 
 

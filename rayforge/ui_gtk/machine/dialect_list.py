@@ -1,6 +1,8 @@
-from typing import cast
 from gettext import gettext as _
-from gi.repository import Gtk, Adw
+from typing import cast
+
+from gi.repository import Adw, Gtk
+
 from ...context import get_context
 from ...machine.models.dialect import GcodeDialect
 from ..icons import get_icon

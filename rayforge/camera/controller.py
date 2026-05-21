@@ -1,12 +1,14 @@
-import sys
-import time
-import threading
+import logging
 import multiprocessing as mp
-from typing import Optional, List, Tuple, TYPE_CHECKING
+import sys
+import threading
+import time
+from typing import TYPE_CHECKING, List, Optional, Tuple
+
 import cv2
 import numpy as np
-import logging
 from blinker import Signal
+
 from ..image.util.srgb import resize_linear_nd
 from ..shared.util.glib import idle_add
 from .models.camera import Camera, Pos
@@ -297,7 +299,7 @@ class CameraController:
     @property
     def pixbuf(self) -> Optional["GdkPixbuf.Pixbuf"]:
         # Import the UI library ONLY when this method is actually called.
-        from gi.repository import GLib, GdkPixbuf
+        from gi.repository import GdkPixbuf, GLib
 
         if self._image_data is None:
             return None

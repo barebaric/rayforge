@@ -1,6 +1,7 @@
-from rayforge.core.ops import Ops
-from rayforge.pipeline.artifact.workpiece import WorkPieceArtifact
+from raygeo.ops import Ops
+
 from rayforge.pipeline import CoordinateSystem
+from rayforge.pipeline.artifact.workpiece import WorkPieceArtifact
 
 
 def test_artifact_type_property():

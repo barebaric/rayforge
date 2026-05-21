@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import Dict, Any, Type, Optional, List
 from abc import ABC
-
+from typing import Any, Dict, List, Optional, Type
 
 _handle_registry: Dict[str, Type["BaseArtifactHandle"]] = {}
 

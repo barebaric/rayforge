@@ -3,25 +3,26 @@ import json
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional, Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 from raygeo import Geometry
+
 from ...core.source_asset import SourceAsset
-from ...core.vectorization_spec import VectorizationSpec, ProceduralSpec
+from ...core.vectorization_spec import ProceduralSpec, VectorizationSpec
 from ...core.workpiece import WorkPiece
 from ..base_importer import (
     Importer,
     ImporterFeature,
 )
+from ..engine import NormalizationEngine
 from ..structures import (
-    ImportPayload,
-    ParsingResult,
-    LayerGeometry,
-    VectorizationResult,
     ImportManifest,
+    ImportPayload,
+    LayerGeometry,
+    ParsingResult,
+    VectorizationResult,
 )
 from .renderer import PROCEDURAL_RENDERER
-from ..engine import NormalizationEngine
 
 logger = logging.getLogger(__name__)
 

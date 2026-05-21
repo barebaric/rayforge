@@ -1,7 +1,8 @@
+from unittest.mock import MagicMock, Mock
+
 import pytest
-from unittest.mock import Mock, MagicMock
-from sketcher.ui_gtk.tools.arc_tool import ArcTool
 from sketcher.core.commands import ArcPreviewState
+from sketcher.ui_gtk.tools.arc_tool import ArcTool
 
 
 @pytest.fixture

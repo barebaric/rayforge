@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 import logging
-import numpy as np
 from multiprocessing import shared_memory
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
+import numpy as np
+
 from ...shared.tasker.progress import CallbackProgressContext
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ...shared.util.profile import profile_if_enabled
@@ -16,8 +19,8 @@ from ..artifact.workpiece_view import (
     WorkPieceViewArtifact,
 )
 from .view_compute import (
-    compute_workpiece_view_to_buffer,
     compute_view_dimensions,
+    compute_workpiece_view_to_buffer,
     render_chunk_to_buffer,
 )
 

@@ -1,38 +1,40 @@
 import asyncio
 from pathlib import Path
-from typing import Tuple, Generator
+from typing import Generator, Tuple
 from unittest.mock import MagicMock
 
 import pytest
 from raygeo import Geometry
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
+
 import rayforge.machine.driver as driver_module
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.matrix import Matrix
-from rayforge.core.ops import Ops, Axis
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
+from rayforge.core.step_registry import step_registry
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
 from rayforge.image import SVG_RENDERER
 from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.driver.driver import DeviceState
-from rayforge.pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.driver.grbl.grbl_network import GrblNetworkDriver
 from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
 from rayforge.machine.driver.smoothie import SmoothieDriver
 from rayforge.machine.models.dialect import (
-    GcodeDialect,
     GRBL_DIALECT,
     SMOOTHIEWARE_DIALECT,
+    GcodeDialect,
 )
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import JogDirection, Machine, Origin
 from rayforge.machine.models.macro import MacroTrigger
 from rayforge.machine.transport import TransportStatus
-from rayforge.core.step_registry import step_registry
+from rayforge.pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
 from rayforge.shared.tasker.manager import TaskManager
 
 

@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Screenshot: Material test grid dialog."""
 
-import time
 import logging
-from rayforge.uiscript import app, win
+import time
+
 from utils import (
     open_material_test,
-    take_screenshot,
     set_window_size,
+    take_screenshot,
 )
+
+from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 

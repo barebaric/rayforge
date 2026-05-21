@@ -1,15 +1,17 @@
 import logging
-from typing import Dict, Any, cast, Optional, TYPE_CHECKING
 from gettext import gettext as _
-from gi.repository import Gtk, Adw
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+
 from blinker import Signal
+from gi.repository import Adw, Gtk
+
 from ...context import get_context
-from ...core.step import Step
-from ...core.recipe import Recipe
 from ...core.capability import Capability
+from ...core.recipe import Recipe
+from ...core.step import Step
 from ...core.undo.property_cmd import ChangePropertyCommand
-from .recipe_selector_dialog import RecipeSelectorDialog
 from .edit_recipe_dialog import AddEditRecipeDialog
+from .recipe_selector_dialog import RecipeSelectorDialog
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor

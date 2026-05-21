@@ -1,32 +1,34 @@
 import logging
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from enum import Enum, auto
 from gettext import gettext as _
 from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
     List,
     Optional,
     Tuple,
-    Any,
-    TYPE_CHECKING,
-    Callable,
     Union,
-    Awaitable,
-    Dict,
 )
+
 from blinker import Signal
-from dataclasses import dataclass
-from enum import Enum, auto
+from raygeo.ops.axis import Axis
+
 from ...context import RayforgeContext
-from ...core.ops.axis import Axis
 
 if TYPE_CHECKING:
-    from ...core.doc import Doc
     from ...core.capability import Capability
+    from ...core.doc import Doc
     from ...core.varset import VarSet
-    from ...pipeline.encoder.base import OpsEncoder, EncodedOutput
+    from ...pipeline.encoder.base import EncodedOutput, OpsEncoder
     from ..device.profile import DeviceProfile
     from ..models.dialect import GcodeDialect
-    from ..models.machine import Machine
     from ..models.laser import Laser
+    from ..models.machine import Machine
 
 
 logger = logging.getLogger(__name__)

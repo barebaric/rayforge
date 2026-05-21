@@ -2,11 +2,13 @@
 import gi
 
 gi.require_version("GdkPixbuf", "2.0")
+from unittest.mock import patch
+
 import cv2
 import numpy as np
-from unittest.mock import patch
-from rayforge.camera.models.camera import Camera
+
 from rayforge.camera.controller import CameraController
+from rayforge.camera.models.camera import Camera
 
 
 def test_controller_initialization():

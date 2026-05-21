@@ -1,13 +1,14 @@
 import logging
-from typing import Optional, TYPE_CHECKING, Dict, Any
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from raygeo import Geometry
-from rayforge.core.ops import Ops, SectionType
-from rayforge.shared.tasker.progress import ProgressContext
+from raygeo.ops import Ops
+from raygeo.ops.types import SectionType
+
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.producer.base import OpsProducer, CutSide
-
+from rayforge.pipeline.producer.base import CutSide, OpsProducer
+from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
     from rayforge.core.workpiece import WorkPiece

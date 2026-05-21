@@ -9,10 +9,12 @@ from a specified font for the characters '0'-'9'.
 import logging
 import math
 from typing import Dict, Optional, Tuple, Union
-import numpy as np
-from OpenGL import GL
+
 import cairo
+import numpy as np
 from gi.repository import Pango, PangoCairo
+from OpenGL import GL
+
 from ..gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)

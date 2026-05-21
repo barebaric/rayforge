@@ -1,4 +1,5 @@
-from rayforge.core.ops import Ops
+from raygeo.ops import Ops
+
 from rayforge.machine.sanity import IssueCategory, IssueSeverity, SanityContext
 from rayforge.machine.sanity.checks.extent_2d import ExtentCheck2D
 

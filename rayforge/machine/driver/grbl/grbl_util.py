@@ -1,11 +1,12 @@
-import re
 import asyncio
+import re
 from copy import copy, deepcopy
-from typing import Callable, Dict, Optional, List, Tuple, cast
 from dataclasses import dataclass, field
 from gettext import gettext as _
+from typing import Callable, Dict, List, Optional, Tuple, cast
+
 from ....core.varset import Var, VarSet
-from ..driver import DeviceStatus, DeviceState, Pos, DeviceError
+from ..driver import DeviceError, DeviceState, DeviceStatus, Pos
 
 _gcode_comment_re = re.compile(r"\([^)]*\)")
 

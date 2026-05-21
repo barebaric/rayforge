@@ -1,17 +1,19 @@
 import logging
 import math
-from typing import Optional, TYPE_CHECKING, Tuple
 import warnings
+from typing import TYPE_CHECKING, Optional, Tuple
+
 from raygeo import Geometry
-from raygeo.path import PyCommand
+from raygeo.geo import PyCommand
+
+from rayforge.core.color import ColorRGBA
 from rayforge.image.base_renderer import Renderer, RenderSpecification
 from rayforge.image.structures import FillRenderData, FillStyle
 from rayforge.image.svg.svg_fallback import (
     SVG_LOAD_AVAILABLE,
-    render_svg_to_cairo,
     cairo_surface_to_vips,
+    render_svg_to_cairo,
 )
-from rayforge.core.color import ColorRGBA
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)

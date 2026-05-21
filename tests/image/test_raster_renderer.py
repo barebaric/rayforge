@@ -1,7 +1,9 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
+
+from rayforge.core.vectorization_spec import PassthroughSpec, TraceSpec
 from rayforge.image.base_renderer import RasterRenderer, RenderSpecification
-from rayforge.core.vectorization_spec import TraceSpec, PassthroughSpec
 
 
 class ConcreteRasterRenderer(RasterRenderer):

@@ -1,11 +1,12 @@
 from typing import Optional
 
 from blinker import Signal
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
+from raygeo.ops.types import CommandCategory, CommandType
 
 from ..core.doc import Doc
 from ..core.layer import Layer
-from ..core.ops import Ops, CommandType, CommandCategory
-from ..core.ops.axis import Axis
 from ..machine.models.machine import Machine
 from ..machine.models.rotary_module import RotaryMode
 from .machine_state import MachineState

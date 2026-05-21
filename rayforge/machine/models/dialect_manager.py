@@ -1,10 +1,12 @@
 import logging
 from dataclasses import replace
-from typing import List, Dict, Optional, Tuple, TYPE_CHECKING
-import yaml
-from pathlib import Path
-from blinker import Signal
 from gettext import gettext as _
+from pathlib import Path
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+
+import yaml
+from blinker import Signal
+
 from .dialect import (
     BUILTIN_DIALECTS,
     GcodeDialect,

@@ -1,5 +1,5 @@
-import pytest
 import numpy as np
+import pytest
 
 from rayforge.simulator.scene3d.render_config import (
     LayerRenderConfig,

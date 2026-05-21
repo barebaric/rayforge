@@ -1,23 +1,26 @@
 import json
-import uuid
-from datetime import date, datetime
-from pathlib import Path
-from typing import ClassVar, Union, List, Optional, Set, Dict, Any, Tuple
-from blinker import Signal
-from collections import defaultdict
 import logging
 import math
+import uuid
+from collections import defaultdict
+from datetime import date, datetime
 from gettext import gettext as _
+from pathlib import Path
+from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple, Union
+
+from blinker import Signal
 from raygeo import Geometry
-from raygeo.path import PyCommand
-from raygeo.shape.polygon import is_point_inside_polygon
+from raygeo.geo import PyCommand
+from raygeo.geo.shape.polygon import is_point_inside_polygon
+
 from rayforge.core.asset import IAsset
+from rayforge.core.color import ColorRGBA
 from rayforge.core.expression import ExpressionMap
 from rayforge.core.geometry_provider import IGeometryProvider
 from rayforge.core.varset import VarSet
 from rayforge.image.geo_renderer import render_geometry_to_png
 from rayforge.image.structures import FillRenderData, FillStyle
-from rayforge.core.color import ColorRGBA
+
 from .constraints import (
     AngleConstraint,
     AspectRatioConstraint,
@@ -40,12 +43,12 @@ from .constraints import (
 )
 from .constraints.drag import DragConstraint
 from .entities import (
-    Line,
     Arc,
-    Circle,
     Bezier,
-    Entity,
+    Circle,
     Ellipse,
+    Entity,
+    Line,
     TextBoxEntity,
 )
 from .entities.point import WaypointType
@@ -53,7 +56,6 @@ from .params import ParameterContext
 from .registry import EntityRegistry
 from .solver import Solver
 from .types import EntityID
-
 
 DEFAULT_FILL_COLOR: ColorRGBA = (0.85, 0.85, 0.85, 0.7)
 _DEFAULT_VARSET_TITLE = _("Sketch Parameters")

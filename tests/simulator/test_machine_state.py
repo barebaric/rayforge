@@ -1,11 +1,13 @@
-from rayforge.simulator.machine_state import MachineState
-from rayforge.core.ops import Ops, Axis
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
+
 from rayforge.machine.models.axis import (
     AxisConfig,
+    AxisDirection,
     AxisSet,
     AxisType,
-    AxisDirection,
 )
+from rayforge.simulator.machine_state import MachineState
 
 
 def _apply_all(state, ops):

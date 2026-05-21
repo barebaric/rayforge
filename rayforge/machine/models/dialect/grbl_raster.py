@@ -1,4 +1,5 @@
 from gettext import gettext as _
+
 from .base import GcodeDialect
 
 GRBL_RASTER_DIALECT = GcodeDialect(

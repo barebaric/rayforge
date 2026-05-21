@@ -1,11 +1,14 @@
 import asyncio
 import logging
 import socket
+from unittest.mock import MagicMock
+
 import pytest
 import pytest_asyncio
-from unittest.mock import MagicMock
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
+
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Axis, Ops
 from rayforge.machine.driver.driver import DeviceStatus
 from rayforge.machine.driver.smoothie import SmoothieDriver
 from rayforge.machine.transport import TransportStatus

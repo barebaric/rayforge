@@ -1,7 +1,9 @@
 import logging
-from gi.repository import Gtk
-from typing import Optional, List, TYPE_CHECKING, Tuple
 from gettext import gettext as _
+from typing import TYPE_CHECKING, List, Optional, Tuple
+
+from gi.repository import Gtk
+
 from ...context import get_context
 from ...core.group import Group
 from ...core.item import DocItem

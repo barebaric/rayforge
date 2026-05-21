@@ -1,8 +1,7 @@
 import pytest
-
-from sketcher.core.snap.types import DragContext
-from sketcher.core.snap.producers.intersections import IntersectionsProducer
 from sketcher.core.registry import EntityRegistry
+from sketcher.core.snap.producers.intersections import IntersectionsProducer
+from sketcher.core.snap.types import DragContext
 
 
 @pytest.fixture

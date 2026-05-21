@@ -1,5 +1,6 @@
 import math
-from raygeo.shape.arc import get_arc_direction
+
+from raygeo.geo.shape.arc import get_arc_direction
 from sketcher.core import Sketch
 from sketcher.core.commands import ArcCommand, ArcPreviewState
 from sketcher.core.entities import Arc

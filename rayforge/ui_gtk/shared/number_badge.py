@@ -1,8 +1,8 @@
 from typing import Optional
 
 from gi.repository import Graphene, Gtk, Pango, PangoCairo
-from .gtk import apply_css
 
+from .gtk import apply_css
 
 css = """
 .number-badge {

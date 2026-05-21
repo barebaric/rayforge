@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Screenshot: Recipe editor - General page."""
 
-import time
 import logging
-from rayforge.uiscript import app, win
+import time
+
 from utils import open_recipe_editor, take_screenshot
+
+from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 PAGE = "general"

@@ -1,5 +1,5 @@
 from functools import lru_cache, wraps
-from typing import Callable, Any
+from typing import Any, Callable
 
 
 def lru_cache_unless_forced(maxsize: int = 128):

@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
+
+import pytest
 from blinker import Signal
 
 from rayforge.machine.driver.grbl.grbl_probe import (
@@ -7,10 +8,10 @@ from rayforge.machine.driver.grbl.grbl_probe import (
 )
 from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
 from rayforge.machine.driver.grbl.grbl_util import (
-    parse_grbl_settings,
-    parse_ver,
-    parse_msg,
     extract_device_name,
+    parse_grbl_settings,
+    parse_msg,
+    parse_ver,
 )
 from rayforge.machine.transport import TransportStatus
 

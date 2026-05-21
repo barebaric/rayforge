@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+
 from stubs_to_markdown import generate  # type: ignore[import]
 
 STUBS_DIR = Path("external/raygeo/raygeo-stubs")

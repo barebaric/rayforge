@@ -1,15 +1,16 @@
 import logging
-from typing import List, Optional, Iterator, Tuple
+from typing import Iterator, List, Optional, Tuple
 
-from raygeo import Point as GeoPoint
+from raygeo.geo.types import Point as GeoPoint
+
 from ..registry import EntityRegistry
+from .spatial import SnapLineIndex
 from .types import (
+    DragContext,
     SnapLine,
     SnapPoint,
     SnapResult,
-    DragContext,
 )
-from .spatial import SnapLineIndex
 
 logger = logging.getLogger(__name__)
 

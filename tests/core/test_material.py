@@ -1,9 +1,11 @@
 """Tests for the Material class."""
 
-import pytest
 import tempfile
-import yaml
 from pathlib import Path
+
+import pytest
+import yaml
+
 from rayforge.core.material import Material, MaterialAppearance
 
 

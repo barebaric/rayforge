@@ -1,9 +1,9 @@
 from unittest.mock import MagicMock
 
 import pytest
+from laser_essentials.steps import MaterialTestStep
 
 from rayforge.core.capability import MATERIAL_TEST
-from laser_essentials.steps import MaterialTestStep
 
 
 @pytest.fixture

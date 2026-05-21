@@ -1,10 +1,13 @@
+from unittest.mock import MagicMock, Mock
+
 import pytest
-from unittest.mock import Mock, MagicMock
+from post_processors.transformers import CropTransformer
 from raygeo import Geometry
-from rayforge.core.ops import Ops, CommandType, CommandCategory
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandCategory, CommandType
+
 from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
-from post_processors.transformers import CropTransformer
 from rayforge.pipeline.transformer.base import ExecutionPhase
 
 

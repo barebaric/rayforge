@@ -1,7 +1,7 @@
 import pytest
 from raygeo import Geometry
 from sketcher.core import Sketch
-from sketcher.core.entities import Line, Arc, Bezier
+from sketcher.core.entities import Arc, Bezier, Line
 
 
 class TestSketchFromGeometry:

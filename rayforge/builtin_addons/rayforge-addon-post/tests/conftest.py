@@ -66,12 +66,12 @@ def register_post_processors():
 
     # Import and register transformers directly from the addon
     from post_processors.transformers import (
+        CropTransformer,
+        MultiPassTransformer,
+        Optimize,
+        OverscanTransformer,
         Smooth,
         TabOpsTransformer,
-        CropTransformer,
-        Optimize,
-        MultiPassTransformer,
-        OverscanTransformer,
     )
 
     ADDON_NAME = "post_processors"

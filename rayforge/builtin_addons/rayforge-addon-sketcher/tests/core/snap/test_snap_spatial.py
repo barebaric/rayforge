@@ -1,7 +1,6 @@
 import pytest
-
+from sketcher.core.snap.spatial import IndexedLine, SnapLineIndex
 from sketcher.core.snap.types import SnapLine, SnapLineType
-from sketcher.core.snap.spatial import SnapLineIndex, IndexedLine
 
 
 def test_indexed_line_creation():

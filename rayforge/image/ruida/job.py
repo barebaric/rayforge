@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
-from raygeo import Rect
+from raygeo.geo.types import Rect
 
 
 @dataclass

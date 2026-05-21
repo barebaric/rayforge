@@ -1,4 +1,5 @@
 import pytest
+
 from rayforge.core.varset.baudratevar import BaudrateVar, ValidationError
 from rayforge.core.varset.varset import VarSet
 

@@ -1,13 +1,12 @@
 import pytest
-
-from sketcher.core.snap.types import (
-    SnapLine,
-    SnapPoint,
-    SnapLineType,
-    DragContext,
-)
-from sketcher.core.snap.engine import SnapLineProducer, SnapEngine
 from sketcher.core.registry import EntityRegistry
+from sketcher.core.snap.engine import SnapEngine, SnapLineProducer
+from sketcher.core.snap.types import (
+    DragContext,
+    SnapLine,
+    SnapLineType,
+    SnapPoint,
+)
 
 
 class MockSnapLineProducer(SnapLineProducer):

@@ -4,6 +4,7 @@ Defines the Camera class for managing 3D perspective and navigation.
 
 import enum
 import math
+
 import numpy as np
 
 

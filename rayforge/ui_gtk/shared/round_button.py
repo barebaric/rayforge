@@ -1,6 +1,5 @@
 from gi.repository import Gtk
 
-
 css = """
 button.round-button {
     min-width: 64px;

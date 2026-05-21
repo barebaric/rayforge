@@ -5,9 +5,9 @@ Provides step implementations for laser cutting operations.
 """
 
 from .contour_step import ContourStep
-from .raster_step import EngraveStep
 from .frame_step import FrameStep
 from .material_test import MaterialTestStep
+from .raster_step import EngraveStep
 from .shrinkwrap_step import ShrinkWrapStep
 
 __all__ = [

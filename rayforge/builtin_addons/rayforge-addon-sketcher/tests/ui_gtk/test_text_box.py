@@ -1,9 +1,9 @@
 import os
 import sys
-
-import pytest
-import cairo
 from unittest.mock import MagicMock, Mock
+
+import cairo
+import pytest
 
 if sys.platform.startswith("linux"):
     os.environ.setdefault("PYOPENGL_PLATFORM", "egl")
@@ -13,13 +13,14 @@ if sys.platform.startswith("linux"):
             allow_module_level=True,
         )
 
-from rayforge.core.font_config import FontConfig
 from sketcher.core import Sketch
 from sketcher.core.entities import TextBoxEntity
+from sketcher.ui_gtk.renderer import SketchRenderer
 from sketcher.ui_gtk.sketchelement import SketchElement
 from sketcher.ui_gtk.tools import TextBoxTool
 from sketcher.ui_gtk.tools.text_box_tool import TextBoxState
-from sketcher.ui_gtk.renderer import SketchRenderer
+
+from rayforge.core.font_config import FontConfig
 
 
 @pytest.fixture

@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 import time
 from abc import ABC, abstractmethod
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 
 class Command(ABC):

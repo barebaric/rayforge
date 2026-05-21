@@ -1,10 +1,10 @@
 from unittest.mock import MagicMock
 
 import pytest
+from laser_essentials.steps import EngraveStep
 
 from rayforge.core.capability import ENGRAVE
 from rayforge.core.step_registry import step_registry
-from laser_essentials.steps import EngraveStep
 
 
 @pytest.fixture

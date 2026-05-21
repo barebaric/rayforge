@@ -1,9 +1,9 @@
 from rayforge.machine.models.dialect import (
-    GcodeDialect,
     GRBL_DIALECT,
     LINUXCNC_DIALECT,
     MARLIN_DIALECT,
     SMOOTHIEWARE_DIALECT,
+    GcodeDialect,
 )
 
 

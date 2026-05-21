@@ -4,7 +4,7 @@
 # loaded dynamically, so PyInstaller's static analysis misses these imports.
 # -----------------------------------------------------------------------------
 
-from PyInstaller.utils.hooks import collect_submodules, collect_data_files
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 # Collect all submodules from rayforge and its subpackages
 hiddenimports = collect_submodules("rayforge")

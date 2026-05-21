@@ -4,7 +4,7 @@ from sketcher.core.commands import (
     RoundedRectPreviewState,
 )
 from sketcher.core.constraints import TangentConstraint
-from sketcher.core.entities import Line, Arc
+from sketcher.core.entities import Arc, Line
 
 
 def test_rounded_rect_calculate_geometry():

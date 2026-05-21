@@ -1,11 +1,13 @@
-import numpy as np
+from unittest.mock import ANY, MagicMock
+
 import cairo
-from unittest.mock import MagicMock, ANY
-from raygeo import COL_TYPE, CMD_TYPE_MOVE, CMD_TYPE_LINE
+import numpy as np
+from raygeo import CMD_TYPE_LINE, CMD_TYPE_MOVE, COL_TYPE
+
 from rayforge.image.tracing import (
-    trace_surface,
-    trace_color_image,
     Geometry,
+    trace_color_image,
+    trace_surface,
 )
 
 

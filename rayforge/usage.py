@@ -3,10 +3,10 @@ import locale
 import logging
 import platform
 import threading
+import urllib.error
+import urllib.request
 import uuid
 from typing import Optional
-import urllib.request
-import urllib.error
 
 from . import __version__
 from .config import UMAMI_URL, UMAMI_WEBSITE_ID

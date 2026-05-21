@@ -1,9 +1,9 @@
+from .manager import DeviceProfileManager
 from .profile import (
     DeviceMeta,
     DeviceProfile,
     export_machine_to_dir,
 )
-from .manager import DeviceProfileManager
 
 __all__ = [
     "DeviceMeta",

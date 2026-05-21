@@ -1,14 +1,15 @@
-import pytest
-import numpy as np
-from scipy.optimize import check_grad
 import math
 from types import SimpleNamespace
 from unittest.mock import MagicMock
+
+import numpy as np
+import pytest
+from scipy.optimize import check_grad
 from sketcher.core import Sketch
-from sketcher.core.selection import SketchSelection
 from sketcher.core.constraints import RadiusConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
+from sketcher.core.selection import SketchSelection
 
 
 @pytest.fixture

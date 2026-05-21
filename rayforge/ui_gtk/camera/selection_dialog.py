@@ -1,9 +1,11 @@
 import logging
-from gi.repository import Gtk, Adw, GdkPixbuf
-from typing import Optional, Literal
 from gettext import gettext as _
-from ...camera.models.camera import Camera
+from typing import Literal, Optional
+
+from gi.repository import Adw, GdkPixbuf, Gtk
+
 from ...camera.controller import CameraController
+from ...camera.models.camera import Camera
 from ...context import get_context
 from ..shared.gtk import apply_css
 

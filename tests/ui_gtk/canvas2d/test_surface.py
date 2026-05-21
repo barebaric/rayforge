@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
+
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.pipeline.coordspace import MachineSpace
 

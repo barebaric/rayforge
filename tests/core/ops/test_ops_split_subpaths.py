@@ -1,4 +1,5 @@
-from rayforge.core.ops import Ops, CommandType
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandType
 
 
 class TestSplitIntoSubpaths:

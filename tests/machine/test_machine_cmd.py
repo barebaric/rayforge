@@ -1,14 +1,14 @@
+import asyncio
 from functools import partial
 from unittest.mock import MagicMock, PropertyMock
 
 import numpy as np
 import pytest
 import pytest_asyncio
-import asyncio
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
 
 from rayforge.core.config import ConfigManager
-from rayforge.core.ops import Ops
-from rayforge.core.ops.axis import Axis
 from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.models.machine import Machine
 from rayforge.pipeline.artifact import JobArtifact

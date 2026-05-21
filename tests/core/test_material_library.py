@@ -1,8 +1,10 @@
 """Tests for the MaterialLibrary class."""
 
 import tempfile
-import yaml
 from pathlib import Path
+
+import yaml
+
 from rayforge.core.material import Material
 from rayforge.core.material_library import MaterialLibrary
 

@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from ...pipeline.artifact.handle import create_handle_from_dict
+from ...pipeline.artifact.job import JobArtifact
 from ...pipeline.artifact.store import (
     ArtifactStore,
     SharedMemoryNotFoundError,
 )
-from ...pipeline.artifact.job import JobArtifact
 from ...shared.tasker.proxy import ExecutionContextProxy
 from .render_config import RenderConfig3D
 from .scene_compiler import compile_scene

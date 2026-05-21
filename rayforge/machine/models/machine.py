@@ -9,13 +9,14 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
 import numpy as np
 from blinker import Signal
+from raygeo.geo.types import Point3D, Rect
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
 
 from ...camera.models.camera import Camera
 from ...context import RayforgeContext, get_context
-from raygeo import Point3D, Rect
 from ...core.layer import Layer
 from ...core.model import Model
-from ...core.ops import Axis, Ops
 from ...pipeline.coordspace import MachineSpace
 from ...pipeline.encoder.base import EncodedOutput
 from ...shared.tasker import task_mgr
@@ -30,9 +31,8 @@ from .dialect import GcodeDialect
 from .laser import Laser
 from .machine_hours import MachineHours
 from .macro import Macro, MacroTrigger
-from .rotary_module import RotaryModule, RotaryMode
+from .rotary_module import RotaryMode, RotaryModule
 from .zone import Zone
-
 
 if TYPE_CHECKING:
     from ...core.capability import Capability

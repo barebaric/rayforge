@@ -1,13 +1,16 @@
 import math
-from typing import List, Dict, Optional, Any, Sequence, TYPE_CHECKING
-from raygeo import Geometry, Point, Polygon, Rect
-from raygeo.shape.arc import (
-    get_arc_bounds,
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+
+from raygeo import Geometry
+from raygeo.geo.shape.arc import (
     does_arc_intersect_rect,
+    get_arc_bounds,
     get_arc_midpoint,
     is_angle_between,
 )
-from raygeo.shape.rect import does_rect_contain_rect
+from raygeo.geo.shape.rect import does_rect_contain_rect
+from raygeo.geo.types import Point, Polygon, Rect
+
 from ..types import EntityID
 from .entity import Entity
 

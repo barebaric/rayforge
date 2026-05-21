@@ -1,12 +1,13 @@
-from typing import Optional, List, Dict, Any, TYPE_CHECKING
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from raygeo.algo.smooth import compute_gaussian_kernel, smooth_polyline
-from rayforge.core.ops import Ops
-from rayforge.core.ops.enums import CommandType
+from raygeo.geo.algo.smooth import compute_gaussian_kernel, smooth_polyline
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandType
+
 from rayforge.core.workpiece import WorkPiece
+from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
 from rayforge.shared.tasker.progress import ProgressContext
-from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
 
 if TYPE_CHECKING:
     from raygeo import Geometry

@@ -3,7 +3,6 @@ A renderer for a gradient background that gives a raytraced studio appearance.
 """
 
 import logging
-
 from typing import Optional
 
 import numpy as np
@@ -31,8 +30,8 @@ class BackgroundRenderer(BaseRenderer):
 
     def init_gl(self):
         from ..shaders import (
-            BACKGROUND_VERTEX_SHADER,
             BACKGROUND_FRAGMENT_SHADER,
+            BACKGROUND_VERTEX_SHADER,
         )
 
         self._shader = Shader(

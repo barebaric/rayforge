@@ -1,6 +1,8 @@
 import logging
 from typing import Dict, List, Optional
+
 from blinker import Signal
+
 from ..context import RayforgeContext
 from ..machine.models.machine import Machine
 from .controller import CameraController

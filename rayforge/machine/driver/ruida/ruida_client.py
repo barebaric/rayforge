@@ -7,7 +7,7 @@ sending them via transport, and parsing of responses.
 
 import asyncio
 import logging
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Optional
 
 from blinker import Signal
 
@@ -18,7 +18,7 @@ from .ruida_maps import (
     REF_POINT_OFFSET_ADDRESSES,
 )
 from .ruida_protocol import RuidaResponse, RuidaState
-from .ruida_util import encode14, encode35, decode35
+from .ruida_util import decode35, encode14, encode35
 
 if TYPE_CHECKING:
     from .ruida_transport import RuidaTransport

@@ -1,5 +1,7 @@
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
+
 from blinker import Signal
+
 from .types import EntityID
 
 if TYPE_CHECKING:

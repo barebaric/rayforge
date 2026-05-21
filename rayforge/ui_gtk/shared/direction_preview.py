@@ -1,6 +1,7 @@
 import math
-from gi.repository import Gtk
+
 import cairo
+from gi.repository import Gtk
 
 
 class DirectionPreview(Gtk.DrawingArea):

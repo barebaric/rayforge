@@ -4,6 +4,7 @@ from typing import Any, List, Optional, Tuple
 import cairo
 
 from rayforge.ui_gtk.canvas.worldsurface import WorldSurface
+
 from ..core.constraints import (
     CoincidentConstraint,
     PointOnLineConstraint,
@@ -13,7 +14,6 @@ from ..core.entities import (
     Entity,
     TextBoxEntity,
 )
-
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 import logging
+
 from gi.repository import Gtk
 
 logger = logging.getLogger(__name__)

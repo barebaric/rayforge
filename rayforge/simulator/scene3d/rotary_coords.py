@@ -8,8 +8,10 @@ when rendering rotary axis data onto a cylinder surface.
 import math
 from typing import Optional, Tuple
 
-from ...core.ops import Ops, CommandType, CommandCategory
-from ...core.ops.axis import Axis
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
+from raygeo.ops.types import CommandCategory, CommandType
+
 from ...machine.kinematic_math import KinematicMath
 
 

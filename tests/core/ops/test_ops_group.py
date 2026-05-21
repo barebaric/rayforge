@@ -1,6 +1,8 @@
 from typing import List
-from rayforge.core.ops import Ops, CommandType
-from rayforge.core.ops.container import MachineState
+
+from raygeo.ops import Ops
+from raygeo.ops.state import State
+from raygeo.ops.types import CommandType
 
 
 def test_group_by_command_type_empty():
@@ -59,7 +61,7 @@ def _create_ops_with_states(states_config: List[bool]) -> Ops:
     for i, air_on in enumerate(states_config):
         ops.set_state_at(
             i,
-            MachineState(
+            State(
                 power=1.0,
                 air_assist=air_on,
                 cut_speed=None,
@@ -108,7 +110,7 @@ def test_group_by_state_continuity():
     ops_marker.line_to(1, 1)
     ops_marker.set_state_at(
         0,
-        MachineState(
+        State(
             power=1.0,
             air_assist=True,
             cut_speed=None,
@@ -120,7 +122,7 @@ def test_group_by_state_continuity():
     )
     ops_marker.set_state_at(
         2,
-        MachineState(
+        State(
             power=1.0,
             air_assist=True,
             cut_speed=None,

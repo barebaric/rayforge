@@ -1,60 +1,62 @@
-import aiohttp
 import asyncio
 import inspect
 import logging
-from urllib.parse import quote
-from typing import (
-    Optional,
-    cast,
-    Any,
-    TYPE_CHECKING,
-    List,
-    Tuple,
-    Callable,
-    Union,
-    Awaitable,
-    Dict,
-)
 from gettext import gettext as _
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
+from urllib.parse import quote
+
+import aiohttp
+
 from ....context import RayforgeContext
-from ....core.varset import Var, VarSet, HostnameVar, PortVar
+from ....core.varset import HostnameVar, PortVar, Var, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
-from ....pipeline.encoder.base import OpsEncoder, EncodedOutput
+from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
-from ...transport import HttpTransport, WebSocketTransport, TransportStatus
+from ...transport import HttpTransport, TransportStatus, WebSocketTransport
 from ..driver import (
+    Axis,
+    DeviceConnectionError,
     DeviceStatus,
     Driver,
-    DriverSetupError,
     DriverPrecheckError,
-    DeviceConnectionError,
-    Axis,
+    DriverSetupError,
     Pos,
 )
 from .grbl_probe import probe_grbl_device
 from .grbl_util import (
-    parse_state,
+    CommandRequest,
+    command_url,
+    eeprom_info_url,
+    execute_url,
+    fw_info_url,
+    gcode_to_p_number,
     get_grbl_setting_varsets,
     grbl_setting_re,
-    wcs_re,
-    prb_re,
-    gcode_to_p_number,
-    CommandRequest,
     hw_info_url,
-    fw_info_url,
-    eeprom_info_url,
-    command_url,
-    upload_url,
-    execute_url,
-    status_url,
     parse_grbl_parser_state,
+    parse_state,
+    prb_re,
+    status_url,
+    upload_url,
+    wcs_re,
 )
 
 if TYPE_CHECKING:
     from ....core.doc import Doc
     from ...device.profile import DeviceProfile
-    from ...models.machine import Machine
     from ...models.laser import Laser
+    from ...models.machine import Machine
 
 
 logger = logging.getLogger(__name__)
@@ -465,12 +467,9 @@ class GrblNetworkDriver(Driver):
         if axes is None:
             await self.execute_interactive_command(dialect.home_all)
         else:
-            for axis in Axis:
-                if axes & axis:
-                    assert axis.name
-                    axis_letter: str = axis.name.upper()
-                    cmd = dialect.home_axis.format(axis_letter=axis_letter)
-                    await self.execute_interactive_command(cmd)
+            for axis in axes:
+                cmd = dialect.home_axis.format(axis_letter=axis.name)
+                await self.execute_interactive_command(cmd)
 
         # The following works around a quirk in some Grbl versions:
         # After homing, the machine is still in G54, but forgets its

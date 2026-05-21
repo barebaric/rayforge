@@ -1,4 +1,5 @@
 import math
+
 from sketcher.core import Sketch
 from sketcher.core.commands import LineCommand, LinePreviewState
 from sketcher.core.entities import Line, Point

@@ -1,13 +1,15 @@
 import logging
-import yaml
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
-from .recipe import Recipe
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+
+import yaml
+
 from .capability import Capability
+from .recipe import Recipe
 
 if TYPE_CHECKING:
-    from .stock import StockItem
     from ..machine.models.machine import Machine
+    from .stock import StockItem
 
 logger = logging.getLogger(__name__)
 

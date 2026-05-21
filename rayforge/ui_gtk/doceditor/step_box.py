@@ -1,11 +1,13 @@
-from typing import TYPE_CHECKING
 from gettext import gettext as _
-from gi.repository import Gtk
+from typing import TYPE_CHECKING
+
 from blinker import Signal
+from gi.repository import Gtk
+
+from ...context import get_context
 from ...core.capability import ENGRAVE
 from ...core.step import Step
 from ...core.undo.property_cmd import ChangePropertyCommand
-from ...context import get_context
 from ..icons import get_icon
 from ..shared.number_badge import NumberBadge
 from ..shared.tag import TagWidget

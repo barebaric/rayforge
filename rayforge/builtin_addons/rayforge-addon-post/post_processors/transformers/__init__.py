@@ -12,8 +12,8 @@ from .multipass_transformer import MultiPassTransformer
 from .optimize_transformer import (
     Optimize,
     greedy_order_segments,
-    two_opt,
     kdtree_order_segments,
+    two_opt,
 )
 from .overscan_transformer import OverscanTransformer
 from .smooth_transformer import Smooth

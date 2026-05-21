@@ -1,10 +1,12 @@
 """Material library list UI components for Rayforge."""
 
 import logging
-from typing import Optional, cast, List
 from gettext import gettext as _
-from gi.repository import Gtk, Adw
+from typing import List, Optional, cast
+
 from blinker import Signal
+from gi.repository import Adw, Gtk
+
 from ...context import get_context
 from ...core.material_library import MaterialLibrary
 from ..icons import get_icon

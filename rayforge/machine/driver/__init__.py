@@ -1,6 +1,7 @@
 import inspect
 from typing import Type, cast
-from .driver import Driver, DriverMaturity, DRIVER_MATURITY_LABELS
+
+from .driver import DRIVER_MATURITY_LABELS, Driver, DriverMaturity
 from .dummy import NoDeviceDriver
 from .grbl import GrblNetworkDriver, GrblSerialDriver, GrblTelnetDriver
 from .marlin import MarlinSerialDriver

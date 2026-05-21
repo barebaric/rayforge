@@ -1,7 +1,8 @@
 import ipaddress
 from gettext import gettext as _
 from typing import Callable, Optional
-from .var import Var, ValidationError
+
+from .var import ValidationError, Var
 
 
 def is_valid_hostname_or_ip(s: str) -> bool:

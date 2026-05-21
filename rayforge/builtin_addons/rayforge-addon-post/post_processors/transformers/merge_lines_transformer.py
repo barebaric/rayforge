@@ -2,23 +2,24 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
+from gettext import gettext as _
 from typing import (
-    Optional,
-    Dict,
-    Any,
-    List,
     TYPE_CHECKING,
+    Any,
+    DefaultDict,
+    Dict,
+    List,
+    Optional,
     Sequence,
     Set,
     Tuple,
-    DefaultDict,
 )
-from gettext import gettext as _
 
-from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandCategory, CommandType
+
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.ops import Ops
-from rayforge.core.ops.enums import CommandType, CommandCategory
+from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:

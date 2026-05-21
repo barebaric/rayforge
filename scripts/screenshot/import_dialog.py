@@ -5,16 +5,18 @@ Screenshot: Import dialog.
 Usage: pixi run screenshot import-dialog
 """
 
-import time
 import logging
+import time
 from pathlib import Path
-from rayforge.uiscript import app, win
+
 from utils import (
-    wait_for_settled,
-    take_screenshot,
     run_on_main_thread,
     set_window_size,
+    take_screenshot,
+    wait_for_settled,
 )
+
+from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 

@@ -1,14 +1,18 @@
 from __future__ import annotations
+
 import math
 from typing import List, Optional
+
 import numpy as np
-from raygeo import Point3D
-from raygeo.shape.arc import linearize_arc
-from raygeo.shape.bezier import linearize_bezier_segment
-from ...core.ops import Ops, CommandType, CommandCategory
+from raygeo.geo.shape.arc import linearize_arc
+from raygeo.geo.shape.bezier import linearize_bezier_segment
+from raygeo.geo.types import Point3D
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandCategory, CommandType
+
 from ...machine.kinematic_math import KinematicMath
-from .base import OpsEncoder
 from ..artifact.base import VertexData
+from .base import OpsEncoder
 
 
 def transform_to_cylinder(

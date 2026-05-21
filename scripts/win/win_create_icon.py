@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+
 from PIL import Image
 
 here = Path(__file__).parent.parent.parent

@@ -3,10 +3,10 @@ from typing import Type
 
 from .context import ExpressionContext
 from .errors import (
-    ValidationResult,
     SyntaxErrorInfo,
-    UnknownVariableInfo,
     TypeMismatchInfo,
+    UnknownVariableInfo,
+    ValidationResult,
 )
 from .parser import ExpressionParser
 

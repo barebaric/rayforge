@@ -1,9 +1,11 @@
 import asyncio
+
+import asyncudp
 import pytest
 import pytest_asyncio
-import asyncudp
-from rayforge.machine.transport.udp import UdpTransport
+
 from rayforge.machine.transport import TransportStatus
+from rayforge.machine.transport.udp import UdpTransport
 
 
 class SignalTracker:

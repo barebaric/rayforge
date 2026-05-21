@@ -1,8 +1,10 @@
 import logging
 import math
-from typing import Optional, cast, List
 from gettext import gettext as _
+from typing import List, Optional, cast
+
 from gi.repository import Adw, Gdk, Gtk
+
 from rayforge.camera.controller import CameraController
 from rayforge.context import get_context
 from rayforge.core.expression import ExpressionContext, safe_evaluate
@@ -10,6 +12,7 @@ from rayforge.core.matrix import Matrix
 from rayforge.ui_gtk.canvas import WorldSurface
 from rayforge.ui_gtk.canvas2d.elements.camera_image import CameraImageElement
 from rayforge.ui_gtk.shared.expression_entry import ExpressionEntry
+
 from ..core.commands import ModifyConstraintCommand
 from ..core.constraints import (
     AngleConstraint,

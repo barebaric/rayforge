@@ -5,26 +5,28 @@ Screenshot: Main window in 3D mode with rotary project.
 Usage: pixi run screenshot main:3d-rotary
 """
 
-import time
 import logging
-from rayforge.uiscript import app, win
-from rayforge.ui_gtk.sim3d.camera import ViewDirection
+import time
+
 from utils import (
-    load_project,
-    wait_for_settled,
-    wait_for_3d_rendered,
-    seek_3d_playback,
-    show_panel,
-    hide_panel,
-    show_bottom_tab,
-    save_panel_states,
-    restore_panel_states,
-    take_screenshot,
     clear_window_subtitle,
+    hide_panel,
+    load_project,
+    restore_panel_states,
     run_on_main_thread,
+    save_panel_states,
+    seek_3d_playback,
     set_window_size,
+    show_bottom_tab,
+    show_panel,
+    take_screenshot,
+    wait_for_3d_rendered,
+    wait_for_settled,
     wcs,
 )
+
+from rayforge.ui_gtk.sim3d.camera import ViewDirection
+from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 

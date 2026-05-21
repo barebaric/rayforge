@@ -1,7 +1,7 @@
 import pytest
 
 from rayforge.core.layer import Layer
-from rayforge.doceditor.layer_cmd import LayerCmd, AddLayerAndSetActiveCommand
+from rayforge.doceditor.layer_cmd import AddLayerAndSetActiveCommand, LayerCmd
 
 
 @pytest.fixture

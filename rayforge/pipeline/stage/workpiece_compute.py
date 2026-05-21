@@ -1,21 +1,23 @@
-from typing import (
-    Any,
-    List,
-    Tuple,
-    Iterator,
-    Optional,
-    Callable,
-    TYPE_CHECKING,
-)
 import logging
 from gettext import gettext as _
-from ...core.ops import Ops
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+)
+
+from raygeo.ops import Ops
+
 from ...core.workpiece import WorkPiece
 from ...machine.models.laser import Laser
 from ...shared.tasker.progress import ProgressContext, set_progress
 from ..artifact import WorkPieceArtifact
 from ..producer import OpsProducer
-from ..transformer import OpsTransformer, ExecutionPhase
+from ..transformer import ExecutionPhase, OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo import Geometry

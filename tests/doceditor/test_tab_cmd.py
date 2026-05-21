@@ -1,8 +1,8 @@
 import pytest
 
-from rayforge.core.workpiece import WorkPiece
 from rayforge.core.layer import Layer
 from rayforge.core.tab import Tab
+from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.tab_cmd import TabCmd
 
 

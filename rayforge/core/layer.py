@@ -4,18 +4,20 @@ workpieces within a document.
 """
 
 from __future__ import annotations
+
 import logging
 import math
 from gettext import gettext as _
 from typing import (
-    List,
-    Tuple,
-    Optional,
-    TypeVar,
-    Iterable,
-    Dict,
     Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
 )
+
 from blinker import Signal
 
 from .color import COLOR_PALETTE

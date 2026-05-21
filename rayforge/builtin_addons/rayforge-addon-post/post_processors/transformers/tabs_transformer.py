@@ -2,28 +2,25 @@ from __future__ import annotations
 
 import logging
 import math
-from enum import auto, Enum
+from enum import Enum, auto
+from gettext import gettext as _
 from typing import (
+    TYPE_CHECKING,
     Dict,
     List,
     NamedTuple,
     Optional,
     Tuple,
-    TYPE_CHECKING,
 )
 
-from gettext import gettext as _
+from raygeo.geo import PyCommand
+from raygeo.geo.shape.bezier import linearize_bezier
+from raygeo.geo.types import Point3D
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandCategory, CommandType, SectionType
 
-from raygeo.shape.bezier import linearize_bezier
-from raygeo.path import PyCommand
-from raygeo import Point3D
-from rayforge.core.ops import (
-    Ops,
-    SectionType,
-)
-from rayforge.core.ops.enums import CommandType, CommandCategory
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
+from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
@@ -345,7 +342,7 @@ class TabOpsTransformer(OpsTransformer):
         ops: Ops,
         clip_data: List[_ClipPoint],
     ) -> None:
-        section_ranges = list(ops.iter_section_ranges())
+        section_ranges = list(ops.section_ranges())
         assignments = self._assign_clips_globally(
             ops, section_ranges, clip_data
         )
@@ -405,7 +402,7 @@ class TabOpsTransformer(OpsTransformer):
         original_power = settings.get("power", 1.0) if settings else 1.0
         actual_tab_power = tab_power * original_power
 
-        section_ranges = list(ops.iter_section_ranges())
+        section_ranges = list(ops.section_ranges())
         assignments = self._assign_clips_globally(
             ops, section_ranges, clip_data
         )

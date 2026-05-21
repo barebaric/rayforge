@@ -1,7 +1,9 @@
 import logging
 from typing import Optional
+
 from blinker import Signal
-from gi.repository import Gdk, Gtk, Pango, GLib
+from gi.repository import Gdk, GLib, Gtk, Pango
+
 from ...core.expression import (
     ExpressionContext,
     ExpressionTokenizer,
@@ -10,7 +12,6 @@ from ...core.expression import (
     TokenType,
 )
 from .gtk import apply_css
-
 
 logger = logging.getLogger(__name__)
 

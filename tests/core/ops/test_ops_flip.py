@@ -1,5 +1,6 @@
 import pytest
-from rayforge.core.ops import Ops, CommandType
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandType
 
 
 def test_flip_segment_empty_or_short():

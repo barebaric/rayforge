@@ -1,5 +1,5 @@
-import numpy as np
 import cv2
+import numpy as np
 
 
 def _get_component_areas(boolean_image: np.ndarray) -> np.ndarray:

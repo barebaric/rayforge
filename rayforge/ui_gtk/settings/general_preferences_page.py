@@ -1,19 +1,18 @@
 import logging
-from pathlib import Path
 from gettext import gettext as _
+from pathlib import Path
 
-from gi.repository import Adw, Gtk, GLib
+from gi.repository import Adw, GLib, Gtk
 
 from ...context import get_context
 from ...core.config import OpsColorMode, StartupBehavior
 from ...shared.units.definitions import (
-    get_units_for_quantity,
     get_base_unit_for_quantity,
+    get_units_for_quantity,
 )
 from ...ui_gtk.doceditor import file_dialogs
 from ...usage import get_usage_tracker
 from ..shared.preferences_page import TrackedPreferencesPage
-
 
 logger = logging.getLogger(__name__)
 

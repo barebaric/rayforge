@@ -1,15 +1,17 @@
 # flake8: noqa: E402
 import logging
+import re
 import threading
 import time
 from pathlib import Path
+
 import pytest
-import re
+
 from rayforge.context import get_context
+from rayforge.core.step_registry import step_registry
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.image.svg import svg_fallback
 from rayforge.machine.models.machine import Origin
-from rayforge.core.step_registry import step_registry
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

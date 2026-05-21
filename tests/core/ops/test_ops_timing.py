@@ -2,7 +2,8 @@
 Tests for timing estimation functionality.
 """
 
-from rayforge.core.ops import CommandCategory, Ops
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandCategory
 
 
 class TestTiming:

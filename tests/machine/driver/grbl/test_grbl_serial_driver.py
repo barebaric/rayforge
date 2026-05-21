@@ -1,18 +1,20 @@
+import asyncio
+from unittest.mock import AsyncMock, MagicMock, PropertyMock
+
 import pytest
 import pytest_asyncio
-import asyncio
-from unittest.mock import MagicMock, AsyncMock, PropertyMock
+from raygeo.ops import Ops
+
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops
-from rayforge.core.varset import VarSet, Var
-from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
-from rayforge.machine.transport.grbl import GrblSerialTransport
-from rayforge.machine.transport import TransportStatus, SerialTransport
+from rayforge.core.varset import Var, VarSet
 from rayforge.machine.driver.driver import (
-    DeviceStatus,
-    DeviceConnectionError,
     Axis,
+    DeviceConnectionError,
+    DeviceStatus,
 )
+from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
+from rayforge.machine.transport import SerialTransport, TransportStatus
+from rayforge.machine.transport.grbl import GrblSerialTransport
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
 
 

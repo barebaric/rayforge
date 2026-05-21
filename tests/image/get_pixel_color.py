@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import argparse
-from PIL import Image
 import sys
+
+from PIL import Image
 
 
 def get_pixel_color(image_path, x, y):

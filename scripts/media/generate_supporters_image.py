@@ -8,7 +8,6 @@ from typing import List, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
-
 WIDTH = 1920
 HEIGHT = 1080
 BG_COLOR = (18, 18, 24)

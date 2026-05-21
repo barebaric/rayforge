@@ -8,6 +8,7 @@ import gettext
 from pathlib import Path
 
 from rayforge.core.hooks import hookimpl
+
 from .widgets import TRANSFORMER_WIDGETS
 
 _localedir = Path(__file__).parent.parent / "locale"

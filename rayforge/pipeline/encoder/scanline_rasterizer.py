@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import numpy as np
 from typing import Tuple, Union
 
-from ...core.ops import CommandType
+import numpy as np
+from raygeo.ops.types import CommandType
 
 MAX_TEXTURE_DIMENSION = 8192
 

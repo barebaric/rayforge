@@ -1,15 +1,16 @@
-import pytest
 from unittest.mock import MagicMock
-from raygeo import Geometry
-from raygeo import CMD_TYPE_ARC
+
+import pytest
+from raygeo import CMD_TYPE_ARC, Geometry
+
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.stock_cmd import StockCmd
 from rayforge.pipeline.coordspace import (
+    AxisDirection,
     MachineSpace,
     OriginCorner,
-    AxisDirection,
 )
 
 

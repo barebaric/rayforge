@@ -1,15 +1,15 @@
 import struct
-from typing import Dict, Tuple, Callable, Union
+from typing import Callable, Dict, Tuple, Union
 
 from ...machine.driver.ruida.ruida_util import (
     UM_PER_MM,
-    unswizzle_byte,
     decode14,
     decode35,
     decode_abs_coords,
     decode_rel_coords,
+    unswizzle_byte,
 )
-from .job import RuidaJob, RuidaLayer, RuidaGeoCommand
+from .job import RuidaGeoCommand, RuidaJob, RuidaLayer
 
 # A type alias for a command handler, defined at the module level for
 # correct type checking. A handler is a tuple of:

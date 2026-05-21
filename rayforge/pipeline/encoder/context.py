@@ -1,14 +1,14 @@
-from typing import Optional, List, Tuple, TYPE_CHECKING, Dict, Set
 from dataclasses import dataclass
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
-from raygeo import Point3D, Rect
+from raygeo.geo.types import Point3D, Rect
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
-    from ...machine.models.machine import Machine
     from ...core.layer import Layer
     from ...core.workpiece import WorkPiece
+    from ...machine.models.machine import Machine
 
 
 @dataclass

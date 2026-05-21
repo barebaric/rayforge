@@ -1,70 +1,72 @@
-import logging
 import asyncio
 import inspect
-import serial.serialutil
+import logging
 from gettext import gettext as _
 from typing import (
-    Optional,
-    Any,
-    List,
-    Dict,
-    Tuple,
-    cast,
     TYPE_CHECKING,
-    Callable,
-    Union,
+    Any,
     Awaitable,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    cast,
 )
+
+import serial.serialutil
+
 from ....context import RayforgeContext
 from ....core.varset import (
-    Var,
-    VarSet,
+    BaudrateVar,
     IntVar,
     SerialPortVar,
-    BaudrateVar,
+    Var,
+    VarSet,
 )
-from ....pipeline.encoder.base import OpsEncoder, EncodedOutput
+from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
-from ...transport import TransportStatus, SerialTransport
+from ...transport import SerialTransport, TransportStatus
 from ...transport.grbl import (
-    GrblSerialTransport,
-    GrblResponseType,
     DEFAULT_GRBL_RX_BUFFER_SIZE,
     BufferStallError,
+    GrblResponseType,
+    GrblSerialTransport,
 )
 from ...transport.serial import SerialPortPermissionError
 from ..driver import (
-    Driver,
-    DriverSetupError,
-    DeviceStatus,
-    DriverPrecheckError,
-    DeviceConnectionError,
     Axis,
-    Pos,
+    DeviceConnectionError,
     DeviceError,
+    DeviceStatus,
+    Driver,
+    DriverPrecheckError,
+    DriverSetupError,
+    Pos,
 )
 from .grbl_probe import probe_grbl_device
 from .grbl_util import (
-    parse_state,
+    CommandRequest,
+    alarm_code_to_device_error,
+    error_code_to_device_error,
+    gcode_to_p_number,
     get_grbl_setting_varsets,
     grbl_setting_re,
-    wcs_re,
-    prb_re,
-    gcode_to_p_number,
-    error_code_to_device_error,
-    alarm_code_to_device_error,
-    CommandRequest,
     parse_grbl_parser_state,
     parse_opt_info,
+    parse_state,
     parse_version,
+    prb_re,
     strip_gcode_comments,
+    wcs_re,
 )
 
 if TYPE_CHECKING:
     from ....core.doc import Doc
     from ...device.profile import DeviceProfile
-    from ...models.machine import Machine
     from ...models.laser import Laser
+    from ...models.machine import Machine
 
 logger = logging.getLogger(__name__)
 
@@ -1031,12 +1033,9 @@ class GrblSerialDriver(Driver):
         if axes is None:
             await self._execute_command(dialect.home_all)
         else:
-            for axis in Axis:
-                if axes & axis:
-                    assert axis.name
-                    axis_letter: str = axis.name.upper()
-                    cmd = dialect.home_axis.format(axis_letter=axis_letter)
-                    await self._execute_command(cmd)
+            for axis in axes:
+                cmd = dialect.home_axis.format(axis_letter=axis.name)
+                await self._execute_command(cmd)
 
         # The following works around a quirk in some Grbl versions:
         # After homing, the machine is still in G54, but forgets its

@@ -2,7 +2,7 @@ import logging
 import mimetypes
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Type, Dict, Tuple
+from typing import Dict, List, Optional, Tuple, Type
 
 from .base_exporter import BaseExporter
 from .base_importer import Importer, ImporterFeature

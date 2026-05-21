@@ -1,6 +1,7 @@
-import pytest
 import struct
 from pathlib import Path
+
+import pytest
 from pytest_mock import MockerFixture
 
 from rayforge.image.ruida.parser import RuidaParser

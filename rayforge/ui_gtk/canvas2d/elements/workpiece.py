@@ -1,42 +1,44 @@
 import logging
-from typing import Optional, TYPE_CHECKING, Dict, Set, Tuple, cast, List
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple, cast
+
 import cairo
 import numpy as np
 from gi.repository import Gdk, GLib
-from raygeo import Geometry
 from raygeo import (
-    CMD_TYPE_MOVE,
-    CMD_TYPE_LINE,
     CMD_TYPE_ARC,
     CMD_TYPE_BEZIER,
-    COL_TYPE,
-    COL_X,
-    COL_Y,
+    CMD_TYPE_LINE,
+    CMD_TYPE_MOVE,
     COL_C1X,
     COL_C1Y,
     COL_C2X,
     COL_C2Y,
+    COL_CW,
     COL_I,
     COL_J,
-    COL_CW,
+    COL_TYPE,
+    COL_X,
+    COL_Y,
+    Geometry,
 )
-from ....core.workpiece import WorkPiece
-from ....core.step import Step
+
+from ....core.color import OPS_COLOR_SPEC, ColorSet, ColorSpecDict
 from ....core.matrix import Matrix
+from ....core.step import Step
+from ....core.workpiece import WorkPiece
 from ....pipeline.artifact import (
-    WorkPieceArtifact,
     BaseArtifactHandle,
+    WorkPieceArtifact,
     WorkPieceViewArtifact,
 )
-from ....core.color import ColorSet, OPS_COLOR_SPEC, ColorSpecDict
 from ...canvas import CanvasElement
 from ...shared.gtk_color import GtkColorResolver
 from ..ops_cache_registry import registry
 from .tab_handle import TabHandleElement
 
 if TYPE_CHECKING:
-    from ..surface import WorkSurface
     from ....pipeline.view import ViewManager
+    from ..surface import WorkSurface
 
 logger = logging.getLogger(__name__)
 
