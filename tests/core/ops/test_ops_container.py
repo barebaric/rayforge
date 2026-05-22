@@ -4,31 +4,19 @@ import io
 import json
 import numpy as np
 from contextlib import redirect_stdout
-from typing import cast
 from raygeo import Geometry
 from rayforge.core.ops import (
     Axis,
     Ops,
     OpsSection,
-    MoveToCommand,
-    LineToCommand,
-    ArcToCommand,
-    BezierToCommand,
-    CurveToCommand,
-    SetPowerCommand,
-    SetCutSpeedCommand,
-    SetFrequencyCommand,
-    SetPulseWidthCommand,
-    SetTravelSpeedCommand,
-    EnableAirAssistCommand,
-    DisableAirAssistCommand,
+    CommandType,
+    CommandCategory,
     State,
-    MovingCommand,
     SectionType,
-    OpsSectionStartCommand,
-    OpsSectionEndCommand,
-    ScanLinePowerCommand,
-    SetLaserCommand,
+)
+from rayforge.core.ops.container import (
+    MachineState,
+    OpsSectionRange,
 )
 
 
@@ -48,22 +36,22 @@ def sample_ops():
 
 
 def test_initialization(empty_ops):
-    assert len(empty_ops.commands) == 0
+    assert len(empty_ops) == 0
     assert empty_ops.last_move_to == (0.0, 0.0, 0.0)
 
 
 def test_add_commands(empty_ops):
     empty_ops.move_to(5, 5)
-    assert len(empty_ops.commands) == 1
-    assert isinstance(empty_ops.commands[0], MoveToCommand)
+    assert empty_ops.len() == 1
+    assert empty_ops.command_type(0) == CommandType.MOVE_TO
 
     empty_ops.line_to(10, 10)
-    assert isinstance(empty_ops.commands[1], LineToCommand)
+    assert empty_ops.command_type(1) == CommandType.LINE_TO
 
 
 def test_clear_commands(sample_ops):
     sample_ops.clear()
-    assert len(sample_ops.commands) == 0
+    assert len(sample_ops) == 0
 
 
 def test_ops_addition(sample_ops):
@@ -93,9 +81,10 @@ def test_ops_extend(sample_ops):
     # Verify the length has increased correctly
     assert len(sample_ops) == original_len + len_to_add
 
-    # Verify the last two commands are the ones from ops2
-    assert sample_ops.commands[-2] is ops2.commands[0]
-    assert sample_ops.commands[-1] is ops2.commands[1]
+    # Verify the last two commands match what was appended
+    assert sample_ops.command_type(-2) == CommandType.MOVE_TO
+    assert sample_ops.endpoint(-2) == (20, 20, 0)
+    assert sample_ops.command_type(-1) == CommandType.SET_CUT_SPEED
 
 
 def test_ops_extend_with_empty(sample_ops):
@@ -124,66 +113,70 @@ def test_copy():
 
     # Check for deepcopy: objects should not be the same instance
     assert ops_original is not ops_copy
-    assert ops_original.commands is not ops_copy.commands
-    assert ops_original.commands[0] is not ops_copy.commands[0]
     assert ops_original.last_move_to == ops_copy.last_move_to
 
     # Modify the copy and check that original is unchanged
     ops_copy.translate(5, 5)
     ops_copy.set_power(1.0)
 
-    assert len(ops_original.commands) == 2
-    assert ops_original.commands[0].end == (10, 10, 0)
-    assert ops_original.commands[1].end == (20, 20, 0)
+    assert len(ops_original) == 2
+    assert ops_original.endpoint(0) == (10, 10, 0)
+    assert ops_original.endpoint(1) == (20, 20, 0)
 
-    assert len(ops_copy.commands) == 3
-    assert ops_copy.commands[0].end == (15, 15, 0)
-    assert ops_copy.commands[1].end == (25, 25, 0)
+    assert len(ops_copy) == 3
+    assert ops_copy.endpoint(0) == (15, 15, 0)
+    assert ops_copy.endpoint(1) == (25, 25, 0)
 
 
 def test_preload_state(sample_ops):
     sample_ops.preload_state()
 
     # Verify that non-state commands have their state attribute set
-    for cmd in sample_ops.commands:
-        if not cmd.is_state_command():
-            assert cmd.state is not None
-            assert isinstance(cmd.state, State)
+    for i in range(sample_ops.len()):
+        if sample_ops.category(i) != CommandCategory.STATE:
+            info = sample_ops.inspect(i)
+            assert info.state is not None
+            assert isinstance(info.state, State)
 
     # Verify that state commands are still present in the commands list
-    state_commands = [c for c in sample_ops.commands if c.is_state_command()]
-    assert len(state_commands) > 0
+    state_count = sum(
+        1
+        for i in range(sample_ops.len())
+        if sample_ops.category(i) == CommandCategory.STATE
+    )
+    assert state_count > 0
 
 
 def test_move_to(sample_ops):
     sample_ops.move_to(15, 15)
-    last_cmd = sample_ops.commands[-1]
-    assert isinstance(last_cmd, MoveToCommand)
-    assert last_cmd.end == (15.0, 15.0, 0.0)
+    last_idx = sample_ops.len() - 1
+    assert sample_ops.command_type(last_idx) == CommandType.MOVE_TO
+    assert sample_ops.endpoint(last_idx) == (15.0, 15.0, 0.0)
 
 
 def test_line_to(sample_ops):
     sample_ops.line_to(20, 20)
-    last_cmd = sample_ops.commands[-1]
-    assert isinstance(last_cmd, LineToCommand)
-    assert last_cmd.end == (20.0, 20.0, 0.0)
+    last_idx = sample_ops.len() - 1
+    assert sample_ops.command_type(last_idx) == CommandType.LINE_TO
+    assert sample_ops.endpoint(last_idx) == (20.0, 20.0, 0.0)
 
 
 def test_close_path(sample_ops):
     sample_ops.move_to(5, 5, -1.0)
     sample_ops.close_path()
-    last_cmd = sample_ops.commands[-1]
-    assert isinstance(last_cmd, LineToCommand)
-    assert last_cmd.end == sample_ops.last_move_to
-    assert last_cmd.end == (5.0, 5.0, -1.0)
+    last_idx = sample_ops.len() - 1
+    assert sample_ops.command_type(last_idx) == CommandType.LINE_TO
+    assert sample_ops.endpoint(last_idx) == sample_ops.last_move_to
+    assert sample_ops.endpoint(last_idx) == (5.0, 5.0, -1.0)
 
 
 def test_arc_to(sample_ops):
     sample_ops.arc_to(5, 5, 2, 3, clockwise=False)
-    last_cmd = sample_ops.commands[-1]
-    assert isinstance(last_cmd, ArcToCommand)
-    assert last_cmd.end == (5.0, 5.0, 0.0)
-    assert last_cmd.clockwise is False
+    last_idx = sample_ops.len() - 1
+    assert sample_ops.command_type(last_idx) == CommandType.ARC_TO
+    assert sample_ops.endpoint(last_idx) == (5.0, 5.0, 0.0)
+    i, j, cw = sample_ops.arc_params(last_idx)
+    assert cw is False
 
 
 def test_bezier_to():
@@ -195,12 +188,13 @@ def test_bezier_to():
         end=(3.0, 0.0, 20.0),
     )
 
-    assert len(ops.commands) == 2  # move_to + bezier_to
-    assert isinstance(ops.commands[0], MoveToCommand)
-    assert isinstance(ops.commands[1], BezierToCommand)
-    assert ops.commands[1].end == (3.0, 0.0, 20.0)
-    assert ops.commands[1].control1 == (1.0, 1.0, 10.0)
-    assert ops.commands[1].control2 == (2.0, 1.0, 20.0)
+    assert len(ops) == 2  # move_to + bezier_to
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.command_type(1) == CommandType.BEZIER_TO
+    info = ops.inspect(1)
+    assert info.end == (3.0, 0.0, 20.0)
+    assert info.control1 == (1.0, 1.0, 10.0)
+    assert info.control2 == (2.0, 1.0, 20.0)
 
 
 def test_bezier_to_no_start_point():
@@ -212,73 +206,79 @@ def test_bezier_to_no_start_point():
 
 def test_set_power(sample_ops):
     sample_ops.set_power(0.8)
-    last_cmd = sample_ops.commands[-1]
-    assert isinstance(last_cmd, SetPowerCommand)
-    assert last_cmd.power == 0.8
+    last_idx = sample_ops.len() - 1
+    assert sample_ops.command_type(last_idx) == CommandType.SET_POWER
+    assert sample_ops.inspect(last_idx).power == 0.8
 
 
 def test_set_cut_speed(sample_ops):
     sample_ops.set_cut_speed(300)
-    last_cmd = sample_ops.commands[-1]
-    assert isinstance(last_cmd, SetCutSpeedCommand)
-    assert last_cmd.speed == 300.0
+    last_idx = sample_ops.len() - 1
+    assert sample_ops.command_type(last_idx) == CommandType.SET_CUT_SPEED
+    assert sample_ops.inspect(last_idx).speed == 300
 
 
 def test_set_travel_speed(sample_ops):
     sample_ops.set_travel_speed(2000)
-    last_cmd = sample_ops.commands[-1]
-    assert isinstance(last_cmd, SetTravelSpeedCommand)
-    assert last_cmd.speed == 2000.0
+    last_idx = sample_ops.len() - 1
+    assert sample_ops.command_type(last_idx) == CommandType.SET_TRAVEL_SPEED
+    assert sample_ops.inspect(last_idx).speed == 2000.0
 
 
 def test_set_laser():
     ops = Ops()
     ops.set_laser("laser-abc")
-    last_cmd = ops.commands[-1]
-    assert isinstance(last_cmd, SetLaserCommand)
-    assert last_cmd.laser_uid == "laser-abc"
+    last_idx = ops.len() - 1
+    assert ops.command_type(last_idx) == CommandType.SET_LASER
+    assert ops.inspect(last_idx).laser_uid == "laser-abc"
 
 
 def test_set_frequency():
     ops = Ops()
     ops.set_frequency(20000)
-    last_cmd = ops.commands[-1]
-    assert isinstance(last_cmd, SetFrequencyCommand)
-    assert last_cmd.frequency == 20000
+    last_idx = ops.len() - 1
+    assert ops.command_type(last_idx) == CommandType.SET_FREQUENCY
+    assert ops.inspect(last_idx).frequency == 20000
 
 
 def test_set_pulse_width():
     ops = Ops()
     ops.set_pulse_width(5.0)
-    last_cmd = ops.commands[-1]
-    assert isinstance(last_cmd, SetPulseWidthCommand)
-    assert last_cmd.pulse_width == 5.0
+    last_idx = ops.len() - 1
+    assert ops.command_type(last_idx) == CommandType.SET_PULSE_WIDTH
+    assert ops.inspect(last_idx).pulse_width == 5.0
 
 
 def test_enable_disable_air_assist(empty_ops):
     empty_ops.enable_air_assist()
-    assert isinstance(empty_ops.commands[-1], EnableAirAssistCommand)
+    assert (
+        empty_ops.command_type(empty_ops.len() - 1)
+        == CommandType.ENABLE_AIR_ASSIST
+    )
 
     empty_ops.disable_air_assist()
-    assert isinstance(empty_ops.commands[-1], DisableAirAssistCommand)
+    assert (
+        empty_ops.command_type(empty_ops.len() - 1)
+        == CommandType.DISABLE_AIR_ASSIST
+    )
 
 
 def test_scan_to(empty_ops):
     """Test the scan_to method with default and custom power values."""
     # Test with default power values
     empty_ops.scan_to(10, 20, 5)
-    assert isinstance(empty_ops.commands[-1], ScanLinePowerCommand)
-    scan_cmd = empty_ops.commands[-1]
-    assert scan_cmd.end == (10.0, 20.0, 5.0)
-    assert scan_cmd.power_values == bytearray([255])
+    last_idx = empty_ops.len() - 1
+    assert empty_ops.command_type(last_idx) == CommandType.SCAN_LINE
+    assert empty_ops.endpoint(last_idx) == (10.0, 20.0, 5.0)
+    assert bytes(empty_ops.scanline_data(last_idx)) == bytearray([255])
 
     # Test with custom power values
     custom_power = bytearray([100, 150, 200, 150, 100])
     empty_ops.scan_to(30, 40, 2, custom_power)
-    assert isinstance(empty_ops.commands[-1], ScanLinePowerCommand)
-    scan_cmd = empty_ops.commands[-1]
-    assert scan_cmd.end == (30.0, 40.0, 2.0)
-    assert scan_cmd.power_values == custom_power
+    last_idx = empty_ops.len() - 1
+    assert empty_ops.command_type(last_idx) == CommandType.SCAN_LINE
+    assert empty_ops.endpoint(last_idx) == (30.0, 40.0, 2.0)
+    assert bytes(empty_ops.scanline_data(last_idx)) == custom_power
 
 
 def test_rect_default_ignores_travel():
@@ -305,8 +305,24 @@ def test_rect_includes_travel():
 
 def test_get_frame(sample_ops):
     frame = sample_ops.get_frame(power=1.0, speed=500)
-    assert sum(1 for c in frame if c.is_travel_command()) == 1  # move_to
-    assert sum(1 for c in frame if c.is_cutting_command()) == 4  # line_to
+    assert (
+        sum(
+            1
+            for i in range(frame.len())
+            if frame.category(i) == CommandCategory.MOVING
+            and frame.command_type(i) == CommandType.MOVE_TO
+        )
+        == 1
+    )  # move_to
+    assert (
+        sum(
+            1
+            for i in range(frame.len())
+            if frame.category(i) == CommandCategory.MOVING
+            and frame.command_type(i) == CommandType.LINE_TO
+        )
+        == 4
+    )  # line_to
 
     min_x, min_y, max_x, max_y = sample_ops.rect()
 
@@ -319,14 +335,16 @@ def test_get_frame(sample_ops):
     ]
 
     frame_points = [
-        cmd.end for cmd in frame.commands if isinstance(cmd, MovingCommand)
+        frame.endpoint(i)
+        for i in range(frame.len())
+        if frame.category(i) == CommandCategory.MOVING
     ]
     assert frame_points == expected_points
 
 
 def test_get_frame_empty(empty_ops):
     frame = empty_ops.get_frame()
-    assert len(frame.commands) == 0
+    assert len(frame) == 0
 
 
 def test_distance(sample_ops):
@@ -348,10 +366,10 @@ def test_cut_distance(sample_ops):
 
 def test_segments(sample_ops):
     sample_ops.move_to(5, 5)  # Travel command
-    segments = list(sample_ops.segments())
+    segments = list(sample_ops.segment_indices())
     assert len(segments) > 0
     # First segment should end before the travel command
-    assert isinstance(segments[0][-1], LineToCommand)
+    assert sample_ops.is_cutting(segments[0][-1])
 
 
 def test_preload_state_application():
@@ -361,17 +379,20 @@ def test_preload_state_application():
     ops.set_cut_speed(200)
     ops.preload_state()
 
-    line_cmd = ops.commands[1]
-    assert line_cmd.state is not None
-    assert line_cmd.state.power == 0.3
+    state1 = ops.inspect(1).state
+    assert state1 is not None
+    assert state1.power == 0.3
 
-    state_commands = [cmd for cmd in ops.commands if cmd.is_state_command()]
-    assert len(state_commands) == 2
+    state_count = sum(
+        1 for i in range(ops.len()) if ops.category(i) == CommandCategory.STATE
+    )
+    assert state_count == 2
 
-    for cmd in ops.commands:
-        if not cmd.is_state_command():
-            assert cmd.state is not None
-            assert isinstance(cmd.state, State)
+    for i in range(ops.len()):
+        if ops.category(i) != CommandCategory.STATE:
+            info = ops.inspect(i)
+            assert info.state is not None
+            assert isinstance(info.state, State)
 
 
 def test_translate_3d():
@@ -379,10 +400,8 @@ def test_translate_3d():
     ops.move_to(10, 20, 30)
     ops.line_to(30, 40, 50)
     ops.translate(5, 10, -20)
-    assert ops.commands[0].end is not None
-    assert ops.commands[0].end == pytest.approx((15, 30, 10))
-    assert ops.commands[1].end is not None
-    assert ops.commands[1].end == pytest.approx((35, 50, 30))
+    assert ops.endpoint(0) == pytest.approx((15, 30, 10))
+    assert ops.endpoint(1) == pytest.approx((35, 50, 30))
     assert ops.last_move_to == pytest.approx((15, 30, 10))
 
 
@@ -392,12 +411,10 @@ def test_scale_3d():
     ops.arc_to(22, 22, 5, 7, z=-10)
     ops.scale(2, 3, 4)  # Non-uniform scale
 
-    assert ops.commands[0].end is not None
-    assert ops.commands[0].end == pytest.approx((20, 60, 20))
-    assert isinstance(ops.commands[1], LineToCommand)
-    final_cmd = ops.commands[-1]
-    assert final_cmd.end is not None
-    final_point = final_cmd.end
+    assert ops.endpoint(0) == pytest.approx((20, 60, 20))
+    assert ops.command_type(1) == CommandType.LINE_TO
+    final_idx = ops.len() - 1
+    final_point = ops.endpoint(final_idx)
     expected_final_point = (22 * 2, 22 * 3, -10 * 4)
     assert final_point == pytest.approx(expected_final_point)
     assert ops.last_move_to == pytest.approx((20, 60, 20))
@@ -407,8 +424,7 @@ def test_rotate_preserves_z():
     ops = Ops()
     ops.move_to(10, 10, -5)
     ops.rotate(90, 0, 0)
-    assert ops.commands[0].end is not None
-    x, y, z = ops.commands[0].end
+    x, y, z = ops.endpoint(0)
     assert z == -5
     assert x == pytest.approx(-10)
     assert y == pytest.approx(10)
@@ -434,20 +450,17 @@ def test_transform_uniform():
 
     ops.transform(matrix)
 
-    move_cmd = ops.commands[0]
-    arc_cmd = ops.commands[1]
-
     # Original (10,0) -> Rotated (0,10) -> Translated (100, 10)
-    assert move_cmd.end == pytest.approx((100, 10, 0))
+    assert ops.endpoint(0) == pytest.approx((100, 10, 0))
     # Original (0,10) -> Rotated (-10,0) -> Translated (90, 0)
-    assert arc_cmd.end == pytest.approx((90, 0, 0))
+    assert ops.endpoint(1) == pytest.approx((90, 0, 0))
 
     # Arc should NOT be linearized
-    assert isinstance(arc_cmd, ArcToCommand)
+    assert ops.command_type(1) == CommandType.ARC_TO
 
     # Original offset (-10, 0) should be rotated to (0, -10)
-    assert arc_cmd.center_offset[0] == pytest.approx(0)
-    assert arc_cmd.center_offset[1] == pytest.approx(-10)
+    _, _, cw = ops.arc_params(1)
+    assert ops.inspect(1).center_offset == pytest.approx((0, -10))
 
 
 def test_transform_uniform_reflection_flips_cw():
@@ -467,11 +480,11 @@ def test_transform_uniform_reflection_flips_cw():
     )
     ops.transform(matrix)
 
-    arc_cmd = ops.commands[1]
-    assert isinstance(arc_cmd, ArcToCommand)
-    assert arc_cmd.clockwise is True
-    assert arc_cmd.center_offset[0] == pytest.approx(10)
-    assert arc_cmd.center_offset[1] == pytest.approx(0)
+    assert ops.command_type(1) == CommandType.ARC_TO
+    i, j, cw = ops.arc_params(1)
+    assert cw is True
+    assert i == pytest.approx(10)
+    assert j == pytest.approx(0)
 
 
 def test_transform_uniform_reflection_flips_ccw_to_cw():
@@ -491,9 +504,9 @@ def test_transform_uniform_reflection_flips_ccw_to_cw():
     )
     ops.transform(matrix)
 
-    arc_cmd = ops.commands[1]
-    assert isinstance(arc_cmd, ArcToCommand)
-    assert arc_cmd.clockwise is False
+    assert ops.command_type(1) == CommandType.ARC_TO
+    _, _, cw = ops.arc_params(1)
+    assert cw is False
 
 
 def test_transform_uniform_rotation_preserves_cw():
@@ -514,9 +527,9 @@ def test_transform_uniform_rotation_preserves_cw():
     )
     ops.transform(matrix)
 
-    arc_cmd = ops.commands[1]
-    assert isinstance(arc_cmd, ArcToCommand)
-    assert arc_cmd.clockwise is False
+    assert ops.command_type(1) == CommandType.ARC_TO
+    _, _, cw = ops.arc_params(1)
+    assert cw is False
 
 
 def test_transform_non_uniform():
@@ -530,14 +543,16 @@ def test_transform_non_uniform():
     ops.transform(matrix)
 
     # Original move_to (10,0) -> (20, 0)
-    assert ops.commands[0].end == pytest.approx((20, 0, 0))
+    assert ops.endpoint(0) == pytest.approx((20, 0, 0))
 
     # Arc must be linearized into LineToCommands
-    assert all(isinstance(c, LineToCommand) for c in ops.commands[1:])
-    assert len(ops.commands) > 2
+    assert all(
+        ops.command_type(i) == CommandType.LINE_TO for i in range(1, ops.len())
+    )
+    assert ops.len() > 2
 
     # Final point should be original arc end (0,10) scaled -> (0, 30)
-    assert ops.commands[-1].end == pytest.approx((0, 30, 0))
+    assert ops.endpoint(ops.len() - 1) == pytest.approx((0, 30, 0))
 
 
 def test_transform_uniform_bezier():
@@ -558,11 +573,11 @@ def test_transform_uniform_bezier():
     )
     ops.transform(matrix)
 
-    assert isinstance(ops.commands[1], BezierToCommand)
-    cmd = ops.commands[1]
-    assert cmd.end == pytest.approx((-5, 10, 0))
-    assert cmd.control1 == pytest.approx((5, 20, 0))
-    assert cmd.control2 == pytest.approx((-5, 20, 0))
+    assert ops.command_type(1) == CommandType.BEZIER_TO
+    info = ops.inspect(1)
+    assert info.end == pytest.approx((-5, 10, 0))
+    assert info.control1 == pytest.approx((5, 20, 0))
+    assert info.control2 == pytest.approx((-5, 20, 0))
 
 
 def test_transform_non_uniform_bezier():
@@ -574,11 +589,11 @@ def test_transform_non_uniform_bezier():
     matrix = np.diag([2.0, 3.0, 1.0, 1.0])
     ops.transform(matrix)
 
-    assert isinstance(ops.commands[1], BezierToCommand)
-    cmd = ops.commands[1]
-    assert cmd.end == pytest.approx((0, 30, 0))
-    assert cmd.control1 == pytest.approx((20, 0, 0))
-    assert cmd.control2 == pytest.approx((20, 30, 0))
+    assert ops.command_type(1) == CommandType.BEZIER_TO
+    info = ops.inspect(1)
+    assert info.end == pytest.approx((0, 30, 0))
+    assert info.control1 == pytest.approx((20, 0, 0))
+    assert info.control2 == pytest.approx((20, 30, 0))
 
 
 def test_transform_bezier_linearize_matches():
@@ -617,7 +632,11 @@ def test_transform_bezier_linearize_matches():
 
     def _endpoints(o):
         return np.array(
-            [c.end for c in o.commands if isinstance(c, MovingCommand)]
+            [
+                o.endpoint(i)
+                for i in range(o.len())
+                if o.category(i) == CommandCategory.MOVING
+            ]
         )
 
     pts_a = _endpoints(ops)
@@ -649,11 +668,11 @@ def test_transform_preserves_extra_axes():
     )
     ops.transform(matrix)
 
-    assert ops.commands[0].extra_axes == {Axis.A: 45.0, Axis.Y: 0.0}
-    assert ops.commands[1].extra_axes == {Axis.A: 90.0, Axis.Y: 10.0}
+    assert ops.inspect(0).extra_axes == {Axis.A: 45.0, Axis.Y: 0.0}
+    assert ops.inspect(1).extra_axes == {Axis.A: 90.0, Axis.Y: 10.0}
 
-    assert ops.commands[0].end != pytest.approx((10, 20, 0))
-    assert ops.commands[1].end != pytest.approx((30, 40, 0))
+    assert ops.endpoint(0) != pytest.approx((10, 20, 0))
+    assert ops.endpoint(1) != pytest.approx((30, 40, 0))
 
 
 def test_transform_preserves_extra_axes_with_identity():
@@ -665,10 +684,10 @@ def test_transform_preserves_extra_axes_with_identity():
     matrix = np.identity(4)
     ops.transform(matrix)
 
-    assert ops.commands[0].extra_axes == {Axis.B: 180.0}
-    assert ops.commands[1].extra_axes == {Axis.B: 270.0}
-    assert ops.commands[0].end == pytest.approx((5, 5, 0))
-    assert ops.commands[1].end == pytest.approx((15, 25, 0))
+    assert ops.inspect(0).extra_axes == {Axis.B: 180.0}
+    assert ops.inspect(1).extra_axes == {Axis.B: 270.0}
+    assert ops.endpoint(0) == pytest.approx((5, 5, 0))
+    assert ops.endpoint(1) == pytest.approx((15, 25, 0))
 
 
 def test_linearize_all():
@@ -680,16 +699,22 @@ def test_linearize_all():
 
     ops.linearize_all()
 
-    assert len(ops.commands) > 4  # Move, Line, SetPower, plus linearized arc
-    assert isinstance(ops.commands[0], MoveToCommand)
-    assert isinstance(ops.commands[1], LineToCommand)
+    assert ops.len() > 4  # Move, Line, SetPower, plus linearized arc
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.command_type(1) == CommandType.LINE_TO
     # All geometric commands after the first two should be LineTo
     moving_cmds_after = [
-        c for c in ops.commands[2:] if isinstance(c, MovingCommand)
+        i
+        for i in range(2, ops.len())
+        if ops.category(i) == CommandCategory.MOVING
     ]
-    assert all(isinstance(c, LineToCommand) for c in moving_cmds_after)
+    assert all(
+        ops.command_type(i) == CommandType.LINE_TO for i in moving_cmds_after
+    )
     # Check that state command is still there
-    assert any(isinstance(c, SetPowerCommand) for c in ops.commands)
+    assert any(
+        ops.command_type(i) == CommandType.SET_POWER for i in range(ops.len())
+    )
 
 
 @pytest.fixture
@@ -702,11 +727,10 @@ def test_clip_fully_inside(clip_rect):
     ops.move_to(10, 10, -1)
     ops.line_to(90, 90, -1)
     clipped_ops = ops.clip_rect(clip_rect)
-    assert len(clipped_ops.commands) == 2
-    assert isinstance(clipped_ops.commands[0], MoveToCommand)
-    assert isinstance(clipped_ops.commands[1], LineToCommand)
-    assert clipped_ops.commands[1].end is not None
-    assert clipped_ops.commands[1].end == pytest.approx((90.0, 90.0, -1.0))
+    assert clipped_ops.len() == 2
+    assert clipped_ops.command_type(0) == CommandType.MOVE_TO
+    assert clipped_ops.command_type(1) == CommandType.LINE_TO
+    assert clipped_ops.endpoint(1) == pytest.approx((90.0, 90.0, -1.0))
 
 
 def test_clip_fully_outside(clip_rect):
@@ -714,7 +738,7 @@ def test_clip_fully_outside(clip_rect):
     ops.move_to(110, 110, 0)
     ops.line_to(120, 120, 0)
     clipped_ops = ops.clip_rect(clip_rect)
-    assert len(clipped_ops.commands) == 0
+    assert len(clipped_ops) == 0
 
 
 def test_clip_with_arc():
@@ -726,13 +750,15 @@ def test_clip_with_arc():
     clipped_ops = ops.clip_rect(clip_rect)
 
     # Check that there are drawing commands left
-    drawing_cmds = [c for c in clipped_ops if c.is_cutting_command()]
-    assert len(drawing_cmds) > 0
+    cutting_count = sum(
+        1 for i in range(clipped_ops.len()) if clipped_ops.is_cutting(i)
+    )
+    assert cutting_count > 0
 
     # Check that all remaining points are within the rect bounds
-    for cmd in clipped_ops:
-        if isinstance(cmd, MovingCommand) and cmd.end is not None:
-            x, y, z = cmd.end
+    for i in range(clipped_ops.len()):
+        if clipped_ops.category(i) == CommandCategory.MOVING:
+            x, y, z = clipped_ops.endpoint(i)
             assert clip_rect[0] <= x <= clip_rect[2]
             assert clip_rect[1] <= y <= clip_rect[3]
 
@@ -745,22 +771,23 @@ def test_clip_scanlinepowercommand_start_outside():
     clip_rect = (50, 0, 150, 100)
     clipped_ops = ops.clip_rect(clip_rect)
 
-    assert len(clipped_ops.commands) == 2  # MoveTo, ScanLinePowerCommand
-    assert isinstance(clipped_ops.commands[0], MoveToCommand)
-    clipped_cmd = cast(ScanLinePowerCommand, clipped_ops.commands[1])
+    assert clipped_ops.len() == 2  # MoveTo, ScanLinePowerCommand
+    assert clipped_ops.command_type(0) == CommandType.MOVE_TO
+    assert clipped_ops.command_type(1) == CommandType.SCAN_LINE
 
     # 1. Verify it's still a ScanLinePowerCommand (not linearized)
-    assert isinstance(clipped_cmd, ScanLinePowerCommand)
+    assert clipped_ops.command_type(1) == CommandType.SCAN_LINE
 
     # 2. Verify new geometry (starts at the clip boundary)
-    assert clipped_ops.commands[0].end == pytest.approx((50, 50, 10))
-    assert clipped_cmd.end == pytest.approx((100, 50, 10))
+    assert clipped_ops.endpoint(0) == pytest.approx((50, 50, 10))
+    assert clipped_ops.endpoint(1) == pytest.approx((100, 50, 10))
 
     # 3. Verify power values are sliced correctly (original was 100 values)
     # The clip starts 50% of the way through the line.
-    assert len(clipped_cmd.power_values) == 50
-    assert clipped_cmd.power_values[0] == 50
-    assert clipped_cmd.power_values[-1] == 99
+    pv = bytes(clipped_ops.scanline_data(1))
+    assert len(pv) == 50
+    assert pv[0] == 50
+    assert pv[-1] == 99
 
 
 def test_clip_scanlinepowercommand_crossing_with_z_interp():
@@ -772,9 +799,8 @@ def test_clip_scanlinepowercommand_crossing_with_z_interp():
     clip_rect = (0, 0, 100, 100)
     clipped_ops = ops.clip_rect(clip_rect)
 
-    assert len(clipped_ops.commands) == 2
-    clipped_cmd = cast(ScanLinePowerCommand, clipped_ops.commands[1])
-    assert isinstance(clipped_cmd, ScanLinePowerCommand)
+    assert clipped_ops.len() == 2
+    assert clipped_ops.command_type(1) == CommandType.SCAN_LINE
 
     # The line starts 50 units before x=0 and ends 50 units after x=100.
     # The clipped portion is from x=0 to x=100.
@@ -782,16 +808,15 @@ def test_clip_scanlinepowercommand_crossing_with_z_interp():
     expected_z_start = 0 + (0.25 * 200)  # 50
     expected_z_end = 0 + (0.75 * 200)  # 150
 
-    assert clipped_ops.commands[0].end == pytest.approx(
-        (0, 50, expected_z_start)
-    )
-    assert clipped_cmd.end == pytest.approx((100, 50, expected_z_end))
+    assert clipped_ops.endpoint(0) == pytest.approx((0, 50, expected_z_start))
+    assert clipped_ops.endpoint(1) == pytest.approx((100, 50, expected_z_end))
 
     # Power values should be sliced from index 50 to 150.
     expected_len = int(200 * 0.75) - int(200 * 0.25)
-    assert len(clipped_cmd.power_values) == expected_len
-    assert clipped_cmd.power_values[0] == 50
-    assert clipped_cmd.power_values[-1] == 149
+    pv = bytes(clipped_ops.scanline_data(1))
+    assert len(pv) == expected_len
+    assert pv[0] == 50
+    assert pv[-1] == 149
 
 
 def test_clip_scanlinepowercommand_fully_outside():
@@ -801,7 +826,7 @@ def test_clip_scanlinepowercommand_fully_outside():
     ops.scan_to(300, 50, 10, bytearray(range(100)))
     clip_rect = (0, 0, 100, 100)
     clipped_ops = ops.clip_rect(clip_rect)
-    assert len(clipped_ops.commands) == 0
+    assert len(clipped_ops) == 0
 
 
 def test_subtract_regions():
@@ -810,9 +835,9 @@ def test_subtract_regions():
     ops.line_to(100, 50, 5)
     region = [(40.0, 45.0), (60.0, 45.0), (60.0, 55.0), (40.0, 55.0)]
     ops.subtract_regions([region])
-    assert len(ops.commands) == 4
-    assert ops.commands[1].end == pytest.approx((40.0, 50.0, -1.0))
-    assert ops.commands[3].end == pytest.approx((100.0, 50.0, 5.0))
+    assert ops.len() == 4
+    assert ops.endpoint(1) == pytest.approx((40.0, 50.0, -1.0))
+    assert ops.endpoint(3) == pytest.approx((100.0, 50.0, 5.0))
 
 
 def test_subtract_regions_with_scanline():
@@ -824,22 +849,20 @@ def test_subtract_regions_with_scanline():
     ops.subtract_regions([region])
 
     # Expected: M(0,50), S(->40,50), M(60,50), S(->100,50)
-    assert len(ops.commands) == 4
-    assert isinstance(ops.commands[0], MoveToCommand)
-    assert ops.commands[0].end == pytest.approx((0, 50, 0))
+    assert ops.len() == 4
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.endpoint(0) == pytest.approx((0, 50, 0))
 
-    scan1 = cast(ScanLinePowerCommand, ops.commands[1])
-    assert isinstance(scan1, ScanLinePowerCommand)
-    assert scan1.end == pytest.approx((40, 50, 0))
-    assert len(scan1.power_values) == 40
+    assert ops.command_type(1) == CommandType.SCAN_LINE
+    assert ops.endpoint(1) == pytest.approx((40, 50, 0))
+    assert len(bytes(ops.scanline_data(1))) == 40
 
-    assert isinstance(ops.commands[2], MoveToCommand)
-    assert ops.commands[2].end == pytest.approx((60, 50, 0))
+    assert ops.command_type(2) == CommandType.MOVE_TO
+    assert ops.endpoint(2) == pytest.approx((60, 50, 0))
 
-    scan2 = cast(ScanLinePowerCommand, ops.commands[3])
-    assert isinstance(scan2, ScanLinePowerCommand)
-    assert scan2.end == pytest.approx((100, 50, 0))
-    assert len(scan2.power_values) == 40
+    assert ops.command_type(3) == CommandType.SCAN_LINE
+    assert ops.endpoint(3) == pytest.approx((100, 50, 0))
+    assert len(bytes(ops.scanline_data(3))) == 40
 
 
 def test_clip_to_regions_basic():
@@ -850,9 +873,9 @@ def test_clip_to_regions_basic():
 
     ops.clip_to_regions([region])
 
-    assert len(ops.commands) == 2
-    assert ops.commands[0].end == pytest.approx((40.0, 50.0, -1.0))
-    assert ops.commands[1].end == pytest.approx((60.0, 50.0, 1.0))
+    assert ops.len() == 2
+    assert ops.endpoint(0) == pytest.approx((40.0, 50.0, -1.0))
+    assert ops.endpoint(1) == pytest.approx((60.0, 50.0, 1.0))
 
 
 def test_clip_to_regions_fully_outside():
@@ -863,7 +886,7 @@ def test_clip_to_regions_fully_outside():
 
     ops.clip_to_regions([region])
 
-    assert len(ops.commands) == 0
+    assert len(ops) == 0
 
 
 def test_clip_to_regions_fully_inside():
@@ -874,8 +897,8 @@ def test_clip_to_regions_fully_inside():
 
     ops.clip_to_regions([region])
 
-    assert len(ops.commands) == 2
-    assert ops.commands[1].end == pytest.approx((55, 50, 0))
+    assert ops.len() == 2
+    assert ops.endpoint(1) == pytest.approx((55, 50, 0))
 
 
 def test_clip_to_regions_multiple_regions():
@@ -887,11 +910,11 @@ def test_clip_to_regions_multiple_regions():
 
     ops.clip_to_regions([region1, region2])
 
-    assert len(ops.commands) == 4
-    assert ops.commands[0].end == pytest.approx((20.0, 50.0, 0.0))
-    assert ops.commands[1].end == pytest.approx((30.0, 50.0, 0.0))
-    assert ops.commands[2].end == pytest.approx((70.0, 50.0, 0.0))
-    assert ops.commands[3].end == pytest.approx((80.0, 50.0, 0.0))
+    assert ops.len() == 4
+    assert ops.endpoint(0) == pytest.approx((20.0, 50.0, 0.0))
+    assert ops.endpoint(1) == pytest.approx((30.0, 50.0, 0.0))
+    assert ops.endpoint(2) == pytest.approx((70.0, 50.0, 0.0))
+    assert ops.endpoint(3) == pytest.approx((80.0, 50.0, 0.0))
 
 
 def test_clip_to_regions_with_scanline():
@@ -902,14 +925,13 @@ def test_clip_to_regions_with_scanline():
 
     ops.clip_to_regions([region])
 
-    assert len(ops.commands) == 2
-    assert isinstance(ops.commands[0], MoveToCommand)
-    assert ops.commands[0].end == pytest.approx((40, 50, 0))
+    assert ops.len() == 2
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.endpoint(0) == pytest.approx((40, 50, 0))
 
-    scan = cast(ScanLinePowerCommand, ops.commands[1])
-    assert isinstance(scan, ScanLinePowerCommand)
-    assert scan.end == pytest.approx((60, 50, 0))
-    assert len(scan.power_values) == 20
+    assert ops.command_type(1) == CommandType.SCAN_LINE
+    assert ops.endpoint(1) == pytest.approx((60, 50, 0))
+    assert len(bytes(ops.scanline_data(1))) == 20
 
 
 def test_clip_to_regions_empty_regions():
@@ -917,10 +939,10 @@ def test_clip_to_regions_empty_regions():
     ops.move_to(0, 50, 0)
     ops.line_to(100, 50, 0)
 
-    original_len = len(ops.commands)
+    original_len = len(ops)
     ops.clip_to_regions([])
 
-    assert len(ops.commands) == original_len
+    assert len(ops) == original_len
 
 
 def test_clip_to_regions_preserves_state_commands():
@@ -932,10 +954,10 @@ def test_clip_to_regions_preserves_state_commands():
 
     ops.clip_to_regions([region])
 
-    assert len(ops.commands) == 3
-    assert isinstance(ops.commands[0], SetPowerCommand)
-    assert isinstance(ops.commands[1], MoveToCommand)
-    assert isinstance(ops.commands[2], LineToCommand)
+    assert ops.len() == 3
+    assert ops.command_type(0) == CommandType.SET_POWER
+    assert ops.command_type(1) == CommandType.MOVE_TO
+    assert ops.command_type(2) == CommandType.LINE_TO
 
 
 def create_circle_polygon(cx, cy, radius, num_segments=32):
@@ -959,13 +981,11 @@ class TestClipToCircleRegions:
 
         ops.clip_to_regions([circle])
 
-        assert len(ops.commands) == 2
-        assert ops.commands[0].end is not None
-        assert ops.commands[0].end[0] == pytest.approx(30.0, abs=0.5)
-        assert ops.commands[0].end[1] == pytest.approx(50.0)
-        assert ops.commands[1].end is not None
-        assert ops.commands[1].end[0] == pytest.approx(70.0, abs=0.5)
-        assert ops.commands[1].end[1] == pytest.approx(50.0)
+        assert ops.len() == 2
+        assert ops.endpoint(0)[0] == pytest.approx(30.0, abs=0.5)
+        assert ops.endpoint(0)[1] == pytest.approx(50.0)
+        assert ops.endpoint(1)[0] == pytest.approx(70.0, abs=0.5)
+        assert ops.endpoint(1)[1] == pytest.approx(50.0)
 
     def test_clip_to_circle_fully_outside(self):
         ops = Ops()
@@ -975,7 +995,7 @@ class TestClipToCircleRegions:
 
         ops.clip_to_regions([circle])
 
-        assert len(ops.commands) == 0
+        assert len(ops) == 0
 
     def test_clip_to_circle_fully_inside(self):
         ops = Ops()
@@ -985,8 +1005,8 @@ class TestClipToCircleRegions:
 
         ops.clip_to_regions([circle])
 
-        assert len(ops.commands) == 2
-        assert ops.commands[1].end == pytest.approx((55, 50, 0))
+        assert ops.len() == 2
+        assert ops.endpoint(1) == pytest.approx((55, 50, 0))
 
     def test_clip_to_multiple_circles(self):
         ops = Ops()
@@ -997,15 +1017,11 @@ class TestClipToCircleRegions:
 
         ops.clip_to_regions([circle1, circle2])
 
-        assert len(ops.commands) == 4
-        assert ops.commands[0].end is not None
-        assert ops.commands[0].end[0] == pytest.approx(15.0, abs=0.5)
-        assert ops.commands[1].end is not None
-        assert ops.commands[1].end[0] == pytest.approx(35.0, abs=0.5)
-        assert ops.commands[2].end is not None
-        assert ops.commands[2].end[0] == pytest.approx(65.0, abs=0.5)
-        assert ops.commands[3].end is not None
-        assert ops.commands[3].end[0] == pytest.approx(85.0, abs=0.5)
+        assert ops.len() == 4
+        assert ops.endpoint(0)[0] == pytest.approx(15.0, abs=0.5)
+        assert ops.endpoint(1)[0] == pytest.approx(35.0, abs=0.5)
+        assert ops.endpoint(2)[0] == pytest.approx(65.0, abs=0.5)
+        assert ops.endpoint(3)[0] == pytest.approx(85.0, abs=0.5)
 
     def test_clip_to_circle_vertical_line(self):
         ops = Ops()
@@ -1015,11 +1031,9 @@ class TestClipToCircleRegions:
 
         ops.clip_to_regions([circle])
 
-        assert len(ops.commands) == 2
-        assert ops.commands[0].end is not None
-        assert ops.commands[0].end[1] == pytest.approx(30.0, abs=0.5)
-        assert ops.commands[1].end is not None
-        assert ops.commands[1].end[1] == pytest.approx(70.0, abs=0.5)
+        assert ops.len() == 2
+        assert ops.endpoint(0)[1] == pytest.approx(30.0, abs=0.5)
+        assert ops.endpoint(1)[1] == pytest.approx(70.0, abs=0.5)
 
     def test_clip_to_circle_diagonal_line(self):
         ops = Ops()
@@ -1029,11 +1043,9 @@ class TestClipToCircleRegions:
 
         ops.clip_to_regions([circle])
 
-        assert len(ops.commands) == 2
-        assert ops.commands[0].end is not None
-        start_x = ops.commands[0].end[0]
-        assert ops.commands[1].end is not None
-        end_x = ops.commands[1].end[0]
+        assert ops.len() == 2
+        start_x = ops.endpoint(0)[0]
+        end_x = ops.endpoint(1)[0]
         assert start_x == pytest.approx(50 - 20 * math.sqrt(2) / 2, abs=0.5)
         assert end_x == pytest.approx(50 + 20 * math.sqrt(2) / 2, abs=0.5)
 
@@ -1045,16 +1057,13 @@ class TestClipToCircleRegions:
 
         ops.clip_to_regions([circle])
 
-        assert len(ops.commands) == 2
-        assert isinstance(ops.commands[0], MoveToCommand)
-        assert ops.commands[0].end is not None
-        assert ops.commands[0].end[0] == pytest.approx(30.0, abs=0.5)
+        assert ops.len() == 2
+        assert ops.command_type(0) == CommandType.MOVE_TO
+        assert ops.endpoint(0)[0] == pytest.approx(30.0, abs=0.5)
 
-        scan = cast(ScanLinePowerCommand, ops.commands[1])
-        assert isinstance(scan, ScanLinePowerCommand)
-        assert scan.end is not None
-        assert scan.end[0] == pytest.approx(70.0, abs=0.5)
-        assert len(scan.power_values) == pytest.approx(40, abs=2)
+        assert ops.command_type(1) == CommandType.SCAN_LINE
+        assert ops.endpoint(1)[0] == pytest.approx(70.0, abs=0.5)
+        assert len(bytes(ops.scanline_data(1))) == pytest.approx(40, abs=2)
 
     def test_clip_to_circle_with_arc(self):
         ops = Ops()
@@ -1064,12 +1073,12 @@ class TestClipToCircleRegions:
 
         ops.clip_to_regions([circle])
 
-        assert len(ops.commands) > 0
-        drawing_cmds = [c for c in ops if c.is_cutting_command()]
-        assert len(drawing_cmds) > 0
-        for cmd in ops.commands:
-            if isinstance(cmd, MovingCommand) and cmd.end is not None:
-                x, y, z = cmd.end
+        assert ops.len() > 0
+        cutting_count = sum(1 for i in range(ops.len()) if ops.is_cutting(i))
+        assert cutting_count > 0
+        for i in range(ops.len()):
+            if ops.category(i) == CommandCategory.MOVING:
+                x, y, z = ops.endpoint(i)
                 dist = math.hypot(x - 50, y - 50)
                 assert dist <= 20.5
 
@@ -1082,10 +1091,10 @@ class TestClipToCircleRegions:
 
         ops.clip_to_regions([circle])
 
-        assert len(ops.commands) == 3
-        assert isinstance(ops.commands[0], SetPowerCommand)
-        assert isinstance(ops.commands[1], MoveToCommand)
-        assert isinstance(ops.commands[2], LineToCommand)
+        assert ops.len() == 3
+        assert ops.command_type(0) == CommandType.SET_POWER
+        assert ops.command_type(1) == CommandType.MOVE_TO
+        assert ops.command_type(2) == CommandType.LINE_TO
 
 
 def test_from_geometry():
@@ -1097,15 +1106,16 @@ def test_from_geometry():
 
     ops = Ops.from_geometry(geo_obj)
 
-    assert len(ops.commands) == 3
-    assert isinstance(ops.commands[0], MoveToCommand)
-    assert ops.commands[0].end == (10, 10, 0)
-    assert isinstance(ops.commands[1], LineToCommand)
-    assert ops.commands[1].end == (20, 20, 0)
-    assert isinstance(ops.commands[2], ArcToCommand)
-    assert ops.commands[2].end == (30, 10, 0)
-    assert ops.commands[2].center_offset == (-10, 0)
-    assert ops.commands[2].clockwise is False
+    assert ops.len() == 3
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.endpoint(0) == (10, 10, 0)
+    assert ops.command_type(1) == CommandType.LINE_TO
+    assert ops.endpoint(1) == (20, 20, 0)
+    assert ops.command_type(2) == CommandType.ARC_TO
+    assert ops.endpoint(2) == (30, 10, 0)
+    i, j, cw = ops.arc_params(2)
+    assert (i, j) == (-10, 0)
+    assert cw is False
     assert ops.last_move_to == geo_obj.last_move_to
 
 
@@ -1117,12 +1127,15 @@ def test_from_geometry_with_bezier():
 
     ops = Ops.from_geometry(geo_obj)
 
-    assert isinstance(ops.commands[0], MoveToCommand)
-    assert ops.commands[0].end == pytest.approx((10, 10, 0))
-    assert isinstance(ops.commands[1], LineToCommand)
-    assert ops.commands[1].end == pytest.approx((20, 20, 0))
-    assert all(isinstance(c, BezierToCommand) for c in ops.commands[2:])
-    assert ops.commands[-1].end == pytest.approx((30, 10, 0))
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.endpoint(0) == pytest.approx((10, 10, 0))
+    assert ops.command_type(1) == CommandType.LINE_TO
+    assert ops.endpoint(1) == pytest.approx((20, 20, 0))
+    assert all(
+        ops.command_type(i) == CommandType.BEZIER_TO
+        for i in range(2, ops.len())
+    )
+    assert ops.endpoint(ops.len() - 1) == pytest.approx((30, 10, 0))
     assert ops.last_move_to == geo_obj.last_move_to
 
 
@@ -1151,13 +1164,11 @@ def test_serialization_deserialization_all_types():
     data = ops.to_dict()
     new_ops = Ops.from_dict(data)
 
-    assert len(ops.commands) == len(new_ops.commands)
+    assert len(ops) == len(new_ops)
     assert new_ops.last_move_to == (1, 1, 1)
 
-    for old_cmd, new_cmd in zip(ops.commands, new_ops.commands):
-        # Check type and dict representation to ensure all fields are preserved
-        assert type(old_cmd) is type(new_cmd)
-        assert old_cmd.to_dict() == new_cmd.to_dict()
+    for i in range(ops.len()):
+        assert ops.inspect(i) == new_ops.inspect(i)
 
 
 def test_translate_with_scanline():
@@ -1167,13 +1178,12 @@ def test_translate_with_scanline():
     ops.scan_to(40, 50, 60, bytearray([1, 2, 3]))
     ops.translate(5, -10, 15)
 
-    move_cmd = cast(MoveToCommand, ops.commands[0])
-    translated_cmd = cast(ScanLinePowerCommand, ops.commands[1])
-    assert isinstance(translated_cmd, ScanLinePowerCommand)
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.command_type(1) == CommandType.SCAN_LINE
 
     # Check if both start_point (from move_to) and end are translated
-    assert move_cmd.end == pytest.approx((15, 10, 45))
-    assert translated_cmd.end == pytest.approx((45, 40, 75))
+    assert ops.endpoint(0) == pytest.approx((15, 10, 45))
+    assert ops.endpoint(1) == pytest.approx((45, 40, 75))
 
 
 def test_clip_at_no_hit():
@@ -1181,10 +1191,10 @@ def test_clip_at_no_hit():
     ops = Ops()
     ops.move_to(0, 0)
     ops.line_to(10, 10)
-    original_commands = ops.commands[:]
+    original_len = len(ops)
     # Point is far away from the path
     assert ops.clip_at(100, 100, 1.0) is False
-    assert ops.commands == original_commands
+    assert len(ops) == original_len
 
 
 def test_clip_at_on_line_segment():
@@ -1198,16 +1208,16 @@ def test_clip_at_on_line_segment():
 
     # Expected:
     # Move(0,50,10), Line(45,50,14.5), Move(55,50,15.5), Line(100,50,20)
-    assert len(ops.commands) == 4
-    assert isinstance(ops.commands[0], MoveToCommand)
-    assert isinstance(ops.commands[1], LineToCommand)
-    assert isinstance(ops.commands[2], MoveToCommand)
-    assert isinstance(ops.commands[3], LineToCommand)
+    assert ops.len() == 4
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.command_type(1) == CommandType.LINE_TO
+    assert ops.command_type(2) == CommandType.MOVE_TO
+    assert ops.command_type(3) == CommandType.LINE_TO
 
     # Check the points
-    assert ops.commands[1].end == pytest.approx((45.0, 50.0, 14.5))
-    assert ops.commands[2].end == pytest.approx((55.0, 50.0, 15.5))
-    assert ops.commands[3].end == pytest.approx((100.0, 50.0, 20.0))
+    assert ops.endpoint(1) == pytest.approx((45.0, 50.0, 14.5))
+    assert ops.endpoint(2) == pytest.approx((55.0, 50.0, 15.5))
+    assert ops.endpoint(3) == pytest.approx((100.0, 50.0, 20.0))
 
 
 def test_clip_at_on_arc_segment():
@@ -1224,12 +1234,12 @@ def test_clip_at_on_arc_segment():
 
     # The arc gets linearized by subtract_regions, so we expect a series
     # of LineTo commands with a gap in the middle.
-    assert len(ops.commands) > 3
+    assert ops.len() > 3
     # Verify there is a MoveTo command somewhere in the middle,
     # indicating a gap
-    assert any(isinstance(cmd, MoveToCommand) for cmd in ops.commands[1:]), (
-        "No MoveToCommand found, indicating no gap was created."
-    )
+    assert any(
+        ops.command_type(i) == CommandType.MOVE_TO for i in range(1, ops.len())
+    ), "No MoveToCommand found, indicating no gap was created."
 
 
 def test_clip_at_start_of_subpath():
@@ -1242,12 +1252,12 @@ def test_clip_at_start_of_subpath():
     assert ops.clip_at(1, 50, 2.0) is True
 
     # Expected: Move(0,50), Move(2,50), Line(100,50)
-    assert len(ops.commands) == 3
-    assert isinstance(ops.commands[0], MoveToCommand)
-    assert ops.commands[0].end == pytest.approx((0, 50, 0))
-    assert isinstance(ops.commands[1], MoveToCommand)
-    assert ops.commands[1].end == pytest.approx((2.0, 50.0, 0.0))
-    assert ops.commands[2].end == pytest.approx((100.0, 50.0, 0.0))
+    assert ops.len() == 3
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.endpoint(0) == pytest.approx((0, 50, 0))
+    assert ops.command_type(1) == CommandType.MOVE_TO
+    assert ops.endpoint(1) == pytest.approx((2.0, 50.0, 0.0))
+    assert ops.endpoint(2) == pytest.approx((100.0, 50.0, 0.0))
 
 
 def test_clip_at_end_of_subpath():
@@ -1260,13 +1270,13 @@ def test_clip_at_end_of_subpath():
     assert ops.clip_at(99, 50, 2.0) is True
 
     # Expected: Move(0,50), Line(98,50), Move(100,50)
-    assert len(ops.commands) == 3
-    assert isinstance(ops.commands[0], MoveToCommand)
-    assert ops.commands[0].end == pytest.approx((0, 50, 0))
-    assert isinstance(ops.commands[1], LineToCommand)
-    assert ops.commands[1].end == pytest.approx((98.0, 50.0, 0.0))
-    assert isinstance(ops.commands[2], MoveToCommand)
-    assert ops.commands[2].end == pytest.approx((100.0, 50.0, 0.0))
+    assert ops.len() == 3
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.endpoint(0) == pytest.approx((0, 50, 0))
+    assert ops.command_type(1) == CommandType.LINE_TO
+    assert ops.endpoint(1) == pytest.approx((98.0, 50.0, 0.0))
+    assert ops.command_type(2) == CommandType.MOVE_TO
+    assert ops.endpoint(2) == pytest.approx((100.0, 50.0, 0.0))
 
 
 def test_clip_at_spans_multiple_segments():
@@ -1287,18 +1297,18 @@ def test_clip_at_spans_multiple_segments():
 
     # Original: M, L, L, L -> 4 commands
     # Expected: M, L(shortened), M(to skip gap), L(shortened), L -> 5+ commands
-    assert len(ops.commands) > 4
-    assert isinstance(ops.commands[0], MoveToCommand)
-    assert isinstance(ops.commands[1], LineToCommand)
-    assert isinstance(ops.commands[2], MoveToCommand)
+    assert ops.len() > 4
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.command_type(1) == CommandType.LINE_TO
+    assert ops.command_type(2) == CommandType.MOVE_TO
 
     # The first line segment should end before 50
-    assert ops.commands[1].end[0] < 50
+    assert ops.endpoint(1)[0] < 50
     # The new path should start after 50
-    assert ops.commands[2].end[0] > 50
+    assert ops.endpoint(2)[0] > 50
 
     # Ensure the entire original path after the clip is still present
-    assert ops.commands[-1].end == pytest.approx((100, 100, 0))
+    assert ops.endpoint(ops.len() - 1) == pytest.approx((100, 100, 0))
 
 
 def test_clip_at_ignores_state_commands():
@@ -1317,16 +1327,16 @@ def test_clip_at_ignores_state_commands():
     assert ops.clip_at(80, 0, 10.0) is True
 
     # Path 1 should be unchanged. Path 2 should be clipped.
-    assert len(ops.commands) == 7
+    assert ops.len() == 7
     # Path 1
-    assert ops.commands[0].end == (0, 0, 0)
-    assert ops.commands[1].end == (50, 0, 0)
-    assert isinstance(ops.commands[2], SetPowerCommand)
+    assert ops.endpoint(0) == (0, 0, 0)
+    assert ops.endpoint(1) == (50, 0, 0)
+    assert ops.command_type(2) == CommandType.SET_POWER
     # Path 2 (clipped)
-    assert ops.commands[3].end == (60, 0, 0)
-    assert ops.commands[4].end == pytest.approx((75, 0, 0))
-    assert ops.commands[5].end == pytest.approx((85, 0, 0))
-    assert ops.commands[6].end == pytest.approx((100, 0, 0))
+    assert ops.endpoint(3) == (60, 0, 0)
+    assert ops.endpoint(4) == pytest.approx((75, 0, 0))
+    assert ops.endpoint(5) == pytest.approx((85, 0, 0))
+    assert ops.endpoint(6) == pytest.approx((100, 0, 0))
 
 
 def test_clip_at_with_state_commands_in_subpath():
@@ -1347,21 +1357,18 @@ def test_clip_at_with_state_commands_in_subpath():
 
     # Expected: Move(0,0), Line(50,0), SetPower, Line(70,0), Move(80,0),
     #           Line(100,0)
-    # The gap is centered at x=75 with width 10, so from 70 to 80.
-    # Segment 1 (0-50) is kept whole.
-    # Segment 2 (50-100) is split: 50-70 kept, 70-80 gap, 80-100 kept.
-    assert len(ops.commands) == 6
-    assert isinstance(ops.commands[0], MoveToCommand)
-    assert ops.commands[0].end == (0, 0, 0)
-    assert isinstance(ops.commands[1], LineToCommand)
-    assert ops.commands[1].end == pytest.approx((50.0, 0.0, 0.0))
-    assert isinstance(ops.commands[2], SetPowerCommand)
-    assert isinstance(ops.commands[3], LineToCommand)
-    assert ops.commands[3].end == pytest.approx((70.0, 0.0, 0.0))
-    assert isinstance(ops.commands[4], MoveToCommand)
-    assert ops.commands[4].end == pytest.approx((80.0, 0.0, 0.0))
-    assert isinstance(ops.commands[5], LineToCommand)
-    assert ops.commands[5].end == pytest.approx((100.0, 0.0, 0.0))
+    assert ops.len() == 6
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.endpoint(0) == (0, 0, 0)
+    assert ops.command_type(1) == CommandType.LINE_TO
+    assert ops.endpoint(1) == pytest.approx((50.0, 0.0, 0.0))
+    assert ops.command_type(2) == CommandType.SET_POWER
+    assert ops.command_type(3) == CommandType.LINE_TO
+    assert ops.endpoint(3) == pytest.approx((70.0, 0.0, 0.0))
+    assert ops.command_type(4) == CommandType.MOVE_TO
+    assert ops.endpoint(4) == pytest.approx((80.0, 0.0, 0.0))
+    assert ops.command_type(5) == CommandType.LINE_TO
+    assert ops.endpoint(5) == pytest.approx((100.0, 0.0, 0.0))
 
 
 def test_clip_at_end_of_segment_with_state_command():
@@ -1378,17 +1385,14 @@ def test_clip_at_end_of_segment_with_state_command():
     # Clip at the exact endpoint of segment 1 (x=100)
     assert ops.clip_at(100, 0, 10.0) is True
 
-    # The clip should be centered at x=100, so gap from 95 to 105
-    # Segment 1 should end at 95, segment 2 should start at 105
-    # Note: State command at position 100 is inside the gap, so it's removed
-    assert isinstance(ops.commands[0], MoveToCommand)
-    assert ops.commands[0].end == (0, 0, 0)
-    assert isinstance(ops.commands[1], LineToCommand)
-    assert ops.commands[1].end == pytest.approx((95.0, 0.0, 0.0))
-    assert isinstance(ops.commands[2], MoveToCommand)
-    assert ops.commands[2].end == pytest.approx((105.0, 0.0, 0.0))
-    assert isinstance(ops.commands[3], LineToCommand)
-    assert ops.commands[3].end == pytest.approx((200.0, 0.0, 0.0))
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.endpoint(0) == (0, 0, 0)
+    assert ops.command_type(1) == CommandType.LINE_TO
+    assert ops.endpoint(1) == pytest.approx((95.0, 0.0, 0.0))
+    assert ops.command_type(2) == CommandType.MOVE_TO
+    assert ops.endpoint(2) == pytest.approx((105.0, 0.0, 0.0))
+    assert ops.command_type(3) == CommandType.LINE_TO
+    assert ops.endpoint(3) == pytest.approx((200.0, 0.0, 0.0))
 
 
 def test_dump(sample_ops):
@@ -1397,8 +1401,8 @@ def test_dump(sample_ops):
     with redirect_stdout(f):
         sample_ops.dump()
     output = f.getvalue()
-    assert "MoveToCommand" in output
-    assert "LineToCommand" in output
+    assert "MOVE_TO" in output
+    assert "LINE_TO" in output
 
 
 def test_estimate_time_empty(empty_ops):
@@ -1595,13 +1599,9 @@ def test_numpy_serialization_round_trip_all_commands():
     reconstructed_ops = Ops.from_numpy_arrays(arrays)
 
     # Assertions
-    assert len(reconstructed_ops.commands) == len(ops.commands)
-    for original_cmd, recon_cmd in zip(
-        ops.commands, reconstructed_ops.commands
-    ):
-        assert type(original_cmd) is type(recon_cmd)
-        # Use to_dict for a comprehensive comparison of all fields
-        assert original_cmd.to_dict() == recon_cmd.to_dict()
+    assert len(reconstructed_ops) == len(ops)
+    for i in range(ops.len()):
+        assert ops.inspect(i) == reconstructed_ops.inspect(i)
 
 
 def test_numpy_serialization_structure_hybrid():
@@ -1629,7 +1629,7 @@ def test_numpy_serialization_structure_hybrid():
     assert "1" in data
     assert "0" not in data
     assert "2" not in data
-    assert data["1"]["type"] == "SetPowerCommand"
+    assert data["1"]["type"] == "SET_POWER"
     assert data["1"]["power"] == 0.5
 
     # Verify that geometric data is still correctly placed
@@ -1649,9 +1649,9 @@ def test_numpy_serialization_round_trip_only_state():
     arrays = ops.to_numpy_arrays()
     reconstructed_ops = Ops.from_numpy_arrays(arrays)
 
-    assert len(reconstructed_ops.commands) == 3
-    for original, recon in zip(ops.commands, reconstructed_ops.commands):
-        assert original.to_dict() == recon.to_dict()
+    assert len(reconstructed_ops) == 3
+    for i in range(ops.len()):
+        assert ops.inspect(i) == reconstructed_ops.inspect(i)
 
 
 def test_numpy_serialization_round_trip_empty():
@@ -1694,32 +1694,30 @@ def test_numpy_serialization_bezier_round_trip():
     ops.move_to(0, 0, 0)
     ops.bezier_to(c1=(1.5, 2.5, 3.5), c2=(4.5, 5.5, 6.5), end=(7.5, 8.5, 9.5))
     ops.set_power(0.5)
-    ops.add(
-        BezierToCommand(
-            end=(70, 80, 90),
-            control1=(10, 20, 30),
-            control2=(40, 50, 60),
-        )
+    ops.bezier_to(
+        c1=(10, 20, 30),
+        c2=(40, 50, 60),
+        end=(70, 80, 90),
     )
 
     arrays = ops.to_numpy_arrays()
     reconstructed = Ops.from_numpy_arrays(arrays)
 
-    assert len(reconstructed.commands) == 4
-    assert isinstance(reconstructed.commands[0], MoveToCommand)
-    assert isinstance(reconstructed.commands[1], BezierToCommand)
-    assert isinstance(reconstructed.commands[2], SetPowerCommand)
-    assert isinstance(reconstructed.commands[3], BezierToCommand)
+    assert len(reconstructed) == 4
+    assert reconstructed.command_type(0) == CommandType.MOVE_TO
+    assert reconstructed.command_type(1) == CommandType.BEZIER_TO
+    assert reconstructed.command_type(2) == CommandType.SET_POWER
+    assert reconstructed.command_type(3) == CommandType.BEZIER_TO
 
-    cmd1 = reconstructed.commands[1]
-    assert cmd1.end == pytest.approx((7.5, 8.5, 9.5))
-    assert cmd1.control1 == pytest.approx((1.5, 2.5, 3.5))
-    assert cmd1.control2 == pytest.approx((4.5, 5.5, 6.5))
+    info1 = reconstructed.inspect(1)
+    assert info1.end == pytest.approx((7.5, 8.5, 9.5))
+    assert info1.control1 == pytest.approx((1.5, 2.5, 3.5))
+    assert info1.control2 == pytest.approx((4.5, 5.5, 6.5))
 
-    cmd3 = reconstructed.commands[3]
-    assert cmd3.end == pytest.approx((70, 80, 90))
-    assert cmd3.control1 == pytest.approx((10, 20, 30))
-    assert cmd3.control2 == pytest.approx((40, 50, 60))
+    info3 = reconstructed.inspect(3)
+    assert info3.end == pytest.approx((70, 80, 90))
+    assert info3.control1 == pytest.approx((10, 20, 30))
+    assert info3.control2 == pytest.approx((40, 50, 60))
 
 
 def test_linearize_curves():
@@ -1730,19 +1728,26 @@ def test_linearize_curves():
     ops.set_power(0.8)
     ops.line_to(5, 5, 0)
 
-    assert isinstance(ops.commands[1], BezierToCommand)
+    assert ops.command_type(1) == CommandType.BEZIER_TO
     ops.linearize_curves()
 
-    assert not any(isinstance(c, CurveToCommand) for c in ops.commands)
-    assert isinstance(ops.commands[0], MoveToCommand)
-    assert all(
-        isinstance(c, LineToCommand)
-        for c in ops.commands[1:-1]
-        if isinstance(c, MovingCommand)
+    assert not any(
+        ops.command_type(i) == CommandType.BEZIER_TO
+        or ops.command_type(i) == CommandType.QUADRATIC_BEZIER_TO
+        for i in range(ops.len())
     )
-    assert isinstance(ops.commands[-2], SetPowerCommand)
-    assert isinstance(ops.commands[-1], LineToCommand)
-    assert ops.commands[-1].end == (5, 5, 0)
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    moving_indices = [
+        i
+        for i in range(1, ops.len() - 1)
+        if ops.category(i) == CommandCategory.MOVING
+    ]
+    assert all(
+        ops.command_type(i) == CommandType.LINE_TO for i in moving_indices
+    )
+    assert ops.command_type(ops.len() - 2) == CommandType.SET_POWER
+    assert ops.command_type(ops.len() - 1) == CommandType.LINE_TO
+    assert ops.endpoint(ops.len() - 1) == (5, 5, 0)
 
 
 def test_linearize_curves_preserves_arcs():
@@ -1754,9 +1759,13 @@ def test_linearize_curves_preserves_arcs():
 
     ops.linearize_curves()
 
-    assert isinstance(ops.commands[1], ArcToCommand)
-    assert isinstance(ops.commands[-1], LineToCommand)
-    assert not any(isinstance(c, CurveToCommand) for c in ops.commands)
+    assert ops.command_type(1) == CommandType.ARC_TO
+    assert ops.command_type(ops.len() - 1) == CommandType.LINE_TO
+    assert not any(
+        ops.command_type(i)
+        in (CommandType.BEZIER_TO, CommandType.QUADRATIC_BEZIER_TO)
+        for i in range(ops.len())
+    )
 
 
 def test_linearize_arcs():
@@ -1779,11 +1788,16 @@ def test_linearize_arcs_preserves_beziers():
 
     ops.linearize_arcs()
 
-    bezier_cmds = [c for c in ops.commands if isinstance(c, BezierToCommand)]
-    assert len(bezier_cmds) == 1
-    assert bezier_cmds[0].control1 == (10, 0, 0)
-    assert bezier_cmds[0].control2 == (10, 10, 0)
-    assert bezier_cmds[0].end == (0, 10, 0)
+    bezier_indices = [
+        i
+        for i in range(ops.len())
+        if ops.command_type(i) == CommandType.BEZIER_TO
+    ]
+    assert len(bezier_indices) == 1
+    info = ops.inspect(bezier_indices[0])
+    assert info.control1 == (10, 0, 0)
+    assert info.control2 == (10, 10, 0)
+    assert info.end == (0, 10, 0)
 
 
 class TestIterSections:
@@ -1802,8 +1816,8 @@ class TestIterSections:
         sections = list(ops.iter_sections())
         assert len(sections) == 1
         assert sections[0].section_type is None
-        assert sections[0].markers == []
-        assert len(sections[0].commands) == 3
+        assert sections[0].marker_indices == []
+        assert len(sections[0].content_indices) == 3
 
     def test_single_section(self):
         ops = Ops()
@@ -1815,10 +1829,10 @@ class TestIterSections:
         sections = list(ops.iter_sections())
         assert len(sections) == 1
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
-        assert len(sections[0].markers) == 2
-        assert isinstance(sections[0].markers[0], OpsSectionStartCommand)
-        assert isinstance(sections[0].markers[1], OpsSectionEndCommand)
-        assert len(sections[0].commands) == 2
+        assert len(sections[0].marker_indices) == 2
+        assert ops.is_marker(sections[0].marker_indices[0])
+        assert ops.is_marker(sections[0].marker_indices[1])
+        assert len(sections[0].content_indices) == 2
 
     def test_multiple_sections(self):
         ops = Ops()
@@ -1836,8 +1850,8 @@ class TestIterSections:
         assert len(sections) == 2
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
         assert sections[1].section_type == SectionType.RASTER_FILL
-        assert len(sections[0].commands) == 2
-        assert len(sections[1].commands) == 2
+        assert len(sections[0].content_indices) == 2
+        assert len(sections[1].content_indices) == 2
 
     def test_commands_before_section(self):
         ops = Ops()
@@ -1850,9 +1864,9 @@ class TestIterSections:
         sections = list(ops.iter_sections())
         assert len(sections) == 2
         assert sections[0].section_type is None
-        assert sections[0].markers == []
-        assert len(sections[0].commands) == 1
-        assert isinstance(sections[0].commands[0], SetPowerCommand)
+        assert sections[0].marker_indices == []
+        assert len(sections[0].content_indices) == 1
+        assert ops.category(0) == CommandCategory.STATE
         assert sections[1].section_type == SectionType.VECTOR_OUTLINE
 
     def test_commands_after_section(self):
@@ -1867,9 +1881,9 @@ class TestIterSections:
         assert len(sections) == 2
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
         assert sections[1].section_type is None
-        assert sections[1].markers == []
-        assert len(sections[1].commands) == 1
-        assert isinstance(sections[1].commands[0], SetPowerCommand)
+        assert sections[1].marker_indices == []
+        assert len(sections[1].content_indices) == 1
+        assert ops.category(4) == CommandCategory.STATE
 
     def test_commands_between_sections(self):
         ops = Ops()
@@ -1889,23 +1903,22 @@ class TestIterSections:
         assert len(sections) == 3
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
         assert sections[1].section_type is None
-        assert sections[1].markers == []
-        assert isinstance(sections[1].commands[0], SetPowerCommand)
+        assert sections[1].marker_indices == []
+        assert ops.category(4) == CommandCategory.STATE
         assert sections[2].section_type == SectionType.RASTER_FILL
 
     def test_section_markers_preserved(self):
         ops = Ops()
-        start_cmd = OpsSectionStartCommand(SectionType.VECTOR_OUTLINE, "wp-1")
-        end_cmd = OpsSectionEndCommand(SectionType.VECTOR_OUTLINE)
-        ops.commands.append(start_cmd)
+        ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
         ops.move_to(0, 0)
         ops.line_to(10, 10)
-        ops.commands.append(end_cmd)
+        ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
         sections = list(ops.iter_sections())
         assert len(sections) == 1
-        assert sections[0].markers[0] is start_cmd
-        assert sections[0].markers[1] is end_cmd
+        assert sections[0].section_type == SectionType.VECTOR_OUTLINE
+        assert len(sections[0].content_indices) == 2
+        assert len(sections[0].marker_indices) == 2
 
     def test_empty_section(self):
         ops = Ops()
@@ -1915,8 +1928,8 @@ class TestIterSections:
         sections = list(ops.iter_sections())
         assert len(sections) == 1
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
-        assert sections[0].commands == []
-        assert len(sections[0].markers) == 2
+        assert sections[0].content_indices == []
+        assert len(sections[0].marker_indices) == 2
 
     def test_consecutive_empty_sections(self):
         ops = Ops()
@@ -1928,9 +1941,9 @@ class TestIterSections:
         sections = list(ops.iter_sections())
         assert len(sections) == 2
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
-        assert sections[0].commands == []
+        assert sections[0].content_indices == []
         assert sections[1].section_type == SectionType.RASTER_FILL
-        assert sections[1].commands == []
+        assert sections[1].content_indices == []
 
     def test_commands_reconstructed_correctly(self):
         ops = Ops()
@@ -1943,17 +1956,13 @@ class TestIterSections:
         ops.set_power(0.5)
 
         sections = list(ops.iter_sections())
-        reconstructed = []
-        for section in sections:
-            if section.section_type is not None:
-                reconstructed.append(section.markers[0])
-                reconstructed.extend(section.commands)
-                if len(section.markers) > 1:
-                    reconstructed.append(section.markers[1])
-            else:
-                reconstructed.extend(section.commands)
-
-        assert reconstructed == ops.commands
+        assert len(sections) == 3
+        assert sections[0].section_type is None
+        assert len(sections[0].content_indices) == 1
+        assert sections[1].section_type == SectionType.VECTOR_OUTLINE
+        assert len(sections[1].content_indices) == 3
+        assert sections[2].section_type is None
+        assert len(sections[2].content_indices) == 1
 
     def test_returns_ops_section_namedtuple(self):
         ops = Ops()
@@ -1961,43 +1970,44 @@ class TestIterSections:
         section = list(ops.iter_sections())[0]
         assert isinstance(section, OpsSection)
         assert hasattr(section, "section_type")
-        assert hasattr(section, "markers")
-        assert hasattr(section, "commands")
+        assert hasattr(section, "marker_indices")
+        assert hasattr(section, "content_indices")
 
 
 # --- Extra Axes Dict Serialization Tests ---
 
 
 def test_extra_axes_to_dict_no_extra_axes():
-    cmd = MoveToCommand((1, 2, 3))
-    data = cmd.to_dict()
-    assert "extra_axes" not in data
+    ops = Ops()
+    ops.move_to(1, 2, 3)
+    data = ops.to_dict()
+    assert "extra_axes" not in data["commands"][0]
 
 
 def test_extra_axes_to_dict_with_extra_axes():
-    cmd = MoveToCommand((1, 2, 3), extra_axes={Axis.A: 45.0})
-    data = cmd.to_dict()
-    assert data["extra_axes"] == {"A": 45.0}
+    ops = Ops()
+    ops.move_to(1, 2, 3, extra={Axis.A: 45.0})
+    data = ops.to_dict()
+    assert data["commands"][0]["extra_axes"] == {"A": 45.0}
 
 
 def test_extra_axes_from_dict_no_extra_axes():
     data = {
         "commands": [
-            {"type": "MoveToCommand", "end": [1, 2, 3]},
+            {"type": "MOVE_TO", "end": [1, 2, 3]},
         ],
         "last_move_to": [0, 0, 0],
     }
     ops = Ops.from_dict(data)
-    cmd = ops.commands[0]
-    assert isinstance(cmd, MoveToCommand)
-    assert cmd.extra_axes == {}
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.inspect(0).extra_axes is None
 
 
 def test_extra_axes_from_dict_with_extra_axes():
     data = {
         "commands": [
             {
-                "type": "MoveToCommand",
+                "type": "MOVE_TO",
                 "end": [1, 2, 3],
                 "extra_axes": {"A": 45.0},
             },
@@ -2005,9 +2015,8 @@ def test_extra_axes_from_dict_with_extra_axes():
         "last_move_to": [0, 0, 0],
     }
     ops = Ops.from_dict(data)
-    cmd = ops.commands[0]
-    assert isinstance(cmd, MoveToCommand)
-    assert cmd.extra_axes == {Axis.A: 45.0}
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.inspect(0).extra_axes == {Axis.A: 45.0}
 
 
 def test_extra_axes_round_trip_mixed():
@@ -2020,11 +2029,11 @@ def test_extra_axes_round_trip_mixed():
     data = ops.to_dict()
     restored = Ops.from_dict(data)
 
-    assert len(restored.commands) == 4
-    assert restored.commands[0].extra_axes == {}
-    assert restored.commands[1].extra_axes == {Axis.A: 45.0}
-    assert restored.commands[2].extra_axes == {}
-    assert restored.commands[3].extra_axes == {}
+    assert len(restored) == 4
+    assert restored.inspect(0).extra_axes is None
+    assert restored.inspect(1).extra_axes == {Axis.A: 45.0}
+    assert restored.inspect(2).extra_axes is None
+    assert restored.inspect(3).extra_axes is None
 
 
 # --- Extra Axes Numpy Serialization Tests ---
@@ -2055,11 +2064,11 @@ def test_extra_axes_numpy_round_trip_with_extra_axes():
     assert "extra_axes_json" in arrays
 
     restored = Ops.from_numpy_arrays(arrays)
-    assert len(restored.commands) == 4
-    assert restored.commands[0].extra_axes == {}
-    assert restored.commands[1].extra_axes == {Axis.A: 45.0}
-    assert restored.commands[2].extra_axes == {Axis.B: 90.0}
-    assert restored.commands[3].extra_axes == {}
+    assert len(restored) == 4
+    assert restored.inspect(0).extra_axes is None
+    assert restored.inspect(1).extra_axes == {Axis.A: 45.0}
+    assert restored.inspect(2).extra_axes == {Axis.B: 90.0}
+    assert restored.inspect(3).extra_axes is None
 
 
 def test_extra_axes_numpy_old_arrays_deserialize():
@@ -2070,9 +2079,9 @@ def test_extra_axes_numpy_old_arrays_deserialize():
     assert "extra_axes_json" not in arrays
 
     restored = Ops.from_numpy_arrays(arrays)
-    for cmd in restored.commands:
-        if isinstance(cmd, MovingCommand):
-            assert cmd.extra_axes == {}
+    for i in range(restored.len()):
+        if restored.category(i) == CommandCategory.MOVING:
+            assert restored.inspect(i).extra_axes is None
 
 
 def test_extra_axes_numpy_round_trip_preserves_all_data():
@@ -2092,8 +2101,8 @@ def test_extra_axes_numpy_round_trip_preserves_all_data():
     arrays = ops.to_numpy_arrays()
     restored = Ops.from_numpy_arrays(arrays)
 
-    for orig, rest in zip(ops.commands, restored.commands):
-        assert orig.to_dict() == rest.to_dict()
+    for i in range(ops.len()):
+        assert ops.inspect(i) == restored.inspect(i)
 
 
 # --- Extra Axes Convenience Tests ---
@@ -2102,34 +2111,30 @@ def test_extra_axes_numpy_round_trip_preserves_all_data():
 def test_move_to_no_extra():
     ops = Ops()
     ops.move_to(10, 20)
-    cmd = ops.commands[0]
-    assert isinstance(cmd, MoveToCommand)
-    assert cmd.end == (10.0, 20.0, 0.0)
-    assert cmd.extra_axes == {}
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.endpoint(0) == (10.0, 20.0, 0.0)
+    assert ops.inspect(0).extra_axes is None
 
 
 def test_move_to_with_extra():
     ops = Ops()
     ops.move_to(10, 20, 0, extra={Axis.A: 45.0})
-    cmd = ops.commands[0]
-    assert isinstance(cmd, MoveToCommand)
-    assert cmd.extra_axes == {Axis.A: 45.0}
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert ops.inspect(0).extra_axes == {Axis.A: 45.0}
 
 
 def test_line_to_with_extra():
     ops = Ops()
     ops.line_to(10, 20, extra={Axis.A: 90.0})
-    cmd = ops.commands[0]
-    assert isinstance(cmd, LineToCommand)
-    assert cmd.extra_axes == {Axis.A: 90.0}
+    assert ops.command_type(0) == CommandType.LINE_TO
+    assert ops.inspect(0).extra_axes == {Axis.A: 90.0}
 
 
 def test_arc_to_with_extra():
     ops = Ops()
     ops.arc_to(5, 5, 2, 3, extra={Axis.A: 45.0})
-    cmd = ops.commands[0]
-    assert isinstance(cmd, ArcToCommand)
-    assert cmd.extra_axes == {Axis.A: 45.0}
+    assert ops.command_type(0) == CommandType.ARC_TO
+    assert ops.inspect(0).extra_axes == {Axis.A: 45.0}
 
 
 def test_bezier_to_with_extra():
@@ -2141,9 +2146,8 @@ def test_bezier_to_with_extra():
         end=(3, 3, 0),
         extra={Axis.A: 45.0},
     )
-    cmd = ops.commands[1]
-    assert isinstance(cmd, BezierToCommand)
-    assert cmd.extra_axes == {Axis.A: 45.0}
+    assert ops.command_type(1) == CommandType.BEZIER_TO
+    assert ops.inspect(1).extra_axes == {Axis.A: 45.0}
 
 
 def test_scan_to_with_extra():
@@ -2155,9 +2159,8 @@ def test_scan_to_with_extra():
         bytearray([100, 200]),
         extra={Axis.A: 45.0},
     )
-    cmd = ops.commands[0]
-    assert isinstance(cmd, ScanLinePowerCommand)
-    assert cmd.extra_axes == {Axis.A: 45.0}
+    assert ops.command_type(0) == CommandType.SCAN_LINE
+    assert ops.inspect(0).extra_axes == {Axis.A: 45.0}
 
 
 def test_scanline_count_empty():
@@ -2185,9 +2188,8 @@ def test_translate_layers_default_applied_to_all():
     ops.move_to(10.0, 20.0, 0.0)
     ops.line_to(30.0, 40.0, 5.0)
     ops.translate_layers((1.0, 2.0, 3.0))
-    cmds = list(ops.commands)
-    assert cmds[0].end == (9.0, 18.0, -3.0)
-    assert cmds[1].end == (29.0, 38.0, 2.0)
+    assert ops.endpoint(0) == (9.0, 18.0, -3.0)
+    assert ops.endpoint(1) == (29.0, 38.0, 2.0)
 
 
 def test_translate_layers_layer_overrides_default():
@@ -2196,7 +2198,7 @@ def test_translate_layers_layer_overrides_default():
     ops.move_to(100.0, 0.0)
     ops.layer_end("lyr1")
     ops.translate_layers((5.0, 5.0, 0.0), {"lyr1": (1.0, 1.0, 0.0)})
-    assert list(ops.commands)[1].end == (99.0, -1.0, 0.0)
+    assert ops.endpoint(1) == (99.0, -1.0, 0.0)
 
 
 def test_translate_layers_multiple_layers():
@@ -2211,9 +2213,8 @@ def test_translate_layers_multiple_layers():
         (2.0, 2.0, 0.0),
         {"lyrA": (10.0, 10.0, 0.0), "lyrB": (2.0, 2.0, 0.0)},
     )
-    cmds = list(ops.commands)
-    assert cmds[1].end == (-10.0, -10.0, 0.0)
-    assert cmds[4].end == (8.0, 8.0, 0.0)
+    assert ops.endpoint(1) == (-10.0, -10.0, 0.0)
+    assert ops.endpoint(4) == (8.0, 8.0, 0.0)
 
 
 def test_translate_layers_between_layers_gets_default():
@@ -2229,10 +2230,9 @@ def test_translate_layers_between_layers_gets_default():
         (3.0, 3.0, 0.0),
         {"lyrA": (10.0, 10.0, 0.0), "lyrB": (1.0, 1.0, 0.0)},
     )
-    cmds = list(ops.commands)
-    assert cmds[1].end == (-10.0, -10.0, 0.0)  # layer A
-    assert cmds[3].end == (47.0, 47.0, 0.0)  # between layers
-    assert cmds[5].end == (9.0, 9.0, 0.0)  # layer B
+    assert ops.endpoint(1) == (-10.0, -10.0, 0.0)  # layer A
+    assert ops.endpoint(3) == (47.0, 47.0, 0.0)  # between layers
+    assert ops.endpoint(5) == (9.0, 9.0, 0.0)  # layer B
 
 
 def test_translate_layers_after_last_layer_gets_default():
@@ -2242,9 +2242,8 @@ def test_translate_layers_after_last_layer_gets_default():
     ops.layer_end("lyrA")
     ops.move_to(60.0, 60.0)
     ops.translate_layers((5.0, 5.0, 0.0), {"lyrA": (2.0, 2.0, 0.0)})
-    cmds = list(ops.commands)
-    assert cmds[1].end == (-2.0, -2.0, 0.0)
-    assert cmds[3].end == (55.0, 55.0, 0.0)
+    assert ops.endpoint(1) == (-2.0, -2.0, 0.0)
+    assert ops.endpoint(3) == (55.0, 55.0, 0.0)
 
 
 def test_translate_layers_empty_dict():
@@ -2253,7 +2252,7 @@ def test_translate_layers_empty_dict():
     ops.move_to(10.0, 10.0)
     ops.layer_end("lyr1")
     ops.translate_layers((4.0, 4.0, 0.0), {})
-    assert list(ops.commands)[1].end == (6.0, 6.0, 0.0)
+    assert ops.endpoint(1) == (6.0, 6.0, 0.0)
 
 
 def test_translate_layers_layer_not_in_dict_gets_default():
@@ -2262,7 +2261,7 @@ def test_translate_layers_layer_not_in_dict_gets_default():
     ops.move_to(10.0, 10.0)
     ops.layer_end("unknown")
     ops.translate_layers((4.0, 4.0, 0.0), {"other": (1.0, 1.0, 0.0)})
-    assert list(ops.commands)[1].end == (6.0, 6.0, 0.0)
+    assert ops.endpoint(1) == (6.0, 6.0, 0.0)
 
 
 def test_translate_layers_commands_before_first_layer():
@@ -2272,9 +2271,8 @@ def test_translate_layers_commands_before_first_layer():
     ops.move_to(0.0, 0.0)
     ops.layer_end("lyr1")
     ops.translate_layers((10.0, 10.0, 0.0), {"lyr1": (2.0, 2.0, 0.0)})
-    cmds = list(ops.commands)
-    assert cmds[0].end == (90.0, 90.0, 0.0)
-    assert cmds[2].end == (-2.0, -2.0, 0.0)
+    assert ops.endpoint(0) == (90.0, 90.0, 0.0)
+    assert ops.endpoint(2) == (-2.0, -2.0, 0.0)
 
 
 def test_transform_layers_callback_receives_layer_uid():
@@ -2299,10 +2297,9 @@ def test_transform_layers_callback_receives_layer_commands():
     ops.layer_end("lyr1")
 
     def check(uid, sub):
-        cmds = list(sub.commands)
-        assert len(cmds) == 4
-        assert cmds[1].end[:2] == (10.0, 20.0)
-        assert cmds[2].end[:2] == (30.0, 40.0)
+        assert sub.len() == 4
+        assert sub.endpoint(1)[:2] == (10.0, 20.0)
+        assert sub.endpoint(2)[:2] == (30.0, 40.0)
 
     ops.transform_layers(check)
 
@@ -2314,13 +2311,13 @@ def test_transform_layers_callback_modifies_in_place():
     ops.layer_end("lyr1")
 
     def flip_y(uid, sub):
-        for cmd in sub.commands:
-            if hasattr(cmd, "end"):
-                x, y, z = cmd.end
-                cmd.end = (x, -y, z)
+        def _flip(end, extra):
+            end[1] = -end[1]
+
+        sub.transform_moving(_flip)
 
     ops.transform_layers(flip_y)
-    assert list(ops.commands)[1].end == (100.0, 0.0, 0.0)
+    assert ops.endpoint(1) == (100.0, 0.0, 0.0)
 
 
 def test_transform_layers_commands_before_first_layer_skipped():
@@ -2337,9 +2334,7 @@ def test_transform_layers_commands_before_first_layer_skipped():
 
     counts = []
 
-    ops.transform_layers(
-        lambda uid, sub: counts.append(len(list(sub.commands)))
-    )
+    ops.transform_layers(lambda uid, sub: counts.append(sub.len()))
     assert counts == [3, 3]
 
 
@@ -2367,9 +2362,8 @@ def test_transform_moving_endpoint():
         end[1] = -end[1]
 
     ops.transform_moving(flip_xy)
-    cmds = list(ops.commands)
-    assert cmds[0].end == (-10.0, -20.0, 5.0)
-    assert cmds[1].end == (-30.0, -40.0, 5.0)
+    assert ops.endpoint(0) == (-10.0, -20.0, 5.0)
+    assert ops.endpoint(1) == (-30.0, -40.0, 5.0)
 
 
 def test_transform_moving_extra_axes():
@@ -2382,9 +2376,8 @@ def test_transform_moving_extra_axes():
             extra[Axis.A] = extra[Axis.A] * 2
 
     ops.transform_moving(scale_a)
-    cmds = list(ops.commands)
-    assert cmds[0].extra_axes == {Axis.A: 20.0}
-    assert cmds[1].extra_axes == {Axis.A: 40.0}
+    assert ops.inspect(0).extra_axes == {Axis.A: 20.0}
+    assert ops.inspect(1).extra_axes == {Axis.A: 40.0}
 
 
 def test_transform_moving_arc_center():
@@ -2396,9 +2389,9 @@ def test_transform_moving_arc_center():
         pt[1] = pt[1] * 2
 
     ops.transform_moving(lambda end, extra: None, scale_center)
-    cmd = list(ops.commands)[0]
-    assert isinstance(cmd, ArcToCommand)
-    assert cmd.center_offset == (4.0, 6.0)
+    assert ops.command_type(0) == CommandType.ARC_TO
+    info = ops.inspect(0)
+    assert info.center_offset == (4.0, 6.0)
 
 
 def test_transform_moving_bezier_controls():
@@ -2410,11 +2403,11 @@ def test_transform_moving_bezier_controls():
         pt[1] = -pt[1]
 
     ops.transform_moving(lambda end, extra: None, flip_y)
-    cmd = list(ops.commands)[1]
-    assert isinstance(cmd, BezierToCommand)
-    assert cmd.control1 == (1.0, -2.0, 0.0)
-    assert cmd.control2 == (3.0, -4.0, 0.0)
-    assert cmd.end == (5.0, 6.0, 0.0)
+    assert ops.command_type(1) == CommandType.BEZIER_TO
+    info = ops.inspect(1)
+    assert info.control1 == (1.0, -2.0, 0.0)
+    assert info.control2 == (3.0, -4.0, 0.0)
+    assert info.end == (5.0, 6.0, 0.0)
 
 
 def test_transform_moving_no_aux():
@@ -2425,7 +2418,7 @@ def test_transform_moving_no_aux():
         end[:] = [0.0, 0.0, 0.0]
 
     ops.transform_moving(reset)
-    assert list(ops.commands)[0].end == (0.0, 0.0, 0.0)
+    assert ops.endpoint(0) == (0.0, 0.0, 0.0)
 
 
 def test_transform_moving_skips_markers():
@@ -2438,4 +2431,414 @@ def test_transform_moving_skips_markers():
         end[:] = [0.0, 0.0, 0.0]
 
     ops.transform_moving(reset)
-    assert list(ops.commands)[1].end == (0.0, 0.0, 0.0)
+    assert ops.endpoint(1) == (0.0, 0.0, 0.0)
+
+
+def test_to_geometry():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 10)
+    ops.arc_to(20, 0, 5, 0, False)
+    ops.set_power(1.0)
+    ops.bezier_to((15, 15, 0), (25, 15, 0), (30, 0, 0))
+    geo = ops.to_geometry()
+    assert isinstance(geo, Geometry)
+
+
+def test_to_geometry_empty():
+    ops = Ops()
+    geo = ops.to_geometry()
+    assert isinstance(geo, Geometry)
+
+
+def test_iter_section_ranges():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp1")
+    ops.move_to(5, 5)
+    ops.line_to(15, 5)
+    ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+    ops.move_to(20, 20)
+
+    ranges = list(ops.iter_section_ranges())
+    assert len(ranges) == 3
+    assert isinstance(ranges[0], OpsSectionRange)
+    assert ranges[0].section_type is None
+    assert ranges[0].content_indices == [0, 1]
+    assert ranges[1].section_type == SectionType.VECTOR_OUTLINE
+    assert ranges[1].marker_indices == [2, 5]
+    assert ranges[1].content_indices == [3, 4]
+    assert ranges[2].section_type is None
+    assert ranges[2].content_indices == [6]
+
+
+def test_iter_section_ranges_empty():
+    ops = Ops()
+    assert list(ops.iter_section_ranges()) == []
+
+
+def test_subpath_indices():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    ops.line_to(10, 10)
+    ops.move_to(100, 100)
+    ops.line_to(110, 100)
+
+    result = ops.subpath_indices()
+    assert len(result) == 2
+    assert result[0] == [0, 1, 2]
+    assert result[1] == [3, 4]
+
+
+def test_subpath_indices_empty():
+    ops = Ops()
+    assert ops.subpath_indices() == []
+
+
+def test_subpath_indices_single():
+    ops = Ops()
+    ops.move_to(0, 0)
+    assert ops.subpath_indices() == [[0]]
+
+
+def test_sub_ops():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    ops.line_to(20, 0)
+
+    sub = ops.sub_ops([0, 2])
+    assert sub.len() == 2
+    assert sub.command_type(0) == CommandType.MOVE_TO
+    assert sub.command_type(1) == CommandType.LINE_TO
+    assert sub.endpoint(1) == (20.0, 0.0, 0.0)
+
+
+def test_sub_ops_is_deep_copy():
+    ops = Ops()
+    ops.line_to(10, 0)
+    sub = ops.sub_ops([0])
+    sub.move_to(99, 99)
+    assert ops.len() == 1
+
+
+def test_is_scanline():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    ops.scan_to(20, 0, 0, power_values=bytearray([128] * 10))
+
+    assert not ops.is_scanline(0)
+    assert not ops.is_scanline(1)
+    assert ops.is_scanline(2)
+
+
+def test_distance_at():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+
+    assert ops.distance_at(1, (0.0, 0.0, 0.0)) == pytest.approx(10.0)
+
+
+def test_distance_at_diagonal():
+    ops = Ops()
+    ops.line_to(3, 4)
+    dist = ops.distance_at(0, (0.0, 0.0, 0.0))
+    assert dist == pytest.approx(5.0)
+
+
+def test_distance_at_state_command():
+    ops = Ops()
+    ops.set_power(1.0)
+    assert ops.distance_at(0, (0.0, 0.0, 0.0)) == 0.0
+
+
+def test_distance_at_none_last_point():
+    ops = Ops()
+    ops.line_to(10, 0)
+    assert ops.distance_at(0, None) == 0.0
+
+
+def test_state_at():
+    ops = Ops()
+    ops.set_power(0.5)
+    ops.set_cut_speed(800)
+    ops.enable_air_assist()
+    ops.move_to(0, 0)
+
+    state = ops.state_at(3)
+    assert state.power == 0.5
+    assert state.cut_speed == 800
+    assert state.air_assist is True
+
+
+def test_state_at_no_state_commands():
+    ops = Ops()
+    ops.move_to(0, 0)
+    state = ops.state_at(0)
+    assert state.power == 0.0
+    assert state.air_assist is False
+
+
+def test_state_at_mid_sequence():
+    ops = Ops()
+    ops.set_power(0.3)
+    ops.set_cut_speed(500)
+    ops.set_power(0.8)
+    ops.move_to(0, 0)
+
+    state_0 = ops.state_at(0)
+    assert state_0.power == 0.3
+    assert state_0.cut_speed is None
+
+    state_1 = ops.state_at(1)
+    assert state_1.cut_speed == 500
+
+    state_2 = ops.state_at(2)
+    assert state_2.power == 0.8
+    assert state_2.cut_speed == 500
+
+
+def test_set_state_on_moving():
+    ops = Ops()
+    ops.set_power(1.0)
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    ops.enable_air_assist()
+
+    ms = MachineState(
+        power=0.7,
+        air_assist=True,
+        cut_speed=600,
+        travel_speed=2000,
+        active_laser_uid=None,
+        frequency=None,
+        pulse_width=None,
+    )
+    ops.set_state_on_moving(ms)
+
+    state_1 = ops.inspect(1).state
+    state_2 = ops.inspect(2).state
+    assert state_1 is not None
+    assert state_1.power == 0.7
+    assert state_2 is not None
+    assert state_2.power == 0.7
+    assert state_2.air_assist is True
+    assert state_2.cut_speed == 600
+
+
+def test_copy_command_from():
+    src = Ops()
+    src.move_to(5, 5)
+    src.line_to(10, 10)
+
+    dst = Ops()
+    dst.copy_command_from(src, 1)
+    assert dst.len() == 1
+    assert dst.command_type(0) == CommandType.LINE_TO
+    assert dst.endpoint(0) == (10.0, 10.0, 0.0)
+
+
+def test_copy_command_from_is_deep():
+    src = Ops()
+    src.line_to(10, 0)
+    dst = Ops()
+    dst.copy_command_from(src, 0)
+    dst.move_to(99, 99)
+    assert src.len() == 1
+
+
+def test_transfer_command_from():
+    src = Ops()
+    src.move_to(5, 5)
+    src.line_to(10, 10)
+
+    dst = Ops()
+    dst.transfer_command_from(src, 1)
+    assert dst.len() == 1
+    assert dst.command_type(0) == CommandType.LINE_TO
+
+
+def test_dwell():
+    ops = Ops()
+    ops.dwell(250.0)
+    assert ops.len() == 1
+    assert ops.command_type(0) == CommandType.DWELL
+
+
+def test_dwell_duration():
+    ops = Ops()
+    ops.dwell(150.0)
+    assert ops.dwell_duration(0) == 150.0
+
+
+def test_dwell_duration_wrong_type():
+    ops = Ops()
+    ops.move_to(0, 0)
+    with pytest.raises(TypeError):
+        ops.dwell_duration(0)
+
+
+def test_speed_cut():
+    ops = Ops()
+    ops.set_cut_speed(1200)
+    assert ops.speed(0) == 1200
+
+
+def test_speed_travel():
+    ops = Ops()
+    ops.set_travel_speed(3000)
+    assert ops.speed(0) == 3000
+
+
+def test_speed_wrong_type():
+    ops = Ops()
+    ops.move_to(0, 0)
+    with pytest.raises(TypeError):
+        ops.speed(0)
+
+
+def test_laser_uid():
+    ops = Ops()
+    ops.set_laser("laser_42")
+    assert ops.laser_uid(0) == "laser_42"
+
+
+def test_laser_uid_wrong_type():
+    ops = Ops()
+    ops.move_to(0, 0)
+    with pytest.raises(TypeError):
+        ops.laser_uid(0)
+
+
+def test_layer_uid():
+    ops = Ops()
+    ops.layer_start("layer_a")
+    assert ops.layer_uid(0) == "layer_a"
+    ops.layer_end("layer_a")
+    assert ops.layer_uid(1) == "layer_a"
+
+
+def test_layer_uid_wrong_type():
+    ops = Ops()
+    ops.move_to(0, 0)
+    with pytest.raises(TypeError):
+        ops.layer_uid(0)
+
+
+def test_section_params_start():
+    ops = Ops()
+    ops.ops_section_start(SectionType.RASTER_FILL, "wp1")
+    st, uid = ops.section_params(0)
+    assert st == SectionType.RASTER_FILL
+    assert uid == "wp1"
+
+
+def test_section_params_end():
+    ops = Ops()
+    ops.ops_section_end(SectionType.RASTER_FILL)
+    st, uid = ops.section_params(0)
+    assert st == SectionType.RASTER_FILL
+    assert uid is None
+
+
+def test_section_params_wrong_type():
+    ops = Ops()
+    ops.move_to(0, 0)
+    with pytest.raises(TypeError):
+        ops.section_params(0)
+
+
+def test_linearize_arc():
+    ops = Ops()
+    ops.arc_to(10, 0, 5, 0, False)
+    result = ops.linearize(0, (0.0, 0.0, 0.0))
+    assert result.len() > 1
+    for i in range(result.len()):
+        assert result.command_type(i) == CommandType.LINE_TO
+
+
+def test_linearize_bezier():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.bezier_to((5, 0, 0), (10, 5, 0), (15, 0, 0))
+    result = ops.linearize(1, (0.0, 0.0, 0.0))
+    assert result.len() > 1
+    for i in range(result.len()):
+        assert result.command_type(i) == CommandType.LINE_TO
+
+
+def test_linearize_scanline():
+    ops = Ops()
+    ops.scan_to(10, 0, 0, power_values=bytearray([100, 200, 100]))
+    result = ops.linearize(0, (0.0, 0.0, 0.0))
+    assert result.len() > 1
+
+
+def test_linearize_line():
+    ops = Ops()
+    ops.line_to(10, 0)
+    result = ops.linearize(0, (0.0, 0.0, 0.0))
+    assert result.len() == 1
+    assert result.command_type(0) == CommandType.LINE_TO
+
+
+def test_linearize_move():
+    ops = Ops()
+    ops.move_to(5, 5)
+    result = ops.linearize(0, (0.0, 0.0, 0.0))
+    assert result.len() == 1
+    assert result.command_type(0) == CommandType.MOVE_TO
+
+
+def test_linearize_unsupported():
+    ops = Ops()
+    ops.set_power(1.0)
+    with pytest.raises(TypeError):
+        ops.linearize(0, (0.0, 0.0, 0.0))
+
+
+def test_replace_with():
+    src = Ops()
+    src.move_to(5, 5)
+    src.line_to(10, 10)
+    src.last_move_to = (5.0, 5.0, 0.0)
+
+    dst = Ops()
+    dst.move_to(0, 0)
+    dst.replace_with(src)
+    assert dst.len() == 2
+    assert dst.command_type(0) == CommandType.MOVE_TO
+    assert dst.endpoint(0) == (5.0, 5.0, 0.0)
+    assert dst.last_move_to == (5.0, 5.0, 0.0)
+
+
+def test_without_state():
+    ops = Ops()
+    ops.set_power(1.0)
+    ops.move_to(0, 0)
+    ops.set_cut_speed(800)
+    ops.line_to(10, 0)
+    ops.enable_air_assist()
+
+    filtered = ops.without_state()
+    assert filtered.len() == 2
+    assert filtered.command_type(0) == CommandType.MOVE_TO
+    assert filtered.command_type(1) == CommandType.LINE_TO
+
+
+def test_without_state_empty():
+    ops = Ops()
+    filtered = ops.without_state()
+    assert filtered.len() == 0
+
+
+def test_without_state_no_state_commands():
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    filtered = ops.without_state()
+    assert filtered.len() == 2

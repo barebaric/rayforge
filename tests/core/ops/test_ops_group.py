@@ -1,157 +1,158 @@
 from typing import List
-from rayforge.core.ops import (
-    Command,
-    MoveToCommand,
-    LineToCommand,
-    ArcToCommand,
-    SetPowerCommand,
-    DisableAirAssistCommand,
-    State,
-    JobStartCommand,
-)
-from rayforge.core.ops.group import (
-    group_by_command_type,
-    group_by_state_continuity,
-    group_by_path_continuity,
-)
-
-
-def _to_dict(item):
-    if hasattr(item, "__iter__") and not isinstance(item, tuple):
-        return [_to_dict(c) for c in item]
-    if hasattr(item, "__dict__"):
-        d = item.__dict__.copy()
-        # Remove state as it's not relevant for this comparison and can be None
-        d.pop("state", None)
-        return d
-    return item
-
-
-def _pathcompare(one, two):
-    return _to_dict(one) == _to_dict(two)
+from rayforge.core.ops import Ops, CommandType
+from rayforge.core.ops.container import MachineState
 
 
 def test_group_by_command_type_empty():
-    assert group_by_command_type([]) == []
+    ops = Ops()
+    assert list(ops.segment_indices()) == []
 
 
 def test_group_by_command_type_single_move():
-    commands: List[Command] = [MoveToCommand((0, 0, 0))]
-    assert _pathcompare(
-        group_by_command_type(commands), [[MoveToCommand((0, 0, 0))]]
-    )
+    ops = Ops()
+    ops.move_to(0, 0)
+    indices = list(ops.segment_indices())
+    assert len(indices) == 1
+    assert len(indices[0]) == 1
+    assert ops.command_type(indices[0][0]) == CommandType.MOVE_TO
 
 
 def test_group_by_command_type_move_and_line():
-    commands: List[Command] = [
-        MoveToCommand((0, 0, 0)),
-        LineToCommand((1, 0, 0)),
-    ]
-    assert _pathcompare(
-        group_by_command_type(commands),
-        [[MoveToCommand((0, 0, 0)), LineToCommand((1, 0, 0))]],
-    )
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(1, 0)
+    indices = list(ops.segment_indices())
+    assert len(indices) == 1
+    assert len(indices[0]) == 2
 
 
 def test_group_by_command_type_move_and_arc():
-    commands: List[Command] = [
-        MoveToCommand((0, 0, 0)),
-        ArcToCommand((1, 0, 0), (1, 1), False),
-        LineToCommand((2, 0, 0)),
-        LineToCommand((3, 0, 0)),
-    ]
-    expected = [
-        [MoveToCommand((0, 0, 0)), ArcToCommand((1, 0, 0), (1, 1), False)],
-        [
-            MoveToCommand((1, 0, 0)),
-            LineToCommand((2, 0, 0)),
-            LineToCommand((3, 0, 0)),
-        ],
-    ]
-    assert _pathcompare(group_by_command_type(commands), expected)
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.arc_to(1, 0, 1, 1, False)
+    ops.line_to(2, 0)
+    ops.line_to(3, 0)
+    indices = list(ops.segment_indices())
+    assert len(indices) == 1
+    assert indices[0][0] == 0
+    assert ops.command_type(indices[0][1]) == CommandType.ARC_TO
 
 
 def test_group_by_command_type_state_commands():
-    commands: List[Command] = [
-        SetPowerCommand(1.0),
-        MoveToCommand((0, 0, 0)),
-        LineToCommand((1, 0, 0)),
-        DisableAirAssistCommand(),
-    ]
-    assert _pathcompare(
-        group_by_command_type(commands),
-        [
-            [SetPowerCommand(1.0)],
-            [MoveToCommand((0, 0, 0)), LineToCommand((1, 0, 0))],
-            [DisableAirAssistCommand()],
-        ],
-    )
+    ops = Ops()
+    ops.set_power(1.0)
+    ops.move_to(0, 0)
+    ops.line_to(1, 0)
+    ops.disable_air_assist()
+    indices = list(ops.segment_indices())
+    assert len(indices) == 3
+    assert ops.is_state(indices[0][0])
+    assert ops.is_travel(indices[1][0])
+    assert ops.is_state(indices[2][0])
 
 
-def _create_commands_with_states(states_config: List[bool]) -> List[Command]:
-    """Helper to create commands with specified air_assist states."""
-    commands = []
+def _create_ops_with_states(states_config: List[bool]) -> Ops:
+    """Helper to create ops with specified air_assist states."""
+    ops = Ops()
     for i, air_on in enumerate(states_config):
-        state = State(power=1.0, air_assist=air_on)
-        cmd = LineToCommand((float(i), float(i), 0.0))
-        cmd.state = state
-        commands.append(cmd)
-    return commands
+        ops.line_to(float(i), float(i))
+    for i, air_on in enumerate(states_config):
+        ops.set_state_at(
+            i,
+            MachineState(
+                power=1.0,
+                air_assist=air_on,
+                cut_speed=None,
+                travel_speed=None,
+                active_laser_uid=None,
+                frequency=None,
+                pulse_width=None,
+            ),
+        )
+    return ops
 
 
 def test_group_by_state_continuity():
     """Test splitting commands by non-reorderable state changes."""
     # All same state -> 1 segment
-    cmds1 = _create_commands_with_states([True, True, True])
-    assert len(group_by_state_continuity(cmds1)) == 1
-    assert len(group_by_state_continuity(cmds1)[0]) == 3
+    ops1 = _create_ops_with_states([True, True, True])
+    groups = ops1.group_by_state_continuity()
+    assert len(groups) == 1
+    assert groups[0].len() == 3
 
     # State change -> 2 segments
-    cmds2 = _create_commands_with_states([True, True, False])
-    assert len(group_by_state_continuity(cmds2)) == 2
-    assert len(group_by_state_continuity(cmds2)[0]) == 2
-    assert len(group_by_state_continuity(cmds2)[1]) == 1
+    ops2 = _create_ops_with_states([True, True, False])
+    groups = ops2.group_by_state_continuity()
+    assert len(groups) == 2
+    assert groups[0].len() == 2
+    assert groups[1].len() == 1
 
     # Multiple state changes
-    cmds3 = _create_commands_with_states(
-        [False, True, True, False, False, True]
-    )
-    segments = group_by_state_continuity(cmds3)
-    assert len(segments) == 4
-    assert [len(s) for s in segments] == [1, 2, 2, 1]
+    ops3 = _create_ops_with_states([False, True, True, False, False, True])
+    groups = ops3.group_by_state_continuity()
+    assert len(groups) == 4
+    assert [g.len() for g in groups] == [1, 2, 2, 1]
 
-    # Empty and single command lists
-    assert group_by_state_continuity([]) == []
-    cmds4 = _create_commands_with_states([True])
-    assert len(group_by_state_continuity(cmds4)) == 1
+    # Empty
+    ops_empty = Ops()
+    assert ops_empty.group_by_state_continuity() == []
+
+    # Single command
+    ops4 = _create_ops_with_states([True])
+    assert len(ops4.group_by_state_continuity()) == 1
 
     # Test with marker commands
-    cmds_with_marker = _create_commands_with_states([True, True])
-    cmds_with_marker.insert(1, JobStartCommand())
-    segments_with_marker = group_by_state_continuity(cmds_with_marker)
-    assert len(segments_with_marker) == 3
-    assert [len(s) for s in segments_with_marker] == [1, 1, 1]
-    assert isinstance(segments_with_marker[1][0], JobStartCommand)
+    ops_marker = Ops()
+    ops_marker.line_to(0, 0)
+    ops_marker.job_start()
+    ops_marker.line_to(1, 1)
+    ops_marker.set_state_at(
+        0,
+        MachineState(
+            power=1.0,
+            air_assist=True,
+            cut_speed=None,
+            travel_speed=None,
+            active_laser_uid=None,
+            frequency=None,
+            pulse_width=None,
+        ),
+    )
+    ops_marker.set_state_at(
+        2,
+        MachineState(
+            power=1.0,
+            air_assist=True,
+            cut_speed=None,
+            travel_speed=None,
+            active_laser_uid=None,
+            frequency=None,
+            pulse_width=None,
+        ),
+    )
+    groups_m = ops_marker.group_by_state_continuity()
+    assert len(groups_m) == 3
+    assert [g.len() for g in groups_m] == [1, 1, 1]
+    assert groups_m[1].is_marker(0)
 
 
 def test_group_by_path_continuity():
     """Test splitting a list of commands into re-orderable paths."""
-    cmds: List[Command] = [
-        MoveToCommand((0, 0, 0)),
-        LineToCommand((10, 0, 0)),
-        LineToCommand((10, 10, 0)),
-        MoveToCommand((100, 100, 0)),
-        LineToCommand((110, 100, 0)),
-    ]
-    segments = group_by_path_continuity(cmds)
-    assert len(segments) == 2
-    assert len(segments[0]) == 3
-    assert isinstance(segments[0][0], MoveToCommand)
-    assert len(segments[1]) == 2
-    assert isinstance(segments[1][0], MoveToCommand)
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    ops.line_to(10, 10)
+    ops.move_to(100, 100)
+    ops.line_to(110, 100)
+    indices = list(ops.segment_indices())
+    assert len(indices) == 2
+    assert len(indices[0]) == 3
+    assert ops.is_travel(indices[0][0])
+    assert len(indices[1]) == 2
+    assert ops.is_travel(indices[1][0])
 
     # Test with a travel command at the end
-    cmds.append(MoveToCommand((0, 0, 0)))
-    segments = group_by_path_continuity(cmds)
-    assert len(segments) == 3
-    assert len(segments[2]) == 1
+    ops.move_to(0, 0)
+    indices = list(ops.segment_indices())
+    assert len(indices) == 3
+    assert len(indices[2]) == 1

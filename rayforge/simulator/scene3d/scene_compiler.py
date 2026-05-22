@@ -17,19 +17,7 @@ import numpy as np
 
 from raygeo.shape.arc import linearize_arc
 from raygeo.shape.bezier import linearize_bezier_segment
-from ...core.ops import Ops
-from ...core.ops.commands import (
-    ArcToCommand,
-    BezierToCommand,
-    LayerEndCommand,
-    LayerStartCommand,
-    LineToCommand,
-    MoveToCommand,
-    MovingCommand,
-    ScanLinePowerCommand,
-    SetLaserCommand,
-    SetPowerCommand,
-)
+from ...core.ops import Ops, CommandType
 from ...pipeline.encoder.vertexencoder import transform_to_cylinder
 from .compiled_scene import (
     CompiledSceneArtifact,
@@ -122,23 +110,24 @@ def _to_flat(raw: np.ndarray) -> np.ndarray:
 
 
 def _extract_zero_power_segments(
-    cmd: ScanLinePowerCommand,
+    ops: Ops,
+    idx: int,
     start_pos: Tuple[float, float, float],
     zero_power_v: List[float],
     end_pos: Optional[Tuple[float, float, float]] = None,
 ) -> None:
-    if cmd.end is None:
-        return
-    num_steps = len(cmd.power_values)
+    end = ops.endpoint(idx)
+    power_mv = ops.scanline_data(idx)
+    num_steps = len(power_mv)
     if num_steps == 0:
         return
 
     p_start = np.array(start_pos, dtype=np.float32)
-    end = end_pos if end_pos is not None else cmd.end
-    p_end = np.array(end, dtype=np.float32)
+    use_end = end_pos if end_pos is not None else end
+    p_end = np.array(use_end, dtype=np.float32)
     line_vec = p_end - p_start
 
-    is_zero = np.frombuffer(cmd.power_values, dtype=np.uint8) == 0
+    is_zero = np.frombuffer(power_mv, dtype=np.uint8) == 0
     padded = np.concatenate(([False], is_zero, [False]))
     diffs = np.diff(padded.astype(int))
     starts = np.where(diffs == 1)[0]
@@ -154,7 +143,8 @@ def _extract_zero_power_segments(
 
 
 def _encode_overlay_segments(
-    cmd: ScanLinePowerCommand,
+    ops: Ops,
+    idx: int,
     start_pos: Tuple[float, float, float],
     ov_pos: List[float],
     ov_pow: List[float],
@@ -162,15 +152,15 @@ def _encode_overlay_segments(
     laser_index: int = 0,
     end_pos: Optional[Tuple[float, float, float]] = None,
 ) -> int:
-    if cmd.end is None:
-        return 0
-    num_steps = len(cmd.power_values)
+    end = ops.endpoint(idx)
+    power_mv = ops.scanline_data(idx)
+    num_steps = len(power_mv)
     if num_steps == 0:
         return 0
 
     sx, sy, sz = start_pos
-    end = end_pos if end_pos is not None else cmd.end
-    ex, ey, ez = end
+    use_end = end_pos if end_pos is not None else end
+    ex, ey, ez = use_end
     dx = (ex - sx) / num_steps
     dy = (ey - sy) / num_steps
     dz = (ez - sz) / num_steps
@@ -183,7 +173,7 @@ def _encode_overlay_segments(
     seg_power = 0.0
 
     for i in range(num_steps):
-        power_byte = cmd.power_values[i]
+        power_byte = power_mv[i]
         power_on = power_byte > 0
 
         if power_on and not prev_power_on:
@@ -235,21 +225,20 @@ def _scanline_bbox(ops: Ops) -> Optional[Tuple[float, float, float, float]]:
     max_x = float("-inf")
     max_y = float("-inf")
 
-    for cmd in ops.commands:
-        if isinstance(cmd, MoveToCommand):
-            if cmd.end is not None:
-                current_pos = cmd.end
-        elif isinstance(cmd, ScanLinePowerCommand):
-            if cmd.end is None:
-                continue
-            has_scanlines = True
+    for i in range(ops.len()):
+        ct = ops.command_type(i)
+        if ct == CommandType.MOVE_TO:
+            current_pos = ops.endpoint(i)
+        elif ct == CommandType.SCAN_LINE:
+            end = ops.endpoint(i)
             sx, sy = current_pos[0], current_pos[1]
-            ex, ey = cmd.end[0], cmd.end[1]
+            ex, ey = end[0], end[1]
             min_x = min(min_x, sx, ex)
             min_y = min(min_y, sy, ey)
             max_x = max(max_x, sx, ex)
             max_y = max(max_y, sy, ey)
-            current_pos = cmd.end
+            current_pos = end
+            has_scanlines = True
 
     if not has_scanlines:
         return None
@@ -669,9 +658,8 @@ def _generate_texture_layers(
             continue
 
         layer_ops = Ops()
-        layer_ops.replace_all(
-            list(ops.commands[li["cmd_start"] : li["cmd_end"]])
-        )
+        for j in range(li["cmd_start"], li["cmd_end"]):
+            layer_ops.copy_command_from(ops, j)
 
         is_rot = li["is_rotary"]
 
@@ -730,12 +718,12 @@ def _generate_texture_layers(
 def _handle_layer_start(
     st: _WalkState,
     acc: _LayerAccumulator,
-    cmd_idx: int,
-    cmd: LayerStartCommand,
+    ops: Ops,
+    idx: int,
     config: RenderConfig3D,
     accumulators: dict[bool, _LayerAccumulator],
 ) -> _LayerAccumulator:
-    layer_uid = cmd.layer_uid
+    layer_uid = ops.layer_uid(idx)
     layer_cfg = None
     if config.layer_configs and layer_uid in config.layer_configs:
         layer_cfg = config.layer_configs[layer_uid]
@@ -751,9 +739,9 @@ def _handle_layer_start(
     st.has_mapped_data = st.is_rotary
 
     if st.is_rotary and st.rotary_diameter > 0:
-        acc.begin_rotary_segment(cmd_idx, degrees_input=st.has_mapped_data)
+        acc.begin_rotary_segment(idx, degrees_input=st.has_mapped_data)
 
-    st.current_layer_start = cmd_idx + 1
+    st.current_layer_start = idx + 1
     st.current_layer_has_scanlines = False
     st.current_layer_scanline_laser = ""
 
@@ -786,50 +774,53 @@ def _handle_layer_end(
 
 def _handle_set_laser(
     st: _WalkState,
-    cmd: SetLaserCommand,
+    ops: Ops,
+    idx: int,
 ) -> None:
-    st.current_laser_uid = cmd.laser_uid
-    if cmd.laser_uid not in st.laser_uid_order:
-        st.laser_uid_order.append(cmd.laser_uid)
-    st.current_laser_index = st.laser_uid_order.index(cmd.laser_uid)
+    laser_uid = ops.laser_uid(idx)
+    st.current_laser_uid = laser_uid
+    if laser_uid not in st.laser_uid_order:
+        st.laser_uid_order.append(laser_uid)
+    st.current_laser_index = st.laser_uid_order.index(laser_uid)
 
 
 def _update_positions(
     st: _WalkState,
     acc: _LayerAccumulator,
-    cmd: MovingCommand,
+    ops: Ops,
+    idx: int,
 ) -> None:
-    st.current_pos_vis = _visual_end(cmd)
+    st.current_pos_vis = _visual_end(ops, idx)
     if st.has_mapped_data and st.is_rotary:
         st.current_pos = _reconstruct_mu_pos(
-            cmd,
-            acc.diameter,
-            acc.reverse,
+            ops, idx, acc.diameter, acc.reverse
         )
     else:
-        st.current_pos = cmd.end
+        st.current_pos = ops.endpoint(idx)
     st.is_initial = False
 
 
 def _handle_move_to(
     st: _WalkState,
     acc: _LayerAccumulator,
-    cmd: MoveToCommand,
+    ops: Ops,
+    idx: int,
 ) -> None:
-    vis_end = _visual_end(cmd)
+    vis_end = _visual_end(ops, idx)
     if not st.is_initial:
         acc.tv.extend(st.current_pos_vis)
         acc.tv.extend(vis_end)
         acc.tv_cum += 2
-    _update_positions(st, acc, cmd)
+    _update_positions(st, acc, ops, idx)
 
 
 def _handle_line_to(
     st: _WalkState,
     acc: _LayerAccumulator,
-    cmd: LineToCommand,
+    ops: Ops,
+    idx: int,
 ) -> None:
-    vis_end = _visual_end(cmd)
+    vis_end = _visual_end(ops, idx)
     if st.current_power > 0.0:
         acc.pv.extend(st.current_pos_vis)
         acc.pv.extend(vis_end)
@@ -841,21 +832,32 @@ def _handle_line_to(
     else:
         acc.zpv.extend(st.current_pos_vis)
         acc.zpv.extend(vis_end)
-    _update_positions(st, acc, cmd)
+    _update_positions(st, acc, ops, idx)
 
 
 def _handle_arc_to(
     st: _WalkState,
     acc: _LayerAccumulator,
-    cmd: ArcToCommand,
+    ops: Ops,
+    idx: int,
 ) -> None:
+    end = ops.endpoint(idx)
+    i_val, j_val, cw = ops.arc_params(idx)
     if st.has_mapped_data and st.is_rotary:
-        mu_cmd = _reconstruct_mu_arc(
-            cmd,
-            acc.diameter,
-            acc.reverse,
+        mu_end, mu_i, mu_j, mu_cw = _reconstruct_mu_arc(
+            ops, idx, acc.diameter, acc.reverse
         )
-        segments = linearize_arc(mu_cmd, st.current_pos)
+        arc_row = [
+            3,
+            mu_end[0],
+            mu_end[1],
+            mu_end[2],
+            mu_i,
+            mu_j,
+            1.0 if mu_cw else 0.0,
+            0.0,
+        ]
+        segments = linearize_arc(arc_row, st.current_pos)
         vis_segs = []
         for seg_start, seg_end in segments:
             vis_start = _mu_to_visual(
@@ -870,7 +872,17 @@ def _handle_arc_to(
             )
             vis_segs.append((vis_start, vis_end_pt))
     else:
-        segments = linearize_arc(cmd, st.current_pos)
+        arc_row = [
+            3,
+            end[0],
+            end[1],
+            end[2],
+            i_val,
+            j_val,
+            1.0 if cw else 0.0,
+            0.0,
+        ]
+        segments = linearize_arc(arc_row, st.current_pos)
         vis_segs = segments
     if st.current_power > 0.0:
         n_segs = len(vis_segs)
@@ -886,25 +898,26 @@ def _handle_arc_to(
         for seg_start, seg_end in vis_segs:
             acc.zpv.extend(seg_start)
             acc.zpv.extend(seg_end)
-    _update_positions(st, acc, cmd)
+    _update_positions(st, acc, ops, idx)
 
 
 def _handle_bezier_to(
     st: _WalkState,
     acc: _LayerAccumulator,
-    cmd: BezierToCommand,
+    ops: Ops,
+    idx: int,
 ) -> None:
+    end = ops.endpoint(idx)
+    c1, c2 = ops.bezier_params(idx)
     if st.has_mapped_data and st.is_rotary:
-        mu_cmd = _reconstruct_mu_bezier(
-            cmd,
-            acc.diameter,
-            acc.reverse,
+        mu_end, mu_c1, mu_c2 = _reconstruct_mu_bezier(
+            ops, idx, acc.diameter, acc.reverse
         )
         polyline = linearize_bezier_segment(
             st.current_pos,
-            mu_cmd.control1,
-            mu_cmd.control2,
-            mu_cmd.end,
+            mu_c1,
+            mu_c2,
+            mu_end,
         )
         vis_poly = [
             _mu_to_visual(
@@ -917,9 +930,9 @@ def _handle_bezier_to(
     else:
         polyline = linearize_bezier_segment(
             st.current_pos,
-            cmd.control1,
-            cmd.control2,
-            cmd.end,
+            c1,
+            c2,
+            end,
         )
         vis_poly = list(polyline)
     if st.current_power > 0.0:
@@ -935,34 +948,36 @@ def _handle_bezier_to(
         for j in range(len(vis_poly) - 1):
             acc.zpv.extend(vis_poly[j])
             acc.zpv.extend(vis_poly[j + 1])
-    _update_positions(st, acc, cmd)
+    _update_positions(st, acc, ops, idx)
 
 
 def _handle_scanline(
     st: _WalkState,
     acc: _LayerAccumulator,
-    cmd: ScanLinePowerCommand,
+    ops: Ops,
+    idx: int,
 ) -> None:
-    if cmd.end is not None:
-        vis_end = _visual_end(cmd)
-        _extract_zero_power_segments(
-            cmd,
+    vis_end = _visual_end(ops, idx)
+    _extract_zero_power_segments(
+        ops,
+        idx,
+        st.current_pos_vis,
+        acc.zpv,
+        end_pos=vis_end,
+    )
+    if not st.is_initial:
+        n = _encode_overlay_segments(
+            ops,
+            idx,
             st.current_pos_vis,
-            acc.zpv,
+            acc.ov_pos,
+            acc.ov_pow,
+            acc.ov_lid,
+            laser_index=st.current_laser_index,
             end_pos=vis_end,
         )
-        if not st.is_initial:
-            n = _encode_overlay_segments(
-                cmd,
-                st.current_pos_vis,
-                acc.ov_pos,
-                acc.ov_pow,
-                acc.ov_lid,
-                laser_index=st.current_laser_index,
-                end_pos=vis_end,
-            )
-            acc.ov_cum += n
-        _update_positions(st, acc, cmd)
+        acc.ov_cum += n
+    _update_positions(st, acc, ops, idx)
     st.current_layer_has_scanlines = True
     if not st.current_layer_scanline_laser:
         st.current_layer_scanline_laser = st.current_laser_uid
@@ -973,7 +988,7 @@ def compile_scene(
     config: RenderConfig3D,
     cancel_check: Optional[Callable[[], bool]] = None,
 ) -> CompiledSceneArtifact:
-    total_cmds = len(ops.commands)
+    total_cmds = ops.len()
 
     accumulators: dict[bool, _LayerAccumulator] = {
         False: _LayerAccumulator(total_cmds, is_rotary=False),
@@ -982,37 +997,38 @@ def compile_scene(
 
     st = _WalkState()
 
-    for i, cmd in enumerate(ops.commands):
+    for i in range(ops.len()):
         if cancel_check is not None and cancel_check():
             raise RuntimeError("Cancelled")
 
         acc = accumulators[st.is_rotary]
+        ct = ops.command_type(i)
 
-        if isinstance(cmd, LayerStartCommand):
+        if ct == CommandType.LAYER_START:
             acc = _handle_layer_start(
                 st,
                 acc,
+                ops,
                 i,
-                cmd,
                 config,
                 accumulators,
             )
-        elif isinstance(cmd, LayerEndCommand):
+        elif ct == CommandType.LAYER_END:
             _handle_layer_end(st, acc, i)
-        elif isinstance(cmd, SetLaserCommand):
-            _handle_set_laser(st, cmd)
-        elif isinstance(cmd, SetPowerCommand):
-            st.current_power = cmd.power
-        elif isinstance(cmd, MoveToCommand):
-            _handle_move_to(st, acc, cmd)
-        elif isinstance(cmd, LineToCommand):
-            _handle_line_to(st, acc, cmd)
-        elif isinstance(cmd, ArcToCommand):
-            _handle_arc_to(st, acc, cmd)
-        elif isinstance(cmd, BezierToCommand):
-            _handle_bezier_to(st, acc, cmd)
-        elif isinstance(cmd, ScanLinePowerCommand):
-            _handle_scanline(st, acc, cmd)
+        elif ct == CommandType.SET_LASER:
+            _handle_set_laser(st, ops, i)
+        elif ct == CommandType.SET_POWER:
+            st.current_power = ops.power(i)
+        elif ct == CommandType.MOVE_TO:
+            _handle_move_to(st, acc, ops, i)
+        elif ct == CommandType.LINE_TO:
+            _handle_line_to(st, acc, ops, i)
+        elif ct == CommandType.ARC_TO:
+            _handle_arc_to(st, acc, ops, i)
+        elif ct == CommandType.BEZIER_TO:
+            _handle_bezier_to(st, acc, ops, i)
+        elif ct == CommandType.SCAN_LINE:
+            _handle_scanline(st, acc, ops, i)
 
         for a in accumulators.values():
             a.record_offset(i)

@@ -12,13 +12,7 @@ Tests the material test grid generation including:
 from unittest.mock import MagicMock, patch
 
 import pytest
-from rayforge.core.ops import (
-    SetPowerCommand,
-    SetCutSpeedCommand,
-    MoveToCommand,
-    LineToCommand,
-    OpsSectionStartCommand,
-)
+from rayforge.core.ops import CommandType
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline import CoordinateSystem
 from rayforge.pipeline.producer.base import OpsProducer
@@ -189,11 +183,8 @@ def test_risk_sorted_execution_order(laser: Laser, mock_workpiece: WorkPiece):
         workpiece=mock_workpiece,
         settings={},
     )
-    speeds = [
-        c.speed
-        for c in artifact.ops.commands
-        if isinstance(c, SetCutSpeedCommand)
-    ]
+    ops = artifact.ops
+    speeds = [ops.speed(i) for i in ops.indices_of(CommandType.SET_CUT_SPEED)]
     assert len(speeds) == 9
     assert speeds[0] == 300.0, "First speed should be maximum (safest)"
     unique_speeds = sorted(set(speeds), reverse=True)
@@ -217,12 +208,9 @@ def test_ops_contains_rectangles(laser: Laser, mock_workpiece: WorkPiece):
         workpiece=mock_workpiece,
         settings={},
     )
-    move_count = sum(
-        1 for cmd in artifact.ops.commands if isinstance(cmd, MoveToCommand)
-    )
-    line_count = sum(
-        1 for cmd in artifact.ops.commands if isinstance(cmd, LineToCommand)
-    )
+    ops = artifact.ops
+    move_count = len(ops.indices_of(CommandType.MOVE_TO))
+    line_count = len(ops.indices_of(CommandType.LINE_TO))
     assert move_count >= 4
     assert line_count >= 16
 
@@ -245,16 +233,9 @@ def test_power_and_speed_ranges(laser: Laser, mock_workpiece: WorkPiece):
         workpiece=mock_workpiece,
         settings={},
     )
-    speeds = [
-        c.speed
-        for c in artifact.ops.commands
-        if isinstance(c, SetCutSpeedCommand)
-    ]
-    all_powers = [
-        c.power
-        for c in artifact.ops.commands
-        if isinstance(c, SetPowerCommand)
-    ]
+    ops = artifact.ops
+    speeds = [ops.speed(i) for i in ops.indices_of(CommandType.SET_CUT_SPEED)]
+    all_powers = [ops.power(i) for i in ops.indices_of(CommandType.SET_POWER)]
     # Filter out the explicit power-off commands for range validation
     powers = [p for p in all_powers if p > 0]
     min_power, max_power = min_power_percent / 100.0, max_power_percent / 100.0
@@ -284,16 +265,9 @@ def test_single_column_grid(laser: Laser, mock_workpiece: WorkPiece):
         workpiece=mock_workpiece,
         settings={},
     )
-    speeds = [
-        c.speed
-        for c in artifact.ops.commands
-        if isinstance(c, SetCutSpeedCommand)
-    ]
-    all_powers = [
-        c.power
-        for c in artifact.ops.commands
-        if isinstance(c, SetPowerCommand)
-    ]
+    ops = artifact.ops
+    speeds = [ops.speed(i) for i in ops.indices_of(CommandType.SET_CUT_SPEED)]
+    all_powers = [ops.power(i) for i in ops.indices_of(CommandType.SET_POWER)]
     # Filter out explicit power-off commands
     powers = [p for p in all_powers if p > 0]
     assert len(set(speeds)) == 5
@@ -317,16 +291,9 @@ def test_single_row_grid(laser: Laser, mock_workpiece: WorkPiece):
         workpiece=mock_workpiece,
         settings={},
     )
-    speeds = [
-        c.speed
-        for c in artifact.ops.commands
-        if isinstance(c, SetCutSpeedCommand)
-    ]
-    all_powers = [
-        c.power
-        for c in artifact.ops.commands
-        if isinstance(c, SetPowerCommand)
-    ]
+    ops = artifact.ops
+    speeds = [ops.speed(i) for i in ops.indices_of(CommandType.SET_CUT_SPEED)]
+    all_powers = [ops.power(i) for i in ops.indices_of(CommandType.SET_POWER)]
     # Filter out explicit power-off commands
     powers = [p for p in all_powers if p > 0]
     assert all(s == 100.0 for s in speeds)
@@ -346,13 +313,11 @@ def test_workpiece_uid_in_section_commands(
         workpiece=mock_workpiece,
         settings={},
     )
-    section_starts = [
-        c
-        for c in artifact.ops.commands
-        if isinstance(c, OpsSectionStartCommand)
-    ]
-    assert len(section_starts) > 0
-    assert section_starts[0].workpiece_uid == mock_workpiece.uid
+    ops = artifact.ops
+    section_indices = ops.indices_of(CommandType.OPS_SECTION_START)
+    assert len(section_indices) > 0
+    _, wp_uid = ops.section_params(section_indices[0])
+    assert wp_uid == mock_workpiece.uid
 
 
 def test_grid_cell_count(laser: Laser):
@@ -378,10 +343,9 @@ def test_grid_cell_count(laser: Laser):
             workpiece=workpiece,
             settings={},
         )
+        ops = artifact.ops
         speeds = [
-            c.speed
-            for c in artifact.ops.commands
-            if isinstance(c, SetCutSpeedCommand)
+            ops.speed(i) for i in ops.indices_of(CommandType.SET_CUT_SPEED)
         ]
         assert len(speeds) == cols * rows
         assert artifact.source_dimensions == wp_size

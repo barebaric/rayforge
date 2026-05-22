@@ -2,7 +2,6 @@ import math
 import pytest
 import numpy as np
 from rayforge.core.ops import Ops, SectionType
-from rayforge.core.ops.commands import BezierToCommand
 from rayforge.pipeline.encoder.vertexencoder import VertexEncoder
 
 
@@ -286,12 +285,10 @@ class TestVertexEncoder:
         ops = Ops()
         ops.set_power(0.5)
         ops.move_to(0.0, 0.0, 0.0)
-        ops.commands.append(
-            BezierToCommand(
-                end=(10.0, 0.0, 0.0),
-                control1=(3.0, 5.0, 0.0),
-                control2=(7.0, 5.0, 0.0),
-            )
+        ops.bezier_to(
+            (3.0, 5.0, 0.0),
+            (7.0, 5.0, 0.0),
+            (10.0, 0.0, 0.0),
         )
 
         result = encoder.encode(ops)
@@ -320,12 +317,10 @@ class TestVertexEncoder:
         ops = Ops()
         ops.move_to(0.0, 0.0, 0.0)
         ops.set_power(0.0)
-        ops.commands.append(
-            BezierToCommand(
-                end=(10.0, 0.0, 0.0),
-                control1=(3.0, 5.0, 0.0),
-                control2=(7.0, 5.0, 0.0),
-            )
+        ops.bezier_to(
+            (3.0, 5.0, 0.0),
+            (7.0, 5.0, 0.0),
+            (10.0, 0.0, 0.0),
         )
 
         result = encoder.encode(ops)

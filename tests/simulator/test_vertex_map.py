@@ -1,5 +1,4 @@
 from rayforge.core.ops import Ops
-from rayforge.core.ops.commands import ScanLinePowerCommand
 from rayforge.simulator.vertex_map import (
     build_vertex_map,
     build_scanline_overlay,
@@ -20,7 +19,7 @@ def test_single_line():
     ops.line_to(10.0, 0.0, 0.0)
     m = build_vertex_map(ops)
     assert m.total_powered_vertices == 2
-    assert len(m.command_vertex_offset) == len(list(ops)) + 1
+    assert len(m.command_vertex_offset) == ops.len() + 1
 
 
 def test_multiple_lines():
@@ -72,7 +71,7 @@ def test_offset_at_each_command():
 def test_scanline_zero_powered_vertices():
     ops = Ops()
     ops.move_to(0.0, 0.0, 0.0)
-    ops.add(ScanLinePowerCommand((10.0, 0.0, 0.0), bytearray([100, 200])))
+    ops.scan_to(10.0, 0.0, 0.0, bytearray([100, 200]))
     m = build_vertex_map(ops)
     assert m.total_powered_vertices == 0
 
@@ -119,7 +118,7 @@ def test_scanline_overlay_empty():
 def test_scanline_overlay_single_command():
     ops = Ops()
     ops.move_to(0.0, 0.0, 0.0)
-    ops.add(ScanLinePowerCommand((10.0, 0.0, 0.0), bytearray([100, 200])))
+    ops.scan_to(10.0, 0.0, 0.0, bytearray([100, 200]))
     overlay = build_scanline_overlay(ops)
     assert overlay.total_overlay_vertices == 2
     assert overlay.positions.shape == (6,)
@@ -130,9 +129,7 @@ def test_scanline_overlay_single_command():
 def test_scanline_overlay_zero_power_gaps():
     ops = Ops()
     ops.move_to(0.0, 0.0, 0.0)
-    ops.add(
-        ScanLinePowerCommand((10.0, 0.0, 0.0), bytearray([100, 0, 0, 200]))
-    )
+    ops.scan_to(10.0, 0.0, 0.0, bytearray([100, 0, 0, 200]))
     overlay = build_scanline_overlay(ops)
     assert overlay.total_overlay_vertices == 4
 
@@ -140,7 +137,7 @@ def test_scanline_overlay_zero_power_gaps():
 def test_scanline_overlay_all_zero():
     ops = Ops()
     ops.move_to(0.0, 0.0, 0.0)
-    ops.add(ScanLinePowerCommand((10.0, 0.0, 0.0), bytearray([0, 0, 0])))
+    ops.scan_to(10.0, 0.0, 0.0, bytearray([0, 0, 0]))
     overlay = build_scanline_overlay(ops)
     assert overlay.total_overlay_vertices == 0
 
@@ -148,17 +145,17 @@ def test_scanline_overlay_all_zero():
 def test_scanline_overlay_multiple_scanlines():
     ops = Ops()
     ops.move_to(0.0, 0.0, 0.0)
-    ops.add(ScanLinePowerCommand((10.0, 0.0, 0.0), bytearray([100])))
-    ops.add(ScanLinePowerCommand((10.0, 5.0, 0.0), bytearray([200])))
+    ops.scan_to(10.0, 0.0, 0.0, bytearray([100]))
+    ops.scan_to(10.0, 5.0, 0.0, bytearray([200]))
     overlay = build_scanline_overlay(ops)
     assert overlay.total_overlay_vertices == 4
-    assert len(overlay.cmd_vertex_offset) == len(list(ops)) + 1
+    assert len(overlay.cmd_vertex_offset) == ops.len() + 1
 
 
 def test_scanline_overlay_positions_match_ops():
     ops = Ops()
     ops.move_to(0.0, 0.0, 0.0)
-    ops.add(ScanLinePowerCommand((10.0, 0.0, 0.0), bytearray([255, 255, 255])))
+    ops.scan_to(10.0, 0.0, 0.0, bytearray([255, 255, 255]))
     overlay = build_scanline_overlay(ops)
     pos = overlay.positions.reshape(-1, 3)
     assert abs(pos[0][0] - 0.0) < 1e-6

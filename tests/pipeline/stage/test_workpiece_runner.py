@@ -335,7 +335,7 @@ def test_transformers_are_applied_before_put(
         reconstructed_artifact = get_context().artifact_store.get(handle)
 
         assert isinstance(reconstructed_artifact, WorkPieceArtifact)
-        assert len(reconstructed_artifact.ops.commands) >= 24
+        assert len(reconstructed_artifact.ops) >= 24
     finally:
         # Cleanup
         if handle:
