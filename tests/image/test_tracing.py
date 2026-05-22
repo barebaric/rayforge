@@ -2,10 +2,9 @@ from unittest.mock import ANY, MagicMock
 
 import cairo
 import numpy as np
-from raygeo import CMD_TYPE_LINE, CMD_TYPE_MOVE, COL_TYPE
+from raygeo import Geometry
 
 from rayforge.image.tracing import (
-    Geometry,
     trace_color_image,
     trace_surface,
 )
@@ -132,8 +131,8 @@ def test_trace_surface_hull_fallback_path(monkeypatch):
     # Check command types directly from numpy array
     data = geometries[0].data
     assert data is not None
-    assert data[0, COL_TYPE] == CMD_TYPE_MOVE
-    assert np.all(data[1:, COL_TYPE] == CMD_TYPE_LINE)
+    assert data[0, Geometry.COL_TYPE] == Geometry.CMD_TYPE_MOVE
+    assert np.all(data[1:, Geometry.COL_TYPE] == Geometry.CMD_TYPE_LINE)
 
 
 def test_trace_surface_edge_touching_shape():

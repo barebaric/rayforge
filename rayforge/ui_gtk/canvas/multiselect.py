@@ -13,14 +13,13 @@ from typing import (
     Union,
 )
 
-from raygeo.geo.types import Point, Rect
-
 from ...core.matrix import Matrix
 from . import element, transform
 from .region import ElementRegion, check_region_hit, get_region_rect
 
 # Forward declaration for type hinting to avoid circular imports
 if TYPE_CHECKING:
+    from raygeo.geo.types import Point, Rect
     from .canvas import Canvas
     from .element import CanvasElement
 
@@ -38,9 +37,9 @@ class MultiSelectionGroup:
         self.elements: List[CanvasElement] = elements
         self.canvas: Canvas = canvas
         self._bounding_box: Rect = (0, 0, 0, 0)
-        self._center: Point = (0, 0)
+        self._center: "Point" = (0, 0)
         self.initial_states: List[Dict[str, Any]] = []
-        self.initial_center: Point = (0, 0)
+        self.initial_center: "Point" = (0, 0)
 
         # The transformation matrix for the entire group, applied during a
         # drag operation.
@@ -65,7 +64,7 @@ class MultiSelectionGroup:
         return self._bounding_box[3]
 
     @property
-    def center(self) -> Point:
+    def center(self) -> "Point":
         return self._center
 
     def _calculate_bounding_box(self):
@@ -230,7 +229,9 @@ class MultiSelectionGroup:
         )
         self._update_element_transforms()
 
-    def apply_rotate(self, angle_delta: float, center: Optional[Point] = None):
+    def apply_rotate(
+        self, angle_delta: float, center: Optional["Point"] = None
+    ):
         """
         Sets the group transform to a rotation around the group's initial
         center and updates elements.
@@ -280,7 +281,7 @@ class MultiSelectionGroup:
         self,
         current_x: float,
         current_y: float,
-        rotation_pivot: Point,
+        rotation_pivot: "Point",
         drag_start_angle: float,
     ):
         """

@@ -150,7 +150,7 @@ class TestKinematicMappingApply:
 
         qb_idx = ops.indices_of(CommandType.QUADRATIC_BEZIER_TO)[0]
         circ = diameter * math.pi
-        ctrl = ops.quadratic_bezier_params(qb_idx)[0]
+        ctrl = ops.quadratic_bezier_params(qb_idx)
         assert ctrl[1] == pytest.approx((30.0 / circ) * 360.0)
 
     def test_non_moving_commands_untouched(self):

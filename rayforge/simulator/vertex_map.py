@@ -128,7 +128,7 @@ class ScanlineOverlay:
 
 def _encode_scanline_segments(
     end: Tuple[float, float, float],
-    power_mv: memoryview,
+    power_mv: memoryview | bytes,
     start_pos: Tuple[float, float, float],
 ) -> Tuple[List[float], List[float], int]:
     """

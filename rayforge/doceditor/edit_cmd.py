@@ -13,7 +13,7 @@ from typing import (
 )
 
 import numpy as np
-from raygeo import CMD_TYPE_MOVE, COL_TYPE, Geometry
+from raygeo import Geometry
 
 from ..core.item import DocItem
 from ..core.stock import StockItem
@@ -383,7 +383,10 @@ class EditCmd:
 
         to_remove = set(segment_indices)
         for idx in segment_indices:
-            if idx > 0 and data[idx - 1, COL_TYPE] == CMD_TYPE_MOVE:
+            prev_is_move = (
+                data[idx - 1, Geometry.COL_TYPE] == Geometry.CMD_TYPE_MOVE
+            )
+            if idx > 0 and prev_is_move:
                 to_remove.add(idx - 1)
 
         remaining_rows = [

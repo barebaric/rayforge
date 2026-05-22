@@ -8,9 +8,6 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from raygeo import (
-    CMD_TYPE_ARC,
-    CMD_TYPE_LINE,
-    CMD_TYPE_MOVE,
     Geometry,
 )
 
@@ -94,17 +91,17 @@ class TabCmd:
 
             # MoveTo just updates the pen position for the next drawable
             # command. It has no length and cannot contain a tab.
-            if cmd_type == CMD_TYPE_MOVE:
+            if cmd_type == Geometry.CMD_TYPE_MOVE:
                 last_point = end_point
                 continue
 
-            if cmd_type not in (CMD_TYPE_LINE, CMD_TYPE_ARC):
+            if cmd_type not in (Geometry.CMD_TYPE_LINE, Geometry.CMD_TYPE_ARC):
                 continue
 
             length = 0.0
-            if cmd_type == CMD_TYPE_LINE:
+            if cmd_type == Geometry.CMD_TYPE_LINE:
                 length = math.dist(last_point[:2], end_point[:2])
-            elif cmd_type == CMD_TYPE_ARC:
+            elif cmd_type == Geometry.CMD_TYPE_ARC:
                 i, j, cw = p1, p2, p3  # Unpack arc params
                 center_offset = (i, j)
                 clockwise = bool(cw)

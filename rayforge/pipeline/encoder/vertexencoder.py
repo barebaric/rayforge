@@ -325,7 +325,7 @@ class VertexEncoder(OpsEncoder):
     def _handle_scanline_indexed(
         self,
         end: Point3D,
-        power_mv: memoryview,
+        power_mv: memoryview | bytes,
         start_pos: Point3D,
         zero_power_v: List[float],
     ):

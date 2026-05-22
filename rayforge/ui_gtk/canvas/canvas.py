@@ -3,13 +3,21 @@ from __future__ import annotations
 import logging
 import math
 from enum import Enum, auto
-from typing import Any, Generator, List, Optional, Set, Tuple, Union
+from typing import (
+    Any,
+    Generator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    TYPE_CHECKING,
+)
 
 import cairo
 import numpy as np
 from blinker import Signal
 from gi.repository import Gdk, Graphene, Gtk
-from raygeo.geo.types import Point, Rect
 
 from ...core.color import ColorRGBA
 from ...core.matrix import Matrix
@@ -28,6 +36,10 @@ from .region import (
     SHEAR_HANDLES,
     ElementRegion,
 )
+
+if TYPE_CHECKING:
+    from raygeo.geo.types import Point, Rect
+
 
 logger = logging.getLogger(__name__)
 DRAG_THRESHOLD = 5.0

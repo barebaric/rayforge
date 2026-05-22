@@ -1,10 +1,6 @@
 import numpy as np
 from raygeo import (
-    CMD_TYPE_BEZIER,
-    CMD_TYPE_LINE,
-    CMD_TYPE_MOVE,
-    COL_TYPE,
-    COL_Z,
+    Geometry,
 )
 
 from rayforge.core.font_config import FontConfig
@@ -44,24 +40,24 @@ def test_text_to_geometry_has_move_to():
     """Tests that geometry starts with MOVE_TO command."""
     geo = text_to_geometry("X")
     assert geo.data is not None
-    assert geo.data[0, COL_TYPE] == CMD_TYPE_MOVE
+    assert geo.data[0, Geometry.COL_TYPE] == Geometry.CMD_TYPE_MOVE
 
 
 def test_text_to_geometry_has_path_commands():
     """Tests that geometry contains path commands."""
     geo = text_to_geometry("O")
     assert geo.data is not None
-    types = set(geo.data[:, COL_TYPE])
-    assert CMD_TYPE_MOVE in types
-    assert CMD_TYPE_LINE in types or CMD_TYPE_BEZIER in types
+    types = set(geo.data[:, Geometry.COL_TYPE])
+    assert Geometry.CMD_TYPE_MOVE in types
+    assert Geometry.CMD_TYPE_LINE in types or Geometry.CMD_TYPE_BEZIER in types
 
 
 def test_text_to_geometry_bezier_curves():
     """Tests that curved text generates bezier commands."""
     geo = text_to_geometry("O")
     assert geo.data is not None
-    types = set(geo.data[:, COL_TYPE])
-    assert CMD_TYPE_BEZIER in types
+    types = set(geo.data[:, Geometry.COL_TYPE])
+    assert Geometry.CMD_TYPE_BEZIER in types
 
 
 def test_text_to_geometry_font_family():
@@ -126,7 +122,7 @@ def test_text_to_geometry_z_zero():
     """Tests that text geometry has z=0 for all points."""
     geo = text_to_geometry("ABC")
     assert geo.data is not None
-    assert np.all(geo.data[:, COL_Z] == 0.0)
+    assert np.all(geo.data[:, Geometry.COL_Z] == 0.0)
 
 
 def test_text_to_geometry_consistent():

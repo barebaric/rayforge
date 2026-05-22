@@ -7,10 +7,6 @@ from typing import List
 
 import ezdxf
 from raygeo import (
-    CMD_TYPE_ARC,
-    CMD_TYPE_BEZIER,
-    CMD_TYPE_LINE,
-    CMD_TYPE_MOVE,
     Geometry,
 )
 
@@ -62,13 +58,13 @@ class GeometryDxfExporter(BaseExporter):
             x = cmd[1]
             y = cmd[2]
 
-            if cmd_type == CMD_TYPE_MOVE:
+            if cmd_type == Geometry.CMD_TYPE_MOVE:
                 flush_polyline()
-            elif cmd_type == CMD_TYPE_LINE:
+            elif cmd_type == Geometry.CMD_TYPE_LINE:
                 if not poly_points:
                     poly_points = [(last_x, last_y)]
                 poly_points.append((x, y))
-            elif cmd_type == CMD_TYPE_ARC:
+            elif cmd_type == Geometry.CMD_TYPE_ARC:
                 flush_polyline()
 
                 i = cmd[4]
@@ -99,7 +95,7 @@ class GeometryDxfExporter(BaseExporter):
                     start_angle=start_angle,
                     end_angle=end_angle,
                 )
-            elif cmd_type == CMD_TYPE_BEZIER:
+            elif cmd_type == Geometry.CMD_TYPE_BEZIER:
                 flush_polyline()
 
                 c1x = cmd[4]

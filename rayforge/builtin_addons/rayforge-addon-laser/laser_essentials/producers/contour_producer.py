@@ -235,8 +235,7 @@ class ContourProducer(OpsProducer):
                 if self.overcut > 0:
                     contour_list = final_geometry.split_into_contours()
                     contour_list = [
-                        apply_overcut(c, self.overcut)
-                        for c in contour_list
+                        apply_overcut(c, self.overcut) for c in contour_list
                     ]
                     final_geometry = Geometry()
                     for c in contour_list:
@@ -253,12 +252,10 @@ class ContourProducer(OpsProducer):
 
                 if self.overcut > 0:
                     inner_contours = [
-                        apply_overcut(c, self.overcut)
-                        for c in inner_contours
+                        apply_overcut(c, self.overcut) for c in inner_contours
                     ]
                     outer_contours = [
-                        apply_overcut(c, self.overcut)
-                        for c in outer_contours
+                        apply_overcut(c, self.overcut) for c in outer_contours
                     ]
 
                 # Combine the lists of contours into composite Geometry objects

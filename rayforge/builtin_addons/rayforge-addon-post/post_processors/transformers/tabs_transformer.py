@@ -13,9 +13,10 @@ from typing import (
     Tuple,
 )
 
-from raygeo.geo import PyCommand
+
 from raygeo.geo.shape.bezier import linearize_bezier
 from raygeo.geo.types import Point3D
+from raygeo.geo import Arc, Bezier, Line, Move
 from raygeo.ops import Ops
 from raygeo.ops.types import CommandCategory, CommandType, SectionType
 
@@ -114,7 +115,7 @@ class TabOpsTransformer(OpsTransformer):
 
             end_point = cmd.end
 
-            if isinstance(cmd, PyCommand.Move):
+            if isinstance(cmd, Move):
                 continue
 
             p_start_3d: Point3D = (0.0, 0.0, 0.0)
@@ -134,12 +135,12 @@ class TabOpsTransformer(OpsTransformer):
 
             center_x, center_y = 0.0, 0.0
 
-            if isinstance(cmd, PyCommand.Line):
+            if isinstance(cmd, Line):
                 p_start, p_end = p_start_3d[:2], end_point[:2]
                 center_x = p_start[0] + (p_end[0] - p_start[0]) * tab.pos
                 center_y = p_start[1] + (p_end[1] - p_start[1]) * tab.pos
 
-            elif isinstance(cmd, PyCommand.Arc):
+            elif isinstance(cmd, Arc):
                 center_offset = cmd.center_offset
                 clockwise = cmd.clockwise
                 center = (
@@ -170,7 +171,7 @@ class TabOpsTransformer(OpsTransformer):
                 center_x = center[0] + radius * math.cos(tab_angle)
                 center_y = center[1] + radius * math.sin(tab_angle)
 
-            elif isinstance(cmd, PyCommand.Bezier):
+            elif isinstance(cmd, Bezier):
                 c1x, c1y = cmd.control1
                 c2x, c2y = cmd.control2
                 t = tab.pos

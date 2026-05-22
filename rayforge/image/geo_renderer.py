@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 
 import cairo
 from raygeo import Geometry
-from raygeo.geo import PyCommand
+from raygeo.geo import Arc, Bezier, Line, Move
 
 
 def geometry_to_cairo(
@@ -24,11 +24,11 @@ def geometry_to_cairo(
     for cmd in geometry.iter_typed_commands():
         end = (cmd.end[0], cmd.end[1])
 
-        if isinstance(cmd, PyCommand.Move):
+        if isinstance(cmd, Move):
             ctx.move_to(end[0], end[1])
-        elif isinstance(cmd, PyCommand.Line):
+        elif isinstance(cmd, Line):
             ctx.line_to(end[0], end[1])
-        elif isinstance(cmd, PyCommand.Arc):
+        elif isinstance(cmd, Arc):
             cx = last_point[0] + cmd.center_offset[0]
             cy = last_point[1] + cmd.center_offset[1]
             radius = math.hypot(cmd.center_offset[0], cmd.center_offset[1])
@@ -51,7 +51,7 @@ def geometry_to_cairo(
                 ctx.arc_negative(cx, cy, radius, start_angle, end_angle)
             else:
                 ctx.arc(cx, cy, radius, start_angle, end_angle)
-        elif isinstance(cmd, PyCommand.Bezier):
+        elif isinstance(cmd, Bezier):
             ctx.curve_to(
                 cmd.control1[0],
                 cmd.control1[1],
