@@ -10,7 +10,13 @@ from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple, Union
 
 from blinker import Signal
 from raygeo import Geometry
-from raygeo.geo import PyCommand
+
+from raygeo.geo import (
+    Arc as GeoArc,
+    Bezier as GeoBezier,
+    Line as GeoLine,
+    Move as GeoMove,
+)
 from raygeo.geo.shape.polygon import is_point_inside_polygon
 
 from rayforge.core.asset import IAsset
@@ -471,17 +477,17 @@ class Sketch(IAsset, IGeometryProvider):
         for cmd in geometry.iter_typed_commands():
             end_x, end_y = cmd.end[0], cmd.end[1]
 
-            if isinstance(cmd, PyCommand.Move):
+            if isinstance(cmd, GeoMove):
                 current_x, current_y = end_x, end_y
                 current_pid = get_or_add_point(end_x, end_y)
-            elif isinstance(cmd, PyCommand.Line):
+            elif isinstance(cmd, GeoLine):
                 if current_pid is None:
                     current_pid = get_or_add_point(current_x, current_y)
                 end_pid = get_or_add_point(end_x, end_y)
                 sketch.add_line(current_pid, end_pid)
                 current_pid = end_pid
                 current_x, current_y = end_x, end_y
-            elif isinstance(cmd, PyCommand.Arc):
+            elif isinstance(cmd, GeoArc):
                 if current_pid is None:
                     current_pid = get_or_add_point(current_x, current_y)
                 end_pid = get_or_add_point(end_x, end_y)
@@ -498,7 +504,7 @@ class Sketch(IAsset, IGeometryProvider):
                 )
                 current_pid = end_pid
                 current_x, current_y = end_x, end_y
-            elif isinstance(cmd, PyCommand.Bezier):
+            elif isinstance(cmd, GeoBezier):
                 if current_pid is None:
                     current_pid = get_or_add_point(current_x, current_y)
 

@@ -77,6 +77,7 @@ SPHINX_REF_RE = re.compile(
 
 FENCE_PLACEHOLDER = "\x00FENCE\x00"
 
+
 def convert_sphinx(text: str) -> str:
     text = SPHINX_REF_RE.sub(r"**\1**", text)
     # Protect triple-backtick code fences from the `` -> ` replacement

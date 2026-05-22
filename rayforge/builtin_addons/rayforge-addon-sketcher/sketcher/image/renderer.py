@@ -1,10 +1,14 @@
 import logging
 import math
 import warnings
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Optional,
+    Tuple,
+)
 
 from raygeo import Geometry
-from raygeo.geo import PyCommand
+from raygeo.geo import Arc, Bezier, Line, Move
 
 from rayforge.core.color import ColorRGBA
 from rayforge.image.base_renderer import Renderer, RenderSpecification
@@ -41,11 +45,11 @@ def _geometry_to_svg_path(
     path_data = []
     for cmd in geometry.iter_typed_commands():
         x, y = cmd.end[0], cmd.end[1]
-        if isinstance(cmd, PyCommand.Move):
+        if isinstance(cmd, Move):
             path_data.append(f"M {x * width:.3f} {height * (1 - y):.3f}")
-        elif isinstance(cmd, PyCommand.Line):
+        elif isinstance(cmd, Line):
             path_data.append(f"L {x * width:.3f} {height * (1 - y):.3f}")
-        elif isinstance(cmd, PyCommand.Arc):
+        elif isinstance(cmd, Arc):
             i = cmd.center_offset[0]
             j = cmd.center_offset[1]
             cw = cmd.clockwise
@@ -65,7 +69,7 @@ def _geometry_to_svg_path(
                 f"A {radius_x_px:.3f} {radius_y_px:.3f} 0 {large_arc} {sweep} "
                 f"{ex_px:.3f} {ey_px:.3f}"
             )
-        elif isinstance(cmd, PyCommand.Bezier):
+        elif isinstance(cmd, Bezier):
             c1x = cmd.control1[0]
             c1y = cmd.control1[1]
             c2x = cmd.control2[0]

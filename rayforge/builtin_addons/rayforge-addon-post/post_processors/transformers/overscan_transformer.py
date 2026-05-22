@@ -262,7 +262,10 @@ class OverscanTransformer(OpsTransformer):
                     new_ops.transfer_command_from(old_ops, j)
                 return
 
-            original_power = old_ops.preloaded_state(first_cut_idx).power
+            first_state = old_ops.preloaded_state(first_cut_idx)
+            original_power = (
+                first_state.power if first_state is not None else 0.0
+            )
 
             new_ops.move_to(*overscan_start_3d)
             new_ops.set_power(0)

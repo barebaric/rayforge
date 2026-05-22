@@ -497,7 +497,7 @@ class DxfImporter(Importer):
         # Check continuity with the *internal* geometry cursor
         is_continuous = False
         if not geo.is_empty():
-            lx, ly, lz = geo._get_last_point()
+            lx, ly, lz = geo.get_last_point()
             if (lx - start.x) ** 2 + (ly - start.y) ** 2 + (
                 lz - start.z
             ) ** 2 < 1e-8:
@@ -514,7 +514,7 @@ class DxfImporter(Importer):
                 c1, c2 = cmd.ctrl1, cmd.ctrl2
                 geo.bezier_to(end.x, end.y, c1.x, c1.y, c2.x, c2.y, end.z)
             elif cmd.type == Command.CURVE3_TO:
-                start_x, start_y, _ = geo._get_last_point()
+                start_x, start_y, _ = geo.get_last_point()
                 ctrl = cmd.ctrl
                 c1x = start_x + (2 / 3) * (ctrl.x - start_x)
                 c1y = start_y + (2 / 3) * (ctrl.y - start_y)
@@ -523,7 +523,7 @@ class DxfImporter(Importer):
                 geo.bezier_to(end.x, end.y, c1x, c1y, c2x, c2y, end.z)
             elif cmd.type == Command.MOVE_TO:
                 # Check internal continuity of the path object itself
-                cx, cy, cz = geo._get_last_point()
+                cx, cy, cz = geo.get_last_point()
                 if (cx - end.x) ** 2 + (cy - end.y) ** 2 + (
                     cz - end.z
                 ) ** 2 > 1e-8:

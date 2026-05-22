@@ -3,17 +3,7 @@ import uuid
 from pathlib import Path
 
 import pytest
-from raygeo import (
-    CMD_TYPE_ARC,
-    CMD_TYPE_LINE,
-    COL_CW,
-    COL_I,
-    COL_J,
-    COL_TYPE,
-    COL_X,
-    COL_Z,
-    Geometry,
-)
+from raygeo import Geometry
 from sketcher.core import Sketch
 from sketcher.core.constraints import (
     CoincidentConstraint,
@@ -111,14 +101,16 @@ def test_sketch_arc_export():
     assert data is not None
 
     # Should contain a MoveTo(10,0) and ArcTo(0,10)
-    arc_rows = data[data[:, COL_TYPE] == CMD_TYPE_ARC]
+    arc_rows = data[data[:, Geometry.COL_TYPE] == Geometry.CMD_TYPE_ARC]
     assert len(arc_rows) == 1
 
     arc_row = arc_rows[0]
-    assert (arc_row[COL_X : COL_Z + 1] == (0.0, 10.0, 0.0)).all()
+    assert (
+        arc_row[Geometry.COL_X : Geometry.COL_Z + 1] == (0.0, 10.0, 0.0)
+    ).all()
     # Check offsets. Center (0,0) relative to Start (10,0) is (-10, 0)
-    assert (arc_row[COL_I : COL_J + 1] == (-10.0, 0.0)).all()
-    assert arc_row[COL_CW] == 0.0
+    assert (arc_row[Geometry.COL_I : Geometry.COL_J + 1] == (-10.0, 0.0)).all()
+    assert arc_row[Geometry.COL_CW] == 0.0
 
 
 def test_sketch_circle_workflow():
@@ -145,7 +137,7 @@ def test_sketch_circle_workflow():
     assert isinstance(geo, Geometry)
     data = geo.data
     assert data is not None
-    arcs = data[data[:, COL_TYPE] == CMD_TYPE_ARC]
+    arcs = data[data[:, Geometry.COL_TYPE] == Geometry.CMD_TYPE_ARC]
     assert len(arcs) == 2
 
 
@@ -1055,21 +1047,27 @@ def test_sketch_fill_geometry_generation_circle():
     assert len(geo) == 3
 
     # Start at radius point (10, 0)
-    assert (data[0, COL_X : COL_Z + 1] == (10.0, 0.0, 0.0)).all()
+    assert (
+        data[0, Geometry.COL_X : Geometry.COL_Z + 1] == (10.0, 0.0, 0.0)
+    ).all()
 
     # First arc to (-10, 0). Center is (0,0). Offset from (10,0) is (-10, 0).
     arc1 = data[1]
-    assert arc1[COL_TYPE] == CMD_TYPE_ARC
-    assert (arc1[COL_X : COL_Z + 1] == (-10.0, 0.0, 0.0)).all()
-    assert (arc1[COL_I : COL_J + 1] == (-10.0, 0.0)).all()
-    assert not bool(arc1[COL_CW])
+    assert arc1[Geometry.COL_TYPE] == Geometry.CMD_TYPE_ARC
+    assert (
+        arc1[Geometry.COL_X : Geometry.COL_Z + 1] == (-10.0, 0.0, 0.0)
+    ).all()
+    assert (arc1[Geometry.COL_I : Geometry.COL_J + 1] == (-10.0, 0.0)).all()
+    assert not bool(arc1[Geometry.COL_CW])
 
     # Second arc to (10, 0). Offset from (-10,0) is (10, 0).
     arc2 = data[2]
-    assert arc2[COL_TYPE] == CMD_TYPE_ARC
-    assert (arc2[COL_X : COL_Z + 1] == (10.0, 0.0, 0.0)).all()
-    assert (arc2[COL_I : COL_J + 1] == (10.0, 0.0)).all()
-    assert not bool(arc2[COL_CW])
+    assert arc2[Geometry.COL_TYPE] == Geometry.CMD_TYPE_ARC
+    assert (
+        arc2[Geometry.COL_X : Geometry.COL_Z + 1] == (10.0, 0.0, 0.0)
+    ).all()
+    assert (arc2[Geometry.COL_I : Geometry.COL_J + 1] == (10.0, 0.0)).all()
+    assert not bool(arc2[Geometry.COL_CW])
 
 
 def test_sketch_fill_geometry_generation_rect():
@@ -1104,20 +1102,30 @@ def test_sketch_fill_geometry_generation_rect():
     assert len(geo) == 5  # MoveTo + 4 LineTo
 
     # Check start
-    assert (data[0, COL_X : COL_Z + 1] == (0.0, 0.0, 0.0)).all()
+    assert (
+        data[0, Geometry.COL_X : Geometry.COL_Z + 1] == (0.0, 0.0, 0.0)
+    ).all()
 
     # Check sequence
-    assert data[1, COL_TYPE] == CMD_TYPE_LINE
-    assert (data[1, COL_X : COL_Z + 1] == (10.0, 0.0, 0.0)).all()
+    assert data[1, Geometry.COL_TYPE] == Geometry.CMD_TYPE_LINE
+    assert (
+        data[1, Geometry.COL_X : Geometry.COL_Z + 1] == (10.0, 0.0, 0.0)
+    ).all()
 
-    assert data[2, COL_TYPE] == CMD_TYPE_LINE
-    assert (data[2, COL_X : COL_Z + 1] == (10.0, 10.0, 0.0)).all()
+    assert data[2, Geometry.COL_TYPE] == Geometry.CMD_TYPE_LINE
+    assert (
+        data[2, Geometry.COL_X : Geometry.COL_Z + 1] == (10.0, 10.0, 0.0)
+    ).all()
 
-    assert data[3, COL_TYPE] == CMD_TYPE_LINE
-    assert (data[3, COL_X : COL_Z + 1] == (0.0, 10.0, 0.0)).all()
+    assert data[3, Geometry.COL_TYPE] == Geometry.CMD_TYPE_LINE
+    assert (
+        data[3, Geometry.COL_X : Geometry.COL_Z + 1] == (0.0, 10.0, 0.0)
+    ).all()
 
-    assert data[4, COL_TYPE] == CMD_TYPE_LINE
-    assert (data[4, COL_X : COL_Z + 1] == (0.0, 0.0, 0.0)).all()
+    assert data[4, Geometry.COL_TYPE] == Geometry.CMD_TYPE_LINE
+    assert (
+        data[4, Geometry.COL_X : Geometry.COL_Z + 1] == (0.0, 0.0, 0.0)
+    ).all()
 
 
 def test_sketch_fill_geometry_generation_arc_shape():
@@ -1160,11 +1168,15 @@ def test_sketch_fill_geometry_generation_arc_shape():
     assert len(geo) == 3  # MoveTo + LineTo + ArcTo
 
     # 1. MoveTo Start of Line (-10, 0)
-    assert (data[0, COL_X : COL_Z + 1] == (-10.0, 0.0, 0.0)).all()
+    assert (
+        data[0, Geometry.COL_X : Geometry.COL_Z + 1] == (-10.0, 0.0, 0.0)
+    ).all()
 
     # 2. LineTo End of Line (10, 0)
-    assert data[1, COL_TYPE] == CMD_TYPE_LINE
-    assert (data[1, COL_X : COL_Z + 1] == (10.0, 0.0, 0.0)).all()
+    assert data[1, Geometry.COL_TYPE] == Geometry.CMD_TYPE_LINE
+    assert (
+        data[1, Geometry.COL_X : Geometry.COL_Z + 1] == (10.0, 0.0, 0.0)
+    ).all()
 
     # 3. ArcTo back to (-10, 0)
     # Entity is CW. Traversal is Reverse.
@@ -1172,15 +1184,17 @@ def test_sketch_fill_geometry_generation_arc_shape():
     # So is_cw should be False (CCW).
 
     cmd_arc = data[2]
-    assert cmd_arc[COL_TYPE] == CMD_TYPE_ARC
-    assert (cmd_arc[COL_X : COL_Z + 1] == (-10.0, 0.0, 0.0)).all()
+    assert cmd_arc[Geometry.COL_TYPE] == Geometry.CMD_TYPE_ARC
+    assert (
+        cmd_arc[Geometry.COL_X : Geometry.COL_Z + 1] == (-10.0, 0.0, 0.0)
+    ).all()
 
     # Center offset relative to current point (10, 0). Center is (0,0).
     # Offset = (0 - 10, 0 - 0) = (-10, 0)
-    assert (cmd_arc[COL_I : COL_J + 1] == (-10.0, 0.0)).all()
+    assert (cmd_arc[Geometry.COL_I : Geometry.COL_J + 1] == (-10.0, 0.0)).all()
 
     # Direction check
-    assert not bool(cmd_arc[COL_CW])
+    assert not bool(cmd_arc[Geometry.COL_CW])
 
 
 def test_get_coincident_points_no_constraints():

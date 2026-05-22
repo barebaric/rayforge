@@ -156,41 +156,37 @@ class TestTiming:
         time1 = ops.estimate_time()
         time2 = ops.estimate_time()
         assert time1 == time2
-        assert not ops._time_dirty
-        assert ops._time_params == (1000.0, 3000.0, 1000.0)
 
     def test_cache_invalidated_on_add(self):
         """Test that adding a command invalidates the time cache."""
         ops = Ops()
         ops.line_to(10, 0, 0)
-        ops.estimate_time()
-        assert not ops._time_dirty
+        time1 = ops.estimate_time()
 
         ops.line_to(20, 0, 0)
-        assert ops._time_dirty
+        time2 = ops.estimate_time()
+        assert time2 != time1
 
     def test_cache_invalidated_on_clear(self):
         """Test that clearing commands invalidates the time cache."""
         ops = Ops()
         ops.line_to(10, 0, 0)
         ops.estimate_time()
-        assert not ops._time_dirty
 
         ops.clear()
-        assert ops._time_dirty
         assert ops.estimate_time() == 0.0
 
     def test_cache_invalidated_on_replace_all(self):
         """Test that replace_all invalidates the time cache."""
         ops = Ops()
         ops.line_to(10, 0, 0)
-        ops.estimate_time()
-        assert not ops._time_dirty
+        time1 = ops.estimate_time()
 
         tmp = Ops()
         tmp.move_to(5, 5, 0)
         ops.replace_all(tmp)
-        assert ops._time_dirty
+        time2 = ops.estimate_time()
+        assert time2 != time1
 
     def test_cache_keyed_on_params(self):
         """Test that different machine parameters cause recomputation."""
@@ -205,32 +201,30 @@ class TestTiming:
         """Test that copy() preserves the cache state."""
         ops = Ops()
         ops.line_to(100, 0, 0)
-        ops.estimate_time()
-        assert not ops._time_dirty
+        time1 = ops.estimate_time()
 
         copied = ops.copy()
-        assert not copied._time_dirty
-        assert copied._cached_time == ops._cached_time
-        assert copied._time_params == ops._time_params
+        time2 = copied.estimate_time()
+        assert time1 == time2
 
     def test_cache_after_transform(self):
-        """Test that transform() invalidates the cache."""
+        """Test that transform() invalidates the time cache."""
         ops = Ops()
         ops.line_to(100, 0, 0)
-        ops.estimate_time()
-        assert not ops._time_dirty
+        time1 = ops.estimate_time()
 
         ops.translate(10, 10)
-        assert ops._time_dirty
+        time2 = ops.estimate_time()
+        assert time2 != time1
 
     def test_cache_after_extend(self):
-        """Test that extend() invalidates the cache."""
+        """Test that extend() invalidates the time cache."""
         ops1 = Ops()
         ops1.line_to(100, 0, 0)
-        ops1.estimate_time()
-        assert not ops1._time_dirty
+        time1 = ops1.estimate_time()
 
         ops2 = Ops()
         ops2.move_to(50, 50)
         ops1.extend(ops2)
-        assert ops1._time_dirty
+        time2 = ops1.estimate_time()
+        assert time2 != time1
