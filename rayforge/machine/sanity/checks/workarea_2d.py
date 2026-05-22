@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, List, Set
 
+from ....core.ops import CommandCategory
 from ..result import IssueCategory, IssueSeverity, SanityIssue
 from .base import BaseCheck
 
@@ -20,10 +21,11 @@ class WorkareaCheck2D(BaseCheck):
         x_max, y_max = wa[0] + wa[2], wa[1] + wa[3]
         seen: Set[str] = set()
         issues: List[SanityIssue] = []
-        for cmd in context.ops.commands:
-            end = getattr(cmd, "end", None)
-            if end is None:
+        ops = context.ops
+        for i in range(ops.len()):
+            if ops.category(i) != CommandCategory.MOVING:
                 continue
+            end = ops.endpoint(i)
             self._check_point(issues, seen, end, x_min, y_min, x_max, y_max)
         return issues
 

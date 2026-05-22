@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import logging
 import math
-from copy import deepcopy
 from enum import auto, Enum
 from typing import (
     Dict,
     List,
     NamedTuple,
     Optional,
-    Sequence,
     Tuple,
     TYPE_CHECKING,
 )
@@ -20,17 +18,10 @@ from raygeo.shape.bezier import linearize_bezier
 from raygeo.path import PyCommand
 from raygeo import Point3D
 from rayforge.core.ops import (
-    BezierToCommand,
-    Command,
-    CurveToCommand,
-    LineToCommand,
-    MoveToCommand,
-    MovingCommand,
     Ops,
-    OpsSection,
     SectionType,
-    SetPowerCommand,
 )
+from rayforge.core.ops.enums import CommandType, CommandCategory
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
 from rayforge.shared.tasker.progress import ProgressContext
@@ -299,18 +290,10 @@ class TabOpsTransformer(OpsTransformer):
         else:
             self._apply_tab_gaps(ops, processed_clip_data)
 
-    @staticmethod
-    def _split_into_subpaths(
-        cmds: List[Command],
-    ) -> List[List[Command]]:
-        """Split commands into subpaths at MoveToCommand boundaries."""
-        temp_ops = Ops()
-        temp_ops.replace_all(cmds)
-        return temp_ops.split_into_subpaths()
-
     def _assign_clips_globally(
         self,
-        sections: List[OpsSection],
+        ops: Ops,
+        section_ranges: List,
         clip_data: List[_ClipPoint],
     ) -> Dict[_SubpathKey, List[_ClipPoint]]:
         """
@@ -319,15 +302,18 @@ class TabOpsTransformer(OpsTransformer):
         tab from clipping multiple contours (e.g. inner and outer
         contours produced by ContourProducer).
         """
-        # Collect all subpaths from VECTOR_OUTLINE sections.
-        all_subpaths: List[Tuple[_SubpathKey, List[Command]]] = []
-        for sec_idx, section in enumerate(sections):
-            if section.section_type != SectionType.VECTOR_OUTLINE:
+        all_subpaths: List[Tuple[_SubpathKey, Ops]] = []
+        for sec_idx, sec_range in enumerate(section_ranges):
+            sec_type = sec_range.section_type
+            content_indices = sec_range.content_indices
+            if sec_type != SectionType.VECTOR_OUTLINE:
                 continue
-            for sp_idx, sp_cmds in enumerate(
-                self._split_into_subpaths(section.commands)
-            ):
-                all_subpaths.append((_SubpathKey(sec_idx, sp_idx), sp_cmds))
+            content_ops = ops.sub_ops(content_indices)
+            sp_ranges = content_ops.subpath_indices()
+            for sp_idx, sp_indices in enumerate(sp_ranges):
+                sp_ops = content_ops.sub_ops(sp_indices)
+                key = _SubpathKey(sec_idx, sp_idx)
+                all_subpaths.append((key, sp_ops))
 
         assignments: Dict[_SubpathKey, List[_ClipPoint]] = {}
 
@@ -336,11 +322,7 @@ class TabOpsTransformer(OpsTransformer):
             best_key: Optional[_SubpathKey] = None
             best_dist = float("inf")
 
-            for key, sp_cmds in all_subpaths:
-                sp_ops = Ops()
-                # Create a distinct copy for each evaluation to avoid
-                # shared references.
-                sp_ops.replace_all(deepcopy(sp_cmds))
+            for key, sp_ops in all_subpaths:
                 sp_ops.preload_state()
                 geo = sp_ops.to_geometry()
                 closest = geo.find_closest_point(clip.x, clip.y)
@@ -363,44 +345,55 @@ class TabOpsTransformer(OpsTransformer):
         ops: Ops,
         clip_data: List[_ClipPoint],
     ) -> None:
-        sections = list(ops.iter_sections())
-        assignments = self._assign_clips_globally(sections, clip_data)
+        section_ranges = list(ops.iter_section_ranges())
+        assignments = self._assign_clips_globally(
+            ops, section_ranges, clip_data
+        )
 
-        new_commands: List[Command] = []
-        for sec_idx, section in enumerate(sections):
+        new_ops = Ops()
+        for sec_idx, sec_range in enumerate(section_ranges):
+            sec_type = sec_range.section_type
+            marker_indices = sec_range.marker_indices
+            content_indices = sec_range.content_indices
             # Preserve the section markers (start/end commands).
-            new_commands.extend(section.markers)
+            for mi in marker_indices:
+                new_ops.transfer_command_from(ops, mi)
 
-            if section.section_type != SectionType.VECTOR_OUTLINE:
+            if sec_type != SectionType.VECTOR_OUTLINE:
                 # For any other section type, or commands outside a
                 # section, pass them through unmodified.
-                new_commands.extend(section.commands)
+                for ci in content_indices:
+                    new_ops.transfer_command_from(ops, ci)
                 continue
 
-            subpaths = self._split_into_subpaths(section.commands)
-            for sp_idx, sp_cmds in enumerate(subpaths):
+            content_ops = ops.sub_ops(content_indices)
+            subpaths = content_ops.subpath_indices()
+            for sp_idx, sp_indices in enumerate(subpaths):
                 key = _SubpathKey(sec_idx, sp_idx)
                 clips = assignments.get(key, [])
                 if clips:
+                    sp_ops = content_ops.sub_ops(sp_indices)
                     has_curves = any(
-                        isinstance(c, CurveToCommand) for c in sp_cmds
+                        sp_ops.command_type(i)
+                        in (
+                            CommandType.BEZIER_TO,
+                            CommandType.QUADRATIC_BEZIER_TO,
+                        )
+                        for i in range(sp_ops.len())
                     )
                     if has_curves:
-                        processed = self._clip_subpath_with_gaps(
-                            sp_cmds, clips
-                        )
-                        new_commands.extend(processed)
+                        processed = self._clip_subpath_with_gaps(sp_ops, clips)
+                        new_ops.extend(processed)
                     else:
-                        sp_ops = Ops()
-                        sp_ops.replace_all(deepcopy(sp_cmds))
                         sp_ops.preload_state()
                         for clip in clips:
                             sp_ops.clip_at(clip.x, clip.y, clip.width)
-                        new_commands.extend(sp_ops.commands)
+                        new_ops.extend(sp_ops)
                 else:
-                    new_commands.extend(sp_cmds)
+                    for si in sp_indices:
+                        new_ops.transfer_command_from(content_ops, si)
 
-        ops.replace_all(new_commands)
+        ops.replace_with(new_ops)
 
     def _apply_tab_power(
         self,
@@ -412,80 +405,107 @@ class TabOpsTransformer(OpsTransformer):
         original_power = settings.get("power", 1.0) if settings else 1.0
         actual_tab_power = tab_power * original_power
 
-        sections = list(ops.iter_sections())
-        assignments = self._assign_clips_globally(sections, clip_data)
+        section_ranges = list(ops.iter_section_ranges())
+        assignments = self._assign_clips_globally(
+            ops, section_ranges, clip_data
+        )
 
-        new_commands: List[Command] = []
-        for sec_idx, section in enumerate(sections):
+        new_ops = Ops()
+        for sec_idx, sec_range in enumerate(section_ranges):
+            sec_type = sec_range.section_type
+            marker_indices = sec_range.marker_indices
+            content_indices = sec_range.content_indices
             # Preserve the section markers (start/end commands).
-            new_commands.extend(section.markers)
+            for mi in marker_indices:
+                new_ops.transfer_command_from(ops, mi)
 
-            if section.section_type != SectionType.VECTOR_OUTLINE:
+            if sec_type != SectionType.VECTOR_OUTLINE:
                 # For any other section type, or commands outside a
                 # section, pass them through unmodified.
-                new_commands.extend(section.commands)
+                for ci in content_indices:
+                    new_ops.transfer_command_from(ops, ci)
                 continue
 
-            subpaths = self._split_into_subpaths(section.commands)
-            for sp_idx, sp_cmds in enumerate(subpaths):
+            content_ops = ops.sub_ops(content_indices)
+            subpaths = content_ops.subpath_indices()
+            for sp_idx, sp_indices in enumerate(subpaths):
                 key = _SubpathKey(sec_idx, sp_idx)
                 clips = assignments.get(key, [])
                 if clips:
+                    sp_ops = content_ops.sub_ops(sp_indices)
                     processed = self._insert_power_commands(
-                        sp_cmds, clips, actual_tab_power, original_power
+                        sp_ops,
+                        clips,
+                        actual_tab_power,
+                        original_power,
                     )
-                    new_commands.extend(processed)
+                    new_ops.extend(processed)
                 else:
-                    new_commands.extend(sp_cmds)
+                    for si in sp_indices:
+                        new_ops.transfer_command_from(content_ops, si)
 
-        ops.replace_all(new_commands)
+        ops.replace_with(new_ops)
 
     def _insert_power_commands(
         self,
-        commands: List[Command],
+        sub_ops: Ops,
         clip_data: List[_ClipPoint],
         tab_power: float,
         original_power: float,
-    ) -> List[Command]:
-        has_curves = any(isinstance(c, CurveToCommand) for c in commands)
+    ) -> Ops:
+        has_curves = any(
+            sub_ops.command_type(i)
+            in (
+                CommandType.BEZIER_TO,
+                CommandType.QUADRATIC_BEZIER_TO,
+            )
+            for i in range(sub_ops.len())
+        )
         if has_curves:
             return self._insert_power_commands_curve_aware(
-                commands, clip_data, tab_power, original_power
+                sub_ops, clip_data, tab_power, original_power
             )
 
         temp_ops = Ops()
-        temp_ops.replace_all(deepcopy(commands))
+        for i in range(sub_ops.len()):
+            temp_ops.copy_command_from(sub_ops, i)
         temp_ops.preload_state()
         temp_ops.linearize_all()
-        linear_cmds = temp_ops.commands
 
-        if len(linear_cmds) < 2:
-            return commands
+        if temp_ops.len() < 2:
+            return sub_ops
 
-        geo_cmds = [
-            cmd
-            for cmd in linear_cmds
-            if isinstance(cmd, (MoveToCommand, LineToCommand))
+        geo_indices = [
+            i
+            for i in range(temp_ops.len())
+            if temp_ops.command_type(i)
+            in (CommandType.MOVE_TO, CommandType.LINE_TO)
         ]
 
-        if len(geo_cmds) < 2:
-            return commands
+        if len(geo_indices) < 2:
+            return sub_ops
 
-        tab_regions = self._compute_tab_regions(temp_ops, geo_cmds, clip_data)
+        tab_regions = self._compute_tab_regions(
+            temp_ops, geo_indices, clip_data
+        )
 
         if not tab_regions:
-            return commands
+            return sub_ops
 
         tab_regions.sort(key=lambda r: r.start)
 
         return self._build_commands_with_power(
-            linear_cmds, geo_cmds, tab_regions, tab_power, original_power
+            temp_ops,
+            geo_indices,
+            tab_regions,
+            tab_power,
+            original_power,
         )
 
     def _compute_tab_regions(
         self,
         temp_ops: Ops,
-        geo_cmds: Sequence[Command],
+        geo_indices: List[int],
         clip_data: List[_ClipPoint],
     ) -> List[_TabRegion]:
         tab_regions: List[_TabRegion] = []
@@ -502,7 +522,9 @@ class TabOpsTransformer(OpsTransformer):
             if dist_sq > (clip.width * 2) ** 2:
                 continue
 
-            hit_dist = self._compute_hit_distance(geo_cmds, closest)
+            hit_dist = self._compute_hit_distance(
+                temp_ops, geo_indices, closest
+            )
             if hit_dist is None:
                 continue
 
@@ -517,31 +539,33 @@ class TabOpsTransformer(OpsTransformer):
 
     def _compute_hit_distance(
         self,
-        geo_cmds: Sequence[Command],
+        temp_ops: Ops,
+        geo_indices: List[int],
         closest: Tuple[int, float, Tuple[float, ...]],
     ) -> Optional[float]:
         segment_idx = closest[0]
         t = closest[1]
 
-        if segment_idx >= len(geo_cmds):
+        if segment_idx >= len(geo_indices):
             return None
 
         hit_dist = 0.0
-        last_pos = geo_cmds[0].end
-        if last_pos is None:
-            return None
+        last_pos = temp_ops.endpoint(geo_indices[0])
 
         for i in range(1, segment_idx):
-            cmd = geo_cmds[i]
-            if isinstance(cmd, MoveToCommand) and cmd.end:
-                last_pos = cmd.end
-            elif isinstance(cmd, LineToCommand) and cmd.end:
-                hit_dist += math.dist(last_pos[:2], cmd.end[:2])
-                last_pos = cmd.end
+            idx = geo_indices[i]
+            ct = temp_ops.command_type(idx)
+            if ct == CommandType.MOVE_TO:
+                last_pos = temp_ops.endpoint(idx)
+            elif ct == CommandType.LINE_TO:
+                end = temp_ops.endpoint(idx)
+                hit_dist += math.dist(last_pos[:2], end[:2])
+                last_pos = end
 
-        hit_segment_cmd = geo_cmds[segment_idx]
-        if isinstance(hit_segment_cmd, LineToCommand) and hit_segment_cmd.end:
-            dist = math.dist(last_pos[:2], hit_segment_cmd.end[:2])
+        hit_idx = geo_indices[segment_idx]
+        if temp_ops.command_type(hit_idx) == CommandType.LINE_TO:
+            end = temp_ops.endpoint(hit_idx)
+            dist = math.dist(last_pos[:2], end[:2])
             hit_dist += t * dist
             return hit_dist
 
@@ -549,24 +573,24 @@ class TabOpsTransformer(OpsTransformer):
 
     def _build_commands_with_power(
         self,
-        linear_cmds: List[Command],
-        geo_cmds: Sequence[Command],
+        temp_ops: Ops,
+        geo_indices: List[int],
         tab_regions: List[_TabRegion],
         tab_power: float,
         original_power: float,
-    ) -> List[Command]:
-        result: List[Command] = []
+    ) -> Ops:
+        result = Ops()
         accum_dist = 0.0
         current_power = original_power
-        last_pos = geo_cmds[0].end
-        assert last_pos is not None
+        last_pos = temp_ops.endpoint(geo_indices[0])
 
-        result.append(deepcopy(linear_cmds[0]))
+        result.copy_command_from(temp_ops, 0)
 
-        for cmd in linear_cmds[1:]:
-            if isinstance(cmd, LineToCommand):
-                p1, p2 = last_pos, cmd.end
-                seg_len = math.dist(p1[:2], p2[:2])
+        for i in range(1, temp_ops.len()):
+            ct = temp_ops.command_type(i)
+            if ct == CommandType.LINE_TO:
+                p2 = temp_ops.endpoint(i)
+                seg_len = math.dist(last_pos[:2], p2[:2])
 
                 if seg_len < 1e-9:
                     last_pos = p2
@@ -580,8 +604,9 @@ class TabOpsTransformer(OpsTransformer):
                 if events:
                     self._process_segment_events(
                         result,
-                        cmd,
-                        p1,
+                        temp_ops,
+                        i,
+                        last_pos,
                         p2,
                         seg_len,
                         seg_start,
@@ -595,16 +620,15 @@ class TabOpsTransformer(OpsTransformer):
                         events, tab_power, original_power
                     )
                 else:
-                    result.append(deepcopy(cmd))
+                    result.copy_command_from(temp_ops, i)
 
                 last_pos = p2
                 accum_dist += seg_len
-            elif isinstance(cmd, MoveToCommand):
-                result.append(deepcopy(cmd))
-                if cmd.end:
-                    last_pos = cmd.end
+            elif ct == CommandType.MOVE_TO:
+                result.copy_command_from(temp_ops, i)
+                last_pos = temp_ops.endpoint(i)
             else:
-                result.append(deepcopy(cmd))
+                result.copy_command_from(temp_ops, i)
 
         return result
 
@@ -629,8 +653,9 @@ class TabOpsTransformer(OpsTransformer):
 
     def _process_segment_events(
         self,
-        result: List[Command],
-        cmd: LineToCommand,
+        result: Ops,
+        src_ops: Ops,
+        src_idx: int,
         p1: Point3D,
         p2: Point3D,
         seg_len: float,
@@ -648,23 +673,21 @@ class TabOpsTransformer(OpsTransformer):
                 t = (event_dist - seg_start) / seg_len
                 split_pt = self._interpolate_point(p1, p2, t)
 
-                new_cmd = LineToCommand(split_pt)
-                new_cmd.state = deepcopy(cmd.state) if cmd.state else None
-                result.append(new_cmd)
+                result.line_to(*split_pt)
 
             if event_type == _EventType.ENTER_TAB:
                 if current_power != tab_power:
-                    result.append(SetPowerCommand(tab_power))
+                    result.set_power(tab_power)
                     current_power = tab_power
             else:
                 if current_power != original_power:
-                    result.append(SetPowerCommand(original_power))
+                    result.set_power(original_power)
                     current_power = original_power
 
             last_dist = event_dist
 
         if seg_end > last_dist + 1e-9:
-            result.append(deepcopy(cmd))
+            result.copy_command_from(src_ops, src_idx)
 
     def _interpolate_point(
         self, p1: Point3D, p2: Point3D, t: float
@@ -795,17 +818,15 @@ class TabOpsTransformer(OpsTransformer):
         return kept
 
     @staticmethod
-    def _get_last_moving_end(
-        cmds: List[Command],
-    ) -> Optional[Point3D]:
-        for c in reversed(cmds):
-            if isinstance(c, MovingCommand) and c.end is not None:
-                return c.end
+    def _get_last_moving_end(ops: Ops) -> Optional[Point3D]:
+        for i in range(ops.len() - 1, -1, -1):
+            if ops.category(i) == CommandCategory.MOVING:
+                return ops.endpoint(i)
         return None
 
     def _compute_hit_distance_original(
         self,
-        commands: List[Command],
+        sub_ops: Ops,
         target_geo_idx: int,
         target_t: float,
     ) -> Optional[float]:
@@ -813,45 +834,49 @@ class TabOpsTransformer(OpsTransformer):
         last_pos: Optional[Point3D] = None
         geo_idx = 0
 
-        for cmd in commands:
-            if not isinstance(cmd, MovingCommand) or cmd.end is None:
+        for i in range(sub_ops.len()):
+            cat = sub_ops.category(i)
+            if cat != CommandCategory.MOVING:
                 continue
 
-            if isinstance(cmd, MoveToCommand):
-                last_pos = cmd.end
+            ct = sub_ops.command_type(i)
+            end_pt = sub_ops.endpoint(i)
+
+            if ct == CommandType.MOVE_TO:
+                last_pos = end_pt
                 if geo_idx == target_geo_idx:
                     return accum
                 geo_idx += 1
                 continue
 
             if last_pos is None:
-                last_pos = cmd.end
+                last_pos = end_pt
                 geo_idx += 1
                 continue
 
-            if isinstance(cmd, BezierToCommand):
-                seg_len = self._bezier_arc_length_2d(
-                    last_pos, cmd.control1, cmd.control2, cmd.end
-                )
+            if ct == CommandType.BEZIER_TO:
+                c1, c2 = sub_ops.bezier_params(i)
+                seg_len = self._bezier_arc_length_2d(last_pos, c1, c2, end_pt)
             else:
-                seg_len = math.dist(last_pos[:2], cmd.end[:2])
+                seg_len = math.dist(last_pos[:2], end_pt[:2])
 
             if geo_idx == target_geo_idx:
                 return accum + target_t * seg_len
 
             accum += seg_len
-            last_pos = cmd.end
+            last_pos = end_pt
             geo_idx += 1
 
         return None
 
     def _compute_gap_regions_from_original(
         self,
-        commands: List[Command],
+        sub_ops: Ops,
         clip_data: List[_ClipPoint],
     ) -> List[_TabRegion]:
         temp_ops = Ops()
-        temp_ops.replace_all(deepcopy(commands))
+        for i in range(sub_ops.len()):
+            temp_ops.copy_command_from(sub_ops, i)
         temp_ops.preload_state()
         geo = temp_ops.to_geometry()
 
@@ -869,9 +894,7 @@ class TabOpsTransformer(OpsTransformer):
                 continue
 
             seg_idx, t, _ = closest
-            hit_dist = self._compute_hit_distance_original(
-                commands, seg_idx, t
-            )
+            hit_dist = self._compute_hit_distance_original(sub_ops, seg_idx, t)
             if hit_dist is None:
                 continue
 
@@ -886,208 +909,188 @@ class TabOpsTransformer(OpsTransformer):
 
     def _clip_subpath_with_gaps(
         self,
-        commands: List[Command],
+        sub_ops: Ops,
         clip_data: List[_ClipPoint],
-    ) -> List[Command]:
+    ) -> Ops:
         gap_regions = self._compute_gap_regions_from_original(
-            commands, clip_data
+            sub_ops, clip_data
         )
         if not gap_regions:
-            return commands
+            return sub_ops
 
-        new_cmds: List[Command] = []
+        result = Ops()
         accum_dist = 0.0
         last_pos: Optional[Point3D] = None
 
-        for cmd in commands:
-            if isinstance(cmd, MoveToCommand):
-                new_cmds.append(deepcopy(cmd))
-                if cmd.end:
-                    last_pos = cmd.end
+        for i in range(sub_ops.len()):
+            ct = sub_ops.command_type(i)
+            cat = sub_ops.category(i)
+
+            if ct == CommandType.MOVE_TO:
+                result.copy_command_from(sub_ops, i)
+                last_pos = sub_ops.endpoint(i)
                 accum_dist = 0.0
                 continue
 
-            if not isinstance(cmd, MovingCommand):
+            if cat != CommandCategory.MOVING:
                 if not any(
                     g_start <= accum_dist <= g_end
                     for g_start, g_end in gap_regions
                 ):
-                    new_cmds.append(deepcopy(cmd))
+                    result.copy_command_from(sub_ops, i)
                 continue
 
-            if cmd.end is None or last_pos is None:
-                new_cmds.append(deepcopy(cmd))
-                if cmd.end:
-                    last_pos = cmd.end
+            end_pt = sub_ops.endpoint(i)
+            if last_pos is None:
+                result.copy_command_from(sub_ops, i)
+                last_pos = end_pt
                 continue
 
-            if isinstance(cmd, BezierToCommand):
-                seg_len = self._bezier_arc_length_2d(
-                    last_pos, cmd.control1, cmd.control2, cmd.end
-                )
+            if ct == CommandType.BEZIER_TO:
+                c1, c2 = sub_ops.bezier_params(i)
+                seg_len = self._bezier_arc_length_2d(last_pos, c1, c2, end_pt)
             else:
-                seg_len = math.dist(last_pos[:2], cmd.end[:2])
+                seg_len = math.dist(last_pos[:2], end_pt[:2])
 
             seg_start = accum_dist
             seg_end = accum_dist + seg_len
 
             if seg_len < 1e-9:
-                last_pos = cmd.end
+                last_pos = end_pt
                 accum_dist += seg_len
                 continue
 
             kept = self._compute_kept_ranges(seg_start, seg_end, gap_regions)
 
             if kept is None:
-                new_cmds.append(deepcopy(cmd))
+                result.copy_command_from(sub_ops, i)
             else:
                 for k_start, k_end in kept:
                     d_start = k_start - seg_start
                     d_end = k_end - seg_start
 
-                    if isinstance(cmd, BezierToCommand):
+                    if ct == CommandType.BEZIER_TO:
+                        c1, c2 = sub_ops.bezier_params(i)
                         t_start = self._bezier_distance_to_t(
-                            last_pos,
-                            cmd.control1,
-                            cmd.control2,
-                            cmd.end,
-                            d_start,
+                            last_pos, c1, c2, end_pt, d_start
                         )
                         t_end = self._bezier_distance_to_t(
-                            last_pos,
-                            cmd.control1,
-                            cmd.control2,
-                            cmd.end,
-                            d_end,
+                            last_pos, c1, c2, end_pt, d_end
                         )
                         sub = self._extract_bezier_subsegment_3d(
-                            last_pos,
-                            cmd.control1,
-                            cmd.control2,
-                            cmd.end,
-                            t_start,
-                            t_end,
+                            last_pos, c1, c2, end_pt, t_start, t_end
                         )
 
-                        last_end = self._get_last_moving_end(new_cmds)
+                        last_end = self._get_last_moving_end(result)
                         if (
                             last_end is not None
                             and math.dist(last_end[:2], sub[0][:2]) > 1e-6
                         ):
-                            new_cmds.append(MoveToCommand(sub[0]))
+                            result.move_to(*sub[0])
 
-                        new_cmd = BezierToCommand(
-                            end=sub[3],
-                            control1=sub[1],
-                            control2=sub[2],
-                        )
-                        new_cmd.state = (
-                            deepcopy(cmd.state) if cmd.state else None
-                        )
-                        new_cmds.append(new_cmd)
+                        result.bezier_to(sub[1], sub[2], sub[3])
                     else:
                         t_s = d_start / seg_len
                         t_e = d_end / seg_len
                         start_pt = self._interpolate_point(
-                            last_pos, cmd.end, t_s
+                            last_pos, end_pt, t_s
                         )
-                        end_pt = self._interpolate_point(
-                            last_pos, cmd.end, t_e
+                        end_pt_interp = self._interpolate_point(
+                            last_pos, end_pt, t_e
                         )
 
-                        last_end = self._get_last_moving_end(new_cmds)
+                        last_end = self._get_last_moving_end(result)
                         if (
                             last_end is not None
                             and math.dist(last_end[:2], start_pt[:2]) > 1e-6
                         ):
-                            new_cmds.append(MoveToCommand(start_pt))
+                            result.move_to(*start_pt)
 
-                        new_line = LineToCommand(end_pt)
-                        new_line.state = (
-                            deepcopy(cmd.state) if cmd.state else None
-                        )
-                        new_cmds.append(new_line)
+                        result.line_to(*end_pt_interp)
 
             accum_dist += seg_len
-            last_pos = cmd.end
+            last_pos = end_pt
 
         orig_endpoint = None
-        for c in reversed(commands):
-            if isinstance(c, MovingCommand) and c.end:
-                orig_endpoint = c.end
+        for ri in range(sub_ops.len() - 1, -1, -1):
+            if sub_ops.category(ri) == CommandCategory.MOVING:
+                orig_endpoint = sub_ops.endpoint(ri)
                 break
 
         if orig_endpoint:
-            last_end = self._get_last_moving_end(new_cmds)
+            last_end = self._get_last_moving_end(result)
             if last_end is None or math.dist(last_end, orig_endpoint) > 1e-6:
-                new_cmds.append(MoveToCommand(orig_endpoint))
+                result.move_to(*orig_endpoint)
 
-        return new_cmds
+        return result
 
     def _insert_power_commands_curve_aware(
         self,
-        commands: List[Command],
+        sub_ops: Ops,
         clip_data: List[_ClipPoint],
         tab_power: float,
         original_power: float,
-    ) -> List[Command]:
+    ) -> Ops:
         tab_regions = self._compute_gap_regions_from_original(
-            commands, clip_data
+            sub_ops, clip_data
         )
         if not tab_regions:
-            return commands
+            return sub_ops
         tab_regions.sort(key=lambda r: r.start)
 
-        new_cmds: List[Command] = []
+        result = Ops()
         accum_dist = 0.0
         last_pos: Optional[Point3D] = None
         current_power = original_power
 
-        for cmd in commands:
-            if isinstance(cmd, MoveToCommand):
-                new_cmds.append(deepcopy(cmd))
-                if cmd.end:
-                    last_pos = cmd.end
+        for i in range(sub_ops.len()):
+            ct = sub_ops.command_type(i)
+            cat = sub_ops.category(i)
+
+            if ct == CommandType.MOVE_TO:
+                result.copy_command_from(sub_ops, i)
+                last_pos = sub_ops.endpoint(i)
                 accum_dist = 0.0
                 continue
 
-            if isinstance(cmd, SetPowerCommand):
-                new_cmds.append(deepcopy(cmd))
+            if ct == CommandType.SET_POWER:
+                result.copy_command_from(sub_ops, i)
                 continue
 
-            if not isinstance(cmd, MovingCommand):
-                new_cmds.append(deepcopy(cmd))
+            if cat != CommandCategory.MOVING:
+                result.copy_command_from(sub_ops, i)
                 continue
 
-            if cmd.end is None or last_pos is None:
-                new_cmds.append(deepcopy(cmd))
-                if cmd.end:
-                    last_pos = cmd.end
+            end_pt = sub_ops.endpoint(i)
+            if last_pos is None:
+                result.copy_command_from(sub_ops, i)
+                last_pos = end_pt
                 continue
 
-            if isinstance(cmd, BezierToCommand):
-                seg_len = self._bezier_arc_length_2d(
-                    last_pos, cmd.control1, cmd.control2, cmd.end
-                )
+            if ct == CommandType.BEZIER_TO:
+                c1, c2 = sub_ops.bezier_params(i)
+                seg_len = self._bezier_arc_length_2d(last_pos, c1, c2, end_pt)
             else:
-                seg_len = math.dist(last_pos[:2], cmd.end[:2])
+                seg_len = math.dist(last_pos[:2], end_pt[:2])
 
             seg_start = accum_dist
             seg_end = accum_dist + seg_len
 
             if seg_len < 1e-9:
-                last_pos = cmd.end
+                last_pos = end_pt
                 accum_dist += seg_len
                 continue
 
             events = self._collect_events(seg_start, seg_end, tab_regions)
 
             if not events:
-                new_cmds.append(deepcopy(cmd))
-            elif isinstance(cmd, BezierToCommand):
+                result.copy_command_from(sub_ops, i)
+            elif ct == CommandType.BEZIER_TO:
+                c1, c2 = sub_ops.bezier_params(i)
                 self._split_bezier_with_power(
-                    new_cmds,
-                    cmd,
+                    result,
+                    sub_ops,
+                    i,
                     last_pos,
                     seg_start,
                     events,
@@ -1102,35 +1105,30 @@ class TabOpsTransformer(OpsTransformer):
                 for event_dist, event_type in events:
                     if event_dist > seg_start + 1e-9:
                         t = (event_dist - seg_start) / seg_len
-                        split_pt = self._interpolate_point(
-                            last_pos, cmd.end, t
-                        )
-                        new_line = LineToCommand(split_pt)
-                        new_line.state = (
-                            deepcopy(cmd.state) if cmd.state else None
-                        )
-                        new_cmds.append(new_line)
+                        split_pt = self._interpolate_point(last_pos, end_pt, t)
+                        result.line_to(*split_pt)
 
                     if event_type == _EventType.ENTER_TAB:
                         if current_power != tab_power:
-                            new_cmds.append(SetPowerCommand(tab_power))
+                            result.set_power(tab_power)
                             current_power = tab_power
                     else:
                         if current_power != original_power:
-                            new_cmds.append(SetPowerCommand(original_power))
+                            result.set_power(original_power)
                             current_power = original_power
 
-                new_cmds.append(deepcopy(cmd))
+                result.copy_command_from(sub_ops, i)
 
             accum_dist += seg_len
-            last_pos = cmd.end
+            last_pos = end_pt
 
-        return new_cmds
+        return result
 
     def _split_bezier_with_power(
         self,
-        new_cmds: List[Command],
-        cmd: BezierToCommand,
+        result: Ops,
+        src_ops: Ops,
+        src_idx: int,
         last_pos: Point3D,
         seg_start: float,
         events: List[Tuple[float, _EventType]],
@@ -1138,8 +1136,10 @@ class TabOpsTransformer(OpsTransformer):
         original_power: float,
         current_power: float,
     ) -> None:
+        c1, c2 = src_ops.bezier_params(src_idx)
+        p1 = src_ops.endpoint(src_idx)
+
         p0 = last_pos
-        c1, c2, p1 = cmd.control1, cmd.control2, cmd.end
 
         sub_segments: List[Tuple[float, float, float]] = []
         last_t = 0.0
@@ -1161,17 +1161,13 @@ class TabOpsTransformer(OpsTransformer):
 
         for t_start, t_end, power in sub_segments:
             if power != current_power:
-                new_cmds.append(SetPowerCommand(power))
+                result.set_power(power)
                 current_power = power
 
             sub = self._extract_bezier_subsegment_3d(
                 p0, c1, c2, p1, t_start, t_end
             )
-            new_cmd = BezierToCommand(
-                end=sub[3], control1=sub[1], control2=sub[2]
-            )
-            new_cmd.state = deepcopy(cmd.state) if cmd.state else None
-            new_cmds.append(new_cmd)
+            result.bezier_to(sub[1], sub[2], sub[3])
 
     @classmethod
     def from_dict(cls, data: Dict) -> "TabOpsTransformer":

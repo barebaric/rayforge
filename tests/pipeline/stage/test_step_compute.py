@@ -2,7 +2,7 @@ import pytest
 
 from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.ops import Ops, LineToCommand
+from rayforge.core.ops import Ops, CommandType
 from rayforge.pipeline.artifact import (
     WorkPieceArtifact,
     StepOpsArtifact,
@@ -79,10 +79,12 @@ def test_compute_step_artifacts_merges_ops(setup_two_artifacts):
 
     assert isinstance(ops_artifact, StepOpsArtifact)
 
-    line_commands = [
-        c for c in ops_artifact.ops if isinstance(c, LineToCommand)
+    line_indices = [
+        i
+        for i in range(ops_artifact.ops.len())
+        if ops_artifact.ops.command_type(i) == CommandType.LINE_TO
     ]
-    assert len(line_commands) == 2
+    assert len(line_indices) == 2
 
 
 def test_compute_step_artifacts_applies_transforms(setup_two_artifacts):
@@ -95,15 +97,17 @@ def test_compute_step_artifacts_applies_transforms(setup_two_artifacts):
         generation_id=1,
     )
 
-    line_commands = [
-        c for c in ops_artifact.ops if isinstance(c, LineToCommand)
+    line_indices = [
+        i
+        for i in range(ops_artifact.ops.len())
+        if ops_artifact.ops.command_type(i) == CommandType.LINE_TO
     ]
 
-    first_end = line_commands[0].end
+    first_end = ops_artifact.ops.endpoint(line_indices[0])
     expected_first_end = (65.0, 75.0, 0.0)
     assert first_end == pytest.approx(expected_first_end)
 
-    second_end = line_commands[1].end
+    second_end = ops_artifact.ops.endpoint(line_indices[1])
     expected_second_end = (130.0, 120.0, 0.0)
     assert second_end == pytest.approx(expected_second_end)
 
@@ -271,9 +275,13 @@ def test_apply_artifact_scaling_scalable_with_source_dimensions():
 
     _apply_artifact_scaling(ops, artifact, wp)
 
-    line_commands = [c for c in ops if isinstance(c, LineToCommand)]
-    assert len(line_commands) == 1
-    assert line_commands[0].end == pytest.approx((20.0, 0.0, 0.0))
+    line_indices = [
+        i
+        for i in range(ops.len())
+        if ops.command_type(i) == CommandType.LINE_TO
+    ]
+    assert len(line_indices) == 1
+    assert ops.endpoint(line_indices[0]) == pytest.approx((20.0, 0.0, 0.0))
 
 
 def test_apply_artifact_scaling_non_scalable():
@@ -299,9 +307,13 @@ def test_apply_artifact_scaling_non_scalable():
 
     _apply_artifact_scaling(ops, artifact, wp)
 
-    line_commands = [c for c in ops if isinstance(c, LineToCommand)]
-    assert len(line_commands) == 1
-    assert line_commands[0].end == pytest.approx((100.0, 0.0, 0.0))
+    line_indices = [
+        i
+        for i in range(ops.len())
+        if ops.command_type(i) == CommandType.LINE_TO
+    ]
+    assert len(line_indices) == 1
+    assert ops.endpoint(line_indices[0]) == pytest.approx((100.0, 0.0, 0.0))
 
 
 def test_apply_artifact_scaling_without_source_dimensions():
@@ -328,9 +340,13 @@ def test_apply_artifact_scaling_without_source_dimensions():
 
     _apply_artifact_scaling(ops, artifact, wp)
 
-    line_commands = [c for c in ops if isinstance(c, LineToCommand)]
-    assert len(line_commands) == 1
-    assert line_commands[0].end == pytest.approx((100.0, 0.0, 0.0))
+    line_indices = [
+        i
+        for i in range(ops.len())
+        if ops.command_type(i) == CommandType.LINE_TO
+    ]
+    assert len(line_indices) == 1
+    assert ops.endpoint(line_indices[0]) == pytest.approx((100.0, 0.0, 0.0))
 
 
 def test_create_workpiece_placement_matrix():

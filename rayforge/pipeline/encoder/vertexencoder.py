@@ -5,16 +5,8 @@ import numpy as np
 from raygeo import Point3D
 from raygeo.shape.arc import linearize_arc
 from raygeo.shape.bezier import linearize_bezier_segment
-from ...core.ops import Ops
+from ...core.ops import Ops, CommandType, CommandCategory
 from ...machine.kinematic_math import KinematicMath
-from ...core.ops.commands import (
-    MoveToCommand,
-    LineToCommand,
-    ArcToCommand,
-    BezierToCommand,
-    SetPowerCommand,
-    ScanLinePowerCommand,
-)
 from .base import OpsEncoder
 from ..artifact.base import VertexData
 
@@ -216,86 +208,100 @@ class VertexEncoder(OpsEncoder):
         current_pos = (0.0, 0.0, 0.0)
         is_initial_position = True
 
-        for cmd in ops.commands:
-            if isinstance(cmd, SetPowerCommand):
-                current_power = cmd.power
+        for i in range(ops.len()):
+            ct = ops.command_type(i)
+
+            if ct == CommandType.SET_POWER:
+                current_power = ops.power(i)
                 continue
 
-            # Use a match statement for clarity and direct handling
-            match cmd:
-                case MoveToCommand():
-                    start_pos, end_pos = current_pos, cmd.end
-                    # Skip the initial travel move from machine origin to first
-                    # cut point - this is positioning, not actual workpiece
-                    # travel
-                    if not is_initial_position:
-                        travel_v.extend(start_pos)
-                        travel_v.extend(end_pos)
-                    current_pos = end_pos
-                    is_initial_position = False
+            cat = ops.category(i)
+            if cat != CommandCategory.MOVING:
+                continue
 
-                case LineToCommand():
-                    start_pos, end_pos = current_pos, cmd.end
-                    if current_power > 0.0:
-                        power_byte = min(255, int(current_power * 255.0))
-                        color = self._grayscale_lut[power_byte]
-                        powered_v.extend(start_pos)
-                        powered_v.extend(end_pos)
+            end = ops.endpoint(i)
+
+            if ct == CommandType.MOVE_TO:
+                start_pos, end_pos = current_pos, end
+                # Skip the initial travel move from machine origin to first
+                # cut point - this is positioning, not actual workpiece
+                # travel
+                if not is_initial_position:
+                    travel_v.extend(start_pos)
+                    travel_v.extend(end_pos)
+                current_pos = end_pos
+                is_initial_position = False
+
+            elif ct == CommandType.LINE_TO:
+                start_pos, end_pos = current_pos, end
+                if current_power > 0.0:
+                    power_byte = min(255, int(current_power * 255.0))
+                    color = self._grayscale_lut[power_byte]
+                    powered_v.extend(start_pos)
+                    powered_v.extend(end_pos)
+                    powered_c.extend(color)
+                    powered_c.extend(color)
+                else:
+                    zero_power_v.extend(start_pos)
+                    zero_power_v.extend(end_pos)
+                current_pos = end_pos
+                is_initial_position = False
+
+            elif ct == CommandType.ARC_TO:
+                start_pos = current_pos
+                i_val, j_val, cw = ops.arc_params(i)
+                arc_row = [
+                    3,
+                    end[0],
+                    end[1],
+                    end[2],
+                    i_val,
+                    j_val,
+                    1.0 if cw else 0.0,
+                    0.0,
+                ]
+                segments = linearize_arc(arc_row, start_pos)
+                if current_power > 0.0:
+                    power_byte = min(255, int(current_power * 255.0))
+                    color = self._grayscale_lut[power_byte]
+                    for seg_start, seg_end in segments:
+                        powered_v.extend(seg_start)
+                        powered_v.extend(seg_end)
                         powered_c.extend(color)
                         powered_c.extend(color)
-                    else:
-                        zero_power_v.extend(start_pos)
-                        zero_power_v.extend(end_pos)
-                    current_pos = end_pos
-                    is_initial_position = False
+                else:
+                    for seg_start, seg_end in segments:
+                        zero_power_v.extend(seg_start)
+                        zero_power_v.extend(seg_end)
+                current_pos = end
+                is_initial_position = False
 
-                case ArcToCommand():
-                    start_pos = current_pos
-                    segments = linearize_arc(cmd, start_pos)
-                    if current_power > 0.0:
-                        power_byte = min(255, int(current_power * 255.0))
-                        color = self._grayscale_lut[power_byte]
-                        for seg_start, seg_end in segments:
-                            powered_v.extend(seg_start)
-                            powered_v.extend(seg_end)
-                            powered_c.extend(color)
-                            powered_c.extend(color)
-                    else:
-                        for seg_start, seg_end in segments:
-                            zero_power_v.extend(seg_start)
-                            zero_power_v.extend(seg_end)
-                    current_pos = cmd.end
-                    is_initial_position = False
+            elif ct == CommandType.BEZIER_TO:
+                start_pos = current_pos
+                c1, c2 = ops.bezier_params(i)
+                polyline = linearize_bezier_segment(start_pos, c1, c2, end)
+                if current_power > 0.0:
+                    power_byte = min(255, int(current_power * 255.0))
+                    color = self._grayscale_lut[power_byte]
+                    for j in range(len(polyline) - 1):
+                        powered_v.extend(polyline[j])
+                        powered_v.extend(polyline[j + 1])
+                        powered_c.extend(color)
+                        powered_c.extend(color)
+                else:
+                    for j in range(len(polyline) - 1):
+                        zero_power_v.extend(polyline[j])
+                        zero_power_v.extend(polyline[j + 1])
+                current_pos = end
+                is_initial_position = False
 
-                case BezierToCommand():
-                    start_pos = current_pos
-                    polyline = linearize_bezier_segment(
-                        start_pos, cmd.control1, cmd.control2, cmd.end
-                    )
-                    if current_power > 0.0:
-                        power_byte = min(255, int(current_power * 255.0))
-                        color = self._grayscale_lut[power_byte]
-                        for i in range(len(polyline) - 1):
-                            powered_v.extend(polyline[i])
-                            powered_v.extend(polyline[i + 1])
-                            powered_c.extend(color)
-                            powered_c.extend(color)
-                    else:
-                        for i in range(len(polyline) - 1):
-                            zero_power_v.extend(polyline[i])
-                            zero_power_v.extend(polyline[i + 1])
-                    current_pos = cmd.end
-                    is_initial_position = False
-
-                case ScanLinePowerCommand():
-                    if cmd.end is not None:
-                        self._handle_scanline(
-                            cmd,
-                            current_pos,
-                            zero_power_v,
-                        )
-                        current_pos = cmd.end
-                        is_initial_position = False
+            elif ct == CommandType.SCAN_LINE:
+                scanline_mv = ops.scanline_data(i)
+                self._handle_scanline_indexed(
+                    end, scanline_mv, current_pos, zero_power_v
+                )
+                current_pos = end
+                is_initial_position = False
 
         powered_verts = np.array(powered_v, dtype=np.float32).reshape(-1, 3)
         travel_verts = np.array(travel_v, dtype=np.float32).reshape(-1, 3)
@@ -312,9 +318,10 @@ class VertexEncoder(OpsEncoder):
             zero_power_vertices=zero_power_verts,
         )
 
-    def _handle_scanline(
+    def _handle_scanline_indexed(
         self,
-        cmd: ScanLinePowerCommand,
+        end: Point3D,
+        power_mv: memoryview,
         start_pos: Point3D,
         zero_power_v: List[float],
     ):
@@ -323,24 +330,20 @@ class VertexEncoder(OpsEncoder):
         Powered segments are ignored, as their visualization comes from the
         texture generated by the TextureEncoder.
         """
-        if cmd.end is None:
-            return
-
-        num_steps = len(cmd.power_values)
+        num_steps = len(power_mv)
         if num_steps == 0:
             return
 
         sx, sy, sz = start_pos[0], start_pos[1], start_pos[2]
-        ex, ey, ez = cmd.end[0], cmd.end[1], cmd.end[2]
+        ex, ey, ez = end[0], end[1], end[2]
         dx = ex - sx
         dy = ey - sy
         dz = ez - sz
         inv_n = 1.0 / num_steps
-        pwr = cmd.power_values
         run_start = -1
 
         for i in range(num_steps):
-            if pwr[i] == 0:
+            if power_mv[i] == 0:
                 if run_start < 0:
                     run_start = i
             else:

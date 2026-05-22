@@ -6,27 +6,8 @@ from ...core.layer import Layer
 from ...core.ops import (
     Axis,
     Ops,
-    Command,
-    DwellCommand,
-    SetPowerCommand,
-    SetCutSpeedCommand,
-    SetTravelSpeedCommand,
-    SetFrequencyCommand,
-    SetPulseWidthCommand,
-    EnableAirAssistCommand,
-    DisableAirAssistCommand,
-    SetLaserCommand,
-    MoveToCommand,
-    LineToCommand,
-    ArcToCommand,
-    BezierToCommand,
-    ScanLinePowerCommand,
-    JobStartCommand,
-    JobEndCommand,
-    LayerStartCommand,
-    LayerEndCommand,
-    WorkpieceStartCommand,
-    WorkpieceEndCommand,
+    CommandType,
+    CommandCategory,
 )
 from ...core.workpiece import WorkPiece
 from ...machine.models.dialect import GcodeDialect
@@ -247,9 +228,9 @@ class GcodeEncoder(OpsEncoder):
         # Include a bi-directional map from ops to line number.
         # Since this is an n:n mapping, this needs to be stored as
         # two separate maps.
-        for i, cmd in enumerate(ops):
+        for i in range(ops.len()):
             start_line = len(gcode)
-            self._handle_command(gcode, cmd, context)
+            self._handle_command(gcode, ops, i, context)
             end_line = len(gcode)
 
             if end_line > start_line:
@@ -293,12 +274,15 @@ class GcodeEncoder(OpsEncoder):
         formatter = TemplateFormatter(context.machine, context)
         return [formatter.format_string(line) for line in lines]
 
-    def _update_current_pos(self, cmd) -> None:
-        self.current_pos[Axis.X] = cmd.end[0]
-        self.current_pos[Axis.Y] = cmd.end[1]
-        self.current_pos[Axis.Z] = cmd.end[2]
-        for axis, value in cmd.extra_axes.items():
-            self.current_pos[axis] = value
+    def _update_current_pos(self, ops: Ops, idx: int) -> None:
+        end = ops.endpoint(idx)
+        self.current_pos[Axis.X] = end[0]
+        self.current_pos[Axis.Y] = end[1]
+        self.current_pos[Axis.Z] = end[2]
+        ea = ops.extra_axes(idx)
+        if ea:
+            for axis, value in ea.items():
+                self.current_pos[axis] = value
 
     def _current_pos_xyz(self) -> Point3D:
         return (
@@ -308,132 +292,157 @@ class GcodeEncoder(OpsEncoder):
         )
 
     def _handle_command(
-        self, gcode: List[str], cmd: Command, context: GcodeContext
+        self,
+        gcode: List[str],
+        ops: Ops,
+        idx: int,
+        context: GcodeContext,
     ) -> None:
         """Dispatch command to appropriate handler"""
-        match cmd:
-            case SetPowerCommand():
-                self._update_power(context, gcode, cmd.power)
-            case SetCutSpeedCommand():
-                # Cut speed limits are the responsibility of the Ops
-                # producer. The encoder trusts the value it receives.
-                self.cut_speed = cmd.speed
-            case SetTravelSpeedCommand():
-                self.travel_speed = min(
-                    cmd.speed, context.machine.max_travel_speed
+        ct = ops.command_type(idx)
+        cat = ops.category(idx)
+
+        if ct == CommandType.SET_POWER:
+            self._update_power(context, gcode, ops.power(idx))
+        elif ct == CommandType.SET_CUT_SPEED:
+            # Cut speed limits are the responsibility of the Ops
+            # producer. The encoder trusts the value it receives.
+            self.cut_speed = ops.speed(idx)
+        elif ct == CommandType.SET_TRAVEL_SPEED:
+            self.travel_speed = min(
+                ops.speed(idx), context.machine.max_travel_speed
+            )
+        elif ct == CommandType.SET_FREQUENCY:
+            self.frequency = ops.frequency(idx)
+        elif ct == CommandType.SET_PULSE_WIDTH:
+            self.pulse_width = ops.pulse_width(idx)
+        elif ct == CommandType.ENABLE_AIR_ASSIST:
+            self._set_air_assist(context, gcode, True)
+        elif ct == CommandType.DISABLE_AIR_ASSIST:
+            self._set_air_assist(context, gcode, False)
+        elif ct == CommandType.SET_LASER:
+            self._handle_set_laser(context, gcode, ops.laser_uid(idx))
+        elif cat == CommandCategory.MOVING:
+            self._handle_moving(gcode, ops, idx, ct, context)
+        elif ct == CommandType.DWELL:
+            if self.dialect.dwell:
+                duration = ops.dwell_duration(idx)
+                gcode.append(
+                    self.dialect.dwell.format(
+                        seconds=duration / 1000.0,
+                        milliseconds=duration,
+                    )
                 )
-            case SetFrequencyCommand():
-                self.frequency = cmd.frequency
-            case SetPulseWidthCommand():
-                self.pulse_width = cmd.pulse_width
-            case EnableAirAssistCommand():
-                self._set_air_assist(context, gcode, True)
-            case DisableAirAssistCommand():
+        elif ct == CommandType.JOB_START:
+            # 1. Emit Preamble
+            gcode.extend(
+                self._format_script_lines(self.dialect.preamble, context)
+            )
+
+            # 2. Inject Active WCS command. This is done AFTER the
+            # preamble to guarantee the correct coordinate system is
+            # active for the job, treating the preamble as a black box
+            # that may have changed state.
+            if self.dialect.inject_wcs_after_preamble:
+                gcode.append(context.machine.active_wcs)
+                self._active_wcs = context.machine.active_wcs
+
+        elif ct == CommandType.JOB_END:
+            # This is the single point of truth for job cleanup.
+            # First, perform guaranteed safety shutdowns. This emits the
+            # first M5 and updates the internal state.
+            self._laser_off(context, gcode)
+            if self.air_assist:
                 self._set_air_assist(context, gcode, False)
-            case SetLaserCommand():
-                self._handle_set_laser(context, gcode, cmd.laser_uid)
-            case MoveToCommand():
-                self._handle_move_to(
-                    context,
-                    gcode,
-                    *cmd.end,
-                    extra_axes=cmd.extra_axes,
+            gcode.extend(
+                self._format_script_lines(self.dialect.postscript, context)
+            )
+        elif ct == CommandType.LAYER_START:
+            uid = ops.layer_uid(idx)
+            descendant = context.doc.find_descendant_by_uid(uid)
+            if isinstance(descendant, Layer):
+                context.layer = descendant
+                layer_wcs = descendant.get_effective_wcs(context.machine)
+                if (
+                    self.dialect.inject_wcs_after_preamble
+                    and layer_wcs != self._active_wcs
+                ):
+                    gcode.append(layer_wcs)
+                    self._active_wcs = layer_wcs
+            elif descendant is not None:
+                logger.warning(
+                    f"Expected Layer for UID {uid}, but "
+                    f" found {type(descendant)}"
                 )
-                self._update_current_pos(cmd)
-            case LineToCommand():
-                self._handle_line_to(
-                    context,
-                    gcode,
-                    *cmd.end,
-                    extra_axes=cmd.extra_axes,
+            self._emit_macros(context, gcode, MacroTrigger.LAYER_START)
+        elif ct == CommandType.LAYER_END:
+            self._emit_macros(context, gcode, MacroTrigger.LAYER_END)
+            context.layer = None
+        elif ct == CommandType.WORKPIECE_START:
+            uid = ops.workpiece_uid(idx)
+            descendant = context.doc.find_descendant_by_uid(uid)
+            if isinstance(descendant, WorkPiece):
+                context.workpiece = descendant
+            elif descendant is not None:
+                logger.warning(
+                    f"Expected WorkPiece for UID {uid}, "
+                    f" but found {type(descendant)}"
                 )
-                self._update_current_pos(cmd)
-            case ScanLinePowerCommand():
-                # Deconstruct into simpler commands that the encoder already
-                # understands.
-                sub_commands = cmd.linearize(self._current_pos_xyz())
-                for sub_cmd in sub_commands:
-                    self._handle_command(gcode, sub_cmd, context)
-                # To avoid float precision errors, explicitly set the final pos
-                self._update_current_pos(cmd)
-            case ArcToCommand():
-                self._handle_arc_to(
-                    context,
-                    gcode,
-                    cmd.end,
-                    cmd.center_offset,
-                    cmd.clockwise,
-                    extra_axes=cmd.extra_axes,
-                )
-                self._update_current_pos(cmd)
-            case BezierToCommand():
-                self._handle_bezier_to(context, gcode, cmd)
-                self._update_current_pos(cmd)
-            case DwellCommand():
-                if self.dialect.dwell:
-                    gcode.append(
-                        self.dialect.dwell.format(
-                            seconds=cmd.duration_ms / 1000.0,
-                            milliseconds=cmd.duration_ms,
-                        )
-                    )
-            case JobStartCommand():
-                # 1. Emit Preamble
-                gcode.extend(
-                    self._format_script_lines(self.dialect.preamble, context)
-                )
+            self._emit_macros(context, gcode, MacroTrigger.WORKPIECE_START)
+        elif ct == CommandType.WORKPIECE_END:
+            self._emit_macros(context, gcode, MacroTrigger.WORKPIECE_END)
+            context.workpiece = None
 
-                # 2. Inject Active WCS command. This is done AFTER the
-                # preamble to guarantee the correct coordinate system is
-                # active for the job, treating the preamble as a black box
-                # that may have changed state.
-                if self.dialect.inject_wcs_after_preamble:
-                    gcode.append(context.machine.active_wcs)
-                    self._active_wcs = context.machine.active_wcs
-
-            case JobEndCommand():
-                # This is the single point of truth for job cleanup.
-                # First, perform guaranteed safety shutdowns. This emits the
-                # first M5 and updates the internal state.
-                self._laser_off(context, gcode)
-                if self.air_assist:
-                    self._set_air_assist(context, gcode, False)
-                gcode.extend(
-                    self._format_script_lines(self.dialect.postscript, context)
-                )
-            case LayerStartCommand(layer_uid=uid):
-                descendant = context.doc.find_descendant_by_uid(uid)
-                if isinstance(descendant, Layer):
-                    context.layer = descendant
-                    layer_wcs = descendant.get_effective_wcs(context.machine)
-                    if (
-                        self.dialect.inject_wcs_after_preamble
-                        and layer_wcs != self._active_wcs
-                    ):
-                        gcode.append(layer_wcs)
-                        self._active_wcs = layer_wcs
-                elif descendant is not None:
-                    logger.warning(
-                        f"Expected Layer for UID {uid}, but "
-                        f" found {type(descendant)}"
-                    )
-                self._emit_macros(context, gcode, MacroTrigger.LAYER_START)
-            case LayerEndCommand():
-                self._emit_macros(context, gcode, MacroTrigger.LAYER_END)
-                context.layer = None
-            case WorkpieceStartCommand(workpiece_uid=uid):
-                descendant = context.doc.find_descendant_by_uid(uid)
-                if isinstance(descendant, WorkPiece):
-                    context.workpiece = descendant
-                elif descendant is not None:
-                    logger.warning(
-                        f"Expected WorkPiece for UID {uid}, "
-                        f" but found {type(descendant)}"
-                    )
-                self._emit_macros(context, gcode, MacroTrigger.WORKPIECE_START)
-            case WorkpieceEndCommand():
-                self._emit_macros(context, gcode, MacroTrigger.WORKPIECE_END)
-                context.workpiece = None
+    def _handle_moving(
+        self,
+        gcode: List[str],
+        ops: Ops,
+        idx: int,
+        ct: CommandType,
+        context: GcodeContext,
+    ) -> None:
+        ea = ops.extra_axes(idx)
+        if ct == CommandType.MOVE_TO:
+            end = ops.endpoint(idx)
+            self._handle_move_to(
+                context,
+                gcode,
+                *end,
+                extra_axes=ea,
+            )
+            self._update_current_pos(ops, idx)
+        elif ct == CommandType.LINE_TO:
+            end = ops.endpoint(idx)
+            self._handle_line_to(
+                context,
+                gcode,
+                *end,
+                extra_axes=ea,
+            )
+            self._update_current_pos(ops, idx)
+        elif ct == CommandType.ARC_TO:
+            end = ops.endpoint(idx)
+            i, j, cw = ops.arc_params(idx)
+            self._handle_arc_to(
+                context,
+                gcode,
+                end,
+                (i, j),
+                cw,
+                extra_axes=ea,
+            )
+            self._update_current_pos(ops, idx)
+        elif ct == CommandType.BEZIER_TO:
+            self._handle_bezier_to(context, gcode, ops, idx, ea)
+            self._update_current_pos(ops, idx)
+        elif ct == CommandType.SCAN_LINE:
+            # Deconstruct into simpler commands that the encoder already
+            # understands.
+            sub_ops = ops.linearize(idx, self._current_pos_xyz())
+            for j in range(sub_ops.len()):
+                self._handle_command(gcode, sub_ops, j, context)
+            # To avoid float precision errors, explicitly set the final pos
+            self._update_current_pos(ops, idx)
 
     def _emit_modal_speed(self, gcode: List[str], speed: float) -> None:
         """
@@ -639,33 +648,41 @@ class GcodeEncoder(OpsEncoder):
         self,
         context: GcodeContext,
         gcode: List[str],
-        cmd: BezierToCommand,
+        ops: Ops,
+        idx: int,
+        extra_axes: Optional[Dict[Axis, float]],
     ) -> None:
         if not self.dialect.bezier_cubic:
             start = self._current_pos_xyz()
-            for line_cmd in cmd.linearize(start):
-                assert isinstance(line_cmd, LineToCommand)
-                self._handle_line_to(
-                    context,
-                    gcode,
-                    *line_cmd.end,
-                    extra_axes=line_cmd.extra_axes,
-                )
+            sub_ops = ops.linearize(idx, start)
+            for j in range(sub_ops.len()):
+                sub_ct = sub_ops.command_type(j)
+                if sub_ct == CommandType.LINE_TO:
+                    end = sub_ops.endpoint(j)
+                    sub_ea = sub_ops.extra_axes(j)
+                    self._handle_line_to(
+                        context,
+                        gcode,
+                        *end,
+                        extra_axes=sub_ea,
+                    )
             return
         start = self._current_pos_xyz()
-        ex, ey, ez = cmd.end
+        end = ops.endpoint(idx)
+        c1, c2 = ops.bezier_params(idx)
+        ex, ey, ez = end
         template_vars = self._build_cut_move_vars(
             context,
             gcode,
             ex,
             ey,
             ez,
-            extra_axes=cmd.extra_axes,
+            extra_axes=extra_axes,
         )
-        template_vars["i"] = self._format_coord(cmd.control1[0] - start[0])
-        template_vars["j"] = self._format_coord(cmd.control1[1] - start[1])
-        template_vars["p"] = self._format_coord(cmd.control2[0] - ex)
-        template_vars["q"] = self._format_coord(cmd.control2[1] - ey)
+        template_vars["i"] = self._format_coord(c1[0] - start[0])
+        template_vars["j"] = self._format_coord(c1[1] - start[1])
+        template_vars["p"] = self._format_coord(c2[0] - ex)
+        template_vars["q"] = self._format_coord(c2[1] - ey)
         gcode.append(self.dialect.bezier_cubic.format(**template_vars))
 
     def _laser_on(self, context: GcodeContext, gcode: List[str]) -> None:

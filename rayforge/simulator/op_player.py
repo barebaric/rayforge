@@ -4,9 +4,8 @@ from blinker import Signal
 
 from ..core.doc import Doc
 from ..core.layer import Layer
-from ..core.ops import Ops
+from ..core.ops import Ops, CommandType, CommandCategory
 from ..core.ops.axis import Axis
-from ..core.ops.commands import LayerStartCommand, MovingCommand
 from ..machine.models.machine import Machine
 from ..machine.models.rotary_module import RotaryMode
 from .machine_state import MachineState
@@ -83,35 +82,35 @@ class OpPlayer:
                 f"{self._current_index}, requested={index}. "
                 f"Use seek() instead."
             )
-        if index >= len(self.ops):
+        if index >= self.ops.len():
             raise IndexError(
                 f"Index {index} out of range "
-                f"(ops has {len(self.ops)} commands)"
+                f"(ops has {self.ops.len()} commands)"
             )
         for i in range(self._current_index + 1, index + 1):
-            cmd = self.ops.commands[i]
-            if isinstance(cmd, LayerStartCommand):
-                self._update_rotary_config(cmd.layer_uid)
-            self.state.apply_command(cmd, i)
+            ct = self.ops.command_type(i)
+            if ct == CommandType.LAYER_START:
+                self._update_rotary_config(self.ops.layer_uid(i))
+            self.state.apply_command(self.ops, i)
         self._current_index = index
 
     def seek_last_movement(self) -> Optional[int]:
         last = None
-        for i, cmd in enumerate(self.ops):
-            if isinstance(cmd, MovingCommand):
+        for i in range(self.ops.len()):
+            if self.ops.category(i) == CommandCategory.MOVING:
                 last = i
         if last is not None:
             self.seek(last)
         return last
 
     def seek_to_fraction(self, fraction: float):
-        target = int(len(self.ops) * fraction)
-        target = max(0, min(target, len(self.ops) - 1))
+        target = int(self.ops.len() * fraction)
+        target = max(0, min(target, self.ops.len() - 1))
         self.seek(target)
 
     def seek_to_first_layer(self):
-        for i, cmd in enumerate(self.ops):
-            if isinstance(cmd, LayerStartCommand):
+        for i in range(self.ops.len()):
+            if self.ops.command_type(i) == CommandType.LAYER_START:
                 self.seek(i)
                 return i
         return 0

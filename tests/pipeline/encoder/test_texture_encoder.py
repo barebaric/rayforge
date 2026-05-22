@@ -2,7 +2,6 @@ import pytest
 import numpy as np
 
 from rayforge.core.ops import Ops
-from rayforge.core.ops.commands import MoveToCommand
 from rayforge.pipeline.encoder.textureencoder import TextureEncoder
 
 
@@ -390,30 +389,6 @@ class TestTextureEncoder:
 
         # Check that some pixels were set
         assert np.any(result > 0)
-
-    def test_move_to_without_end(
-        self,
-        encoder: TextureEncoder,
-        default_width_px: int,
-        default_height_px: int,
-        default_px_per_mm: tuple[float, float],
-        safe_y_mm: float,
-    ):
-        """Test MoveToCommand without end attribute."""
-        ops = Ops()
-        ops.move_to(0.0, safe_y_mm, 0.0)
-        move_cmd = MoveToCommand(end=None)
-        ops.commands.append(move_cmd)
-        ops.scan_to(5.0, safe_y_mm, 0.0, bytearray([100]))
-
-        result = encoder.encode(
-            ops, default_width_px, default_height_px, default_px_per_mm
-        )
-
-        # MoveTo with None doesn't update position, so scan line
-        # starts from the previous position (0, safe_y_mm)
-        expected_y = default_height_px - 10
-        assert result[expected_y, 0] == 100
 
     def test_z_coordinate_ignored(
         self,

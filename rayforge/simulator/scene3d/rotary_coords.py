@@ -8,14 +8,8 @@ when rendering rotary axis data onto a cylinder surface.
 import math
 from typing import Optional, Tuple
 
-from ...core.ops import Ops
+from ...core.ops import Ops, CommandType, CommandCategory
 from ...core.ops.axis import Axis
-from ...core.ops.commands import (
-    ArcToCommand,
-    BezierToCommand,
-    MovingCommand,
-    ScanLinePowerCommand,
-)
 from ...machine.kinematic_math import KinematicMath
 
 
@@ -30,88 +24,89 @@ def degrees_to_mu(
     return degrees * math.pi * diameter / 360.0 * sign
 
 
-def find_degrees(cmd: MovingCommand) -> Optional[float]:
+def _find_degrees_from_axes(
+    extra_axes: Optional[dict],
+) -> Optional[float]:
+    if extra_axes is None:
+        return None
     for ax in (Axis.A, Axis.B, Axis.C, Axis.U, Axis.Y):
-        val = cmd.extra_axes.get(ax)
+        val = extra_axes.get(ax)
         if val is not None:
             return val
     return None
 
 
-def visual_end(
-    cmd: MovingCommand,
-) -> Tuple[float, float, float]:
-    degrees = find_degrees(cmd)
+def find_degrees(ops: Ops, idx: int) -> Optional[float]:
+    return _find_degrees_from_axes(ops.extra_axes(idx))
+
+
+def visual_end(ops: Ops, idx: int) -> Tuple[float, float, float]:
+    end = ops.endpoint(idx)
+    degrees = find_degrees(ops, idx)
     if degrees is not None:
-        pos = list(cmd.end)
-        pos[1] = degrees
-        return (pos[0], pos[1], pos[2])
-    return cmd.end
+        return (end[0], degrees, end[2])
+    return end
 
 
 def reconstruct_mu_pos(
-    cmd: MovingCommand,
+    ops: Ops,
+    idx: int,
     diameter: float,
     reverse: bool,
 ) -> Tuple[float, float, float]:
-    degrees = find_degrees(cmd)
+    end = ops.endpoint(idx)
+    degrees = find_degrees(ops, idx)
     if degrees is None:
-        return cmd.end
+        return end
     mu_val = degrees_to_mu(degrees, diameter, reverse=reverse)
-    pos = list(cmd.end)
-    pos[1] = mu_val
-    return (pos[0], pos[1], pos[2])
+    return (end[0], mu_val, end[2])
 
 
 def reconstruct_mu_arc(
-    cmd: ArcToCommand,
+    ops: Ops,
+    idx: int,
     diameter: float,
     reverse: bool,
-) -> ArcToCommand:
-    degrees = find_degrees(cmd)
+) -> Tuple[Tuple[float, float, float], float, float, bool]:
+    """Reconstructs arc parameters in mu coordinates.
+
+    Returns (end, i, j, clockwise) for building an arc_row.
+    """
+    end = ops.endpoint(idx)
+    i_val, j_val, cw = ops.arc_params(idx)
+    degrees = find_degrees(ops, idx)
     if degrees is None:
-        return cmd
+        return end, i_val, j_val, cw
     scale = degrees_to_mu(1.0, diameter, reverse=reverse)
-
-    pos = list(cmd.end)
-    pos[1] = degrees * scale
-
-    offset = list(cmd.center_offset)
-    offset[1] = offset[1] * scale
-
-    return ArcToCommand(
-        end=(pos[0], pos[1], pos[2]),
-        center_offset=(offset[0], offset[1]),
-        clockwise=cmd.clockwise,
-        extra_axes=dict(cmd.extra_axes),
-    )
+    mu_end = (end[0], degrees * scale, end[2])
+    mu_j = j_val * scale
+    return mu_end, i_val, mu_j, cw
 
 
 def reconstruct_mu_bezier(
-    cmd: BezierToCommand,
+    ops: Ops,
+    idx: int,
     diameter: float,
     reverse: bool,
-) -> BezierToCommand:
-    degrees = find_degrees(cmd)
+) -> Tuple[
+    Tuple[float, float, float],
+    Tuple[float, float, float],
+    Tuple[float, float, float],
+]:
+    """Reconstructs bezier parameters in mu coordinates.
+
+    Returns (end, control1, control2).
+    """
+    end = ops.endpoint(idx)
+    c1, c2 = ops.bezier_params(idx)
+    degrees = find_degrees(ops, idx)
     if degrees is None:
-        return cmd
+        return end, c1, c2
     scale = degrees_to_mu(1.0, diameter, reverse=reverse)
-
-    pos = list(cmd.end)
-    pos[1] = degrees * scale
-
-    cp1 = list(cmd.control1)
-    cp1[1] = cp1[1] * scale
-
-    cp2 = list(cmd.control2)
-    cp2[1] = cp2[1] * scale
-
-    return BezierToCommand(
-        end=(pos[0], pos[1], pos[2]),
-        control1=(cp1[0], cp1[1], cp1[2]),
-        control2=(cp2[0], cp2[1], cp2[2]),
-        extra_axes=dict(cmd.extra_axes),
-    )
+    mu_end = (end[0], degrees * scale, end[2])
+    mu_c1 = (c1[0], c1[1] * scale, c1[2])
+    mu_c2 = (c2[0], c2[1] * scale, c2[2])
+    return mu_end, mu_c1, mu_c2
 
 
 def mu_to_visual(
@@ -129,42 +124,50 @@ def bake_visual_positions(
     ops: Ops,
 ) -> Ops:
     baked = Ops()
-    for cmd in ops.commands:
-        if isinstance(cmd, MovingCommand):
-            degrees = find_degrees(cmd)
-            if degrees is not None:
-                pos = list(cmd.end)
-                pos[1] = degrees
-                new_end = (pos[0], pos[1], pos[2])
-                if isinstance(cmd, ScanLinePowerCommand):
-                    new_cmd = ScanLinePowerCommand(
-                        new_end,
-                        cmd.power_values,
-                        extra_axes=dict(cmd.extra_axes),
-                    )
-                elif isinstance(cmd, ArcToCommand):
-                    new_cmd = ArcToCommand(
-                        new_end,
-                        cmd.center_offset,
-                        cmd.clockwise,
-                        extra_axes=dict(cmd.extra_axes),
-                    )
-                elif isinstance(cmd, BezierToCommand):
-                    new_cmd = BezierToCommand(
-                        new_end,
-                        cmd.control1,
-                        cmd.control2,
-                        extra_axes=dict(cmd.extra_axes),
-                    )
-                else:
-                    new_cmd = cmd.__class__(
-                        new_end,
-                        extra_axes=dict(cmd.extra_axes),
-                    )
-                new_cmd.state = cmd.state
-                baked.add(new_cmd)
+    for i in range(ops.len()):
+        ct = ops.command_type(i)
+        cat = ops.category(i)
+
+        if cat != CommandCategory.MOVING:
+            baked.copy_command_from(ops, i)
+            continue
+
+        end = ops.endpoint(i)
+        ea = ops.extra_axes(i)
+        degrees = _find_degrees_from_axes(ea)
+        if degrees is not None:
+            new_end = (end[0], degrees, end[2])
+            if ct == CommandType.SCAN_LINE:
+                baked.scan_to(
+                    new_end[0],
+                    new_end[1],
+                    new_end[2],
+                    power_values=bytearray(ops.scanline_data(i)),
+                    extra=ea if ea else None,
+                )
+            elif ct == CommandType.ARC_TO:
+                i_val, j_val, cw = ops.arc_params(i)
+                baked.arc_to(
+                    new_end[0],
+                    new_end[1],
+                    i_val,
+                    j_val,
+                    cw,
+                    new_end[2],
+                    extra=ea if ea else None,
+                )
+            elif ct == CommandType.BEZIER_TO:
+                c1, c2 = ops.bezier_params(i)
+                baked.bezier_to(c1, c2, new_end, extra=ea if ea else None)
+            elif ct == CommandType.MOVE_TO:
+                baked.move_to(
+                    new_end[0],
+                    new_end[1],
+                    new_end[2],
+                    extra=ea if ea else None,
+                )
             else:
-                baked.add(cmd)
+                baked.copy_command_from(ops, i)
         else:
-            baked.add(cmd)
+            baked.copy_command_from(ops, i)
     return baked

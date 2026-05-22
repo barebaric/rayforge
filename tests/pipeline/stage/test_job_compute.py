@@ -3,7 +3,7 @@ import numpy as np
 
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
-from rayforge.core.ops import Ops, LineToCommand
+from rayforge.core.ops import Ops, CommandType
 from rayforge.machine.models.machine import Machine, Laser
 from rayforge.pipeline.artifact import StepOpsArtifact, JobArtifact
 from rayforge.pipeline.encoder.base import EncodedOutput
@@ -60,11 +60,19 @@ def test_job_compute_assembles_step_artifacts_correctly(
     assert isinstance(result, JobArtifact)
 
     final_ops = result.ops
-    line_cmds = [c for c in final_ops if isinstance(c, LineToCommand)]
+    line_indices = [
+        i
+        for i in range(final_ops.len())
+        if final_ops.command_type(i) == CommandType.LINE_TO
+    ]
 
-    assert len(line_cmds) == 2
-    assert line_cmds[0].end == pytest.approx((50.0, 50.0, 0.0))
-    assert line_cmds[1].end == pytest.approx((50.0, 50.0, 0.0))
+    assert len(line_indices) == 2
+    assert final_ops.endpoint(line_indices[0]) == pytest.approx(
+        (50.0, 50.0, 0.0)
+    )
+    assert final_ops.endpoint(line_indices[1]) == pytest.approx(
+        (50.0, 50.0, 0.0)
+    )
 
     assert result.encoded_output_bytes is not None
 
@@ -177,8 +185,12 @@ def test_job_compute_multiple_steps(
     )
 
     assert isinstance(result, JobArtifact)
-    line_cmds = [c for c in result.ops if isinstance(c, LineToCommand)]
-    assert len(line_cmds) == 2
+    line_indices = [
+        i
+        for i in range(result.ops.len())
+        if result.ops.command_type(i) == CommandType.LINE_TO
+    ]
+    assert len(line_indices) == 2
 
 
 def test_job_compute_empty_step_artifacts(
@@ -250,8 +262,12 @@ def test_job_compute_multiple_layers(
     )
 
     assert isinstance(result, JobArtifact)
-    line_cmds = [c for c in result.ops if isinstance(c, LineToCommand)]
-    assert len(line_cmds) == 2
+    line_indices = [
+        i
+        for i in range(result.ops.len())
+        if result.ops.command_type(i) == CommandType.LINE_TO
+    ]
+    assert len(line_indices) == 2
 
 
 def test_job_compute_layer_without_workflow(
@@ -287,8 +303,12 @@ def test_job_compute_layer_without_workflow(
     )
 
     assert isinstance(result, JobArtifact)
-    line_cmds = [c for c in result.ops if isinstance(c, LineToCommand)]
-    assert len(line_cmds) == 1
+    line_indices = [
+        i
+        for i in range(result.ops.len())
+        if result.ops.command_type(i) == CommandType.LINE_TO
+    ]
+    assert len(line_indices) == 1
 
 
 def test_job_compute_missing_step_artifact(
@@ -325,8 +345,12 @@ def test_job_compute_missing_step_artifact(
     )
 
     assert isinstance(result, JobArtifact)
-    line_cmds = [c for c in result.ops if isinstance(c, LineToCommand)]
-    assert len(line_cmds) == 1
+    line_indices = [
+        i
+        for i in range(result.ops.len())
+        if result.ops.command_type(i) == CommandType.LINE_TO
+    ]
+    assert len(line_indices) == 1
 
 
 def test_job_compute_time_and_distance(
@@ -388,8 +412,12 @@ def test_assemble_final_ops_single_step(
     )
 
     assert isinstance(result, Ops)
-    line_cmds = [c for c in result if isinstance(c, LineToCommand)]
-    assert len(line_cmds) == 1
+    line_indices = [
+        i
+        for i in range(result.len())
+        if result.command_type(i) == CommandType.LINE_TO
+    ]
+    assert len(line_indices) == 1
 
 
 def test_assemble_final_ops_multiple_steps(
@@ -426,8 +454,12 @@ def test_assemble_final_ops_multiple_steps(
     result = _assemble_final_ops(doc, step_artifacts_by_uid, machine)
 
     assert isinstance(result, Ops)
-    line_cmds = [c for c in result if isinstance(c, LineToCommand)]
-    assert len(line_cmds) == 2
+    line_indices = [
+        i
+        for i in range(result.len())
+        if result.command_type(i) == CommandType.LINE_TO
+    ]
+    assert len(line_indices) == 2
 
 
 def test_assemble_final_ops_multiple_layers(
@@ -468,8 +500,12 @@ def test_assemble_final_ops_multiple_layers(
     result = _assemble_final_ops(doc, step_artifacts_by_uid, machine)
 
     assert isinstance(result, Ops)
-    line_cmds = [c for c in result if isinstance(c, LineToCommand)]
-    assert len(line_cmds) == 2
+    line_indices = [
+        i
+        for i in range(result.len())
+        if result.command_type(i) == CommandType.LINE_TO
+    ]
+    assert len(line_indices) == 2
 
 
 def test_assemble_final_ops_empty_artifacts(
@@ -521,8 +557,12 @@ def test_assemble_final_ops_missing_step(
     result = _assemble_final_ops(doc, step_artifacts_by_uid, machine)
 
     assert isinstance(result, Ops)
-    line_cmds = [c for c in result if isinstance(c, LineToCommand)]
-    assert len(line_cmds) == 1
+    line_indices = [
+        i
+        for i in range(result.len())
+        if result.command_type(i) == CommandType.LINE_TO
+    ]
+    assert len(line_indices) == 1
 
 
 def test_assemble_final_ops_without_progress(
@@ -549,8 +589,12 @@ def test_assemble_final_ops_without_progress(
     result = _assemble_final_ops(doc, step_artifacts_by_uid, machine, None)
 
     assert isinstance(result, Ops)
-    line_cmds = [c for c in result if isinstance(c, LineToCommand)]
-    assert len(line_cmds) == 1
+    line_indices = [
+        i
+        for i in range(result.len())
+        if result.command_type(i) == CommandType.LINE_TO
+    ]
+    assert len(line_indices) == 1
 
 
 def test_calculate_time_estimate(machine, mock_progress_context):

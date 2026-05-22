@@ -1,13 +1,7 @@
 import math
 from unittest.mock import Mock, patch
 from raygeo.algo.smooth import smooth_polyline
-from rayforge.core.ops import (
-    ArcToCommand,
-    LineToCommand,
-    MoveToCommand,
-    Ops,
-)
-from rayforge.core.ops.commands import BezierToCommand
+from rayforge.core.ops import CommandType, Ops
 from tests.conftest import MockProgressContext
 from post_processors.transformers import Smooth
 
@@ -51,19 +45,21 @@ def test_run_with_zero_amount():
     original_ops = ops.copy()
     smoother = Smooth(amount=0)
     smoother.run(ops)
-    assert len(ops.commands) == len(original_ops.commands)
+    assert ops.len() == original_ops.len()
 
 
 def test_arcs_are_linearized_and_smoothed():
     """Tests that segments with arcs are linearized and smoothed."""
     ops = Ops()
     ops.move_to(0, 0)
-    ops.add(ArcToCommand((10, 10, 0), (5, 0), True))
+    ops.arc_to(10, 10, 5, 0, True)
     smoother = Smooth(amount=50)
     smoother.run(ops)
-    assert len(ops.commands) > 2
-    assert isinstance(ops.commands[0], MoveToCommand)
-    assert all(isinstance(c, LineToCommand) for c in ops.commands[1:])
+    assert ops.len() > 2
+    assert ops.command_type(0) == CommandType.MOVE_TO
+    assert all(
+        ops.command_type(i) == CommandType.LINE_TO for i in range(1, ops.len())
+    )
 
 
 def test_smooth_open_path():
@@ -76,9 +72,9 @@ def test_smooth_open_path():
     smoother = Smooth(amount=50)
     smoother.run(ops)
 
-    assert len(ops.commands) > 3, "Path should be subdivided"
+    assert ops.len() > 3, "Path should be subdivided"
 
-    output_points = [cmd.end for cmd in ops.commands if cmd.end is not None]
+    output_points = [ops.endpoint(i) for i in range(ops.len())]
 
     assert_points_almost_equal(output_points[0], (0, 0, 5))
     assert_points_almost_equal(output_points[-1], (100, 50, 5))
@@ -104,7 +100,7 @@ def test_corner_preservation():
     smoother = Smooth(amount=40, corner_angle_threshold=95)
     smoother.run(ops)
 
-    output_points = [cmd.end for cmd in ops.commands if cmd.end is not None]
+    output_points = [ops.endpoint(i) for i in range(ops.len())]
 
     found_sharp = any(distance_2d(p, (50, 0, 0)) < 1e-5 for p in output_points)
     assert found_sharp, "Sharp corner was not preserved"
@@ -163,12 +159,13 @@ def test_bezier_passes_through_unchanged():
     smoother = Smooth(amount=50)
     smoother.run(ops)
 
-    bezier_cmds = [c for c in ops.commands if isinstance(c, BezierToCommand)]
-    assert len(bezier_cmds) == 1
-    cmd = bezier_cmds[0]
-    assert cmd.control1 == (10, 20, 0)
-    assert cmd.control2 == (30, 20, 0)
-    assert cmd.end == (40, 0, 0)
+    bezier_indices = ops.indices_of(CommandType.BEZIER_TO)
+    assert len(bezier_indices) == 1
+    bezier_idx = bezier_indices[0]
+    c1, c2 = ops.bezier_params(bezier_idx)
+    assert c1 == (10, 20, 0)
+    assert c2 == (30, 20, 0)
+    assert ops.endpoint(bezier_idx) == (40, 0, 0)
 
 
 def test_mixed_lines_and_bezier():
@@ -192,13 +189,15 @@ def test_mixed_lines_and_bezier():
     smoother = Smooth(amount=50)
     smoother.run(ops)
 
-    bezier_cmds = [c for c in ops.commands if isinstance(c, BezierToCommand)]
-    assert len(bezier_cmds) == 1
-    assert bezier_cmds[0].control1 == (20, 10, 0)
-    assert bezier_cmds[0].control2 == (30, 10, 0)
-    assert bezier_cmds[0].end == (40, 0, 0)
+    bezier_indices = ops.indices_of(CommandType.BEZIER_TO)
+    assert len(bezier_indices) == 1
+    bezier_idx = bezier_indices[0]
+    c1, c2 = ops.bezier_params(bezier_idx)
+    assert c1 == (20, 10, 0)
+    assert c2 == (30, 10, 0)
+    assert ops.endpoint(bezier_idx) == (40, 0, 0)
 
-    line_cmds = [c for c in ops.commands if isinstance(c, LineToCommand)]
+    line_count = len(ops.indices_of(CommandType.LINE_TO))
     # Segment 1 was smoothed (subdivided into more lines)
     # Segment 2's line is preserved but not smoothed
-    assert len(line_cmds) > 2
+    assert line_count > 2

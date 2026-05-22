@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-import copy
 from collections import defaultdict
 from typing import (
     Optional,
@@ -9,7 +8,6 @@ from typing import (
     Any,
     List,
     TYPE_CHECKING,
-    cast,
     Sequence,
     Set,
     Tuple,
@@ -19,12 +17,8 @@ from gettext import gettext as _
 
 from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.ops import (
-    Ops,
-    MoveToCommand,
-    LineToCommand,
-    Command,
-)
+from rayforge.core.ops import Ops
+from rayforge.core.ops.enums import CommandType, CommandCategory
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
@@ -180,11 +174,14 @@ class MergeLinesTransformer(OpsTransformer):
         dist2 = self._point_line_distance(seg2.end, seg1)
         return dist2 <= tol
 
-    def _is_line_segment(self, segment: Sequence[Command]) -> bool:
+    @staticmethod
+    def _is_line_segment(ops: Ops, indices: List[int]) -> bool:
         return (
-            len(segment) > 1
-            and isinstance(segment[0], MoveToCommand)
-            and all(isinstance(c, LineToCommand) for c in segment[1:])
+            len(indices) > 1
+            and ops.command_type(indices[0]) == CommandType.MOVE_TO
+            and all(
+                ops.command_type(i) == CommandType.LINE_TO for i in indices[1:]
+            )
         )
 
     def _get_cell_keys(
@@ -201,28 +198,21 @@ class MergeLinesTransformer(OpsTransformer):
             for cy in range(cy1, cy2 + 1)
         }
 
+    @staticmethod
     def _extract_line_segments(
-        self, segments: List[List[Command]]
+        ops: Ops, segments: List[List[int]]
     ) -> List[LineSegment]:
         line_segments: List[LineSegment] = []
 
-        for seg_idx, segment in enumerate(segments):
-            if not self._is_line_segment(segment):
+        for seg_idx, seg_indices in enumerate(segments):
+            if not MergeLinesTransformer._is_line_segment(ops, seg_indices):
                 continue
 
-            move_cmd = cast(MoveToCommand, segment[0])
-            if move_cmd.end is None:
-                continue
+            current_pos = ops.endpoint(seg_indices[0])
 
-            current_pos = move_cmd.end
-
-            for cmd_idx, cmd in enumerate(segment[1:], start=1):
-                line_cmd = cast(LineToCommand, cmd)
-                if line_cmd.end is None:
-                    continue
-
-                end_pos = line_cmd.end
-                line_seg = LineSegment(current_pos, end_pos, seg_idx, cmd_idx)
+            for cmd_pos in range(1, len(seg_indices)):
+                end_pos = ops.endpoint(seg_indices[cmd_pos])
+                line_seg = LineSegment(current_pos, end_pos, seg_idx, cmd_pos)
                 line_segments.append(line_seg)
                 current_pos = end_pos
 
@@ -327,8 +317,8 @@ class MergeLinesTransformer(OpsTransformer):
 
         ops.preload_state()
 
-        segments = list(ops.segments())
-        line_segments = self._extract_line_segments(segments)
+        segments = list(ops.segment_indices())
+        line_segments = self._extract_line_segments(ops, segments)
 
         if not line_segments:
             return
@@ -387,16 +377,17 @@ class MergeLinesTransformer(OpsTransformer):
                 (p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2 + (z2 - z1) ** 2
             )
 
-        ops.clear()
+        new_ops = Ops()
 
         machine_pos = None
 
-        for seg_idx, segment in enumerate(segments):
+        for seg_idx, seg_indices in enumerate(segments):
             expected_pos = None
 
-            for cmd_idx, cmd in enumerate(segment):
-                line_seg = segment_map.get((seg_idx, cmd_idx))
-                has_end = hasattr(cmd, "end") and cmd.end is not None
+            for cmd_pos, idx in enumerate(seg_indices):
+                line_seg = segment_map.get((seg_idx, cmd_pos))
+                cat = ops.category(idx)
+                is_moving = cat == CommandCategory.MOVING
 
                 if line_seg:
                     if line_seg.covered_intervals:
@@ -417,32 +408,22 @@ class MergeLinesTransformer(OpsTransformer):
                             end_pt = interpolate(P1, P2, v)
 
                             if dist3d(machine_pos, start_pt) > 1e-5:
-                                new_move = MoveToCommand(start_pt)
-                                if hasattr(cmd, "state") and cmd.state:
-                                    new_move.state = copy.copy(cmd.state)
-                                ops.add(new_move)
+                                new_ops.move_to(*start_pt)
 
-                            new_cut = LineToCommand(end_pt)
-                            if hasattr(cmd, "state") and cmd.state:
-                                new_cut.state = copy.copy(cmd.state)
-                            ops.add(new_cut)
+                            new_ops.line_to(*end_pt)
                             machine_pos = end_pt
                     else:
                         P1 = line_seg.start
                         if dist3d(machine_pos, P1) > 1e-5:
-                            new_move = MoveToCommand(P1)
-                            if hasattr(cmd, "state") and cmd.state:
-                                new_move.state = copy.copy(cmd.state)
-                            ops.add(new_move)
+                            new_ops.move_to(*P1)
 
-                        ops.add(cmd)
-                        machine_pos = cmd.end
+                        new_ops.transfer_command_from(ops, idx)
+                        machine_pos = ops.endpoint(idx)
 
-                    expected_pos = cmd.end
+                    expected_pos = ops.endpoint(idx)
                 else:
-                    is_cut = getattr(
-                        cmd, "is_cutting_command", lambda: False
-                    )()
+                    ct = ops.command_type(idx)
+                    is_cut = is_moving and ct != CommandType.MOVE_TO
 
                     # If it's a non-LineTo cut (like an arc) and we are out
                     # of sync due to skipping prior lines
@@ -451,21 +432,18 @@ class MergeLinesTransformer(OpsTransformer):
                         and expected_pos is not None
                         and dist3d(machine_pos, expected_pos) > 1e-5
                     ):
-                        new_move = MoveToCommand(expected_pos)
-                        if hasattr(cmd, "state") and cmd.state:
-                            new_move.state = copy.copy(cmd.state)
-                        ops.add(new_move)
+                        new_ops.move_to(*expected_pos)
                         machine_pos = expected_pos
 
-                    ops.add(cmd)
+                    new_ops.transfer_command_from(ops, idx)
 
-                    if has_end:
-                        expected_pos = cmd.end
-                        if (
-                            getattr(cmd, "is_travel_command", lambda: False)()
-                            or is_cut
-                        ):
-                            machine_pos = cmd.end
+                    if is_moving:
+                        end_pt = ops.endpoint(idx)
+                        expected_pos = end_pt
+                        if ct == CommandType.MOVE_TO or is_cut:
+                            machine_pos = end_pt
+
+        ops.replace_with(new_ops)
 
     def to_dict(self) -> Dict[str, Any]:
         data = super().to_dict()

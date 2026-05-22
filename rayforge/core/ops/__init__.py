@@ -1,75 +1,16 @@
-"""
-The ops module contains the core Ops class for representing machine operations
-and the Command classes that define those operations.
-"""
-
 from .axis import Axis
-from .container import Ops, OpsSection
-from . import flip
-from . import group
-from .commands import (
-    State,
-    Command,
-    CurveToCommand,
-    MovingCommand,
-    MoveToCommand,
-    LineToCommand,
-    ArcToCommand,
-    BezierToCommand,
-    QuadraticBezierToCommand,
-    DwellCommand,
-    SetCutSpeedCommand,
-    SetFrequencyCommand,
-    SetLaserCommand,
-    SetPowerCommand,
-    SetPulseWidthCommand,
-    SetTravelSpeedCommand,
-    EnableAirAssistCommand,
-    DisableAirAssistCommand,
-    JobStartCommand,
-    JobEndCommand,
-    LayerStartCommand,
-    LayerEndCommand,
-    ScanLinePowerCommand,
-    WorkpieceStartCommand,
-    WorkpieceEndCommand,
-    SectionType,
-    OpsSectionStartCommand,
-    OpsSectionEndCommand,
-)
+from .container import Ops, OpsSection, MachineState, CommandInfo
+from .enums import CommandType, CommandCategory, SectionType
+from .state import State
 
 __all__ = [
     "Axis",
+    "CommandType",
+    "CommandCategory",
+    "CommandInfo",
+    "MachineState",
     "Ops",
     "OpsSection",
-    "flip",
-    "group",
     "State",
-    "Command",
-    "CurveToCommand",
-    "MovingCommand",
-    "MoveToCommand",
-    "LineToCommand",
-    "ArcToCommand",
-    "BezierToCommand",
-    "QuadraticBezierToCommand",
-    "DwellCommand",
-    "SetCutSpeedCommand",
-    "SetFrequencyCommand",
-    "SetLaserCommand",
-    "SetPowerCommand",
-    "SetPulseWidthCommand",
-    "SetTravelSpeedCommand",
-    "EnableAirAssistCommand",
-    "DisableAirAssistCommand",
-    "JobStartCommand",
-    "JobEndCommand",
-    "LayerStartCommand",
-    "LayerEndCommand",
-    "ScanLinePowerCommand",
-    "WorkpieceStartCommand",
-    "WorkpieceEndCommand",
     "SectionType",
-    "OpsSectionStartCommand",
-    "OpsSectionEndCommand",
 ]

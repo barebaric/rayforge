@@ -1,10 +1,4 @@
-from rayforge.core.ops import (
-    Ops,
-    MoveToCommand,
-    LineToCommand,
-    ArcToCommand,
-    SetPowerCommand,
-)
+from rayforge.core.ops import Ops, CommandType
 
 
 class TestSplitIntoSubpaths:
@@ -17,8 +11,8 @@ class TestSplitIntoSubpaths:
         ops.move_to(0, 0)
         result = ops.split_into_subpaths()
         assert len(result) == 1
-        assert len(result[0]) == 1
-        assert isinstance(result[0][0], MoveToCommand)
+        assert result[0].len() == 1
+        assert result[0].is_travel(0)
 
     def test_single_subpath(self):
         ops = Ops()
@@ -27,7 +21,7 @@ class TestSplitIntoSubpaths:
         ops.line_to(10, 10)
         result = ops.split_into_subpaths()
         assert len(result) == 1
-        assert len(result[0]) == 3
+        assert result[0].len() == 3
 
     def test_two_subpaths(self):
         ops = Ops()
@@ -37,8 +31,8 @@ class TestSplitIntoSubpaths:
         ops.line_to(30, 30)
         result = ops.split_into_subpaths()
         assert len(result) == 2
-        assert isinstance(result[0][0], MoveToCommand)
-        assert isinstance(result[1][0], MoveToCommand)
+        assert result[0].is_travel(0)
+        assert result[1].is_travel(0)
 
     def test_state_commands_grouped_with_subpath(self):
         ops = Ops()
@@ -47,8 +41,9 @@ class TestSplitIntoSubpaths:
         ops.line_to(10, 0)
         result = ops.split_into_subpaths()
         assert len(result) == 1
-        assert len(result[0]) == 3
-        assert isinstance(result[0][1], SetPowerCommand)
+        assert result[0].len() == 3
+        assert result[0].command_type(1) == CommandType.SET_POWER
+        assert result[0].is_state(1)
 
     def test_subpath_starting_with_lineto(self):
         ops = Ops()
@@ -56,7 +51,8 @@ class TestSplitIntoSubpaths:
         ops.line_to(10, 10)
         result = ops.split_into_subpaths()
         assert len(result) == 1
-        assert isinstance(result[0][0], LineToCommand)
+        assert result[0].command_type(0) == CommandType.LINE_TO
+        assert not result[0].is_travel(0)
 
     def test_three_subpaths(self):
         ops = Ops()
@@ -75,7 +71,8 @@ class TestSplitIntoSubpaths:
         ops.arc_to(10, 0, 5, 0, clockwise=True)
         result = ops.split_into_subpaths()
         assert len(result) == 1
-        assert isinstance(result[0][1], ArcToCommand)
+        assert result[0].len() == 2
+        assert result[0].command_type(1) == CommandType.ARC_TO
 
     def test_single_moveto_no_draw(self):
         ops = Ops()
@@ -83,5 +80,5 @@ class TestSplitIntoSubpaths:
         ops.move_to(10, 10)
         result = ops.split_into_subpaths()
         assert len(result) == 2
-        assert len(result[0]) == 1
-        assert len(result[1]) == 1
+        assert result[0].len() == 1
+        assert result[1].len() == 1

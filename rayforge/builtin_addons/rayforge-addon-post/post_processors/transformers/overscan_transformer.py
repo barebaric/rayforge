@@ -1,21 +1,14 @@
 from __future__ import annotations
 import math
 import logging
-from typing import Optional, List, Dict, Any, Sequence, TYPE_CHECKING
+from typing import Optional, List, Dict, Any, TYPE_CHECKING
 from gettext import gettext as _
 
 from rayforge.core.ops import (
     Ops,
-    Command,
-    MovingCommand,
-    MoveToCommand,
-    LineToCommand,
-    ScanLinePowerCommand,
-    SetPowerCommand,
     SectionType,
-    OpsSectionStartCommand,
-    OpsSectionEndCommand,
 )
+from rayforge.core.ops.enums import CommandType, CommandCategory
 from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
 from rayforge.shared.tasker.progress import ProgressContext
 
@@ -130,81 +123,94 @@ class OverscanTransformer(OpsTransformer):
         # Preload state only when we are actually going to process commands.
         ops.preload_state()
 
-        new_commands: List[Command] = []
-        line_buffer: List[Command] = []
+        new_ops = Ops()
+        line_buffer: List[int] = []
         in_raster_section = False
 
         def _process_buffer():
             nonlocal line_buffer
             if line_buffer:
-                rewritten_line = self._rewrite_buffered_line(line_buffer)
-                new_commands.extend(rewritten_line)
+                self._rewrite_buffered_line(new_ops, ops, line_buffer)
                 line_buffer = []
 
-        for cmd in ops:
-            is_start = (
-                isinstance(cmd, OpsSectionStartCommand)
-                and cmd.section_type == SectionType.RASTER_FILL
-            )
-            is_end = (
-                isinstance(cmd, OpsSectionEndCommand)
-                and cmd.section_type == SectionType.RASTER_FILL
-            )
+        for i in range(ops.len()):
+            ct = ops.command_type(i)
+
+            is_start = ct == CommandType.OPS_SECTION_START
+            if is_start:
+                sec_type, _ = ops.section_params(i)
+                is_start = sec_type == SectionType.RASTER_FILL
+
+            is_end = ct == CommandType.OPS_SECTION_END
+            if is_end:
+                sec_type, _ = ops.section_params(i)
+                is_end = sec_type == SectionType.RASTER_FILL
 
             if is_start:
                 _process_buffer()
                 in_raster_section = True
-                new_commands.append(cmd)
+                new_ops.transfer_command_from(ops, i)
             elif is_end:
                 _process_buffer()
                 in_raster_section = False
-                new_commands.append(cmd)
+                new_ops.transfer_command_from(ops, i)
             elif not in_raster_section:
-                new_commands.append(cmd)
+                new_ops.transfer_command_from(ops, i)
             else:  # Inside raster section
-                if isinstance(cmd, MoveToCommand):
+                if ct == CommandType.MOVE_TO:
                     _process_buffer()
-                    line_buffer = [cmd]
+                    line_buffer = [i]
                 elif line_buffer:
                     # If a line has been started, append subsequent commands
                     # (could be state changes or cutting moves)
-                    line_buffer.append(cmd)
+                    line_buffer.append(i)
                 else:
                     # This command appeared without a preceding MoveTo
                     _process_buffer()
-                    new_commands.append(cmd)
+                    new_ops.transfer_command_from(ops, i)
 
         _process_buffer()
-        ops.replace_all(new_commands)
+        ops.replace_with(new_ops)
 
     def _rewrite_buffered_line(
-        self, buffer: List[Command]
-    ) -> Sequence[Command]:
+        self,
+        new_ops: Ops,
+        old_ops: Ops,
+        indices: List[int],
+    ) -> None:
         """
         Replaces a simple raster line pattern with a full toolpath
         including overscan lead-in and lead-out.
         """
-        moving_cmds = [c for c in buffer if isinstance(c, MovingCommand)]
+        moving_indices = [
+            j for j in indices if old_ops.category(j) == CommandCategory.MOVING
+        ]
 
-        if len(moving_cmds) < 2 or not isinstance(
-            moving_cmds[0], MoveToCommand
+        if len(moving_indices) < 2 or (
+            old_ops.command_type(moving_indices[0]) != CommandType.MOVE_TO
         ):
-            return buffer
+            for j in indices:
+                new_ops.transfer_command_from(old_ops, j)
+            return
 
-        content_start_3d = moving_cmds[0].end
-        content_end_3d = moving_cmds[-1].end
+        content_start_3d = old_ops.endpoint(moving_indices[0])
+        content_end_3d = old_ops.endpoint(moving_indices[-1])
 
         start_x, start_y = content_start_3d[0], content_start_3d[1]
         end_x, end_y = content_end_3d[0], content_end_3d[1]
 
         if start_x == end_x and start_y == end_y:
-            return buffer
+            for j in indices:
+                new_ops.transfer_command_from(old_ops, j)
+            return
 
         dx = end_x - start_x
         dy = end_y - start_y
         original_length = math.hypot(dx, dy)
         if original_length < 1e-9:
-            return buffer
+            for j in indices:
+                new_ops.transfer_command_from(old_ops, j)
+            return
 
         v_dir_norm_x = dx / original_length
         v_dir_norm_y = dy / original_length
@@ -226,53 +232,55 @@ class OverscanTransformer(OpsTransformer):
         )
 
         # Case 1: Variable Power ScanLine - Handled by padding its data
-        if len(buffer) == 2 and isinstance(buffer[1], ScanLinePowerCommand):
-            scan_cmd = buffer[1].__copy__()
+        if len(indices) == 2 and (
+            old_ops.command_type(indices[1]) == CommandType.SCAN_LINE
+        ):
+            scan_idx = indices[1]
+            old_pv = bytes(old_ops.scanline_data(scan_idx))
             pixels_per_mm = (
-                len(scan_cmd.power_values) / original_length
-                if original_length > 0
-                else 0
+                len(old_pv) / original_length if original_length > 0 else 0
             )
             num_pad_pixels = round(self.distance_mm * pixels_per_mm)
             pad_bytes = bytearray([0] * num_pad_pixels)
 
-            scan_cmd.power_values = (
-                pad_bytes + scan_cmd.power_values + pad_bytes
-            )
-            scan_cmd.end = overscan_end_3d
+            padded_pv = pad_bytes + old_pv + pad_bytes
 
-            return [MoveToCommand(overscan_start_3d), scan_cmd]
+            new_ops.move_to(*overscan_start_3d)
+            new_ops.scan_to(*overscan_end_3d, power_values=padded_pv)
+            return
 
         # Case 2: Constant Power LineTo(s) - Handled by wrapping
         else:
-            first_cut_cmd = next(
-                (cmd for cmd in moving_cmds if cmd.is_cutting_command()), None
-            )
+            first_cut_idx = None
+            for j in moving_indices[1:]:
+                if old_ops.command_type(j) == CommandType.LINE_TO:
+                    first_cut_idx = j
+                    break
 
-            if not first_cut_cmd or not first_cut_cmd.state:
-                return buffer
+            if first_cut_idx is None:
+                for j in indices:
+                    new_ops.transfer_command_from(old_ops, j)
+                return
 
-            original_power = first_cut_cmd.state.power
-            rewritten_commands: List[Command] = [
-                MoveToCommand(overscan_start_3d),
-            ]
-            rewritten_commands.extend(
-                [SetPowerCommand(0), LineToCommand(content_start_3d)]
-            )
+            original_power = old_ops.preloaded_state(first_cut_idx).power
 
-            content_cmds = buffer[1:]
+            new_ops.move_to(*overscan_start_3d)
+            new_ops.set_power(0)
+            new_ops.line_to(*content_start_3d)
 
-            if not content_cmds or not isinstance(
-                content_cmds[0], SetPowerCommand
+            content_indices = indices[1:]
+
+            if not content_indices or (
+                old_ops.command_type(content_indices[0])
+                != CommandType.SET_POWER
             ):
-                rewritten_commands.append(SetPowerCommand(original_power))
+                new_ops.set_power(original_power)
 
-            rewritten_commands.extend(content_cmds)
+            for j in content_indices:
+                new_ops.transfer_command_from(old_ops, j)
 
-            rewritten_commands.extend(
-                [SetPowerCommand(0), LineToCommand(overscan_end_3d)]
-            )
-            return rewritten_commands
+            new_ops.set_power(0)
+            new_ops.line_to(*overscan_end_3d)
 
     def to_dict(self) -> Dict[str, Any]:
         return {

@@ -1,12 +1,7 @@
 import pytest
 from unittest.mock import Mock, MagicMock
 from raygeo import Geometry
-from rayforge.core.ops import Ops
-from rayforge.core.ops.commands import (
-    ArcToCommand,
-    BezierToCommand,
-    LineToCommand,
-)
+from rayforge.core.ops import Ops, CommandType, CommandCategory
 from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
 from post_processors.transformers import CropTransformer
@@ -122,7 +117,7 @@ class TestCropTransformerNoOp:
         ops = Ops()
         ops.move_to(0, 0)
         ops.line_to(200, 0)
-        original_commands = list(ops.commands)
+        original_len = ops.len()
 
         transformer.enabled = False
         stock_geo = create_rect_geometry(0, 0, 100, 100)
@@ -130,17 +125,17 @@ class TestCropTransformerNoOp:
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
 
-        assert ops.commands == original_commands
+        assert ops.len() == original_len
 
     def test_no_op_when_no_stock_geometries(self, transformer, mock_workpiece):
         ops = Ops()
         ops.move_to(0, 0)
         ops.line_to(200, 0)
-        original_commands = list(ops.commands)
+        original_len = ops.len()
 
         transformer.run(ops, workpiece=mock_workpiece, stock_geometries=None)
 
-        assert ops.commands == original_commands
+        assert ops.len() == original_len
 
     def test_no_op_when_empty_stock_geometries(
         self, transformer, mock_workpiece
@@ -148,22 +143,22 @@ class TestCropTransformerNoOp:
         ops = Ops()
         ops.move_to(0, 0)
         ops.line_to(200, 0)
-        original_commands = list(ops.commands)
+        original_len = ops.len()
 
         transformer.run(ops, workpiece=mock_workpiece, stock_geometries=[])
 
-        assert ops.commands == original_commands
+        assert ops.len() == original_len
 
     def test_no_op_when_no_workpiece(self, transformer):
         ops = Ops()
         ops.move_to(0, 0)
         ops.line_to(200, 0)
-        original_commands = list(ops.commands)
+        original_len = ops.len()
 
         stock_geo = create_rect_geometry(0, 0, 100, 100)
         transformer.run(ops, workpiece=None, stock_geometries=[stock_geo])
 
-        assert ops.commands == original_commands
+        assert ops.len() == original_len
 
 
 class TestCropTransformerCropping:
@@ -177,14 +172,14 @@ class TestCropTransformerCropping:
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
 
-        segments = list(ops.segments())
+        segments = list(ops.segment_indices())
         assert len(segments) == 1
         segment = segments[0]
         assert len(segment) >= 2
-        assert segment[0].end is not None
-        assert segment[-1].end is not None
-        start_x = segment[0].end[0]
-        end_x = segment[-1].end[0]
+        assert ops.endpoint(segment[0]) is not None
+        assert ops.endpoint(segment[-1]) is not None
+        start_x = ops.endpoint(segment[0])[0]
+        end_x = ops.endpoint(segment[-1])[0]
         assert start_x >= 0.3
         assert end_x <= 0.7
 
@@ -192,14 +187,14 @@ class TestCropTransformerCropping:
         ops = Ops()
         ops.move_to(0.4, 0.5)
         ops.line_to(0.6, 0.5)
-        original_segment_count = len(list(ops.segments()))
+        original_segment_count = len(list(ops.segment_indices()))
 
         stock_geo = create_rect_geometry(0, 0, 1, 1)
         transformer.run(
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
 
-        segments = list(ops.segments())
+        segments = list(ops.segment_indices())
         assert len(segments) == original_segment_count
 
     def test_crop_line_fully_outside_stock(self, transformer, mock_workpiece):
@@ -212,7 +207,7 @@ class TestCropTransformerCropping:
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
 
-        segments = list(ops.segments())
+        segments = list(ops.segment_indices())
         assert len(segments) == 0
 
     def test_crop_with_positive_offset(self, mock_workpiece):
@@ -226,13 +221,13 @@ class TestCropTransformerCropping:
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
 
-        segments = list(ops.segments())
+        segments = list(ops.segment_indices())
         assert len(segments) == 1
         segment = segments[0]
-        assert segment[0].end is not None
-        assert segment[-1].end is not None
-        start_x = segment[0].end[0]
-        end_x = segment[-1].end[0]
+        assert ops.endpoint(segment[0]) is not None
+        assert ops.endpoint(segment[-1]) is not None
+        start_x = ops.endpoint(segment[0])[0]
+        end_x = ops.endpoint(segment[-1])[0]
         assert start_x >= 0.3
         assert end_x <= 0.7
 
@@ -247,13 +242,13 @@ class TestCropTransformerCropping:
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
 
-        segments = list(ops.segments())
+        segments = list(ops.segment_indices())
         assert len(segments) == 1
         segment = segments[0]
-        assert segment[0].end is not None
-        assert segment[-1].end is not None
-        start_x = segment[0].end[0]
-        end_x = segment[-1].end[0]
+        assert ops.endpoint(segment[0]) is not None
+        assert ops.endpoint(segment[-1]) is not None
+        start_x = ops.endpoint(segment[0])[0]
+        end_x = ops.endpoint(segment[-1])[0]
         assert start_x >= 0.4
         assert end_x <= 0.6
 
@@ -271,16 +266,20 @@ class TestCropTransformerCropping:
             stock_geometries=[stock_geo1, stock_geo2],
         )
 
-        segments = list(ops.segments())
+        segments = list(ops.segment_indices())
         assert len(segments) == 2
         seg1 = segments[0]
         seg2 = segments[1]
-        assert seg1[0].end is not None
-        assert seg1[-1].end is not None
-        assert seg2[0].end is not None
-        assert seg2[-1].end is not None
-        assert seg1[0].end[0] >= 0 and seg1[-1].end[0] <= 0.4
-        assert seg2[0].end[0] >= 0.6 and seg2[-1].end[0] <= 1
+        assert ops.endpoint(seg1[0]) is not None
+        assert ops.endpoint(seg1[-1]) is not None
+        assert ops.endpoint(seg2[0]) is not None
+        assert ops.endpoint(seg2[-1]) is not None
+        assert (
+            ops.endpoint(seg1[0])[0] >= 0 and ops.endpoint(seg1[-1])[0] <= 0.4
+        )
+        assert (
+            ops.endpoint(seg2[0])[0] >= 0.6 and ops.endpoint(seg2[-1])[0] <= 1
+        )
 
     def test_crop_with_transformed_workpiece(self):
         wp = MagicMock(spec=WorkPiece)
@@ -295,7 +294,7 @@ class TestCropTransformerCropping:
         stock_geo = create_rect_geometry(0, 0, 1, 1)
         transformer.run(ops, workpiece=wp, stock_geometries=[stock_geo])
 
-        segments = list(ops.segments())
+        segments = list(ops.segment_indices())
         assert len(segments) == 1
 
     def test_crop_with_rotated_workpiece(self):
@@ -314,7 +313,7 @@ class TestCropTransformerCropping:
         stock_geo = create_rect_geometry(-1, -1, 2, 2)
         transformer.run(ops, workpiece=wp, stock_geometries=[stock_geo])
 
-        segments = list(ops.segments())
+        segments = list(ops.segment_indices())
         assert len(segments) >= 0
 
     def test_crop_empty_ops(self, transformer, mock_workpiece):
@@ -325,7 +324,7 @@ class TestCropTransformerCropping:
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
 
-        assert len(ops.commands) == 0
+        assert ops.len() == 0
 
     def test_crop_workpiece_with_no_size(self):
         wp = MagicMock(spec=WorkPiece)
@@ -336,12 +335,12 @@ class TestCropTransformerCropping:
         ops = Ops()
         ops.move_to(0, 0)
         ops.line_to(100, 0)
-        original_len = len(ops.commands)
+        original_len = ops.len()
 
         stock_geo = create_rect_geometry(0, 0, 50, 50)
         transformer.run(ops, workpiece=wp, stock_geometries=[stock_geo])
 
-        assert len(ops.commands) <= original_len
+        assert ops.len() <= original_len
 
     def test_crop_with_custom_tolerance(self, mock_workpiece):
         transformer = CropTransformer(tolerance=0.1)
@@ -354,7 +353,7 @@ class TestCropTransformerCropping:
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
 
-        segments = list(ops.segments())
+        segments = list(ops.segment_indices())
         assert len(segments) == 1
 
 
@@ -369,9 +368,15 @@ class TestCropTransformerArcPreservation:
         transformer.run(
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
-        arcs = [c for c in ops.commands if isinstance(c, ArcToCommand)]
-        assert len(arcs) == 1
-        assert arcs[0].end == pytest.approx((0.6, 0.5, 0.0), abs=1e-6)
+        arc_indices = [
+            i
+            for i in range(ops.len())
+            if ops.command_type(i) == CommandType.ARC_TO
+        ]
+        assert len(arc_indices) == 1
+        assert ops.endpoint(arc_indices[0]) == pytest.approx(
+            (0.6, 0.5, 0.0), abs=1e-6
+        )
 
     def test_arc_partially_outside_stock_is_refitted(
         self, transformer, mock_workpiece
@@ -383,13 +388,17 @@ class TestCropTransformerArcPreservation:
         transformer.run(
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
-        arcs = [c for c in ops.commands if isinstance(c, ArcToCommand)]
-        assert len(arcs) >= 1
-        segments = list(ops.segments())
+        arc_indices = [
+            i
+            for i in range(ops.len())
+            if ops.command_type(i) == CommandType.ARC_TO
+        ]
+        assert len(arc_indices) >= 1
+        segments = list(ops.segment_indices())
         for seg in segments:
-            for cmd in seg:
-                if hasattr(cmd, "end") and cmd.end is not None:
-                    assert 0.3 <= cmd.end[0] <= 0.7
+            for i in seg:
+                if ops.category(i) == CommandCategory.MOVING:
+                    assert 0.3 <= ops.endpoint(i)[0] <= 0.7
 
     def test_arc_fully_outside_stock_is_removed(
         self, transformer, mock_workpiece
@@ -401,7 +410,7 @@ class TestCropTransformerArcPreservation:
         transformer.run(
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
-        segments = list(ops.segments())
+        segments = list(ops.segment_indices())
         assert len(segments) == 0
 
     def test_mixed_line_and_arc_inside_stock(
@@ -416,9 +425,13 @@ class TestCropTransformerArcPreservation:
         transformer.run(
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
-        arcs = [c for c in ops.commands if isinstance(c, ArcToCommand)]
-        assert len(arcs) == 1
-        segments = list(ops.segments())
+        arc_indices = [
+            i
+            for i in range(ops.len())
+            if ops.command_type(i) == CommandType.ARC_TO
+        ]
+        assert len(arc_indices) == 1
+        segments = list(ops.segment_indices())
         assert len(segments) == 1
 
     def test_rounded_rect_arcs_preserved_when_inside_stock(
@@ -441,8 +454,12 @@ class TestCropTransformerArcPreservation:
         transformer.run(
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
-        arcs = [c for c in ops.commands if isinstance(c, ArcToCommand)]
-        assert len(arcs) == 4
+        arc_indices = [
+            i
+            for i in range(ops.len())
+            if ops.command_type(i) == CommandType.ARC_TO
+        ]
+        assert len(arc_indices) == 4
 
 
 class TestCropTransformerBezierPreservation:
@@ -456,9 +473,15 @@ class TestCropTransformerBezierPreservation:
         transformer.run(
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
-        beziers = [c for c in ops.commands if isinstance(c, BezierToCommand)]
-        assert len(beziers) == 1
-        assert beziers[0].end == pytest.approx((0.7, 0.5, 0.0), abs=1e-6)
+        bezier_indices = [
+            i
+            for i in range(ops.len())
+            if ops.command_type(i) == CommandType.BEZIER_TO
+        ]
+        assert len(bezier_indices) == 1
+        assert ops.endpoint(bezier_indices[0]) == pytest.approx(
+            (0.7, 0.5, 0.0), abs=1e-6
+        )
 
     def test_bezier_partially_outside_stock_is_refitted(
         self, transformer, mock_workpiece
@@ -470,12 +493,12 @@ class TestCropTransformerBezierPreservation:
         transformer.run(
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
-        segments = list(ops.segments())
+        segments = list(ops.segment_indices())
         assert len(segments) >= 1
         for seg in segments:
-            for cmd in seg:
-                if hasattr(cmd, "end") and cmd.end is not None:
-                    assert 0.3 <= cmd.end[0] <= 0.7
+            for i in seg:
+                if ops.category(i) == CommandCategory.MOVING:
+                    assert 0.3 <= ops.endpoint(i)[0] <= 0.7
 
     def test_bezier_fully_outside_stock_is_removed(
         self, transformer, mock_workpiece
@@ -487,7 +510,7 @@ class TestCropTransformerBezierPreservation:
         transformer.run(
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
-        segments = list(ops.segments())
+        segments = list(ops.segment_indices())
         assert len(segments) == 0
 
     def test_mixed_line_and_bezier_inside_stock(
@@ -502,9 +525,13 @@ class TestCropTransformerBezierPreservation:
         transformer.run(
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
-        beziers = [c for c in ops.commands if isinstance(c, BezierToCommand)]
-        assert len(beziers) == 1
-        segments = list(ops.segments())
+        bezier_indices = [
+            i
+            for i in range(ops.len())
+            if ops.command_type(i) == CommandType.BEZIER_TO
+        ]
+        assert len(bezier_indices) == 1
+        segments = list(ops.segment_indices())
         assert len(segments) == 1
 
     def test_bezier_state_preserved_after_refit(
@@ -518,10 +545,13 @@ class TestCropTransformerBezierPreservation:
         transformer.run(
             ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
         )
-        cutting_cmds = [
-            c
-            for c in ops.commands
-            if isinstance(c, (LineToCommand, BezierToCommand))
+        cutting_indices = [
+            i
+            for i in range(ops.len())
+            if ops.command_type(i)
+            in (CommandType.LINE_TO, CommandType.BEZIER_TO)
         ]
-        for cmd in cutting_cmds:
-            assert cmd.state == {"power": 0.8}
+        for i in cutting_indices:
+            state = ops.inspect(i).state
+            assert state is not None
+            assert state.power == 0.8

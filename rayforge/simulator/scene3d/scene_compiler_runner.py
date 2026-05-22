@@ -52,7 +52,7 @@ def compile_scene_in_subprocess(
     elapsed = (time.perf_counter() - t_start) * 1000
     logger.info(
         f"[SCENE_COMPILER] Compilation took {elapsed:.1f}ms "
-        f"(commands={len(ops.commands)})"
+        f"(commands={len(ops)})"
     )
 
     compiled_handle = artifact_store.put(compiled, creator_tag="scene3d")

@@ -2,13 +2,7 @@ from typing import List, Tuple
 
 import pytest
 
-from rayforge.core.ops import Ops
-from rayforge.core.ops.commands import (
-    ArcToCommand,
-    BezierToCommand,
-    State,
-    SetPowerCommand,
-)
+from rayforge.core.ops import Ops, CommandType, CommandCategory
 from rayforge.core.ops.clipping import clip_ops_to_regions
 
 
@@ -23,7 +17,7 @@ class TestClipOpsToRegionsLines:
         ops = Ops()
         regions = [make_square_region(0, 0, 10, 10)]
         result = clip_ops_to_regions(ops, regions)
-        assert len(result.commands) == 0
+        assert result.len() == 0
 
     def test_empty_regions(self):
         ops = Ops()
@@ -62,13 +56,13 @@ class TestClipOpsToRegionsLines:
         ops.line_to(20, 5)
         regions = [make_square_region(5, 0, 10, 10)]
         clip_ops_to_regions(ops, regions)
-        segs = list(ops.segments())
+        segs = list(ops.segment_indices())
         assert len(segs) == 1
         seg = segs[0]
-        assert seg[0].end is not None
-        assert seg[-1].end is not None
-        assert seg[0].end[0] >= 5.0
-        assert seg[-1].end[0] <= 15.0
+        assert ops.endpoint(seg[0]) is not None
+        assert ops.endpoint(seg[-1]) is not None
+        assert ops.endpoint(seg[0])[0] >= 5.0
+        assert ops.endpoint(seg[-1])[0] <= 15.0
 
     def test_multiple_regions(self):
         ops = Ops()
@@ -90,9 +84,11 @@ class TestClipOpsToRegionsArcs:
         ops.arc_to(6, 5, 1, 0, clockwise=True)
         regions = [make_square_region(0, 0, 10, 10)]
         clip_ops_to_regions(ops, regions)
-        arcs = [c for c in ops.commands if isinstance(c, ArcToCommand)]
-        assert len(arcs) == 1
-        assert arcs[0].end == pytest.approx((6, 5, 0), abs=1e-6)
+        arc_indices = ops.indices_of(CommandType.ARC_TO)
+        assert len(arc_indices) == 1
+        assert ops.endpoint(arc_indices[0]) == pytest.approx(
+            (6, 5, 0), abs=1e-6
+        )
 
     def test_arc_fully_outside_removed(self):
         ops = Ops()
@@ -108,13 +104,12 @@ class TestClipOpsToRegionsArcs:
         ops.arc_to(9, 5, 4, 0, clockwise=True)
         regions = [make_square_region(3, 0, 4, 10)]
         clip_ops_to_regions(ops, regions)
-        arcs = [c for c in ops.commands if isinstance(c, ArcToCommand)]
-        assert len(arcs) >= 1
-        segs = list(ops.segments())
-        for seg in segs:
-            for cmd in seg:
-                if hasattr(cmd, "end") and cmd.end is not None:
-                    assert 3.0 <= cmd.end[0] <= 7.0
+        arc_indices = ops.indices_of(CommandType.ARC_TO)
+        assert len(arc_indices) >= 1
+        for seg_indices in ops.segment_indices():
+            for i in seg_indices:
+                if ops.category(i) == CommandCategory.MOVING:
+                    assert 3.0 <= ops.endpoint(i)[0] <= 7.0
 
     def test_mixed_lines_and_arcs_inside(self):
         ops = Ops()
@@ -124,8 +119,8 @@ class TestClipOpsToRegionsArcs:
         ops.line_to(8, 5)
         regions = [make_square_region(0, 0, 10, 10)]
         clip_ops_to_regions(ops, regions)
-        arcs = [c for c in ops.commands if isinstance(c, ArcToCommand)]
-        assert len(arcs) == 1
+        arc_indices = ops.indices_of(CommandType.ARC_TO)
+        assert len(arc_indices) == 1
         assert len(list(ops.segments())) == 1
 
     def test_rounded_rect_all_corners_preserved(self):
@@ -144,35 +139,34 @@ class TestClipOpsToRegionsArcs:
         ops.arc_to(x + r, y, r, 0, clockwise=True)
         regions = [make_square_region(0, 0, 10, 10)]
         clip_ops_to_regions(ops, regions)
-        arcs = [c for c in ops.commands if isinstance(c, ArcToCommand)]
-        assert len(arcs) == 4
+        arc_indices = ops.indices_of(CommandType.ARC_TO)
+        assert len(arc_indices) == 4
 
     def test_arc_state_preserved_after_refit(self):
         ops = Ops()
         ops.move_to(1, 5)
-        arc = ArcToCommand((9, 5, 0), (4, 0), clockwise=True)
-        arc.state = State(power=0.8)
-        ops.add(arc)
+        ops.set_power(0.8)
+        ops.arc_to(9, 5, 4, 0, clockwise=True)
+        ops.preload_state()
         regions = [make_square_region(3, 0, 4, 10)]
         clip_ops_to_regions(ops, regions)
-        arcs = [c for c in ops.commands if isinstance(c, ArcToCommand)]
-        for a in arcs:
-            assert a.state is not None
-            assert abs(a.state.power - 0.8) < 1e-6
+        arc_indices = ops.indices_of(CommandType.ARC_TO)
+        for idx in arc_indices:
+            state = ops.inspect(idx).state
+            assert state is not None
+            assert abs(state.power - 0.8) < 1e-6
 
 
 class TestClipOpsToRegionsLeadingCommands:
     def test_state_commands_before_first_move_preserved(self):
         ops = Ops()
-        ops.add(SetPowerCommand(0.5))
+        ops.set_power(0.5)
         ops.move_to(2, 5)
         ops.line_to(8, 5)
         regions = [make_square_region(0, 0, 10, 10)]
         clip_ops_to_regions(ops, regions)
-        state_cmds = [
-            c for c in ops.commands if isinstance(c, SetPowerCommand)
-        ]
-        assert len(state_cmds) == 1
+        state_indices = ops.indices_of(CommandType.SET_POWER)
+        assert len(state_indices) == 1
 
 
 class TestClipOpsToRegionsBezier:
@@ -182,9 +176,11 @@ class TestClipOpsToRegionsBezier:
         ops.bezier_to((4, 7, 0), (6, 7, 0), (7, 5, 0))
         regions = [make_square_region(0, 0, 10, 10)]
         clip_ops_to_regions(ops, regions)
-        beziers = [c for c in ops.commands if isinstance(c, BezierToCommand)]
-        assert len(beziers) == 1
-        assert beziers[0].end == pytest.approx((7, 5, 0), abs=1e-6)
+        bezier_indices = ops.indices_of(CommandType.BEZIER_TO)
+        assert len(bezier_indices) == 1
+        assert ops.endpoint(bezier_indices[0]) == pytest.approx(
+            (7, 5, 0), abs=1e-6
+        )
 
     def test_bezier_fully_outside_removed(self):
         ops = Ops()
@@ -200,25 +196,27 @@ class TestClipOpsToRegionsBezier:
         ops.bezier_to((3, 8, 0), (7, 8, 0), (9, 5, 0))
         regions = [make_square_region(3, 0, 4, 10)]
         clip_ops_to_regions(ops, regions)
-        segs = list(ops.segments())
+        segs = list(ops.segment_indices())
         assert len(segs) >= 1
-        for seg in segs:
-            for cmd in seg:
-                if hasattr(cmd, "end") and cmd.end is not None:
-                    assert 3.0 <= cmd.end[0] <= 7.0
+        for seg_indices in segs:
+            for i in seg_indices:
+                if ops.category(i) == CommandCategory.MOVING:
+                    assert 3.0 <= ops.endpoint(i)[0] <= 7.0
 
     def test_bezier_state_preserved_after_refit(self):
         ops = Ops()
         ops.move_to(1, 5)
-        bezier = BezierToCommand((9, 5, 0), (3, 8, 0), (7, 8, 0))
-        bezier.state = State(power=0.8)
-        ops.add(bezier)
+        ops.set_power(0.8)
+        ops.bezier_to((3, 8, 0), (7, 8, 0), (9, 5, 0))
+        ops.preload_state()
         regions = [make_square_region(3, 0, 4, 10)]
         clip_ops_to_regions(ops, regions)
-        for cmd in ops.commands:
-            if isinstance(cmd, (ArcToCommand, BezierToCommand)):
-                assert cmd.state is not None
-                assert abs(cmd.state.power - 0.8) < 1e-6
+        for i in ops.indices_of(CommandType.ARC_TO) + ops.indices_of(
+            CommandType.BEZIER_TO
+        ):
+            state = ops.inspect(i).state
+            assert state is not None
+            assert abs(state.power - 0.8) < 1e-6
 
     def test_mixed_lines_and_beziers_inside(self):
         ops = Ops()
@@ -228,6 +226,6 @@ class TestClipOpsToRegionsBezier:
         ops.line_to(8, 5)
         regions = [make_square_region(0, 0, 10, 10)]
         clip_ops_to_regions(ops, regions)
-        beziers = [c for c in ops.commands if isinstance(c, BezierToCommand)]
-        assert len(beziers) == 1
+        bezier_indices = ops.indices_of(CommandType.BEZIER_TO)
+        assert len(bezier_indices) == 1
         assert len(list(ops.segments())) == 1

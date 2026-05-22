@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, List, Set
 
+from ....core.ops import CommandCategory, CommandType
 from ..result import IssueCategory, IssueSeverity, SanityIssue
 from .base import BaseCheck
 
@@ -19,15 +20,18 @@ class NoGoZoneCheck2D(BaseCheck):
         hit_zones: Set[str] = set()
         issues: List[SanityIssue] = []
         pos = None
-        for cmd in context.ops.commands:
-            end = getattr(cmd, "end", None)
-            if end is not None and pos is not None:
+        ops = context.ops
+        for i in range(ops.len()):
+            if ops.category(i) != CommandCategory.MOVING:
+                continue
+            end = ops.endpoint(i)
+            if pos is not None:
                 start_2d = (pos[0], pos[1])
                 end_2d = (end[0], end[1])
                 for uid, zone in context.enabled_zones.items():
                     if uid in hit_zones:
                         continue
-                    if self._check_segment(zone, start_2d, end_2d, cmd):
+                    if self._check_segment(zone, start_2d, end_2d, i, ops):
                         hit_zones.add(uid)
                         issues.append(
                             SanityIssue(
@@ -40,21 +44,18 @@ class NoGoZoneCheck2D(BaseCheck):
                                 zone_name=zone.name,
                             )
                         )
-            if end is not None:
-                pos = end
+            pos = end
         return issues
 
     @staticmethod
-    def _check_segment(zone, start_2d, end_2d, cmd) -> bool:
-        if hasattr(cmd, "center_offset"):
-            arc_center = (
-                start_2d[0] + cmd.center_offset[0],
-                start_2d[1] + cmd.center_offset[1],
-            )
+    def _check_segment(zone, start_2d, end_2d, idx, ops) -> bool:
+        if ops.command_type(idx) == CommandType.ARC_TO:
+            i, j, cw = ops.arc_params(idx)
+            arc_center = (start_2d[0] + i, start_2d[1] + j)
             return zone.collides_with_arc(
                 start_2d,
                 end_2d,
                 arc_center,
-                cmd.clockwise,
+                cw,
             )
         return zone.collides_with_line(start_2d, end_2d)
