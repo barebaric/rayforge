@@ -1,14 +1,16 @@
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Union
+
 from blinker import Signal
 from gi.repository import Gtk
 
 from rayforge.ui_gtk.shared.piemenu import PieMenu, PieMenuItem
+
 from .tools import TOOL_REGISTRY
 
 if TYPE_CHECKING:
-    from ..core.entities import Point, Entity
     from ..core.constraints import Constraint
+    from ..core.entities import Entity, Point
     from .sketchelement import SketchElement
 
 logger = logging.getLogger(__name__)

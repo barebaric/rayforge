@@ -1,9 +1,11 @@
 import io
-import warnings
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+import warnings
+from typing import TYPE_CHECKING, Optional, Tuple
+
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
+
 from ..base_renderer import RasterRenderer, RenderSpecification
 
 with warnings.catch_warnings():

@@ -1,19 +1,20 @@
-import uuid
 import logging
-import numpy as np
+import uuid
+from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
-    List,
     Dict,
+    List,
+    Optional,
+    Sequence,
     Set,
     Tuple,
-    Sequence,
-    Optional,
     cast,
 )
-from gettext import gettext as _
+
+import numpy as np
 from raygeo import Geometry
-from raygeo import CMD_TYPE_MOVE, COL_TYPE
+
 from ..core.item import DocItem
 from ..core.stock import StockItem
 from ..core.undo import (
@@ -21,8 +22,8 @@ from ..core.undo import (
     ListItemCommand,
     ReorderListCommand,
 )
-from ..core.workpiece import WorkPiece
 from ..core.workflow import Workflow
+from ..core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
     from ..core.asset import IAsset
@@ -382,7 +383,10 @@ class EditCmd:
 
         to_remove = set(segment_indices)
         for idx in segment_indices:
-            if idx > 0 and data[idx - 1, COL_TYPE] == CMD_TYPE_MOVE:
+            prev_is_move = (
+                data[idx - 1, Geometry.COL_TYPE] == Geometry.CMD_TYPE_MOVE
+            )
+            if idx > 0 and prev_is_move:
                 to_remove.add(idx - 1)
 
         remaining_rows = [

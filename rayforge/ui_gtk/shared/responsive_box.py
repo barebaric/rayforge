@@ -1,4 +1,4 @@
-from gi.repository import Gsk, Graphene, Gtk
+from gi.repository import Graphene, Gsk, Gtk
 
 
 class ResponsiveBox(Gtk.Widget):

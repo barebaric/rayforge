@@ -1,10 +1,10 @@
+from rayforge.core.config import Config
 from rayforge.shared.units.definitions import (
+    get_base_unit_for_quantity,
     get_unit,
     get_units_for_quantity,
-    get_base_unit_for_quantity,
 )
 from rayforge.shared.units.engine import engine
-from rayforge.core.config import Config
 
 
 def test_length_units():

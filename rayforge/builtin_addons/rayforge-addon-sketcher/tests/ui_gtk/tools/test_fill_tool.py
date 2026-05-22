@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import Mock
+
+import pytest
 from sketcher.core.sketch import Fill
 from sketcher.ui_gtk.tools.fill_tool import FillTool
 

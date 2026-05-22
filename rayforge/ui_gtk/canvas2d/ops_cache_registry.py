@@ -1,6 +1,6 @@
-import time
 import logging
-from typing import Dict, Optional, TYPE_CHECKING
+import time
+from typing import TYPE_CHECKING, Dict, Optional
 
 if TYPE_CHECKING:
     from .elements.workpiece import WorkPieceElement

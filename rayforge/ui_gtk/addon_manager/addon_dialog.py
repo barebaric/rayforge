@@ -1,18 +1,17 @@
 import logging
 import threading
-from typing import List
 from gettext import gettext as _
+from typing import List
 
 from gi.repository import Adw, GLib, Gtk
 
 from ... import __version__
-from ...context import get_context
 from ...addon_mgr.addon import AddonMetadata
 from ...addon_mgr.addon_manager import UpdateStatus
+from ...context import get_context
 from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from .license_dialog import LicenseRequiredDialog
-
 
 logger = logging.getLogger(__name__)
 

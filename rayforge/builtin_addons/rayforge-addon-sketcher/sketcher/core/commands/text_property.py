@@ -1,15 +1,19 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Dict, Any, Optional, List, Tuple
+
 from gettext import gettext as _
-from raygeo import Point as GeoPoint
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+from raygeo.geo.types import Point as GeoPoint
+
 from rayforge.core.font_config import FontConfig
+
 from ..constraints import (
     AspectRatioConstraint,
-    EqualLengthConstraint,
     DistanceConstraint,
+    EqualLengthConstraint,
 )
-from ..entities.point import Point
 from ..entities.line import Line
+from ..entities.point import Point
 from ..entities.text_box import TextBoxEntity
 from ..types import EntityID
 from .base import SketchChangeCommand

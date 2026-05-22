@@ -1,8 +1,11 @@
 import asyncio
 import logging
-from typing import List, Tuple, TYPE_CHECKING
-from gettext import gettext as _, ngettext
+from gettext import gettext as _
+from gettext import ngettext
+from typing import TYPE_CHECKING, List, Tuple
+
 from blinker import Signal
+
 from ..context import RayforgeContext
 from .addon import Addon, AddonMetadata
 

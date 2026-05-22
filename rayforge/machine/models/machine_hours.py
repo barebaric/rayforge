@@ -1,9 +1,9 @@
-from dataclasses import dataclass, field
-from typing import Dict, Any, Optional
-from blinker import Signal
-import uuid
 import logging
+import uuid
+from dataclasses import dataclass, field
+from typing import Any, Dict, Optional
 
+from blinker import Signal
 
 logger = logging.getLogger(__name__)
 

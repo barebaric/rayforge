@@ -1,10 +1,12 @@
 """Tests for the LibraryManager class."""
 
 import tempfile
-import yaml
 from pathlib import Path
-from rayforge.core.material import Material
+
+import yaml
+
 from rayforge.core.library_manager import LibraryManager
+from rayforge.core.material import Material
 
 
 class TestLibraryManager:

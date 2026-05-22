@@ -1,9 +1,11 @@
 from __future__ import annotations
-from gettext import gettext as _
+
 import math
+from gettext import gettext as _
 from typing import TYPE_CHECKING, List, Optional, Set
 
-from raygeo import Point as GeoPoint
+from raygeo.geo.types import Point as GeoPoint
+
 from ..constraints import DiameterConstraint
 from ..entities import Circle, Point
 from ..types import EntityID

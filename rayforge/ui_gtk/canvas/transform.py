@@ -1,10 +1,14 @@
 from __future__ import annotations
+
 import math
-from typing import Tuple
-from raygeo import Point, Rect
+from typing import Tuple, TYPE_CHECKING
+
 from ...core.matrix import Matrix
 from .element import CanvasElement
 from .region import ElementRegion
+
+if TYPE_CHECKING:
+    from raygeo.geo.types import Point, Rect
 
 # This data structure defines the behavior for a standard Y-DOWN view.
 RESIZE_BEHAVIORS = {

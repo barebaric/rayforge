@@ -1,10 +1,11 @@
 import logging
-from gi.repository import Gtk
 from typing import Optional
+
 from blinker import Signal
+from gi.repository import Gtk
+
 from ..machine.models.machine import Machine
 from .shared.progress_bar import ProgressBar
-
 
 logger = logging.getLogger(__name__)
 

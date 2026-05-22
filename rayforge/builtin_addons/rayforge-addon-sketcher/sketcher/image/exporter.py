@@ -1,13 +1,16 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, cast
+
 import json
 from gettext import gettext as _
-from rayforge.image.base_exporter import Exporter
+from typing import TYPE_CHECKING, cast
+
 from rayforge import const
+from rayforge.image.base_exporter import Exporter
 
 if TYPE_CHECKING:
-    from ..core import Sketch
     from rayforge.core.workpiece import WorkPiece
+
+    from ..core import Sketch
 
 
 class SketchExporter(Exporter):

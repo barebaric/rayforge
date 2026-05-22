@@ -1,4 +1,5 @@
 from gi.repository import Adw
+
 from ...usage import get_usage_tracker
 
 

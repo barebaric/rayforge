@@ -1,18 +1,20 @@
-from typing import cast
-import numpy as np
 import multiprocessing as mp
 from multiprocessing import shared_memory
+from typing import cast
+
+import numpy as np
 import pytest
+from raygeo.ops import Ops
+
 from rayforge.context import get_context
-from rayforge.core.ops import Ops
 from rayforge.pipeline import CoordinateSystem
 from rayforge.pipeline.artifact import create_handle_from_dict
+from rayforge.pipeline.artifact.job import JobArtifact, JobArtifactHandle
 from rayforge.pipeline.artifact.store import ArtifactStore
 from rayforge.pipeline.artifact.workpiece import (
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
 )
-from rayforge.pipeline.artifact.job import JobArtifact, JobArtifactHandle
 from rayforge.pipeline.encoder.base import (
     EncodedOutput,
     MachineCodeOpMap,

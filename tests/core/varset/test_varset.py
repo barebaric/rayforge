@@ -1,10 +1,12 @@
-import pytest
 from unittest.mock import Mock
-from rayforge.core.varset.var import Var, ValidationError
-from rayforge.core.varset.intvar import IntVar
-from rayforge.core.varset.floatvar import FloatVar
+
+import pytest
+
 from rayforge.core.varset.choicevar import ChoiceVar
+from rayforge.core.varset.floatvar import FloatVar
+from rayforge.core.varset.intvar import IntVar
 from rayforge.core.varset.urlvar import UrlVar, WebsocketUrlVar
+from rayforge.core.varset.var import ValidationError, Var
 from rayforge.core.varset.varset import VarSet
 
 

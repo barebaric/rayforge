@@ -1,14 +1,16 @@
 import asyncio
+import os
 import threading
 import time
-from unittest.mock import Mock
-import pytest
 from pathlib import Path
-import os
-from rayforge.shared.tasker.manager import TaskManager, TaskManagerProxy
-from rayforge.shared.tasker.task import Task, CancelledError
+from unittest.mock import Mock
+
+import pytest
+
 from rayforge.shared.tasker.context import ExecutionContext
+from rayforge.shared.tasker.manager import TaskManager, TaskManagerProxy
 from rayforge.shared.tasker.proxy import ExecutionContextProxy
+from rayforge.shared.tasker.task import CancelledError, Task
 
 
 def simple_process_func(

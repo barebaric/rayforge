@@ -1,10 +1,10 @@
-import math
 import logging
+import math
 from typing import Optional, Tuple, Union
 
 import cairo
-from gi.repository import Gdk, Graphene, Gtk
 from blinker import Signal
+from gi.repository import Gdk, Graphene, Gtk
 
 from rayforge.core.group import Group
 from rayforge.core.matrix import Matrix

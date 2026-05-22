@@ -5,8 +5,10 @@ Renders a cylinder wireframe for visualizing rotary mode workpieces.
 import logging
 import math
 from typing import Tuple
+
 import numpy as np
 from OpenGL import GL
+
 from ..gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)

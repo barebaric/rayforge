@@ -2,13 +2,15 @@
 PyVips image manipulation utilities.
 """
 
-from typing import Optional, Tuple, Dict, Any
 import logging
+from typing import Any, Dict, Optional, Tuple
+
 import cairo
 import numpy
 import pyvips
+from raygeo import Geometry
+from raygeo.geo.types import Rect
 
-from raygeo import Geometry, Rect
 from ...core.matrix import Matrix
 from ..geo_renderer import geometry_to_cairo
 from .cairo_util import rgba_to_cairo_surface

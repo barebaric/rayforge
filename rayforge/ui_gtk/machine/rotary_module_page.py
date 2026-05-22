@@ -1,16 +1,16 @@
-from pathlib import Path
-from typing import List, cast, Optional
 from gettext import gettext as _
+from pathlib import Path
+from typing import List, Optional, cast
 
 from gi.repository import Adw, Gtk
+from raygeo.ops.axis import Axis
 
 from ...context import get_context
 from ...core.model import Model
-from ...core.ops.axis import Axis
 from ...machine.models.machine import Machine
 from ...machine.models.rotary_module import (
-    RotaryModule,
     RotaryMode,
+    RotaryModule,
     RotaryType,
 )
 from ..icons import get_icon

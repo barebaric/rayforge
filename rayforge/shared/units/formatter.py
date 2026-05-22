@@ -1,8 +1,8 @@
+from ...context import get_context
 from .definitions import (
     get_base_unit_for_quantity,
     get_unit,
 )
-from ...context import get_context
 
 
 def format_value(value_in_base: float, quantity: str) -> str:

@@ -1,6 +1,6 @@
 import os
-import sys
 import subprocess
+import sys
 from typing import Optional
 
 __dir__ = os.path.dirname(__file__)
@@ -28,7 +28,7 @@ def get_version_from_git() -> Optional[str]:
 
 def get_version_from_pkg() -> Optional[str]:
     try:
-        from importlib.metadata import version, PackageNotFoundError
+        from importlib.metadata import PackageNotFoundError, version
     except ImportError:
         return None
 

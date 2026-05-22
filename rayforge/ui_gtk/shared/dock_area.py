@@ -1,7 +1,7 @@
-from gi.repository import Gtk, Gdk
 from blinker import Signal
-from .gtk import apply_css
+from gi.repository import Gdk, Gtk
 
+from .gtk import apply_css
 
 dock_area_css = """
 box.dock-area {

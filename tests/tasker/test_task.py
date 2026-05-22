@@ -1,9 +1,12 @@
 from __future__ import annotations
-import pytest
+
 import asyncio
-from unittest.mock import Mock, AsyncMock
-from rayforge.shared.tasker.task import Task
+from unittest.mock import AsyncMock, Mock
+
+import pytest
+
 from rayforge.shared.tasker.context import ExecutionContext
+from rayforge.shared.tasker.task import Task
 
 
 class ControllableTimer:

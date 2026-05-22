@@ -1,15 +1,17 @@
-import pytest
 from unittest.mock import MagicMock
-from rayforge.core.step import Step
-from rayforge.core.matrix import Matrix
-from rayforge.core.doc import Doc
+
+import pytest
+
 from rayforge.core.capability import (
     CUT,
     WITH_KERF,
     Capability,
     PWMCapability,
 )
-from rayforge.core.varset import VarSet, FloatVar
+from rayforge.core.doc import Doc
+from rayforge.core.matrix import Matrix
+from rayforge.core.step import Step
+from rayforge.core.varset import FloatVar, VarSet
 
 
 @pytest.fixture

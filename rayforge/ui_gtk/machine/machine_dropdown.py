@@ -1,8 +1,10 @@
 import logging
-from typing import Optional, cast
 from gettext import gettext as _
-from gi.repository import Gtk, Gio, GObject, Pango
+from typing import Optional, cast
+
 from blinker import Signal
+from gi.repository import Gio, GObject, Gtk, Pango
+
 from ...context import get_context
 from ...machine.driver.driver import (
     DEVICE_STATUS_LABELS,

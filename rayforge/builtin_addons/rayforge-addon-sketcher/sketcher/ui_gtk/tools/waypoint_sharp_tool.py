@@ -1,9 +1,9 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional, Union
 
+from ...core.commands import SetWaypointTypeCommand
 from ...core.entities import Bezier, Entity, Line, Point
 from ...core.entities.point import WaypointType
-from ...core.commands import SetWaypointTypeCommand
 from ...core.types import EntityID
 from .base import SketchTool
 

@@ -1,22 +1,26 @@
 from __future__ import annotations
+
 import logging
-from typing import List, Optional, Dict, Any, Generator, Union
-from svgelements import Group, Path as SvgPath, SVG, Length
+from typing import Any, Dict, Generator, List, Optional, Union
+
 from raygeo import Geometry
+from svgelements import SVG, Group, Length
+from svgelements import Path as SvgPath
+
 from ...core.matrix import Matrix
 from ...core.vectorization_spec import (
     PassthroughSpec,
     VectorizationSpec,
 )
 from ..base_importer import ImporterFeature
+from ..engine import NormalizationEngine
 from ..structures import (
-    ParsingResult,
     LayerGeometry,
+    ParsingResult,
     VectorizationResult,
 )
-from .svgutil import extract_layer_manifest
 from .svg_base import SvgImporterBase
-from ..engine import NormalizationEngine
+from .svgutil import extract_layer_manifest
 
 logger = logging.getLogger(__name__)
 

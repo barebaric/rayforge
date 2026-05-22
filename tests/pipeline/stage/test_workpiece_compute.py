@@ -1,32 +1,34 @@
-import cairo
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import cairo
+import pytest
 from raygeo import Geometry
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandType
+
 from rayforge.core.matrix import Matrix
-from rayforge.core.workpiece import WorkPiece
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
-from rayforge.core.ops import Ops, CommandType
+from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.machine import Laser
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
-from rayforge.pipeline.transformer.base import OpsTransformer
 from rayforge.pipeline.stage.workpiece_compute import (
-    _create_initial_ops,
-    _validate_workpiece_size,
-    _calculate_vector_render_size,
-    _execute_vector,
-    _execute_raster,
-    _apply_transformers,
-    _merge_artifact_ops,
-    compute_workpiece_artifact_vector,
-    compute_workpiece_artifact_raster,
-    compute_workpiece_artifact,
     MAX_VECTOR_TRACE_PIXELS,
+    _apply_transformers,
+    _calculate_vector_render_size,
+    _create_initial_ops,
+    _execute_raster,
+    _execute_vector,
+    _merge_artifact_ops,
+    _validate_workpiece_size,
+    compute_workpiece_artifact,
+    compute_workpiece_artifact_raster,
+    compute_workpiece_artifact_vector,
 )
+from rayforge.pipeline.transformer.base import OpsTransformer
 from rayforge.shared.tasker.progress import set_progress
 
 

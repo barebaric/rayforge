@@ -1,6 +1,7 @@
-import pytest
-from pathlib import Path
 import tempfile
+from pathlib import Path
+
+import pytest
 import yaml
 
 from rayforge.machine.models.dialect import GRBL_DIALECT

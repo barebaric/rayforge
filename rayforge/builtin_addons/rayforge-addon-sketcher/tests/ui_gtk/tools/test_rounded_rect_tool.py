@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from sketcher.core.commands import (
     RoundedRectCommand,
     RoundedRectPreviewState,

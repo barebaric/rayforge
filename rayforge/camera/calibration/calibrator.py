@@ -1,5 +1,6 @@
 import logging
 from typing import Any, List, Optional, Tuple, cast
+
 import cv2
 import numpy as np
 from blinker import Signal

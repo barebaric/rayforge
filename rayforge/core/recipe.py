@@ -1,13 +1,14 @@
-import uuid
 import math
-from typing import Dict, Any, Optional, Tuple, List, TYPE_CHECKING
-from dataclasses import dataclass, field, asdict
-from .capability import Capability, CAPABILITIES_BY_NAME, CUT
+import uuid
+from dataclasses import asdict, dataclass, field
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+from .capability import CAPABILITIES_BY_NAME, CUT, Capability
 
 if TYPE_CHECKING:
-    from .stock import StockItem
     from ..machine.models.machine import Machine
     from .step import Step
+    from .stock import StockItem
 
 
 @dataclass

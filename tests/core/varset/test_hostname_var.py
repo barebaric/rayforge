@@ -1,4 +1,5 @@
 import pytest
+
 from rayforge.core.varset.hostnamevar import HostnameVar, ValidationError
 from rayforge.core.varset.varset import VarSet
 

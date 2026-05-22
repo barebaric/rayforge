@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, Any, Tuple, Union
+from typing import Any, Dict, Tuple, Union
+
 import numpy as np
 
 logger = logging.getLogger(__name__)

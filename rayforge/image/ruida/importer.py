@@ -1,26 +1,27 @@
 import logging
-from typing import Optional, Dict
-from pathlib import Path
 from gettext import gettext as _
+from pathlib import Path
+from typing import Dict, Optional
 
 from raygeo import Geometry
+
+from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import VectorizationSpec
 from ...image.geo_renderer import render_geometry_to_png
 from ..base_importer import (
     Importer,
     ImporterFeature,
 )
-from ...core.source_asset import SourceAsset
-from ..structures import (
-    ParsingResult,
-    LayerGeometry,
-    VectorizationResult,
-    ImportManifest,
-)
-from .renderer import RUIDA_RENDERER
-from .parser import RuidaParser, RuidaParseError
-from .job import RuidaJob
 from ..engine import NormalizationEngine
+from ..structures import (
+    ImportManifest,
+    LayerGeometry,
+    ParsingResult,
+    VectorizationResult,
+)
+from .job import RuidaJob
+from .parser import RuidaParseError, RuidaParser
+from .renderer import RUIDA_RENDERER
 
 logger = logging.getLogger(__name__)
 

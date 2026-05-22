@@ -1,8 +1,8 @@
 import asyncio
 import logging
 from typing import Optional
-from .transport import Transport, TransportStatus
 
+from .transport import Transport, TransportStatus
 
 logger = logging.getLogger(__name__)
 

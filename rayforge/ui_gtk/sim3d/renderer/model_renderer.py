@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 import numpy as np
-from OpenGL import GL
 import trimesh
+from OpenGL import GL
 from trimesh.visual.color import ColorVisuals
 
 from ..gl_utils import BaseRenderer, RenderContext, Shader

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Dict, Any, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+from raygeo.ops import Ops
 
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
-from ...core.ops import Ops
 from .base import OpsProducer
 
 if TYPE_CHECKING:

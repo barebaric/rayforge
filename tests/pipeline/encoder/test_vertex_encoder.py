@@ -1,7 +1,10 @@
 import math
-import pytest
+
 import numpy as np
-from rayforge.core.ops import Ops, SectionType
+import pytest
+from raygeo.ops import Ops
+from raygeo.ops.types import SectionType
+
 from rayforge.pipeline.encoder.vertexencoder import VertexEncoder
 
 

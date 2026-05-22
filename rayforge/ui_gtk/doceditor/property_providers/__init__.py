@@ -1,6 +1,6 @@
 from .base import PropertyProvider, property_provider_registry
 from .transform import TransformPropertyProvider
-from .workpiece import WorkpieceInfoProvider, TabsPropertyProvider
+from .workpiece import TabsPropertyProvider, WorkpieceInfoProvider
 
 
 def register_builtin_providers():

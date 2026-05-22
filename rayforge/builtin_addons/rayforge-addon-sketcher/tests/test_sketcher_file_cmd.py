@@ -1,6 +1,8 @@
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
+
+import pytest
+from sketcher.core import Sketch
 
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
@@ -9,7 +11,6 @@ from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.file_cmd import FileCmd
 from rayforge.image.svg.renderer import SVG_RENDERER
 from rayforge.shared.tasker.manager import TaskManager
-from sketcher.core import Sketch
 
 
 @pytest.fixture

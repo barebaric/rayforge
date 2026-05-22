@@ -7,9 +7,9 @@ from pathlib import Path
 import pytest
 
 from rayforge.shared.util.po_compiler import (
+    compile_po_to_mo,
     parse_po_file,
     write_mo_file,
-    compile_po_to_mo,
 )
 
 

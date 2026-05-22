@@ -38,7 +38,7 @@ def make_assembled_ops(step_ops_list):
     step_ops_list: list of (layer_uid, ops) tuples.
     Returns a single Ops with JobStart/End and LayerStart/End markers.
     """
-    from rayforge.core.ops import Ops
+    from raygeo.ops import Ops
 
     assembled = Ops()
     assembled.job_start()

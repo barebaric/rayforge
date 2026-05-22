@@ -1,14 +1,16 @@
 import logging
-from typing import Dict, Optional, Tuple, Any, TypeGuard, cast
+from typing import Any, Dict, Optional, Tuple, TypeGuard, cast
+
 import numpy as np
 from gi.repository import Gdk, Gtk
+
 from ...core.color import (
-    ColorSet,
-    ColorRGBA,
     ColorAtom,
+    ColorRGBA,
+    ColorSet,
     ColorSpec,
-    GradientSpec,
     ColorSpecDict,
+    GradientSpec,
 )
 
 logger = logging.getLogger(__name__)

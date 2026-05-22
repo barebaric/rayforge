@@ -2,7 +2,7 @@ import enum
 import io
 import token as py_token
 import tokenize as py_tokenize
-from typing import NamedTuple, List, Optional
+from typing import List, NamedTuple, Optional
 
 
 class TokenType(enum.Enum):

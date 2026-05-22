@@ -2,7 +2,6 @@ import sys
 
 from gi.repository import Gdk
 
-
 if sys.platform == "darwin":
     PRIMARY_MODIFIER_MASK = Gdk.ModifierType(0)
     for mask_name in ("META_MASK", "SUPER_MASK", "MOD2_MASK"):

@@ -1,5 +1,6 @@
-from typing import Optional
 from gettext import gettext as _
+from typing import Optional
+
 from .intvar import IntVar, ValidationError
 
 

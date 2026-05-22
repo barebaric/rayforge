@@ -1,14 +1,15 @@
 import json
 import logging
-import urllib.request
-import urllib.parse
 import urllib.error
-import yaml
+import urllib.parse
+import urllib.request
 from datetime import datetime
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from threading import Thread
 from typing import Any, Callable, Dict, List, Optional
+
+import yaml
 
 from .provider import (
     LicenseProvider,
@@ -16,7 +17,6 @@ from .provider import (
     LicenseStatus,
     LicenseType,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class OAuthCallbackHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path.startswith("/callback"):
-            from urllib.parse import urlparse, parse_qs
+            from urllib.parse import parse_qs, urlparse
 
             parsed = urlparse(self.path)
             params = parse_qs(parsed.query)

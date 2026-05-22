@@ -1,9 +1,11 @@
-from gi.repository import Gtk, Adw
-from blinker import Signal
-from typing import List, cast, Optional
 from gettext import gettext as _
-from ...camera.models.camera import Camera
+from typing import List, Optional, cast
+
+from blinker import Signal
+from gi.repository import Adw, Gtk
+
 from ...camera.controller import CameraController
+from ...camera.models.camera import Camera
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage

@@ -1,9 +1,10 @@
 from __future__ import annotations
-from abc import ABC, abstractmethod
-from typing import Optional, TYPE_CHECKING, Tuple, Dict, Any
+
 import logging
 import warnings
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 from ..core.vectorization_spec import TraceSpec
 

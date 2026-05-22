@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, List, Dict, Any
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict, List
+
 from rayforge.core.undo import ChangePropertyCommand
 from rayforge.core.workpiece import WorkPiece
 

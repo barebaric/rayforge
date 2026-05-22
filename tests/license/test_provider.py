@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from rayforge.license import LicenseStatus, LicenseType, LicenseResult
+from rayforge.license import LicenseResult, LicenseStatus, LicenseType
 
 
 class TestLicenseResult:

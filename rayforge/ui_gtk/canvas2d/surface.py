@@ -1,20 +1,22 @@
 import logging
 import math
-from blinker import Signal
 from typing import (
     TYPE_CHECKING,
     Any,
-    Optional,
-    cast,
     Dict,
     List,
+    Optional,
     Sequence,
     Tuple,
+    cast,
 )
-from gi.repository import Gdk, GLib, Gtk, Graphene
+
+from blinker import Signal
+from gi.repository import Gdk, GLib, Graphene, Gtk
+
 from ...camera.controller import CameraController
 from ...context import get_context
-from ...core.color import ColorRGBA, ColorSet, hex_to_rgba, OPS_COLOR_SPEC
+from ...core.color import OPS_COLOR_SPEC, ColorRGBA, ColorSet, hex_to_rgba
 from ...core.group import Group
 from ...core.item import DocItem
 from ...core.layer import Layer
@@ -25,24 +27,24 @@ from ...image.util.srgb import create_lut_from_color
 from ...machine.models.colors import OpsColorSet
 from ...machine.models.machine import Machine
 from ...pipeline.artifact import RenderContext
-from ..canvas import WorldSurface, Canvas, CanvasElement
+from ..canvas import Canvas, CanvasElement, WorldSurface
 from ..shared.gtk_color import GtkColorResolver
 from ..shared.keyboard import is_primary_modifier
+from . import context_menu
 from .elements.axis_extent_frame import (
     AxisExtentFrameElement,
     WorkareaBackgroundElement,
 )
-from .elements.nogo_zone import NogoZoneElement
 from .elements.camera_image import CameraImageElement
 from .elements.dot import DotElement
 from .elements.group import GroupElement
 from .elements.layer import LayerElement
+from .elements.nogo_zone import NogoZoneElement
 from .elements.stock import StockElement
 from .elements.tab_handle import TabHandleElement
-from .elements.workpiece import WorkPieceElement
 from .elements.work_origin import WorkOriginElement
+from .elements.workpiece import WorkPieceElement
 from .projection import CanvasProjection
-from . import context_menu
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor

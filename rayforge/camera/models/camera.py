@@ -1,10 +1,10 @@
 import json
-from datetime import datetime
-from typing import Optional, Tuple, Dict, Sequence, Any
-import numpy as np
 import logging
-from blinker import Signal
+from datetime import datetime
+from typing import Any, Dict, Optional, Sequence, Tuple
 
+import numpy as np
+from blinker import Signal
 
 logger = logging.getLogger(__name__)
 Pos = Tuple[float, float]

@@ -8,10 +8,12 @@ paste operations, keeping them separate from the core UI components.
 import json
 import logging
 import tempfile
-from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Tuple, List
 from gettext import gettext as _
-from gi.repository import GObject, Gdk, Gtk, Gio, GLib, Adw
+from pathlib import Path
+from typing import TYPE_CHECKING, List, Optional, Tuple
+
+from gi.repository import Adw, Gdk, Gio, GLib, GObject, Gtk
+
 from ...context import get_context
 from ...core.layer import Layer
 from ...core.matrix import Matrix

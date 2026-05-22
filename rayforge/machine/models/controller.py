@@ -1,11 +1,11 @@
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 from blinker import Signal
+from raygeo.geo.types import Point3D
 
-from raygeo import Point3D
 from ...core.varset import ValidationError
 from ...shared.tasker import task_mgr
 from ..driver import get_driver_cls
@@ -19,7 +19,6 @@ from ..driver.driver import (
 )
 from ..driver.dummy import NoDeviceDriver
 from ..transport import TransportStatus
-
 
 if TYPE_CHECKING:
     from ...context import RayforgeContext

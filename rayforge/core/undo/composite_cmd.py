@@ -1,4 +1,5 @@
-from typing import List, Optional, Callable
+from typing import Callable, List, Optional
+
 from .command import Command
 
 

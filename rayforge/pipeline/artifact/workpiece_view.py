@@ -1,8 +1,11 @@
 from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field
+from typing import Any, Dict, Tuple, Type, Union
+
 import numpy as np
-from typing import Tuple, Dict, Any, Type, Union
-from dataclasses import dataclass, asdict, field
-from raygeo import Rect
+from raygeo.geo.types import Rect
+
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
 

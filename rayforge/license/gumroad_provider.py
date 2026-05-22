@@ -1,8 +1,8 @@
 import json
 import logging
-import urllib.request
-import urllib.parse
 import urllib.error
+import urllib.parse
+import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -15,7 +15,6 @@ from .provider import (
     LicenseStatus,
     LicenseType,
 )
-
 
 logger = logging.getLogger(__name__)
 

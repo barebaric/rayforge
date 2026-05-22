@@ -6,6 +6,7 @@ State tracking is handled by DAG scheduler via ArtifactNode.
 """
 
 from unittest.mock import Mock
+
 import pytest
 
 from rayforge.pipeline.artifact import (
@@ -13,8 +14,8 @@ from rayforge.pipeline.artifact import (
     ArtifactManager,
     WorkPieceArtifactHandle,
 )
-from rayforge.pipeline.artifact.store import ArtifactStore
 from rayforge.pipeline.artifact.manager import make_composite_key
+from rayforge.pipeline.artifact.store import ArtifactStore
 
 
 def create_mock_handle(handle_class, name: str) -> Mock:

@@ -1,17 +1,19 @@
 import logging
 from typing import List, Optional
-from raygeo import Rect
+
+from raygeo.geo.types import Rect
+
 from ..core.matrix import Matrix
 from ..core.vectorization_spec import (
     LayerImportMode,
-    VectorizationSpec,
     PassthroughSpec,
     TraceSpec,
+    VectorizationSpec,
 )
 from .structures import (
-    ParsingResult,
-    LayoutItem,
     LayerGeometry,
+    LayoutItem,
+    ParsingResult,
     VectorizationResult,
 )
 

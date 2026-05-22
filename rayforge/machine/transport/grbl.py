@@ -1,9 +1,9 @@
 import asyncio
+import logging
 import re
 import threading
-import logging
-from typing import Optional, NamedTuple, List, Callable, Awaitable
 from enum import Enum, auto
+from typing import Awaitable, Callable, List, NamedTuple, Optional
 
 from .serial import SerialTransport
 from .transport import Transport

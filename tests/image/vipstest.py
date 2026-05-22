@@ -3,12 +3,13 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Gio", "2.0")
-from gi.repository import Gtk, Gio
-import cairo
-import pyvips
-import numpy
-from pathlib import Path
 import sys
+from pathlib import Path
+
+import cairo
+import numpy
+import pyvips
+from gi.repository import Gio, Gtk
 
 # Assume the test base dir is the same dir as the current file
 image_base_dir = Path(__file__).parent

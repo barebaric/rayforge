@@ -1,4 +1,5 @@
 import logging
+from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -10,11 +11,12 @@ from typing import (
     Union,
     cast,
 )
-from gettext import gettext as _
-import cairo
 
-from raygeo import Point as GeoPoint
+import cairo
+from raygeo.geo.types import Point as GeoPoint
+
 from rayforge.core.matrix import Matrix
+
 from ...core.commands import (
     CreateOrEditConstraintCommand,
     MoveControlPointCommand,
@@ -36,7 +38,7 @@ from ...core.entities import (
     TextBoxEntity,
 )
 from ...core.types import EntityID
-from .base import SketchTool, SketcherKey
+from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin
 from .text_box_tool import TextBoxTool
 

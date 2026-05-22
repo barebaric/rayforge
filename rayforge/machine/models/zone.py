@@ -4,17 +4,20 @@ from gettext import gettext as _
 from typing import Any, Dict
 
 from blinker import Signal
-
-from raygeo.shape.arc import (
+from raygeo.geo.shape.arc import (
     does_arc_intersect_circle as arc_intersects_circle,
+)
+from raygeo.geo.shape.arc import (
     does_arc_intersect_rect as arc_intersects_rect,
 )
-from raygeo.shape.line import (
+from raygeo.geo.shape.line import (
     does_line_segment_intersect_circle as line_segment_intersects_circle,
+)
+from raygeo.geo.shape.line import (
     does_line_segment_intersect_rect as line_segment_intersects_rect,
 )
-from raygeo import Point
-from ...core.ops.enums import CommandType
+from raygeo.geo.types import Point
+from raygeo.ops.types import CommandCategory, CommandType
 
 
 class ZoneShape(Enum):
@@ -164,7 +167,7 @@ class Zone:
 def check_ops_collides_with_zones(ops, zones):
     pos = None
     for i in range(ops.len()):
-        if ops.category(i).value == 0:
+        if ops.category(i) != CommandCategory.MOVING:
             continue
         end = ops.endpoint(i)
         ct = ops.command_type(i)

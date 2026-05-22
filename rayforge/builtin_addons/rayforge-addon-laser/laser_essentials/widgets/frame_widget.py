@@ -1,7 +1,7 @@
-from typing import Any, TYPE_CHECKING
+from gettext import gettext as _
+from typing import TYPE_CHECKING, Any
 
 from gi.repository import Adw, Gtk
-from gettext import gettext as _
 
 from rayforge.core.undo import DictItemCommand
 from rayforge.pipeline.producer.base import CutSide
@@ -10,6 +10,7 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
+
 from ..producers import FrameProducer
 
 if TYPE_CHECKING:

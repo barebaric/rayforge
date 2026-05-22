@@ -1,16 +1,20 @@
 # constraints/horizontal.py
 
 from __future__ import annotations
+
 import math
-from typing import Dict, Any, List, Callable, Optional, TYPE_CHECKING
 from gettext import gettext as _
-from raygeo import Point
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+
+from raygeo.geo.types import Point
+
 from ..entities import Line
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
     import cairo
+
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection

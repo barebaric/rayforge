@@ -7,8 +7,8 @@ import time
 import types
 from pathlib import Path
 from typing import Optional
-from .manifest import AddonManifest
 
+from .manifest import AddonManifest
 
 logger = logging.getLogger(__name__)
 

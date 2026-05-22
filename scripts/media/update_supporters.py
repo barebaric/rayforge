@@ -10,7 +10,6 @@ import aiohttp
 import yaml
 from platformdirs import user_config_dir
 
-
 logger = logging.getLogger(__name__)
 
 CONFIG_DIR = Path(user_config_dir("rayforge"))

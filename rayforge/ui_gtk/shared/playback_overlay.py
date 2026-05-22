@@ -1,5 +1,5 @@
-from gettext import gettext as _
 import logging
+from gettext import gettext as _
 from typing import Optional
 
 from blinker import Signal

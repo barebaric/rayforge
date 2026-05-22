@@ -1,11 +1,13 @@
 from __future__ import annotations
-import math
-from typing import Optional, Dict, Any, List, TYPE_CHECKING
-from gettext import gettext as _
 
-from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
+import math
+from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+from raygeo.ops import Ops
+
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.ops import Ops
+from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:

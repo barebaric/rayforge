@@ -1,15 +1,17 @@
-import pytest
 import io
-import ezdxf
 from pathlib import Path
+
+import ezdxf
+import pytest
 from raygeo import Geometry
+
+from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
+from rayforge.core.workpiece import WorkPiece
 from rayforge.image.dxf.exporter import (
     GeometryDxfExporter,
     MultiGeometryDxfExporter,
 )
 from rayforge.image.dxf.importer import DxfImporter
-from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
-from rayforge.core.workpiece import WorkPiece
 
 
 @pytest.fixture

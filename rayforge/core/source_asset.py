@@ -1,14 +1,16 @@
 from __future__ import annotations
+
 import base64
 import logging
-import pyvips
 import uuid
 from collections import OrderedDict
-from blinker import Signal
 from dataclasses import dataclass, field
 from gettext import gettext as _
 from pathlib import Path
-from typing import ClassVar, Dict, Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
+
+import pyvips
+from blinker import Signal
 
 from .asset import IAsset
 

@@ -3,13 +3,15 @@ Task module for managing individual tasks.
 """
 
 from __future__ import annotations
-import asyncio
-from asyncio.exceptions import CancelledError
-import logging
-from typing import Optional, Callable, Coroutine, Any
-from blinker import Signal
-from .context import ExecutionContext
 
+import asyncio
+import logging
+from asyncio.exceptions import CancelledError
+from typing import Any, Callable, Coroutine, Optional
+
+from blinker import Signal
+
+from .context import ExecutionContext
 
 logger = logging.getLogger(__name__)
 

@@ -1,17 +1,20 @@
-import cairo
-import numpy as np
-import cv2
-import vtracer
-import xml.etree.ElementTree as ET
+import logging
 import re
+import sys
+import threading
+import xml.etree.ElementTree as ET
 from enum import Enum
 from typing import List, Optional, Tuple
-import logging
-import threading
-import sys
-from raygeo import Geometry, Point
-from ..core.vectorization_spec import VectorizationSpec, TraceSpec
+
+import cairo
+import cv2
+import numpy as np
+import vtracer
+from raygeo import Geometry
+from raygeo.geo.types import Point
+
 from ..core.matrix import Matrix
+from ..core.vectorization_spec import TraceSpec, VectorizationSpec
 from .denoise import denoise_boolean_image
 from .hull import get_enclosing_hull, get_hulls_from_image
 from .util.srgb import resize_linear_nd

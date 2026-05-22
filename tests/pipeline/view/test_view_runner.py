@@ -1,9 +1,11 @@
-import pytest
 from typing import cast
+
 import numpy as np
+import pytest
+from raygeo.ops import Ops
 
 from rayforge.context import get_context
-from rayforge.core.ops import Ops
+from rayforge.core.color import ColorSet
 from rayforge.pipeline import CoordinateSystem
 from rayforge.pipeline.artifact import (
     RenderContext,
@@ -14,7 +16,6 @@ from rayforge.pipeline.artifact import (
 from rayforge.pipeline.view.view_runner import (
     make_workpiece_view_artifact_in_subprocess,
 )
-from rayforge.core.color import ColorSet
 
 
 def create_test_color_set(spec: dict) -> ColorSet:

@@ -1,13 +1,15 @@
-from gi.repository import Gtk
-from typing import Optional
 from gettext import gettext as _
-from ..icons import get_icon
+from typing import Optional
+
+from gi.repository import Gtk
+
 from ...machine.driver.dummy import NoDeviceDriver
-from ...machine.transport.transport import (
-    TransportStatus,
-    TRANSPORT_STATUS_LABELS,
-)
 from ...machine.models.machine import Machine
+from ...machine.transport.transport import (
+    TRANSPORT_STATUS_LABELS,
+    TransportStatus,
+)
+from ..icons import get_icon
 
 
 class ConnectionStatusIconWidget(Gtk.Box):

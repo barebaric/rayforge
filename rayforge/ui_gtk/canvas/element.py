@@ -1,28 +1,30 @@
 from __future__ import annotations
-import os
+
 import logging
+import os
+from concurrent.futures import Future, ThreadPoolExecutor
+from copy import deepcopy
 from typing import (
     TYPE_CHECKING,
     Any,
     Generator,
     List,
-    Tuple,
     Optional,
-    Union,
     Set,
+    Tuple,
+    Union,
 )
+
 import cairo
 import numpy as np
 from gi.repository import GLib
-from copy import deepcopy
-from concurrent.futures import ThreadPoolExecutor, Future
-from raygeo import Point, Rect
-from ...core.matrix import Matrix
-from .region import ElementRegion, get_region_rect, check_region_hit
-from .hittest import check_pixel_hit
 
-# Forward declaration for type hinting
+from ...core.matrix import Matrix
+from .hittest import check_pixel_hit
+from .region import ElementRegion, check_region_hit, get_region_rect
+
 if TYPE_CHECKING:
+    from raygeo.geo.types import Point, Rect
     from .canvas import Canvas
 
 

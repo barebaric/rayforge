@@ -1,9 +1,10 @@
 from gettext import gettext as _
 from typing import Callable, Optional
-from gi.repository import Adw, GLib, Gtk
-from ..shared.gtk import apply_css
-from ...machine.models.dialect import GcodeDialect, BUILTIN_DIALECTS
 
+from gi.repository import Adw, GLib, Gtk
+
+from ...machine.models.dialect import BUILTIN_DIALECTS, GcodeDialect
+from ..shared.gtk import apply_css
 
 css = """
 .dialect-template-list {

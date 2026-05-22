@@ -1,13 +1,15 @@
+import asyncio
 import glob
 import logging
-import asyncio
 import os
-import serial
 import threading
 import time
-from typing import Optional, List
-from serial.tools import list_ports
 from gettext import gettext as _
+from typing import List, Optional
+
+import serial
+from serial.tools import list_ports
+
 from .transport import Transport, TransportStatus
 
 logger = logging.getLogger(__name__)

@@ -1,8 +1,7 @@
 import pytest
-
 from sketcher.core import Sketch
-from sketcher.core.sketch import Fill
 from sketcher.core.commands import AddFillCommand, RemoveFillCommand
+from sketcher.core.sketch import Fill
 
 
 @pytest.fixture

@@ -1,22 +1,22 @@
-from rayforge.core.varset import VarSet, SliderFloatVar, IntVar, BoolVar
 from rayforge.core.capability import (
+    ALL_CAPABILITIES,
+    CAPABILITIES_BY_NAME,
+    CUT,
+    ENGRAVE,
+    MATERIAL_TEST,
+    SCORE,
+    WITH_KERF,
     Capability,
     CutCapability,
     EngraveCapability,
     KerfCapability,
-    MaterialTestCapability,
     LaserHeadVar,
+    MaterialTestCapability,
     PWMCapability,
     ScoreCapability,
     _CombinedCapability,
-    CUT,
-    ENGRAVE,
-    SCORE,
-    WITH_KERF,
-    MATERIAL_TEST,
-    ALL_CAPABILITIES,
-    CAPABILITIES_BY_NAME,
 )
+from rayforge.core.varset import BoolVar, IntVar, SliderFloatVar, VarSet
 
 
 def test_cut_capability(mocker):

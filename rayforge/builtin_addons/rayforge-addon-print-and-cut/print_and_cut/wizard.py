@@ -1,5 +1,5 @@
-import math
 import logging
+import math
 from gettext import gettext as _
 from typing import Optional, Tuple, Union
 
@@ -8,15 +8,16 @@ from gi.repository import Adw, Gtk
 from rayforge.core.group import Group
 from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
-from rayforge.machine.models.machine import Machine
-from rayforge.machine.cmd import MachineCmd
 from rayforge.doceditor.editor import DocEditor
-from rayforge.ui_gtk.shared.patched_dialog_window import (
-    PatchedDialogWindow,
-)
+from rayforge.machine.cmd import MachineCmd
+from rayforge.machine.models.machine import Machine
 from rayforge.ui_gtk.icons import get_icon
 from rayforge.ui_gtk.machine.jog_widget import JogWidget
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
+from rayforge.ui_gtk.shared.patched_dialog_window import (
+    PatchedDialogWindow,
+)
+
 from .pick_surface import PickSurface
 
 logger = logging.getLogger(__name__)

@@ -1,7 +1,7 @@
 import json
 import logging
-from typing import TYPE_CHECKING
 from gettext import gettext as _
+from typing import TYPE_CHECKING
 
 from rayforge.core.item import DocItem
 from rayforge.core.step import Step
@@ -10,12 +10,12 @@ from rayforge.core.undo import ListItemCommand
 from rayforge.core.vectorization_spec import ProceduralSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.procedural import ProceduralImporter
+
 from ..producers import (
     MaterialTestGridProducer,
     draw_material_test_preview,
     get_material_test_proportional_size,
 )
-
 
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor

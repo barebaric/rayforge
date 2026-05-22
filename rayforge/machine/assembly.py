@@ -12,10 +12,10 @@ from typing import (
 )
 
 import numpy as np
+from raygeo.geo.types import Point3D
+from raygeo.ops.axis import Axis
 
-from raygeo import Point3D
 from ..core.model import Model
-from ..core.ops.axis import Axis
 
 if TYPE_CHECKING:
     from ..simulator.machine_state import MachineState

@@ -3,11 +3,12 @@ TaskManager module for managing task execution.
 """
 
 from __future__ import annotations
+
 import asyncio
 import logging
+import threading
 from multiprocessing import Manager
 from multiprocessing.managers import DictProxy
-import threading
 from typing import (
     Any,
     Callable,
@@ -19,11 +20,12 @@ from typing import (
     Protocol,
     runtime_checkable,
 )
-from blinker import Signal
-from .context import ExecutionContext
-from .task import Task
-from .pool import WorkerPoolManager
 
+from blinker import Signal
+
+from .context import ExecutionContext
+from .pool import WorkerPoolManager
+from .task import Task
 
 logger = logging.getLogger(__name__)
 

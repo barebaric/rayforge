@@ -1,8 +1,10 @@
-from gi.repository import Gio, Gtk, GLib
-from typing import List
 from gettext import gettext as _
-from .action_registry import action_registry
+from typing import List
+
+from gi.repository import Gio, GLib, Gtk
+
 from ..machine.models.macro import Macro
+from .action_registry import action_registry
 
 
 class MainMenu(Gio.Menu):

@@ -1,10 +1,10 @@
 import re
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
-    from ...pipeline.encoder.gcode import GcodeContext
     from ...machine.models.machine import Machine
     from ...machine.models.macro import Macro
+    from ...pipeline.encoder.gcode import GcodeContext
 
 
 class TemplateFormatter:

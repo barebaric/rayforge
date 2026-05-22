@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, List, Set
 
-from ....core.ops import CommandCategory, CommandType
+from raygeo.ops.types import CommandCategory, CommandType
+
 from ..result import IssueCategory, IssueSeverity, SanityIssue
 from .base import BaseCheck
 

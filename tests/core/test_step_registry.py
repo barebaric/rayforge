@@ -1,6 +1,6 @@
-from rayforge.core.step_registry import StepRegistry, step_registry
-from rayforge.core.step import Step
 from rayforge.core.matrix import Matrix
+from rayforge.core.step import Step
+from rayforge.core.step_registry import StepRegistry, step_registry
 
 
 class MockStep(Step):

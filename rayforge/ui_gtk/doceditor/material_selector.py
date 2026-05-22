@@ -1,9 +1,11 @@
 """A dialog for selecting a material from available libraries."""
 
 import logging
-from typing import Optional, List
 from gettext import gettext as _
-from gi.repository import Gtk, Adw
+from typing import List, Optional
+
+from gi.repository import Adw, Gtk
+
 from ...context import get_context
 from ...core.material import Material
 from ...core.material_library import MaterialLibrary

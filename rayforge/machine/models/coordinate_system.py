@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Dict
 
-from raygeo import Point3D
+from raygeo.geo.types import Point3D
 
 _DEFAULT_WCS = ["G54", "G55", "G56", "G57", "G58", "G59"]
 ZERO_OFFSET: Point3D = (0.0, 0.0, 0.0)

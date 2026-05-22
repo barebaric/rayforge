@@ -1,19 +1,21 @@
-import pytest
 from dataclasses import asdict
+
+import pytest
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandType
 
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops, CommandType
-from rayforge.machine.models.machine import Machine, Laser
+from rayforge.machine.models.machine import Laser, Machine
 from rayforge.pipeline.artifact import (
-    StepOpsArtifact,
     JobArtifact,
+    StepOpsArtifact,
     create_handle_from_dict,
 )
 from rayforge.pipeline.artifact.key import ArtifactKey
 from rayforge.pipeline.stage.job_runner import (
-    make_job_artifact_in_subprocess,
     JobDescription,
+    make_job_artifact_in_subprocess,
 )
 
 

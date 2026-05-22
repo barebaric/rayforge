@@ -1,7 +1,9 @@
+from typing import List, Sequence, Set
+
 import numpy as np
 import scipy.linalg
 from scipy.optimize import least_squares
-from typing import Sequence, List, Set
+
 from .constraints import Constraint
 from .entities import Point
 from .params import ParameterContext

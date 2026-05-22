@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Screenshot: Machine settings - Laser page."""
 
-import time
 import logging
-from rayforge.uiscript import app, win
+import time
+
 from utils import open_machine_settings, take_screenshot
+
+from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 PAGE = "laser"

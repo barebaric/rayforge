@@ -1,13 +1,15 @@
-import pytest
 import json
 from pathlib import Path
 from typing import cast
+
+import pytest
 from raygeo import Geometry
-from rayforge.core.workpiece import WorkPiece
-from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
-from rayforge.image.base_importer import ImporterFeature
 from sketcher.core import Sketch
 from sketcher.image.importer import SketchImporter
+
+from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
+from rayforge.core.workpiece import WorkPiece
+from rayforge.image.base_importer import ImporterFeature
 
 
 @pytest.fixture

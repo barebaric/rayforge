@@ -1,19 +1,22 @@
 from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Optional, Callable, Coroutine, Dict
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Callable, Coroutine, Dict, Optional
+
 from blinker import Signal
+from raygeo.ops import Ops
+
 from ..context import get_context
-from ..core.ops import Ops
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from ..pipeline.encoder.base import EncodedOutput
 from ..pipeline.encoder.context import GcodeContext, JobInfo
 from ..shared.util.template import TemplateFormatter
 from .job_monitor import JobMonitor
 
-
 if TYPE_CHECKING:
-    from ..core.ops.axis import Axis
+    from raygeo.ops.axis import Axis
+
     from ..doceditor.editor import DocEditor
     from .models.laser import Laser
     from .models.machine import Machine

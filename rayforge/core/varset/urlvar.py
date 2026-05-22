@@ -1,7 +1,8 @@
-from typing import Optional, Tuple
 from gettext import gettext as _
+from typing import Optional, Tuple
 from urllib.parse import urlparse
-from .var import Var, ValidationError
+
+from .var import ValidationError, Var
 
 
 def url_validator(

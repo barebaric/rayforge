@@ -1,9 +1,9 @@
-from typing import cast
 from gettext import gettext as _
+from typing import cast
 
 from gi.repository import Adw, Gtk
+from raygeo.ops.axis import Axis
 
-from ...core.ops.axis import Axis
 from ...machine.models.machine import Machine, Origin
 from ..shared.adwfix import get_spinrow_float
 from ..shared.preferences_page import TrackedPreferencesPage

@@ -1,17 +1,17 @@
 # flake8: noqa: E402
 import argparse
 import asyncio
+import gettext
+import locale
 import logging
 import mimetypes
 import os
 import sys
 import traceback
 import warnings
-import gettext
-import locale
+from gettext import gettext as _
 from pathlib import Path
 from typing import cast
-from gettext import gettext as _
 
 # Parse --config early before any rayforge imports, as they may
 # import config.py which computes CONFIG_DIR at module load time
@@ -256,8 +256,8 @@ def main():
             """
             # These imports must be inside the method.
             from rayforge.core.vectorization_spec import (
-                TraceSpec,
                 PassthroughSpec,
+                TraceSpec,
             )
             from rayforge.image import ImporterFeature
 

@@ -1,15 +1,17 @@
 import logging
 from typing import TYPE_CHECKING, Optional, cast
+
 from gi.repository import GLib
-from ....core.workpiece import WorkPiece
+
 from ....core.group import Group
 from ....core.matrix import Matrix
+from ....core.workpiece import WorkPiece
 from ...canvas import ShrinkWrapGroup
 from .workpiece import WorkPieceElement
 
 if TYPE_CHECKING:
-    from ..surface import WorkSurface
     from ...canvas import CanvasElement
+    from ..surface import WorkSurface
 
 
 logger = logging.getLogger(__name__)

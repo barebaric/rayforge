@@ -3,13 +3,15 @@ Defines the Workflow class, which holds an ordered sequence of Steps.
 """
 
 from __future__ import annotations
+
 import logging
-from typing import List, Optional, TypeVar, Iterable, Dict, Any
+from typing import Any, Dict, Iterable, List, Optional, TypeVar
+
 from blinker import Signal
+
 from .item import DocItem
 from .matrix import Matrix
 from .step import Step
-
 
 logger = logging.getLogger(__name__)
 

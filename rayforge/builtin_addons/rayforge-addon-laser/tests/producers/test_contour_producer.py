@@ -1,15 +1,16 @@
-import pytest
-import cairo
 from typing import List
+
+import cairo
+import pytest
+from laser_essentials.producers import ContourProducer, CutOrder
 from raygeo import Geometry
-from rayforge.core.workpiece import WorkPiece
+
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
-from rayforge.pipeline.producer.base import OpsProducer, CutSide
+from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.laser import Laser
 from rayforge.pipeline.artifact import WorkPieceArtifact
-from laser_essentials.producers import ContourProducer, CutOrder
-
+from rayforge.pipeline.producer.base import CutSide, OpsProducer
 
 # --- Helpers ---
 

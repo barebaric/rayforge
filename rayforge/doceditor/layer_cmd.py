@@ -1,18 +1,20 @@
 from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Dict, Optional, List
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Dict, List, Optional
+
+from ..core.color import pick_unused_color
 from ..core.group import Group
-from ..core.layer import Layer
 from ..core.item import DocItem
+from ..core.layer import Layer
 from ..core.undo import (
-    Command,
     ChangePropertyCommand,
+    Command,
     CompositeCommand,
 )
 from ..core.undo.list_cmd import ReorderListCommand
 from ..core.workpiece import WorkPiece
-from ..core.color import pick_unused_color
 
 if TYPE_CHECKING:
     from ..ui_gtk.canvas2d.surface import WorkSurface

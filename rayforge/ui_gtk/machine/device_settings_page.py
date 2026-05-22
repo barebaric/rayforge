@@ -1,16 +1,18 @@
 import logging
-from typing import List, cast
 from gettext import gettext as _
-from gi.repository import Adw, Gtk, GLib, Gdk
+from typing import List, cast
+
 from blinker import Signal
+from gi.repository import Adw, Gdk, GLib, Gtk
+
 from ...context import get_context
-from ..icons import get_icon
 from ...machine.driver.driver import (
-    ResourceBusyError,
     DeviceStatus,
+    ResourceBusyError,
 )
+from ..icons import get_icon
 from ..shared.preferences_page import TrackedPreferencesPage
-from ..varset.varsetwidget import VarSetWidget, VarSet
+from ..varset.varsetwidget import VarSet, VarSetWidget
 
 logger = logging.getLogger(__name__)
 

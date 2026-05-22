@@ -1,8 +1,9 @@
-import pytest
 from unittest.mock import MagicMock, patch
 
-from rayforge.core.workpiece import WorkPiece
+import pytest
+
 from rayforge.core.layer import Layer
+from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.transform_cmd import TransformCmd
 
 

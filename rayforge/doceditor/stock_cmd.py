@@ -1,20 +1,22 @@
 from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING
 from gettext import gettext as _
+from typing import TYPE_CHECKING
+
 from raygeo import Geometry
+
 from ..core.matrix import Matrix
-from ..core.undo import ChangePropertyCommand, Command
 from ..core.stock import StockItem
 from ..core.stock_asset import StockAsset
+from ..core.undo import ChangePropertyCommand, Command
 from ..core.workpiece import WorkPiece
-
 from ..usage import get_usage_tracker
 
 if TYPE_CHECKING:
-    from .editor import DocEditor
     from ..core.doc import Doc
     from ..core.item import DocItem
+    from .editor import DocEditor
 
 logger = logging.getLogger(__name__)
 

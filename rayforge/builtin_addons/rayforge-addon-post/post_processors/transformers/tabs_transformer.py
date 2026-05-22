@@ -2,28 +2,26 @@ from __future__ import annotations
 
 import logging
 import math
-from enum import auto, Enum
+from enum import Enum, auto
+from gettext import gettext as _
 from typing import (
+    TYPE_CHECKING,
     Dict,
     List,
     NamedTuple,
     Optional,
     Tuple,
-    TYPE_CHECKING,
 )
 
-from gettext import gettext as _
 
-from raygeo.shape.bezier import linearize_bezier
-from raygeo.path import PyCommand
-from raygeo import Point3D
-from rayforge.core.ops import (
-    Ops,
-    SectionType,
-)
-from rayforge.core.ops.enums import CommandType, CommandCategory
+from raygeo.geo.shape.bezier import linearize_bezier
+from raygeo.geo.types import Point3D
+from raygeo.geo import Arc, Bezier, Line, Move
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandCategory, CommandType, SectionType
+
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
+from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
@@ -117,7 +115,7 @@ class TabOpsTransformer(OpsTransformer):
 
             end_point = cmd.end
 
-            if isinstance(cmd, PyCommand.Move):
+            if isinstance(cmd, Move):
                 continue
 
             p_start_3d: Point3D = (0.0, 0.0, 0.0)
@@ -137,12 +135,12 @@ class TabOpsTransformer(OpsTransformer):
 
             center_x, center_y = 0.0, 0.0
 
-            if isinstance(cmd, PyCommand.Line):
+            if isinstance(cmd, Line):
                 p_start, p_end = p_start_3d[:2], end_point[:2]
                 center_x = p_start[0] + (p_end[0] - p_start[0]) * tab.pos
                 center_y = p_start[1] + (p_end[1] - p_start[1]) * tab.pos
 
-            elif isinstance(cmd, PyCommand.Arc):
+            elif isinstance(cmd, Arc):
                 center_offset = cmd.center_offset
                 clockwise = cmd.clockwise
                 center = (
@@ -173,7 +171,7 @@ class TabOpsTransformer(OpsTransformer):
                 center_x = center[0] + radius * math.cos(tab_angle)
                 center_y = center[1] + radius * math.sin(tab_angle)
 
-            elif isinstance(cmd, PyCommand.Bezier):
+            elif isinstance(cmd, Bezier):
                 c1x, c1y = cmd.control1
                 c2x, c2y = cmd.control2
                 t = tab.pos
@@ -345,7 +343,7 @@ class TabOpsTransformer(OpsTransformer):
         ops: Ops,
         clip_data: List[_ClipPoint],
     ) -> None:
-        section_ranges = list(ops.iter_section_ranges())
+        section_ranges = list(ops.section_ranges())
         assignments = self._assign_clips_globally(
             ops, section_ranges, clip_data
         )
@@ -405,7 +403,7 @@ class TabOpsTransformer(OpsTransformer):
         original_power = settings.get("power", 1.0) if settings else 1.0
         actual_tab_power = tab_power * original_power
 
-        section_ranges = list(ops.iter_section_ranges())
+        section_ranges = list(ops.section_ranges())
         assignments = self._assign_clips_globally(
             ops, section_ranges, clip_data
         )

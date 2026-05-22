@@ -1,16 +1,18 @@
 from __future__ import annotations
-from typing import Dict, List, Optional
+
 from abc import ABC, abstractmethod
 from gettext import gettext as _
+from typing import Dict, List, Optional
+
 from ..context import get_context
 from .varset import (
-    ChoiceVar,
-    IntVar,
-    VarSet,
-    SpeedVar,
-    SliderFloatVar,
     BoolVar,
+    ChoiceVar,
     FloatVar,
+    IntVar,
+    SliderFloatVar,
+    SpeedVar,
+    VarSet,
 )
 
 

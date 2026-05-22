@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Any, Dict
+
 from ..core.step_registry import step_registry
 from ..core.undo import DictItemCommand
 

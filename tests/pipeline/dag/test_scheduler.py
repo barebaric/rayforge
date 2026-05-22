@@ -1,8 +1,8 @@
+from contextlib import contextmanager
 from typing import cast
 from unittest.mock import MagicMock
-from contextlib import contextmanager
 
-from rayforge.pipeline.artifact import StepOpsArtifactHandle, JobArtifactHandle
+from rayforge.pipeline.artifact import JobArtifactHandle, StepOpsArtifactHandle
 from rayforge.pipeline.artifact.handle import BaseArtifactHandle
 from rayforge.pipeline.artifact.key import ArtifactKey
 from rayforge.pipeline.artifact.manager import ArtifactManager
@@ -14,7 +14,6 @@ from rayforge.pipeline.stage import (
     StepPipelineStage,
     WorkPiecePipelineStage,
 )
-
 
 WP_UID_1 = "550e8400-e29b-41d4-a716-446655440001"
 STEP_UID_1 = "550e8400-e29b-41d4-a716-446655440003"

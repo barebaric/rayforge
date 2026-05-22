@@ -3,28 +3,30 @@ import inspect
 import logging
 from gettext import gettext as _
 from typing import (
-    Any,
     TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
     List,
     Optional,
-    Callable,
     Union,
-    Awaitable,
-    Dict,
     cast,
 )
+
+from raygeo.ops.axis import Axis
+
 from ...context import RayforgeContext
-from ...core.ops.axis import Axis
 from ...core.varset import VarSet
-from ...pipeline.encoder.base import OpsEncoder, EncodedOutput
+from ...pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TransportStatus
-from .driver import Driver, Pos, DeviceStatus
+from .driver import DeviceStatus, Driver, Pos
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
-    from ..models.machine import Machine
     from ..models.laser import Laser
+    from ..models.machine import Machine
 
 
 logger = logging.getLogger(__name__)

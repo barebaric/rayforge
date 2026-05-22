@@ -1,13 +1,16 @@
 import logging
 import math
 import time
-from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+
 import numpy as np
-from gi.repository import GLib, Gdk, Gtk, Pango
+from gi.repository import Gdk, GLib, Gtk, Pango
 from OpenGL import GL
+from raygeo.geo.types import Point
+from raygeo.ops import Ops
+
 from ...context import RayforgeContext
-from raygeo import Point
-from ...core.ops import Ops
+from ...core.color import OPS_COLOR_SPEC, ColorSet, hex_to_rgba
 from ...machine.assembly import LinkRole
 from ...machine.kinematic_mapping import KinematicMapping
 from ...machine.models.colors import OpsColorSet
@@ -15,8 +18,7 @@ from ...pipeline.artifact.base import TextureData
 from ...pipeline.artifact.handle import create_handle_from_dict
 from ...pipeline.artifact.job import JobArtifact, JobArtifactHandle
 from ...pipeline.pipeline import Pipeline
-from ...core.color import ColorSet, hex_to_rgba, OPS_COLOR_SPEC
-from ...shared.tasker import task_mgr, Task
+from ...shared.tasker import Task, task_mgr
 from ...simulator.machine_state import MachineState
 from ...simulator.op_player import OpPlayer
 from ...simulator.scene3d import (

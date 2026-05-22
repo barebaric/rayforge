@@ -1,12 +1,14 @@
 from pathlib import Path
+
 import pytest
-from rayforge.image import import_file
+
 from rayforge.core.vectorization_spec import (
     LayerImportMode,
-    TraceSpec,
     PassthroughSpec,
+    TraceSpec,
 )
 from rayforge.core.workpiece import WorkPiece
+from rayforge.image import import_file
 
 
 @pytest.fixture

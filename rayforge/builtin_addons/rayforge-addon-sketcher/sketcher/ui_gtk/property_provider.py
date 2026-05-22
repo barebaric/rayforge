@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Any, List, Set, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, List, Set, cast
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -11,10 +11,12 @@ from rayforge.ui_gtk.doceditor.property_providers.base import (
     PropertyProvider,
 )
 from rayforge.ui_gtk.varset.varsetwidget import VarSetRowList
+
 from .sketch_cmd import SketchCmd
 
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
+
     from ..core.sketch import Sketch
 
 logger = logging.getLogger(__name__)

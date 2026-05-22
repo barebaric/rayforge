@@ -1,9 +1,11 @@
-from typing import Optional, TYPE_CHECKING, Tuple
 import logging
+import warnings
+from typing import TYPE_CHECKING, Optional, Tuple
+
+from raygeo import Geometry
+
 from ..base_renderer import Renderer, RenderSpecification
 from ..ops_renderer import OPS_RENDERER
-import warnings
-from raygeo import Geometry
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)

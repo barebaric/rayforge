@@ -1,11 +1,12 @@
 from __future__ import annotations
+
 from collections import defaultdict
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Dict, Set, Callable, Optional
+from typing import TYPE_CHECKING, Callable, Dict, Optional, Set
 
 if TYPE_CHECKING:
-    from rayforge.pipeline.artifact.key import ArtifactKey
     from rayforge.pipeline.artifact.handle import BaseArtifactHandle
+    from rayforge.pipeline.artifact.key import ArtifactKey
 
 
 class ContextState(Enum):

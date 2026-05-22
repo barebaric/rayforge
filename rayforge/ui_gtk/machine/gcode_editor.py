@@ -1,5 +1,5 @@
-from typing import List, Optional
 from gettext import gettext as _
+from typing import List, Optional
 
 from gi.repository import Adw, Gdk, GLib, Gtk
 

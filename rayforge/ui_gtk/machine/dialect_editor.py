@@ -1,8 +1,10 @@
 import copy
 import re
-from typing import List, Set, cast, Optional
 from gettext import gettext as _
+from typing import List, Optional, Set, cast
+
 from gi.repository import Adw, Gtk
+
 from ...machine.models.dialect import GcodeDialect
 from ...pipeline.encoder.context import GcodeContext
 from ..icons import get_icon

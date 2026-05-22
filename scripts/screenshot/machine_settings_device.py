@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Screenshot: Machine settings - Device page."""
 
-import time
 import logging
-from rayforge.uiscript import app, win
+import time
+
+from utils import open_machine_settings, run_on_main_thread, take_screenshot
+
 from rayforge.machine.driver.grbl.grbl_util import get_grbl_setting_varsets
-from utils import open_machine_settings, take_screenshot, run_on_main_thread
+from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 PAGE = "device"

@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
-from rayforge.camera.models.camera import Camera
+
 from rayforge.camera.controller import CameraController
+from rayforge.camera.models.camera import Camera
 
 
 def run_visual_test():

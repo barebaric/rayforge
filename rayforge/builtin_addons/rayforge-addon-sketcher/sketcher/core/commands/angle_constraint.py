@@ -5,8 +5,9 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
-from raygeo.shape.arc import normalize_angle
-from raygeo.shape.line import get_line_line_intersection
+from raygeo.geo.shape.arc import normalize_angle
+from raygeo.geo.shape.line import get_line_line_intersection
+
 from ..entities import Line
 from ..types import EntityID
 

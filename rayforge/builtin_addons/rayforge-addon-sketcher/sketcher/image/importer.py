@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 import json
 import logging
-from pathlib import Path
-from typing import Iterator, List, Optional, TYPE_CHECKING
 from gettext import gettext as _
+from pathlib import Path
+from typing import TYPE_CHECKING, Iterator, List, Optional
+
+from rayforge import const
 from rayforge.core.item import DocItem
 from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset
@@ -12,15 +15,15 @@ from rayforge.image.base_importer import (
     Importer,
     ImporterFeature,
 )
-from rayforge.image.structures import (
-    ParsingResult,
-    LayerGeometry,
-    VectorizationResult,
-    ImportPayload,
-    ImportManifest,
-)
 from rayforge.image.engine import NormalizationEngine
-from rayforge import const
+from rayforge.image.structures import (
+    ImportManifest,
+    ImportPayload,
+    LayerGeometry,
+    ParsingResult,
+    VectorizationResult,
+)
+
 from ..core import Sketch
 
 if TYPE_CHECKING:

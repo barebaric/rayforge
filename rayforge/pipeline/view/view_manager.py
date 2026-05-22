@@ -1,12 +1,13 @@
 from __future__ import annotations
+
 import logging
-import numpy as np
 import threading
 import time
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, Optional, Set, cast, Tuple
+from typing import TYPE_CHECKING, Dict, Optional, Set, Tuple, cast
 
+import numpy as np
 from blinker import Signal
 
 from ..artifact import (

@@ -1,8 +1,11 @@
-import pytest
 import asyncio
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
+
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Axis, Ops
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.models.machine import Machine
 from rayforge.pipeline.encoder.gcode import GcodeEncoder

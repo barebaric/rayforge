@@ -1,8 +1,12 @@
 from __future__ import annotations
+
 import logging
-from typing import Dict, Any, Optional, TYPE_CHECKING, Tuple, cast
 from gettext import gettext as _
-from raygeo import Geometry, Rect
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
+
+from raygeo import Geometry
+from raygeo.geo.types import Rect
+
 from .item import DocItem
 from .matrix import Matrix
 

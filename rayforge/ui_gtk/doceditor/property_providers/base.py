@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, List, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Type
 
 from gi.repository import Gtk
 

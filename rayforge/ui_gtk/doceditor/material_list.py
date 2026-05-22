@@ -1,11 +1,13 @@
 """Material list UI components for Rayforge."""
 
-import uuid
 import logging
-from typing import Optional, cast
+import uuid
 from gettext import gettext as _
-from gi.repository import Gtk, Adw
+from typing import Optional, cast
+
 from blinker import Signal
+from gi.repository import Adw, Gtk
+
 from ...context import get_context
 from ...core.material import Material, MaterialAppearance
 from ...core.material_library import MaterialLibrary

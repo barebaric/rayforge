@@ -1,4 +1,5 @@
 import cairo
+
 from ...canvas import CanvasElement
 
 

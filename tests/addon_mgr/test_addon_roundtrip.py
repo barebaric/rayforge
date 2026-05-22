@@ -3,11 +3,11 @@
 import sys
 from unittest.mock import patch
 
-from rayforge.context import RayforgeContext
 from rayforge.addon_mgr.addon_manager import (
     AddonManager,
     UpdateStatus,
 )
+from rayforge.context import RayforgeContext
 
 
 class TestAddonRoundTrip:

@@ -1,8 +1,10 @@
 from __future__ import annotations
-import logging
-from typing import TYPE_CHECKING, Dict, List, Optional, Any, Set
 
-from raygeo import Point
+import logging
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
+
+from raygeo.geo.types import Point
+
 from rayforge.core.undo.command import Command
 
 if TYPE_CHECKING:

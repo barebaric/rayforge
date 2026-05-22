@@ -5,10 +5,10 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 from blinker import Signal
+from raygeo.geo.types import Rect3D
+from raygeo.ops.axis import Axis
 
 from ...core.matrix import euler_rotation_matrix
-from raygeo import Rect3D
-from ...core.ops.axis import Axis
 
 
 class RotaryMode(Enum):
@@ -221,7 +221,7 @@ class RotaryModule:
         rm = cls()
         rm.uid = data.get("uid", str(uuid.uuid4()))
         rm.name = data.get("name", _("Rotary Module"))
-        rm.axis = Axis[data.get("axis", "A")]
+        rm.axis = Axis.from_name(data.get("axis", "A"))
         rm.mode = RotaryMode(data.get("mode", "true_4th_axis"))
         rm.mu_per_rotation = data.get("mm_per_rotation", 0.0)
         rm.default_diameter = data.get("default_diameter", 25.0)

@@ -1,17 +1,17 @@
 import asyncio
-import pytest
 import zipfile
 from pathlib import Path
 
+import pytest
 import yaml
 
 from rayforge.machine.device.manager import DeviceProfileManager
 from rayforge.machine.device.profile import (
-    DeviceProfile,
-    export_machine_to_dir,
     CURRENT_API_VERSION,
     DIALECT_FILENAME,
     MANIFEST_FILENAME,
+    DeviceProfile,
+    export_machine_to_dir,
 )
 from rayforge.machine.models.laser import LaserType
 from rayforge.machine.models.machine import Origin
@@ -604,6 +604,7 @@ class TestExportToZip:
 class TestExportMachine:
     def _make_mock_machine(self, name, **overrides):
         from unittest.mock import MagicMock
+
         from rayforge.machine.models.dialect import GcodeDialect
 
         machine = MagicMock()

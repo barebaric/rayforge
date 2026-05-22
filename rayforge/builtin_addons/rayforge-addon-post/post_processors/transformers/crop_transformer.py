@@ -1,12 +1,14 @@
 from __future__ import annotations
-import logging
-from typing import Dict, Any, List, Optional, TYPE_CHECKING
-from gettext import gettext as _
 
-from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
+import logging
+from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+from raygeo.ops import Ops
+
 from rayforge.core.matrix import Matrix
-from rayforge.core.ops import Ops
 from rayforge.core.workpiece import WorkPiece
+from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
@@ -105,7 +107,8 @@ class CropTransformer(OpsTransformer):
         if not regions:
             return
 
-        ops.clip_to_regions(regions, tolerance=self._tolerance)
+        ops.preload_state()
+        ops.clip_ops_to_regions(regions, tolerance=self._tolerance)
 
     def to_dict(self) -> Dict[str, Any]:
         return {

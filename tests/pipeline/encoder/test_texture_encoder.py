@@ -1,7 +1,7 @@
-import pytest
 import numpy as np
+import pytest
+from raygeo.ops import Ops
 
-from rayforge.core.ops import Ops
 from rayforge.pipeline.encoder.textureencoder import TextureEncoder
 
 

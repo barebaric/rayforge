@@ -1,15 +1,17 @@
-import cairo
-import math
 import logging
-import numpy as np
-from typing import TYPE_CHECKING, cast, Optional, Tuple, List
-from gi.repository import Gdk
+import math
 from copy import deepcopy
 from gettext import gettext as _
-from ...canvas.element import CanvasElement
+from typing import TYPE_CHECKING, List, Optional, Tuple, cast
+
+import cairo
+import numpy as np
+from gi.repository import Gdk
+
+from ....core.matrix import Matrix
 from ....core.tab import Tab
 from ....core.undo import ChangePropertyCommand
-from ....core.matrix import Matrix
+from ...canvas.element import CanvasElement
 
 if TYPE_CHECKING:
     from ..surface import WorkSurface

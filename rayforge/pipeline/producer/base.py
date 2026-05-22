@@ -1,11 +1,12 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Optional, TYPE_CHECKING, Dict, Any
 from enum import Enum, auto
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
 from ...shared.tasker.progress import ProgressContext
 from ..artifact import WorkPieceArtifact
-
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
@@ -133,8 +134,8 @@ class OpsProducer(ABC):
         If the producer type is not found in the registry, returns a
         PlaceholderProducer that preserves the original configuration.
         """
-        from .registry import producer_registry
         from .placeholder import PlaceholderProducer
+        from .registry import producer_registry
 
         producer_type = data.get("type")
         if not producer_type:

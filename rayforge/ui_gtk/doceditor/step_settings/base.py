@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union, Dict, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from gi.repository import Adw
 

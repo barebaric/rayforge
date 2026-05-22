@@ -1,18 +1,20 @@
+from gettext import gettext as _
 from pathlib import Path
 from typing import cast
-from gettext import gettext as _
-from gi.repository import Adw, Gtk, Gdk
+
+from gi.repository import Adw, Gdk, Gtk
+
 from ...context import get_context
 from ...core.model import Model
 from ...machine.models.laser import Laser, LaserType
 from ...machine.models.machine import Machine
 from ...shared.util.glib import DebounceMixin
 from ..icons import get_icon
-from ..shared.adwfix import get_spinrow_int, get_spinrow_float
-from ..shared.unit_spin_row import UnitSpinRowHelper
+from ..shared.adwfix import get_spinrow_float, get_spinrow_int
 from ..shared.model_selection_dialog import ModelSelectionDialog
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.unit_spin_row import UnitSpinRowHelper
 from ..sim3d.renderer.model_renderer import get_model_extent
 
 

@@ -1,7 +1,9 @@
-import numpy as np
+from typing import List, Optional, Tuple
+
 import cv2
-from typing import Tuple, Optional, List
-from raygeo import Geometry, Point
+import numpy as np
+from raygeo import Geometry
+from raygeo.geo.types import Point
 
 
 def polygon_to_geometry(

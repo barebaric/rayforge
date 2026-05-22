@@ -1,8 +1,10 @@
 from pathlib import Path
+
 import pytest
-from rayforge.image import import_file
+
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.core.workpiece import WorkPiece
+from rayforge.image import import_file
 
 
 @pytest.fixture

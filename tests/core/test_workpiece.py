@@ -1,20 +1,22 @@
-import cairo
-import pytest
+from dataclasses import asdict
 from pathlib import Path
 from typing import Tuple, cast
-from dataclasses import asdict
+
+import cairo
+import pytest
 from blinker import Signal
 from raygeo import Geometry
+
 from rayforge.core.doc import Doc
-from rayforge.core.source_asset import SourceAsset
 from rayforge.core.item import DocItem
 from rayforge.core.matrix import Matrix
-from rayforge.core.tab import Tab
-from rayforge.core.workpiece import WorkPiece
+from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
+from rayforge.core.tab import Tab
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
-from rayforge.image.svg.renderer import SvgRenderer
+from rayforge.core.workpiece import WorkPiece
 from rayforge.image import import_file
+from rayforge.image.svg.renderer import SvgRenderer
 
 
 @pytest.fixture

@@ -1,7 +1,9 @@
 import logging
-from typing import Callable, TYPE_CHECKING, Any, Optional, cast
 from gettext import gettext as _
-from gi.repository import GLib, Gtk, Gio
+from typing import TYPE_CHECKING, Any, Callable, Optional, cast
+
+from gi.repository import Gio, GLib, Gtk
+
 from ... import const
 from ...image.registry import exporter_registry, importer_registry
 from ..shared.gtk import file_filter_to_gtk

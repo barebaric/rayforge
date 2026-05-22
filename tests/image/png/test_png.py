@@ -1,18 +1,20 @@
+from pathlib import Path
+from typing import Tuple, cast
+from unittest.mock import Mock
+
 import cairo
 import pytest
-from pathlib import Path
-from typing import cast, Tuple
-from unittest.mock import Mock
 from raygeo import Geometry
+
+from rayforge.core.matrix import Matrix
+from rayforge.core.source_asset import SourceAsset
+from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.source_asset import SourceAsset
-from rayforge.core.matrix import Matrix
-from rayforge.core.source_asset_segment import SourceAssetSegment
+from rayforge.image.base_importer import ImporterFeature
 from rayforge.image.png.importer import PngImporter
 from rayforge.image.png.renderer import PNG_RENDERER
 from rayforge.image.registry import renderer_registry
-from rayforge.image.base_importer import ImporterFeature
 
 # Assume the test PNGs are in the same directory as this test file
 TEST_DATA_DIR = Path(__file__).parent

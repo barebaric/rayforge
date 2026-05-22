@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 import math
-import cairo
-from typing import Union, Dict, Any, List, Optional, Callable, TYPE_CHECKING
 from gettext import gettext as _
-from raygeo import Point
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
+
+import cairo
+from raygeo.geo.types import Point
+
 from ..entities import Arc, Circle
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus

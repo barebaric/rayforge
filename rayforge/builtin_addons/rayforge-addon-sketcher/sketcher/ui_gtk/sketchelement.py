@@ -1,20 +1,22 @@
-import cairo
 import logging
+from typing import TYPE_CHECKING, List, Optional, cast
+
+import cairo
 from blinker import Signal
-from typing import List, Optional, TYPE_CHECKING, cast
 
 from rayforge.core.matrix import Matrix
 from rayforge.ui_gtk.canvas import CanvasElement
-from ..core.sketch import Sketch
+
 from ..core.entities import Line
 from ..core.selection import SketchSelection
+from ..core.sketch import Sketch
 from ..core.snap import SnapEngine
 from ..core.snap.producers import (
-    EntityPointsProducer,
-    MidpointsProducer,
-    IntersectionsProducer,
-    EquidistantLinesProducer,
     CentersProducer,
+    EntityPointsProducer,
+    EquidistantLinesProducer,
+    IntersectionsProducer,
+    MidpointsProducer,
     OnEntityProducer,
 )
 from ..core.types import EntityID

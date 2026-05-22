@@ -1,7 +1,9 @@
 import base64
-import pytest
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
+
 from rayforge.core.source_asset import SourceAsset
 from rayforge.image.registry import renderer_registry
 from rayforge.image.svg.renderer import SvgRenderer

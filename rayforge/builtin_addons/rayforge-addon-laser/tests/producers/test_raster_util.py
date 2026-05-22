@@ -1,16 +1,15 @@
-import pytest
 import numpy as np
-
+import pytest
 from laser_essentials.producers.raster_util import (
     ScanLine,
-    line_pixels,
-    generate_scan_lines,
-    find_segments,
     calculate_ymax_mm,
     convert_y_to_output,
     find_bounding_box,
     find_mask_bounding_box,
+    find_segments,
     generate_horizontal_scan_positions,
+    generate_scan_lines,
+    line_pixels,
     resample_rows,
 )
 

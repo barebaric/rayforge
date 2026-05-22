@@ -1,7 +1,7 @@
 import cairo
 import numpy as np
-from gi.repository import Gtk
 from blinker import Signal
+from gi.repository import Gtk
 
 
 class HistogramPreview(Gtk.DrawingArea):

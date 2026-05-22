@@ -1,5 +1,5 @@
-from typing import Optional, cast
 from gettext import gettext as _
+from typing import Optional, cast
 
 from gi.repository import Adw, Gtk
 

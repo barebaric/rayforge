@@ -1,15 +1,16 @@
+import asyncio
 import os
 import re
 import threading
 import time
+from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
-import asyncio
-from unittest.mock import MagicMock
+from raygeo.ops import Ops
 
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops
+from rayforge.core.varset import VarSet
 from rayforge.machine.driver.driver import (
     Axis,
     DeviceStatus,
@@ -21,7 +22,6 @@ from rayforge.machine.driver.marlin.marlin_serial import MarlinSerialDriver
 from rayforge.machine.transport import TransportStatus
 from rayforge.machine.transport.serial import SerialPortPermissionError
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
-from rayforge.core.varset import VarSet
 
 HAS_PTY = hasattr(os, "openpty")
 

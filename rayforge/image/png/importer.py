@@ -1,14 +1,15 @@
-import warnings
-from typing import Optional
 import logging
-from pathlib import Path
+import warnings
 from gettext import gettext as _
+from pathlib import Path
+from typing import Optional
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
 from raygeo import Geometry
+
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
 from .. import util
@@ -16,15 +17,15 @@ from ..base_importer import (
     Importer,
     ImporterFeature,
 )
+from ..engine import NormalizationEngine
 from ..structures import (
-    ParsingResult,
-    LayerGeometry,
-    VectorizationResult,
     ImportManifest,
+    LayerGeometry,
+    ParsingResult,
+    VectorizationResult,
 )
 from ..tracing import trace_surface
 from .renderer import PNG_RENDERER
-from ..engine import NormalizationEngine
 
 logger = logging.getLogger(__name__)
 

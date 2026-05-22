@@ -1,26 +1,25 @@
+import logging
 from typing import Optional
+
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
     LayerImportMode,
-    VectorizationSpec,
-    TraceSpec,
     PassthroughSpec,
+    TraceSpec,
+    VectorizationSpec,
 )
 from ..base_importer import (
     Importer,
     ImporterFeature,
 )
 from ..structures import (
+    ImportManifest,
+    ImportResult,
     ParsingResult,
     VectorizationResult,
-    ImportResult,
-    ImportManifest,
 )
 from .svg_trace import SvgTraceImporter
 from .svg_vector import SvgVectorImporter
-
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -104,8 +103,8 @@ class SvgImporter(Importer):
             and import_result.payload
             and import_result.payload.items
         ):
-            from ...core.workpiece import WorkPiece
             from ...core.layer import Layer
+            from ...core.workpiece import WorkPiece
 
             def count_workpieces(items):
                 count = 0

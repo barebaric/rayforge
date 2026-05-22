@@ -1,8 +1,11 @@
 import logging
-from typing import Optional, TYPE_CHECKING
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Optional
+
 from gi.repository import Adw, Gtk
+
 from rayforge.ui_gtk.icons import get_icon
+
 from ..core.commands.items import RemoveItemsCommand
 
 if TYPE_CHECKING:

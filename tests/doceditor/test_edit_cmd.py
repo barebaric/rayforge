@@ -1,11 +1,11 @@
 import pytest
 
-from rayforge.doceditor.editor import DocEditor
-from rayforge.doceditor.edit_cmd import EditCmd
-from rayforge.core.workpiece import WorkPiece
 from rayforge.core.group import Group
 from rayforge.core.item import DocItem
 from rayforge.core.layer import Layer
+from rayforge.core.workpiece import WorkPiece
+from rayforge.doceditor.edit_cmd import EditCmd
+from rayforge.doceditor.editor import DocEditor
 
 
 @pytest.fixture

@@ -1,8 +1,9 @@
-import pytest
-from typing import cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
-from rayforge.shared.util.template import TemplateFormatter
+import pytest
+
 from rayforge.machine.models.macro import Macro
+from rayforge.shared.util.template import TemplateFormatter
 
 if TYPE_CHECKING:
     from rayforge.pipeline.encoder.context import GcodeContext

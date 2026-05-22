@@ -1,8 +1,10 @@
 import asyncio
+
 import pytest
 import pytest_asyncio
-from rayforge.machine.transport.telnet import TelnetTransport
+
 from rayforge.machine.transport import TransportStatus
+from rayforge.machine.transport.telnet import TelnetTransport
 
 
 class SignalTracker:

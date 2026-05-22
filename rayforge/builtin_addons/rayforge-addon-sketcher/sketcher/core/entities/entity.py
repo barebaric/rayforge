@@ -1,5 +1,8 @@
-from typing import List, Dict, Any, Sequence, TYPE_CHECKING, Optional
-from raygeo import Geometry, Polygon, Rect
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+
+from raygeo import Geometry
+from raygeo.geo.types import Polygon, Rect
+
 from ..types import EntityID
 
 if TYPE_CHECKING:

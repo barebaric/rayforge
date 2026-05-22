@@ -1,7 +1,9 @@
 import math
 from unittest.mock import MagicMock
 
-from rayforge.core.ops import Axis, Ops
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
+
 from rayforge.machine.models.dialect.grbl import GRBL_DIALECT
 from rayforge.machine.models.dialect.grbl_raster import GRBL_RASTER_DIALECT
 from rayforge.machine.models.dialect.marlin import MARLIN_DIALECT

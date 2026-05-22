@@ -1,11 +1,13 @@
 """Core material data structures for Rayforge."""
 
 import logging
-import yaml
 import re
-from pathlib import Path
-from typing import Optional, Dict, Any, Union, cast
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, Optional, Union, cast
+
+import yaml
+
 from ..shared.util.localized import LocalizedField
 
 # Accept both plain strings and LocalizedField as input

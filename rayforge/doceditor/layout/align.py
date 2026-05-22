@@ -1,5 +1,7 @@
 from __future__ import annotations
-from typing import Dict, Optional, TYPE_CHECKING, Sequence, Tuple
+
+from typing import TYPE_CHECKING, Dict, Optional, Sequence, Tuple
+
 from ...core.matrix import Matrix
 from .base import LayoutStrategy
 

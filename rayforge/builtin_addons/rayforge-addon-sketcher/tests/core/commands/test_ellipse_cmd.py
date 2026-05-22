@@ -1,7 +1,7 @@
 from sketcher.core import Sketch
 from sketcher.core.commands import EllipseCommand, EllipsePreviewState
 from sketcher.core.constraints import EqualDistanceConstraint
-from sketcher.core.entities import Ellipse, Point, Line
+from sketcher.core.entities import Ellipse, Line, Point
 
 
 def test_ellipse_command_execute_no_snap():

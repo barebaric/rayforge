@@ -1,9 +1,11 @@
-import pytest
+from unittest.mock import MagicMock
+
 import cairo
 import numpy as np
-from unittest.mock import MagicMock
-from rayforge.ui_gtk.canvas.axis import AxisRenderer
+import pytest
+
 from rayforge.core.matrix import Matrix
+from rayforge.ui_gtk.canvas.axis import AxisRenderer
 
 # A known widget size for consistent testing
 WIDGET_W, WIDGET_H = 800, 600

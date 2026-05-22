@@ -1,20 +1,20 @@
 import types
 from typing import cast
 
-from rayforge.core.ops import Ops
-from rayforge.pipeline.artifact.store import ArtifactStore
+from compile_scene_helper import (
+    make_assembled_ops,
+    make_flat_layer_config,
+    make_rotary_layer_config,
+    make_test_config,
+)
+from raygeo.ops import Ops
+
 from rayforge.pipeline.artifact.job import JobArtifact
+from rayforge.pipeline.artifact.store import ArtifactStore
 from rayforge.shared.tasker.proxy import ExecutionContextProxy
 from rayforge.simulator.scene3d.compiled_scene import CompiledSceneArtifact
 from rayforge.simulator.scene3d.scene_compiler_runner import (
     compile_scene_in_subprocess,
-)
-
-from compile_scene_helper import (
-    make_test_config,
-    make_assembled_ops,
-    make_flat_layer_config,
-    make_rotary_layer_config,
 )
 
 

@@ -4,13 +4,12 @@ import os
 import platform
 import sys
 import webbrowser
-from importlib.metadata import PackageNotFoundError, distribution, version
 from gettext import gettext as _
+from importlib.metadata import PackageNotFoundError, distribution, version
 
 from gi.repository import Adw, GLib, Gtk
 
-from .. import __version__
-from .. import const
+from .. import __version__, const
 from .icons import get_icon
 from .shared.patched_dialog_window import PatchedDialogWindow
 

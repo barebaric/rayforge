@@ -1,6 +1,6 @@
 import logging
-from typing import cast
 from gettext import gettext as _
+from typing import cast
 
 from gi.repository import Adw, Gtk
 

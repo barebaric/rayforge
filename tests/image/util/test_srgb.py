@@ -2,12 +2,12 @@ import numpy as np
 import pytest
 
 from rayforge.image.util.srgb import (
+    _LINEAR_TO_SRGB,
+    _SRGB_TO_LINEAR,
     create_lut_from_color,
     linear_to_srgb,
     resize_linear_nd,
     srgb_to_linear,
-    _SRGB_TO_LINEAR,
-    _LINEAR_TO_SRGB,
 )
 
 

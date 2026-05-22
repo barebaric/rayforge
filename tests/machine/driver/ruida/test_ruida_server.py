@@ -2,8 +2,8 @@
 Tests for the Ruida server.
 """
 
-from rayforge.machine.driver.ruida.ruida_server import RuidaServer
 from rayforge.machine.driver.ruida.ruida_protocol import RuidaState
+from rayforge.machine.driver.ruida.ruida_server import RuidaServer
 from rayforge.machine.driver.ruida.ruida_util import encode35
 
 

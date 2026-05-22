@@ -1,5 +1,5 @@
-import re
 import logging
+import re
 from typing import Any, Dict, Optional
 
 from .evaluator import MATH_CONTEXT

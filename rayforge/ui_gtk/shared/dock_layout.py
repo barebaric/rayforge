@@ -1,6 +1,8 @@
 import logging
-from gi.repository import Gsk, Graphene, Gtk, Gdk, GLib
+
 from blinker import Signal
+from gi.repository import Gdk, GLib, Graphene, Gsk, Gtk
+
 from .dock_area import DockArea
 from .gtk import apply_css
 

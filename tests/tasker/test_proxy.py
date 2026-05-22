@@ -1,10 +1,12 @@
-import pytest
-import time
 import logging
-from queue import Queue, Full
-from unittest.mock import Mock, call
+import time
 from multiprocessing import Manager
+from queue import Full, Queue
 from typing import Any
+from unittest.mock import Mock, call
+
+import pytest
+
 from rayforge.shared.tasker.proxy import ExecutionContextProxy
 
 

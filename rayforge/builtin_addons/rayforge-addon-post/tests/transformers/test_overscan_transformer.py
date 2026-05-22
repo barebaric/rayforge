@@ -1,9 +1,11 @@
-import pytest
 import math
 
-from rayforge.core.ops import Ops, CommandType, SectionType
-from rayforge.pipeline.transformer.base import ExecutionPhase
+import pytest
 from post_processors.transformers import OverscanTransformer
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandType, SectionType
+
+from rayforge.pipeline.transformer.base import ExecutionPhase
 
 
 @pytest.fixture

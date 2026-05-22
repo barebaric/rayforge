@@ -1,6 +1,7 @@
-import pytest
-import cairo
 from unittest.mock import Mock
+
+import cairo
+import pytest
 from sketcher.ui_gtk.tools.base import SketchTool
 
 
