@@ -309,7 +309,7 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         group.add(self.cross_hatch_row)
 
         line_interval_adj = Gtk.Adjustment(
-            lower=0.01,
+            lower=0.001,
             upper=10.0,
             step_increment=0.01,
             value=producer.line_interval_mm or 0.1,
@@ -318,7 +318,7 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             title=_("Line Spacing"),
             subtitle=_("Distance between scan lines"),
             adjustment=line_interval_adj,
-            digits=2,
+            digits=3,
         )
         self.line_interval_row.connect(
             "changed",
