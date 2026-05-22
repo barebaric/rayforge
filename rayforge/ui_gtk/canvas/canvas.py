@@ -1,14 +1,25 @@
 from __future__ import annotations
-import math
+
 import logging
-from typing import Any, Generator, List, Tuple, Optional, Set, Union
+import math
 from enum import Enum, auto
+from typing import (
+    Any,
+    Generator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    TYPE_CHECKING,
+)
+
 import cairo
 import numpy as np
-from gi.repository import Gtk, Gdk, Graphene
 from blinker import Signal
+from gi.repository import Gdk, Graphene, Gtk
+
 from ...core.color import ColorRGBA
-from raygeo import Point, Rect
 from ...core.matrix import Matrix
 from ..shared.keyboard import is_primary_keyval
 from . import transform
@@ -16,15 +27,18 @@ from .cursor import get_cursor_for_region
 from .element import CanvasElement
 from .intersect import obb_intersects_aabb
 from .multiselect import MultiSelectionGroup
-from .overlays import render_selection_handles, render_selection_frame
+from .overlays import render_selection_frame, render_selection_handles
 from .region import (
-    ElementRegion,
     BBOX_REGIONS,
     RESIZE_HANDLES,
     ROTATE_HANDLES,
     ROTATE_SHEAR_HANDLES,
     SHEAR_HANDLES,
+    ElementRegion,
 )
+
+if TYPE_CHECKING:
+    from raygeo.geo.types import Point, Rect
 
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 from gettext import gettext as _
+
 from blinker import Signal
 
 

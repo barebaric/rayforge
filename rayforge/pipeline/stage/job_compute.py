@@ -1,12 +1,13 @@
 from __future__ import annotations
+
 import logging
-from typing import Dict, Optional
 from gettext import gettext as _
+from typing import Dict, Optional
 
 import numpy as np
+from raygeo.ops import Ops
 
 from ...core.doc import Doc
-from ...core.ops import Ops
 from ...machine.kinematic_mapping import KinematicMapping
 from ...machine.models.machine import Machine
 from ...shared.tasker.progress import ProgressContext, set_progress

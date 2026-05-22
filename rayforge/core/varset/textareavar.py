@@ -1,5 +1,6 @@
 from gettext import gettext as _
 from typing import Optional
+
 from .var import Var
 
 

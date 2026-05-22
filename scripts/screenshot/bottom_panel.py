@@ -7,21 +7,23 @@ Usage: pixi run screenshot bottom-panel
        pixi run screenshot bottom-panel:layers
 """
 
+import logging
 import os
 import time
-import logging
-from rayforge.uiscript import app, win
+
 from utils import (
     load_project,
-    wait_for_settled,
-    show_panel,
-    show_bottom_tab,
-    save_panel_states,
     restore_panel_states,
-    take_cropped_screenshot,
     run_on_main_thread,
+    save_panel_states,
     set_window_size,
+    show_bottom_tab,
+    show_panel,
+    take_cropped_screenshot,
+    wait_for_settled,
 )
+
+from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 

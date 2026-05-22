@@ -1,9 +1,10 @@
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List
-from dataclasses import dataclass, field
 import base64
 import json
-from ...core.ops import Ops
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import Any, Dict, List
+
+from raygeo.ops import Ops
 
 
 @dataclass

@@ -1,13 +1,14 @@
-import pytest
 import math
 from types import SimpleNamespace
 from unittest.mock import MagicMock
+
+import pytest
 from sketcher.core import Sketch
-from sketcher.core.selection import SketchSelection
 from sketcher.core.constraints import AngleConstraint
 from sketcher.core.constraints.angle import ARC_RADIUS
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
+from sketcher.core.selection import SketchSelection
 
 
 @pytest.fixture

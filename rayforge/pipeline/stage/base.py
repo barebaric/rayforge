@@ -1,13 +1,15 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional
+
 from blinker import Signal
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...machine.models.machine import Machine
     from ...shared.tasker.manager import TaskManager
-    from ..artifact.manager import ArtifactManager
     from ..artifact.key import ArtifactKey
+    from ..artifact.manager import ArtifactManager
     from ..dag.node import NodeState
 
 

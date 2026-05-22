@@ -1,55 +1,57 @@
 import asyncio
 import inspect
 import logging
-import serial.serialutil
 from gettext import gettext as _
 from typing import (
+    TYPE_CHECKING,
     Any,
+    Awaitable,
     Callable,
     Dict,
     List,
     Optional,
     Tuple,
-    TYPE_CHECKING,
     Union,
-    Awaitable,
     cast,
 )
+
+import serial.serialutil
+
 from ....context import RayforgeContext
 from ....core.varset import (
-    VarSet,
-    SerialPortVar,
     BaudrateVar,
+    SerialPortVar,
+    VarSet,
 )
-from ....pipeline.encoder.base import OpsEncoder, EncodedOutput
+from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
-from ...transport import TransportStatus, SerialTransport
+from ...transport import SerialTransport, TransportStatus
 from ...transport.serial import SerialPortPermissionError
 from ..driver import (
-    Driver,
-    DriverMaturity,
-    DriverSetupError,
-    DriverPrecheckError,
+    Axis,
     DeviceConnectionError,
     DeviceState,
     DeviceStatus,
-    Axis,
+    Driver,
+    DriverMaturity,
+    DriverPrecheckError,
+    DriverSetupError,
     Pos,
 )
 from .marlin_probe import probe_marlin_device
 from .marlin_util import (
     gcode_to_p_number,
-    m114_pos_re,
-    is_ok_response,
-    is_error_response,
     is_boot_message,
+    is_error_response,
+    is_ok_response,
+    m114_pos_re,
 )
 
 if TYPE_CHECKING:
     from ....core.doc import Doc
+    from ...device.profile import DeviceProfile
     from ...models.laser import Laser
     from ...models.machine import Machine
-    from ...device.profile import DeviceProfile
 
 logger = logging.getLogger(__name__)
 
@@ -503,12 +505,9 @@ class MarlinSerialDriver(Driver):
         if axes is None:
             await self._send_and_wait(dialect.home_all)
         else:
-            for axis in Axis:
-                if axes & axis:
-                    assert axis.name
-                    axis_letter: str = axis.name.upper()
-                    cmd = dialect.home_axis.format(axis_letter=axis_letter)
-                    await self._send_and_wait(cmd)
+            for axis in axes:
+                cmd = dialect.home_axis.format(axis_letter=axis.name)
+                await self._send_and_wait(cmd)
         self.state.error = None
         self.state_changed.send(self, state=self.state)
 

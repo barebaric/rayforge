@@ -1,9 +1,10 @@
 from gettext import gettext as _
 from typing import Callable, List, Optional, Tuple, Union
+
 import cairo
 
 from ...core.commands import EllipseCommand, EllipsePreviewState
-from .base import SketchTool, SketcherKey
+from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin
 
 

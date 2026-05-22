@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 """Screenshot: Configuration wizard pages."""
 
+import logging
 import os
 import time
-import logging
-from rayforge.uiscript import app, win
+
+from utils import (
+    run_on_main_thread,
+    set_window_size,
+    take_screenshot,
+)
+
 from rayforge.machine.device.profile import (
     DeviceMeta,
     DeviceProfile,
     MachineConfig,
 )
-from utils import (
-    take_screenshot,
-    run_on_main_thread,
-    set_window_size,
-)
+from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 

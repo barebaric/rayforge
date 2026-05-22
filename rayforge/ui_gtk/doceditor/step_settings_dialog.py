@@ -1,6 +1,6 @@
 from functools import reduce
-from typing import TYPE_CHECKING, Dict, Optional
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Dict, Optional
 
 from blinker import Signal
 from gi.repository import Adw, Gtk

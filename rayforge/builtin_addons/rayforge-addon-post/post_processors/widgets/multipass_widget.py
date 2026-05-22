@@ -1,15 +1,16 @@
+from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gtk
-from gettext import gettext as _
 
 from rayforge.core.undo import DictItemCommand
-from ..transformers import MultiPassTransformer
+from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
-from rayforge.shared.util.glib import DebounceMixin
+
+from ..transformers import MultiPassTransformer
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step

@@ -2,9 +2,10 @@
 
 import sys
 from pathlib import Path
+
 from stubs_to_markdown import generate  # type: ignore[import]
 
-STUBS_DIR = Path("external/raygeo/raygeo-stubs")
+STUBS_DIR = Path("external/raygeo/python/raygeo")
 OUTPUT_DIR = Path("website/docs/developer/raygeo-api")
 
 

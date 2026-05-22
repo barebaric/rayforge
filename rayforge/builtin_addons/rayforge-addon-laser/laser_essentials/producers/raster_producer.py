@@ -1,31 +1,33 @@
-import cairo
-import numpy as np
 import logging
 from enum import Enum, auto
-from typing import Optional, TYPE_CHECKING, Dict, Any, Tuple
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
-from rayforge.core.ops import Ops, SectionType
+import cairo
+import numpy as np
+from raygeo.ops import Ops
+from raygeo.ops.types import SectionType
+
+from rayforge.image.dither import DitherAlgorithm, surface_to_dithered_array
 from rayforge.image.util import (
-    surface_to_grayscale,
-    surface_to_binary,
-    normalize_grayscale,
     compute_auto_levels,
+    normalize_grayscale,
+    surface_to_binary,
+    surface_to_grayscale,
 )
-from rayforge.image.dither import surface_to_dithered_array, DitherAlgorithm
-from rayforge.shared.tasker.progress import ProgressContext
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.producer.base import OpsProducer
-from .raster_util import (
-    find_segments,
-    convert_y_to_output,
-    calculate_ymax_mm,
-    find_mask_bounding_box,
-    generate_scan_lines,
-    downsample_power_values,
-)
+from rayforge.shared.tasker.progress import ProgressContext
 
+from .raster_util import (
+    calculate_ymax_mm,
+    convert_y_to_output,
+    downsample_power_values,
+    find_mask_bounding_box,
+    find_segments,
+    generate_scan_lines,
+)
 
 if TYPE_CHECKING:
     from rayforge.core.workpiece import WorkPiece

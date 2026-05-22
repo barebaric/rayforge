@@ -4,9 +4,9 @@ from typing import Callable, Optional
 from gi.repository import Adw, Gtk, Pango
 
 from ...machine.sanity.result import (
+    ISSUE_CATEGORY_LABELS,
     IssueSeverity,
     SanityReport,
-    ISSUE_CATEGORY_LABELS,
 )
 
 

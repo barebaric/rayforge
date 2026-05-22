@@ -8,6 +8,7 @@ import gettext
 from pathlib import Path
 
 from rayforge.core.hooks import hookimpl
+
 from .producers import (
     ContourProducer,
     FrameProducer,

@@ -1,5 +1,5 @@
 from .importer import ProceduralImporter
-from .renderer import ProceduralRenderer, PROCEDURAL_RENDERER
+from .renderer import PROCEDURAL_RENDERER, ProceduralRenderer
 
 __all__ = [
     "ProceduralImporter",

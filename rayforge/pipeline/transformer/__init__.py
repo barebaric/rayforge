@@ -1,6 +1,7 @@
 # flake8: noqa:F401
 import inspect
-from .base import OpsTransformer, ExecutionPhase
+
+from .base import ExecutionPhase, OpsTransformer
 
 transformer_by_name = dict(
     (name, obj)

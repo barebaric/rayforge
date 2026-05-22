@@ -1,11 +1,12 @@
-import pytest
+from typing import Dict, Tuple, cast
+
 import cairo
 import numpy as np
-from typing import Tuple, Dict, cast
+import pytest
+from raygeo.ops import Ops
 
-from rayforge.core.ops import Ops
-from rayforge.pipeline.encoder.cairoencoder import CairoEncoder
 from rayforge.core.color import ColorSet
+from rayforge.pipeline.encoder.cairoencoder import CairoEncoder
 
 # --- Test Constants for Matrix-based Testing ---
 CUT_COLOR_RGB = (1, 0, 0)  # Red

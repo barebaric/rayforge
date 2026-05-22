@@ -1,32 +1,33 @@
-import pytest
-import logging
-from unittest.mock import MagicMock, ANY
-from pathlib import Path
 import asyncio
+import logging
+from pathlib import Path
+from unittest.mock import ANY, MagicMock
+
+import pytest
 from raygeo import Geometry
-from rayforge.image import SVG_RENDERER
+from raygeo.ops import Ops
+
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.pipeline import Pipeline
+from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact import (
     ArtifactKey,
     JobArtifact,
     StepOpsArtifact,
     WorkPieceArtifactHandle,
 )
-from rayforge.pipeline.stage.workpiece_runner import (
-    make_workpiece_artifact_in_subprocess,
-)
+from rayforge.pipeline.pipeline import Pipeline
+from rayforge.pipeline.stage.job_runner import make_job_artifact_in_subprocess
 from rayforge.pipeline.stage.step_runner import (
     make_step_artifact_in_subprocess,
 )
-from rayforge.pipeline.stage.job_runner import make_job_artifact_in_subprocess
-
+from rayforge.pipeline.stage.workpiece_runner import (
+    make_workpiece_artifact_in_subprocess,
+)
 
 logger = logging.getLogger(__name__)
 

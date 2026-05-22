@@ -34,6 +34,7 @@ def _register_actions(action_manager):
         if not isinstance(item, (WorkPiece, Group)):
             return
         from rayforge.context import get_context
+
         from .wizard import PrintAndCutWizard
 
         ctx = get_context()

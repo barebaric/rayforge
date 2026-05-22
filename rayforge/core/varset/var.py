@@ -9,6 +9,7 @@ from typing import (
     Type,
     TypeVar,
 )
+
 from blinker import Signal
 
 if TYPE_CHECKING:

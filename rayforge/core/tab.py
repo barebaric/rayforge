@@ -1,6 +1,7 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
+
 import uuid
+from dataclasses import dataclass, field
 
 
 @dataclass

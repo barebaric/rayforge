@@ -1,11 +1,11 @@
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from pathlib import Path
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import numpy as np
+from raygeo.geo.types import Point3D
+from raygeo.ops.axis import Axis
 
-from raygeo import Point3D
 from ..core.model import Model
-from ..core.ops.axis import Axis
 from .assembly import Assembly, JointType, Link, LinkRole
 from .models.axis import AxisSet
 

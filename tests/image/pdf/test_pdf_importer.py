@@ -1,15 +1,16 @@
-import pytest
 import io
-import cairo
 from pathlib import Path
 from typing import cast
 from unittest.mock import Mock
 
+import cairo
+import pytest
 from raygeo import Geometry
+
 from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
-from rayforge.core.vectorization_spec import TraceSpec, PassthroughSpec
+from rayforge.core.vectorization_spec import PassthroughSpec, TraceSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.pdf.importer import PdfImporter
 from rayforge.image.pdf.renderer import PDF_RENDERER

@@ -10,15 +10,15 @@ Run with:  pixi run test -m "stress"
 """
 
 import random
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock
 
-from rayforge.machine.transport.grbl import (
-    GrblSerialTransport,
-    DEFAULT_GRBL_RX_BUFFER_SIZE,
-)
 from rayforge.machine.transport import SerialTransport
-
+from rayforge.machine.transport.grbl import (
+    DEFAULT_GRBL_RX_BUFFER_SIZE,
+    GrblSerialTransport,
+)
 
 pytestmark = pytest.mark.stress
 

@@ -3,13 +3,14 @@ Defines the PipelineGraph class for managing the dependency graph.
 """
 
 from __future__ import annotations
+
 import logging
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+
 from ...core.doc import Doc
 from ...core.layer import Layer
 from ..artifact.key import ArtifactKey
 from .node import ArtifactNode
-
 
 if TYPE_CHECKING:
     from ..artifact.manager import ArtifactManager

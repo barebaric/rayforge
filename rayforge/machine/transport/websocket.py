@@ -1,10 +1,11 @@
 import asyncio
 import logging
-import websockets
 from typing import Optional
-from websockets.exceptions import ConnectionClosed
-from .transport import Transport, TransportStatus
 
+import websockets
+from websockets.exceptions import ConnectionClosed
+
+from .transport import Transport, TransportStatus
 
 logger = logging.getLogger(__name__)
 

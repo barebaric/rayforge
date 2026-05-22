@@ -1,6 +1,7 @@
 from gettext import gettext as _
 from typing import Optional
-from .var import Var, ValidationError
+
+from .var import ValidationError, Var
 
 
 def serial_port_validator(port: Optional[str]):

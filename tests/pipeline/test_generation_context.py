@@ -1,12 +1,14 @@
+import uuid
 from typing import cast
 from unittest.mock import MagicMock
-import uuid
+
 import pytest
+from raygeo.ops import Ops
+
 from rayforge.context import get_context
-from rayforge.core.ops import Ops
 from rayforge.pipeline import CoordinateSystem
-from rayforge.pipeline.artifact.key import ArtifactKey
 from rayforge.pipeline.artifact.handle import BaseArtifactHandle
+from rayforge.pipeline.artifact.key import ArtifactKey
 from rayforge.pipeline.artifact.workpiece import (
     WorkPieceArtifact,
     WorkPieceArtifactHandle,

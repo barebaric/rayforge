@@ -1,7 +1,8 @@
 """Dithering algorithms for converting grayscale images to binary."""
 
-import numpy as np
 from enum import Enum
+
+import numpy as np
 
 from .util.srgb import linear_to_srgb, srgb_to_linear
 

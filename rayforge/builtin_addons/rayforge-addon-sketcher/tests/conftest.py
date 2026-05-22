@@ -6,8 +6,9 @@ by adding the addon directory to sys.path before tests run.
 """
 
 import sys
-import pytest
 from pathlib import Path
+
+import pytest
 
 _gtk_available = True
 try:
@@ -38,8 +39,9 @@ def pytest_ignore_collect(collection_path, config):
 @pytest.fixture(scope="session", autouse=True)
 def register_sketch_asset_type():
     """Register Sketch asset type for tests that need serialization."""
-    from rayforge.core.asset_registry import asset_type_registry
     from sketcher.core import Sketch
+
+    from rayforge.core.asset_registry import asset_type_registry
 
     asset_type_registry.register(Sketch, "sketch", "sketcher")
     yield

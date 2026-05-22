@@ -2,6 +2,7 @@ import asyncio
 import logging
 from gettext import gettext as _
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     List,
@@ -9,20 +10,19 @@ from typing import (
     Protocol,
     Tuple,
     Type,
-    TYPE_CHECKING,
     runtime_checkable,
 )
 
 from blinker import Signal
 
+from ...transport import TransportStatus
 from .grbl_util import (
-    grbl_opt_re,
-    parse_opt_info,
-    parse_grbl_settings,
     extract_device_name,
+    grbl_opt_re,
+    parse_grbl_settings,
+    parse_opt_info,
     parse_version,
 )
-from ...transport import TransportStatus
 
 if TYPE_CHECKING:
     from ....context import RayforgeContext

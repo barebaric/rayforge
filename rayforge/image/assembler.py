@@ -1,16 +1,19 @@
 import logging
-from typing import List, Dict, Optional
-from raygeo import Geometry, Rect
+from typing import Dict, List, Optional
+
+from raygeo import Geometry
+from raygeo.geo.types import Rect
+
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.source_asset import SourceAsset
 from ..core.source_asset_segment import SourceAssetSegment
-from ..core.workpiece import WorkPiece
 from ..core.vectorization_spec import (
-    VectorizationSpec,
-    PassthroughSpec,
     LayerImportMode,
+    PassthroughSpec,
+    VectorizationSpec,
 )
+from ..core.workpiece import WorkPiece
 from .structures import LayoutItem
 
 logger = logging.getLogger(__name__)

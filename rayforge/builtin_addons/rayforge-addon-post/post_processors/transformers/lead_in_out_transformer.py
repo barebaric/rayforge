@@ -1,20 +1,19 @@
 from __future__ import annotations
 
-import math
 import logging
-from typing import Optional, List, Dict, Any, TYPE_CHECKING
+import math
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from rayforge.core.ops import (
-    Ops,
-    SectionType,
-)
-from rayforge.core.ops.enums import CommandType, CommandCategory
-from rayforge.pipeline.transformer.base import OpsTransformer, ExecutionPhase
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandCategory, CommandType, SectionType
+
+from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
     from raygeo import Geometry
+
     from rayforge.core.workpiece import WorkPiece
 
 logger = logging.getLogger(__name__)
@@ -286,7 +285,7 @@ class LeadInOutTransformer(OpsTransformer):
         for j in moving_indices[1:]:
             if old_ops.command_type(j) == CommandType.LINE_TO:
                 state = old_ops.preloaded_state(j)
-                if state.power is not None:
+                if state is not None and state.power is not None:
                     first_cut_idx = j
                     break
 
@@ -295,7 +294,8 @@ class LeadInOutTransformer(OpsTransformer):
                 new_ops.transfer_command_from(old_ops, j)
             return
 
-        original_power = old_ops.preloaded_state(first_cut_idx).power
+        first_state = old_ops.preloaded_state(first_cut_idx)
+        original_power = first_state.power if first_state is not None else 0.0
         start_3d = old_ops.endpoint(moving_indices[0])
         end_3d = old_ops.endpoint(moving_indices[-1])
 

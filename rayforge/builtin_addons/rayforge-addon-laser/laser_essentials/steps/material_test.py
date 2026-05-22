@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import List, Optional, Protocol, Tuple, TYPE_CHECKING, cast
 from gettext import gettext as _
+from typing import TYPE_CHECKING, List, Optional, Protocol, Tuple, cast
 
-from rayforge.core.capability import Capability, MATERIAL_TEST
+from rayforge.core.capability import MATERIAL_TEST, Capability
 from rayforge.core.step import Step
 from rayforge.pipeline.transformer.registry import transformer_registry
-from ..producers import MaterialTestGridProducer
 
+from ..producers import MaterialTestGridProducer
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext

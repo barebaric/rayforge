@@ -1,6 +1,6 @@
 from gi.repository import Gtk
-from ..shared.gtk import apply_css
 
+from ..shared.gtk import apply_css
 
 css = """
 .key {

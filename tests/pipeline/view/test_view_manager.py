@@ -1,26 +1,27 @@
 import logging
 import time
 import uuid
-import numpy as np
-from unittest.mock import MagicMock, patch
 from contextlib import contextmanager
+from unittest.mock import MagicMock, patch
+
+import numpy as np
 import pytest
+from raygeo.ops import Ops
 
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
-from rayforge.core.ops import Ops
 from rayforge.pipeline import CoordinateSystem
-from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.artifact.manager import ArtifactManager
-from rayforge.pipeline.view.view_manager import ViewManager, ViewEntry
 from rayforge.pipeline.artifact import (
     ArtifactKey,
     RenderContext,
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
-    WorkPieceViewArtifactHandle,
     WorkPieceViewArtifact,
+    WorkPieceViewArtifactHandle,
 )
+from rayforge.pipeline.artifact.manager import ArtifactManager
+from rayforge.pipeline.pipeline import Pipeline
+from rayforge.pipeline.view.view_manager import ViewEntry, ViewManager
 
 
 @pytest.fixture

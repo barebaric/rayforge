@@ -1,13 +1,12 @@
 import pytest
-
 from sketcher.core.snap.types import (
-    SnapLineType,
-    SnapLineStyle,
     SNAP_LINE_STYLES,
-    SnapPoint,
-    SnapLine,
-    SnapResult,
     DragContext,
+    SnapLine,
+    SnapLineStyle,
+    SnapLineType,
+    SnapPoint,
+    SnapResult,
 )
 
 

@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from typing import Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict
+
 import numpy as np
 
 from ...core.color import (
-    ColorSet,
     ColorRGBA,
+    ColorSet,
     hex_to_rgba,
 )
 from ...image.util.srgb import create_lut_from_color

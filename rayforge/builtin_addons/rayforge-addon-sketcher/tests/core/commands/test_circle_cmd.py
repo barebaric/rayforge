@@ -1,4 +1,5 @@
 import math
+
 from sketcher.core import Sketch
 from sketcher.core.commands import CircleCommand, CirclePreviewState
 from sketcher.core.entities import Circle, Point

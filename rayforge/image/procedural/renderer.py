@@ -1,10 +1,12 @@
-import cairo
+import importlib
 import json
 import logging
-import importlib
-from typing import Optional, Tuple, Callable, TYPE_CHECKING
-from ..base_renderer import Renderer
 import warnings
+from typing import TYPE_CHECKING, Callable, Optional, Tuple
+
+import cairo
+
+from ..base_renderer import Renderer
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)

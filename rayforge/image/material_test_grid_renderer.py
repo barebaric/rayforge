@@ -6,12 +6,15 @@ canvas. The actual ops generation is handled by MaterialTestGridProducer.
 """
 
 from __future__ import annotations
-import cairo
+
 import json
 import logging
-from typing import Dict, Any, Optional, TYPE_CHECKING
-from .base_renderer import Renderer
 import warnings
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+import cairo
+
+from .base_renderer import Renderer
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)

@@ -1,9 +1,11 @@
 import logging
-from typing import Tuple, TYPE_CHECKING
-from gi.repository import Graphene, Gdk, Gtk
+from typing import TYPE_CHECKING, Tuple
+
+from gi.repository import Gdk, Graphene, Gtk
+
 from ...core.matrix import Matrix
-from .canvas import Canvas
 from .axis import AxisRenderer
+from .canvas import Canvas
 
 if TYPE_CHECKING:
     from ...pipeline.coordspace import CoordinateSpace

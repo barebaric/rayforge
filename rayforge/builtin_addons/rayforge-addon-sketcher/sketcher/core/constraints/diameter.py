@@ -1,15 +1,19 @@
 from __future__ import annotations
+
 import math
 from gettext import gettext as _
-from typing import Union, Dict, Any, List, Optional, Callable, TYPE_CHECKING
-from raygeo import Point
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
+
+from raygeo.geo.types import Point
+
 from ..entities import Circle
+from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 from .radius import RadiusConstraint
-from ..types import EntityID
 
 if TYPE_CHECKING:
     import cairo
+
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection

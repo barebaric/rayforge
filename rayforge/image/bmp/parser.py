@@ -1,6 +1,6 @@
-import struct
 import logging
-from typing import Optional, Tuple, List
+import struct
+from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 

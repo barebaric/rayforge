@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+
 import pytest
 
 # Platform-Specific Setup
@@ -23,9 +24,9 @@ gi.require_version("Adw", "1")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Adw, GLib
 
-from rayforge.ui_gtk.mainwindow import MainWindow
-from rayforge.ui_gtk.canvas2d.elements.workpiece import WorkPieceElement
 from rayforge.core.workpiece import WorkPiece
+from rayforge.ui_gtk.canvas2d.elements.workpiece import WorkPieceElement
+from rayforge.ui_gtk.mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
 

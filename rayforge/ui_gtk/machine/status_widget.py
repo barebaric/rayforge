@@ -1,14 +1,16 @@
-from gi.repository import Gtk
-from typing import Optional
 from gettext import gettext as _
-from ..icons import get_icon
+from typing import Optional
+
+from gi.repository import Gtk
+
 from ...machine.driver.driver import (
-    DeviceStatus,
-    DeviceState,
     DEVICE_STATUS_LABELS,
+    DeviceState,
+    DeviceStatus,
 )
 from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.models.machine import Machine
+from ..icons import get_icon
 
 
 class MachineStatusIconWidget(Gtk.Box):

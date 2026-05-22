@@ -10,10 +10,10 @@ from ....core.varset import (
 )
 from ....machine.transport.serial import SerialTransport
 from .base import (
+    NULL_CHOICE_LABEL,
     RowAdapter,
     escape_title,
     natural_sort_key,
-    NULL_CHOICE_LABEL,
     register_adapter,
 )
 

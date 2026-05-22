@@ -2,6 +2,7 @@ import asyncio
 import logging
 from gettext import gettext as _
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     List,
@@ -9,7 +10,6 @@ from typing import (
     Protocol,
     Tuple,
     Type,
-    TYPE_CHECKING,
     runtime_checkable,
 )
 
@@ -17,10 +17,10 @@ from blinker import Signal
 
 from ...transport import TransportStatus
 from .marlin_util import (
+    extract_marlin_device_name,
     parse_m115_firmware_info,
     parse_m211_endstops,
     parse_m503_settings,
-    extract_marlin_device_name,
     parse_marlin_version,
 )
 

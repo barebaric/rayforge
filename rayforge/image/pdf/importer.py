@@ -1,23 +1,22 @@
-from typing import Optional
+import logging
 from pathlib import Path
+from typing import Optional
 
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
-    VectorizationSpec,
-    TraceSpec,
     PassthroughSpec,
+    TraceSpec,
+    VectorizationSpec,
 )
 from ..base_importer import Importer, ImporterFeature
 from ..structures import (
+    ImportManifest,
+    ImportResult,
     ParsingResult,
     VectorizationResult,
-    ImportResult,
-    ImportManifest,
 )
 from .pdf_trace import PdfTraceImporter
 from .pdf_vector import PdfVectorImporter
-
-import logging
 
 logger = logging.getLogger(__name__)
 

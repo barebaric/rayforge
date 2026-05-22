@@ -5,20 +5,22 @@ Screenshot: Main window in standard mode.
 Usage: pixi run screenshot main
 """
 
-import time
 import logging
-from rayforge.uiscript import app, win
+import time
+
 from utils import (
-    load_project,
-    wait_for_settled,
-    show_panel,
-    show_bottom_tab,
-    save_panel_states,
-    restore_panel_states,
-    take_screenshot,
     clear_window_subtitle,
+    load_project,
+    restore_panel_states,
+    save_panel_states,
     set_window_size,
+    show_bottom_tab,
+    show_panel,
+    take_screenshot,
+    wait_for_settled,
 )
+
+from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 

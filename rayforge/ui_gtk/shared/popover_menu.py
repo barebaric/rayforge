@@ -1,5 +1,6 @@
-from typing import List, Callable, TYPE_CHECKING, Optional, Tuple, Any
-from gi.repository import Gtk, Gdk
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple
+
+from gi.repository import Gdk, Gtk
 
 if TYPE_CHECKING:
     from ...context import RayforgeContext

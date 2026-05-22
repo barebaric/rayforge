@@ -1,26 +1,26 @@
+import importlib.util
 import io
 import json
-import os
-import sys
 import logging
-import importlib.util
-import urllib.request
+import os
 import shutil
+import sys
 import tempfile
+import urllib.request
 import zipfile
 from enum import Enum, auto
 from pathlib import Path
 from typing import (
-    Optional,
-    List,
-    Dict,
-    Any,
-    Tuple,
-    Callable,
-    Set,
-    Protocol,
-    runtime_checkable,
     TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    Set,
+    Tuple,
+    runtime_checkable,
 )
 from urllib.parse import quote, urlparse
 
@@ -30,17 +30,18 @@ from blinker import Signal
 
 from .. import __version__
 from ..config import ADDON_REGISTRY_URL
-from ..core.addon_config import AddonConfig, AddonState as ConfigAddonState
+from ..core.addon_config import AddonConfig
+from ..core.addon_config import AddonState as ConfigAddonState
 from ..core.hooks import PLUGIN_API_VERSION
 from ..core.registration import call_registration_hooks
 from ..license import LicenseValidator
 from ..shared.util.po_compiler import compile_po_to_mo, needs_compilation
 from ..shared.util.versioning import (
+    UnknownVersion,
     check_rayforge_compatibility,
     get_git_tag_version,
     is_newer_version,
     parse_requirement,
-    UnknownVersion,
 )
 from .addon import (
     Addon,

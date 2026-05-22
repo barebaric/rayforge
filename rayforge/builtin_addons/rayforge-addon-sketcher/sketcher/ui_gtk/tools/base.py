@@ -10,7 +10,6 @@ if TYPE_CHECKING:
     from ...core.commands.base import PreviewState
     from ...core.constraints import Constraint
     from ...core.entities import Entity, Point
-
     from ..sketchelement import SketchElement
 
 

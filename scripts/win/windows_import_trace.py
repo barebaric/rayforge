@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # Attempts to import key native modules and run a vtracer call.
+import faulthandler
 import sys
 import traceback
-import faulthandler
 
 faulthandler.enable()
 print(f"=== Python executable: {sys.executable} ===", flush=True)
@@ -18,8 +18,8 @@ for m in ["vtracer", "pyvips", "gi", "cv2", "numpy"]:
         )
 
 try:
-    import numpy as np
     import cv2
+    import numpy as np
 
     arr = np.zeros((16, 16), dtype=np.uint8)
     arr[4:12, 4:12] = 255

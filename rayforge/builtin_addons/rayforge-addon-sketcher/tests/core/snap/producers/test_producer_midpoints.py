@@ -1,8 +1,7 @@
 import pytest
-
-from sketcher.core.snap.types import SnapLineType, DragContext
-from sketcher.core.snap.producers.midpoints import MidpointsProducer
 from sketcher.core.registry import EntityRegistry
+from sketcher.core.snap.producers.midpoints import MidpointsProducer
+from sketcher.core.snap.types import DragContext, SnapLineType
 
 
 @pytest.fixture

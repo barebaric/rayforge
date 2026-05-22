@@ -1,9 +1,11 @@
-from gi.repository import GLib, Gtk, Adw
-from typing import Optional
 from gettext import gettext as _
-from ...machine.models.machine import Machine
-from ...machine.models.laser import Laser
+from typing import Optional
+
+from gi.repository import Adw, GLib, Gtk
+
 from ...machine.cmd import MachineCmd
+from ...machine.models.laser import Laser
+from ...machine.models.machine import Machine
 from ..icons import get_icon
 from ..shared.gtk import apply_css
 from ..shared.slider import create_slider

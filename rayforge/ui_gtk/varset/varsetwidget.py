@@ -1,8 +1,10 @@
 import logging
-from typing import Any, Dict, Optional, Tuple
 from gettext import gettext as _
-from gi.repository import GLib, Gtk, Adw
+from typing import Any, Dict, Optional, Tuple
+
 from blinker import Signal
+from gi.repository import Adw, GLib, Gtk
+
 from ...core.varset import Var, VarSet
 from ..icons import get_icon
 from .adapter import RowAdapter, create_row_for_var, escape_title

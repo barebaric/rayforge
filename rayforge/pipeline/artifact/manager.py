@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import logging
 from contextlib import contextmanager
 from typing import (
@@ -11,6 +12,7 @@ from typing import (
     Tuple,
     Union,
 )
+
 from ...shared.util.debug import safe_caller_stack
 from ..dag.node import NodeState
 from .base import BaseArtifact

@@ -1,7 +1,9 @@
-import pytest
 from typing import cast
 from unittest.mock import Mock
-from rayforge.core.varset.var import Var, ValidationError
+
+import pytest
+
+from rayforge.core.varset.var import ValidationError, Var
 from rayforge.core.varset.varset import VarSet
 
 

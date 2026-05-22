@@ -1,17 +1,19 @@
-import pytest
 import io
 from pathlib import Path
-import ezdxf
 from typing import Optional, Union, cast
 from unittest.mock import Mock
-from raygeo import CMD_TYPE_BEZIER, Geometry
+
+import ezdxf
+import pytest
+from raygeo import Geometry
+
 from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
+from rayforge.image.base_importer import ImporterFeature
 from rayforge.image.dxf.importer import DxfImporter
 from rayforge.image.structures import ImportPayload
-from rayforge.image.base_importer import ImporterFeature
 
 
 # Fixtures
@@ -373,7 +375,7 @@ class TestDXFImporter:
         assert not boundaries.is_empty()
         data = boundaries.data
         assert data is not None
-        has_bezier_commands = (data[:, 0] == CMD_TYPE_BEZIER).any()
+        has_bezier_commands = (data[:, 0] == Geometry.CMD_TYPE_BEZIER).any()
         assert has_bezier_commands, (
             "Circle should contain bezier commands, not be linearized"
         )
@@ -400,7 +402,7 @@ class TestDXFImporter:
         assert not boundaries.is_empty()
         data = boundaries.data
         assert data is not None
-        has_bezier_commands = (data[:, 0] == CMD_TYPE_BEZIER).any()
+        has_bezier_commands = (data[:, 0] == Geometry.CMD_TYPE_BEZIER).any()
         assert has_bezier_commands, (
             "ACDB circle should contain bezier commands, not be linearized"
         )

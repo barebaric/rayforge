@@ -1,17 +1,19 @@
 """Tests for the RecipeManager class."""
 
-from unittest.mock import Mock
-from typing import Optional
-import pytest
 import tempfile
-import yaml
 from pathlib import Path
+from typing import Optional
+from unittest.mock import Mock
+
+import pytest
+import yaml
+
+from rayforge.core.capability import CUT, ENGRAVE
 from rayforge.core.doc import Doc
 from rayforge.core.recipe import Recipe
 from rayforge.core.recipe_manager import RecipeManager
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
-from rayforge.core.capability import CUT, ENGRAVE
 from rayforge.machine.models.machine import Machine
 
 

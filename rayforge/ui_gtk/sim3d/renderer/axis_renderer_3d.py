@@ -7,20 +7,23 @@ axes. It uses a composed PlaneRenderer for the background.
 """
 
 from __future__ import annotations
-import math
+
 import logging
+import math
 from typing import Optional, Tuple
+
 import numpy as np
 from OpenGL import GL
-from raygeo import Point3D
+from raygeo.geo.types import Point3D
+
 from ..gl_utils import (
     BaseRenderer,
     RenderContext,
     Shader,
     set_line_width,
 )
-from .text_renderer import TextRenderer
 from .plane_renderer import PlaneRenderer
+from .text_renderer import TextRenderer
 
 logger = logging.getLogger(__name__)
 

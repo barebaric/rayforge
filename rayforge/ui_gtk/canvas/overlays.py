@@ -1,24 +1,27 @@
 from __future__ import annotations
+
+import math
 from typing import (
     TYPE_CHECKING,
-    Tuple,
-    Union,
-    Dict,
     Any,
+    Dict,
     List,
     Optional,
+    Tuple,
+    Union,
 )
+
 import cairo
-import math
-from ...core.matrix import Matrix
+
 from ...core.color import ColorRGBA
+from ...core.matrix import Matrix
 from .region import (
-    ElementRegion,
-    ROTATE_SHEAR_HANDLES,
     CORNER_RESIZE_HANDLES,
     MIDDLE_RESIZE_HANDLES,
-    ROTATE_HANDLES,
     RESIZE_HANDLES,
+    ROTATE_HANDLES,
+    ROTATE_SHEAR_HANDLES,
+    ElementRegion,
 )
 
 if TYPE_CHECKING:

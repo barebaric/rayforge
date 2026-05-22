@@ -1,17 +1,18 @@
-import warnings
 import logging
-from typing import Optional, TYPE_CHECKING, List, Tuple
+import warnings
+from typing import TYPE_CHECKING, List, Optional, Tuple
 from xml.etree import ElementTree as ET
-from raygeo import Rect
+
+from raygeo.geo.types import Rect
+
 from ...core.vectorization_spec import TraceSpec
 from ..base_renderer import Renderer, RenderSpecification
-from .svgutil import filter_svg_layers
 from .svg_fallback import (
     SVG_LOAD_AVAILABLE,
-    render_svg_to_cairo,
     cairo_surface_to_vips,
+    render_svg_to_cairo,
 )
-
+from .svgutil import filter_svg_layers
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)

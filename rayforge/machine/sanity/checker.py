@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Tuple
 
-from raygeo import Rect
-from ...core.ops.container import Ops
+from raygeo.geo.types import Rect
+from raygeo.ops import Ops
+
 from ..models.zone import Zone
 from .result import CheckMode, SanityReport
 

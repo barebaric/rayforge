@@ -1,19 +1,20 @@
 import logging
-from typing import Optional
 from gettext import gettext as _
-from gi.repository import Gtk, GLib, Gdk
+from typing import Optional
+
 from blinker import Signal
+from gi.repository import Gdk, GLib, Gtk
+
 from ...logging_setup import (
-    get_ui_log_records,
-    get_ui_formatter,
     UILogFilter,
+    get_ui_formatter,
+    get_ui_log_records,
 )
-from ...machine.models.machine import Machine
 from ...machine.driver.dummy import NoDeviceDriver
+from ...machine.models.machine import Machine
 from ...usage import get_usage_tracker
 from ..icons import get_icon
 from ..shared.gtk import apply_css
-
 
 logger = logging.getLogger(__name__)
 

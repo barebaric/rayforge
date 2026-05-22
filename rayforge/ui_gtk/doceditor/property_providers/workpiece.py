@@ -1,7 +1,9 @@
 import logging
-from gi.repository import Gtk, Adw, Gio
-from typing import List, cast, TYPE_CHECKING
 from gettext import gettext as _
+from typing import TYPE_CHECKING, List, cast
+
+from gi.repository import Adw, Gio, Gtk
+
 from ....core.item import DocItem
 from ....core.workpiece import WorkPiece
 from ...icons import get_icon

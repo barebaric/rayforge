@@ -2,8 +2,8 @@ import os
 from typing import TYPE_CHECKING, Any, List, Optional, Set
 
 import cairo
+from raygeo.geo.types import Point as GeoPoint
 
-from raygeo import Point as GeoPoint
 from ...core.constraints import (
     CoincidentConstraint,
     HorizontalConstraint,
@@ -13,10 +13,10 @@ from ...core.constraints import (
 )
 from ...core.entities import Arc, Circle, Line, Point
 from ...core.snap import (
+    SNAP_LINE_STYLES,
     DragContext,
     SnapLineType,
     SnapResult,
-    SNAP_LINE_STYLES,
 )
 from ...core.snap.types import SnapLineStyle
 from .base import SketcherKey

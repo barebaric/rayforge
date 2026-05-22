@@ -1,8 +1,8 @@
-from typing import TYPE_CHECKING, Optional
 import logging
+from gettext import gettext as _
+from typing import TYPE_CHECKING, Optional
 
 from gi.repository import Gio, GLib
-from gettext import gettext as _
 
 from rayforge.context import get_context
 from rayforge.core.workpiece import WorkPiece
@@ -11,13 +11,14 @@ from rayforge.ui_gtk.action_registry import (
     action_registry,
 )
 from rayforge.ui_gtk.actions import action_extension_registry
-from rayforge.ui_gtk.shared.keyboard import PRIMARY_ACCEL
 from rayforge.ui_gtk.canvas2d.context_menu import (
     context_menu_extension_registry,
 )
 from rayforge.ui_gtk.doceditor.property_providers import (
     property_provider_registry,
 )
+from rayforge.ui_gtk.shared.keyboard import PRIMARY_ACCEL
+
 from .property_provider import SketchPropertyProvider
 from .sketch_mode_cmd import SketchModeCmd
 from .sketchelement import SketchElement

@@ -1,8 +1,8 @@
-from typing import Any, Optional, TYPE_CHECKING
-
-from gi.repository import Adw, GObject, Gtk
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Optional
+
 import numpy as np
+from gi.repository import Adw, GObject, Gtk
 
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.image.util import (
@@ -17,6 +17,7 @@ from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
 from rayforge.ui_gtk.shared.direction_preview import DirectionPreview
 from rayforge.ui_gtk.shared.histogram_preview import HistogramPreview
 from rayforge.ui_gtk.shared.slider import create_slider, create_slider_row
+
 from ..producers import DepthMode, Rasterizer
 
 if TYPE_CHECKING:

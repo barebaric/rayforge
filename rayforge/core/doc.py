@@ -1,17 +1,19 @@
 import logging
+from gettext import gettext as _
 from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Iterable,
     List,
     Optional,
     Set,
     TypeVar,
-    Iterable,
-    Dict,
-    TYPE_CHECKING,
     cast,
 )
-from gettext import gettext as _
+
 from blinker import Signal
 from raygeo import Geometry
+
 from ..core.undo import HistoryManager
 from ..pipeline.producer.registry import producer_registry
 from .asset import IAsset, UnknownAsset
@@ -59,11 +61,11 @@ class Doc(DocItem):
     @classmethod
     def from_dict(cls, data: Dict) -> "Doc":
         """Deserializes the document from a dictionary."""
+        from .asset_registry import asset_type_registry
+        from .matrix import Matrix
+        from .source_asset import SourceAsset
         from .stock import StockItem
         from .stock_asset import StockAsset
-        from .source_asset import SourceAsset
-        from .matrix import Matrix
-        from .asset_registry import asset_type_registry
 
         # --- Polymorphic Deserialization Factories ---
         item_class_map = {"layer": Layer, "stockitem": StockItem}

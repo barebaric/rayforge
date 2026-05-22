@@ -1,4 +1,5 @@
-from typing import Any, Optional, Callable
+from typing import Any, Callable, Optional
+
 from .command import Command
 
 _sentinel = object()

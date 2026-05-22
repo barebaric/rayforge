@@ -1,15 +1,16 @@
-import pytest
-import cairo
 from unittest.mock import MagicMock
 
-from rayforge.core.ops import CommandType, SectionType
+import cairo
+import pytest
+from laser_essentials.producers import DepthMode, Rasterizer
+from raygeo.ops.types import CommandType, SectionType
+
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.machine.models.laser import Laser
 from rayforge.pipeline import CoordinateSystem
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.producer.base import OpsProducer
-from laser_essentials.producers import Rasterizer, DepthMode
 
 
 @pytest.fixture

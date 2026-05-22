@@ -1,10 +1,11 @@
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, MagicMock, patch
-from sketcher.ui_gtk.tools.circle_tool import CircleTool
 from sketcher.core.commands.ellipse import EllipsePreviewState
-from sketcher.ui_gtk.tools.base import SketcherKey
-from sketcher.core.snap import SnapLineType
 from sketcher.core.entities import Point as SketchPoint
+from sketcher.core.snap import SnapLineType
+from sketcher.ui_gtk.tools.base import SketcherKey
+from sketcher.ui_gtk.tools.circle_tool import CircleTool
 
 
 @pytest.fixture

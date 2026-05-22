@@ -1,7 +1,8 @@
-import pytest
-import numpy as np
-from scipy.optimize import check_grad
 from unittest.mock import MagicMock
+
+import numpy as np
+import pytest
+from scipy.optimize import check_grad
 from sketcher.core.constraints import EqualDistanceConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry

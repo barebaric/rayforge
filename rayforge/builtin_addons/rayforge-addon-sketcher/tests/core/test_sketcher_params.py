@@ -1,5 +1,6 @@
-import pytest
 import math
+
+import pytest
 from sketcher.core.params import ParameterContext
 
 

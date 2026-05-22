@@ -1,5 +1,6 @@
-from gi.repository import Gtk, Gdk
 from blinker import Signal
+from gi.repository import Gdk, Gtk
+
 from ..icons import get_icon
 from .gtk import apply_css
 

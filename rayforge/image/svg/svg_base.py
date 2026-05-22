@@ -1,38 +1,42 @@
 from __future__ import annotations
+
 import io
 import logging
-from typing import Optional, Tuple, Dict, Any
-from pathlib import Path
-from xml.etree import ElementTree as ET
 from gettext import gettext as _
+from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
+from xml.etree import ElementTree as ET
 
+from raygeo import Geometry
+from raygeo.geo.types import Rect
 from svgelements import (
     SVG,
-    Path as SvgPath,
-    Close,
-    Move,
-    Line,
-    CubicBezier,
-    QuadraticBezier,
     Arc,
+    Close,
+    CubicBezier,
+    Line,
+    Move,
+    QuadraticBezier,
+)
+from svgelements import (
+    Path as SvgPath,
 )
 
-from raygeo import Geometry, Rect
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import PassthroughSpec
 from ..base_importer import (
     Importer,
 )
 from ..structures import (
-    ParsingResult,
     ImportManifest,
     LayerInfo,
+    ParsingResult,
 )
 from .renderer import SVG_RENDERER
 from .svgutil import (
     PPI,
-    get_natural_size,
     extract_layer_manifest,
+    get_natural_size,
     is_unitless_svg,
 )
 

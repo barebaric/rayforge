@@ -2,10 +2,11 @@
 import logging
 import os
 import sys
+import threading
 import time
 from pathlib import Path
+
 import pytest
-import threading
 
 # Platform-Specific Setup
 if sys.platform.startswith("linux"):

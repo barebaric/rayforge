@@ -1,14 +1,16 @@
-from typing import cast
-import pytest
-from unittest.mock import MagicMock, patch
 from pathlib import Path
-from rayforge.image.registry import renderer_registry
+from typing import cast
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
+from rayforge.core.source_asset import SourceAsset
 from rayforge.core.step import Step
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
-from rayforge.core.source_asset import SourceAsset
+from rayforge.image.registry import renderer_registry
 from rayforge.image.svg.renderer import SvgRenderer
 
 

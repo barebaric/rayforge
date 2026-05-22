@@ -1,7 +1,8 @@
 import uuid
-from typing import Protocol, runtime_checkable, Dict, Any, ClassVar, Optional
-from blinker import Signal
 from dataclasses import dataclass, field
+from typing import Any, ClassVar, Dict, Optional, Protocol, runtime_checkable
+
+from blinker import Signal
 
 
 @runtime_checkable

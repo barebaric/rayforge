@@ -1,12 +1,14 @@
 import math
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 from blinker import Signal
+
 from rayforge.core.doc import Doc
-from rayforge.core.workpiece import WorkPiece
-from rayforge.core.step import Step
 from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
+from rayforge.core.step import Step
+from rayforge.core.workpiece import WorkPiece
 
 
 @pytest.fixture

@@ -4,13 +4,14 @@ Tests for Ruida L2 Transport layer.
 Tests framing, swizzle encoding/decoding, and magic key detection.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from rayforge.machine.driver.ruida.ruida_transport import (
     RuidaCodec,
-    RuidaTransport,
     RuidaServerTransport,
+    RuidaTransport,
 )
 from rayforge.machine.driver.ruida.ruida_util import frame_packet
 

@@ -2,8 +2,9 @@
 Tests for RuidaClient command generation and sending.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from rayforge.machine.driver.ruida.ruida_client import RuidaClient
 from rayforge.machine.driver.ruida.ruida_util import encode35

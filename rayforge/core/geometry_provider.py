@@ -1,17 +1,19 @@
 from typing import (
-    Dict,
+    TYPE_CHECKING,
     Any,
+    Dict,
     List,
     Optional,
     Protocol,
     Tuple,
     runtime_checkable,
-    TYPE_CHECKING,
 )
+
 from blinker import Signal
 
 if TYPE_CHECKING:
     from raygeo import Geometry
+
     from ..image.base_renderer import Renderer
     from ..image.structures import FillRenderData
 

@@ -2,13 +2,14 @@ import math
 
 import numpy as np
 import pytest
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
+from raygeo.ops.types import CommandType
 
-from rayforge.core.ops.axis import Axis
-from rayforge.core.ops import Ops, CommandType
 from rayforge.machine.kinematic_mapping import KinematicMapping
 from rayforge.machine.models.rotary_module import (
-    RotaryModule,
     RotaryMode,
+    RotaryModule,
     RotaryType,
 )
 
@@ -149,7 +150,7 @@ class TestKinematicMappingApply:
 
         qb_idx = ops.indices_of(CommandType.QUADRATIC_BEZIER_TO)[0]
         circ = diameter * math.pi
-        ctrl = ops.quadratic_bezier_params(qb_idx)[0]
+        ctrl = ops.quadratic_bezier_params(qb_idx)
         assert ctrl[1] == pytest.approx((30.0 / circ) * 360.0)
 
     def test_non_moving_commands_untouched(self):

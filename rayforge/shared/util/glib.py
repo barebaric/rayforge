@@ -1,4 +1,5 @@
-from typing import Callable, Optional, Tuple, Any
+from typing import Any, Callable, Optional, Tuple
+
 from gi.repository import GLib
 
 

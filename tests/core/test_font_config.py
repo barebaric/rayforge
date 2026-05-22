@@ -1,4 +1,5 @@
 import pytest
+
 from rayforge.core.font_config import FontConfig
 
 

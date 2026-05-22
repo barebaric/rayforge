@@ -5,7 +5,7 @@ from ...core.commands import (
     RoundedRectCommand,
     RoundedRectPreviewState,
 )
-from .base import SketchTool, SketcherKey
+from .base import SketcherKey, SketchTool
 from .dimension_input import DimensionInputHandler
 
 

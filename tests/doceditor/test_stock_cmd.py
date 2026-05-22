@@ -1,15 +1,16 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 from raygeo import Geometry
-from raygeo import CMD_TYPE_ARC
+
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.stock_cmd import StockCmd
 from rayforge.pipeline.coordspace import (
+    AxisDirection,
     MachineSpace,
     OriginCorner,
-    AxisDirection,
 )
 
 
@@ -121,7 +122,9 @@ def test_convert_to_stock_preserves_arcs(stock_cmd, doc_editor):
     doc.add_child(workpiece)
 
     arc_count_before = sum(
-        1 for cmd in geometry.iter_commands() if cmd[0] == CMD_TYPE_ARC
+        1
+        for cmd in geometry.iter_commands()
+        if cmd[0] == Geometry.CMD_TYPE_ARC
     )
     assert arc_count_before == 2, "Test setup: geometry should have 2 arcs"
 
@@ -133,7 +136,9 @@ def test_convert_to_stock_preserves_arcs(stock_cmd, doc_editor):
 
     stock_geo = stock_item.geometry
     arc_count_after = sum(
-        1 for cmd in stock_geo.iter_commands() if cmd[0] == CMD_TYPE_ARC
+        1
+        for cmd in stock_geo.iter_commands()
+        if cmd[0] == Geometry.CMD_TYPE_ARC
     )
 
     assert arc_count_after == arc_count_before, (

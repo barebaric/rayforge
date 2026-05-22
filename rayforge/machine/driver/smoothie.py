@@ -1,38 +1,39 @@
 import asyncio
 import inspect
 import logging
+from gettext import gettext as _
 from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
     List,
     Optional,
-    cast,
-    Any,
-    TYPE_CHECKING,
-    Callable,
     Union,
-    Awaitable,
-    Dict,
+    cast,
 )
-from gettext import gettext as _
+
 from ...context import RayforgeContext
-from ...core.varset import VarSet, HostnameVar, PortVar
+from ...core.varset import HostnameVar, PortVar, VarSet
 from ...core.varset.hostnamevar import is_valid_hostname_or_ip
-from ...pipeline.encoder.base import OpsEncoder, EncodedOutput
+from ...pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ...pipeline.encoder.gcode import GcodeEncoder
 from ..transport import TelnetTransport, TransportStatus
 from .driver import (
-    Driver,
-    DeviceStatus,
-    DriverSetupError,
-    DriverPrecheckError,
     Axis,
+    DeviceStatus,
+    Driver,
+    DriverPrecheckError,
+    DriverSetupError,
     Pos,
 )
 from .grbl.grbl_util import parse_state
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
-    from ..models.machine import Machine
     from ..models.laser import Laser
+    from ..models.machine import Machine
 
 
 logger = logging.getLogger(__name__)
@@ -305,12 +306,9 @@ class SmoothieDriver(Driver):
             return
 
         # Handle multiple axes - home them one by one
-        for axis in Axis:
-            if axes & axis:
-                assert axis.name
-                axis_letter: str = axis.name.upper()
-                cmd = dialect.home_axis.format(axis_letter=axis_letter)
-                await self._send_and_wait(cmd.encode())
+        for axis in axes:
+            cmd = dialect.home_axis.format(axis_letter=axis.name)
+            await self._send_and_wait(cmd.encode())
 
     async def move_to(self, pos_x, pos_y) -> None:
         dialect = self.dialect

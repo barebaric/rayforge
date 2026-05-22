@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 import math
+from typing import cast
+
 import cairo
 import numpy as np
-from typing import cast
 from gi.repository import GLib
 
 from ...core.matrix import Matrix

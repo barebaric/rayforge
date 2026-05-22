@@ -1,13 +1,16 @@
 from __future__ import annotations
+
 import json
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+
 import numpy as np
-from typing import Optional, Dict, Any, Type, TYPE_CHECKING
-from ...core.ops import Ops
+from raygeo.ops import Ops
+
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
-    from ..encoder.base import MachineCodeOpMap, EncodedOutput
+    from ..encoder.base import EncodedOutput, MachineCodeOpMap
 
 
 class _NumpyEncoder(json.JSONEncoder):

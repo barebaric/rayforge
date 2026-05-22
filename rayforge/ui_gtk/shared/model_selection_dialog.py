@@ -3,9 +3,9 @@
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 
-from gi.repository import Gtk, Adw
+from gi.repository import Adw, Gtk
 
 from ...context import get_context
 from ...core.model import Model

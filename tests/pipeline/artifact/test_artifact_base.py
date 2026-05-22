@@ -1,8 +1,8 @@
 import numpy as np
-from rayforge.core.ops import Ops
-from rayforge.pipeline.artifact import WorkPieceArtifact
-from rayforge.pipeline.artifact import JobArtifact
+from raygeo.ops import Ops
+
 from rayforge.pipeline import CoordinateSystem
+from rayforge.pipeline.artifact import JobArtifact, WorkPieceArtifact
 from rayforge.pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
 
 

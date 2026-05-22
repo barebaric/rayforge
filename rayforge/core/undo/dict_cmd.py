@@ -2,7 +2,8 @@
 Provides a command for changing a value within a dictionary.
 """
 
-from typing import Dict, Any, Optional, Callable, cast
+from typing import Any, Callable, Dict, Optional, cast
+
 from .command import Command
 
 

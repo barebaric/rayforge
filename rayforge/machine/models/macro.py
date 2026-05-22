@@ -1,9 +1,10 @@
 from __future__ import annotations
-from enum import Enum
-from dataclasses import dataclass, field
-from typing import List, Dict, Any
+
 import uuid
+from dataclasses import dataclass, field
+from enum import Enum
 from gettext import gettext as _
+from typing import Any, Dict, List
 
 
 class MacroTrigger(Enum):

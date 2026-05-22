@@ -1,8 +1,10 @@
 import logging
-from typing import cast
 from gettext import gettext as _
-from gi.repository import Gtk, Adw
+from typing import cast
+
 from blinker import Signal
+from gi.repository import Adw, Gtk
+
 from ...context import get_context
 from ...core.recipe import Recipe
 from ...shared.units.formatter import format_value

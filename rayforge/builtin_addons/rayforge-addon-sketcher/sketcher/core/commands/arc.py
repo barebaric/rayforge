@@ -1,11 +1,13 @@
 from __future__ import annotations
+
 import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, List, Optional, Set
 
-from raygeo import Point as GeoPoint
-from raygeo.shape.arc import get_arc_direction
-from raygeo.shape.circle import project_point_onto_circle
+from raygeo.geo.shape.arc import get_arc_direction
+from raygeo.geo.shape.circle import project_point_onto_circle
+from raygeo.geo.types import Point as GeoPoint
+
 from ..constraints import EqualDistanceConstraint, RadiusConstraint
 from ..entities import Arc, Point
 from ..types import EntityID

@@ -7,18 +7,19 @@ State tracking is the single source of truth in the ledger.
 
 import uuid
 from unittest.mock import Mock
-import pytest
-from rayforge.pipeline.artifact import (
-    ArtifactManager,
-    ArtifactKey,
-    WorkPieceArtifactHandle,
-    StepOpsArtifactHandle,
-    JobArtifactHandle,
-)
-from rayforge.pipeline.artifact.store import ArtifactStore
-from rayforge.pipeline.artifact.manager import make_composite_key
-from rayforge.pipeline.dag.node import NodeState
 
+import pytest
+
+from rayforge.pipeline.artifact import (
+    ArtifactKey,
+    ArtifactManager,
+    JobArtifactHandle,
+    StepOpsArtifactHandle,
+    WorkPieceArtifactHandle,
+)
+from rayforge.pipeline.artifact.manager import make_composite_key
+from rayforge.pipeline.artifact.store import ArtifactStore
+from rayforge.pipeline.dag.node import NodeState
 
 STEP1_UID = str(uuid.uuid4())
 STEP2_UID = str(uuid.uuid4())

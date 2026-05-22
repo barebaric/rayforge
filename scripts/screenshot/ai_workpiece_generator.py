@@ -5,14 +5,16 @@ Screenshot: AI Workpiece Generator dialog.
 Usage: pixi run screenshot ai-workpiece-generator
 """
 
-import time
 import logging
-from rayforge.uiscript import app, win
+import time
+
 from utils import (
-    wait_for_settled,
-    take_screenshot,
     run_on_main_thread,
+    take_screenshot,
+    wait_for_settled,
 )
+
+from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 

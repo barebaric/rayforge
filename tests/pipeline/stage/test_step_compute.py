@@ -1,19 +1,20 @@
 import pytest
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandType
 
 from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
-from rayforge.core.ops import Ops, CommandType
 from rayforge.pipeline.artifact import (
-    WorkPieceArtifact,
     StepOpsArtifact,
+    WorkPieceArtifact,
 )
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.stage.step_compute import (
-    compute_step_artifacts,
     _apply_artifact_scaling,
+    _apply_transformers_to_ops,
     _create_workpiece_placement_matrix,
     _process_artifact,
-    _apply_transformers_to_ops,
+    compute_step_artifacts,
 )
 
 

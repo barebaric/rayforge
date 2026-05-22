@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timedelta
 
-from rayforge.core.varset import VarSet, Var
+from rayforge.core.varset import Var, VarSet
 from rayforge.core.varset.oauthvar import OAuthFlowVar
 
 

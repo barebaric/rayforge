@@ -1,5 +1,6 @@
 import numpy as np
-from rayforge.core.ops import Ops
+from raygeo.ops import Ops
+
 from rayforge.pipeline.artifact.job import JobArtifact
 from rayforge.pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
 

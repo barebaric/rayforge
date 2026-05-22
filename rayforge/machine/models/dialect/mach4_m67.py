@@ -1,4 +1,5 @@
 from gettext import gettext as _
+
 from .base import GcodeDialect
 
 MACH4_M67_DIALECT = GcodeDialect(

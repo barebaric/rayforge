@@ -1,6 +1,8 @@
-from typing import cast, Optional
 from gettext import gettext as _
+from typing import Optional, cast
+
 from gi.repository import Adw, Gtk
+
 from ...context import get_context
 from ...machine.device.profile import DeviceProfile
 from ...machine.models.machine import Machine

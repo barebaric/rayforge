@@ -3,13 +3,13 @@ import queue
 
 import pytest
 
+from rayforge.machine.transport import TransportStatus
 from rayforge.machine.transport.serial import (
     SerialPort,
     SerialPortPermissionError,
     SerialTransport,
     safe_list_ports_linux,
 )
-from rayforge.machine.transport import TransportStatus
 
 
 class SignalTracker:

@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 import logging
 import math
-from typing import List, Tuple, Optional, TYPE_CHECKING
 from gettext import gettext as _
-from ...core.ops import Ops
+from typing import TYPE_CHECKING, List, Optional, Tuple
+
+from raygeo.ops import Ops
+
 from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import ProgressContext, set_progress
@@ -14,6 +17,7 @@ from ..artifact import (
 
 if TYPE_CHECKING:
     from raygeo import Geometry
+
     from ..transformer import OpsTransformer
 
 logger = logging.getLogger(__name__)

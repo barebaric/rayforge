@@ -7,10 +7,10 @@ import pytest
 import yaml
 
 from rayforge.license import (
+    GumroadProvider,
+    LicenseResult,
     LicenseStatus,
     LicenseType,
-    LicenseResult,
-    GumroadProvider,
 )
 
 

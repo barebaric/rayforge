@@ -1,5 +1,7 @@
 import logging
+
 from gi.repository import Gdk, Gtk, Pango
+
 from ...core.workpiece import WorkPiece
 from ..icons import get_icon
 

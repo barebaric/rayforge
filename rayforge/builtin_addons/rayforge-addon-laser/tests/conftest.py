@@ -6,8 +6,9 @@ with their respective registries before tests run.
 """
 
 import pytest
-from rayforge.pipeline.producer.registry import producer_registry
+
 from rayforge.core.step_registry import step_registry
+from rayforge.pipeline.producer.registry import producer_registry
 from rayforge.pipeline.transformer.registry import transformer_registry
 
 
@@ -69,12 +70,13 @@ def register_laser_essentials():
     to fail in tests.
     """
     from rayforge import worker_init
-    from rayforge.config import BUILTIN_ADDONS_DIR
     from rayforge.addon_mgr.addon_manager import AddonManager
+    from rayforge.config import BUILTIN_ADDONS_DIR
 
     worker_init._worker_addons_loaded = True
 
     import pluggy
+
     from rayforge.core.hooks import RayforgeSpecs
 
     plugin_mgr = pluggy.PluginManager("rayforge")

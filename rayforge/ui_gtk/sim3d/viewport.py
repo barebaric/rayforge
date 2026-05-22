@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
-
-from raygeo import Point3D, Rect
+from raygeo.geo.types import Point3D, Rect
 
 if TYPE_CHECKING:
     from ...machine.models.machine import Machine

@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
+
 from rayforge.machine.driver.driver import DeviceState
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.ui_gtk.canvas2d.surface import WorkSurface

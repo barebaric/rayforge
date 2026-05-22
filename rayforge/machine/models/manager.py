@@ -12,7 +12,6 @@ from ..driver.driver import ResourceBusyError
 from .controller import MachineController
 from .machine import Machine
 
-
 logger = logging.getLogger(__name__)
 
 

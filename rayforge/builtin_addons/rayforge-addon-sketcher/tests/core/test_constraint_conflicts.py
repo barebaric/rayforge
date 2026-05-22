@@ -9,8 +9,8 @@ from sketcher.core.constraints import (
 )
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
-from sketcher.core.solver import Solver, CONFLICT_ERROR_THRESHOLD
 from sketcher.core.sketch import Sketch
+from sketcher.core.solver import CONFLICT_ERROR_THRESHOLD, Solver
 
 
 class TestSolverConflictDetection:

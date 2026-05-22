@@ -8,15 +8,14 @@ text representation for UI display.
 import logging
 from typing import TYPE_CHECKING, List, Optional
 
-from ....core.ops import (
-    Ops,
-    CommandType,
-)
-from raygeo import Point3D
+from raygeo.geo.types import Point3D
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandType
+
 from ....pipeline.encoder.base import (
-    OpsEncoder,
-    MachineCodeOpMap,
     EncodedOutput,
+    MachineCodeOpMap,
+    OpsEncoder,
 )
 from .ruida_maps import REF_POINT_COMMANDS
 from .ruida_util import encode14, encode35

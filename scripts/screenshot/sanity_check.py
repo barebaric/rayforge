@@ -5,17 +5,19 @@ Screenshot: Sanity check dialog.
 Usage: pixi run screenshot sanity-check
 """
 
-import time
 import logging
+import time
 from threading import Event
-from rayforge.uiscript import app, win
+
 from utils import (
     load_project,
-    wait_for_settled,
-    take_screenshot,
     run_on_main_thread,
     set_window_size,
+    take_screenshot,
+    wait_for_settled,
 )
+
+from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 

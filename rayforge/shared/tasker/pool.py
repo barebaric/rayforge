@@ -5,18 +5,20 @@ worker processes to execute tasks efficiently.
 
 from __future__ import annotations
 
+import builtins
 import logging
 import os
 import threading
 import traceback
-import builtins
-from queue import Empty
-from multiprocessing import get_context, Manager
+from multiprocessing import Manager, get_context
 from multiprocessing.managers import DictProxy
 from multiprocessing.process import BaseProcess
 from multiprocessing.queues import Queue as MpQueue
-from typing import Any, Callable, List, Set, Optional, Tuple
+from queue import Empty
+from typing import Any, Callable, List, Optional, Set, Tuple
+
 from blinker import Signal
+
 from .proxy import ExecutionContextProxy
 
 logger = logging.getLogger(__name__)

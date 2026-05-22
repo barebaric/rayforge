@@ -18,8 +18,8 @@ In other words, we cannot use GLib.idle_add or similar.
 
 import logging
 import time
-from queue import Full
 from multiprocessing.queues import Queue
+from queue import Full
 from typing import Any, Optional
 
 from rayforge.shared.tasker.progress import (

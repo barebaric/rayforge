@@ -1,25 +1,28 @@
 from __future__ import annotations
-import math
-import logging
-from typing import Optional, Dict, Any
-from gettext import gettext as _
 
-from raygeo import Geometry, Rect
+import logging
+import math
+from gettext import gettext as _
+from typing import Any, Dict, Optional
+
+from raygeo import Geometry
+from raygeo.geo.types import Rect
+
 from ...core.matrix import Matrix
 from ...core.vectorization_spec import (
     TraceSpec,
     VectorizationSpec,
 )
+from .. import util
 from ..base_importer import (
     ImporterFeature,
 )
-from .. import util
-from ..structures import ParsingResult, LayerGeometry, VectorizationResult
-from ..tracing import trace_surface, VTRACER_PIXEL_LIMIT
+from ..engine import NormalizationEngine
+from ..structures import LayerGeometry, ParsingResult, VectorizationResult
+from ..tracing import VTRACER_PIXEL_LIMIT, trace_surface
 from .renderer import SVG_RENDERER
 from .svg_base import SvgImporterBase
 from .svgutil import trim_svg
-from ..engine import NormalizationEngine
 
 logger = logging.getLogger(__name__)
 

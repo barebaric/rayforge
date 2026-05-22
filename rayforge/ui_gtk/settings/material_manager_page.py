@@ -1,8 +1,9 @@
 """Material manager UI component for Rayforge."""
 
 import logging
-from typing import Optional
 from gettext import gettext as _
+from typing import Optional
+
 from ...context import get_context
 from ...core.material_library import MaterialLibrary
 from ..doceditor.material_library_list import LibraryListWidget

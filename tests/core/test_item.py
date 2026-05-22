@@ -1,11 +1,13 @@
-import pytest
 import math
-from typing import Optional, Dict
+from typing import Dict, Optional
+
+import pytest
 from blinker import Signal
-from rayforge.core.item import DocItem
-from rayforge.core.group import Group
-from rayforge.core.matrix import Matrix
+
 from rayforge.core.doc import Doc
+from rayforge.core.group import Group
+from rayforge.core.item import DocItem
+from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
 
 

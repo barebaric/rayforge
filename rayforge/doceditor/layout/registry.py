@@ -1,4 +1,5 @@
-from typing import Dict, List, Optional, Set, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Type
+
 from blinker import Signal
 
 if TYPE_CHECKING:

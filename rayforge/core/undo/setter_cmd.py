@@ -1,4 +1,5 @@
-from typing import Any, Optional, Callable, Tuple
+from typing import Any, Callable, Optional, Tuple
+
 from .command import Command
 
 

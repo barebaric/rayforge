@@ -11,7 +11,7 @@ from .serialportvar import SerialPortVar
 from .speedvar import SpeedVar
 from .textareavar import TextAreaVar
 from .urlvar import UrlVar, WebsocketUrlVar
-from .var import Var, ValidationError, get_editable_var_types
+from .var import ValidationError, Var, get_editable_var_types
 from .varset import VarSet
 
 __all__ = [

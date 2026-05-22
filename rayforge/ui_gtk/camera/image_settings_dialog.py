@@ -1,7 +1,9 @@
 import logging
-from typing import List, Optional, Tuple
 from gettext import gettext as _
-from gi.repository import Gtk, Adw
+from typing import List, Optional, Tuple
+
+from gi.repository import Adw, Gtk
+
 from ...camera.controller import CameraController
 from ..shared.adwfix import get_spinrow_int
 from ..shared.patched_dialog_window import PatchedDialogWindow

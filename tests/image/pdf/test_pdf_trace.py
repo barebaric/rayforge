@@ -1,8 +1,10 @@
-import pytest
 import io
-import cairo
 from pathlib import Path
-from rayforge.core.vectorization_spec import TraceSpec, PassthroughSpec
+
+import cairo
+import pytest
+
+from rayforge.core.vectorization_spec import PassthroughSpec, TraceSpec
 from rayforge.image.base_importer import ImporterFeature
 from rayforge.image.pdf.pdf_trace import PdfTraceImporter
 

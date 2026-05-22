@@ -1,6 +1,6 @@
 import bisect
-from typing import List, Tuple, Iterator, Optional
 from dataclasses import dataclass
+from typing import Iterator, List, Optional, Tuple
 
 from .types import SnapLine
 

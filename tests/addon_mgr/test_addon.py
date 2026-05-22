@@ -1,19 +1,20 @@
 import sys
 import tempfile
-import yaml
-import pytest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, timezone, timedelta
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
+import yaml
+
 from rayforge.addon_mgr.addon import (
     Addon,
-    AddonMetadata,
-    AddonValidationError,
     AddonAuthor,
+    AddonMetadata,
     AddonProvides,
+    AddonValidationError,
 )
-from rayforge.shared.util.versioning import get_git_tag_version, UnknownVersion
-
+from rayforge.shared.util.versioning import UnknownVersion, get_git_tag_version
 
 TEST_VERSION = "1.0.0"
 

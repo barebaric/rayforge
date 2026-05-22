@@ -1,9 +1,11 @@
 """Material library management for Rayforge."""
 
 import logging
-import yaml
 from pathlib import Path
 from typing import Dict, List, Optional
+
+import yaml
+
 from .material import Material
 
 logger = logging.getLogger(__name__)

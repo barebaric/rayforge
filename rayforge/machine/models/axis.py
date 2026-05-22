@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-from rayforge.core.ops.axis import Axis
+from raygeo.ops.axis import Axis
 
 
 class AxisType(Enum):
@@ -42,7 +42,7 @@ class AxisConfig:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "AxisConfig":
         return cls(
-            letter=Axis[data["letter"]],
+            letter=Axis.from_name(data["letter"]),
             axis_type=AxisType(data["axis_type"]),
             extents=tuple(data["extents"]),
             direction=AxisDirection(

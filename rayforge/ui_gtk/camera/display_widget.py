@@ -1,7 +1,8 @@
 import logging
-from gi.repository import Gtk, Gdk, GdkPixbuf, Graphene, Pango, PangoCairo
-from ...camera.controller import CameraController
 
+from gi.repository import Gdk, GdkPixbuf, Graphene, Gtk, Pango, PangoCairo
+
+from ...camera.controller import CameraController
 
 logger = logging.getLogger(__name__)
 

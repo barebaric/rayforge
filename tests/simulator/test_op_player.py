@@ -1,13 +1,14 @@
 import math
 
 import pytest
-from rayforge.simulator.op_player import OpPlayer
-from rayforge.core.ops import Ops
-from rayforge.core.ops.axis import Axis
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
+
+from rayforge.context import RayforgeContext
 from rayforge.core.doc import Doc
 from rayforge.machine.models.machine import Machine
-from rayforge.machine.models.rotary_module import RotaryModule, RotaryMode
-from rayforge.context import RayforgeContext
+from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
+from rayforge.simulator.op_player import OpPlayer
 
 
 def _make_machine():

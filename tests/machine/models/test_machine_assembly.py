@@ -1,10 +1,11 @@
 import math
 from pathlib import Path
 
+from raygeo.ops.axis import Axis
+
 from rayforge.context import RayforgeContext
 from rayforge.core.layer import Layer
 from rayforge.machine.assembly import LinkRole
-from rayforge.core.ops.axis import Axis
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.rotary_module import RotaryModule

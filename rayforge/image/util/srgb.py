@@ -5,9 +5,10 @@ Implements the sRGB transfer function defined in IEC 61966-2-1 using
 precomputed lookup tables for fast vectorized conversion with NumPy.
 """
 
+from typing import Tuple
+
 import cv2
 import numpy as np
-from typing import Tuple
 
 _SRGB_TO_LINEAR = np.empty(256, dtype=np.float32)
 for _i in range(256):

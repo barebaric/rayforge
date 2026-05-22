@@ -1,4 +1,5 @@
 from gettext import gettext as _
+
 from ...machine.models.machine import Machine
 from ..shared.preferences_page import TrackedPreferencesPage
 from .hook_list import HookList

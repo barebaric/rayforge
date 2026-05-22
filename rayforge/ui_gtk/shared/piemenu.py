@@ -1,9 +1,11 @@
-import math
-import cairo
 import logging
-from typing import List, Any
-from gi.repository import Gtk, Gdk
+import math
+from typing import Any, List
+
+import cairo
 from blinker import Signal
+from gi.repository import Gdk, Gtk
+
 from ..icons import get_icon_pixbuf
 from .gtk import apply_css
 

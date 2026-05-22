@@ -1,14 +1,14 @@
-import pytest
 from xml.etree import ElementTree as ET
+
+import pytest
 
 # Assuming the file structure allows this import
 from rayforge.image.svg.svgutil import (
+    MM_PER_PX,
     get_natural_size,
     trim_svg,
-    MM_PER_PX,
 )
 from rayforge.image.util import parse_length
-
 
 # --- Test Data Fixtures ---
 

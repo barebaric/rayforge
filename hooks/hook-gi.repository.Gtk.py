@@ -7,8 +7,12 @@ import os.path
 
 from PyInstaller.compat import is_win
 from PyInstaller.utils.hooks import get_hook_config
-from PyInstaller.utils.hooks.gi import GiModuleInfo, collect_glib_etc_files, collect_glib_share_files, \
-    collect_glib_translations
+from PyInstaller.utils.hooks.gi import (
+    GiModuleInfo,
+    collect_glib_etc_files,
+    collect_glib_share_files,
+    collect_glib_translations,
+)
 
 
 def hook(hook_api):

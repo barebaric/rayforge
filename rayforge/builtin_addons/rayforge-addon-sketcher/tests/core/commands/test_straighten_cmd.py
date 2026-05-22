@@ -1,5 +1,4 @@
 import pytest
-
 from sketcher.core import Sketch
 from sketcher.core.commands import StraightenBezierCommand
 from sketcher.core.entities import Bezier, Line

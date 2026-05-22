@@ -2,22 +2,23 @@ import logging
 import re
 import shutil
 import tempfile
-import yaml
 import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional
 
+import yaml
+
 from ...core.model import ModelLibrary
 from .profile import (
+    MANIFEST_FILENAME,
     DeviceProfile,
     export_machine_to_dir,
     parse_meta,
-    MANIFEST_FILENAME,
 )
 
 if TYPE_CHECKING:
-    from ...core.model_manager import ModelManager
     from ...context import RayforgeContext
+    from ...core.model_manager import ModelManager
     from ...machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)

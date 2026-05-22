@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Screenshot: App settings - General page."""
 
-import time
 import logging
-from rayforge.uiscript import app, win
+import time
+
 from utils import open_app_settings, take_screenshot
+
+from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 PAGE = "general"

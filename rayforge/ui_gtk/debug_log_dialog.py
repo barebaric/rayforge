@@ -1,7 +1,7 @@
 import logging
-from pathlib import Path
-from typing import Optional, Callable, TYPE_CHECKING
 from gettext import gettext as _
+from pathlib import Path
+from typing import TYPE_CHECKING, Callable, Optional
 
 from gi.repository import Adw, Gio, GLib, Gtk
 

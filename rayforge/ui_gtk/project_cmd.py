@@ -1,8 +1,8 @@
 import logging
 import sys
+from gettext import gettext as _
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
-from gettext import gettext as _
 
 from gi.repository import Adw, Gio, GLib, Gtk
 
@@ -12,8 +12,8 @@ from ..usage import get_usage_tracker
 from .doceditor import file_dialogs
 
 if TYPE_CHECKING:
-    from .mainwindow import MainWindow
     from ..doceditor.editor import DocEditor
+    from .mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,7 @@
 from typing import List, Optional
+
 from gi.repository import Gtk
+
 from .shortcut import Shortcut
 
 

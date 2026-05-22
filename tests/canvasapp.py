@@ -1,20 +1,23 @@
 # flake8: noqa: E402
-import gi
 import logging
 import math
 from pathlib import Path
 
+import gi
+
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, Gdk
+from typing import Dict, List, Optional
+
 import cairo
-from typing import Optional, Dict, List
+from gi.repository import Gdk, Gtk
 
 base_path = Path(__file__).parent
 logging.basicConfig(level=logging.DEBUG)
 
-from raygeo import Point
-from rayforge.ui_gtk.canvas import Canvas, CanvasElement, ShrinkWrapGroup
+from raygeo.geo.types import Point
+
 from rayforge.core.matrix import Matrix
+from rayforge.ui_gtk.canvas import Canvas, CanvasElement, ShrinkWrapGroup
 
 
 class ExampleElement(CanvasElement):

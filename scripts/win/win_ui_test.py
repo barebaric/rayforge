@@ -9,6 +9,7 @@ starts and the main window is visible.
 import logging
 import sys
 import time
+
 from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)

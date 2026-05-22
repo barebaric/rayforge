@@ -1,22 +1,23 @@
 from __future__ import annotations
+
 import logging
 import math
-from typing import TYPE_CHECKING, Optional, Dict, Any
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from .base import SketchChangeCommand
-from .items import AddItemsCommand, RemoveItemsCommand
-from ..entities import Line, Point, Arc
 from ..constraints import (
-    TangentConstraint,
     CollinearConstraint,
     EqualDistanceConstraint,
+    TangentConstraint,
 )
+from ..entities import Arc, Line, Point
 from ..types import EntityID
+from .base import SketchChangeCommand
+from .items import AddItemsCommand, RemoveItemsCommand
 
 if TYPE_CHECKING:
-    from ..sketch import Sketch
     from ..registry import EntityRegistry
+    from ..sketch import Sketch
 
 logger = logging.getLogger(__name__)
 

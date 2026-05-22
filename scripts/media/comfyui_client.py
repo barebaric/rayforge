@@ -10,7 +10,6 @@ import sys
 import urllib.request
 from pathlib import Path
 
-
 COMFYUI_URL = os.getenv("COMFYUI_URL", "http://127.0.0.1:8188")
 _default_output = (
     Path.home() / "Documents" / "projects" / "code" / "comfy" / "output"

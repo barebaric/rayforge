@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional, List
+from typing import TYPE_CHECKING, List, Optional
 
 from ..entities import Line
 from ..types import EntityID
 
 if TYPE_CHECKING:
-    from ..registry import EntityRegistry
     from ..entities import Point
+    from ..registry import EntityRegistry
 
 
 @dataclass

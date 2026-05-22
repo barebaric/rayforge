@@ -3,17 +3,17 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import (
+    MISSING,
+    asdict,
     dataclass,
     field,
-    asdict,
     fields,
-    MISSING,
     replace,
 )
-from typing import List, Dict, Optional, Any
 from gettext import gettext as _
+from typing import Any, Dict, List, Optional
 
-from ....core.varset import VarSet, Var, TextAreaVar, BoolVar
+from ....core.varset import BoolVar, TextAreaVar, Var, VarSet
 
 logger = logging.getLogger(__name__)
 

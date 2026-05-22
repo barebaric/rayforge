@@ -1,9 +1,10 @@
-import pytest
 from pathlib import Path
 
+import pytest
+
+from rayforge.context import RayforgeContext
 from rayforge.core.model import Model, ModelLibrary
 from rayforge.core.model_manager import ModelManager
-from rayforge.context import RayforgeContext
 
 
 @pytest.fixture

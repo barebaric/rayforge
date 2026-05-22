@@ -1,7 +1,9 @@
-import pytest
-import numpy as np
-import math
 import copy
+import math
+
+import numpy as np
+import pytest
+
 from rayforge.core.matrix import Matrix
 
 

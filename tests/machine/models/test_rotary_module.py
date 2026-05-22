@@ -1,12 +1,12 @@
 import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
+from raygeo.ops.axis import Axis
 
-from rayforge.core.ops.axis import Axis
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.rotary_module import (
-    RotaryModule,
     RotaryMode,
+    RotaryModule,
     RotaryType,
 )
 

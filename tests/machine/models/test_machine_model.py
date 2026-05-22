@@ -14,18 +14,19 @@ import gc
 import math
 
 import pytest
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
+from raygeo.ops.types import CommandType
 
 from rayforge import config
 from rayforge import context as context_module
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops, CommandType
-from rayforge.core.ops.axis import Axis
+from rayforge.machine.kinematic_mapping import KinematicMapping
 from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine, Origin
-from rayforge.machine.models.rotary_module import RotaryModule, RotaryMode
+from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
 from rayforge.machine.transport import TransportStatus
-from rayforge.machine.kinematic_mapping import KinematicMapping
 
 
 @pytest.fixture(autouse=True)

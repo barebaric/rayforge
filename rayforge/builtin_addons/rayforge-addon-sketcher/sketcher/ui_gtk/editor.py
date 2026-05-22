@@ -6,6 +6,7 @@ from gi.repository import Gdk, GLib, Gtk
 from rayforge.core.undo import HistoryManager
 from rayforge.ui_gtk.canvas.cursor import get_tool_cursor
 from rayforge.ui_gtk.shared.keyboard import is_primary_modifier
+
 from ..core.constraints import Constraint
 from ..core.entities import Entity, Point
 from .piemenu import SketchPieMenu

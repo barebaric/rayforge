@@ -1,6 +1,7 @@
-from typing import Optional, Callable, Dict, Any
 from gettext import gettext as _
-from .var import Var, ValidationError
+from typing import Any, Callable, Dict, Optional
+
+from .var import ValidationError, Var
 
 
 class FloatVar(Var[float]):

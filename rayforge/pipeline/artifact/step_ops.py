@@ -1,11 +1,14 @@
 from __future__ import annotations
-from typing import Dict, Any, Type, Optional, TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+
 import numpy as np
+
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
-    from ...core.ops import Ops
+    from raygeo.ops import Ops
 
 
 class StepOpsArtifactHandle(BaseArtifactHandle):
@@ -77,7 +80,7 @@ class StepOpsArtifact(BaseArtifact):
         """
         if not isinstance(handle, StepOpsArtifactHandle):
             raise TypeError("StepOpsArtifact requires a StepOpsArtifactHandle")
-        from ...core.ops import Ops
+        from raygeo.ops import Ops
 
         # Create a deep copy of the arrays to break the link to shared memory
         copied_arrays = {k: v.copy() for k, v in arrays.items()}

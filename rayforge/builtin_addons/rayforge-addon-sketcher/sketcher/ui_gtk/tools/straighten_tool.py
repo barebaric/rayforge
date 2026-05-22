@@ -1,8 +1,8 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional, Union
 
-from ...core.entities import Bezier, Entity, Point
 from ...core.commands import StraightenBezierCommand
+from ...core.entities import Bezier, Entity, Point
 from .base import SketchTool
 
 if TYPE_CHECKING:

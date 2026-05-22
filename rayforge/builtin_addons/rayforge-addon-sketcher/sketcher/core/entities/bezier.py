@@ -1,15 +1,13 @@
-from typing import Dict, Any, List, Sequence, TYPE_CHECKING, Optional, Tuple
-from raygeo import (
-    Geometry,
-    Point as GeoPoint,
-    Polygon,
-    Rect,
-)
-from raygeo.shape.line import (
-    get_line_segment_closest_point,
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
+
+from raygeo import Geometry
+from raygeo.geo.shape.line import (
     does_line_segment_intersect_rect,
+    get_line_segment_closest_point,
 )
-from raygeo.shape.rect import does_rect_contain_rect
+from raygeo.geo.shape.rect import does_rect_contain_rect
+from raygeo.geo.types import Point as GeoPoint, Polygon, Rect
+
 from ..types import EntityID
 from .entity import Entity
 

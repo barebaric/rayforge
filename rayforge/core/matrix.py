@@ -1,7 +1,19 @@
 import math
-from typing import Tuple, Any, Optional, Union, Sequence, List, cast
+from typing import (
+    Any,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+    TYPE_CHECKING,
+)
+
 import numpy as np
-from raygeo import Rect, Point
+
+if TYPE_CHECKING:
+    from raygeo.geo.types import Point, Rect
 
 
 def euler_rotation_matrix(rx: float, ry: float, rz: float) -> np.ndarray:
@@ -216,7 +228,7 @@ class Matrix:
         """
         return self.get_determinant_2x2() < 0
 
-    def get_translation(self) -> Point:
+    def get_translation(self) -> "Point":
         """
         Extracts the translation component (tx, ty) from the matrix.
         """
@@ -319,7 +331,7 @@ class Matrix:
 
     @staticmethod
     def scale(
-        sx: float, sy: float, center: Optional[Point] = None
+        sx: float, sy: float, center: Optional["Point"] = None
     ) -> "Matrix":
         """
         Creates a scaling matrix.
@@ -350,7 +362,7 @@ class Matrix:
         self,
         sx: float,
         sy: float,
-        center: Optional[Point] = None,
+        center: Optional["Point"] = None,
     ) -> "Matrix":
         """
         Applies a scale before this matrix's transformation.
@@ -363,7 +375,7 @@ class Matrix:
         self,
         sx: float,
         sy: float,
-        center: Optional[Point] = None,
+        center: Optional["Point"] = None,
     ) -> "Matrix":
         """
         Applies a scale after this matrix's transformation.
@@ -387,7 +399,9 @@ class Matrix:
         return angle_deg
 
     @staticmethod
-    def rotation(angle_deg: float, center: Optional[Point] = None) -> "Matrix":
+    def rotation(
+        angle_deg: float, center: Optional["Point"] = None
+    ) -> "Matrix":
         """
         Creates a rotation matrix.
 
@@ -416,7 +430,7 @@ class Matrix:
         return m
 
     def pre_rotate(
-        self, angle_deg: float, center: Optional[Point] = None
+        self, angle_deg: float, center: Optional["Point"] = None
     ) -> "Matrix":
         """
         Applies a rotation before this matrix's transformation.
@@ -426,7 +440,7 @@ class Matrix:
         return r @ self
 
     def post_rotate(
-        self, angle_deg: float, center: Optional[Point] = None
+        self, angle_deg: float, center: Optional["Point"] = None
     ) -> "Matrix":
         """
         Applies a rotation after this matrix's transformation.
@@ -437,7 +451,7 @@ class Matrix:
 
     @staticmethod
     def shear(
-        sh_x: float, sh_y: float, center: Optional[Point] = None
+        sh_x: float, sh_y: float, center: Optional["Point"] = None
     ) -> "Matrix":
         """
         Creates a shearing matrix.
@@ -467,7 +481,7 @@ class Matrix:
         self,
         sh_x: float,
         sh_y: float,
-        center: Optional[Point] = None,
+        center: Optional["Point"] = None,
     ) -> "Matrix":
         """
         Applies a shear before this matrix's transformation.
@@ -480,7 +494,7 @@ class Matrix:
         self,
         sh_x: float,
         sh_y: float,
-        center: Optional[Point] = None,
+        center: Optional["Point"] = None,
     ) -> "Matrix":
         """
         Applies a shear after this matrix's transformation.
@@ -491,7 +505,7 @@ class Matrix:
 
     @staticmethod
     def flip_horizontal(
-        center: Optional[Point] = None,
+        center: Optional["Point"] = None,
     ) -> "Matrix":
         """
         Creates a horizontal flip (mirror along the Y-axis) matrix.
@@ -504,7 +518,7 @@ class Matrix:
 
     @staticmethod
     def flip_vertical(
-        center: Optional[Point] = None,
+        center: Optional["Point"] = None,
     ) -> "Matrix":
         """
         Creates a vertical flip (mirror along the X-axis) matrix.
@@ -528,7 +542,7 @@ class Matrix:
         """
         return Matrix(np.linalg.inv(self.m))
 
-    def transform_point(self, point: Point) -> Point:
+    def transform_point(self, point: "Point") -> "Point":
         """
         Applies the full affine transformation to a 2D point.
 
@@ -554,7 +568,7 @@ class Matrix:
         res_vec = np.dot(self.m, vec)
         return (float(res_vec[0]), float(res_vec[1]))
 
-    def transform_rectangle(self, rect: Rect) -> Rect:
+    def transform_rectangle(self, rect: "Rect") -> "Rect":
         """
         Transforms a rectangle and computes its new axis-aligned bounding box.
 

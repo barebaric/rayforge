@@ -1,15 +1,16 @@
+from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gtk
-from gettext import gettext as _
 
+from rayforge.context import get_context
+from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
-from rayforge.context import get_context
-from ..transformers import LeadInOutTransformer
-from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.shared.unit_spin_row import UnitSpinRowHelper
+
+from ..transformers import LeadInOutTransformer
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step

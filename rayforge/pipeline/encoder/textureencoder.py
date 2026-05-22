@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-import numpy as np
 from typing import TYPE_CHECKING, Tuple
+
+import numpy as np
 
 from .base import OpsEncoder
 from .scanline_rasterizer import rasterize_scanlines
 
 if TYPE_CHECKING:
-    from ...core.ops import Ops
+    from raygeo.ops import Ops
 
 
 class TextureEncoder(OpsEncoder):

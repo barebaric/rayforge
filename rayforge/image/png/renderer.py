@@ -1,5 +1,6 @@
 import warnings
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+
 from ..base_renderer import RasterRenderer
 
 with warnings.catch_warnings():

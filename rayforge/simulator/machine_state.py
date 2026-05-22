@@ -2,18 +2,26 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Dict, Iterable, Optional
 
-from ..core.ops import Axis, Ops, State, CommandType, CommandCategory
+from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
+from raygeo.ops.types import CommandCategory, CommandType
 
 if TYPE_CHECKING:
     from ..machine.models.axis import AxisSet
 
 
-class MachineState(State):
+class MachineState:
     def __init__(
         self,
         axis_letters: Optional[Iterable[Axis]] = None,
     ):
-        super().__init__()
+        self.power: float = 0.0
+        self.air_assist: bool = False
+        self.cut_speed: Optional[int] = None
+        self.travel_speed: Optional[int] = None
+        self.active_laser_uid: Optional[str] = None
+        self.frequency: Optional[int] = None
+        self.pulse_width: Optional[float] = None
         if axis_letters is not None:
             self.axes: Dict[Axis, float] = {a: 0.0 for a in axis_letters}
         else:

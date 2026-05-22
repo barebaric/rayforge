@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
+
+import pytest
 from blinker import Signal
 
 from rayforge.machine.driver.marlin.marlin_probe import build_marlin_profile

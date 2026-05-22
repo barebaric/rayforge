@@ -1,10 +1,12 @@
-import pytest
 from pathlib import Path
 from typing import Optional
-from rayforge.image.svg.svg_base import SvgImporterBase
-from rayforge.image.structures import ParsingResult, VectorizationResult
-from rayforge.core.vectorization_spec import VectorizationSpec
 from xml.etree import ElementTree as ET
+
+import pytest
+
+from rayforge.core.vectorization_spec import VectorizationSpec
+from rayforge.image.structures import ParsingResult, VectorizationResult
+from rayforge.image.svg.svg_base import SvgImporterBase
 
 # --- Test Data ---
 

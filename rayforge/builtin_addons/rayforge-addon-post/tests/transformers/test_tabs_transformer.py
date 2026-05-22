@@ -1,14 +1,10 @@
 import math
 
-from raygeo.shape.bezier import get_bezier_point_at
-from rayforge.core.ops import (
-    Ops,
-    SectionType,
-)
-from rayforge.core.ops.enums import CommandType, CommandCategory
 from post_processors.transformers import TabOpsTransformer
 from post_processors.transformers.tabs_transformer import _ClipPoint
-
+from raygeo.geo.shape.bezier import get_bezier_point_at
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandCategory, CommandType, SectionType
 
 _P0 = (0.0, 0.0, 0.0)
 _C1 = (33.0, 10.0, 0.0)

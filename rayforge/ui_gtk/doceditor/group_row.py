@@ -1,5 +1,7 @@
 import logging
+
 from gi.repository import Gdk, Gtk, Pango
+
 from ...core.group import Group
 from ..icons import get_icon
 

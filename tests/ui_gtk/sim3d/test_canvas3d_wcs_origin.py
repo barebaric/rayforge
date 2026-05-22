@@ -1,10 +1,12 @@
-import pytest
-import numpy as np
 from unittest.mock import MagicMock, patch
-from rayforge.machine.models.machine import Origin
-from rayforge.ui_gtk.sim3d.renderer.axis_renderer_3d import AxisRenderer3D
-from rayforge.ui_gtk.sim3d.gl_utils import RenderContext
+
+import numpy as np
+import pytest
+
 from rayforge.core.color import ColorSet
+from rayforge.machine.models.machine import Origin
+from rayforge.ui_gtk.sim3d.gl_utils import RenderContext
+from rayforge.ui_gtk.sim3d.renderer.axis_renderer_3d import AxisRenderer3D
 
 
 def create_model_matrix(

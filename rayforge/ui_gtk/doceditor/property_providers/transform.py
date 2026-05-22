@@ -1,7 +1,9 @@
 import logging
-from gi.repository import Gtk, Adw
-from typing import List, TYPE_CHECKING
 from gettext import gettext as _
+from typing import TYPE_CHECKING, List
+
+from gi.repository import Adw, Gtk
+
 from ....context import get_context
 from ....core.group import Group
 from ....core.item import DocItem

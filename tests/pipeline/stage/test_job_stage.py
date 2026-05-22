@@ -1,8 +1,9 @@
-import pytest
 from unittest.mock import MagicMock
 
-from rayforge.pipeline.artifact.store import ArtifactStore
+import pytest
+
 from rayforge.pipeline.artifact import ArtifactManager
+from rayforge.pipeline.artifact.store import ArtifactStore
 from rayforge.pipeline.stage.base import PipelineStage
 from rayforge.pipeline.stage.job_stage import JobPipelineStage
 

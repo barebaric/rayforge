@@ -1,30 +1,32 @@
 from __future__ import annotations
-import logging
+
 import asyncio
+import logging
+from contextlib import contextmanager
 from typing import (
-    Optional,
     TYPE_CHECKING,
-    Generator,
-    Union,
     Any,
     Callable,
     Dict,
+    Generator,
     List,
+    Optional,
+    Union,
 )
+
 from blinker import Signal
-from contextlib import contextmanager
+from raygeo.ops import Ops
 
 from ..core.doc import Doc
 from ..core.group import Group
 from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.matrix import Matrix
-from ..core.ops import Ops
 from ..core.step import Step
 from ..core.stock import StockItem
-from ..shared.tasker.manager import CancelHandle
 from ..core.workflow import Workflow
 from ..core.workpiece import WorkPiece
+from ..shared.tasker.manager import CancelHandle
 from .artifact import (
     ArtifactManager,
     BaseArtifactHandle,
@@ -41,7 +43,6 @@ from .stage import (
     WorkPiecePipelineStage,
 )
 from .stage.job_runner import JobDescription
-
 
 if TYPE_CHECKING:
     from ..machine.models.machine import Machine

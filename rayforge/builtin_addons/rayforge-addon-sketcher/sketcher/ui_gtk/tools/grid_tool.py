@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Optional, Union, cast
 from gi.repository import Adw, Gtk
 
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_int
+
 from ...core.commands import GridCommand
 from ...core.entities import Entity, Point
 from .base import SketchTool

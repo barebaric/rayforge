@@ -1,23 +1,15 @@
-import pytest
-import math
 import io
 import json
-import numpy as np
+import math
 from contextlib import redirect_stdout
+
+import numpy as np
+import pytest
 from raygeo import Geometry
-from rayforge.core.ops import (
-    Axis,
-    Ops,
-    OpsSection,
-    CommandType,
-    CommandCategory,
-    State,
-    SectionType,
-)
-from rayforge.core.ops.container import (
-    MachineState,
-    OpsSectionRange,
-)
+from raygeo.ops import Ops, OpsSection, OpsSectionRange
+from raygeo.ops.axis import Axis
+from raygeo.ops.state import State
+from raygeo.ops.types import CommandCategory, CommandType, SectionType
 
 
 @pytest.fixture
@@ -1801,11 +1793,11 @@ def test_linearize_arcs_preserves_beziers():
 
 
 class TestIterSections:
-    """Tests for Ops.iter_sections()."""
+    """Tests for Ops.sections()."""
 
     def test_empty_ops(self):
         ops = Ops()
-        assert list(ops.iter_sections()) == []
+        assert list(ops.sections()) == []
 
     def test_no_sections(self):
         ops = Ops()
@@ -1813,7 +1805,7 @@ class TestIterSections:
         ops.line_to(10, 10)
         ops.set_power(0.5)
 
-        sections = list(ops.iter_sections())
+        sections = list(ops.sections())
         assert len(sections) == 1
         assert sections[0].section_type is None
         assert sections[0].marker_indices == []
@@ -1826,7 +1818,7 @@ class TestIterSections:
         ops.line_to(10, 10)
         ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
-        sections = list(ops.iter_sections())
+        sections = list(ops.sections())
         assert len(sections) == 1
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
         assert len(sections[0].marker_indices) == 2
@@ -1846,7 +1838,7 @@ class TestIterSections:
         ops.line_to(10, 5)
         ops.ops_section_end(SectionType.RASTER_FILL)
 
-        sections = list(ops.iter_sections())
+        sections = list(ops.sections())
         assert len(sections) == 2
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
         assert sections[1].section_type == SectionType.RASTER_FILL
@@ -1861,7 +1853,7 @@ class TestIterSections:
         ops.line_to(10, 10)
         ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
-        sections = list(ops.iter_sections())
+        sections = list(ops.sections())
         assert len(sections) == 2
         assert sections[0].section_type is None
         assert sections[0].marker_indices == []
@@ -1877,7 +1869,7 @@ class TestIterSections:
         ops.ops_section_end(SectionType.VECTOR_OUTLINE)
         ops.set_power(0.5)
 
-        sections = list(ops.iter_sections())
+        sections = list(ops.sections())
         assert len(sections) == 2
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
         assert sections[1].section_type is None
@@ -1899,7 +1891,7 @@ class TestIterSections:
         ops.line_to(5, 5)
         ops.ops_section_end(SectionType.RASTER_FILL)
 
-        sections = list(ops.iter_sections())
+        sections = list(ops.sections())
         assert len(sections) == 3
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
         assert sections[1].section_type is None
@@ -1914,7 +1906,7 @@ class TestIterSections:
         ops.line_to(10, 10)
         ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
-        sections = list(ops.iter_sections())
+        sections = list(ops.sections())
         assert len(sections) == 1
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
         assert len(sections[0].content_indices) == 2
@@ -1925,7 +1917,7 @@ class TestIterSections:
         ops.ops_section_start(SectionType.VECTOR_OUTLINE, "wp-1")
         ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
-        sections = list(ops.iter_sections())
+        sections = list(ops.sections())
         assert len(sections) == 1
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
         assert sections[0].content_indices == []
@@ -1938,7 +1930,7 @@ class TestIterSections:
         ops.ops_section_start(SectionType.RASTER_FILL, "wp-1")
         ops.ops_section_end(SectionType.RASTER_FILL)
 
-        sections = list(ops.iter_sections())
+        sections = list(ops.sections())
         assert len(sections) == 2
         assert sections[0].section_type == SectionType.VECTOR_OUTLINE
         assert sections[0].content_indices == []
@@ -1955,7 +1947,7 @@ class TestIterSections:
         ops.ops_section_end(SectionType.VECTOR_OUTLINE)
         ops.set_power(0.5)
 
-        sections = list(ops.iter_sections())
+        sections = list(ops.sections())
         assert len(sections) == 3
         assert sections[0].section_type is None
         assert len(sections[0].content_indices) == 1
@@ -1967,7 +1959,7 @@ class TestIterSections:
     def test_returns_ops_section_namedtuple(self):
         ops = Ops()
         ops.move_to(0, 0)
-        section = list(ops.iter_sections())[0]
+        section = list(ops.sections())[0]
         assert isinstance(section, OpsSection)
         assert hasattr(section, "section_type")
         assert hasattr(section, "marker_indices")
@@ -2461,7 +2453,7 @@ def test_iter_section_ranges():
     ops.ops_section_end(SectionType.VECTOR_OUTLINE)
     ops.move_to(20, 20)
 
-    ranges = list(ops.iter_section_ranges())
+    ranges = list(ops.section_ranges())
     assert len(ranges) == 3
     assert isinstance(ranges[0], OpsSectionRange)
     assert ranges[0].section_type is None
@@ -2475,7 +2467,7 @@ def test_iter_section_ranges():
 
 def test_iter_section_ranges_empty():
     ops = Ops()
-    assert list(ops.iter_section_ranges()) == []
+    assert list(ops.section_ranges()) == []
 
 
 def test_subpath_indices():
@@ -2609,7 +2601,7 @@ def test_set_state_on_moving():
     ops.line_to(10, 0)
     ops.enable_air_assist()
 
-    ms = MachineState(
+    ms = State(
         power=0.7,
         air_assist=True,
         cut_speed=600,

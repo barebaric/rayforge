@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 import logging
-from typing import List, Dict, Optional, Sequence, TYPE_CHECKING, Any, Tuple
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
+
 import cairo
-from raygeo import Rect
+from raygeo.geo.types import Rect
+
 from .item import DocItem
 from .matrix import Matrix
 from .workpiece import WorkPiece

@@ -1,18 +1,19 @@
-import warnings
-from typing import Tuple, Optional, List, Dict, Any
-from xml.etree import ElementTree as ET
 import logging
+import warnings
+from typing import Any, Dict, List, Optional, Tuple
+from xml.etree import ElementTree as ET
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
-from raygeo import Rect
+from raygeo.geo.types import Rect
+
 from ..util import parse_length, to_mm
 from .svg_fallback import (
     SVG_LOAD_AVAILABLE,
-    render_svg_to_cairo,
     cairo_surface_to_vips,
+    render_svg_to_cairo,
 )
 
 logger = logging.getLogger(__name__)

@@ -1,15 +1,18 @@
-import cairo
-from typing import Optional, TYPE_CHECKING, Tuple
 import logging
+from typing import TYPE_CHECKING, Optional, Tuple
+
+import cairo
 
 if TYPE_CHECKING:
     from ..core.source_asset_segment import SourceAssetSegment
     from ..core.workpiece import RenderContext
 
+import warnings
+
 from raygeo import Geometry
+
 from .base_renderer import Renderer, RenderSpecification
 from .geo_renderer import geometry_to_cairo
-import warnings
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)

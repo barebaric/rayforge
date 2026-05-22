@@ -1,4 +1,5 @@
 import pytest
+
 from rayforge.core.varset.floatvar import FloatVar, SliderFloatVar
 from rayforge.core.varset.var import ValidationError
 from rayforge.core.varset.varset import VarSet

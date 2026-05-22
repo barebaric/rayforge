@@ -1,18 +1,19 @@
-import pytest
 import numpy as np
+import pytest
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandType
 
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
-from rayforge.core.ops import Ops, CommandType
-from rayforge.machine.models.machine import Machine, Laser
-from rayforge.pipeline.artifact import StepOpsArtifact, JobArtifact
+from rayforge.machine.models.machine import Laser, Machine
+from rayforge.pipeline.artifact import JobArtifact, StepOpsArtifact
 from rayforge.pipeline.encoder.base import EncodedOutput
 from rayforge.pipeline.stage.job_compute import (
-    compute_job_artifact,
     _assemble_final_ops,
-    _calculate_time_estimate,
     _calculate_distance,
+    _calculate_time_estimate,
     _encode_gcode_and_opmap,
+    compute_job_artifact,
 )
 
 

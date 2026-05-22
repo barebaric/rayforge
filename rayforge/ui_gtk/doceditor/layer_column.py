@@ -1,9 +1,11 @@
 import json
 import logging
 from gettext import gettext as _
-from typing import List, Optional, Set, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, List, Optional, Set, cast
+
 from blinker import Signal
 from gi.repository import Adw, Gdk, Gio, GObject, Gtk, Pango
+
 from ...context import get_context
 from ...core.doc import Doc
 from ...core.group import Group

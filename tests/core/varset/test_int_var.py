@@ -1,4 +1,5 @@
 import pytest
+
 from rayforge.core.varset.intvar import IntVar
 from rayforge.core.varset.var import ValidationError
 from rayforge.core.varset.varset import VarSet

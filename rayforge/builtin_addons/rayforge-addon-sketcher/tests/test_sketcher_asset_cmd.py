@@ -1,9 +1,9 @@
 import pytest
+from sketcher.core import Sketch
 
 from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.asset_cmd import AssetCmd
-from sketcher.core import Sketch
 
 
 @pytest.fixture

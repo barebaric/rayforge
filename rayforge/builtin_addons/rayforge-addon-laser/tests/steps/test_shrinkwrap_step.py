@@ -1,9 +1,9 @@
 from unittest.mock import MagicMock
 
 import pytest
+from laser_essentials.steps import ShrinkWrapStep
 
 from rayforge.core.capability import CUT, SCORE, WITH_KERF
-from laser_essentials.steps import ShrinkWrapStep
 
 
 @pytest.fixture

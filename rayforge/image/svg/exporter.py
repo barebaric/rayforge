@@ -1,14 +1,13 @@
 from __future__ import annotations
+
 import math
-from typing import List
 from gettext import gettext as _
-from raygeo import Geometry
+from typing import List
+
 from raygeo import (
-    CMD_TYPE_MOVE,
-    CMD_TYPE_LINE,
-    CMD_TYPE_ARC,
-    CMD_TYPE_BEZIER,
+    Geometry,
 )
+
 from ..base_exporter import BaseExporter
 
 
@@ -82,6 +81,7 @@ class GeometrySvgExporter(BaseExporter):
 
         def transform(x: float, y: float) -> tuple:
             tx = x - min_x
+            assert max_y is not None
             ty = max_y - y
             return tx, ty
 
@@ -93,13 +93,13 @@ class GeometrySvgExporter(BaseExporter):
             x = cmd[1]
             y = cmd[2]
 
-            if cmd_type == CMD_TYPE_MOVE:
+            if cmd_type == Geometry.CMD_TYPE_MOVE:
                 tx, ty = transform(x, y)
                 path_data.append(f"M {tx:.6f} {ty:.6f}")
-            elif cmd_type == CMD_TYPE_LINE:
+            elif cmd_type == Geometry.CMD_TYPE_LINE:
                 tx, ty = transform(x, y)
                 path_data.append(f"L {tx:.6f} {ty:.6f}")
-            elif cmd_type == CMD_TYPE_ARC:
+            elif cmd_type == Geometry.CMD_TYPE_ARC:
                 i = cmd[4]
                 j = cmd[5]
                 cw = bool(cmd[6])
@@ -115,7 +115,7 @@ class GeometrySvgExporter(BaseExporter):
                     f"A {radius:.6f} {radius:.6f} 0 {large_arc} {sweep} "
                     f"{tx:.6f} {ty:.6f}"
                 )
-            elif cmd_type == CMD_TYPE_BEZIER:
+            elif cmd_type == Geometry.CMD_TYPE_BEZIER:
                 c1x = cmd[4]
                 c1y = cmd[5]
                 c2x = cmd[6]

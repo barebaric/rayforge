@@ -1,10 +1,11 @@
-import pytest
 import math
+
+import pytest
 from sketcher.core.constraints import (
     DistanceConstraint,
+    DragConstraint,
     HorizontalConstraint,
     VerticalConstraint,
-    DragConstraint,
 )
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry

@@ -1,16 +1,17 @@
 import json
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from rayforge.core.ops import Axis
-from rayforge.machine.driver.octoprint import OctoPrintDriver
-from rayforge.machine.driver.octoprint.octoprint_driver import (
-    _STATE_MAP,
-)
+import pytest
+from raygeo.ops.axis import Axis
+
 from rayforge.machine.driver.driver import (
     DeviceConnectionError,
     DeviceStatus,
     DriverMaturity,
+)
+from rayforge.machine.driver.octoprint import OctoPrintDriver
+from rayforge.machine.driver.octoprint.octoprint_driver import (
+    _STATE_MAP,
 )
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
 

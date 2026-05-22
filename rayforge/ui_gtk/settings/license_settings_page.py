@@ -1,12 +1,12 @@
 import logging
 import webbrowser
 from gettext import gettext as _
-from typing import cast, Optional
-from gi.repository import Adw, Gtk, GLib
+from typing import Optional, cast
 
-from ..shared.preferences_page import TrackedPreferencesPage
+from gi.repository import Adw, GLib, Gtk
+
 from ...context import get_context
-
+from ..shared.preferences_page import TrackedPreferencesPage
 
 logger = logging.getLogger(__name__)
 

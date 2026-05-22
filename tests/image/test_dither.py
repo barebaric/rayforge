@@ -1,11 +1,12 @@
-import numpy as np
 import cairo
+import numpy as np
+
 from rayforge.image.dither import (
-    apply_floyd_steinberg_dither,
-    apply_bayer_dither,
-    surface_to_dithered_array,
     BAYER_MATRICES,
     DitherAlgorithm,
+    apply_bayer_dither,
+    apply_floyd_steinberg_dither,
+    surface_to_dithered_array,
 )
 
 

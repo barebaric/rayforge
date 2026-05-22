@@ -1,11 +1,13 @@
 import logging
 from gettext import gettext as _
-from gi.repository import Gdk, Gtk
+
 from blinker import Signal
+from gi.repository import Gdk, Gtk
+
 from .action_registry import action_registry
 from .icons import get_icon
 from .shared.splitbutton import SplitMenuButton
-from .shared.undo_button import UndoButton, RedoButton
+from .shared.undo_button import RedoButton, UndoButton
 from .sim3d import initialized as canvas3d_initialized
 
 logger = logging.getLogger(__name__)

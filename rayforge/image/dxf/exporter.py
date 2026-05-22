@@ -1,16 +1,15 @@
 from __future__ import annotations
+
 import io
 import math
-from typing import List
 from gettext import gettext as _
+from typing import List
+
 import ezdxf
-from raygeo import Geometry
 from raygeo import (
-    CMD_TYPE_MOVE,
-    CMD_TYPE_LINE,
-    CMD_TYPE_ARC,
-    CMD_TYPE_BEZIER,
+    Geometry,
 )
+
 from ..base_exporter import BaseExporter
 
 
@@ -59,13 +58,13 @@ class GeometryDxfExporter(BaseExporter):
             x = cmd[1]
             y = cmd[2]
 
-            if cmd_type == CMD_TYPE_MOVE:
+            if cmd_type == Geometry.CMD_TYPE_MOVE:
                 flush_polyline()
-            elif cmd_type == CMD_TYPE_LINE:
+            elif cmd_type == Geometry.CMD_TYPE_LINE:
                 if not poly_points:
                     poly_points = [(last_x, last_y)]
                 poly_points.append((x, y))
-            elif cmd_type == CMD_TYPE_ARC:
+            elif cmd_type == Geometry.CMD_TYPE_ARC:
                 flush_polyline()
 
                 i = cmd[4]
@@ -96,7 +95,7 @@ class GeometryDxfExporter(BaseExporter):
                     start_angle=start_angle,
                     end_angle=end_angle,
                 )
-            elif cmd_type == CMD_TYPE_BEZIER:
+            elif cmd_type == Geometry.CMD_TYPE_BEZIER:
                 flush_polyline()
 
                 c1x = cmd[4]

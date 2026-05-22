@@ -9,7 +9,6 @@ from gi.repository import Adw, GLib, Gtk
 from ...context import get_context
 from ...license.gumroad_provider import GumroadProvider
 
-
 logger = logging.getLogger(__name__)
 
 

@@ -1,15 +1,16 @@
+from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gtk
-from gettext import gettext as _
 
 from rayforge.context import get_context
-from ..transformers import CropTransformer
+from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
-from rayforge.shared.util.glib import DebounceMixin
+
+from ..transformers import CropTransformer
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step

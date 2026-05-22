@@ -1,5 +1,6 @@
 from gettext import gettext as _
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
+
 from .intvar import IntVar, ValidationError
 
 STANDARD_BAUD_RATES: List[int] = [

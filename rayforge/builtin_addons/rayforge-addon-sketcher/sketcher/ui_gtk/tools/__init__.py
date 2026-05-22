@@ -1,7 +1,7 @@
 from .angle_constraint_tool import AngleConstraintTool
 from .arc_tool import ArcTool
 from .aspect_ratio_constraint_tool import AspectRatioConstraintTool
-from .base import SketchTool, SketcherKey
+from .base import SketcherKey, SketchTool
 from .chamfer_tool import ChamferTool
 from .circle_tool import CircleTool
 from .coincident_constraint_tool import CoincidentConstraintTool
@@ -10,8 +10,8 @@ from .delete_tool import DeleteTool
 from .diameter_constraint_tool import DiameterConstraintTool
 from .distance_constraint_tool import DistanceConstraintTool
 from .equal_constraint_tool import EqualConstraintTool
-from .fillet_tool import FilletTool
 from .fill_tool import FillTool
+from .fillet_tool import FilletTool
 from .grid_tool import GridTool
 from .horizontal_constraint_tool import HorizontalConstraintTool
 from .path_tool import PathTool
@@ -21,8 +21,8 @@ from .rectangle_tool import RectangleTool
 from .rounded_rect_tool import RoundedRectTool
 from .select_tool import SelectTool
 from .snap_mixin import SnapMixin
-from .symmetry_constraint_tool import SymmetryConstraintTool
 from .straighten_tool import StraightenTool
+from .symmetry_constraint_tool import SymmetryConstraintTool
 from .tangent_constraint_tool import TangentConstraintTool
 from .text_box_tool import TextBoxTool
 from .vertical_constraint_tool import VerticalConstraintTool

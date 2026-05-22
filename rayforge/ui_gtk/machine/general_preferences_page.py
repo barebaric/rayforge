@@ -1,5 +1,6 @@
 import logging
 from gettext import gettext as _
+
 from gi.repository import Adw, Gtk
 
 from ...machine.driver import drivers, get_driver_cls

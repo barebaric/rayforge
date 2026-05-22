@@ -1,16 +1,19 @@
 from __future__ import annotations
+
 import logging
-from typing import List, Dict, Any, TYPE_CHECKING
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, Dict, List
+
 from raygeo import Geometry
+
 from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import CallbackProgressContext
 from ...shared.tasker.proxy import ExecutionContextProxy
 from ...shared.util.profile import profile_if_enabled
 from ..artifact import (
-    create_handle_from_dict,
     WorkPieceArtifact,
+    create_handle_from_dict,
 )
 from ..artifact.store import ArtifactStore, SharedMemoryNotFoundError
 from ..transformer import OpsTransformer

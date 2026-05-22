@@ -14,16 +14,17 @@ from contextlib import contextmanager
 from pathlib import Path
 from threading import Event
 from typing import (
+    TYPE_CHECKING,
     Callable,
     Generator,
     List,
     Optional,
     Tuple,
     TypeVar,
-    TYPE_CHECKING,
 )
-from gi.repository import Adw, GLib
+
 import numpy as np
+from gi.repository import Adw, GLib
 from PIL import Image
 from PIL.PngImagePlugin import PngInfo
 

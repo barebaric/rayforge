@@ -1,8 +1,9 @@
 from typing import List, Optional
+
 from gi.repository import Gtk
+
 from ..shared.gtk import apply_css
 from .key import Key
-
 
 css = """
 .shortcut-description {

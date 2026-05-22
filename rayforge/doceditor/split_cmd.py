@@ -1,9 +1,11 @@
-import uuid
 import logging
-from typing import TYPE_CHECKING, List
+import uuid
 from abc import ABC, abstractmethod
 from gettext import gettext as _
+from typing import TYPE_CHECKING, List
+
 from raygeo import Geometry
+
 from ..core.item import DocItem
 from ..core.undo import ListItemCommand
 from ..core.workpiece import WorkPiece

@@ -43,12 +43,15 @@ Method Usage Guide
 """
 
 from __future__ import annotations
-import uuid
+
 import logging
+import uuid
 from contextlib import contextmanager
-from typing import Dict, Optional, Generator, Any, TYPE_CHECKING
 from multiprocessing import shared_memory
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional
+
 import numpy as np
+
 from ...shared.util.debug import safe_caller_stack
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle, create_handle_from_dict

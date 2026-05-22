@@ -1,15 +1,15 @@
 import logging
-from typing import TYPE_CHECKING, cast, Optional
+from typing import TYPE_CHECKING, Optional, cast
 
-from ....core.stock import StockItem
-from ....core.item import DocItem
-from ....core.workpiece import WorkPiece
 from ....core.group import Group
+from ....core.item import DocItem
+from ....core.stock import StockItem
+from ....core.workpiece import WorkPiece
 from ...canvas.element import CanvasElement
-from .workpiece import WorkPieceElement
-from .step import StepElement
 from .group import GroupElement
+from .step import StepElement
 from .stock import StockElement
+from .workpiece import WorkPieceElement
 
 if TYPE_CHECKING:
     from ....core.layer import Layer

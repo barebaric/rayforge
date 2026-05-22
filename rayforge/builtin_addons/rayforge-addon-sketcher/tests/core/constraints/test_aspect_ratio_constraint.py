@@ -1,12 +1,13 @@
-import pytest
 from unittest.mock import MagicMock
+
 import numpy as np
+import pytest
 from scipy.optimize import check_grad
 from sketcher.core import Sketch
-from sketcher.core.selection import SketchSelection
 from sketcher.core.constraints import AspectRatioConstraint
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
+from sketcher.core.selection import SketchSelection
 
 
 @pytest.fixture

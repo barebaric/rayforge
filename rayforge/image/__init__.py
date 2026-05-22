@@ -2,26 +2,21 @@ import inspect
 import logging
 import mimetypes
 from pathlib import Path
-from typing import Optional, Type, Union, List
-from ..core.vectorization_spec import VectorizationSpec, PassthroughSpec
-from ..core.workpiece import WorkPiece
+from typing import List, Optional, Type, Union
+
 from ..core.item import DocItem
 from ..core.source_asset import SourceAsset
+from ..core.vectorization_spec import PassthroughSpec, VectorizationSpec
+from ..core.workpiece import WorkPiece
+from .base_exporter import BaseExporter
 from .base_importer import (
     Importer,
     ImporterFeature,
 )
-from .base_exporter import BaseExporter
-from .structures import (
-    ImportPayload,
-    ImportResult,
-    ParsingResult,
-    ImportManifest,
-    LayerInfo,
-)
 from .base_renderer import Renderer
 from .bmp.importer import BmpImporter
 from .bmp.renderer import BMP_RENDERER
+from .dxf.exporter import GeometryDxfExporter
 from .dxf.importer import DxfImporter
 from .dxf.renderer import DXF_RENDERER
 from .jpg.importer import JpgImporter
@@ -33,17 +28,23 @@ from .pdf.renderer import PDF_RENDERER
 from .png.importer import PngImporter
 from .png.renderer import PNG_RENDERER
 from .procedural.renderer import PROCEDURAL_RENDERER
-from .ruida.importer import RuidaImporter
-from .ruida.renderer import RUIDA_RENDERER
-from .svg.importer import SvgImporter
-from .svg.renderer import SVG_RENDERER
-from .svg.exporter import GeometrySvgExporter
-from .dxf.exporter import GeometryDxfExporter
 from .registry import (
     exporter_registry,
     importer_registry,
     renderer_registry,
 )
+from .ruida.importer import RuidaImporter
+from .ruida.renderer import RUIDA_RENDERER
+from .structures import (
+    ImportManifest,
+    ImportPayload,
+    ImportResult,
+    LayerInfo,
+    ParsingResult,
+)
+from .svg.exporter import GeometrySvgExporter
+from .svg.importer import SvgImporter
+from .svg.renderer import SVG_RENDERER
 
 logger = logging.getLogger(__name__)
 

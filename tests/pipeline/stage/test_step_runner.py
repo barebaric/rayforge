@@ -1,14 +1,16 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+from raygeo.ops import Ops
+from raygeo.ops.types import CommandType
 
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
-from rayforge.core.ops import Ops, CommandType
 from rayforge.core.workpiece import WorkPiece
-from rayforge.machine.models.machine import Machine, Laser
+from rayforge.machine.models.machine import Laser, Machine
 from rayforge.pipeline.artifact import (
-    WorkPieceArtifact,
     StepOpsArtifact,
+    WorkPieceArtifact,
     create_handle_from_dict,
 )
 from rayforge.pipeline.coord import CoordinateSystem

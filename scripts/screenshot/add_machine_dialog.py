@@ -5,15 +5,17 @@ Screenshot: Add Machine dialog.
 Usage: pixi run screenshot app-settings:machines:add
 """
 
-import time
 import logging
-from rayforge.uiscript import app, win
+import time
+
 from utils import (
-    wait_for_settled,
-    take_screenshot,
     run_on_main_thread,
     set_window_size,
+    take_screenshot,
+    wait_for_settled,
 )
+
+from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 

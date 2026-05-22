@@ -1,4 +1,5 @@
-from rayforge.core.ops import Ops
+from raygeo.ops import Ops
+
 from rayforge.machine.models.zone import (
     Zone,
     ZoneShape,

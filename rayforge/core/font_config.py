@@ -1,5 +1,6 @@
-from typing import Dict, Any, Optional, Tuple
 from dataclasses import dataclass, field
+from typing import Any, Dict, Optional, Tuple
+
 import cairo
 from gi.repository import Pango, PangoCairo
 

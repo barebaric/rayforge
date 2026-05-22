@@ -9,7 +9,8 @@ and progress updates that are throttled to prevent UI flooding.
 
 import logging
 import threading
-from typing import Any, Optional, Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Optional
+
 from .progress import ThrottledProgressContext
 
 if TYPE_CHECKING:

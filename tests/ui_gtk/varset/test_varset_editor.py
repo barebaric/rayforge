@@ -1,8 +1,9 @@
 # flake8: noqa: E402
 import os
 import sys
-import pytest
 from unittest.mock import Mock
+
+import pytest
 
 if sys.platform.startswith("linux"):
     os.environ.setdefault("PYOPENGL_PLATFORM", "egl")
@@ -16,14 +17,15 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gtk, GLib
 import time
 
+from gi.repository import Adw, GLib, Gtk
+
 from rayforge.core.undo import HistoryManager
-from rayforge.core.varset import VarSet, IntVar, FloatVar
+from rayforge.core.varset import FloatVar, IntVar, VarSet
 from rayforge.ui_gtk.varset.varset_editor import (
-    VarSetEditorWidget,
     VarDefinitionRowWidget,
+    VarSetEditorWidget,
 )
 
 

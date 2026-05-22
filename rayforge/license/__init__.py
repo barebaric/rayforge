@@ -1,3 +1,5 @@
+from .gumroad_provider import GumroadProvider
+from .patreon_provider import PatreonProvider
 from .provider import (
     LicenseProvider,
     LicenseResult,
@@ -5,8 +7,6 @@ from .provider import (
     LicenseType,
 )
 from .validator import LicenseValidator
-from .gumroad_provider import GumroadProvider
-from .patreon_provider import PatreonProvider
 
 __all__ = [
     "LicenseProvider",

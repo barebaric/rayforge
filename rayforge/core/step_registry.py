@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Set, Type, Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Set, Type
 
 if TYPE_CHECKING:
     from .step import Step

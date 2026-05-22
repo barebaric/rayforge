@@ -1,16 +1,20 @@
 # constraints/equal_distance.py
 
 from __future__ import annotations
+
 import math
-from typing import Optional, Dict, Any, List, Callable, TYPE_CHECKING
 from gettext import gettext as _
-from raygeo import Point
-from ..entities import Line, Arc, Circle
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+
+from raygeo.geo.types import Point
+
+from ..entities import Arc, Circle, Line
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
     import cairo
+
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection

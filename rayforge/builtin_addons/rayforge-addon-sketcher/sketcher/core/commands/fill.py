@@ -1,12 +1,15 @@
 from __future__ import annotations
+
 import logging
 import uuid
-from typing import TYPE_CHECKING, List, Tuple, Optional
 from gettext import gettext as _
-from rayforge.image.structures import FillStyle
+from typing import TYPE_CHECKING, List, Optional, Tuple
+
 from rayforge.core.color import ColorRGBA
+from rayforge.image.structures import FillStyle
+
 from ..entities.text_box import TextBoxEntity
-from ..sketch import Fill, DEFAULT_FILL_COLOR
+from ..sketch import DEFAULT_FILL_COLOR, Fill
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:

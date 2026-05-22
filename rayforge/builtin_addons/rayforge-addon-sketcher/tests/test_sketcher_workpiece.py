@@ -1,12 +1,14 @@
-import pytest
 from pathlib import Path
+
+import pytest
 from raygeo import Geometry
+from sketcher.core import Sketch
+
 from rayforge.core.doc import Doc
 from rayforge.core.matrix import Matrix
-from rayforge.core.workpiece import WorkPiece
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
-from sketcher.core import Sketch
+from rayforge.core.workpiece import WorkPiece
 
 
 @pytest.fixture
@@ -18,8 +20,8 @@ def doc():
 @pytest.fixture
 def doc_with_workpiece(doc):
     """Provides a doc with a workpiece."""
-    from rayforge.image.svg.renderer import SVG_RENDERER
     from rayforge.core.source_asset import SourceAsset
+    from rayforge.image.svg.renderer import SVG_RENDERER
 
     source = SourceAsset(
         source_file=Path("test.svg"),

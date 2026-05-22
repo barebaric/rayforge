@@ -1,26 +1,28 @@
-import pytest
-import cairo
 import struct
 from pathlib import Path
 from typing import cast
 from unittest.mock import Mock
+
+import cairo
+import pytest
 from raygeo import Geometry
+
 from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
-from rayforge.core.vectorization_spec import TraceSpec, PassthroughSpec
+from rayforge.core.vectorization_spec import PassthroughSpec, TraceSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image import import_file
+from rayforge.image.base_importer import ImporterFeature
 from rayforge.image.bmp.importer import BmpImporter
-from rayforge.image.bmp.renderer import BMP_RENDERER
 from rayforge.image.bmp.parser import (
+    _get_row_offset,
+    _validate_format,
     parse_bmp,
     parse_dib_header,
-    _validate_format,
-    _get_row_offset,
 )
+from rayforge.image.bmp.renderer import BMP_RENDERER
 from rayforge.image.structures import ImportPayload
-from rayforge.image.base_importer import ImporterFeature
 
 TEST_DATA_DIR = Path(__file__).parent
 
