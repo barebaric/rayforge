@@ -369,7 +369,12 @@ class MachineCmd:
             key=f"macro-{macro_uid}",
         )
 
-    def set_power(self, head: "Laser", percent: float):
+    def set_power(
+        self,
+        head: "Laser",
+        percent: float,
+        machine: Optional["Machine"] = None,
+    ):
         """
         Adds a task to set the laser power to a specific percentage.
 
@@ -377,14 +382,20 @@ class MachineCmd:
             head: The laser head to control
             percent: Power percentage (0-1.0). 0 disables power.
         """
-        config = get_context().config
-        machine = config.machine
+        if machine is None:
+            config = get_context().config
+            machine = config.machine
         if machine:
             self._editor.task_manager.add_coroutine(
                 lambda ctx: machine.set_power(head, percent)
             )
 
-    def set_focus_power(self, head: "Laser", percent: float):
+    def set_focus_power(
+        self,
+        head: "Laser",
+        percent: float,
+        machine: Optional["Machine"] = None,
+    ):
         """
         Adds a task to set the laser power for focus mode.
 
@@ -392,8 +403,9 @@ class MachineCmd:
             head: The laser head to control
             percent: Power percentage (0-1.0). 0 disables power.
         """
-        config = get_context().config
-        machine = config.machine
+        if machine is None:
+            config = get_context().config
+            machine = config.machine
         if machine:
             self._editor.task_manager.add_coroutine(
                 lambda ctx: machine.set_focus_power(head, percent)

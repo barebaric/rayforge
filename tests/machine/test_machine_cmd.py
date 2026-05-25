@@ -258,3 +258,37 @@ class TestMachineCmdJog:
         # --- Assert ---
         # Verify call arguments to Machine.jog
         jog_mock.assert_called_once_with(deltas, 1500)
+
+
+class TestMachineCmdLaserPower:
+    """Test suite for manual laser power commands."""
+
+    @pytest.mark.asyncio
+    async def test_set_focus_power_uses_explicit_machine(
+        self, machine_cmd, machine, mocker, task_mgr
+    ):
+        head = machine.get_default_head()
+        set_focus_power_mock = mocker.patch.object(
+            machine, "set_focus_power", new_callable=mocker.AsyncMock
+        )
+
+        machine_cmd.set_focus_power(head, 0.25, machine)
+
+        await wait_for_tasks_to_finish(task_mgr)
+
+        set_focus_power_mock.assert_called_once_with(head, 0.25)
+
+    @pytest.mark.asyncio
+    async def test_set_power_uses_explicit_machine(
+        self, machine_cmd, machine, mocker, task_mgr
+    ):
+        head = machine.get_default_head()
+        set_power_mock = mocker.patch.object(
+            machine, "set_power", new_callable=mocker.AsyncMock
+        )
+
+        machine_cmd.set_power(head, 0.5, machine)
+
+        await wait_for_tasks_to_finish(task_mgr)
+
+        set_power_mock.assert_called_once_with(head, 0.5)
