@@ -663,10 +663,11 @@ class GrblSerialDriver(Driver):
                 return True
             logger.error("Recovery failed: buffer still full.")
             return False
-        logger.warning(
-            "Timeout waiting for buffer space (machine not IDLE). Retrying."
+        logger.info(
+            "Timeout waiting for buffer space (machine not IDLE). "
+            "This is normal during slow moves. Retrying."
         )
-        return False
+        return True
 
     async def _send_gcode_line(
         self,
@@ -739,7 +740,7 @@ class GrblSerialDriver(Driver):
         if not transport:
             raise ConnectionError("Transport not initialized")
         job_completed_successfully = False
-        deadlock_timeout = 10.0 if not self._poll_status_while_running else 2.0
+        deadlock_timeout = 30.0 if not self._poll_status_while_running else 5.0
         sent_count = 0
         try:
             for line_idx, line in enumerate(gcode_lines):
