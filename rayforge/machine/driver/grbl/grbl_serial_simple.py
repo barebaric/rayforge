@@ -59,6 +59,8 @@ from .grbl_util import (
 )
 
 if TYPE_CHECKING:
+    from raygeo.ops import Ops
+
     from ....core.doc import Doc
     from ...device.profile import DeviceProfile
     from ...models.laser import Laser
@@ -170,6 +172,7 @@ class GrblSerialSimpleDriver(Driver):
 
     @classmethod
     def create_encoder(cls, machine: "Machine") -> OpsEncoder:
+        assert machine.dialect is not None
         return GcodeEncoder(machine.dialect)
 
     @classmethod
@@ -190,17 +193,25 @@ class GrblSerialSimpleDriver(Driver):
         self._transport = SerialTransport(str(port), int(baudrate))
         self._transport.received.connect(self._on_serial_data)
 
-    def cleanup(self) -> None:
+    async def cleanup(self) -> None:
         self.keep_running = False
         self._is_cancelled = False
         self._job_running = False
+        if self._connection_task and not self._connection_task.done():
+            self._connection_task.cancel()
+            try:
+                await self._connection_task
+            except asyncio.CancelledError:
+                pass
+        if self._poll_task and not self._poll_task.done():
+            self._poll_task.cancel()
+        self._connection_task = None
+        self._poll_task = None
         if self._transport:
             self._transport.received.disconnect(self._on_serial_data)
             if self._transport.is_connected:
-                asyncio.get_event_loop().run_until_complete(
-                    self._transport.disconnect()
-                )
-        super().cleanup()
+                await self._transport.disconnect()
+        await super().cleanup()
 
     def _log_extra(self, category: str) -> Dict[str, Optional[str]]:
         return {
@@ -383,8 +394,9 @@ class GrblSerialSimpleDriver(Driver):
             logger.warning(
                 line, extra=self._log_extra("MACHINE_EVENT")
             )
+            alarm_code = line.split(":")[1].strip()
             self.state.error = alarm_code_to_device_error(
-                line, self.state.error
+                alarm_code
             )
             self.state.status = DeviceStatus.ALARM
             self.state_changed.send(self, state=self.state)
@@ -411,30 +423,22 @@ class GrblSerialSimpleDriver(Driver):
     def _handle_status_report(self, report: str) -> None:
         """Process a GRBL status report like <Idle|MPos:0,0,0>."""
         self._handshake_received.set()
-        parsed = parse_state(report)
-        if parsed is None:
-            return
+        state = parse_state(
+            report, self.state, lambda message: logger.info(message)
+        )
 
-        status, fields = parsed
-        self._raw_grbl_status = status
+        self._raw_grbl_status = state.status
 
-        if self._job_running and status == DeviceStatus.IDLE:
-            status = DeviceStatus.RUN
+        if self._job_running and state.status == DeviceStatus.IDLE:
+            state.status = DeviceStatus.RUN
 
-        self.state.status = status
-        if "MPos" in fields or "WPos" in fields:
-            pos_str = fields.get("MPos", fields.get("WPos", ""))
-            parts = pos_str.split(",")
-            if len(parts) >= 2:
-                try:
-                    self.state.pos_x = float(parts[0])
-                    self.state.pos_y = float(parts[1])
-                except ValueError:
-                    pass
+        self.state.status = state.status
+        if state.error is not None:
+            self.state.error = state.error
 
         self.state_changed.send(self, state=self.state)
 
-    async def _start_job(
+    def _start_job(
         self,
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
@@ -519,6 +523,7 @@ class GrblSerialSimpleDriver(Driver):
         self,
         encoded: EncodedOutput,
         doc: "Doc",
+        ops: "Ops",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
