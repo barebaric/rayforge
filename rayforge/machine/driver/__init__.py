@@ -3,7 +3,7 @@ from typing import Type, cast
 
 from .driver import DRIVER_MATURITY_LABELS, Driver, DriverMaturity
 from .dummy import NoDeviceDriver
-from .grbl import GrblNetworkDriver, GrblSerialDriver, GrblTelnetDriver
+from .grbl import GrblNetworkDriver, GrblSerialDriver, GrblSerialSimpleDriver, GrblTelnetDriver
 from .marlin import MarlinSerialDriver
 from .octoprint import OctoPrintDriver
 from .ruida import RuidaDriver
@@ -39,6 +39,7 @@ __all__ = [
     "NoDeviceDriver",
     "GrblNetworkDriver",
     "GrblSerialDriver",
+    "GrblSerialSimpleDriver",
     "GrblTelnetDriver",
     "MarlinSerialDriver",
     "OctoPrintDriver",
