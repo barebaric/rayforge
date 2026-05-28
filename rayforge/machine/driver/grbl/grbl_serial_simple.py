@@ -15,12 +15,13 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
+    Awaitable,
     Callable,
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
-    Awaitable,
 )
 
 from ....context import RayforgeContext
@@ -37,7 +38,6 @@ from ...transport.serial import SerialPortPermissionError
 from ..driver import (
     Axis,
     DeviceConnectionError,
-    DeviceError,
     DeviceStatus,
     Driver,
     DriverMaturity,
@@ -48,7 +48,6 @@ from ..driver import (
 from .grbl_probe import probe_grbl_device
 from .grbl_util import (
     alarm_code_to_device_error,
-    error_code_to_device_error,
     gcode_to_p_number,
     get_grbl_setting_varsets,
     grbl_setting_re,
@@ -355,7 +354,11 @@ class GrblSerialSimpleDriver(Driver):
             raw_line = bytes(self._line_buffer[:idx])
             del self._line_buffer[:idx]
 
-            for line in raw_line.decode("utf-8", errors="replace").strip().splitlines():
+            for line in (
+                raw_line.decode("utf-8", errors="replace")
+                .strip()
+                .splitlines()
+            ):
                 if not line:
                     continue
                 self._handle_response_line(line)
@@ -462,7 +465,10 @@ class GrblSerialSimpleDriver(Driver):
         sent_count = 0
         try:
             for line_idx, line in enumerate(gcode_lines):
-                if self._is_cancelled or self.state.status == DeviceStatus.ALARM:
+                if (
+                    self._is_cancelled
+                    or self.state.status == DeviceStatus.ALARM
+                ):
                     logger.info("Job cancelled or alarm. Stopping.")
                     break
 
