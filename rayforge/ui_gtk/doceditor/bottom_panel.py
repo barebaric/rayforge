@@ -353,6 +353,19 @@ class BottomPanel(Gtk.Box):
         )
         position_button_box.append(self.move_ur_btn)
 
+        self.move_origin_btn = Gtk.Button(
+            child=get_icon("goto-origin-symbolic")
+        )
+        self.move_origin_btn.add_css_class("flat")
+        self.move_origin_btn.set_size_request(40, -1)
+        self.move_origin_btn.connect(
+            "clicked", self._on_move_to_wcs_zero
+        )
+        self.move_origin_btn.set_tooltip_text(
+            _("Move to Origin of Active WCS")
+        )
+        position_button_box.append(self.move_origin_btn)
+
         self.zero_row = Adw.ActionRow(title=_("Zero Axes"))
         self.wcs_group.add(self.zero_row)
 
@@ -532,6 +545,7 @@ class BottomPanel(Gtk.Box):
         self.move_ll_btn.set_sensitive(has_bounds and is_active)
         self.move_center_btn.set_sensitive(has_bounds and is_active)
         self.move_ur_btn.set_sensitive(has_bounds and is_active)
+        self.move_origin_btn.set_sensitive(is_active)
 
     def _on_move_to_position(self, button, position: str):
         if not self.machine or not self.machine_cmd:
@@ -564,6 +578,11 @@ class BottomPanel(Gtk.Box):
         self.machine_cmd.move_to(
             self.machine, machine_x - x_off, machine_y - y_off
         )
+
+    def _on_move_to_wcs_zero(self, button):
+        if not self.machine or not self.machine_cmd:
+            return
+        self.machine_cmd.move_to(self.machine, 0.0, 0.0)
 
     def _on_click_to_zero_toggled(self, button):
         self.set_click_to_zero_mode(not self._click_to_zero_mode)
