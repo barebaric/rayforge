@@ -627,6 +627,13 @@ class LaserPreferencesPage(DebounceMixin, TrackedPreferencesPage):
             self.laser_list_editor.list_box, initial_row
         )
 
+        self.connect("destroy", self._on_destroy)
+
+    def _on_destroy(self, *args):
+        self.machine.changed.disconnect(
+            self.laser_list_editor._on_machine_changed
+        )
+
     def on_laserhead_selected(self, listbox, row):
         """Update the configuration panel when a Laser is selected."""
         has_selection = row is not None

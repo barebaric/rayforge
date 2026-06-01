@@ -1233,6 +1233,7 @@ class WorkSurface(WorldSurface):
             self._sync_camera_elements()
             self._sync_nogo_zone_elements()
             self._on_wcs_updated(machine)
+            self._update_pipeline_view_context()
 
     def reset_view(self):
         """
