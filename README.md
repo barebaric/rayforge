@@ -114,7 +114,7 @@ For installation instructions [refer to our homepage](https://rayforge.org/docs/
 
 For detailed information about developing for Rayforge, including setup instructions,
 testing, and contribution guidelines, please see the
-[Developer Documentation](https://rayforge.org/docs/latest/developer/getting-started/).
+[Developer Documentation](https://rayforge.org/docs/developer/getting-started).
 
 ## License
 
