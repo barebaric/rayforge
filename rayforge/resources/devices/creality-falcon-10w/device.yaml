@@ -1,0 +1,28 @@
+api_version: 1
+device:
+  name: Creality Falcon 10W
+  description: 10W diode laser engraver with 400x415mm work area
+machine:
+  driver: GrblSerialDriver
+  driver_args:
+    baudrate: '115200'
+    poll_status_while_running: false
+  gcode_precision: 3
+  supports_arcs: true
+  supports_curves: false
+  axis_extents:
+  - 400.0
+  - 415.0
+  origin: bottom_left
+  max_travel_speed: 10000
+  max_cut_speed: 10000
+  home_on_start: true
+  acceleration: 500
+  single_axis_homing_enabled: true
+  rotary_enabled_default: false
+  heads:
+  - max_power: 1000
+    frame_power_percent: 0.1
+    spot_size_mm:
+    - 0.1
+    - 0.1
