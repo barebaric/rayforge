@@ -200,7 +200,6 @@ class JogWidget(Gtk.Widget):
         self, machine: Optional[Machine], machine_cmd: Optional[MachineCmd]
     ):
         """Set the machine this widget controls."""
-        # Disconnect from previous machine if any
         if self.machine:
             self.machine.state_changed.disconnect(
                 self._on_machine_state_changed
@@ -208,17 +207,22 @@ class JogWidget(Gtk.Widget):
             self.machine.connection_status_changed.disconnect(
                 self._on_connection_status_changed
             )
+            self.machine.changed.disconnect(self._on_machine_changed)
 
         self.machine = machine
         self.machine_cmd = machine_cmd
 
-        # Connect to state changes
         if self.machine:
             self.machine.state_changed.connect(self._on_machine_state_changed)
             self.machine.connection_status_changed.connect(
                 self._on_connection_status_changed
             )
+            self.machine.changed.connect(self._on_machine_changed)
 
+        self._update_button_sensitivity()
+        self._update_limit_status()
+
+    def _on_machine_changed(self, sender, **kwargs):
         self._update_button_sensitivity()
         self._update_limit_status()
 

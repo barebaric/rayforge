@@ -396,8 +396,7 @@ class HardwarePage(TrackedPreferencesPage):
             y_max = get_spinrow_float(self.soft_y_max_row)
             self.machine.set_soft_limits(x_min, y_min, x_max, y_max)
         else:
-            self.machine._soft_limits = None
-            self.machine.changed.send(self.machine)
+            self.machine.clear_soft_limits()
 
     def on_soft_limits_changed(self, _spinrow, _param):
         if not self.soft_limits_enabled_row.get_active():
