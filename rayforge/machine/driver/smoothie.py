@@ -31,6 +31,8 @@ from .driver import (
 from .grbl.grbl_util import parse_state
 
 if TYPE_CHECKING:
+    from raygeo.ops import Ops
+
     from ...core.doc import Doc
     from ..models.laser import Laser
     from ..models.machine import Machine
@@ -213,7 +215,7 @@ class SmoothieDriver(Driver):
         self,
         encoded: EncodedOutput,
         doc: "Doc",
-        ops,
+        ops: "Ops",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
