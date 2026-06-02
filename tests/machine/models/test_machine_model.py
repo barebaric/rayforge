@@ -769,3 +769,327 @@ class TestRotaryAxisGcodeOutput:
         expected_deg = (10.0 / circumference) * 360.0
         formatted_deg = f"{expected_deg:.3f}".rstrip("0").rstrip(".")
         assert formatted_deg in gcode
+
+
+class TestSetSupportsArcs:
+    """Tests for the set_supports_arcs setter."""
+
+    def test_default_is_true(self, lite_context):
+        machine = Machine(lite_context)
+        assert machine.supports_arcs is True
+
+    def test_set_supports_arcs(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_supports_arcs(False)
+        assert machine.supports_arcs is False
+        machine.set_supports_arcs(True)
+        assert machine.supports_arcs is True
+
+    def test_signal_fired_on_change(self, lite_context):
+        machine = Machine(lite_context)
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_supports_arcs(False)
+        assert len(signals) == 1
+
+    def test_no_signal_on_same_value(self, lite_context):
+        machine = Machine(lite_context)
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_supports_arcs(True)
+        assert len(signals) == 0
+
+    def test_serialization_round_trip(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_supports_arcs(False)
+        data = machine.to_dict()
+        restored = Machine.from_dict(data, context=lite_context)
+        assert restored.supports_arcs is False
+
+
+class TestClearSoftLimits:
+    """Tests for the clear_soft_limits method."""
+
+    def test_clears_soft_limits(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_axis_extents(500, 500)
+        machine.set_soft_limits(10, 20, 300, 400)
+        assert machine.soft_limits is not None
+        machine.clear_soft_limits()
+        assert machine.soft_limits is None
+
+    def test_signal_fired_when_limits_exist(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_axis_extents(500, 500)
+        machine.set_soft_limits(10, 20, 300, 400)
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.clear_soft_limits()
+        assert len(signals) == 1
+
+    def test_no_signal_when_already_none(self, lite_context):
+        machine = Machine(lite_context)
+        assert machine.soft_limits is None
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.clear_soft_limits()
+        assert len(signals) == 0
+
+
+class TestSetterEqualityGuards:
+    """Tests for equality guards on setters that previously lacked them."""
+
+    def test_set_home_on_start_no_signal_on_same(self, lite_context):
+        machine = Machine(lite_context)
+        machine.home_on_start = True
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_home_on_start(True)
+        assert len(signals) == 0
+
+    def test_set_home_on_start_signal_on_change(self, lite_context):
+        machine = Machine(lite_context)
+        machine.home_on_start = True
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_home_on_start(False)
+        assert len(signals) == 1
+
+    def test_set_max_travel_speed_no_signal_on_same(self, lite_context):
+        machine = Machine(lite_context)
+        machine.max_travel_speed = 5000
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_max_travel_speed(5000)
+        assert len(signals) == 0
+
+    def test_set_max_travel_speed_signal_on_change(self, lite_context):
+        machine = Machine(lite_context)
+        machine.max_travel_speed = 5000
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_max_travel_speed(6000)
+        assert len(signals) == 1
+
+    def test_set_max_cut_speed_no_signal_on_same(self, lite_context):
+        machine = Machine(lite_context)
+        machine.max_cut_speed = 3000
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_max_cut_speed(3000)
+        assert len(signals) == 0
+
+    def test_set_max_cut_speed_signal_on_change(self, lite_context):
+        machine = Machine(lite_context)
+        machine.max_cut_speed = 3000
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_max_cut_speed(4000)
+        assert len(signals) == 1
+
+    def test_set_acceleration_no_signal_on_same(self, lite_context):
+        machine = Machine(lite_context)
+        machine.acceleration = 1000
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_acceleration(1000)
+        assert len(signals) == 0
+
+    def test_set_acceleration_signal_on_change(self, lite_context):
+        machine = Machine(lite_context)
+        machine.acceleration = 1000
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_acceleration(2000)
+        assert len(signals) == 1
+
+    def test_set_origin_no_signal_on_same(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        assert len(signals) == 0
+
+    def test_set_origin_signal_on_change(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_origin(Origin.TOP_LEFT)
+        assert len(signals) == 1
+
+    def test_set_soft_limits_enabled_no_signal_on_same(
+        self, lite_context
+    ):
+        machine = Machine(lite_context)
+        machine.soft_limits_enabled = False
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_soft_limits_enabled(False)
+        assert len(signals) == 0
+
+    def test_set_soft_limits_enabled_signal_on_change(
+        self, lite_context
+    ):
+        machine = Machine(lite_context)
+        machine.soft_limits_enabled = False
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_soft_limits_enabled(True)
+        assert len(signals) == 1
+
+
+class TestHydratedDialectCache:
+    """Tests for _hydrated_dialect cache invalidation."""
+
+    def test_set_dialect_uid_clears_cache(self, lite_context):
+        machine = Machine(lite_context)
+        machine.hydrate()
+        assert machine._hydrated_dialect is not None
+        machine.set_dialect_uid("smoothieware")
+        assert machine._hydrated_dialect is None
+
+    def test_set_dialect_uid_no_clear_on_same(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_dialect_uid("grbl")
+        machine.hydrate()
+        assert machine._hydrated_dialect is not None
+        machine.set_dialect_uid("grbl")
+        assert machine._hydrated_dialect is not None
+
+    def test_dialect_returns_fresh_after_uid_change(self, lite_context):
+        from rayforge.machine.models.dialect import (
+            GRBL_DIALECT,
+            SMOOTHIEWARE_DIALECT,
+        )
+
+        machine = Machine(lite_context)
+        assert machine.dialect == GRBL_DIALECT
+        machine.hydrate()
+        assert machine._hydrated_dialect == GRBL_DIALECT
+        machine.set_dialect_uid("smoothieware")
+        assert machine.dialect == SMOOTHIEWARE_DIALECT
+
+
+class TestSetDriverEmitsChanged:
+    """Tests for set_driver/set_driver_args emitting changed."""
+
+    def test_set_driver_emits_changed_signal(self, lite_context):
+        machine = Machine(lite_context)
+        lite_context.machine_mgr.add_machine(machine)
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        from rayforge.machine.driver.dummy import NoDeviceDriver
+
+        class TestDriver(NoDeviceDriver):
+            pass
+
+        machine.set_driver(TestDriver, {"port": "/dev/null"})
+        assert len(signals) >= 1
+
+    def test_set_driver_args_emits_changed_signal(
+        self, lite_context
+    ):
+        machine = Machine(lite_context)
+        lite_context.machine_mgr.add_machine(machine)
+        from rayforge.machine.driver.dummy import NoDeviceDriver
+
+        class TestDriver2(NoDeviceDriver):
+            pass
+
+        machine.set_driver(TestDriver2, {"port": "/dev/old"})
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_driver_args({"port": "/dev/new"})
+        assert len(signals) >= 1
+
+    def test_set_driver_no_signal_on_same(self, lite_context):
+        machine = Machine(lite_context)
+        lite_context.machine_mgr.add_machine(machine)
+        from rayforge.machine.driver.dummy import NoDeviceDriver
+
+        class TestDriver3(NoDeviceDriver):
+            pass
+
+        machine.set_driver(TestDriver3, {"port": "/dev/null"})
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_driver(TestDriver3, {"port": "/dev/null"})
+        assert len(signals) == 0
