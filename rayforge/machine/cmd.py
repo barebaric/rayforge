@@ -118,17 +118,15 @@ class MachineCmd:
                 await machine.driver.run(
                     encoded,
                     self._editor.doc,
+                    ops,
                     on_command_done=self._current_monitor.update_progress,
-                    ops=ops,
-                    machine=machine,
                 )
             else:
                 await machine.driver.run(
                     encoded,
                     self._editor.doc,
+                    ops,
                     on_command_done=None,
-                    ops=ops,
-                    machine=machine,
                 )
                 if self._current_monitor:
                     self._current_monitor.mark_as_complete()

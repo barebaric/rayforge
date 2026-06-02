@@ -901,25 +901,21 @@ class GrblSerialDriver(Driver):
         self,
         encoded: EncodedOutput,
         doc: "Doc",
+        ops: "Ops",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
-        *,
-        ops: "Optional['Ops']" = None,
-        machine: "Optional['Machine']" = None,
     ) -> None:
         self._start_job(on_command_done)
 
         mapping = encoded.op_map.machine_code_to_op if encoded.op_map else None
         gcode_lines = encoded.text.splitlines()
 
-        command_times = None
-        if ops is not None and machine is not None:
-            command_times = ops.estimate_command_times(
-                default_cut_speed=machine.max_cut_speed,
-                default_travel_speed=machine.max_travel_speed,
-                acceleration=machine.acceleration,
-            )
+        command_times = ops.estimate_command_times(
+            default_cut_speed=self._machine.max_cut_speed,
+            default_travel_speed=self._machine.max_travel_speed,
+            acceleration=self._machine.acceleration,
+        )
 
         try:
             await self._stream_gcode(gcode_lines, mapping, command_times)

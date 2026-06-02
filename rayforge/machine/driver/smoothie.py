@@ -213,12 +213,10 @@ class SmoothieDriver(Driver):
         self,
         encoded: EncodedOutput,
         doc: "Doc",
+        ops,
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
-        *,
-        ops=None,
-        machine=None,
     ) -> None:
         gcode_lines = encoded.text.splitlines()
         op_map = encoded.op_map

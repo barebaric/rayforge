@@ -392,12 +392,10 @@ class Driver(ABC):
         self,
         encoded: "EncodedOutput",
         doc: "Doc",
+        ops: "Ops",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
-        *,
-        ops: "Optional[Ops]" = None,
-        machine: "Optional['Machine']" = None,
     ) -> None:
         """
         Executes the given encoded output.
@@ -405,11 +403,9 @@ class Driver(ABC):
         Args:
             encoded: The encoded output containing machine code and op map
             doc: The document context
+            ops: The Ops object used to generate the encoded output.
             on_command_done: Optional sync or async callback called when each
                            command is done. Called with the op_index.
-            ops: The Ops object used to generate the encoded output.
-                Used for adaptive timeout computation.
-            machine: The Machine object. Used with ops for adaptive timeout.
         """
         pass
 

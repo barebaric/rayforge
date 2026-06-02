@@ -542,12 +542,10 @@ class OctoPrintDriver(Driver):
         self,
         encoded: "EncodedOutput",
         doc: "Doc",
+        ops,
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
-        *,
-        ops=None,
-        machine=None,
     ) -> None:
         if not self.host:
             raise DeviceConnectionError(
