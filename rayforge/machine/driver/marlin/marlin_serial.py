@@ -436,6 +436,9 @@ class MarlinSerialDriver(Driver):
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
+        *,
+        ops=None,
+        machine=None,
     ) -> None:
         self._start_job(on_command_done)
 

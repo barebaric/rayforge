@@ -21,6 +21,8 @@ from raygeo.ops.axis import Axis
 from ...context import RayforgeContext
 
 if TYPE_CHECKING:
+    from raygeo.ops import Ops
+
     from ...core.capability import Capability
     from ...core.doc import Doc
     from ...core.varset import VarSet
@@ -393,6 +395,9 @@ class Driver(ABC):
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
+        *,
+        ops: "Optional[Ops]" = None,
+        machine: "Optional['Machine']" = None,
     ) -> None:
         """
         Executes the given encoded output.
@@ -402,6 +407,9 @@ class Driver(ABC):
             doc: The document context
             on_command_done: Optional sync or async callback called when each
                            command is done. Called with the op_index.
+            ops: The Ops object used to generate the encoded output.
+                Used for adaptive timeout computation.
+            machine: The Machine object. Used with ops for adaptive timeout.
         """
         pass
 
