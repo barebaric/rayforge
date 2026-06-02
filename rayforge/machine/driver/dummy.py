@@ -24,6 +24,8 @@ from ..transport import TransportStatus
 from .driver import DeviceStatus, Driver, Pos
 
 if TYPE_CHECKING:
+    from raygeo.ops import Ops
+
     from ...core.doc import Doc
     from ..models.laser import Laser
     from ..models.machine import Machine
@@ -116,7 +118,7 @@ class NoDeviceDriver(Driver):
         self,
         encoded: EncodedOutput,
         doc: "Doc",
-        ops,
+        ops: "Ops",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,

@@ -53,6 +53,8 @@ from .grbl_util import (
 )
 
 if TYPE_CHECKING:
+    from raygeo.ops import Ops
+
     from ....core.doc import Doc
     from ...device.profile import DeviceProfile
     from ...models.laser import Laser
@@ -355,7 +357,7 @@ class GrblNetworkDriver(Driver):
         self,
         encoded: EncodedOutput,
         doc: "Doc",
-        ops,
+        ops: "Ops",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,

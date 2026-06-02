@@ -37,6 +37,8 @@ from .ruida_encoder import RuidaEncoder
 from .ruida_transport import RuidaTransport
 
 if TYPE_CHECKING:
+    from raygeo.ops import Ops
+
     from ....core.doc import Doc
     from ...models.laser import Laser
     from ...models.machine import Machine
@@ -388,7 +390,7 @@ class RuidaDriver(Driver):
         self,
         encoded: EncodedOutput,
         doc: "Doc",
-        ops,
+        ops: "Ops",
         on_command_done: Optional[
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None,
