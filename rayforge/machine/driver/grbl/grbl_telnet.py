@@ -71,6 +71,18 @@ class GrblTelnetDriver(GrblSerialDriver):
                     var_type=bool,
                     default=False,
                 ),
+                Var(
+                    key="deadlock_detection",
+                    label=_("Deadlock detection"),
+                    description=_(
+                        "Detect and recover from serial communication "
+                        "deadlocks during jobs. If disabled, the driver "
+                        "will simply wait for the machine to respond. "
+                        "Disable if you experience false ALARM:3 errors."
+                    ),
+                    var_type=bool,
+                    default=False,
+                ),
             ]
         )
 
@@ -79,6 +91,9 @@ class GrblTelnetDriver(GrblSerialDriver):
         port = cast(int, kwargs.get("port", 23))
         self._poll_status_while_running = bool(
             kwargs.get("poll_status_while_running", False)
+        )
+        self._deadlock_detection = bool(
+            kwargs.get("deadlock_detection", False)
         )
 
         if not host:

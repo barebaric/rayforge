@@ -102,6 +102,7 @@ class GrblSerialDriver(Driver):
         self._last_reported_op_index = -1
         self._job_exception: Optional[Exception] = None
         self._poll_status_while_running: bool = False
+        self._deadlock_detection: bool = False
         self._rx_buffer_size_override: int = 0
         self._handshake_received = asyncio.Event()
         self._loop: Optional[asyncio.AbstractEventLoop] = None
@@ -154,6 +155,18 @@ class GrblSerialDriver(Driver):
                     var_type=bool,
                     default=False,
                 ),
+                Var(
+                    key="deadlock_detection",
+                    label=_("Deadlock detection"),
+                    description=_(
+                        "Detect and recover from serial communication "
+                        "deadlocks during jobs. If disabled, the driver "
+                        "will simply wait for the machine to respond. "
+                        "Disable if you experience false ALARM:3 errors."
+                    ),
+                    var_type=bool,
+                    default=False,
+                ),
                 IntVar(
                     key="rx_buffer_size_override",
                     label=_("RX Buffer Size Override"),
@@ -185,6 +198,9 @@ class GrblSerialDriver(Driver):
         baudrate = kwargs.get("baudrate", 115200)
         self._poll_status_while_running = bool(
             kwargs.get("poll_status_while_running", False)
+        )
+        self._deadlock_detection = bool(
+            kwargs.get("deadlock_detection", False)
         )
         self._rx_buffer_size_override = int(
             kwargs.get("rx_buffer_size_override", 0) or 0
@@ -647,7 +663,16 @@ class GrblSerialDriver(Driver):
         driver's ``_cmd_lock``, so poll and recovery must skip the
         lock.  pyserial serializes concurrent writes, making this
         safe.
+
+        Returns True to retry the wait, False to abort the job.
         """
+        if not self._deadlock_detection:
+            logger.debug(
+                "Buffer stall timed out (deadlock detection disabled). "
+                "Retrying."
+            )
+            return True
+
         if await self._poll_and_check_idle(transport, hold_lock=False):
             if not transport.needs_space(command_len):
                 logger.info(
@@ -663,10 +688,11 @@ class GrblSerialDriver(Driver):
                 return True
             logger.error("Recovery failed: buffer still full.")
             return False
-        logger.warning(
-            "Timeout waiting for buffer space (machine not IDLE). Retrying."
+        logger.info(
+            "Timeout waiting for buffer space (machine not IDLE). "
+            "This is normal during slow moves. Retrying."
         )
-        return False
+        return True
 
     async def _send_gcode_line(
         self,
@@ -739,7 +765,12 @@ class GrblSerialDriver(Driver):
         if not transport:
             raise ConnectionError("Transport not initialized")
         job_completed_successfully = False
-        deadlock_timeout = 10.0 if not self._poll_status_while_running else 2.0
+        if self._deadlock_detection:
+            deadlock_timeout = (
+                30.0 if not self._poll_status_while_running else 5.0
+            )
+        else:
+            deadlock_timeout = 30.0
         sent_count = 0
         try:
             for line_idx, line in enumerate(gcode_lines):
