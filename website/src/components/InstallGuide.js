@@ -781,6 +781,9 @@ function WindowsDeveloperInstall() {
           <Admonition type="tip">
             <Translate id="install.msys2.defaultPath">
               Use the default installation path (C:\msys64) for best compatibility.
+              After installation, MSYS2 provides several shell shortcuts in the
+              Start Menu — always use the <strong>MINGW64</strong> shell for
+              Rayforge development. The other shells (MSYS2, UCRT64) will not work.
             </Translate>
           </Admonition>
         </div>
