@@ -515,7 +515,7 @@ async def test_run_with_machine_code(driver, ruida_simulator):
     sim.x = 0
     sim.y = 0
 
-    await driver.run(encoded, doc)
+    await driver.run(encoded, doc, ops)
     await asyncio.sleep(0.2)
 
     assert sim.x == 30000
