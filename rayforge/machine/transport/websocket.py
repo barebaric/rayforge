@@ -57,6 +57,7 @@ class WebSocketTransport(Transport):
                 self._websocket = await websockets.connect(
                     self.uri,
                     origin=self._origin,
+                    ping_interval=None,
                     additional_headers=(
                         ("Connection", "Upgrade"),
                         ("Upgrade", "websocket"),
