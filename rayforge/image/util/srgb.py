@@ -76,6 +76,7 @@ def resize_linear_nd(
     for c in range(n_channels):
         ch_linear = srgb_to_linear(image[:, :, c]).astype(np.float32)
         ch_resized = cv2.resize(ch_linear, size, interpolation=interpolation)
-        result[:, :, c] = linear_to_srgb(np.clip(ch_resized, 0, 1))
+        ch_clipped = np.clip(ch_resized, 0, 1).astype(np.float32)
+        result[:, :, c] = linear_to_srgb(ch_clipped)
 
     return result[:, :, 0] if ndim == 2 else result
