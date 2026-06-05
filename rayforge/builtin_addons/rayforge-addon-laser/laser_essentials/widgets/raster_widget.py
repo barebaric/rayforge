@@ -6,9 +6,9 @@ from gi.repository import Adw, GObject, Gtk
 
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.image.util import (
-    compute_auto_levels,
     get_visible_grayscale_values,
 )
+from raygeo.image import compute_auto_levels
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,

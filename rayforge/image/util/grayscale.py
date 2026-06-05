@@ -2,98 +2,28 @@
 Grayscale and binary image conversion utilities for Cairo surfaces.
 """
 
-from typing import Tuple
-
 import cairo
-import numpy
-
-from .srgb import linear_to_srgb, srgb_to_linear
-
-
-def compute_auto_levels(
-    gray_image: numpy.ndarray,
-    clip_percent: float = 1.0,
-) -> Tuple[int, int]:
-    """
-    Compute black and white points automatically using percentile clipping.
-
-    Uses a heuristic that clips a percentage of pixels at both ends of the
-    histogram to automatically determine the black and white points.
-
-    Args:
-        gray_image: uint8 numpy array with grayscale values (0-255).
-        clip_percent: Percentage of pixels to clip at each end (0-100).
-            Default is 1.0, meaning the bottom 1% and top 1% are clipped.
-
-    Returns:
-        Tuple of (black_point, white_point) as integers in range 0-255.
-        black_point will be at least 1 less than white_point.
-    """
-    if gray_image.size == 0:
-        return 0, 255
-
-    flat = gray_image.flatten()
-    if flat.size == 0:
-        return 0, 255
-
-    lower_percentile = clip_percent
-    upper_percentile = 100.0 - clip_percent
-
-    black_point = int(numpy.percentile(flat, lower_percentile))
-    white_point = int(numpy.percentile(flat, upper_percentile))
-
-    black_point = max(0, min(253, black_point))
-    white_point = max(black_point + 2, min(255, white_point))
-
-    return black_point, white_point
+import numpy as np
+from raygeo.image import (
+    rgba_to_binary,
+    rgba_to_grayscale,
+    rgba_to_grayscale_inplace,
+)
 
 
-def normalize_grayscale(
-    gray_image: numpy.ndarray,
-    black_point: int = 0,
-    white_point: int = 255,
-) -> numpy.ndarray:
-    """
-    Normalize grayscale values based on black and white points.
-
-    Stretches the histogram so that:
-    - Values at or below black_point become 0 (black)
-    - Values at or above white_point become 255 (white)
-    - Values in between are linearly interpolated
-
-    Args:
-        gray_image: uint8 numpy array with grayscale values (0-255).
-        black_point: Input value that maps to black (0). Default 0.
-        white_point: Input value that maps to white (255). Default 255.
-
-    Returns:
-        Normalized uint8 numpy array with values 0-255.
-
-    Raises:
-        ValueError: If black_point >= white_point.
-    """
-    if black_point >= white_point:
-        raise ValueError(
-            f"black_point ({black_point}) must be less than "
-            f"white_point ({white_point})"
-        )
-
-    clipped = numpy.clip(gray_image, black_point, white_point).astype(
-        numpy.float32
-    )
-    normalized = (clipped - black_point) / (white_point - black_point) * 255.0
-
-    return normalized.astype(numpy.uint8)
+def _extract_rgba(surface: cairo.ImageSurface) -> tuple:
+    width = surface.get_width()
+    height = surface.get_height()
+    stride_px = surface.get_stride() // 4
+    buf = np.frombuffer(surface.get_data(), dtype=np.uint8).copy()
+    return buf, width, height, stride_px
 
 
 def surface_to_grayscale(
     surface: cairo.ImageSurface,
-) -> Tuple[numpy.ndarray, numpy.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Convert a Cairo ARGB32 surface to a grayscale array with alpha handling.
-
-    Performs proper unpremultiplication of alpha and blends to white
-    background for grayscale calculation.
 
     Args:
         surface: Cairo ImageSurface in FORMAT_ARGB32 format.
@@ -103,88 +33,24 @@ def surface_to_grayscale(
         grayscale_array: uint8 array with values 0-255.
         alpha_array: float32 array with values 0.0-1.0.
     """
-    width_px = surface.get_width()
-    height_px = surface.get_height()
-    stride = surface.get_stride()
-    buf = surface.get_data()
-    data_with_padding = numpy.ndarray(
-        shape=(height_px, stride // 4, 4), dtype=numpy.uint8, buffer=buf
-    )
-    data = data_with_padding[:, :width_px, :]
-
-    alpha = data[:, :, 3].astype(numpy.float32) / 255.0
-
-    r = data[:, :, 2].astype(numpy.float32)
-    g = data[:, :, 1].astype(numpy.float32)
-    b = data[:, :, 0].astype(numpy.float32)
-
-    alpha_safe = numpy.maximum(alpha, 1e-6)
-
-    r_unpremult = r / alpha_safe
-    g_unpremult = g / alpha_safe
-    b_unpremult = b / alpha_safe
-
-    r_unpremult = numpy.clip(r_unpremult, 0, 255)
-    g_unpremult = numpy.clip(g_unpremult, 0, 255)
-    b_unpremult = numpy.clip(b_unpremult, 0, 255)
-
-    r_linear = srgb_to_linear(r_unpremult.astype(numpy.uint8))
-    g_linear = srgb_to_linear(g_unpremult.astype(numpy.uint8))
-    b_linear = srgb_to_linear(b_unpremult.astype(numpy.uint8))
-
-    r_blended = 1.0 - (1.0 - r_linear) * alpha
-    g_blended = 1.0 - (1.0 - g_linear) * alpha
-    b_blended = 1.0 - (1.0 - b_linear) * alpha
-
-    gray_linear = 0.2989 * r_blended + 0.5870 * g_blended + 0.1140 * b_blended
-
-    gray_image = linear_to_srgb(gray_linear)
-
-    return gray_image, alpha
-
-
-def get_visible_grayscale_values(
-    surface: cairo.ImageSurface,
-    invert: bool = False,
-) -> numpy.ndarray:
-    """
-    Extract grayscale values for visible pixels from a Cairo ARGB32 surface.
-
-    Args:
-        surface: Cairo ImageSurface in FORMAT_ARGB32 format.
-        invert: If True, invert grayscale values for visible pixels.
-
-    Returns:
-        1D uint8 numpy array containing grayscale values (0-255) for pixels
-        with alpha > 0. Returns empty array if no visible pixels.
-    """
-    gray_image, alpha = surface_to_grayscale(surface)
-
-    if invert:
-        alpha_mask = alpha > 0
-        gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
-
-    return gray_image[alpha > 0]
+    buf, width, height, stride = _extract_rgba(surface)
+    return rgba_to_grayscale(buf, width, height, stride)
 
 
 def surface_to_binary(
     surface: cairo.ImageSurface,
     threshold: int = 128,
     invert: bool = False,
-) -> numpy.ndarray:
+) -> np.ndarray:
     """
     Convert a Cairo ARGB32 surface to a binary array using thresholding.
 
-    Converts the surface to grayscale and applies a threshold to produce
-    a binary (0 or 1) output. Transparent pixels are always treated as
-    white (0).
+    Transparent pixels are always treated as white (0).
 
     Args:
         surface: Cairo ImageSurface in FORMAT_ARGB32 format.
-        threshold: Brightness value (0-255) for binarization. Pixels with
-            grayscale value below this threshold become black (1).
-        invert: If True, invert the binarization logic. Pixels above the
-            threshold become black (1).
+        threshold: Brightness value (0-255) for binarization.
+        invert: If True, pixels above threshold become black (1).
 
     Returns:
         2D numpy array with values 0 (white/transparent) or 1 (black).
@@ -194,34 +60,8 @@ def surface_to_binary(
     """
     if surface.get_format() != cairo.FORMAT_ARGB32:
         raise ValueError("Unsupported Cairo surface format")
-
-    width = surface.get_width()
-    height = surface.get_height()
-    data = numpy.frombuffer(surface.get_data(), dtype=numpy.uint8)
-    data = data.reshape((height, width, 4))
-
-    blue = data[:, :, 0]
-    green = data[:, :, 1]
-    red = data[:, :, 2]
-    alpha = data[:, :, 3]
-
-    red_linear = srgb_to_linear(red)
-    green_linear = srgb_to_linear(green)
-    blue_linear = srgb_to_linear(blue)
-
-    gray_linear = (
-        0.2989 * red_linear + 0.5870 * green_linear + 0.1140 * blue_linear
-    )
-
-    grayscale = linear_to_srgb(gray_linear).astype(numpy.float32)
-
-    if invert:
-        binary = (grayscale > threshold).astype(numpy.uint8)
-    else:
-        binary = (grayscale < threshold).astype(numpy.uint8)
-
-    binary[alpha == 0] = 0
-    return binary
+    buf, width, height, stride = _extract_rgba(surface)
+    return rgba_to_binary(buf, width, height, stride, threshold, invert)
 
 
 def convert_surface_to_grayscale_inplace(
@@ -229,9 +69,6 @@ def convert_surface_to_grayscale_inplace(
 ) -> None:
     """
     Convert a Cairo ARGB32 surface to grayscale in place.
-
-    Modifies the surface directly, converting RGB channels to grayscale
-    while preserving the alpha channel.
 
     Args:
         surface: Cairo ImageSurface in FORMAT_ARGB32 format.
@@ -241,25 +78,29 @@ def convert_surface_to_grayscale_inplace(
     """
     if surface.get_format() != cairo.FORMAT_ARGB32:
         raise ValueError("Unsupported Cairo surface format")
+    width = surface.get_width()
+    height = surface.get_height()
+    stride_px = surface.get_stride() // 4
+    buf = np.frombuffer(surface.get_data(), dtype=np.uint8)
+    rgba_to_grayscale_inplace(buf, width, height, stride_px)
 
-    width, height = surface.get_width(), surface.get_height()
-    data = surface.get_data()
-    data_array = numpy.frombuffer(data, dtype=numpy.uint8).reshape(
-        (height, width, 4)
-    )
 
-    red = data_array[:, :, 2]
-    green = data_array[:, :, 1]
-    blue = data_array[:, :, 0]
+def get_visible_grayscale_values(
+    surface: cairo.ImageSurface,
+    invert: bool = False,
+) -> np.ndarray:
+    """
+    Extract grayscale values for visible pixels from a Cairo ARGB32 surface.
 
-    red_linear = srgb_to_linear(red)
-    green_linear = srgb_to_linear(green)
-    blue_linear = srgb_to_linear(blue)
+    Args:
+        surface: Cairo ImageSurface in FORMAT_ARGB32 format.
+        invert: If True, invert grayscale values for visible pixels.
 
-    gray_linear = (
-        0.2989 * red_linear + 0.5870 * green_linear + 0.1140 * blue_linear
-    )
-
-    gray = linear_to_srgb(gray_linear)
-
-    data_array[:, :, :3] = gray[:, :, None]
+    Returns:
+        1D uint8 numpy array of grayscale values for pixels with alpha > 0.
+    """
+    gray_image, alpha = surface_to_grayscale(surface)
+    if invert:
+        alpha_mask = alpha > 0
+        gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
+    return gray_image[alpha > 0]
