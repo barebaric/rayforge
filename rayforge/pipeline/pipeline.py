@@ -316,6 +316,8 @@ class Pipeline:
                 n.key for n in nodes if n.state.value == "processing"
             ]
             return f"pending_work(processing={proc})"
+        if self._task_manager.has_tasks():
+            return "has_tasks"
         return "none"
 
     @property
@@ -327,22 +329,24 @@ class Pipeline:
         The pipeline is busy if:
         1. A reconciliation timer is pending, OR
         2. A removal timer is pending, OR
-        3. The scheduler has pending work (PROCESSING nodes)
+        3. The scheduler has pending work (PROCESSING nodes), OR
+        4. The task manager has active tasks
 
-        Note: We do NOT check the active context's task count here.
-        The context uses a counter per key that can accumulate when
-        tasks are cancelled and re-launched rapidly (e.g., during
-        chaos-phase invalidations).  Since ``has_pending_work()``
-        already reflects whether any DAG node is PROCESSING, it is
-        the authoritative signal.  The context check was causing
-        false "busy" states when cancelled tasks left residual
-        counts behind.
+        Both checks 3 and 4 are needed because they can diverge:
+        ``artifact_created`` events can set DAG nodes to VALID before
+        the worker has sent its final "done" message, causing
+        ``has_pending_work()`` to return False while tasks are still
+        live in the TaskManager.  Conversely, a cancelled task is
+        removed from the TaskManager immediately but its DAG node may
+        still appear as PROCESSING until the cancellation propagates.
         """
         if self._reconciliation_timer is not None:
             return True
         if self._removal_timer is not None:
             return True
         if self._scheduler.has_pending_work():
+            return True
+        if self._task_manager.has_tasks():
             return True
         return False
 
