@@ -191,6 +191,16 @@ class Machine:
         return self.context.machine_mgr.get_controller(self.id)
 
     @property
+    def has_controller(self) -> bool:
+        """
+        Returns whether a controller currently exists for this machine
+        without lazily creating one. This is ``False`` once the machine has
+        been removed and its controller torn down, allowing callers to skip
+        controller access that would otherwise raise.
+        """
+        return self.context.machine_mgr.has_controller(self.id)
+
+    @property
     def driver(self) -> "Driver":
         """Property to access the driver through the controller."""
         return self.controller.driver
