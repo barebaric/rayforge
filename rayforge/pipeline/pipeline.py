@@ -913,6 +913,14 @@ class Pipeline:
         if self._is_shutting_down:
             return
 
+        if generation_id < self._data_generation_id:
+            logger.debug(
+                f"Ignoring stale workpiece completion for "
+                f"generation {generation_id} "
+                f"(current: {self._data_generation_id})"
+            )
+            return
+
         if handle is not None:
             self.workpiece_artifact_ready.send(
                 self,
