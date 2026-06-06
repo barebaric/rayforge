@@ -211,6 +211,7 @@ class WorkPiecePipelineStage(PipelineStage):
             with self._artifact_manager.report_cancellation(
                 key, generation_id
             ) as handle:
+                self._emit_node_state(key, NodeState.DIRTY)
                 self.generation_finished.send(
                     self,
                     step=step,

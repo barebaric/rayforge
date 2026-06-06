@@ -152,6 +152,7 @@ class StepPipelineStage(PipelineStage):
             with self._artifact_manager.report_cancellation(
                 ledger_key, task_generation_id
             ):
+                self._emit_node_state(ledger_key, NodeState.DIRTY)
                 self.generation_finished.send(
                     self, step=step, generation_id=task_generation_id
                 )

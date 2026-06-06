@@ -162,6 +162,8 @@ depends-on = ["compile-translations"]
 libglvnd = ">=1.7.0,<2"
 libadwaita = ">=1.8.4,<2"
 pyright = ">=1.1.409,<2"
+gxx_impl_linux-64 = ">=15.2.0,<16"
+libstdcxx-devel_linux-64 = ">=15.2.0,<16"
 
 # Tasks for developing and generating the website
 [feature.website.tasks]
