@@ -538,8 +538,8 @@ class WorkerPoolManager:
                     if status is not None:
                         stuck_info.append((pid, worker))
 
-        # Log diagnostic state periodically.
-        if dead_info or stuck_info:
+        # Log diagnostic state when anomalies are found.
+        if dead_info:
             no_result_dur = time.monotonic() - self._last_result_time
             logger.info(
                 f"Health check: {len(dead_info)} dead, "
