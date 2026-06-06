@@ -284,6 +284,7 @@ class WorkerPoolManager:
             )
             self._workers.append(process)
             process.start()
+            assert process.pid is not None
             self._pid_to_worker[process.pid] = process
 
         self._listener_thread = threading.Thread(
@@ -504,7 +505,8 @@ class WorkerPoolManager:
                     if pid in self._pid_to_worker:
                         del self._pid_to_worker[pid]
                     try:
-                        self._workers.remove(worker)
+                        if worker is not None:
+                            self._workers.remove(worker)
                     except (ValueError, AttributeError):
                         pass
 
@@ -572,6 +574,7 @@ class WorkerPoolManager:
                 daemon=True,
             )
             process.start()
+            assert process.pid is not None
             with self._lock:
                 self._workers.append(process)
                 self._pid_to_worker[process.pid] = process
