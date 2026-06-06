@@ -1507,9 +1507,17 @@ class MainWindow(Adw.ApplicationWindow):
             self._current_machine.machine_hours.changed.disconnect(
                 self._on_machine_hours_changed
             )
-            self._current_machine.controller.laser_power_changed.disconnect(
-                self._on_laser_power_changed
-            )
+            # The controller signal is sourced directly from the controller
+            # object rather than proxied through the machine. When the active
+            # machine is removed, its controller is torn down before this
+            # handler runs, so accessing ``controller`` would lazily fail
+            # with a ValueError. Skip the disconnect in that case: the
+            # controller (and its signal) is already gone, so there is
+            # nothing left to detach.
+            if self._current_machine.has_controller:
+                self._current_machine.controller.laser_power_changed.disconnect(  # noqa: E501
+                    self._on_laser_power_changed
+                )
 
         self._current_machine = config.machine
 
