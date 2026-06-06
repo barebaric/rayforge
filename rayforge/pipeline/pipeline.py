@@ -348,6 +348,9 @@ class Pipeline:
             return True
         if self._task_manager.has_tasks():
             return True
+        active_ctx = self._active_context
+        if active_ctx is not None and active_ctx.has_active_tasks():
+            return True
         return False
 
     def _check_and_update_processing_state(self) -> None:
