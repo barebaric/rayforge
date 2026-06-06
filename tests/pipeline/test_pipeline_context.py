@@ -242,10 +242,10 @@ class TestPipelineBusyState:
         assert not pipeline._scheduler.has_pending_work()
         assert not pipeline.is_busy
 
-    def test_is_busy_true_with_inactive_context_tasks(
+    def test_is_busy_false_when_tasks_only_in_inactive_context(
         self, doc, mock_task_mgr
     ):
-        """Test is_busy is True when inactive context has active tasks."""
+        """Test is_busy is False when only inactive context has tasks."""
         pipeline = Pipeline(
             doc=doc,
             task_manager=mock_task_mgr,
@@ -261,7 +261,7 @@ class TestPipelineBusyState:
         pipeline._contexts[2] = pipeline._active_context
 
         assert not pipeline._scheduler.has_pending_work()
-        assert pipeline.is_busy
+        assert not pipeline.is_busy
 
     def test_is_busy_false_when_inactive_context_empty(
         self, doc, mock_task_mgr
@@ -295,8 +295,8 @@ class TestPipelineBusyState:
 
         assert pipeline.is_busy
 
-    def test_is_busy_checks_all_inactive_contexts(self, doc, mock_task_mgr):
-        """Test is_busy checks all inactive contexts for active tasks."""
+    def test_is_busy_ignores_inactive_contexts(self, doc, mock_task_mgr):
+        """Test is_busy only checks the active context for tasks."""
         pipeline = Pipeline(
             doc=doc,
             task_manager=mock_task_mgr,
@@ -316,7 +316,7 @@ class TestPipelineBusyState:
         pipeline._contexts[3] = ctx3
         pipeline._active_context = ctx3
 
-        assert pipeline.is_busy
+        assert not pipeline.is_busy
 
     def test_is_busy_active_context_tasks_included(self, doc, mock_task_mgr):
         """Test is_busy includes active tasks in the active context."""
