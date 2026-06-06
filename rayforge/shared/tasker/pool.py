@@ -160,6 +160,21 @@ def _worker_main_loop(
             f"key={key}, last_task_key={last_task_key}"
         )
 
+        cancel_key = f"cancel:{task_id}"
+        if cancel_key in adoption_signals:
+            worker_logger.debug(
+                f"Worker {os.getpid()} skipping already-cancelled "
+                f"task '{key}' (id: {task_id})."
+            )
+            try:
+                result_queue.put_nowait(
+                    (key, task_id, "done", None)
+                )
+            except (OSError, BrokenPipeError):
+                pass
+            adoption_signals.pop(cancel_key, None)
+            continue
+
         # Track this task via the DictProxy BEFORE running user_func.
         # This is the sole mechanism for identifying orphaned tasks when
         # a worker crashes — it uses the SyncManager's own connection,
@@ -169,6 +184,13 @@ def _worker_main_loop(
         # intact and the health check can read the orphaned task info.
         try:
             shared_state[f"_wpool:{os.getpid()}"] = (key, task_id)
+        except (OSError, BrokenPipeError):
+            pass
+
+        try:
+            result_queue.put_nowait(
+                (key, task_id, "running", os.getpid())
+            )
         except (OSError, BrokenPipeError):
             pass
 
@@ -251,6 +273,7 @@ class WorkerPoolManager:
         self._lock = threading.Lock()
         self._worker_shutdown_info: dict[int, tuple[int, Any | None]] = {}
         self._worker_task_map: dict[int, Tuple[Any, int]] = {}
+        self._worker_start_time: dict[int, float] = {}
         self._pid_to_worker: dict[int, BaseProcess] = {}
         self._health_check_counter = 0
         self._last_result_time = time.monotonic()
@@ -408,6 +431,7 @@ class WorkerPoolManager:
                 pid = value
                 with self._lock:
                     self._worker_task_map[pid] = (key, task_id)
+                    self._worker_start_time[pid] = time.monotonic()
                 continue
 
             # The 'event' message type is special because it may carry
@@ -471,6 +495,7 @@ class WorkerPoolManager:
                     for pid, (k, tid) in list(self._worker_task_map.items()):
                         if k == key and tid == task_id:
                             del self._worker_task_map[pid]
+                            self._worker_start_time.pop(pid, None)
                             break
 
         logger.debug("Result listener thread finished.")
@@ -586,6 +611,83 @@ class WorkerPoolManager:
                     f"Restarting all stuck workers."
                 )
                 self._restart_stuck_workers(stuck_info)
+                return
+
+        # Per-worker timeout: even if the global result queue is
+        # healthy (other workers producing results), an individual
+        # worker may have crashed without being detected by
+        # is_alive() (e.g., a segfault in a C extension that
+        # leaves the process technically alive but unresponsive).
+        # Check how long each worker has been on its current task.
+        max_task_duration = 30.0
+        timed_out = []
+        with self._lock:
+            for pid in list(self._worker_start_time.keys()):
+                start = self._worker_start_time.get(pid)
+                if start is None:
+                    continue
+                elapsed = time.monotonic() - start
+                if elapsed > max_task_duration:
+                    worker = self._pid_to_worker.get(pid)
+                    if worker is not None:
+                        try:
+                            alive = worker.is_alive()
+                        except ValueError:
+                            alive = False
+                        if alive:
+                            status = self._shared_state.get(
+                                f"_wpool:{pid}"
+                            )
+                            key, task_id = (
+                                status if status else (None, None)
+                            )
+                            timed_out.append(
+                                (pid, worker, key, task_id, elapsed)
+                            )
+
+        for pid, worker, key, task_id, elapsed in timed_out:
+            logger.warning(
+                f"Worker PID {pid} has been running task "
+                f"'{key}' (id: {task_id}) for {elapsed:.0f}s. "
+                f"Terminating as unresponsive."
+            )
+            self._terminate_stuck_worker(pid, worker, key, task_id)
+
+    def _terminate_stuck_worker(
+        self,
+        pid: int,
+        worker: BaseProcess,
+        key: Any,
+        task_id: Any,
+    ):
+        """
+        Terminate a single unresponsive worker, finalize its orphaned
+        task, and spawn a replacement.
+        """
+        try:
+            worker.terminate()
+            worker.join(timeout=2.0)
+            worker.close()
+        except (ValueError, OSError):
+            pass
+
+        with self._lock:
+            self._pid_to_worker.pop(pid, None)
+            self._worker_task_map.pop(pid, None)
+            self._worker_start_time.pop(pid, None)
+            try:
+                self._workers.remove(worker)
+            except ValueError:
+                pass
+
+        self._shared_state.pop(f"_wpool:{pid}", None)
+
+        if key is not None:
+            self.worker_died.send(
+                self, key=key, task_id=task_id, pid=pid
+            )
+
+        self._spawn_replacement_worker()
 
     def _restart_stuck_workers(self, stuck_info):
         """

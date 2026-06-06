@@ -305,6 +305,19 @@ class Pipeline:
                 self._data_stale_flag = True
                 self.data_stale.send(self)
 
+    def _busy_reason(self) -> str:
+        if self._reconciliation_timer is not None:
+            return "reconciliation_timer"
+        if self._removal_timer is not None:
+            return "removal_timer"
+        if self._scheduler.has_pending_work():
+            nodes = self._scheduler.graph.get_all_nodes()
+            proc = [
+                n.key for n in nodes if n.state.value == "processing"
+            ]
+            return f"pending_work(processing={proc})"
+        return "none"
+
     @property
     def is_busy(self) -> bool:
         """
@@ -314,17 +327,22 @@ class Pipeline:
         The pipeline is busy if:
         1. A reconciliation timer is pending, OR
         2. A removal timer is pending, OR
-        3. The scheduler has pending work (PROCESSING nodes), OR
-        4. The active context has active tasks
+        3. The scheduler has pending work (PROCESSING nodes)
+
+        Note: We do NOT check the active context's task count here.
+        The context uses a counter per key that can accumulate when
+        tasks are cancelled and re-launched rapidly (e.g., during
+        chaos-phase invalidations).  Since ``has_pending_work()``
+        already reflects whether any DAG node is PROCESSING, it is
+        the authoritative signal.  The context check was causing
+        false "busy" states when cancelled tasks left residual
+        counts behind.
         """
         if self._reconciliation_timer is not None:
             return True
         if self._removal_timer is not None:
             return True
         if self._scheduler.has_pending_work():
-            return True
-        active_ctx = self._active_context
-        if active_ctx is not None and active_ctx.has_active_tasks():
             return True
         return False
 
@@ -931,7 +949,17 @@ class Pipeline:
             )
 
         if task_status != "canceled":
+            had_timer = self._reconciliation_timer is not None
             self._scheduler.process_graph()
+            if (
+                self._reconciliation_timer is not None
+                and not had_timer
+            ):
+                logger.debug(
+                    f"Completion of gen {generation_id} triggered new "
+                    f"invalidation — process_graph work will be handled "
+                    f"by debounced reconciliation."
+                )
 
         if not self.is_busy and self._reconciliation_timer is None:
             self._task_manager.schedule_on_main_thread(
