@@ -5,13 +5,17 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import cairo
 import numpy as np
+from raygeo.image import compute_auto_levels, normalize_grayscale
 from raygeo.ops import Ops
+from raygeo.ops.raster import (
+    rasterize_mask_scan,
+    rasterize_multi_pass,
+    rasterize_power_modulation,
+)
 from raygeo.ops.types import SectionType
 
 from rayforge.image.dither import DitherAlgorithm, surface_to_dithered_array
 from rayforge.image.util import (
-    compute_auto_levels,
-    normalize_grayscale,
     surface_to_binary,
     surface_to_grayscale,
 )
@@ -19,15 +23,6 @@ from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.shared.tasker.progress import ProgressContext
-
-from .raster_util import (
-    calculate_ymax_mm,
-    convert_y_to_output,
-    downsample_power_values,
-    find_mask_bounding_box,
-    find_segments,
-    generate_scan_lines,
-)
 
 if TYPE_CHECKING:
     from rayforge.core.workpiece import WorkPiece
@@ -311,113 +306,20 @@ class Rasterizer(OpsProducer):
         step_power: float = 1.0,
         angle: float = 0.0,
     ) -> Ops:
-        ops = Ops()
-        height_px, width_px = gray_image.shape
-        ymax_mm = calculate_ymax_mm((width_px, height_px), pixels_per_mm)
-        px_per_mm_x, px_per_mm_y = pixels_per_mm
-
-        bbox = find_mask_bounding_box(alpha)
-        if bbox is None:
-            return ops
-
-        power_range = self.max_power - self.min_power
-
-        for scan_line in generate_scan_lines(
-            bbox=bbox,
-            image_size=(width_px, height_px),
-            pixels_per_mm=pixels_per_mm,
-            line_interval_mm=line_interval_mm,
-            direction_degrees=angle,
-            offset_x_mm=offset_x_mm,
-            offset_y_mm=offset_y_mm,
-        ):
-            if len(scan_line.pixels) == 0:
-                continue
-
-            gray_values = gray_image[
-                scan_line.pixels[:, 1], scan_line.pixels[:, 0]
-            ]
-            alpha_values = alpha[
-                scan_line.pixels[:, 1], scan_line.pixels[:, 0]
-            ]
-            power_fractions = (
-                self.min_power + (1.0 - gray_values / 255.0) * power_range
-            )
-            power_fractions = power_fractions * step_power
-            power_values = (power_fractions * 255).astype(np.uint8)
-            power_values[alpha_values == 0] = 0
-
-            if self.num_power_levels < 256:
-                num_levels = min(256, max(2, self.num_power_levels))
-                power_float = power_values.astype(np.float64)
-                quantized = (
-                    np.round(power_float * (num_levels - 1) / 255.0)
-                    * 255
-                    / (num_levels - 1)
-                )
-                power_values = quantized.astype(np.uint8)
-
-            if not np.any(power_values > 0):
-                continue
-
-            segments = find_segments(power_values)
-            if len(segments) == 0:
-                continue
-
-            is_reversed = (scan_line.index % 2) != 0
-            if is_reversed:
-                segments = segments[::-1]
-
-            for start_idx, end_idx in segments:
-                if power_values[start_idx] == 0:
-                    continue
-
-                seg_pixels = scan_line.pixels[start_idx:end_idx]
-                seg_power = power_values[start_idx:end_idx]
-
-                seg_start_mm = scan_line.pixel_to_mm(
-                    seg_pixels[0, 0], seg_pixels[0, 1], pixels_per_mm
-                )
-                seg_end_mm = scan_line.pixel_to_mm(
-                    seg_pixels[-1, 0], seg_pixels[-1, 1], pixels_per_mm
-                )
-
-                (
-                    ds_power,
-                    ds_x_mm,
-                    ds_y_mm,
-                ) = downsample_power_values(
-                    seg_power,
-                    seg_pixels,
-                    seg_start_mm,
-                    seg_end_mm,
-                    pixels_per_mm,
-                    sample_interval_mm,
-                )
-
-                if len(ds_power) == 0:
-                    continue
-
-                if is_reversed:
-                    ds_power = ds_power[::-1]
-                    ds_x_mm = ds_x_mm[::-1]
-                    ds_y_mm = ds_y_mm[::-1]
-
-                start_x = ds_x_mm[0]
-                start_y = ds_y_mm[0]
-                end_x = ds_x_mm[-1]
-                end_y = ds_y_mm[-1]
-
-                if abs(end_x - start_x) < 1e-6 and abs(end_y - start_y) < 1e-6:
-                    continue
-
-                final_start_y = float(convert_y_to_output(start_y, ymax_mm))
-                final_end_y = float(convert_y_to_output(end_y, ymax_mm))
-
-                ops.move_to(start_x, final_start_y, 0.0)
-                ops.scan_to(end_x, final_end_y, 0.0, bytearray(ds_power))
-
-        return ops
+        return rasterize_power_modulation(
+            gray_image,
+            (alpha * 255).astype(np.uint8),
+            pixels_per_mm,
+            offset_x_mm,
+            offset_y_mm,
+            line_interval_mm,
+            sample_interval_mm,
+            min_power=self.min_power,
+            max_power=self.max_power,
+            step_power=step_power,
+            num_power_levels=self.num_power_levels,
+            angle=angle,
+        )
 
     def _run_constant_power(
         self,
@@ -431,12 +333,6 @@ class Rasterizer(OpsProducer):
         angle: float = 0.0,
         use_dither: bool = False,
     ) -> Ops:
-        ops = Ops()
-        width_px = surface.get_width()
-        height_px = surface.get_height()
-        ymax_mm = calculate_ymax_mm((width_px, height_px), pixels_per_mm)
-        px_per_mm_x, px_per_mm_y = pixels_per_mm
-
         min_feature_px = max(
             1, int(round(laser.spot_size_mm[0] * pixels_per_mm[0]))
         )
@@ -456,64 +352,15 @@ class Rasterizer(OpsProducer):
                 surface, threshold=self.threshold, invert=self.invert
             )
 
-        bbox = find_mask_bounding_box(mask)
-        if bbox is None:
-            return ops
-
-        for scan_line in generate_scan_lines(
-            bbox=bbox,
-            image_size=(width_px, height_px),
-            pixels_per_mm=pixels_per_mm,
-            line_interval_mm=line_interval_mm,
-            direction_degrees=angle,
-            offset_x_mm=offset_x_mm,
-            offset_y_mm=offset_y_mm,
-        ):
-            if len(scan_line.pixels) == 0:
-                continue
-
-            values = mask[scan_line.pixels[:, 1], scan_line.pixels[:, 0]]
-            segments = find_segments(values)
-
-            if len(segments) == 0:
-                continue
-
-            is_reversed = (scan_line.index % 2) != 0
-            if is_reversed:
-                segments = segments[::-1]
-
-            for start_idx, end_idx in segments:
-                if values[start_idx] == 0:
-                    continue
-
-                if is_reversed:
-                    seg_start_px = scan_line.pixels[end_idx - 1]
-                    seg_end_px = scan_line.pixels[start_idx]
-                else:
-                    seg_start_px = scan_line.pixels[start_idx]
-                    seg_end_px = scan_line.pixels[end_idx - 1]
-
-                start_mm = scan_line.pixel_to_mm(
-                    seg_start_px[0], seg_start_px[1], pixels_per_mm
-                )
-                end_mm = scan_line.pixel_to_mm(
-                    seg_end_px[0], seg_end_px[1], pixels_per_mm
-                )
-
-                segment_length_px = end_idx - start_idx
-                power_values = bytearray(
-                    [int(255 * step_power)] * segment_length_px
-                )
-
-                final_start_y = float(
-                    convert_y_to_output(start_mm[1], ymax_mm)
-                )
-                final_end_y = float(convert_y_to_output(end_mm[1], ymax_mm))
-
-                ops.move_to(start_mm[0], final_start_y, 0.0)
-                ops.scan_to(end_mm[0], final_end_y, 0.0, power_values)
-
-        return ops
+        return rasterize_mask_scan(
+            mask,
+            pixels_per_mm,
+            offset_x_mm,
+            offset_y_mm,
+            line_interval_mm,
+            step_power=step_power,
+            angle=angle,
+        )
 
     def _run_multi_pass(
         self,
@@ -524,99 +371,17 @@ class Rasterizer(OpsProducer):
         line_interval_mm: float,
         angle: float = 0.0,
     ) -> Ops:
-        ops = Ops()
-
-        pass_map = np.ceil(
-            ((255 - gray_image) / 255.0) * self.num_depth_levels
-        ).astype(int)
-
-        for pass_level in range(1, self.num_depth_levels + 1):
-            mask = (pass_map >= pass_level).astype(np.uint8)
-            if not np.any(mask):
-                continue
-
-            z_offset = -((pass_level - 1) * self.z_step_down)
-            pass_angle = angle + (pass_level - 1) * self.angle_increment
-            pass_ops = self._rasterize_mask(
-                mask,
-                pixels_per_mm,
-                offset_x_mm,
-                offset_y_mm,
-                line_interval_mm,
-                z_offset,
-                pass_angle,
-            )
-            ops.extend(pass_ops)
-
-        return ops
-
-    def _rasterize_mask(
-        self,
-        mask: np.ndarray,
-        pixels_per_mm: tuple,
-        offset_x_mm: float,
-        offset_y_mm: float,
-        line_interval_mm: float,
-        z: float,
-        angle: float = 0.0,
-    ) -> Ops:
-        ops = Ops()
-        height_px, width_px = mask.shape
-        ymax_mm = calculate_ymax_mm((width_px, height_px), pixels_per_mm)
-
-        bbox = find_mask_bounding_box(mask)
-        if bbox is None:
-            return ops
-
-        for scan_line in generate_scan_lines(
-            bbox=bbox,
-            image_size=(width_px, height_px),
-            pixels_per_mm=pixels_per_mm,
-            line_interval_mm=line_interval_mm,
-            direction_degrees=angle,
-            offset_x_mm=offset_x_mm,
-            offset_y_mm=offset_y_mm,
-        ):
-            if len(scan_line.pixels) == 0:
-                continue
-
-            values = mask[scan_line.pixels[:, 1], scan_line.pixels[:, 0]]
-            segments = find_segments(values)
-
-            if len(segments) == 0:
-                continue
-
-            is_reversed = (scan_line.index % 2) != 0
-            if is_reversed:
-                segments = segments[::-1]
-
-            for start_idx, end_idx in segments:
-                if values[start_idx] == 0:
-                    continue
-
-                if is_reversed:
-                    seg_start_px = scan_line.pixels[end_idx - 1]
-                    seg_end_px = scan_line.pixels[start_idx]
-                else:
-                    seg_start_px = scan_line.pixels[start_idx]
-                    seg_end_px = scan_line.pixels[end_idx - 1]
-
-                start_mm = scan_line.pixel_to_mm(
-                    seg_start_px[0], seg_start_px[1], pixels_per_mm
-                )
-                end_mm = scan_line.pixel_to_mm(
-                    seg_end_px[0], seg_end_px[1], pixels_per_mm
-                )
-
-                final_start_y = float(
-                    convert_y_to_output(start_mm[1], ymax_mm)
-                )
-                final_end_y = float(convert_y_to_output(end_mm[1], ymax_mm))
-
-                ops.move_to(start_mm[0], final_start_y, z)
-                ops.line_to(end_mm[0], final_end_y, z)
-
-        return ops
+        return rasterize_multi_pass(
+            gray_image,
+            pixels_per_mm,
+            offset_x_mm,
+            offset_y_mm,
+            line_interval_mm,
+            self.num_depth_levels,
+            self.z_step_down,
+            angle=angle,
+            angle_increment=self.angle_increment,
+        )
 
     @staticmethod
     def _has_no_fills(workpiece: "WorkPiece") -> bool:
