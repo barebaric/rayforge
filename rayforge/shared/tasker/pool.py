@@ -484,8 +484,7 @@ class WorkerPoolManager:
         Also detects workers that are alive but whose results are stuck
         because the result queue's ``_wlock`` semaphore was poisoned by
         a crashed peer. When this is detected, ALL stuck workers are
-        terminated and the pool is fully restarted with a fresh result
-        queue.
+        terminated and restarted with a fresh result queue.
         """
         dead_info = []
         stuck_info = []
@@ -511,9 +510,7 @@ class WorkerPoolManager:
                     except (ValueError, AttributeError):
                         pass
 
-            # Check all workers via DictProxy path. This catches workers
-            # that crashed before their "running" message was delivered
-            # through the result queue (e.g., when _wlock is poisoned).
+            # Check all remaining workers via DictProxy.
             for pid, worker in list(self._pid_to_worker.items()):
                 if pid in self._worker_task_map:
                     continue
@@ -535,12 +532,20 @@ class WorkerPoolManager:
                         self._workers.remove(worker)
                     except ValueError:
                         pass
-                elif self._shared_state.get(f"_wpool:{pid}") is not None:
-                    # Worker is alive AND has a DictProxy entry meaning
-                    # it's running a task. If no results have been
-                    # received for a long time, the queue is likely
-                    # poisoned.
-                    stuck_info.append((pid, worker))
+                else:
+                    # Alive worker — check if it has a stuck task.
+                    status = self._shared_state.get(f"_wpool:{pid}")
+                    if status is not None:
+                        stuck_info.append((pid, worker))
+
+        # Log diagnostic state periodically.
+        if dead_info or stuck_info:
+            no_result_dur = time.monotonic() - self._last_result_time
+            logger.info(
+                f"Health check: {len(dead_info)} dead, "
+                f"{len(stuck_info)} stuck, "
+                f"no_result_for={no_result_dur:.1f}s"
+            )
 
         # Emit signals for dead workers with orphaned tasks.
         for pid, key, task_id, worker in dead_info:
@@ -567,15 +572,17 @@ class WorkerPoolManager:
             for _ in dead_info:
                 self._spawn_replacement_worker()
 
-        # Detect poisoned result queue: if we have dead workers AND
-        # alive workers that haven't delivered results in a while,
-        # the queue is broken. Do a full restart.
-        if dead_info and stuck_info:
+        # Detect poisoned result queue: if any alive workers have
+        # DictProxy entries (meaning they're running tasks) but no
+        # results have been received recently, the queue is broken.
+        # Terminate stuck workers and restart.
+        if stuck_info:
             no_result_duration = time.monotonic() - self._last_result_time
-            if no_result_duration > 5.0:
+            if no_result_duration > 3.0:
                 logger.warning(
                     f"Result queue appears poisoned (no results for "
-                    f"{no_result_duration:.1f}s). "
+                    f"{no_result_duration:.1f}s, "
+                    f"{len(stuck_info)} stuck workers). "
                     f"Restarting all stuck workers."
                 )
                 self._restart_stuck_workers(stuck_info)
