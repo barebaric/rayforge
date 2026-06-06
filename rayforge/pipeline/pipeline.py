@@ -315,7 +315,7 @@ class Pipeline:
         1. A reconciliation timer is pending, OR
         2. A removal timer is pending, OR
         3. The scheduler has pending work (PROCESSING nodes), OR
-        4. Any context (active or inactive) has active tasks
+        4. The active context has active tasks
         """
         if self._reconciliation_timer is not None:
             return True
@@ -323,9 +323,9 @@ class Pipeline:
             return True
         if self._scheduler.has_pending_work():
             return True
-        for ctx in self._contexts.values():
-            if ctx.has_active_tasks():
-                return True
+        active_ctx = self._active_context
+        if active_ctx is not None and active_ctx.has_active_tasks():
+            return True
         return False
 
     def _check_and_update_processing_state(self) -> None:
