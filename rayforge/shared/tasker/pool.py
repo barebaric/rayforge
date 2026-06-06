@@ -9,6 +9,7 @@ import builtins
 import logging
 import os
 import threading
+import time
 import traceback
 from multiprocessing import Manager, get_context
 from multiprocessing.managers import DictProxy
@@ -252,6 +253,7 @@ class WorkerPoolManager:
         self._worker_task_map: dict[int, Tuple[Any, int]] = {}
         self._pid_to_worker: dict[int, BaseProcess] = {}
         self._health_check_counter = 0
+        self._last_result_time = time.monotonic()
 
         # Signals for the TaskManager to subscribe to
         self.task_event_received = Signal()
@@ -385,6 +387,7 @@ class WorkerPoolManager:
                 break
 
             key, task_id, msg_type, value = message
+            self._last_result_time = time.monotonic()
 
             if msg_type == _SHUTDOWN_INFO_MSG:
                 pid, last_task_key = value
@@ -478,16 +481,14 @@ class WorkerPoolManager:
         If so, emit a worker_died signal for orphaned task cleanup and start
         a replacement worker.
 
-        Uses two sources to determine orphaned tasks:
-        1. ``_worker_task_map`` — populated by "running" messages through the
-           result queue. This works when the result queue is healthy.
-        2. ``shared_state["_wpool:{pid}"]`` — written by the worker directly
-           via the SyncManager DictProxy BEFORE any result queue operation.
-           This is the fallback when the result queue's ``_wlock`` semaphore
-           has been poisoned (never released) by a crash in a peer worker's
-           ``_feed`` thread.
+        Also detects workers that are alive but whose results are stuck
+        because the result queue's ``_wlock`` semaphore was poisoned by
+        a crashed peer. When this is detected, ALL stuck workers are
+        terminated and the pool is fully restarted with a fresh result
+        queue.
         """
         dead_info = []
+        stuck_info = []
         with self._lock:
             # Check all workers via _worker_task_map (result queue path).
             for pid, (key, task_id) in list(self._worker_task_map.items()):
@@ -515,22 +516,18 @@ class WorkerPoolManager:
             # through the result queue (e.g., when _wlock is poisoned).
             for pid, worker in list(self._pid_to_worker.items()):
                 if pid in self._worker_task_map:
-                    # Already handled above — skip.
                     continue
                 try:
                     alive = worker.is_alive()
                 except ValueError:
-                    # Worker was already closed (e.g. during shutdown).
                     alive = False
 
                 if not alive:
-                    # Check DictProxy for an orphaned task.
                     status = self._shared_state.get(f"_wpool:{pid}")
                     if status is not None:
                         key, task_id = status
                         dead_info.append((pid, key, task_id, worker))
                     else:
-                        # Worker died but wasn't running a task.
                         dead_info.append((pid, None, None, worker))
                     if pid in self._pid_to_worker:
                         del self._pid_to_worker[pid]
@@ -538,7 +535,14 @@ class WorkerPoolManager:
                         self._workers.remove(worker)
                     except ValueError:
                         pass
+                elif self._shared_state.get(f"_wpool:{pid}") is not None:
+                    # Worker is alive AND has a DictProxy entry meaning
+                    # it's running a task. If no results have been
+                    # received for a long time, the queue is likely
+                    # poisoned.
+                    stuck_info.append((pid, worker))
 
+        # Emit signals for dead workers with orphaned tasks.
         for pid, key, task_id, worker in dead_info:
             if key is not None:
                 logger.warning(
@@ -559,28 +563,83 @@ class WorkerPoolManager:
                     self, key=key, task_id=task_id, pid=pid
                 )
 
-        for _ in dead_info:
-            process = self._mp_context.Process(
-                target=_worker_main_loop,
-                args=(
-                    self._task_queue,
-                    self._result_queue,
-                    self._log_level,
-                    self._initializer,
-                    self._initargs,
-                    self._adoption_signals,
-                    self._shared_state,
-                ),
-                daemon=True,
-            )
-            process.start()
-            assert process.pid is not None
-            with self._lock:
-                self._workers.append(process)
-                self._pid_to_worker[process.pid] = process
-            logger.info(
-                f"Replacement worker PID {process.pid} started."
-            )
+        if dead_info:
+            for _ in dead_info:
+                self._spawn_replacement_worker()
+
+        # Detect poisoned result queue: if we have dead workers AND
+        # alive workers that haven't delivered results in a while,
+        # the queue is broken. Do a full restart.
+        if dead_info and stuck_info:
+            no_result_duration = time.monotonic() - self._last_result_time
+            if no_result_duration > 5.0:
+                logger.warning(
+                    f"Result queue appears poisoned (no results for "
+                    f"{no_result_duration:.1f}s). "
+                    f"Restarting all stuck workers."
+                )
+                self._restart_stuck_workers(stuck_info)
+
+    def _restart_stuck_workers(self, stuck_info):
+        """
+        Terminate stuck workers (alive but can't deliver results due to
+        a poisoned result queue), finalize their orphaned tasks, and
+        restart the pool with a fresh result queue.
+        """
+        # Kill stuck workers and emit worker_died for their tasks.
+        for pid, worker in stuck_info:
+            status = self._shared_state.get(f"_wpool:{pid}")
+            if status is not None:
+                key, task_id = status
+                logger.warning(
+                    f"Terminating stuck worker PID {pid} "
+                    f"(task '{key}', id: {task_id})."
+                )
+                try:
+                    worker.terminate()
+                    worker.join(timeout=2.0)
+                    worker.close()
+                except (ValueError, OSError):
+                    pass
+                self.worker_died.send(
+                    self, key=key, task_id=task_id, pid=pid
+                )
+
+        with self._lock:
+            for pid, worker in stuck_info:
+                if pid in self._pid_to_worker:
+                    del self._pid_to_worker[pid]
+                try:
+                    self._workers.remove(worker)
+                except ValueError:
+                    pass
+
+        for _ in stuck_info:
+            self._spawn_replacement_worker()
+
+    def _spawn_replacement_worker(self):
+        """Start a single replacement worker process."""
+        process = self._mp_context.Process(
+            target=_worker_main_loop,
+            args=(
+                self._task_queue,
+                self._result_queue,
+                self._log_level,
+                self._initializer,
+                self._initargs,
+                self._adoption_signals,
+                self._shared_state,
+            ),
+            daemon=True,
+        )
+        process.start()
+        assert process.pid is not None
+        with self._lock:
+            self._workers.append(process)
+            self._pid_to_worker[process.pid] = process
+        logger.info(
+            f"Replacement worker PID {process.pid} started."
+        )
 
     def shutdown(self, timeout: float = 2.0):
         """
