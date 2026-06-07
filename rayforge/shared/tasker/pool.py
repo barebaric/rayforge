@@ -160,6 +160,22 @@ def _worker_main_loop(
             f"key={key}, last_task_key={last_task_key}"
         )
 
+        cancel_key = f"cancel:{task_id}"
+        if cancel_key in adoption_signals:
+            worker_logger.debug(
+                f"Worker {os.getpid()} skipping already-cancelled "
+                f"task '{key}' (id: {task_id})."
+            )
+            try:
+                result_queue.put_nowait(
+                    (key, task_id, "done", None)
+                )
+            except (OSError, BrokenPipeError):
+                pass
+            adoption_signals.pop(cancel_key, None)
+            shared_state.pop(f"_wpool:{os.getpid()}", None)
+            continue
+
         # Track this task via the DictProxy BEFORE running user_func.
         # This is the sole mechanism for identifying orphaned tasks when
         # a worker crashes — it uses the SyncManager's own connection,
