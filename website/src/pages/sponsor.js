@@ -19,6 +19,7 @@ import {
   mdiBookmarkOutline,
   mdiCodeTags,
   mdiAccountGroup,
+  mdiPatreon,
 } from '@mdi/js';
 import styles from './sponsor.module.css';
 
@@ -240,6 +241,36 @@ export default function Sponsor() {
                 message: 'Get in Touch',
               })}
             </a>
+          </div>
+        </section>
+
+        {/* Current Sponsors */}
+        <section className={styles.sponsorsSection}>
+          <div className={styles.sponsorsInner}>
+            <h2 className={styles.sectionTitle}>
+              {translate({
+                id: 'sponsor.sponsors.title',
+                message: 'Current Sponsors',
+              })}
+            </h2>
+            <p className={styles.sectionSubtitle}>
+              {translate({
+                id: 'sponsor.sponsors.subtitle',
+                message: 'Special thanks to our current sponsors!',
+              })}
+            </p>
+            <div className={styles.sponsorsGrid}>
+              {['starlynx.dev', 'old-man-and-the-seam'].map((name) => (
+                <div className={styles.sponsorCard} key={name}>
+                  <Icon
+                    path={mdiPatreon}
+                    size={1}
+                    className={styles.sponsorIcon}
+                  />
+                  {name}
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
