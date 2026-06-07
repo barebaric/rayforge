@@ -151,9 +151,34 @@ class StressTestController:
         """
         start = time.monotonic()
         timeout = self.config.max_settle_wait_sec
+        last_log = start
         while time.monotonic() - start < timeout:
-            if not self.pipeline.is_busy and not self.task_mgr.has_tasks():
+            if not self.pipeline.is_busy:
                 return True
+            now = time.monotonic()
+            if now - last_log >= 2.0:
+                reason = self.pipeline._busy_reason()
+                scheduler = self.pipeline._scheduler
+                graph = scheduler.graph
+                nodes = graph.get_all_nodes()
+                states = {}
+                for n in nodes:
+                    states.setdefault(n.state.value, []).append(
+                        n.key.id[:8]
+                    )
+                active_ctx = self.pipeline._active_context
+                ctx_tasks = (
+                    active_ctx.active_tasks if active_ctx else set()
+                )
+                logger.error(
+                    f"Settle stuck at +{now - start:.1f}s: "
+                    f"busy_reason={reason}, "
+                    f"has_tasks={self.task_mgr.has_tasks()}, "
+                    f"gen_id={self.pipeline._data_generation_id}, "
+                    f"nodes={states}, "
+                    f"ctx_tasks={len(ctx_tasks)}"
+                )
+                last_log = now
             await asyncio.sleep(0.1)
         return False
 
