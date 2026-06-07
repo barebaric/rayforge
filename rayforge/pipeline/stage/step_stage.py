@@ -146,12 +146,20 @@ class StepPipelineStage(PipelineStage):
             self._artifact_manager.release_handle(handle)
 
         task_status = task.get_status()
-        logger.debug(f"[{ledger_key}] Task status is '{task_status}'.")
+        is_current = self._artifact_manager.is_generation_current(
+            ledger_key, task_generation_id
+        )
+        logger.debug(
+            f"[{ledger_key}] Task status is '{task_status}', "
+            f"is_current={is_current}."
+        )
 
         if task_status == "canceled":
             with self._artifact_manager.report_cancellation(
                 ledger_key, task_generation_id
             ):
+                if is_current:
+                    self._emit_node_state(ledger_key, NodeState.DIRTY)
                 self.generation_finished.send(
                     self, step=step, generation_id=task_generation_id
                 )
@@ -172,7 +180,8 @@ class StepPipelineStage(PipelineStage):
                     self, step=step, generation_id=task_generation_id
                 )
         else:
-            self._emit_node_state(ledger_key, NodeState.ERROR)
+            if is_current:
+                self._emit_node_state(ledger_key, NodeState.ERROR)
             with self._artifact_manager.report_failure(
                 ledger_key, task_generation_id
             ):
