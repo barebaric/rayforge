@@ -175,6 +175,7 @@ def get_supporters() -> list[tuple[str, str | None]]:
     Each entry is a tuple of (name, optional_url).
     """
     return [
+        ("starlynx.dev", None),
         ("Anonymous Supporter", None),
     ]
 
