@@ -147,10 +147,20 @@ class StressTestController:
         """
         Wait for pipeline to reach idle state.
 
+        Polls ``pipeline.is_busy`` until it returns ``False``, which
+        covers reconciliation/removal timers, in-flight scheduler work,
+        and live tasks in the task manager.  On previous versions the
+        condition also checked ``task_mgr.has_tasks()`` independently,
+        but that is now redundant because ``is_busy`` already includes
+        that check.
+
         Returns True if settled within timeout, False if timeout exceeded.
         """
         start = time.monotonic()
         timeout = self.config.max_settle_wait_sec
+        # Log diagnostic details every 2 s so that a stuck settle
+        # produces a useful trail (busy reason, node states, active
+        # context tasks) instead of silently timing out.
         last_log = start
         while time.monotonic() - start < timeout:
             if not self.pipeline.is_busy:
@@ -161,6 +171,7 @@ class StressTestController:
                 scheduler = self.pipeline._scheduler
                 graph = scheduler.graph
                 nodes = graph.get_all_nodes()
+                # Bucket nodes by state to keep the log line compact.
                 states = {}
                 for n in nodes:
                     states.setdefault(n.state.value, []).append(
