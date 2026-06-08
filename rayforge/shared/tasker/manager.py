@@ -100,6 +100,7 @@ class TaskManager:
         self._pool.task_progress_updated.connect(self._on_pool_task_progress)
         self._pool.task_message_updated.connect(self._on_pool_task_message)
         self._pool.task_event_received.connect(self._on_pool_task_event)
+        self._pool.worker_died.connect(self._on_pool_worker_died)
 
     def __len__(self) -> int:
         """Return the number of active tasks."""
@@ -578,6 +579,28 @@ class TaskManager:
                 f"key '{key}' (id: {task_id}). NACKing."
             )
             adoption_signals[signal_key] = False
+
+    def _on_pool_worker_died(self, sender, key, task_id, pid):
+        """
+        Handle a worker death by finalizing the orphaned task as failed.
+        Runs on the listener thread; schedules finalization on the main
+        thread.
+        """
+        logger.warning(
+            f"Worker PID {pid} died while processing task "
+            f"'{key}' (id: {task_id}). "
+            f"Marking orphaned task as failed."
+        )
+        self._main_thread_scheduler(
+            self._finalize_pooled_task,
+            key,
+            task_id,
+            "failed",
+            error=(
+                f"Worker process {pid} died unexpectedly "
+                f"while executing task '{key}'."
+            ),
+        )
 
     # === Main Thread Update Methods for Pooled Tasks ===
 

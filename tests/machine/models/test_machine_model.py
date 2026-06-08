@@ -975,9 +975,7 @@ class TestSetterEqualityGuards:
         machine.set_origin(Origin.TOP_LEFT)
         assert len(signals) == 1
 
-    def test_set_soft_limits_enabled_no_signal_on_same(
-        self, lite_context
-    ):
+    def test_set_soft_limits_enabled_no_signal_on_same(self, lite_context):
         machine = Machine(lite_context)
         machine.soft_limits_enabled = False
         signals = []
@@ -989,9 +987,7 @@ class TestSetterEqualityGuards:
         machine.set_soft_limits_enabled(False)
         assert len(signals) == 0
 
-    def test_set_soft_limits_enabled_signal_on_change(
-        self, lite_context
-    ):
+    def test_set_soft_limits_enabled_signal_on_change(self, lite_context):
         machine = Machine(lite_context)
         machine.soft_limits_enabled = False
         signals = []
@@ -1056,9 +1052,7 @@ class TestSetDriverEmitsChanged:
         machine.set_driver(TestDriver, {"port": "/dev/null"})
         assert len(signals) >= 1
 
-    def test_set_driver_args_emits_changed_signal(
-        self, lite_context
-    ):
+    def test_set_driver_args_emits_changed_signal(self, lite_context):
         machine = Machine(lite_context)
         lite_context.machine_mgr.add_machine(machine)
         from rayforge.machine.driver.dummy import NoDeviceDriver

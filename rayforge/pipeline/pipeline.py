@@ -312,9 +312,7 @@ class Pipeline:
             return "removal_timer"
         if self._scheduler.has_pending_work():
             nodes = self._scheduler.graph.get_all_nodes()
-            proc = [
-                n.key for n in nodes if n.state.value == "processing"
-            ]
+            proc = [n.key for n in nodes if n.state.value == "processing"]
             return f"pending_work(processing={proc})"
         if self._task_manager.has_tasks():
             return "has_tasks"
@@ -958,10 +956,7 @@ class Pipeline:
         if task_status != "canceled":
             had_timer = self._reconciliation_timer is not None
             self._scheduler.process_graph()
-            if (
-                self._reconciliation_timer is not None
-                and not had_timer
-            ):
+            if self._reconciliation_timer is not None and not had_timer:
                 logger.debug(
                     f"Completion of gen {generation_id} triggered new "
                     f"invalidation — process_graph work will be handled "
