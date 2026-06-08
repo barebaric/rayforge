@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import cairo
 import pytest
-from laser_essentials.producers import DepthMode, Rasterizer
+from laser_essentials.producers import DepthMode, Rasterizer, ScanMode
 from raygeo.ops.types import CommandType, SectionType
 
 from rayforge.core.workpiece import WorkPiece
@@ -1150,6 +1150,377 @@ def test_constant_power_with_scan_angle(
 
     assert len(scan_indices_horizontal) >= 1
     assert len(scan_indices_angled) >= 1
+
+
+class TestScanMode:
+    """Tests for ScanMode parameter on Rasterizer."""
+
+    def test_default_is_segmented(self, producer: Rasterizer):
+        assert producer.scan_mode == ScanMode.Segmented
+
+    def test_full_sweep_construction(self):
+        r = Rasterizer(scan_mode=ScanMode.FullSweep)
+        assert r.scan_mode == ScanMode.FullSweep
+
+    def test_segmented_construction(self):
+        r = Rasterizer(scan_mode=ScanMode.Segmented)
+        assert r.scan_mode == ScanMode.Segmented
+
+
+class TestScanModeSerialization:
+    """Tests for serialization/deserialization of scan_mode."""
+
+    def test_to_dict_includes_scan_mode(self, producer: Rasterizer):
+        data = producer.to_dict()
+        assert "scan_mode" in data["params"]
+
+    def test_to_dict_default_is_segmented(self, producer: Rasterizer):
+        data = producer.to_dict()
+        assert data["params"]["scan_mode"] == "Segmented"
+
+    def test_to_dict_full_sweep(self):
+        r = Rasterizer(scan_mode=ScanMode.FullSweep)
+        data = r.to_dict()
+        assert data["params"]["scan_mode"] == "FullSweep"
+
+    def test_from_dict_with_scan_mode(self):
+        data = {
+            "type": "Rasterizer",
+            "params": {"scan_mode": "FullSweep"},
+        }
+        r = Rasterizer.from_dict(data)
+        assert r.scan_mode == ScanMode.FullSweep
+
+    def test_from_dict_segmented(self):
+        data = {
+            "type": "Rasterizer",
+            "params": {"scan_mode": "Segmented"},
+        }
+        r = Rasterizer.from_dict(data)
+        assert r.scan_mode == ScanMode.Segmented
+
+    def test_from_dict_default_scan_mode(self):
+        data = {
+            "type": "Rasterizer",
+            "params": {},
+        }
+        r = Rasterizer.from_dict(data)
+        assert r.scan_mode == ScanMode.Segmented
+
+    def test_from_dict_invalid_scan_mode(self):
+        data = {
+            "type": "Rasterizer",
+            "params": {"scan_mode": "INVALID"},
+        }
+        r = Rasterizer.from_dict(data)
+        assert r.scan_mode == ScanMode.Segmented
+
+    def test_roundtrip_segmented(self):
+        original = Rasterizer(scan_mode=ScanMode.Segmented)
+        data = original.to_dict()
+        recreated = Rasterizer.from_dict(data)
+        assert recreated.scan_mode == ScanMode.Segmented
+
+    def test_roundtrip_full_sweep(self):
+        original = Rasterizer(scan_mode=ScanMode.FullSweep)
+        data = original.to_dict()
+        recreated = Rasterizer.from_dict(data)
+        assert recreated.scan_mode == ScanMode.FullSweep
+
+    def test_to_dict_roundtrip_preserves_all_params(self):
+        original = Rasterizer(
+            scan_mode=ScanMode.FullSweep,
+            scan_angle=45.0,
+            depth_mode=DepthMode.POWER_MODULATION,
+            min_power=0.1,
+            max_power=0.9,
+        )
+        data = original.to_dict()
+        recreated = Rasterizer.from_dict(data)
+        assert recreated.scan_mode == ScanMode.FullSweep
+        assert recreated.scan_angle == 45.0
+        assert recreated.depth_mode == DepthMode.POWER_MODULATION
+
+    def test_backward_compat_segmented_upper(self):
+        data = {
+            "type": "Rasterizer",
+            "params": {"scan_mode": "SEGMENTED"},
+        }
+        r = Rasterizer.from_dict(data)
+        assert r.scan_mode == ScanMode.Segmented
+
+    def test_backward_compat_full_sweep_upper(self):
+        data = {
+            "type": "Rasterizer",
+            "params": {"scan_mode": "FULL_SWEEP"},
+        }
+        r = Rasterizer.from_dict(data)
+        assert r.scan_mode == ScanMode.FullSweep
+
+
+def _make_striped_surface(
+    width: int, height: int, stripe_width: int
+) -> cairo.ImageSurface:
+    """Create a surface with alternating black/white vertical stripes."""
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+    ctx = cairo.Context(surface)
+    for x in range(0, width, stripe_width):
+        brightness = 0.0 if (x // stripe_width) % 2 == 0 else 1.0
+        ctx.set_source_rgb(brightness, brightness, brightness)
+        ctx.rectangle(x, 0, stripe_width, height)
+        ctx.fill()
+    return surface
+
+
+class TestPowerModulationFullSweep:
+    """Integration tests: POWER_MODULATION with Full Sweep."""
+
+    def test_full_sweep_fewer_scans_than_segmented(
+        self, laser: Laser, mock_workpiece: WorkPiece
+    ):
+        surface = _make_striped_surface(10, 10, 2)
+        mock_workpiece.set_size(1.0, 1.0)
+
+        seg = Rasterizer(
+            scan_mode=ScanMode.Segmented,
+            depth_mode=DepthMode.POWER_MODULATION,
+        )
+        full = Rasterizer(
+            scan_mode=ScanMode.FullSweep,
+            depth_mode=DepthMode.POWER_MODULATION,
+        )
+
+        art_seg = seg.run(
+            laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+        )
+        art_full = full.run(
+            laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+        )
+
+        scans_seg = len(art_seg.ops.indices_of(CommandType.SCAN_LINE))
+        scans_full = len(art_full.ops.indices_of(CommandType.SCAN_LINE))
+
+        assert scans_seg > 0
+        assert scans_full > 0
+        assert scans_full < scans_seg
+
+    def test_full_sweep_includes_zero_power_gaps(
+        self, laser: Laser, mock_workpiece: WorkPiece
+    ):
+        surface = _make_striped_surface(10, 10, 2)
+        mock_workpiece.set_size(1.0, 1.0)
+
+        full = Rasterizer(
+            scan_mode=ScanMode.FullSweep,
+            depth_mode=DepthMode.POWER_MODULATION,
+        )
+        art = full.run(
+            laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+        )
+
+        scan_indices = art.ops.indices_of(CommandType.SCAN_LINE)
+        assert len(scan_indices) > 0
+
+        all_power_vals = []
+        for i in scan_indices:
+            all_power_vals.extend(art.ops.scanline_data(i))
+
+        has_zero = any(v == 0 for v in all_power_vals)
+        has_nonzero = any(v > 0 for v in all_power_vals)
+        assert has_zero, "Full sweep should have zero-power gaps"
+        assert has_nonzero, "Full sweep should have non-zero power values"
+
+    def test_full_sweep_uniform_image(
+        self, laser: Laser, mock_workpiece: WorkPiece
+    ):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(0, 0, 0)
+        ctx.paint()
+        mock_workpiece.set_size(1.0, 1.0)
+
+        full = Rasterizer(
+            scan_mode=ScanMode.FullSweep,
+            depth_mode=DepthMode.POWER_MODULATION,
+        )
+        art = full.run(
+            laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+        )
+
+        scan_indices = art.ops.indices_of(CommandType.SCAN_LINE)
+        assert len(scan_indices) > 0
+
+    def test_full_sweep_with_angle(
+        self, laser: Laser, mock_workpiece: WorkPiece
+    ):
+        surface = _make_striped_surface(10, 10, 2)
+        mock_workpiece.set_size(1.0, 1.0)
+
+        full = Rasterizer(
+            scan_mode=ScanMode.FullSweep,
+            depth_mode=DepthMode.POWER_MODULATION,
+            scan_angle=45.0,
+        )
+        art = full.run(
+            laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+        )
+
+        scan_indices = art.ops.indices_of(CommandType.SCAN_LINE)
+        assert len(scan_indices) > 0
+
+
+class TestConstantPowerFullSweep:
+    """Integration tests: CONSTANT_POWER + DITHER with Full Sweep."""
+
+    def test_full_sweep_fewer_scans_than_segmented(
+        self, laser: Laser, mock_workpiece: WorkPiece
+    ):
+        surface = _make_striped_surface(10, 10, 2)
+        mock_workpiece.set_size(1.0, 1.0)
+
+        seg = Rasterizer(
+            scan_mode=ScanMode.Segmented,
+            depth_mode=DepthMode.CONSTANT_POWER,
+            threshold=128,
+        )
+        full = Rasterizer(
+            scan_mode=ScanMode.FullSweep,
+            depth_mode=DepthMode.CONSTANT_POWER,
+            threshold=128,
+        )
+
+        art_seg = seg.run(
+            laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+        )
+        art_full = full.run(
+            laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+        )
+
+        scans_seg = len(art_seg.ops.indices_of(CommandType.SCAN_LINE))
+        scans_full = len(art_full.ops.indices_of(CommandType.SCAN_LINE))
+
+        assert scans_seg > 0
+        assert scans_full > 0
+        assert scans_full < scans_seg
+
+    def test_full_sweep_empty_mask(
+        self, laser: Laser, mock_workpiece: WorkPiece
+    ):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(1, 1, 1)
+        ctx.paint()
+        mock_workpiece.set_size(1.0, 1.0)
+
+        full = Rasterizer(
+            scan_mode=ScanMode.FullSweep,
+            depth_mode=DepthMode.CONSTANT_POWER,
+            threshold=128,
+        )
+        art = full.run(
+            laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+        )
+
+        scans = art.ops.indices_of(CommandType.SCAN_LINE)
+        assert len(scans) == 0
+
+    def test_full_sweep_full_mask(
+        self, laser: Laser, mock_workpiece: WorkPiece
+    ):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(0, 0, 0)
+        ctx.paint()
+        mock_workpiece.set_size(1.0, 1.0)
+
+        full = Rasterizer(
+            scan_mode=ScanMode.FullSweep,
+            depth_mode=DepthMode.CONSTANT_POWER,
+            threshold=128,
+        )
+        art = full.run(
+            laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+        )
+
+        scans = art.ops.indices_of(CommandType.SCAN_LINE)
+        assert len(scans) > 0
+
+    def test_full_sweep_dither(self, laser: Laser, mock_workpiece: WorkPiece):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(0.5, 0.5, 0.5)
+        ctx.paint()
+        mock_workpiece.set_size(1.0, 1.0)
+
+        full = Rasterizer(
+            scan_mode=ScanMode.FullSweep,
+            depth_mode=DepthMode.DITHER,
+        )
+        art = full.run(
+            laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+        )
+
+        scans = art.ops.indices_of(CommandType.SCAN_LINE)
+        assert len(scans) > 0
+
+
+class TestMultiPassFullSweep:
+    """Integration tests: MULTI_PASS with Full Sweep."""
+
+    def test_full_sweep_fewer_lines_than_segmented(
+        self, laser: Laser, mock_workpiece: WorkPiece
+    ):
+        surface = _make_striped_surface(10, 10, 2)
+        mock_workpiece.set_size(1.0, 1.0)
+
+        seg = Rasterizer(
+            scan_mode=ScanMode.Segmented,
+            depth_mode=DepthMode.MULTI_PASS,
+            num_depth_levels=1,
+        )
+        full = Rasterizer(
+            scan_mode=ScanMode.FullSweep,
+            depth_mode=DepthMode.MULTI_PASS,
+            num_depth_levels=1,
+        )
+
+        art_seg = seg.run(
+            laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+        )
+        art_full = full.run(
+            laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+        )
+
+        lines_seg = len(art_seg.ops.indices_of(CommandType.LINE_TO))
+        lines_full = len(art_full.ops.indices_of(CommandType.LINE_TO))
+
+        assert lines_seg > 0
+        assert lines_full > 0
+        assert lines_full < lines_seg
+
+    def test_full_sweep_with_angle_increment(
+        self, laser: Laser, mock_workpiece: WorkPiece
+    ):
+        surface = _make_striped_surface(10, 10, 2)
+        mock_workpiece.set_size(1.0, 1.0)
+
+        full = Rasterizer(
+            scan_mode=ScanMode.FullSweep,
+            depth_mode=DepthMode.MULTI_PASS,
+            num_depth_levels=2,
+            angle_increment=45.0,
+        )
+        art = full.run(
+            laser, surface, (10, 10), workpiece=mock_workpiece, generation_id=1
+        )
+
+        lines = art.ops.indices_of(CommandType.LINE_TO)
+        assert len(lines) > 0
+
+
+def test_initialization_defaults_includes_scan_mode(producer: Rasterizer):
+    """Verify scan_mode default is Segmented."""
+    assert producer.scan_mode == ScanMode.Segmented
 
 
 def test_power_modulation_with_scan_angle(

@@ -28,9 +28,9 @@ class OpPlayer:
         self._prev_layer_uid: Optional[str] = None
         self.state = self._create_home_state()
         self.layer_changed = Signal()
-        self._snapshots: List[Tuple[
-            int, MachineState, Axis, Optional[Axis]
-        ]] = []
+        self._snapshots: List[
+            Tuple[int, MachineState, Axis, Optional[Axis]]
+        ] = []
         self._build_snapshots()
 
     def _build_snapshots(self):
@@ -43,12 +43,14 @@ class OpPlayer:
         interval = _SNAPSHOT_INTERVAL
         for target in range(interval, n, interval):
             temp_player.advance_to(target - 1)
-            self._snapshots.append((
-                target,
-                temp_player.state.copy(),
-                temp_player._source_axis,
-                temp_player._rotary_axis,
-            ))
+            self._snapshots.append(
+                (
+                    target,
+                    temp_player.state.copy(),
+                    temp_player._source_axis,
+                    temp_player._rotary_axis,
+                )
+            )
 
     @property
     def current_index(self) -> int:
@@ -102,9 +104,9 @@ class OpPlayer:
 
         snapshot_idx = self._find_snapshot(index)
         if snapshot_idx is not None:
-            snap_index, snap_state, snap_source, snap_rotary = (
-                self._snapshots[snapshot_idx]
-            )
+            snap_index, snap_state, snap_source, snap_rotary = self._snapshots[
+                snapshot_idx
+            ]
             self.state = snap_state.copy()
             self._current_index = snap_index - 1
             self._source_axis = snap_source
@@ -203,9 +205,7 @@ class _SnapshotBuilder:
         for i in range(self._current_index + 1, index + 1):
             ct = self.ops.command_type(i)
             if ct == CommandType.LAYER_START:
-                item = self._doc.find_descendant_by_uid(
-                    self.ops.layer_uid(i)
-                )
+                item = self._doc.find_descendant_by_uid(self.ops.layer_uid(i))
                 if isinstance(item, Layer):
                     module = (
                         self._machine.rotary_modules.get(
