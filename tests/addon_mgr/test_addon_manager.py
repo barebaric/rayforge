@@ -35,7 +35,7 @@ def create_addon_files(
     author_name: str = "Test Author",
     author_email: str = "test@example.com",
     worker: Optional[str] = "test_plugin.worker",
-    api_version: int = 13,
+    api_version: int = 15,
 ) -> Path:
     """Create a minimal valid addon directory on disk."""
     addon_dir = dest / name

@@ -23,7 +23,7 @@ class TestAddonRoundTrip:
 
         (addon_dir / "rayforge-addon.yaml").write_text(
             "name: this_name_is_ignored\nversion: 0.1\n"
-            "api_version: 13\n"
+            "api_version: 15\n"
             "depends:\n"
             "  - rayforge>=0.27.0,~0.27\n"
             "author:\n"
@@ -93,7 +93,7 @@ class TestAddonRoundTrip:
 
         (addon_dir / "rayforge-addon.yaml").write_text(
             "name: this_name_is_ignored\nversion: 0.1\n"
-            "api_version: 13\n"
+            "api_version: 15\n"
             "depends:\n"
             "  - rayforge>=0.27.0,~0.27\n"
             "author:\n"
@@ -152,7 +152,7 @@ class TestAddonRoundTrip:
 
         (addon_dir / "rayforge-addon.yaml").write_text(
             "name: this_name_is_ignored\nversion: 0.1\n"
-            "api_version: 13\n"
+            "api_version: 15\n"
             "depends:\n"
             "  - rayforge>=0.27.0,~0.27\n"
             "provides:\n"
