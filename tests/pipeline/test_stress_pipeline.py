@@ -147,13 +147,49 @@ class StressTestController:
         """
         Wait for pipeline to reach idle state.
 
+        Polls ``pipeline.is_busy`` until it returns ``False``, which
+        covers reconciliation/removal timers, in-flight scheduler work,
+        and live tasks in the task manager.  On previous versions the
+        condition also checked ``task_mgr.has_tasks()`` independently,
+        but that is now redundant because ``is_busy`` already includes
+        that check.
+
         Returns True if settled within timeout, False if timeout exceeded.
         """
         start = time.monotonic()
         timeout = self.config.max_settle_wait_sec
+        # Log diagnostic details every 2 s so that a stuck settle
+        # produces a useful trail (busy reason, node states, active
+        # context tasks) instead of silently timing out.
+        last_log = start
         while time.monotonic() - start < timeout:
-            if not self.pipeline.is_busy and not self.task_mgr.has_tasks():
+            if not self.pipeline.is_busy:
                 return True
+            now = time.monotonic()
+            if now - last_log >= 2.0:
+                reason = self.pipeline._busy_reason()
+                scheduler = self.pipeline._scheduler
+                graph = scheduler.graph
+                nodes = graph.get_all_nodes()
+                # Bucket nodes by state to keep the log line compact.
+                states = {}
+                for n in nodes:
+                    states.setdefault(n.state.value, []).append(
+                        n.key.id[:8]
+                    )
+                active_ctx = self.pipeline._active_context
+                ctx_tasks = (
+                    active_ctx.active_tasks if active_ctx else set()
+                )
+                logger.error(
+                    f"Settle stuck at +{now - start:.1f}s: "
+                    f"busy_reason={reason}, "
+                    f"has_tasks={self.task_mgr.has_tasks()}, "
+                    f"gen_id={self.pipeline._data_generation_id}, "
+                    f"nodes={states}, "
+                    f"ctx_tasks={len(ctx_tasks)}"
+                )
+                last_log = now
             await asyncio.sleep(0.1)
         return False
 

@@ -305,6 +305,21 @@ class Pipeline:
                 self._data_stale_flag = True
                 self.data_stale.send(self)
 
+    def _busy_reason(self) -> str:
+        if self._reconciliation_timer is not None:
+            return "reconciliation_timer"
+        if self._removal_timer is not None:
+            return "removal_timer"
+        if self._scheduler.has_pending_work():
+            nodes = self._scheduler.graph.get_all_nodes()
+            proc = [
+                n.key for n in nodes if n.state.value == "processing"
+            ]
+            return f"pending_work(processing={proc})"
+        if self._task_manager.has_tasks():
+            return "has_tasks"
+        return "none"
+
     @property
     def is_busy(self) -> bool:
         """
@@ -315,7 +330,15 @@ class Pipeline:
         1. A reconciliation timer is pending, OR
         2. A removal timer is pending, OR
         3. The scheduler has pending work (PROCESSING nodes), OR
-        4. Any context (active or inactive) has active tasks
+        4. The task manager has active tasks
+
+        Both checks 3 and 4 are needed because they can diverge:
+        ``artifact_created`` events can set DAG nodes to VALID before
+        the worker has sent its final "done" message, causing
+        ``has_pending_work()`` to return False while tasks are still
+        live in the TaskManager.  Conversely, a cancelled task is
+        removed from the TaskManager immediately but its DAG node may
+        still appear as PROCESSING until the cancellation propagates.
         """
         if self._reconciliation_timer is not None:
             return True
@@ -323,9 +346,11 @@ class Pipeline:
             return True
         if self._scheduler.has_pending_work():
             return True
-        for ctx in self._contexts.values():
-            if ctx.has_active_tasks():
-                return True
+        if self._task_manager.has_tasks():
+            return True
+        active_ctx = self._active_context
+        if active_ctx is not None and active_ctx.has_active_tasks():
+            return True
         return False
 
     def _check_and_update_processing_state(self) -> None:
@@ -913,6 +938,14 @@ class Pipeline:
         if self._is_shutting_down:
             return
 
+        if generation_id < self._data_generation_id:
+            logger.debug(
+                f"Ignoring stale workpiece completion for "
+                f"generation {generation_id} "
+                f"(current: {self._data_generation_id})"
+            )
+            return
+
         if handle is not None:
             self.workpiece_artifact_ready.send(
                 self,
@@ -923,7 +956,17 @@ class Pipeline:
             )
 
         if task_status != "canceled":
+            had_timer = self._reconciliation_timer is not None
             self._scheduler.process_graph()
+            if (
+                self._reconciliation_timer is not None
+                and not had_timer
+            ):
+                logger.debug(
+                    f"Completion of gen {generation_id} triggered new "
+                    f"invalidation — process_graph work will be handled "
+                    f"by debounced reconciliation."
+                )
 
         if not self.is_busy and self._reconciliation_timer is None:
             self._task_manager.schedule_on_main_thread(

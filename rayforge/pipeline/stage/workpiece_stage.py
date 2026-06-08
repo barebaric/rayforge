@@ -205,12 +205,20 @@ class WorkPiecePipelineStage(PipelineStage):
             context.task_did_finish(key)
 
         task_status = task.get_status()
-        logger.debug(f"[{key}] Task status is '{task_status}'.")
+        is_current = self._artifact_manager.is_generation_current(
+            key, generation_id
+        )
+        logger.debug(
+            f"[{key}] Task status is '{task_status}', "
+            f"is_current={is_current}."
+        )
 
         if task_status == "canceled":
             with self._artifact_manager.report_cancellation(
                 key, generation_id
             ) as handle:
+                if is_current:
+                    self._emit_node_state(key, NodeState.DIRTY)
                 self.generation_finished.send(
                     self,
                     step=step,
@@ -247,7 +255,8 @@ class WorkPiecePipelineStage(PipelineStage):
                 f"Ops generation for '{step.name}' on '{wp_name}' failed."
             )
             logger.warning(f"[{key}] {error_msg}")
-            self._emit_node_state(key, NodeState.ERROR)
+            if is_current:
+                self._emit_node_state(key, NodeState.ERROR)
             with self._artifact_manager.report_failure(
                 key, generation_id
             ) as handle:
