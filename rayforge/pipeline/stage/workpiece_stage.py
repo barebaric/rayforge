@@ -209,8 +209,7 @@ class WorkPiecePipelineStage(PipelineStage):
             key, generation_id
         )
         logger.debug(
-            f"[{key}] Task status is '{task_status}', "
-            f"is_current={is_current}."
+            f"[{key}] Task status is '{task_status}', is_current={is_current}."
         )
 
         if task_status == "canceled":
