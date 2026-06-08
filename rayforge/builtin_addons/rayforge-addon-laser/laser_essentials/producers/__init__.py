@@ -13,7 +13,7 @@ from .material_test_grid_producer import (
     draw_material_test_preview,
     get_material_test_proportional_size,
 )
-from .raster_producer import DepthMode, Rasterizer
+from .raster_producer import DepthMode, Rasterizer, ScanMode
 from .shrinkwrap_producer import ShrinkWrapProducer
 
 __all__ = [
@@ -21,6 +21,7 @@ __all__ = [
     "CutOrder",
     "Rasterizer",
     "DepthMode",
+    "ScanMode",
     "FrameProducer",
     "MaterialTestGridProducer",
     "MaterialTestGridType",

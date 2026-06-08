@@ -48,9 +48,7 @@ def _make_sectioned_mixed_ops():
 
 
 def _count_in_ops(ops, cmd_type):
-    return sum(
-        1 for i in range(ops.len()) if ops.command_type(i) == cmd_type
-    )
+    return sum(1 for i in range(ops.len()) if ops.command_type(i) == cmd_type)
 
 
 # ------------------------------------------------------------------
@@ -73,9 +71,7 @@ def test_bezier_gap_splits_into_two_beziers():
     ops.apply_tab_gaps(clips)
 
     bezier_count = _count_in_ops(ops, CommandType.BEZIER_TO)
-    assert bezier_count == 2, (
-        f"Expected 2 bezier segments, got {bezier_count}"
-    )
+    assert bezier_count == 2, f"Expected 2 bezier segments, got {bezier_count}"
 
 
 def test_bezier_gap_preserves_start_and_end():
@@ -186,7 +182,8 @@ def test_bezier_power_mode_no_overlap():
     assert bezier_count == 1
 
     bezier_idx = next(
-        i for i in range(ops.len())
+        i
+        for i in range(ops.len())
         if ops.command_type(i) == CommandType.BEZIER_TO
     )
     assert ops.endpoint(bezier_idx) == _P1
