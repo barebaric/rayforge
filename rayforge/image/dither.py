@@ -3,8 +3,12 @@
 from enum import Enum
 
 import numpy as np
-
-from .util.srgb import linear_to_srgb, srgb_to_linear
+from raygeo.image import (
+    apply_bayer_dither,
+    apply_floyd_steinberg_dither,
+    apply_minimum_run_length,
+    rgba_to_grayscale,
+)
 
 
 class DitherAlgorithm(Enum):
@@ -36,123 +40,6 @@ BAYER_MATRICES = {
 }
 
 
-def apply_floyd_steinberg_dither(
-    grayscale: np.ndarray, invert: bool
-) -> np.ndarray:
-    """
-    Apply Floyd-Steinberg error diffusion dithering to a grayscale image.
-
-    Args:
-        grayscale: 2D array of grayscale values (0-255).
-        invert: If True, invert the output (engrave light areas).
-
-    Returns:
-        Binary image where 1 represents areas to engrave.
-    """
-    height, width = grayscale.shape
-    linear = srgb_to_linear(np.clip(grayscale, 0, 255).astype(np.uint8))
-    dithered = linear.astype(np.float32).copy()
-
-    for y in range(height):
-        for x in range(width):
-            old_pixel = dithered[y, x]
-            new_pixel = 0.0 if old_pixel < 0.5 else 1.0
-            dithered[y, x] = new_pixel
-            quant_error = old_pixel - new_pixel
-
-            if x + 1 < width:
-                dithered[y, x + 1] += quant_error * 7.0 / 16.0
-            if y + 1 < height:
-                if x > 0:
-                    dithered[y + 1, x - 1] += quant_error * 3.0 / 16.0
-                dithered[y + 1, x] += quant_error * 5.0 / 16.0
-                if x + 1 < width:
-                    dithered[y + 1, x + 1] += quant_error * 1.0 / 16.0
-
-    if invert:
-        return (dithered >= 0.5).astype(np.uint8)
-    else:
-        return (dithered < 0.5).astype(np.uint8)
-
-
-def apply_minimum_run_length(
-    binary: np.ndarray, min_run_length: int
-) -> np.ndarray:
-    """
-    Ensure all runs of 1s are at least min_run_length pixels long.
-
-    Short runs are removed (set to 0). This prevents the laser from
-    attempting to engrave features smaller than its spot size.
-
-    Args:
-        binary: 2D binary array.
-        min_run_length: Minimum run length in pixels.
-
-    Returns:
-        Binary array with short runs removed.
-    """
-    if min_run_length <= 1:
-        return binary
-
-    result = binary.copy()
-    height, width = binary.shape
-
-    for y in range(height):
-        row = result[y, :]
-        x = 0
-        while x < width:
-            if row[x] == 1:
-                run_start = x
-                while x < width and row[x] == 1:
-                    x += 1
-                run_length = x - run_start
-                if run_length < min_run_length:
-                    row[run_start:x] = 0
-            else:
-                x += 1
-
-    return result
-
-
-def apply_bayer_dither(
-    grayscale: np.ndarray,
-    bayer_matrix: np.ndarray,
-    invert: bool,
-    cell_size: int = 1,
-) -> np.ndarray:
-    """
-    Apply ordered dithering using a Bayer matrix.
-
-    Args:
-        grayscale: 2D array of grayscale values (0-255).
-        bayer_matrix: Bayer threshold matrix.
-        invert: If True, invert the output (engrave light areas).
-        cell_size: Size of each dither cell in pixels. Values > 1 create
-            larger threshold regions suitable for coarser laser resolution.
-
-    Returns:
-        Binary image where 1 represents areas to engrave.
-    """
-    height, width = grayscale.shape
-    matrix_size = bayer_matrix.shape[0]
-
-    normalized_matrix = (bayer_matrix / (matrix_size * matrix_size)) * 255.0
-
-    result = np.zeros((height, width), dtype=np.uint8)
-
-    for y in range(height):
-        for x in range(width):
-            cell_x = (x // cell_size) % matrix_size
-            cell_y = (y // cell_size) % matrix_size
-            threshold = normalized_matrix[cell_y, cell_x]
-            if invert:
-                result[y, x] = 1 if grayscale[y, x] > threshold else 0
-            else:
-                result[y, x] = 1 if grayscale[y, x] < threshold else 0
-
-    return result
-
-
 def surface_to_dithered_array(
     surface,
     dither_algorithm: DitherAlgorithm,
@@ -166,48 +53,17 @@ def surface_to_dithered_array(
         surface: Cairo surface in ARGB32 format.
         dither_algorithm: The dithering algorithm to use.
         invert: If True, invert the output (engrave light areas).
-        min_feature_px: Minimum feature size in pixels. Ensures dithered
-            patterns have features no smaller than this size, suitable
-            for the laser's spot size.
+        min_feature_px: Minimum feature size in pixels.
 
     Returns:
         Binary image where 1 represents areas to engrave.
     """
     width = surface.get_width()
     height = surface.get_height()
-    stride = surface.get_stride()
+    stride_px = surface.get_stride() // 4
+    buf = np.frombuffer(surface.get_data(), dtype=np.uint8).copy()
 
-    buf = surface.get_data()
-    data_with_padding = np.ndarray(
-        shape=(height, stride // 4, 4), dtype=np.uint8, buffer=buf
-    )
-    data = data_with_padding[:, :width, :]
-
-    blue = data[:, :, 0].astype(np.float32)
-    green = data[:, :, 1].astype(np.float32)
-    red = data[:, :, 2].astype(np.float32)
-    alpha = data[:, :, 3].astype(np.float32)
-
-    alpha_safe = np.maximum(alpha, 1e-6)
-
-    red_unpremult = np.clip(red * 255.0 / alpha_safe, 0, 255)
-    green_unpremult = np.clip(green * 255.0 / alpha_safe, 0, 255)
-    blue_unpremult = np.clip(blue * 255.0 / alpha_safe, 0, 255)
-
-    red_linear = srgb_to_linear(red_unpremult.astype(np.uint8))
-    green_linear = srgb_to_linear(green_unpremult.astype(np.uint8))
-    blue_linear = srgb_to_linear(blue_unpremult.astype(np.uint8))
-
-    alpha_normalized = alpha / 255.0
-    red_blended = 1.0 - (1.0 - red_linear) * alpha_normalized
-    green_blended = 1.0 - (1.0 - green_linear) * alpha_normalized
-    blue_blended = 1.0 - (1.0 - blue_linear) * alpha_normalized
-
-    gray_linear = (
-        0.2989 * red_blended + 0.5870 * green_blended + 0.1140 * blue_blended
-    )
-
-    grayscale = linear_to_srgb(gray_linear).astype(np.float32)
+    grayscale, _ = rgba_to_grayscale(buf, width, height, stride_px)
 
     if dither_algorithm == DitherAlgorithm.FLOYD_STEINBERG:
         bw_image = apply_floyd_steinberg_dither(grayscale, invert)
@@ -218,5 +74,4 @@ def surface_to_dithered_array(
             grayscale, bayer_matrix, invert, cell_size=min_feature_px
         )
 
-    bw_image[alpha == 0] = 0
     return bw_image
