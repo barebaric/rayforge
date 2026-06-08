@@ -226,7 +226,6 @@ class StepPipelineStage(PipelineStage):
                     )
 
         ledger_key = ArtifactKey.for_step(step.uid)
-        self._emit_node_state(ledger_key, NodeState.PROCESSING)
 
         from ..stage.step_runner import make_step_artifact_in_subprocess
 
@@ -257,6 +256,8 @@ class StepPipelineStage(PipelineStage):
             ),
         )
         self._retained_handles_by_task[task.id] = retained_handles
+
+        self._emit_node_state(ledger_key, NodeState.PROCESSING)
 
     def get_estimate(self, step_uid: StepKey) -> Optional[float]:
         """Retrieves a cached time estimate if available."""

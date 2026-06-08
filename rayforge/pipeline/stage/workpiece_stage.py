@@ -304,8 +304,6 @@ class WorkPiecePipelineStage(PipelineStage):
 
         workpiece_dict = self.prepare_workpiece_dict(workpiece)
 
-        self._emit_node_state(key, NodeState.PROCESSING)
-
         if context is not None:
             context.add_task(key)
 
@@ -320,6 +318,8 @@ class WorkPiecePipelineStage(PipelineStage):
             workpiece.size,
             context,
         )
+
+        self._emit_node_state(key, NodeState.PROCESSING)
 
     def _create_and_register_task(
         self,
