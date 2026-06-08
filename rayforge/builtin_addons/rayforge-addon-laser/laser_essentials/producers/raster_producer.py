@@ -8,6 +8,7 @@ import numpy as np
 from raygeo.image import compute_auto_levels, normalize_grayscale
 from raygeo.ops import Ops
 from raygeo.ops.raster import (
+    ScanMode,
     rasterize_mask_scan,
     rasterize_multi_pass,
     rasterize_power_modulation,
@@ -69,6 +70,7 @@ class Rasterizer(OpsProducer):
         self,
         scan_angle: float = 0.0,
         depth_mode: DepthMode = DepthMode.POWER_MODULATION,
+        scan_mode: ScanMode = ScanMode.Segmented,
         threshold: int = 128,
         dither_algorithm: Optional[
             DitherAlgorithm
@@ -90,6 +92,7 @@ class Rasterizer(OpsProducer):
     ):
         self.scan_angle = scan_angle
         self.depth_mode = depth_mode
+        self.scan_mode = scan_mode
         self.threshold = threshold
         self.dither_algorithm = dither_algorithm
         self.cross_hatch = cross_hatch
@@ -319,6 +322,7 @@ class Rasterizer(OpsProducer):
             step_power=step_power,
             num_power_levels=self.num_power_levels,
             angle=angle,
+            scan_mode=self.scan_mode,
         )
 
     def _run_constant_power(
@@ -360,6 +364,7 @@ class Rasterizer(OpsProducer):
             line_interval_mm,
             step_power=step_power,
             angle=angle,
+            scan_mode=self.scan_mode,
         )
 
     def _run_multi_pass(
@@ -381,6 +386,7 @@ class Rasterizer(OpsProducer):
             self.z_step_down,
             angle=angle,
             angle_increment=self.angle_increment,
+            scan_mode=self.scan_mode,
         )
 
     @staticmethod
@@ -405,6 +411,7 @@ class Rasterizer(OpsProducer):
             "params": {
                 "scan_angle": self.scan_angle,
                 "depth_mode": self.depth_mode.name,
+                "scan_mode": self.scan_mode.name,
                 "threshold": self.threshold,
                 "dither_algorithm": (
                     self.dither_algorithm.value
@@ -447,6 +454,7 @@ class Rasterizer(OpsProducer):
         valid_params = {
             "scan_angle",
             "depth_mode",
+            "scan_mode",
             "threshold",
             "dither_algorithm",
             "cross_hatch",
@@ -480,6 +488,17 @@ class Rasterizer(OpsProducer):
             init_args["depth_mode"] = DepthMode[depth_mode_str]
         except KeyError:
             init_args["depth_mode"] = DepthMode.POWER_MODULATION
+
+        scan_mode_str = init_args.pop("scan_mode", ScanMode.Segmented.name)
+        scan_mode_map = {
+            "Segmented": ScanMode.Segmented,
+            "FullSweep": ScanMode.FullSweep,
+            "SEGMENTED": ScanMode.Segmented,
+            "FULL_SWEEP": ScanMode.FullSweep,
+        }
+        init_args["scan_mode"] = scan_mode_map.get(
+            scan_mode_str, ScanMode.Segmented
+        )
 
         dither_algorithm_str = init_args.get("dither_algorithm")
         if dither_algorithm_str is not None:

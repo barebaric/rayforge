@@ -18,7 +18,9 @@ from rayforge.ui_gtk.shared.direction_preview import DirectionPreview
 from rayforge.ui_gtk.shared.histogram_preview import HistogramPreview
 from rayforge.ui_gtk.shared.slider import create_slider, create_slider_row
 
-from ..producers import DepthMode, Rasterizer
+from ..producers import DepthMode, Rasterizer, ScanMode
+
+_SCAN_MODES = [ScanMode.Segmented, ScanMode.FullSweep]
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
@@ -309,6 +311,24 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
         group.add(self.cross_hatch_row)
 
+        scan_mode_choices = [
+            _("Segmented"),
+            _("Full Sweep"),
+        ]
+        self.scan_mode_row = Adw.ComboRow(
+            title=_("Scan Mode"),
+            subtitle=_(
+                "Segmented: moves between content regions. "
+                "Full Sweep: scans full width with laser toggling."
+            ),
+            model=Gtk.StringList.new(scan_mode_choices),
+        )
+        self.scan_mode_row.set_selected(_SCAN_MODES.index(producer.scan_mode))
+        self.scan_mode_row.connect(
+            "notify::selected", self._on_scan_mode_changed
+        )
+        group.add(self.scan_mode_row)
+
         line_interval_adj = Gtk.Adjustment(
             lower=0.001,
             upper=10.0,
@@ -526,6 +546,11 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             self.angle_scale.get_value(), cross_hatch
         )
         self._on_param_changed("cross_hatch", cross_hatch)
+
+    def _on_scan_mode_changed(self, row, pspec):
+        selected_idx = row.get_selected()
+        selected_mode = _SCAN_MODES[selected_idx]
+        self._on_param_changed("scan_mode", selected_mode.name)
 
     def _update_power_labels(self, invert: bool):
         """Update min/max power labels based on invert setting."""
