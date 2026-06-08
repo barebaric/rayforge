@@ -2,8 +2,6 @@ import numpy as np
 import pytest
 
 from rayforge.image.util.srgb import (
-    _LINEAR_TO_SRGB,
-    _SRGB_TO_LINEAR,
     create_lut_from_color,
     linear_to_srgb,
     resize_linear_nd,
@@ -89,17 +87,15 @@ class TestLinearToSrgb:
         assert result.shape == (1, 3)
 
     def test_dithering_produces_valid_output(self):
-        rng = np.random.default_rng(42)
         arr = np.linspace(0.0, 1.0, 1000, dtype=np.float32)
-        result = linear_to_srgb(arr, dither=True, rng=rng)
+        result = linear_to_srgb(arr, dither=True)
         assert result.dtype == np.uint8
         assert np.all(result >= 0)
         assert np.all(result <= 255)
 
     def test_dithering_preserves_endpoints(self):
-        rng = np.random.default_rng(42)
         arr = np.array([0.0, 1.0])
-        result = linear_to_srgb(arr, dither=True, rng=rng)
+        result = linear_to_srgb(arr, dither=True)
         assert result[0] == 0
         assert result[1] == 255
 
@@ -116,22 +112,6 @@ class TestRoundTrip:
         linear = srgb_to_linear(srgb_in)
         srgb_out = linear_to_srgb(linear)
         np.testing.assert_array_equal(srgb_out, srgb_in)
-
-
-class TestLutProperties:
-    def test_forward_lut_size(self):
-        assert len(_SRGB_TO_LINEAR) == 256
-
-    def test_inverse_lut_size(self):
-        assert len(_LINEAR_TO_SRGB) == 32769
-
-    def test_forward_lut_bounds(self):
-        assert _SRGB_TO_LINEAR[0] == pytest.approx(0.0)
-        assert _SRGB_TO_LINEAR[255] == pytest.approx(1.0)
-
-    def test_inverse_lut_bounds(self):
-        assert _LINEAR_TO_SRGB[0] == 0
-        assert _LINEAR_TO_SRGB[-1] == 255
 
 
 class TestResizeLinearNd:
@@ -191,7 +171,7 @@ class TestCreateLutFromColor:
 
     def test_midpoint_matches_srgb_roundtrip(self):
         lut = create_lut_from_color((1.0, 1.0, 1.0, 1.0))
-        linear_mid = _SRGB_TO_LINEAR[255] * 0.5
+        linear_mid = 1.0 * 0.5
         expected_srgb = linear_to_srgb(np.array([linear_mid]))[0] / 255.0
         assert lut[128, 0] == pytest.approx(expected_srgb, abs=1 / 255)
 

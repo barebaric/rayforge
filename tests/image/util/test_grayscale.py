@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from rayforge.image.util import grayscale
+from raygeo.image import compute_auto_levels, normalize_grayscale
 
 
 def test_surface_to_grayscale_black_surface():
@@ -182,77 +183,65 @@ def test_convert_surface_to_grayscale_inplace_preserves_alpha():
 
 def test_normalize_grayscale_default_params_no_change():
     gray = np.array([[0, 128, 255]], dtype=np.uint8)
-    result = grayscale.normalize_grayscale(gray)
+    result = normalize_grayscale(gray)
     np.testing.assert_array_equal(result, gray)
 
 
 def test_normalize_grayscale_stretches_contrast():
     gray = np.array([[50, 100, 150]], dtype=np.uint8)
-    result = grayscale.normalize_grayscale(
-        gray, black_point=50, white_point=150
-    )
+    result = normalize_grayscale(gray, black_point=50, white_point=150)
     assert result[0, 0] == 0
-    assert result[0, 1] == 127
+    assert result[0, 1] == 128
     assert result[0, 2] == 255
 
 
 def test_normalize_grayscale_clips_below_black_point():
     gray = np.array([[0, 25, 50]], dtype=np.uint8)
-    result = grayscale.normalize_grayscale(
-        gray, black_point=50, white_point=200
-    )
+    result = normalize_grayscale(gray, black_point=50, white_point=200)
     np.testing.assert_array_equal(result[0, :2], [0, 0])
 
 
 def test_normalize_grayscale_clips_above_white_point():
     gray = np.array([[200, 225, 255]], dtype=np.uint8)
-    result = grayscale.normalize_grayscale(
-        gray, black_point=0, white_point=200
-    )
+    result = normalize_grayscale(gray, black_point=0, white_point=200)
     np.testing.assert_array_equal(result[0, :], [255, 255, 255])
 
 
 def test_normalize_grayscale_raises_for_invalid_points():
     gray = np.array([[128]], dtype=np.uint8)
     with pytest.raises(ValueError, match="must be less than"):
-        grayscale.normalize_grayscale(gray, black_point=128, white_point=128)
+        normalize_grayscale(gray, black_point=128, white_point=128)
 
     with pytest.raises(ValueError, match="must be less than"):
-        grayscale.normalize_grayscale(gray, black_point=200, white_point=100)
+        normalize_grayscale(gray, black_point=200, white_point=100)
 
 
 def test_normalize_grayscale_preserves_shape():
     gray = np.random.randint(0, 256, (10, 20), dtype=np.uint8)
-    result = grayscale.normalize_grayscale(
-        gray, black_point=30, white_point=200
-    )
+    result = normalize_grayscale(gray, black_point=30, white_point=200)
     assert result.shape == gray.shape
 
 
 def test_normalize_grayscale_extreme_stretch():
     gray = np.array([[100]], dtype=np.uint8)
-    result = grayscale.normalize_grayscale(
-        gray, black_point=100, white_point=101
-    )
+    result = normalize_grayscale(gray, black_point=100, white_point=101)
     assert result[0, 0] == 0
 
     gray2 = np.array([[101]], dtype=np.uint8)
-    result2 = grayscale.normalize_grayscale(
-        gray2, black_point=100, white_point=101
-    )
+    result2 = normalize_grayscale(gray2, black_point=100, white_point=101)
     assert result2[0, 0] == 255
 
 
 def test_compute_auto_levels_uniform_image():
     gray = np.full((10, 10), 128, dtype=np.uint8)
-    black_pt, white_pt = grayscale.compute_auto_levels(gray)
+    black_pt, white_pt = compute_auto_levels(gray)
     assert black_pt == 128
     assert white_pt == 130
 
 
 def test_compute_auto_levels_full_range():
     gray = np.array([[0, 255]], dtype=np.uint8)
-    black_pt, white_pt = grayscale.compute_auto_levels(gray)
+    black_pt, white_pt = compute_auto_levels(gray)
     assert 0 <= black_pt <= 253
     assert black_pt < white_pt
     assert white_pt <= 255
@@ -260,14 +249,14 @@ def test_compute_auto_levels_full_range():
 
 def test_compute_auto_levels_empty_array():
     gray = np.array([], dtype=np.uint8)
-    black_pt, white_pt = grayscale.compute_auto_levels(gray)
+    black_pt, white_pt = compute_auto_levels(gray)
     assert black_pt == 0
     assert white_pt == 255
 
 
 def test_compute_auto_levels_with_clip_percent():
     gray = np.arange(256, dtype=np.uint8).reshape(1, 256)
-    black_pt, white_pt = grayscale.compute_auto_levels(gray, clip_percent=5.0)
+    black_pt, white_pt = compute_auto_levels(gray, clip_percent=5.0)
     assert 5 <= black_pt <= 20
     assert 235 <= white_pt <= 250
     assert black_pt < white_pt
@@ -275,7 +264,7 @@ def test_compute_auto_levels_with_clip_percent():
 
 def test_compute_auto_levels_returns_valid_range():
     gray = np.random.randint(0, 256, (100, 100), dtype=np.uint8)
-    black_pt, white_pt = grayscale.compute_auto_levels(gray)
+    black_pt, white_pt = compute_auto_levels(gray)
     assert 0 <= black_pt <= 253
     assert 2 <= white_pt <= 255
     assert black_pt < white_pt

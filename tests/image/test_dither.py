@@ -4,10 +4,9 @@ import numpy as np
 from rayforge.image.dither import (
     BAYER_MATRICES,
     DitherAlgorithm,
-    apply_bayer_dither,
-    apply_floyd_steinberg_dither,
     surface_to_dithered_array,
 )
+from raygeo.image import apply_bayer_dither, apply_floyd_steinberg_dither
 
 
 def test_bayer_matrices_shape_and_values():
@@ -34,7 +33,7 @@ def test_bayer_matrices_shape_and_values():
 
 def test_bayer2_matrix_expected_values():
     """Tests that the 2x2 Bayer matrix has expected values."""
-    expected = np.array([[0, 2], [3, 1]], dtype=np.float32)
+    expected = np.array([[0, 2], [3, 1]], dtype=np.uint8)
     np.testing.assert_array_equal(
         BAYER_MATRICES[DitherAlgorithm.BAYER2], expected
     )
@@ -78,7 +77,7 @@ def test_bayer8_matrix_expected_values():
 
 def test_floyd_steinberg_dither_all_white():
     """Tests Floyd-Steinberg dithering with all white image."""
-    white = np.full((10, 10), 255, dtype=np.float32)
+    white = np.full((10, 10), 255, dtype=np.uint8)
     result = apply_floyd_steinberg_dither(white, invert=False)
     assert result.shape == (10, 10)
     assert result.dtype == np.uint8
@@ -87,7 +86,7 @@ def test_floyd_steinberg_dither_all_white():
 
 def test_floyd_steinberg_dither_all_black():
     """Tests Floyd-Steinberg dithering with all black image."""
-    black = np.full((10, 10), 0, dtype=np.float32)
+    black = np.full((10, 10), 0, dtype=np.uint8)
     result = apply_floyd_steinberg_dither(black, invert=False)
     assert result.shape == (10, 10)
     assert result.dtype == np.uint8
@@ -96,7 +95,7 @@ def test_floyd_steinberg_dither_all_black():
 
 def test_floyd_steinberg_dither_invert():
     """Tests that invert parameter flips the output."""
-    gray = np.full((10, 10), 128, dtype=np.float32)
+    gray = np.full((10, 10), 128, dtype=np.uint8)
     result_normal = apply_floyd_steinberg_dither(gray, invert=False)
     result_inverted = apply_floyd_steinberg_dither(gray, invert=True)
     assert np.array_equal(result_normal, 1 - result_inverted)
@@ -104,7 +103,7 @@ def test_floyd_steinberg_dither_invert():
 
 def test_floyd_steinberg_dither_gradient():
     """Tests Floyd-Steinberg dithering with a horizontal gradient."""
-    gradient = np.linspace(0, 255, 100).reshape(10, 10).astype(np.float32)
+    gradient = np.linspace(0, 255, 100).reshape(10, 10).astype(np.uint8)
     result = apply_floyd_steinberg_dither(gradient, invert=False)
     assert result.shape == (10, 10)
     assert result.dtype == np.uint8
@@ -113,7 +112,7 @@ def test_floyd_steinberg_dither_gradient():
 
 def test_floyd_steinberg_dither_single_pixel():
     """Tests Floyd-Steinberg dithering with a single pixel."""
-    single = np.array([[127]], dtype=np.float32)
+    single = np.array([[127]], dtype=np.uint8)
     result = apply_floyd_steinberg_dither(single, invert=False)
     assert result.shape == (1, 1)
     assert result.dtype == np.uint8
@@ -121,7 +120,7 @@ def test_floyd_steinberg_dither_single_pixel():
 
 def test_floyd_steinberg_dither_error_diffusion():
     """Tests that error is properly diffused to neighboring pixels."""
-    img = np.array([[100, 100], [100, 100]], dtype=np.float32)
+    img = np.array([[100, 100], [100, 100]], dtype=np.uint8)
     result = apply_floyd_steinberg_dither(img, invert=False)
     assert result.shape == (2, 2)
     assert result.dtype == np.uint8
@@ -129,7 +128,7 @@ def test_floyd_steinberg_dither_error_diffusion():
 
 def test_bayer_dither_all_white():
     """Tests Bayer dithering with all white image."""
-    white = np.full((10, 10), 255, dtype=np.float32)
+    white = np.full((10, 10), 255, dtype=np.uint8)
     for matrix_enum in [
         DitherAlgorithm.BAYER2,
         DitherAlgorithm.BAYER4,
@@ -144,7 +143,7 @@ def test_bayer_dither_all_white():
 
 def test_bayer_dither_all_black():
     """Tests Bayer dithering with all black image."""
-    black = np.full((10, 10), 0, dtype=np.float32)
+    black = np.full((10, 10), 0, dtype=np.uint8)
     for matrix_enum in [
         DitherAlgorithm.BAYER2,
         DitherAlgorithm.BAYER4,
@@ -159,7 +158,7 @@ def test_bayer_dither_all_black():
 
 def test_bayer_dither_invert():
     """Tests that invert parameter flips the output for Bayer dither."""
-    gray = np.full((10, 10), 128, dtype=np.float32)
+    gray = np.full((10, 10), 128, dtype=np.uint8)
     for matrix_enum in [
         DitherAlgorithm.BAYER2,
         DitherAlgorithm.BAYER4,
@@ -173,7 +172,7 @@ def test_bayer_dither_invert():
 
 def test_bayer_dither_pattern_consistency():
     """Tests that Bayer dither produces consistent patterns."""
-    gray = np.full((16, 16), 128, dtype=np.float32)
+    gray = np.full((16, 16), 128, dtype=np.uint8)
     for matrix_enum in [
         DitherAlgorithm.BAYER2,
         DitherAlgorithm.BAYER4,
@@ -187,7 +186,7 @@ def test_bayer_dither_pattern_consistency():
 
 def test_bayer_dither_tiling_pattern():
     """Tests that Bayer dither pattern tiles correctly across image."""
-    gray = np.full((16, 16), 128, dtype=np.float32)
+    gray = np.full((16, 16), 128, dtype=np.uint8)
     matrix = BAYER_MATRICES[DitherAlgorithm.BAYER2]
     result = apply_bayer_dither(gray, matrix, invert=False)
     assert result.shape == (16, 16)
@@ -196,7 +195,7 @@ def test_bayer_dither_tiling_pattern():
 
 def test_bayer_dither_single_pixel():
     """Tests Bayer dithering with a single pixel."""
-    single = np.array([[127]], dtype=np.float32)
+    single = np.array([[127]], dtype=np.uint8)
     for matrix_enum in [
         DitherAlgorithm.BAYER2,
         DitherAlgorithm.BAYER4,
@@ -211,7 +210,7 @@ def test_bayer_dither_single_pixel():
 def test_dither_output_alignment_floyd_steinberg():
     """Tests that Floyd-Steinberg dither output aligns with input."""
     original = np.random.rand(50, 50) * 255
-    original = original.astype(np.float32)
+    original = original.astype(np.uint8)
     result = apply_floyd_steinberg_dither(original, invert=False)
     assert result.shape == original.shape
 
@@ -219,7 +218,7 @@ def test_dither_output_alignment_floyd_steinberg():
 def test_dither_output_alignment_bayer():
     """Tests that Bayer dither output aligns with input."""
     original = np.random.rand(50, 50) * 255
-    original = original.astype(np.float32)
+    original = original.astype(np.uint8)
     for matrix_enum in [
         DitherAlgorithm.BAYER2,
         DitherAlgorithm.BAYER4,
@@ -232,7 +231,7 @@ def test_dither_output_alignment_bayer():
 
 def test_dither_preserves_dark_regions():
     """Tests that dark regions remain dark after dithering."""
-    dark = np.full((10, 10), 30, dtype=np.float32)
+    dark = np.full((10, 10), 30, dtype=np.uint8)
     result_fs = apply_floyd_steinberg_dither(dark, invert=False)
     matrix = BAYER_MATRICES[DitherAlgorithm.BAYER4]
     result_bayer = apply_bayer_dither(dark, matrix, invert=False)
@@ -242,7 +241,7 @@ def test_dither_preserves_dark_regions():
 
 def test_dither_preserves_light_regions():
     """Tests that light regions remain light after dithering."""
-    light = np.full((10, 10), 225, dtype=np.float32)
+    light = np.full((10, 10), 225, dtype=np.uint8)
     result_fs = apply_floyd_steinberg_dither(light, invert=False)
     matrix = BAYER_MATRICES[DitherAlgorithm.BAYER4]
     result_bayer = apply_bayer_dither(light, matrix, invert=False)
@@ -461,7 +460,7 @@ def test_surface_to_dithered_array_blue_channel():
 def test_dither_result_is_binary():
     """Tests that dithering results are strictly binary (0 or 1)."""
     random_img = np.random.rand(20, 20) * 255
-    random_img = random_img.astype(np.float32)
+    random_img = random_img.astype(np.uint8)
 
     result_fs = apply_floyd_steinberg_dither(random_img, invert=False)
     assert np.all(np.isin(result_fs, [0, 1]))
@@ -478,7 +477,7 @@ def test_dither_result_is_binary():
 
 def test_dither_edge_case_mid_gray():
     """Tests dithering behavior at exactly mid-gray (128)."""
-    mid_gray = np.full((10, 10), 128.0, dtype=np.float32)
+    mid_gray = np.full((10, 10), 128.0, dtype=np.uint8)
     result_fs = apply_floyd_steinberg_dither(mid_gray, invert=False)
     assert result_fs.shape == (10, 10)
     assert result_fs.dtype == np.uint8
@@ -486,8 +485,8 @@ def test_dither_edge_case_mid_gray():
 
 def test_dither_edge_case_threshold_boundary():
     """Tests dithering at the threshold boundary (127 vs 128)."""
-    below = np.full((10, 10), 127.0, dtype=np.float32)
-    above = np.full((10, 10), 128.0, dtype=np.float32)
+    below = np.full((10, 10), 127.0, dtype=np.uint8)
+    above = np.full((10, 10), 128.0, dtype=np.uint8)
 
     result_below = apply_floyd_steinberg_dither(below, invert=False)
     result_above = apply_floyd_steinberg_dither(above, invert=False)
@@ -499,7 +498,7 @@ def test_dither_edge_case_threshold_boundary():
 def test_dither_preserves_input():
     """Tests that dithering does not modify the input array."""
     original = np.random.rand(10, 10) * 255
-    original = original.astype(np.float32)
+    original = original.astype(np.uint8)
     original_copy = original.copy()
 
     apply_floyd_steinberg_dither(original, invert=False)
@@ -514,7 +513,7 @@ def test_dither_preserves_input():
 def test_dither_consistency_same_input():
     """Tests that same input produces same output."""
     fixed_input = np.random.rand(10, 10) * 255
-    fixed_input = fixed_input.astype(np.float32)
+    fixed_input = fixed_input.astype(np.uint8)
 
     result1 = apply_floyd_steinberg_dither(fixed_input.copy(), invert=False)
     result2 = apply_floyd_steinberg_dither(fixed_input.copy(), invert=False)
@@ -533,7 +532,7 @@ def test_dither_consistency_same_input():
 
 def test_dither_checkerboard_pattern():
     """Tests dithering with a checkerboard pattern."""
-    checkerboard = np.zeros((10, 10), dtype=np.float32)
+    checkerboard = np.zeros((10, 10), dtype=np.uint8)
     checkerboard[::2, ::2] = 255
     checkerboard[1::2, 1::2] = 255
 
@@ -552,7 +551,7 @@ def test_dither_checkerboard_pattern():
 
 def test_dither_vertical_gradient():
     """Tests dithering with a vertical gradient."""
-    gradient = np.linspace(0, 255, 100).reshape(100, 1).astype(np.float32)
+    gradient = np.linspace(0, 255, 100).reshape(100, 1).astype(np.uint8)
     gradient = np.tile(gradient, (1, 10))
 
     result_fs = apply_floyd_steinberg_dither(gradient, invert=False)
@@ -571,7 +570,7 @@ def test_dither_vertical_gradient():
 def test_dither_diagonal_gradient():
     """Tests dithering with a diagonal gradient."""
     size = 50
-    diagonal = np.zeros((size, size), dtype=np.float32)
+    diagonal = np.zeros((size, size), dtype=np.uint8)
     for i in range(size):
         for j in range(size):
             diagonal[i, j] = (i + j) * 255 / (2 * size)
@@ -612,19 +611,19 @@ def test_surface_stride_handling():
 def test_dither_non_square_images():
     """Tests dithering with non-square images."""
     wide = np.random.rand(10, 20) * 255
-    wide = wide.astype(np.float32)
+    wide = wide.astype(np.uint8)
     result = apply_floyd_steinberg_dither(wide, invert=False)
     assert result.shape == (10, 20)
 
     tall = np.random.rand(20, 10) * 255
-    tall = tall.astype(np.float32)
+    tall = tall.astype(np.uint8)
     result = apply_floyd_steinberg_dither(tall, invert=False)
     assert result.shape == (20, 10)
 
 
 def test_pixel_probing_corner_alignment():
     """Tests that corner pixels are correctly aligned in output."""
-    img = np.full((10, 10), 30, dtype=np.float32)
+    img = np.full((10, 10), 30, dtype=np.uint8)
     img[0, 0] = 0
     img[0, 9] = 0
     img[9, 0] = 0
@@ -640,7 +639,7 @@ def test_pixel_probing_corner_alignment():
 
 def test_pixel_probing_center_pixel():
     """Tests that center pixel is correctly processed."""
-    img = np.full((11, 11), 200.0, dtype=np.float32)
+    img = np.full((11, 11), 200.0, dtype=np.uint8)
     img[5, 5] = 0
 
     result = apply_floyd_steinberg_dither(img, invert=False)
@@ -652,7 +651,7 @@ def test_pixel_probing_center_pixel():
 
 def test_pixel_probing_bayer_threshold_boundaries():
     """Tests Bayer dithering at exact threshold boundaries."""
-    gray = np.full((8, 8), 128.0, dtype=np.float32)
+    gray = np.full((8, 8), 128.0, dtype=np.uint8)
     matrix = BAYER_MATRICES[DitherAlgorithm.BAYER4]
     result = apply_bayer_dither(gray, matrix, invert=False)
 
@@ -665,7 +664,7 @@ def test_pixel_probing_bayer_threshold_boundaries():
 
 def test_pixel_probing_error_propagation():
     """Tests that error propagates correctly to adjacent pixels."""
-    img = np.full((3, 3), 127.0, dtype=np.float32)
+    img = np.full((3, 3), 127.0, dtype=np.uint8)
     img[0, 0] = 0
 
     result = apply_floyd_steinberg_dither(img, invert=False)
@@ -675,7 +674,7 @@ def test_pixel_probing_error_propagation():
 
 def test_xor_invert_produces_complement():
     """Tests that inverting produces bitwise complement via XOR."""
-    gray = np.full((10, 10), 128, dtype=np.float32)
+    gray = np.full((10, 10), 128, dtype=np.uint8)
 
     result_normal = apply_floyd_steinberg_dither(gray, invert=False)
     result_inverted = apply_floyd_steinberg_dither(gray, invert=True)
@@ -686,7 +685,7 @@ def test_xor_invert_produces_complement():
 
 def test_xor_bayer_invert_complement():
     """Tests that Bayer invert produces bitwise complement via XOR."""
-    gray = np.full((10, 10), 128, dtype=np.float32)
+    gray = np.full((10, 10), 128, dtype=np.uint8)
 
     for matrix_enum in [
         DitherAlgorithm.BAYER2,
@@ -703,7 +702,7 @@ def test_xor_bayer_invert_complement():
 
 def test_xor_pattern_tiling_consistency():
     """Tests Bayer pattern tiles consistently using XOR comparison."""
-    gray = np.full((16, 16), 100, dtype=np.float32)
+    gray = np.full((16, 16), 100, dtype=np.uint8)
     matrix = BAYER_MATRICES[DitherAlgorithm.BAYER4]
     result = apply_bayer_dither(gray, matrix, invert=False)
 
@@ -724,7 +723,7 @@ def test_xor_pattern_tiling_consistency():
 
 def test_xor_gradient_monotonicity():
     """Tests gradient dithering produces monotonic pattern changes."""
-    gradient = np.linspace(0, 255, 20).reshape(4, 5).astype(np.float32)
+    gradient = np.linspace(0, 255, 20).reshape(4, 5).astype(np.uint8)
     result = apply_floyd_steinberg_dither(gradient, invert=False)
 
     for col in range(4):
@@ -752,7 +751,7 @@ def test_xor_surface_conversion_alignment():
 
 def test_pixel_probing_edge_pixel_error_diffusion():
     """Tests error diffusion at image edges doesn't overflow."""
-    img = np.zeros((5, 5), dtype=np.float32)
+    img = np.zeros((5, 5), dtype=np.uint8)
     img[0, :] = 200
     img[4, :] = 200
     img[:, 0] = 200
@@ -766,7 +765,7 @@ def test_pixel_probing_edge_pixel_error_diffusion():
 def test_xor_binary_output_verification():
     """Tests all dithering produces strictly binary output via XOR."""
     random_img = np.random.rand(15, 15) * 255
-    random_img = random_img.astype(np.float32)
+    random_img = random_img.astype(np.uint8)
 
     result_fs = apply_floyd_steinberg_dither(random_img, invert=False)
     xor_fs = np.bitwise_xor(result_fs, result_fs)
@@ -785,7 +784,7 @@ def test_xor_binary_output_verification():
 
 def test_pixel_probing_specific_bayer_values():
     """Tests specific Bayer threshold values at known positions."""
-    img = np.full((4, 4), 128.0, dtype=np.float32)
+    img = np.full((4, 4), 128.0, dtype=np.uint8)
     matrix = BAYER_MATRICES[DitherAlgorithm.BAYER4]
 
     result = apply_bayer_dither(img, matrix, invert=False)
