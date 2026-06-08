@@ -75,8 +75,12 @@ def _worker_main_loop(
     result_queue.
     """
     worker_logger = logging.getLogger(__name__)
+    try:
+        state_keys = list(shared_state.keys())
+    except OSError:
+        state_keys = "<unavailable>"
     worker_logger.debug(
-        f"Worker {os.getpid()} shared_state keys: {list(shared_state.keys())}"
+        f"Worker {os.getpid()} shared_state keys: {state_keys}"
     )
     # Set up a null translator for gettext in the subprocess.
     if not hasattr(builtins, "_"):
@@ -620,8 +624,18 @@ class WorkerPoolManager:
             # Capture PIDs before closing workers for shutdown summary.
             worker_pids = [w.pid for w in self._workers]
             for worker in self._workers:
-                worker.join(timeout=timeout)
-                if worker.is_alive():
+                try:
+                    worker.join(timeout=timeout)
+                except OSError:
+                    logger.warning(
+                        f"Worker process {worker.pid}: join failed "
+                        "(process handle invalid, may have crashed)."
+                    )
+                try:
+                    still_alive = worker.is_alive()
+                except (OSError, ValueError):
+                    still_alive = False
+                if still_alive:
                     logger.warning(
                         f"Worker process {worker.pid} did not exit cleanly. "
                         "Terminating."
@@ -667,6 +681,13 @@ class WorkerPoolManager:
                         f"Worker PID {pid}: no shutdown info received "
                         "(may have crashed or not reported)"
                     )
+            # 5. Shut down the Manager to release its process and
+            # named pipe / Unix socket resources.
+            try:
+                self._manager.shutdown()
+            except Exception:
+                logger.debug("Manager shutdown failed (may already be gone).")
+
             logger.info("Worker pool shutdown complete.")
         except KeyboardInterrupt:
             logger.debug(
