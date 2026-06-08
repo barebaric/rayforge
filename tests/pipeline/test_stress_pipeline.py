@@ -174,13 +174,9 @@ class StressTestController:
                 # Bucket nodes by state to keep the log line compact.
                 states = {}
                 for n in nodes:
-                    states.setdefault(n.state.value, []).append(
-                        n.key.id[:8]
-                    )
+                    states.setdefault(n.state.value, []).append(n.key.id[:8])
                 active_ctx = self.pipeline._active_context
-                ctx_tasks = (
-                    active_ctx.active_tasks if active_ctx else set()
-                )
+                ctx_tasks = active_ctx.active_tasks if active_ctx else set()
                 logger.error(
                     f"Settle stuck at +{now - start:.1f}s: "
                     f"busy_reason={reason}, "
