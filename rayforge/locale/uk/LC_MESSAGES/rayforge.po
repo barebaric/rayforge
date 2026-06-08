@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-14 16:35+0200\n"
+"POT-Creation-Date: 2026-06-09 00:08+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -735,6 +735,22 @@ msgstr ""
 "Періодично запитувати пристрій про позицію та статус під час виконання "
 "завдання. Попередження: Деякі пристрої мають проблеми з підтримкою "
 "стабільного з'єднання, якщо це використовується!"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Deadlock detection"
+msgstr "Виявлення взаємоблокування"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid ""
+"Detect and recover from serial communication deadlocks during jobs. If "
+"disabled, the driver will simply wait for the machine to respond. Disable if "
+"you experience false ALARM:3 errors."
+msgstr ""
+"Виявляє та відновлює після взаємоблокувань послідовної комунікації під час "
+"завдань. Якщо вимкнено, драйвер просто чекатиме відповіді машини. "
+"Вимкніть, якщо отримуєте помилкові помилки ALARM:3."
 
 #: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Missing Command Letter"
@@ -6599,6 +6615,10 @@ msgstr "Інструментарій інтерфейсу"
 #: rayforge/ui_gtk/about.py
 msgid "Graphics & Imaging"
 msgstr "Графіка та зображення"
+
+#: rayforge/ui_gtk/about.py
+msgid "Geometry"
+msgstr "Геометрія"
 
 #: rayforge/ui_gtk/about.py
 msgid "File Formats & Communication"

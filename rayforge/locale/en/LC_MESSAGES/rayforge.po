@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-14 16:35+0200\n"
+"POT-Creation-Date: 2026-06-09 00:08+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -707,6 +707,19 @@ msgid ""
 "Periodically query the device for position and status while a job is "
 "running. Warning: Some devices have trouble maintaining a stable connection "
 "if this is used!"
+msgstr ""
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Deadlock detection"
+msgstr ""
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid ""
+"Detect and recover from serial communication deadlocks during jobs. If "
+"disabled, the driver will simply wait for the machine to respond. Disable if "
+"you experience false ALARM:3 errors."
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_util.py
@@ -6303,6 +6316,10 @@ msgstr ""
 
 #: rayforge/ui_gtk/about.py
 msgid "Graphics & Imaging"
+msgstr ""
+
+#: rayforge/ui_gtk/about.py
+msgid "Geometry"
 msgstr ""
 
 #: rayforge/ui_gtk/about.py

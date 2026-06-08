@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-14 16:35+0200\n"
+"POT-Creation-Date: 2026-06-09 00:08+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -712,6 +712,21 @@ msgid ""
 msgstr ""
 "在作业运行时定期查询设备的位置和状态。警告：某些设备在使用此功能时可能无法保"
 "持稳定连接！"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Deadlock detection"
+msgstr "死锁检测"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid ""
+"Detect and recover from serial communication deadlocks during jobs. If "
+"disabled, the driver will simply wait for the machine to respond. Disable if "
+"you experience false ALARM:3 errors."
+msgstr ""
+"在作业期间检测并恢复串行通信死锁。如果禁用，驱动程序将仅等待机器响"
+"应。如果您遇到错误的ALARM:3错误，请禁用此功能。"
 
 #: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Missing Command Letter"
@@ -6363,6 +6378,10 @@ msgstr "UI工具包"
 #: rayforge/ui_gtk/about.py
 msgid "Graphics & Imaging"
 msgstr "图形与成像"
+
+#: rayforge/ui_gtk/about.py
+msgid "Geometry"
+msgstr "几何"
 
 #: rayforge/ui_gtk/about.py
 msgid "File Formats & Communication"

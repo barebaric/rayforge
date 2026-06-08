@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-14 16:35+0200\n"
+"POT-Creation-Date: 2026-06-09 00:08+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -743,6 +743,22 @@ msgstr ""
 "Interroger périodiquement l'appareil pour obtenir sa position et son état "
 "pendant l'exécution d'une tâche. Attention : certains appareils ont des "
 "difficultés à maintenir une connexion stable si cette option est utilisée !"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Deadlock detection"
+msgstr "Détection de blocage"
+
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid ""
+"Detect and recover from serial communication deadlocks during jobs. If "
+"disabled, the driver will simply wait for the machine to respond. Disable if "
+"you experience false ALARM:3 errors."
+msgstr ""
+"Détecte et récupère les blocages de communication série pendant les "
+"travaux. Si désactivé, le pilote attendra simplement que la machine réponde. "
+"Désactivez si vous rencontrez de fausses erreurs ALARM:3."
 
 #: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Missing Command Letter"
@@ -6689,6 +6705,10 @@ msgstr "Boîte à outils d'interface utilisateur"
 #: rayforge/ui_gtk/about.py
 msgid "Graphics & Imaging"
 msgstr "Graphismes et imagerie"
+
+#: rayforge/ui_gtk/about.py
+msgid "Geometry"
+msgstr "Géométrie"
 
 #: rayforge/ui_gtk/about.py
 msgid "File Formats & Communication"
