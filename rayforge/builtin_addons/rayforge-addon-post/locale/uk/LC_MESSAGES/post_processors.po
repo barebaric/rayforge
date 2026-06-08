@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-10 23:41+0200\n"
+"POT-Creation-Date: 2026-06-08 19:14+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -202,47 +202,6 @@ msgstr "Оптимізувати контур"
 #: post_processors/transformers/optimize_transformer.py
 msgid "Minimizes travel distance by reordering segments."
 msgstr "Мінімізує відстань переміщення шляхом зміни порядку сегментів."
-
-#: post_processors/transformers/optimize_transformer.py
-msgid "Analyzing workpieces..."
-msgstr "Аналіз деталей..."
-
-#: post_processors/transformers/optimize_transformer.py
-msgid "Optimizing workpiece order..."
-msgstr "Оптимізація порядку деталей..."
-
-#: post_processors/transformers/optimize_transformer.py
-msgid "Applying 2-opt refinement..."
-msgstr "Застосування 2-opt уточнення..."
-
-#: post_processors/transformers/optimize_transformer.py
-msgid "Reassembling optimized workpieces..."
-msgstr "Повторна збірка оптимізованих деталей..."
-
-#: post_processors/transformers/optimize_transformer.py
-msgid "Workpiece optimization complete"
-msgstr "Оптимізація деталей завершена"
-
-#: post_processors/transformers/optimize_transformer.py
-msgid "Preprocessing for optimization..."
-msgstr "Попередня обробка для оптимізації..."
-
-#: post_processors/transformers/optimize_transformer.py
-msgid "Analyzing and bucketing path segments..."
-msgstr "Аналіз та групування сегментів контуру..."
-
-#: post_processors/transformers/optimize_transformer.py
-#, python-brace-format
-msgid "Optimizing segment {i}/{total}..."
-msgstr "Оптимізація сегмента {i}/{total}..."
-
-#: post_processors/transformers/optimize_transformer.py
-msgid "Finding nearest paths..."
-msgstr "Пошук найближчих контурів..."
-
-#: post_processors/transformers/optimize_transformer.py
-msgid "Reassembling optimized paths..."
-msgstr "Повторна збірка оптимізованих контурів..."
 
 #: post_processors/transformers/optimize_transformer.py
 msgid "Optimization complete"
