@@ -844,6 +844,8 @@ class TaskManager:
             # Shut down the worker pool. This will wait for workers to exit.
             self._pool.shutdown()
 
+            self._manager.shutdown()
+
             logger.info("Stopping asyncio event loop...")
             # Stop the asyncio loop
             if self.loop.is_running():
