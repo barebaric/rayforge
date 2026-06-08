@@ -9,6 +9,9 @@ import pytest
 import pytest_asyncio
 from raygeo.ops import Ops
 
+from rayforge import config
+from rayforge import context as context_module
+from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.varset import VarSet
 from rayforge.machine.driver.driver import (
@@ -19,6 +22,8 @@ from rayforge.machine.driver.driver import (
     DriverSetupError,
 )
 from rayforge.machine.driver.marlin.marlin_serial import MarlinSerialDriver
+from rayforge.machine.models.dialect_manager import DialectManager
+from rayforge.machine.models.machine import Machine
 from rayforge.machine.transport import TransportStatus
 from rayforge.machine.transport.serial import SerialPortPermissionError
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
@@ -148,8 +153,42 @@ class MarlinSimulator:
 
 
 @pytest.fixture
-def driver(context_initializer, machine):
-    return MarlinSerialDriver(context_initializer, machine)
+def driver(tmp_path, monkeypatch):
+    temp_config_dir = tmp_path / "config"
+    temp_dialect_dir = temp_config_dir / "dialects"
+    temp_machine_dir = temp_config_dir / "machines"
+    monkeypatch.setattr(config, "CONFIG_DIR", temp_config_dir)
+    monkeypatch.setattr(config, "DIALECT_DIR", temp_dialect_dir)
+    monkeypatch.setattr(config, "MACHINE_DIR", temp_machine_dir)
+
+    ctx = get_context()
+    ctx.initialize_lite_context(temp_machine_dir)
+    ctx._dialect_mgr = DialectManager(temp_dialect_dir)
+
+    m = Machine(ctx)
+    ctx.machine_mgr.add_machine(m)
+    yield MarlinSerialDriver(ctx, m)
+    context_module._context_instance = None
+
+
+@pytest_asyncio.fixture
+async def async_driver(tmp_path, monkeypatch):
+    temp_config_dir = tmp_path / "config"
+    temp_dialect_dir = temp_config_dir / "dialects"
+    temp_machine_dir = temp_config_dir / "machines"
+    monkeypatch.setattr(config, "CONFIG_DIR", temp_config_dir)
+    monkeypatch.setattr(config, "DIALECT_DIR", temp_dialect_dir)
+    monkeypatch.setattr(config, "MACHINE_DIR", temp_machine_dir)
+
+    ctx = get_context()
+    ctx.initialize_lite_context(temp_machine_dir)
+    ctx._dialect_mgr = DialectManager(temp_dialect_dir)
+
+    m = Machine(ctx)
+    ctx.machine_mgr.add_machine(m)
+    yield MarlinSerialDriver(ctx, m), m
+    await m.shutdown()
+    context_module._context_instance = None
 
 
 class TestMarlinSerialDriverProperties:
@@ -258,16 +297,15 @@ class TestMarlinSerialDriverRealSerial:
     @pytest_asyncio.fixture
     async def connected_driver(
         self,
-        context_initializer,
-        machine,
+        async_driver,
         virtual_serial,
         simulator,
         mocker,
     ):
+        d, machine = async_driver
         _, slave_name = virtual_serial
         machine.set_dialect_uid("marlin")
         mocker.patch.object(asyncio, "sleep", _fast_sleep)
-        d = MarlinSerialDriver(context_initializer, machine)
         d.setup(port=slave_name, baudrate=115200)
 
         statuses = []
@@ -400,8 +438,9 @@ class TestMarlinSerialDriverRealSerial:
         assert driver._job_running is False
 
     @pytest.mark.asyncio
-    async def test_run_with_encoded_ops(self, connected_driver, machine):
+    async def test_run_with_encoded_ops(self, connected_driver):
         driver = connected_driver
+        machine = driver._machine
         job_finished = MagicMock()
         driver.job_finished.connect(lambda sender: job_finished(), weak=False)
         machine.set_active_wcs("G54")
