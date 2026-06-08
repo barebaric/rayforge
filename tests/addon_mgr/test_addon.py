@@ -106,18 +106,18 @@ class TestAddonMetadata:
             "author": {"name": "Test", "email": "t@t.com"},
             "repository": "https://github.com/example/repo",
             "latest_stable": "v1.0.0",
-            "api_version": 13,
+            "api_version": 15,
             "versions": [
-                {"version": "v1.0.0", "api_version": 13},
-                {"version": "v0.9.0", "api_version": 12},
+                {"version": "v1.0.0", "api_version": 15},
+                {"version": "v0.9.0", "api_version": 13},
             ],
         }
         meta = AddonMetadata.from_registry_entry("my_addon", data)
         assert len(meta.version_entries) == 2
         assert meta.version_entries[0]["version"] == "v1.0.0"
-        assert meta.version_entries[0]["api_version"] == 13
+        assert meta.version_entries[0]["api_version"] == 15
         assert meta.version_entries[1]["version"] == "v0.9.0"
-        assert meta.version_entries[1]["api_version"] == 12
+        assert meta.version_entries[1]["api_version"] == 13
 
     def test_from_registry_entry_legacy_string_versions(self):
         """Test parsing legacy string-based version entries."""

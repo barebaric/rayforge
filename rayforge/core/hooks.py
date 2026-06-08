@@ -3,13 +3,19 @@ import pluggy
 hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
-MINIMUM_API_VERSION = 13
-PLUGIN_API_VERSION = 14
+MINIMUM_API_VERSION = 15
+PLUGIN_API_VERSION = 15
 
 
 """
 API Changelog
 ============
+
+Version 15
+----------
+Raygeo 0.6 adds tab operations, merge overlapping lines, overscan,
+lead-in/out, concave hull (shrink-wrap), and full-sweep raster scan
+mode. Image processing delegated to raygeo.image.
 
 Version 14
 ----------
