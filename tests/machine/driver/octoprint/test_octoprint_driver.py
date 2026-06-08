@@ -4,6 +4,9 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from raygeo.ops.axis import Axis
 
+from rayforge import config
+from rayforge import context as context_module
+from rayforge.context import get_context
 from rayforge.machine.driver.driver import (
     DeviceConnectionError,
     DeviceStatus,
@@ -13,6 +16,8 @@ from rayforge.machine.driver.octoprint import OctoPrintDriver
 from rayforge.machine.driver.octoprint.octoprint_driver import (
     _STATE_MAP,
 )
+from rayforge.machine.models.dialect_manager import DialectManager
+from rayforge.machine.models.machine import Machine
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
 
 
@@ -21,10 +26,25 @@ def _api_key_json(key="test-api-key-123"):
 
 
 @pytest.fixture
-def driver(lite_context, machine):
-    machine.dialect_uid = "grbl"
-    d = OctoPrintDriver(lite_context, machine)
-    return d
+def driver(tmp_path, monkeypatch):
+
+    temp_config_dir = tmp_path / "config"
+    temp_dialect_dir = temp_config_dir / "dialects"
+    temp_machine_dir = temp_config_dir / "machines"
+    monkeypatch.setattr(config, "CONFIG_DIR", temp_config_dir)
+    monkeypatch.setattr(config, "DIALECT_DIR", temp_dialect_dir)
+    monkeypatch.setattr(config, "MACHINE_DIR", temp_machine_dir)
+
+    context = get_context()
+    context.initialize_lite_context(temp_machine_dir)
+    context._dialect_mgr = DialectManager(temp_dialect_dir)
+
+    m = Machine(context)
+    context.machine_mgr.add_machine(m)
+    m.dialect_uid = "grbl"
+    d = OctoPrintDriver(context, m)
+    yield d
+    context_module._context_instance = None
 
 
 @pytest.fixture
