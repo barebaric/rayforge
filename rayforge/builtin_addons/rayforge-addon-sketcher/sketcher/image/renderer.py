@@ -8,7 +8,7 @@ from typing import (
 )
 
 from raygeo import Geometry
-from raygeo.geo import Arc, Bezier, Line, Move
+from raygeo.svg import geometry_to_svg_path
 
 from rayforge.core.color import ColorRGBA
 from rayforge.image.base_renderer import Renderer, RenderSpecification
@@ -30,62 +30,6 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-
-
-def _geometry_to_svg_path(
-    geometry: Geometry,
-    width: int,
-    height: int,
-    stroke_width: float = 1.0,
-) -> str:
-    """
-    Converts a normalized (0-1) Geometry object into an SVG path string,
-    scaled to the target pixel dimensions.
-    """
-    path_data = []
-    for cmd in geometry.iter_typed_commands():
-        x, y = cmd.end[0], cmd.end[1]
-        if isinstance(cmd, Move):
-            path_data.append(f"M {x * width:.3f} {height * (1 - y):.3f}")
-        elif isinstance(cmd, Line):
-            path_data.append(f"L {x * width:.3f} {height * (1 - y):.3f}")
-        elif isinstance(cmd, Arc):
-            i = cmd.center_offset[0]
-            j = cmd.center_offset[1]
-            cw = cmd.clockwise
-
-            ex_px = x * width
-            ey_px = height * (1 - y)
-
-            radius = math.hypot(i, j)
-            radius_x_px = radius * width
-            radius_y_px = radius * height
-
-            large_arc = 0
-
-            sweep = 1 if bool(cw) else 0
-
-            path_data.append(
-                f"A {radius_x_px:.3f} {radius_y_px:.3f} 0 {large_arc} {sweep} "
-                f"{ex_px:.3f} {ey_px:.3f}"
-            )
-        elif isinstance(cmd, Bezier):
-            c1x = cmd.control1[0]
-            c1y = cmd.control1[1]
-            c2x = cmd.control2[0]
-            c2y = cmd.control2[1]
-            c1x_px = c1x * width
-            c1y_px = height * (1 - c1y)
-            c2x_px = c2x * width
-            c2y_px = height * (1 - c2y)
-            ex_px = x * width
-            ey_px = height * (1 - y)
-            path_data.append(
-                f"C {c1x_px:.3f} {c1y_px:.3f} {c2x_px:.3f} {c2y_px:.3f} "
-                f"{ex_px:.3f} {ey_px:.3f}"
-            )
-
-    return " ".join(path_data)
 
 
 class SketchRenderer(Renderer):
@@ -201,7 +145,7 @@ class SketchRenderer(Renderer):
 
         if fills:
             for fill_data in fills:
-                path_d = _geometry_to_svg_path(
+                path_d = geometry_to_svg_path(
                     fill_data.geometry, width, height
                 )
                 if path_d:
@@ -210,9 +154,7 @@ class SketchRenderer(Renderer):
 
         if boundaries:
             stroke_width = 1.0
-            path_d = _geometry_to_svg_path(
-                boundaries, width, height, stroke_width=stroke_width
-            )
+            path_d = geometry_to_svg_path(boundaries, width, height)
             if path_d:
                 svg_parts.append(
                     f'<path d="{path_d}" fill="none" stroke="black" '
