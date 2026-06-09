@@ -37,7 +37,6 @@ Das untere Panel kann umgeschaltet werden über:
 Die Jog-Steuerung ist nur verfügbar, wenn mit einer Maschine verbunden ist, die Jogging-Operationen unterstützt.
 :::
 
-
 ## Jog-Steuerung
 
 Die Jog-Steuerung bietet manuelle Kontrolle über die Position deines
@@ -49,14 +48,13 @@ Ausrichtung und Testzwecke bewegen kannst.
 Referenziere die Achsen deiner Maschine, um eine Referenzposition zu
 etablieren:
 
-| Schaltfläche | Funktion        | Beschreibung                             |
-| ------------ | --------------- | ---------------------------------------- |
+| Schaltfläche       | Funktion                 | Beschreibung                          |
+| ------------------ | ------------------------ | ------------------------------------- |
 | Alle referenzieren | Referenziert alle Achsen | Referenziert alle Achsen gleichzeitig |
 
 :::tip Referenzfahrt-Sequenz
 Es wird empfohlen, alle Achsen zu referenzieren bevor ein Auftrag gestartet wird, um präzise Positionierung sicherzustellen.
 :::
-
 
 ### Richtungssteuerung
 
@@ -68,23 +66,22 @@ Die Jog-Steuerung bietet Schaltflächen für Richtungssteuerung:
   ↙  ↓  ↘
 ```
 
-| Schaltfläche      | Bewegung                         | Tastaturkürzel |
-| ----------------- | -------------------------------- | -------------- |
-| ↑                 | Y+ (Y- wenn Maschine Y-gespiegelt ist) | Pfeil nach oben |
-| ↓                 | Y- (Y+ wenn Maschine Y-gespiegelt ist) | Pfeil nach unten |
-| ←                 | X- (links)                       | Pfeil nach links |
-| →                 | X+ (rechts)                      | Pfeil nach rechts |
-| ↖ (oben-links)    | X- Y+/- (diagonal)               | -               |
-| ↗ (oben-rechts)   | X+ Y+/- (diagonal)               | -               |
-| ↙ (unten-links)   | X- Y-/+ (diagonal)               | -               |
-| ↘ (unten-rechts)  | X+ Y-/+ (diagonal)               | -               |
-| Z+                | Z-Achse hoch                     | Bild ↑          |
-| Z-                | Z-Achse runter                   | Bild ↓          |
+| Schaltfläche     | Bewegung                               | Tastaturkürzel    |
+| ---------------- | -------------------------------------- | ----------------- |
+| ↑                | Y+ (Y- wenn Maschine Y-gespiegelt ist) | Pfeil nach oben   |
+| ↓                | Y- (Y+ wenn Maschine Y-gespiegelt ist) | Pfeil nach unten  |
+| ←                | X- (links)                             | Pfeil nach links  |
+| →                | X+ (rechts)                            | Pfeil nach rechts |
+| ↖ (oben-links)   | X- Y+/- (diagonal)                     | -                 |
+| ↗ (oben-rechts)  | X+ Y+/- (diagonal)                     | -                 |
+| ↙ (unten-links)  | X- Y-/+ (diagonal)                     | -                 |
+| ↘ (unten-rechts) | X+ Y-/+ (diagonal)                     | -                 |
+| Z+               | Z-Achse hoch                           | Bild ↑            |
+| Z-               | Z-Achse runter                         | Bild ↓            |
 
 :::note Fokus erforderlich
 Tastaturkürzel funktionieren nur, wenn das Hauptfenster den Fokus hat.
 :::
-
 
 ### Visuelles Feedback
 
@@ -99,28 +96,30 @@ Die Jog-Schaltflächen bieten visuelles Feedback:
 Konfiguriere das Verhalten von Jog-Operationen:
 
 **Jog-Geschwindigkeit:**
+
 - **Bereich**: 1-60.000 mm/min
 - **Standard**: 1.000 mm/min
 - **Zweck**: Steuert, wie schnell sich der Laserkopf bewegt
 
 :::tip Geschwindigkeitsauswahl
+
 - Niedrigere Geschwindigkeiten (100-500 mm/min) für präzise Positionierung verwenden
 - Höhere Geschwindigkeiten (1.000-3.000 mm/min) für größere Bewegungen verwenden
 - Sehr hohe Geschwindigkeiten können bei einigen Maschinen zu verpassten Schritten führen
-:::
-
+  :::
 
 **Jog-Distanz:**
+
 - **Bereich**: 0,1-1.000 mm
 - **Standard**: 10,0 mm
 - **Zweck**: Steuert, wie weit sich der Laserkopf pro Schaltflächenklick bewegt
 
 :::tip Distanzauswahl
+
 - Kleine Distanzen (0,1-1,0 mm) zum Feinabstimmen verwenden
 - Mittlere Distanzen (5-20 mm) für allgemeines Positionieren verwenden
 - Große Distanzen (50-100 mm) für schnelles Umpositionieren verwenden
-:::
-
+  :::
 
 ## Maschinenstatus-Anzeige
 
@@ -157,41 +156,41 @@ Werkstückkoordinatensystem-Verwaltung.
 
 Wähle, welches Koordinatensystem gerade aktiv ist:
 
-| Option          | Typ   | Beschreibung                                     |
-| --------------- | ----- | ------------------------------------------------ |
-| G53 (Maschine)  | Fest  | Absolute Maschinenkoordinaten, können nicht geändert werden |
-| G54 (Arbeit 1)  | Benutzer | Erstes Werkstückkoordinatensystem             |
-| G55 (Arbeit 2)  | Benutzer | Zweites Werkstückkoordinatensystem            |
-| G56 (Arbeit 3)  | Benutzer | Drittes Werkstückkoordinatensystem            |
-| G57 (Arbeit 4)  | Benutzer | Viertes Werkstückkoordinatensystem            |
-| G58 (Arbeit 5)  | Benutzer | Fünftes Werkstückkoordinatensystem            |
-| G59 (Arbeit 6)  | Benutzer | Sechstes Werkstückkoordinatensystem           |
+| Option         | Typ      | Beschreibung                                                |
+| -------------- | -------- | ----------------------------------------------------------- |
+| G53 (Maschine) | Fest     | Absolute Maschinenkoordinaten, können nicht geändert werden |
+| G54 (Arbeit 1) | Benutzer | Erstes Werkstückkoordinatensystem                           |
+| G55 (Arbeit 2) | Benutzer | Zweites Werkstückkoordinatensystem                          |
+| G56 (Arbeit 3) | Benutzer | Drittes Werkstückkoordinatensystem                          |
+| G57 (Arbeit 4) | Benutzer | Viertes Werkstückkoordinatensystem                          |
+| G58 (Arbeit 5) | Benutzer | Fünftes Werkstückkoordinatensystem                          |
+| G59 (Arbeit 6) | Benutzer | Sechstes Werkstückkoordinatensystem                         |
 
 ### WCS-Null setzen
 
 Definiere, wo der Ursprung des aktiven WCS sein soll:
 
-| Schaltfläche     | Funktion      | Beschreibung                                                 |
-| ---------------- | ------------- | ------------------------------------------------------------ |
-| Klicken zum Nullen | X,Y=0 setzen  | Auf das Fadenkreuz-Symbol klicken, dann auf die Canvas klicken um Arbeitsnullpunkt zu setzen |
-| Offsets bearbeiten | Bearbeiten    | WCS-Offset-Werte manuell bearbeiten                          |
-| X nullen         | X=0 setzen    | Macht aktuelle X-Position zum X-Ursprung für aktives WCS    |
-| Y nullen         | Y=0 setzen    | Macht aktuelle Y-Position zum Y-Ursprung für aktives WCS    |
-| Z nullen         | Z=0 setzen    | Macht aktuelle Z-Position zum Z-Ursprung für aktives WCS    |
+| Schaltfläche       | Funktion     | Beschreibung                                                                                 |
+| ------------------ | ------------ | -------------------------------------------------------------------------------------------- |
+| Klicken zum Nullen | X,Y=0 setzen | Auf das Fadenkreuz-Symbol klicken, dann auf die Canvas klicken um Arbeitsnullpunkt zu setzen |
+| Zum WCS-Nullpunkt  | Bewegen      | Laserkopf zu X0 Y0 des aktiven WCS bewegen                                                   |
+| Offsets bearbeiten | Bearbeiten   | WCS-Offset-Werte manuell bearbeiten                                                          |
+| X nullen           | X=0 setzen   | Macht aktuelle X-Position zum X-Ursprung für aktives WCS                                     |
+| Y nullen           | Y=0 setzen   | Macht aktuelle Y-Position zum Y-Ursprung für aktives WCS                                     |
+| Z nullen           | Z=0 setzen   | Macht aktuelle Z-Position zum Z-Ursprung für aktives WCS                                     |
 
 :::note G53 kann nicht geändert werden
 Null-Schaltflächen sind deaktiviert wenn G53 (Maschinenkoordinaten) ausgewählt ist, da Maschinenkoordinaten durch die Hardware festgelegt sind.
 :::
 
-
 :::tip WCS-Einrichtungs-Workflow
+
 1. Mit deiner Maschine verbinden und alle Achsen referenzieren
 2. Das WCS auswählen, das du konfigurieren möchtest (z.B. G54)
 3. Den Laserkopf zur gewünschten Ursprungsposition jogen
 4. Auf X nullen und Y nullen klicken um diese Position als (0, 0) zu setzen
 5. Der Offset wird im Controller deiner Maschine gespeichert
-:::
-
+   :::
 
 ## Konsole-Tab
 
@@ -343,11 +342,11 @@ Das untere Panel passt sich an die Fähigkeiten deiner Maschine an:
 
 ### Maschinentypen
 
-| Maschinentyp       | Jog-Unterstützung | Hinweise                      |
-| ------------------ | ----------------- | ----------------------------- |
-| GRBL (v1.1+)       | Vollständig       | Unterstützt alle Jog-Funktionen |
-| Smoothieware       | Vollständig       | Unterstützt alle Jog-Funktionen |
-| Custom-Controller  | Variabel          | Hängt von der Implementierung ab |
+| Maschinentyp      | Jog-Unterstützung | Hinweise                         |
+| ----------------- | ----------------- | -------------------------------- |
+| GRBL (v1.1+)      | Vollständig       | Unterstützt alle Jog-Funktionen  |
+| Smoothieware      | Vollständig       | Unterstützt alle Jog-Funktionen  |
+| Custom-Controller | Variabel          | Hängt von der Implementierung ab |
 
 ## Sicherheitsfunktionen
 

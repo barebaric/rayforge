@@ -5,6 +5,53 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.8.0-beta1
+
+### Added
+
+- Simple GRBL serial driver with ping-pong protocol for devices with
+  buffer-counting issues (GrblSerialSimpleDriver)
+- "Go to WCS Zero" button in the Current Position section (#247)
+- Device profile for the Creality Falcon 10W (#266)
+- Device profile for the Sculpfun C1 engraver
+- Allow finer raster line spacing (0.001 mm) for microfabrication (#252)
+- Deadlock detection toggle in GRBL serial and telnet driver settings
+
+### Changed
+
+- Rewrote Ops container from List[Command] to Struct-of-Arrays with
+  index-based access; ported all transformers, encoders, producers, and
+  the 3D simulator to the new API
+- Migrated tab operations, merge lines, overscan, lead-in/out, and hull
+  computation to raygeo 0.6 Rust backend
+- Replaced Python raster scan loops with Rust-accelerated raygeo functions
+  (rasterize_power_modulation, rasterize_mask_scan, rasterize_multi_pass)
+- Delegated image processing to raygeo.image (sRGB conversion, dithering,
+  grayscale normalization)
+- Adaptive deadlock timeouts based on per-command time estimates instead
+  of fixed values
+- Machine settings now apply immediately without requiring a restart
+- Bumped addon API minimum version to 15 for raygeo 0.6
+- File dialogs prefer Rayforge project and sketch MIME types over ZIP
+
+### Fixed
+
+- Fixed O(n) OpPlayer.seek() causing 3D canvas slider to freeze on large
+  jobs; now uses pre-computed snapshots with binary search
+- Fixed GRBL network disconnect with MKS DLC32 boards (#273)
+- Fixed buffer stall recovery aborting jobs during slow moves (#256)
+- Fixed machine settings not applying until restart (#267)
+- Fixed ValueError when removing the active machine (#280)
+- Fixed manual laser control routing
+- Fixed WCS dropdown coordinates not updating on sync
+- Detect and recover from crashed/unresponsive worker processes (#283)
+- Fixed pipeline stress test: stale completions and busy state
+- Fixed node state race: emit PROCESSING after task creation
+- Skip stale cancelled tasks in worker pool queue
+- Shut down multiprocessing Manager in TaskManager.shutdown() to prevent
+  semaphore leaks
+- Hardened pool shutdown for Windows CI
+
 ## 1.7.10
 
 ### Fixed

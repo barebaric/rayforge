@@ -39,7 +39,6 @@ The jog controls are only available when connected to a machine
 that supports jogging operations.
 :::
 
-
 ## Jog Controls
 
 The jog controls provide manual control over your laser cutter's position,
@@ -50,15 +49,14 @@ testing purposes.
 
 Home your machine's axes to establish a reference position:
 
-| Button   | Function       | Description                       |
-| -------- | -------------- | --------------------------------- |
-| Home All | Homes all axes | Homes all axes simultaneously     |
+| Button   | Function       | Description                   |
+| -------- | -------------- | ----------------------------- |
+| Home All | Homes all axes | Homes all axes simultaneously |
 
 :::tip Homing Sequence
 It's recommended to home all axes before starting any job to ensure
 accurate positioning.
 :::
-
 
 ### Directional Movement
 
@@ -87,7 +85,6 @@ The jog controls provide buttons for directional movement:
 Keyboard shortcuts only work when the main window has focus.
 :::
 
-
 ### Visual Feedback
 
 The jog buttons provide visual feedback:
@@ -101,28 +98,30 @@ The jog buttons provide visual feedback:
 Configure the behavior of jog operations:
 
 **Jog Speed:**
+
 - **Range**: 1-60,000 mm/min
 - **Default**: 1,000 mm/min
 - **Purpose**: Controls how fast the laser head moves
 
 :::tip Speed Selection
+
 - Use lower speeds (100-500 mm/min) for precise positioning
 - Use higher speeds (1,000-3,000 mm/min) for larger movements
 - Very high speeds may cause missed steps on some machines
-:::
-
+  :::
 
 **Jog Distance:**
+
 - **Range**: 0.1-1,000 mm
 - **Default**: 10.0 mm
 - **Purpose**: Controls how far the laser head moves per button press
 
 :::tip Distance Selection
+
 - Use small distances (0.1-1.0 mm) for fine-tuning
 - Use medium distances (5-20 mm) for general positioning
 - Use large distances (50-100 mm) for quick repositioning
-:::
-
+  :::
 
 ## Machine Status Display
 
@@ -172,28 +171,28 @@ Select which coordinate system is currently active:
 
 Define where the origin of the active WCS should be:
 
-| Button         | Function  | Description                                                 |
-| -------------- | --------- | ----------------------------------------------------------- |
+| Button         | Function  | Description                                                          |
+| -------------- | --------- | -------------------------------------------------------------------- |
 | Click to Zero  | Set X,Y=0 | Click the crosshairs icon, then click on the canvas to set work zero |
-| Edit Offsets   | Edit      | Manually edit WCS offset values                             |
-| Zero X         | Set X=0   | Makes current X position the X origin for active WCS        |
-| Zero Y         | Set Y=0   | Makes current Y position the Y origin for active WCS        |
-| Zero Z         | Set Z=0   | Makes current Z position the Z origin for active WCS        |
+| Go to WCS Zero | Move      | Move the laser head to X0 Y0 of the active WCS                       |
+| Edit Offsets   | Edit      | Manually edit WCS offset values                                      |
+| Zero X         | Set X=0   | Makes current X position the X origin for active WCS                 |
+| Zero Y         | Set Y=0   | Makes current Y position the Y origin for active WCS                 |
+| Zero Z         | Set Z=0   | Makes current Z position the Z origin for active WCS                 |
 
 :::note G53 Cannot Be Changed
 Zero buttons are disabled when G53 (Machine Coordinates) is selected,
 as machine coordinates are fixed by hardware.
 :::
 
-
 :::tip Setting WCS Workflow
+
 1. Connect to your machine and home all axes
 2. Select the WCS you want to configure (e.g., G54)
 3. Jog the laser head to the desired origin position
 4. Click Zero X and Zero Y to set this position as (0, 0)
 5. The offset is stored in your machine's controller
-:::
-
+   :::
 
 ## Console Tab
 
