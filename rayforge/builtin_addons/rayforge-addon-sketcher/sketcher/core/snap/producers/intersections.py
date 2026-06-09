@@ -1,6 +1,9 @@
 import math
 from typing import TYPE_CHECKING, Iterator
 
+from raygeo.geo.shape.circle import get_circle_circle_intersections
+from raygeo.geo.shape.circle import get_line_circle_intersections
+from raygeo.geo.shape.line import get_line_segment_intersection
 from raygeo.geo.types import Point as GeoPoint
 
 from ...entities import Arc, Circle, Line
@@ -104,22 +107,14 @@ class IntersectionsProducer(SnapLineProducer):
         if not all([p1, p2, p3, p4]):
             return
 
-        x1, y1 = p1.x, p1.y
-        x2, y2 = p2.x, p2.y
-        x3, y3 = p3.x, p3.y
-        x4, y4 = p4.x, p4.y
-
-        denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
-        if abs(denom) < 1e-10:
-            return
-
-        t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom
-        u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom
-
-        if 0 <= t <= 1 and 0 <= u <= 1:
-            ix = x1 + t * (x2 - x1)
-            iy = y1 + t * (y2 - y1)
-            yield (ix, iy)
+        result = get_line_segment_intersection(
+            (p1.x, p1.y),
+            (p2.x, p2.y),
+            (p3.x, p3.y),
+            (p4.x, p4.y),
+        )
+        if result is not None:
+            yield result
 
     def _line_arc_intersections(
         self,
@@ -139,8 +134,11 @@ class IntersectionsProducer(SnapLineProducer):
         if radius < 1e-10:
             return
 
-        for ix, iy in self._line_circle_intersections_raw(
-            p1.x, p1.y, p2.x, p2.y, center.x, center.y, radius
+        for ix, iy in get_line_circle_intersections(
+            (p1.x, p1.y),
+            (p2.x, p2.y),
+            (center.x, center.y),
+            radius,
         ):
             angle = math.atan2(iy - center.y, ix - center.x)
             if arc.is_angle_within_sweep(angle, registry):
@@ -164,42 +162,12 @@ class IntersectionsProducer(SnapLineProducer):
         if radius < 1e-10:
             return
 
-        yield from self._line_circle_intersections_raw(
-            p1.x, p1.y, p2.x, p2.y, center.x, center.y, radius
+        yield from get_line_circle_intersections(
+            (p1.x, p1.y),
+            (p2.x, p2.y),
+            (center.x, center.y),
+            radius,
         )
-
-    def _line_circle_intersections_raw(
-        self,
-        x1: float,
-        y1: float,
-        x2: float,
-        y2: float,
-        cx: float,
-        cy: float,
-        r: float,
-    ) -> Iterator[GeoPoint]:
-        dx = x2 - x1
-        dy = y2 - y1
-        fx = x1 - cx
-        fy = y1 - cy
-
-        a = dx * dx + dy * dy
-        b = 2 * (fx * dx + fy * dy)
-        c = fx * fx + fy * fy - r * r
-
-        discriminant = b * b - 4 * a * c
-        if discriminant < 0:
-            return
-
-        sqrt_disc = math.sqrt(discriminant)
-        t_values = [(-b - sqrt_disc) / (2 * a), (-b + sqrt_disc) / (2 * a)]
-        if sqrt_disc < 1e-10:
-            t_values = [t_values[0]]
-        for t in t_values:
-            if 0 <= t <= 1:
-                ix = x1 + t * dx
-                iy = y1 + t * dy
-                yield (ix, iy)
 
     def _arc_arc_intersections(
         self,
@@ -218,8 +186,8 @@ class IntersectionsProducer(SnapLineProducer):
         r1 = math.hypot(s1.x - c1.x, s1.y - c1.y)
         r2 = math.hypot(s2.x - c2.x, s2.y - c2.y)
 
-        for ix, iy in self._circle_circle_intersections_raw(
-            c1.x, c1.y, r1, c2.x, c2.y, r2
+        for ix, iy in get_circle_circle_intersections(
+            (c1.x, c1.y), r1, (c2.x, c2.y), r2
         ):
             angle1 = math.atan2(iy - c1.y, ix - c1.x)
             angle2 = math.atan2(iy - c2.y, ix - c2.x)
@@ -245,36 +213,6 @@ class IntersectionsProducer(SnapLineProducer):
         r1 = math.hypot(r1_pt.x - c1.x, r1_pt.y - c1.y)
         r2 = math.hypot(r2_pt.x - c2.x, r2_pt.y - c2.y)
 
-        yield from self._circle_circle_intersections_raw(
-            c1.x, c1.y, r1, c2.x, c2.y, r2
+        yield from get_circle_circle_intersections(
+            (c1.x, c1.y), r1, (c2.x, c2.y), r2
         )
-
-    def _circle_circle_intersections_raw(
-        self,
-        x1: float,
-        y1: float,
-        r1: float,
-        x2: float,
-        y2: float,
-        r2: float,
-    ) -> Iterator[GeoPoint]:
-        d = math.hypot(x2 - x1, y2 - y1)
-        if d < 1e-10 or d > r1 + r2 or d < abs(r1 - r2):
-            return
-
-        a = (r1 * r1 - r2 * r2 + d * d) / (2 * d)
-        h_sq = r1 * r1 - a * a
-        if h_sq < 0:
-            return
-        h = math.sqrt(h_sq)
-
-        px = x1 + a * (x2 - x1) / d
-        py = y1 + a * (y2 - y1) / d
-
-        if h < 1e-10:
-            yield (px, py)
-        else:
-            dx = h * (y2 - y1) / d
-            dy = h * (x1 - x2) / d
-            yield (px + dx, py + dy)
-            yield (px - dx, py - dy)

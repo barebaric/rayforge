@@ -251,9 +251,7 @@ class ContourProducer(OpsProducer):
                 # handled by split_inner_and_outer_contours(), so we
                 # must separate them first and add them back afterwards.
                 all_contours = final_geometry.split_into_contours()
-                open_contours = [
-                    c for c in all_contours if not c.is_closed()
-                ]
+                open_contours = [c for c in all_contours if not c.is_closed()]
                 closed_geo = Geometry()
                 for c in all_contours:
                     if c.is_closed():

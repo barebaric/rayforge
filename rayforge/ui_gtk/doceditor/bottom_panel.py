@@ -358,9 +358,7 @@ class BottomPanel(Gtk.Box):
         )
         self.move_origin_btn.add_css_class("flat")
         self.move_origin_btn.set_size_request(40, -1)
-        self.move_origin_btn.connect(
-            "clicked", self._on_move_to_wcs_zero
-        )
+        self.move_origin_btn.connect("clicked", self._on_move_to_wcs_zero)
         self.move_origin_btn.set_tooltip_text(
             _("Move to Origin of Active WCS")
         )
