@@ -544,6 +544,88 @@ def test_overcut_larger_than_one_side(laser, dummy_surface):
     assert last_y == pytest.approx(5.0, abs=0.01)
 
 
+def test_open_paths_preserved_with_closed_contours(
+    laser, dummy_surface, vector_workpiece
+):
+    """
+    Open paths (e.g. crosshair lines from SVG H/V commands) must not
+    be dropped when mixed with closed contours.
+
+    split_inner_and_outer_contours() only handles closed paths, so
+    open ones must be separated beforehand and re-added afterwards.
+    """
+    # Add two open line paths to the vector workpiece boundaries
+    extra = Geometry()
+    extra.move_to(0.3, 0.0)
+    extra.line_to(0.3, 1.0)
+    extra.move_to(0.0, 0.7)
+    extra.line_to(1.0, 0.7)
+
+    combined = Geometry()
+    combined.extend(vector_workpiece.boundaries)
+    combined.extend(extra)
+    vector_workpiece._boundaries_cache = combined
+
+    tracer = ContourProducer(cut_side=CutSide.CENTERLINE)
+    artifact = tracer.run(
+        laser,
+        dummy_surface,
+        (10, 10),
+        workpiece=vector_workpiece,
+        generation_id=1,
+    )
+
+    geoms = get_geo_from_artifact(artifact)
+
+    # 2 closed contours (outer + hole) + 2 open lines = 4 total
+    assert len(geoms) == 4
+
+    closed = [g for g in geoms if g.is_closed()]
+    open_ = [g for g in geoms if not g.is_closed()]
+    assert len(closed) == 2
+    assert len(open_) == 2
+
+    # Verify the open lines survived and have the expected coordinates
+    # after scaling by 20 (workpiece size).
+    # Sort: vertical lines first (zero width), then horizontal.
+    open_rects = sorted(
+        [g.rect() for g in open_], key=lambda r: abs(r[2] - r[0])
+    )
+    # Vertical line: x=6, y=0..20
+    assert open_rects[0] == pytest.approx((6.0, 0.0, 6.0, 20.0), abs=0.05)
+    # Horizontal line: x=0..20, y=14
+    assert open_rects[1] == pytest.approx((0.0, 14.0, 20.0, 14.0), abs=0.05)
+
+
+def test_open_paths_only(laser, dummy_surface):
+    """
+    When the geometry contains only open paths and no closed contours,
+    all open paths must still be emitted.
+    """
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(1, 0)
+    geo.move_to(0.5, 0)
+    geo.line_to(0.5, 1)
+
+    wp = WorkPiece(name="lines_only")
+    wp._boundaries_cache = geo
+    wp.set_size(10, 10)
+
+    tracer = ContourProducer(cut_side=CutSide.CENTERLINE)
+    artifact = tracer.run(
+        laser,
+        dummy_surface,
+        (10, 10),
+        workpiece=wp,
+        generation_id=1,
+    )
+
+    geoms = get_geo_from_artifact(artifact)
+    assert len(geoms) == 2
+    assert all(not g.is_closed() for g in geoms)
+
+
 def test_overcut_on_full_circle(laser, dummy_surface):
     """Overcut works on a full-circle arc (start == end)."""
     # Normalized circle: center (0.5,0.5), radius 0.5, start at (1,0.5)

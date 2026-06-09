@@ -246,9 +246,27 @@ class ContourProducer(OpsProducer):
                 final_ops.extend(Ops.from_geometry(final_geometry))
                 final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
             else:
-                # Complex case: separate inner and outer paths into two groups
-                split_func = final_geometry.split_inner_and_outer_contours
-                inner_contours, outer_contours = split_func()
+                # Complex case: separate inner and outer paths into two
+                # groups. Open contours (e.g. straight lines) are not
+                # handled by split_inner_and_outer_contours(), so we
+                # must separate them first and add them back afterwards.
+                all_contours = final_geometry.split_into_contours()
+                open_contours = [
+                    c for c in all_contours if not c.is_closed()
+                ]
+                closed_geo = Geometry()
+                for c in all_contours:
+                    if c.is_closed():
+                        closed_geo.extend(c)
+
+                inner_contours = []
+                outer_contours = []
+                if not closed_geo.is_empty():
+                    inner_contours, outer_contours = (
+                        closed_geo.split_inner_and_outer_contours()
+                    )
+
+                outer_contours.extend(open_contours)
 
                 if self.overcut > 0:
                     inner_contours = [
