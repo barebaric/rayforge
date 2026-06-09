@@ -370,6 +370,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/10/cb/f2ad4230dc2eb1a74edf38f1a38b9b52277f75bef262d8908e60d957e13c/blinker-1.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/14/15/5574111ae50dd6e879456888c0eadd4c5a869959775854e18e18a6b345f3/propcache-0.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/17/fe/77f4a24264e728fd95542e53f026a91249b51d1611087b8c82d3a033ea97/asyncudp-0.11.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/19/d8/51de5c6b971c27bb1ef620293b8d1ca611ec78736b34b3f6ccf68e4c8785/aiohttp-3.14.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/1c/d4/44a200c1bf3fbd38cbf05ce0aa9460b06c4792a3df0608d1e2ad6466e00f/ezdxf-1.4.4b3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/1e/c0/56472c251d09858a53e51efbd485b09e1995d8731668b76d52e5dd6ee0f1/ruff-0.15.14-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/20/7a/1c6e3562dfd8950adbb11ffbc65d21e7c89d01a6e4f137fa981056de25c5/gitpython-3.1.50-py3-none-any.whl
@@ -382,7 +383,6 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/3c/a6/bc1012356d8ece4d66dd75c4b9fc6c1f6650ddd5991e421177d9f8f671be/platformdirs-4.3.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/43/e3/fdc657359e919462369869f1c9f0e973f353f9a9ee295a39b1fea8ee1a77/pillow-12.2.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/4c/a2/d8ecd2f7ffa084870ba071a584aac44800a89f3c77b305999be7dc8b7bb3/pyvips-3.0.0.tar.gz
-      - pypi: https://files.pythonhosted.org/packages/57/d8/8d44036d7eb7b6a8ec4c5494ea0c8c8b94fbc0ed3991c1a7adf230df03bf/aiohttp-3.13.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/5a/cc/06253936f4a7fa2e0f48dfe6d851d9c56df896a9ab09ac019d70b760619c/pytest_mock-3.15.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/5f/fc/a7bf5b6e4e617b45f90f2d9d2a68519c249c81dd4fc2658c7a2a61c4f4b7/aiohappyeyeballs-2.6.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/60/45/c7b5c3168458db837e8ceab06dc77824e18202679d0463f0e8f002143a97/tinycss2-1.5.1-py3-none-any.whl
@@ -4717,7 +4717,7 @@ packages:
   name: rayforge
   requires_dist:
   - raygeo
-  - aiohttp==3.13.5
+  - aiohttp==3.14.0
   - asyncudp==0.11.0
   - blinker==1.9.0
   - ezdxf==1.4.4b3
@@ -4865,6 +4865,25 @@ packages:
   name: asyncudp
   version: 0.11.0
   sha256: 96d859d86471e3ed30cf9f05cb38e96920156e3a9fe70ee916096ba758ea316e
+- pypi: https://files.pythonhosted.org/packages/19/d8/51de5c6b971c27bb1ef620293b8d1ca611ec78736b34b3f6ccf68e4c8785/aiohttp-3.14.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+  name: aiohttp
+  version: 3.14.0
+  sha256: 78d6f9286a629ce52728430afe18f8ed2b6c39a1fddb3802d7244b9983910ad2
+  requires_dist:
+  - aiohappyeyeballs>=2.5.0
+  - aiosignal>=1.4.0
+  - async-timeout>=4.0,<6.0 ; python_full_version < '3.11'
+  - attrs>=17.3.0
+  - frozenlist>=1.1.1
+  - multidict>=4.5,<7.0
+  - propcache>=0.2.0
+  - typing-extensions>=4.4 ; python_full_version < '3.13'
+  - yarl>=1.17.0,<2.0
+  - aiodns>=3.3.0 ; sys_platform != 'android' and sys_platform != 'ios' and extra == 'speedups'
+  - brotli>=1.2 ; platform_python_implementation == 'CPython' and sys_platform != 'android' and sys_platform != 'ios' and extra == 'speedups'
+  - brotlicffi>=1.2 ; platform_python_implementation != 'CPython' and extra == 'speedups'
+  - backports-zstd ; python_full_version < '3.14' and platform_python_implementation == 'CPython' and sys_platform != 'android' and sys_platform != 'ios' and extra == 'speedups'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/1c/d4/44a200c1bf3fbd38cbf05ce0aa9460b06c4792a3df0608d1e2ad6466e00f/ezdxf-1.4.4b3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
   name: ezdxf
   version: 1.4.4b3
@@ -5074,24 +5093,6 @@ packages:
   - sphinx ; extra == 'doc'
   - sphinx-rtd-theme ; extra == 'doc'
   requires_python: '>=3.7'
-- pypi: https://files.pythonhosted.org/packages/57/d8/8d44036d7eb7b6a8ec4c5494ea0c8c8b94fbc0ed3991c1a7adf230df03bf/aiohttp-3.13.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
-  name: aiohttp
-  version: 3.13.5
-  sha256: b18f31b80d5a33661e08c89e202edabf1986e9b49c42b4504371daeaa11b47c1
-  requires_dist:
-  - aiohappyeyeballs>=2.5.0
-  - aiosignal>=1.4.0
-  - async-timeout>=4.0,<6.0 ; python_full_version < '3.11'
-  - attrs>=17.3.0
-  - frozenlist>=1.1.1
-  - multidict>=4.5,<7.0
-  - propcache>=0.2.0
-  - yarl>=1.17.0,<2.0
-  - aiodns>=3.3.0 ; extra == 'speedups'
-  - brotli>=1.2 ; platform_python_implementation == 'CPython' and extra == 'speedups'
-  - brotlicffi>=1.2 ; platform_python_implementation != 'CPython' and extra == 'speedups'
-  - backports-zstd ; python_full_version < '3.14' and platform_python_implementation == 'CPython' and extra == 'speedups'
-  requires_python: '>=3.9'
 - pypi: https://files.pythonhosted.org/packages/5a/cc/06253936f4a7fa2e0f48dfe6d851d9c56df896a9ab09ac019d70b760619c/pytest_mock-3.15.1-py3-none-any.whl
   name: pytest-mock
   version: 3.15.1

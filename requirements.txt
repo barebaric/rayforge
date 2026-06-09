@@ -1,5 +1,5 @@
 raygeo
-aiohttp==3.13.5
+aiohttp==3.14.0
 asyncudp==0.11.0
 blinker==1.9.0
 ezdxf==1.4.4b3
