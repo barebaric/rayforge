@@ -1482,13 +1482,10 @@ def test_estimate_time_with_arc():
     # Disable acceleration for simpler calculation
     time_est = ops.estimate_time(acceleration=0)
 
-    # The actual distance is calculated as the straight line distance
-    # from (10,0) to (0,10) which is sqrt(10^2 + 10^2) = 14.142mm
+    # Arc length for quarter circle with r=10: pi/2 * 10 ≈ 15.708mm
     # Plus the initial move_to(10, 0) which is 10mm travel
-    # Expected: 14.142mm cut @ 1000mm/min = 0.8485s
-    #         + 10mm travel  @ 3000mm/min = 0.2s
-    #         = 1.0485s total
-    expected_time = math.sqrt(10**2 + 10**2) / 1000 * 60 + 10.0 / 3000 * 60
+    arc_len = math.pi / 2.0 * 10.0
+    expected_time = arc_len / 1000 * 60 + 10.0 / 3000 * 60
     assert time_est == pytest.approx(expected_time, rel=1e-3)
 
 
