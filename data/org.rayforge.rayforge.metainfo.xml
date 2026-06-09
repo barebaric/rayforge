@@ -66,6 +66,53 @@
   </screenshots>
 
   <releases>
+    <release version="1.8.0~beta1" date="2026-06-09">
+      <description>
+        <p>Rust-powered pipeline, faster rasterizing, new GRBL driver</p>
+        <p>Major Changes:</p>
+        <ul>
+          <li>Core Ops container rewritten with Struct-of-Arrays layout for
+          better performance and Rust compatibility</li>
+          <li>Five pipeline stages migrated to Rust via raygeo 0.6: tabs,
+          merge lines, overscan, lead-in/out, and hull computation</li>
+          <li>Raster scan loops replaced with Rust-accelerated raygeo
+          functions for faster engraving operations</li>
+          <li>Image processing (sRGB conversion, dithering, grayscale)
+          delegated to raygeo.image Rust backend</li>
+          <li>3D canvas slider now uses binary search with pre-computed
+          snapshots, eliminating freezes on large jobs</li>
+        </ul>
+        <p>New Features:</p>
+        <ul>
+          <li>Simple GRBL serial driver with ping-pong protocol for devices
+          with buffer-counting issues</li>
+          <li>"Go to WCS Zero" button in the Current Position section</li>
+          <li>Device profiles for Creality Falcon 10W and Sculpfun C1</li>
+          <li>Minimum raster line spacing lowered to 0.001 mm for
+          microfabrication</li>
+          <li>Deadlock detection toggle in GRBL driver settings</li>
+          <li>Machine settings now apply immediately without restart</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Adaptive deadlock timeouts based on per-command time
+          estimates</li>
+          <li>Worker pool detects crashed workers and spawns replacements
+          automatically</li>
+          <li>File dialogs prefer Rayforge MIME types over ZIP</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Fixed GRBL network disconnect with MKS DLC32 boards</li>
+          <li>Fixed buffer stall recovery aborting jobs during slow
+          moves</li>
+          <li>Fixed ValueError when removing the active machine</li>
+          <li>Fixed manual laser control routing</li>
+          <li>Fixed WCS dropdown coordinates not updating on sync</li>
+          <li>Fixed pipeline stress test race conditions on Windows</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.7.10" date="2026-05-18">
       <description>
         <p>Bug fix release</p>

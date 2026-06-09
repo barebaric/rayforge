@@ -37,7 +37,6 @@ Los controles de desplazamiento solo están disponibles cuando se está conectad
 que soporta operaciones de desplazamiento.
 :::
 
-
 ## Controles de Desplazamiento
 
 Los controles de desplazamiento proporcionan control manual sobre la posición de tu cortador láser,
@@ -59,7 +58,6 @@ Lleva los ejes de tu máquina al origen para establecer una posición de referen
 Se recomienda llevar todos los ejes al origen antes de iniciar cualquier trabajo para asegurar
 posicionamiento preciso.
 :::
-
 
 ### Movimiento Direccional
 
@@ -88,7 +86,6 @@ Los controles de desplazamiento proporcionan botones para movimiento direccional
 Los atajos de teclado solo funcionan cuando la ventana principal tiene foco.
 :::
 
-
 ### Retroalimentación Visual
 
 Los botones de desplazamiento proporcionan retroalimentación visual:
@@ -108,11 +105,11 @@ Configura el comportamiento de las operaciones de desplazamiento:
 - **Propósito**: Controla qué tan rápido se mueve la cabeza del láser
 
 :::tip Selección de Velocidad
+
 - Usa velocidades más bajas (100-500 mm/min) para posicionamiento preciso
 - Usa velocidades más altas (1,000-3,000 mm/min) para movimientos grandes
 - Velocidades muy altas pueden causar pasos perdidos en algunas máquinas
-:::
-
+  :::
 
 **Distancia de Desplazamiento:**
 
@@ -121,11 +118,11 @@ Configura el comportamiento de las operaciones de desplazamiento:
 - **Propósito**: Controla qué tan lejos se mueve la cabeza del láser por presión de botón
 
 :::tip Selección de Distancia
+
 - Usa distancias pequeñas (0.1-1.0 mm) para ajuste fino
 - Usa distancias medianas (5-20 mm) para posicionamiento general
 - Usa distancias grandes (50-100 mm) para reposicionamiento rápido
-:::
-
+  :::
 
 ## Pantalla de Estado de la Máquina
 
@@ -175,28 +172,28 @@ Selecciona qué sistema de coordenadas está actualmente activo:
 
 Define dónde debería estar el origen del WCS activo:
 
-| Botón          | Función        | Descripción                                                      |
-| -------------- | -------------- | ---------------------------------------------------------------- |
+| Botón          | Función          | Descripción                                                                                  |
+| -------------- | ---------------- | -------------------------------------------------------------------------------------------- |
 | Clic para Cero | Establecer X,Y=0 | Haz clic en el icono de cruz, luego haz clic en el lienzo para establecer el cero de trabajo |
-| Editar Despl.  | Editar         | Editar manualmente los valores de desplazamiento WCS             |
-| Cero X         | Establecer X=0 | Hace que la posición X actual sea el origen X para el WCS activo |
-| Cero Y         | Establecer Y=0 | Hace que la posición Y actual sea el origen Y para el WCS activo |
-| Cero Z         | Establecer Z=0 | Hace que la posición Z actual sea el origen Z para el WCS activo |
+| Ir a Cero WCS  | Mover            | Mover la cabeza láser a X0 Y0 del WCS activo                                                 |
+| Editar Despl.  | Editar           | Editar manualmente los valores de desplazamiento WCS                                         |
+| Cero X         | Establecer X=0   | Hace que la posición X actual sea el origen X para el WCS activo                             |
+| Cero Y         | Establecer Y=0   | Hace que la posición Y actual sea el origen Y para el WCS activo                             |
+| Cero Z         | Establecer Z=0   | Hace que la posición Z actual sea el origen Z para el WCS activo                             |
 
 :::note G53 No Puede Cambiarse
 Los botones de cero están deshabilitados cuando G53 (Coordenadas de Máquina) está seleccionado,
 ya que las coordenadas de máquina están fijadas por hardware.
 :::
 
-
 :::tip Flujo de Trabajo para Establecer WCS
+
 1. Conéctate a tu máquina y lleva todos los ejes al origen
 2. Selecciona el WCS que quieres configurar (ej., G54)
 3. Desplaza la cabeza del láser a la posición de origen deseada
 4. Haz clic en Cero X y Cero Y para establecer esta posición como (0, 0)
 5. El desplazamiento se almacena en el controlador de tu máquina
-:::
-
+   :::
 
 ## Pestaña de Consola
 

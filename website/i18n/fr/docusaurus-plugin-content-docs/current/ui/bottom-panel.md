@@ -171,6 +171,7 @@ Définis où l'origine du WCS actif devrait être :
 | Bouton               | Fonction      | Description                                                                                |
 | -------------------- | ------------- | ------------------------------------------------------------------------------------------ |
 | Cliquer pour zéro    | Définir X,Y=0 | Clique sur l'icône du réticule, puis clique sur le canevas pour définir le zéro de travail |
+| Aller au zéro WCS    | Déplacer      | Déplacer la tête laser vers X0 Y0 du WCS actif                                             |
 | Éditer les décalages | Éditer        | Éditer manuellement les valeurs de décalage du WCS                                         |
 | Zéro X               | Définir X=0   | Fait de la position X actuelle l'origine X pour le WCS actif                               |
 | Zéro Y               | Définir Y=0   | Fait de la position Y actuelle l'origine Y pour le WCS actif                               |
