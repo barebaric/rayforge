@@ -292,14 +292,14 @@ class BottomPanel(Gtk.Box):
             self.wcs_list = self.machine.supported_wcs
         else:
             self.wcs_list = []
-        wcs_model = Gtk.StringList.new(self.wcs_list)
+        self._wcs_model = Gtk.StringList.new(self.wcs_list)
 
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", self._on_wcs_factory_setup)
         factory.connect("bind", self._on_wcs_factory_bind)
 
         self.wcs_row = Adw.ComboRow(
-            model=wcs_model,
+            model=self._wcs_model,
             factory=factory,
             use_subtitle=True,
         )
@@ -681,6 +681,10 @@ class BottomPanel(Gtk.Box):
         self.wcs_row.set_subtitle(
             f"X: {off_x:.2f}   Y: {off_y:.2f}   Z: {off_z:.2f}"
         )
+
+        n = self._wcs_model.get_n_items()
+        for i in range(n):
+            self._wcs_model.items_changed(i, 1, 1)
 
         is_dummy = isinstance(self.machine.driver, NoDeviceDriver)
         is_connected = self.machine.is_connected()
