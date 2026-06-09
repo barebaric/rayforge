@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-11 12:17+0200\n"
+"POT-Creation-Date: 2026-06-08 23:45+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -167,6 +167,24 @@ msgstr "交叉填充"
 #: laser_essentials/widgets/raster_widget.py
 msgid "Add a second pass at 90 degrees"
 msgstr "添加90度第二次扫描"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Segmented"
+msgstr "分段"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Full Sweep"
+msgstr "全幅扫描"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Scan Mode"
+msgstr "扫描模式"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid ""
+"Segmented: moves between content regions. Full Sweep: scans full width with "
+"laser toggling."
+msgstr "分段：在内容区域之间移动。全幅扫描：扫描整个宽度，激光切换。"
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Line Spacing"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-11 12:17+0200\n"
+"POT-Creation-Date: 2026-06-08 23:45+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -168,6 +168,26 @@ msgstr "Перехресна штриховка"
 #: laser_essentials/widgets/raster_widget.py
 msgid "Add a second pass at 90 degrees"
 msgstr "Додати другий прохід під 90 градусів"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Segmented"
+msgstr "Сегментований"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Full Sweep"
+msgstr "Повне проходження"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Scan Mode"
+msgstr "Режим сканування"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid ""
+"Segmented: moves between content regions. Full Sweep: scans full width with "
+"laser toggling."
+msgstr ""
+"Сегментований: рухається між областями вмісту. Повне проходження: сканує всю "
+"ширину з вмиканням/вимиканням лазера."
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Line Spacing"

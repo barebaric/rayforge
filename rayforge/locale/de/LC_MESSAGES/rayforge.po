@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-09 00:08+0200\n"
+"POT-Creation-Date: 2026-06-09 18:15+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -469,6 +469,7 @@ msgstr "Smoothieware über eine Telnet-Verbindung"
 #: rayforge/machine/driver/smoothie.py
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Machine Coordinates (G53)"
 msgstr "Maschinenkoordinaten (G53)"
@@ -501,6 +502,7 @@ msgstr "Die IP-Adresse oder der Hostname des Geräts"
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Port"
 msgstr "Port"
 
@@ -688,12 +690,14 @@ msgstr "Marlin-Firmware über serielle Verbindung"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Serial port for the device"
 msgstr "Serieller Port für das Gerät"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Port must be configured."
 msgstr "Port muss konfiguriert werden."
 
@@ -1421,11 +1425,13 @@ msgstr ""
 "automatische Erkennung vom Gerät."
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown Settings"
 msgstr "Unbekannte Einstellungen"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Settings reported by the device not in the standard list."
 msgstr ""
@@ -1433,6 +1439,7 @@ msgstr ""
 "sind."
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown setting from device"
 msgstr "Unbekannte Einstellung vom Gerät"
@@ -1452,6 +1459,18 @@ msgid ""
 msgstr ""
 "Lasermodus ist nicht aktiviert ($32=0). Für beste Ergebnisse mit "
 "Lasergeräten aktivieren."
+
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+msgid "GRBL (Serial Simple)"
+msgstr "GRBL (Serial Simple)"
+
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+msgid "GRBL serial with simple ping-pong protocol (no buffer counting)"
+msgstr "GRBL-Seriell mit einfachem Ping-Pong-Protokoll (ohne Pufferzählung)"
+
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+msgid "Baudrate must be configured."
+msgstr "Baudrate muss konfiguriert werden."
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "GRBL (Network)"
@@ -6187,6 +6206,10 @@ msgstr "Zur Mitte der Auswahl oder des Arbeitsbereichs bewegen"
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Move to Upper-Right of Selection or Workarea"
 msgstr "Zur oberen rechten Ecke der Auswahl oder des Arbeitsbereichs bewegen"
+
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid "Move to Origin of Active WCS"
+msgstr "Zum Ursprung des aktiven WCS bewegen"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Zero Axes"
