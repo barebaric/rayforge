@@ -288,6 +288,7 @@ class WorkerPoolManager:
         self._worker_task_map: dict[int, Tuple[Any, int]] = {}
         self._pid_to_worker: dict[int, BaseProcess] = {}
         self._health_check_counter = 0
+        self._shutting_down = False
 
         # Signals for the TaskManager to subscribe to
         self.task_event_received = Signal()
@@ -513,6 +514,9 @@ class WorkerPoolManager:
         Check if any workers have died. If so, emit a worker_died
         signal for orphaned task cleanup and start a replacement worker.
         """
+        if self._shutting_down:
+            return
+
         dead_info = []
         with self._lock:
             for pid, (key, task_id) in list(self._worker_task_map.items()):
@@ -604,6 +608,7 @@ class WorkerPoolManager:
         Shuts down the worker pool, terminating all worker processes.
         """
         logger.info("Shutting down worker pool.")
+        self._shutting_down = True
         try:
             for worker in self._workers:
                 pid = worker.pid
