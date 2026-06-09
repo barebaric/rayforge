@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-09 00:08+0200\n"
+"POT-Creation-Date: 2026-06-09 18:15+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -458,6 +458,7 @@ msgstr "通过Telnet连接的Smoothieware"
 #: rayforge/machine/driver/smoothie.py
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Machine Coordinates (G53)"
 msgstr "机器坐标（G53）"
@@ -490,6 +491,7 @@ msgstr "设备的IP地址或主机名"
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Port"
 msgstr "端口"
 
@@ -657,12 +659,14 @@ msgstr "通过串行连接的Marlin固件"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Serial port for the device"
 msgstr "设备的串口"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Port must be configured."
 msgstr "必须配置端口。"
 
@@ -725,8 +729,8 @@ msgid ""
 "disabled, the driver will simply wait for the machine to respond. Disable if "
 "you experience false ALARM:3 errors."
 msgstr ""
-"在作业期间检测并恢复串行通信死锁。如果禁用，驱动程序将仅等待机器响"
-"应。如果您遇到错误的ALARM:3错误，请禁用此功能。"
+"在作业期间检测并恢复串行通信死锁。如果禁用，驱动程序将仅等待机器响应。如果您"
+"遇到错误的ALARM:3错误，请禁用此功能。"
 
 #: rayforge/machine/driver/grbl/grbl_util.py
 msgid "Missing Command Letter"
@@ -1286,16 +1290,19 @@ msgid ""
 msgstr "强制指定RX缓冲区大小（字节）。设置为0以从设备自动检测。"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown Settings"
 msgstr "未知设置"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Settings reported by the device not in the standard list."
 msgstr "设备报告的设置不在标准列表中。"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown setting from device"
 msgstr "来自设备的未知设置"
@@ -1311,6 +1318,18 @@ msgid ""
 "Laser mode is not enabled ($32=0). Enable it for best results with laser "
 "cutters."
 msgstr "激光模式未启用（$32=0）。建议启用以获得最佳激光切割效果。"
+
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+msgid "GRBL (Serial Simple)"
+msgstr "GRBL（简易串口）"
+
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+msgid "GRBL serial with simple ping-pong protocol (no buffer counting)"
+msgstr "采用简单乒乓协议的GRBL串口（无缓冲计数）"
+
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+msgid "Baudrate must be configured."
+msgstr "必须配置波特率。"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "GRBL (Network)"
@@ -5891,6 +5910,10 @@ msgstr "移动到选择或工作区域的中心"
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Move to Upper-Right of Selection or Workarea"
 msgstr "移动到选择或工作区域的右上角"
+
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid "Move to Origin of Active WCS"
+msgstr "移动到活动WCS原点"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Zero Axes"

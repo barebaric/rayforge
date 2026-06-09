@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-11 12:17+0200\n"
+"POT-Creation-Date: 2026-06-08 23:45+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -166,6 +166,24 @@ msgstr ""
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Add a second pass at 90 degrees"
+msgstr ""
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Segmented"
+msgstr ""
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Full Sweep"
+msgstr ""
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Scan Mode"
+msgstr ""
+
+#: laser_essentials/widgets/raster_widget.py
+msgid ""
+"Segmented: moves between content regions. Full Sweep: scans full width with "
+"laser toggling."
 msgstr ""
 
 #: laser_essentials/widgets/raster_widget.py

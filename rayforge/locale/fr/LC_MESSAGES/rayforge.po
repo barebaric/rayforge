@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-09 00:08+0200\n"
+"POT-Creation-Date: 2026-06-09 18:15+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -469,6 +469,7 @@ msgstr "Smoothieware via une connexion Telnet"
 #: rayforge/machine/driver/smoothie.py
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Machine Coordinates (G53)"
 msgstr "Coordonnées machine (G53)"
@@ -501,6 +502,7 @@ msgstr "L’adresse IP ou le nom d’hôte du périphérique"
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Port"
 msgstr "Port"
 
@@ -687,12 +689,14 @@ msgstr "Firmware Marlin via connexion série"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Serial port for the device"
 msgstr "Port série pour le périphérique"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Port must be configured."
 msgstr "Le port doit être configuré."
 
@@ -756,8 +760,8 @@ msgid ""
 "disabled, the driver will simply wait for the machine to respond. Disable if "
 "you experience false ALARM:3 errors."
 msgstr ""
-"Détecte et récupère les blocages de communication série pendant les "
-"travaux. Si désactivé, le pilote attendra simplement que la machine réponde. "
+"Détecte et récupère les blocages de communication série pendant les travaux. "
+"Si désactivé, le pilote attendra simplement que la machine réponde. "
 "Désactivez si vous rencontrez de fausses erreurs ALARM:3."
 
 #: rayforge/machine/driver/grbl/grbl_util.py
@@ -1420,11 +1424,13 @@ msgstr ""
 "détection automatique à partir du périphérique."
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown Settings"
 msgstr "Paramètres inconnus"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Settings reported by the device not in the standard list."
 msgstr ""
@@ -1432,6 +1438,7 @@ msgstr ""
 "standard."
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown setting from device"
 msgstr "Paramètre inconnu provenant du périphérique"
@@ -1451,6 +1458,18 @@ msgid ""
 msgstr ""
 "Le mode laser n'est pas activé ($32=0). Activez-le pour de meilleurs "
 "résultats avec les découpeuses laser."
+
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+msgid "GRBL (Serial Simple)"
+msgstr "GRBL (Série Simple)"
+
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+msgid "GRBL serial with simple ping-pong protocol (no buffer counting)"
+msgstr "GRBL série avec protocole ping-pong simple (sans comptage de tampon)"
+
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+msgid "Baudrate must be configured."
+msgstr "Le débit en bauds doit être configuré."
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "GRBL (Network)"
@@ -6201,6 +6220,10 @@ msgid "Move to Upper-Right of Selection or Workarea"
 msgstr ""
 "Déplacer vers le coin supérieur droit de la sélection ou de la zone de "
 "travail"
+
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid "Move to Origin of Active WCS"
+msgstr "Déplacer à l'origine du WCS actif"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Zero Axes"

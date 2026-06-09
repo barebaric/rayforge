@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-11 12:17+0200\n"
+"POT-Creation-Date: 2026-06-08 23:45+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -171,6 +171,26 @@ msgstr "Hachura Cruzada"
 #: laser_essentials/widgets/raster_widget.py
 msgid "Add a second pass at 90 degrees"
 msgstr "Adicionar uma segunda passagem a90 graus"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Segmented"
+msgstr "Segmentado"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Full Sweep"
+msgstr "Varredura completa"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Scan Mode"
+msgstr "Modo de varredura"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid ""
+"Segmented: moves between content regions. Full Sweep: scans full width with "
+"laser toggling."
+msgstr ""
+"Segmentado: move-se entre regiões de conteúdo. Varredura completa: varre "
+"toda a largura com ativação do laser."
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Line Spacing"
