@@ -122,7 +122,7 @@ if [ "$(uname -s)" = "Darwin" ]; then
             next
         }
         /^scipy[=~><!]/ {
-            print "scipy==1.11.4"
+            print "scipy==1.17.1"
             done_scipy = 1
             next
         }
@@ -132,7 +132,7 @@ if [ "$(uname -s)" = "Darwin" ]; then
                 print "numpy==1.26.4"
             }
             if (done_scipy == 0) {
-                print "scipy==1.11.4"
+                    print "scipy==1.17.1"
             }
         }
     ' "$TMP_REQUIREMENTS" > "$TMP_REQUIREMENTS.patched"
@@ -148,7 +148,7 @@ fi
 "$VENV_PY" -m pip install -r "$TMP_REQUIREMENTS"
 if [ "$(uname -s)" = "Darwin" ]; then
     "$VENV_PY" -m pip install --upgrade --force-reinstall \
-        "numpy==1.26.4" "scipy==1.11.4"
+        "numpy==1.26.4" "scipy==1.17.1"
 fi
 rm -f "$TMP_REQUIREMENTS"
 "$VENV_PY" -m pip install PyOpenGL_accelerate==3.1.10 || \
@@ -195,13 +195,38 @@ for target in ("dist/Rayforge", "dist/Rayforge.app"):
     if path.exists():
         shutil.rmtree(path, onerror=_onerror)
 PY
-    # Generate macOS icon if it doesn't exist or if SVG is newer
-    if [ ! -f "rayforge.icns" ] || \
-       [ "website/static/images/icon-app.svg" -nt "rayforge.icns" ]; then
-        echo "Generating macOS icon..."
-        bash scripts/mac/mac_create_icon.sh
+
+    # Compile .icon → Assets.car (macOS 26+ Liquid Glass icon format).
+    # Falls back to legacy .icns if rayforge.icon is not present.
+    ICON_SOURCE=""
+    if [ -d "rayforge/resources/icons/rayforge.icon" ]; then
+        echo "Compiling rayforge.icon → Assets.car..."
+        if ! xcrun actool rayforge/resources/icons/rayforge.icon \
+                --compile "$(pwd)" \
+               --app-icon rayforge \
+                --platform macosx \
+                --target-device mac \
+                --minimum-deployment-target 10.14 \
+            --output-partial-info-plist /dev/null; then
+            echo "actool failed; falling back to .icns if available." >&2
+            ICON_SOURCE="icns"
+        else
+            echo "Assets.car compiled successfully."
+            ICON_SOURCE="car"
+        fi
     else
-        echo "Icon is up to date, skipping generation."
+        echo "rayforge.icon not found, using legacy .icns path."
+        ICON_SOURCE="icns"
+    fi
+
+    if [ "$ICON_SOURCE" = "icns" ]; then
+        if [ ! -f "rayforge.icns" ] || \
+           [ "website/static/images/icon-app.svg" -nt "rayforge.icns" ]; then
+            echo "Generating macOS icon..."
+            bash scripts/mac/mac_create_icon.sh
+        else
+            echo "Icon is up to date, skipping generation."
+        fi
     fi
 
     "$VENV_PY" -m PyInstaller --clean --noconfirm Rayforge.spec
@@ -209,8 +234,22 @@ PY
     APP_ROOT="dist/Rayforge.app/Contents"
     FW_DIR="$APP_ROOT/Frameworks"
     BIN_DIR="$APP_ROOT/MacOS"
+    RES_DIR="$APP_ROOT/Resources"
 
     chmod -R u+w "dist/Rayforge.app" || true
+
+    # Copy Assets.car into Resources and set CFBundleIconName in Info.plist.
+    # This is what tells macOS to use the Liquid Glass .icon instead of .icns.
+    if [ "$ICON_SOURCE" = "car" ] && [ -f "Assets.car" ]; then
+        echo "Installing Assets.car into app bundle..."
+        cp "Assets.car" "$RES_DIR/Assets.car"
+        /usr/libexec/PlistBuddy -c "Delete :CFBundleIconFile" \
+            "$APP_ROOT/Info.plist" 2>/dev/null || true
+        /usr/libexec/PlistBuddy -c "Add :CFBundleIconName string rayforge" \
+            "$APP_ROOT/Info.plist" 2>/dev/null || \
+        /usr/libexec/PlistBuddy -c "Set :CFBundleIconName rayforge" \
+            "$APP_ROOT/Info.plist" 2>/dev/null || true
+    fi
 
     # Remove conflicting libiconv bundled by cv2.
     rm -f "$FW_DIR/libiconv.2.dylib"
