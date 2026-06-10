@@ -2,7 +2,7 @@ from typing import Any, Optional, Tuple
 
 from gi.repository import Adw, Gtk
 
-from ....core.varset import SliderFloatVar, Var
+from ....core.varset import SliderFloatVar, Var, FloatVar
 from ...shared.slider import create_slider_row
 from .base import RowAdapter, escape_title, register_adapter
 
@@ -70,14 +70,14 @@ class SliderAdapter(RowAdapter):
         self._scale.set_value(percent)
 
     def update_from_var(self, var: Var):
+        assert isinstance(var, FloatVar)
         if var.label:
             self._row.set_title(escape_title(var.label))
         if var.description:
             self._row.set_tooltip_text(var.description)
-        adj = self._scale.get_adjustment()
-        min_val = getattr(var, "min_val", None)
-        max_val = getattr(var, "max_val", None)
+        min_val = var.min_val if var.min_val is not None else 0.0
+        max_val = var.max_val if var.max_val is not None else 1.0
         if min_val is not None:
-            adj.set_lower(float(min_val))
+            self._min_val = float(min_val)
         if max_val is not None:
-            adj.set_upper(float(max_val))
+            self._max_val = float(max_val)
