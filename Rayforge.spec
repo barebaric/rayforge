@@ -1,6 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-
-
+import os
 from PyInstaller.utils.hooks import collect_submodules
 
 hiddenimports = ['gi._gi_cairo', 'cairosvg']
@@ -11,16 +10,24 @@ hiddenimports += collect_submodules('rayforge.image')
 hiddenimports += collect_submodules('rayforge.core')
 hiddenimports.append('rayforge.ui_gtk.canvas2d.elements.workpiece')
 
+# Use modern .icon (via Assets.car) when available, fall back to .icns.
+_use_car = os.path.exists('Assets.car')
+_icon = None if _use_car else 'rayforge.icns'
+
+_datas = [
+    ('rayforge/version.txt', 'rayforge'),
+    ('rayforge/resources', 'rayforge/resources'),
+    ('rayforge/locale', 'rayforge/locale'),
+    ('rayforge/builtin_addons', 'rayforge/builtin_addons'),
+]
+if _use_car:
+    _datas.append(('Assets.car', '.'))
+
 a = Analysis(
     ['rayforge/app.py'],
     pathex=['.'],
     binaries=[],
-    datas=[
-        ('rayforge/version.txt', 'rayforge'),
-        ('rayforge/resources', 'rayforge/resources'),
-        ('rayforge/locale', 'rayforge/locale'),
-        ('rayforge/builtin_addons', 'rayforge/builtin_addons'),
-    ],
+    datas=_datas,
     hiddenimports=hiddenimports,
     hookspath=['hooks'],
     hooksconfig={
@@ -37,7 +44,6 @@ a = Analysis(
     optimize=0,
 )
 pyz = PYZ(a.pure)
-
 exe = EXE(
     pyz,
     a.scripts,
@@ -54,7 +60,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['rayforge.icns'],
+    icon=[_icon] if _icon else [],
 )
 coll = COLLECT(
     exe,
@@ -68,6 +74,7 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='Rayforge.app',
-    icon='rayforge.icns',
+    icon=_icon,
     bundle_identifier='org.rayforge.rayforge',
+    info_plist={'CFBundleIconName': 'rayforge'} if _use_car else {},
 )
