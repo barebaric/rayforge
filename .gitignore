@@ -9,6 +9,7 @@ build
 /media
 *.egg-info
 .msys2_env
+.DS_Store
 
 .flatpak-builder
 repo
@@ -39,3 +40,7 @@ crates/rayforge-ops/Cargo.lock
 
 # External dependencies
 external/
+
+# macOS icon build artifacts
+Assets.car
+rayforge.icns

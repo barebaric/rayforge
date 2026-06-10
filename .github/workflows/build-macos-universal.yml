@@ -61,7 +61,7 @@ jobs:
   build-intel:
     name: Build macOS Intel Bundle
     needs: version
-    runs-on: macos-15-intel
+    runs-on: macos-26-intel
     env:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
@@ -121,7 +121,7 @@ jobs:
   build-arm:
     name: Build macOS Apple Silicon Bundle
     needs: version
-    runs-on: macos-14
+    runs-on: macos-26
     env:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
@@ -181,7 +181,7 @@ jobs:
   merge-universal:
     name: Merge Universal App and DMG
     needs: [version, build-intel, build-arm]
-    runs-on: macos-15
+    runs-on: macos-26
     env:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
