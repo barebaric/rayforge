@@ -133,7 +133,11 @@ class LayerSettingsDialog(PatchedDialogWindow):
 
         self._is_initializing = False
 
-        if not self.layer.rotary_module_uid and self._module_uids:
+        has_modules = bool(self._module_uids)
+        if not has_modules:
+            self.module_row.set_sensitive(False)
+
+        if not self.layer.rotary_module_uid and has_modules:
             self.layer.set_rotary_module_uid(self._module_uids[0])
 
     def _populate_wcs_store(self):
