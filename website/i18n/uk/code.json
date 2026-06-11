@@ -938,6 +938,9 @@
   "page.devices.device.acmer-s1.description": {
     "message": "Компактний діодний лазерний гравер з робочою областю 130x130mm"
   },
+  "page.devices.device.acmer-p3.description": {
+    "message": "Діодний лазерний гравер з подвійною головкою та робочою областю 400x390mm"
+  },
   "page.devices.device.atomstack-a70.description": {
     "message": "70W діодний лазерний різак з робочою областю 500x500mm та точковим стисненням"
   },
@@ -952,6 +955,9 @@
   },
   "page.devices.device.creality-falcon-a1.description": {
     "message": "Діодний лазерний гравер з робочою областю 381x305mm та ротаційною підтримкою"
+  },
+  "page.devices.device.creality-falcon-10w.description": {
+    "message": "10W діодний лазерний гравер з робочою областю 400x415mm"
   },
   "page.devices.device.elidor-z6.description": {
     "message": "Діодний лазерний гравер з робочою областю 300x300mm"
@@ -982,6 +988,9 @@
   },
   "page.devices.device.sculpfun-icube-ultra.description": {
     "message": "Діодний лазерний гравер з Bluetooth та робочою областю 150x150mm"
+  },
+  "page.devices.device.sculpfun-c1.description": {
+    "message": "Бюджетний діодний лазерний гравер з робочою областю 150x130mm"
   },
   "page.devices.device.sculpfun-s30.description": {
     "message": "Бюджетний діодний лазерний гравер з робочою областю 400x400mm"

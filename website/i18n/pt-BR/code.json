@@ -938,6 +938,9 @@
   "page.devices.device.acmer-s1.description": {
     "message": "Gravador a laser de diodo compacto com área de trabalho de 130x130mm"
   },
+  "page.devices.device.acmer-p3.description": {
+    "message": "Gravador a laser de diodo de dupla cabeça com área de trabalho de 400x390mm"
+  },
   "page.devices.device.atomstack-a70.description": {
     "message": "Cortadora a laser de diodo 70W com área de trabalho de 500x500mm e compressão pontual"
   },
@@ -952,6 +955,9 @@
   },
   "page.devices.device.creality-falcon-a1.description": {
     "message": "Gravador a laser de diodo com área de trabalho de 381x305mm e suporte rotativo"
+  },
+  "page.devices.device.creality-falcon-10w.description": {
+    "message": "Gravador a laser de diodo 10W com área de trabalho de 400x415mm"
   },
   "page.devices.device.elidor-z6.description": {
     "message": "Gravador a laser de diodo com área de trabalho de 300x300mm"
@@ -982,6 +988,9 @@
   },
   "page.devices.device.sculpfun-icube-ultra.description": {
     "message": "Gravador a laser de diodo com Bluetooth e área de trabalho de 150x150mm"
+  },
+  "page.devices.device.sculpfun-c1.description": {
+    "message": "Gravador a laser de diodo econômico com área de trabalho de 150x130mm"
   },
   "page.devices.device.sculpfun-s30.description": {
     "message": "Gravador a laser de diodo econômico com área de trabalho de 400x400mm"

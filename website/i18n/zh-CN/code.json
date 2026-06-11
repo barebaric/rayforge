@@ -938,6 +938,9 @@
   "page.devices.device.acmer-s1.description": {
     "message": "紧凑型二极管激光雕刻机，工作区域130x130mm"
   },
+  "page.devices.device.acmer-p3.description": {
+    "message": "双头二极管激光雕刻机，工作区域400x390mm"
+  },
   "page.devices.device.atomstack-a70.description": {
     "message": "70W二极管激光切割机，工作区域500x500mm，带光斑压缩"
   },
@@ -952,6 +955,9 @@
   },
   "page.devices.device.creality-falcon-a1.description": {
     "message": "二极管激光雕刻机，工作区域381x305mm，带旋转轴"
+  },
+  "page.devices.device.creality-falcon-10w.description": {
+    "message": "10W二极管激光雕刻机，工作区域400x415mm"
   },
   "page.devices.device.elidor-z6.description": {
     "message": "二极管激光雕刻机，工作区域300x300mm"
@@ -982,6 +988,9 @@
   },
   "page.devices.device.sculpfun-icube-ultra.description": {
     "message": "二极管激光雕刻机，带蓝牙功能，工作区域150x150mm"
+  },
+  "page.devices.device.sculpfun-c1.description": {
+    "message": "经济型二极管激光雕刻机，工作区域150x130mm"
   },
   "page.devices.device.sculpfun-s30.description": {
     "message": "经济型二极管激光雕刻机，工作区域400x400mm"
