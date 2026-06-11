@@ -1,38 +1,50 @@
+---
+description: "Kamera-Kalibrierung in Rayforge für präzise Werkstückausrichtung einrichten. Verwenden Sie Ihre Kamera zur Vorschau und Positionierung von Designs auf Materialien."
+---
+
 # Kamera-Integration
 
-Rayforge unterstützt die USB-Kamera-Integration für präzise Materialausrichtung und Positionierung. Die Kamera-Overlay-Funktion ermöglicht es dir, genau zu sehen, wo dein Laser auf dem Material schneiden oder gravieren wird, was Rätselraten eliminiert und Materialabfall reduziert.
+Rayforge unterstützt die USB-Kamera-Integration für präzise
+Materialausrichtung und Positionierung. Die Kamera-Overlay-Funktion ermöglicht
+es dir, genau zu sehen, wo dein Laser auf dem Material schneiden oder
+gravieren wird, was Rätselraten eliminiert und Materialabfall reduziert.
 
 ![Kameraeinstellungen](/screenshots/machine-camera.png)
 
-## Übersicht
+## Setup-Workflow
 
-Die Kamera-Integration bietet:
+Die Einrichtung einer Kamera erfolgt in vier Schritten:
 
-- **Live-Video-Overlay** auf der Arbeitsfläche, das dein Material in Echtzeit zeigt
-- **Bildausrichtung** zur Kalibrierung der Kameraposition relativ zum Laser
-- **Visuelle Positionierung** um Jobs präzise auf unregelmäßigen oder vormarkierten Materialien zu platzieren
-- **Materialvorschau** vor dem Ausführen von Jobs
-- **Unterstützung mehrerer Kameras** für verschiedene Maschinen-Setups
+1. **Kamera hinzufügen** — Schließe deine Kamera an und füge sie der
+   Maschinenkonfiguration hinzu
+2. **Bildeinstellungen anpassen** — Optimiere Helligkeit, Kontrast,
+   Weißabgleich und Rauschunterdrückung
+3. **Linse kalibrieren** — Korrigiere Verzerrungen mit dem
+   Kalibrierungsassistenten oder manuellen Koeffizienten
+4. **Kamera ausrichten** — Bilde Kamerapixel auf Maschinenkoordinaten ab für
+   präzise Positionierung
 
-:::tip Anwendungsfälle
+Die Schritte 2–4 werden über das Kameraeigenschaften-Panel aufgerufen, wo
+Status-Symbole den Fortschritt auf einen Blick zeigen:
 
-- Schnitte auf vorgedruckten Materialien ausrichten
-- Arbeiten mit unregelmäßig geformten Materialien
-- Präzises Platzieren von Gravuren auf vorhandenen Objekten
-- Reduzieren von Testschnitten und Materialabfall
-  :::
+- ✓ **Linsenkalibrierung** — Kalibrierung wurde durchgeführt
+- ⚠ **Bildausrichtung** — Warnung wenn Ausrichtung wiederholt werden muss (z.
+  B. nach Linsenkalibrierung)
+- ✓ **Bildausrichtung** — Ausrichtung ist aktuell und gültig
 
 ---
 
-## Kamera-Setup
+## Schritt 1: Kamera hinzufügen
 
 ### Hardware-Anforderungen
 
 **Kompatible Kameras:**
 
 - USB-Webcams (am häufigsten)
-- Eingebaute Laptop-Kameras (wenn Rayforge auf einem Laptop in der Nähe der Maschine läuft)
-- Jede Kamera, die von Video4Linux2 (V4L2) unter Linux oder DirectShow unter Windows unterstützt wird
+- Eingebaute Laptop-Kameras (wenn Rayforge auf einem Laptop in der Nähe
+  der Maschine läuft)
+- Jede Kamera, die von Video4Linux2 (V4L2) unter Linux oder DirectShow
+  unter Windows unterstützt wird
 
 **Empfohlenes Setup:**
 
@@ -51,7 +63,8 @@ Die Kamera-Integration bietet:
 
 3. **Eine neue Kamera hinzufügen:**
    - Klicke auf die "+"-Taste, um eine Kamera hinzuzufügen
-   - Gib einen beschreibenden Namen ein (z.B. "Obere Kamera", "Arbeitsbereich-Kamera")
+   - Gib einen beschreibenden Namen ein (z.B. "Obere Kamera",
+     "Arbeitsbereich-Kamera")
    - Wähle das Gerät aus dem Dropdown-Menü
      - Unter Linux: `/dev/video0`, `/dev/video1`, usw.
      - Unter Windows: Kamera 0, Kamera 1, usw.
@@ -60,138 +73,15 @@ Die Kamera-Integration bietet:
    - Schalte den Kamera-Aktivierungsschalter um
    - Der Live-Feed sollte auf deiner Arbeitsfläche erscheinen
 
-5. **Kameraeinstellungen anpassen:**
-   - **Helligkeit:** Anpassen, wenn das Material zu dunkel/hell ist
-   - **Kontrast:** Kantensichtbarkeit verbessern
-   - **Transparenz:** Overlay-Deckkraft steuern (20-50% empfohlen)
-   - **Weißabgleich:** Auto oder manuelle Kelvin-Temperatur
-
 ---
 
-## Kamera-Ausrichtung
+## Schritt 2: Bildeinstellungen anpassen
 
-Die Kameraausrichtung kalibriert die Beziehung zwischen Kamerapixeln und realen Koordinaten und ermöglicht so präzises Positionieren.
+![Bildeinstellungen Dialog](/screenshots/camera-image-settings.png)
 
-### Warum Ausrichtung notwendig ist
-
-Die Kamera sieht den Arbeitsbereich von oben, aber das Bild kann:
-
-- Relativ zu den Maschinenachsen gedreht sein
-- In X- und Y-Richtung unterschiedlich skaliert sein
-- Durch Linsenperspektive verzerrt sein
-
-Die Ausrichtung erstellt eine Transformationsmatrix, die Kamerapixel Maschinenkoordinaten zuordnet.
-
-### Ausrichtungsprozedur
-
-1. **Ausrichtungsdialog öffnen:**
-   - Klicke auf die Kamera-Ausrichtungstaste in der Symbolleiste
-   - Oder gehe zu **Kamera → Kamera ausrichten**
-
-2. **Ausrichtungsmarkierungen platzieren:**
-   - Du benötigst mindestens 3 Referenzpunkte (4 empfohlen für bessere Genauigkeit)
-   - Ausrichtungspunkte sollten über den Arbeitsbereich verteilt sein
-   - Verwende bekannte Positionen wie:
-     - Maschinen-Home-Position
-     - Lineal-Markierungen
-     - Vorgeschnittene Ausrichtungslöcher
-     - Kalibrierungsraster
-
-3. **Bildpunkte markieren:**
-   - Klicke auf das Kamerabild, um einen Punkt an einer bekannten Position zu platzieren
-   - Das Blasen-Widget erscheint und zeigt Punktkoordinaten an
-   - Wiederhole für jeden Referenzpunkt
-
-4. **Weltkoordinaten eingeben:**
-   - Gib für jeden Bildpunkt die realen X/Y-Koordinaten in mm ein
-   - Dies sind die tatsächlichen Maschinenkoordinaten, an denen sich jeder Punkt befindet
-   - Miss genau mit einem Lineal oder verwende bekannte Maschinenpositionen
-
-5. **Ausrichtung anwenden:**
-   - Klicke auf "Anwenden", um die Transformation zu berechnen
-   - Das Kamera-Overlay ist nun richtig ausgerichtet
-
-6. **Ausrichtung überprüfen:**
-   - Bewege den Laserkopf an eine bekannte Position
-   - Überprüfe, ob der Laserpunkt mit der erwarteten Position in der Kameraansicht übereinstimmt
-   - Bei Bedarf durch Neuausrichtung feinabstimmen
-
-### Ausrichtungs-Tipps
-
-:::tip Best Practices
-
-- Verwende Punkte an den Ecken deines Arbeitsbereichs für maximale Abdeckung
-- Vermeide es, Punkte in einem Bereich zu clusteren
-- Miss Weltkoordinaten sorgfältig - die Genauigkeit hier bestimmt die gesamte Ausrichtungsqualität
-- Richte neu aus, wenn du die Kamera bewegt oder den Fokusabstand geändert hast
-- Speichere deine Ausrichtung - sie bleibt über Sitzungen hinweg erhalten
-  :::
-
-**Beispiel-Ausrichtungsworkflow:**
-
-1. Laser zur Home-Position (0, 0) bewegen und in der Kamera markieren
-2. Laser zu (100, 0) bewegen und in der Kamera markieren
-3. Laser zu (100, 100) bewegen und in der Kamera markieren
-4. Laser zu (0, 100) bewegen und in der Kamera markieren
-5. Exakte Koordinaten für jeden Punkt eingeben
-6. Anwenden und verifizieren
-
----
-
-## Das Kamera-Overlay verwenden
-
-Sobald ausgerichtet, hilft das Kamera-Overlay beim präzisen Positionieren von Jobs.
-
-### Overlay Aktivieren/Deaktivieren
-
-- **Kamera umschalten:** Klicke auf das Kamera-Symbol in der Symbolleiste
-- **Transparenz anpassen:** Verwende den Schieberegler in den Kameraeinstellungen (20-50% funktioniert gut)
-- **Bild aktualisieren:** Kamera aktualisiert kontinuierlich während aktiviert
-
-### Jobs mit der Kamera positionieren
-
-**Workflow für präzises Platzieren:**
-
-1. **Kamera-Overlay aktivieren** um dein Material zu sehen
-
-2. **Dein Design importieren** (SVG, DXF, usw.)
-
-3. **Design auf der Arbeitsfläche positionieren:**
-   - Ziehe das Design, um es mit in der Kamera sichtbaren Merkmalen auszurichten
-   - Verwende Zoom, um feine Details zu sehen
-   - Nach Bedarf drehen/skalieren
-
-4. **Ausrichtung überprüfen:**
-   - Verwende die [3D-Vorschau](../ui/3d-preview), um zu visualisieren
-   - Überprüfe, dass Schnitte/Gravuren dort sein werden, wo du sie erwartest
-
-5. **Job rahmen** um die Positionierung vor dem Ausführen zu verifizieren
-
-6. **Job mit Zuversicht ausführen**
-
-### Beispiel: Gravieren auf einer vorgedruckten Karte
-
-1. Platziere die gedruckte Karte auf dem Laserbett
-2. Kamera-Overlay aktivieren
-3. Dein Gravurdesign importieren
-4. Design ziehen und positionieren, um mit gedruckten Merkmalen auszurichten
-5. Position mit Pfeiltasten feinabstimmen
-6. Rahmen um zu verifizieren
-7. Job ausführen
-
----
-
-## Kameraeinstellungen-Referenz
-
-### Geräteeinstellungen
-
-| Einstellung   | Beschreibung                       | Werte                                |
-| ------------- | ---------------------------------- | ------------------------------------ |
-| **Name**      | Beschreibender Name für die Kamera | Beliebiger Text                      |
-| **Geräte-ID** | System-Gerätekennung               | `/dev/video0` (Linux), `0` (Windows) |
-| **Aktiviert** | Kamera-Aktivzustand                | Ein/Aus                              |
-
-### Bildanpassung
+Klicke auf **Konfigurieren** neben **Bildeinstellungen** in den
+Kameraeigenschaften, um den Bildeinstellungen-Dialog zu öffnen. Optimiere
+diese Parameter für eine klare Kameraansicht:
 
 | Einstellung             | Beschreibung                                                                           |
 | ----------------------- | -------------------------------------------------------------------------------------- |
@@ -206,52 +96,180 @@ Die YUYV-Option ist nützlich, wenn deine Kamera grünstichige Bilder im
 Standard-MJPEG-Format erzeugt. Beachte, dass YUYV unkomprimiert ist und die
 verfügbare Auflösung oder Bildrate an USB-2.0-Verbindungen reduzieren kann.
 
-### Ausrichtungsdaten
+---
 
-| Eigenschaft               | Beschreibung                    |
-| ------------------------- | ------------------------------- |
-| **Bildpunkte**            | Pixelkoordinaten im Kamerabild  |
-| **Weltpunkte**            | Reale Maschinenkoordinaten (mm) |
-| **Transformationsmatrix** | Berechnete Zuordnung (intern)   |
+## Schritt 3: Linsenkalibrierung
+
+Wenn deine Kamera ein Weitwinkelobjektiv hat oder schräg montiert ist,
+zeigt das Bild möglicherweise sichtbare Krümmung — gerade Linien
+erscheinen gebogen, insbesondere in Richtung der Bildränder. Dies nennt
+man Linsenverzerrung, und sie kann die Ausrichtung beeinträchtigen,
+selbst wenn deine Ausrichtungspunkte sorgfältig gemessen wurden.
+
+Rayforge enthält einen geführten Kalibrierungsassistenten, der diese
+Verzerrung automatisch korrigiert. Du kannst auch die
+Verzerrungskoeffizienten manuell anpassen.
+
+### Linsenkalibrierungsdialog
+
+![Linsenkalibrierungsdialog](/screenshots/camera-lens-calibration.png)
+
+Öffne den Linsenkalibrierung-Dialog, indem du auf **Konfigurieren**
+neben **Linsenkalibrierung** in den Kameraeigenschaften klickst. Hier
+kannst du:
+
+- **Verzerrungskoeffizienten manuell anpassen** — Radiale (k1–k3) und
+  tangentiale (p1–p2) Verzerrungsparameter feinabstimmen
+- **Kalibrierungsassistenten starten** — Klicke auf **Assistent** für
+  eine geführte automatische Kalibrierung
+
+Manuelle Anpassungen sind nützlich für die Feinabstimmung, nachdem der
+Assistent eine erste Lösung berechnet hat, oder wenn du die ungefähren
+Verzerrungswerte für dein Objektiv kennst.
+
+### Kalibrierungsassistent
+
+Der Kalibrierungsassistent führt dich durch das Aufnehmen mehrerer Bilder
+einer gedruckten Kalibrierungskarte von verschiedenen Positionen auf dem
+Bett. Er berechnet dann automatisch ein Verzerrungsmodell.
+
+**Schritt 1: Kalibrierungskarte konfigurieren**
+
+![Assistent —
+Karteneinstellungen](/screenshots/camera-lens-calibration-wizard-card.png)
+
+1. Klicke auf **Assistent** im Linsenkalibrierung-Dialog, um zu starten
+2. Gib **Breite** und **Höhe** deiner gedruckten Karte ein
+3. Die Vorschau aktualisiert sich in Echtzeit — die Karte sollte etwa
+   70% der Kameraansicht abdecken
+4. Klicke auf **Als PDF speichern**, um die Karte zum Drucken zu exportieren
+5. Drucke die Karte aus und lege sie auf das Laserbett
+
+**Schritt 2: Bilder aufnehmen**
+
+![Assistent —
+Aufnahme](/screenshots/camera-lens-calibration-wizard-capture.png)
+
+1. Klicke auf **Weiter**, um in den Aufnahmemodus zu wechseln
+2. Positioniere die Kalibrierungskarte an verschiedenen Stellen und
+   Winkeln in der Kameraansicht
+3. Klicke für jede Position auf **Bild aufnehmen**
+4. Strebe mindestens 8 Aufnahmen an, die das gesamte Bild abdecken,
+   einschließlich Ecken und Kanten
+5. Die Fortschrittsanzeige und Statusanzeigen zeigen die Aufnahmequalität
+
+**Schritt 3: Kalibrierung anwenden**
+
+1. Sobald genügend Aufnahmen gemacht wurden, klicke auf **Kalibrieren**
+2. Die berechneten Verzerrungskoeffizienten werden automatisch auf die
+   Kamera angewendet
+3. Das Kamera-Overlay zeigt nun ein korrigiertes, gerades Bild
 
 ---
 
-## Erweiterte Funktionen
+## Schritt 4: Bildausrichtung
 
-### Kamera-Kalibrierung (Linsenverzerrungskorrektur)
+![Bildausrichtung Dialog](/screenshots/camera-image-alignment.png)
 
-Wenn deine Kamera ein Weitwinkelobjektiv hat oder schräg montiert ist, zeigt das
-Bild möglicherweise sichtbare Krümmung — gerade Linien erscheinen gebogen,
-insbesondere in Richtung der Bildränder. Dies nennt man Linsenverzerrung, und sie
-kann die Ausrichtung beeinträchtigen, selbst wenn deine Ausrichtungspunkte sorgfältig
-gemessen wurden.
+Die Kameraausrichtung kalibriert die Beziehung zwischen Kamerapixeln und
+realen Koordinaten und ermöglicht so präzises Positionieren.
 
-Rayforge enthält einen geführten Kalibrierungsassistenten, der diese Verzerrung
-automatisch korrigiert. So funktioniert es:
+### Warum Ausrichtung notwendig ist
 
-1. **Kalibrierungskarte drucken** — Rayforge bietet ein druckbares Muster (ein Raster
-   aus Markierungen), das du auf dein Laserbett legst
-2. **Dem Assistenten folgen** — Der Kalibrierungsassistent führt dich durch das
-   Aufnehmen mehrerer Bilder der Karte von verschiedenen Positionen auf dem Bett
-3. **Korrektur anwenden** — Rayforge berechnet ein Verzerrungsmodell aus den
-   aufgenommenen Bildern und verwendet es, um das Kamera-Overlay zu begradigen
+Die Kamera sieht den Arbeitsbereich von oben, aber das Bild kann:
 
-Nach der Kalibrierung zeigt das Kamera-Overlay eine deutlich genauere Darstellung
-dessen, was sich auf dem Bett befindet. Dies ist besonders hilfreich für
-Weitwinkellinsen, außermittig montierte Kameras oder Arbeiten, die enge
-Ausrichtungstoleranzen erfordern.
+- Relativ zu den Maschinenachsen gedreht sein
+- In X- und Y-Richtung unterschiedlich skaliert sein
+- Durch Linsenperspektive verzerrt sein
 
-:::note Wann kalibrieren
-Kalibrierung ist am nützlichsten, wenn du merkst, dass das Kamera-Overlay nicht gut
-mit dem tatsächlichen Bett übereinstimmt, selbst nach sorgfältiger Ausrichtung. Wenn
-deine aktuelle Ausrichtung gut aussieht, brauchst du sie möglicherweise nicht. Aber
-wenn die Dinge leicht verschoben wirken — besonders in Richtung der Bildränder —
-hilft der Kalibrierungsassistent normalerweise.
-:::
+Die Ausrichtung erstellt eine Transformationsmatrix, die Kamerapixel
+Maschinenkoordinaten zuordnet.
+
+### Ausrichtungsprozedur
+
+1. **Ausrichtungsdialog öffnen:**
+   - Klicke auf die **Konfigurieren** Taste neben **Bildausrichtung** in den
+     Kameraeigenschaften
+   - Der Dialog zeigt das Kamerabild mit der aktuellen
+     Ausrichtungsüberlagerung
+
+2. **Ausrichtungsmarkierungen platzieren:**
+   - Du benötigst mindestens 3 Referenzpunkte (4 empfohlen für bessere
+     Genauigkeit)
+   - Ausrichtungspunkte sollten über den Arbeitsbereich verteilt sein
+   - Verwende bekannte Positionen wie:
+     - Maschinen-Home-Position
+     - Lineal-Markierungen
+     - Vorgeschnittene Ausrichtungslöcher
+     - Kalibrierungsraster
+
+3. **Bildpunkte markieren:**
+   - Klicke auf das Kamerabild, um einen Punkt an einer bekannten Position zu
+     platzieren
+   - Das Blasen-Widget erscheint und zeigt Punktkoordinaten an
+   - Wiederhole für jeden Referenzpunkt
+
+4. **Weltkoordinaten eingeben:**
+   - Gib für jeden Bildpunkt die realen X/Y-Koordinaten in mm ein
+   - Dies sind die tatsächlichen Maschinenkoordinaten, an denen sich jeder
+     Punkt befindet
+   - Miss genau mit einem Lineal oder verwende bekannte Maschinenpositionen
+
+5. **Ausrichtung anwenden:**
+   - Klicke auf **Anwenden**, um die Transformation zu berechnen
+   - Das Kamera-Overlay ist nun richtig ausgerichtet
+
+6. **Ausrichtung überprüfen:**
+   - Bewege den Laserkopf an eine bekannte Position
+   - Überprüfe, ob der Laserpunkt mit der erwarteten Position in der
+     Kameraansicht übereinstimmt
+   - Bei Bedarf durch Neuausrichtung feinabstimmen
+
+### Ausrichtungsstatus
+
+Das Kameraeigenschaften-Panel zeigt den Ausrichtungsstatus mit einem Symbol:
+
+- **Häkchen** — Ausrichtung ist aktuell und gültig
+- **Warnung** — Ausrichtung muss wiederholt werden. Dies passiert, wenn die
+  Linsenkalibrierung aktualisiert wird, da die Verzerrungskorrektur das
+  Kamerabild verändert und die bestehende Ausrichtung ungültig macht. Deine
+  Ausrichtungspunkte bleiben erhalten — öffne einfach den Dialog und klicke
+  erneut auf **Anwenden**.
+
+### Beispiel-Workflow
+
+1. Laser zur Home-Position (0, 0) bewegen und in der Kamera markieren
+2. Laser zu (100, 0) bewegen und in der Kamera markieren
+3. Laser zu (100, 100) bewegen und in der Kamera markieren
+4. Laser zu (0, 100) bewegen und in der Kamera markieren
+5. Exakte Koordinaten für jeden Punkt eingeben
+6. Anwenden und verifizieren
+
+:::tip Best Practices
+
+- Verwende Punkte an den Ecken deines Arbeitsbereichs für maximale Abdeckung
+- Vermeide es, Punkte in einem Bereich zu clusteren
+- Miss Weltkoordinaten sorgfältig - die Genauigkeit hier bestimmt die
+  gesamte Ausrichtungsqualität
+- Richte neu aus, wenn du die Kamera bewegt oder den Fokusabstand geändert hast
+- Richte nach der Aktualisierung der Linsenkalibrierung neu aus
+- Speichere deine Ausrichtung - sie bleibt über Sitzungen hinweg erhalten
+  :::
+
+---
+
+## Das Kamera-Overlay verwenden
+
+Sobald ausgerichtet, hilft das Kamera-Overlay beim präzisen Positionieren
+von Jobs. Schalte es durch Klicken auf das Kamerasymbol in der
+Hauptfenster-Symbolleiste ein oder aus.
+
+---
 
 ### Mehrere Kameras
 
-Rayforge unterstützt mehrere Kameras für verschiedene Ansichten oder Maschinen:
+Rayforge unterstützt mehrere Kameras für verschiedene Ansichten oder
+Maschinen:
 
 - Mehrere Kameras in den Einstellungen hinzufügen
 - Jede Kamera kann unabhängige Ausrichtung haben
@@ -294,8 +312,10 @@ sudo snap connect rayforge:camera
 
 **Windows:**
 
-- Überprüfe den Geräte-Manager für Kamera unter "Kameras" oder "Bildgebende Geräte"
-- Stelle sicher, dass keine andere Anwendung die Kamera verwendet (Zoom, Skype, usw. schließen)
+- Überprüfe den Geräte-Manager für Kamera unter "Kameras" oder
+  "Bildgebende Geräte"
+- Stelle sicher, dass keine andere Anwendung die Kamera verwendet (Zoom,
+  Skype, usw. schließen)
 - Versuche einen anderen USB-Port
 - Kamera-Treiber aktualisieren
 
@@ -307,7 +327,8 @@ sudo snap connect rayforge:camera
 
 1. **Kamera von anderer Anwendung verwendet** - Andere Video-Apps schließen
 2. **Falsches Gerät ausgewählt** - Verschiedene Geräte-IDs ausprobieren
-3. **Kamera-Berechtigungen** - Unter Linux Snap sicherstellen, dass Kamera-Schnittstelle verbunden ist
+3. **Kamera-Berechtigungen** - Unter Linux Snap sicherstellen, dass
+   Kamera-Schnittstelle verbunden ist
 4. **Hardware-Problem** - Kamera mit anderer Anwendung testen
 
 **Lösungen:**
@@ -336,7 +357,8 @@ sudo lsof /dev/video0
 - Mehr Ausrichtungspunkte verwenden (6-8 für sehr große Bereiche)
 - Punkte über den gesamten Arbeitsbereich verteilen
 - Weltkoordinaten sehr sorgfältig messen
-- Maschinenbewegungsbefehle verwenden, um Laser präzise an bekannten Koordinaten zu positionieren
+- Maschinenbewegungsbefehle verwenden, um Laser präzise an bekannten
+  Koordinaten zu positionieren
 - Nach jeglichen Kamera-Anpassungen neu ausrichten
 
 ### Schlechte Bildqualität
@@ -346,9 +368,11 @@ sudo lsof /dev/video0
 **Lösungen:**
 
 1. **Helligkeit/Kontrast anpassen** in den Kameraeinstellungen
-2. **Beleuchtung verbessern** - Konsistente Arbeitsbereich-Beleuchtung hinzufügen
+2. **Beleuchtung verbessern** - Konsistente Arbeitsbereich-Beleuchtung
+   hinzufügen
 3. **Kameraobjektiv reinigen** - Staub und Ablagerungen reduzieren die Klarheit
-4. **Fokus überprüfen** - Autofokus funktioniert möglicherweise nicht gut; manuell verwenden, falls möglich
+4. **Fokus überprüfen** - Autofokus funktioniert möglicherweise nicht
+   gut; manuell verwenden, falls möglich
 5. **Transparenz vorübergehend reduzieren**, um Kamerabild deutlicher zu sehen
 6. **Verschiedene Weißabgleich-Einstellungen** ausprobieren
 7. **Rauschunterdrückung anpassen**, wenn das Bild körnig erscheint
@@ -362,14 +386,11 @@ sudo lsof /dev/video0
 - Kameraauflösung in den Geräteeinstellungen senken (falls zugänglich)
 - Andere Anwendungen schließen, die CPU/GPU verwenden
 - Grafiktreiber aktualisieren
-- Unter Linux sicherstellen, dass V4L2-Backend verwendet wird (automatisch in Rayforge)
-- Kamera deaktivieren, wenn nicht benötigt, um Ressourcen zu sparen
 
 ---
 
 ## Verwandte Seiten
 
-
-- [3D-Vorschau](../ui/3d-preview) - Jobs in 3D visualisieren
-- [Jobs rahmen](../features/framing-your-job) - Job-Position verifizieren
-- [Allgemeine Einstellungen](general) - Maschinenkonfiguration
+- [3D-Vorschau](../ui/3d-preview) — Vorschau der Ausführung mit Kamera-Overlay
+- [Jobs rahmen](../features/framing-your-job) — Job-Position verifizieren
+- [Allgemeine Einstellungen](general) — Maschinenkonfiguration
