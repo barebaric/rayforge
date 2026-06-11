@@ -938,6 +938,9 @@
   "page.devices.device.acmer-s1.description": {
     "message": "Graveur laser à diode compact avec zone de travail de 130x130mm"
   },
+  "page.devices.device.acmer-p3.description": {
+    "message": "Graveur laser à diode double tête avec zone de travail de 400x390mm"
+  },
   "page.devices.device.atomstack-a70.description": {
     "message": "Découpeuse laser à diode 70W avec zone de travail de 500x500mm et compression ponctuelle"
   },
@@ -952,6 +955,9 @@
   },
   "page.devices.device.creality-falcon-a1.description": {
     "message": "Graveur laser à diode avec zone de travail de 381x305mm et support rotatif"
+  },
+  "page.devices.device.creality-falcon-10w.description": {
+    "message": "Graveur laser à diode 10W avec zone de travail de 400x415mm"
   },
   "page.devices.device.elidor-z6.description": {
     "message": "Graveur laser à diode avec zone de travail de 300x300mm"
@@ -982,6 +988,9 @@
   },
   "page.devices.device.sculpfun-icube-ultra.description": {
     "message": "Graveur laser à diode avec Bluetooth et zone de travail de 150x150mm"
+  },
+  "page.devices.device.sculpfun-c1.description": {
+    "message": "Graveur laser à diode économique avec zone de travail de 150x130mm"
   },
   "page.devices.device.sculpfun-s30.description": {
     "message": "Graveur laser à diode économique avec zone de travail de 400x400mm"

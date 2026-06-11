@@ -938,6 +938,9 @@
   "page.devices.device.acmer-s1.description": {
     "message": "Kompakter Diodenlasergravierer mit 130x130mm Arbeitsbereich"
   },
+  "page.devices.device.acmer-p3.description": {
+    "message": "Diodenlasergravierer mit Doppellaserkopf und 400x390mm Arbeitsbereich"
+  },
   "page.devices.device.atomstack-a70.description": {
     "message": "70W Diodenlaserschneider mit 500x500mm Arbeitsbereich und Spot-Kompression"
   },
@@ -952,6 +955,9 @@
   },
   "page.devices.device.creality-falcon-a1.description": {
     "message": "Diodenlasergravierer mit 381x305mm Arbeitsbereich und Rotationsunterstützung"
+  },
+  "page.devices.device.creality-falcon-10w.description": {
+    "message": "10W Diodenlasergravierer mit 400x415mm Arbeitsbereich"
   },
   "page.devices.device.elidor-z6.description": {
     "message": "Diodenlasergravierer mit 300x300mm Arbeitsbereich"
@@ -982,6 +988,9 @@
   },
   "page.devices.device.sculpfun-icube-ultra.description": {
     "message": "Diodenlasergravierer mit Bluetooth und 150x150mm Arbeitsbereich"
+  },
+  "page.devices.device.sculpfun-c1.description": {
+    "message": "Preiswerter Diodenlasergravierer mit 150x130mm Arbeitsbereich"
   },
   "page.devices.device.sculpfun-s30.description": {
     "message": "Preiswerter Diodenlasergravierer mit 400x400mm Arbeitsbereich"

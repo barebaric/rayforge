@@ -1,0 +1,43 @@
+api_version: 1
+device:
+  name: Acmer P3
+  description: Dual-head diode laser engraver with 400x390mm work area
+machine:
+  driver: GrblSerialDriver
+  driver_args:
+    baudrate: '115200'
+    poll_status_while_running: false
+  gcode_precision: 3
+  supports_arcs: true
+  axis_extents:
+  - 400.0
+  - 390.0
+  origin: bottom_left
+  max_travel_speed: 3000
+  max_cut_speed: 48000
+  home_on_start: false
+  acceleration: 1000
+  single_axis_homing_enabled: true
+  heads:
+  - name: Blue Diode Laser
+    tool_number: 0
+    max_power: 1000
+    frame_power_percent: 1.0
+    focus_power_percent: 1.0
+    spot_size_mm:
+    - 0.08
+    - 0.06
+    focal_distance: 5.0
+    laser_type: diode
+    pwm_frequency: 500
+  - name: Infra Red Diode
+    tool_number: 1
+    max_power: 1000
+    frame_power_percent: 0.0
+    focus_power_percent: 0.0
+    spot_size_mm:
+    - 0.03
+    - 0.03
+    focal_distance: 5.0
+    laser_type: diode
+    pwm_frequency: 500

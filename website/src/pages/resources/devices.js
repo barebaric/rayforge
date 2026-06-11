@@ -52,6 +52,17 @@ const devices = [
     },
   },
   {
+    id: 'acmer-p3',
+    name: 'Acmer P3',
+    description: 'Dual-head diode laser engraver with 400x390mm work area',
+    driver: 'GrblSerialDriver',
+    affiliate: {
+      href: 'https://s.click.aliexpress.com/e/_c2zFUF1F',
+      img: 'https://ae01.alicdn.com/kf/Sa9bb3d51f0ea43da959c46fbea99211bq.png_350x350.png',
+      shop: 'AliExpress',
+    },
+  },
+  {
     id: 'atomstack-a70',
     name: 'Atomstack A70',
     description: '70W diode laser cutter with 500x500mm work area and spot compression',
@@ -78,6 +89,17 @@ const devices = [
     name: 'Carvera Air',
     description: 'Desktop laser engraver with Smoothieware controller and 300x200mm work area',
     driver: 'SmoothieDriver',
+  },
+  {
+    id: 'creality-falcon-10w',
+    name: 'Creality Falcon 10W',
+    description: '10W diode laser engraver with 400x415mm work area',
+    driver: 'GrblSerialDriver',
+    affiliate: {
+      href: 'https://s.click.aliexpress.com/e/_c32iQkkN',
+      img: 'https://ae01.alicdn.com/kf/S573b081191d94cd7bfba7aeb55e6e7faL.jpg_350x350.jpg',
+      shop: 'AliExpress',
+    },
   },
   {
     id: 'creality-falcon-2-pro',
@@ -168,6 +190,17 @@ const devices = [
     name: 'Ortur Laser Master 4',
     description: 'Diode laser engraver with 400x400mm work area and high-speed capabilities',
     driver: 'GrblSerialDriver',
+  },
+  {
+    id: 'sculpfun-c1',
+    name: 'Sculpfun C1',
+    description: 'Budget diode laser engraver with 150x130mm work area',
+    driver: 'GrblSerialDriver',
+    affiliate: {
+      href: 'https://s.click.aliexpress.com/e/_c4Uk37Rn',
+      img: 'https://ae01.alicdn.com/kf/S4288e9cf0a1c4ddf8b5c94dbbb36ea04v.jpg_350x350.jpg',
+      shop: 'AliExpress',
+    },
   },
   {
     id: 'sculpfun-icube',
