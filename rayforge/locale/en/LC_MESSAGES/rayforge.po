@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-09 18:15+0200\n"
+"POT-Creation-Date: 2026-06-11 19:42+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -2286,6 +2286,70 @@ msgstr ""
 msgid "Auto Layout (Simple)"
 msgstr ""
 
+#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+#, python-brace-format
+msgid "{camera_name} - Lens Calibration"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Lens Calibration"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+msgid ""
+"Correct lens distortion for straighter lines. Use the wizard for automatic "
+"calibration or adjust manually."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+msgid "Wizard"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Radial 1 (k1)"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+msgid "First order radial distortion"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Radial 2 (k2)"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+msgid "Second order radial distortion"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+msgid "Radial 3 (k3)"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+msgid "Third order radial distortion"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Tangential 1 (p1)"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+msgid "First order tangential distortion"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Tangential 2 (p2)"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+msgid "Second order tangential distortion"
+msgstr ""
+
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "Please select an available camera device"
 msgstr ""
@@ -2376,11 +2440,35 @@ msgid "Adjust brightness, contrast, white balance, and noise"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Correct lens distortion for straighter lines"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Image Alignment"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Calibrate camera position and perspective"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Lens calibration completed"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Lens calibration not yet performed"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Image alignment completed"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Image alignment must be redone after lens calibration was updated"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Image alignment not yet performed"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/calibration_wizard.py
@@ -2715,64 +2803,6 @@ msgstr ""
 
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 msgid "Transparency on the worksurface"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Lens Calibration"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid ""
-"Correct lens distortion for straighter lines. Use the wizard for automatic "
-"calibration or adjust manually."
-msgstr ""
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Wizard"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-#: rayforge/ui_gtk/camera/camera_preferences_page.py
-msgid "Radial 1 (k1)"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "First order radial distortion"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-#: rayforge/ui_gtk/camera/camera_preferences_page.py
-msgid "Radial 2 (k2)"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Second order radial distortion"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Radial 3 (k3)"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Third order radial distortion"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-#: rayforge/ui_gtk/camera/camera_preferences_page.py
-msgid "Tangential 1 (p1)"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "First order tangential distortion"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-#: rayforge/ui_gtk/camera/camera_preferences_page.py
-msgid "Tangential 2 (p2)"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Second order tangential distortion"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
