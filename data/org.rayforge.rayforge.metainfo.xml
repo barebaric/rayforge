@@ -66,6 +66,30 @@
   </screenshots>
 
   <releases>
+    <release version="1.8.0~beta2" date="2026-06-11">
+      <description>
+        <p>Acmer P3 profile, lens calibration dialog, and bug fixes</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Device profile for the Acmer P3 laser engraver</li>
+          <li>Lens calibration dialog with status icons and tooltips,
+          split from the image settings dialog</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Rotary module selection is now disabled when the machine
+          has no rotary modules</li>
+          <li>macOS app icons updated to Tahoe (Liquid Glass-style)
+          design</li>
+          <li>Updated translations</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Fixed slider power value clamped to 1% after dialog
+          re-population</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.8.0~beta1" date="2026-06-09">
       <description>
         <p>Rust-powered pipeline, faster rasterizing, new GRBL driver</p>
