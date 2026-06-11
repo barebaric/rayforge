@@ -54,6 +54,7 @@ class Camera:
 
         # Properties for camera alignment points
         self._image_to_world: Optional[Tuple[PointList, PointList]] = None
+        self._alignment_date: Optional[datetime] = None
 
         # Signals
         self.changed = Signal()
@@ -264,6 +265,7 @@ class Camera:
     @distortion_k1.setter
     def distortion_k1(self, value: float):
         self._distortion_k1 = float(value)
+        self._calibration_date = datetime.now()
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -274,6 +276,7 @@ class Camera:
     @distortion_k2.setter
     def distortion_k2(self, value: float):
         self._distortion_k2 = float(value)
+        self._calibration_date = datetime.now()
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -284,6 +287,7 @@ class Camera:
     @distortion_p1.setter
     def distortion_p1(self, value: float):
         self._distortion_p1 = float(value)
+        self._calibration_date = datetime.now()
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -294,6 +298,7 @@ class Camera:
     @distortion_p2.setter
     def distortion_p2(self, value: float):
         self._distortion_p2 = float(value)
+        self._calibration_date = datetime.now()
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -304,6 +309,7 @@ class Camera:
     @distortion_k3.setter
     def distortion_k3(self, value: float):
         self._distortion_k3 = float(value)
+        self._calibration_date = datetime.now()
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -432,6 +438,10 @@ class Camera:
             f"{self._image_to_world} to {value}"
         )
         self._image_to_world = value
+        if value is not None:
+            self._alignment_date = datetime.now()
+        else:
+            self._alignment_date = None
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -489,6 +499,32 @@ class Camera:
     def calibration_frames_used(self) -> Optional[int]:
         return self._calibration_frames_used
 
+    @property
+    def alignment_date(self) -> Optional[datetime]:
+        return self._alignment_date
+
+    @alignment_date.setter
+    def alignment_date(self, value: Optional[datetime]):
+        if self._alignment_date == value:
+            return
+        self._alignment_date = value
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def has_alignment(self) -> bool:
+        return self._image_to_world is not None
+
+    @property
+    def alignment_valid(self) -> bool:
+        if not self.has_alignment:
+            return False
+        if self._calibration_date is None:
+            return True
+        if self._alignment_date is None:
+            return False
+        return self._alignment_date >= self._calibration_date
+
     def to_dict(self) -> Dict[str, Any]:
         data = {
             "name": self.name,
@@ -520,6 +556,14 @@ class Camera:
             ]
         else:
             data["image_to_world"] = None
+
+        if self._alignment_date is not None:
+            data["alignment_date"] = self._alignment_date.isoformat()
+
+        if self._calibration_date is not None:
+            data["calibration_date"] = (
+                self._calibration_date.isoformat()
+            )
 
         if self.has_calibration:
             data["camera_matrix_fx"] = self._camera_matrix_fx
@@ -569,6 +613,7 @@ class Camera:
             "calibration_date",
             "calibration_image_size",
             "calibration_frames_used",
+            "alignment_date",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -608,6 +653,13 @@ class Camera:
         else:
             camera.image_to_world = None
 
+        if data.get("alignment_date"):
+            camera._alignment_date = datetime.fromisoformat(
+                data["alignment_date"]
+            )
+        elif camera._image_to_world is not None:
+            camera._alignment_date = datetime.now()
+
         camera._camera_matrix_fx = data.get("camera_matrix_fx")
         camera._camera_matrix_fy = data.get("camera_matrix_fy")
         camera._camera_matrix_cx = data.get("camera_matrix_cx")
@@ -617,6 +669,14 @@ class Camera:
             camera._calibration_date = datetime.fromisoformat(
                 data["calibration_date"]
             )
+        elif any(v != 0.0 for v in [
+            camera._distortion_k1,
+            camera._distortion_k2,
+            camera._distortion_k3,
+            camera._distortion_p1,
+            camera._distortion_p2,
+        ]):
+            camera._calibration_date = datetime.now()
         if data.get("calibration_image_size"):
             camera._calibration_image_size = tuple(
                 data["calibration_image_size"]

@@ -1,5 +1,6 @@
 import logging
 import math
+from datetime import datetime
 from gettext import gettext as _
 from typing import List, Optional, Tuple
 
@@ -641,6 +642,7 @@ class CameraAlignmentDialog(PatchedDialogWindow):
             raise ValueError("Less than 4 points for alignment.")
 
         self.camera.image_to_world = (image_points, world_points)
+        self.camera.alignment_date = datetime.now()
         logger.info("Camera alignment applied.")
         self.close()
 
