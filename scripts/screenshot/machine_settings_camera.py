@@ -72,7 +72,9 @@ def parse_target(target: str) -> dict | None:
         if wizard_page not in ("card", "capture"):
             logger.error(f"Unknown wizard page: {wizard_page}")
             return None
-        output = WIZARD_PAGES.get(sub, f"camera-lens-calibration-wizard-{wizard_page}.png")
+        output = WIZARD_PAGES.get(
+            sub, f"camera-lens-calibration-wizard-{wizard_page}.png"
+        )
         return {"type": "wizard", "page": wizard_page, "output": output}
     if sub in DIALOGS:
         return {"type": "dialog", "key": sub}
@@ -170,6 +172,7 @@ def take_wizard_screenshot(parent_dialog, wizard_page: str, output: str):
     time.sleep(0.5)
 
     if wizard_page == "capture":
+
         def _go_to_capture():
             wizard._next_btn.activate()
 
@@ -179,9 +182,16 @@ def take_wizard_screenshot(parent_dialog, wizard_page: str, output: str):
     # Activate the wizard window so gnome-screenshot -w captures it
     try:
         subprocess.run(
-            ["xdotool", "search", "--name", "Lens Calibration Wizard",
-             "windowactivate"],
-            capture_output=True, text=True, timeout=5,
+            [
+                "xdotool",
+                "search",
+                "--name",
+                "Lens Calibration Wizard",
+                "windowactivate",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         time.sleep(0.25)
     except Exception:
