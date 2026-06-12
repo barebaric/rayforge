@@ -561,9 +561,7 @@ class Camera:
             data["alignment_date"] = self._alignment_date.isoformat()
 
         if self._calibration_date is not None:
-            data["calibration_date"] = (
-                self._calibration_date.isoformat()
-            )
+            data["calibration_date"] = self._calibration_date.isoformat()
 
         if self.has_calibration:
             data["camera_matrix_fx"] = self._camera_matrix_fx
@@ -669,13 +667,16 @@ class Camera:
             camera._calibration_date = datetime.fromisoformat(
                 data["calibration_date"]
             )
-        elif any(v != 0.0 for v in [
-            camera._distortion_k1,
-            camera._distortion_k2,
-            camera._distortion_k3,
-            camera._distortion_p1,
-            camera._distortion_p2,
-        ]):
+        elif any(
+            v != 0.0
+            for v in [
+                camera._distortion_k1,
+                camera._distortion_k2,
+                camera._distortion_k3,
+                camera._distortion_p1,
+                camera._distortion_p2,
+            ]
+        ):
             camera._calibration_date = datetime.now()
         if data.get("calibration_image_size"):
             camera._calibration_image_size = tuple(
