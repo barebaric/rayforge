@@ -6,6 +6,7 @@ from unittest.mock import Mock
 import ezdxf
 import pytest
 from raygeo import Geometry
+from raygeo.geo import Bezier
 
 from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
@@ -375,7 +376,7 @@ class TestDXFImporter:
         assert not boundaries.is_empty()
         data = boundaries.data
         assert data is not None
-        has_bezier_commands = (data[:, 0] == Geometry.CMD_TYPE_BEZIER).any()
+        has_bezier_commands = any(isinstance(cmd, Bezier) for cmd in data)
         assert has_bezier_commands, (
             "Circle should contain bezier commands, not be linearized"
         )
@@ -402,7 +403,7 @@ class TestDXFImporter:
         assert not boundaries.is_empty()
         data = boundaries.data
         assert data is not None
-        has_bezier_commands = (data[:, 0] == Geometry.CMD_TYPE_BEZIER).any()
+        has_bezier_commands = any(isinstance(cmd, Bezier) for cmd in data)
         assert has_bezier_commands, (
             "ACDB circle should contain bezier commands, not be linearized"
         )

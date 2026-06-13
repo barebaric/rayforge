@@ -1,12 +1,12 @@
 import logging
+import math
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple, cast
 
 import cairo
 import numpy as np
 from gi.repository import Gdk, GLib
-from raygeo import (
-    Geometry,
-)
+from raygeo import Geometry
+from raygeo.geo import Arc, Bezier, Line, Move
 
 from ....core.color import OPS_COLOR_SPEC, ColorSet, ColorSpecDict
 from ....core.matrix import Matrix
@@ -35,78 +35,38 @@ REC_MARGIN_MM = 0.1  # A small "safe area" margin in mm for recordings
 CONTOUR_HIT_THRESHOLD_PX = 8.0
 
 
-def _segment_bbox(data: np.ndarray, idx: int) -> Optional[Tuple]:
-    """Returns (min_x, min_y, max_x, max_y) for one segment row."""
-    row = data[idx]
-    cmd = row[Geometry.COL_TYPE]
-    if cmd == Geometry.CMD_TYPE_MOVE:
-        return None
-    ex, ey = row[Geometry.COL_X], row[Geometry.COL_Y]
-    if idx > 0:
-        sx, sy = data[idx - 1, Geometry.COL_X], data[idx - 1, Geometry.COL_Y]
-    else:
-        sx, sy = 0.0, 0.0
-    if cmd == Geometry.CMD_TYPE_LINE:
-        return (
-            min(sx, ex),
-            min(sy, ey),
-            max(sx, ex),
-            max(sy, ey),
-        )
-    if cmd == Geometry.CMD_TYPE_BEZIER:
-        c1x, c1y = row[Geometry.COL_C1X], row[Geometry.COL_C1Y]
-        c2x, c2y = row[Geometry.COL_C2X], row[Geometry.COL_C2Y]
-        pts_x = [sx, ex, c1x, c2x]
-        pts_y = [sy, ey, c1y, c2y]
-        return (min(pts_x), min(pts_y), max(pts_x), max(pts_y))
-    if cmd == Geometry.CMD_TYPE_ARC:
-        import math
-
-        ci, cj = row[Geometry.COL_I], row[Geometry.COL_J]
-        r = math.hypot(ci, cj)
-        cx, cy = sx + ci, sy + cj
-        return (
-            cx - r,
-            cy - r,
-            cx + r,
-            cy + r,
-        )
-    return (min(sx, ex), min(sy, ey), max(sx, ex), max(sy, ey))
-
-
-def _draw_segment(ctx: cairo.Context, data: np.ndarray, idx: int):
+def _draw_segment(ctx: cairo.Context, data: list, idx: int):
     """Draws a single segment (LINE/ARC/BEZIER) to a cairo context."""
-    row = data[idx]
-    cmd = row[Geometry.COL_TYPE]
-    if cmd == Geometry.CMD_TYPE_MOVE:
+    cmd = data[idx]
+    if isinstance(cmd, Move):
         return
-    ex, ey = row[Geometry.COL_X], row[Geometry.COL_Y]
+    ex, ey = cmd.end[0], cmd.end[1]
     if idx > 0:
-        sx, sy = data[idx - 1, Geometry.COL_X], data[idx - 1, Geometry.COL_Y]
+        prev = data[idx - 1]
+        sx = prev.end[0] if hasattr(prev, "end") else 0.0
+        sy = prev.end[1] if hasattr(prev, "end") else 0.0
     else:
         sx, sy = 0.0, 0.0
-    if cmd == Geometry.CMD_TYPE_LINE:
+    if isinstance(cmd, Line):
         ctx.move_to(sx, sy)
         ctx.line_to(ex, ey)
-    elif cmd == Geometry.CMD_TYPE_BEZIER:
+    elif isinstance(cmd, Bezier):
         ctx.move_to(sx, sy)
         ctx.curve_to(
-            row[Geometry.COL_C1X],
-            row[Geometry.COL_C1Y],
-            row[Geometry.COL_C2X],
-            row[Geometry.COL_C2Y],
+            cmd.control1[0],
+            cmd.control1[1],
+            cmd.control2[0],
+            cmd.control2[1],
             ex,
             ey,
         )
-    elif cmd == Geometry.CMD_TYPE_ARC:
-        import math
-
-        ci, cj = row[Geometry.COL_I], row[Geometry.COL_J]
+    elif isinstance(cmd, Arc):
+        ci, cj = cmd.center_offset[0], cmd.center_offset[1]
         r = math.hypot(ci, cj)
         cx, cy = sx + ci, sy + cj
         start_angle = math.atan2(-cj, -ci)
         end_angle = math.atan2(ey - cy, ex - cx)
-        cw = bool(row[Geometry.COL_CW])
+        cw = cmd.clockwise
         ctx.move_to(sx, sy)
         if cw:
             ctx.arc_negative(cx, cy, r, start_angle, end_angle)
@@ -822,8 +782,8 @@ class WorkPieceElement(CanvasElement):
         prev_width = None
 
         for idx in range(len(data)):
-            cmd = data[idx, Geometry.COL_TYPE]
-            if cmd == Geometry.CMD_TYPE_MOVE:
+            cmd = data[idx]
+            if isinstance(cmd, Move):
                 continue
 
             is_sel = idx in self._edit_state.selected_segments
@@ -911,25 +871,7 @@ class WorkPieceElement(CanvasElement):
     ) -> Set[int]:
         if not self._edit_state:
             return set()
-        data = self._edit_state.geometry.data
-        if data is None:
-            return set()
-        fmin_x, fmin_y = min(x1, x2), min(y1, y2)
-        fmax_x, fmax_y = max(x1, x2), max(y1, y2)
-        result = set()
-        for idx in range(len(data)):
-            bbox = _segment_bbox(data, idx)
-            if bbox is None:
-                continue
-            smin_x, smin_y, smax_x, smax_y = bbox
-            if (
-                smax_x >= fmin_x
-                and smin_x <= fmax_x
-                and smax_y >= fmin_y
-                and smin_y <= fmax_y
-            ):
-                result.add(idx)
-        return result
+        return set(self._edit_state.geometry.segments_in_frame(x1, y1, x2, y2))
 
     def _world_to_local(
         self, wx: float, wy: float
@@ -1062,9 +1004,7 @@ class WorkPieceElement(CanvasElement):
         data = self._edit_state.geometry.data
         if data is not None:
             self._edit_state.selected_segments = {
-                i
-                for i in range(len(data))
-                if data[i, Geometry.COL_TYPE] != Geometry.CMD_TYPE_MOVE
+                i for i in range(len(data)) if not isinstance(data[i], Move)
             }
         else:
             self._edit_state.selected_segments = set()

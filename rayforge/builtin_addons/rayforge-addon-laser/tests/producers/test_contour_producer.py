@@ -412,8 +412,8 @@ def test_overcut_extends_closed_contour(laser, dummy_surface):
 
     data = geoms[0].data
     assert data is not None
-    last_x = data[-1, 1]
-    last_y = data[-1, 2]
+    last_x = data[-1].end[0]
+    last_y = data[-1].end[1]
     # First side goes (0,0)→(20,0), 20mm.  Overcut 5mm → (5,0).
     assert last_x == pytest.approx(5.0, abs=0.01)
     assert last_y == pytest.approx(0.0, abs=0.01)
@@ -477,8 +477,8 @@ def test_overcut_with_remove_inner_paths(
 
     data = geoms[0].data
     assert data is not None
-    last_x = data[-1, 1]
-    last_y = data[-1, 2]
+    last_x = data[-1].end[0]
+    last_y = data[-1].end[1]
     assert last_x == pytest.approx(5.0, abs=0.01)
     assert last_y == pytest.approx(0.0, abs=0.01)
 
@@ -504,8 +504,8 @@ def test_overcut_applies_to_both_inner_and_outer(
     for geo in geoms:
         data = geo.data
         assert data is not None
-        start_x, start_y = data[0, 1], data[0, 2]
-        end_x, end_y = data[-1, 1], data[-1, 2]
+        start_x, start_y = data[0].end[0], data[0].end[1]
+        end_x, end_y = data[-1].end[0], data[-1].end[1]
         # With overcut the path no longer ends at the start point
         assert not (
             abs(end_x - start_x) < 0.01 and abs(end_y - start_y) < 0.01
@@ -536,8 +536,8 @@ def test_overcut_larger_than_one_side(laser, dummy_surface):
 
     data = geoms[0].data
     assert data is not None
-    last_x = data[-1, 1]
-    last_y = data[-1, 2]
+    last_x = data[-1].end[0]
+    last_y = data[-1].end[1]
     # 25mm: first side (20mm) fully traced, then 5mm into second side
     # Second side: (20,0)→(20,20).  5mm/20mm → t=0.25 → (20, 5)
     assert last_x == pytest.approx(20.0, abs=0.01)
@@ -656,7 +656,7 @@ def test_overcut_on_full_circle(laser, dummy_surface):
     # After scaling: circle radius 60, center (60,60), start (120,60)
     # Overcut 3mm → angle = 3/60 = 0.05 rad CCW from angle 0.
     # x = 60 + 60·cos(0.05) ≈ 119.93, y = 60 + 60·sin(0.05) ≈ 63.0
-    last_x = data[-1, 1]
-    last_y = data[-1, 2]
+    last_x = data[-1].end[0]
+    last_y = data[-1].end[1]
     assert last_x == pytest.approx(119.93, abs=0.05)
     assert last_y == pytest.approx(63.0, abs=0.05)

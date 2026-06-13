@@ -4,9 +4,10 @@ import math
 from gettext import gettext as _
 from typing import List
 
-from raygeo import (
-    Geometry,
-)
+from raygeo import Geometry
+from raygeo.geo import Arc, Bezier, Line, Move
+from raygeo.geo.shape.arc import get_arc_angles
+from raygeo.geo.shape.rect import get_combined_rect
 
 from ..base_exporter import BaseExporter
 
@@ -88,21 +89,20 @@ class GeometrySvgExporter(BaseExporter):
         last_x = 0.0
         last_y = 0.0
 
-        for cmd in geometry.iter_commands():
-            cmd_type = cmd[0]
-            x = cmd[1]
-            y = cmd[2]
+        for cmd in geometry.data:
+            x = cmd.end[0]
+            y = cmd.end[1]
 
-            if cmd_type == Geometry.CMD_TYPE_MOVE:
+            if isinstance(cmd, Move):
                 tx, ty = transform(x, y)
                 path_data.append(f"M {tx:.6f} {ty:.6f}")
-            elif cmd_type == Geometry.CMD_TYPE_LINE:
+            elif isinstance(cmd, Line):
                 tx, ty = transform(x, y)
                 path_data.append(f"L {tx:.6f} {ty:.6f}")
-            elif cmd_type == Geometry.CMD_TYPE_ARC:
-                i = cmd[4]
-                j = cmd[5]
-                cw = bool(cmd[6])
+            elif isinstance(cmd, Arc):
+                i = cmd.center_offset[0]
+                j = cmd.center_offset[1]
+                cw = cmd.clockwise
 
                 radius = math.hypot(i, j)
                 large_arc = self._compute_large_arc_flag(
@@ -115,11 +115,11 @@ class GeometrySvgExporter(BaseExporter):
                     f"A {radius:.6f} {radius:.6f} 0 {large_arc} {sweep} "
                     f"{tx:.6f} {ty:.6f}"
                 )
-            elif cmd_type == Geometry.CMD_TYPE_BEZIER:
-                c1x = cmd[4]
-                c1y = cmd[5]
-                c2x = cmd[6]
-                c2y = cmd[7]
+            elif isinstance(cmd, Bezier):
+                c1x = cmd.control1[0]
+                c1y = cmd.control1[1]
+                c2x = cmd.control2[0]
+                c2y = cmd.control2[1]
 
                 tx, ty = transform(x, y)
                 c1tx, c1ty = transform(c1x, c1y)
@@ -145,25 +145,10 @@ class GeometrySvgExporter(BaseExporter):
         j: float,
         cw: bool,
     ) -> int:
-        cx = x1 + i
-        cy = y1 + j
-
-        start_angle = math.atan2(y1 - cy, x1 - cx)
-        end_angle = math.atan2(y2 - cy, x2 - cx)
-
-        if cw:
-            arc_angle = start_angle - end_angle
-        else:
-            arc_angle = end_angle - start_angle
-
-        while arc_angle < 0:
-            arc_angle += 2 * math.pi
-        while arc_angle > 2 * math.pi:
-            arc_angle -= 2 * math.pi
-
-        if arc_angle > math.pi:
-            return 1
-        return 0
+        _, _, sweep = get_arc_angles(
+            (x1, y1), (x2, y2), (x1 + i, y1 + j), cw
+        )
+        return 1 if abs(sweep) > math.pi else 0
 
 
 class MultiGeometrySvgExporter(BaseExporter):
@@ -183,14 +168,7 @@ class MultiGeometrySvgExporter(BaseExporter):
         if not non_empty:
             raise ValueError("Cannot export: All geometries are empty.")
 
-        min_x = min_y = float("inf")
-        max_x = max_y = float("-inf")
-        for geo in non_empty:
-            gx0, gy0, gx1, gy1 = geo.rect()
-            min_x = min(min_x, gx0)
-            min_y = min(min_y, gy0)
-            max_x = max(max_x, gx1)
-            max_y = max(max_y, gy1)
+        min_x, min_y, max_x, max_y = get_combined_rect(non_empty)
 
         width = max(max_x - min_x, 1e-9)
         height = max(max_y - min_y, 1e-9)

@@ -1,7 +1,5 @@
 import numpy as np
-from raygeo import (
-    Geometry,
-)
+from raygeo.geo import Move
 
 from rayforge.core.font_config import FontConfig
 from rayforge.core.text import text_to_geometry
@@ -11,7 +9,7 @@ def test_text_to_geometry_empty_string():
     """Tests that empty string returns empty geometry."""
     geo = text_to_geometry("")
     assert geo.is_empty()
-    assert geo.data is None
+    assert len(geo.data) == 0
 
 
 def test_text_to_whitespace_string():
@@ -40,24 +38,24 @@ def test_text_to_geometry_has_move_to():
     """Tests that geometry starts with MOVE_TO command."""
     geo = text_to_geometry("X")
     assert geo.data is not None
-    assert geo.data[0, Geometry.COL_TYPE] == Geometry.CMD_TYPE_MOVE
+    assert isinstance(geo.data[0], Move)
 
 
 def test_text_to_geometry_has_path_commands():
     """Tests that geometry contains path commands."""
     geo = text_to_geometry("O")
     assert geo.data is not None
-    types = set(geo.data[:, Geometry.COL_TYPE])
-    assert Geometry.CMD_TYPE_MOVE in types
-    assert Geometry.CMD_TYPE_LINE in types or Geometry.CMD_TYPE_BEZIER in types
+    types = set(type(cmd).__name__ for cmd in geo.data)
+    assert "Move" in types
+    assert "Line" in types or "Bezier" in types
 
 
 def test_text_to_geometry_bezier_curves():
     """Tests that curved text generates bezier commands."""
     geo = text_to_geometry("O")
     assert geo.data is not None
-    types = set(geo.data[:, Geometry.COL_TYPE])
-    assert Geometry.CMD_TYPE_BEZIER in types
+    types = set(type(cmd).__name__ for cmd in geo.data)
+    assert "Bezier" in types
 
 
 def test_text_to_geometry_font_family():
@@ -122,7 +120,7 @@ def test_text_to_geometry_z_zero():
     """Tests that text geometry has z=0 for all points."""
     geo = text_to_geometry("ABC")
     assert geo.data is not None
-    assert np.all(geo.data[:, Geometry.COL_Z] == 0.0)
+    assert np.all([cmd.end[2] == 0.0 for cmd in geo.data])
 
 
 def test_text_to_geometry_consistent():
@@ -131,7 +129,10 @@ def test_text_to_geometry_consistent():
     geo2 = text_to_geometry("TEST")
     assert geo1.data is not None
     assert geo2.data is not None
-    assert np.array_equal(geo1.data, geo2.data)
+    assert len(geo1.data) == len(geo2.data)
+    for c1, c2 in zip(geo1.data, geo2.data):
+        assert type(c1) is type(c2)
+        assert c1.end == c2.end
 
 
 def test_text_to_geometry_different_text():
@@ -140,7 +141,11 @@ def test_text_to_geometry_different_text():
     geo2 = text_to_geometry("B")
     assert geo1.data is not None
     assert geo2.data is not None
-    assert not np.array_equal(geo1.data, geo2.data)
+    differs = any(
+        type(c1) is not type(c2) or c1.end != c2.end
+        for c1, c2 in zip(geo1.data, geo2.data)
+    )
+    assert differs
 
 
 def test_text_to_geometry_with_spaces():

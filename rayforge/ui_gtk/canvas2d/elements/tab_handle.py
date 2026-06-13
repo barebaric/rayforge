@@ -163,13 +163,11 @@ class TabHandleElement(CanvasElement):
         segment_index, pos, local_pos_norm = closest
 
         # 2. Get the tangent for orientation from the normalized geometry.
-        tangent_result = vectors.get_point_and_tangent_at(segment_index, pos)
+        tangent_result = vectors.get_tangent_at(segment_index, pos)
         if not tangent_result:
             return world_dx, world_dy
 
-        # The point is also returned, but we have a more accurate one
-        # from `find_closest_point`.
-        _, local_tangent_norm = tangent_result
+        local_tangent_norm = tangent_result
 
         # 3. Update the temporary copy, NOT the document model's data.
         if self._dragged_tab_state:
@@ -209,17 +207,17 @@ class TabHandleElement(CanvasElement):
         ):
             return
 
-        result = parent_view.data.boundaries.get_point_and_tangent_at(
+        point_result = parent_view.data.boundaries.get_point_at(
             tab.segment_index, tab.pos
         )
-        if not result:
+        tangent_result = parent_view.data.boundaries.get_tangent_at(
+            tab.segment_index, tab.pos
+        )
+        if not point_result or not tangent_result:
             return
 
-        # The parent WorkPiece's `vectors` object is normalized to a 1x1 box.
-        # Therefore, the point and tangent returned are already in the correct
-        # local, normalized coordinate system of the parent view. We can use
-        # them directly.
-        local_pos_norm, local_tangent_norm = result
+        local_pos_norm = point_result[:2]
+        local_tangent_norm = tangent_result
 
         self._local_pos_norm = local_pos_norm
         self._local_tangent_norm = local_tangent_norm
