@@ -6,9 +6,10 @@ from gettext import gettext as _
 from typing import List
 
 import ezdxf
-from raygeo import (
-    Geometry,
-)
+from raygeo import Geometry
+from raygeo.geo import Arc, Bezier, Line, Move
+from raygeo.geo.shape.arc import get_arc_angles
+from raygeo.geo.shape.bezier import linearize_bezier_segment
 
 from ..base_exporter import BaseExporter
 
@@ -53,23 +54,22 @@ class GeometryDxfExporter(BaseExporter):
                 msp.add_lwpolyline(poly_points)
             poly_points = []
 
-        for cmd in geometry.iter_commands():
-            cmd_type = cmd[0]
-            x = cmd[1]
-            y = cmd[2]
+        for cmd in geometry.data:
+            x = cmd.end[0]
+            y = cmd.end[1]
 
-            if cmd_type == Geometry.CMD_TYPE_MOVE:
+            if isinstance(cmd, Move):
                 flush_polyline()
-            elif cmd_type == Geometry.CMD_TYPE_LINE:
+            elif isinstance(cmd, Line):
                 if not poly_points:
                     poly_points = [(last_x, last_y)]
                 poly_points.append((x, y))
-            elif cmd_type == Geometry.CMD_TYPE_ARC:
+            elif isinstance(cmd, Arc):
                 flush_polyline()
 
-                i = cmd[4]
-                j = cmd[5]
-                cw = cmd[6]
+                i = cmd.center_offset[0]
+                j = cmd.center_offset[1]
+                cw = cmd.clockwise
 
                 center_x = last_x + i
                 center_y = last_y + j
@@ -77,12 +77,11 @@ class GeometryDxfExporter(BaseExporter):
                 if radius < 1e-9:
                     radius = 0.001
 
-                start_angle = math.degrees(
-                    math.atan2(last_y - center_y, last_x - center_x)
+                start_angle, end_angle, _ = get_arc_angles(
+                    (last_x, last_y), (x, y), (center_x, center_y), cw
                 )
-                end_angle = math.degrees(
-                    math.atan2(y - center_y, x - center_x)
-                )
+                start_angle = math.degrees(start_angle)
+                end_angle = math.degrees(end_angle)
 
                 if cw:
                     start_angle, end_angle = end_angle, start_angle
@@ -95,16 +94,20 @@ class GeometryDxfExporter(BaseExporter):
                     start_angle=start_angle,
                     end_angle=end_angle,
                 )
-            elif cmd_type == Geometry.CMD_TYPE_BEZIER:
+            elif isinstance(cmd, Bezier):
                 flush_polyline()
 
-                c1x = cmd[4]
-                c1y = cmd[5]
-                c2x = cmd[6]
-                c2y = cmd[7]
+                c1x = cmd.control1[0]
+                c1y = cmd.control1[1]
+                c2x = cmd.control2[0]
+                c2y = cmd.control2[1]
 
-                points = self._bezier_to_points(
-                    last_x, last_y, c1x, c1y, c2x, c2y, x, y
+                points = linearize_bezier_segment(
+                    (last_x, last_y, 0.0),
+                    (c1x, c1y, 0.0),
+                    (c2x, c2y, 0.0),
+                    (x, y, 0.0),
+                    tolerance=0.1,
                 )
                 if points:
                     fit_points = [(p[0], p[1]) for p in points]
@@ -114,35 +117,7 @@ class GeometryDxfExporter(BaseExporter):
 
             last_x = x
             last_y = y
-
         flush_polyline()
-
-    def _bezier_to_points(
-        self,
-        x0: float,
-        y0: float,
-        c1x: float,
-        c1y: float,
-        c2x: float,
-        c2y: float,
-        x1: float,
-        y1: float,
-        segments: int = 20,
-    ) -> List[tuple]:
-        points = [(x0, y0)]
-        for i in range(1, segments):
-            t = i / segments
-            t2 = t * t
-            t3 = t2 * t
-            mt = 1 - t
-            mt2 = mt * mt
-            mt3 = mt2 * mt
-
-            px = mt3 * x0 + 3 * mt2 * t * c1x + 3 * mt * t2 * c2x + t3 * x1
-            py = mt3 * y0 + 3 * mt2 * t * c1y + 3 * mt * t2 * c2y + t3 * y1
-            points.append((px, py))
-        points.append((x1, y1))
-        return points
 
 
 class MultiGeometryDxfExporter(BaseExporter):

@@ -1,15 +1,12 @@
 from __future__ import annotations
 
 import logging
-import math
 from copy import deepcopy
 from dataclasses import replace
 from gettext import gettext as _
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
-from raygeo import (
-    Geometry,
-)
+from raygeo import Geometry
 
 from ..core.tab import Tab
 from ..core.undo import Command
@@ -72,94 +69,17 @@ class TabCmd:
         if count <= 0:
             return []
 
-        # 1. Calculate total perimeter and individual segment lengths
-        total_length = 0.0
-        segment_lengths: List[Tuple[int, float]] = []
-        last_point = (0.0, 0.0, 0.0)
-
-        for segment_idx, (
-            cmd_type,
-            x,
-            y,
-            z,
-            p1,
-            p2,
-            p3,
-            __,
-        ) in enumerate(geometry.iter_commands()):
-            end_point = (x, y, z)
-
-            # MoveTo just updates the pen position for the next drawable
-            # command. It has no length and cannot contain a tab.
-            if cmd_type == Geometry.CMD_TYPE_MOVE:
-                last_point = end_point
-                continue
-
-            if cmd_type not in (Geometry.CMD_TYPE_LINE, Geometry.CMD_TYPE_ARC):
-                continue
-
-            length = 0.0
-            if cmd_type == Geometry.CMD_TYPE_LINE:
-                length = math.dist(last_point[:2], end_point[:2])
-            elif cmd_type == Geometry.CMD_TYPE_ARC:
-                i, j, cw = p1, p2, p3  # Unpack arc params
-                center_offset = (i, j)
-                clockwise = bool(cw)
-
-                p0 = last_point
-                center = (
-                    p0[0] + center_offset[0],
-                    p0[1] + center_offset[1],
-                )
-                radius = math.dist(p0[:2], center)
-                if radius > 1e-9:
-                    start_angle = math.atan2(
-                        p0[1] - center[1], p0[0] - center[0]
-                    )
-                    end_angle = math.atan2(
-                        end_point[1] - center[1], end_point[0] - center[0]
-                    )
-                    angle_range = end_angle - start_angle
-                    if clockwise:
-                        if angle_range > 0:
-                            angle_range -= 2 * math.pi
-                    else:
-                        if angle_range < 0:
-                            angle_range += 2 * math.pi
-                    length = radius * abs(angle_range)
-                else:
-                    length = math.dist(last_point[:2], end_point[:2])
-
-            if length > 1e-6:
-                segment_lengths.append((segment_idx, length))
-                total_length += length
-
-            # Update last_point for the next segment
-            last_point = end_point
-
+        total_length = geometry.distance()
         if total_length == 0:
             return []
 
-        # 2. Determine target positions and find them on the path
-        tabs: List[Tab] = []
         spacing = total_length / count
-        for i in range(count):
-            target_dist = (i + 0.5) * spacing
-            cumulative_dist = 0.0
-            for segment_index, seg_len in segment_lengths:
-                if cumulative_dist + seg_len >= target_dist:
-                    dist_into_segment = target_dist - cumulative_dist
-                    t = dist_into_segment / seg_len
-                    tabs.append(
-                        Tab(
-                            width=width,
-                            segment_index=segment_index,
-                            pos=min(1.0, max(0.0, t)),
-                        )
-                    )
-                    break
-                cumulative_dist += seg_len
-        return tabs
+        targets = [(i + 0.5) * spacing for i in range(count)]
+        positions = geometry.get_positions_at_distances(targets)
+        return [
+            Tab(width=width, segment_index=si, pos=min(1.0, max(0.0, t)))
+            for si, t, _ in positions
+        ]
 
     def _calculate_cardinal_tabs(
         self, geometry: Geometry, width: float

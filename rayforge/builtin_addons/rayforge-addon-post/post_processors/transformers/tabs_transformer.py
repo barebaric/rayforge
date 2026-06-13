@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import math
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
@@ -11,8 +10,6 @@ from typing import (
     Optional,
 )
 
-from raygeo.geo.types import Point3D
-from raygeo.geo import Arc, Bezier, Line, Move
 from raygeo.ops import Ops
 
 from rayforge.core.workpiece import WorkPiece
@@ -60,11 +57,6 @@ class TabOpsTransformer(OpsTransformer):
     def _generate_tab_clip_data(
         self, workpiece: WorkPiece
     ) -> List[_ClipPoint]:
-        """
-        Generates clip data (center point and width) for each tab in the
-        workpiece's local coordinate space. This matches the coordinate space
-        of the incoming Ops object during the generation phase.
-        """
         if not workpiece.boundaries or workpiece.boundaries.is_empty():
             logger.debug(
                 "TabOps: workpiece has no vectors, cannot generate clip data."
@@ -72,17 +64,23 @@ class TabOpsTransformer(OpsTransformer):
             return []
 
         clip_data: List[_ClipPoint] = []
+        vectors = workpiece.boundaries
 
         logger.debug(
             "TabOps: Generating clip data in LOCAL space for workpiece "
             f"'{workpiece.name}'"
         )
-        logger.debug(
-            f"TabOps: Workpiece vectors bbox: {workpiece.boundaries.rect()}"
-        )
+        logger.debug(f"TabOps: Workpiece vectors bbox: {vectors.rect()}")
 
         for tab in workpiece.tabs:
-            cmd = workpiece.boundaries.get_typed_command_at(tab.segment_index)
+            if tab.segment_index >= len(vectors):
+                logger.warning(
+                    f"Tab {tab.uid} has invalid segment_index "
+                    f"{tab.segment_index}, skipping."
+                )
+                continue
+
+            cmd = vectors.get_typed_command_at(tab.segment_index)
             if cmd is None:
                 logger.warning(
                     f"Tab {tab.uid} has invalid segment_index "
@@ -90,85 +88,20 @@ class TabOpsTransformer(OpsTransformer):
                 )
                 continue
 
-            end_point = cmd.end
+            from raygeo.geo import Move
 
             if isinstance(cmd, Move):
                 continue
 
-            p_start_3d: Point3D = (0.0, 0.0, 0.0)
-            if tab.segment_index > 0:
-                prev_cmd = workpiece.boundaries.get_typed_command_at(
-                    tab.segment_index - 1
+            point = vectors.get_point_at(tab.segment_index, tab.pos)
+            if point is None:
+                logger.warning(
+                    f"Tab {tab.uid}: could not evaluate point on "
+                    f"segment {tab.segment_index} at t={tab.pos}, skipping."
                 )
-                if prev_cmd:
-                    p_start_3d = prev_cmd.end
+                continue
 
-            logger.debug(
-                f"Processing Tab UID {tab.uid} on segment "
-                f"{tab.segment_index} "
-                f"(type: {type(cmd).__name__}) starting from "
-                f"{p_start_3d}"
-            )
-
-            center_x, center_y = 0.0, 0.0
-
-            if isinstance(cmd, Line):
-                p_start, p_end = p_start_3d[:2], end_point[:2]
-                center_x = p_start[0] + (p_end[0] - p_start[0]) * tab.pos
-                center_y = p_start[1] + (p_end[1] - p_start[1]) * tab.pos
-
-            elif isinstance(cmd, Arc):
-                center_offset = cmd.center_offset
-                clockwise = cmd.clockwise
-                center = (
-                    p_start_3d[0] + center_offset[0],
-                    p_start_3d[1] + center_offset[1],
-                )
-                radius = math.dist(p_start_3d[:2], center)
-                if radius < 1e-9:
-                    continue
-
-                start_angle = math.atan2(
-                    p_start_3d[1] - center[1],
-                    p_start_3d[0] - center[0],
-                )
-                end_angle = math.atan2(
-                    end_point[1] - center[1],
-                    end_point[0] - center[0],
-                )
-                angle_range = end_angle - start_angle
-                if clockwise:
-                    if angle_range > 0:
-                        angle_range -= 2 * math.pi
-                else:
-                    if angle_range < 0:
-                        angle_range += 2 * math.pi
-
-                tab_angle = start_angle + angle_range * tab.pos
-                center_x = center[0] + radius * math.cos(tab_angle)
-                center_y = center[1] + radius * math.sin(tab_angle)
-
-            elif isinstance(cmd, Bezier):
-                c1x, c1y = cmd.control1
-                c2x, c2y = cmd.control2
-                t = tab.pos
-                t2 = t * t
-                t3 = t2 * t
-                mt = 1.0 - t
-                mt2 = mt * mt
-                mt3 = mt2 * mt
-                center_x = (
-                    mt3 * p_start_3d[0]
-                    + 3.0 * mt2 * t * c1x
-                    + 3.0 * mt * t2 * c2x
-                    + t3 * end_point[0]
-                )
-                center_y = (
-                    mt3 * p_start_3d[1]
-                    + 3.0 * mt2 * t * c1y
-                    + 3.0 * mt * t2 * c2y
-                    + t3 * end_point[1]
-                )
+            center_x, center_y = point[0], point[1]
 
             logger.debug(
                 f"Local space tab center (from normalized vectors): "

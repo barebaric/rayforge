@@ -11,9 +11,8 @@ from typing import (
     Tuple,
     cast,
 )
-
-import numpy as np
 from raygeo import Geometry
+from raygeo.geo import Move
 
 from ..core.item import DocItem
 from ..core.stock import StockItem
@@ -362,13 +361,13 @@ class EditCmd:
     ):
         """Removes selected segments from a workpiece's boundaries.
 
-        Each segment index refers to a row in the geometry's internal
-        numpy data array. The MOVE commands that precede removed segments
-        are also removed to keep the path well-formed.
+        Each segment index refers to a command in the geometry. The MOVE
+        commands that precede removed segments are also removed to keep
+        the path well-formed.
 
         Args:
             workpiece: The workpiece to modify.
-            segment_indices: Set of row indices to remove.
+            segment_indices: Set of command indices to remove.
         """
         if not segment_indices:
             return
@@ -377,25 +376,14 @@ class EditCmd:
         if boundaries is None or boundaries.is_empty():
             return
 
-        data = boundaries.data
-        if data is None:
-            return
-
         to_remove = set(segment_indices)
+        data = boundaries.data
         for idx in segment_indices:
-            prev_is_move = (
-                data[idx - 1, Geometry.COL_TYPE] == Geometry.CMD_TYPE_MOVE
-            )
-            if idx > 0 and prev_is_move:
+            if idx > 0 and isinstance(data[idx - 1], Move):
                 to_remove.add(idx - 1)
 
-        remaining_rows = [
-            data[i] for i in range(len(data)) if i not in to_remove
-        ]
-
-        new_geo = Geometry()
-        if remaining_rows:
-            new_geo.data = np.array(remaining_rows, dtype=np.float64)
+        keep = set(range(len(data))) - to_remove
+        new_geo = boundaries.filter(keep)
 
         old_value = workpiece._edited_boundaries
 

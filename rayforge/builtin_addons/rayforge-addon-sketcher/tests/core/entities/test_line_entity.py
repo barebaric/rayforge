@@ -1,5 +1,6 @@
 import pytest
 from raygeo import Geometry
+from raygeo.geo import Line as GeoLine, Move
 from sketcher.core.entities import Line
 from sketcher.core.registry import EntityRegistry
 
@@ -177,8 +178,8 @@ def test_line_to_geometry(registry):
     assert isinstance(geo, Geometry)
     assert len(geo) == 2
     assert geo.data is not None
-    assert geo.data[0][0] == 1.0  # Move command
-    assert geo.data[1][0] == 2.0  # Line command
+    assert isinstance(geo.data[0], Move)
+    assert isinstance(geo.data[1], GeoLine)
 
 
 def test_line_append_to_geometry(registry):
@@ -194,16 +195,16 @@ def test_line_append_to_geometry(registry):
     line.append_to_geometry(geo, registry, forward=True)
     assert len(geo) == 2
     assert geo.data is not None
-    assert geo.data[0][0] == 1.0  # Move command
-    assert geo.data[1][0] == 2.0  # Line command to p2
+    assert isinstance(geo.data[0], Move)
+    assert isinstance(geo.data[1], GeoLine)
 
     geo2 = Geometry()
     geo2.move_to(pt2.x, pt2.y)
     line.append_to_geometry(geo2, registry, forward=False)
     assert geo2.data is not None
     assert len(geo2) == 2
-    assert geo2.data[0][0] == 1.0  # Move command
-    assert geo2.data[1][0] == 2.0  # Line command to p1
+    assert isinstance(geo2.data[0], Move)
+    assert isinstance(geo2.data[1], GeoLine)
 
 
 def test_line_get_set_state(registry):

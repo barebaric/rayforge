@@ -1,5 +1,6 @@
 import pytest
 from raygeo import Geometry
+from raygeo.geo import Bezier as GeoBezier, Line as GeoLine, Move
 from sketcher.core.entities import Bezier
 from sketcher.core.registry import EntityRegistry
 
@@ -143,8 +144,8 @@ def test_bezier_to_geometry_as_line(registry):
     assert isinstance(geo, Geometry)
     assert len(geo) == 2
     assert geo.data is not None
-    assert geo.data[0][0] == 1.0
-    assert geo.data[1][0] == 2.0
+    assert isinstance(geo.data[0], Move)
+    assert isinstance(geo.data[1], GeoLine)
 
 
 def test_bezier_to_geometry_with_control_points(registry):
@@ -159,8 +160,8 @@ def test_bezier_to_geometry_with_control_points(registry):
     assert isinstance(geo, Geometry)
     assert len(geo) == 2
     assert geo.data is not None
-    assert geo.data[0][0] == 1.0
-    assert geo.data[1][0] == 4.0
+    assert isinstance(geo.data[0], Move)
+    assert isinstance(geo.data[1], GeoBezier)
 
 
 def test_bezier_get_set_state(registry):

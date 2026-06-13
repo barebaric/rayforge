@@ -1,5 +1,6 @@
 import pytest
 from raygeo import Geometry
+from raygeo.geo import Arc as GeoArc, Move
 from sketcher.core.entities import Circle
 from sketcher.core.registry import EntityRegistry
 
@@ -231,9 +232,9 @@ def test_circle_to_geometry(registry):
     assert isinstance(geo, Geometry)
     assert len(geo) == 3
     assert geo.data is not None
-    assert geo.data[0][0] == 1.0  # Move command
-    assert geo.data[1][0] == 3.0  # Arc command (first semi-circle)
-    assert geo.data[2][0] == 3.0  # Arc command (second semi-circle)
+    assert isinstance(geo.data[0], Move)
+    assert isinstance(geo.data[1], GeoArc)
+    assert isinstance(geo.data[2], GeoArc)
 
 
 def test_circle_create_fill_geometry(registry):
@@ -245,9 +246,9 @@ def test_circle_create_fill_geometry(registry):
     assert isinstance(geo, Geometry)
     assert len(geo) == 3
     assert geo.data is not None
-    assert geo.data[0][0] == 1.0  # Move command
-    assert geo.data[1][0] == 3.0  # Arc command (first semi-circle)
-    assert geo.data[2][0] == 3.0  # Arc command (second semi-circle)
+    assert isinstance(geo.data[0], Move)
+    assert isinstance(geo.data[1], GeoArc)
+    assert isinstance(geo.data[2], GeoArc)
 
 
 def test_circle_get_set_state(registry):

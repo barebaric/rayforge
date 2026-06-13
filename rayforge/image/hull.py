@@ -18,13 +18,13 @@ def _transform_geometry(
     offset.
     """
     data = geo.data
-    if data is None or len(data) < 2:
+    if len(data) < 2:
         return geo
 
     new_geo = Geometry()
-    for i, row in enumerate(data[:-1]):
-        px = row[1] - border_size
-        py = height_px - (row[2] - border_size)
+    for i, cmd in enumerate(data[:-1]):
+        px = cmd.end[0] - border_size
+        py = height_px - (cmd.end[1] - border_size)
         x = px / scale_x
         y = py / scale_y
         if i == 0:

@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 from raygeo import Geometry
+from raygeo.geo import Arc as GeoArc, Line as GeoLine, Move
 from sketcher.core import Sketch
 from sketcher.core.constraints import (
     CoincidentConstraint,
@@ -100,17 +101,16 @@ def test_sketch_arc_export():
     data = geo.data
     assert data is not None
 
-    # Should contain a MoveTo(10,0) and ArcTo(0,10)
-    arc_rows = data[data[:, Geometry.COL_TYPE] == Geometry.CMD_TYPE_ARC]
-    assert len(arc_rows) == 1
+    arc_cmds = [c for c in data if isinstance(c, GeoArc)]
+    assert len(arc_cmds) == 1
 
-    arc_row = arc_rows[0]
-    assert (
-        arc_row[Geometry.COL_X : Geometry.COL_Z + 1] == (0.0, 10.0, 0.0)
-    ).all()
-    # Check offsets. Center (0,0) relative to Start (10,0) is (-10, 0)
-    assert (arc_row[Geometry.COL_I : Geometry.COL_J + 1] == (-10.0, 0.0)).all()
-    assert arc_row[Geometry.COL_CW] == 0.0
+    arc = arc_cmds[0]
+    assert arc.end[0] == pytest.approx(0.0)
+    assert arc.end[1] == pytest.approx(10.0)
+    assert arc.end[2] == pytest.approx(0.0)
+    assert arc.center_offset[0] == pytest.approx(-10.0)
+    assert arc.center_offset[1] == pytest.approx(0.0)
+    assert arc.clockwise is False
 
 
 def test_sketch_circle_workflow():
@@ -137,7 +137,7 @@ def test_sketch_circle_workflow():
     assert isinstance(geo, Geometry)
     data = geo.data
     assert data is not None
-    arcs = data[data[:, Geometry.COL_TYPE] == Geometry.CMD_TYPE_ARC]
+    arcs = [c for c in data if isinstance(c, GeoArc)]
     assert len(arcs) == 2
 
 
@@ -1047,27 +1047,27 @@ def test_sketch_fill_geometry_generation_circle():
     assert len(geo) == 3
 
     # Start at radius point (10, 0)
-    assert (
-        data[0, Geometry.COL_X : Geometry.COL_Z + 1] == (10.0, 0.0, 0.0)
-    ).all()
+    assert isinstance(data[0], Move)
+    assert data[0].end[0] == pytest.approx(10.0)
+    assert data[0].end[1] == pytest.approx(0.0)
 
     # First arc to (-10, 0). Center is (0,0). Offset from (10,0) is (-10, 0).
     arc1 = data[1]
-    assert arc1[Geometry.COL_TYPE] == Geometry.CMD_TYPE_ARC
-    assert (
-        arc1[Geometry.COL_X : Geometry.COL_Z + 1] == (-10.0, 0.0, 0.0)
-    ).all()
-    assert (arc1[Geometry.COL_I : Geometry.COL_J + 1] == (-10.0, 0.0)).all()
-    assert not bool(arc1[Geometry.COL_CW])
+    assert isinstance(arc1, GeoArc)
+    assert arc1.end[0] == pytest.approx(-10.0)
+    assert arc1.end[1] == pytest.approx(0.0)
+    assert arc1.center_offset[0] == pytest.approx(-10.0)
+    assert arc1.center_offset[1] == pytest.approx(0.0)
+    assert arc1.clockwise is False
 
     # Second arc to (10, 0). Offset from (-10,0) is (10, 0).
     arc2 = data[2]
-    assert arc2[Geometry.COL_TYPE] == Geometry.CMD_TYPE_ARC
-    assert (
-        arc2[Geometry.COL_X : Geometry.COL_Z + 1] == (10.0, 0.0, 0.0)
-    ).all()
-    assert (arc2[Geometry.COL_I : Geometry.COL_J + 1] == (10.0, 0.0)).all()
-    assert not bool(arc2[Geometry.COL_CW])
+    assert isinstance(arc2, GeoArc)
+    assert arc2.end[0] == pytest.approx(10.0)
+    assert arc2.end[1] == pytest.approx(0.0)
+    assert arc2.center_offset[0] == pytest.approx(10.0)
+    assert arc2.center_offset[1] == pytest.approx(0.0)
+    assert arc2.clockwise is False
 
 
 def test_sketch_fill_geometry_generation_rect():
@@ -1102,30 +1102,25 @@ def test_sketch_fill_geometry_generation_rect():
     assert len(geo) == 5  # MoveTo + 4 LineTo
 
     # Check start
-    assert (
-        data[0, Geometry.COL_X : Geometry.COL_Z + 1] == (0.0, 0.0, 0.0)
-    ).all()
+    assert data[0].end[0] == pytest.approx(0.0)
+    assert data[0].end[1] == pytest.approx(0.0)
 
     # Check sequence
-    assert data[1, Geometry.COL_TYPE] == Geometry.CMD_TYPE_LINE
-    assert (
-        data[1, Geometry.COL_X : Geometry.COL_Z + 1] == (10.0, 0.0, 0.0)
-    ).all()
+    assert isinstance(data[1], GeoLine)
+    assert data[1].end[0] == pytest.approx(10.0)
+    assert data[1].end[1] == pytest.approx(0.0)
 
-    assert data[2, Geometry.COL_TYPE] == Geometry.CMD_TYPE_LINE
-    assert (
-        data[2, Geometry.COL_X : Geometry.COL_Z + 1] == (10.0, 10.0, 0.0)
-    ).all()
+    assert isinstance(data[2], GeoLine)
+    assert data[2].end[0] == pytest.approx(10.0)
+    assert data[2].end[1] == pytest.approx(10.0)
 
-    assert data[3, Geometry.COL_TYPE] == Geometry.CMD_TYPE_LINE
-    assert (
-        data[3, Geometry.COL_X : Geometry.COL_Z + 1] == (0.0, 10.0, 0.0)
-    ).all()
+    assert isinstance(data[3], GeoLine)
+    assert data[3].end[0] == pytest.approx(0.0)
+    assert data[3].end[1] == pytest.approx(10.0)
 
-    assert data[4, Geometry.COL_TYPE] == Geometry.CMD_TYPE_LINE
-    assert (
-        data[4, Geometry.COL_X : Geometry.COL_Z + 1] == (0.0, 0.0, 0.0)
-    ).all()
+    assert isinstance(data[4], GeoLine)
+    assert data[4].end[0] == pytest.approx(0.0)
+    assert data[4].end[1] == pytest.approx(0.0)
 
 
 def test_sketch_fill_geometry_generation_arc_shape():
@@ -1168,15 +1163,14 @@ def test_sketch_fill_geometry_generation_arc_shape():
     assert len(geo) == 3  # MoveTo + LineTo + ArcTo
 
     # 1. MoveTo Start of Line (-10, 0)
-    assert (
-        data[0, Geometry.COL_X : Geometry.COL_Z + 1] == (-10.0, 0.0, 0.0)
-    ).all()
+    assert isinstance(data[0], Move)
+    assert data[0].end[0] == pytest.approx(-10.0)
+    assert data[0].end[1] == pytest.approx(0.0)
 
     # 2. LineTo End of Line (10, 0)
-    assert data[1, Geometry.COL_TYPE] == Geometry.CMD_TYPE_LINE
-    assert (
-        data[1, Geometry.COL_X : Geometry.COL_Z + 1] == (10.0, 0.0, 0.0)
-    ).all()
+    assert isinstance(data[1], GeoLine)
+    assert data[1].end[0] == pytest.approx(10.0)
+    assert data[1].end[1] == pytest.approx(0.0)
 
     # 3. ArcTo back to (-10, 0)
     # Entity is CW. Traversal is Reverse.
@@ -1184,17 +1178,17 @@ def test_sketch_fill_geometry_generation_arc_shape():
     # So is_cw should be False (CCW).
 
     cmd_arc = data[2]
-    assert cmd_arc[Geometry.COL_TYPE] == Geometry.CMD_TYPE_ARC
-    assert (
-        cmd_arc[Geometry.COL_X : Geometry.COL_Z + 1] == (-10.0, 0.0, 0.0)
-    ).all()
+    assert isinstance(cmd_arc, GeoArc)
+    assert cmd_arc.end[0] == pytest.approx(-10.0)
+    assert cmd_arc.end[1] == pytest.approx(0.0)
 
     # Center offset relative to current point (10, 0). Center is (0,0).
     # Offset = (0 - 10, 0 - 0) = (-10, 0)
-    assert (cmd_arc[Geometry.COL_I : Geometry.COL_J + 1] == (-10.0, 0.0)).all()
+    assert cmd_arc.center_offset[0] == pytest.approx(-10.0)
+    assert cmd_arc.center_offset[1] == pytest.approx(0.0)
 
     # Direction check
-    assert not bool(cmd_arc[Geometry.COL_CW])
+    assert cmd_arc.clockwise is False
 
 
 def test_get_coincident_points_no_constraints():

@@ -185,4 +185,9 @@ def test_get_concave_hull_zero_gravity():
     assert len(convex_geo) == len(concave_geo)
 
     # Check if the command points are identical
-    np.testing.assert_array_equal(convex_geo.data, concave_geo.data)
+    convex_data = convex_geo.data
+    concave_data = concave_geo.data
+    assert len(convex_data) == len(concave_data)
+    for c1, c2 in zip(convex_data, concave_data):
+        assert type(c1) is type(c2)
+        assert c1.end == c2.end
