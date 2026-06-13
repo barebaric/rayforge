@@ -248,7 +248,7 @@ def test_enable_disable_air_assist(empty_ops):
         == CommandType.ENABLE_AIR_ASSIST
     )
 
-    empty_ops.disable_air_assist()
+    empty_ops.enable_air_assist(False)
     assert (
         empty_ops.command_type(empty_ops.len() - 1)
         == CommandType.DISABLE_AIR_ASSIST
@@ -1579,7 +1579,7 @@ def test_numpy_serialization_round_trip_all_commands():
         end=(10.0, 11.0, 12.0),
     )
     ops.scan_to(10, 11, 12, bytearray([10, 20, 30]))  # Geometric
-    ops.disable_air_assist()  # State
+    ops.enable_air_assist(False)  # State
     ops.layer_end("layer-1")  # Marker with data
     ops.job_end()  # Marker
 

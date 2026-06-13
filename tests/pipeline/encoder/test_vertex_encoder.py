@@ -253,7 +253,7 @@ class TestVertexEncoder:
                 combined_ops.line_to(cx, cy, 0.0)
 
             combined_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-            combined_ops.disable_air_assist()
+            combined_ops.enable_air_assist(False)
 
             combined_ops.workpiece_end(wp_uid)
 

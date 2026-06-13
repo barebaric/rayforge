@@ -239,7 +239,7 @@ class TestAirAssistCommands:
         """Disable air assist should send correct command."""
         ops = Ops()
         ops.enable_air_assist()
-        ops.disable_air_assist()
+        ops.enable_air_assist(False)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -268,8 +268,8 @@ class TestAirAssistCommands:
         ops = Ops()
         ops.enable_air_assist()
         ops.enable_air_assist()
-        ops.disable_air_assist()
-        ops.disable_air_assist()
+        ops.enable_air_assist(False)
+        ops.enable_air_assist(False)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -684,7 +684,7 @@ class TestComplexJobs:
         ops.enable_air_assist()
         ops.move_to(0.0, 0.0, 0.0)
         ops.line_to(10.0, 0.0, 0.0)
-        ops.disable_air_assist()
+        ops.enable_air_assist(False)
         ops.move_to(20.0, 0.0, 0.0)
         result = encoder.encode(ops, mock_machine, doc)
 

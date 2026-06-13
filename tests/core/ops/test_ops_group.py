@@ -45,7 +45,7 @@ def test_group_by_command_type_state_commands():
     ops.set_power(1.0)
     ops.move_to(0, 0)
     ops.line_to(1, 0)
-    ops.disable_air_assist()
+    ops.enable_air_assist(False)
     indices = list(ops.segment_indices())
     assert len(indices) == 3
     assert ops.is_state(indices[0][0])
