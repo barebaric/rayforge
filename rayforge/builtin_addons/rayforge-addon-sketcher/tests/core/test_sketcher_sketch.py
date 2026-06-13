@@ -3,7 +3,7 @@ import uuid
 from pathlib import Path
 
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo import Arc as GeoArc, Line as GeoLine, Move
 from sketcher.core import Sketch
 from sketcher.core.constraints import (

@@ -1,5 +1,5 @@
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from rayforge.image.geo_renderer import render_geometry_to_png
 

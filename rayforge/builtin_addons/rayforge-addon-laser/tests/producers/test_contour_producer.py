@@ -3,7 +3,7 @@ from typing import List
 import cairo
 import pytest
 from laser_essentials.producers import ContourProducer, CutOrder
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec

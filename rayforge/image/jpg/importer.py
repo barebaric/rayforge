@@ -8,7 +8,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec

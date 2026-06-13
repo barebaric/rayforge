@@ -11,7 +11,7 @@ from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
-    from raygeo import Geometry
+    from raygeo.geo import Geometry
 
 
 class ExecutionPhase(Enum):

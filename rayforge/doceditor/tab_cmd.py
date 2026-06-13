@@ -6,7 +6,7 @@ from dataclasses import replace
 from gettext import gettext as _
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from ..core.tab import Tab
 from ..core.undo import Command

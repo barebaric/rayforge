@@ -5,7 +5,7 @@ from contextlib import redirect_stdout
 
 import numpy as np
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.ops import Ops, OpsSection, OpsSectionRange
 from raygeo.ops.axis import Axis
 from raygeo.ops.state import State

@@ -2,7 +2,7 @@ from typing import Optional
 
 import cairo
 from gi.repository import Pango, PangoCairo
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from .font_config import FontConfig
 

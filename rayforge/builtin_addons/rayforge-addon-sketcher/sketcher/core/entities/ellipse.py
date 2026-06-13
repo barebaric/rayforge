@@ -1,7 +1,7 @@
 import math
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo.types import Point, Rect
 
 from ..types import EntityID

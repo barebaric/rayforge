@@ -1,5 +1,5 @@
 import cairo
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from rayforge.core.font_config import FontConfig
 from rayforge.core.text import text_to_geometry

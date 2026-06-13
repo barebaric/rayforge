@@ -10,7 +10,7 @@ import cairo
 import cv2
 import numpy as np
 import vtracer
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo.types import Point
 
 from ..core.matrix import Matrix

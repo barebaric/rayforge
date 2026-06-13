@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo import Arc
 
 from rayforge.core.stock import StockItem

@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset

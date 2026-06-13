@@ -1,7 +1,7 @@
 import math
 
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo import Arc as GeoArc, Move
 from sketcher.core.entities import Arc
 from sketcher.core.registry import EntityRegistry

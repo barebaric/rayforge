@@ -5,7 +5,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Optional, Set
 
 import cairo
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo.types import Point as GeoPoint
 
 from rayforge.core.geo_helpers import geometry_from_text

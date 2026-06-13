@@ -6,7 +6,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
 from blinker import Signal
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.ops import Ops
 
 from ...shared.tasker.task import Task

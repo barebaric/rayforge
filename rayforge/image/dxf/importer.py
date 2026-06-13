@@ -13,7 +13,7 @@ from ezdxf import bbox
 from ezdxf.addons import text2path
 from ezdxf.lldxf.const import DXFStructureError
 from ezdxf.path import Command
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
 
 from ...core.source_asset import SourceAsset

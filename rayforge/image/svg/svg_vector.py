@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Generator, List, Optional, Union
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from svgelements import SVG, Group, Length
 from svgelements import Path as SvgPath
 

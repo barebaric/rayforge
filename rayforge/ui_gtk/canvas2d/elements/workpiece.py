@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple, cast
 import cairo
 import numpy as np
 from gi.repository import Gdk, GLib
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo import Arc, Bezier, Line, Move
 
 from ....core.color import OPS_COLOR_SPEC, ColorSet, ColorSpecDict

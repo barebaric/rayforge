@@ -7,7 +7,7 @@ from typing import (
     Tuple,
 )
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.svg import geometry_to_svg_path
 
 from rayforge.core.color import ColorRGBA

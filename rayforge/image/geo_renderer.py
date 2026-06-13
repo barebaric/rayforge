@@ -4,7 +4,7 @@ import math
 from typing import Optional, Tuple
 
 import cairo
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo import Arc, Bezier, Line, Move
 
 

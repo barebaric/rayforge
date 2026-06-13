@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from sketcher.core import Sketch
 
 from rayforge.core.doc import Doc

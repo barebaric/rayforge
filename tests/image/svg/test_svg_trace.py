@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from rayforge.core.matrix import Matrix
 from rayforge.core.vectorization_spec import TraceSpec

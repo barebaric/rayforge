@@ -2,7 +2,7 @@ from typing import List
 from unittest.mock import MagicMock
 
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset_segment import SourceAssetSegment

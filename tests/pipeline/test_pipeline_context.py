@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from rayforge.context import get_context
 from rayforge.core.doc import Doc

@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import cairo
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset

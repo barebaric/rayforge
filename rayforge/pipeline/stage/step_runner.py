@@ -4,7 +4,7 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, List
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece

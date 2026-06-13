@@ -1,5 +1,5 @@
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from sketcher.core.entities import TextBoxEntity
 from sketcher.core.registry import EntityRegistry
 

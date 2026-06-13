@@ -1,7 +1,7 @@
 import math
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo.shape.arc import (
     does_arc_intersect_rect,
     get_arc_bounds,

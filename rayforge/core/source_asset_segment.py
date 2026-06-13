@@ -4,7 +4,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field, replace
 from typing import Any, Dict, List, Optional
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
 
 from .matrix import Matrix

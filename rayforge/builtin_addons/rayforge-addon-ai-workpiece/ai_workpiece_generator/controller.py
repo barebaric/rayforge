@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Optional, Protocol, cast
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from svgelements import SVG
 from svgelements import Path as SvgPath
 

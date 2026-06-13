@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple, Union
 
 from blinker import Signal
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from raygeo.geo import (
     Arc as GeoArc,

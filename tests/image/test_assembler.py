@@ -2,7 +2,7 @@ from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix

@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.ops import Ops
 
 from rayforge.context import get_context

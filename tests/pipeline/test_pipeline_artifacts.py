@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.ops import Ops
 
 from rayforge.context import get_context
