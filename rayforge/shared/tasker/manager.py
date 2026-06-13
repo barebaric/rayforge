@@ -7,7 +7,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import threading
-from multiprocessing import Manager
+from multiprocessing import get_context
 from multiprocessing.managers import DictProxy
 from typing import (
     Any,
@@ -64,7 +64,7 @@ class TaskManager:
         self._thread.start()
 
         # TaskManager owns the persistent Manager and shared state
-        self._manager = Manager()
+        self._manager = get_context("spawn").Manager()
         if shared_state is None:
             shared_state = self._manager.dict()
         self._shared_state = shared_state

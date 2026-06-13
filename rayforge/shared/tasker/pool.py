@@ -10,7 +10,7 @@ import logging
 import os
 import threading
 import traceback
-from multiprocessing import Manager, get_context
+from multiprocessing import get_context
 from multiprocessing.managers import DictProxy
 from multiprocessing.process import BaseProcess
 from multiprocessing.queues import Queue as MpQueue
@@ -273,7 +273,7 @@ class WorkerPoolManager:
         )
 
         self._mp_context = get_context("spawn")
-        self._manager = Manager()
+        self._manager = self._mp_context.Manager()
         self._task_queue: MpQueue = self._mp_context.Queue()
         self._result_queue: MpQueue = self._mp_context.Queue()
         self._adoption_signals = self._manager.dict()
@@ -667,12 +667,15 @@ class WorkerPoolManager:
                 )
             self._listener_thread.join(timeout=1.0)
 
-            # 4. Clean up queues.
+            # 4. Clean up multiprocessing queues.
+            # Use cancel_join_thread() to prevent joining the feeder thread,
+            # which avoids reentrant resource_tracker warnings on Python 3.12.
+            # The feeder thread is a daemon and will be cleaned up when the
+            # process exits.
+            self._task_queue.cancel_join_thread()
             self._task_queue.close()
+            self._result_queue.cancel_join_thread()
             self._result_queue.close()
-            # It's important to join the queue's feeder thread.
-            self._task_queue.join_thread()
-            self._result_queue.join_thread()
 
             logger.debug("Worker shutdown summary")
             for pid in worker_pids:
