@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from rayforge.core.stock_asset import StockAsset
 

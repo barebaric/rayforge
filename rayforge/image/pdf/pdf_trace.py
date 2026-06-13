@@ -12,7 +12,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset

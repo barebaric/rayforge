@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Tuple
 
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
 
 from rayforge.core.matrix import Matrix

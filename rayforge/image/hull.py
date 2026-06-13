@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 import numpy as np
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo.algo import hull as _hull
 
 

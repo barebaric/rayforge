@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from rayforge.core.asset_registry import asset_type_registry
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec

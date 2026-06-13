@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 from post_processors.transformers import CropTransformer
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.ops import Ops
 from raygeo.ops.types import CommandCategory, CommandType
 

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo.shape.line import (
     does_line_segment_intersect_rect,
     get_line_segment_closest_point,

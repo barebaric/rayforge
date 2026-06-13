@@ -4,7 +4,7 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
 
 from .item import DocItem

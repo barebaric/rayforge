@@ -12,7 +12,7 @@ from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
-    from raygeo import Geometry
+    from raygeo.geo import Geometry
 
 logger = logging.getLogger(__name__)
 

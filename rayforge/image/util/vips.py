@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, Tuple
 import cairo
 import numpy
 import pyvips
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
 
 from ...core.matrix import Matrix

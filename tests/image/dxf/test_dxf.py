@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import ezdxf
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo import Bezier
 
 from rayforge.core.layer import Layer

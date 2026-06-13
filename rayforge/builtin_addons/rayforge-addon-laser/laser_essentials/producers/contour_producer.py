@@ -3,7 +3,7 @@ from enum import Enum, auto
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo.algo.overcut import apply_overcut
 from raygeo.ops import Ops
 from raygeo.ops.types import SectionType

@@ -1,5 +1,5 @@
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo import Line as GeoLine, Move
 from sketcher.core.entities import Line
 from sketcher.core.registry import EntityRegistry

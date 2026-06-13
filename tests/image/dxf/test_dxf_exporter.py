@@ -3,7 +3,7 @@ from pathlib import Path
 
 import ezdxf
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece

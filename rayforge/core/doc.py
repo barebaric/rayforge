@@ -12,7 +12,7 @@ from typing import (
 )
 
 from blinker import Signal
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from ..core.undo import HistoryManager
 from ..pipeline.producer.registry import producer_registry

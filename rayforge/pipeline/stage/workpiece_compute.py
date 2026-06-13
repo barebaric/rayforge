@@ -20,7 +20,7 @@ from ..producer import OpsProducer
 from ..transformer import ExecutionPhase, OpsTransformer
 
 if TYPE_CHECKING:
-    from raygeo import Geometry
+    from raygeo.geo import Geometry
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 MAX_RASTER_RENDER_PIXELS = 16 * 1024 * 1024

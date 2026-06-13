@@ -1,7 +1,7 @@
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.ops import Ops
 from raygeo.ops.types import SectionType
 

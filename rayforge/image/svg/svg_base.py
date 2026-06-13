@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 from xml.etree import ElementTree as ET
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
 from svgelements import (
     SVG,

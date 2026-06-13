@@ -11,7 +11,7 @@ from typing import (
     Tuple,
     cast,
 )
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo import Move
 
 from ..core.item import DocItem

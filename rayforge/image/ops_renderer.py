@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 import warnings
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from .base_renderer import Renderer, RenderSpecification
 from .geo_renderer import geometry_to_cairo

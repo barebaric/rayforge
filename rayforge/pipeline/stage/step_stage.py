@@ -4,7 +4,7 @@ import logging
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from blinker import Signal
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from ...shared.tasker.task import Task
 from ...shared.util.size import sizes_are_close

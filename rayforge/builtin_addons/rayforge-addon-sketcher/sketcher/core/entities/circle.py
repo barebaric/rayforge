@@ -1,7 +1,7 @@
 import math
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo.shape.circle import (
     does_circle_intersect_rect,
     is_circle_inside_rect,

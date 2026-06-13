@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, List, Optional
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
 
 from ..core.item import DocItem

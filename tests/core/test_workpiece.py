@@ -5,7 +5,7 @@ from typing import Tuple, cast
 import cairo
 import pytest
 from blinker import Signal
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from rayforge.core.doc import Doc
 from rayforge.core.item import DocItem

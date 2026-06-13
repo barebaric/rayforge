@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from raygeo import Geometry
+from raygeo.geo import Geometry
 from sketcher.core import Sketch
 from sketcher.image.importer import SketchImporter
 

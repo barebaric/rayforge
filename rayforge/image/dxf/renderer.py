@@ -2,7 +2,7 @@ import logging
 import warnings
 from typing import TYPE_CHECKING, Optional, Tuple
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from ..base_renderer import Renderer, RenderSpecification
 from ..ops_renderer import OPS_RENDERER

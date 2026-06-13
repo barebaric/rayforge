@@ -3,7 +3,7 @@ from gettext import gettext as _
 from pathlib import Path
 from typing import Dict, Optional
 
-from raygeo import Geometry
+from raygeo.geo import Geometry
 
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import VectorizationSpec
