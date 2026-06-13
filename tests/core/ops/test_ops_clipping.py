@@ -38,7 +38,7 @@ class TestClipOpsToRegionsLines:
         ops.line_to(8, 5)
         regions = [make_square_region(0, 0, 10, 10)]
         ops.clip_ops_to_regions(regions)
-        segs = list(ops.segments())
+        segs = list(ops.segment_indices())
         assert len(segs) == 1
 
     def test_line_fully_outside(self):
@@ -47,7 +47,7 @@ class TestClipOpsToRegionsLines:
         ops.line_to(30, 30)
         regions = [make_square_region(0, 0, 10, 10)]
         ops.clip_ops_to_regions(regions)
-        assert len(list(ops.segments())) == 0
+        assert len(list(ops.segment_indices())) == 0
 
     def test_line_partially_clipped(self):
         ops = Ops()
@@ -72,7 +72,7 @@ class TestClipOpsToRegionsLines:
             make_square_region(15, 0, 5, 10),
         ]
         ops.clip_ops_to_regions(regions)
-        segs = list(ops.segments())
+        segs = list(ops.segment_indices())
         assert len(segs) == 2
 
 
@@ -95,7 +95,7 @@ class TestClipOpsToRegionsArcs:
         ops.arc_to(52, 50, 1, 0, clockwise=True)
         regions = [make_square_region(0, 0, 10, 10)]
         ops.clip_ops_to_regions(regions)
-        assert len(list(ops.segments())) == 0
+        assert len(list(ops.segment_indices())) == 0
 
     def test_arc_partially_outside_refitted(self):
         ops = Ops()
@@ -120,7 +120,7 @@ class TestClipOpsToRegionsArcs:
         ops.clip_ops_to_regions(regions)
         arc_indices = ops.indices_of(CommandType.ARC_TO)
         assert len(arc_indices) == 1
-        assert len(list(ops.segments())) == 1
+        assert len(list(ops.segment_indices())) == 1
 
     def test_rounded_rect_all_corners_preserved(self):
         r = 0.5
@@ -187,7 +187,7 @@ class TestClipOpsToRegionsBezier:
         ops.bezier_to((51, 53, 0), (53, 53, 0), (54, 50, 0))
         regions = [make_square_region(0, 0, 10, 10)]
         ops.clip_ops_to_regions(regions)
-        assert len(list(ops.segments())) == 0
+        assert len(list(ops.segment_indices())) == 0
 
     def test_bezier_partially_outside_refitted(self):
         ops = Ops()
@@ -227,4 +227,4 @@ class TestClipOpsToRegionsBezier:
         ops.clip_ops_to_regions(regions)
         bezier_indices = ops.indices_of(CommandType.BEZIER_TO)
         assert len(bezier_indices) == 1
-        assert len(list(ops.segments())) == 1
+        assert len(list(ops.segment_indices())) == 1

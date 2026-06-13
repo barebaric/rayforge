@@ -146,7 +146,7 @@ def test_context_cancellation_and_progress():
     ):
         smoother.run(ops, context=context)
 
-    assert len(list(ops.segments())) == 5
+    assert len(list(ops.segment_indices())) == 5
     assert abs(context.progress_calls[-1] - 0.5) < 1e-9
 
 
