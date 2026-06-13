@@ -508,8 +508,8 @@ class Sketch(IAsset, IGeometryProvider):
                 if current_pid is None:
                     current_pid = get_or_add_point(current_x, current_y)
 
-                cp1_x, cp1_y = cmd.control1
-                cp2_x, cp2_y = cmd.control2
+                cp1_x, cp1_y, _ = cmd.control1
+                cp2_x, cp2_y, _ = cmd.control2
 
                 start_pt = sketch.registry.get_point(current_pid)
                 if start_pt:

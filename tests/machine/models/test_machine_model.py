@@ -646,7 +646,9 @@ class TestRotaryAxisGcodeOutput:
         machine = Machine(lite_context)
         ops = Ops()
         ops.move_to(0, 0)
-        ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
+        ops.bezier_to(
+            control1=(10, 0, 0), control2=(10, 10, 0), end=(0, 10, 0)
+        )
         prepared = machine._prepare_ops_for_encoding(ops)
         assert not any(
             prepared.command_type(i) == CommandType.BEZIER_TO
@@ -662,7 +664,9 @@ class TestRotaryAxisGcodeOutput:
         machine.set_supports_curves(True)
         ops = Ops()
         ops.move_to(0, 0)
-        ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
+        ops.bezier_to(
+            control1=(10, 0, 0), control2=(10, 10, 0), end=(0, 10, 0)
+        )
         prepared = machine._prepare_ops_for_encoding(ops)
         assert any(
             prepared.command_type(i) == CommandType.BEZIER_TO

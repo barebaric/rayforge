@@ -175,8 +175,8 @@ def test_bezier_to():
     ops = Ops()
     ops.move_to(0.0, 0.0, 10.0)
     ops.bezier_to(
-        c1=(1.0, 1.0, 10.0),
-        c2=(2.0, 1.0, 20.0),
+        control1=(1.0, 1.0, 10.0),
+        control2=(2.0, 1.0, 20.0),
         end=(3.0, 0.0, 20.0),
     )
 
@@ -191,9 +191,11 @@ def test_bezier_to():
 
 def test_bezier_to_no_start_point():
     ops = Ops()
-    # Should not raise an error, just do nothing and log a warning.
+    # Should not raise an error; bezier would be ill-defined but
+    # adding a single bezier without a start point is accepted.
     ops.bezier_to((1, 1, 1), (2, 2, 2), (3, 3, 3))
-    assert ops.is_empty()
+    assert ops.len() == 1
+    assert ops.command_type(0) == CommandType.BEZIER_TO
 
 
 def test_set_power(sample_ops):
@@ -551,7 +553,7 @@ def test_transform_uniform_bezier():
     """Uniform transform preserves BezierToCommand and transforms controls."""
     ops = Ops()
     ops.move_to(0, 0)
-    ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
+    ops.bezier_to(control1=(10, 0, 0), control2=(10, 10, 0), end=(0, 10, 0))
 
     angle_rad = math.radians(90)
     cos_a, sin_a = math.cos(angle_rad), math.sin(angle_rad)
@@ -576,7 +578,7 @@ def test_transform_non_uniform_bezier():
     """Non-uniform transform preserves BezierToCommand (affine invariance)."""
     ops = Ops()
     ops.move_to(0, 0)
-    ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
+    ops.bezier_to(control1=(10, 0, 0), control2=(10, 10, 0), end=(0, 10, 0))
 
     matrix = np.diag([2.0, 3.0, 1.0, 1.0])
     ops.transform(matrix)
@@ -599,12 +601,12 @@ def test_transform_bezier_linearize_matches():
     """
     ops = Ops()
     ops.move_to(0, 0)
-    ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
+    ops.bezier_to(control1=(10, 0, 0), control2=(10, 10, 0), end=(0, 10, 0))
 
     ops_linearized_first = Ops()
     ops_linearized_first.move_to(0, 0)
     ops_linearized_first.bezier_to(
-        c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0)
+        control1=(10, 0, 0), control2=(10, 10, 0), end=(0, 10, 0)
     )
     ops_linearized_first.linearize_curves()
 
@@ -1574,8 +1576,8 @@ def test_numpy_serialization_round_trip_all_commands():
     ops.line_to(4, 5, 6)  # Geometric
     ops.arc_to(x=7, y=8, z=9, i=1, j=-1, clockwise=False)  # Geometric
     ops.bezier_to(
-        c1=(8.0, 9.0, 10.0),
-        c2=(9.0, 10.0, 11.0),
+        control1=(8.0, 9.0, 10.0),
+        control2=(9.0, 10.0, 11.0),
         end=(10.0, 11.0, 12.0),
     )
     ops.scan_to(10, 11, 12, bytearray([10, 20, 30]))  # Geometric
@@ -1655,10 +1657,12 @@ def test_numpy_serialization_bezier_arrays():
     """Verifies bezier_data and bezier_map are populated correctly."""
     ops = Ops()
     ops.move_to(0, 0, 0)  # index 0
-    ops.bezier_to(c1=(1, 2, 3), c2=(4, 5, 6), end=(7, 8, 9))  # index 1
+    ops.bezier_to(
+        control1=(1, 2, 3), control2=(4, 5, 6), end=(7, 8, 9)
+    )  # index 1
     ops.line_to(10, 10, 10)  # index 2
     ops.bezier_to(
-        c1=(11, 12, 13), c2=(14, 15, 16), end=(17, 18, 19)
+        control1=(11, 12, 13), control2=(14, 15, 16), end=(17, 18, 19)
     )  # index 3
 
     arrays = ops.to_numpy_arrays()
@@ -1681,11 +1685,13 @@ def test_numpy_serialization_bezier_round_trip():
     """Tests that BezierToCommand survives numpy serialization."""
     ops = Ops()
     ops.move_to(0, 0, 0)
-    ops.bezier_to(c1=(1.5, 2.5, 3.5), c2=(4.5, 5.5, 6.5), end=(7.5, 8.5, 9.5))
+    ops.bezier_to(
+        control1=(1.5, 2.5, 3.5), control2=(4.5, 5.5, 6.5), end=(7.5, 8.5, 9.5)
+    )
     ops.set_power(0.5)
     ops.bezier_to(
-        c1=(10, 20, 30),
-        c2=(40, 50, 60),
+        control1=(10, 20, 30),
+        control2=(40, 50, 60),
         end=(70, 80, 90),
     )
 
@@ -1713,7 +1719,7 @@ def test_linearize_curves():
     """Tests that linearize_curves replaces beziers with lines."""
     ops = Ops()
     ops.move_to(0, 0, 0)
-    ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
+    ops.bezier_to(control1=(10, 0, 0), control2=(10, 10, 0), end=(0, 10, 0))
     ops.set_power(0.8)
     ops.line_to(5, 5, 0)
 
@@ -1744,7 +1750,7 @@ def test_linearize_curves_preserves_arcs():
     ops = Ops()
     ops.move_to(10, 0)
     ops.arc_to(0, 10, i=-10, j=0, clockwise=False)
-    ops.bezier_to(c1=(0, 10, 0), c2=(-10, 10, 0), end=(-10, 0, 0))
+    ops.bezier_to(control1=(0, 10, 0), control2=(-10, 10, 0), end=(-10, 0, 0))
 
     ops.linearize_curves()
 
@@ -1765,14 +1771,14 @@ def test_linearize_arcs():
     ops.arc_to(10, 10, i=-10, j=0, clockwise=False)
     ops.set_power(1.0)
     ops.move_to(10, 10)
-    ops.bezier_to(c1=(10, 10, 0), c2=(20, 10, 0), end=(20, 0, 0))
+    ops.bezier_to(control1=(10, 10, 0), control2=(20, 10, 0), end=(20, 0, 0))
 
 
 def test_linearize_arcs_preserves_beziers():
     """Tests that linearize_arcs does not touch bezier curves."""
     ops = Ops()
     ops.move_to(0, 0)
-    ops.bezier_to(c1=(10, 0, 0), c2=(10, 10, 0), end=(0, 10, 0))
+    ops.bezier_to(control1=(10, 0, 0), control2=(10, 10, 0), end=(0, 10, 0))
     ops.set_power(0.8)
 
     ops.linearize_arcs()
@@ -2130,8 +2136,8 @@ def test_bezier_to_with_extra():
     ops = Ops()
     ops.move_to(0, 0)
     ops.bezier_to(
-        c1=(1, 1, 0),
-        c2=(2, 2, 0),
+        control1=(1, 1, 0),
+        control2=(2, 2, 0),
         end=(3, 3, 0),
         extra={Axis.A: 45.0},
     )

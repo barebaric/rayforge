@@ -122,7 +122,9 @@ class TestKinematicMappingApply:
         diameter = 25.0
         ops = Ops()
         ops.move_to(0, 0, 0)
-        ops.bezier_to(c1=(10, 20, 0), c2=(10, 40, 0), end=(0, 50, 0))
+        ops.bezier_to(
+            control1=(10, 20, 0), control2=(10, 40, 0), end=(0, 50, 0)
+        )
 
         mapping = KinematicMapping(
             rotary_axis=Axis.A,
@@ -198,7 +200,9 @@ class TestKinematicMappingApply:
         diameter = 25.0
         ops = Ops()
         ops.move_to(0, 100, 0)
-        ops.bezier_to(c1=(10, 120, 0), c2=(10, 140, 0), end=(0, 150, 0))
+        ops.bezier_to(
+            control1=(10, 120, 0), control2=(10, 140, 0), end=(0, 150, 0)
+        )
 
         mapping = KinematicMapping(
             rotary_axis=Axis.A,

@@ -251,7 +251,7 @@ def test_run_with_air_assist_change(mock_progress_context):
     air_on_idx = -1
     for i in range(ops.len()):
         if ops.category(i) == CommandCategory.MOVING:
-            state = ops.preloaded_state(i)
+            state = ops.state(i)
             if state is not None and state.air_assist:
                 air_on_idx = i
                 break
@@ -264,7 +264,7 @@ def test_run_with_air_assist_change(mock_progress_context):
             assert ops.endpoint(i)[0] < 50, (
                 "Points from Part 1 should be in first half"
             )
-            state = ops.preloaded_state(i)
+            state = ops.state(i)
             assert state is None or not state.air_assist, (
                 "State should be air OFF"
             )
@@ -275,7 +275,7 @@ def test_run_with_air_assist_change(mock_progress_context):
             assert ops.endpoint(i)[0] > 50, (
                 "Points from Part 2 should be second half"
             )
-            state = ops.preloaded_state(i)
+            state = ops.state(i)
             assert state is not None and state.air_assist, (
                 "State should be air ON"
             )
@@ -528,14 +528,14 @@ def test_run_optimization_scanline_flip_preserves_state(
     assert ops.command_type(move_idx) == CommandType.MOVE_TO
 
     # Check state on the new MoveTo for the flipped segment
-    move_state = ops.preloaded_state(move_idx)
+    move_state = ops.state(move_idx)
     assert move_state is not None
     assert move_state.power == pytest.approx(0.85)
     assert move_state.cut_speed == pytest.approx(1234)
     assert move_state.air_assist is True
 
     # Check state on the flipped ScanLinePowerCommand
-    scan_state = ops.preloaded_state(scan_idx)
+    scan_state = ops.state(scan_idx)
     assert scan_state is not None
     assert scan_state.power == pytest.approx(0.85)
     assert scan_state.cut_speed == pytest.approx(1234)
@@ -578,14 +578,14 @@ def test_run_optimization_scanline_split_preserves_state(
         assert ops.command_type(move_idx) == CommandType.MOVE_TO
 
         # Verify state on the new MoveTo for the sub-segment
-        move_state = ops.preloaded_state(move_idx)
+        move_state = ops.state(move_idx)
         assert move_state is not None
         assert move_state.power == pytest.approx(0.77)
         assert move_state.travel_speed == pytest.approx(5678)
         assert move_state.air_assist is False
 
         # Verify state on the new ScanLinePowerCommand for the sub-segment
-        scan_state = ops.preloaded_state(scan_idx)
+        scan_state = ops.state(scan_idx)
         assert scan_state is not None
         assert scan_state.power == pytest.approx(0.77)
         assert scan_state.travel_speed == pytest.approx(5678)
@@ -624,7 +624,7 @@ def test_run_with_state_change_and_scanlines(mock_progress_context):
     power_change_idx = -1
     for i in range(ops.len()):
         if ops.category(i) == CommandCategory.MOVING:
-            state = ops.preloaded_state(i)
+            state = ops.state(i)
             if state is not None and state.power == pytest.approx(0.9):
                 power_change_idx = i
                 break
@@ -634,7 +634,7 @@ def test_run_with_state_change_and_scanlines(mock_progress_context):
     # Check all moving commands before the state change
     for i in range(power_change_idx):
         if ops.category(i) == CommandCategory.MOVING:
-            state = ops.preloaded_state(i)
+            state = ops.state(i)
             assert ops.endpoint(i)[0] < 50, (
                 "Points from Part 1 should be in first half"
             )
@@ -645,7 +645,7 @@ def test_run_with_state_change_and_scanlines(mock_progress_context):
     # Check all moving commands at and after the state change
     for i in range(power_change_idx, ops.len()):
         if ops.category(i) == CommandCategory.MOVING:
-            state = ops.preloaded_state(i)
+            state = ops.state(i)
             assert ops.endpoint(i)[0] > 50, (
                 "Points from Part 2 should be in second half"
             )
@@ -714,13 +714,13 @@ def test_run_optimization_with_overscan_and_flip_preserves_state(
     assert ops.command_type(move_idx) == CommandType.MOVE_TO
 
     # Check state on the new MoveTo for the flipped segment
-    move_state = ops.preloaded_state(move_idx)
+    move_state = ops.state(move_idx)
     assert move_state is not None
     assert move_state.power == pytest.approx(0.66)
     assert move_state.cut_speed == pytest.approx(2000)
 
     # Check state on the flipped ScanLinePowerCommand
-    scan_state = ops.preloaded_state(flipped_scan_idx)
+    scan_state = ops.state(flipped_scan_idx)
     assert scan_state is not None
     assert scan_state.power == pytest.approx(0.66)
     assert scan_state.cut_speed == pytest.approx(2000)
