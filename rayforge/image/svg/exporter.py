@@ -145,9 +145,7 @@ class GeometrySvgExporter(BaseExporter):
         j: float,
         cw: bool,
     ) -> int:
-        _, _, sweep = get_arc_angles(
-            (x1, y1), (x2, y2), (x1 + i, y1 + j), cw
-        )
+        _, _, sweep = get_arc_angles((x1, y1), (x2, y2), (x1 + i, y1 + j), cw)
         return 1 if abs(sweep) > math.pi else 0
 
 
