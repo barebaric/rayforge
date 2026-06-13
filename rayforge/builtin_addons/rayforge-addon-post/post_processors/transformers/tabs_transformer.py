@@ -154,24 +154,17 @@ class TabOpsTransformer(OpsTransformer):
         )
 
         processed_clip_data = tab_clip_data
-        if workpiece.boundaries and not workpiece.boundaries.is_empty():
-            vector_rect = workpiece.boundaries.rect()
-            if vector_rect:
-                final_w, final_h = workpiece.size
-                _vx, _vy, vector_w, vector_h = vector_rect
-                if vector_w > 1e-6 and vector_h > 1e-6:
-                    scale_x = final_w / vector_w
-                    scale_y = final_h / vector_h
-                    if abs(scale_x - 1.0) > 1e-3 or abs(scale_y - 1.0) > 1e-3:
-                        logger.debug(
-                            "TabOps: Scaling tab clip points from vector "
-                            "space to final ops space. "
-                            f"Scale=({scale_x:.3f}, {scale_y:.3f})"
-                        )
-                        processed_clip_data = [
-                            (cp.x * scale_x, cp.y * scale_y, cp.width)
-                            for cp in tab_clip_data
-                        ]
+        final_w, final_h = workpiece.size
+        if final_w > 1e-6 and final_h > 1e-6:
+            logger.debug(
+                "TabOps: Scaling tab clip points from vector "
+                "space to final ops space. "
+                f"Scale=({final_w:.3f}, {final_h:.3f})"
+            )
+            processed_clip_data = [
+                (cp.x * final_w, cp.y * final_h, cp.width)
+                for cp in tab_clip_data
+            ]
 
         logger.debug(
             f"TabOps: Clipping points to be used: {processed_clip_data}"
