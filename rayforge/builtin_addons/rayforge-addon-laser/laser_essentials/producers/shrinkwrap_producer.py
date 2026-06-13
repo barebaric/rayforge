@@ -133,7 +133,11 @@ class ShrinkWrapProducer(OpsProducer):
                     beziers=supports_curves,
                     arcs=allow_arcs,
                     on_progress=(
-                        lambda p: context.set_progress(p) if context else None
+                        lambda current, total: (
+                            context.set_progress(current / total)
+                            if context
+                            else None
+                        )
                     ),
                 )
 
