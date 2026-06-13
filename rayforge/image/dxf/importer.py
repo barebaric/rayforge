@@ -512,7 +512,7 @@ class DxfImporter(Importer):
                 geo.line_to(end.x, end.y, end.z)
             elif cmd.type == Command.CURVE4_TO:
                 c1, c2 = cmd.ctrl1, cmd.ctrl2
-                geo.bezier_to(end.x, end.y, c1.x, c1.y, c2.x, c2.y, end.z)
+                geo.bezier_to(end.x, end.y, c1.x, c1.y, c2.x, c2.y, z=end.z)
             elif cmd.type == Command.CURVE3_TO:
                 start_x, start_y, _ = geo.get_last_point()
                 ctrl = cmd.ctrl
@@ -520,7 +520,7 @@ class DxfImporter(Importer):
                 c1y = start_y + (2 / 3) * (ctrl.y - start_y)
                 c2x = end.x + (2 / 3) * (ctrl.x - end.x)
                 c2y = end.y + (2 / 3) * (ctrl.y - end.y)
-                geo.bezier_to(end.x, end.y, c1x, c1y, c2x, c2y, end.z)
+                geo.bezier_to(end.x, end.y, c1x, c1y, c2x, c2y, z=end.z)
             elif cmd.type == Command.MOVE_TO:
                 # Check internal continuity of the path object itself
                 cx, cy, cz = geo.get_last_point()

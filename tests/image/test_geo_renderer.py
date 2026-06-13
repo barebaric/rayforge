@@ -90,7 +90,7 @@ def test_render_geometry_to_png_arc():
 def test_render_geometry_to_png_bezier():
     geo = Geometry()
     geo.move_to(0, 0)
-    geo.bezier_to(10, 0, 2, 10, 8, 10, 0.0)
+    geo.bezier_to(10, 0, 2, 10, 8, 10, z=0.0)
 
     result = render_geometry_to_png(geo, 100)
 
