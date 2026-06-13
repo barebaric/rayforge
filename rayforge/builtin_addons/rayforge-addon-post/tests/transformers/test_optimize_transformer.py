@@ -391,8 +391,9 @@ def test_run_optimization_with_unsplit_scanline(mock_progress_context):
 
 def test_run_optimization_with_split_scanline(mock_progress_context):
     """
-    Verify the optimizer splits a ScanLine with blank areas and optimizes
-    the resulting segment. This version uses geometry that forces a reorder.
+    Verify the optimizer keeps a ScanLine with blank areas as a single
+    atomic segment — scanlines represent continuous sweeps and must not
+    be fragmented.
     """
     ops = Ops()
     ops.set_power(1.0)
@@ -401,10 +402,8 @@ def test_run_optimization_with_split_scanline(mock_progress_context):
     ops.move_to(0, 5, 0)
     ops.line_to(108, 5, 0)
 
-    # Path B+C: A raster line from (100, 5) to (110, 5) with a blank middle.
-    # This gets split into two segments:
-    # Path B: from x=100 to x=102.857
-    # Path C: from x=107.142 to x=110
+    # Path B: A raster line from (100, 5) to (110, 5) with a blank middle.
+    # The scanline must not be split — it stays as one atomic sweep.
     ops.move_to(100, 5, 0)
     ops.scan_to(110, 5, 0, power_values=bytearray([50, 50, 0, 0, 0, 60, 60]))
 
@@ -418,47 +417,22 @@ def test_run_optimization_with_split_scanline(mock_progress_context):
         if ops.category(i) == CommandCategory.MOVING
     ]
 
-    # Original: M, L, M, S (4 commands total)
-    # The ScanLine is split into two segments: [M, S] and [M, S].
-    # The original M is removed, so we add 2*2=4 new commands.
-    # Total expanded: M, L, M_B, S_B, M_C, S_C -> 6 commands
-    assert len(moving_indices) == 6
+    # Original: M, L, M, S (4 commands)
+    # Scanline stays intact: still 4 commands (may be reordered)
+    assert len(moving_indices) == 4
 
-    # The greedy k-d tree algorithm will produce the path [A, C, flipped(B)].
-    # 1. Start with A, ending at x=108.
-    # 2. The closest unvisited point is the start of C (x=107.142).
-    # 3. From the end of C (x=110), the closest unvisited point is the
-    #    end of B (x=102.857), so B is flipped.
-
-    # Check segment C (part 2), which should be next.
-    move_cmd_1_idx = moving_indices[2]
-    scan_cmd_1_idx = moving_indices[3]
-    assert ops.command_type(move_cmd_1_idx) == CommandType.MOVE_TO
-    assert ops.command_type(scan_cmd_1_idx) == CommandType.SCAN_LINE
-
-    # It should connect to the start of C, its original start.
-    assert ops.endpoint(move_cmd_1_idx) == pytest.approx(
-        (107.142, 5.0, 0.0), abs=1e-3
-    )
-    # The scan should proceed to the original end of C.
-    assert ops.endpoint(scan_cmd_1_idx) == pytest.approx((110.0, 5.0, 0.0))
-    assert bytearray(ops.scanline_data(scan_cmd_1_idx)) == bytearray([60, 60])
-
-    # Check segment flipped(B) (part 1), which should be last.
-    move_cmd_2_idx = moving_indices[4]
-    scan_cmd_2_idx = moving_indices[5]
-    assert ops.command_type(move_cmd_2_idx) == CommandType.MOVE_TO
-    assert ops.command_type(scan_cmd_2_idx) == CommandType.SCAN_LINE
-    # It should connect to the start of flipped(B), which is B's original end.
-    assert ops.endpoint(move_cmd_2_idx) == pytest.approx(
-        (102.857, 5.0, 0.0), abs=1e-3
-    )
-    # The scan should proceed to the end of flipped(B), B's original start.
-    assert ops.endpoint(scan_cmd_2_idx) == pytest.approx((100.0, 5.0, 0.0))
-    assert (
-        bytearray(ops.scanline_data(scan_cmd_2_idx))
-        == bytearray([50, 50])[::-1]
-    )
+    # Find the scanline — it should have all original power values
+    scan_indices = [
+        i
+        for i in range(ops.len())
+        if ops.command_type(i) == CommandType.SCAN_LINE
+    ]
+    assert len(scan_indices) == 1
+    scan_idx = scan_indices[0]
+    original_power = bytearray([50, 50, 0, 0, 0, 60, 60])
+    actual = bytearray(ops.scanline_data(scan_idx))
+    # May be flipped, but must contain every original byte
+    assert actual == original_power or actual == original_power[::-1]
 
 
 def test_optimizer_does_not_split_overscanned_scanline(
@@ -468,10 +442,9 @@ def test_optimizer_does_not_split_overscanned_scanline(
     Tests that the optimizer does not split a ScanLinePowerCommand that has
     been padded with zero-power values by the OverscanTransformer.
 
-    The optimizer's splitting logic is designed to break up scanlines with
-    large empty areas to improve travel paths. However, an overscanned line
-    intentionally has zero-power lead-in/outs. The optimizer must treat
-    this entire overscanned line as a single, unbreakable segment.
+    Scanlines represent continuous sweeps and must never be fragmented
+    by the optimizer. This is especially important for overscanned lines
+    with zero-power lead-in/outs and full-sweep engraving.
     """
     # Arrange: Create an Ops object that simulates the output of an
     # OverscanTransformer. This is a single scanline with zero-power padding.
@@ -573,15 +546,15 @@ def test_run_optimization_scanline_split_preserves_state(
     mock_progress_context,
 ):
     """
-    Verify that when a ScanLine is split, all new sub-segments correctly
-    inherit the original state.
+    Verify that a ScanLine kept as a single atomic segment correctly
+    inherits the original state.
     """
     ops = Ops()
     ops.set_power(0.77)
     ops.set_travel_speed(5678)
     ops.enable_air_assist(False)
 
-    # A raster line that will be split into two segments
+    # A raster line that stays as a single atomic sweep
     ops.move_to(0, 0)
     ops.scan_to(10, 0, power_values=bytearray([50, 50, 0, 0, 60, 60]))
     # A far away vector line to ensure no reordering happens
@@ -592,13 +565,13 @@ def test_run_optimization_scanline_split_preserves_state(
     optimizer.run(ops, context=mock_progress_context)
     ops.preload_state()
 
-    # The original ScanLine should be replaced by two new ones
+    # The original ScanLine stays as a single command
     scan_indices = [
         i
         for i in range(ops.len())
         if ops.command_type(i) == CommandType.SCAN_LINE
     ]
-    assert len(scan_indices) == 2
+    assert len(scan_indices) == 1
 
     for scan_idx in scan_indices:
         move_idx = scan_idx - 1
