@@ -169,7 +169,8 @@ class ContourProducer(OpsProducer):
             merged = Geometry()
             for g in base_contours:
                 merged.extend(g)
-            target_contours = merged.normalize_winding_orders()
+            merged.normalize_winding_orders()
+            target_contours = merged.split_into_contours()
 
         # 4. Apply offsets.
         composite_geo = Geometry()
@@ -177,23 +178,19 @@ class ContourProducer(OpsProducer):
             composite_geo.extend(geo)
 
         if abs(total_offset) > 1e-6:
-            # Attempt to apply the offset (grow/shrink).
-            grown_geometry = composite_geo.grow(total_offset)
+            original_geo = composite_geo.copy()
+            composite_geo.grow(total_offset)
 
-            # Check if the grow operation failed (returned empty geometry).
-            # This can happen with complex or malformed input shapes.
-            if grown_geometry.is_empty() and not composite_geo.is_empty():
+            if composite_geo.is_empty() and not original_geo.is_empty():
                 logger.warning(
                     f"ContourProducer for '{workpiece.name}' failed to apply "
                     f"an offset of {total_offset:.3f} mm. This can be "
                     "caused by micro-gaps or self-intersections in the "
                     "source geometry. Falling back to the un-offset path."
                 )
-                # Fall back to the original, un-offset geometry.
-                final_geometry = composite_geo
+                final_geometry = original_geo
             else:
-                # The grow operation was successful or input was empty.
-                final_geometry = grown_geometry
+                final_geometry = composite_geo
         else:
             # No offset was requested, so use the composite geometry.
             final_geometry = composite_geo

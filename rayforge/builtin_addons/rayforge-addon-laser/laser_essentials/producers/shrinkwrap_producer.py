@@ -107,11 +107,9 @@ class ShrinkWrapProducer(OpsProducer):
 
             # 4. Normalize winding order BEFORE offsetting (grow). This ensures
             #    that a positive offset correctly expands the shape.
-            normalized_geos = hull_geometry.normalize_winding_orders()
-            if not normalized_geos:
+            hull_geometry.normalize_winding_orders()
+            if hull_geometry.is_empty():
                 hull_geometry = None
-            else:
-                hull_geometry = normalized_geos[0]
 
         if hull_geometry and not hull_geometry.is_empty():
             # 5. Apply offset in millimeter space
