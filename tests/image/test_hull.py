@@ -159,7 +159,7 @@ def test_concave_hull_creates_valid_indentation():
     # 3. Check that shrinking the hull did not create new intersections
     convex_geo.grow(1)  # grow to avoid touching due to floating point errors
     assert not concave_geo.intersects_with(convex_geo), (
-       f"Intersects with convex hull: {concave_geo.dump()}"
+       f"Intersects with convex hull: {concave_geo.to_dict()}"
     )
 
     # 4. Check that the hull encloses all points of the original shape.
