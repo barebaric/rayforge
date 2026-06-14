@@ -256,7 +256,7 @@ Shrink Wrap operations support several post-processing options:
 
 - Check that boundary doesn't overlap parts
 - Verify offset is sufficient
-- Preview in [3D Preview](../ui/3d-preview)
+- Preview in [3D Preview](../../ui/3d-preview)
 - Test on scrap first
 
 **Watch for:**
@@ -301,7 +301,7 @@ Shrink wrap within a larger boundary:
 Before production run:
 
 1. Create shrink wrap
-2. Preview with [3D Preview](../ui/3d-preview)
+2. Preview with [3D Preview](../../ui/3d-preview)
 3. Verify clearance is adequate
 4. Check no parts are intersected
 5. Run test on scrap material
@@ -370,5 +370,5 @@ The boundary path is optimized for:
 - **[Contour Cutting](contour)** - Cutting individual object outlines
 - **[Multi-Layer Workflow](../multi-layer)** - Combining operations effectively
 - **[Holding Tabs](../holding-tabs)** - Keeping parts secure during cutting
-- **[3D Preview](../ui/3d-preview)** - Previewing cutting paths
+- **[3D Preview](../../ui/3d-preview)** - Previewing cutting paths
 - **[Material Test Grid](material-test-grid)** - Finding optimal cutting settings
