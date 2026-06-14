@@ -39,7 +39,10 @@ def _sync_dir(src: Path, dst: Path) -> None:
         rel = src_path.relative_to(src)
         dst_path = dst / rel
         dst_path.parent.mkdir(parents=True, exist_ok=True)
-        if not dst_path.exists() or src_path.stat().st_mtime > dst_path.stat().st_mtime:
+        if (
+            not dst_path.exists()
+            or src_path.stat().st_mtime > dst_path.stat().st_mtime
+        ):
             shutil.copy2(src_path, dst_path)
 
     for dst_path in existing_dst_files:

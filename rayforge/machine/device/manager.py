@@ -4,13 +4,19 @@ import shutil
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import yaml
 
 from ...core.model import ModelLibrary
+from .lightburn_importer import (
+    ImportSummary,
+    convert_to_profile,
+)
 from .profile import (
+    DIALECT_FILENAME,
     MANIFEST_FILENAME,
+    CURRENT_API_VERSION,
     DeviceProfile,
     export_machine_to_dir,
     parse_meta,
@@ -184,6 +190,53 @@ class DeviceProfileManager:
                 shutil.move(str(tmp_dir), str(dest_dir))
 
         return self.load_profile(dest_dir)
+
+    def install_from_lbdev(
+        self, lbdev_path: Path
+    ) -> Tuple[DeviceProfile, ImportSummary]:
+        """
+        Install a device profile from a LightBurn ``.lbdev`` file.
+
+        Parses the file, writes ``device.yaml`` and ``dialect.yaml``
+        into the user devices directory, and loads the resulting
+        :class:`DeviceProfile`.
+
+        Returns ``(profile, summary)`` so the caller can display the
+        :class:`ImportSummary` to the user.
+        """
+        if not lbdev_path.exists():
+            raise FileNotFoundError(
+                f"LightBurn profile not found: {lbdev_path}"
+            )
+
+        if self._install_dir is None:
+            raise RuntimeError("No install directory configured")
+
+        profile, summary = convert_to_profile(lbdev_path)
+
+        dest_dir = self._install_dir / _safe_filename(profile.name)
+
+        if dest_dir.exists():
+            shutil.rmtree(dest_dir)
+        dest_dir.mkdir(parents=True, exist_ok=True)
+
+        device_yaml = {
+            "api_version": CURRENT_API_VERSION,
+            "device": {
+                "name": profile.meta.name,
+            },
+            "machine": profile.machine_config.to_dict(),
+        }
+        with open(dest_dir / MANIFEST_FILENAME, "w") as f:
+            yaml.safe_dump(device_yaml, f, sort_keys=False)
+
+        if profile.dialect_config:
+            with open(dest_dir / DIALECT_FILENAME, "w") as f:
+                yaml.safe_dump(profile.dialect_config, f, sort_keys=False)
+
+        loaded = DeviceProfile.from_path(dest_dir)
+        self._profiles[loaded.name] = loaded
+        return loaded, summary
 
     def export_to_zip(self, profile: DeviceProfile, dest: Path) -> Path:
         """

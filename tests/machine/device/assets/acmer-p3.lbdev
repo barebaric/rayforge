@@ -1,0 +1,168 @@
+{
+    "DeviceList": [
+        {
+            "Checklist": "",
+            "DefaultCutList": [
+            ],
+            "DefaultToolCutList": [
+            ],
+            "DisplayName": "ACMER P3 2-IN-1",
+            "EnableLaser2Offset": false,
+            "EnableProcessOffset": false,
+            "GUID": "iLWZlNGUtN",
+            "Height": 390,
+            "HomeOnStartup": false,
+            "Info": "",
+            "Laser2OffsetX": 0,
+            "Laser2OffsetY": 0,
+            "LastCamera": "",
+            "LastDevLibraryPath": "",
+            "MirrorX": false,
+            "MirrorY": false,
+            "Name": "GRBL",
+            "ProcessOffsetX": 0,
+            "ProcessOffsetY": 0,
+            "ProfilePath": "GRBL",
+            "ReverseIntervalCompensation": true,
+            "ReverseIntervals": [
+                {
+                    "LineShift": 0.07000000029802322,
+                    "Speed": 100,
+                    "StartAdjust": 0
+                },
+                {
+                    "LineShift": 0.07999999821186066,
+                    "Speed": 200,
+                    "StartAdjust": 0
+                },
+                {
+                    "LineShift": 0.05999999865889549,
+                    "Speed": 300,
+                    "StartAdjust": 0
+                },
+                {
+                    "LineShift": 0.05999999865889549,
+                    "Speed": 400,
+                    "StartAdjust": 0
+                },
+                {
+                    "LineShift": 0.07999999821186066,
+                    "Speed": 500,
+                    "StartAdjust": 0
+                },
+                {
+                    "LineShift": 0.07999999821186066,
+                    "Speed": 600,
+                    "StartAdjust": 0
+                },
+                {
+                    "LineShift": 0.07999999821186066,
+                    "Speed": 700,
+                    "StartAdjust": 0
+                },
+                {
+                    "LineShift": 0.07999999821186066,
+                    "Speed": 800,
+                    "StartAdjust": 0
+                }
+            ],
+            "Settings": {
+                "AirAssistM7": false,
+                "AlignH": 0,
+                "AlignV": 2,
+                "BaudRate": 115200,
+                "Checklist": false,
+                "ClickSelTolerance": 1,
+                "CommPort": "COM20",
+                "ContinuousFrame": false,
+                "CutOrigin": 2,
+                "DockState_ArtBrowser": false,
+                "DockState_Camera": true,
+                "DockState_Console": true,
+                "DockState_CutLibrary": true,
+                "DockState_LaserFiles": false,
+                "DockState_Move": true,
+                "DockState_ShapeProperties": true,
+                "DockState_VariableText": false,
+                "EnableBoundsCheck": true,
+                "EnableDTR": false,
+                "EnableGrblJCommand": false,
+                "EnableU": false,
+                "EnableZ": false,
+                "EndGCode": "",
+                "ForceSValueOutput": false,
+                "GCodeClustering": false,
+                "GridShade": 192,
+                "GridSnap": 1,
+                "GridSnapEnabled": true,
+                "GridSpacing": 5,
+                "LaserFire_Enable": false,
+                "LaserFire_Power": 0,
+                "LaserFrame_Enable": false,
+                "NegativeZ": false,
+                "OMTechPolar": false,
+                "ObjSnap": 5,
+                "ObjSnapEnabled": true,
+                "OptimizeZ": false,
+                "RelativeZOnly": true,
+                "S_Scale": 1000,
+                "Sim_CornerTolerance": 0.009999999776482582,
+                "Sim_FastWhiteScan": false,
+                "Sim_FastWhiteScanSpeed": 0,
+                "Sim_GlobalFactor": 1,
+                "Sim_MaxAccelX": 3000,
+                "Sim_MaxAccelY": 3000,
+                "Sim_MaxSpeedX": 500,
+                "Sim_MaxSpeedY": 400,
+                "Sim_MinCornerSpeed": 1,
+                "Sim_RapidSpeed": 400,
+                "Sim_ScanAccelX": 3000,
+                "Sim_ScanAccelY": 3000,
+                "Sim_SpeedFactor": 1,
+                "SkipWhiteFlag": false,
+                "SkipWhiteSpeed": 0,
+                "StartGCode": "",
+                "TabPulseWidth": 0.05000000074505806,
+                "TransferMode": 0,
+                "Units": 1,
+                "UseG0ForOverscan": false,
+                "UserFinishX": 200,
+                "UserFinishY": 390,
+                "cameraIsFisheye": false,
+                "cameraMatrix": [
+                    2480.0939794325805,
+                    0,
+                    0,
+                    0,
+                    2469.1212073199326,
+                    0,
+                    1295.103905070817,
+                    956.5219913976445,
+                    1
+                ],
+                "distortionMatrix": [
+                    0.357228167851783,
+                    -4.406697398354698,
+                    -0.0012563735252031536,
+                    0.001225669621189481,
+                    8.584358418213519
+                ],
+                "inversePerspective": [
+                    1.1406101963964803,
+                    -0.006882195839950894,
+                    1.7797419019769571e-06,
+                    0.007251217529273837,
+                    1.1355484384360102,
+                    -2.352424528967983e-06,
+                    -186.11796884506242,
+                    -98.06597588453272,
+                    1
+                ],
+                "isHeadCamera": false,
+                "mapScale": 0.7812876105308533
+            },
+            "Type": "Serial",
+            "Width": 400
+        }
+    ]
+}
