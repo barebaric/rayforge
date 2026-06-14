@@ -9,12 +9,11 @@ import cv2
 import numpy as np
 import vtracer
 from raygeo.geo import Geometry
-from raygeo.image import grayscale_to_binary
+from raygeo.image import denoise_binary, grayscale_to_binary
 from raygeo.svg import svg_string_to_geometries
 
 from ..core.matrix import Matrix
 from ..core.vectorization_spec import TraceSpec, VectorizationSpec
-from .denoise import denoise_boolean_image
 from .hull import get_enclosing_hull, get_hulls_from_image
 from .util.srgb import resize_linear_nd
 
@@ -169,7 +168,7 @@ def prepare_surface(
     boolean_image = _get_boolean_image_from_color(
         img_for_threshold, channels, vectorization_spec
     )
-    return denoise_boolean_image(boolean_image)
+    return denoise_binary(boolean_image.astype(np.uint8)) > 0
 
 
 def _fallback_to_enclosing_hull(
@@ -400,9 +399,7 @@ def _get_geometries_from_image(
 
     geometries = svg_string_to_geometries(svg_str, 1.0, 1.0)
     if not geometries:
-        logger.warning(
-            "vtracer produced 0 geometries, falling back to hulls."
-        )
+        logger.warning("vtracer produced 0 geometries, falling back to hulls.")
         return _fallback_to_hulls_from_image(
             image_to_trace,
             processing_surface_height,
