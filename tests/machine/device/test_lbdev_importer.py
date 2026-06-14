@@ -315,6 +315,56 @@ class TestConvertToProfile:
         assert summary.mirror_x is True
         assert summary.mirror_y is True
 
+    def test_convert_camera_data(self, tmp_path):
+        lbdev = _make_lbdev(
+            tmp_path / "camera.lbdev",
+            settings_overrides={
+                "cameraMatrix": [1000, 0, 0, 0, 1000, 0, 320, 240, 1],
+                "distortionMatrix": [0.1, -0.05, 0.01, 0.02, 0.001],
+                "cameraIsFisheye": False,
+                "isHeadCamera": False,
+                "mapScale": 0.75,
+            },
+        )
+        profile, summary = convert_to_profile(lbdev)
+        assert summary.camera_calibration is True
+        assert profile.machine_config.cameras is not None
+        assert len(profile.machine_config.cameras) == 1
+
+        cam = profile.machine_config.cameras[0]
+        assert cam["camera_matrix_fx"] == 1000.0
+        assert cam["camera_matrix_fy"] == 1000.0
+        assert cam["camera_matrix_cx"] == 320.0
+        assert cam["camera_matrix_cy"] == 240.0
+        assert cam["distortion_k1"] == 0.1
+        assert cam["distortion_k2"] == -0.05
+        assert cam["distortion_p1"] == 0.01
+        assert cam["distortion_p2"] == 0.02
+        assert cam["distortion_k3"] == 0.001
+        assert cam["camera_is_fisheye"] is False
+        assert cam["is_head_camera"] is False
+        assert cam["map_scale"] == 0.75
+
+    def test_convert_no_camera(self, tmp_path):
+        lbdev = _make_lbdev(tmp_path / "nocam.lbdev")
+        profile, summary = convert_to_profile(lbdev)
+        assert summary.camera_calibration is False
+        assert profile.machine_config.cameras is None
+
+    def test_convert_partial_camera(self, tmp_path):
+        """cameraMatrix without distortionMatrix still gets captured."""
+        lbdev = _make_lbdev(
+            tmp_path / "partial.lbdev",
+            settings_overrides={
+                "cameraMatrix": [2000, 0, 0, 0, 2000, 0, 640, 480, 1],
+            },
+        )
+        profile, summary = convert_to_profile(lbdev)
+        assert summary.camera_calibration is True
+        assert profile.machine_config.cameras is not None
+        assert profile.machine_config.cameras[0]["camera_matrix_fx"] == 2000.0
+        assert profile.machine_config.cameras[0].get("distortion_k1") is None
+
 
 class TestInstallFromLBDev:
     def test_install_basic(self, tmp_path):
@@ -425,6 +475,21 @@ class TestRealLBDevAsset:
         assert profile.machine_config.max_travel_speed == 400
         assert profile.machine_config.origin == Origin("bottom_left")
 
+        assert summary.camera_calibration is True
+        assert profile.machine_config.cameras is not None
+        cam = profile.machine_config.cameras[0]
+        assert cam["name"] == "LightBurn Camera"
+        assert cam["device_id"] == "lightburn_camera"
+        assert cam["camera_matrix_fx"] == pytest.approx(2480.09, rel=1e-3)
+        assert cam["camera_matrix_fy"] == pytest.approx(2469.12, rel=1e-3)
+        assert cam["camera_matrix_cx"] == pytest.approx(1295.10, rel=1e-3)
+        assert cam["camera_matrix_cy"] == pytest.approx(956.52, rel=1e-3)
+        assert cam["distortion_k1"] == pytest.approx(0.357, rel=1e-2)
+        assert cam["distortion_k2"] == pytest.approx(-4.407, rel=1e-2)
+        assert cam["distortion_p1"] == pytest.approx(-0.001256, abs=1e-5)
+        assert cam["distortion_p2"] == pytest.approx(0.001226, abs=1e-5)
+        assert cam["distortion_k3"] == pytest.approx(8.584, rel=1e-2)
+
         assert summary.name == "ACMER P3 2-IN-1"
         assert summary.driver == "GrblSerialDriver"
         assert summary.axis_extents == (400.0, 390.0)
@@ -440,6 +505,7 @@ class TestRealLBDevAsset:
         assert any("GrblSerialDriver" in line for line in lines)
         assert any("115200" in line for line in lines)
         assert any("bottom_left" in line for line in lines)
+        assert any("Camera calibration" in line for line in lines)
 
     def test_to_items_real_asset(self):
         _, summary = convert_to_profile(self.ASSET_PATH)
@@ -470,5 +536,8 @@ class TestRealLBDevAsset:
             data = yaml.safe_load(f)
         assert data["device"]["name"] == "ACMER P3 2-IN-1"
         assert data["machine"]["axis_extents"] == [400.0, 390.0]
+        assert "cameras" in data["machine"]
+        assert len(data["machine"]["cameras"]) == 1
+        assert data["machine"]["cameras"][0]["camera_matrix_fx"] is not None
 
         assert mgr.get("ACMER P3 2-IN-1") is profile
