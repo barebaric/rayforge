@@ -68,11 +68,13 @@ def _parse_xform(text: str) -> Matrix:
     except ValueError:
         logger.warning("Invalid XForm values: %s, using identity", text)
         return Matrix()
-    return Matrix([
-        [a, c, tx],
-        [b, d, ty],
-        [0, 0, 1],
-    ])
+    return Matrix(
+        [
+            [a, c, tx],
+            [b, d, ty],
+            [0, 0, 1],
+        ]
+    )
 
 
 def _parse_verts(text: str) -> List[Dict[str, float]]:
@@ -114,9 +116,7 @@ def _apply_xform_to_geo(geo: Geometry, xform: Matrix) -> Geometry:
     return geo
 
 
-def _build_rect(
-    w: float, h: float, cr: float
-) -> Geometry:
+def _build_rect(w: float, h: float, cr: float) -> Geometry:
     geo = Geometry()
     if w <= 0 or h <= 0:
         return geo
@@ -223,8 +223,12 @@ def _build_path_from_verts_and_prims(
             c0y = sv.get("c0y")
             c1x = ev.get("c1x")
             c1y = ev.get("c1y")
-            if (c0x is not None and c0y is not None
-                    and c1x is not None and c1y is not None):
+            if (
+                c0x is not None
+                and c0y is not None
+                and c1x is not None
+                and c1y is not None
+            ):
                 geo.bezier_to(ex, ey, c0x, c0y, c1x, c1y)
             else:
                 geo.line_to(ex, ey)
@@ -303,9 +307,7 @@ def _shape_to_geometry(
                 else ""
             )
             prims = _parse_prims(prim_list_raw)
-            geo = _build_path_from_verts_and_prims(
-                verts, prims, prim_list_raw
-            )
+            geo = _build_path_from_verts_and_prims(verts, prims, prim_list_raw)
 
     elif shape_type == "Text":
         has_backup = shape_elem.get("HasBackupPath", "0") == "1"
@@ -317,9 +319,7 @@ def _shape_to_geometry(
         if children_elem is not None:
             combined = Geometry()
             for child in children_elem.findall("Shape"):
-                child_result = _shape_to_geometry(
-                    child, cut_settings, bitmaps
-                )
+                child_result = _shape_to_geometry(child, cut_settings, bitmaps)
                 if child_result is not None:
                     child_cut_idx, child_geo = child_result
                     child_geo = _apply_xform_to_geo(child_geo, xform)
@@ -339,13 +339,15 @@ def _shape_to_geometry(
                 logger.warning("Failed to decode Bitmap data")
                 return None
             if bitmaps is not None:
-                bitmaps.append(BitmapInfo(
-                    cut_index=cut_index,
-                    xform=xform,
-                    width=w,
-                    height=h,
-                    png_data=png_bytes,
-                ))
+                bitmaps.append(
+                    BitmapInfo(
+                        cut_index=cut_index,
+                        xform=xform,
+                        width=w,
+                        height=h,
+                        png_data=png_bytes,
+                    )
+                )
             geo = _build_rect(w, h, cr=0)
         else:
             return None
@@ -414,9 +416,8 @@ class LightBurnImporter(Importer):
         self, project: ET.Element
     ) -> Dict[int, Dict[str, Any]]:
         cut_settings: Dict[int, Dict[str, Any]] = {}
-        for cs_elem in (
-            list(project.findall("CutSetting"))
-            + list(project.findall("CutSetting_Img"))
+        for cs_elem in list(project.findall("CutSetting")) + list(
+            project.findall("CutSetting_Img")
         ):
             index_el = cs_elem.find("index")
             if index_el is None:
@@ -452,9 +453,12 @@ class LightBurnImporter(Importer):
         for bm in self._bitmaps:
             hw, hh = bm.width / 2.0, bm.height / 2.0
             a, b, c, d, tx, ty = (
-                bm.xform.m[0, 0], bm.xform.m[1, 0],
-                bm.xform.m[0, 1], bm.xform.m[1, 1],
-                bm.xform.m[0, 2], bm.xform.m[1, 2],
+                bm.xform.m[0, 0],
+                bm.xform.m[1, 0],
+                bm.xform.m[0, 1],
+                bm.xform.m[1, 1],
+                bm.xform.m[0, 2],
+                bm.xform.m[1, 2],
             )
             data_url = "data:image/png;base64," + base64.b64encode(
                 bm.png_data
@@ -608,9 +612,9 @@ class LightBurnImporter(Importer):
             merged_geo.extend(geo)
 
         if split_layers:
-            final_geometries: Dict[Optional[str], Geometry] = (
-                geometries or {None: merged_geo}
-            )
+            final_geometries: Dict[Optional[str], Geometry] = geometries or {
+                None: merged_geo
+            }
         else:
             final_geometries = {None: merged_geo}
 
