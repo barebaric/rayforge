@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 import vtracer
 from raygeo.geo import Geometry
+from raygeo.image import grayscale_to_binary
 from raygeo.svg import svg_string_to_geometries
 
 from ..core.matrix import Matrix
@@ -112,28 +113,15 @@ def _get_boolean_image_from_color(
 
     spec = vectorization_spec
     if not isinstance(spec, TraceSpec):
-        spec = TraceSpec()  # Use defaults
+        spec = TraceSpec()
 
-    # Use auto-threshold (Otsu) if requested
-    if spec.auto_threshold:
-        otsu_threshold, _ = cv2.threshold(
-            gray_with_border, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
-        )
-        threshold_val = otsu_threshold
-    else:
-        # The threshold is 0.0 (black) to 1.0 (white).
-        threshold_val = int(spec.threshold * 255)
-
-    # Apply inversion if requested
-    if spec.invert:
-        threshold_type = cv2.THRESH_BINARY
-    else:
-        threshold_type = cv2.THRESH_BINARY_INV
-
-    _, thresh_img = cv2.threshold(
-        gray_with_border, threshold_val, 255, threshold_type
+    binary = grayscale_to_binary(
+        gray_with_border.astype(np.uint8),
+        threshold=spec.threshold,
+        invert=spec.invert,
+        auto_threshold=spec.auto_threshold,
     )
-    return thresh_img > 0
+    return binary > 0
 
 
 def prepare_surface(

@@ -1,9 +1,8 @@
 import numpy as np
+from raygeo.image import filter_components, get_component_areas
 
 from rayforge.image.denoise import (
-    _filter_image_by_component_area,
     _find_adaptive_area_threshold,
-    _get_component_areas,
     denoise_boolean_image,
 )
 
@@ -22,16 +21,16 @@ def test_get_component_areas():
         dtype=np.uint8,
     )
     boolean_image = img < 128
-    areas = _get_component_areas(boolean_image)
-    assert sorted(areas.tolist()) == [1, 4, 6]
+    areas = get_component_areas(boolean_image.astype(np.uint8))
+    assert sorted(areas) == [1, 4, 6]
 
 
 def test_get_component_areas_empty_image():
     """Tests behavior with an image containing no components."""
     img = np.full((10, 10), 255, dtype=np.uint8)
     boolean_image = img < 128
-    areas = _get_component_areas(boolean_image)
-    assert areas.size == 0
+    areas = get_component_areas(boolean_image.astype(np.uint8))
+    assert len(areas) == 0
 
 
 def test_find_adaptive_area_threshold_noisy_image():
@@ -44,7 +43,7 @@ def test_find_adaptive_area_threshold_noisy_image():
             np.full(2, 100, dtype=int),
         ]
     )
-    # The new gap-finding algorithm correctly identifies the noise cluster
+    # The gap-finding algorithm identifies the noise cluster
     # ending at area 10, just before the large gap to area 100.
     # Therefore, the threshold should be 11.
     assert _find_adaptive_area_threshold(areas) == 11
@@ -74,7 +73,7 @@ def test_filter_image_by_component_area():
         dtype=np.uint8,
     )
     boolean_image = img < 128
-    filtered = _filter_image_by_component_area(boolean_image, min_area=5)
+    filtered = filter_components(boolean_image.astype(np.uint8), min_area=5)
     assert np.sum(filtered) == 6
     assert np.sum(boolean_image) == 7
 
