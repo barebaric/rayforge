@@ -12,6 +12,8 @@ Dateiformate, einschließlich Fähigkeiten, Einschränkungen und Empfehlungen.
 | **SVG**              | Vektor    | ✓ Direkt / Tracing | ✓ Objekt-Export | Primäres Design-Format     |
 | **DXF**              | Vektor    | ✓ Direkt           | ✓ Objekt-Export | CAD-Datenaustausch         |
 | **PDF**              | Gemischt  | ✓ Direkt / Tracing | –               | Dokumente mit Vektorinhalt |
+| **LightBurn**        | Vektor    | ✓ Direkt           | –               | LightBurn-Projekte         |
+| **Ruida**            | Vektor    | ✓ Direkt           | –               | Ruida-Aufgabendateien      |
 | **PNG**              | Raster    | ✓ Tracing          | –               | Fotos, Bilder              |
 | **JPEG**             | Raster    | ✓ Tracing          | –               | Fotos                      |
 | **BMP**              | Raster    | ✓ Tracing          | –               | Einfache Grafiken          |
@@ -154,6 +156,47 @@ bearbeitbare Skizzen speichern und teilen kannst.
 - Wiederverwendbare parametrische Designs speichern
 - Bearbeitbare Skizzen mit anderen Rayforge-Benutzern teilen
 - Arbeit in progress archivieren
+
+---
+
+### LightBurn (.lbrn / .lbrn2)
+
+**Erweiterung:** `.lbrn`, `.lbrn2`
+**MIME-Typ:** `application/x-lightburn`
+**Import:** Direktes Vektor-Parsing
+**Export:** Nicht unterstützt
+
+**Was ist LightBurn?**
+
+LightBurn ist eine proprietäre Laserschneide-Software. Die Dateiformate `.lbrn`
+und `.lbrn2` enthalten Vektorgeometrie, die in farbcodierten Ebenen mit
+Laser-Einstellungen organisiert ist. Rayforge kann diese Dateien direkt
+importieren und bietet einen Migrationspfad für Benutzer, die von LightBurn zu
+Rayforge wechseln.
+
+**Unterstützte Funktionen:**
+
+- ✓ Vektorpfade (Linien, Kurven, Bögen, in Pfade konvertierter Text)
+- ✓ Mehrere farbige Ebenen mit Namen
+- ✓ Laser-Einstellungen pro Ebene (Leistung, Geschwindigkeit, Durchgänge,
+  Schnittreihenfolge)
+- ✓ Ebenensichtbarkeit und Sperrstatus
+- ✓ Ebenenfarben, die auf Dokumentebenen abgebildet werden
+- ✓ Eingebettete Rasterbilder (werden beim Import getraced)
+
+**Einschränkungen:**
+
+- ✗ **Schreibgeschützter Import** — LightBurn-Dateien können nur importiert,
+  nicht exportiert werden
+- ✗ Rasterbilder mit variabler Bittiefe können vereinfacht werden
+- ✗ Einige erweiterte LightBurn-spezifische Funktionen werden möglicherweise
+  nicht übertragen
+
+**Wann zu verwenden:**
+
+- Migration bestehender LightBurn-Projekte zu Rayforge
+- Öffnen von LightBurn-Dateien, die von anderen Benutzern geteilt wurden
+- Wiederverwendung vorhandener LightBurn-Designs
 
 ---
 

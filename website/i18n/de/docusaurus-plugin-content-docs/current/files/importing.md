@@ -8,12 +8,13 @@ optimierst.
 
 ### Vektorformate
 
-| Format    | Erweiterung | Importmethode                 | Am besten für                       |
-| --------- | ----------- | ----------------------------- | ----------------------------------- |
-| **SVG**   | `.svg`      | Direkte Vektoren oder Tracing | Vektorgrafiken, Logos, Designs      |
-| **DXF**   | `.dxf`      | Direkte Vektoren              | CAD-Zeichnungen, technische Designs |
-| **PDF**   | `.pdf`      | Direkte Vektoren oder Tracing | Dokumente mit Vektorinhalt          |
-| **Ruida** | `.rd`       | Direkte Vektoren              | Ruida-Controller-Auftragsdateien    |
+| Format        | Erweiterung       | Importmethode                 | Am besten für                       |
+| ------------- | ----------------- | ----------------------------- | ----------------------------------- |
+| **SVG**       | `.svg`            | Direkte Vektoren oder Tracing | Vektorgrafiken, Logos, Designs      |
+| **DXF**       | `.dxf`            | Direkte Vektoren              | CAD-Zeichnungen, technische Designs |
+| **PDF**       | `.pdf`            | Direkte Vektoren oder Tracing | Dokumente mit Vektorinhalt          |
+| **LightBurn** | `.lbrn`, `.lbrn2` | Direkte Vektoren              | LightBurn-Projekte                  |
+| **Ruida**     | `.rd`             | Direkte Vektoren              | Ruida-Controller-Auftragsdateien    |
 
 ### Rasterformate
 
@@ -188,27 +189,22 @@ Der Import-Dialog zeigt eine Live-Vorschau, wie dein SVG importiert wird:
 **Bereite dein SVG für beste Ergebnisse vor:**
 
 1. **Text in Pfade konvertieren:**
-
    - Inkscape: `Pfad → Objekt in Pfad`
    - Illustrator: `Typ → Umrisse erstellen`
 
 2. **Komplexe Pfade vereinfachen:**
-
    - Inkscape: `Pfad → Vereinfachen` (Strg+L)
    - Unnötige Knoten entfernen
 
 3. **Verschachtelte Gruppen auflösen:**
-
    - Hierarchie wo möglich abflachen
    - `Objekt → Gruppierung aufheben` (Strg+Umschalt+G)
 
 4. **Versteckte Elemente entfernen:**
-
    - Hilfslinien, Raster, Konstruktionslinien löschen
    - Unsichtbare/transparente Objekte entfernen
 
 5. **Als Plain SVG speichern:**
-
    - Inkscape: "Plain SVG" oder "Optimiertes SVG"
    - Nicht "Inkscape SVG" (hat zusätzliche Metadaten)
 
@@ -331,6 +327,33 @@ Vektorgeometrie als auch Lasereinstellungen, organisiert in Ebenen (Farben).
 - **Binärformat** – Direktes Bearbeiten von Original-.rd-Dateien nicht unterstützt
 - **Proprietäre Funktionen** – Einige fortgeschrittene Ruida-Funktionen werden
   möglicherweise nicht vollständig unterstützt
+
+---
+
+## LightBurn-Import
+
+LightBurn-Dateien (.lbrn / .lbrn2) sind proprietäre Projektdateien, die von
+der LightBurn-Laserschneidesoftware verwendet werden. Sie speichern
+Vektorgeometrie, die in farbcodierten Ebenen mit konfigurierbaren
+Laser-Einstellungen organisiert ist.
+
+**Nach dem Import:**
+
+- **Ebenen überprüfen** — LightBurn-Ebenen werden auf Dokumentebenen mit
+  entsprechenden Namen abgebildet
+- **Laser-Einstellungen prüfen** — Leistungs-, Geschwindigkeits- und
+  Durchgangseinstellungen aus LightBurn-Ebenen bleiben erhalten
+- **Pfade validieren** — Bestätigen, dass alle Schnittpfade vorhanden und
+  korrekt positioniert sind
+
+### Einschränkungen
+
+- **Schreibgeschützter Import** — LightBurn-Dateien können nur importiert,
+  nicht exportiert werden
+- **Binärformat** — Direktes Bearbeiten von Original-.lbrn-Dateien nicht
+  unterstützt
+- **Proprietäre Funktionen** — Einige fortgeschrittene LightBurn-Funktionen
+  werden möglicherweise nicht vollständig unterstützt
 
 ---
 

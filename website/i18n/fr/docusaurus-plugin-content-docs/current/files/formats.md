@@ -13,6 +13,8 @@ recommandations.
 | **SVG**             | Vecteur   | ✓ Direct / Trace | ✓ Export obj. | Format de conception principal   |
 | **DXF**             | Vecteur   | ✓ Direct         | ✓ Export obj. | Échange CAO                      |
 | **PDF**             | Mixte     | ✓ Direct / Trace | –             | Documents avec contenu vectoriel |
+| **LightBurn**       | Vecteur   | ✓ Direct         | –             | Projets LightBurn                |
+| **Ruida**           | Vecteur   | ✓ Direct         | –             | Fichiers de tâches Ruida         |
 | **PNG**             | Matriciel | ✓ Trace          | –             | Photos, images                   |
 | **JPEG**            | Matriciel | ✓ Trace          | –             | Photos                           |
 | **BMP**             | Matriciel | ✓ Trace          | –             | Graphiques simples               |
@@ -153,6 +155,47 @@ d'enregistrer et de partager des croquis entièrement modifiables.
 - Enregistrer des conceptions paramétriques réutilisables
 - Partager des croquis modifiables avec d'autres utilisateurs de Rayforge
 - Archiver des travaux en cours
+
+---
+
+### LightBurn (.lbrn / .lbrn2)
+
+**Extension :** `.lbrn`, `.lbrn2`
+**Type MIME :** `application/x-lightburn`
+**Importation :** Analyse vectorielle directe
+**Exportation :** Non pris en charge
+
+**Qu'est-ce que LightBurn ?**
+
+LightBurn est un logiciel propriétaire de découpe laser. Ses fichiers `.lbrn`
+et `.lbrn2` contiennent de la géométrie vectorielle organisée en calques
+colorés avec des paramètres laser. Rayforge peut importer ces fichiers
+directement, offrant une voie de migration pour les utilisateurs passant de
+LightBurn à Rayforge.
+
+**Fonctionnalités prises en charge :**
+
+- ✓ Chemins vectoriels (lignes, courbes, arcs, texte converti en chemins)
+- ✓ Plusieurs calques colorés avec noms
+- ✓ Paramètres laser des calques (puissance, vitesse, passes, ordre de coupe)
+- ✓ Visibilité des calques et état verrouillé
+- ✓ Couleurs des lignes des calques mappées aux calques du document
+- ✓ Images matricielles intégrées (vectorisées à l'importation)
+
+**Limitations :**
+
+- ✗ **Importation en lecture seule** — les fichiers LightBurn ne peuvent être
+  qu'importés, pas exportés
+- ✗ Les images matricielles à profondeur de bits variable peuvent être
+  simplifiées
+- ✗ Certaines fonctionnalités avancées spécifiques à LightBurn peuvent ne pas
+  être traduites
+
+**Quand l'utiliser :**
+
+- Migrer des projets LightBurn existants vers Rayforge
+- Ouvrir des fichiers LightBurn partagés par d'autres utilisateurs
+- Réutiliser des conceptions LightBurn existantes
 
 ---
 

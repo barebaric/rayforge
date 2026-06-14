@@ -8,12 +8,13 @@ les optimiser pour obtenir les meilleurs résultats.
 
 ### Formats vectoriels
 
-| Format    | Extension | Méthode d'importation             | Idéal pour                            |
-| --------- | --------- | --------------------------------- | ------------------------------------- |
-| **SVG**   | `.svg`    | Vecteurs directs ou vectorisation | Graphiques vectoriels, logos, dessins |
-| **DXF**   | `.dxf`    | Vecteurs directs                  | Dessins CAO, plans techniques         |
-| **PDF**   | `.pdf`    | Vecteurs directs ou vectorisation | Documents avec contenu vectoriel      |
-| **Ruida** | `.rd`     | Vecteurs directs                  | Fichiers de tâches contrôleur Ruida   |
+| Format        | Extension         | Méthode d'importation             | Idéal pour                            |
+| ------------- | ----------------- | --------------------------------- | ------------------------------------- |
+| **SVG**       | `.svg`            | Vecteurs directs ou vectorisation | Graphiques vectoriels, logos, dessins |
+| **DXF**       | `.dxf`            | Vecteurs directs                  | Dessins CAO, plans techniques         |
+| **PDF**       | `.pdf`            | Vecteurs directs ou vectorisation | Documents avec contenu vectoriel      |
+| **LightBurn** | `.lbrn`, `.lbrn2` | Vecteurs directs                  | Projets LightBurn                     |
+| **Ruida**     | `.rd`             | Vecteurs directs                  | Fichiers de tâches contrôleur Ruida   |
 
 ### Formats matriciels
 
@@ -198,27 +199,22 @@ de ton SVG :
 **Prépare ton SVG pour obtenir les meilleurs résultats :**
 
 1. **Convertir le texte en tracés :**
-
    - Inkscape : `Chemin → Objet en tracé`
    - Illustrator : `Texte → Vectoriser le texte`
 
 2. **Simplifier les tracés complexes :**
-
    - Inkscape : `Chemin → Simplifier` (Ctrl+L)
    - Supprimer les nœuds inutiles
 
 3. **Dégrouper les groupes imbriqués :**
-
    - Aplanir la hiérarchie lorsque c'est possible
    - `Objet → Dégrouper` (Ctrl+Shift+G)
 
 4. **Supprimer les éléments masqués :**
-
    - Effacer les guides, grilles, lignes de construction
    - Supprimer les objets invisibles/transparentes
 
 5. **Enregistrer en SVG simple :**
-
    - Inkscape : « SVG simple » ou « SVG optimisé »
    - Pas « SVG Inkscape » (contient des métadonnées supplémentaires)
 
@@ -353,6 +349,33 @@ laser organisés en calques (couleurs).
   prise en charge
 - **Fonctionnalités propriétaires** - Certaines fonctionnalités Ruida avancées
   peuvent ne pas être entièrement prises en charge
+
+---
+
+## Importation LightBurn
+
+Les fichiers LightBurn (.lbrn / .lbrn2) sont des fichiers de projet
+propriétaires utilisés par le logiciel de découpe laser LightBurn. Ils
+stockent la géométrie vectorielle organisée en calques colorés avec des
+paramètres laser configurables.
+
+**Après l'importation :**
+
+- **Examiner les calques** — Les calques LightBurn sont mappés aux calques du
+  document avec des noms correspondants
+- **Vérifier les paramètres laser** — Les réglages de puissance, vitesse et
+  passes des calques LightBurn sont conservés
+- **Valider les tracés** — Confirmer que tous les tracés de découpe sont
+  présents et correctement positionnés
+
+### Limitations
+
+- **Importation en lecture seule** — les fichiers LightBurn ne peuvent être
+  qu'importés, pas exportés
+- **Format binaire** — L'édition directe des fichiers .lbrn originaux n'est
+  pas prise en charge
+- **Fonctionnalités propriétaires** — Certaines fonctionnalités avancées de
+  LightBurn peuvent ne pas être entièrement prises en charge
 
 ---
 

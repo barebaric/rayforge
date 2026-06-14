@@ -5,6 +5,25 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.8.0-beta3
+
+### Added
+
+- LightBurn (.lbrn / .lbrn2) file format import support
+
+### Changed
+
+- Updated to latest raygeo 0.6 API (Geometry API, bezier_to, fit_curves,
+  optimizer, canonical imports)
+- Updated translations
+
+### Fixed
+
+- Optimizer no longer splits continuous scanlines
+- Tab clip points now correctly scaled by workpiece size to match producer
+  transformation
+- Fixed multiprocessing warnings on Python 3.12
+
 ## 1.8.0-beta2
 
 ### Added

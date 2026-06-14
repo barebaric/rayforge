@@ -12,6 +12,8 @@ suportados pelo Rayforge, incluindo capacidades, limitações e recomendações.
 | **SVG**              | Vetor    | ✓ Direto / Traçar | ✓ Exportar obj. | Formato de design principal  |
 | **DXF**              | Vetor    | ✓ Direto          | ✓ Exportar obj. | Intercâmbio CAD              |
 | **PDF**              | Misto    | ✓ Direto / Traçar | –               | Documentos com conteúdo vet. |
+| **LightBurn**        | Vetor    | ✓ Direto          | –               | Projetos LightBurn           |
+| **Ruida**            | Vetor    | ✓ Direto          | –               | Arquivos de trabalho Ruida   |
 | **PNG**              | Raster   | ✓ Traçar          | –               | Fotos, imagens               |
 | **JPEG**             | Raster   | ✓ Traçar          | –               | Fotos                        |
 | **BMP**              | Raster   | ✓ Traçar          | –               | Gráficos simples             |
@@ -151,6 +153,47 @@ compartilhar esboços totalmente editáveis.
 - Salvar designs paramétricos reutilizáveis
 - Compartilhar esboços editáveis com outros usuários do Rayforge
 - Arquivar trabalho em andamento
+
+---
+
+### LightBurn (.lbrn / .lbrn2)
+
+**Extensão:** `.lbrn`, `.lbrn2`
+**Tipo MIME:** `application/x-lightburn`
+**Importar:** Análise vetorial direta
+**Exportar:** Não suportado
+
+**O que é LightBurn?**
+
+LightBurn é um software proprietário de corte a laser. Seus arquivos `.lbrn` e
+`.lbrn2` contêm geometria vetorial organizada em camadas coloridas com
+configurações de laser. O Rayforge pode importar estes arquivos diretamente,
+fornecendo um caminho de migração para usuários que estão trocando LightBurn
+pelo Rayforge.
+
+**Recursos suportados:**
+
+- ✓ Caminhos vetoriais (linhas, curvas, arcos, texto convertido em caminhos)
+- ✓ Múltiplas camadas coloridas com nomes
+- ✓ Configurações de laser das camadas (potência, velocidade, passes, ordem de
+  corte)
+- ✓ Visibilidade de camadas e estado de bloqueio
+- ✓ Cores das linhas das camadas mapeadas para as camadas do documento
+- ✓ Imagens raster incorporadas (vetorizadas na importação)
+
+**Limitações:**
+
+- ✗ **Importação somente leitura** — arquivos LightBurn só podem ser
+  importados, não exportados
+- ✗ Imagens raster com profundidade de bits variável podem ser simplificadas
+- ✗ Alguns recursos avançados específicos do LightBurn podem não ser
+  traduzidos
+
+**Quando usar:**
+
+- Migrando projetos existentes do LightBurn para o Rayforge
+- Abrindo arquivos LightBurn compartilhados por outros usuários
+- Reutilizando designs existentes do LightBurn
 
 ---
 

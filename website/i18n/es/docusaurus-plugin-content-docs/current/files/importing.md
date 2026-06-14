@@ -8,12 +8,13 @@ para obtener los mejores resultados.
 
 ### Formatos vectoriales
 
-| Formato   | Extensión | Método de importación     | Mejor para                            |
-| --------- | --------- | ------------------------- | ------------------------------------- |
-| **SVG**   | `.svg`    | Vectores directos o trazo | Gráficos vectoriales, logos, diseños  |
-| **DXF**   | `.dxf`    | Vectores directos         | Planos CAD, diseños técnicos          |
-| **PDF**   | `.pdf`    | Vectores directos o trazo | Documentos con contenido vectorial    |
-| **Ruida** | `.rd`     | Vectores directos         | Archivos de trabajo controlador Ruida |
+| Formato       | Extensión         | Método de importación     | Mejor para                            |
+| ------------- | ----------------- | ------------------------- | ------------------------------------- |
+| **SVG**       | `.svg`            | Vectores directos o trazo | Gráficos vectoriales, logos, diseños  |
+| **DXF**       | `.dxf`            | Vectores directos         | Planos CAD, diseños técnicos          |
+| **PDF**       | `.pdf`            | Vectores directos o trazo | Documentos con contenido vectorial    |
+| **LightBurn** | `.lbrn`, `.lbrn2` | Vectores directos         | Proyectos LightBurn                   |
+| **Ruida**     | `.rd`             | Vectores directos         | Archivos de trabajo controlador Ruida |
 
 ### Formatos de mapa de bits
 
@@ -192,27 +193,22 @@ importará tu SVG:
 **Prepara tu SVG para obtener los mejores resultados:**
 
 1. **Convertir texto a trazados:**
-
    - Inkscape: `Trazado → Objeto a trazado`
    - Illustrator: `Texto → Crear contornos`
 
 2. **Simplificar trazados complejos:**
-
    - Inkscape: `Trazado → Simplificar` (Ctrl+L)
    - Eliminar nodos innecesarios
 
 3. **Desagrupar grupos anidados:**
-
    - Aplanar la jerarquía donde sea posible
    - `Objeto → Desagrupar` (Ctrl+Shift+G)
 
 4. **Eliminar elementos ocultos:**
-
    - Borrar guías, cuadrículas, líneas de construcción
    - Eliminar objetos invisibles/transparentes
 
 5. **Guardar como SVG simple:**
-
    - Inkscape: "SVG simple" o "SVG optimizado"
    - No "SVG de Inkscape" (contiene metadatos adicionales)
 
@@ -343,6 +339,32 @@ contienen tanto geometría vectorial como ajustes del láser organizados en capa
   compatible
 - **Funciones propietarias** - Algunas funciones avanzadas de Ruida pueden no ser
   totalmente compatibles
+
+---
+
+## Importación LightBurn
+
+Los archivos LightBurn (.lbrn / .lbrn2) son archivos de proyecto propietarios
+utilizados por el software de corte láser LightBurn. Almacenan geometría
+vectorial organizada en capas de colores con configuraciones láser ajustables.
+
+**Después de la importación:**
+
+- **Revisar capas** — Las capas de LightBurn se asignan a las capas del
+  documento con nombres correspondientes
+- **Verificar configuraciones láser** — Los ajustes de potencia, velocidad y
+  pasadas de las capas de LightBurn se conservan
+- **Validar trazados** — Confirmar que todos los trazados de corte están
+  presentes y correctamente posicionados
+
+### Limitaciones
+
+- **Importación de solo lectura** — Los archivos LightBurn solo pueden
+  importarse, no exportarse
+- **Formato binario** — La edición directa de archivos .lbrn originales no es
+  compatible
+- **Funciones propietarias** — Algunas funciones avanzadas de LightBurn pueden
+  no ser totalmente compatibles
 
 ---
 

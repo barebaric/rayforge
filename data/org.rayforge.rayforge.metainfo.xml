@@ -66,6 +66,28 @@
   </screenshots>
 
   <releases>
+    <release version="1.8.0~beta3" date="2026-06-14">
+      <description>
+        <p>LightBurn import, raygeo API update, and bug fixes</p>
+        <p>New Features:</p>
+        <ul>
+          <li>LightBurn (.lbrn / .lbrn2) file format import support</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Updated to latest raygeo 0.6 API (Geometry API, bezier_to,
+          fit_curves, optimizer, canonical imports)</li>
+          <li>Updated translations</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Optimizer no longer splits continuous scanlines</li>
+          <li>Fixed tab clip points not scaled by workpiece size, matching
+          producer transformation</li>
+          <li>Fixed multiprocessing warnings on Python 3.12</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.8.0~beta2" date="2026-06-11">
       <description>
         <p>Acmer P3 profile, lens calibration dialog, and bug fixes</p>

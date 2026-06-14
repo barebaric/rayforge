@@ -1,5 +1,5 @@
 ---
-description: "Import SVG, DXF, PDF, and raster image files into Rayforge. Supported formats and import options for laser cutting and engraving projects."
+description: "Import SVG, DXF, PDF, LightBurn, Ruida, and raster image files into Rayforge. Supported formats and import options for laser cutting and engraving projects."
 ---
 
 # Importing Files
@@ -11,12 +11,13 @@ page explains how to import files and optimize them for best results.
 
 ### Vector Formats
 
-| Format    | Extension | Import Method           | Best For                        |
-| --------- | --------- | ----------------------- | ------------------------------- |
-| **SVG**   | `.svg`    | Direct vectors or trace | Vector graphics, logos, designs |
-| **DXF**   | `.dxf`    | Direct vectors          | CAD drawings, technical designs |
-| **PDF**   | `.pdf`    | Direct vectors or trace | Documents with vector content   |
-| **Ruida** | `.rd`     | Direct vectors          | Ruida controller job files      |
+| Format        | Extension         | Import Method           | Best For                        |
+| ------------- | ----------------- | ----------------------- | ------------------------------- |
+| **SVG**       | `.svg`            | Direct vectors or trace | Vector graphics, logos, designs |
+| **DXF**       | `.dxf`            | Direct vectors          | CAD drawings, technical designs |
+| **PDF**       | `.pdf`            | Direct vectors or trace | Documents with vector content   |
+| **LightBurn** | `.lbrn`, `.lbrn2` | Direct vectors          | LightBurn project files         |
+| **Ruida**     | `.rd`             | Direct vectors          | Ruida controller job files      |
 
 ### Raster Formats
 
@@ -188,27 +189,22 @@ The import dialog shows a live preview of how your SVG will be imported:
 **Prepare your SVG for best results:**
 
 1. **Convert text to paths:**
-
    - Inkscape: `Path → Object to Path`
    - Illustrator: `Type → Create Outlines`
 
 2. **Simplify complex paths:**
-
    - Inkscape: `Path → Simplify` (Ctrl+L)
    - Remove unnecessary nodes
 
 3. **Ungroup nested groups:**
-
    - Flatten hierarchy where possible
    - `Object → Ungroup` (Ctrl+Shift+G)
 
 4. **Remove hidden elements:**
-
    - Delete guides, grids, construction lines
    - Remove invisible/transparent objects
 
 5. **Save as Plain SVG:**
-
    - Inkscape: "Plain SVG" or "Optimized SVG"
    - Not "Inkscape SVG" (has extra metadata)
 
@@ -245,18 +241,15 @@ Rayforge supports standard DXF formats:
 **Before exporting from CAD:**
 
 1. **Simplify the drawing:**
-
    - Remove unnecessary layers
    - Delete dimensions and annotations
    - Remove 3D objects (use 2D projection)
 
 2. **Check units:**
-
    - Verify drawing units (mm vs inches)
    - Rayforge assumes mm by default
 
 3. **Flatten layers:**
-
    - Consider exporting only relevant layers
    - Hide or delete construction layers
 
@@ -336,6 +329,30 @@ settings organized in layers (colors).
 
 ---
 
+## LightBurn Import
+
+LightBurn (.lbrn / .lbrn2) files are proprietary project files used by
+LightBurn laser cutter software. They store vector geometry organized in
+color-coded layers with configurable laser settings.
+
+**After import:**
+
+- **Review layers** — LightBurn layers are mapped to document layers with
+  matching names
+- **Check laser settings** — Power, speed, and pass settings from LightBurn
+  layers are preserved
+- **Validate paths** — Confirm all cutting paths are present and correctly
+  positioned
+
+### Limitations
+
+- **Read-only import** — LightBurn files can only be imported, not exported
+- **Binary format** — Direct editing of original .lbrn files is not supported
+- **Proprietary features** — Some advanced LightBurn-specific features may not
+  be fully supported
+
+---
+
 ## Raster Image Import (PNG, JPG, BMP)
 
 Raster images are **traced** to create vector paths using the import dialog.
@@ -369,22 +386,18 @@ before importing.
 **For best results:**
 
 1. **High contrast:**
-
    - Adjust brightness/contrast in image editor
    - Clear distinction between foreground and background
 
 2. **Clean background:**
-
    - Remove noise and artifacts
    - Solid white or transparent background
 
 3. **Appropriate resolution:**
-
    - 300-500 DPI for photos
    - Too high = slow tracing, too low = poor quality
 
 4. **Crop to content:**
-
    - Remove unnecessary borders
    - Focus on the area to be engraved/cut
 
