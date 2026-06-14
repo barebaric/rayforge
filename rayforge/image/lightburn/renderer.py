@@ -71,9 +71,7 @@ class LightBurnRenderer(Renderer):
 
         boundaries = kwargs.get("boundaries")
         if not boundaries or boundaries.is_empty():
-            logger.warning(
-                "LightBurnRenderer: No boundaries or SVG data."
-            )
+            logger.warning("LightBurnRenderer: No boundaries or SVG data.")
             return None
 
         surface = OPS_RENDERER._render_to_cairo_surface(

@@ -204,10 +204,22 @@ class TestBuildPath:
 
     def test_bezier(self):
         verts: List[Dict[str, float]] = [
-            {"x": 0.0, "y": 0.0, "c0x": 10.0, "c0y": 0.0,
-             "c1x": 10.0, "c1y": 0.0},
-            {"x": 20.0, "y": 0.0, "c1x": 20.0, "c1y": 10.0,
-             "c0x": 20.0, "c0y": 10.0},
+            {
+                "x": 0.0,
+                "y": 0.0,
+                "c0x": 10.0,
+                "c0y": 0.0,
+                "c1x": 10.0,
+                "c1y": 0.0,
+            },
+            {
+                "x": 20.0,
+                "y": 0.0,
+                "c1x": 20.0,
+                "c1y": 10.0,
+                "c0x": 20.0,
+                "c0y": 10.0,
+            },
         ]
         prims = [("B", 0, 1)]
         geo = _build_path_from_verts_and_prims(verts, prims, "B 0 1")
@@ -215,7 +227,8 @@ class TestBuildPath:
 
     def test_bezier_missing_controls_falls_back_to_line(self):
         verts: List[Dict[str, float]] = [
-            {"x": 0.0, "y": 0.0}, {"x": 10.0, "y": 10.0}
+            {"x": 0.0, "y": 0.0},
+            {"x": 10.0, "y": 10.0},
         ]
         prims = [("B", 0, 1)]
         geo = _build_path_from_verts_and_prims(verts, prims, "B 0 1")
@@ -295,6 +308,7 @@ class TestLightBurnImporter:
         parse_result = importer.parse()
         assert parse_result is not None
         from rayforge.core.vectorization_spec import PassthroughSpec
+
         vec_result = importer.vectorize(parse_result, PassthroughSpec())
         assert isinstance(vec_result, VectorizationResult)
         assert len(vec_result.geometries_by_layer) > 0
@@ -339,6 +353,7 @@ class TestLightBurnImporter:
 
     def test_extension_registration(self):
         from rayforge.image.registry import importer_registry
+
         importer_cls = importer_registry.get_by_extension(".lbrn2")
         assert importer_cls is not None
         assert importer_cls is LightBurnImporter
