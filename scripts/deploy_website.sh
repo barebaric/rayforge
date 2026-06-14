@@ -47,6 +47,10 @@ BOT_EMAIL="41898282+github-actions[bot]@users.noreply.github.com"
 git -C "${DEPLOY_DIR}" config user.name "github-actions[bot]"
 git -C "${DEPLOY_DIR}" config user.email "${BOT_EMAIL}"
 
+# Sync pre-generated raygeo API docs into the website tree
+echo "Syncing raygeo API docs..."
+python3 "${PROJECT_ROOT}/scripts/update_api_docs.py"
+
 # Install dependencies and build the Docusaurus site
 echo "Installing dependencies..."
 cd "${WEBSITE_SRC_DIR}"

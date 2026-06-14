@@ -4750,6 +4750,8 @@ packages:
   name: raygeo
   requires_dist:
   - numpy>=1.20.0
+  - matplotlib ; extra == 'docs'
+  - pillow ; extra == 'docs'
   - pycairo ; extra == 'test'
   - pytest ; extra == 'test'
   - pytest-mock ; extra == 'test'
