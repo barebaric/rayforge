@@ -1,8 +1,6 @@
 import logging
-import re
 import sys
 import threading
-import xml.etree.ElementTree as ET
 from enum import Enum
 from typing import List, Optional, Tuple
 
@@ -11,7 +9,7 @@ import cv2
 import numpy as np
 import vtracer
 from raygeo.geo import Geometry
-from raygeo.geo.types import Point
+from raygeo.svg import svg_string_to_geometries
 
 from ..core.matrix import Matrix
 from ..core.vectorization_spec import TraceSpec, VectorizationSpec
@@ -183,321 +181,7 @@ def prepare_surface(
     boolean_image = _get_boolean_image_from_color(
         img_for_threshold, channels, vectorization_spec
     )
-
     return denoise_boolean_image(boolean_image)
-
-
-def _parse_svg_transform(transform_str: str) -> np.ndarray:
-    """Parses an SVG transform attribute string (translate only)."""
-    logger.debug("Entering _parse_svg_transform")
-    matrix = np.identity(3)
-    if not transform_str:
-        return matrix
-    match = re.search(
-        r"translate\(\s*([-\d.eE]+)\s*,?\s*([-\d.eE]+)?\s*\)",
-        transform_str,
-    )
-    if match:
-        tx = float(match.group(1))
-        ty = float(match.group(2)) if match.group(2) is not None else 0.0
-        matrix[0, 2] = tx
-        matrix[1, 2] = ty
-    return matrix
-
-
-def _apply_svg_transform(point: np.ndarray, matrix: np.ndarray) -> np.ndarray:
-    """Applies a 3x3 transformation matrix to a 2D point."""
-    logger.debug("Entering _apply_svg_transform")
-    vec = np.array([point[0], point[1], 1])
-    transformed_vec = matrix @ vec
-    return transformed_vec[:2]
-
-
-def _flatten_bezier(
-    start: np.ndarray,
-    c1: np.ndarray,
-    c2: np.ndarray,
-    end: np.ndarray,
-    num_steps=20,
-) -> List[np.ndarray]:
-    """Flattens a cubic Bezier curve into a list of points."""
-    logger.debug("Entering _flatten_bezier")
-    points = []
-    t_values = np.linspace(0, 1, num_steps)[1:]  # Exclude start point
-    for t in t_values:
-        one_minus_t = 1 - t
-        p = (
-            (one_minus_t**3 * start)
-            + (3 * one_minus_t**2 * t * c1)
-            + (3 * one_minus_t * t**2 * c2)
-            + (t**3 * end)
-        )
-        points.append(p)
-    return points
-
-
-def _transform_point_for_geometry(
-    p: Point,
-    height_px: int,
-    scale_x: float,
-    scale_y: float,
-) -> Point:
-    """
-    Transforms a point from vtracer's SVG coordinates to Y-down pixel
-    coordinates relative to the original image (border removed).
-    """
-    px, py = p
-    # The tracer outputs Y-down SVG coordinates. We just need to remove
-    # the border offset to get into the original image's pixel space.
-    ops_px = px - BORDER_SIZE
-    ops_py = py - BORDER_SIZE
-    return ops_px / scale_x, ops_py / scale_y
-
-
-def _parse_path_coords(coords_str: str) -> List[float]:
-    """Parses coordinate strings from SVG path data."""
-    logger.debug("Entering _parse_path_coords")
-    return [
-        float(c)
-        for c in re.findall(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", coords_str)
-    ]
-
-
-def _process_moveto_command(
-    cmd: str,
-    coords: List[float],
-    current_pos: np.ndarray,
-    transform: np.ndarray,
-    scale_x: float,
-    scale_y: float,
-    height_px: int,
-) -> Tuple[Geometry, np.ndarray, np.ndarray]:
-    """Processes an SVG 'M' or 'm' command."""
-    logger.debug(f"Entering _process_moveto_command with cmd: {cmd}")
-    current_geo = Geometry()
-    point_coords = coords[0:2]
-
-    if cmd == "m":
-        current_pos += np.array(point_coords)
-    else:
-        current_pos = np.array(point_coords)
-    start_of_subpath = current_pos
-    tp = _apply_svg_transform(current_pos, transform)
-    geo_pt = _transform_point_for_geometry(
-        tuple(tp), height_px, scale_x, scale_y
-    )
-    current_geo.move_to(geo_pt[0], geo_pt[1])
-
-    # Handle implicit lineto commands that can follow a moveto
-    for i in range(2, len(coords), 2):
-        if cmd == "m":  # Implicit linetos are relative
-            current_pos += np.array(coords[i : i + 2])
-        else:  # Implicit linetos are absolute
-            current_pos = np.array(coords[i : i + 2])
-        tp = _apply_svg_transform(current_pos, transform)
-        geo_pt = _transform_point_for_geometry(
-            tuple(tp), height_px, scale_x, scale_y
-        )
-        current_geo.line_to(geo_pt[0], geo_pt[1])
-    return current_geo, current_pos, start_of_subpath
-
-
-def _process_lineto_command(
-    cmd: str,
-    coords: List[float],
-    current_pos: np.ndarray,
-    current_geo: Geometry,
-    transform: np.ndarray,
-    scale_x: float,
-    scale_y: float,
-    height_px: int,
-) -> np.ndarray:
-    """Processes SVG 'L', 'l', 'H', 'h', 'V', 'v' commands."""
-    logger.debug(f"Entering _process_lineto_command with cmd: {cmd}")
-    if cmd == "L":
-        current_pos = np.array(coords[0:2])
-    elif cmd == "l":
-        current_pos += np.array(coords[0:2])
-    elif cmd == "H":
-        current_pos[0] = coords[0]
-    elif cmd == "h":
-        current_pos[0] += coords[0]
-    elif cmd == "V":
-        current_pos[1] = coords[0]
-    elif cmd == "v":
-        current_pos[1] += coords[0]
-
-    tp = _apply_svg_transform(current_pos, transform)
-    geo_pt = _transform_point_for_geometry(
-        tuple(tp), height_px, scale_x, scale_y
-    )
-    current_geo.line_to(geo_pt[0], geo_pt[1])
-    return current_pos
-
-
-def _process_curveto_command(
-    cmd: str,
-    coords: List[float],
-    current_pos: np.ndarray,
-    current_geo: Geometry,
-    transform: np.ndarray,
-    scale_x: float,
-    scale_y: float,
-    height_px: int,
-) -> np.ndarray:
-    """Processes SVG 'C' or 'c' commands."""
-    logger.debug(f"Entering _process_curveto_command with cmd: {cmd}")
-    if cmd == "C":
-        c1, c2, end = (
-            np.array(coords[0:2]),
-            np.array(coords[2:4]),
-            np.array(coords[4:6]),
-        )
-    else:  # cmd == "c"
-        c1 = current_pos + np.array(coords[0:2])
-        c2 = current_pos + np.array(coords[2:4])
-        end = current_pos + np.array(coords[4:6])
-
-    for p in _flatten_bezier(current_pos, c1, c2, end):
-        tp = _apply_svg_transform(p, transform)
-        geo_pt = _transform_point_for_geometry(
-            tuple(tp), height_px, scale_x, scale_y
-        )
-        current_geo.line_to(geo_pt[0], geo_pt[1])
-    return end
-
-
-def _process_closepath_command(
-    current_geo: Geometry,
-    current_pos: np.ndarray,
-    start_of_subpath: np.ndarray,
-) -> np.ndarray:
-    """Processes an SVG 'Z' or 'z' command."""
-    logger.debug("Entering _process_closepath_command")
-    current_geo.close_path()
-    return start_of_subpath
-
-
-def _parse_svg_path_tokens(path_data: str):
-    """Parses SVG path data into command and coordinate tokens."""
-    logger.debug("Entering _parse_svg_path_tokens")
-    return re.findall(r"([MmLlHhVvCcZz])([^MmLlHhVvCcZz]*)", path_data)
-
-
-def _svg_path_data_to_geometries(
-    path_data: str,
-    transform: np.ndarray,
-    scale_x: float,
-    scale_y: float,
-    height_px: int,
-) -> List[Geometry]:
-    """
-    Parses an SVG path 'd' attribute and converts it into Geometry objects.
-    Each subpath (starting with 'M' or 'm') becomes a new Geometry object.
-    """
-    logger.debug("Entering _svg_path_data_to_geometries")
-    geometries = []
-    current_geo = None
-    current_pos = np.array([0.0, 0.0])
-    start_of_subpath = np.array([0.0, 0.0])
-
-    tokens = _parse_svg_path_tokens(path_data)
-
-    for cmd, coords_str in tokens:
-        coords = _parse_path_coords(coords_str)
-
-        if cmd.lower() == "m":
-            current_geo, current_pos, start_of_subpath = (
-                _process_moveto_command(
-                    cmd,
-                    coords,
-                    current_pos,
-                    transform,
-                    scale_x,
-                    scale_y,
-                    height_px,
-                )
-            )
-            geometries.append(current_geo)
-        elif current_geo is None:
-            continue
-        elif cmd.lower() in ["l", "h", "v"]:
-            current_pos = _process_lineto_command(
-                cmd,
-                coords,
-                current_pos,
-                current_geo,
-                transform,
-                scale_x,
-                scale_y,
-                height_px,
-            )
-        elif cmd.lower() == "c":
-            current_pos = _process_curveto_command(
-                cmd,
-                coords,
-                current_pos,
-                current_geo,
-                transform,
-                scale_x,
-                scale_y,
-                height_px,
-            )
-        elif cmd.lower() == "z":
-            current_pos = _process_closepath_command(
-                current_geo, current_pos, start_of_subpath
-            )
-
-    return [g for g in geometries if not g.is_empty()]
-
-
-def _traverse_svg_node(
-    node: ET.Element,
-    parent_transform: np.ndarray,
-    all_geometries: List[Geometry],
-    scale_x: float,
-    scale_y: float,
-    height_px: int,
-):
-    """Recursively traverses SVG nodes to extract path data."""
-    logger.debug(f"Entering _traverse_svg_node for node: {node.tag}")
-    local_transform = _parse_svg_transform(node.get("transform", ""))
-    transform = parent_transform @ local_transform
-    if node.tag.endswith("path"):
-        path_data = node.get("d")
-        if path_data:
-            geos = _svg_path_data_to_geometries(
-                path_data, transform, scale_x, scale_y, height_px
-            )
-            all_geometries.extend(geos)
-    for child in node:
-        _traverse_svg_node(
-            child, transform, all_geometries, scale_x, scale_y, height_px
-        )
-
-
-def _svg_string_to_geometries(
-    svg_str: str,
-    scale_x: float,
-    scale_y: float,
-    height_px: int,
-) -> List[Geometry]:
-    """
-    Parses an SVG string from vtracer and converts all path elements into
-    a list of Geometry objects.
-    """
-    logger.debug("Entering _svg_string_to_geometries")
-    all_geometries = []
-    try:
-        root = ET.fromstring(svg_str)
-    except ET.ParseError:
-        logger.error("Failed to parse SVG string from vtracer.")
-        return []
-
-    _traverse_svg_node(
-        root, np.identity(3), all_geometries, scale_x, scale_y, height_px
-    )
-    return all_geometries
 
 
 def _fallback_to_enclosing_hull(
@@ -638,20 +322,6 @@ def _extract_svg_from_raw_output(raw_output: str) -> str:
         raise
 
 
-def _count_svg_subpaths(svg_str: str) -> int:
-    """Counts the total number of sub-paths in an SVG string."""
-    logger.debug("Entering _count_svg_subpaths")
-    root = ET.fromstring(svg_str)
-    ns = {"svg": "http://www.w3.org/2000/svg"}
-    paths = root.findall(".//svg:path", ns)
-    total_sub_paths = 0
-    for path in paths:
-        path_data = path.get("d", "")
-        count = path_data.count("m") + path_data.count("M")
-        total_sub_paths += max(1, count)
-    return total_sub_paths
-
-
 def _fallback_to_hulls_from_image(
     cleaned_boolean_image: np.ndarray,
     surface_height: int,
@@ -740,37 +410,26 @@ def _get_geometries_from_image(
             processing_surface_height,
         )
 
-    try:
-        total_sub_paths = _count_svg_subpaths(svg_str)
-        if total_sub_paths == 0:
-            logger.warning(
-                "vtracer produced 0 sub-paths, falling back to hulls."
-            )
-            return _fallback_to_hulls_from_image(
-                image_to_trace,
-                processing_surface_height,
-            )
-        if total_sub_paths >= MAX_VECTORS_LIMIT:
-            logger.warning(
-                f"vtracer produced {total_sub_paths} sub-paths, "
-                f"exceeding limit of {MAX_VECTORS_LIMIT}. "
-                "Falling back to convex hulls."
-            )
-            return _fallback_to_hulls_from_image(
-                image_to_trace,
-                processing_surface_height,
-            )
-        return _svg_string_to_geometries(
-            svg_str, 1.0, 1.0, processing_surface_height
+    geometries = svg_string_to_geometries(svg_str, 1.0, 1.0)
+    if not geometries:
+        logger.warning(
+            "vtracer produced 0 geometries, falling back to hulls."
         )
-    except ET.ParseError:
-        logger.error("Failed to parse SVG from vtracer, falling back.")
-        return _fallback_to_enclosing_hull(
+        return _fallback_to_hulls_from_image(
             image_to_trace,
-            1.0,  # scale_x = 1 (pixel units)
-            1.0,  # scale_y = 1 (pixel units)
             processing_surface_height,
         )
+    if len(geometries) >= MAX_VECTORS_LIMIT:
+        logger.warning(
+            f"vtracer produced {len(geometries)} geometries, "
+            f"exceeding limit of {MAX_VECTORS_LIMIT}. "
+            "Falling back to convex hulls."
+        )
+        return _fallback_to_hulls_from_image(
+            image_to_trace,
+            processing_surface_height,
+        )
+    return geometries
 
 
 def _apply_upscaling(
@@ -819,23 +478,17 @@ def _get_geometries_from_color(
         logger.error(f"vtracer color failed: {e}")
         return []
 
-    try:
-        total_sub_paths = _count_svg_subpaths(svg_str)
-        if total_sub_paths == 0:
-            logger.warning("vtracer color produced 0 sub-paths.")
-            return []
-        if total_sub_paths >= MAX_VECTORS_LIMIT:
-            logger.warning(
-                f"vtracer color produced {total_sub_paths} sub-paths, "
-                f"exceeding limit of {MAX_VECTORS_LIMIT}."
-            )
-            return []
-        return _svg_string_to_geometries(
-            svg_str, 1.0, 1.0, processing_surface_height
-        )
-    except ET.ParseError:
-        logger.error("Failed to parse SVG from vtracer color.")
+    geometries = svg_string_to_geometries(svg_str, 1.0, 1.0)
+    if not geometries:
+        logger.warning("vtracer color produced 0 geometries.")
         return []
+    if len(geometries) >= MAX_VECTORS_LIMIT:
+        logger.warning(
+            f"vtracer color produced {len(geometries)} geometries, "
+            f"exceeding limit of {MAX_VECTORS_LIMIT}."
+        )
+        return []
+    return geometries
 
 
 def trace_color_image(
