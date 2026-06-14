@@ -21,6 +21,8 @@ from .dxf.importer import DxfImporter
 from .dxf.renderer import DXF_RENDERER
 from .jpg.importer import JpgImporter
 from .jpg.renderer import JPG_RENDERER
+from .lightburn.importer import LightBurnImporter
+from .lightburn.renderer import LIGHTBURN_RENDERER
 from .material_test_grid_renderer import MaterialTestRenderer
 from .ops_renderer import OPS_RENDERER
 from .pdf.importer import PdfImporter
@@ -225,6 +227,7 @@ def import_file(
 _RENDERERS = [
     BMP_RENDERER,
     DXF_RENDERER,
+    LIGHTBURN_RENDERER,
     PROCEDURAL_RENDERER,
     JPG_RENDERER,
     MaterialTestRenderer(),
@@ -248,6 +251,7 @@ __all__ = [
     "BmpImporter",
     "DxfImporter",
     "JpgImporter",
+    "LightBurnImporter",
     "PdfImporter",
     "PngImporter",
     "RuidaImporter",

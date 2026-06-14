@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightBurnProject AppVersion="0.9.24" FormatVersion="1" MaterialHeight="0" MirrorX="False" MirrorY="False">
+    <Thumbnail Source="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"/>
+    <VariableText>
+        <Start Value="0"/>
+        <End Value="999"/>
+        <Current Value="0"/>
+        <Increment Value="1"/>
+        <AutoAdvance Value="0"/>
+    </VariableText>
+    <UIPrefs>
+        <Optimize_ByLayer Value="0"/>
+        <Optimize_ByGroup Value="-1"/>
+        <Optimize_ByPriority Value="1"/>
+        <Optimize_WhichDirection Value="0"/>
+        <Optimize_InnerToOuter Value="1"/>
+        <Optimize_ByDirection Value="0"/>
+        <Optimize_ReduceTravel Value="1"/>
+        <Optimize_HideBacklash Value="0"/>
+        <Optimize_ReduceDirChanges Value="0"/>
+        <Optimize_ChooseCorners Value="0"/>
+        <Optimize_AllowReverse Value="1"/>
+        <Optimize_RemoveOverlaps Value="0"/>
+        <Optimize_OptimalEntryPoint Value="1"/>
+    </UIPrefs>
+    <CutSetting_Img type="Image">
+        <index Value="0"/>
+        <name Value="C00"/>
+        <minPower Value="0"/>
+        <maxPower Value="5"/>
+        <minPower2 Value="20"/>
+        <maxPower2 Value="20"/>
+        <speed Value="1.66667"/>
+        <kerf Value="0"/>
+        <zOffset Value="0"/>
+        <enableLaser1 Value="1"/>
+        <enableLaser2 Value="0"/>
+        <startDelay Value="0"/>
+        <endDelay Value="0"/>
+        <throughPower Value="0"/>
+        <throughPower2 Value="0"/>
+        <enableCutThroughStart Value="0"/>
+        <enableCutThroughEnd Value="0"/>
+        <priority Value="0"/>
+        <frequency Value="20000"/>
+        <overrideFrequency Value="0"/>
+        <PPI Value="200"/>
+        <enablePPI Value="0"/>
+        <doOutput Value="1"/>
+        <hide Value="0"/>
+        <runBlower Value="1"/>
+        <autoBlower Value="0"/>
+        <blowerSpeedOverride Value="0"/>
+        <blowerSpeedPercent Value="100"/>
+        <overcut Value="0"/>
+        <rampLength Value="0"/>
+        <rampOuter Value="0"/>
+        <forceConstantPower Value="0"/>
+        <numPasses Value="1"/>
+        <zPerPass Value="0"/>
+        <perforate Value="0"/>
+        <perfLen Value="0.1"/>
+        <perfSkip Value="0.1"/>
+        <dotMode Value="0"/>
+        <dotTime Value="0"/>
+        <dotSpacing Value="0"/>
+        <tabsEnabled Value="0"/>
+        <manualTabs Value="1"/>
+        <tabSize Value="0.5"/>
+        <tabCount Value="1"/>
+        <tabSpacing Value="50"/>
+        <skipInnerTabs Value="0"/>
+        <tabsUseSpacing Value="1"/>
+        <tabCutPower Value="0"/>
+        <scanOpt Value="individual"/>
+        <bidir Value="1"/>
+        <crossHatch Value="0"/>
+        <overscan Value="1"/>
+        <overscanPercent Value="2.5"/>
+        <floodFill Value="0"/>
+        <interval Value="0.1"/>
+        <angle Value="0"/>
+        <cellsPerInch Value="50"/>
+        <halftoneAngle Value="22.5"/>
+        <ditherMode Value="dithered"/>
+        <dpi Value="254"/>
+        <linkDPItoInterval Value="1"/>
+    </CutSetting_Img>
+    <CutSetting_Img type="Image">
+        <index Value="1"/>
+        <name Value="C01"/>
+        <minPower Value="0"/>
+        <maxPower Value="5"/>
+        <minPower2 Value="20"/>
+        <maxPower2 Value="20"/>
+        <speed Value="1.66667"/>
+        <kerf Value="0"/>
+        <zOffset Value="0"/>
+        <enableLaser1 Value="1"/>
+        <enableLaser2 Value="0"/>
+        <startDelay Value="0"/>
+        <endDelay Value="0"/>
+        <throughPower Value="0"/>
+        <throughPower2 Value="0"/>
+        <enableCutThroughStart Value="0"/>
+        <enableCutThroughEnd Value="0"/>
+        <priority Value="1"/>
+        <frequency Value="20000"/>
+        <overrideFrequency Value="0"/>
+        <PPI Value="200"/>
+        <enablePPI Value="0"/>
+        <doOutput Value="1"/>
+        <hide Value="0"/>
+        <runBlower Value="0"/>
+        <autoBlower Value="0"/>
+        <blowerSpeedOverride Value="0"/>
+        <blowerSpeedPercent Value="100"/>
+        <overcut Value="0"/>
+        <rampLength Value="0"/>
+        <rampOuter Value="0"/>
+        <forceConstantPower Value="0"/>
+        <numPasses Value="1"/>
+        <zPerPass Value="0"/>
+        <perforate Value="0"/>
+        <perfLen Value="0.1"/>
+        <perfSkip Value="0.1"/>
+        <dotMode Value="0"/>
+        <dotTime Value="0"/>
+        <dotSpacing Value="0"/>
+        <tabsEnabled Value="0"/>
+        <manualTabs Value="1"/>
+        <tabSize Value="0.5"/>
+        <tabCount Value="1"/>
+        <tabSpacing Value="50"/>
+        <skipInnerTabs Value="0"/>
+        <tabsUseSpacing Value="1"/>
+        <tabCutPower Value="0"/>
+        <scanOpt Value="individual"/>
+        <bidir Value="1"/>
+        <crossHatch Value="0"/>
+        <overscan Value="1"/>
+        <overscanPercent Value="2.5"/>
+        <floodFill Value="0"/>
+        <interval Value="0.1"/>
+        <angle Value="0"/>
+        <cellsPerInch Value="50"/>
+        <halftoneAngle Value="22.5"/>
+        <ditherMode Value="dithered"/>
+        <dpi Value="254"/>
+        <linkDPItoInterval Value="1"/>
+    </CutSetting_Img>
+    <Shape Type="Bitmap" CutIndex="0" W="33.862434" H="33.862434" Gamma="1" Contrast="0" Brightness="0" EnhanceAmount="0" EnhanceRadius="0" EnhanceDenoise="0" File="/Users/quba/Downloads/black-48dp(1)/2x/baseline_android_black_48dp.png" SourceHash="0" Data="iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAACXBIWXMAAAsTAAALEwEAmpwYAAAD1UlEQVR4nO3bzUtUURzG8a9iQZBJSbUIe6NICNpERZKgC3f1F7QRQmrjrjfctSuEVkEbaRdBuzJwERq5lF6gXFhGZAQRWVkhSYG2OCfQmTPTnft2zsx9PvADud655zm/64x37pwBERERERERERERERERERERERFpNE2ObV+ALXkHKYivQPvqDc2Ond7kk6WQynqrE5AvnQDPdAI8i3QCXuYQpKjKeuu6CmoCPgFbM49TLJ+B7cDK6o2uZ8AKMJFHooKZoKT54D4BAA+zzVJIzp66XoIAdgHvMotSTLuBudKNlZ4Bc8CLLNMUzAsczYfKJwBgJMUAD4BeoNVWr90WiqzzxeplG7CI+ceRpIaqjDGUwvFDz7doexnLrYSD348wxv0UJhlyvlsRxqjoWMLBeyKM0ZNwjNDzHYswRlWTCQZvjXD81oQTTFJZ55uMcPz/OgosxwxQ5BOwbHtXVbWroH+mgLsR9nM5nNI+Wcky311M71KxB1ii9r+Cov4TXrI9S9VwjCArFPMydLjKMWPbAEzHDDSKuZrYaKvHbvPd/CzyTdteZeIQ8CvFiTda/bI9ytRgABMNtQYT9LUmIb18hFKjiTpaozbgeQaTqNd6ToL7PXFtA2YTBm+EmrW98GI38KFKuEavD7YHXh3EfODsuxl512c79yDsA2bw35S8asbOOSibgXH8NyfrGrdzDVIL5uM3303KqkbsHIN3BljAf8PSqgU7p7qyg8Z4wzZq51K3TgPz+G9krTVvszeE2/hvaK11O5NOeHCc+B9p+qxlm72uNWE+liud3HfgCma9vO9Gv7FZvjt+N0Xl5Zt1oR/3pC+s2qcLuIn5cmBeTf9ix+xaleNChX37U+iDF63AR8on9BpY79i/GbOK4CIwBvx0PDZu/bTHvGjHcC1GWG+zlT72I9FWT8SS5dPrKnDJsf0U0dZdrgMOAPttHQD2Yr5CuwnTxJ123/eY1+wfmK+CvgVeYe5Uztqf/0QY8yTu+/rXgMsRHh+MfbhXUYz5DBXRGOW5lwjw3k819yifxG+g02eoiDoxWUvz3/MZqhZ9uF+Hr/sMVaPruOfQ5zNUFC24l658wsNHdgm0YTKXzmOawG/GVVoxMeAzVEwDuOeS28qHWrXjvpZ/RrQ1qKFpxmR3vYdor/I4b25QHnYZ6PYZKqFu3LdRbvgM5dKM+638HZ+hUnKH8nktEOCzuvQELAIdXhOlo4Py78p985qogsusDXnWb5xUnWPt3M6ndeC0b0X0AEeAR8CTlI/t21HgBPAUeOw5i4iIiIiIiIiIiIiIiIiIiPzPX6mEfJBhGPorAAAAAElFTkSuQmCC">
+        <XForm>-0.265781 0 0 0.265781 192.688 215</XForm>
+    </Shape>
+    <Shape Type="Bitmap" CutIndex="1" W="33.862434" H="33.862434" Gamma="1" Contrast="0" Brightness="0" EnhanceAmount="0" EnhanceRadius="0" EnhanceDenoise="0" File="/Users/quba/Repo/Etcher/keycaps/icons/accessibility_new.png" SourceHash="1" Data="iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAACXBIWXMAAAsTAAALEwEAmpwYAAAC7klEQVR4nO3dPWtTUQDG8b+SQbBDhQ4dCgoGzFCwgmA3M7g76ubgR/BjODh0cBCnjn4FwSsIIigWLFhBMGKhGTo4BFRa0OGckL5h7j03uU9u7vODy01fDj3mn6bnXFMFMzMzMzNrmnPqCZzh75iPj5tz2fGVOq+eQNM5gJgDiDmAmAOIOYCYA4g5gJgDiDmAmAOIOYCYA4g5gJgDiDmAmAOIOYCYA4g5gJgDiDmAmAOItdQTSDDudT+14u8AMQcQcwAxBxBzADEHEHMAMQcQcwAxBxBzADEHEHMAMQcQcwAxBxBzADEHEHMAMQcQcwAxBxBzADEHEHMAMQcQcwCxqv/9tBWgDVyNt6/E8wqwFI8q9IF9YPfI8RX4Hs/9iuYxlQAtoANcA24S7vBOPF+YwtebhgEhxE48toAv8fZETSLAKnALWAPW49t1uaOLGhBivI/HO0KoZCkB1oHbQDfeXiwzgTmwD7wBMuA1IdBU7RFeo+/j9PGx6J2ZsgrKEsY0RVZ0gANMVlZ0QMrPgA7wOWFcE1wCfhYZkLoK2gOWE8cO9Qnr7+GavBfPg/i+P/F9Qz3yaxH2FkdvXyTsMxbjeYXwZ1hmtA8pYwu4UXRQ6i/pZcD9HJ/XJ0xsh7BcG252esDvxK+dxyHHg+VZKi4QNoaXCXuWNmFJvUq+OFmRCQ5NMsA2ozXyh/h2oW9HsQFhzttnfGwJuM5or7NGCHRUNs3JndQhLLmeAHdp5l5gGbgHPAU+0aD7oAtscnw/8g14Rnhk2pQsAC8YvxnaoJ6/gD7TFghL37w70lc4wkTleeSfPB5LZjqHuqRdlzng9Epl5tThb8QeJo5rAQ8mOZGmKnP19a1gvnOnzOXhH4L5FlKHp6AyDtUTGKcOAXqisZWoQ4CXorEWrZH2/P+L8pfMLdqgeIBHkpnOqRbh8kLeO39TM8351iJcXjjg/087tXrkz9R/7ZpTm7DDvcPoOb5H+IH7nApfVmhmZmZmZpbiH3htIIn+Jiy9AAAAAElFTkSuQmCC">
+        <XForm>0.265781 0 0 0.265781 227.312 215</XForm>
+    </Shape>
+    <Notes ShowOnLoad="0" Notes=""/>
+</LightBurnProject>
