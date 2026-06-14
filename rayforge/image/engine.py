@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from raygeo.geo.types import Rect
 
@@ -70,6 +70,7 @@ class NormalizationEngine:
         parse_result: ParsingResult,
         layer_id: Optional[str] = None,
         layer_name: Optional[str] = None,
+        settings: Optional[Dict[str, Any]] = None,
     ) -> LayoutItem:
         """
         Generates the transformation matrices for a specific bounding box.
@@ -164,6 +165,7 @@ class NormalizationEngine:
             world_matrix=world_matrix,
             normalization_matrix=norm_matrix,
             crop_window=bounds,
+            settings=settings,
         )
 
     def calculate_layout(
@@ -276,14 +278,14 @@ class NormalizationEngine:
             # content and positioned correctly in the world.
             plan = []
             for layer in target_layers:
-                # Create the item based on its individual bounds to get the
-                # correct world_matrix and normalization_matrix.
+                settings = vec_result.layer_settings.get(layer.layer_id)
                 plan.append(
                     self.calculate_layout_item(
                         layer.content_bounds,
                         result,
                         layer_id=layer.layer_id,
                         layer_name=layer.name,
+                        settings=settings,
                     )
                 )
             return plan

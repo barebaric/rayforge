@@ -1,7 +1,16 @@
 import logging
 from abc import ABC
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    cast,
+)
 
 from blinker import Signal
 
@@ -35,6 +44,7 @@ class Step(DocItem, ABC):
     HIDDEN: bool = False
     ICON: str = ""
     CAPABILITIES: Tuple[Capability, ...] = ()
+    PRODUCER_CLASS: ClassVar[Any] = None
 
     def __init__(
         self,

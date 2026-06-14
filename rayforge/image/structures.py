@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
@@ -219,9 +219,13 @@ class VectorizationResult:
         geometries_by_layer: Final vector geometry for each layer. Keys are
                              layer IDs (None for single-layer content).
         source_parse_result: Reference to original ParsingResult for context
-                            (e.g., page bounds, coordinate system info).
+                             (e.g., page bounds, coordinate system info).
         fills_by_layer: Optional fill geometry per layer, primarily used by
                         the Sketch importer.
+        layer_settings: Per-layer settings (e.g. power, speed) produced by
+                        the importer during vectorization. Layer IDs match
+                        keys in geometries_by_layer. The assembler applies
+                        these when creating Layer objects.
 
     Error Handling:
     ---------------
@@ -232,6 +236,9 @@ class VectorizationResult:
     geometries_by_layer: Dict[Optional[str], Geometry]
     source_parse_result: ParsingResult
     fills_by_layer: Dict[Optional[str], List[FillRenderData]] = field(
+        default_factory=dict
+    )
+    layer_settings: Dict[Optional[str], Dict[str, Any]] = field(
         default_factory=dict
     )
 
@@ -282,6 +289,7 @@ class LayoutItem:
     world_matrix: Matrix
     normalization_matrix: Matrix
     crop_window: Rect
+    settings: Optional[Dict[str, Any]] = None
 
 
 @dataclass

@@ -11,6 +11,7 @@ from rayforge.image.structures import (
 )
 from rayforge.image.lightburn.importer import (
     LightBurnImporter,
+    _build_step_config,
     _parse_xform,
     _parse_verts,
     _parse_prims,
@@ -19,6 +20,7 @@ from rayforge.image.lightburn.importer import (
     _build_path_from_verts_and_prims,
     _apply_xform_to_geo,
 )
+from rayforge.core.layer import Layer
 from rayforge.core.matrix import Matrix
 
 ASSETS = Path(__file__).parent / "assets"
@@ -168,6 +170,44 @@ class TestBuildEllipse:
     def test_zero_radius(self):
         assert _build_ellipse(0, 0).is_empty()
         assert _build_ellipse(-1, 5).is_empty()
+
+
+class TestBuildStepConfig:
+    def test_empty_cs_returns_none(self):
+        assert _build_step_config({}) is None
+
+    def test_power_mapping(self):
+        cs = {"maxPower": 80}
+        config = _build_step_config(cs)
+        assert config is not None
+        assert config == {"power": 0.8}
+
+    def test_speed_mapping(self):
+        cs = {"speed": 100}
+        config = _build_step_config(cs)
+        assert config is not None
+        assert config == {"cut_speed": 6000}
+
+    def test_kerf_mapping(self):
+        cs = {"kerf": 0.06}
+        config = _build_step_config(cs)
+        assert config is not None
+        assert config == {"kerf_mm": 0.06}
+
+    def test_num_passes_mapping(self):
+        cs = {"numPasses": 3}
+        config = _build_step_config(cs)
+        assert config is not None
+        assert config == {"passes": 3}
+
+    def test_all_keys(self):
+        cs = {"maxPower": 70, "speed": 6.66667, "kerf": 0.06, "numPasses": 2}
+        config = _build_step_config(cs)
+        assert config is not None
+        assert config["power"] == 0.7
+        assert config["cut_speed"] == 400
+        assert config["kerf_mm"] == 0.06
+        assert config["passes"] == 2
 
 
 class TestBuildPath:
@@ -395,3 +435,101 @@ class TestLightBurnImporter:
         assert result is not None
         assert result.payload is not None
         assert len(result.payload.items) > 0
+
+    def test_source_asset_contains_lightburn_cut_settings(self):
+        importer = self._import("rect.lbrn2")
+        parse_result = importer.parse()
+        assert parse_result is not None
+        asset = importer.create_source_asset(parse_result)
+        lb_settings = asset.metadata.get("lightburn_cut_settings")
+        assert lb_settings is not None
+        assert "C02" in lb_settings
+        assert lb_settings["C02"]["maxPower"] == 20
+        assert lb_settings["C02"]["speed"] == 8.33333
+
+    def test_source_asset_settings_with_multiple_layers(self):
+        importer = self._import("multi_layer.lbrn2")
+        parse_result = importer.parse()
+        assert parse_result is not None
+        asset = importer.create_source_asset(parse_result)
+        lb_settings = asset.metadata.get("lightburn_cut_settings")
+        assert lb_settings is not None
+        assert len(lb_settings) == 2
+        assert lb_settings["C01"]["index"] == 0
+        assert lb_settings["C02"]["index"] == 1
+
+    def test_vectorization_passes_layer_settings_for_rect(self):
+        from rayforge.core.vectorization_spec import PassthroughSpec
+
+        importer = self._import("rect.lbrn2")
+        parse_result = importer.parse()
+        assert parse_result is not None
+        vec = importer.vectorize(parse_result, PassthroughSpec())
+        assert "2" in vec.layer_settings
+        s = vec.layer_settings["2"]
+        assert s["power"] == 0.2
+        assert s["cut_speed"] == 500
+
+    def test_vectorization_layer_settings_for_fence(self):
+        from rayforge.core.vectorization_spec import PassthroughSpec
+
+        importer = self._import("fence.lbrn2")
+        parse_result = importer.parse()
+        assert parse_result is not None
+        vec = importer.vectorize(parse_result, PassthroughSpec())
+        assert "1" in vec.layer_settings
+        s = vec.layer_settings["1"]
+        assert s["power"] == 0.7
+        assert s["cut_speed"] == 400
+        assert s["kerf_mm"] == 0.06
+
+    def test_assembler_creates_step_from_settings(self):
+        importer = self._import("rect.lbrn2")
+        result = importer.get_doc_items()
+        assert result is not None
+        assert result.payload is not None
+        found = False
+        for item in result.payload.items:
+            if isinstance(item, Layer):
+                wf = item.workflow
+                # If ContourStep is registered (addons loaded), the step
+                # should already exist on the workflow with the right
+                # settings.  Otherwise the assembler silently leaves the
+                # workflow empty and add_default_steps_for_layers will
+                # create a default step later.
+                if wf and wf.has_steps():
+                    step = wf.steps[0]
+                    assert abs(step.power - 0.2) < 1e-6
+                    assert step.cut_speed == 500
+                found = True
+                break
+        assert found, "No Layer found in imported items"
+
+    def test_assembler_creates_step_with_passes(self):
+        importer = self._import("fence.lbrn2")
+        result = importer.get_doc_items()
+        assert result is not None
+        assert result.payload is not None
+        found = False
+        for item in result.payload.items:
+            if isinstance(item, Layer):
+                wf = item.workflow
+                if wf and wf.has_steps():
+                    step = wf.steps[0]
+                    assert abs(step.power - 0.7) < 1e-6
+                    assert step.cut_speed == 400
+                    assert abs(step.kerf_mm - 0.06) < 1e-6
+                found = True
+                break
+        assert found, "No Layer found in imported items"
+
+    def test_assembler_omits_step_when_no_settings(self):
+        importer = self._import("multi_layer.lbrn2")
+        result = importer.get_doc_items()
+        assert result is not None
+        assert result.payload is not None
+        for item in result.payload.items:
+            if isinstance(item, Layer):
+                wf = item.workflow
+                # No settings available → no step pre-created
+                assert wf is None or not wf.has_steps()
