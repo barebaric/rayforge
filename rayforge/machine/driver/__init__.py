@@ -11,6 +11,7 @@ from .grbl import (
 )
 from .marlin import MarlinSerialDriver
 from .octoprint import OctoPrintDriver
+from .galvo import GalvoDriver
 from .ruida import RuidaDriver
 from .smoothie import SmoothieDriver
 
@@ -42,6 +43,7 @@ __all__ = [
     "DriverMaturity",
     "DRIVER_MATURITY_LABELS",
     "NoDeviceDriver",
+    "GalvoDriver",
     "GrblNetworkDriver",
     "GrblSerialDriver",
     "GrblSerialSimpleDriver",
