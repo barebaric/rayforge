@@ -90,6 +90,7 @@ class ImportSummary:
     origin: Optional[str] = None
     mirror_x: Optional[bool] = None
     mirror_y: Optional[bool] = None
+    camera_calibration: bool = False
 
     def to_lines(self) -> List[str]:
         """Return a bulleted list of human-readable summary lines."""
@@ -115,6 +116,10 @@ class ImportSummary:
             lines.append(f"\u2022 Mirror X: {self.mirror_x}")
         if self.mirror_y is not None:
             lines.append(f"\u2022 Mirror Y: {self.mirror_y}")
+        if self.camera_calibration:
+            lines.append(
+                _("\u2022 Camera calibration: matrix + distortion found")
+            )
         if not lines:
             lines.append(_("(no fields mapped)"))
         return lines
@@ -143,6 +148,10 @@ class ImportSummary:
             items.append((_("Mirror X"), str(self.mirror_x)))
         if self.mirror_y is not None:
             items.append((_("Mirror Y"), str(self.mirror_y)))
+        if self.camera_calibration:
+            items.append(
+                (_("Camera calibration"), _("matrix + distortion imported"))
+            )
         return items
 
 
@@ -172,6 +181,51 @@ def _map_origin(cut_origin: Optional[int]) -> Optional[str]:
     if cut_origin is None:
         return None
     return _CUT_ORIGIN_MAP.get(cut_origin)
+
+
+def _parse_camera_data(
+    settings: Dict[str, Any],
+) -> Optional[Dict[str, Any]]:
+    """Extract camera calibration data from LightBurn settings."""
+
+    camera_matrix_raw = settings.get("cameraMatrix")
+    distortion_raw = settings.get("distortionMatrix")
+
+    if not camera_matrix_raw and not distortion_raw:
+        return None
+
+    cam: Dict[str, Any] = {}
+
+    name = settings.get("LastCamera") or "LightBurn Camera"
+    cam["name"] = name
+    cam["device_id"] = name.lower().replace(" ", "_")
+
+    if camera_matrix_raw and len(camera_matrix_raw) == 9:
+        cam["camera_matrix_fx"] = float(camera_matrix_raw[0])
+        cam["camera_matrix_fy"] = float(camera_matrix_raw[4])
+        cam["camera_matrix_cx"] = float(camera_matrix_raw[6])
+        cam["camera_matrix_cy"] = float(camera_matrix_raw[7])
+
+    if distortion_raw and len(distortion_raw) == 5:
+        cam["distortion_k1"] = float(distortion_raw[0])
+        cam["distortion_k2"] = float(distortion_raw[1])
+        cam["distortion_p1"] = float(distortion_raw[2])
+        cam["distortion_p2"] = float(distortion_raw[3])
+        cam["distortion_k3"] = float(distortion_raw[4])
+
+    is_fisheye = settings.get("cameraIsFisheye")
+    if is_fisheye is not None:
+        cam["camera_is_fisheye"] = bool(is_fisheye)
+
+    is_head = settings.get("isHeadCamera")
+    if is_head is not None:
+        cam["is_head_camera"] = bool(is_head)
+
+    map_scale = settings.get("mapScale")
+    if map_scale is not None:
+        cam["map_scale"] = float(map_scale)
+
+    return cam
 
 
 def convert_to_profile(
@@ -256,5 +310,10 @@ def _convert(
         summary.mirror_x = bool(mirror_x)
     if mirror_y is not None:
         summary.mirror_y = bool(mirror_y)
+
+    camera_data = _parse_camera_data(settings)
+    if camera_data:
+        kwargs["cameras"] = [camera_data]
+        summary.camera_calibration = True
 
     return meta, MachineConfig(**kwargs), summary
