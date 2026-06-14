@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightBurnProject AppVersion="1.4.03" FormatVersion="1">
+    <CutSetting type="Cut">
+        <index Value="0"/>
+        <name Value="C01"/>
+    </CutSetting>
+    <Shape Type="Group" CutIndex="0">
+        <XForm>1 0 0 1 100 100</XForm>
+        <Children>
+            <Shape Type="Rect" CutIndex="0" W="10" H="10" Cr="0">
+                <XForm>1 0 0 1 0 0</XForm>
+            </Shape>
+        </Children>
+    </Shape>
+</LightBurnProject>

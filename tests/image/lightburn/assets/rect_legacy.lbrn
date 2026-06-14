@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightBurnProject AppVersion="0.9.16" FormatVersion="0">
+    <CutSetting type="Cut">
+        <index Value="0"/>
+        <name Value="C01"/>
+        <maxPower Value="80"/>
+        <speed Value="100"/>
+        <priority Value="0"/>
+    </CutSetting>
+    <Shape Type="Rect" CutIndex="0" W="100" H="50" Cr="0">
+        <XForm>1 0 0 1 200 150</XForm>
+    </Shape>
+</LightBurnProject>
