@@ -8,12 +8,13 @@ melhores resultados.
 
 ### Formatos vetoriais
 
-| Formato   | Extensão | Método de importação           | Ideal para                             |
-| --------- | -------- | ------------------------------ | -------------------------------------- |
-| **SVG**   | `.svg`   | Vetores diretos ou vetorização | Gráficos vetoriais, logos, designs     |
-| **DXF**   | `.dxf`   | Vetores diretos                | Desenhos CAD, projetos técnicos        |
-| **PDF**   | `.pdf`   | Vetores diretos ou vetorização | Documentos com conteúdo vetorial       |
-| **Ruida** | `.rd`    | Vetores diretos                | Arquivos de trabalho controlador Ruida |
+| Formato       | Extensão          | Método de importação           | Ideal para                             |
+| ------------- | ----------------- | ------------------------------ | -------------------------------------- |
+| **SVG**       | `.svg`            | Vetores diretos ou vetorização | Gráficos vetoriais, logos, designs     |
+| **DXF**       | `.dxf`            | Vetores diretos                | Desenhos CAD, projetos técnicos        |
+| **PDF**       | `.pdf`            | Vetores diretos ou vetorização | Documentos com conteúdo vetorial       |
+| **LightBurn** | `.lbrn`, `.lbrn2` | Vetores diretos                | Projetos LightBurn                     |
+| **Ruida**     | `.rd`             | Vetores diretos                | Arquivos de trabalho controlador Ruida |
 
 ### Formatos raster
 
@@ -192,27 +193,22 @@ será importado:
 **Prepare seu SVG para obter os melhores resultados:**
 
 1. **Converter texto em caminhos:**
-
    - Inkscape: `Caminho → Objeto para caminho`
    - Illustrator: `Tipo → Criar contornos`
 
 2. **Simplificar caminhos complexos:**
-
    - Inkscape: `Caminho → Simplificar` (Ctrl+L)
    - Remover nós desnecessários
 
 3. **Desagrupar grupos aninhados:**
-
    - Achatar a hierarquia quando possível
    - `Objeto → Desagrupar` (Ctrl+Shift+G)
 
 4. **Remover elementos ocultos:**
-
    - Excluir guias, grades, linhas de construção
    - Remover objetos invisíveis/transparentes
 
 5. **Salvar como SVG simples:**
-
    - Inkscape: "SVG simples" ou "SVG otimizado"
    - Não "SVG do Inkscape" (contém metadados extras)
 
@@ -341,6 +337,32 @@ camadas (cores).
 - **Formato binário** - Edição direta dos arquivos .rd originais não é suportada
 - **Recursos proprietários** - Alguns recursos avançados do Ruida podem não ser
   totalmente suportados
+
+---
+
+## Importação LightBurn
+
+Arquivos LightBurn (.lbrn / .lbrn2) são arquivos de projeto proprietários
+usados pelo software de corte a laser LightBurn. Eles armazenam geometria
+vetorial organizada em camadas coloridas com configurações de laser ajustáveis.
+
+**Após a importação:**
+
+- **Revisar camadas** — As camadas do LightBurn são mapeadas para as camadas
+  do documento com nomes correspondentes
+- **Verificar configurações do laser** — As configurações de potência,
+  velocidade e passes das camadas do LightBurn são preservadas
+- **Validar caminhos** — Confirmar se todos os caminhos de corte estão
+  presentes e corretamente posicionados
+
+### Limitações
+
+- **Importação somente leitura** — arquivos LightBurn só podem ser importados,
+  não exportados
+- **Formato binário** — Edição direta dos arquivos .lbrn originais não é
+  suportada
+- **Recursos proprietários** — Alguns recursos avançados do LightBurn podem
+  não ser totalmente suportados
 
 ---
 

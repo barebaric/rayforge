@@ -8,17 +8,19 @@ recomendaciones.
 
 ### Referencia rápida
 
-| Formato              | Tipo     | Importar           | Exportar        | Uso recomendado                |
-| -------------------- | -------- | ------------------ | --------------- | ------------------------------ |
-| **SVG**              | Vector   | ✓ Directo / Traza  | ✓ Exportar obj. | Formato de diseño principal    |
-| **DXF**              | Vector   | ✓ Directo          | ✓ Exportar obj. | Intercambio CAD                |
-| **PDF**              | Mixto    | ✓ Directo / Traza  | –               | Documentos con contenido vec.  |
-| **PNG**              | Raster   | ✓ Traza            | –               | Fotos, imágenes                |
-| **JPEG**             | Raster   | ✓ Traza            | –               | Fotos                          |
-| **BMP**              | Raster   | ✓ Traza            | –               | Gráficos simples               |
-| **RFS**              | Bosquejo | ✓ Directo          | ✓ Exportar obj. | Bosquejos paramétricos         |
-| **G-code**           | Control  | –                  | ✓ Principal     | Salida de máquina              |
-| **Proyecto Rayforge**| Proyecto | ✓                  | ✓               | Guardar/cargar proyectos       |
+| Formato               | Tipo     | Importar          | Exportar        | Uso recomendado               |
+| --------------------- | -------- | ----------------- | --------------- | ----------------------------- |
+| **SVG**               | Vector   | ✓ Directo / Traza | ✓ Exportar obj. | Formato de diseño principal   |
+| **DXF**               | Vector   | ✓ Directo         | ✓ Exportar obj. | Intercambio CAD               |
+| **PDF**               | Mixto    | ✓ Directo / Traza | –               | Documentos con contenido vec. |
+| **LightBurn**         | Vector   | ✓ Directo         | –               | Proyectos LightBurn           |
+| **Ruida**             | Vector   | ✓ Directo         | –               | Archivos de trabajo Ruida     |
+| **PNG**               | Raster   | ✓ Traza           | –               | Fotos, imágenes               |
+| **JPEG**              | Raster   | ✓ Traza           | –               | Fotos                         |
+| **BMP**               | Raster   | ✓ Traza           | –               | Gráficos simples              |
+| **RFS**               | Bosquejo | ✓ Directo         | ✓ Exportar obj. | Bosquejos paramétricos        |
+| **G-code**            | Control  | –                 | ✓ Principal     | Salida de máquina             |
+| **Proyecto Rayforge** | Proyecto | ✓                 | ✓               | Guardar/cargar proyectos      |
 
 ---
 
@@ -154,6 +156,46 @@ compartir bosquejos completamente editables.
 - Guardar diseños paramétricos reutilizables
 - Compartir bosquejos editables con otros usuarios de Rayforge
 - Archivar trabajos en progreso
+
+---
+
+### LightBurn (.lbrn / .lbrn2)
+
+**Extensión:** `.lbrn`, `.lbrn2`
+**Tipo MIME:** `application/x-lightburn`
+**Importación:** Análisis vectorial directo
+**Exportación:** No compatible
+
+**¿Qué es LightBurn?**
+
+LightBurn es un software propietario de corte láser. Sus archivos `.lbrn` y
+`.lbrn2` contienen geometría vectorial organizada en capas de colores con
+configuraciones láser. Rayforge puede importar estos archivos directamente,
+proporcionando una ruta de migración para usuarios que cambian de LightBurn a
+Rayforge.
+
+**Características compatibles:**
+
+- ✓ Trazados vectoriales (líneas, curvas, arcos, texto convertido a trazados)
+- ✓ Múltiples capas de colores con nombres
+- ✓ Configuraciones láser de capas (potencia, velocidad, pasadas, orden de
+  corte)
+- ✓ Visibilidad de capas y estado bloqueado
+- ✓ Colores de línea de capas mapeados a capas del documento
+- ✓ Imágenes ráster incrustadas (trazadas al importar)
+
+**Limitaciones:**
+
+- ✗ **Importación solo lectura** — los archivos LightBurn solo se pueden
+  importar, no exportar
+- ✗ Las imágenes ráster de profundidad de bits variable pueden simplificarse
+- ✗ Algunas funciones avanzadas específicas de LightBurn pueden no traducirse
+
+**Cuándo usar:**
+
+- Migrar proyectos existentes de LightBurn a Rayforge
+- Abrir archivos LightBurn compartidos por otros usuarios
+- Reutilizar diseños existentes de LightBurn
 
 ---
 

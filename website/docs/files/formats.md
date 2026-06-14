@@ -1,5 +1,5 @@
 ---
-description: "Supported file formats in Rayforge — SVG, DXF, PDF, PNG, JPG, BMP and more. Import vector and raster designs for laser cutting and engraving."
+description: "Supported file formats in Rayforge — SVG, DXF, PDF, LightBurn, Ruida, PNG, JPG, BMP and more. Import vector and raster designs for laser cutting and engraving."
 ---
 
 # Supported File Formats
@@ -16,6 +16,8 @@ Rayforge, including capabilities, limitations, and recommendations.
 | **SVG**              | Vector  | ✓ Direct / Trace | ✓ Object export | Primary design format         |
 | **DXF**              | Vector  | ✓ Direct         | ✓ Object export | CAD interchange               |
 | **PDF**              | Mixed   | ✓ Direct / Trace | –               | Documents with vector content |
+| **LightBurn**        | Vector  | ✓ Direct         | –               | LightBurn project files       |
+| **Ruida**            | Vector  | ✓ Direct         | –               | Ruida controller job files    |
 | **PNG**              | Raster  | ✓ Trace          | –               | Photos, images                |
 | **JPEG**             | Raster  | ✓ Trace          | –               | Photos                        |
 | **BMP**              | Raster  | ✓ Trace          | –               | Simple graphics               |
@@ -154,6 +156,43 @@ editable sketches.
 - Save reusable parametric designs
 - Share editable sketches with other Rayforge users
 - Archive work in progress
+
+---
+
+### LightBurn (.lbrn / .lbrn2)
+
+**Extension:** `.lbrn`, `.lbrn2`
+**MIME Type:** `application/x-lightburn`
+**Import:** Direct vector parsing
+**Export:** Not supported
+
+**What is LightBurn?**
+
+LightBurn is a proprietary laser cutter software. Its `.lbrn` and `.lbrn2`
+files contain vector geometry organized in color-coded layers with laser
+settings. Rayforge can import these files directly, providing a migration path
+for users switching from LightBurn to Rayforge.
+
+**Supported Features:**
+
+- ✓ Vector paths (lines, curves, arcs, text converted to paths)
+- ✓ Multiple colored layers with names
+- ✓ Layer laser settings (power, speed, passes, cut order)
+- ✓ Layer visibility and locked state
+- ✓ Layer line colors mapped to document layers
+- ✓ Embedded raster images (traced on import)
+
+**Limitations:**
+
+- ✗ **Read-only import** — LightBurn files can only be imported, not exported
+- ✗ Variable bit-depth raster images may be simplified
+- ✗ Some advanced LightBurn-specific features may not translate
+
+**When to Use:**
+
+- Migrating existing LightBurn projects to Rayforge
+- Opening LightBurn files shared by other users
+- Reusing existing LightBurn designs
 
 ---
 
