@@ -359,6 +359,26 @@ def _shape_to_geometry(
     return (cut_index, geo)
 
 
+def _build_step_config(
+    cs: Dict[str, Any],
+) -> Optional[Dict[str, Any]]:
+    """Translate LightBurn cut settings to generic step configuration."""
+    config: Dict[str, Any] = {}
+    max_power = cs.get("maxPower")
+    if max_power is not None:
+        config["power"] = float(max_power) / 100.0
+    speed = cs.get("speed")
+    if speed is not None:
+        config["cut_speed"] = round(float(speed) * 60.0)
+    kerf = cs.get("kerf")
+    if kerf is not None:
+        config["kerf_mm"] = float(kerf)
+    num_passes = cs.get("numPasses")
+    if num_passes is not None:
+        config["passes"] = int(num_passes)
+    return config or None
+
+
 class LightBurnImporter(Importer):
     label = "LightBurn project files"
     mime_types = ("application/x-lightburn",)
@@ -514,6 +534,13 @@ class LightBurnImporter(Importer):
             else None
         )
 
+        # Store LightBurn cut settings in source asset metadata so they
+        # survive project save/load and can be re-applied on re-import.
+        cut_settings_by_name: Dict[str, Dict[str, Any]] = {}
+        for idx, cs in self._cut_settings.items():
+            name = cs.get("name", str(idx))
+            cut_settings_by_name[name] = dict(cs)
+
         source = SourceAsset(
             source_file=self.source_file,
             original_data=self.raw_data,
@@ -522,6 +549,7 @@ class LightBurnImporter(Importer):
             width_mm=w,
             height_mm=h,
         )
+        source.metadata["lightburn_cut_settings"] = cut_settings_by_name
 
         if self._bitmaps:
             svg_data = self._render_bitmaps_to_svg()
@@ -618,9 +646,25 @@ class LightBurnImporter(Importer):
         else:
             final_geometries = {None: merged_geo}
 
+        # Build per-layer settings from cut settings for the assembler.
+        layer_settings: Dict[Optional[str], Dict[str, Any]] = {}
+        for layer_id in final_geometries:
+            if layer_id is None:
+                continue
+            try:
+                cs = self._cut_settings.get(int(layer_id))
+            except (ValueError, TypeError):
+                cs = None
+            if cs is None:
+                continue
+            config = _build_step_config(cs)
+            if config:
+                layer_settings[layer_id] = config
+
         return VectorizationResult(
             geometries_by_layer=final_geometries,
             source_parse_result=parse_result,
+            layer_settings=layer_settings,
         )
 
     def parse(self) -> Optional[ParsingResult]:

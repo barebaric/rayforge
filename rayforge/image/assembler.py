@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
@@ -8,6 +8,7 @@ from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.source_asset import SourceAsset
 from ..core.source_asset_segment import SourceAssetSegment
+from ..core.step_registry import step_registry
 from ..core.vectorization_spec import (
     LayerImportMode,
     PassthroughSpec,
@@ -185,8 +186,63 @@ class ItemAssembler:
             ):
                 layer = Layer(name=name)
                 layer.add_child(wp)
+                # If the importer provided settings, pre-populate a step
+                # on the layer's workflow so that add_default_steps_for_layers
+                # will skip it (workflow.has_steps() -> True).
+                if item.settings:
+                    self._apply_settings(layer, item.settings)
                 items.append(layer)
             else:
                 items.append(wp)
 
         return items
+
+    @staticmethod
+    def _apply_settings(layer: Layer, settings: Dict[str, Any]) -> None:
+        """Create a configured step on the layer from importer settings."""
+        cls = step_registry.get("ContourStep")
+        if cls is None:
+            return
+
+        try:
+            step = cls(typelabel="Contour", name=layer.name)
+            if cls.PRODUCER_CLASS is not None:
+                step.opsproducer_dict = cls.PRODUCER_CLASS().to_dict()
+            per_wp, per_step = cls.get_default_transformers_dicts()
+            step.per_workpiece_transformers_dicts = per_wp
+            step.per_step_transformers_dicts = per_step
+        except Exception:
+            logger.exception("Failed to set up step from settings")
+            return
+
+        power = settings.get("power")
+        if power is not None:
+            try:
+                step.set_power(power)
+            except Exception:
+                step.power = power
+
+        cut_speed = settings.get("cut_speed")
+        if cut_speed is not None:
+            try:
+                step.set_cut_speed(cut_speed)
+            except Exception:
+                step.cut_speed = cut_speed
+
+        kerf_mm = settings.get("kerf_mm")
+        if kerf_mm is not None:
+            try:
+                step.set_kerf_mm(kerf_mm)
+            except Exception:
+                step.kerf_mm = kerf_mm
+
+        passes = settings.get("passes")
+        if passes is not None:
+            for t in step.per_step_transformers_dicts:
+                if t.get("name") == "MultiPassTransformer":
+                    t["passes"] = passes
+                    break
+
+        workflow = layer.workflow
+        if workflow is not None:
+            workflow.add_step(step)
