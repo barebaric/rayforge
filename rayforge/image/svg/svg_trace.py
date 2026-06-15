@@ -54,7 +54,6 @@ class SvgTraceImporter(SvgImporterBase):
 
         # Unpack
         (
-            _,
             document_bounds,
             unit_to_mm,
             untrimmed_document_bounds,

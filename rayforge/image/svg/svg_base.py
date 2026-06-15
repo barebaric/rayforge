@@ -1,27 +1,14 @@
 from __future__ import annotations
 
-import io
 import logging
 from gettext import gettext as _
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 from xml.etree import ElementTree as ET
 
-from svgelements import (
-    Arc,
-    Close,
-    CubicBezier,
-    Line,
-    Move,
-    QuadraticBezier,
-)
-
 from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
 from raygeo.svg import extract_svg_metadata, svg_string_to_geometry
-
-
-from svgelements import SVG, Path as SvgPath
 
 from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset
@@ -57,7 +44,6 @@ class SvgImporterBase(Importer):
     def __init__(self, data: bytes, source_file: Optional[Path] = None):
         super().__init__(data, source_file)
         self.trimmed_data: Optional[bytes] = None
-        self.svg: Optional[SVG] = None
 
     def _get_ppi(self) -> float:
         if self._vectorization_spec and hasattr(
@@ -173,7 +159,6 @@ class SvgImporterBase(Importer):
         self,
     ) -> Optional[
         Tuple[
-            SVG,
             Rect,
             float,
             Optional[Rect],
@@ -182,7 +167,7 @@ class SvgImporterBase(Importer):
     ]:
         """
         Common parsing logic. Returns:
-        (svg_object, document_bounds, unit_to_mm, untrimmed_document_bounds,
+        (document_bounds, unit_to_mm, untrimmed_document_bounds,
          world_frame_of_reference)
         or None if parsing fails.
 
@@ -194,12 +179,6 @@ class SvgImporterBase(Importer):
             logger.error("Failed to prepare trimmed SVG data.")
             self.add_error(_("Failed to prepare trimmed SVG data."))
             return None
-
-        svg = self._parse_svg_data(self.trimmed_data)
-        if svg is None:
-            # Error already added in _parse_svg_data
-            return None
-        self.svg = svg
 
         # Check dimensions: if no viewBox and no explicit width/height,
         # verify there's actual geometry.
@@ -295,7 +274,6 @@ class SvgImporterBase(Importer):
         world_frame = (x_mm, y_mm, w_mm, h_mm)
 
         return (
-            svg,
             document_bounds,
             unit_to_mm,
             untrimmed_document_bounds,
@@ -379,15 +357,6 @@ class SvgImporterBase(Importer):
             self.add_warning(f"Optimization (trimming) failed: {e}")
             return data
 
-    def _parse_svg_data(self, data: bytes) -> Optional[SVG]:
-        try:
-            svg_stream = io.BytesIO(data)
-            return SVG.parse(svg_stream, ppi=self._get_ppi())
-        except (ET.ParseError, ValueError, TypeError) as e:
-            logger.error(f"Failed to parse SVG for direct import: {e}")
-            self.add_error(_(f"Failed to parse SVG structure: {e}"))
-            return None
-
     def _get_svg_parsing_facts(
         self, data: bytes
     ) -> Optional[Tuple[float, float, Optional[Rect]]]:
@@ -420,77 +389,3 @@ class SvgImporterBase(Importer):
             geo.transform(translate_matrix.to_4x4_numpy())
 
         return geo
-
-    def _add_path_to_geometry(self, path: SvgPath, geo: Geometry) -> None:
-        """Convert an svgelements Path to Geometry commands."""
-        for seg in path:
-            end_pt = (0.0, 0.0)
-            if not isinstance(seg, Close):
-                if seg.end is None or seg.end.x is None or seg.end.y is None:
-                    continue
-                end_pt = (float(seg.end.x), float(seg.end.y))
-
-            if isinstance(seg, Move):
-                geo.move_to(end_pt[0], end_pt[1])
-            elif isinstance(seg, Line):
-                geo.line_to(end_pt[0], end_pt[1])
-            elif isinstance(seg, Close):
-                geo.close_path()
-            elif isinstance(seg, CubicBezier):
-                if (
-                    seg.control1 is not None
-                    and seg.control1.x is not None
-                    and seg.control1.y is not None
-                    and seg.control2 is not None
-                    and seg.control2.x is not None
-                    and seg.control2.y is not None
-                ):
-                    c1 = (float(seg.control1.x), float(seg.control1.y))
-                    c2 = (float(seg.control2.x), float(seg.control2.y))
-                    geo.bezier_to(
-                        end_pt[0], end_pt[1], c1[0], c1[1], c2[0], c2[1]
-                    )
-                else:
-                    geo.line_to(end_pt[0], end_pt[1])
-            elif isinstance(seg, QuadraticBezier):
-                if (
-                    seg.start is not None
-                    and seg.start.x is not None
-                    and seg.start.y is not None
-                    and seg.control is not None
-                    and seg.control.x is not None
-                    and seg.control.y is not None
-                ):
-                    sx, sy = float(seg.start.x), float(seg.start.y)
-                    cx, cy = float(seg.control.x), float(seg.control.y)
-                    ex, ey = end_pt
-                    c1x = sx + (2.0 / 3.0) * (cx - sx)
-                    c1y = sy + (2.0 / 3.0) * (cy - sy)
-                    c2x = ex + (2.0 / 3.0) * (cx - ex)
-                    c2y = ey + (2.0 / 3.0) * (cy - ey)
-                    geo.bezier_to(ex, ey, c1x, c1y, c2x, c2y)
-                else:
-                    geo.line_to(end_pt[0], end_pt[1])
-            elif isinstance(seg, Arc):
-                for cubic in seg.as_cubic_curves():
-                    if (
-                        cubic.end is not None
-                        and cubic.end.x is not None
-                        and cubic.end.y is not None
-                        and cubic.control1 is not None
-                        and cubic.control1.x is not None
-                        and cubic.control1.y is not None
-                        and cubic.control2 is not None
-                        and cubic.control2.x is not None
-                        and cubic.control2.y is not None
-                    ):
-                        e = (float(cubic.end.x), float(cubic.end.y))
-                        c1 = (float(cubic.control1.x), float(cubic.control1.y))
-                        c2 = (float(cubic.control2.x), float(cubic.control2.y))
-                        geo.bezier_to(e[0], e[1], c1[0], c1[1], c2[0], c2[1])
-                    elif (
-                        cubic.end is not None
-                        and cubic.end.x is not None
-                        and cubic.end.y is not None
-                    ):
-                        geo.line_to(float(cubic.end.x), float(cubic.end.y))
