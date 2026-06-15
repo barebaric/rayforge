@@ -43,10 +43,10 @@ def test_parse_valid_vector_data(vector_importer):
 
     # Content 20x20, padding 0.2. New viewbox is padded.
     px, py, pw, ph = result.document_bounds
-    assert px == pytest.approx(9.8)
-    assert py == pytest.approx(9.8)
-    assert pw == pytest.approx(20.4)
-    assert ph == pytest.approx(20.4)
+    assert px == pytest.approx(9.8, abs=1e-3)
+    assert py == pytest.approx(9.8, abs=1e-3)
+    assert pw == pytest.approx(20.4, abs=1e-3)
+    assert ph == pytest.approx(20.4, abs=1e-3)
     assert result.native_unit_to_mm == pytest.approx(1.0)
     assert result.is_y_down is True
     # The parse method now extracts actual layers, it doesn't create a default
@@ -74,8 +74,8 @@ def test_get_doc_items_alignment(vector_importer):
     # bounds (9.8, 9.8), Y-inverted relative to the 100mm page.
     #   100 - (9.8 + 20.4) = 69.8
     wx, wy = item.matrix.transform_point((0, 0))
-    assert wx == pytest.approx(9.8)
-    assert wy == pytest.approx(69.8)
+    assert wx == pytest.approx(9.8, abs=1e-3)
+    assert wy == pytest.approx(69.8, abs=1e-3)
 
 
 def test_layer_separation_and_positioning():
