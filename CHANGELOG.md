@@ -5,6 +5,18 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.8.0
+
+### Added
+
+- LightBurn device profile (.lbdev) import with camera calibration and
+  device configuration
+- Import LightBurn layer settings as Rayforge step parameters
+
+### Changed
+
+- Updated translations
+
 ## 1.8.0-beta3
 
 ### Added

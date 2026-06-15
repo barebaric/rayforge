@@ -27,7 +27,9 @@ Alternatively:
   [Configuration Wizard](../machine/config-wizard), which auto-detects
   settings from a connected device
 - Click **Import from File…** to add a machine from a previously
-  exported profile
+  exported profile or from a LightBurn device profile (.lbdev).
+  LightBurn profiles include camera calibration and laser settings
+  that are applied to the new machine
 
 ## Editing a Machine
 

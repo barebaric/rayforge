@@ -19,6 +19,10 @@
 如果您的设备已连接并开机，可以点击 **Other Device…** 使用
 [配置向导](../machine/config-wizard)自动检测和配置您的机器。
 
+如果你有包含相机校准和设备设置的 LightBurn 设备配置文件 (.lbdev)，
+可以点击 **Import from File…** 并选择 .lbdev 文件。你 LightBurn
+设置中的相机校准和激光设置将应用到新机器上。
+
 选择后，机器设置对话框将打开您的新机器。
 
 ## 第 3 步：配置常规设置

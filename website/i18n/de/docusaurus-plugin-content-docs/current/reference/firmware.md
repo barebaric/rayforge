@@ -8,16 +8,16 @@ Rayforge ist primär für **GRBL-basierte Controller** konzipiert, bietet aber a
 
 ### Kompatibilitätsmatrix
 
-| Firmware         | Version | Status                    | Treiber                    | Hinweise                    |
-| ---------------- | ------- | ------------------------- | -------------------------- | --------------------------- |
-| **GRBL**         | 1.1+    | Vollständig unterstützt   | GRBL Serial               | Empfohlen                   |
-| **grblHAL**      | 2023+   | Kompatibel                | GRBL Serial / GRBL Telnet | Moderner GRBL-Fork          |
-| **GRBL**         | 0.9     | Eingeschränkt             | GRBL Serial               | Älter, kann Probleme haben  |
-| **Smoothieware** | Alle    | Kompatibel                | SmoothieDriver (Telnet)   | Netzwerkbasiert             |
-| **Marlin**       | 2.0+    | Kompatibel                | Marlin Serial              | Laser-Modus erforderlich    |
-| **ESP3D**        | Alle    | Kompatibel                | GRBL Telnet               | Netzwerkbasiert             |
-| **OctoPrint**    | Alle    | Experimentell             | OctoPrint                 | Siehe Hinweise unten        |
-| **Andere**       | -       | Nicht unterstützt         | -                          | Support anfordern           |
+| Firmware         | Version | Status                  | Treiber                          | Hinweise                   |
+| ---------------- | ------- | ----------------------- | -------------------------------- | -------------------------- |
+| **GRBL**         | 1.1+    | Vollständig unterstützt | GRBL Serial / GRBL Serial Simple | Empfohlen                  |
+| **grblHAL**      | 2023+   | Kompatibel              | GRBL Serial / GRBL Telnet        | Moderner GRBL-Fork         |
+| **GRBL**         | 0.9     | Eingeschränkt           | GRBL Serial                      | Älter, kann Probleme haben |
+| **Smoothieware** | Alle    | Kompatibel              | SmoothieDriver (Telnet)          | Netzwerkbasiert            |
+| **Marlin**       | 2.0+    | Kompatibel              | Marlin Serial                    | Laser-Modus erforderlich   |
+| **ESP3D**        | Alle    | Kompatibel              | GRBL Telnet                      | Netzwerkbasiert            |
+| **OctoPrint**    | Alle    | Experimentell           | OctoPrint                        | Siehe Hinweise unten       |
+| **Andere**       | -       | Nicht unterstützt       | -                                | Support anfordern          |
 
 ---
 
@@ -25,7 +25,7 @@ Rayforge ist primär für **GRBL-basierte Controller** konzipiert, bietet aber a
 
 **Status:** Vollständig unterstützt
 **Versionen:** 1.1+
-**Treiber:** GRBL Serial
+**Treiber:** GRBL Serial / GRBL Serial Simple
 
 ### GRBL 1.1 (Empfohlen)
 
@@ -92,6 +92,31 @@ GRBL 0.9 ist eine ältere Version mit einigen Kompatibilitätsproblemen:
 3. **Gründlich testen** – einige Funktionen funktionieren möglicherweise nicht
 
 **Upgrade-Anleitung:** Siehe [GRBL Wiki](https://github.com/gnea/grbl/wiki)
+
+### GRBL Serial Simple Treiber
+
+Rayforge enthält einen zweiten seriellen GRBL-Treiber für Geräte, bei
+denen der standardmäßige pufferzählende Treiber falsche Alarme oder
+Kommunikationsfehler verursacht.
+
+**Funktionsweise:**
+
+- Verwendet ein Ping-Pong-Protokoll: sende eine Zeile, warte auf "ok", sende die nächste
+- Keine zeichenzählende Pufferverwaltung
+- Keine Deadlock-Erkennung oder Stall-Wiederherstellung
+- Einfacher und vorhersagbarer auf manchen Geräten
+
+**Verwendung:**
+
+- Dein Gerät erhält falsche Puffer-Stall-Alarme mit dem Standardtreiber
+- Kommunikationsfehler treten zeitweise mit dem Standardtreiber auf
+- Du hast ein Gerät mit ungewöhnlichem Puffer-Verhalten
+
+**Nicht verwenden wenn:**
+
+- Der standardmäßige GRBL Serial Treiber bei dir zuverlässig funktioniert
+- Der Simple Treiber hat keine Deadlock-Wiederherstellung und Jobs können
+  bei verlorenen "ok"-Antworten ohne automatische Wiederherstellung stoppen
 
 ---
 
@@ -162,6 +187,7 @@ Ethernet — kein USB-Kabel erforderlich.
 ---
 
 ## Smoothieware
+
 **Treiber:** GRBL Serial (Kompatibilitätsmodus)
 
 ### Kompatibilitätshinweise
@@ -170,11 +196,11 @@ Smoothieware verwendet eine andere G-Code-Syntax:
 
 **Wichtige Unterschiede:**
 
-| Funktion         | GRBL           | Smoothieware     |
-| --------------- | -------------- | ---------------- |
-| **Laser ein**   | `M4 S<Wert>`   | `M3 S<Wert>`     |
-| **Leistungsbereich** | 0-1000    | 0.0-1.0 (Float)  |
-| **Status**      | `<...>`-Format | Anderes Format   |
+| Funktion             | GRBL           | Smoothieware    |
+| -------------------- | -------------- | --------------- |
+| **Laser ein**        | `M4 S<Wert>`   | `M3 S<Wert>`    |
+| **Leistungsbereich** | 0-1000         | 0.0-1.0 (Float) |
+| **Status**           | `<...>`-Format | Anderes Format  |
 
 **Smoothieware mit Rayforge verwenden:**
 
@@ -186,7 +212,7 @@ Smoothieware verwendet eine andere G-Code-Syntax:
 **Einschränkungen:**
 
 - Statusberichte nicht vollständig kompatibel
- Leistungsskalierung kann abweichen
+  Leistungsskalierung kann abweichen
 - Einstellungen ($$-Befehle) nicht unterstützt
 - Ungetestet auf echter Hardware
 

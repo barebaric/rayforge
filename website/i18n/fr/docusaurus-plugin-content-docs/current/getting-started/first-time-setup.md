@@ -20,6 +20,12 @@ Si votre appareil est connecté et allumé, vous pouvez cliquer sur **Other Devi
 pour utiliser l'[Assistant de Configuration](../machine/config-wizard), qui
 détecte et configure automatiquement votre machine.
 
+Si vous avez un profil d'appareil LightBurn (.lbdev) avec calibrage
+de caméra et paramètres d'appareil, vous pouvez cliquer sur **Import
+from File…** et sélectionner le fichier .lbdev. Le calibrage de caméra
+et les paramètres laser de votre configuration LightBurn seront
+appliqués à la nouvelle machine.
+
 Après la sélection, la boîte de dialogue Paramètres Machine s'ouvre pour votre nouvelle machine.
 
 ## Étape 3 : Configurer les Paramètres Généraux

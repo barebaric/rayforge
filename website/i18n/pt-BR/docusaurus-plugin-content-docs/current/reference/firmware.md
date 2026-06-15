@@ -8,22 +8,22 @@ O Rayforge é projetado principalmente para **controladores baseados em GRBL** m
 
 ### Matriz de Compatibilidade
 
-| Firmware         | Versão | Status                 | Driver                     | Notas                       |
-| ---------------- | ------- | ---------------------- | -------------------------- | --------------------------- |
-| **GRBL**         | 1.1+    | Totalmente suportado   | GRBL Serial               | Recomendado                 |
-| **grblHAL**      | 2023+   | Compatível             | GRBL Serial / GRBL Telnet | Fork moderno do GRBL        |
-| **GRBL**         | 0.9     | Limitado               | GRBL Serial               | Antigo, pode ter problemas  |
-| **Smoothieware** | Todos   | Compatível             | SmoothieDriver (Telnet)   | Baseado em rede             |
-| **Marlin**       | 2.0+    | Compatível             | Marlin Serial              | Modo laser necessário       |
-| **ESP3D**        | Todos   | Compatível             | GRBL Telnet               | Baseado em rede             |
-| **OctoPrint**    | Todos   | Experimental           | OctoPrint                 | Veja notas abaixo           |
-| **Outro**        | -       | Não suportado          | -                          | Solicite suporte            |
+| Firmware         | Versão | Status               | Driver                           | Notas                      |
+| ---------------- | ------ | -------------------- | -------------------------------- | -------------------------- |
+| **GRBL**         | 1.1+   | Totalmente suportado | GRBL Serial / GRBL Serial Simple | Recomendado                |
+| **grblHAL**      | 2023+  | Compatível           | GRBL Serial / GRBL Telnet        | Fork moderno do GRBL       |
+| **GRBL**         | 0.9    | Limitado             | GRBL Serial                      | Antigo, pode ter problemas |
+| **Smoothieware** | Todos  | Compatível           | SmoothieDriver (Telnet)          | Baseado em rede            |
+| **Marlin**       | 2.0+   | Compatível           | Marlin Serial                    | Modo laser necessário      |
+| **ESP3D**        | Todos  | Compatível           | GRBL Telnet                      | Baseado em rede            |
+| **OctoPrint**    | Todos  | Experimental         | OctoPrint                        | Veja notas abaixo          |
+| **Outro**        | -      | Não suportado        | -                                | Solicite suporte           |
 
 ---
 
 ## Firmware GRBL
 
-**Status:**  Totalmente Suportado
+**Status:** Totalmente Suportado
 **Versões:** 1.1+
 **Driver:** GRBL Serial
 
@@ -92,6 +92,31 @@ GRBL 0.9 é uma versão antiga com alguns problemas de compatibilidade:
 3. **Teste completamente** - alguns recursos podem não funcionar
 
 **Instruções de atualização:** Veja [GRBL Wiki](https://github.com/gnea/grbl/wiki)
+
+### Driver GRBL Serial Simple
+
+Rayforge inclui um segundo driver serial GRBL para dispositivos onde
+o driver padrão com contagem de buffer causa falsos alarmes ou erros
+de comunicação.
+
+**Como funciona:**
+
+- Usa um protocolo ping-pong: envia uma linha, aguarda "ok", envia a próxima
+- Sem gerenciamento de buffer por contagem de caracteres
+- Sem detecção de deadlock ou recuperação de parada
+- Mais simples e previsível em alguns dispositivos
+
+**Quando usar:**
+
+- Seu dispositivo recebe falsos alarmes de buffer com o driver padrão
+- Erros de comunicação ocorrem intermitentemente com o driver padrão
+- Você tem um dispositivo com comportamento de buffer incomum
+
+**Quando NÃO usar:**
+
+- O driver GRBL Serial padrão funciona de forma confiável na maioria dos dispositivos
+- O driver simple não tem recuperação de deadlock, então os trabalhos
+  podem parar em uma resposta "ok" perdida sem recuperação automática
 
 ---
 
@@ -162,6 +187,7 @@ sem necessidade de cabo USB.
 ---
 
 ## Smoothieware
+
 **Driver:** GRBL Serial (modo de compatibilidade)
 
 ### Notas de Compatibilidade
@@ -170,11 +196,11 @@ Smoothieware usa sintaxe G-code diferente:
 
 **Principais diferenças:**
 
-| Recurso         | GRBL           | Smoothieware     |
-| --------------- | -------------- | ---------------- |
-| **Laser Ligado**    | `M4 S<valor>`  | `M3 S<valor>`    |
-| **Intervalo de Potência** | 0-1000         | 0.0-1.0 (float)  |
-| **Status**      | formato `<...>` | Formato diferente |
+| Recurso                   | GRBL            | Smoothieware      |
+| ------------------------- | --------------- | ----------------- |
+| **Laser Ligado**          | `M4 S<valor>`   | `M3 S<valor>`     |
+| **Intervalo de Potência** | 0-1000          | 0.0-1.0 (float)   |
+| **Status**                | formato `<...>` | Formato diferente |
 
 **Usando Smoothieware com Rayforge:**
 
@@ -312,11 +338,11 @@ via serial (USB). Marlin 2.0+ pode controlar lasers quando configurado corretame
 ### Controladores Comuns
 
 | Placa                  | Firmware Típico | Suporte Rayforge |
-| ---------------------- | ---------------- | ---------------- |
-| **Arduino CNC Shield** | GRBL 1.1         | Excelente        |
-| **MKS DLC32**          | grblHAL          | Excelente        |
-| **Ruida**              | Proprietário      | Experimental     |
-| **OctoPrint (Pi)**     | Diversos          | Experimental     |
+| ---------------------- | --------------- | ---------------- |
+| **Arduino CNC Shield** | GRBL 1.1        | Excelente        |
+| **MKS DLC32**          | grblHAL         | Excelente        |
+| **Ruida**              | Proprietário    | Experimental     |
+| **OctoPrint (Pi)**     | Diversos        | Experimental     |
 
 ### Controladores Recomendados
 

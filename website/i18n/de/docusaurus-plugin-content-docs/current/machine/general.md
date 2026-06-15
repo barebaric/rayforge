@@ -19,6 +19,15 @@ Auswahldropdown zu erkennen, wenn du mehrere Maschinen konfiguriert hast.
 Wähle den Treiber aus, der zum Controller deiner Maschine passt. Der Treiber
 übernimmt die Kommunikation zwischen Rayforge und der Hardware.
 
+GRBL-Geräte haben zwei serielle Treiber-Optionen:
+
+- **GRBL (Serial)** — Pufferzählender Treiber mit Deadlock-Erkennung und
+  Stall-Wiederherstellung. Für die meisten GRBL-Geräte empfohlen
+- **GRBL (Serial Simple)** — Ping-Pong-Protokoll-Treiber. Sendet eine
+  Zeile, wartet auf "ok", sendet die nächste. Keine Pufferverwaltung, keine
+  Deadlock-Erkennung. Nützlich, wenn der Standardtreiber falsche Alarme
+  auslöst
+
 Nach der Auswahl eines Treibers werden verbindungsspezifische Einstellungen
 unter der Auswahl angezeigt (z. B. serieller Port, Baudrate). Diese variieren
 je nach gewähltem Treiber.

@@ -27,8 +27,10 @@ Alternativamente:
 - Clique em **Other Device…** para iniciar o
   [Assistente de Configuração](../machine/config-wizard), que detecta
   automaticamente as configurações de um dispositivo conectado
-- Clique em **Import from File...** no seletor de perfil para adicionar
-  uma máquina de um perfil exportado anteriormente
+- Clique em **Import from File…** para adicionar uma máquina de um
+  perfil exportado anteriormente ou de um perfil de dispositivo LightBurn
+  (.lbdev). Perfis LightBurn incluem calibração de câmera e configurações
+  de laser que são aplicadas à nova máquina.
 
 ## Editar uma Máquina
 
