@@ -39,6 +39,15 @@ class ColorMode(Enum):
     COLOR = "color"
 
 
+def _remove_border_offset(geometries: List[Geometry]) -> None:
+    """Remove the BORDER_SIZE offset added to vtracer input."""
+    m = np.eye(4, dtype=np.float64)
+    m[0, 3] = -BORDER_SIZE
+    m[1, 3] = -BORDER_SIZE
+    for g in geometries:
+        g.transform(m)
+
+
 def _get_image_from_surface(
     surface: cairo.ImageSurface,
 ) -> Tuple[np.ndarray, int]:
@@ -398,6 +407,8 @@ def _get_geometries_from_image(
         )
 
     geometries = svg_string_to_geometries(svg_str, 1.0, 1.0)
+    if geometries:
+        _remove_border_offset(geometries)
     if not geometries:
         logger.warning("vtracer produced 0 geometries, falling back to hulls.")
         return _fallback_to_hulls_from_image(
