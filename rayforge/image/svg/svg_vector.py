@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 from raygeo.geo import Geometry
 from raygeo.svg import (
     svg_string_to_geometries,
-    svg_string_to_geometries_by_layer,
+    svg_string_to_geometry_by_layer,
 )
 
 from ...core.vectorization_spec import (
@@ -56,7 +56,7 @@ class SvgVectorImporter(SvgImporterBase):
         # 2. Extract layer geometry from trimmed data.
         assert self.trimmed_data is not None
         svg_str = self.trimmed_data.decode("utf-8")
-        layers_raw = svg_string_to_geometries_by_layer(svg_str, 1.0, 1.0)
+        layers_raw = svg_string_to_geometry_by_layer(svg_str, 1.0, 1.0)
 
         # 3. Build layer geometries with names from manifest.
         layer_manifest = extract_layer_manifest(self.trimmed_data)
@@ -65,10 +65,7 @@ class SvgVectorImporter(SvgImporterBase):
         }
 
         layer_geometries: List[LayerGeometry] = []
-        for layer_id, geo_list in layers_raw:
-            geo = Geometry()
-            for g in geo_list:
-                geo.extend(g)
+        for layer_id, geo in layers_raw:
             if not geo.is_empty():
                 layer_name = layer_names_by_id.get(layer_id, layer_id)
                 min_x, min_y, max_x, max_y = geo.rect()
@@ -134,15 +131,11 @@ class SvgVectorImporter(SvgImporterBase):
         )
 
         # Extract per-layer geometries via raygeo (already in user space).
-        layers_raw = svg_string_to_geometries_by_layer(svg_str, 1.0, 1.0)
+        layers_raw = svg_string_to_geometry_by_layer(svg_str, 1.0, 1.0)
         geometries_by_layer: Dict[Optional[str], Geometry] = {}
-        for layer_id, geo_list in layers_raw:
-            if layer_id in target_layer_ids:
-                geo = Geometry()
-                for g in geo_list:
-                    geo.extend(g)
-                if not geo.is_empty():
-                    geometries_by_layer[layer_id] = geo
+        for layer_id, geo in layers_raw:
+            if layer_id in target_layer_ids and not geo.is_empty():
+                geometries_by_layer[layer_id] = geo
 
         # If no layers found, fall back to the whole SVG.
         if not geometries_by_layer:
