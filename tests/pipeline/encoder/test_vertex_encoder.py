@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 import pytest
+from raygeo.geo.algo.cylindrical import transform_to_cylinder
 from raygeo.ops import Ops
 from raygeo.ops.types import SectionType
 
@@ -342,10 +343,6 @@ class TestTransformToCylinder:
 
     def test_surface_z_zero(self):
         """At Z=0 (surface) vertices sit on the cylinder surface."""
-        from rayforge.pipeline.encoder.vertexencoder import (
-            transform_to_cylinder,
-        )
-
         diameter = 10.0
         radius = diameter / 2.0
         verts = np.array(
@@ -363,10 +360,6 @@ class TestTransformToCylinder:
 
     def test_negative_z_smaller_radius(self):
         """Negative Z (step-down) produces smaller effective radius."""
-        from rayforge.pipeline.encoder.vertexencoder import (
-            transform_to_cylinder,
-        )
-
         diameter = 10.0
         z = -1.0
         verts = np.array(
@@ -383,10 +376,6 @@ class TestTransformToCylinder:
 
     def test_mixed_z_different_radii(self):
         """Vertices with different Z depths produce different radii."""
-        from rayforge.pipeline.encoder.vertexencoder import (
-            transform_to_cylinder,
-        )
-
         diameter = 20.0
         z1, z2 = 0.0, -1.0
         verts = np.array(
