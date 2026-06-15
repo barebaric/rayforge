@@ -492,7 +492,7 @@ class Sketch(IAsset, IGeometryProvider):
                     current_pid = get_or_add_point(current_x, current_y)
                 end_pid = get_or_add_point(end_x, end_y)
 
-                i_offset, j_offset = cmd.center_offset
+                i_offset, j_offset, _ = cmd.center_offset
                 clockwise = cmd.clockwise
 
                 center_x = current_x + i_offset
