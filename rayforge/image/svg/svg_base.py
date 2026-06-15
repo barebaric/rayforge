@@ -7,13 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 from xml.etree import ElementTree as ET
 
-from raygeo.geo import Geometry
-from raygeo.geo.types import Rect
-from raygeo.svg import extract_svg_metadata
-
-
 from svgelements import (
-    SVG,
     Arc,
     Close,
     CubicBezier,
@@ -21,10 +15,15 @@ from svgelements import (
     Move,
     QuadraticBezier,
 )
-from svgelements import (
-    Path as SvgPath,
-)
 
+from raygeo.geo import Geometry
+from raygeo.geo.types import Rect
+from raygeo.svg import extract_svg_metadata, svg_string_to_geometry
+
+
+from svgelements import SVG, Path as SvgPath
+
+from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import PassthroughSpec
 from ..base_importer import (
@@ -164,7 +163,7 @@ class SvgImporterBase(Importer):
                     pass
 
             source.metadata.update(metadata)
-        except (ValueError, ET.ParseError):
+        except ValueError:
             logger.warning("Could not calculate SVG metadata.", exc_info=True)
             self.add_warning(_("Could not calculate SVG metadata."))
 
@@ -202,12 +201,20 @@ class SvgImporterBase(Importer):
             return None
         self.svg = svg
 
-        # Check dimensions
-        has_explicit_dims = svg.values is not None and (
-            "width" in svg.values or "height" in svg.values
+        # Check dimensions: if no viewBox and no explicit width/height,
+        # verify there's actual geometry.
+        try:
+            check_meta = extract_svg_metadata(
+                self.trimmed_data.decode("utf-8")
+            )
+        except ValueError:
+            check_meta = None
+        has_viewbox = check_meta is not None and check_meta.viewbox is not None
+        has_explicit_dims = check_meta is not None and (
+            check_meta.width is not None or check_meta.height is not None
         )
-        if not has_explicit_dims:
-            geo = self._convert_svg_to_geometry(svg)
+        if not has_viewbox and not has_explicit_dims:
+            geo = self._convert_svg_to_geometry(self.trimmed_data)
             if geo.is_empty():
                 self.add_error(_("SVG contains no geometry or dimensions."))
                 return None
@@ -300,14 +307,12 @@ class SvgImporterBase(Importer):
     def _analytical_trim(self, data: bytes) -> bytes:
         """Trims the SVG using vector geometry bounds."""
         try:
-            svg = SVG.parse(io.BytesIO(data), ppi=self._get_ppi())
             root = ET.fromstring(data)
 
             # 1. Get geometry bounds in the SVG's native user coordinate
             # system.
-            # This requires converting from svgelements' pixel-based coords.
-            geo_px = self._convert_svg_to_geometry(svg)
-            if geo_px.is_empty():
+            geo = self._convert_svg_to_geometry(data)
+            if geo.is_empty():
                 return data
 
             # Get pixel and user unit dimensions to calculate the scale
@@ -326,19 +331,7 @@ class SvgImporterBase(Importer):
                 f"VB=({vb_x}, {vb_y}, {orig_vb_w}, {orig_vb_h})"
             )
 
-            scale_x = orig_vb_w / orig_w_px if orig_w_px > 0 else 1.0
-            scale_y = orig_vb_h / orig_h_px if orig_h_px > 0 else 1.0
-
-            from ...core.matrix import Matrix
-
-            scale_matrix = Matrix.scale(scale_x, scale_y)
-            translate_matrix = Matrix.translation(vb_x, vb_y)
-            final_transform = translate_matrix @ scale_matrix
-
-            geo_user_units = geo_px.copy()
-            geo_user_units.transform(final_transform.to_4x4_numpy())
-
-            min_x, min_y, max_x, max_y = geo_user_units.rect()
+            min_x, min_y, max_x, max_y = geo.rect()
 
             logger.debug(
                 f"_analytical_trim: Content Bounds (User Units): "
@@ -381,8 +374,7 @@ class SvgImporterBase(Importer):
 
             return ET.tostring(root, encoding="utf-8")
 
-        except (ET.ParseError, ValueError, TypeError) as e:
-            # Catch specific, expected errors instead of a generic Exception.
+        except (ValueError, ET.ParseError) as e:
             logger.warning(f"Analytical trim failed: {e}")
             self.add_warning(f"Optimization (trimming) failed: {e}")
             return data
@@ -400,8 +392,8 @@ class SvgImporterBase(Importer):
         self, data: bytes
     ) -> Optional[Tuple[float, float, Optional[Rect]]]:
         try:
-            meta = extract_svg_metadata(data.decode("utf-8"))
-        except (ValueError, ET.ParseError, TypeError):
+            meta = extract_svg_metadata(data.decode())
+        except ValueError:
             return None
 
         ppi = self._get_ppi()
@@ -415,27 +407,22 @@ class SvgImporterBase(Importer):
         return w_px, h_px, meta.viewbox
 
     def _convert_svg_to_geometry(
-        self, svg: SVG, translate_to_origin: bool = False
+        self, data: bytes, translate_to_origin: bool = False
     ) -> Geometry:
-        geo = Geometry()
-        for shape in svg.elements():
-            try:
-                path = SvgPath(shape)
-                path.reify()
-                self._add_path_to_geometry(path, geo)
-            except (AttributeError, TypeError):
-                continue
+        try:
+            geo = svg_string_to_geometry(data.decode("utf-8"), 1.0, 1.0)
+        except ValueError:
+            geo = Geometry()
 
         if translate_to_origin and not geo.is_empty():
             min_x, min_y, _, _ = geo.rect()
-            from ...core.matrix import Matrix
-
             translate_matrix = Matrix.translation(-min_x, -min_y)
             geo.transform(translate_matrix.to_4x4_numpy())
 
         return geo
 
     def _add_path_to_geometry(self, path: SvgPath, geo: Geometry) -> None:
+        """Convert an svgelements Path to Geometry commands."""
         for seg in path:
             end_pt = (0.0, 0.0)
             if not isinstance(seg, Close):
