@@ -17,15 +17,9 @@ import numpy as np
 from raygeo.geo.shape.arc import linearize_arc
 from raygeo.geo.shape.bezier import linearize_bezier_segment
 from raygeo.ops import Ops
+from raygeo.geo.algo.cylindrical import transform_to_cylinder
+from raygeo.image import rasterize_scanlines as _rasterize_scanlines_shared
 from raygeo.ops.types import CommandType
-
-from ...pipeline.encoder.scanline_rasterizer import (
-    MAX_TEXTURE_DIMENSION,
-)
-from ...pipeline.encoder.scanline_rasterizer import (
-    rasterize_scanlines as _rasterize_scanlines_shared,
-)
-from ...pipeline.encoder.vertexencoder import transform_to_cylinder
 from .compiled_scene import (
     CompiledSceneArtifact,
     ScanlineOverlayLayer,
@@ -55,6 +49,7 @@ from .rotary_coords import (
 
 logger = logging.getLogger(__name__)
 
+MAX_TEXTURE_DIMENSION = 8192
 Z_OFFSET_NON_POWERED = 0.01
 
 
@@ -282,16 +277,14 @@ def _rasterize_scanlines(
     if width_px <= 0 or height_px <= 0:
         return None
 
-    buffer = np.zeros((height_px, width_px), dtype=np.uint8)
-    has_content = _rasterize_scanlines_shared(
+    buffer = _rasterize_scanlines_shared(
         ops,
-        buffer,
         width_px,
         height_px,
+        (px_per_mm, px_per_mm),
         origin_mm=(x0, y0),
-        px_per_mm=px_per_mm,
     )
-    if not has_content:
+    if not np.any(buffer):
         return None
 
     dilated = np.zeros_like(buffer)

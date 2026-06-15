@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple
 
 import numpy as np
+from raygeo.image import rasterize_scanlines
 
 from .base import OpsEncoder
-from .scanline_rasterizer import rasterize_scanlines
 
 if TYPE_CHECKING:
     from raygeo.ops import Ops
@@ -39,13 +39,10 @@ class TextureEncoder(OpsEncoder):
         if width_px <= 0 or height_px <= 0:
             return np.array([], dtype=np.uint8)
 
-        buffer = np.zeros((height_px, width_px), dtype=np.uint8)
-        rasterize_scanlines(
+        return rasterize_scanlines(
             ops,
-            buffer,
             width_px,
             height_px,
+            px_per_mm,
             origin_mm=(0.0, 0.0),
-            px_per_mm=px_per_mm,
         )
-        return buffer
