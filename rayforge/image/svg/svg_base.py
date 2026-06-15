@@ -9,6 +9,9 @@ from xml.etree import ElementTree as ET
 
 from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
+from raygeo.svg import extract_svg_metadata
+
+
 from svgelements import (
     SVG,
     Arc,
@@ -41,9 +44,6 @@ from .svgutil import (
 )
 
 logger = logging.getLogger(__name__)
-
-ViewBoxType = Optional[Rect]
-ParsingFactsType = Optional[Tuple[float, float, ViewBoxType]]
 
 
 class SvgImporterBase(Importer):
@@ -124,8 +124,8 @@ class SvgImporterBase(Importer):
         # Get pixel dimensions for rendering from the parsed SVG object,
         # which is based on the trimmed_data. This is the authoritative source
         # for the trimmed pixel dimensions.
-        if self.svg:
-            facts = self._get_svg_parsing_facts(self.svg)
+        if self.trimmed_data:
+            facts = self._get_svg_parsing_facts(self.trimmed_data)
             if facts:
                 w_px_float, h_px_float, viewbox = facts
                 source.width_px = int(w_px_float)
@@ -212,7 +212,7 @@ class SvgImporterBase(Importer):
                 self.add_error(_("SVG contains no geometry or dimensions."))
                 return None
 
-        facts = self._get_svg_parsing_facts(svg)
+        facts = self._get_svg_parsing_facts(self.trimmed_data)
         if not facts:
             self.add_error(_("Could not determine valid SVG dimensions."))
             return None
@@ -242,25 +242,23 @@ class SvgImporterBase(Importer):
         # First, try to get the authoritative untrimmed viewbox by parsing
         # the original, untrimmed SVG data. This is the correct frame of
         # reference for positioning.
-        untrimmed_svg_for_vb = self._parse_svg_data(self.raw_data)
-        if untrimmed_svg_for_vb:
-            untrimmed_facts = self._get_svg_parsing_facts(untrimmed_svg_for_vb)
-            if untrimmed_facts:
-                _w, _h, untrimmed_vb = untrimmed_facts
-                if untrimmed_vb:
-                    untrimmed_document_bounds = untrimmed_vb
-                    logger.debug(f"Found untrimmed viewBox: {untrimmed_vb}")
-                else:
-                    # Fallback for SVGs without a viewbox, use pixel dims
-                    untrimmed_document_bounds = (
-                        0.0,
-                        0.0,
-                        float(_w),
-                        float(_h),
-                    )
-                logger.debug(
-                    f"Using untrimmed viewBox: {untrimmed_document_bounds}"
+        untrimmed_facts = self._get_svg_parsing_facts(self.raw_data)
+        if untrimmed_facts:
+            _w, _h, untrimmed_vb = untrimmed_facts
+            if untrimmed_vb:
+                untrimmed_document_bounds = untrimmed_vb
+                logger.debug(f"Found untrimmed viewBox: {untrimmed_vb}")
+            else:
+                # Fallback for SVGs without a viewbox, use pixel dims
+                untrimmed_document_bounds = (
+                    0.0,
+                    0.0,
+                    float(_w),
+                    float(_h),
                 )
+            logger.debug(
+                f"Using untrimmed viewBox: {untrimmed_document_bounds}"
+            )
 
         # If parsing failed, fall back to calculating from physical size
         if not untrimmed_document_bounds:
@@ -313,7 +311,7 @@ class SvgImporterBase(Importer):
                 return data
 
             # Get pixel and user unit dimensions to calculate the scale
-            facts = self._get_svg_parsing_facts(svg)
+            facts = self._get_svg_parsing_facts(data)
             if not facts:
                 return data
             orig_w_px, orig_h_px, viewbox = facts
@@ -398,33 +396,23 @@ class SvgImporterBase(Importer):
             self.add_error(_(f"Failed to parse SVG structure: {e}"))
             return None
 
-    def _get_svg_parsing_facts(self, svg: SVG) -> ParsingFactsType:
-        if svg.width is None or svg.height is None:
+    def _get_svg_parsing_facts(
+        self, data: bytes
+    ) -> Optional[Tuple[float, float, Optional[Rect]]]:
+        try:
+            meta = extract_svg_metadata(data.decode("utf-8"))
+        except (ValueError, ET.ParseError, TypeError):
             return None
 
-        # Robustly get pixel dimensions, as svgelements can return a float
-        width_px: float = float(getattr(svg.width, "px", svg.width))
-        height_px: float = float(getattr(svg.height, "px", svg.height))
-
-        if width_px <= 1e-9 or height_px <= 1e-9:
+        ppi = self._get_ppi()
+        w_px = meta.width_px(ppi)
+        h_px = meta.height_px(ppi)
+        if w_px is None or h_px is None:
+            return None
+        if w_px <= 1e-9 or h_px <= 1e-9:
             return None
 
-        viewbox: ViewBoxType = None
-        if (
-            svg.viewbox
-            and svg.viewbox.x is not None
-            and svg.viewbox.y is not None
-            and svg.viewbox.width is not None
-            and svg.viewbox.height is not None
-        ):
-            viewbox = (
-                svg.viewbox.x,
-                svg.viewbox.y,
-                svg.viewbox.width,
-                svg.viewbox.height,
-            )
-
-        return width_px, height_px, viewbox
+        return w_px, h_px, meta.viewbox
 
     def _convert_svg_to_geometry(
         self, svg: SVG, translate_to_origin: bool = False
