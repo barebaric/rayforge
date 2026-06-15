@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-11 19:42+0200\n"
+"POT-Creation-Date: 2026-06-15 20:47+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -1527,6 +1527,58 @@ msgstr "Limites de la machine"
 msgid "{name} (device dialect)"
 msgstr "{name} (dialecte de l'appareil)"
 
+#: rayforge/machine/device/lightburn_importer.py
+msgid "• Camera calibration: matrix + distortion found"
+msgstr "• Calibrage de la caméra : matrice + distorsion trouvée"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "(no fields mapped)"
+msgstr "(aucun champ mappé)"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Device name"
+msgstr "Nom du périphérique"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Work area"
+msgstr "Zone de travail"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Driver"
+msgstr "Pilote"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Baud rate"
+msgstr "Débit en bauds"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Home on start"
+msgstr "Origine au démarrage"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Max travel speed"
+msgstr "Vitesse de déplacement max."
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Origin"
+msgstr "Origine"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Mirror X"
+msgstr "Miroir X"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Mirror Y"
+msgstr "Miroir Y"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Camera calibration"
+msgstr "Calibrage de la caméra"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "matrix + distortion imported"
+msgstr "matrice + distorsion importée"
+
 #: rayforge/machine/models/dialect_manager.py
 #: rayforge/machine/models/machine.py
 #, python-brace-format
@@ -1966,6 +2018,7 @@ msgstr ""
 #: rayforge/ui_gtk/machine/hook_list.py rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/wcs_dialog.py
 #: rayforge/ui_gtk/machine/maintenance_page.py
+#: rayforge/ui_gtk/machine/lbdev_import_dialog.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/profile_selector.py
 #: rayforge/ui_gtk/machine/template_selector.py
@@ -3443,6 +3496,10 @@ msgid "Device Profile archives"
 msgstr "Archives de profils d'appareil"
 
 #: rayforge/ui_gtk/machine/profile_importer.py
+msgid "LightBurn device profiles"
+msgstr "Profils de périphérique LightBurn"
+
+#: rayforge/ui_gtk/machine/profile_importer.py
 msgid "All files"
 msgstr "Tous les fichiers"
 
@@ -3684,6 +3741,31 @@ msgstr "Connexion impossible : utilisé par « {machine} »"
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Machine activated."
 msgstr "Machine activée."
+
+#: rayforge/ui_gtk/machine/lbdev_import_dialog.py
+msgid "Import LightBurn profile?"
+msgstr "Importer le profil LightBurn ?"
+
+#: rayforge/ui_gtk/machine/lbdev_import_dialog.py
+msgid ""
+"LightBurn device profiles contain only basic machine settings. The imported "
+"profile may be incomplete. After import, please review and configure any "
+"additional settings such as laser heads, homing, end stops, G-code dialect, "
+"macros, and rotary modules."
+msgstr ""
+"Les profils de périphérique LightBurn ne contiennent que des paramètres "
+"machine de base. Le profil importé peut être incomplet. Après l'importation, "
+"veuillez vérifier et configurer tous les paramètres supplémentaires tels que "
+"les têtes laser, la prise d'origine, les fins de course, le dialecte G-code, "
+"les macros et les modules rotatifs."
+
+#: rayforge/ui_gtk/machine/lbdev_import_dialog.py
+msgid "Import Anyway"
+msgstr "Importer quand même"
+
+#: rayforge/ui_gtk/machine/lbdev_import_dialog.py
+msgid "The following values will be imported:"
+msgstr "Les valeurs suivantes seront importées :"
 
 #: rayforge/ui_gtk/machine/hooks_macros_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
