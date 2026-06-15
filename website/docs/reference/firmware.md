@@ -12,16 +12,16 @@ Rayforge is designed primarily for **GRBL-based controllers** but also supports 
 
 ### Compatibility Matrix
 
-| Firmware         | Version | Status        | Driver                    | Notes                  |
-| ---------------- | ------- | ------------- | ------------------------- | ---------------------- |
-| **GRBL**         | 1.1+    | Compatible    | GRBL Serial               | Recommended            |
-| **grblHAL**      | 2023+   | Compatible    | GRBL Serial / GRBL Telnet | Modern GRBL fork       |
-| **GRBL**         | 0.9     | Limited       | GRBL Serial               | Older, may have issues |
-| **Smoothieware** | All     | Compatible    | SmoothieDriver (Telnet)   | Network-based          |
-| **Marlin**       | 2.0+    | Compatible    | Marlin Serial             | Laser mode required    |
-| **ESP3D**        | All     | Compatible    | GRBL Telnet               | Network-based          |
-| **OctoPrint**    | All     | Experimental  | OctoPrint                 | See notes below        |
-| **Other**        | -       | Not supported | -                         | Request support        |
+| Firmware         | Version | Status        | Driver                           | Notes                  |
+| ---------------- | ------- | ------------- | -------------------------------- | ---------------------- |
+| **GRBL**         | 1.1+    | Compatible    | GRBL Serial / GRBL Serial Simple | Recommended            |
+| **grblHAL**      | 2023+   | Compatible    | GRBL Serial / GRBL Telnet        | Modern GRBL fork       |
+| **GRBL**         | 0.9     | Limited       | GRBL Serial                      | Older, may have issues |
+| **Smoothieware** | All     | Compatible    | SmoothieDriver (Telnet)          | Network-based          |
+| **Marlin**       | 2.0+    | Compatible    | Marlin Serial                    | Laser mode required    |
+| **ESP3D**        | All     | Compatible    | GRBL Telnet                      | Network-based          |
+| **OctoPrint**    | All     | Experimental  | OctoPrint                        | See notes below        |
+| **Other**        | -       | Not supported | -                                | Request support        |
 
 ---
 
@@ -29,7 +29,7 @@ Rayforge is designed primarily for **GRBL-based controllers** but also supports 
 
 **Status:** Fully Supported
 **Versions:** 1.1+
-**Driver:** GRBL Serial
+**Drivers:** GRBL Serial, GRBL Serial Simple
 
 ### GRBL 1.1 (Recommended)
 
@@ -96,6 +96,30 @@ GRBL 0.9 is an older version with some compatibility issues:
 3. **Test thoroughly** - some features may not work
 
 **Upgrade instructions:** See [GRBL Wiki](https://github.com/gnea/grbl/wiki)
+
+### GRBL Serial Simple Driver
+
+Rayforge includes a second GRBL serial driver for devices where the
+standard buffer-counting driver causes false alarms or communication errors.
+
+**How it works:**
+
+- Uses a ping-pong protocol: send one line, wait for "ok", send the next
+- No character-counting buffer management
+- No deadlock detection or stall recovery
+- Simpler and more predictable on some devices
+
+**When to use:**
+
+- Your device gets false buffer stall alarms with the standard driver
+- Communication errors occur intermittently with the standard driver
+- You have a device with unusual buffer behavior
+
+**When not to use:**
+
+- The standard GRBL Serial driver works reliably for most devices
+- The simple driver lacks deadlock recovery, so jobs may stop on a lost
+  "ok" response without automatic recovery
 
 ---
 

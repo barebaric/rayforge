@@ -26,6 +26,11 @@ If your device is connected and powered on, you can click **Other Device…**
 to use the [Configuration Wizard](../machine/config-wizard), which
 automatically detects and configures your machine.
 
+If you have a LightBurn device profile (.lbdev) with camera calibration
+and device settings, you can click **Import from File…** and select the
+.lbdev file. The camera calibration and laser settings from your LightBurn
+setup will be applied to the new machine.
+
 After selecting, the Machine Settings dialog opens for your new machine.
 
 ## Step 3: Configure General Settings
@@ -42,7 +47,12 @@ The **General** page contains basic machine information, driver selection, and c
 
 Select the appropriate driver for your device from the dropdown:
 
-- **GRBL (Serial)** - For GRBL devices connected via USB/serial port
+- **GRBL (Serial)** - For GRBL devices connected via USB/serial port.
+  Uses buffer-counting for flow control. Recommended for most GRBL devices
+- **GRBL (Serial Simple)** - An alternative GRBL serial driver using a
+  ping-pong protocol. Send one line, wait for "ok", send the next. Useful
+  when the standard driver causes false alarms or communication errors on
+  your device
 - **GRBL (Network)** - For GRBL devices with WiFi/Ethernet connectivity
 - **Smoothie** - For Smoothieware-based devices
 

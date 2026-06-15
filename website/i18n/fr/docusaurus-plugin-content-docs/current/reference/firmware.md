@@ -8,16 +8,16 @@ Rayforge est conçu principalement pour les **contrôleurs basés sur GRBL** mai
 
 ### Matrice de compatibilité
 
-| Firmware         | Version | Statut                     | Pilote                    | Notes                            |
-| ---------------- | ------- | -------------------------- | ------------------------- | -------------------------------- |
-| **GRBL**         | 1.1+    | Entièrement pris en charge | GRBL Serial               | Recommandé                       |
-| **grblHAL**      | 2023+   | Compatible                 | GRBL Serial / GRBL Telnet | Fork GRBL moderne                |
-| **GRBL**         | 0.9     | Limité                     | GRBL Serial               | Ancien, peut avoir des problèmes |
-| **Smoothieware** | Tous    | Compatible                 | SmoothieDriver (Telnet)   | Basé sur le réseau               |
-| **Marlin**       | 2.0+    | Compatible                 | Marlin Serial              | Mode laser requis                |
-| **ESP3D**        | Tous    | Compatible                 | GRBL Telnet               | Basé sur le réseau               |
-| **OctoPrint**    | Tous    | Expérimental               | OctoPrint                 | Voir notes ci-dessous            |
-| **Autre**        | -       | Non pris en charge         | -                         | Demander le support              |
+| Firmware         | Version | Statut                     | Pilote                           | Notes                            |
+| ---------------- | ------- | -------------------------- | -------------------------------- | -------------------------------- |
+| **GRBL**         | 1.1+    | Entièrement pris en charge | GRBL Serial / GRBL Serial Simple | Recommandé                       |
+| **grblHAL**      | 2023+   | Compatible                 | GRBL Serial / GRBL Telnet        | Fork GRBL moderne                |
+| **GRBL**         | 0.9     | Limité                     | GRBL Serial                      | Ancien, peut avoir des problèmes |
+| **Smoothieware** | Tous    | Compatible                 | SmoothieDriver (Telnet)          | Basé sur le réseau               |
+| **Marlin**       | 2.0+    | Compatible                 | Marlin Serial                    | Mode laser requis                |
+| **ESP3D**        | Tous    | Compatible                 | GRBL Telnet                      | Basé sur le réseau               |
+| **OctoPrint**    | Tous    | Expérimental               | OctoPrint                        | Voir notes ci-dessous            |
+| **Autre**        | -       | Non pris en charge         | -                                | Demander le support              |
 
 ---
 
@@ -92,6 +92,32 @@ GRBL 0.9 est une ancienne version avec quelques problèmes de compatibilité :
 3. **Testez minutieusement** - certaines fonctionnalités peuvent ne pas fonctionner
 
 **Instructions de mise à niveau :** Voir [GRBL Wiki](https://github.com/gnea/grbl/wiki)
+
+### Pilote GRBL Serial Simple
+
+Rayforge inclut un second pilote série GRBL pour les appareils où le
+pilote standard à comptage de tampon provoque de fausses alarmes ou
+des erreurs de communication.
+
+**Fonctionnement :**
+
+- Utilise un protocole ping-pong : envoyer une ligne, attendre « ok », envoyer la suivante
+- Pas de gestion de tampon par comptage de caractères
+- Pas de détection d'interblocage ni de récupération de blocage
+- Plus simple et plus prévisible sur certains appareils
+
+**Quand l'utiliser :**
+
+- Votre appareil reçoit de fausses alarmes de tampon avec le pilote standard
+- Des erreurs de communication surviennent par intermittence avec le pilote standard
+- Vous avez un appareil avec un comportement de tampon inhabituel
+
+**Quand ne pas l'utiliser :**
+
+- Le pilote GRBL Serial standard fonctionne de manière fiable sur la plupart des appareils
+- Le pilote simple n'a pas de récupération d'interblocage, donc les
+  travaux peuvent s'arrêter sur une réponse « ok » perdue sans
+  récupération automatique
 
 ---
 

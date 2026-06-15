@@ -66,6 +66,19 @@
   </screenshots>
 
   <releases>
+    <release version="1.8.0" date="2026-06-16">
+      <description>
+        <p>LightBurn device profile import and bug fixes</p>
+        <p>New Features:</p>
+        <ul>
+          <li>LightBurn device profile (.lbdev) import with camera
+          calibration and device configuration</li>
+          <li>Import LightBurn layer settings as Rayforge step
+          parameters</li>
+        </ul>
+        <p>Updated translations</p>
+      </description>
+    </release>
     <release version="1.8.0~beta3" date="2026-06-14">
       <description>
         <p>LightBurn import, raygeo API update, and bug fixes</p>

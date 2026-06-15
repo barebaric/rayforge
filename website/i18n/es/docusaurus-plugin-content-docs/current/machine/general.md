@@ -20,6 +20,16 @@ desplegable de selección cuando tienes varias máquinas configuradas.
 Selecciona el controlador que corresponda al control de tu máquina. El
 controlador gestiona la comunicación entre Rayforge y el hardware.
 
+Los dispositivos GRBL tienen dos opciones de controlador serie:
+
+- **GRBL (Serial)** — Controlador con contador de búfer, detección de
+  bloqueos y recuperación de paradas. Recomendado para la mayoría de
+  dispositivos GRBL
+- **GRBL (Serial Simple)** — Controlador de protocolo ping-pong. Envía
+  una línea, espera "ok", envía la siguiente. Sin gestión de búfer ni
+  detección de bloqueos. Útil cuando el controlador estándar genera
+  falsas alarmas
+
 Tras seleccionar un controlador, aparecerán debajo del selector los ajustes
 específicos de conexión (p. ej., puerto serie, baud rate). Estos varían según
 el controlador elegido.

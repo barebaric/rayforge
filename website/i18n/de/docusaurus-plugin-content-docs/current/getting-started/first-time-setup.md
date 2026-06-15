@@ -20,6 +20,11 @@ Wenn dein Gerät verbunden und eingeschaltet ist, kannst du auf **Other Device�
 klicken, um den [Konfigurations-Assistenten](../machine/config-wizard) zu
 verwenden, der deine Maschine automatisch erkennt und konfiguriert.
 
+Wenn du ein LightBurn-Geräteprofil (.lbdev) mit Kamerakalibrierung und
+Geräteeinstellungen hast, kannst du auf **Import from File…** klicken und die
+.lbdev-Datei auswählen. Die Kamerakalibrierung und Lasereinstellungen deines
+LightBurn-Setups werden auf die neue Maschine übertragen.
+
 Nach der Auswahl öffnet sich der Maschineneinstellungs-Dialog für deine neue Maschine.
 
 ## Schritt 3: Allgemeine Einstellungen konfigurieren

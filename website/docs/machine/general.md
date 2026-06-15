@@ -19,6 +19,14 @@ the machine selector dropdown when you have multiple machines configured.
 Select the driver that matches your machine's controller. The driver
 handles communication between Rayforge and the hardware.
 
+GRBL devices have two serial driver options:
+
+- **GRBL (Serial)** — Buffer-counting driver with deadlock detection and
+  stall recovery. Recommended for most GRBL devices
+- **GRBL (Serial Simple)** — Ping-pong protocol driver. Sends one line,
+  waits for "ok", sends the next. No buffer management, no deadlock
+  detection. Useful when the standard driver causes false alarms
+
 After selecting a driver, connection-specific settings appear below the
 selector (e.g. serial port, baud rate). These vary depending on the
 chosen driver.

@@ -21,6 +21,16 @@ configurées.
 Sélectionnez le pilote correspondant au contrôleur de votre machine. Le
 pilote gère la communication entre Rayforge et le matériel.
 
+Les appareils GRBL disposent de deux options de pilote série :
+
+- **GRBL (Serial)** — Pilote avec comptage de tampon, détection
+  d'interblocage et récupération de blocage. Recommandé pour la plupart
+  des appareils GRBL
+- **GRBL (Serial Simple)** — Pilote à protocole ping-pong. Envoie une
+  ligne, attend « ok », envoie la suivante. Sans gestion de tampon ni
+  détection d'interblocage. Utile lorsque le pilote standard déclenche
+  de fausses alarmes
+
 Après avoir sélectionné un pilote, des paramètres de connexion spécifiques
 apparaissent sous le sélecteur (ex. : port série, baud rate). Ils varient
 selon le pilote choisi.
