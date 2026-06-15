@@ -162,27 +162,30 @@ class SvgVectorImporter(SvgImporterBase):
             else all_layer_ids
         )
 
+        # Layer geometry from svgelements is in pixel space and needs
+        # conversion to user space.
         geometries_by_layer_px = self._parse_geometry_by_layer(
             self.svg, target_layer_ids
         )
 
-        # If layer-specific parsing found nothing (e.g., SVG has no layers),
-        # fall back to parsing the whole SVG into a default 'None' layer.
-        # This ensures geometry is always extracted from valid files.
-        if not geometries_by_layer_px:
+        if geometries_by_layer_px:
+            geometries_by_layer_user = self._convert_pixel_geo_to_user_geo(
+                self.svg, geometries_by_layer_px
+            )
+        else:
+            # No explicit layers: fall back to parsing the whole SVG via
+            # raygeo, which returns geometry in user space directly.
+            geometries_by_layer_user = {}
             logger.debug(
                 "No layer-specific geometry found, parsing entire SVG as "
                 "default."
             )
+            assert self.trimmed_data is not None
             geo = self._convert_svg_to_geometry(
-                self.svg, translate_to_origin=False
+                self.trimmed_data, translate_to_origin=False
             )
             if not geo.is_empty():
-                geometries_by_layer_px[None] = geo
-
-        geometries_by_layer_user = self._convert_pixel_geo_to_user_geo(
-            self.svg, geometries_by_layer_px
-        )
+                geometries_by_layer_user[None] = geo
 
         return VectorizationResult(
             geometries_by_layer=geometries_by_layer_user,
