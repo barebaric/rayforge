@@ -122,7 +122,6 @@ def test_calculate_parsing_basics_success():
 
     assert result is not None
     (
-        svg_obj,
         document_bounds_units,
         unit_to_mm,
         untrimmed_bounds,
@@ -151,7 +150,7 @@ def test_calculate_parsing_basics_world_frame():
     result = importer._calculate_parsing_basics()
 
     assert result is not None
-    _, _, unit_to_mm, untrimmed_bounds, world_frame = result
+    _, unit_to_mm, untrimmed_bounds, world_frame = result
 
     assert untrimmed_bounds is not None
     # The world frame should be based on the untrimmed bounds.
