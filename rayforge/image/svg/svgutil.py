@@ -8,8 +8,8 @@ with warnings.catch_warnings():
     import pyvips
 
 from raygeo.geo.types import Rect
+from raygeo.svg import extract_svg_metadata, parse_svg_length, svg_length_to_mm
 
-from ..util import parse_length, to_mm
 from .svg_fallback import (
     SVG_LOAD_AVAILABLE,
     cairo_surface_to_vips,
@@ -73,8 +73,11 @@ def _get_margins_from_data(
         if not w_str or not h_str:
             return 0.0, 0.0, 0.0, 0.0  # Cannot determine aspect ratio.
 
-        orig_w, _ = parse_length(w_str)
-        orig_h, _ = parse_length(h_str)
+        orig_w, w_unit = parse_svg_length(w_str)
+        orig_h, h_unit = parse_svg_length(h_str)
+        # Normalise to numeric values (unit suffix is handled separately)
+        orig_w = float(orig_w)
+        orig_h = float(orig_h)
 
         if orig_w <= 0 or orig_h <= 0:
             return 0.0, 0.0, 0.0, 0.0
@@ -174,8 +177,8 @@ def trim_svg(data: bytes) -> bytes:
         if not w_str or not h_str:
             return data  # Cannot proceed without dimensions
 
-        w_val, w_unit = parse_length(w_str)
-        h_val, h_unit = parse_length(h_str)
+        w_val, w_unit = parse_svg_length(w_str)
+        h_val, h_unit = parse_svg_length(h_str)
 
         vb_str = root.get("viewBox")
         if vb_str:
@@ -224,14 +227,10 @@ def is_unitless_svg(data: bytes) -> bool:
     if not data:
         return False
     try:
-        root = ET.fromstring(data)
-        w_str = root.get("width")
-        h_str = root.get("height")
-        if not w_str or not h_str:
+        meta = extract_svg_metadata(data.decode("utf-8"))
+        if meta.width is None and meta.height is None:
             return True
-        _, w_unit = parse_length(w_str)
-        _, h_unit = parse_length(h_str)
-        return w_unit in ("", "px") and h_unit in ("", "px")
+        return meta.width_unit in ("", "px") and meta.height_unit in ("", "px")
     except (ValueError, ET.ParseError):
         return False
 
@@ -254,20 +253,14 @@ def get_natural_size(
         return None
 
     try:
-        root = ET.fromstring(data)
-
-        w_str = root.get("width")
-        h_str = root.get("height")
-        if not w_str or not h_str:
+        meta = extract_svg_metadata(data.decode("utf-8"))
+        if meta.width is None or meta.height is None:
             return None
 
-        w_val, w_unit = parse_length(w_str)
-        h_val, h_unit = parse_length(h_str)
-
-        mm_per_px = 25.4 / ppi
-        width_mm = to_mm(w_val, w_unit, px_factor=mm_per_px)
-        height_mm = to_mm(h_val, h_unit, px_factor=mm_per_px)
-
+        width_mm = svg_length_to_mm(f"{meta.width}{meta.width_unit}", dpi=ppi)
+        height_mm = svg_length_to_mm(
+            f"{meta.height}{meta.height_unit}", dpi=ppi
+        )
         return width_mm, height_mm
 
     except (ValueError, ET.ParseError):
