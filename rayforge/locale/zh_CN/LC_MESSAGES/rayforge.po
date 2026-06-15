@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-11 19:42+0200\n"
+"POT-Creation-Date: 2026-06-15 20:47+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -1383,6 +1383,58 @@ msgstr "机器范围"
 msgid "{name} (device dialect)"
 msgstr "{name}（设备方言）"
 
+#: rayforge/machine/device/lightburn_importer.py
+msgid "• Camera calibration: matrix + distortion found"
+msgstr "• 相机标定：矩阵+畸变已找到"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "(no fields mapped)"
+msgstr "（未映射字段）"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Device name"
+msgstr "设备名称"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Work area"
+msgstr "工作区域"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Driver"
+msgstr "驱动"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Baud rate"
+msgstr "波特率"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Home on start"
+msgstr "启动时回原点"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Max travel speed"
+msgstr "最大移动速度"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Origin"
+msgstr "原点"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Mirror X"
+msgstr "镜像X"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Mirror Y"
+msgstr "镜像Y"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "Camera calibration"
+msgstr "相机标定"
+
+#: rayforge/machine/device/lightburn_importer.py
+msgid "matrix + distortion imported"
+msgstr "矩阵+畸变已导入"
+
 #: rayforge/machine/models/dialect_manager.py
 #: rayforge/machine/models/machine.py
 #, python-brace-format
@@ -1803,6 +1855,7 @@ msgstr "此机器配置文件及其所有设置将被永久删除。此操作无
 #: rayforge/ui_gtk/machine/hook_list.py rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/wcs_dialog.py
 #: rayforge/ui_gtk/machine/maintenance_page.py
+#: rayforge/ui_gtk/machine/lbdev_import_dialog.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/profile_selector.py
 #: rayforge/ui_gtk/machine/template_selector.py
@@ -3236,6 +3289,10 @@ msgid "Device Profile archives"
 msgstr "设备配置文件归档"
 
 #: rayforge/ui_gtk/machine/profile_importer.py
+msgid "LightBurn device profiles"
+msgstr "LightBurn设备配置文件"
+
+#: rayforge/ui_gtk/machine/profile_importer.py
 msgid "All files"
 msgstr "所有文件"
 
@@ -3461,6 +3518,28 @@ msgstr "无法连接：正被'{machine}'使用"
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Machine activated."
 msgstr "机器已激活。"
+
+#: rayforge/ui_gtk/machine/lbdev_import_dialog.py
+msgid "Import LightBurn profile?"
+msgstr "导入LightBurn配置？"
+
+#: rayforge/ui_gtk/machine/lbdev_import_dialog.py
+msgid ""
+"LightBurn device profiles contain only basic machine settings. The imported "
+"profile may be incomplete. After import, please review and configure any "
+"additional settings such as laser heads, homing, end stops, G-code dialect, "
+"macros, and rotary modules."
+msgstr ""
+"LightBurn设备配置文件仅包含基本机器设置。导入的配置可能不完整。导入后，请检查"
+"并配置任何其他设置，如激光头、回原点、限位开关、G代码方言、宏和旋转模块。"
+
+#: rayforge/ui_gtk/machine/lbdev_import_dialog.py
+msgid "Import Anyway"
+msgstr "仍然导入"
+
+#: rayforge/ui_gtk/machine/lbdev_import_dialog.py
+msgid "The following values will be imported:"
+msgstr "将导入以下值："
 
 #: rayforge/ui_gtk/machine/hooks_macros_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
