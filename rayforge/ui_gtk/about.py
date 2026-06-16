@@ -157,6 +157,7 @@ def get_dependency_info() -> dict:
         "pypdf",
         "PyYAML",
         "pyserial",
+        "pyusb",
         "aiohttp",
         "websockets",
     ]:
