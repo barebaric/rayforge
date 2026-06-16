@@ -32,12 +32,6 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Checkout raygeo source
-        uses: actions/checkout@v6
-        with:
-          repository: barebaric/raygeo
-          path: external/raygeo
-
       - name: Install Pixi
         uses: prefix-dev/setup-pixi@v0.9.4
         with:

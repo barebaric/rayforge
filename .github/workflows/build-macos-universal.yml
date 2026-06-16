@@ -28,12 +28,6 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Checkout raygeo source
-        uses: actions/checkout@v6
-        with:
-          repository: barebaric/raygeo
-          path: external/raygeo
-
       - name: Set Version
         id: set-version
         shell: bash
@@ -70,12 +64,6 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-
-      - name: Checkout raygeo source
-        uses: actions/checkout@v6
-        with:
-          repository: barebaric/raygeo
-          path: external/raygeo
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -130,12 +118,6 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-
-      - name: Checkout raygeo source
-        uses: actions/checkout@v6
-        with:
-          repository: barebaric/raygeo
-          path: external/raygeo
 
       - name: Set up Python
         uses: actions/setup-python@v5
