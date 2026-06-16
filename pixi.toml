@@ -34,7 +34,7 @@ rust = "*"
 patchelf = "*"
 
 [feature.app.pypi-dependencies]
-raygeo = "==0.8.0"
+raygeo = "==0.9.0"
 rayforge = { editable = true, path = "." }
 aiohttp = "==3.14.0"
 asyncudp = "==0.11.0"
@@ -157,7 +157,6 @@ depends-on = ["compile-translations"]
 [dependencies]
 libglvnd = ">=1.7.0,<2"
 libadwaita = ">=1.8.4,<2"
-pyright = ">=1.1.409,<2"
 
 # Tasks for developing and generating the website
 [feature.website.tasks]
