@@ -34,7 +34,7 @@ rust = "*"
 patchelf = "*"
 
 [feature.app.pypi-dependencies]
-raygeo = { path = "external/raygeo", editable = true }
+raygeo = "==0.8.0"
 rayforge = { editable = true, path = "." }
 aiohttp = "==3.14.0"
 asyncudp = "==0.11.0"
@@ -143,9 +143,6 @@ cmd = "scripts/with_gdk.sh scripts/screenshot/cli.py"
 [tasks.wheel]
 cmd = "python3 -m build"
 depends-on = ["compile-translations"]
-
-[tasks.reinstall-raygeo]
-cmd = "rm -Rf .pixi/envs/default/lib/python3.12/site-packages/raygeo* && pixi clean cache -y && pixi install"
 
 [tasks.build-deb]
 # Builds a binary .deb package for local installation and testing.
