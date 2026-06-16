@@ -860,8 +860,10 @@ def _handle_arc_to(
             mu_end[2],
             mu_i,
             mu_j,
-            1.0 if mu_cw else 0.0,
             0.0,
+            0.0,
+            0.0,
+            -1.0 if mu_cw else 1.0,
         ]
         segments = linearize_arc(arc_row, st.current_pos)
         vis_segs = []
@@ -885,8 +887,10 @@ def _handle_arc_to(
             end[2],
             i_val,
             j_val,
-            1.0 if cw else 0.0,
             0.0,
+            0.0,
+            0.0,
+            -1.0 if cw else 1.0,
         ]
         segments = linearize_arc(arc_row, st.current_pos)
         vis_segs = segments
