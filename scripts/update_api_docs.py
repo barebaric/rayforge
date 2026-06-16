@@ -1,15 +1,33 @@
-"""Copy pre-generated raygeo API docs from external/raygeo/docs/api/.
+"""Download and sync raygeo API docs from the GitHub source archive.
 
-Raygeo now generates its own Docusaurus-compatible documentation.
-This script simply syncs those files into the website tree.
+Reads the pinned raygeo version from requirements.txt, downloads the
+matching source tarball from GitHub, and syncs docs/api/ into the
+website tree.
 """
 
+import re
 import shutil
 import sys
+import tarfile
+import tempfile
+import urllib.request
 from pathlib import Path
 
-RAYGEO_DOCS = Path("external/raygeo/docs/api")
+REPO_URL = "https://github.com/barebaric/raygeo"
+REQUIREMENTS = Path("requirements.txt")
 OUTPUT_DIR = Path("website/docs/developer/raygeo-api")
+
+
+def _get_raygeo_version() -> str:
+    text = REQUIREMENTS.read_text()
+    match = re.search(r"^raygeo==([\d.]+)", text, re.MULTILINE)
+    if not match:
+        print(
+            f"Could not find pinned raygeo version in {REQUIREMENTS}.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return match.group(1)
 
 
 def _newest_mtime(files: list[Path]) -> float:
@@ -32,7 +50,6 @@ def _sync_dir(src: Path, dst: Path) -> None:
     dst.mkdir(parents=True, exist_ok=True)
 
     src_files = set(_find_files(src, "*.*"))
-
     existing_dst_files = set(_find_files(dst, "*.*"))
 
     for src_path in src_files:
@@ -53,16 +70,35 @@ def _sync_dir(src: Path, dst: Path) -> None:
 
 
 def main() -> int:
-    if not RAYGEO_DOCS.exists():
-        print(f"Raygeo docs not found at {RAYGEO_DOCS}.", file=sys.stderr)
-        return 1
+    version = _get_raygeo_version()
+    tar_url = f"{REPO_URL}/archive/refs/tags/v{version}.tar.gz"
 
-    if not _needs_update(RAYGEO_DOCS, OUTPUT_DIR):
-        print("API docs are up to date.")
-        return 0
+    with tempfile.TemporaryDirectory() as tmp:
+        archive_path = Path(tmp) / "raygeo.tar.gz"
+        print(f"Downloading raygeo v{version} source...")
+        urllib.request.urlretrieve(tar_url, archive_path)
 
-    print("Syncing raygeo API docs...")
-    _sync_dir(RAYGEO_DOCS, OUTPUT_DIR)
+        prefix = f"raygeo-{version}"
+        docs_src = Path(tmp) / prefix / "docs" / "api"
+
+        print("Extracting docs/api from archive...")
+        with tarfile.open(archive_path, "r:gz") as tar:
+            tar.extractall(path=tmp, filter="data")
+
+        if not docs_src.exists():
+            print(
+                f"docs/api/ not found in the v{version} archive.",
+                file=sys.stderr,
+            )
+            return 1
+
+        if not _needs_update(docs_src, OUTPUT_DIR):
+            print("API docs are up to date.")
+            return 0
+
+        print("Syncing raygeo API docs...")
+        _sync_dir(docs_src, OUTPUT_DIR)
+
     return 0
 
 
