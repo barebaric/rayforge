@@ -283,7 +283,7 @@ class Rasterizer(OpsProducer):
                     )
 
                 if not mode_ops.is_empty():
-                    final_ops.set_laser(laser.uid)
+                    final_ops.set_head(laser.uid)
                     final_ops.extend(mode_ops)
 
         final_ops.ops_section_end(SectionType.RASTER_FILL)

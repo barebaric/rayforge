@@ -42,16 +42,16 @@ class TestTiming:
         ops.line_to(60, 0, 0)
         # Distance = 60mm
         # At 1200mm/min = 20mm/s, time = 60/20 = 3s + acceleration
-        actual_time = ops.estimate_time(default_cut_speed=1200.0)
+        actual_time = ops.estimate_time(default_feed_rate=1200.0)
         # Should be around 3.02s with acceleration
         assert 3.0 < actual_time < 3.05
 
     def test_speed_commands(self):
         """Test timing estimation with speed change commands."""
         ops = Ops()
-        ops.set_cut_speed(600)  # 10mm/s
+        ops.set_feed_rate(600)  # 10mm/s
         ops.line_to(50, 0, 0)  # 5s at 10mm/s
-        ops.set_travel_speed(1200)  # 20mm/s
+        ops.set_rapid_rate(1200)  # 20mm/s
         ops.move_to(50, 50, 0)  # 2.5s at 20mm/s
         actual_time = ops.estimate_time()
         # Should be around 7.53s with acceleration
@@ -134,7 +134,7 @@ class TestTiming:
     def test_estimate_time_does_not_mutate_commands(self):
         """Test that estimate_time does not set .state on commands."""
         ops = Ops()
-        ops.set_cut_speed(500)
+        ops.set_feed_rate(500)
         ops.line_to(10, 0, 0)
 
         for i in range(ops.len()):
@@ -193,8 +193,8 @@ class TestTiming:
         ops = Ops()
         ops.line_to(100, 0, 0)
 
-        time_fast = ops.estimate_time(default_cut_speed=2000.0)
-        time_slow = ops.estimate_time(default_cut_speed=500.0)
+        time_fast = ops.estimate_time(default_feed_rate=2000.0)
+        time_slow = ops.estimate_time(default_feed_rate=500.0)
         assert time_fast < time_slow
 
     def test_cache_preserved_on_copy(self):

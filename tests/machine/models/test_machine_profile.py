@@ -37,7 +37,7 @@ async def test_carvera_air_gcode_generation(carvera_air_machine: "Machine"):
     machine = carvera_air_machine
     ops = Ops()
     ops.job_start()
-    ops.set_cut_speed(600)
+    ops.set_feed_rate(600)
     ops.set_power(0.5)
     ops.line_to(10.123, 20.456, 0)
     ops.job_end()
@@ -88,7 +88,7 @@ async def test_inject_wcs_after_preamble_flag(carvera_air_machine: "Machine"):
     machine = carvera_air_machine
     ops = Ops()
     ops.job_start()
-    ops.set_cut_speed(600)
+    ops.set_feed_rate(600)
     ops.set_power(0.5)
     ops.line_to(10.123, 20.456, 0)
     ops.job_end()

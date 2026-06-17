@@ -1,6 +1,7 @@
 import pytest
 from post_processors.transformers import Optimize
 from raygeo.ops import Ops
+from raygeo.ops.state import CoolantMode
 from raygeo.ops.types import CommandCategory, CommandType
 
 
@@ -233,7 +234,7 @@ def test_run_with_air_assist_change(mock_progress_context):
     ops.move_to(0, 10)
     ops.line_to(10, 10)  # Seg A2
 
-    ops.enable_air_assist(True)
+    ops.set_coolant(CoolantMode.AIR)
 
     # Part 2: Air Assist ON - Inefficient path
     ops.move_to(100, 100)
@@ -252,7 +253,7 @@ def test_run_with_air_assist_change(mock_progress_context):
     for i in range(ops.len()):
         if ops.category(i) == CommandCategory.MOVING:
             state = ops.state(i)
-            if state is not None and state.air_assist:
+            if state is not None and state.coolant == CoolantMode.AIR:
                 air_on_idx = i
                 break
 
@@ -265,7 +266,7 @@ def test_run_with_air_assist_change(mock_progress_context):
                 "Points from Part 1 should be in first half"
             )
             state = ops.state(i)
-            assert state is None or not state.air_assist, (
+            assert state is None or state.coolant != CoolantMode.AIR, (
                 "State should be air OFF"
             )
 
@@ -276,7 +277,7 @@ def test_run_with_air_assist_change(mock_progress_context):
                 "Points from Part 2 should be second half"
             )
             state = ops.state(i)
-            assert state is not None and state.air_assist, (
+            assert state is not None and state.coolant == CoolantMode.AIR, (
                 "State should be air ON"
             )
 
@@ -501,8 +502,8 @@ def test_run_optimization_scanline_flip_preserves_state(
     """
     ops = Ops()
     ops.set_power(0.85)
-    ops.set_cut_speed(1234)
-    ops.enable_air_assist(True)
+    ops.set_feed_rate(1234)
+    ops.set_coolant(CoolantMode.AIR)
 
     # Path 1: A vector line from (0,0) to (10,0)
     ops.move_to(0, 0)
@@ -531,15 +532,15 @@ def test_run_optimization_scanline_flip_preserves_state(
     move_state = ops.state(move_idx)
     assert move_state is not None
     assert move_state.power == pytest.approx(0.85)
-    assert move_state.cut_speed == pytest.approx(1234)
-    assert move_state.air_assist is True
+    assert move_state.feed_rate == pytest.approx(1234)
+    assert move_state.coolant == CoolantMode.AIR
 
     # Check state on the flipped ScanLinePowerCommand
     scan_state = ops.state(scan_idx)
     assert scan_state is not None
     assert scan_state.power == pytest.approx(0.85)
-    assert scan_state.cut_speed == pytest.approx(1234)
-    assert scan_state.air_assist is True
+    assert scan_state.feed_rate == pytest.approx(1234)
+    assert scan_state.coolant == CoolantMode.AIR
 
 
 def test_run_optimization_scanline_split_preserves_state(
@@ -551,8 +552,8 @@ def test_run_optimization_scanline_split_preserves_state(
     """
     ops = Ops()
     ops.set_power(0.77)
-    ops.set_travel_speed(5678)
-    ops.enable_air_assist(False)
+    ops.set_rapid_rate(5678)
+    ops.set_coolant(CoolantMode.OFF)
 
     # A raster line that stays as a single atomic sweep
     ops.move_to(0, 0)
@@ -581,15 +582,15 @@ def test_run_optimization_scanline_split_preserves_state(
         move_state = ops.state(move_idx)
         assert move_state is not None
         assert move_state.power == pytest.approx(0.77)
-        assert move_state.travel_speed == pytest.approx(5678)
-        assert move_state.air_assist is False
+        assert move_state.rapid_rate == pytest.approx(5678)
+        assert move_state.coolant == CoolantMode.OFF
 
         # Verify state on the new ScanLinePowerCommand for the sub-segment
         scan_state = ops.state(scan_idx)
         assert scan_state is not None
         assert scan_state.power == pytest.approx(0.77)
-        assert scan_state.travel_speed == pytest.approx(5678)
-        assert scan_state.air_assist is False
+        assert scan_state.rapid_rate == pytest.approx(5678)
+        assert scan_state.coolant == CoolantMode.OFF
 
 
 def test_run_with_state_change_and_scanlines(mock_progress_context):
@@ -679,7 +680,7 @@ def test_run_optimization_with_overscan_and_flip_preserves_state(
     """
     ops = Ops()
     ops.set_power(0.66)
-    ops.set_cut_speed(2000)
+    ops.set_feed_rate(2000)
 
     # Path 1: A vector line from (0,0) to (10,10)
     ops.move_to(0, 0)
@@ -717,13 +718,13 @@ def test_run_optimization_with_overscan_and_flip_preserves_state(
     move_state = ops.state(move_idx)
     assert move_state is not None
     assert move_state.power == pytest.approx(0.66)
-    assert move_state.cut_speed == pytest.approx(2000)
+    assert move_state.feed_rate == pytest.approx(2000)
 
     # Check state on the flipped ScanLinePowerCommand
     scan_state = ops.state(flipped_scan_idx)
     assert scan_state is not None
     assert scan_state.power == pytest.approx(0.66)
-    assert scan_state.cut_speed == pytest.approx(2000)
+    assert scan_state.feed_rate == pytest.approx(2000)
 
     # Verify the geometry and power values were flipped correctly
     assert ops.endpoint(move_idx) == pytest.approx(end_pt_overscan)

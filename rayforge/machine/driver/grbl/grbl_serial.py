@@ -912,8 +912,8 @@ class GrblSerialDriver(Driver):
         gcode_lines = encoded.text.splitlines()
 
         command_times = ops.estimate_command_times(
-            default_cut_speed=self._machine.max_cut_speed,
-            default_travel_speed=self._machine.max_travel_speed,
+            default_feed_rate=self._machine.max_cut_speed,
+            default_rapid_rate=self._machine.max_travel_speed,
             acceleration=self._machine.acceleration,
         )
 

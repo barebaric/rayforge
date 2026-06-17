@@ -303,24 +303,22 @@ class GcodeEncoder(OpsEncoder):
 
         if ct == CommandType.SET_POWER:
             self._update_power(context, gcode, ops.power(idx))
-        elif ct == CommandType.SET_CUT_SPEED:
+        elif ct == CommandType.SET_FEED_RATE:
             # Cut speed limits are the responsibility of the Ops
             # producer. The encoder trusts the value it receives.
-            self.cut_speed = ops.speed(idx)
-        elif ct == CommandType.SET_TRAVEL_SPEED:
+            self.cut_speed = ops.rate(idx)
+        elif ct == CommandType.SET_RAPID_RATE:
             self.travel_speed = min(
-                ops.speed(idx), context.machine.max_travel_speed
+                ops.rate(idx), context.machine.max_travel_speed
             )
         elif ct == CommandType.SET_FREQUENCY:
             self.frequency = ops.frequency(idx)
         elif ct == CommandType.SET_PULSE_WIDTH:
             self.pulse_width = ops.pulse_width(idx)
-        elif ct == CommandType.ENABLE_AIR_ASSIST:
-            self._set_air_assist(context, gcode, True)
-        elif ct == CommandType.DISABLE_AIR_ASSIST:
-            self._set_air_assist(context, gcode, False)
-        elif ct == CommandType.SET_LASER:
-            self._handle_set_laser(context, gcode, ops.laser_uid(idx))
+        elif ct == CommandType.SET_COOLANT:
+            self._handle_coolant(context, gcode, ops.coolant(idx))
+        elif ct == CommandType.SET_HEAD:
+            self._handle_set_laser(context, gcode, ops.head_uid(idx))
         elif cat == CommandCategory.MOVING:
             self._handle_moving(gcode, ops, idx, ct, context)
         elif ct == CommandType.DWELL:
@@ -352,7 +350,7 @@ class GcodeEncoder(OpsEncoder):
             # first M5 and updates the internal state.
             self._laser_off(context, gcode)
             if self.air_assist:
-                self._set_air_assist(context, gcode, False)
+                self._handle_coolant(context, gcode, "Off")
             gcode.extend(
                 self._format_script_lines(self.dialect.postscript, context)
             )
@@ -504,16 +502,17 @@ class GcodeEncoder(OpsEncoder):
             else:  # power <= 0
                 self._laser_off(context, gcode)
 
-    def _set_air_assist(
-        self, context: GcodeContext, gcode: List[str], state: bool
+    def _handle_coolant(
+        self, context: GcodeContext, gcode: List[str], mode: str
     ) -> None:
-        """Update air assist state with dialect commands"""
-        if self.air_assist == state:
+        """Update coolant state with dialect commands"""
+        coolant_on = mode == "Air"
+        if self.air_assist == coolant_on:
             return
-        self.air_assist = state
+        self.air_assist = coolant_on
         cmd = (
             self.dialect.air_assist_on
-            if state
+            if coolant_on
             else self.dialect.air_assist_off
         )
         if cmd:

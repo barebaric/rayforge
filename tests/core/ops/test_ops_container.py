@@ -8,7 +8,7 @@ import pytest
 from raygeo.geo import Geometry
 from raygeo.ops import Ops, OpsSection, OpsSectionRange
 from raygeo.ops.axis import Axis
-from raygeo.ops.state import State
+from raygeo.ops.state import CoolantMode, State
 from raygeo.ops.types import CommandCategory, CommandType, SectionType
 
 
@@ -23,7 +23,7 @@ def sample_ops():
     ops.move_to(0, 0)
     ops.line_to(10, 10)
     ops.set_power(0.5)
-    ops.enable_air_assist()
+    ops.set_coolant(CoolantMode.AIR)
     return ops
 
 
@@ -62,7 +62,7 @@ def test_ops_extend(sample_ops):
     # Create another Ops object to extend with
     ops2 = Ops()
     ops2.move_to(20, 20)
-    ops2.set_cut_speed(1000)
+    ops2.set_feed_rate(1000)
 
     original_len = len(sample_ops)
     len_to_add = len(ops2)
@@ -76,7 +76,7 @@ def test_ops_extend(sample_ops):
     # Verify the last two commands match what was appended
     assert sample_ops.command_type(-2) == CommandType.MOVE_TO
     assert sample_ops.endpoint(-2) == (20, 20, 0)
-    assert sample_ops.command_type(-1) == CommandType.SET_CUT_SPEED
+    assert sample_ops.command_type(-1) == CommandType.SET_FEED_RATE
 
 
 def test_ops_extend_with_empty(sample_ops):
@@ -206,25 +206,25 @@ def test_set_power(sample_ops):
 
 
 def test_set_cut_speed(sample_ops):
-    sample_ops.set_cut_speed(300)
+    sample_ops.set_feed_rate(300)
     last_idx = sample_ops.len() - 1
-    assert sample_ops.command_type(last_idx) == CommandType.SET_CUT_SPEED
-    assert sample_ops.inspect(last_idx).speed == 300
+    assert sample_ops.command_type(last_idx) == CommandType.SET_FEED_RATE
+    assert sample_ops.inspect(last_idx).feed_rate == 300
 
 
 def test_set_travel_speed(sample_ops):
-    sample_ops.set_travel_speed(2000)
+    sample_ops.set_rapid_rate(2000)
     last_idx = sample_ops.len() - 1
-    assert sample_ops.command_type(last_idx) == CommandType.SET_TRAVEL_SPEED
-    assert sample_ops.inspect(last_idx).speed == 2000.0
+    assert sample_ops.command_type(last_idx) == CommandType.SET_RAPID_RATE
+    assert sample_ops.inspect(last_idx).rapid_rate == 2000
 
 
 def test_set_laser():
     ops = Ops()
-    ops.set_laser("laser-abc")
+    ops.set_head("laser-abc")
     last_idx = ops.len() - 1
-    assert ops.command_type(last_idx) == CommandType.SET_LASER
-    assert ops.inspect(last_idx).laser_uid == "laser-abc"
+    assert ops.command_type(last_idx) == CommandType.SET_HEAD
+    assert ops.inspect(last_idx).head_uid == "laser-abc"
 
 
 def test_set_frequency():
@@ -244,16 +244,14 @@ def test_set_pulse_width():
 
 
 def test_enable_disable_air_assist(empty_ops):
-    empty_ops.enable_air_assist()
+    empty_ops.set_coolant(CoolantMode.AIR)
     assert (
-        empty_ops.command_type(empty_ops.len() - 1)
-        == CommandType.ENABLE_AIR_ASSIST
+        empty_ops.command_type(empty_ops.len() - 1) == CommandType.SET_COOLANT
     )
 
-    empty_ops.enable_air_assist(False)
+    empty_ops.set_coolant(CoolantMode.OFF)
     assert (
-        empty_ops.command_type(empty_ops.len() - 1)
-        == CommandType.DISABLE_AIR_ASSIST
+        empty_ops.command_type(empty_ops.len() - 1) == CommandType.SET_COOLANT
     )
 
 
@@ -298,7 +296,7 @@ def test_rect_includes_travel():
 
 
 def test_get_frame(sample_ops):
-    frame = sample_ops.get_frame(power=1.0, speed=500)
+    frame = sample_ops.get_frame(power=1.0, feed_rate=500)
     assert (
         sum(
             1
@@ -370,7 +368,7 @@ def test_preload_state_application():
     ops = Ops()
     ops.set_power(0.3)
     ops.line_to(5, 5)
-    ops.set_cut_speed(200)
+    ops.set_feed_rate(200)
     ops.preload_state()
 
     state1 = ops.inspect(1).state
@@ -1140,11 +1138,11 @@ def test_serialization_deserialization_all_types():
     ops.layer_start("layer-1")
     ops.workpiece_start("wp-1")
     ops.ops_section_start(SectionType.RASTER_FILL, "wp-1")
-    ops.set_travel_speed(5000)
-    ops.set_cut_speed(1000)
+    ops.set_rapid_rate(5000)
+    ops.set_feed_rate(1000)
     ops.set_power(0.8)
-    ops.enable_air_assist()
-    ops.set_laser("laser-2")
+    ops.set_coolant(CoolantMode.AIR)
+    ops.set_head("laser-2")
     ops.move_to(1, 1, 1)
     ops.line_to(2, 2, 2)
     ops.arc_to(3, 1, 1, 1, clockwise=False)
@@ -1433,7 +1431,7 @@ def test_estimate_time_with_custom_speeds():
     # Custom speeds: 1200 mm/min cut, 2400 mm/min travel
     # Disable acceleration for simpler calculation
     time_est = ops.estimate_time(
-        default_cut_speed=1200.0, default_travel_speed=2400.0, acceleration=0
+        default_feed_rate=1200.0, default_rapid_rate=2400.0, acceleration=0
     )
 
     # Expected: 60mm @ 1200mm/min + 100mm @ 2400mm/min
@@ -1446,9 +1444,9 @@ def test_estimate_time_with_state_commands():
     """Test time estimation respects state commands."""
     ops = Ops()
     ops.move_to(0, 0)
-    ops.set_cut_speed(2000)  # Faster cutting speed
+    ops.set_feed_rate(2000)  # Faster cutting speed
     ops.line_to(100, 0)  # 100mm cut at 2000mm/min
-    ops.set_travel_speed(6000)  # Faster travel speed
+    ops.set_rapid_rate(6000)  # Faster travel speed
     ops.move_to(0, 100)  # 141.42mm travel at 6000mm/min
 
     # Disable acceleration for simpler calculation
@@ -1496,8 +1494,8 @@ def test_estimate_time_ignores_state_commands():
     ops = Ops()
     ops.move_to(0, 0)
     ops.set_power(0.5)  # State command
-    ops.set_cut_speed(1000)  # State command
-    ops.enable_air_assist()  # State command
+    ops.set_feed_rate(1000)  # State command
+    ops.set_coolant(CoolantMode.AIR)  # State command
     ops.line_to(60, 0)  # 60mm cut
 
     # Disable acceleration for simpler calculation
@@ -1530,7 +1528,7 @@ def test_estimate_time_complex_path():
     """Test time estimation with a complex path."""
     ops = Ops()
     ops.move_to(0, 0)
-    ops.set_cut_speed(1500)
+    ops.set_feed_rate(1500)
 
     # Square
     ops.line_to(50, 0)  # 50mm
@@ -1539,11 +1537,11 @@ def test_estimate_time_complex_path():
     ops.line_to(0, 0)  # 50mm
 
     # Move to new position
-    ops.set_travel_speed(3000)
+    ops.set_rapid_rate(3000)
     ops.move_to(100, 0)  # 100mm travel
 
     # Another square
-    ops.set_cut_speed(2000)
+    ops.set_feed_rate(2000)
     ops.line_to(150, 0)  # 50mm
     ops.line_to(150, 50)  # 50mm
 
@@ -1567,11 +1565,11 @@ def test_numpy_serialization_round_trip_all_commands():
     # Add one of each command type
     ops.job_start()  # Marker
     ops.layer_start("layer-1")  # Marker with data
-    ops.set_travel_speed(6000)  # State with data
-    ops.set_cut_speed(1500)  # State with data
+    ops.set_rapid_rate(6000)  # State with data
+    ops.set_feed_rate(1500)  # State with data
     ops.set_power(0.75)  # State with data
-    ops.enable_air_assist()  # State
-    ops.set_laser("laser-xyz")  # State with data
+    ops.set_coolant(CoolantMode.AIR)  # State
+    ops.set_head("laser-xyz")  # State with data
     ops.move_to(1, 2, 3)  # Geometric
     ops.line_to(4, 5, 6)  # Geometric
     ops.arc_to(x=7, y=8, z=9, i=1, j=-1, clockwise=False)  # Geometric
@@ -1581,7 +1579,7 @@ def test_numpy_serialization_round_trip_all_commands():
         end=(10.0, 11.0, 12.0),
     )
     ops.scan_to(10, 11, 12, bytearray([10, 20, 30]))  # Geometric
-    ops.enable_air_assist(False)  # State
+    ops.set_coolant(CoolantMode.OFF)  # State
     ops.layer_end("layer-1")  # Marker with data
     ops.job_end()  # Marker
 
@@ -1634,7 +1632,7 @@ def test_numpy_serialization_round_trip_only_state():
     """Tests round-trip with only state/marker commands."""
     ops = Ops()
     ops.set_power(0.9)
-    ops.set_laser("laser-abc")
+    ops.set_head("laser-abc")
     ops.layer_start("my-layer")
 
     arrays = ops.to_numpy_arrays()
@@ -2560,14 +2558,14 @@ def test_distance_at_none_last_point():
 def test_state_at():
     ops = Ops()
     ops.set_power(0.5)
-    ops.set_cut_speed(800)
-    ops.enable_air_assist()
+    ops.set_feed_rate(800)
+    ops.set_coolant(CoolantMode.AIR)
     ops.move_to(0, 0)
 
     state = ops.state_at(3)
     assert state.power == 0.5
-    assert state.cut_speed == 800
-    assert state.air_assist is True
+    assert state.feed_rate == 800
+    assert state.coolant == CoolantMode.AIR
 
 
 def test_state_at_no_state_commands():
@@ -2575,26 +2573,26 @@ def test_state_at_no_state_commands():
     ops.move_to(0, 0)
     state = ops.state_at(0)
     assert state.power == 0.0
-    assert state.air_assist is False
+    assert state.coolant is None
 
 
 def test_state_at_mid_sequence():
     ops = Ops()
     ops.set_power(0.3)
-    ops.set_cut_speed(500)
+    ops.set_feed_rate(500)
     ops.set_power(0.8)
     ops.move_to(0, 0)
 
     state_0 = ops.state_at(0)
     assert state_0.power == 0.3
-    assert state_0.cut_speed is None
+    assert state_0.feed_rate is None
 
     state_1 = ops.state_at(1)
-    assert state_1.cut_speed == 500
+    assert state_1.feed_rate == 500
 
     state_2 = ops.state_at(2)
     assert state_2.power == 0.8
-    assert state_2.cut_speed == 500
+    assert state_2.feed_rate == 500
 
 
 def test_set_state_on_moving():
@@ -2602,14 +2600,14 @@ def test_set_state_on_moving():
     ops.set_power(1.0)
     ops.move_to(0, 0)
     ops.line_to(10, 0)
-    ops.enable_air_assist()
+    ops.set_coolant(CoolantMode.AIR)
 
     ms = State(
         power=0.7,
-        air_assist=True,
-        cut_speed=600,
-        travel_speed=2000,
-        active_laser_uid=None,
+        coolant=CoolantMode.AIR,
+        feed_rate=600,
+        rapid_rate=2000,
+        active_head_uid=None,
         frequency=None,
         pulse_width=None,
     )
@@ -2621,8 +2619,8 @@ def test_set_state_on_moving():
     assert state_1.power == 0.7
     assert state_2 is not None
     assert state_2.power == 0.7
-    assert state_2.air_assist is True
-    assert state_2.cut_speed == 600
+    assert state_2.coolant == CoolantMode.AIR
+    assert state_2.feed_rate == 600
 
 
 def test_copy_command_from():
@@ -2679,34 +2677,34 @@ def test_dwell_duration_wrong_type():
 
 def test_speed_cut():
     ops = Ops()
-    ops.set_cut_speed(1200)
-    assert ops.speed(0) == 1200
+    ops.set_feed_rate(1200)
+    assert ops.rate(0) == 1200
 
 
 def test_speed_travel():
     ops = Ops()
-    ops.set_travel_speed(3000)
-    assert ops.speed(0) == 3000
+    ops.set_rapid_rate(3000)
+    assert ops.rate(0) == 3000
 
 
 def test_speed_wrong_type():
     ops = Ops()
     ops.move_to(0, 0)
     with pytest.raises(TypeError):
-        ops.speed(0)
+        ops.rate(0)
 
 
 def test_laser_uid():
     ops = Ops()
-    ops.set_laser("laser_42")
-    assert ops.laser_uid(0) == "laser_42"
+    ops.set_head("laser_42")
+    assert ops.head_uid(0) == "laser_42"
 
 
 def test_laser_uid_wrong_type():
     ops = Ops()
     ops.move_to(0, 0)
     with pytest.raises(TypeError):
-        ops.laser_uid(0)
+        ops.head_uid(0)
 
 
 def test_layer_uid():
@@ -2815,9 +2813,9 @@ def test_without_state():
     ops = Ops()
     ops.set_power(1.0)
     ops.move_to(0, 0)
-    ops.set_cut_speed(800)
+    ops.set_feed_rate(800)
     ops.line_to(10, 0)
-    ops.enable_air_assist()
+    ops.set_coolant(CoolantMode.AIR)
 
     filtered = ops.without_state()
     assert filtered.len() == 2

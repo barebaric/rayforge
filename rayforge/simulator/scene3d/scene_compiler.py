@@ -783,7 +783,7 @@ def _handle_set_laser(
     ops: Ops,
     idx: int,
 ) -> None:
-    laser_uid = ops.laser_uid(idx)
+    laser_uid = ops.head_uid(idx)
     st.current_laser_uid = laser_uid
     if laser_uid not in st.laser_uid_order:
         st.laser_uid_order.append(laser_uid)
@@ -1025,7 +1025,7 @@ def compile_scene(
             )
         elif ct == CommandType.LAYER_END:
             _handle_layer_end(st, acc, i)
-        elif ct == CommandType.SET_LASER:
+        elif ct == CommandType.SET_HEAD:
             _handle_set_laser(st, ops, i)
         elif ct == CommandType.SET_POWER:
             st.current_power = ops.power(i)

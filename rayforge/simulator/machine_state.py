@@ -46,16 +46,14 @@ class MachineState:
         if cat == CommandCategory.STATE:
             if ct == CommandType.SET_POWER:
                 self.power = ops.power(idx)
-            elif ct == CommandType.SET_CUT_SPEED:
-                self.cut_speed = int(ops.speed(idx))
-            elif ct == CommandType.SET_TRAVEL_SPEED:
-                self.travel_speed = int(ops.speed(idx))
-            elif ct == CommandType.ENABLE_AIR_ASSIST:
-                self.air_assist = True
-            elif ct == CommandType.DISABLE_AIR_ASSIST:
-                self.air_assist = False
-            elif ct == CommandType.SET_LASER:
-                self.active_laser_uid = ops.laser_uid(idx)
+            elif ct == CommandType.SET_FEED_RATE:
+                self.cut_speed = int(ops.rate(idx))
+            elif ct == CommandType.SET_RAPID_RATE:
+                self.travel_speed = int(ops.rate(idx))
+            elif ct == CommandType.SET_COOLANT:
+                self.air_assist = ops.coolant(idx) == "Air"
+            elif ct == CommandType.SET_HEAD:
+                self.active_laser_uid = ops.head_uid(idx)
             elif ct == CommandType.SET_FREQUENCY:
                 self.frequency = ops.frequency(idx)
             elif ct == CommandType.SET_PULSE_WIDTH:

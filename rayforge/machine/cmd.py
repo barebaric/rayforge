@@ -132,8 +132,8 @@ class MachineCmd:
                     self._current_monitor.mark_as_complete()
 
             estimated_seconds = ops.estimate_time(
-                default_cut_speed=machine.max_cut_speed,
-                default_travel_speed=machine.max_travel_speed,
+                default_feed_rate=machine.max_cut_speed,
+                default_rapid_rate=machine.max_travel_speed,
                 acceleration=machine.acceleration,
             )
             estimated_hours = estimated_seconds / 3600.0
@@ -170,9 +170,9 @@ class MachineCmd:
         min_x, min_y, max_x, max_y = ops.rect()
 
         frame_ops = Ops()
-        frame_ops.set_laser(head.uid)
+        frame_ops.set_head(head.uid)
         frame_ops.set_power(head.frame_power_percent)
-        frame_ops.set_cut_speed(frame_speed)
+        frame_ops.set_feed_rate(frame_speed)
 
         corners = [
             (min_x, min_y),

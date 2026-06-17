@@ -14,6 +14,7 @@ import base64
 
 import pytest
 from raygeo.ops import Ops
+from raygeo.ops.state import CoolantMode
 
 from rayforge.core.doc import Doc
 from rayforge.machine.driver.ruida.ruida_encoder import RuidaEncoder
@@ -151,7 +152,7 @@ class TestSetPowerCommand:
     def test_power_with_different_lasers(self, encoder, mock_machine, doc):
         """Power command should use correct byte for active laser."""
         ops = Ops()
-        ops.set_laser("laser-2")
+        ops.set_head("laser-2")
         ops.set_power(0.5)
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -169,7 +170,7 @@ class TestSetCutSpeedCommand:
     def test_speed_encoding(self, encoder, mock_machine, doc):
         """Cut speed should be encoded as mm/s to µm/s."""
         ops = Ops()
-        ops.set_cut_speed(100)
+        ops.set_feed_rate(100)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -180,7 +181,7 @@ class TestSetCutSpeedCommand:
     def test_speed_fractional(self, encoder, mock_machine, doc):
         """Fractional speeds should be encoded correctly."""
         ops = Ops()
-        ops.set_cut_speed(50)
+        ops.set_feed_rate(50)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -191,7 +192,7 @@ class TestSetCutSpeedCommand:
     def test_speed_zero(self, encoder, mock_machine, doc):
         """Zero speed should encode correctly."""
         ops = Ops()
-        ops.set_cut_speed(0)
+        ops.set_feed_rate(0)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -205,7 +206,7 @@ class TestSetTravelSpeedCommand:
     def test_travel_speed_encoding(self, encoder, mock_machine, doc):
         """Travel speed should be encoded and stored."""
         ops = Ops()
-        ops.set_travel_speed(500)
+        ops.set_rapid_rate(500)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -216,7 +217,7 @@ class TestSetTravelSpeedCommand:
     def test_travel_speed_updates_state(self, encoder, mock_machine, doc):
         """Travel speed should update encoder state."""
         ops = Ops()
-        ops.set_travel_speed(300)
+        ops.set_rapid_rate(300)
         encoder.encode(ops, mock_machine, doc)
 
         assert encoder.travel_speed == 300
@@ -228,7 +229,7 @@ class TestAirAssistCommands:
     def test_enable_air_assist(self, encoder, mock_machine, doc):
         """Enable air assist should send correct command."""
         ops = Ops()
-        ops.enable_air_assist()
+        ops.set_coolant(CoolantMode.AIR)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -238,8 +239,8 @@ class TestAirAssistCommands:
     def test_disable_air_assist(self, encoder, mock_machine, doc):
         """Disable air assist should send correct command."""
         ops = Ops()
-        ops.enable_air_assist()
-        ops.enable_air_assist(False)
+        ops.set_coolant(CoolantMode.AIR)
+        ops.set_coolant(CoolantMode.OFF)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -254,9 +255,9 @@ class TestAirAssistCommands:
     ):
         """Should not emit redundant air assist commands."""
         ops = Ops()
-        ops.enable_air_assist()
-        ops.enable_air_assist()
-        ops.enable_air_assist()
+        ops.set_coolant(CoolantMode.AIR)
+        ops.set_coolant(CoolantMode.AIR)
+        ops.set_coolant(CoolantMode.AIR)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -266,10 +267,10 @@ class TestAirAssistCommands:
     def test_air_assist_state_tracking(self, encoder, mock_machine, doc):
         """Air assist state should be tracked correctly."""
         ops = Ops()
-        ops.enable_air_assist()
-        ops.enable_air_assist()
-        ops.enable_air_assist(False)
-        ops.enable_air_assist(False)
+        ops.set_coolant(CoolantMode.AIR)
+        ops.set_coolant(CoolantMode.AIR)
+        ops.set_coolant(CoolantMode.OFF)
+        ops.set_coolant(CoolantMode.OFF)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -283,7 +284,7 @@ class TestSetLaserCommand:
     def test_select_laser_1(self, encoder, mock_machine, doc):
         """Select laser 1 should emit correct command."""
         ops = Ops()
-        ops.set_laser("laser-1")
+        ops.set_head("laser-1")
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -293,7 +294,7 @@ class TestSetLaserCommand:
     def test_select_laser_2(self, encoder, mock_machine, doc):
         """Select laser 2 should emit correct command."""
         ops = Ops()
-        ops.set_laser("laser-2")
+        ops.set_head("laser-2")
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -305,7 +306,7 @@ class TestSetLaserCommand:
     ):
         """Unknown laser UID should default to laser 1."""
         ops = Ops()
-        ops.set_laser("nonexistent-laser")
+        ops.set_head("nonexistent-laser")
         result = encoder.encode(ops, mock_machine, doc)
 
         assert encoder.active_laser == 1
@@ -558,7 +559,7 @@ class TestOpMapGeneration:
         """Sequential commands should have sequential line numbers."""
         ops = Ops()
         ops.set_power(0.5)
-        ops.set_cut_speed(100)
+        ops.set_feed_rate(100)
         ops.move_to(0.0, 0.0, 0.0)
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -617,7 +618,7 @@ class TestEncodedOutputSerialization:
         """EncodedOutput should survive JSON roundtrip."""
         ops = Ops()
         ops.set_power(0.5)
-        ops.enable_air_assist()
+        ops.set_coolant(CoolantMode.AIR)
         ops.move_to(10.0, 20.0, 0.0)
         original = encoder.encode(ops, mock_machine, doc)
 
@@ -636,7 +637,7 @@ class TestComplexJobs:
         ops = Ops()
         ops.job_start()
         ops.set_power(0.8)
-        ops.set_cut_speed(200)
+        ops.set_feed_rate(200)
         ops.move_to(0.0, 0.0, 0.0)
         ops.line_to(10.0, 0.0, 0.0)
         ops.line_to(10.0, 10.0, 0.0)
@@ -681,10 +682,10 @@ class TestComplexJobs:
     def test_air_assist_toggle(self, encoder, mock_machine, doc):
         """Air assist toggle during job should work correctly."""
         ops = Ops()
-        ops.enable_air_assist()
+        ops.set_coolant(CoolantMode.AIR)
         ops.move_to(0.0, 0.0, 0.0)
         ops.line_to(10.0, 0.0, 0.0)
-        ops.enable_air_assist(False)
+        ops.set_coolant(CoolantMode.OFF)
         ops.move_to(20.0, 0.0, 0.0)
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -767,7 +768,7 @@ class TestBinaryCommandStructure:
     def test_speed_command_structure(self, encoder, mock_machine, doc):
         """Speed command should have 0xC9 0x02 prefix."""
         ops = Ops()
-        ops.set_cut_speed(100)
+        ops.set_feed_rate(100)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -801,7 +802,7 @@ class TestSetFrequencyCommand:
 
     def test_frequency_with_laser_2(self, encoder, mock_machine, doc):
         ops = Ops()
-        ops.set_laser("laser-2")
+        ops.set_head("laser-2")
         ops.set_frequency(5000)
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -838,7 +839,7 @@ class TestSetPulseWidthCommand:
 
     def test_pulse_width_with_laser_2(self, encoder, mock_machine, doc):
         ops = Ops()
-        ops.set_laser("laser-2")
+        ops.set_head("laser-2")
         ops.set_pulse_width(100)
         result = encoder.encode(ops, mock_machine, doc)
 
@@ -864,7 +865,7 @@ class TestFrequencyAndPulseWidthInJob:
         ops = Ops()
         ops.job_start()
         ops.set_power(0.8)
-        ops.set_cut_speed(200)
+        ops.set_feed_rate(200)
         ops.set_frequency(1000)
         ops.set_pulse_width(50)
         ops.move_to(0.0, 0.0, 0.0)
