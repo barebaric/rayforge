@@ -126,19 +126,17 @@ class RuidaEncoder(OpsEncoder):
 
         if ct == CommandType.SET_POWER:
             self._handle_set_power(ops, idx, binary, text)
-        elif ct == CommandType.SET_CUT_SPEED:
+        elif ct == CommandType.SET_FEED_RATE:
             self._handle_set_cut_speed(ops, idx, binary, text)
-        elif ct == CommandType.SET_TRAVEL_SPEED:
+        elif ct == CommandType.SET_RAPID_RATE:
             self._handle_set_travel_speed(ops, idx, binary, text)
         elif ct == CommandType.SET_FREQUENCY:
             self._handle_set_frequency(ops, idx, binary, text)
         elif ct == CommandType.SET_PULSE_WIDTH:
             self._handle_set_pulse_width(ops, idx, binary, text)
-        elif ct == CommandType.ENABLE_AIR_ASSIST:
-            self._handle_enable_air_assist(binary, text)
-        elif ct == CommandType.DISABLE_AIR_ASSIST:
-            self._handle_disable_air_assist(binary, text)
-        elif ct == CommandType.SET_LASER:
+        elif ct == CommandType.SET_COOLANT:
+            self._handle_coolant(ops, idx, binary, text)
+        elif ct == CommandType.SET_HEAD:
             self._handle_set_laser(ops, idx, machine, binary, text)
         elif ct == CommandType.MOVE_TO:
             self._handle_move_to(ops, idx, binary, text)
@@ -191,7 +189,7 @@ class RuidaEncoder(OpsEncoder):
         text: List[str],
     ) -> None:
         """Handle SetCutSpeedCommand - set cutting speed in mm/s."""
-        speed = ops.speed(idx)
+        speed = ops.rate(idx)
         self.cut_speed = speed
         speed_um = self._mm_to_um(speed)
         binary.append(b"\xc9\x02" + encode35(speed_um))
@@ -205,7 +203,7 @@ class RuidaEncoder(OpsEncoder):
         text: List[str],
     ) -> None:
         """Handle SetTravelSpeedCommand - store for move operations."""
-        speed = ops.speed(idx)
+        speed = ops.rate(idx)
         self.travel_speed = speed
         if self.travel_speed is not None:
             speed_um = self._mm_to_um(speed)
@@ -241,27 +239,25 @@ class RuidaEncoder(OpsEncoder):
         )
         text.append(f"PULSE_WIDTH {pw:.1f}")
 
-    def _handle_enable_air_assist(
+    def _handle_coolant(
         self,
+        ops: Ops,
+        idx: int,
         binary: List[bytes],
         text: List[str],
     ) -> None:
-        """Handle EnableAirAssistCommand - turn on air assist."""
-        if not self.air_assist:
-            self.air_assist = True
-            binary.append(b"\xca\x13")
-            text.append("AIR_ASSIST ON")
-
-    def _handle_disable_air_assist(
-        self,
-        binary: List[bytes],
-        text: List[str],
-    ) -> None:
-        """Handle DisableAirAssistCommand - turn off air assist."""
-        if self.air_assist:
-            self.air_assist = False
-            binary.append(b"\xca\x12")
-            text.append("AIR_ASSIST OFF")
+        """Handle SetCoolantCommand - update coolant state."""
+        mode = ops.coolant(idx)
+        if mode == "Air":
+            if not self.air_assist:
+                self.air_assist = True
+                binary.append(b"\xca\x13")
+                text.append("AIR_ASSIST ON")
+        else:
+            if self.air_assist:
+                self.air_assist = False
+                binary.append(b"\xca\x12")
+                text.append("AIR_ASSIST OFF")
 
     def _handle_set_laser(
         self,
@@ -272,7 +268,7 @@ class RuidaEncoder(OpsEncoder):
         text: List[str],
     ) -> None:
         """Handle SetLaserCommand - select active laser head."""
-        laser_uid = ops.laser_uid(idx)
+        laser_uid = ops.head_uid(idx)
         laser_head = next(
             (head for head in machine.heads if head.uid == laser_uid),
             None,

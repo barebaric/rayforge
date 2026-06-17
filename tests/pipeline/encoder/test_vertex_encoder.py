@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from raygeo.geo.algo.cylindrical import transform_to_cylinder
 from raygeo.ops import Ops
+from raygeo.ops.state import CoolantMode
 from raygeo.ops.types import SectionType
 
 from rayforge.pipeline.encoder.vertexencoder import VertexEncoder
@@ -236,10 +237,10 @@ class TestVertexEncoder:
             combined_ops.workpiece_start(wp_uid)
 
             combined_ops.set_power(1.0)
-            combined_ops.set_cut_speed(1000)
-            combined_ops.set_travel_speed(3000)
-            combined_ops.enable_air_assist(True)
-            combined_ops.set_laser("laser-1")
+            combined_ops.set_feed_rate(1000)
+            combined_ops.set_rapid_rate(3000)
+            combined_ops.set_coolant(CoolantMode.AIR)
+            combined_ops.set_head("laser-1")
 
             combined_ops.ops_section_start(SectionType.VECTOR_OUTLINE, wp_uid)
             for c_idx in range(num_contours):
@@ -254,7 +255,7 @@ class TestVertexEncoder:
                 combined_ops.line_to(cx, cy, 0.0)
 
             combined_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-            combined_ops.enable_air_assist(False)
+            combined_ops.set_coolant(CoolantMode.OFF)
 
             combined_ops.workpiece_end(wp_uid)
 

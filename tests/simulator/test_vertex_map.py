@@ -47,7 +47,7 @@ def test_zero_power_produces_no_powered_vertices():
 def test_state_commands_zero_vertices():
     ops = Ops()
     ops.set_power(0.5)
-    ops.set_cut_speed(800)
+    ops.set_feed_rate(800)
     ops.move_to(0.0, 0.0, 0.0)
     ops.line_to(10.0, 0.0, 0.0)
     m = build_vertex_map(ops)

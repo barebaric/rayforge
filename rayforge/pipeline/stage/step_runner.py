@@ -152,8 +152,8 @@ def make_step_artifact_in_subprocess(
     # Calculate time estimate
     proxy.set_message(_("Calculating time estimate..."))
     final_time = ops_artifact.ops.estimate_time(
-        default_cut_speed=cut_speed,
-        default_travel_speed=travel_speed,
+        default_feed_rate=cut_speed,
+        default_rapid_rate=travel_speed,
         acceleration=acceleration,
     )
     proxy.send_event(

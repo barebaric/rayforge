@@ -100,8 +100,8 @@ def _calculate_time_estimate(
         context, 0.7, _("Calculating final time and distance estimates...")
     )
     return final_ops.estimate_time(
-        default_cut_speed=machine.max_cut_speed,
-        default_travel_speed=machine.max_travel_speed,
+        default_feed_rate=machine.max_cut_speed,
+        default_rapid_rate=machine.max_travel_speed,
         acceleration=machine.acceleration,
     )
 

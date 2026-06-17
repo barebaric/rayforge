@@ -142,7 +142,7 @@ class ShrinkWrapProducer(OpsProducer):
                 )
 
             # 7. Convert to Ops
-            final_ops.set_laser(laser.uid)
+            final_ops.set_head(laser.uid)
             final_ops.ops_section_start(
                 SectionType.VECTOR_OUTLINE, workpiece.uid
             )

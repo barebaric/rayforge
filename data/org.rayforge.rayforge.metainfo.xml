@@ -68,7 +68,7 @@
   <releases>
     <release version="1.8.1" date="2026-06-16">
       <description>
-        <p>Upgrade raygeo to release 0.9.0</p>
+        <p>Upgrade raygeo to release 0.10.0</p>
       </description>
     </release>
     <release version="1.8.0" date="2026-06-16">

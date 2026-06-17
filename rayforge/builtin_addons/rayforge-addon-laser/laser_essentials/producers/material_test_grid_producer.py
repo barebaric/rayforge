@@ -168,7 +168,7 @@ class MaterialTestGridProducer(OpsProducer):
         label_elements = [el for el in elements if "label" in el["class"]]
 
         main_ops = Ops()
-        main_ops.set_laser(laser.uid)
+        main_ops.set_head(laser.uid)
 
         # Labels are always outlines, engraved first at a configurable power.
         if label_elements:
@@ -178,7 +178,7 @@ class MaterialTestGridProducer(OpsProducer):
             )
             main_ops.set_power(0.0)
             main_ops.set_power(self.label_power_percent / 100.0)
-            main_ops.set_cut_speed(self.label_speed)
+            main_ops.set_feed_rate(self.label_speed)
             main_ops.extend(text_ops)
             main_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
@@ -210,7 +210,7 @@ class MaterialTestGridProducer(OpsProducer):
             # active.
             main_ops.set_power(0.0)
             main_ops.set_power(element["power"] / 100.0)
-            main_ops.set_cut_speed(element["speed"])
+            main_ops.set_feed_rate(element["speed"])
             passes = element.get("passes", 1)
             for _ in range(passes):
                 if is_engrave:

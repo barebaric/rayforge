@@ -11,6 +11,7 @@ from typing import (
 )
 
 from raygeo.ops import Ops
+from raygeo.ops.state import CoolantMode
 
 from ...core.workpiece import WorkPiece
 from ...machine.models.laser import Laser
@@ -86,9 +87,11 @@ def _create_initial_ops(settings: dict) -> Ops:
     """
     initial_ops = Ops()
     initial_ops.set_power(settings["power"])
-    initial_ops.set_cut_speed(settings["cut_speed"])
-    initial_ops.set_travel_speed(settings["travel_speed"])
-    initial_ops.enable_air_assist(settings["air_assist"])
+    initial_ops.set_feed_rate(settings["cut_speed"])
+    initial_ops.set_rapid_rate(settings["travel_speed"])
+    initial_ops.set_coolant(
+        CoolantMode.AIR if settings["air_assist"] else CoolantMode.OFF
+    )
     if settings.get("frequency"):
         initial_ops.set_frequency(settings["frequency"])
     if settings.get("pulse_width"):

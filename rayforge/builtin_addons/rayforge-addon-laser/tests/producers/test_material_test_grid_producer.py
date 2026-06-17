@@ -185,7 +185,7 @@ def test_risk_sorted_execution_order(laser: Laser, mock_workpiece: WorkPiece):
         settings={},
     )
     ops = artifact.ops
-    speeds = [ops.speed(i) for i in ops.indices_of(CommandType.SET_CUT_SPEED)]
+    speeds = [ops.rate(i) for i in ops.indices_of(CommandType.SET_FEED_RATE)]
     assert len(speeds) == 9
     assert speeds[0] == 300.0, "First speed should be maximum (safest)"
     unique_speeds = sorted(set(speeds), reverse=True)
@@ -235,7 +235,7 @@ def test_power_and_speed_ranges(laser: Laser, mock_workpiece: WorkPiece):
         settings={},
     )
     ops = artifact.ops
-    speeds = [ops.speed(i) for i in ops.indices_of(CommandType.SET_CUT_SPEED)]
+    speeds = [ops.rate(i) for i in ops.indices_of(CommandType.SET_FEED_RATE)]
     all_powers = [ops.power(i) for i in ops.indices_of(CommandType.SET_POWER)]
     # Filter out the explicit power-off commands for range validation
     powers = [p for p in all_powers if p > 0]
@@ -267,7 +267,7 @@ def test_single_column_grid(laser: Laser, mock_workpiece: WorkPiece):
         settings={},
     )
     ops = artifact.ops
-    speeds = [ops.speed(i) for i in ops.indices_of(CommandType.SET_CUT_SPEED)]
+    speeds = [ops.rate(i) for i in ops.indices_of(CommandType.SET_FEED_RATE)]
     all_powers = [ops.power(i) for i in ops.indices_of(CommandType.SET_POWER)]
     # Filter out explicit power-off commands
     powers = [p for p in all_powers if p > 0]
@@ -293,7 +293,7 @@ def test_single_row_grid(laser: Laser, mock_workpiece: WorkPiece):
         settings={},
     )
     ops = artifact.ops
-    speeds = [ops.speed(i) for i in ops.indices_of(CommandType.SET_CUT_SPEED)]
+    speeds = [ops.rate(i) for i in ops.indices_of(CommandType.SET_FEED_RATE)]
     all_powers = [ops.power(i) for i in ops.indices_of(CommandType.SET_POWER)]
     # Filter out explicit power-off commands
     powers = [p for p in all_powers if p > 0]
@@ -346,7 +346,7 @@ def test_grid_cell_count(laser: Laser):
         )
         ops = artifact.ops
         speeds = [
-            ops.speed(i) for i in ops.indices_of(CommandType.SET_CUT_SPEED)
+            ops.rate(i) for i in ops.indices_of(CommandType.SET_FEED_RATE)
         ]
         assert len(speeds) == cols * rows
         assert artifact.source_dimensions == wp_size

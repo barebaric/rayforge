@@ -1,5 +1,6 @@
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
+from raygeo.ops.state import CoolantMode
 
 from rayforge.machine.models.axis import (
     AxisConfig,
@@ -32,9 +33,9 @@ def test_state_commands_no_axis_change():
     state = MachineState()
     ops = Ops()
     ops.set_power(0.8)
-    ops.set_cut_speed(500)
-    ops.set_travel_speed(3000)
-    ops.enable_air_assist()
+    ops.set_feed_rate(500)
+    ops.set_rapid_rate(3000)
+    ops.set_coolant(CoolantMode.AIR)
 
     _apply_all(state, ops)
 
@@ -129,7 +130,7 @@ def test_copy_preserves_state_fields():
 def test_mixed_ops_walk():
     ops = Ops()
     ops.set_power(0.5)
-    ops.set_cut_speed(800)
+    ops.set_feed_rate(800)
     ops.move_to(0.0, 0.0, 0.0)
     ops.line_to(10.0, 0.0, 0.0)
     ops.set_power(1.0)

@@ -98,7 +98,7 @@ class FrameProducer(OpsProducer):
                 f"Rect: {frame_ops.rect()}"
             )
             # Build the final Ops object
-            final_ops.set_laser(laser.uid)
+            final_ops.set_head(laser.uid)
             final_ops.ops_section_start(
                 SectionType.VECTOR_OUTLINE, workpiece.uid
             )

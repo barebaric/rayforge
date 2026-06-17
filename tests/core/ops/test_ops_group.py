@@ -1,7 +1,7 @@
 from typing import List
 
 from raygeo.ops import Ops
-from raygeo.ops.state import State
+from raygeo.ops.state import CoolantMode, State
 from raygeo.ops.types import CommandType
 
 
@@ -45,7 +45,7 @@ def test_group_by_command_type_state_commands():
     ops.set_power(1.0)
     ops.move_to(0, 0)
     ops.line_to(1, 0)
-    ops.enable_air_assist(False)
+    ops.set_coolant(CoolantMode.OFF)
     indices = list(ops.segment_indices())
     assert len(indices) == 3
     assert ops.is_state(indices[0][0])
@@ -54,7 +54,7 @@ def test_group_by_command_type_state_commands():
 
 
 def _create_ops_with_states(states_config: List[bool]) -> Ops:
-    """Helper to create ops with specified air_assist states."""
+    """Helper to create ops with specified coolant states."""
     ops = Ops()
     for i, air_on in enumerate(states_config):
         ops.line_to(float(i), float(i))
@@ -63,10 +63,10 @@ def _create_ops_with_states(states_config: List[bool]) -> Ops:
             i,
             State(
                 power=1.0,
-                air_assist=air_on,
-                cut_speed=None,
-                travel_speed=None,
-                active_laser_uid=None,
+                coolant=CoolantMode.AIR if air_on else CoolantMode.OFF,
+                feed_rate=None,
+                rapid_rate=None,
+                active_head_uid=None,
                 frequency=None,
                 pulse_width=None,
             ),
@@ -112,10 +112,10 @@ def test_group_by_state_continuity():
         0,
         State(
             power=1.0,
-            air_assist=True,
-            cut_speed=None,
-            travel_speed=None,
-            active_laser_uid=None,
+            coolant=CoolantMode.AIR,
+            feed_rate=None,
+            rapid_rate=None,
+            active_head_uid=None,
             frequency=None,
             pulse_width=None,
         ),
@@ -124,10 +124,10 @@ def test_group_by_state_continuity():
         2,
         State(
             power=1.0,
-            air_assist=True,
-            cut_speed=None,
-            travel_speed=None,
-            active_laser_uid=None,
+            coolant=CoolantMode.AIR,
+            feed_rate=None,
+            rapid_rate=None,
+            active_head_uid=None,
             frequency=None,
             pulse_width=None,
         ),

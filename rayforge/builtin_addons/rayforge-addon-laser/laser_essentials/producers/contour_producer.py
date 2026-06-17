@@ -227,7 +227,7 @@ class ContourProducer(OpsProducer):
         # 6. Create Ops by splitting into optimizable groups
         final_ops = Ops()
         if not final_geometry.is_empty():
-            final_ops.set_laser(laser.uid)
+            final_ops.set_head(laser.uid)
 
             if self.remove_inner_paths:
                 # Simple case: remove inner paths and create one optimizable

@@ -19,7 +19,7 @@ def _make_machine():
 def _make_ops():
     ops = Ops()
     ops.set_power(0.5)
-    ops.set_cut_speed(800)
+    ops.set_feed_rate(800)
     ops.move_to(0.0, 0.0, 0.0)
     ops.line_to(10.0, 0.0, 0.0)
     ops.set_power(1.0)
@@ -116,7 +116,7 @@ def test_random_access_matches_sequential():
     ops.move_to(5.0, 5.0, 0.0)
     ops.set_power(0.7)
     ops.line_to(15.0, 25.0, 3.0)
-    ops.set_cut_speed(1200)
+    ops.set_feed_rate(1200)
     ops.line_to(50.0, 60.0, 0.0)
 
     sequential = OpPlayer(ops, machine, doc)
