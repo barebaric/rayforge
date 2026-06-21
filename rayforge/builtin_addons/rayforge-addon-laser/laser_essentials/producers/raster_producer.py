@@ -70,7 +70,7 @@ class Rasterizer(OpsProducer):
         self,
         scan_angle: float = 0.0,
         depth_mode: DepthMode = DepthMode.POWER_MODULATION,
-        scan_mode: ScanMode = ScanMode.Segmented,
+        scan_mode: ScanMode = ScanMode.SEGMENTED,
         threshold: int = 128,
         dither_algorithm: Optional[
             DitherAlgorithm
@@ -489,15 +489,15 @@ class Rasterizer(OpsProducer):
         except KeyError:
             init_args["depth_mode"] = DepthMode.POWER_MODULATION
 
-        scan_mode_str = init_args.pop("scan_mode", ScanMode.Segmented.name)
+        scan_mode_str = init_args.pop("scan_mode", ScanMode.SEGMENTED.name)
         scan_mode_map = {
-            "Segmented": ScanMode.Segmented,
-            "FullSweep": ScanMode.FullSweep,
-            "SEGMENTED": ScanMode.Segmented,
-            "FULL_SWEEP": ScanMode.FullSweep,
+            "SEGMENTED": ScanMode.SEGMENTED,
+            "FULL_SWEEP": ScanMode.FULL_SWEEP,
+            "Segmented": ScanMode.SEGMENTED,
+            "FullSweep": ScanMode.FULL_SWEEP,
         }
         init_args["scan_mode"] = scan_mode_map.get(
-            scan_mode_str, ScanMode.Segmented
+            scan_mode_str, ScanMode.SEGMENTED
         )
 
         dither_algorithm_str = init_args.get("dither_algorithm")

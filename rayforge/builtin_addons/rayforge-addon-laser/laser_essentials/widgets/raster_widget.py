@@ -20,7 +20,7 @@ from rayforge.ui_gtk.shared.slider import create_slider, create_slider_row
 
 from ..producers import DepthMode, Rasterizer, ScanMode
 
-_SCAN_MODES = [ScanMode.Segmented, ScanMode.FullSweep]
+_SCAN_MODES = [ScanMode.SEGMENTED, ScanMode.FULL_SWEEP]
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step

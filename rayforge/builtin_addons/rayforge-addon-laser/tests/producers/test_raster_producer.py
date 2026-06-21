@@ -1156,15 +1156,15 @@ class TestScanMode:
     """Tests for ScanMode parameter on Rasterizer."""
 
     def test_default_is_segmented(self, producer: Rasterizer):
-        assert producer.scan_mode == ScanMode.Segmented
+        assert producer.scan_mode == ScanMode.SEGMENTED
 
     def test_full_sweep_construction(self):
-        r = Rasterizer(scan_mode=ScanMode.FullSweep)
-        assert r.scan_mode == ScanMode.FullSweep
+        r = Rasterizer(scan_mode=ScanMode.FULL_SWEEP)
+        assert r.scan_mode == ScanMode.FULL_SWEEP
 
     def test_segmented_construction(self):
-        r = Rasterizer(scan_mode=ScanMode.Segmented)
-        assert r.scan_mode == ScanMode.Segmented
+        r = Rasterizer(scan_mode=ScanMode.SEGMENTED)
+        assert r.scan_mode == ScanMode.SEGMENTED
 
 
 class TestScanModeSerialization:
@@ -1176,12 +1176,12 @@ class TestScanModeSerialization:
 
     def test_to_dict_default_is_segmented(self, producer: Rasterizer):
         data = producer.to_dict()
-        assert data["params"]["scan_mode"] == "Segmented"
+        assert data["params"]["scan_mode"] == "SEGMENTED"
 
     def test_to_dict_full_sweep(self):
-        r = Rasterizer(scan_mode=ScanMode.FullSweep)
+        r = Rasterizer(scan_mode=ScanMode.FULL_SWEEP)
         data = r.to_dict()
-        assert data["params"]["scan_mode"] == "FullSweep"
+        assert data["params"]["scan_mode"] == "FULL_SWEEP"
 
     def test_from_dict_with_scan_mode(self):
         data = {
@@ -1189,7 +1189,7 @@ class TestScanModeSerialization:
             "params": {"scan_mode": "FullSweep"},
         }
         r = Rasterizer.from_dict(data)
-        assert r.scan_mode == ScanMode.FullSweep
+        assert r.scan_mode == ScanMode.FULL_SWEEP
 
     def test_from_dict_segmented(self):
         data = {
@@ -1197,7 +1197,7 @@ class TestScanModeSerialization:
             "params": {"scan_mode": "Segmented"},
         }
         r = Rasterizer.from_dict(data)
-        assert r.scan_mode == ScanMode.Segmented
+        assert r.scan_mode == ScanMode.SEGMENTED
 
     def test_from_dict_default_scan_mode(self):
         data = {
@@ -1205,7 +1205,7 @@ class TestScanModeSerialization:
             "params": {},
         }
         r = Rasterizer.from_dict(data)
-        assert r.scan_mode == ScanMode.Segmented
+        assert r.scan_mode == ScanMode.SEGMENTED
 
     def test_from_dict_invalid_scan_mode(self):
         data = {
@@ -1213,23 +1213,23 @@ class TestScanModeSerialization:
             "params": {"scan_mode": "INVALID"},
         }
         r = Rasterizer.from_dict(data)
-        assert r.scan_mode == ScanMode.Segmented
+        assert r.scan_mode == ScanMode.SEGMENTED
 
     def test_roundtrip_segmented(self):
-        original = Rasterizer(scan_mode=ScanMode.Segmented)
+        original = Rasterizer(scan_mode=ScanMode.SEGMENTED)
         data = original.to_dict()
         recreated = Rasterizer.from_dict(data)
-        assert recreated.scan_mode == ScanMode.Segmented
+        assert recreated.scan_mode == ScanMode.SEGMENTED
 
     def test_roundtrip_full_sweep(self):
-        original = Rasterizer(scan_mode=ScanMode.FullSweep)
+        original = Rasterizer(scan_mode=ScanMode.FULL_SWEEP)
         data = original.to_dict()
         recreated = Rasterizer.from_dict(data)
-        assert recreated.scan_mode == ScanMode.FullSweep
+        assert recreated.scan_mode == ScanMode.FULL_SWEEP
 
     def test_to_dict_roundtrip_preserves_all_params(self):
         original = Rasterizer(
-            scan_mode=ScanMode.FullSweep,
+            scan_mode=ScanMode.FULL_SWEEP,
             scan_angle=45.0,
             depth_mode=DepthMode.POWER_MODULATION,
             min_power=0.1,
@@ -1237,7 +1237,7 @@ class TestScanModeSerialization:
         )
         data = original.to_dict()
         recreated = Rasterizer.from_dict(data)
-        assert recreated.scan_mode == ScanMode.FullSweep
+        assert recreated.scan_mode == ScanMode.FULL_SWEEP
         assert recreated.scan_angle == 45.0
         assert recreated.depth_mode == DepthMode.POWER_MODULATION
 
@@ -1247,7 +1247,7 @@ class TestScanModeSerialization:
             "params": {"scan_mode": "SEGMENTED"},
         }
         r = Rasterizer.from_dict(data)
-        assert r.scan_mode == ScanMode.Segmented
+        assert r.scan_mode == ScanMode.SEGMENTED
 
     def test_backward_compat_full_sweep_upper(self):
         data = {
@@ -1255,7 +1255,7 @@ class TestScanModeSerialization:
             "params": {"scan_mode": "FULL_SWEEP"},
         }
         r = Rasterizer.from_dict(data)
-        assert r.scan_mode == ScanMode.FullSweep
+        assert r.scan_mode == ScanMode.FULL_SWEEP
 
 
 def _make_striped_surface(
@@ -1282,11 +1282,11 @@ class TestPowerModulationFullSweep:
         mock_workpiece.set_size(1.0, 1.0)
 
         seg = Rasterizer(
-            scan_mode=ScanMode.Segmented,
+            scan_mode=ScanMode.SEGMENTED,
             depth_mode=DepthMode.POWER_MODULATION,
         )
         full = Rasterizer(
-            scan_mode=ScanMode.FullSweep,
+            scan_mode=ScanMode.FULL_SWEEP,
             depth_mode=DepthMode.POWER_MODULATION,
         )
 
@@ -1311,7 +1311,7 @@ class TestPowerModulationFullSweep:
         mock_workpiece.set_size(1.0, 1.0)
 
         full = Rasterizer(
-            scan_mode=ScanMode.FullSweep,
+            scan_mode=ScanMode.FULL_SWEEP,
             depth_mode=DepthMode.POWER_MODULATION,
         )
         art = full.run(
@@ -1340,7 +1340,7 @@ class TestPowerModulationFullSweep:
         mock_workpiece.set_size(1.0, 1.0)
 
         full = Rasterizer(
-            scan_mode=ScanMode.FullSweep,
+            scan_mode=ScanMode.FULL_SWEEP,
             depth_mode=DepthMode.POWER_MODULATION,
         )
         art = full.run(
@@ -1357,7 +1357,7 @@ class TestPowerModulationFullSweep:
         mock_workpiece.set_size(1.0, 1.0)
 
         full = Rasterizer(
-            scan_mode=ScanMode.FullSweep,
+            scan_mode=ScanMode.FULL_SWEEP,
             depth_mode=DepthMode.POWER_MODULATION,
             scan_angle=45.0,
         )
@@ -1379,12 +1379,12 @@ class TestConstantPowerFullSweep:
         mock_workpiece.set_size(1.0, 1.0)
 
         seg = Rasterizer(
-            scan_mode=ScanMode.Segmented,
+            scan_mode=ScanMode.SEGMENTED,
             depth_mode=DepthMode.CONSTANT_POWER,
             threshold=128,
         )
         full = Rasterizer(
-            scan_mode=ScanMode.FullSweep,
+            scan_mode=ScanMode.FULL_SWEEP,
             depth_mode=DepthMode.CONSTANT_POWER,
             threshold=128,
         )
@@ -1413,7 +1413,7 @@ class TestConstantPowerFullSweep:
         mock_workpiece.set_size(1.0, 1.0)
 
         full = Rasterizer(
-            scan_mode=ScanMode.FullSweep,
+            scan_mode=ScanMode.FULL_SWEEP,
             depth_mode=DepthMode.CONSTANT_POWER,
             threshold=128,
         )
@@ -1434,7 +1434,7 @@ class TestConstantPowerFullSweep:
         mock_workpiece.set_size(1.0, 1.0)
 
         full = Rasterizer(
-            scan_mode=ScanMode.FullSweep,
+            scan_mode=ScanMode.FULL_SWEEP,
             depth_mode=DepthMode.CONSTANT_POWER,
             threshold=128,
         )
@@ -1453,7 +1453,7 @@ class TestConstantPowerFullSweep:
         mock_workpiece.set_size(1.0, 1.0)
 
         full = Rasterizer(
-            scan_mode=ScanMode.FullSweep,
+            scan_mode=ScanMode.FULL_SWEEP,
             depth_mode=DepthMode.DITHER,
         )
         art = full.run(
@@ -1474,12 +1474,12 @@ class TestMultiPassFullSweep:
         mock_workpiece.set_size(1.0, 1.0)
 
         seg = Rasterizer(
-            scan_mode=ScanMode.Segmented,
+            scan_mode=ScanMode.SEGMENTED,
             depth_mode=DepthMode.MULTI_PASS,
             num_depth_levels=1,
         )
         full = Rasterizer(
-            scan_mode=ScanMode.FullSweep,
+            scan_mode=ScanMode.FULL_SWEEP,
             depth_mode=DepthMode.MULTI_PASS,
             num_depth_levels=1,
         )
@@ -1505,7 +1505,7 @@ class TestMultiPassFullSweep:
         mock_workpiece.set_size(1.0, 1.0)
 
         full = Rasterizer(
-            scan_mode=ScanMode.FullSweep,
+            scan_mode=ScanMode.FULL_SWEEP,
             depth_mode=DepthMode.MULTI_PASS,
             num_depth_levels=2,
             angle_increment=45.0,
@@ -1520,7 +1520,7 @@ class TestMultiPassFullSweep:
 
 def test_initialization_defaults_includes_scan_mode(producer: Rasterizer):
     """Verify scan_mode default is Segmented."""
-    assert producer.scan_mode == ScanMode.Segmented
+    assert producer.scan_mode == ScanMode.SEGMENTED
 
 
 def test_power_modulation_with_scan_angle(
