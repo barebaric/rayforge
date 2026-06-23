@@ -554,11 +554,17 @@ class WorkPieceElement(CanvasElement):
             if step_ppm_x <= 0 or step_ppm_y <= 0:
                 continue
             dest_x = (vx - OPS_MARGIN_PX / step_ppm_x - union_x) * eff_ppm
-            dest_y = (vy - OPS_MARGIN_PX / step_ppm_y - union_y) * eff_ppm
+            scale_x = eff_ppm / step_ppm_x
+            scale_y = eff_ppm / step_ppm_y
+            surf_h = surf.get_height()
+            dest_y = (
+                comp_h_px
+                - (vy - union_y) * eff_ppm
+                - (surf_h - OPS_MARGIN_PX) * scale_y
+            )
             comp_ctx.save()
             comp_ctx.translate(dest_x, dest_y)
-            scale_factor = eff_ppm / step_ppm_x
-            comp_ctx.scale(scale_factor, scale_factor)
+            comp_ctx.scale(scale_x, scale_y)
             comp_ctx.set_source_surface(surf, 0, 0)
             comp_ctx.paint()
             comp_ctx.restore()
