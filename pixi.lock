@@ -399,8 +399,8 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/c2/2f/81d580a0fb83baeb066698975cb14a618bdbed7720678566f1b046a95fe8/pyflakes-3.4.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d7/27/a58ddaf8c588a3ef080db9d0b7e0b97215cee3a45df74f3a94dbbf5c893a/pycodestyle-2.14.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d7/33/288b5868fa00846dacf249633719d747893e54aebd196b9968ac1878a5d3/pyright-1.1.410-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/d9/17/85ebb28d914bc6f55cc2d0b0270e90495c299bdb5f8c4042cf85255776e0/raygeo-0.11.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/db/3c/33bac158f8ab7f89b2e59426d5fe2e4f63f7ed25df84c036890172b412b5/cfgv-3.5.0-py2.py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/e6/8d/32e77ba2c57738c1c2ecb5ebcddf1b1255e62f7fc363c37707f4199c3614/raygeo-0.12.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/f3/8d/5e5be3ced1d12966fefb5c4ea3b2a5b480afcea36406559442c6e31d4a48/multidict-6.7.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/f4/24/2a3e3df732393fed8b3ebf2ec078f05546de641fe1b667ee316ec1dcf3b7/webencodings-0.5.1-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/fb/76/641ae371508676492379f16e2fa48f4e2c11741bd63c48be4b12a6b09cba/aiosignal-1.4.0-py3-none-any.whl
@@ -5299,7 +5299,7 @@ packages:
 - pypi: .
   name: rayforge
   requires_dist:
-  - raygeo==0.11.0
+  - raygeo==0.12.0
   - aiohttp==3.14.1
   - asyncudp==0.11.0
   - blinker==1.9.0
@@ -5953,10 +5953,15 @@ packages:
   - twine>=3.4.1 ; extra == 'all'
   - nodejs-wheel-binaries ; extra == 'all'
   requires_python: '>=3.7'
-- pypi: https://files.pythonhosted.org/packages/d9/17/85ebb28d914bc6f55cc2d0b0270e90495c299bdb5f8c4042cf85255776e0/raygeo-0.11.0.tar.gz
+- pypi: https://files.pythonhosted.org/packages/db/3c/33bac158f8ab7f89b2e59426d5fe2e4f63f7ed25df84c036890172b412b5/cfgv-3.5.0-py2.py3-none-any.whl
+  name: cfgv
+  version: 3.5.0
+  sha256: a8dc6b26ad22ff227d2634a65cb388215ce6cc96bbcc5cfde7641ae87e8dacc0
+  requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/e6/8d/32e77ba2c57738c1c2ecb5ebcddf1b1255e62f7fc363c37707f4199c3614/raygeo-0.12.0.tar.gz
   name: raygeo
-  version: 0.11.0
-  sha256: 67a3a438339fe54c0ac3f993975a05ea7db437612a52f3692ee79984d124adfa
+  version: 0.12.0
+  sha256: ec2dbb69df9ade6a08a98fd9d74d4ca871e3c13f3e6133101f0353d29807c3fe
   requires_dist:
   - numpy>=1.20.0
   - matplotlib ; extra == 'test'
@@ -5968,11 +5973,6 @@ packages:
   - matplotlib ; extra == 'visual'
   - matplotlib ; extra == 'docs'
   - pillow ; extra == 'docs'
-  requires_python: '>=3.10'
-- pypi: https://files.pythonhosted.org/packages/db/3c/33bac158f8ab7f89b2e59426d5fe2e4f63f7ed25df84c036890172b412b5/cfgv-3.5.0-py2.py3-none-any.whl
-  name: cfgv
-  version: 3.5.0
-  sha256: a8dc6b26ad22ff227d2634a65cb388215ce6cc96bbcc5cfde7641ae87e8dacc0
   requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/f3/8d/5e5be3ced1d12966fefb5c4ea3b2a5b480afcea36406559442c6e31d4a48/multidict-6.7.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
   name: multidict

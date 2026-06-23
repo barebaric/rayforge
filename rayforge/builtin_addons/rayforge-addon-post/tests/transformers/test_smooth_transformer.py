@@ -2,7 +2,7 @@ import math
 from unittest.mock import Mock, patch
 
 from post_processors.transformers import Smooth
-from raygeo.geo.algo.smooth import smooth_polyline
+from raygeo.geo.algo.smooth import smooth_polyline_3d
 from raygeo.ops import Ops
 from raygeo.ops.types import CommandType
 
@@ -128,9 +128,9 @@ def test_context_cancellation_and_progress():
     smoother = Smooth(amount=50)
 
     call_count = [0]
-    original_smooth_polyline = smooth_polyline
+    original_smooth_polyline = smooth_polyline_3d
 
-    def cancelling_smooth_polyline(
+    def cancelling_smooth_polyline_3d(
         points, amount, corner_angle, is_closed=None
     ):
         call_count[0] += 1
@@ -141,8 +141,8 @@ def test_context_cancellation_and_progress():
         )
 
     with patch(
-        "post_processors.transformers.smooth_transformer.smooth_polyline",
-        cancelling_smooth_polyline,
+        "post_processors.transformers.smooth_transformer.smooth_polyline_3d",
+        cancelling_smooth_polyline_3d,
     ):
         smoother.run(ops, context=context)
 
