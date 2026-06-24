@@ -8,6 +8,7 @@ from gi.repository import Adw, Gtk
 from ...context import get_context
 from ...core.capability import Capability, LaserHeadVar
 from ...core.step import Step
+from ...core.varset import VarSet
 from ...core.undo import ChangePropertyCommand, HistoryManager
 from ...pipeline.producer import OpsProducer
 from ...pipeline.producer.placeholder import PlaceholderProducer
@@ -71,10 +72,11 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
 
         # Build settings UI from capability VarSet.
         # VarSetWidget IS the general group — no visual split.
-        varset = reduce(
-            Capability.__or__,
-            step.get_effective_capabilities(get_context().machine),
-        ).varset
+        caps = step.get_effective_capabilities(get_context().machine)
+        if caps:
+            varset = reduce(Capability.__or__, caps).varset
+        else:
+            varset = VarSet(vars=[])
         self.varset_widget = VarSetWidget(
             title=_("General Settings"),
             description=_(
