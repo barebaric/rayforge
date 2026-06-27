@@ -369,6 +369,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/28/30/300c343f68beb9d4cbb64ec81e58c5b6b80b56927f72d2b38654ac26e013/coverage-7.14.1-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/2c/02/3623e6169bed617ed1e2d372f7c69f92ec28d54c4dfc997055c8578ec148/virtualenv-21.5.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2d/1c/317ccaaa6a3ddce270652781cf09d3b1d5d343b1a1dabca304fe5c218474/pygobject_stubs-2.16.0.tar.gz
+      - pypi: https://files.pythonhosted.org/packages/2e/a8/e5fc530cf8c798952fa9b718826d70ade6e8d3a52aefee6a1fbf29a66346/raygeo-0.13.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/32/80/c1b40335949fec3ca1ecea7ddb3f4977dfc104d84dc54e9384f7ccc52124/trimesh-4.6.8-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/3c/a6/bc1012356d8ece4d66dd75c4b9fc6c1f6650ddd5991e421177d9f8f671be/platformdirs-4.3.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/43/e3/fdc657359e919462369869f1c9f0e973f353f9a9ee295a39b1fea8ee1a77/pillow-12.2.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
@@ -379,7 +380,6 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/60/45/c7b5c3168458db837e8ceab06dc77824e18202679d0463f0e8f002143a97/tinycss2-1.5.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/64/b4/17d4b0b2a2dc85a6df63d1157e028ed19f90d4cd97c36717afef2bc2f395/attrs-26.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/67/48/816bd4aaae93dbf9e408c58598bc32f4a8c65f4b86ab560864cb3ee60adb/cairosvg-2.8.2-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/67/ad/1f74652348adc13d64e1acb9aefb957c08ca242e38ca02b0e6ab0a898f52/raygeo-0.12.1.tar.gz
       - pypi: https://files.pythonhosted.org/packages/6a/bd/d91c5e39f490a49df14320f4e8c80161cfcce09f1e2cde1edd16a551abb3/frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/77/c7/2342da9830e3e9d4870305ca5d2091d2a83284f2953079b7bdd3b5e029d8/fonttools-4.63.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/78/2d/7fa73dfa841b5ac06c7b8855cfc18622132e365f5b81d02230333ff26e9e/cffi-2.0.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
@@ -5299,7 +5299,7 @@ packages:
 - pypi: .
   name: rayforge
   requires_dist:
-  - raygeo==0.12.1
+  - raygeo==0.13.0
   - aiohttp==3.14.1
   - asyncudp==0.11.0
   - blinker==1.9.0
@@ -5599,6 +5599,25 @@ packages:
   - pre-commit ; extra == 'dev'
   - pygobject ; extra == 'dev'
   requires_python: '>=3.9'
+- pypi: https://files.pythonhosted.org/packages/2e/a8/e5fc530cf8c798952fa9b718826d70ade6e8d3a52aefee6a1fbf29a66346/raygeo-0.13.0.tar.gz
+  name: raygeo
+  version: 0.13.0
+  sha256: 28648d150a9029e527925286733675775c6e66afdb663fc4f851c759960c4f01
+  requires_dist:
+  - numpy>=1.20.0
+  - matplotlib ; extra == 'test'
+  - pycairo ; extra == 'test'
+  - pytest ; extra == 'test'
+  - pytest-mock ; extra == 'test'
+  - streamlit ; extra == 'test'
+  - streamlit ; extra == 'visual'
+  - matplotlib ; extra == 'visual'
+  - matplotlib ; extra == 'docs'
+  - mdformat ; extra == 'docs'
+  - mdformat-frontmatter ; extra == 'docs'
+  - mdformat-tables ; extra == 'docs'
+  - pillow ; extra == 'docs'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/32/80/c1b40335949fec3ca1ecea7ddb3f4977dfc104d84dc54e9384f7ccc52124/trimesh-4.6.8-py3-none-any.whl
   name: trimesh
   version: 4.6.8
@@ -5781,22 +5800,6 @@ packages:
   - flake8 ; extra == 'test'
   - isort ; extra == 'test'
   requires_python: '>=3.9'
-- pypi: https://files.pythonhosted.org/packages/67/ad/1f74652348adc13d64e1acb9aefb957c08ca242e38ca02b0e6ab0a898f52/raygeo-0.12.1.tar.gz
-  name: raygeo
-  version: 0.12.1
-  sha256: 33e7314bcb8e36a8024607f73dc7abb4b5d2d58e036bbe9d66e6694922f1b5a0
-  requires_dist:
-  - numpy>=1.20.0
-  - matplotlib ; extra == 'test'
-  - pycairo ; extra == 'test'
-  - pytest ; extra == 'test'
-  - pytest-mock ; extra == 'test'
-  - streamlit ; extra == 'test'
-  - streamlit ; extra == 'visual'
-  - matplotlib ; extra == 'visual'
-  - matplotlib ; extra == 'docs'
-  - pillow ; extra == 'docs'
-  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/6a/bd/d91c5e39f490a49df14320f4e8c80161cfcce09f1e2cde1edd16a551abb3/frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
   name: frozenlist
   version: 1.8.0

@@ -10,7 +10,7 @@ from pathlib import Path
 from rayforge.core.hooks import hookimpl
 
 from .producers import (
-    AdaptiveClearingProducer,
+    WavefrontProducer,
     ContourProducer,
     FrameProducer,
     MaterialTestGridProducer,
@@ -18,7 +18,7 @@ from .producers import (
     ShrinkWrapProducer,
 )
 from .steps import (
-    AdaptiveClearingStep,
+    WavefrontStep,
     ContourStep,
     EngraveStep,
     FrameStep,
@@ -38,7 +38,7 @@ ADDON_NAME = "laser_essentials"
 @hookimpl
 def register_producers(producer_registry):
     """Register producers with the producer registry."""
-    producer_registry.register(AdaptiveClearingProducer, addon_name=ADDON_NAME)
+    producer_registry.register(WavefrontProducer, addon_name=ADDON_NAME)
     producer_registry.register(ContourProducer, addon_name=ADDON_NAME)
     producer_registry.register(Rasterizer, addon_name=ADDON_NAME)
     # DepthEngraver and DitherRasterizer are aliases for Rasterizer
@@ -56,7 +56,7 @@ def register_producers(producer_registry):
 @hookimpl
 def register_steps(step_registry):
     """Register steps with the step registry."""
-    step_registry.register(AdaptiveClearingStep, addon_name=ADDON_NAME)
+    step_registry.register(WavefrontStep, addon_name=ADDON_NAME)
     step_registry.register(ContourStep, addon_name=ADDON_NAME)
     step_registry.register(EngraveStep, addon_name=ADDON_NAME)
     step_registry.register(FrameStep, addon_name=ADDON_NAME)
