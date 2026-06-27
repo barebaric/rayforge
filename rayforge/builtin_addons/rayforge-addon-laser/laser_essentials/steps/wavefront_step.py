@@ -6,17 +6,17 @@ from typing import TYPE_CHECKING, List, Optional, Tuple
 from rayforge.core.capability import CUT, Capability
 from rayforge.core.step import Step
 
-from ..producers import AdaptiveClearingProducer
+from ..producers import WavefrontProducer
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
 
 
-class AdaptiveClearingStep(Step):
-    TYPELABEL = _("Adaptive Clearing")
+class WavefrontStep(Step):
+    TYPELABEL = _("Wavefront")
     ICON = "step-contour-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (CUT,)
-    PRODUCER_CLASS = AdaptiveClearingProducer
+    PRODUCER_CLASS = WavefrontProducer
 
     def __init__(
         self, name: Optional[str] = None, typelabel: Optional[str] = None
@@ -33,7 +33,7 @@ class AdaptiveClearingStep(Step):
         context: "RayforgeContext",
         name: Optional[str] = None,
         **kwargs,
-    ) -> "AdaptiveClearingStep":
+    ) -> "WavefrontStep":
         machine = context.machine
         assert machine is not None
         default_head = machine.get_default_head()

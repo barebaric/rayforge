@@ -3,13 +3,11 @@ import math
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from raygeo.geo import Geometry
-from raygeo.geo.algo.cleared_area import ClearedArea
+from raygeo.ops.cut.cleared_area import ClearedArea
 from raygeo.geo.shape.polygon import is_point_inside_polygon
 from raygeo.ops import Ops
-from raygeo.ops.assembly.hsm import (
-    adaptive_entry,
-    adaptive_peeling,
-)
+from raygeo.ops.assembly.entry import adaptive_entry
+from raygeo.ops.assembly.wavefront import adaptive_wavefronts
 from raygeo.ops.types import SectionType
 
 from rayforge.core.matrix import Matrix
@@ -25,18 +23,18 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AdaptiveClearingProducer(OpsProducer):
-    """Uses raygeo HSM adaptive clearing to generate toolpaths for pockets.
+class WavefrontProducer(OpsProducer):
+    """Uses raygeo HSM adaptive wavefront to generate toolpaths for pockets.
 
-    Removes material from a pocket via helical/spiral entry and trochoidal
-    peeling passes. Z height is fixed for laser cutting — no Z motion.
+    Removes material from a pocket via helical/spiral entry and wavefront
+    passes. Z height is fixed for laser cutting — no Z motion.
     """
 
     def __init__(
         self,
         step_over_mm: Optional[float] = None,
         offset_mm: float = 0.0,
-        area_tolerance: float = 1.0,
+        area_tolerance: float = 0.01,
     ):
         super().__init__()
         self.step_over_mm = step_over_mm
@@ -56,9 +54,7 @@ class AdaptiveClearingProducer(OpsProducer):
         context: Optional[ProgressContext] = None,
     ) -> WorkPieceArtifact:
         if workpiece is None:
-            raise ValueError(
-                "AdaptiveClearingProducer requires a workpiece context."
-            )
+            raise ValueError("WavefrontProducer requires a workpiece context.")
 
         has_vector_source = (
             workpiece
@@ -67,7 +63,7 @@ class AdaptiveClearingProducer(OpsProducer):
         )
         if not has_vector_source:
             raise ValueError(
-                "AdaptiveClearingProducer requires vector geometry. "
+                "WavefrontProducer requires vector geometry. "
                 "No workpiece boundaries found."
             )
 
@@ -195,7 +191,7 @@ class AdaptiveClearingProducer(OpsProducer):
         cut_power: float,
         workpiece: "WorkPiece",
     ) -> Ops:
-        """Run entry and peeling passes for a single pocket."""
+        """Run entry and wavefront passes for a single pocket."""
         z_cut = 0.0
         z_safe = 2.0
         plunge_pitch = 1.0
@@ -217,7 +213,7 @@ class AdaptiveClearingProducer(OpsProducer):
         except Exception:
             logger.exception(
                 "adaptive_entry failed for workpiece '%s', "
-                "continuing with peeling only",
+                "continuing with wavefront only",
                 workpiece.name,
             )
 
@@ -228,9 +224,11 @@ class AdaptiveClearingProducer(OpsProducer):
             tool_radius,
         )
 
-        cleared = ClearedArea()
-        if cleared_polys:
-            cleared.add_cleared_polygons(cleared_polys)
+        cleared = ClearedArea(
+            boundary=pocket_boundary,
+            islands=islands,
+            initial=cleared_polys,
+        )
 
         if not cleared.fragments():
             seed_radius = max(tool_radius, step_over * 0.5)
@@ -243,33 +241,31 @@ class AdaptiveClearingProducer(OpsProducer):
                 )
                 for i in range(16)
             ]
-            cleared.add_cleared_polygons([seed_circle])
+            cleared.cut([seed_circle])
 
-        peeled_ops = Ops()
+        wavefront_ops = Ops()
         try:
-            peeled_ops = adaptive_peeling(
+            wavefront_ops = adaptive_wavefronts(
                 cleared=cleared,
                 pocket_boundary=pocket_boundary,
                 islands=islands,
                 tool_radius=tool_radius,
                 step_over=step_over,
-                cut_z=z_cut,
-                safe_z=z_safe,
-                wall_margin=self.offset_mm,
+                z=z_cut,
+                area_tolerance=self.area_tolerance,
                 cut_feed_rate=cut_feed_rate,
-                travel_rapid_rate=travel_rapid_rate,
                 cut_power=cut_power,
             )
         except Exception:
             logger.exception(
-                "adaptive_peeling failed for workpiece '%s'",
+                "adaptive_wavefronts failed for workpiece '%s'",
                 workpiece.name,
             )
 
-        logger.info("  peeling: %d ops", peeled_ops.len())
+        logger.info("  wavefront: %d ops", wavefront_ops.len())
 
         result = Ops()
-        for part in (entry_ops, peeled_ops):
+        for part in (entry_ops, wavefront_ops):
             if part.len() > 0:
                 result.extend(part)
         return result
@@ -285,10 +281,13 @@ class AdaptiveClearingProducer(OpsProducer):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AdaptiveClearingProducer":
+    def from_dict(cls, data: Dict[str, Any]) -> "WavefrontProducer":
         params = data.get("params", {})
+        tolerance = params.get("area_tolerance")
+        if tolerance is None or tolerance == 1.0:
+            tolerance = 0.01
         return cls(
             step_over_mm=params.get("step_over_mm", None),
             offset_mm=params.get("offset_mm", 0.0),
-            area_tolerance=params.get("area_tolerance", 1.0),
+            area_tolerance=tolerance,
         )

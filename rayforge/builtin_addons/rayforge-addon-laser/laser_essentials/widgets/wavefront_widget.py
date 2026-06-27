@@ -9,23 +9,21 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
 
-from ..producers import AdaptiveClearingProducer
+from ..producers import WavefrontProducer
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
     from rayforge.doceditor.editor import DocEditor
 
 
-class AdaptiveClearingSettingsWidget(
-    DebounceMixin, StepComponentSettingsWidget
-):
-    """UI for configuring the AdaptiveClearingProducer."""
+class WavefrontSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
+    """UI for configuring the WavefrontProducer."""
 
     def __init__(
         self,
         editor: "DocEditor",
         title: str,
-        producer: AdaptiveClearingProducer,
+        producer: WavefrontProducer,
         page: Adw.PreferencesPage,
         step: "Step",
         **kwargs,
@@ -44,7 +42,7 @@ class AdaptiveClearingSettingsWidget(
         step_over = producer.step_over_mm or 0.1
         self._add_spin_row(
             label=_("Step Over"),
-            subtitle=_("Lateral step-over between clearing passes (mm)"),
+            subtitle=_("Lateral step-over between wavefront passes (mm)"),
             value=step_over,
             lower=0.05,
             upper=50.0,
@@ -99,6 +97,6 @@ class AdaptiveClearingSettingsWidget(
             target_dict=params_dict,
             key=key,
             new_value=new_value,
-            name=_("Change Adaptive Clearing Setting"),
+            name=_("Change Wavefront Setting"),
             on_change_callback=lambda: self.step.updated.send(self.step),
         )

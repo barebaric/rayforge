@@ -5,14 +5,14 @@ Provides settings widgets for the producers in this addon.
 """
 
 from ..producers import (
-    AdaptiveClearingProducer,
+    WavefrontProducer,
     ContourProducer,
     FrameProducer,
     MaterialTestGridProducer,
     Rasterizer,
     ShrinkWrapProducer,
 )
-from .adaptive_clearing_widget import AdaptiveClearingSettingsWidget
+from .wavefront_widget import WavefrontSettingsWidget
 from .contour_widget import ContourProducerSettingsWidget
 from .frame_widget import FrameProducerSettingsWidget
 from .material_test_grid_widget import MaterialTestGridSettingsWidget
@@ -20,7 +20,7 @@ from .raster_widget import RasterSettingsWidget
 from .shrinkwrap_widget import ShrinkWrapProducerSettingsWidget
 
 PRODUCER_WIDGETS = {
-    AdaptiveClearingProducer: AdaptiveClearingSettingsWidget,
+    WavefrontProducer: WavefrontSettingsWidget,
     ContourProducer: ContourProducerSettingsWidget,
     FrameProducer: FrameProducerSettingsWidget,
     MaterialTestGridProducer: MaterialTestGridSettingsWidget,
@@ -29,7 +29,7 @@ PRODUCER_WIDGETS = {
 }
 
 __all__ = [
-    "AdaptiveClearingSettingsWidget",
+    "WavefrontSettingsWidget",
     "ContourProducerSettingsWidget",
     "RasterSettingsWidget",
     "FrameProducerSettingsWidget",
