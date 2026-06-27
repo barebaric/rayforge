@@ -712,19 +712,28 @@ def _parse_status_part(status_part: str) -> tuple[DeviceStatus, Optional[str]]:
     """
     Parse status part into DeviceStatus and optional error code.
 
+    Only ``Alarm`` status uses the ``:N`` suffix for an actual error/alarm
+    code.  For ``Hold`` and ``Door`` the ``:N`` is a sub‑state indicator
+    (e.g. ``Hold:1`` = hold pending, ``Door:0`` = door closed) that must
+    NOT be treated as an error.
+
     Args:
-        status_part: Status part like 'Idle' or 'Alarm:1'
+        status_part: Status part like ``'Idle'`` or ``'Alarm:1'``
 
     Returns:
         Tuple of (DeviceStatus, error_code or None)
     """
     status_parts = status_part.split(":")
     status_name = status_parts[0]
-    error_code = status_parts[1] if len(status_parts) > 1 else None
     try:
-        return DeviceStatus[status_name.upper()], error_code
+        status = DeviceStatus[status_name.upper()]
     except KeyError:
-        return DeviceStatus.UNKNOWN, error_code
+        return DeviceStatus.UNKNOWN, None
+
+    error_code = status_parts[1] if (
+        status == DeviceStatus.ALARM and len(status_parts) > 1
+    ) else None
+    return status, error_code
 
 
 def _parse_position_attribute(attrib: str, pos_type: str) -> Optional[Pos]:
