@@ -84,6 +84,7 @@ class GrblNetworkDriver(Driver):
         self.http = None
         self.websocket = None
         self.keep_running = False
+        self._is_cancelled = False
         self._connection_task: Optional[asyncio.Task] = None
         self._current_request: Optional[CommandRequest] = None
         self._cmd_lock = asyncio.Lock()
@@ -369,6 +370,8 @@ class GrblNetworkDriver(Driver):
         op_map = encoded.op_map
 
         try:
+            self._is_cancelled = False
+
             # For GRBL driver, we don't track individual commands
             # since we upload the entire file at once
             if on_command_done is not None:
@@ -383,12 +386,14 @@ class GrblNetworkDriver(Driver):
                         await result
 
             await self._upload(gcode, "rayforge.gcode")
-            await self._execute("rayforge.gcode")
+            if not self._is_cancelled:
+                await self._execute("rayforge.gcode")
         except Exception as e:
             self._update_connection_status(TransportStatus.ERROR, str(e))
             raise
         finally:
-            self.job_finished.send(self)
+            if not self._is_cancelled:
+                self.job_finished.send(self)
 
     async def run_raw(self, machine_code: str) -> None:
         """
@@ -407,13 +412,16 @@ class GrblNetworkDriver(Driver):
             logger.info(line, extra=self._log_extra("USER_COMMAND"))
 
         try:
+            self._is_cancelled = False
             await self._upload(machine_code, "rayforge_raw.gcode")
-            await self._execute("rayforge_raw.gcode")
+            if not self._is_cancelled:
+                await self._execute("rayforge_raw.gcode")
         except Exception as e:
             self._update_connection_status(TransportStatus.ERROR, str(e))
             raise
         finally:
-            self.job_finished.send(self)
+            if not self._is_cancelled:
+                self.job_finished.send(self)
 
     async def execute_interactive_command(self, command: str) -> List[str]:
         """
@@ -443,6 +451,7 @@ class GrblNetworkDriver(Driver):
         await self._send_command("!" if hold else "~")
 
     async def cancel(self) -> None:
+        self._is_cancelled = True
         # Soft reset: send Ctrl-X (0x18) as a raw byte.  _send_command
         # URL-encodes the argument, so '\x18' becomes '%18' on the wire —
         # which is what the ESP3D/FluidNC web interface interprets as the

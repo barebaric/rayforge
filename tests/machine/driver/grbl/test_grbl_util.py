@@ -84,10 +84,14 @@ class TestParseStatusPart:
         assert error_code is None
 
     def test_parse_hold_status(self):
-        """Test parsing hold status."""
+        """Test parsing hold status. Hold:N is a sub-state, not an
+        error code."""
         status, error_code = _parse_status_part("Hold:0")
         assert status == DeviceStatus.HOLD
-        assert error_code == "0"
+        assert error_code is None
+        status, error_code = _parse_status_part("Hold:1")
+        assert status == DeviceStatus.HOLD
+        assert error_code is None
 
     def test_parse_jog_status(self):
         """Test parsing jog status."""
