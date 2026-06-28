@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 23:45+0200\n"
+"POT-Creation-Date: 2026-06-28 11:01+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -57,6 +57,26 @@ msgstr "Innen-Außen"
 #: laser_essentials/producers/contour_producer.py
 msgid "Outside-Inside"
 msgstr "Außen-Innen"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Step Over"
+msgstr "Schrittweite"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Lateral step-over between wavefront passes (mm)"
+msgstr "Seitliche Schrittweite zwischen Wavefront-Durchgängen (mm)"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Offset"
+msgstr "Versatz"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Extra offset from walls (mm)"
+msgstr "Zusätzlicher Versatz von Wänden (mm)"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Change Wavefront Setting"
+msgstr "Wavefront-Einstellung ändern"
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Configure how the laser engraves your image."
@@ -524,6 +544,10 @@ msgstr "Gitterabmessungen ändern"
 #: laser_essentials/steps/shrinkwrap_step.py
 msgid "Shrink Wrap"
 msgstr "Umhüllung"
+
+#: laser_essentials/steps/wavefront_step.py
+msgid "Wavefront"
+msgstr "Wellenfront"
 
 #: laser_essentials/steps/frame_step.py
 msgid "Frame"

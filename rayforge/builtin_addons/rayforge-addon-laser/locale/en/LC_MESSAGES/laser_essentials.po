@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 23:45+0200\n"
+"POT-Creation-Date: 2026-06-28 11:01+0200\n"
 "PO-Revision-Date: 2026-03-01 19:25+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -57,6 +57,26 @@ msgstr "Inside-Outside"
 #: laser_essentials/producers/contour_producer.py
 msgid "Outside-Inside"
 msgstr "Outside-Inside"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Step Over"
+msgstr ""
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Lateral step-over between wavefront passes (mm)"
+msgstr ""
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Offset"
+msgstr ""
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Extra offset from walls (mm)"
+msgstr ""
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Change Wavefront Setting"
+msgstr ""
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Configure how the laser engraves your image."
@@ -513,6 +533,10 @@ msgstr "Change Grid Dimensions"
 #: laser_essentials/steps/shrinkwrap_step.py
 msgid "Shrink Wrap"
 msgstr "Shrink Wrap"
+
+#: laser_essentials/steps/wavefront_step.py
+msgid "Wavefront"
+msgstr ""
 
 #: laser_essentials/steps/frame_step.py
 msgid "Frame"
