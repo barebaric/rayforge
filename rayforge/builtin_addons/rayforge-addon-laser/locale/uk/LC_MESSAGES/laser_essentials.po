@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 23:45+0200\n"
+"POT-Creation-Date: 2026-06-28 11:01+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -58,6 +58,26 @@ msgstr "Зсередини-назовні"
 #: laser_essentials/producers/contour_producer.py
 msgid "Outside-Inside"
 msgstr "Ззовні-всередину"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Step Over"
+msgstr "Крок переміщення"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Lateral step-over between wavefront passes (mm)"
+msgstr "Бічне зміщення між проходами хвильового фронту (мм)"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Offset"
+msgstr "Зміщення"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Extra offset from walls (mm)"
+msgstr "Додаткове зміщення від стінок (мм)"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Change Wavefront Setting"
+msgstr "Змінити налаштування хвильового фронту"
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Configure how the laser engraves your image."
@@ -521,6 +541,10 @@ msgstr "Змінити розміри сітки"
 #: laser_essentials/steps/shrinkwrap_step.py
 msgid "Shrink Wrap"
 msgstr "Обтискання"
+
+#: laser_essentials/steps/wavefront_step.py
+msgid "Wavefront"
+msgstr "Хвильовий фронт"
 
 #: laser_essentials/steps/frame_step.py
 msgid "Frame"

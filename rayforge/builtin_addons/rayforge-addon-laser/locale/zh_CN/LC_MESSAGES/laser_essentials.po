@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 23:45+0200\n"
+"POT-Creation-Date: 2026-06-28 11:01+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -57,6 +57,26 @@ msgstr "内-外"
 #: laser_essentials/producers/contour_producer.py
 msgid "Outside-Inside"
 msgstr "外-内"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Step Over"
+msgstr "步进"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Lateral step-over between wavefront passes (mm)"
+msgstr "波前扫描之间的横向步进距离 (mm)"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Offset"
+msgstr "偏移"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Extra offset from walls (mm)"
+msgstr "距壁额外偏移 (mm)"
+
+#: laser_essentials/widgets/wavefront_widget.py
+msgid "Change Wavefront Setting"
+msgstr "更改波前设置"
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Configure how the laser engraves your image."
@@ -511,6 +531,10 @@ msgstr "更改网格尺寸"
 #: laser_essentials/steps/shrinkwrap_step.py
 msgid "Shrink Wrap"
 msgstr "收缩包裹"
+
+#: laser_essentials/steps/wavefront_step.py
+msgid "Wavefront"
+msgstr "波前"
 
 #: laser_essentials/steps/frame_step.py
 msgid "Frame"
