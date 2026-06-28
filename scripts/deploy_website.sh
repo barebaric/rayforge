@@ -23,34 +23,31 @@ if [ -z "$IS_PRERELEASE" ]; then
   exit 1
 fi
 
-# Rewrite the deployment branch history so only tagged release snapshots,
-# the most recent untagged "latest" docs refresh, and the current HEAD
-# survive. Every deploy replaces the whole site tree, so intermediate
-# untagged commits carry no unique content and only bloat the repository.
-# Run this from inside the deploy repo checkout.
+# Rewrite the deployment branch history so only tagged release snapshots
+# and the current HEAD survive. Every deploy replaces the whole site tree
+# so intermediate untagged commits carry no unique content and only bloat
+# the repository. Run this from inside the deploy repo checkout.
 prune_untagged_history() {
-  local current_head latest_untagged sha total kept
+  local current_head total kept sha
 
   current_head=$(git rev-parse HEAD)
-
-  # Most recent untagged commit = the rolling "latest" docs snapshot,
-  # kept even on tagged-release deploys so "latest" is never lost.
-  # `git rev-list --reverse HEAD` is oldest-first, so the last untagged
-  # commit seen is the newest.
-  latest_untagged=""
-  while read -r sha; do
-    if ! git tag -l --points-at "$sha" | grep -q .; then
-      latest_untagged="$sha"
-    fi
-  done < <(git rev-list --reverse HEAD)
-
-  # Bail out if there is nothing to prune (avoids a pointless rewrite).
   total=$(git rev-list --count HEAD)
+
+  # Without at least one tag anchor there is no way to distinguish a
+  # release snapshot from a rolling refresh — pruning would collapse the
+  # entire pre-tag history to a single commit. Wait until a tagged
+  # release has been deployed, then this activates.
+  if ! git tag -l | grep -q .; then
+    echo "No release tags yet; skipping prune (need an anchor)."
+    return 0
+  fi
+
+  # Count commits that will survive: every tagged commit + the current
+  # HEAD (the rolling "latest" docs, even if untagged).
   kept=0
   while read -r sha; do
     local keep=no
     [ "$sha" = "$current_head" ] && keep=yes
-    [ -n "$latest_untagged" ] && [ "$sha" = "$latest_untagged" ] && keep=yes
     if [ "$keep" = no ] && git tag -l --points-at "$sha" | grep -q .; then
       keep=yes
     fi
@@ -64,18 +61,15 @@ prune_untagged_history() {
 
   echo "Pruning history: keeping ${kept}/${total} tagged/latest commits."
 
-  # Drop every commit that is neither tagged, nor HEAD, nor the latest
-  # untagged snapshot. filter-branch rewires parents of surviving
-  # commits, and --tag-name-filter cat re-points tags at the rewritten
-  # commits. Because each deploy is a full snapshot, skipped commits
-  # carry no unique tree content.
+  # Drop every commit that is neither tagged nor the current HEAD.
+  # filter-branch rewires parents of surviving commits, and
+  # --tag-name-filter cat re-points tags at the rewritten commits.
+  # Because each deploy is a full snapshot, skipped commits carry no
+  # unique tree content.
   PRUNE_HEAD="$current_head" \
-  PRUNE_LATEST_UNTAGGED="$latest_untagged" \
     git filter-branch -f --tag-name-filter cat --commit-filter '
       keep=no
       [ "$GIT_COMMIT" = "$PRUNE_HEAD" ] && keep=yes
-      [ -n "$PRUNE_LATEST_UNTAGGED" ] && \
-        [ "$GIT_COMMIT" = "$PRUNE_LATEST_UNTAGGED" ] && keep=yes
       if [ "$keep" = no ] && git tag -l --points-at "$GIT_COMMIT" | grep -q .; then
         keep=yes
       fi
@@ -175,7 +169,8 @@ fi
 
 # Drop intermediate untagged commits from the branch history so the
 # repository does not bloat over time. Only tagged release snapshots and
-# the latest HEAD are kept.
+# the latest HEAD are kept. Once the first release tag exists, every
+# branch push collapses old untagged refreshes into the new HEAD.
 prune_untagged_history
 
 git push --force origin "${DEPLOY_BRANCH}"
