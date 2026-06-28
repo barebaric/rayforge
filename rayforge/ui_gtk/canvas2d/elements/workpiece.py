@@ -459,11 +459,15 @@ class WorkPieceElement(CanvasElement):
             return
 
         # Compute union of all scaled bboxes in workpiece-local mm space.
+        # Track per-axis PPM so that the CAIRO_MAX_DIMENSION cap, which may
+        # affect one axis more than the other for non-square workpieces, does
+        # not corrupt the opposite axis' positioning.
         union_x = float("inf")
         union_y = float("inf")
         union_r = float("-inf")
         union_t = float("-inf")
-        ppm = 0.0
+        ppm_x = 0.0
+        ppm_y = 0.0
 
         for step_uid, surf, meta in visible_steps:
             bbox_mm, wp_size_mm = meta
@@ -479,40 +483,47 @@ class WorkPieceElement(CanvasElement):
                 continue
             w_px = surf.get_width()
             h_px = surf.get_height()
-            step_ppm = (
-                max(
-                    (w_px - 2 * OPS_MARGIN_PX) / vw,
-                    (h_px - 2 * OPS_MARGIN_PX) / vh,
-                )
-                if vw > 1e-9 and vh > 1e-9
-                else 0
-            )
-            if step_ppm > ppm:
-                ppm = step_ppm
-            margin_w = OPS_MARGIN_PX / step_ppm if step_ppm > 0 else 0
-            margin_h = margin_w
+            step_ppm_x = (w_px - 2 * OPS_MARGIN_PX) / vw if vw > 1e-9 else 0
+            step_ppm_y = (h_px - 2 * OPS_MARGIN_PX) / vh if vh > 1e-9 else 0
+            if step_ppm_x > ppm_x:
+                ppm_x = step_ppm_x
+            if step_ppm_y > ppm_y:
+                ppm_y = step_ppm_y
+            margin_w = OPS_MARGIN_PX / step_ppm_x if step_ppm_x > 0 else 0
+            margin_h = OPS_MARGIN_PX / step_ppm_y if step_ppm_y > 0 else 0
             union_x = min(union_x, vx - margin_w)
             union_y = min(union_y, vy - margin_h)
             union_r = max(union_r, vx + vw + margin_w)
             union_t = max(union_t, vy + vh + margin_h)
 
-        if ppm <= 0:
+        if ppm_x <= 0 or ppm_y <= 0:
             self._dispose_composited()
             self._composited_dirty = False
             return
 
         composite_w_mm = union_r - union_x
         composite_h_mm = union_t - union_y
-        comp_w_px = min(int(round(composite_w_mm * ppm)), CAIRO_MAX_DIMENSION)
-        comp_h_px = min(int(round(composite_h_mm * ppm)), CAIRO_MAX_DIMENSION)
+        comp_w_px = min(
+            int(round(composite_w_mm * ppm_x)), CAIRO_MAX_DIMENSION
+        )
+        comp_h_px = min(
+            int(round(composite_h_mm * ppm_y)), CAIRO_MAX_DIMENSION
+        )
 
         if comp_w_px <= 0 or comp_h_px <= 0:
             self._dispose_composited()
             self._composited_dirty = False
             return
 
-        # Effective PPM after capping surface dimensions
-        eff_ppm = comp_w_px / composite_w_mm if composite_w_mm > 1e-9 else ppm
+        # Effective PPM per axis after capping surface dimensions. When the
+        # 8192px cap binds on one axis but not the other, these differ and
+        # must be applied independently to keep each axis aligned.
+        eff_ppm_x = (
+            comp_w_px / composite_w_mm if composite_w_mm > 1e-9 else ppm_x
+        )
+        eff_ppm_y = (
+            comp_h_px / composite_h_mm if composite_h_mm > 1e-9 else ppm_y
+        )
 
         if (
             self._composited_data is not None
@@ -553,13 +564,13 @@ class WorkPieceElement(CanvasElement):
             )
             if step_ppm_x <= 0 or step_ppm_y <= 0:
                 continue
-            dest_x = (vx - OPS_MARGIN_PX / step_ppm_x - union_x) * eff_ppm
-            scale_x = eff_ppm / step_ppm_x
-            scale_y = eff_ppm / step_ppm_y
+            dest_x = (vx - OPS_MARGIN_PX / step_ppm_x - union_x) * eff_ppm_x
+            scale_x = eff_ppm_x / step_ppm_x
+            scale_y = eff_ppm_y / step_ppm_y
             surf_h = surf.get_height()
             dest_y = (
                 comp_h_px
-                - (vy - union_y) * eff_ppm
+                - (vy - union_y) * eff_ppm_y
                 - (surf_h - OPS_MARGIN_PX) * scale_y
             )
             comp_ctx.save()
