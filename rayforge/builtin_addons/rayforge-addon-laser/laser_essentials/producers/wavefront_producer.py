@@ -193,8 +193,7 @@ class WavefrontProducer(OpsProducer):
     ) -> Ops:
         """Run entry and wavefront passes for a single pocket."""
         z_cut = 0.0
-        z_safe = 2.0
-        plunge_pitch = 1.0
+        z_safe = 0.0
 
         entry_ops = Ops()
         cleared_polys = []
@@ -206,7 +205,6 @@ class WavefrontProducer(OpsProducer):
                 step_over=step_over,
                 target_z=z_cut,
                 safe_z=z_safe,
-                plunge_pitch=plunge_pitch,
                 cut_feed_rate=cut_feed_rate,
                 cut_power=cut_power,
             )
