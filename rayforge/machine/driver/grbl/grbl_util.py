@@ -730,9 +730,11 @@ def _parse_status_part(status_part: str) -> tuple[DeviceStatus, Optional[str]]:
     except KeyError:
         return DeviceStatus.UNKNOWN, None
 
-    error_code = status_parts[1] if (
-        status == DeviceStatus.ALARM and len(status_parts) > 1
-    ) else None
+    error_code = (
+        status_parts[1]
+        if (status == DeviceStatus.ALARM and len(status_parts) > 1)
+        else None
+    )
     return status, error_code
 
 
