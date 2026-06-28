@@ -87,6 +87,9 @@ class WavefrontProducer(OpsProducer):
         scaled_geo.transform(scaling_matrix.to_4x4_numpy())
         scaled_geo.normalize_winding_orders()
 
+        if self.offset_mm > 0:
+            scaled_geo = scaled_geo.grow(-self.offset_mm)
+
         contours = scaled_geo.split_into_contours()
         closed = [c for c in contours if c.is_closed()]
         if not closed:
@@ -115,6 +118,7 @@ class WavefrontProducer(OpsProducer):
         final_ops = Ops()
         final_ops.set_head(laser.uid)
 
+        precision = settings.get("arc_tolerance", 0.03) if settings else 0.03
         for idx, (boundary, islands) in enumerate(pockets):
             logger.info(
                 "Processing pocket %d/%d: %d pts, %d islands",
@@ -132,6 +136,7 @@ class WavefrontProducer(OpsProducer):
                 travel_rapid_rate,
                 cut_power,
                 workpiece,
+                precision=precision,
             )
             if pocket_ops.len() > 0:
                 final_ops.ops_section_start(
@@ -190,6 +195,7 @@ class WavefrontProducer(OpsProducer):
         travel_rapid_rate: int,
         cut_power: float,
         workpiece: "WorkPiece",
+        precision: float = 0.03,
     ) -> Ops:
         """Run entry and wavefront passes for a single pocket."""
         z_cut = 0.0
@@ -251,6 +257,7 @@ class WavefrontProducer(OpsProducer):
                 step_over=step_over,
                 z=z_cut,
                 area_tolerance=self.area_tolerance,
+                precision=precision,
                 cut_feed_rate=cut_feed_rate,
                 cut_power=cut_power,
             )
