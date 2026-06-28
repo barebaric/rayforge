@@ -45,7 +45,7 @@ module.exports = {
           path: 'docs',
           routeBasePath: 'docs',
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/barebaric/rayforge/tree/main/website/docs/',
+          editUrl: 'https://github.com/barebaric/rayforge/tree/main/website/',
         },
         blog: {
           path: 'blog',
