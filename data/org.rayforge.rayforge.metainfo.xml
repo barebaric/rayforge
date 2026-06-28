@@ -66,9 +66,31 @@
   </screenshots>
 
   <releases>
-    <release version="1.8.1" date="2026-06-16">
+    <release version="1.8.1" date="2026-06-28">
       <description>
-        <p>Upgrade raygeo to release 0.10.0</p>
+        <p>Wavefront adaptive clearing, raygeo PyPI migration, and bug fixes</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Wavefront (adaptive clearing) toolpath operation for efficient
+          area clearing with helical entry and concentric passes</li>
+          <li>Migrate raygeo from local source to PyPI package</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Upgrade raygeo to releases 0.8.0 through 0.13.2 with numerous
+          API improvements and renames</li>
+          <li>Update dependencies (aiohttp, pypdf) to fix security
+          vulnerabilities</li>
+          <li>Updated translations</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Multi-step composite blit positioning for correct step content
+          placement</li>
+          <li>GRBL error state recovery when machine enters HOLD</li>
+          <li>Backward compatibility for legacy bezier curve formats in
+          raygeo</li>
+        </ul>
       </description>
     </release>
     <release version="1.8.0" date="2026-06-16">

@@ -5,11 +5,26 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 1.8.1 (unreleased)
+## 1.8.1
+
+### Added
+
+- Wavefront (adaptive clearing) toolpath operation for efficient area
+  clearing
+- Migrate raygeo from local source to PyPI package
 
 ### Changed
 
-- Upgrade raygeo to release 0.10.0
+- Upgrade raygeo to releases 0.8.0 through 0.13.2 with numerous API
+  improvements and renames
+- Update dependencies (aiohttp, pypdf) to fix security vulnerabilities
+- Updated translations
+
+### Fixed
+
+- Multi-step composite blit positioning for correct step content placement
+- GRBL error state recovery when machine enters HOLD
+- Backward compatibility for legacy bezier curve formats in raygeo
 
 ## 1.8.0
 
