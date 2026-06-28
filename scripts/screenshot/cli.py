@@ -53,6 +53,7 @@ TARGETS = {
     "main:3d": "main_3d",
     "main:3d-rotary": "main_3d_rotary",
     "material-test": "material_test",
+    "operations:wavefront": "wavefront",
     "recipe-editor:general": "recipe_editor_general",
     "recipe-editor:applicability": "recipe_editor_applicability",
     "recipe-editor:settings": "recipe_editor_settings",

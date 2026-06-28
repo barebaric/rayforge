@@ -11,6 +11,8 @@ from raygeo.ops.assembly.wavefront import adaptive_wavefronts
 from raygeo.ops.types import SectionType
 
 from rayforge.core.matrix import Matrix
+from rayforge.core.vectorization_spec import TraceSpec
+from rayforge.image.tracing import trace_surface
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.producer.base import OpsProducer
@@ -56,18 +58,11 @@ class WavefrontProducer(OpsProducer):
         if workpiece is None:
             raise ValueError("WavefrontProducer requires a workpiece context.")
 
+        boundaries = workpiece.boundaries
         has_vector_source = (
-            workpiece
-            and workpiece.boundaries
-            and not workpiece.boundaries.is_empty()
+            boundaries is not None and not boundaries.is_empty()
         )
-        if not has_vector_source:
-            raise ValueError(
-                "WavefrontProducer requires vector geometry. "
-                "No workpiece boundaries found."
-            )
 
-        assert workpiece.boundaries is not None
         tool_radius = laser.spot_size_mm[0] / 2.0
         step_over = (
             self.step_over_mm
@@ -81,11 +76,29 @@ class WavefrontProducer(OpsProducer):
         )
         cut_power = settings.get("power", 1.0) if settings else 1.0
 
-        scaled_geo = workpiece.boundaries.copy()
-        width_mm, height_mm = workpiece.size
-        scaling_matrix = Matrix.scale(width_mm, height_mm)
-        scaled_geo.transform(scaling_matrix.to_4x4_numpy())
-        scaled_geo.normalize_winding_orders()
+        if has_vector_source:
+            assert boundaries is not None
+            scaled_geo = boundaries.copy()
+            width_mm, height_mm = workpiece.size
+            scaling_matrix = Matrix.scale(width_mm, height_mm)
+            scaled_geo.transform(scaling_matrix.to_4x4_numpy())
+            scaled_geo.normalize_winding_orders()
+        elif surface:
+            scaled_geo = self._trace_surface_to_geometry(
+                surface, workpiece, context
+            )
+            if scaled_geo is None or scaled_geo.is_empty():
+                raise ValueError(
+                    "WavefrontProducer could not derive vector geometry. "
+                    "No workpiece boundaries and surface tracing yielded "
+                    "no contours."
+                )
+            scaled_geo.normalize_winding_orders()
+        else:
+            raise ValueError(
+                "WavefrontProducer requires vector geometry. "
+                "No workpiece boundaries found."
+            )
 
         if self.offset_mm > 0:
             scaled_geo = scaled_geo.grow(-self.offset_mm)
@@ -153,6 +166,47 @@ class WavefrontProducer(OpsProducer):
             generation_size=workpiece.size,
             generation_id=generation_id,
         )
+
+    @staticmethod
+    def _trace_surface_to_geometry(
+        surface,
+        workpiece: "WorkPiece",
+        context: Optional[ProgressContext] = None,
+    ) -> Optional[Geometry]:
+        """Trace a rendered surface into a single normalized Geometry.
+
+        Mirrors ContourProducer's raster fallback: the traced contours are
+        in pixel space (Y-down) and are transformed to mm space (Y-up) at
+        the origin, then merged into one Geometry.
+        """
+        if surface is None:
+            return None
+        spec = TraceSpec(
+            threshold=0.5,
+            auto_threshold=True,
+            invert=False,
+        )
+        traced_contours = trace_surface(surface, vectorization_spec=spec)
+        if not traced_contours:
+            return None
+
+        width_mm, height_mm = workpiece.size
+        px_width = surface.get_width()
+        px_height = surface.get_height()
+        if px_width <= 0 or px_height <= 0:
+            return None
+
+        scale_x = width_mm / px_width
+        scale_y = height_mm / px_height
+        transform = Matrix.translation(0, height_mm) @ Matrix.scale(
+            scale_x, -scale_y
+        )
+
+        merged = Geometry()
+        for geo in traced_contours:
+            geo.transform(transform.to_4x4_numpy())
+            merged.extend(geo)
+        return merged
 
     @staticmethod
     def _associate_pockets(
