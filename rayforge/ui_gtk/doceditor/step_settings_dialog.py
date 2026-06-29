@@ -19,6 +19,7 @@ from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.preferences_page import TrackedPreferencesPage
 from ..varset.varsetwidget import VarSetWidget
 from .recipe_control_widget import RecipeControlWidget
+from .step_settings.base import StepComponentSettingsWidget
 from .step_settings.placeholder import PlaceholderSettingsWidget
 
 if TYPE_CHECKING:
@@ -292,6 +293,17 @@ class PostProcessingSettingsView(TrackedPreferencesPage):
             expander.set_subtitle(subtitle)
         expander.set_expanded(False)
 
+        warning_icon = get_icon("warning-symbolic")
+        warning_icon.set_valign(Gtk.Align.CENTER)
+        expander.add_prefix(warning_icon)
+
+        def _update_warning_icon(grp=group, ico=warning_icon):
+            unsupported = (
+                isinstance(grp, StepComponentSettingsWidget)
+                and grp.is_unsupported()
+            )
+            ico.set_visible(unsupported)
+
         enable_switch_row = None
         for row in rows:
             if isinstance(row, Adw.SwitchRow) and enable_switch_row is None:
@@ -312,9 +324,18 @@ class PostProcessingSettingsView(TrackedPreferencesPage):
                         sw.set_active(r.get_active())
 
                 row.connect("notify::active", _on_orig_toggled)
+                row.connect(
+                    "notify::active",
+                    lambda *_: _update_warning_icon(),
+                )
             else:
                 expander.add_row(row)
 
+        machine = get_context().machine
+        if machine:
+            machine.changed.connect(lambda *_: _update_warning_icon())
+
+        _update_warning_icon()
         self._main_group.add(expander)
         self._has_expanders = True
 

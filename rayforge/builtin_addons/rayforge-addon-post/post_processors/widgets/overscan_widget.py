@@ -47,6 +47,15 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         if machine:
             machine.changed.connect(self._on_machine_changed)
 
+        # Banner shown when the driver applies overscan itself.
+        self.native_banner = Adw.Banner(
+            title=_(
+                "This machine adds overscan automatically; the setting "
+                "has no effect."
+            )
+        )
+        super().add(self.native_banner)
+
         # Auto mode toggle
         self.auto_row = Adw.SwitchRow(
             title=_("Automatic Distance"),
@@ -89,6 +98,19 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             lambda w, _: self._update_sensitivity(),
         )
 
+        self._update_sensitivity()
+
+    def _is_native_overscan(self) -> bool:
+        """Whether the active machine's driver applies overscan itself."""
+        machine = get_context().machine
+        return bool(machine and machine.driver.native_overscan)
+
+    def is_unsupported(self) -> bool:
+        """Enabled overscan that the driver handles itself."""
+        if self.enable_switch is None or not self.enable_switch.get_active():
+            return False
+        return self._is_native_overscan()
+
     def _set_step_param(self, key, new_value, name):
         """Helper method to set a step parameter with standard callback."""
         self.editor.step.set_step_param(
@@ -105,9 +127,13 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         enabled = self.enable_switch.get_active()
         auto = self.auto_row.get_active()
 
+        native = self._is_native_overscan()
+        self.native_banner.set_revealed(native)
+
         # Use the stored references to the rows
-        self.auto_row.set_sensitive(enabled)
-        self.distance_row.set_sensitive(enabled and not auto)
+        self.enable_switch.set_sensitive(not native)
+        self.auto_row.set_sensitive(enabled and not auto and not native)
+        self.distance_row.set_sensitive(enabled and not auto and not native)
 
     def _on_auto_toggled(self, row, pspec):
         new_value = row.get_active()
@@ -149,6 +175,10 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         """
         Handle machine updates (e.g. acceleration) to recalculate overscan.
         """
+        if self._is_native_overscan():
+            self._update_sensitivity()
+            return
+        self._update_sensitivity()
         if self.target_dict.get("auto", True):
             self._recalculate_distance()
 

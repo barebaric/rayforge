@@ -118,6 +118,8 @@ class OverscanTransformer(OpsTransformer):
     ) -> None:
         if not self.enabled or math.isclose(self.distance_mm, 0.0):
             return
+        if settings and settings.get("driver_native_overscan"):
+            return
 
         ops.apply_overscan(self.distance_mm)
 
