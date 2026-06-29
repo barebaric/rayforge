@@ -61,6 +61,7 @@ class RuidaDriver(Driver):
     reports_granular_progress = False
     uses_gcode = False
     maturity = DriverMaturity.KNOWN_BUGGY
+    native_overscan = True
     CONNECTION_TIMEOUT = 2.0
     RECONNECT_INTERVAL = 5.0
     KEEPALIVE_INTERVAL = 1.0

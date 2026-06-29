@@ -55,6 +55,19 @@ def test_no_op_when_disabled(transformer: OverscanTransformer):
     assert ops.len() == original_len
 
 
+def test_no_op_with_native_overscan(transformer: OverscanTransformer):
+    """Verify the transformer is skipped when the driver does overscan."""
+    ops = Ops()
+    ops.ops_section_start(SectionType.RASTER_FILL, "wp_123")
+    ops.move_to(10, 10, 0)
+    ops.ops_section_end(SectionType.RASTER_FILL)
+    original_len = ops.len()
+
+    transformer.run(ops, settings={"driver_native_overscan": True})
+
+    assert ops.len() == original_len
+
+
 def test_no_op_with_zero_distance(transformer: OverscanTransformer):
     """Verify the run method does nothing if the distance is zero."""
     ops = Ops()
