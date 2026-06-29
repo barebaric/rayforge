@@ -90,6 +90,16 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
         for row in self._rows[1:]:
             row.set_sensitive(enabled)
 
+    def is_unsupported(self) -> bool:
+        """
+        Whether this component is enabled but cannot take effect on the
+        active machine (e.g. the driver handles the feature itself).
+
+        Subclasses override this to flag expander-level warnings. Returns
+        False by default.
+        """
+        return False
+
     @property
     def target_dict(self) -> Dict[str, Any]:
         """

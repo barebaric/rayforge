@@ -189,6 +189,9 @@ class Driver(ABC):
     uses_gcode: bool = True
     maturity: DriverMaturity = DriverMaturity.STABLE
     supports_probing: bool = False
+    # When True, the firmware applies its own overscan, so Rayforge's
+    # OverscanTransformer would double it up and should be skipped.
+    native_overscan: bool = False
 
     @property
     @abstractmethod
