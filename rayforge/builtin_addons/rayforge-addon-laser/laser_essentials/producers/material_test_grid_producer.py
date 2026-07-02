@@ -5,11 +5,13 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import cairo
+from raygeo.geo import Geometry
 from raygeo.ops import Ops
 from raygeo.ops.types import SectionType
 
-from rayforge.core.geo_helpers import geometry_from_cairo_path
+from rayforge.core.font_config import FontConfig
 from rayforge.core.matrix import Matrix
+from rayforge.core.text import text_to_geometry
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.producer.base import OpsProducer
@@ -19,10 +21,9 @@ if TYPE_CHECKING:
     from rayforge.core.workpiece import WorkPiece
 
 
-logger = logging.getLogger(__name__)
-
-_TRACE_DPI = 300.0
 _MM_PER_INCH = 25.4
+
+logger = logging.getLogger(__name__)
 
 
 def get_material_test_proportional_size(
@@ -242,8 +243,9 @@ class MaterialTestGridProducer(OpsProducer):
         params: Dict[str, Any],
     ):
         """
-        Draws a visual-only preview by dynamically calculating the layout in
-        pixel space. This prevents stretching.
+        Draws a visual-only preview in pixel space using the same
+        text_to_geometry / Pango pipeline as _vectorize_text_to_ops, so the
+        preview matches the generated Ops.
         """
         ctx.set_source_rgb(1, 1, 1)
         ctx.paint()
@@ -255,7 +257,7 @@ class MaterialTestGridProducer(OpsProducer):
 
         for el in elements:
             if el["class"] == "grid-rect":
-                ctx.set_line_width(0.2 * (width_px / 73.0))  # Scale line width
+                ctx.set_line_width(0.2 * (width_px / 73.0))
                 ctx.rectangle(el["x"], el["y"], el["width"], el["height"])
                 if test_type == MaterialTestGridType.ENGRAVE:
                     ctx.set_source_rgb(0.5, 0.5, 0.5)
@@ -263,7 +265,7 @@ class MaterialTestGridProducer(OpsProducer):
                 ctx.set_source_rgb(0, 0, 0)
                 ctx.stroke()
             elif "label" in el["class"]:
-                cls._setup_text_path_on_context(ctx, **el)
+                cls._setup_text_path_on_context(ctx, width_px, **el)
                 ctx.fill()
 
     @staticmethod
@@ -363,12 +365,6 @@ class MaterialTestGridProducer(OpsProducer):
             font_size_axis = min(margin_left, margin_top) * 0.25
             font_size_grid = font_size_axis * 0.85
 
-            # Add an absolute minimum size in target units (pixels or mm) to
-            # prevent text from becoming illegible if squashed.
-            min_abs_font_size = 2.0
-            font_size_axis = max(font_size_axis, min_abs_font_size * 1.1)
-            font_size_grid = max(font_size_grid, min_abs_font_size)
-
             grid_w = target_width - margin_left
             grid_h = target_height - margin_top
 
@@ -453,76 +449,173 @@ class MaterialTestGridProducer(OpsProducer):
         params: Dict[str, Any], width_mm: float, height_mm: float
     ) -> Ops:
         """
-        Generates clean vector outlines for text by creating a single combined
-        path in Cairo before converting to Geometry.
+        Generates clean vector outlines for text using Pango for robust font
+        resolution and fallback, then converts to Ops.
         """
-        px_per_mm = _TRACE_DPI / _MM_PER_INCH
-        width_px = int(width_mm * px_per_mm)
-        height_px = int(height_mm * px_per_mm)
-
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
-        ctx = cairo.Context(surface)
-
         label_elements = [
             el
             for el in MaterialTestGridProducer._calculate_abstract_layout(
-                params, width_px, height_px
+                params, width_mm, height_mm
             )
             if "label" in el["class"]
         ]
 
-        ctx.new_path()
+        if not label_elements:
+            return Ops()
+
+        # text_to_geometry renders into a Cairo context whose user-space
+        # coincides with Pango's native coordinate system where 1 unit =
+        # 1 device pixel at 96 DPI.  We work in a virtual 96 DPI pixel
+        # space here and scale the final geometry to mm.
+        PANGO_DPI = 96.0
+        PX_PER_MM = PANGO_DPI / _MM_PER_INCH  # = 96 / 25.4
+
+        result_geo = Geometry()
+
         for el in label_elements:
-            MaterialTestGridProducer._setup_text_path_on_context(ctx, **el)
+            is_axis = el["class"] == "axis-label"
+            align_h = el.get("align_h", "center")
+            font_size_mm = el["font_size"]
 
-        path_data = ctx.copy_path_flat()
-        if not path_data:
-            return Ops()
+            if font_size_mm <= 0 or not el.get("text"):
+                continue
 
-        geo = geometry_from_cairo_path(path_data)
-        if geo.is_empty():
-            return Ops()
+            # Convert mm font size to Pango points:
+            # 1 point = 1/72 inch; Pango at PANGO_DPI maps 1 point to
+            # PANGO_DPI/72 device pixels.
+            font_size_pt = font_size_mm * 72.0 / _MM_PER_INCH
 
-        scale_back = 1.0 / px_per_mm
+            font_config = FontConfig(
+                font_family="sans-serif",
+                font_size=font_size_pt,
+                bold=is_axis,
+            )
+
+            geo = text_to_geometry(el["text"], font_config=font_config)
+            if geo.is_empty():
+                logger.warning(
+                    "Empty geometry for text label '%s' at font size %.1f",
+                    el["text"],
+                    font_size_mm,
+                )
+                continue
+
+            # text_to_geometry output, get_text_width() and metrics are
+            # all in Pango's device-pixel space (96 DPI).
+            text_width_px = font_config.get_text_width(el["text"])
+            ascent_px, descent_neg_px, _ = font_config.get_font_metrics()
+
+            if align_h == "right":
+                x_offset_px = -text_width_px
+            elif align_h == "left":
+                x_offset_px = 0.0
+            else:
+                x_offset_px = -text_width_px / 2.0
+
+            y_offset_px = (ascent_px + descent_neg_px) / 2.0
+
+            # Translate element position from mm to Pango pixel space
+            el_x_px = el["x"] * PX_PER_MM
+            el_y_px = el["y"] * PX_PER_MM
+
+            if "transform" in el:
+                match = re.search(r"rotate\((.+?)\)", el["transform"])
+                if match:
+                    angle_deg = float(match.group(1))
+                    combined = (
+                        Matrix.translation(el_x_px, el_y_px)
+                        @ Matrix.rotation(angle_deg)
+                        @ Matrix.translation(x_offset_px, y_offset_px)
+                    )
+                    geo.transform(combined.to_4x4_numpy())
+                else:
+                    transform = Matrix.translation(
+                        el_x_px + x_offset_px, el_y_px + y_offset_px
+                    )
+                    geo.transform(transform.to_4x4_numpy())
+            else:
+                transform = Matrix.translation(
+                    el_x_px + x_offset_px, el_y_px + y_offset_px
+                )
+                geo.transform(transform.to_4x4_numpy())
+
+            result_geo.extend(geo)
+
+        # Scale from 96 DPI pixel space back to mm
+        scale_back = 1.0 / PX_PER_MM
         scaling_matrix = Matrix.scale(scale_back, scale_back)
-        geo.transform(scaling_matrix.to_4x4_numpy())
+        result_geo.transform(scaling_matrix.to_4x4_numpy())
 
-        return Ops.from_geometry(geo)
+        if result_geo.is_empty():
+            if label_elements:
+                logger.warning(
+                    "All text labels produced empty geometry for the material "
+                    "test grid. Check font configuration."
+                )
+            return Ops()
+
+        return Ops.from_geometry(result_geo)
 
     @staticmethod
-    def _setup_text_path_on_context(ctx: cairo.Context, **el):
+    def _setup_text_path_on_context(
+        ctx: cairo.Context, preview_px: float, **el
+    ):
         """
-        Configures a Cairo context and adds a text path to it. This is the
-        shared logic for both preview and direct vectorization.
+        Configures a Cairo context and adds a text path using the same
+        text_to_geometry / Pango pipeline as _vectorize_text_to_ops.
+        The context is expected to be in pixel space; the pixel-to-Pango
+        conversion is handled internally.
         """
+        from rayforge.image.geo_renderer import geometry_to_cairo
+
         ctx.save()
         is_axis = el["class"] == "axis-label"
         align_h = el.get("align_h", "center")
-        ctx.select_font_face(
-            "Sans",
-            cairo.FONT_SLANT_NORMAL,
-            cairo.FONT_WEIGHT_BOLD if is_axis else cairo.FONT_WEIGHT_NORMAL,
+        font_size_px = el["font_size"]
+        text = el.get("text", "")
+
+        if font_size_px <= 0 or not text:
+            ctx.restore()
+            return
+
+        # Pango at 96 DPI maps 1 point to 96/72 pixels.
+        # font_size_px * 72/96 converts to Pango points.
+        font_size_pt = font_size_px * 72.0 / 96.0
+
+        font_config = FontConfig(
+            font_family="sans-serif",
+            font_size=font_size_pt,
+            bold=is_axis,
         )
-        ctx.set_font_size(el["font_size"])
-        extents = ctx.text_extents(el["text"])
+
+        geo = text_to_geometry(text, font_config=font_config)
+        if geo.is_empty():
+            ctx.restore()
+            return
+
+        # text_to_geometry and metrics are in Pango's 96 DPI pixel space,
+        # which matches the canvas pixel space (standard 96 DPI screen).
+        text_width = font_config.get_text_width(text)
+        ascent, descent_neg, _ = font_config.get_font_metrics()
+
+        if align_h == "right":
+            x_offset = -text_width
+        elif align_h == "left":
+            x_offset = 0.0
+        else:
+            x_offset = -text_width / 2.0
+
+        y_offset = (ascent + descent_neg) / 2.0
+
+        geo.transform(Matrix.translation(x_offset, y_offset).to_4x4_numpy())
+
         ctx.translate(el["x"], el["y"])
         if "transform" in el:
             match = re.search(r"rotate\((.+?)\)", el["transform"])
             if match:
                 ctx.rotate(math.radians(float(match.group(1))))
 
-        if align_h == "right":
-            x_offset = -(extents.x_bearing + extents.width)
-        elif align_h == "left":
-            x_offset = -extents.x_bearing
-        else:  # "center"
-            x_offset = -(extents.x_bearing + extents.width / 2)
-
-        ctx.move_to(
-            x_offset,
-            -(extents.y_bearing + extents.height / 2),
-        )
-        ctx.text_path(el["text"])
+        geometry_to_cairo(geo, ctx)
         ctx.restore()
 
     @staticmethod
