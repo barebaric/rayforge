@@ -173,8 +173,13 @@ class ContourProducer(OpsProducer):
             target_contours = merged.split_into_contours()
 
         # 4. Apply offsets.
+        # Separate open contours so they survive the grow() operation,
+        # which only operates on closed contours.
+        closed_contours = [g for g in target_contours if g.is_closed()]
+        open_contours = [g for g in target_contours if not g.is_closed()]
+
         composite_geo = Geometry()
-        for geo in target_contours:
+        for geo in closed_contours:
             composite_geo.extend(geo)
 
         if abs(total_offset) > 1e-6:
@@ -194,6 +199,10 @@ class ContourProducer(OpsProducer):
         else:
             # No offset was requested, so use the composite geometry.
             final_geometry = composite_geo
+
+        # Re-add open contours (not offset, as grow() cannot apply to them).
+        for geo in open_contours:
+            final_geometry.extend(geo)
 
         # 5. Optimize for machining
         tolerance = settings.get("arc_tolerance", 0.03)
