@@ -1352,6 +1352,10 @@ msgid "WebSocket Port"
 msgstr "WebSocket端口"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Protocol variant"
+msgstr ""
+
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "The WebSocket port for the device"
 msgstr "设备的WebSocket端口"
 

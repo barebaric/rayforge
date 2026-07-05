@@ -19,7 +19,7 @@ from urllib.parse import quote
 import aiohttp
 
 from ....context import RayforgeContext
-from ....core.varset import HostnameVar, PortVar, Var, VarSet
+from ....core.varset import HostnameVar, PortVar, ChoiceVar, Var, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
@@ -81,6 +81,7 @@ class GrblNetworkDriver(Driver):
         self.host = None
         self.port = None
         self.ws_port = None
+        self.protocol = None
         self.http = None
         self.websocket = None
         self.keep_running = False
@@ -140,6 +141,13 @@ class GrblNetworkDriver(Driver):
                     description=_("The WebSocket port for the device"),
                     default=81,
                 ),
+                ChoiceVar(
+                    key="protocol",
+                    label=_("Protocol variant"),
+                    description=_("ESP3D or Longer GRBL variant"),
+                    default="EPS3D",
+                    choices=["ESP3D", "Longer"],
+                ),
             ]
         )
 
@@ -153,12 +161,14 @@ class GrblNetworkDriver(Driver):
         host = cast(str, kwargs.get("host", ""))
         port = cast(int, kwargs.get("port", 80))
         ws_port = cast(int, kwargs.get("ws_port", 81))
+        protocol = cast(str, kwargs.get("protocol", "ESP3D"))
         if not host:
             raise DriverSetupError(_("Hostname must be configured."))
 
         self.host = host
         self.port = port
         self.ws_port = ws_port
+        self.protocol = protocol
 
         self.http_base = f"http://{host}:{port}"
         self.http = HttpTransport(
@@ -259,9 +269,17 @@ class GrblNetworkDriver(Driver):
         multipart/form-data POST request.
         """
         form = aiohttp.FormData()
-        form.add_field(
-            "file", gcode, filename=filename, content_type="text/plain"
-        )
+        if (self.protocol == "Longer"):
+            form.add_field("path", "/")
+            form.add_field("size", str(len(gcode)))
+            form.add_field(
+                "file", gcode, filename=filename,
+                content_type="application/octet-stream"
+            )
+        else:
+            form.add_field(
+                "file", gcode, filename=filename, content_type="text/plain"
+            )
         url = f"{self.http_base}{upload_url}?path=/"
 
         log_data = f"POST to {url} with file '{filename}' size {len(gcode)}"
@@ -693,15 +711,16 @@ class GrblNetworkDriver(Driver):
                     target_varset[key] = value_str
                 else:
                     # This setting is not defined in our known VarSets
-                    unknown_vars.add(
-                        Var(
-                            key=key,
-                            label=f"${key}",
-                            var_type=str,
-                            value=value_str,
-                            description=_("Unknown setting from device"),
+                    if (unknown_vars.get(key) is None):
+                        unknown_vars.add(
+                            Var(
+                                key=key,
+                                label=f"${key}",
+                                var_type=str,
+                                value=value_str,
+                                description=_("Unknown setting from device"),
+                            )
                         )
-                    )
 
         # The result is the list of known VarSets (now populated)
         result = known_varsets
