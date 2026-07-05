@@ -50,8 +50,8 @@ class MachineState:
                 self.cut_speed = int(ops.rate(idx))
             elif ct == CommandType.SET_RAPID_RATE:
                 self.travel_speed = int(ops.rate(idx))
-            elif ct == CommandType.SET_COOLANT:
-                self.air_assist = ops.coolant(idx) == "Air"
+            elif ct == CommandType.SET_AIR_ASSIST:
+                self.air_assist = ops.air_assist(idx) == "On"
             elif ct == CommandType.SET_HEAD:
                 self.active_laser_uid = ops.head_uid(idx)
             elif ct == CommandType.SET_FREQUENCY:

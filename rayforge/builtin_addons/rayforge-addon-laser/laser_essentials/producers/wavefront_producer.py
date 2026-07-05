@@ -6,7 +6,7 @@ from raygeo.geo import Geometry
 from raygeo.ops.cut.cleared_area import ClearedArea
 from raygeo.geo.shape.polygon import is_point_inside_polygon
 from raygeo.ops import Ops
-from raygeo.ops.assembly.entry import adaptive_entry
+from raygeo.cnc.machining.entry import adaptive_entry
 from raygeo.ops.assembly.wavefront import adaptive_wavefronts
 from raygeo.ops.types import SectionType
 
@@ -255,10 +255,9 @@ class WavefrontProducer(OpsProducer):
         z_cut = 0.0
         z_safe = 0.0
 
-        entry_ops = Ops()
-        cleared_polys = []
+        entry_result = None
         try:
-            entry_ops, cleared_polys = adaptive_entry(
+            entry_result = adaptive_entry(
                 pocket_boundary=pocket_boundary,
                 islands=islands,
                 tool_radius=tool_radius,
@@ -275,6 +274,8 @@ class WavefrontProducer(OpsProducer):
                 workpiece.name,
             )
 
+        entry_ops = entry_result.ops if entry_result else Ops()
+        cleared_polys = entry_result.cleared_polygons if entry_result else []
         logger.info(
             "  entry: %d ops, %d cleared polys (tool_radius=%.3f)",
             entry_ops.len(),
@@ -303,7 +304,7 @@ class WavefrontProducer(OpsProducer):
 
         wavefront_ops = Ops()
         try:
-            wavefront_ops = adaptive_wavefronts(
+            wavefront_result = adaptive_wavefronts(
                 cleared=cleared,
                 pocket_boundary=pocket_boundary,
                 islands=islands,
@@ -315,6 +316,7 @@ class WavefrontProducer(OpsProducer):
                 cut_feed_rate=cut_feed_rate,
                 cut_power=cut_power,
             )
+            wavefront_ops = wavefront_result.ops
         except Exception:
             logger.exception(
                 "adaptive_wavefronts failed for workpiece '%s'",
