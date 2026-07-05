@@ -1482,6 +1482,10 @@ msgid "WebSocket Port"
 msgstr "Porta WebSocket"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Protocol variant"
+msgstr ""
+
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "The WebSocket port for the device"
 msgstr "A porta WebSocket para o dispositivo"
 
