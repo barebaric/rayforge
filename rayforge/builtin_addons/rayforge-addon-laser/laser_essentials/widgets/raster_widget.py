@@ -2,7 +2,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
-from gi.repository import Adw, GObject, Gtk
+from gi.repository import Adw, GLib, GObject, Gtk
 
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.image.util import (
@@ -258,7 +258,7 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             ),
         )
 
-        self._compute_and_update_histogram(producer.invert)
+        GLib.idle_add(self._compute_and_update_histogram, producer.invert)
         self._on_mode_changed(self.mode_row, None)
 
     def _build_raster_geometry_group(self, producer: Rasterizer):
@@ -404,6 +404,12 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
             if width_px <= 0 or height_px <= 0:
                 continue
+
+            max_px = 256
+            if width_px > max_px or height_px > max_px:
+                scale = min(max_px / width_px, max_px / height_px)
+                width_px = max(int(width_px * scale), 1)
+                height_px = max(int(height_px * scale), 1)
 
             surface = workpiece.render_to_pixels(width_px, height_px)
             if not surface:
