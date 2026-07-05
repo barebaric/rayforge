@@ -1,6 +1,6 @@
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
-from raygeo.ops.state import CoolantMode
+from raygeo.ops.state import AirAssistMode
 
 from rayforge.machine.models.axis import (
     AxisConfig,
@@ -35,7 +35,7 @@ def test_state_commands_no_axis_change():
     ops.set_power(0.8)
     ops.set_feed_rate(500)
     ops.set_rapid_rate(3000)
-    ops.set_coolant(CoolantMode.AIR)
+    ops.set_air_assist(AirAssistMode.ON)
 
     _apply_all(state, ops)
 

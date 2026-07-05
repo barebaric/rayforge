@@ -3,7 +3,7 @@ import math
 import pytest
 from post_processors.transformers import OverscanTransformer
 from raygeo.ops import Ops
-from raygeo.ops.state import CoolantMode
+from raygeo.ops.state import AirAssistMode
 from raygeo.ops.types import CommandType, SectionType
 
 from rayforge.pipeline.transformer.base import ExecutionPhase
@@ -124,7 +124,7 @@ def test_preserves_state_for_constant_power_lines(
     # SetPower command between its MoveTo and LineTo.
     ops = Ops()
     ops.set_power(0.8)
-    ops.set_coolant(CoolantMode.AIR)
+    ops.set_air_assist(AirAssistMode.ON)
     ops.ops_section_start(SectionType.RASTER_FILL, "wp_123")
     # Line 1: Standard
     ops.move_to(10, 20, 0)
@@ -179,7 +179,7 @@ def test_preserves_state_for_constant_power_lines(
     # 2 (header) + 1 (start) + 7 (line 1) + 7 (line 2) + 1 (end) = 18
     assert ops.len() == 18
     assert ops.command_type(0) == CommandType.SET_POWER and ops.power(0) == 0.8
-    assert ops.command_type(1) == CommandType.SET_COOLANT
+    assert ops.command_type(1) == CommandType.SET_AIR_ASSIST
     assert ops.command_type(2) == CommandType.OPS_SECTION_START
     assert ops.command_type(17) == CommandType.OPS_SECTION_END
 

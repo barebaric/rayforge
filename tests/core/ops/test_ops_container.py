@@ -8,7 +8,7 @@ import pytest
 from raygeo.geo import Geometry
 from raygeo.ops import Ops, OpsSection, OpsSectionRange
 from raygeo.ops.axis import Axis
-from raygeo.ops.state import CoolantMode, State
+from raygeo.ops.state import AirAssistMode, State
 from raygeo.ops.types import CommandCategory, CommandType, SectionType
 
 
@@ -23,7 +23,7 @@ def sample_ops():
     ops.move_to(0, 0)
     ops.line_to(10, 10)
     ops.set_power(0.5)
-    ops.set_coolant(CoolantMode.AIR)
+    ops.set_air_assist(AirAssistMode.ON)
     return ops
 
 
@@ -244,15 +244,13 @@ def test_set_pulse_width():
 
 
 def test_enable_disable_air_assist(empty_ops):
-    empty_ops.set_coolant(CoolantMode.AIR)
-    assert (
-        empty_ops.command_type(empty_ops.len() - 1) == CommandType.SET_COOLANT
-    )
+    empty_ops.set_air_assist(AirAssistMode.ON)
+    last = empty_ops.len() - 1
+    assert empty_ops.command_type(last) == CommandType.SET_AIR_ASSIST
 
-    empty_ops.set_coolant(CoolantMode.OFF)
-    assert (
-        empty_ops.command_type(empty_ops.len() - 1) == CommandType.SET_COOLANT
-    )
+    empty_ops.set_air_assist(AirAssistMode.OFF)
+    last = empty_ops.len() - 1
+    assert empty_ops.command_type(last) == CommandType.SET_AIR_ASSIST
 
 
 def test_scan_to(empty_ops):
@@ -1141,7 +1139,7 @@ def test_serialization_deserialization_all_types():
     ops.set_rapid_rate(5000)
     ops.set_feed_rate(1000)
     ops.set_power(0.8)
-    ops.set_coolant(CoolantMode.AIR)
+    ops.set_air_assist(AirAssistMode.ON)
     ops.set_head("laser-2")
     ops.move_to(1, 1, 1)
     ops.line_to(2, 2, 2)
@@ -1495,7 +1493,7 @@ def test_estimate_time_ignores_state_commands():
     ops.move_to(0, 0)
     ops.set_power(0.5)  # State command
     ops.set_feed_rate(1000)  # State command
-    ops.set_coolant(CoolantMode.AIR)  # State command
+    ops.set_air_assist(AirAssistMode.ON)  # State command
     ops.line_to(60, 0)  # 60mm cut
 
     # Disable acceleration for simpler calculation
@@ -1568,7 +1566,7 @@ def test_numpy_serialization_round_trip_all_commands():
     ops.set_rapid_rate(6000)  # State with data
     ops.set_feed_rate(1500)  # State with data
     ops.set_power(0.75)  # State with data
-    ops.set_coolant(CoolantMode.AIR)  # State
+    ops.set_air_assist(AirAssistMode.ON)  # State
     ops.set_head("laser-xyz")  # State with data
     ops.move_to(1, 2, 3)  # Geometric
     ops.line_to(4, 5, 6)  # Geometric
@@ -1579,7 +1577,7 @@ def test_numpy_serialization_round_trip_all_commands():
         end=(10.0, 11.0, 12.0),
     )
     ops.scan_to(10, 11, 12, bytearray([10, 20, 30]))  # Geometric
-    ops.set_coolant(CoolantMode.OFF)  # State
+    ops.set_air_assist(AirAssistMode.OFF)  # State
     ops.layer_end("layer-1")  # Marker with data
     ops.job_end()  # Marker
 
@@ -2559,13 +2557,13 @@ def test_state_at():
     ops = Ops()
     ops.set_power(0.5)
     ops.set_feed_rate(800)
-    ops.set_coolant(CoolantMode.AIR)
+    ops.set_air_assist(AirAssistMode.ON)
     ops.move_to(0, 0)
 
     state = ops.state_at(3)
     assert state.power == 0.5
     assert state.feed_rate == 800
-    assert state.coolant == CoolantMode.AIR
+    assert state.air_assist == AirAssistMode.ON
 
 
 def test_state_at_no_state_commands():
@@ -2600,11 +2598,11 @@ def test_set_state_on_moving():
     ops.set_power(1.0)
     ops.move_to(0, 0)
     ops.line_to(10, 0)
-    ops.set_coolant(CoolantMode.AIR)
+    ops.set_air_assist(AirAssistMode.ON)
 
     ms = State(
         power=0.7,
-        coolant=CoolantMode.AIR,
+        air_assist=AirAssistMode.ON,
         feed_rate=600,
         rapid_rate=2000,
         active_head_uid=None,
@@ -2619,7 +2617,7 @@ def test_set_state_on_moving():
     assert state_1.power == 0.7
     assert state_2 is not None
     assert state_2.power == 0.7
-    assert state_2.coolant == CoolantMode.AIR
+    assert state_2.air_assist == AirAssistMode.ON
     assert state_2.feed_rate == 600
 
 
@@ -2815,7 +2813,7 @@ def test_without_state():
     ops.move_to(0, 0)
     ops.set_feed_rate(800)
     ops.line_to(10, 0)
-    ops.set_coolant(CoolantMode.AIR)
+    ops.set_air_assist(AirAssistMode.ON)
 
     filtered = ops.without_state()
     assert filtered.len() == 2
