@@ -170,6 +170,7 @@ class AddonRow(Gtk.Box):
             parts.append(str(version))
         if self.addon.metadata.author.name:
             parts.append(self.addon.metadata.author.name)
+        parts = [str(p) for p in parts if p is not None]
         return " | ".join(parts)
 
     def _on_toggle_clicked(self, switch: Gtk.Switch, state: bool) -> bool:
