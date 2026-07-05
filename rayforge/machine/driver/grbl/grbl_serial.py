@@ -668,6 +668,8 @@ class GrblSerialDriver(Driver):
 
         Returns True to retry the wait, False to abort the job.
         """
+        if self._is_cancelled:
+            return False
         if not self._deadlock_detection:
             logger.debug(
                 "Buffer stall timed out (deadlock detection disabled). "
