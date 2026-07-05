@@ -3,9 +3,12 @@ device:
   name: Longer Ray5 20W
   description: Diode laser engraver with 375x375mm work area and touchscreen display
 machine:
-  driver: GrblSerialDriver
+  driver: GrblNetworkDriver
   driver_args:
-    baudrate: '115200'
+    host: '192.168.0.1'
+    port: 8848
+    ws_port: 8849
+    protocol: 'Longer'
   gcode_precision: 3
   axis_extents:
   - 375.0

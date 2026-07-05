@@ -1472,6 +1472,10 @@ msgid "The WebSocket port for the device"
 msgstr "WebSocket-порт для пристрою"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Protocol variant"
+msgstr ""
+
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Host is not configured. Please set a valid IP address or hostname."
 msgstr ""
 "Хост не налаштовано. Будь ласка, встановіть дійсну IP-адресу або ім'я хоста."
