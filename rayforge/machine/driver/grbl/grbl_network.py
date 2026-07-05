@@ -51,7 +51,6 @@ from .grbl_util import (
     upload_url,
     wcs_re,
 )
-from rayforge.pipeline.encoder import gcode
 
 if TYPE_CHECKING:
     from raygeo.ops import Ops
@@ -147,7 +146,7 @@ class GrblNetworkDriver(Driver):
                     label=_("Protocol variant"),
                     description=_("ESP3D or Longer GRBL variant"),
                     default="EPS3D",
-                    choices=[ "ESP3D","Longer"],
+                    choices=["ESP3D", "Longer"],
                 ),
             ]
         )
@@ -270,11 +269,12 @@ class GrblNetworkDriver(Driver):
         multipart/form-data POST request.
         """
         form = aiohttp.FormData()
-        if(self.protocol == "Longer"):
+        if (self.protocol == "Longer"):
             form.add_field("path", "/")
             form.add_field("size", str(len(gcode)))
             form.add_field(
-                "file", gcode, filename=filename, content_type="application/octet-stream"
+                "file", gcode, filename=filename,
+                content_type="application/octet-stream"
             )
         else:
             form.add_field(
@@ -348,10 +348,10 @@ class GrblNetworkDriver(Driver):
                 logger.info("Fetching hardware info...")
                 await self._http_get(f"{self.http_base}{hw_info_url}")
 
-                #logger.info("Fetching device info...")
+                logger.info("Fetching device info...")
                 await self._http_get(f"{self.http_base}{fw_info_url}")
 
-                #logger.info("Fetching EEPROM info...")
+                logger.info("Fetching EEPROM info...")
                 await self._http_get(f"{self.http_base}{eeprom_info_url}")
 
                 logger.info("Starting HTTP and WebSocket transports...")
@@ -711,7 +711,7 @@ class GrblNetworkDriver(Driver):
                     target_varset[key] = value_str
                 else:
                     # This setting is not defined in our known VarSets
-                    if(unknown_vars.get(key) is None):
+                    if (unknown_vars.get(key) is None):
                         unknown_vars.add(
                             Var(
                                 key=key,
