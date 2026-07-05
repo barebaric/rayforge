@@ -278,8 +278,7 @@ def test_run_with_air_assist_change(mock_progress_context):
             )
             state = ops.state(i)
             assert (
-                state is not None
-                and state.air_assist == AirAssistMode.ON
+                state is not None and state.air_assist == AirAssistMode.ON
             ), "State should be air ON"
 
 
