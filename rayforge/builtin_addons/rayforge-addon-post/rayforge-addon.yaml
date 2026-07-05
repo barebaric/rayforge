@@ -1,7 +1,7 @@
 name: post_processors
 display_name: "Post Processors"
 description: "Core Post-processing transformers for toolpath optimization"
-api_version: 15
+api_version: 16
 author:
   name: "Rayforge Team"
   email: "noreply@rayforge.org"

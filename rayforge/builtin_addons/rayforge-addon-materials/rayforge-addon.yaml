@@ -1,7 +1,7 @@
 name: core_materials
 display_name: "Core Materials"
 description: "Built-in material library with common laser cutting materials"
-api_version: 15
+api_version: 16
 author:
   name: "Rayforge Team"
   email: "noreply@rayforge.org"

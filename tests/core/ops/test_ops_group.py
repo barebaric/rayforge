@@ -1,7 +1,7 @@
 from typing import List
 
 from raygeo.ops import Ops
-from raygeo.ops.state import CoolantMode, State
+from raygeo.ops.state import AirAssistMode, State
 from raygeo.ops.types import CommandType
 
 
@@ -45,7 +45,7 @@ def test_group_by_command_type_state_commands():
     ops.set_power(1.0)
     ops.move_to(0, 0)
     ops.line_to(1, 0)
-    ops.set_coolant(CoolantMode.OFF)
+    ops.set_air_assist(AirAssistMode.OFF)
     indices = list(ops.segment_indices())
     assert len(indices) == 3
     assert ops.is_state(indices[0][0])
@@ -54,7 +54,7 @@ def test_group_by_command_type_state_commands():
 
 
 def _create_ops_with_states(states_config: List[bool]) -> Ops:
-    """Helper to create ops with specified coolant states."""
+    """Helper to create ops with specified air assist states."""
     ops = Ops()
     for i, air_on in enumerate(states_config):
         ops.line_to(float(i), float(i))
@@ -63,7 +63,7 @@ def _create_ops_with_states(states_config: List[bool]) -> Ops:
             i,
             State(
                 power=1.0,
-                coolant=CoolantMode.AIR if air_on else CoolantMode.OFF,
+                air_assist=AirAssistMode.ON if air_on else AirAssistMode.OFF,
                 feed_rate=None,
                 rapid_rate=None,
                 active_head_uid=None,
@@ -112,7 +112,7 @@ def test_group_by_state_continuity():
         0,
         State(
             power=1.0,
-            coolant=CoolantMode.AIR,
+            air_assist=AirAssistMode.ON,
             feed_rate=None,
             rapid_rate=None,
             active_head_uid=None,
@@ -124,7 +124,7 @@ def test_group_by_state_continuity():
         2,
         State(
             power=1.0,
-            coolant=CoolantMode.AIR,
+            air_assist=AirAssistMode.ON,
             feed_rate=None,
             rapid_rate=None,
             active_head_uid=None,

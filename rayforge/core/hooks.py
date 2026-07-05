@@ -3,13 +3,22 @@ import pluggy
 hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
-MINIMUM_API_VERSION = 15
-PLUGIN_API_VERSION = 15
+MINIMUM_API_VERSION = 16
+PLUGIN_API_VERSION = 16
 
 
 """
 API Changelog
 ============
+
+Version 16
+----------
+Raygeo 0.14: CoolantMode::Air split into AirAssistMode and
+HeadCoolantMode. Module raygeo.ops.assembly.entry moved to
+raygeo.cnc.machining.entry. adaptive_entry/adaptive_wavefronts
+return AssemblyResult. Various geo functions renamed with verb
+prefixes (any_overlap -> does_any_overlap, point_line_distance
+-> get_point_line_distance, etc.).
 
 Version 15
 ----------

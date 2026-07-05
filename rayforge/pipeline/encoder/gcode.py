@@ -315,6 +315,8 @@ class GcodeEncoder(OpsEncoder):
             self.frequency = ops.frequency(idx)
         elif ct == CommandType.SET_PULSE_WIDTH:
             self.pulse_width = ops.pulse_width(idx)
+        elif ct == CommandType.SET_AIR_ASSIST:
+            self._handle_air_assist(context, gcode, ops.air_assist(idx))
         elif ct == CommandType.SET_COOLANT:
             self._handle_coolant(context, gcode, ops.coolant(idx))
         elif ct == CommandType.SET_HEAD:
@@ -350,7 +352,7 @@ class GcodeEncoder(OpsEncoder):
             # first M5 and updates the internal state.
             self._laser_off(context, gcode)
             if self.air_assist:
-                self._handle_coolant(context, gcode, "Off")
+                self._handle_air_assist(context, gcode, "Off")
             gcode.extend(
                 self._format_script_lines(self.dialect.postscript, context)
             )
@@ -502,11 +504,11 @@ class GcodeEncoder(OpsEncoder):
             else:  # power <= 0
                 self._laser_off(context, gcode)
 
-    def _handle_coolant(
+    def _handle_air_assist(
         self, context: GcodeContext, gcode: List[str], mode: str
     ) -> None:
-        """Update coolant state with dialect commands"""
-        coolant_on = mode == "Air"
+        """Update air assist state with dialect commands"""
+        coolant_on = mode == "On"
         if self.air_assist == coolant_on:
             return
         self.air_assist = coolant_on
@@ -517,6 +519,11 @@ class GcodeEncoder(OpsEncoder):
         )
         if cmd:
             gcode.append(cmd)
+
+    def _handle_coolant(
+        self, context: GcodeContext, gcode: List[str], mode: str
+    ) -> None:
+        """Handle coolant commands (not used on laser cutters)."""
 
     def _handle_move_to(
         self,

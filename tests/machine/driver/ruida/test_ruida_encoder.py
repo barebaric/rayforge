@@ -14,7 +14,7 @@ import base64
 
 import pytest
 from raygeo.ops import Ops
-from raygeo.ops.state import CoolantMode
+from raygeo.ops.state import AirAssistMode
 
 from rayforge.core.doc import Doc
 from rayforge.machine.driver.ruida.ruida_encoder import RuidaEncoder
@@ -229,7 +229,7 @@ class TestAirAssistCommands:
     def test_enable_air_assist(self, encoder, mock_machine, doc):
         """Enable air assist should send correct command."""
         ops = Ops()
-        ops.set_coolant(CoolantMode.AIR)
+        ops.set_air_assist(AirAssistMode.ON)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -239,8 +239,8 @@ class TestAirAssistCommands:
     def test_disable_air_assist(self, encoder, mock_machine, doc):
         """Disable air assist should send correct command."""
         ops = Ops()
-        ops.set_coolant(CoolantMode.AIR)
-        ops.set_coolant(CoolantMode.OFF)
+        ops.set_air_assist(AirAssistMode.ON)
+        ops.set_air_assist(AirAssistMode.OFF)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -255,9 +255,9 @@ class TestAirAssistCommands:
     ):
         """Should not emit redundant air assist commands."""
         ops = Ops()
-        ops.set_coolant(CoolantMode.AIR)
-        ops.set_coolant(CoolantMode.AIR)
-        ops.set_coolant(CoolantMode.AIR)
+        ops.set_air_assist(AirAssistMode.ON)
+        ops.set_air_assist(AirAssistMode.ON)
+        ops.set_air_assist(AirAssistMode.ON)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -267,10 +267,10 @@ class TestAirAssistCommands:
     def test_air_assist_state_tracking(self, encoder, mock_machine, doc):
         """Air assist state should be tracked correctly."""
         ops = Ops()
-        ops.set_coolant(CoolantMode.AIR)
-        ops.set_coolant(CoolantMode.AIR)
-        ops.set_coolant(CoolantMode.OFF)
-        ops.set_coolant(CoolantMode.OFF)
+        ops.set_air_assist(AirAssistMode.ON)
+        ops.set_air_assist(AirAssistMode.ON)
+        ops.set_air_assist(AirAssistMode.OFF)
+        ops.set_air_assist(AirAssistMode.OFF)
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
@@ -618,7 +618,7 @@ class TestEncodedOutputSerialization:
         """EncodedOutput should survive JSON roundtrip."""
         ops = Ops()
         ops.set_power(0.5)
-        ops.set_coolant(CoolantMode.AIR)
+        ops.set_air_assist(AirAssistMode.ON)
         ops.move_to(10.0, 20.0, 0.0)
         original = encoder.encode(ops, mock_machine, doc)
 
@@ -682,10 +682,10 @@ class TestComplexJobs:
     def test_air_assist_toggle(self, encoder, mock_machine, doc):
         """Air assist toggle during job should work correctly."""
         ops = Ops()
-        ops.set_coolant(CoolantMode.AIR)
+        ops.set_air_assist(AirAssistMode.ON)
         ops.move_to(0.0, 0.0, 0.0)
         ops.line_to(10.0, 0.0, 0.0)
-        ops.set_coolant(CoolantMode.OFF)
+        ops.set_air_assist(AirAssistMode.OFF)
         ops.move_to(20.0, 0.0, 0.0)
         result = encoder.encode(ops, mock_machine, doc)
 
