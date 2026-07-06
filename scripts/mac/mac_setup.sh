@@ -8,20 +8,7 @@ SKIP_DEPS=()
 GREEN="\033[0;32m"
 RED="\033[0;31m"
 NC="\033[0m"
-
-MAX_RETRIES=3
-RETRY_DELAY=5
-INSTALL_TIMEOUT=600
-
-get_timeout_cmd() {
-    if command -v gtimeout >/dev/null 2>&1; then
-        echo "gtimeout"
-    elif command -v timeout >/dev/null 2>&1; then
-        echo "timeout"
-    else
-        echo ""
-    fi
-}
+BREWFILE="scripts/mac/Brewfile"
 
 print_info() {
     local title=$1
@@ -33,64 +20,21 @@ print_error() {
     printf "${RED}%s${NC}\n" "$msg" >&2
 }
 
-install_package() {
-    local pkg=$1
-    local attempt=1
-    local timeout_cmd
-    timeout_cmd=$(get_timeout_cmd)
+brew_bundle() {
+    local subcommand="$1"
+    shift
+    local skip_deps="${SKIP_DEPS[*]:-}"
+    local args=(bundle "$subcommand" --file "$BREWFILE" "$@")
 
-    while (( attempt <= MAX_RETRIES )); do
-        print_info "Installing $pkg (attempt $attempt/$MAX_RETRIES)..."
-        if [ -n "$timeout_cmd" ]; then
-            if "$timeout_cmd" "$INSTALL_TIMEOUT" \
-                HOMEBREW_NO_INSTALL_CLEANUP=1 brew install "$pkg"; then
-                return 0
-            fi
-        else
-            if HOMEBREW_NO_INSTALL_CLEANUP=1 brew install "$pkg"; then
-                return 0
-            fi
-        fi
-
-        if (( attempt < MAX_RETRIES )); then
-            print_error "Failed to install $pkg, retrying in ${RETRY_DELAY}s..."
-            sleep "$RETRY_DELAY"
-        fi
-        (( attempt++ )) || true
-    done
-
-    return 1
-}
-
-install_with_retries() {
-    local packages=("$@")
-    local failed=()
-
-    for pkg in "${packages[@]}"; do
-        if ! install_package "$pkg"; then
-            failed+=("$pkg")
-        fi
-    done
-
-    if (( ${#failed[@]} > 0 )); then
-        print_error "The following packages failed to install:"
-        printf '  - %s\n' "${failed[@]}" >&2
-        return 1
+    if [[ "$subcommand" == "install" ]]; then
+        args+=(--no-upgrade)
     fi
-}
 
-should_skip_dep() {
-    local dep="$1"
-    local skip
-    for skip in "${SKIP_DEPS[@]:-}"; do
-        if [[ -z "$skip" ]]; then
-            continue
-        fi
-        if [[ "$skip" == "$dep" ]]; then
-            return 0
-        fi
-    done
-    return 1
+    if [[ -n "$skip_deps" ]]; then
+        HOMEBREW_BUNDLE_BREW_SKIP="$skip_deps" brew "${args[@]}"
+    else
+        brew "${args[@]}"
+    fi
 }
 
 for arg in "$@"; do
@@ -157,37 +101,10 @@ if (( RUN_APP == 0 )); then
         LIBFFI_PREFIX="$BREW_PREFIX/opt/libffi"
     fi
 
-    DEPS=(
-        gtk4
-        libadwaita
-        gobject-introspection
-        librsvg
-        libvips
-        openslide
-        pkg-config
-        meson
-        mupdf
-        ninja
-        cairo
-        pango
-        harfbuzz
-    )
-
-    MISSING=()
-    for dep in "${DEPS[@]}"; do
-        if should_skip_dep "$dep"; then
-            continue
-        fi
-        if ! brew list --versions "$dep" >/dev/null 2>&1; then
-            MISSING+=("$dep")
-        fi
-    done
-
-    if (( ${#MISSING[@]} > 0 )); then
+    if ! brew_bundle check --verbose; then
         if (( INSTALL == 1 )); then
-            install_with_retries "${MISSING[@]}"
+            brew_bundle install
         else
-            echo "Missing Homebrew packages: ${MISSING[*]}" >&2
             echo "Run again and choose 'Install missing dependencies'." >&2
             exit 1
         fi
