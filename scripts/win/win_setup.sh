@@ -1,6 +1,25 @@
 #!/bin/bash
 set -e
 
+REQUIREMENTS_FILE="requirements.txt"
+
+# Read the version spec for a package from requirements.txt.
+# Handles "pkg==ver", "pkg>=ver", "pkg~=ver", and bare "pkg".
+# Usage:  pkg_ver=$(req_version raygeo)
+# Output: "==0.14.0"  or  ">=3.5"  or  ""  (empty if no pin)
+req_version() {
+    local pkg="$1"
+    local line
+    line=$(grep -i "^${pkg}[>=<!~]" "$REQUIREMENTS_FILE" 2>/dev/null | head -1)
+    if [ -n "$line" ]; then
+        # Strip the package name and keep the version comparator
+        echo "$line" | sed "s/^${pkg}//I"
+    else
+        # Bare entry with no version pin
+        echo ""
+    fi
+}
+
 # This logic handles both CI/CD environments (where MSYS2_PATH may be pre-set)
 # and local development (where it needs to be auto-detected).
 
@@ -161,15 +180,25 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
     echo "Installing/updating pip packages..."
     $PYTHON_BIN_PATH -m pip install --upgrade pip --break-system-packages
 
-    $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation asyncudp==0.11.0 --break-system-packages
-    $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation semver==3.0.2 --break-system-packages
-    $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation vtracer==0.6.11 --break-system-packages
-    $PYTHON_BIN_PATH -m pip install --no-cache-dir GitPython==3.1.44 --break-system-packages
+    $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation \
+        "asyncudp$(req_version asyncudp)" \
+        "semver$(req_version semver)" \
+        "vtracer$(req_version vtracer)" \
+        "GitPython$(req_version GitPython)" \
+        --break-system-packages
+
     $PYTHON_BIN_PATH -m pip install --no-cache-dir pygobject-stubs --break-system-packages
-    $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation --no-deps pyvips==3.0.0 --break-system-packages
-    $PYTHON_BIN_PATH -m pip install --no-cache-dir pyserial --break-system-packages
-    $PYTHON_BIN_PATH -m pip install --no-cache-dir raygeo --break-system-packages
-    $PYTHON_BIN_PATH -m pip install --no-cache-dir ezdxf==1.4.2 pypdf==6.12.2 trimesh==4.6.8 --break-system-packages
+    $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation --no-deps \
+        "pyvips$(req_version pyvips)" \
+        --break-system-packages
+
+    $PYTHON_BIN_PATH -m pip install --no-cache-dir \
+        "pyserial$(req_version pyserial)" \
+        "raygeo$(req_version raygeo)" \
+        "ezdxf$(req_version ezdxf)" \
+        "pypdf$(req_version pypdf)" \
+        "trimesh$(req_version trimesh)" \
+        --break-system-packages
 
     echo "✅ Windows MSYS2 dependency setup complete."
 fi
