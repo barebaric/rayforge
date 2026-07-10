@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-15 20:47+0200\n"
+"POT-Creation-Date: 2026-07-05 22:13+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -1343,11 +1343,15 @@ msgid "WebSocket Port"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_network.py
+msgid "The WebSocket port for the device"
+msgstr ""
+
+#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Protocol variant"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_network.py
-msgid "The WebSocket port for the device"
+msgid "ESP3D or Longer GRBL variant"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_network.py

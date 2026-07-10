@@ -269,12 +269,14 @@ class GrblNetworkDriver(Driver):
         multipart/form-data POST request.
         """
         form = aiohttp.FormData()
-        if (self.protocol == "Longer"):
+        if self.protocol == "Longer":
             form.add_field("path", "/")
             form.add_field("size", str(len(gcode)))
             form.add_field(
-                "file", gcode, filename=filename,
-                content_type="application/octet-stream"
+                "file",
+                gcode,
+                filename=filename,
+                content_type="application/octet-stream",
             )
         else:
             form.add_field(
@@ -711,7 +713,7 @@ class GrblNetworkDriver(Driver):
                     target_varset[key] = value_str
                 else:
                     # This setting is not defined in our known VarSets
-                    if (unknown_vars.get(key) is None):
+                    if unknown_vars.get(key) is None:
                         unknown_vars.add(
                             Var(
                                 key=key,
