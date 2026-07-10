@@ -276,7 +276,7 @@ Haz copia de seguridad de tus ajustes después de cualquier calibración o ajust
 
 - [Ajustes Generales](general) - Nombre de máquina y ajustes de velocidad
 - [Ajustes de Láser](laser) - Configuración del cabezal láser
-- [Problemas de Conexión](../troubleshooting/connection) - Solucionando problemas de conexión
+- [Problemas de Conexión](../troubleshooting/connection.md) - Solucionando problemas de conexión
 
 ## Recursos Externos
 

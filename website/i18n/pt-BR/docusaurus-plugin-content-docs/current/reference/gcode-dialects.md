@@ -117,7 +117,7 @@ seu dialeto para esta opção.
 
 ## Páginas Relacionadas
 
-- [Exportando G-code](../files/exporting) - Configurações de exportação
+- [Exportando G-code](../files/exporting.md) - Configurações de exportação
 - [Compatibilidade de Firmware](firmware) - Versões de firmware
-- [Configurações de Dispositivo](../machine/device) - Configuração GRBL
-- [Macros & Hooks](../machine/hooks-macros) - Injeção de G-code personalizado
+- [Configurações de Dispositivo](../machine/device.md) - Configuração GRBL
+- [Macros & Hooks](../machine/hooks-macros.md) - Injeção de G-code personalizado

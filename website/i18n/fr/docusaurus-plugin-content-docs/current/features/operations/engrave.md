@@ -206,7 +206,7 @@ Pour une meilleure qualité, désactivez le bidirectionnel. Pour la vitesse, act
 - 2-5mm pour la plupart des travaux
 - Plus grand pour les vitesses élevées
 
-Voir [Overscan](../overscan) pour plus de détails.
+Voir [Overscan](../overscan.md) pour plus de détails.
 
 ## Paramètres Spécifiques au Mode
 
@@ -322,9 +322,9 @@ Utilisez inverser pour les lithophanes (les zones claires doivent être fines) o
 
 Les opérations de gravure supportent plusieurs options de post-traitement :
 
-- **[Overscan](../overscan)** - Étendre les lignes raster pour une qualité de gravure cohérente
-- **[Optimisation de Parcours](../path-optimization)** - Réduire la distance de déplacement
-- **[Passe Multiple](../multi-pass)** - Répéter la gravure pour des résultats plus profonds
+- **[Overscan](../overscan.md)** - Étendre les lignes raster pour une qualité de gravure cohérente
+- **[Optimisation de Parcours](../path-optimization.md)** - Réduire la distance de déplacement
+- **[Passe Multiple](../multi-pass.md)** - Répéter la gravure pour des résultats plus profonds
 
 ## Conseils & Meilleures Pratiques
 
@@ -429,6 +429,6 @@ Les opérations de gravure supportent plusieurs options de post-traitement :
 ## Sujets Connexes
 
 - **[Coupe de Contour](contour)** - Contours et formes de coupe
-- **[Overscan](../overscan)** - Améliorer la qualité de gravure
+- **[Overscan](../overscan.md)** - Améliorer la qualité de gravure
 - **[Grille de Test de Matériau](material-test-grid)** - Trouver les paramètres optimaux
-- **[Flux de Travail Multi-Couches](../multi-layer)** - Combiner gravure avec d'autres opérations
+- **[Flux de Travail Multi-Couches](../multi-layer.md)** - Combiner gravure avec d'autres opérations

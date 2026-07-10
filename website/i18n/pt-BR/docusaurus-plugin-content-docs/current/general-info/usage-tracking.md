@@ -81,4 +81,4 @@ Quando desativado, absolutamente nenhum dado é enviado.
 
 ## Páginas relacionadas
 
-- **[Configurações do aplicativo](../ui/settings)** – Configurar preferências de rastreamento
+- **[Configurações do aplicativo](../ui/settings.md)** – Configurar preferências de rastreamento

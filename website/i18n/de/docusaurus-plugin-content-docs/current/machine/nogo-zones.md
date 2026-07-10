@@ -2,7 +2,7 @@
 
 No-Go-Zonen definieren eingeschränkte Bereiche auf der Arbeitsfläche, die der
 Laser nicht betreten sollte. Wenn aktiviert, werden sie als Teil der
-[Auftrags-Plausibilitätsprüfungen](../features/sanity-checks) vor dem
+[Auftrags-Plausibilitätsprüfungen](../features/sanity-checks.md) vor dem
 Ausführen oder Exportieren geprüft.
 
 ![No-Go-Zonen](/screenshots/machine-nogo-zones.png)
@@ -33,5 +33,5 @@ wird zwischen Sitzungen gespeichert.
 ## Verwandte Seiten
 
 - [Hardware-Einstellungen](hardware) - Maschinenabmessungen und Achsenkonfiguration
-- [Auftrags-Plausibilitätsprüfungen](../features/sanity-checks) - Vorab-Validierung von Aufträgen
-- [3D-Ansicht](../ui/3d-preview) - 3D-Werkzeugweg-Visualisierung
+- [Auftrags-Plausibilitätsprüfungen](../features/sanity-checks.md) - Vorab-Validierung von Aufträgen
+- [3D-Ansicht](../ui/3d-preview.md) - 3D-Werkzeugweg-Visualisierung

@@ -115,7 +115,7 @@ or engraving. Check your dialect's settings page for this option.
 
 ## Related Pages
 
-- [Exporting G-code](../files/exporting) - Export settings
+- [Exporting G-code](../files/exporting.md) - Export settings
 - [Firmware Compatibility](firmware) - Firmware versions
-- [Device Settings](../machine/device) - GRBL configuration
-- [Macros & Hooks](../machine/hooks-macros) - Custom G-code injection
+- [Device Settings](../machine/device.md) - GRBL configuration
+- [Macros & Hooks](../machine/hooks-macros.md) - Custom G-code injection

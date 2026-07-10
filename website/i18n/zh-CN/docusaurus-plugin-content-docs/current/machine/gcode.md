@@ -42,6 +42,6 @@ Ruida），此设置页面将完全隐藏。
 
 ## 另请参阅
 
-- [G 代码基础](../general-info/gcode-basics) - 理解 G 代码
-- [G 代码方言](../reference/gcode-dialects) - 详细的方言差异
+- [G 代码基础](../general-info/gcode-basics.md) - 理解 G 代码
+- [G 代码方言](../reference/gcode-dialects.md) - 详细的方言差异
 - [钩子和宏](hooks-macros) - 自定义 G 代码注入点

@@ -15,7 +15,7 @@ lista para tu cortadora láser.
 ## Requisitos
 
 Antes de usar este addon, necesitas configurar un proveedor de IA. Consulta
-[Proveedor de IA](../application-settings/ai-provider) para instrucciones
+[Proveedor de IA](../application-settings/ai-provider.md) para instrucciones
 de configuración.
 
 ## Usar el Generador
@@ -45,5 +45,5 @@ de configuración.
 
 ## Temas Relacionados
 
-- [Proveedor de IA](../application-settings/ai-provider) - Configurar proveedores de IA
-- [Dibujante](../features/sketcher) - Dibujar formas manualmente
+- [Proveedor de IA](../application-settings/ai-provider.md) - Configurar proveedores de IA
+- [Dibujante](../features/sketcher.md) - Dibujar formas manualmente

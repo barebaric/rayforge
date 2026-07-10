@@ -58,5 +58,5 @@ du système de coordonnées de travail sur votre machine.
 
 ## Sujets associés
 
-- [Systèmes de coordonnées](../general-info/coordinate-systems) - Comprendre les coordonnées machine et les décalages de travail
-- [Positionnement des workpieces](../features/workpiece-positioning) - Positionner les workpieces sur le canevas
+- [Systèmes de coordonnées](../general-info/coordinate-systems.md) - Comprendre les coordonnées machine et les décalages de travail
+- [Positionnement des workpieces](../features/workpiece-positioning.md) - Positionner les workpieces sur le canevas

@@ -109,9 +109,9 @@ estendem até o limite).
 
 As operações de frente de onda suportam:
 
-- **[Suavização de Caminho](../smooth)** — Reduz bordas irregulares nas
+- **[Suavização de Caminho](../smooth.md)** — Reduz bordas irregulares nas
   trajetórias de ferramenta
-- **[Otimização de Caminho](../path-optimization)** — Minimiza a distância
+- **[Otimização de Caminho](../path-optimization.md)** — Minimiza a distância
   de deslocamento entre passagens
 
 ## Dicas e Melhores Práticas
@@ -145,5 +145,5 @@ para o corte de contorno.
   raster
 - **[Envelopamento Ajustado](shrink-wrap)** — Corte de limite ao redor de
   objetos
-- **[Suavização de Caminho](../smooth)** — Refinamento de bordas de
+- **[Suavização de Caminho](../smooth.md)** — Refinamento de bordas de
   trajetória de ferramenta

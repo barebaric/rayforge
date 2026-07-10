@@ -85,5 +85,5 @@ acción deshacible.
 
 ## Temas relacionados
 
-- [Posicionamiento de workpieces](../features/workpiece-positioning) - Posicionar y transformar workpieces manualmente
-- [Configuración del láser](../machine/laser) - Configurar la potencia de enfoque del láser
+- [Posicionamiento de workpieces](../features/workpiece-positioning.md) - Posicionar y transformar workpieces manualmente
+- [Configuración del láser](../machine/laser.md) - Configurar la potencia de enfoque del láser

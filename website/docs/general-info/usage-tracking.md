@@ -85,4 +85,4 @@ When disabled, absolutely no data is sent.
 
 ## Related Pages
 
-- **[Application Settings](../ui/settings)** - Configure tracking preferences
+- **[Application Settings](../ui/settings.md)** - Configure tracking preferences

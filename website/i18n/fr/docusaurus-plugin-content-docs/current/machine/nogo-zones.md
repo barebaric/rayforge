@@ -2,7 +2,7 @@
 
 Les zones interdites définissent des zones restreintes sur la surface de travail que le laser ne
 doit pas traverser. Lorsqu'elles sont activées, elles sont vérifiées dans le cadre des
-[vérifications de cohérence du travail](../features/sanity-checks) avant l'exécution ou l'exportation.
+[vérifications de cohérence du travail](../features/sanity-checks.md) avant l'exécution ou l'exportation.
 
 ![Zones Interdites](/screenshots/machine-nogo-zones.png)
 
@@ -31,5 +31,5 @@ les sessions.
 ## Pages Connexes
 
 - [Paramètres Matériel](hardware) - Dimensions de la machine et configuration des axes
-- [Vérifications de cohérence](../features/sanity-checks) - Validation avant travail
-- [Vue 3D](../ui/3d-preview) - Visualisation du trajet d'outil 3D
+- [Vérifications de cohérence](../features/sanity-checks.md) - Validation avant travail
+- [Vue 3D](../ui/3d-preview.md) - Visualisation du trajet d'outil 3D

@@ -82,4 +82,4 @@ Lorsqu'il est désactivé, absolument aucune donnée n'est envoyée.
 
 ## Pages connexes
 
-- **[Paramètres de l'application](../ui/settings)** – Configurer les préférences de suivi
+- **[Paramètres de l'application](../ui/settings.md)** – Configurer les préférences de suivi

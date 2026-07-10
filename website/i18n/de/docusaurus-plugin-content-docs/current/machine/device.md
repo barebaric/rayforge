@@ -276,7 +276,7 @@ Sichere deine Einstellungen nach jeder Kalibrierung oder Abstimmung. Speichere S
 
 - [Allgemeine Einstellungen](general) - Maschinenname und Geschwindigkeitseinstellungen
 - [Lasereinstellungen](laser) - Laserkopf-Konfiguration
-- [Verbindungsfehlerbehebung](../troubleshooting/connection) - Verbindungsprobleme beheben
+- [Verbindungsfehlerbehebung](../troubleshooting/connection.md) - Verbindungsprobleme beheben
 
 ## Externe Ressourcen
 

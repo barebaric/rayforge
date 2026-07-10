@@ -140,7 +140,7 @@ Schnitt erzeugt. Dies ist besonders nützlich für:
 Der Überlappungsschnitt wird sowohl auf Außenkonturen als auch auf innere Löcher angewendet.
 
 :::tip Ein-/Auslauf vs. Überlappungsschnitt
-[Ein-/Auslauf](../lead-in-out) fügt Nullleistungs-An- und
+[Ein-/Auslauf](../lead-in-out.md) fügt Nullleistungs-An- und
 Abfahrtsbewegungen vor und nach dem Schnittpfad hinzu. Der
 Überlappungsschnitt verlängert den Schnittpfad selbst über die
 Verbindungsstelle hinaus. Beide können zusammen für optimale
@@ -153,12 +153,12 @@ Schnittqualität verwendet werden.
 
 Kontur-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 
-- **[Pfad-Glättung](../smooth)** - Gezackte Kanten in Schneidepfaden reduzieren
-- **[Halte-Laschen](../holding-tabs)** - Geschnittene Teile am Rohmaterial befestigt halten
-- **[Auf Rohmaterial zuschneiden](../crop-to-stock)** - Schnitte auf Materialgrenze beschränken
-- **[Pfad-Optimierung](../path-optimization)** - Verfahrdistanz zwischen Schnitten reduzieren
-- **[Mehrfach-Durchgang](../multi-pass)** - Schnitte für dicke Materialien wiederholen
-- **[Ein-/Auslauf](../lead-in-out)** - Nullleistung-An- und Abfahrtsbewegungen für sauberere Schnittenden hinzufügen
+- **[Pfad-Glättung](../smooth.md)** - Gezackte Kanten in Schneidepfaden reduzieren
+- **[Halte-Laschen](../holding-tabs.md)** - Geschnittene Teile am Rohmaterial befestigt halten
+- **[Auf Rohmaterial zuschneiden](../crop-to-stock.md)** - Schnitte auf Materialgrenze beschränken
+- **[Pfad-Optimierung](../path-optimization.md)** - Verfahrdistanz zwischen Schnitten reduzieren
+- **[Mehrfach-Durchgang](../multi-pass.md)** - Schnitte für dicke Materialien wiederholen
+- **[Ein-/Auslauf](../lead-in-out.md)** - Nullleistung-An- und Abfahrtsbewegungen für sauberere Schnittenden hinzufügen
 
 ### Schnittbreiten-Kompensation
 
@@ -176,7 +176,7 @@ Schnittbreite ist die Breite des vom Laserstrahl entfernten Materials:
 3. Für Teile: um Schnittbreite/2 **nach innen** offseten
 4. Für Löcher: um Schnittbreite/2 **nach außen** offseten
 
-Siehe [Schnittbreite](../kerf) für detaillierte Anleitung.
+Siehe [Schnittbreite](../kerf.md) für detaillierte Anleitung.
 
 ## Tipps & Best Practices
 
@@ -218,7 +218,7 @@ Siehe [Schnittbreite](../kerf) für detaillierte Anleitung.
 
 ### Teile fallen während des Schneidens heraus
 
-- **Hinzufügen:** [Halte-Laschen](../holding-tabs)
+- **Hinzufügen:** [Halte-Laschen](../holding-tabs.md)
 - **Verwenden:** Schneide-Reihenfolge-Optimierung
 - **Schneiden:** Innen-Features vor Außen
 - **Sicherstellen:** Material ist flach und befestigt
@@ -273,6 +273,6 @@ M5                  ; Laser aus
 ## Verwandte Themen
 
 - **[Gravur](engrave)** - Bereiche mit Gravurmustern füllen
-- **[Halte-Laschen](../holding-tabs)** - Teile während des Schneidens sichern
-- **[Schnittbreite](../kerf)** - Schnittgenauigkeit verbessern
+- **[Halte-Laschen](../holding-tabs.md)** - Teile während des Schneidens sichern
+- **[Schnittbreite](../kerf.md)** - Schnittgenauigkeit verbessern
 - **[Materialtest-Raster](material-test-grid)** - Optimale Leistungs-/Geschwindigkeitseinstellungen finden

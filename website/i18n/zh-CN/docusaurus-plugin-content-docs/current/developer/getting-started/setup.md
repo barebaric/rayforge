@@ -6,7 +6,7 @@
 
 ### 前提条件
 
-请参阅 [安装指南](../../getting-started/installation#linux-pixi) 了解 Pixi 安装说明。
+请参阅 [安装指南](../../getting-started/installation.mdx#linux-pixi) 了解 Pixi 安装说明。
 
 ### 预提交钩子（可选）
 
@@ -30,7 +30,7 @@ pixi run pre-commit-install
 
 ### 前提条件
 
-请参阅 [安装指南](../../getting-started/installation#windows-developer) 了解详细的 MSYS2 开发环境设置说明。
+请参阅 [安装指南](../../getting-started/installation.mdx#windows-developer) 了解详细的 MSYS2 开发环境设置说明。
 
 ### 快速开始
 

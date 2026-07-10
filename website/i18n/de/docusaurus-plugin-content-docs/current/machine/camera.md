@@ -391,6 +391,6 @@ sudo lsof /dev/video0
 
 ## Verwandte Seiten
 
-- [3D-Vorschau](../ui/3d-preview) — Vorschau der Ausführung mit Kamera-Overlay
-- [Jobs rahmen](../features/framing-your-job) — Job-Position verifizieren
+- [3D-Vorschau](../ui/3d-preview.md) — Vorschau der Ausführung mit Kamera-Overlay
+- [Jobs rahmen](../features/framing-your-job.md) — Job-Position verifizieren
 - [Allgemeine Einstellungen](general) — Maschinenkonfiguration

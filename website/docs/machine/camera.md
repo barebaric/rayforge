@@ -371,6 +371,6 @@ sudo lsof /dev/video0
 
 ## Related Pages
 
-- [3D Preview](../ui/3d-preview) — Preview execution with camera overlay
-- [Framing Jobs](../features/framing-your-job) — Verify job position
+- [3D Preview](../ui/3d-preview.md) — Preview execution with camera overlay
+- [Framing Jobs](../features/framing-your-job.md) — Verify job position
 - [General Settings](general) — Machine configuration

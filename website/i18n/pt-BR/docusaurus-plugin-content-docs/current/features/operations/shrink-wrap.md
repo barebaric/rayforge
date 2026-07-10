@@ -183,7 +183,7 @@ Fluxo de trabalho comum:
 - Primeiro: Corta detalhes nas peças (enquanto fixadas)
 - Por último: Shrink wrap corta grupo livre
 
-Veja [Fluxo de Trabalho Multi-Camadas](../multi-layer) para detalhes.
+Veja [Fluxo de Trabalho Multi-Camadas](../multi-layer.md) para detalhes.
 
 ### Shrink Wrap + Raster
 
@@ -204,12 +204,12 @@ Veja [Fluxo de Trabalho Multi-Camadas](../multi-layer) para detalhes.
 
 Operações Shrink Wrap suportam várias opções de pós-processamento:
 
-- **[Suavização de Caminho](../smooth)** - Reduz bordas irregulares no caminho do limite
-- **[Abas de Fixação](../holding-tabs)** - Mantém peças cortadas anexadas ao material de estoque
-- **[Cortar para Estoque](../crop-to-stock)** - Limita cortes ao limite do material
-- **[Otimização de Caminho](../path-optimization)** - Reduz distância de deslocamento
-- **[Multi-Passagem](../multi-pass)** - Repete cortes para materiais espessos
-- **[Entrada/Saída](../lead-in-out)** - Adicionar movimentos de aproximação e saída sem potência para extremidades de corte mais limpas
+- **[Suavização de Caminho](../smooth.md)** - Reduz bordas irregulares no caminho do limite
+- **[Abas de Fixação](../holding-tabs.md)** - Mantém peças cortadas anexadas ao material de estoque
+- **[Cortar para Estoque](../crop-to-stock.md)** - Limita cortes ao limite do material
+- **[Otimização de Caminho](../path-optimization.md)** - Reduz distância de deslocamento
+- **[Multi-Passagem](../multi-pass.md)** - Repete cortes para materiais espessos
+- **[Entrada/Saída](../lead-in-out.md)** - Adicionar movimentos de aproximação e saída sem potência para extremidades de corte mais limpas
 
 ## Dicas e Melhores Práticas
 
@@ -335,7 +335,7 @@ Antes da execução de produção:
 
 ### Peças se movem durante o corte
 
-- **Adicione:** Pequenas abas para segurar peças (veja [Abas de Fixação](../holding-tabs))
+- **Adicione:** Pequenas abas para segurar peças (veja [Abas de Fixação](../holding-tabs.md))
 - **Use:** Ordem de corte: dentro para fora
 - **Certifique-se:** Material está plano e fixado
 - **Verifique:** Chapa não está empenada
@@ -368,7 +368,7 @@ O caminho do limite é otimizado para:
 ## Tópicos Relacionados
 
 - **[Corte de Contorno](contour)** - Cortando contornos de objetos individuais
-- **[Fluxo de Trabalho Multi-Camadas](../multi-layer)** - Combinando operações efetivamente
-- **[Abas de Fixação](../holding-tabs)** - Mantendo peças seguras durante o corte
+- **[Fluxo de Trabalho Multi-Camadas](../multi-layer.md)** - Combinando operações efetivamente
+- **[Abas de Fixação](../holding-tabs.md)** - Mantendo peças seguras durante o corte
 - **[Visualização 3D](../ui/3d-preview)** - Pré-visualizando caminhos de corte
 - **[Grade de Teste de Material](material-test-grid)** - Encontrando configurações de corte ideais

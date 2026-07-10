@@ -276,7 +276,7 @@ Sauvegardez vos paramètres après toute calibration ou réglage. Stockez les sa
 
 - [Paramètres Généraux](general) - Nom de machine et paramètres de vitesse
 - [Paramètres Laser](laser) - Configuration de la tête laser
-- [Dépannage de Connexion](../troubleshooting/connection) - Résoudre les problèmes de connexion
+- [Dépannage de Connexion](../troubleshooting/connection.md) - Résoudre les problèmes de connexion
 
 ## Ressources Externes
 

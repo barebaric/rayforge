@@ -395,7 +395,7 @@ Alguns atalhos menos conhecidos:
 
 ## Páginas Relacionadas
 
-- [Janela Principal](../ui/main-window) - Visão geral da UI
-- [Ferramentas da Tela](../ui/canvas-tools) - Interação com a tela
-- [Visualização 3D](../ui/3d-preview) - Controles de visão 3D
+- [Janela Principal](../ui/main-window.md) - Visão geral da UI
+- [Ferramentas da Tela](../ui/canvas-tools.md) - Interação com a tela
+- [Visualização 3D](../ui/3d-preview.md) - Controles de visão 3D
 

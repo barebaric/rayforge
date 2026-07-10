@@ -58,5 +58,5 @@ an deiner Maschine änderst.
 
 ## Verwandte Themen
 
-- [Koordinatensysteme](../general-info/coordinate-systems) - Maschinenkoordinaten und Arbeitsversätze verstehen
-- [Werkstückpositionierung](../features/workpiece-positioning) - Werkstücke auf der Leinwand positionieren
+- [Koordinatensysteme](../general-info/coordinate-systems.md) - Maschinenkoordinaten und Arbeitsversätze verstehen
+- [Werkstückpositionierung](../features/workpiece-positioning.md) - Werkstücke auf der Leinwand positionieren

@@ -400,8 +400,8 @@ réelle du laser.
 
 ## Pages Connexes
 
-- [Vue 3D](../ui/3d-preview) — Visualiser l'exécution avec superposition
+- [Vue 3D](../ui/3d-preview.md) — Visualiser l'exécution avec superposition
   caméra
-- [Cadrer les Travaux](../features/framing-your-job) — Vérifier la position du
+- [Cadrer les Travaux](../features/framing-your-job.md) — Vérifier la position du
   travail
 - [Paramètres Généraux](general) — Configuration de la machine

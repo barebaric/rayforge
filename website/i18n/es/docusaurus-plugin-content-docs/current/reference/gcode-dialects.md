@@ -118,7 +118,7 @@ ajustes de tu dialecto para esta opción.
 
 ## Páginas Relacionadas
 
-- [Exportando Código G](../files/exporting) - Ajustes de exportación
+- [Exportando Código G](../files/exporting.md) - Ajustes de exportación
 - [Compatibilidad de Firmware](firmware) - Versiones de firmware
-- [Ajustes de Dispositivo](../machine/device) - Configuración de GRBL
-- [Macros y Hooks](../machine/hooks-macros) - Inyección de código G personalizado
+- [Ajustes de Dispositivo](../machine/device.md) - Configuración de GRBL
+- [Macros y Hooks](../machine/hooks-macros.md) - Inyección de código G personalizado

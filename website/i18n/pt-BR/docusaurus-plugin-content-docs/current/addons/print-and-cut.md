@@ -83,5 +83,5 @@ Clique em **Aplicar** para mover e girar o workpiece na tela para corresponder
 
 ## Tópicos relacionados
 
-- [Posicionamento de workpieces](../features/workpiece-positioning) - Posicionar e transformar workpieces manualmente
-- [Configurações do laser](../machine/laser) - Configurar a potência de foco do laser
+- [Posicionamento de workpieces](../features/workpiece-positioning.md) - Posicionar e transformar workpieces manualmente
+- [Configurações do laser](../machine/laser.md) - Configurar a potência de foco do laser

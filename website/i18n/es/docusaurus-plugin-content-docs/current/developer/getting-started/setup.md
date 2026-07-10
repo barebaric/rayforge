@@ -6,7 +6,7 @@ Esta guía cubre la configuración de tu entorno de desarrollo para Rayforge.
 
 ### Prerrequisitos
 
-Ver la [Guía de Instalación](../../getting-started/installation#linux-pixi) para instrucciones de instalación de Pixi.
+Ver la [Guía de Instalación](../../getting-started/installation.mdx#linux-pixi) para instrucciones de instalación de Pixi.
 
 ### Hooks Pre-commit (Opcional)
 
@@ -30,7 +30,7 @@ Todos los comandos se ejecutan via `pixi run`:
 
 ### Prerrequisitos
 
-Ver la [Guía de Instalación](../../getting-started/installation#windows-developer) para instrucciones detalladas de configuración de desarrollo MSYS2.
+Ver la [Guía de Instalación](../../getting-started/installation.mdx#windows-developer) para instrucciones detalladas de configuración de desarrollo MSYS2.
 
 ### Inicio Rápido
 

@@ -36,7 +36,7 @@ máquina (ex: Ocioso, Executando) diretamente na barra de ferramentas. Durante a
 execução do trabalho, também exibe o tempo restante estimado.
 
 O menu suspenso WCS permite alternar rapidamente entre sistemas de coordenadas.
-Veja [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems)
+Veja [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems.md)
 para mais informação.
 
 Botões de alternância de visibilidade para peças de trabalho, abas, feed de
@@ -122,7 +122,7 @@ Personalize a interface em **Editar → Configurações**:
 
 **Páginas Relacionadas:**
 
-- [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems) - WCS
+- [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems.md) - WCS
 - [Ferramentas da Tela](canvas-tools) - Ferramentas para manipular designs
 - [Painel Inferior](bottom-panel) - Controle manual da máquina, status e logs
 - [Visualização 3D](3d-preview) - Visualizar caminhos de ferramenta em 3D

@@ -375,5 +375,5 @@ sudo snap connect rayforge:serial-port
 
 - [连接问题](connection) - 串口连接故障排除
 - [调试模式](debug) - 启用诊断日志
-- [安装](../getting-started/installation) - 安装指南
-- [常规设置](../machine/general) - 机器设置
+- [安装](../getting-started/installation.mdx) - 安装指南
+- [常规设置](../machine/general.md) - 机器设置

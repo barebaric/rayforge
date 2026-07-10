@@ -582,6 +582,6 @@ Rayforge 包含一个实验性的 OctoPrint 驱动程序，可通过网络直接
 ## 相关页面
 
 - [G 代码方言](gcode-dialects) - 方言详情
-- [设备设置](../machine/device) - GRBL 配置
-- [连接问题](../troubleshooting/connection) - 连接故障排除
-- [常规设置](../machine/general) - 机器设置
+- [设备设置](../machine/device.md) - GRBL 配置
+- [连接问题](../troubleshooting/connection.md) - 连接故障排除
+- [常规设置](../machine/general.md) - 机器设置

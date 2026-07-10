@@ -307,5 +307,5 @@ Si has probado todo lo anterior y todavía no puedes conectar:
 
 - [Permisos de Snap](snap-permissions) - Configuración de permisos de Snap en Linux
 - [Modo Depuración](debug) - Habilitar registro de diagnóstico
-- [Ajustes Generales](../machine/general) - Guía de configuración de máquina
-- [Ajustes de Dispositivo](../machine/device) - Referencia de configuración de GRBL
+- [Ajustes Generales](../machine/general.md) - Guía de configuración de máquina
+- [Ajustes de Dispositivo](../machine/device.md) - Referencia de configuración de GRBL

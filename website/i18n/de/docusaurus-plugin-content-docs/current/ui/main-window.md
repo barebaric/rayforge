@@ -35,7 +35,7 @@ Während der Auftragsausführung wird zusätzlich eine geschätzte verbleibende
 Zeit angezeigt.
 
 Das WCS-Dropdown ermöglicht dir, schnell zwischen Koordinatensystemen zu
-wechseln. Siehe [Werkstückkoordinatensysteme](../general-info/coordinate-systems)
+wechseln. Siehe [Werkstückkoordinatensysteme](../general-info/coordinate-systems.md)
 für weitere Informationen.
 
 Sichtbarkeits-Umschaltungen für Werkstücke, Halterungen, Kamera-Feed,
@@ -121,7 +121,7 @@ Passe die Oberfläche an in **Bearbeiten → Einstellungen**:
 
 **Verwandte Seiten:**
 
-- [Werkstückkoordinatensysteme](../general-info/coordinate-systems) - WCS
+- [Werkstückkoordinatensysteme](../general-info/coordinate-systems.md) - WCS
 - [Canvas-Werkzeuge](canvas-tools) - Werkzeuge zum Bearbeiten von Designs
 - [Unteres Panel](bottom-panel) - Manuelle Maschinensteuerung, Status und Protokolle
 - [3D-Vorschau](3d-preview) - Werkzeugwege in 3D visualisieren

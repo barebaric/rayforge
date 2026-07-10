@@ -77,6 +77,6 @@ El sistema usa un algoritmo de puntuación de especificidad para priorizar las r
 **Temas Relacionados**:
 
 - [Materiales](materials) - Gestionando propiedades de materiales
-- [Manejo de Stock](../features/stock-handling) - Trabajando con materiales en stock
-- [Configuración de Máquina](../machine/general) - Configurando máquinas y cabezales láser
-- [Resumen de Operaciones](../features/operations/contour) - Entendiendo diferentes tipos de operaciones
+- [Manejo de Stock](../features/stock-handling.md) - Trabajando con materiales en stock
+- [Configuración de Máquina](../machine/general.md) - Configurando máquinas y cabezales láser
+- [Resumen de Operaciones](../features/operations/contour.md) - Entendiendo diferentes tipos de operaciones

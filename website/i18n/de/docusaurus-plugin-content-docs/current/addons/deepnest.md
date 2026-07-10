@@ -65,5 +65,5 @@ ursprünglichen Positionen.
 
 ## Verwandte Themen
 
-- [Material-Handhabung](../features/stock-handling) - Material für das Nesting definieren
-- [Werkstückpositionierung](../features/workpiece-positioning) - Werkstücke manuell positionieren
+- [Material-Handhabung](../features/stock-handling.md) - Material für das Nesting definieren
+- [Werkstückpositionierung](../features/workpiece-positioning.md) - Werkstücke manuell positionieren

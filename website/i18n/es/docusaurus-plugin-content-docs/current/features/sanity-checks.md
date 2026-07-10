@@ -28,6 +28,6 @@ errores y advertencias, y puedes revisar todo antes de decidir si deseas procede
 
 ## Páginas Relacionadas
 
-- [Zonas Prohibidas](../machine/nogo-zones) - Definir áreas restringidas en la
+- [Zonas Prohibidas](../machine/nogo-zones.md) - Definir áreas restringidas en la
   superficie de trabajo
-- [Vista 3D](../ui/3d-preview) - Visualización de trayectorias en 3D
+- [Vista 3D](../ui/3d-preview.md) - Visualización de trayectorias en 3D

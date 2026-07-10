@@ -106,11 +106,11 @@ Rahmen-Umriss unterstützt Schnittbreiten-Kompensation:
 
 Rahmen-Umriss-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 
-- **[Halte-Laschen](../holding-tabs)** - Das eingerahmte Teil am Rohmaterial befestigt halten
-- **[Auf Rohmaterial zuschneiden](../crop-to-stock)** - Schnitte auf Materialgrenze beschränken
-- **[Pfad-Optimierung](../path-optimization)** - Verfahrdistanz reduzieren
-- **[Mehrfach-Durchgang](../multi-pass)** - Schnitte für dicke Materialien wiederholen
-- **[Einlauf/Auslauf](../lead-in-out)** - Nullleistung-An- und Abfahrtsbewegungen hinzufügen für sauberere Schnittenden
+- **[Halte-Laschen](../holding-tabs.md)** - Das eingerahmte Teil am Rohmaterial befestigt halten
+- **[Auf Rohmaterial zuschneiden](../crop-to-stock.md)** - Schnitte auf Materialgrenze beschränken
+- **[Pfad-Optimierung](../path-optimization.md)** - Verfahrdistanz reduzieren
+- **[Mehrfach-Durchgang](../multi-pass.md)** - Schnitte für dicke Materialien wiederholen
+- **[Einlauf/Auslauf](../lead-in-out.md)** - Nullleistung-An- und Abfahrtsbewegungen hinzufügen für sauberere Schnittenden
 
 ## Anwendungsfälle
 
@@ -291,6 +291,6 @@ M5                 ; Laser aus
 
 - **[Kontur-Schneiden](contour)** - Individuelle Objektumrisse schneiden
 - **[Schrumpfumhüllung](shrink-wrap)** - Effiziente unregelmäßige Grenzen
-- **[Halte-Laschen](../holding-tabs)** - Teile während des Schneidens sichern
-- **[Mehrschicht-Workflow](../multi-layer)** - Operationen effektiv organisieren
-- **[Schnittbreiten-Kompensation](../kerf)** - Dimensionsgenauigkeit verbessern
+- **[Halte-Laschen](../holding-tabs.md)** - Teile während des Schneidens sichern
+- **[Mehrschicht-Workflow](../multi-layer.md)** - Operationen effektiv organisieren
+- **[Schnittbreiten-Kompensation](../kerf.md)** - Dimensionsgenauigkeit verbessern

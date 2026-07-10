@@ -589,6 +589,6 @@ Para adicionar suporte a firmware:
 ## Páginas Relacionadas
 
 - [Dialeto G-code](gcode-dialects) - Detalhes do dialeto
-- [Configurações de Dispositivo](../machine/device) - Configuração GRBL
-- [Problemas de Conexão](../troubleshooting/connection) - Solução de problemas de conexão
-- [Configurações Gerais](../machine/general) - Configuração da máquina
+- [Configurações de Dispositivo](../machine/device.md) - Configuração GRBL
+- [Problemas de Conexão](../troubleshooting/connection.md) - Solução de problemas de conexão
+- [Configurações Gerais](../machine/general.md) - Configuração da máquina

@@ -110,11 +110,11 @@ Frame outline supports kerf compensation:
 
 Frame Outline operations support several post-processing options:
 
-- **[Holding Tabs](../holding-tabs)** - Keep the framed piece attached to stock
-- **[Crop to Stock](../crop-to-stock)** - Limit cuts to material boundary
-- **[Path Optimization](../path-optimization)** - Reduce travel distance
-- **[Multi-Pass](../multi-pass)** - Repeat cuts for thick materials
-- **[Lead-In/Out](../lead-in-out)** - Add zero-power approach and exit moves for cleaner cut ends
+- **[Holding Tabs](../holding-tabs.md)** - Keep the framed piece attached to stock
+- **[Crop to Stock](../crop-to-stock.md)** - Limit cuts to material boundary
+- **[Path Optimization](../path-optimization.md)** - Reduce travel distance
+- **[Multi-Pass](../multi-pass.md)** - Repeat cuts for thick materials
+- **[Lead-In/Out](../lead-in-out.md)** - Add zero-power approach and exit moves for cleaner cut ends
 
 ## Use Cases
 
@@ -295,6 +295,6 @@ M5                 ; Laser off
 
 - **[Contour Cutting](contour)** - Cutting individual object outlines
 - **[Shrink Wrap](shrink-wrap)** - Efficient irregular boundaries
-- **[Holding Tabs](../holding-tabs)** - Keeping parts secure during cutting
-- **[Multi-Layer Workflow](../multi-layer)** - Organizing operations effectively
-- **[Kerf Compensation](../kerf)** - Improving dimensional accuracy
+- **[Holding Tabs](../holding-tabs.md)** - Keeping parts secure during cutting
+- **[Multi-Layer Workflow](../multi-layer.md)** - Organizing operations effectively
+- **[Kerf Compensation](../kerf.md)** - Improving dimensional accuracy

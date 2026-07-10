@@ -53,5 +53,5 @@
 
 ## Пов'язані теми
 
-- [Системи координат](../general-info/coordinate-systems) - Зрозуміти координати машини та робочі зсуви
-- [Позиціонування workpieces](../features/workpiece-positioning) - Позиціонувати workpieces на полотні
+- [Системи координат](../general-info/coordinate-systems.md) - Зрозуміти координати машини та робочі зсуви
+- [Позиціонування workpieces](../features/workpiece-positioning.md) - Позиціонувати workpieces на полотні

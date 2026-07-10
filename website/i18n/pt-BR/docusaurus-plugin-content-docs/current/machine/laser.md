@@ -74,7 +74,7 @@ laser em baixa potência para atuar como "ponteiro laser" para posicionamento.
 Clique no botão foco (ícone de laser) na barra de ferramentas para alternar o
 modo foco. O laser ligará neste nível de potência, ajudando você a ver
 exatamente onde o laser está posicionado. Consulte
-[Posicionamento de Peça de Trabalho](../features/workpiece-positioning) para
+[Posicionamento de Peça de Trabalho](../features/workpiece-positioning.md) para
 mais informações.
 :::
 
@@ -151,7 +151,7 @@ substituídos por etapa, se necessário.
 #### Modelo 3D
 
 Cada cabeça de laser pode ter um modelo 3D atribuído a ela. Este modelo é
-renderizado na [visualização 3D](../ui/3d-preview) e segue o caminho da
+renderizado na [visualização 3D](../ui/3d-preview.md) e segue o caminho da
 ferramenta durante a simulação.
 
 Clique na linha de seleção de modelo para navegar pelos modelos disponíveis.
@@ -161,5 +161,5 @@ distância focal para corresponder à sua cabeça de laser física.
 ## Veja Também
 
 - [Configurações do Dispositivo](device) - Configurações de modo laser GRBL
-- [Posicionamento de Peça de Trabalho](../features/workpiece-positioning) -
+- [Posicionamento de Peça de Trabalho](../features/workpiece-positioning.md) -
   Usando modo foco e outros métodos de posicionamento

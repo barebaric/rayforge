@@ -118,5 +118,5 @@ adjustments.
 - [General Settings](general) — manual machine configuration
 - [Device Settings](device) — reading and writing firmware parameters
   on an already-configured machine
-- [Adding a Machine](../application-settings/machines) — overview of
+- [Adding a Machine](../application-settings/machines.md) — overview of
   the machine creation workflow

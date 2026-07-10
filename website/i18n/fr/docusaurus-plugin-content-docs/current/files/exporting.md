@@ -124,6 +124,6 @@ la machine actuellement sélectionnée et de son dialecte G-code.
 
 - [Importer des fichiers](importing) - Importer des conceptions dans Rayforge
 - [Formats pris en charge](formats) - Détails des formats de fichiers
-- [Dialectes G-code](../reference/gcode-dialects) - Différences entre dialectes
-- [Hooks et Macros](../machine/hooks-macros) - Personnaliser la sortie
-- [Aperçu 3D](../ui/3d-preview) - Prévisualiser avant exportation
+- [Dialectes G-code](../reference/gcode-dialects.md) - Différences entre dialectes
+- [Hooks et Macros](../machine/hooks-macros.md) - Personnaliser la sortie
+- [Aperçu 3D](../ui/3d-preview.md) - Prévisualiser avant exportation

@@ -159,7 +159,7 @@ Zum Beispiel:
 - **Wiederholbare Jobs**: Gleicher Job, verschiedene Positionen
 - **Produktionsläufe**: Konsistente Positionierung über mehrere Stücke
 
-Siehe [Arbeitskoordinatensysteme](../general-info/coordinate-systems) für
+Siehe [Arbeitskoordinatensysteme](../general-info/coordinate-systems.md) für
 vollständige Dokumentation.
 
 ---
@@ -210,7 +210,7 @@ Die Kamera-Ausrichtung ordnet Kamerapixel den realen Koordinaten zu:
 - **Präzise Platzierung**: Sub-Millimeter-Genauigkeitsanforderungen
 - **Komplexe Layouts**: Mehrere Elemente mit spezifischem Abstand
 
-Siehe [Kamera-Integration](../machine/camera) für vollständige Dokumentation.
+Siehe [Kamera-Integration](../machine/camera.md) für vollständige Dokumentation.
 
 ---
 
@@ -285,7 +285,7 @@ Für denselben Job an verschiedenen Positionen:
 ## Verwandte Themen
 
 - [Deinen Job einrahmen](framing-your-job) - Detaillierte Rahmen-Dokumentation
-- [Arbeitskoordinatensysteme](../general-info/coordinate-systems) - WKS-Referenz
-- [Kamera-Integration](../machine/camera) - Kamera-Setup und Ausrichtung
-- [Kontrollpanel](../ui/bottom-panel) - Bewegungssteuerung und WKS-Verwaltung
-- [Schnellstart-Anleitung](../getting-started/quick-start) - Grundlegender Workflow
+- [Arbeitskoordinatensysteme](../general-info/coordinate-systems.md) - WKS-Referenz
+- [Kamera-Integration](../machine/camera.md) - Kamera-Setup und Ausrichtung
+- [Kontrollpanel](../ui/bottom-panel.md) - Bewegungssteuerung und WKS-Verwaltung
+- [Schnellstart-Anleitung](../getting-started/quick-start.md) - Grundlegender Workflow

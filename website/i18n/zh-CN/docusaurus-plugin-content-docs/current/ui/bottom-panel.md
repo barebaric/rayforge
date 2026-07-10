@@ -313,8 +313,8 @@ G 代码查看器标签显示当前操作的生成 G 代码。点击标签栏中
 
 **相关页面：**
 
-- [工作坐标系（WCS）](../general-info/coordinate-systems) - 管理 WCS
-- [机器设置](../machine/general) - 配置您的机器
-- [键盘快捷键](../reference/shortcuts) - 完整的快捷键参考
+- [工作坐标系（WCS）](../general-info/coordinate-systems.md) - 管理 WCS
+- [机器设置](../machine/general.md) - 配置您的机器
+- [键盘快捷键](../reference/shortcuts.md) - 完整的快捷键参考
 - [主窗口](main-window) - 主界面概述
-- [常规设置](../machine/general) - 设备配置
+- [常规设置](../machine/general.md) - 设备配置

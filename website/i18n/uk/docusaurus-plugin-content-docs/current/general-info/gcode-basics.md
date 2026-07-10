@@ -69,6 +69,6 @@ G0 X0 Y0 ;Повернутися до початку
 
 ## Пов'язані сторінки
 
-- [Діалекти G-code](../reference/gcode-dialects) - Відмінності прошивок
-- [Експорт G-code](../files/exporting) - Налаштування та параметри експорту
-- [Хуки та макроси](../machine/hooks-macros) - Вставка власного G-code
+- [Діалекти G-code](../reference/gcode-dialects.md) - Відмінності прошивок
+- [Експорт G-code](../files/exporting.md) - Налаштування та параметри експорту
+- [Хуки та макроси](../machine/hooks-macros.md) - Вставка власного G-code

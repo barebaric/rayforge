@@ -6,7 +6,7 @@ Dieser Leitfaden behandelt die Einrichtung deiner Entwicklungsumgebung für Rayf
 
 ### Voraussetzungen
 
-Siehe den [Installationsleitfaden](../../getting-started/installation#linux-pixi) für Pixi-Installationsanweisungen.
+Siehe den [Installationsleitfaden](../../getting-started/installation.mdx#linux-pixi) für Pixi-Installationsanweisungen.
 
 ### Pre-commit-Hooks (Optional)
 
@@ -30,7 +30,7 @@ Alle Befehle werden über `pixi run` ausgeführt:
 
 ### Voraussetzungen
 
-Siehe den [Installationsleitfaden](../../getting-started/installation#windows-developer) für detaillierte MSYS2-Entwickler-Installationsanweisungen.
+Siehe den [Installationsleitfaden](../../getting-started/installation.mdx#windows-developer) für detaillierte MSYS2-Entwickler-Installationsanweisungen.
 
 ### Schnellstart
 

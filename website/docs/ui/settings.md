@@ -53,14 +53,14 @@ page to learn more about what data is collected and how it is used.
 The settings dialog also includes pages for managing other parts of the
 application. Each has its own dedicated documentation:
 
-- [Machines](../application-settings/machines) — add, remove, and configure
+- [Machines](../application-settings/machines.md) — add, remove, and configure
   your laser cutters
-- [Materials](../application-settings/materials) — manage your material
+- [Materials](../application-settings/materials.md) — manage your material
   libraries
-- [Recipes](../application-settings/recipes) — manage saved operation recipes
-- [AI Providers](../application-settings/ai-provider) — configure AI providers
+- [Recipes](../application-settings/recipes.md) — manage saved operation recipes
+- [AI Providers](../application-settings/ai-provider.md) — configure AI providers
   for use by addons
-- [Addons](../application-settings/addons) — install, update, and remove
+- [Addons](../application-settings/addons.md) — install, update, and remove
   extension addons
 
 

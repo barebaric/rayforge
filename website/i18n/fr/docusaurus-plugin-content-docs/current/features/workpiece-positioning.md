@@ -165,7 +165,7 @@ fixation. Par exemple :
 - **Travaux reproductibles** : Même travail, différentes positions
 - **Lots de production** : Positionnement cohérent à travers plusieurs pièces
 
-Voir [Systèmes de Coordonnées de Travail](../general-info/coordinate-systems)
+Voir [Systèmes de Coordonnées de Travail](../general-info/coordinate-systems.md)
 pour la documentation complète.
 
 ---
@@ -221,7 +221,7 @@ monde réel :
 - **Dispositions complexes** : Plusieurs éléments avec un espacement
   spécifique
 
-Voir [Intégration Caméra](../machine/camera) pour la documentation complète.
+Voir [Intégration Caméra](../machine/camera.md) pour la documentation complète.
 
 ---
 
@@ -299,11 +299,11 @@ Pour exécuter le même travail à différents emplacements :
 
 - [Cadrer Votre Travail](framing-your-job) - Documentation détaillée du
   cadrage
-- [Systèmes de Coordonnées de Travail](../general-info/coordinate-systems) -
+- [Systèmes de Coordonnées de Travail](../general-info/coordinate-systems.md) -
   Référence SCF
-- [Intégration Caméra](../machine/camera) - Configuration et alignement de la
+- [Intégration Caméra](../machine/camera.md) - Configuration et alignement de la
   caméra
-- [Panneau de Contrôle](../ui/bottom-panel) - Contrôles de déplacement et
+- [Panneau de Contrôle](../ui/bottom-panel.md) - Contrôles de déplacement et
   gestion SCF
-- [Guide de Démarrage Rapide](../getting-started/quick-start) - Flux de
+- [Guide de Démarrage Rapide](../getting-started/quick-start.md) - Flux de
   travail de base

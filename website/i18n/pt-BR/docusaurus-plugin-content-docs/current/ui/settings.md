@@ -53,13 +53,13 @@ para saber mais sobre quais dados são coletados e como são usados.
 O diálogo de configurações também inclui páginas para gerenciar outras partes
 do aplicativo. Cada uma possui sua própria documentação:
 
-- [Máquinas](../application-settings/machines) — adicionar, remover e
+- [Máquinas](../application-settings/machines.md) — adicionar, remover e
   configurar suas cortadoras a laser
-- [Materiais](../application-settings/materials) — gerenciar suas
+- [Materiais](../application-settings/materials.md) — gerenciar suas
   bibliotecas de materiais
-- [Receitas](../application-settings/recipes) — gerenciar receitas de
+- [Receitas](../application-settings/recipes.md) — gerenciar receitas de
   operações salvas
-- [Provedores de IA](../application-settings/ai-provider) — configurar
+- [Provedores de IA](../application-settings/ai-provider.md) — configurar
   provedores de IA para uso pelos addons
-- [Addons](../application-settings/addons) — instalar, atualizar e remover
+- [Addons](../application-settings/addons.md) — instalar, atualizar e remover
   addons de extensão

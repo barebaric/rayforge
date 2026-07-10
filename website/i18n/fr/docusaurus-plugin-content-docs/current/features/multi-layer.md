@@ -125,10 +125,10 @@ pendant la gravure.
 
 ## Pages associées
 
-- [Opérations](./operations/contour) - Types d'opérations pour les
+- [Opérations](./operations/contour.md) - Types d'opérations pour les
   flux de travail par calque
 
-- [Macros et Hooks](../machine/hooks-macros) - Hooks au niveau du
+- [Macros et Hooks](../machine/hooks-macros.md) - Hooks au niveau du
   calque pour l'automatisation
-- [Navigateur d'actifs](../ui/bottom-panel) - Gérer les actifs avec les menus contextuels
-- [Aperçu 3D](../ui/3d-preview) - Visualiser la pile de calques
+- [Navigateur d'actifs](../ui/bottom-panel.md) - Gérer les actifs avec les menus contextuels
+- [Aperçu 3D](../ui/3d-preview.md) - Visualiser la pile de calques

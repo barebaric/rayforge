@@ -82,5 +82,5 @@ physical positions. The transform is applied as an undoable action.
 
 ## Related Topics
 
-- [Workpiece Positioning](../features/workpiece-positioning) - Position and transform workpieces manually
-- [Laser Settings](../machine/laser) - Configure focus power for the laser
+- [Workpiece Positioning](../features/workpiece-positioning.md) - Position and transform workpieces manually
+- [Laser Settings](../machine/laser.md) - Configure focus power for the laser

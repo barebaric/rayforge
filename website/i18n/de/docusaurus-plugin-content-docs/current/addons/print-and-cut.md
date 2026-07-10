@@ -86,5 +86,5 @@ Transformation wird als rücknehmbare Aktion angewendet.
 
 ## Verwandte Themen
 
-- [Werkstückpositionierung](../features/workpiece-positioning) - Werkstücke manuell positionieren und transformieren
-- [Lasereinstellungen](../machine/laser) - Fokusleistung für den Laser konfigurieren
+- [Werkstückpositionierung](../features/workpiece-positioning.md) - Werkstücke manuell positionieren und transformieren
+- [Lasereinstellungen](../machine/laser.md) - Fokusleistung für den Laser konfigurieren

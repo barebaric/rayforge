@@ -125,5 +125,5 @@ La distance d'overscan devrait permettre à la machine d'**accélérer complète
 
 ## Sujets Connexes
 
-- [Opérations de Gravure](./operations/engrave) - Configurer les paramètres de gravure
-- [Grille de Test de Matériau](./operations/material-test-grid) - Trouver la puissance/vitesse optimales
+- [Opérations de Gravure](./operations/engrave.md) - Configurer les paramètres de gravure
+- [Grille de Test de Matériau](./operations/material-test-grid.md) - Trouver la puissance/vitesse optimales

@@ -81,4 +81,4 @@ Cuando está desactivado, no se envían absolutamente ningún dato.
 
 ## Páginas relacionadas
 
-- **[Configuración de la aplicación](../ui/settings)** – Configurar preferencias de seguimiento
+- **[Configuración de la aplicación](../ui/settings.md)** – Configurar preferencias de seguimiento

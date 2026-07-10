@@ -109,9 +109,9 @@ de onda se extienden hasta el límite).
 
 Las operaciones de frente de onda soportan:
 
-- **[Suavizado de Trayectoria](../smooth)** — Reduce los bordes dentados
+- **[Suavizado de Trayectoria](../smooth.md)** — Reduce los bordes dentados
   en las trayectorias de herramienta
-- **[Optimización de Trayectoria](../path-optimization)** — Minimiza la
+- **[Optimización de Trayectoria](../path-optimization.md)** — Minimiza la
   distancia de desplazamiento entre pasadas
 
 ## Consejos y Mejores Prácticas
@@ -144,5 +144,5 @@ margen para el corte de contorno.
 - **[Grabado](engrave)** — Relleno de áreas con patrones de grabado raster
 - **[Envoltura Ajustada](shrink-wrap)** — Corte de límite alrededor de
   objetos
-- **[Suavizado de Trayectoria](../smooth)** — Refinamiento de bordes de
+- **[Suavizado de Trayectoria](../smooth.md)** — Refinamiento de bordes de
   trayectoria de herramienta

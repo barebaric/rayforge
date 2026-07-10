@@ -122,10 +122,10 @@ durante el grabado.
 
 ## Páginas relacionadas
 
-- [Operaciones](./operations/contour) - Tipos de operaciones para
+- [Operaciones](./operations/contour.md) - Tipos de operaciones para
   flujos de trabajo por capa
 
-- [Macros y Hooks](../machine/hooks-macros) - Hooks a nivel de capa
+- [Macros y Hooks](../machine/hooks-macros.md) - Hooks a nivel de capa
   para automatización
-- [Vista previa 3D](../ui/3d-preview) - Visualizar la pila de capas
-- [Navegador de activos](../ui/bottom-panel) - Gestión de activos con menús contextuales
+- [Vista previa 3D](../ui/3d-preview.md) - Visualizar la pila de capas
+- [Navegador de activos](../ui/bottom-panel.md) - Gestión de activos con menús contextuales

@@ -83,7 +83,7 @@ Personnalise ce que tu vois :
 :::tip Couleurs par Laser
 Lors de l'utilisation de machines avec plusieurs têtes laser, chaque laser peut
 avoir ses propres couleurs de coupe et de raster configurées dans
-[Paramètres Laser](../machine/laser). Cela facilite l'identification du laser
+[Paramètres Laser](../machine/laser.md). Cela facilite l'identification du laser
 qui effectuera chaque opération.
 :::
 
@@ -91,7 +91,7 @@ qui effectuera chaque opération.
 
 La vue 3D affiche un modèle de ta tête laser qui se déplace le long du trajet d'outil
 pendant la simulation. Tu peux attribuer un modèle 3D à chaque tête laser dans la page
-[Paramètres Laser](../machine/laser) des Paramètres Machine. L'échelle, la rotation
+[Paramètres Laser](../machine/laser.md) des Paramètres Machine. L'échelle, la rotation
 et la distance focale du modèle peuvent être ajustées pour correspondre à ton
 installation physique.
 
@@ -135,7 +135,7 @@ Avant d'envoyer à la machine, vérifie :
 
 Certaines vérifications supplémentaires sont effectuées automatiquement.
 Lorsque tu exécutes ou exportes un travail, Rayforge effectue des
-[vérifications de cohérence](../features/sanity-checks) qui vérifient les
+[vérifications de cohérence](../features/sanity-checks.md) qui vérifient les
 limites de la machine, les contours de la zone de travail et les collisions
 avec les zones interdites.
 
@@ -164,6 +164,6 @@ Pour les travaux volumineux ou complexes :
 
 **Pages connexes :**
 
-- [Systèmes de coordonnées de travail](../general-info/coordinate-systems) - WCS
+- [Systèmes de coordonnées de travail](../general-info/coordinate-systems.md) - WCS
 - [Fenêtre principale](main-window) - Aperçu de l'interface principale
 - [Paramètres](settings) - Préférences de l'application

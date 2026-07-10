@@ -107,9 +107,9 @@ bis zur Begrenzung).
 
 Wellenfront-Operationen unterstützen:
 
-- **[Pfad-Glättung](../smooth)** — Gezackte Kanten in den Werkzeugpfaden
+- **[Pfad-Glättung](../smooth.md)** — Gezackte Kanten in den Werkzeugpfaden
   reduzieren
-- **[Pfad-Optimierung](../path-optimization)** — Verfahrweg zwischen
+- **[Pfad-Optimierung](../path-optimization.md)** — Verfahrweg zwischen
   Durchgängen minimieren
 
 ## Tipps & Best Practices
@@ -141,4 +141,4 @@ genügend Rand für den Konturschnitt bleibt.
 - **[Kontur](contour)** — Schneiden entlang von Vektorumrissen
 - **[Gravur](engrave)** — Bereiche mit Rastergravurmustern füllen
 - **[Schrumpf-Wicklung](shrink-wrap)** — Begrenzungsschnitt um Objekte
-- **[Pfad-Glättung](../smooth)** — Werkzeugpfadkanten verfeinern
+- **[Pfad-Glättung](../smooth.md)** — Werkzeugpfadkanten verfeinern

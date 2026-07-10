@@ -18,13 +18,13 @@ delete it. The currently active machine is marked with a check icon.
 
 ![Add Machine Dialog](/screenshots/app-settings-machines-add.png)
 
-3. The [machine settings dialog](../machine/general) opens where you can
+3. The [machine settings dialog](../machine/general.md) opens where you can
    adjust the configuration
 
 Alternatively:
 
 - Click **Other Device…** to launch the
-  [Configuration Wizard](../machine/config-wizard), which auto-detects
+  [Configuration Wizard](../machine/config-wizard.md), which auto-detects
   settings from a connected device
 - Click **Import from File…** to add a machine from a previously
   exported profile or from a LightBurn device profile (.lbdev).
@@ -34,7 +34,7 @@ Alternatively:
 ## Editing a Machine
 
 Click the edit icon next to a machine to open the
-[machine settings dialog](../machine/general).
+[machine settings dialog](../machine/general.md).
 
 ## Switching the Active Machine
 

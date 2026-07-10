@@ -361,8 +361,8 @@ Lorsque les limites logicielles sont activées dans ton profil machine :
 
 **Pages connexes :**
 
-- [Systèmes de coordonnées de travail (WCS)](../general-info/coordinate-systems) - Gérer le WCS
-- [Configuration machine](../machine/general) - Configure ta machine
-- [Raccourcis clavier](../reference/shortcuts) - Référence complète des raccourcis
+- [Systèmes de coordonnées de travail (WCS)](../general-info/coordinate-systems.md) - Gérer le WCS
+- [Configuration machine](../machine/general.md) - Configure ta machine
+- [Raccourcis clavier](../reference/shortcuts.md) - Référence complète des raccourcis
 - [Fenêtre principale](main-window) - Aperçu de l'interface principale
-- [Paramètres généraux](../machine/general) - Configuration de l'appareil
+- [Paramètres généraux](../machine/general.md) - Configuration de l'appareil

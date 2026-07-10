@@ -66,7 +66,7 @@ the layer list so you can tell at a glance which layers will run in rotary mode.
 
 ## 3D Preview in Rotary Mode
 
-When rotary mode is active, the [3D view](../ui/3d-preview) shows your toolpath wrapped
+When rotary mode is active, the [3D view](../ui/3d-preview.md) shows your toolpath wrapped
 around a cylinder instead of on a flat surface. The 2D canvas also adapts to rotary mode
 automatically, and the 3D canvas renders rotary toolpaths accurately in every
 configuration — including during simulation playback.
@@ -79,7 +79,7 @@ making it easier to spot sizing or placement issues before you start cutting.
 ### Rotary Module 3D Model
 
 Each rotary module can have an assigned 3D model. The model appears in
-the [3D view](../ui/3d-preview) alongside your toolpath, giving you a
+the [3D view](../ui/3d-preview.md) alongside your toolpath, giving you a
 better sense of how the physical setup looks. You can adjust the model's scale,
 position, and rotation to match your actual hardware.
 
@@ -100,6 +100,6 @@ cylindrical workpieces across multiple passes.
 
 ## Related Pages
 
-- [Multi-Layer Workflow](../features/multi-layer) - Per-layer settings including rotary
-- [3D View](../ui/3d-preview) - Preview toolpaths in 3D
+- [Multi-Layer Workflow](../features/multi-layer.md) - Per-layer settings including rotary
+- [3D View](../ui/3d-preview.md) - Preview toolpaths in 3D
 - [Machine Settings](general) - General machine configuration

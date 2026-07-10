@@ -140,7 +140,7 @@ coupe nette et complète. Ceci est particulièrement utile pour :
 La surcoupe s'applique à la fois aux contours extérieurs et aux trous intérieurs.
 
 :::tip Entrée/Sortie vs Surcoupe
-[L'entrée/sortie](../lead-in-out) ajoute des mouvements d'approche et de
+[L'entrée/sortie](../lead-in-out.md) ajoute des mouvements d'approche et de
 sortie à puissance nulle avant et après le trajet de coupe. La surcoupe
 prolonge le trajet de coupe lui-même au-delà de la jonction. Ils peuvent
 être utilisés ensemble pour une qualité de coupe optimale.
@@ -152,12 +152,12 @@ prolonge le trajet de coupe lui-même au-delà de la jonction. Ils peuvent
 
 Les opérations de contour supportent plusieurs options de post-traitement :
 
-- **[Lissage de Parcours](../smooth)** - Réduire les bords irréguliers dans les parcours de coupe
-- **[Ponts de Maintien](../holding-tabs)** - Maintenir les pièces coupées attachées au matériau de stock
-- **[Rognage au Stock](../crop-to-stock)** - Limiter les coupes à la limite du matériau
-- **[Optimisation de Parcours](../path-optimization)** - Réduire la distance de déplacement entre les coupes
-- **[Passe Multiple](../multi-pass)** - Répéter les coupes pour les matériaux épais
-- **[Entrée/Sortie](../lead-in-out)** - Ajouter des mouvements d'approche et de sortie à puissance nulle pour des extrémités de coupe plus propres
+- **[Lissage de Parcours](../smooth.md)** - Réduire les bords irréguliers dans les parcours de coupe
+- **[Ponts de Maintien](../holding-tabs.md)** - Maintenir les pièces coupées attachées au matériau de stock
+- **[Rognage au Stock](../crop-to-stock.md)** - Limiter les coupes à la limite du matériau
+- **[Optimisation de Parcours](../path-optimization.md)** - Réduire la distance de déplacement entre les coupes
+- **[Passe Multiple](../multi-pass.md)** - Répéter les coupes pour les matériaux épais
+- **[Entrée/Sortie](../lead-in-out.md)** - Ajouter des mouvements d'approche et de sortie à puissance nulle pour des extrémités de coupe plus propres
 
 ### Compensation de Kerf
 
@@ -175,7 +175,7 @@ Le kerf est la largeur du matériau retiré par le faisceau laser :
 3. Pour les pièces : décalez **vers l'intérieur** de kerf/2
 4. Pour les trous : décalez **vers l'extérieur** de kerf/2
 
-Voir [Kerf](../kerf) pour un guide détaillé.
+Voir [Kerf](../kerf.md) pour un guide détaillé.
 
 ## Conseils & Meilleures Pratiques
 
@@ -217,7 +217,7 @@ Voir [Kerf](../kerf) pour un guide détaillé.
 
 ### Les pièces tombent pendant la coupe
 
-- **Ajoutez :** [Ponts de maintien](../holding-tabs)
+- **Ajoutez :** [Ponts de maintien](../holding-tabs.md)
 - **Utilisez :** L'optimisation de l'ordre de coupe
 - **Coupez :** Les caractéristiques intérieures avant l'extérieur
 - **Assurez-vous :** Le matériau est plat et sécurisé
@@ -272,6 +272,6 @@ M5                  ; Laser éteint
 ## Sujets Connexes
 
 - **[Gravure](engrave)** - Remplir des zones avec des motifs de gravure
-- **[Ponts de Maintien](../holding-tabs)** - Maintenir les pièces sécurisées pendant la coupe
-- **[Kerf](../kerf)** - Améliorer la précision de coupe
+- **[Ponts de Maintien](../holding-tabs.md)** - Maintenir les pièces sécurisées pendant la coupe
+- **[Kerf](../kerf.md)** - Améliorer la précision de coupe
 - **[Grille de Test de Matériau](material-test-grid)** - Trouver les paramètres puissance/vitesse optimaux

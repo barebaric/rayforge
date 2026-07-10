@@ -56,5 +56,5 @@ sistema de coordenadas de trabalho na sua máquina.
 
 ## Tópicos relacionados
 
-- [Sistemas de coordenadas](../general-info/coordinate-systems) - Entender coordenadas da máquina e deslocamentos de trabalho
-- [Posicionamento de workpieces](../features/workpiece-positioning) - Posicionar workpieces na tela
+- [Sistemas de coordenadas](../general-info/coordinate-systems.md) - Entender coordenadas da máquina e deslocamentos de trabalho
+- [Posicionamento de workpieces](../features/workpiece-positioning.md) - Posicionar workpieces na tela

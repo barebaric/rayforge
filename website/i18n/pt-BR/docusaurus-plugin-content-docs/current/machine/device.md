@@ -276,7 +276,7 @@ Faça backup das suas configurações após qualquer calibração ou ajuste. Arm
 
 - [Configurações Gerais](general) - Nome da máquina e configurações de velocidade
 - [Configurações do Laser](laser) - Configuração da cabeça do laser
-- [Solução de Problemas de Conexão](../troubleshooting/connection) - Corrigindo problemas de conexão
+- [Solução de Problemas de Conexão](../troubleshooting/connection.md) - Corrigindo problemas de conexão
 
 ## Recursos Externos
 

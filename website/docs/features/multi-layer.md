@@ -110,10 +110,10 @@ place during engraving.
 
 ## Related Pages
 
-- [Operations](./operations/contour) - Operation types for layer
+- [Operations](./operations/contour.md) - Operation types for layer
   workflows
 
-- [Macros & Hooks](../machine/hooks-macros) - Layer-level hooks for
+- [Macros & Hooks](../machine/hooks-macros.md) - Layer-level hooks for
   automation
-- [3D Preview](../ui/3d-preview) - Visualize layer stack
-- [Asset Browser](../ui/bottom-panel) - Managing assets with context menus
+- [3D Preview](../ui/3d-preview.md) - Visualize layer stack
+- [Asset Browser](../ui/bottom-panel.md) - Managing assets with context menus

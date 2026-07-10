@@ -86,7 +86,7 @@ Passe an, was du siehst:
 
 :::tip Farben pro Laser
 Bei Maschinen mit mehreren Laserköpfen kann jeder Laser eigene Schnitt- und
-Rasterfarben haben, die in den [Lasereinstellungen](../machine/laser)
+Rasterfarben haben, die in den [Lasereinstellungen](../machine/laser.md)
 konfiguriert werden. Dies erleichtert die Identifizierung, welcher Laser
 welche Operation ausführt.
 :::
@@ -95,7 +95,7 @@ welche Operation ausführt.
 
 Die 3D-Ansicht rendert ein Modell deines Laserkopfes, das während der
 Simulation dem Werkzeugweg folgt. Du kannst jedem Laserkopf ein 3D-Modell
-auf der Seite [Lasereinstellungen](../machine/laser) in den
+auf der Seite [Lasereinstellungen](../machine/laser.md) in den
 Maschineneinstellungen zuweisen. Skalierung, Rotation und Fokusabstand des
 Modells können an dein physisches Setup angepasst werden.
 
@@ -139,7 +139,7 @@ Vor dem Senden an die Maschine verifizieren:
 
 Einige zusätzliche Prüfungen werden automatisch durchgeführt. Wenn du einen
 Auftrag ausführst oder exportierst, führt Rayforge
-[Plausibilitätsprüfungen](../features/sanity-checks) durch, die
+[Plausibilitätsprüfungen](../features/sanity-checks.md) durch, die
 Maschinenausmaße, Arbeitsbereichgrenzen und No-Go-Zonen-Kollisionen
 überprüfen.
 
@@ -168,6 +168,6 @@ Für große oder komplexe Aufträge:
 
 **Verwandte Seiten:**
 
-- [Werkstückkoordinatensysteme](../general-info/coordinate-systems) - WCS
+- [Werkstückkoordinatensysteme](../general-info/coordinate-systems.md) - WCS
 - [Hauptfenster](main-window) - Hauptoberflächenübersicht
 - [Einstellungen](settings) - Anwendungseinstellungen

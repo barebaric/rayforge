@@ -123,6 +123,6 @@ máquina atualmente selecionada e seu dialeto G-code.
 
 - [Importando Arquivos](importing) - Trazendo designs para o Rayforge
 - [Formatos Suportados](formats) - Detalhes de formatos de arquivo
-- [Dialeto G-code](../reference/gcode-dialects) - Diferenças de dialeto
-- [Hooks & Macros](../machine/hooks-macros) - Personalizando a saída
-- [Visualização 3D](../ui/3d-preview) - Visualizar antes de exportar
+- [Dialeto G-code](../reference/gcode-dialects.md) - Diferenças de dialeto
+- [Hooks & Macros](../machine/hooks-macros.md) - Personalizando a saída
+- [Visualização 3D](../ui/3d-preview.md) - Visualizar antes de exportar

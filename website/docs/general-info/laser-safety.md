@@ -97,8 +97,8 @@ Most enclosed laser systems don't require goggles during normal operation **if t
 
 Rayforge provides tools to help operate safely:
 
-- **[3D Preview](../ui/3d-preview)** - Preview jobs before running to identify issues
-- **[Material Test Grid](../features/operations/material-test-grid)** - Find safe settings for new materials
+- **[3D Preview](../ui/3d-preview.md)** - Preview jobs before running to identify issues
+- **[Material Test Grid](../features/operations/material-test-grid.md)** - Find safe settings for new materials
 - **Frame Job** - Verify positioning before cutting
 
 **These features help prevent errors but don't replace safe operating practices.**
@@ -212,8 +212,8 @@ Before every job:
 
 ## Related Pages
 
-- **[3D Preview](../ui/3d-preview)** - Preview jobs safely
-- **[Material Test Grid](../features/operations/material-test-grid)** - Find safe settings
+- **[3D Preview](../ui/3d-preview.md)** - Preview jobs safely
+- **[Material Test Grid](../features/operations/material-test-grid.md)** - Find safe settings
 - **[G-code Basics](gcode-basics)** - Understanding laser control commands
 
 ---

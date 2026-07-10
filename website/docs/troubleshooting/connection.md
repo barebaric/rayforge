@@ -310,5 +310,5 @@ If you've tried everything above and still can't connect:
 
 - [Snap Permissions](snap-permissions) - Linux Snap permission setup
 - [Debug Mode](debug) - Enable diagnostic logging
-- [General Settings](../machine/general) - Machine setup guide
-- [Device Settings](../machine/device) - GRBL configuration reference
+- [General Settings](../machine/general.md) - Machine setup guide
+- [Device Settings](../machine/device.md) - GRBL configuration reference

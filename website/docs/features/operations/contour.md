@@ -144,7 +144,7 @@ for:
 Overcut applies to both outer contours and internal holes.
 
 :::tip Lead-In/Out vs Overcut
-[Lead-In/Out](../lead-in-out) adds zero-power approach and exit moves before
+[Lead-In/Out](../lead-in-out.md) adds zero-power approach and exit moves before
 and after the cut path. Overcut extends the cut path itself past the
 junction. They can be used together for optimal cut quality.
 :::
@@ -155,12 +155,12 @@ junction. They can be used together for optimal cut quality.
 
 Contour operations support several post-processing options:
 
-- **[Smooth Path](../smooth)** - Reduce jagged edges in cutting paths
-- **[Holding Tabs](../holding-tabs)** - Keep cut pieces attached to stock material
-- **[Crop to Stock](../crop-to-stock)** - Limit cuts to material boundary
-- **[Path Optimization](../path-optimization)** - Reduce travel distance between cuts
-- **[Multi-Pass](../multi-pass)** - Repeat cuts for thick materials
-- **[Lead-In/Out](../lead-in-out)** - Add zero-power approach and exit moves for cleaner cut ends
+- **[Smooth Path](../smooth.md)** - Reduce jagged edges in cutting paths
+- **[Holding Tabs](../holding-tabs.md)** - Keep cut pieces attached to stock material
+- **[Crop to Stock](../crop-to-stock.md)** - Limit cuts to material boundary
+- **[Path Optimization](../path-optimization.md)** - Reduce travel distance between cuts
+- **[Multi-Pass](../multi-pass.md)** - Repeat cuts for thick materials
+- **[Lead-In/Out](../lead-in-out.md)** - Add zero-power approach and exit moves for cleaner cut ends
 
 ### Retracing with Custom Threshold
 
@@ -198,7 +198,7 @@ Kerf is the width of material removed by the laser beam:
 3. For parts: offset **inside** by kerf/2
 4. For holes: offset **outside** by kerf/2
 
-See [Kerf](../kerf) for detailed guide.
+See [Kerf](../kerf.md) for detailed guide.
 
 ## Tips & Best Practices
 
@@ -240,7 +240,7 @@ See [Kerf](../kerf) for detailed guide.
 
 ### Parts fall out during cutting
 
-- **Add:** [Holding tabs](../holding-tabs)
+- **Add:** [Holding tabs](../holding-tabs.md)
 - **Use:** Cutting order optimization
 - **Cut:** Inside features before outside
 - **Ensure:** Material is flat and secured
@@ -295,6 +295,6 @@ M5                  ; Laser off
 ## Related Topics
 
 - **[Engrave](engrave)** - Filling areas with engraving patterns
-- **[Holding Tabs](../holding-tabs)** - Keeping parts secured during cutting
-- **[Kerf](../kerf)** - Improving cut accuracy
+- **[Holding Tabs](../holding-tabs.md)** - Keeping parts secured during cutting
+- **[Kerf](../kerf.md)** - Improving cut accuracy
 - **[Material Test Grid](material-test-grid)** - Finding optimal power/speed settings

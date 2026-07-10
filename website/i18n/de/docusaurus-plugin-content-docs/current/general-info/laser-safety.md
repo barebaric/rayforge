@@ -93,8 +93,8 @@ Die meisten geschlossenen Lasersysteme erfordern keine Schutzbrille während des
 
 Rayforge bietet Werkzeuge zur sicheren Bedienung:
 
-- **[3D-Vorschau](../ui/3d-preview)** – Aufträge vor dem Ausführen voranschauen, um Probleme zu erkennen
-- **[Materialtestraster](../features/operations/material-test-grid)** – Sichere Einstellungen für neue Materialien finden
+- **[3D-Vorschau](../ui/3d-preview.md)** – Aufträge vor dem Ausführen voranschauen, um Probleme zu erkennen
+- **[Materialtestraster](../features/operations/material-test-grid.md)** – Sichere Einstellungen für neue Materialien finden
 - **Rahmen-Scan** – Positionierung vor dem Schneiden überprüfen
 
 **Diese Funktionen helfen, Fehler zu vermeiden, ersetzen aber keine sicheren Betriebspraktiken.**
@@ -208,8 +208,8 @@ Vor jedem Auftrag:
 
 ## Verwandte Seiten
 
-- **[3D-Vorschau](../ui/3d-preview)** – Aufträge sicher voranschauen
-- **[Materialtestraster](../features/operations/material-test-grid)** – Sichere Einstellungen finden
+- **[3D-Vorschau](../ui/3d-preview.md)** – Aufträge sicher voranschauen
+- **[Materialtestraster](../features/operations/material-test-grid.md)** – Sichere Einstellungen finden
 - **[G-Code-Grundlagen](gcode-basics)** – Lasersteuerungsbefehle verstehen
 
 ---

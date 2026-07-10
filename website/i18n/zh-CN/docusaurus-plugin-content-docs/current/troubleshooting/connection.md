@@ -304,5 +304,5 @@ Rayforge 设计用于兼容 GRBL 的固件。确保您的控制器运行：
 
 - [Snap 权限](snap-permissions) - Linux Snap 权限设置
 - [调试模式](debug) - 启用诊断日志
-- [常规设置](../machine/general) - 机器设置指南
-- [设备设置](../machine/device) - GRBL 配置参考
+- [常规设置](../machine/general.md) - 机器设置指南
+- [设备设置](../machine/device.md) - GRBL 配置参考

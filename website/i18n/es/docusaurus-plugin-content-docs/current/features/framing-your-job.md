@@ -87,7 +87,7 @@ Si su máquina tiene soporte de cámara, puede:
 3. **Ajustar la posición** virtualmente antes de enmarcar
 4. **Enmarcar para confirmar** la alineación física
 
-Consulte [Integración de cámara](../machine/camera) para más detalles.
+Consulte [Integración de cámara](../machine/camera.md) para más detalles.
 
 ## Solución de problemas
 
@@ -114,5 +114,5 @@ en la configuración
 
 - [Posicionamiento de pieza](workpiece-positioning) - Guía completa de
   posicionamiento
-- [Integración de cámara](../machine/camera)
-- [Guía de inicio rápido](../getting-started/quick-start)
+- [Integración de cámara](../machine/camera.md)
+- [Guía de inicio rápido](../getting-started/quick-start.md)

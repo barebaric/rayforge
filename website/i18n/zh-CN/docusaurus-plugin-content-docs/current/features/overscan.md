@@ -125,5 +125,5 @@
 
 ## 相关主题
 
-- [雕刻操作](./operations/engrave) - 配置雕刻设置
-- [材料测试网格](./operations/material-test-grid) - 找到最佳功率/速度
+- [雕刻操作](./operations/engrave.md) - 配置雕刻设置
+- [材料测试网格](./operations/material-test-grid.md) - 找到最佳功率/速度

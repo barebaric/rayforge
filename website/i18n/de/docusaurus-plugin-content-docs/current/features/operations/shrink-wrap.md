@@ -183,7 +183,7 @@ Häufiger Workflow:
 - Zuerst: Details in Teile schneiden (während befestigt)
 - Zuletzt: Schrumpfumhüllung schneidet Gruppe frei
 
-Siehe [Mehrschicht-Workflow](../multi-layer) für Details.
+Siehe [Mehrschicht-Workflow](../multi-layer.md) für Details.
 
 ## Nachbearbeitung
 
@@ -191,12 +191,12 @@ Siehe [Mehrschicht-Workflow](../multi-layer) für Details.
 
 Schrumpfumhüllungs-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 
-- **[Pfad-Glättung](../smooth)** - Gezackte Kanten im Grenzpfad reduzieren
-- **[Halte-Laschen](../holding-tabs)** - Geschnittene Teile am Rohmaterial befestigt halten
-- **[Auf Rohmaterial zuschneiden](../crop-to-stock)** - Schnitte auf Materialgrenze beschränken
-- **[Pfad-Optimierung](../path-optimization)** - Verfahrdistanz reduzieren
-- **[Mehrfach-Durchgang](../multi-pass)** - Schnitte für dicke Materialien wiederholen
-- **[Ein-/Auslauf](../lead-in-out)** - Nullleistungszugänge und -abgänge für sauberere Schnittenden hinzufügen
+- **[Pfad-Glättung](../smooth.md)** - Gezackte Kanten im Grenzpfad reduzieren
+- **[Halte-Laschen](../holding-tabs.md)** - Geschnittene Teile am Rohmaterial befestigt halten
+- **[Auf Rohmaterial zuschneiden](../crop-to-stock.md)** - Schnitte auf Materialgrenze beschränken
+- **[Pfad-Optimierung](../path-optimization.md)** - Verfahrdistanz reduzieren
+- **[Mehrfach-Durchgang](../multi-pass.md)** - Schnitte für dicke Materialien wiederholen
+- **[Ein-/Auslauf](../lead-in-out.md)** - Nullleistungszugänge und -abgänge für sauberere Schnittenden hinzufügen
 
 ### Pfad-Optimierung
 
@@ -215,7 +215,7 @@ Der Grenzpfad wird optimiert für:
 ## Verwandte Themen
 
 - **[Kontur-Schneiden](contour)** - Individuelle Objektumrisse schneiden
-- **[Mehrschicht-Workflow](../multi-layer)** - Operationen effektiv kombinieren
-- **[Halte-Laschen](../holding-tabs)** - Teile während des Schneidens sichern
+- **[Mehrschicht-Workflow](../multi-layer.md)** - Operationen effektiv kombinieren
+- **[Halte-Laschen](../holding-tabs.md)** - Teile während des Schneidens sichern
 - **[3D-Vorschau](../ui/3d-preview)** - Schneidepfade vorschauen
 - **[Materialtest-Raster](material-test-grid)** - Optimale Schneideeinstellungen finden

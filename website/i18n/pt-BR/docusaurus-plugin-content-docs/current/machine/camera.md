@@ -390,8 +390,8 @@ sudo lsof /dev/video0
 
 ## Páginas Relacionadas
 
-- [Visualização 3D](../ui/3d-preview) — Visualizar execução com sobreposição
+- [Visualização 3D](../ui/3d-preview.md) — Visualizar execução com sobreposição
   de câmera
-- [Enquadramento de Trabalhos](../features/framing-your-job) — Verificar
+- [Enquadramento de Trabalhos](../features/framing-your-job.md) — Verificar
   posição do trabalho
 - [Configurações Gerais](general) — Configuração da máquina

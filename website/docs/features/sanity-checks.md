@@ -27,6 +27,6 @@ proceed.
 
 ## Related Pages
 
-- [No-Go Zones](../machine/nogo-zones) - Define restricted areas on the work
+- [No-Go Zones](../machine/nogo-zones.md) - Define restricted areas on the work
   surface
-- [3D View](../ui/3d-preview) - 3D toolpath visualization
+- [3D View](../ui/3d-preview.md) - 3D toolpath visualization

@@ -93,8 +93,8 @@ La plupart des systèmes laser fermés ne nécessitent pas de lunettes pendant l
 
 Rayforge fournit des outils pour aider à opérer en toute sécurité :
 
-- **[Aperçu 3D](../ui/3d-preview)** - Prévisualiser les travaux avant de les exécuter pour identifier les problèmes
-- **[Grille de test de matériau](../features/operations/material-test-grid)** - Trouver des paramètres sûrs pour nouveaux matériaux
+- **[Aperçu 3D](../ui/3d-preview.md)** - Prévisualiser les travaux avant de les exécuter pour identifier les problèmes
+- **[Grille de test de matériau](../features/operations/material-test-grid.md)** - Trouver des paramètres sûrs pour nouveaux matériaux
 - **Cadrer le travail** - Vérifier le positionnement avant la découpe
 
 **Ces fonctionnalités aident à prévenir les erreurs mais ne remplacent pas les pratiques d'exploitation sûres.**
@@ -208,8 +208,8 @@ Avant chaque travail :
 
 ## Pages connexes
 
-- **[Aperçu 3D](../ui/3d-preview)** - Prévisualiser les travaux en toute sécurité
-- **[Grille de test de matériau](../features/operations/material-test-grid)** - Trouver des paramètres sûrs
+- **[Aperçu 3D](../ui/3d-preview.md)** - Prévisualiser les travaux en toute sécurité
+- **[Grille de test de matériau](../features/operations/material-test-grid.md)** - Trouver des paramètres sûrs
 - **[Les bases du G-code](gcode-basics)** - Comprendre les commandes de contrôle laser
 
 ---

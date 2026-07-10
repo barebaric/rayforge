@@ -15,7 +15,7 @@ KI generiert ein Werkstück, das für deinen Lasercutter bereit ist.
 ## Voraussetzungen
 
 Bevor du dieses Addon verwendest, musst du einen KI-Anbieter konfigurieren.
-Siehe [KI-Anbieter](../application-settings/ai-provider) für
+Siehe [KI-Anbieter](../application-settings/ai-provider.md) für
 Einrichtungsanweisungen.
 
 ## Den Generator verwenden
@@ -47,5 +47,5 @@ Einrichtungsanweisungen.
 
 ## Verwandte Themen
 
-- [KI-Anbieter](../application-settings/ai-provider) - KI-Anbieter konfigurieren
-- [Skizzierer](../features/sketcher) - Formen manuell zeichnen
+- [KI-Anbieter](../application-settings/ai-provider.md) - KI-Anbieter konfigurieren
+- [Skizzierer](../features/sketcher.md) - Formen manuell zeichnen

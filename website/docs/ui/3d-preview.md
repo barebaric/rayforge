@@ -86,7 +86,7 @@ Customize what you see:
 
 :::tip Per-Laser Colors
 When using machines with multiple laser heads, each laser can have its own
-cut and raster colors configured in [Laser Settings](../machine/laser).
+cut and raster colors configured in [Laser Settings](../machine/laser.md).
 This makes it easy to identify which laser will perform each operation.
 :::
 
@@ -94,7 +94,7 @@ This makes it easy to identify which laser will perform each operation.
 
 The 3D view renders a model of your laser head that moves along the
 toolpath during simulation. You can assign a 3D model to each laser head
-in the [Laser Settings](../machine/laser) page of Machine Settings. The
+in the [Laser Settings](../machine/laser.md) page of Machine Settings. The
 model's scale, rotation, and focal distance can be adjusted to match your
 physical setup.
 
@@ -137,7 +137,7 @@ Before sending to machine, verify:
 - [ ] Holding tabs are in the correct locations
 
 Some additional checks are performed automatically. When you run or export
-a job, Rayforge runs [sanity checks](../features/sanity-checks) that verify
+a job, Rayforge runs [sanity checks](../features/sanity-checks.md) that verify
 machine extents, workarea boundaries, and no-go zone collisions.
 
 ## Performance Tips
@@ -165,6 +165,6 @@ For large or complex jobs:
 
 **Related Pages:**
 
-- [Work Coordinate Systems](../general-info/coordinate-systems) - WCS
+- [Work Coordinate Systems](../general-info/coordinate-systems.md) - WCS
 - [Main Window](main-window) - Main interface overview
 - [Settings](settings) - Application preferences

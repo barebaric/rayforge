@@ -18,7 +18,7 @@ your laser cutter.
 ## Requirements
 
 Before using this addon, you need to configure an AI provider. See
-[AI Provider](../application-settings/ai-provider) for setup instructions.
+[AI Provider](../application-settings/ai-provider.md) for setup instructions.
 
 ## Using the Generator
 
@@ -49,5 +49,5 @@ Before using this addon, you need to configure an AI provider. See
 
 ## Related Topics
 
-- [AI Provider](../application-settings/ai-provider) - Configure AI providers
-- [Sketcher](../features/sketcher) - Draw shapes manually
+- [AI Provider](../application-settings/ai-provider.md) - Configure AI providers
+- [Sketcher](../features/sketcher.md) - Draw shapes manually

@@ -591,6 +591,6 @@ Um Firmware-Support hinzuzufügen:
 ## Verwandte Seiten
 
 - [G-Code-Dialekte](gcode-dialects) - Dialekt-Details
-- [Geräteeinstellungen](../machine/device) - GRBL-Konfiguration
-- [Verbindungsprobleme](../troubleshooting/connection) - Verbindungs-Fehlerbehebung
-- [Allgemeine Einstellungen](../machine/general) - Maschineneinrichtung
+- [Geräteeinstellungen](../machine/device.md) - GRBL-Konfiguration
+- [Verbindungsprobleme](../troubleshooting/connection.md) - Verbindungs-Fehlerbehebung
+- [Allgemeine Einstellungen](../machine/general.md) - Maschineneinrichtung

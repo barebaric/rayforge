@@ -210,7 +210,7 @@ Bidirectional scanning is faster because the laser fires on every pass. However,
 - 2-5mm for most jobs
 - Larger for high speeds
 
-See [Overscan](../overscan) for details.
+See [Overscan](../overscan.md) for details.
 
 ## Post-Processing
 
@@ -218,9 +218,9 @@ See [Overscan](../overscan) for details.
 
 Engrave operations support several post-processing options:
 
-- **[Overscan](../overscan)** - Extend raster lines for consistent engraving quality
-- **[Path Optimization](../path-optimization)** - Reduce travel distance
-- **[Multi-Pass](../multi-pass)** - Repeat engraving for deeper results
+- **[Overscan](../overscan.md)** - Extend raster lines for consistent engraving quality
+- **[Path Optimization](../path-optimization.md)** - Reduce travel distance
+- **[Multi-Pass](../multi-pass.md)** - Repeat engraving for deeper results
 
 ## Mode-Specific Settings
 
@@ -433,6 +433,6 @@ Use invert for lithophanes (light areas should be thin) or embossing (raised are
 ## Related Topics
 
 - **[Contour Cutting](contour)** - Cutting outlines and shapes
-- **[Overscan](../overscan)** - Improving engraving quality
+- **[Overscan](../overscan.md)** - Improving engraving quality
 - **[Material Test Grid](material-test-grid)** - Finding optimal settings
-- **[Multi-Layer Workflow](../multi-layer)** - Combining engrave with other operations
+- **[Multi-Layer Workflow](../multi-layer.md)** - Combining engrave with other operations

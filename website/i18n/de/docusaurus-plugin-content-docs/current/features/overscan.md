@@ -125,5 +125,5 @@ Die Overscan-Distanz sollte der Maschine ermöglichen, **vollständig auf Zielge
 
 ## Verwandte Themen
 
-- [Gravur-Operationen](./operations/engrave) - Gravureinstellungen konfigurieren
-- [Materialtest-Raster](./operations/material-test-grid) - Optimale Leistung/Geschwindigkeit finden
+- [Gravur-Operationen](./operations/engrave.md) - Gravureinstellungen konfigurieren
+- [Materialtest-Raster](./operations/material-test-grid.md) - Optimale Leistung/Geschwindigkeit finden

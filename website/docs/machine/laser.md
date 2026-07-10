@@ -73,7 +73,7 @@ at low power to act as a "laser pointer" for positioning.
 :::tip Using Focus Mode
 Click the focus button (laser icon) in the toolbar to toggle focus mode. The
 laser will turn on at this power level, helping you see exactly where the laser
-is positioned. See [Workpiece Positioning](../features/workpiece-positioning)
+is positioned. See [Workpiece Positioning](../features/workpiece-positioning.md)
 for more information.
 :::
 
@@ -148,7 +148,7 @@ overridden per step if needed.
 #### 3D Model
 
 Each laser head can have a 3D model assigned to it. This model is rendered in
-the [3D view](../ui/3d-preview) and follows the toolpath during simulation.
+the [3D view](../ui/3d-preview.md) and follows the toolpath during simulation.
 
 Click the model selection row to browse available models. Once a model is
 selected, you can adjust its scale, rotation (X/Y/Z), and focal distance to
@@ -157,5 +157,5 @@ match your physical laser head.
 ## See Also
 
 - [Device Settings](device) - GRBL laser mode settings
-- [Workpiece Positioning](../features/workpiece-positioning) - Using
+- [Workpiece Positioning](../features/workpiece-positioning.md) - Using
   focus mode and other positioning methods

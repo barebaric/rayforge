@@ -56,5 +56,5 @@ change the work coordinate system offset on your machine.
 
 ## Related Topics
 
-- [Coordinate Systems](../general-info/coordinate-systems) - Understand machine coordinates and work offsets
-- [Workpiece Positioning](../features/workpiece-positioning) - Position workpieces on the canvas
+- [Coordinate Systems](../general-info/coordinate-systems.md) - Understand machine coordinates and work offsets
+- [Workpiece Positioning](../features/workpiece-positioning.md) - Position workpieces on the canvas

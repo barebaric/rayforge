@@ -38,7 +38,7 @@ The machine dropdown shows your machine's connection status and current state
 displays an estimated time remaining.
 
 The WCS dropdown allows you to quickly switch between coordinate systems.
-See [Work Coordinate Systems](../general-info/coordinate-systems) for
+See [Work Coordinate Systems](../general-info/coordinate-systems.md) for
 more information.
 
 Visibility toggles for workpieces, tabs, camera feed, travel moves, and
@@ -122,7 +122,7 @@ Customize the interface in **Edit → Settings**:
 
 **Related Pages:**
 
-- [Work Coordinate Systems](../general-info/coordinate-systems) - WCS
+- [Work Coordinate Systems](../general-info/coordinate-systems.md) - WCS
 - [Canvas Tools](canvas-tools) - Tools for manipulating designs
 - [Bottom Panel](bottom-panel) - Manual machine control, status, and logs
 - [3D View](3d-preview) - Visualize toolpaths in 3D
