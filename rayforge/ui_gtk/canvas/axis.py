@@ -4,12 +4,13 @@ from typing import TYPE_CHECKING, Optional, Tuple
 
 import cairo
 import numpy as np
+from raygeo.geo import Matrix
 
-from ...core.matrix import Matrix
 from ...pipeline.coordspace import OriginCorner
 
 if TYPE_CHECKING:
     from raygeo.geo.types import Point3D
+
     from ...pipeline.coordspace import CoordinateSpace
 
 

@@ -6,9 +6,10 @@ from gettext import gettext as _
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterator, List, Optional
 
+from raygeo.geo import Matrix
+
 from rayforge import const
 from rayforge.core.item import DocItem
-from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.base_importer import (

@@ -9,6 +9,7 @@ from pathlib import Path
 
 import cv2
 from gi.repository import GLib
+from utils import open_machine_settings, run_on_main_thread, take_screenshot
 
 from rayforge.camera.models.camera import Camera
 from rayforge.context import get_context
@@ -21,7 +22,6 @@ from rayforge.ui_gtk.camera.lens_calibration_dialog import (
     LensCalibrationDialog,
 )
 from rayforge.uiscript import app, win
-from utils import open_machine_settings, run_on_main_thread, take_screenshot
 
 logger = logging.getLogger(__name__)
 

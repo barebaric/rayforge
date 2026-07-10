@@ -4,9 +4,9 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+from raygeo.geo import Matrix
 from raygeo.ops import Ops
 
-from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
 from rayforge.shared.tasker.progress import ProgressContext
@@ -88,7 +88,6 @@ class CropTransformer(OpsTransformer):
             return
 
         world_to_local = workpiece.get_world_transform().invert()
-        transform_matrix = world_to_local.to_4x4_numpy()
         regions = []
 
         wp_size = workpiece.size
@@ -97,9 +96,9 @@ class CropTransformer(OpsTransformer):
         for stock_geo in stock_geometries:
             if self._offset != 0.0:
                 stock_geo = stock_geo.grow(self._offset)
-            local_geo = stock_geo.transform(transform_matrix)
+            local_geo = stock_geo.transform(world_to_local)
             if wp_size:
-                scale_matrix = Matrix.scale(scale_x, scale_y).to_4x4_numpy()
+                scale_matrix = Matrix.scale(scale_x, scale_y)
                 local_geo = local_geo.transform(scale_matrix)
             polygons = local_geo.to_polygons(self._tolerance)
             regions.extend(p for p in polygons if len(p) >= 3)

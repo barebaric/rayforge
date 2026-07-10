@@ -3,11 +3,10 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.ops import Ops
 
 from rayforge.context import get_context
-from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.step import Step

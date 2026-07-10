@@ -10,20 +10,20 @@ from pathlib import Path
 from rayforge.core.hooks import hookimpl
 
 from .producers import (
-    WavefrontProducer,
     ContourProducer,
     FrameProducer,
     MaterialTestGridProducer,
     Rasterizer,
     ShrinkWrapProducer,
+    WavefrontProducer,
 )
 from .steps import (
-    WavefrontStep,
     ContourStep,
     EngraveStep,
     FrameStep,
     MaterialTestStep,
     ShrinkWrapStep,
+    WavefrontStep,
 )
 
 _localedir = Path(__file__).parent.parent / "locale"

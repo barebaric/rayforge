@@ -8,8 +8,8 @@ from gi.repository import Adw, Gtk
 from ...context import get_context
 from ...core.capability import Capability, LaserHeadVar
 from ...core.step import Step
-from ...core.varset import VarSet
 from ...core.undo import ChangePropertyCommand, HistoryManager
+from ...core.varset import VarSet
 from ...pipeline.producer import OpsProducer
 from ...pipeline.producer.placeholder import PlaceholderProducer
 from ...pipeline.transformer import OpsTransformer

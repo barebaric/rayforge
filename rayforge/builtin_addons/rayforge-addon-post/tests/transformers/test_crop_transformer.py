@@ -2,11 +2,10 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 from post_processors.transformers import CropTransformer
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.ops import Ops
 from raygeo.ops.types import CommandCategory, CommandType
 
-from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.transformer.base import ExecutionPhase
 

@@ -3,11 +3,11 @@ from typing import Dict, Optional
 
 import pytest
 from blinker import Signal
+from raygeo.geo import Matrix
 
 from rayforge.core.doc import Doc
 from rayforge.core.group import Group
 from rayforge.core.item import DocItem
-from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
 
 

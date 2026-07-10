@@ -1,10 +1,9 @@
 from typing import Dict, List, Optional, Tuple
 
 import pytest
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
 
-from rayforge.core.matrix import Matrix
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.image.engine import NormalizationEngine
 from rayforge.image.structures import (

@@ -4,9 +4,9 @@ from gettext import gettext as _
 from typing import Optional, Tuple, Union
 
 from gi.repository import Adw, Gtk
+from raygeo.geo import Matrix
 
 from rayforge.core.group import Group
-from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
 from rayforge.machine.cmd import MachineCmd

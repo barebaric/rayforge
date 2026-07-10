@@ -4,10 +4,11 @@ from collections import defaultdict
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Dict, List, Optional
 
+from raygeo.geo import Matrix
+
 from ..core.group import Group, GroupingResult
 from ..core.item import DocItem
 from ..core.layer import Layer
-from ..core.matrix import Matrix
 from ..core.undo.command import Command
 
 if TYPE_CHECKING:

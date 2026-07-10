@@ -6,8 +6,7 @@ from gettext import gettext as _
 from typing import List
 
 import ezdxf
-from raygeo.geo import Geometry
-from raygeo.geo import Arc, Bezier, Line, Move
+from raygeo.geo import Arc, Bezier, Geometry, Line, Move
 from raygeo.geo.shape.arc import get_arc_angles
 from raygeo.geo.shape.bezier import linearize_bezier_segment
 

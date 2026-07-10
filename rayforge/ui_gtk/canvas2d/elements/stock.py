@@ -2,8 +2,8 @@ import logging
 from typing import Optional
 
 import cairo
+from raygeo.geo import Matrix
 
-from ....core.matrix import Matrix
 from ....core.stock import StockItem
 from ....image.geo_renderer import geometry_to_cairo
 from ...canvas import CanvasElement

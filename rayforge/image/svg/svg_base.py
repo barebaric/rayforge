@@ -6,11 +6,10 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 from xml.etree import ElementTree as ET
 
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
 from raygeo.svg import extract_svg_metadata, svg_string_to_geometry
 
-from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import PassthroughSpec
 from ..base_importer import (
@@ -386,6 +385,6 @@ class SvgImporterBase(Importer):
         if translate_to_origin and not geo.is_empty():
             min_x, min_y, _, _ = geo.rect()
             translate_matrix = Matrix.translation(-min_x, -min_y)
-            geo.transform(translate_matrix.to_4x4_numpy())
+            geo.transform(translate_matrix)
 
         return geo

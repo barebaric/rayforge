@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+from raygeo.geo import Matrix
 
 from rayforge.core.capability import (
     CUT,
@@ -9,7 +10,6 @@ from rayforge.core.capability import (
     PWMCapability,
 )
 from rayforge.core.doc import Doc
-from rayforge.core.matrix import Matrix
 from rayforge.core.step import Step
 from rayforge.core.varset import FloatVar, VarSet
 

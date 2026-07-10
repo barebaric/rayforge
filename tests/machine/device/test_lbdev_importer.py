@@ -6,8 +6,8 @@ import pytest
 import yaml
 
 from rayforge.machine.device.lightburn_importer import (
-    ImportSummary,
     _DEFAULT_GRBL_DIALECT,
+    ImportSummary,
     _map_driver,
     _map_origin,
     convert_to_profile,
@@ -18,7 +18,6 @@ from rayforge.machine.device.manager import (
     MANIFEST_FILENAME,
     DeviceProfileManager,
 )
-
 from rayforge.machine.models.machine import Origin
 
 ASSETS_DIR = Path(__file__).parent / "assets"

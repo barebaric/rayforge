@@ -5,9 +5,9 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
+from raygeo.geo import Matrix
 from raygeo.ops import Ops
 
-from ...core.matrix import Matrix
 from ...core.workpiece import WorkPiece
 from ...shared.tasker.progress import ProgressContext, set_progress
 from ..artifact import (
@@ -83,7 +83,7 @@ def _process_artifact(
     workpiece_placement_matrix = _create_workpiece_placement_matrix(
         tx, ty, angle, sy, skew
     )
-    ops.transform(workpiece_placement_matrix.to_4x4_numpy())
+    ops.transform(workpiece_placement_matrix)
 
     return ops
 

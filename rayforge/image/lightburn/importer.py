@@ -17,15 +17,16 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
-from ...core.matrix import Matrix
+from raygeo.geo import Matrix
+
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
     TraceSpec,
     VectorizationSpec,
 )
+from ...image import util
 from ...image.geo_renderer import render_geometry_to_png
 from ...image.tracing import trace_surface
-from ...image import util
 from ..base_importer import (
     Importer,
     ImporterFeature,
@@ -112,7 +113,7 @@ def _apply_xform_to_geo(geo: Geometry, xform: Matrix) -> Geometry:
     if xform.is_identity():
         return geo
     geo = geo.copy()
-    geo.transform(xform.to_4x4_numpy())
+    geo.transform(xform)
     return geo
 
 
@@ -472,14 +473,7 @@ class LightBurnImporter(Importer):
 
         for bm in self._bitmaps:
             hw, hh = bm.width / 2.0, bm.height / 2.0
-            a, b, c, d, tx, ty = (
-                bm.xform.m[0, 0],
-                bm.xform.m[1, 0],
-                bm.xform.m[0, 1],
-                bm.xform.m[1, 1],
-                bm.xform.m[0, 2],
-                bm.xform.m[1, 2],
-            )
+            a, b, c, d, tx, ty = bm.xform.for_cairo()
             data_url = "data:image/png;base64," + base64.b64encode(
                 bm.png_data
             ).decode("ascii")

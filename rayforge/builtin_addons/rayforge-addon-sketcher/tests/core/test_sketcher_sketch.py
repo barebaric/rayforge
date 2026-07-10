@@ -3,8 +3,9 @@ import uuid
 from pathlib import Path
 
 import pytest
-from raygeo.geo import Geometry
-from raygeo.geo import Arc as GeoArc, Line as GeoLine, Move
+from raygeo.geo import Arc as GeoArc
+from raygeo.geo import Geometry, Move
+from raygeo.geo import Line as GeoLine
 from sketcher.core import Sketch
 from sketcher.core.constraints import (
     CoincidentConstraint,

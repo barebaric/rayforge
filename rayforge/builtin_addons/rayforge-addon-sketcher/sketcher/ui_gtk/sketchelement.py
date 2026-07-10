@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING, List, Optional, cast
 
 import cairo
 from blinker import Signal
+from raygeo.geo import Matrix
 
-from rayforge.core.matrix import Matrix
 from rayforge.ui_gtk.canvas import CanvasElement
 
 from ..core.entities import Line

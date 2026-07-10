@@ -2,11 +2,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
 
 from ..core.color import ColorRGBA
-from ..core.matrix import Matrix
 
 if TYPE_CHECKING:
     from ..core.asset import IAsset

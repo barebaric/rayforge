@@ -1,9 +1,9 @@
 import logging
 from typing import Any, Dict, List, Optional
 
+from raygeo.geo import Matrix
 from raygeo.geo.types import Rect
 
-from ..core.matrix import Matrix
 from ..core.vectorization_spec import (
     LayerImportMode,
     PassthroughSpec,

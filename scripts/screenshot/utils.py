@@ -16,7 +16,6 @@ from threading import Event
 from typing import (
     TYPE_CHECKING,
     Callable,
-    Generator,
     List,
     Optional,
     Tuple,

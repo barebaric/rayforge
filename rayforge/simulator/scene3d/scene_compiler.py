@@ -14,12 +14,13 @@ from dataclasses import dataclass, field
 from typing import Callable, List, Optional, Tuple
 
 import numpy as np
+from raygeo.geo.algo.cylindrical import transform_to_cylinder
 from raygeo.geo.shape.arc import linearize_arc
 from raygeo.geo.shape.bezier import linearize_bezier_segment
-from raygeo.ops import Ops
-from raygeo.geo.algo.cylindrical import transform_to_cylinder
 from raygeo.image import rasterize_scanlines as _rasterize_scanlines_shared
+from raygeo.ops import Ops
 from raygeo.ops.types import CommandType
+
 from .compiled_scene import (
     CompiledSceneArtifact,
     ScanlineOverlayLayer,

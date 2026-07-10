@@ -5,19 +5,19 @@ Provides settings widgets for the producers in this addon.
 """
 
 from ..producers import (
-    WavefrontProducer,
     ContourProducer,
     FrameProducer,
     MaterialTestGridProducer,
     Rasterizer,
     ShrinkWrapProducer,
+    WavefrontProducer,
 )
-from .wavefront_widget import WavefrontSettingsWidget
 from .contour_widget import ContourProducerSettingsWidget
 from .frame_widget import FrameProducerSettingsWidget
 from .material_test_grid_widget import MaterialTestGridSettingsWidget
 from .raster_widget import RasterSettingsWidget
 from .shrinkwrap_widget import ShrinkWrapProducerSettingsWidget
+from .wavefront_widget import WavefrontSettingsWidget
 
 PRODUCER_WIDGETS = {
     WavefrontProducer: WavefrontSettingsWidget,

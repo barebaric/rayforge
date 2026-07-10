@@ -5,10 +5,9 @@ import math
 from gettext import gettext as _
 from typing import Any, Dict, Optional
 
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
 
-from ...core.matrix import Matrix
 from ...core.vectorization_spec import (
     TraceSpec,
     VectorizationSpec,
@@ -188,7 +187,7 @@ class SvgTraceImporter(SvgImporterBase):
         # Shift the geometry to match the original world position
         if not combined_geo.is_empty():
             shift_matrix = Matrix.translation(offset_x_px, offset_y_px)
-            combined_geo.transform(shift_matrix.to_4x4_numpy())
+            combined_geo.transform(shift_matrix)
 
         trace_document_bounds = (
             offset_x_px,

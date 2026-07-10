@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import cairo
 import numpy as np
+from raygeo.geo import Matrix
 from raygeo.ops import Ops
 from raygeo.ops.types import SectionType
 
-from rayforge.core.matrix import Matrix
 from rayforge.image.hull import get_concave_hull
 from rayforge.image.tracing import prepare_surface
 from rayforge.pipeline.artifact import WorkPieceArtifact
@@ -103,7 +103,7 @@ class ShrinkWrapProducer(OpsProducer):
                 scale_x = width_mm / px_width
                 scale_y = height_mm / px_height
                 scaling_matrix = Matrix.scale(scale_x, scale_y)
-                hull_geometry.transform(scaling_matrix.to_4x4_numpy())
+                hull_geometry.transform(scaling_matrix)
 
             # 4. Normalize winding order BEFORE offsetting (grow). This ensures
             #    that a positive offset correctly expands the shape.

@@ -1,6 +1,7 @@
 import pytest
-from raygeo.geo import Geometry
-from raygeo.geo import Bezier as GeoBezier, Line as GeoLine, Move
+from raygeo.geo import Bezier as GeoBezier
+from raygeo.geo import Geometry, Move
+from raygeo.geo import Line as GeoLine
 from sketcher.core.entities import Bezier
 from sketcher.core.registry import EntityRegistry
 

@@ -8,11 +8,10 @@ import cairo
 import cv2
 import numpy as np
 import vtracer
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.image import denoise_binary, grayscale_to_binary
 from raygeo.svg import svg_string_to_geometries
 
-from ..core.matrix import Matrix
 from ..core.vectorization_spec import TraceSpec, VectorizationSpec
 from .hull import get_enclosing_hull, get_hulls_from_image
 from .util.srgb import resize_linear_nd
@@ -436,7 +435,7 @@ def _apply_upscaling(
         logger.debug(f"Upscaling traced geometry by {upscale_x}, {upscale_y}")
         upscale_matrix = Matrix.scale(upscale_x, upscale_y)
         for geo in geometries:
-            geo.transform(upscale_matrix.to_4x4_numpy())
+            geo.transform(upscale_matrix)
     return geometries
 
 

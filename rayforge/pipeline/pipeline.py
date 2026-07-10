@@ -15,13 +15,13 @@ from typing import (
 )
 
 from blinker import Signal
+from raygeo.geo import Matrix
 from raygeo.ops import Ops
 
 from ..core.doc import Doc
 from ..core.group import Group
 from ..core.item import DocItem
 from ..core.layer import Layer
-from ..core.matrix import Matrix
 from ..core.step import Step
 from ..core.stock import StockItem
 from ..core.workflow import Workflow

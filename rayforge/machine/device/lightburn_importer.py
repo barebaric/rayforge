@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from ...machine.models.machine import Origin
-
 from .profile import (
     DeviceMeta,
     DeviceProfile,

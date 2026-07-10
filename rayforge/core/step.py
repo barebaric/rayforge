@@ -13,12 +13,12 @@ from typing import (
 )
 
 from blinker import Signal
+from raygeo.geo import Matrix
 
 from ..pipeline.transformer.registry import transformer_registry
 from ..shared.units.formatter import format_value
 from .capability import Capability
 from .item import DocItem
-from .matrix import Matrix
 from .step_registry import step_registry
 
 if TYPE_CHECKING:

@@ -8,10 +8,9 @@ from typing import Any, Dict, Optional, Tuple
 import cairo
 import numpy
 import pyvips
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
 
-from ...core.matrix import Matrix
 from ..geo_renderer import geometry_to_cairo
 from .cairo_util import rgba_to_cairo_surface
 
@@ -263,7 +262,7 @@ def apply_mask_to_vips_image(
 
     scaled_mask = mask_geo.copy()
     scale_matrix = Matrix.scale(rgba_image.width, rgba_image.height)
-    scaled_mask.transform(scale_matrix.to_4x4_numpy())
+    scaled_mask.transform(scale_matrix)
 
     mask_vips = _render_geometry_to_vips_mask(
         scaled_mask, rgba_image.width, rgba_image.height

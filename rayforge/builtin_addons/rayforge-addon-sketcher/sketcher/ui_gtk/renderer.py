@@ -5,11 +5,10 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Optional, Set
 
 import cairo
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Point as GeoPoint
 
 from rayforge.core.geo_helpers import geometry_from_text
-from rayforge.core.matrix import Matrix
 from rayforge.image.geo_renderer import geometry_to_cairo
 from rayforge.ui_gtk.canvas import WorldSurface
 

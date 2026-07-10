@@ -3,11 +3,11 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from gi.repository import Gtk
+from raygeo.geo import Matrix
 
 from ...context import get_context
 from ...core.group import Group
 from ...core.item import DocItem
-from ...core.matrix import Matrix
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
 from ..shared.expander import Expander

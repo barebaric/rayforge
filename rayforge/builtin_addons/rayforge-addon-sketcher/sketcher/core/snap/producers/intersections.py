@@ -1,8 +1,10 @@
 import math
 from typing import TYPE_CHECKING, Iterator
 
-from raygeo.geo.shape.circle import get_circle_circle_intersections
-from raygeo.geo.shape.circle import get_line_circle_intersections
+from raygeo.geo.shape.circle import (
+    get_circle_circle_intersections,
+    get_line_circle_intersections,
+)
 from raygeo.geo.shape.line import get_line_segment_intersection
 from raygeo.geo.types import Point as GeoPoint
 

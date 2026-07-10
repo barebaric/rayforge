@@ -2,8 +2,7 @@ from unittest.mock import ANY, MagicMock
 
 import cairo
 import numpy as np
-from raygeo.geo import Geometry
-from raygeo.geo import Line, Move
+from raygeo.geo import Geometry, Line, Move
 
 from rayforge.image.tracing import (
     trace_color_image,

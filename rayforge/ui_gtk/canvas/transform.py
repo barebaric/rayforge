@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import math
-from typing import Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
-from ...core.matrix import Matrix
+from raygeo.geo import Matrix
+
 from .element import CanvasElement
 from .region import ElementRegion
 

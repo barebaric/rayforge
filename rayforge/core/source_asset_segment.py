@@ -4,10 +4,9 @@ from copy import deepcopy
 from dataclasses import dataclass, field, replace
 from typing import Any, Dict, List, Optional
 
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
 
-from .matrix import Matrix
 from .vectorization_spec import VectorizationSpec
 
 # A type alias for a list of serializable modifier configurations.

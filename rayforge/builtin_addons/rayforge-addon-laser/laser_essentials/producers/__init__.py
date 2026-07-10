@@ -4,7 +4,6 @@ Laser Essentials Producers.
 Provides producer implementations for laser cutting operations.
 """
 
-from .wavefront_producer import WavefrontProducer
 from .contour_producer import ContourProducer, CutOrder
 from .frame_producer import FrameProducer
 from .material_test_grid_producer import (
@@ -16,6 +15,7 @@ from .material_test_grid_producer import (
 )
 from .raster_producer import DepthMode, Rasterizer, ScanMode
 from .shrinkwrap_producer import ShrinkWrapProducer
+from .wavefront_producer import WavefrontProducer
 
 __all__ = [
     "WavefrontProducer",

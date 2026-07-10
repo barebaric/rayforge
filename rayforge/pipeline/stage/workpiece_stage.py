@@ -20,7 +20,8 @@ from ..dag.node import NodeState
 from .base import PipelineStage
 
 if TYPE_CHECKING:
-    from ...core.matrix import Matrix
+    from raygeo.geo import Matrix
+
     from ...core.step import Step
     from ...core.workpiece import WorkPiece
     from ...machine.models.machine import Machine

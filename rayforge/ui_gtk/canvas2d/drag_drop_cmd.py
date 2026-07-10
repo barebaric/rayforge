@@ -13,10 +13,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from gi.repository import Adw, Gdk, Gio, GLib, GObject, Gtk
+from raygeo.geo import Matrix
 
 from ...context import get_context
 from ...core.layer import Layer
-from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset
 from ...core.stock import StockItem
 from ...core.stock_asset import StockAsset

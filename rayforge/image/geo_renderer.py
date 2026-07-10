@@ -4,8 +4,7 @@ import math
 from typing import Optional, Tuple
 
 import cairo
-from raygeo.geo import Geometry
-from raygeo.geo import Arc, Bezier, Line, Move
+from raygeo.geo import Arc, Bezier, Geometry, Line, Move
 
 
 def geometry_to_cairo(

@@ -6,8 +6,8 @@ from typing import cast
 import cairo
 import numpy as np
 from gi.repository import GLib
+from raygeo.geo import Matrix
 
-from ...core.matrix import Matrix
 from .element import CanvasElement
 
 

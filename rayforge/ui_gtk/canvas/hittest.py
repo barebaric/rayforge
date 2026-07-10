@@ -6,7 +6,7 @@ import cairo
 import numpy as np
 
 if TYPE_CHECKING:
-    from ...core.matrix import Matrix
+    from raygeo.geo import Matrix
 
 
 def check_pixel_hit(

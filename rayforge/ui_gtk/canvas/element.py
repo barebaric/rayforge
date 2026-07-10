@@ -18,13 +18,14 @@ from typing import (
 import cairo
 import numpy as np
 from gi.repository import GLib
+from raygeo.geo import Matrix
 
-from ...core.matrix import Matrix
 from .hittest import check_pixel_hit
 from .region import ElementRegion, check_region_hit, get_region_rect
 
 if TYPE_CHECKING:
     from raygeo.geo.types import Point, Rect
+
     from .canvas import Canvas
 
 
