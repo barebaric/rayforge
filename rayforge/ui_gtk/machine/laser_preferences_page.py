@@ -240,7 +240,7 @@ class LaserPreferencesPage(DebounceMixin, TrackedPreferencesPage):
         self.laserhead_config_group.add(self.name_row)
 
         tool_number_adjustment = Gtk.Adjustment(
-            lower=0, upper=255, step_increment=1, page_increment=1
+            lower=-32768, upper=65535, step_increment=1, page_increment=1
         )
         self.tool_number_row = Adw.SpinRow(
             title=_("Tool Number"),
