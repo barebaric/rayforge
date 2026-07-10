@@ -6,7 +6,8 @@ from raygeo.geo.shape.line import (
     get_line_segment_closest_point,
 )
 from raygeo.geo.shape.rect import does_rect_contain_rect
-from raygeo.geo.types import Point as GeoPoint, Polygon, Rect
+from raygeo.geo.types import Point as GeoPoint
+from raygeo.geo.types import Polygon, Rect
 
 from ..types import EntityID
 from .entity import Entity

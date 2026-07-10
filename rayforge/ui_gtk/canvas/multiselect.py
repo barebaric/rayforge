@@ -13,13 +13,15 @@ from typing import (
     Union,
 )
 
-from ...core.matrix import Matrix
+from raygeo.geo import Matrix
+
 from . import element, transform
 from .region import ElementRegion, check_region_hit, get_region_rect
 
 # Forward declaration for type hinting to avoid circular imports
 if TYPE_CHECKING:
     from raygeo.geo.types import Point, Rect
+
     from .canvas import Canvas
     from .element import CanvasElement
 

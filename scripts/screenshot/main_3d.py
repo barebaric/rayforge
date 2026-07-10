@@ -13,7 +13,6 @@ from utils import (
     hide_panel,
     load_project,
     restore_panel_states,
-    run_on_main_thread,
     save_panel_states,
     seek_3d_playback,
     set_window_size,

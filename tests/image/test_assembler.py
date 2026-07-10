@@ -2,10 +2,9 @@ from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 
 from rayforge.core.layer import Layer
-from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece

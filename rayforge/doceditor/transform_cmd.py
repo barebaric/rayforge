@@ -4,9 +4,10 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
+from raygeo.geo import Matrix
+
 from ..context import get_context
 from ..core.item import DocItem
-from ..core.matrix import Matrix
 from ..core.undo import ChangePropertyCommand
 
 if TYPE_CHECKING:

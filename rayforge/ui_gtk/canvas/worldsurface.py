@@ -2,8 +2,8 @@ import logging
 from typing import TYPE_CHECKING, Tuple
 
 from gi.repository import Gdk, Graphene, Gtk
+from raygeo.geo import Matrix
 
-from ...core.matrix import Matrix
 from .axis import AxisRenderer
 from .canvas import Canvas
 

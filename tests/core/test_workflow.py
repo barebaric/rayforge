@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from raygeo.geo import Matrix
 
-from rayforge.core.matrix import Matrix
 from rayforge.core.step import Step
 from rayforge.core.workflow import Workflow
 

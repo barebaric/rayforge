@@ -5,12 +5,11 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import cairo
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.ops import Ops
 from raygeo.ops.types import SectionType
 
 from rayforge.core.font_config import FontConfig
-from rayforge.core.matrix import Matrix
 from rayforge.core.text import text_to_geometry
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
@@ -527,24 +526,24 @@ class MaterialTestGridProducer(OpsProducer):
                         @ Matrix.rotation(angle_deg)
                         @ Matrix.translation(x_offset_px, y_offset_px)
                     )
-                    geo.transform(combined.to_4x4_numpy())
+                    geo.transform(combined)
                 else:
                     transform = Matrix.translation(
                         el_x_px + x_offset_px, el_y_px + y_offset_px
                     )
-                    geo.transform(transform.to_4x4_numpy())
+                    geo.transform(transform)
             else:
                 transform = Matrix.translation(
                     el_x_px + x_offset_px, el_y_px + y_offset_px
                 )
-                geo.transform(transform.to_4x4_numpy())
+                geo.transform(transform)
 
             result_geo.extend(geo)
 
         # Scale from 96 DPI pixel space back to mm
         scale_back = 1.0 / PX_PER_MM
         scaling_matrix = Matrix.scale(scale_back, scale_back)
-        result_geo.transform(scaling_matrix.to_4x4_numpy())
+        result_geo.transform(scaling_matrix)
 
         if result_geo.is_empty():
             if label_elements:
@@ -607,7 +606,7 @@ class MaterialTestGridProducer(OpsProducer):
 
         y_offset = (ascent + descent_neg) / 2.0
 
-        geo.transform(Matrix.translation(x_offset, y_offset).to_4x4_numpy())
+        geo.transform(Matrix.translation(x_offset, y_offset))
 
         ctx.translate(el["x"], el["y"])
         if "transform" in el:

@@ -5,8 +5,9 @@ from typing import TYPE_CHECKING, Dict, Optional
 from .base import LayoutStrategy
 
 if TYPE_CHECKING:
+    from raygeo.geo import Matrix
+
     from ...core.item import DocItem
-    from ...core.matrix import Matrix
     from ...shared.tasker.context import ExecutionContext
 
 
@@ -47,8 +48,6 @@ class SpreadHorizontallyStrategy(LayoutStrategy):
             target_min_x = current_x + gap_size
             delta_x = target_min_x - bbox[0]
             if abs(delta_x) > 1e-6:
-                from ...core.matrix import Matrix
-
                 deltas[wp] = Matrix.translation(delta_x, 0)
 
             item_width = bbox[2] - bbox[0]
@@ -94,8 +93,6 @@ class SpreadVerticallyStrategy(LayoutStrategy):
             target_min_y = current_y + gap_size
             delta_y = target_min_y - bbox[1]
             if abs(delta_y) > 1e-6:
-                from ...core.matrix import Matrix
-
                 deltas[wp] = Matrix.translation(0, delta_y)
 
             item_height = bbox[3] - bbox[1]

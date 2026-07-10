@@ -4,24 +4,25 @@ import math
 from pathlib import Path
 from typing import Dict, List
 
+from raygeo.geo import Matrix
+
+from rayforge.core.layer import Layer
+from rayforge.image.lightburn.importer import (
+    LightBurnImporter,
+    _apply_xform_to_geo,
+    _build_ellipse,
+    _build_path_from_verts_and_prims,
+    _build_rect,
+    _build_step_config,
+    _parse_prims,
+    _parse_verts,
+    _parse_xform,
+)
 from rayforge.image.structures import (
     ImportManifest,
     ParsingResult,
     VectorizationResult,
 )
-from rayforge.image.lightburn.importer import (
-    LightBurnImporter,
-    _build_step_config,
-    _parse_xform,
-    _parse_verts,
-    _parse_prims,
-    _build_rect,
-    _build_ellipse,
-    _build_path_from_verts_and_prims,
-    _apply_xform_to_geo,
-)
-from rayforge.core.layer import Layer
-from rayforge.core.matrix import Matrix
 
 ASSETS = Path(__file__).parent / "assets"
 

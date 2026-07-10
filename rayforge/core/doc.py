@@ -61,8 +61,9 @@ class Doc(DocItem):
     @classmethod
     def from_dict(cls, data: Dict) -> "Doc":
         """Deserializes the document from a dictionary."""
+        from raygeo.geo import Matrix
+
         from .asset_registry import asset_type_registry
-        from .matrix import Matrix
         from .source_asset import SourceAsset
         from .stock import StockItem
         from .stock_asset import StockAsset

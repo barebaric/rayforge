@@ -6,11 +6,11 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Set
 import cairo
 from blinker import Signal
 from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk
+from raygeo.geo import Matrix
 
 from ...context import get_context
 from ...core.item import DocItem
 from ...core.layer import Layer
-from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
     LayerImportMode,
@@ -672,7 +672,7 @@ class ImportDialog(PatchedDialogWindow):
                 # transform on the context, which would distort the
                 # stroke width.
                 world_geo = item.boundaries.copy()
-                world_geo.transform(item.get_world_transform().to_4x4_numpy())
+                world_geo.transform(item.get_world_transform())
                 ctx.set_line_width(constant_line_width)
                 ctx.set_source_rgb(0.1, 0.5, 1.0)  # Blue for vectors
                 ctx.new_path()

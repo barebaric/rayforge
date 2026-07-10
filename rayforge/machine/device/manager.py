@@ -14,9 +14,9 @@ from .lightburn_importer import (
     convert_to_profile,
 )
 from .profile import (
+    CURRENT_API_VERSION,
     DIALECT_FILENAME,
     MANIFEST_FILENAME,
-    CURRENT_API_VERSION,
     DeviceProfile,
     export_machine_to_dir,
     parse_meta,

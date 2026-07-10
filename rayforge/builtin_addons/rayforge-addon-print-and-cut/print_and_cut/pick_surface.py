@@ -5,9 +5,9 @@ from typing import Optional, Tuple, Union
 import cairo
 from blinker import Signal
 from gi.repository import Gdk, Graphene, Gtk
+from raygeo.geo import Matrix
 
 from rayforge.core.group import Group
-from rayforge.core.matrix import Matrix
 from rayforge.core.workpiece import WorkPiece
 from rayforge.ui_gtk.canvas import Canvas
 

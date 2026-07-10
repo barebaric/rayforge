@@ -9,12 +9,17 @@ from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple, Union
 
 from blinker import Signal
-from raygeo.geo import Geometry
-
 from raygeo.geo import (
     Arc as GeoArc,
+)
+from raygeo.geo import (
     Bezier as GeoBezier,
+)
+from raygeo.geo import Geometry
+from raygeo.geo import (
     Line as GeoLine,
+)
+from raygeo.geo import (
     Move as GeoMove,
 )
 from raygeo.geo.shape.polygon import is_point_inside_polygon

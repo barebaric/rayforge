@@ -1,14 +1,13 @@
 import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-from raygeo.geo import Geometry
-from raygeo.geo.shape.polygon import is_point_inside_polygon
-from raygeo.ops import Ops
 from raygeo.cnc.machining.plan import Workplan
 from raygeo.cnc.machining.wavefront import build_wavefront_workplan
+from raygeo.geo import Geometry, Matrix
+from raygeo.geo.shape.polygon import is_point_inside_polygon
+from raygeo.ops import Ops
 from raygeo.ops.types import SectionType
 
-from rayforge.core.matrix import Matrix
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.image.tracing import trace_surface
 from rayforge.pipeline.artifact import WorkPieceArtifact
@@ -79,7 +78,7 @@ class WavefrontProducer(OpsProducer):
             scaled_geo = boundaries.copy()
             width_mm, height_mm = workpiece.size
             scaling_matrix = Matrix.scale(width_mm, height_mm)
-            scaled_geo.transform(scaling_matrix.to_4x4_numpy())
+            scaled_geo.transform(scaling_matrix)
             scaled_geo.normalize_winding_orders()
         elif surface:
             scaled_geo = self._trace_surface_to_geometry(
@@ -202,7 +201,7 @@ class WavefrontProducer(OpsProducer):
 
         merged = Geometry()
         for geo in traced_contours:
-            geo.transform(transform.to_4x4_numpy())
+            geo.transform(transform)
             merged.extend(geo)
         return merged
 

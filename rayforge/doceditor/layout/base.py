@@ -5,12 +5,12 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Dict, Optional, Sequence
 
 from blinker import Signal
+from raygeo.geo import Matrix
 from raygeo.geo.types import Rect
 
 from ...core.group import Group
 from ...core.item import DocItem
 from ...core.layer import Layer
-from ...core.matrix import Matrix
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
 

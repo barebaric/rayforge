@@ -1,8 +1,8 @@
 import pytest
+from raygeo.geo import Matrix
 
 from rayforge.core.group import Group
 from rayforge.core.layer import Layer
-from rayforge.core.matrix import Matrix
 from rayforge.core.stock import StockItem
 from rayforge.core.workpiece import WorkPiece
 

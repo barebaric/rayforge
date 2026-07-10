@@ -4,9 +4,8 @@ from unittest.mock import Mock
 
 import cairo
 import pytest
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 
-from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import TraceSpec

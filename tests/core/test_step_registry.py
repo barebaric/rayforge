@@ -1,4 +1,5 @@
-from rayforge.core.matrix import Matrix
+from raygeo.geo import Matrix
+
 from rayforge.core.step import Step
 from rayforge.core.step_registry import StepRegistry, step_registry
 

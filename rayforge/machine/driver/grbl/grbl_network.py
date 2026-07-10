@@ -19,7 +19,7 @@ from urllib.parse import quote
 import aiohttp
 
 from ....context import RayforgeContext
-from ....core.varset import HostnameVar, PortVar, ChoiceVar, Var, VarSet
+from ....core.varset import ChoiceVar, HostnameVar, PortVar, Var, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder

@@ -4,6 +4,7 @@ import logging
 import math
 from enum import Enum, auto
 from typing import (
+    TYPE_CHECKING,
     Any,
     Generator,
     List,
@@ -11,16 +12,15 @@ from typing import (
     Set,
     Tuple,
     Union,
-    TYPE_CHECKING,
 )
 
 import cairo
 import numpy as np
 from blinker import Signal
 from gi.repository import Gdk, Graphene, Gtk
+from raygeo.geo import Matrix
 
 from ...core.color import ColorRGBA
-from ...core.matrix import Matrix
 from ..shared.keyboard import is_primary_keyval
 from . import transform
 from .cursor import get_cursor_for_region

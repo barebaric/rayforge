@@ -1,11 +1,10 @@
 from pathlib import Path
 
 import pytest
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from sketcher.core import Sketch
 
 from rayforge.core.doc import Doc
-from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece

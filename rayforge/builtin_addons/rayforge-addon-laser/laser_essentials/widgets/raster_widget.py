@@ -3,12 +3,12 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 from gi.repository import Adw, GLib, GObject, Gtk
+from raygeo.image import compute_auto_levels
 
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.image.util import (
     get_visible_grayscale_values,
 )
-from raygeo.image import compute_auto_levels
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,

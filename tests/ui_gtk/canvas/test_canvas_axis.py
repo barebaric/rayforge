@@ -3,8 +3,8 @@ from unittest.mock import MagicMock
 import cairo
 import numpy as np
 import pytest
+from raygeo.geo import Matrix
 
-from rayforge.core.matrix import Matrix
 from rayforge.ui_gtk.canvas.axis import AxisRenderer
 
 # A known widget size for consistent testing

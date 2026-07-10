@@ -4,10 +4,10 @@ import uuid
 from unittest.mock import MagicMock, patch
 
 import pytest
+from raygeo.geo import Matrix
 
 from rayforge.core.doc import Doc
 from rayforge.core.group import Group
-from rayforge.core.matrix import Matrix
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.artifact import (

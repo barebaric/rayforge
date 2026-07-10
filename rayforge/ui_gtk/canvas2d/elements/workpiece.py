@@ -5,11 +5,9 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple, cast
 import cairo
 import numpy as np
 from gi.repository import Gdk, GLib
-from raygeo.geo import Geometry
-from raygeo.geo import Arc, Bezier, Line, Move
+from raygeo.geo import Arc, Bezier, Geometry, Line, Matrix, Move
 
 from ....core.color import OPS_COLOR_SPEC, ColorSet, ColorSpecDict
-from ....core.matrix import Matrix
 from ....core.step import Step
 from ....core.workpiece import WorkPiece
 from ....pipeline.artifact import (

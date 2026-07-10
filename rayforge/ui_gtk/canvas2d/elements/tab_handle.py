@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, List, Optional, Tuple, cast
 import cairo
 import numpy as np
 from gi.repository import Gdk
+from raygeo.geo import Matrix
 
-from ....core.matrix import Matrix
 from ....core.tab import Tab
 from ....core.undo import ChangePropertyCommand
 from ...canvas.element import CanvasElement

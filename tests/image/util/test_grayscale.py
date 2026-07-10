@@ -1,9 +1,9 @@
 import cairo
 import numpy as np
 import pytest
+from raygeo.image import compute_auto_levels, normalize_grayscale
 
 from rayforge.image.util import grayscale
-from raygeo.image import compute_auto_levels, normalize_grayscale
 
 
 def test_surface_to_grayscale_black_surface():

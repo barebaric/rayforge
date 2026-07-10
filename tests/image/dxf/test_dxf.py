@@ -5,11 +5,9 @@ from unittest.mock import Mock
 
 import ezdxf
 import pytest
-from raygeo.geo import Geometry
-from raygeo.geo import Bezier
+from raygeo.geo import Bezier, Geometry, Matrix
 
 from rayforge.core.layer import Layer
-from rayforge.core.matrix import Matrix
 from rayforge.core.vectorization_spec import LayerImportMode, PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.base_importer import ImporterFeature

@@ -14,9 +14,9 @@ from gi.repository import Gdk, Gtk
 base_path = Path(__file__).parent
 logging.basicConfig(level=logging.DEBUG)
 
+from raygeo.geo import Matrix
 from raygeo.geo.types import Point
 
-from rayforge.core.matrix import Matrix
 from rayforge.ui_gtk.canvas import Canvas, CanvasElement, ShrinkWrapGroup
 
 

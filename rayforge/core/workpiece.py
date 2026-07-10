@@ -26,14 +26,13 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Point, Rect
 
 from ..context import get_context
 from .asset_registry import asset_type_registry
 from .geometry_provider import IGeometryProvider
 from .item import DocItem
-from .matrix import Matrix
 from .source_asset_segment import SourceAssetSegment
 from .tab import Tab
 from .vectorization_spec import TraceSpec
@@ -197,9 +196,9 @@ class WorkPiece(DocItem):
             norm_matrix = Matrix.scale(
                 1.0 / width, 1.0 / height
             ) @ Matrix.translation(-min_x, -min_y)
-            geometry.transform(norm_matrix.to_4x4_numpy())
+            geometry.transform(norm_matrix)
             for fd in fill_data:
-                fd.geometry.transform(norm_matrix.to_4x4_numpy())
+                fd.geometry.transform(norm_matrix)
 
         # Cache the results (even if empty) to ensure fast rendering
         instance._boundaries_cache = geometry
@@ -421,9 +420,9 @@ class WorkPiece(DocItem):
             ) @ Matrix.translation(-min_x, -min_y)
 
             # Apply same normalization to both strokes and fills
-            unnormalized_geo.transform(norm_matrix.to_4x4_numpy())
+            unnormalized_geo.transform(norm_matrix)
             for fill_data in unnormalized_fills:
-                fill_data.geometry.transform(norm_matrix.to_4x4_numpy())
+                fill_data.geometry.transform(norm_matrix)
 
             self._boundaries_cache = unnormalized_geo
             self._fills_cache = unnormalized_fills
@@ -444,7 +443,7 @@ class WorkPiece(DocItem):
             # Path for UI rendering: normalize the pristine data
             norm_geo = self.source_segment.pristine_geometry.copy()
             norm_matrix = self.source_segment.normalization_matrix
-            norm_geo.transform(norm_matrix.to_4x4_numpy())
+            norm_geo.transform(norm_matrix)
             self._boundaries_cache = norm_geo
             return self._boundaries_cache
 
@@ -487,7 +486,7 @@ class WorkPiece(DocItem):
         w = self.natural_width_mm or 1.0
         h = self.natural_height_mm or 1.0
         scale_matrix = Matrix.scale(w, h)
-        scaled.transform(scale_matrix.to_4x4_numpy())
+        scaled.transform(scale_matrix)
         return scaled
 
     @property
@@ -505,7 +504,7 @@ class WorkPiece(DocItem):
         y_down_geo = y_up_geo.copy()
         # Flip Y-up (0,0 at bottom) to Y-down (0,0 at top) in a 0-1 box
         flip_matrix = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
-        y_down_geo.transform(flip_matrix.to_4x4_numpy())
+        y_down_geo.transform(flip_matrix)
         return y_down_geo
 
     @property
@@ -1210,7 +1209,7 @@ class WorkPiece(DocItem):
 
         # Apply the full world transformation
         world_matrix = self.get_world_transform()
-        world_geometry.transform(world_matrix.to_4x4_numpy())
+        world_geometry.transform(world_matrix)
 
         # Return the bounding box of the transformed geometry
         return world_geometry.rect()
@@ -1236,7 +1235,7 @@ class WorkPiece(DocItem):
             # The key insight: compose all matrices BEFORE transforming
             # geometry
             final_transform = world_transform @ norm_matrix
-            pristine_geo.transform(final_transform.to_4x4_numpy())
+            pristine_geo.transform(final_transform)
             return pristine_geo
 
         # --- Path for generated geometry (e.g., sketches) ---
@@ -1246,7 +1245,7 @@ class WorkPiece(DocItem):
         if boundaries and not boundaries.is_empty():
             world_geo = boundaries.copy()
             world_transform = self.get_world_transform()
-            world_geo.transform(world_transform.to_4x4_numpy())
+            world_geo.transform(world_transform)
             return world_geo
 
         return None
@@ -1408,7 +1407,7 @@ class WorkPiece(DocItem):
             norm_matrix = Matrix.scale(1.0 / w, 1.0 / h) @ Matrix.translation(
                 -min_x, -min_y
             )
-            normalized_frag.transform(norm_matrix.to_4x4_numpy())
+            normalized_frag.transform(norm_matrix)
 
             # 4. Create a lightweight copy of the segment
             #    containing only metadata.

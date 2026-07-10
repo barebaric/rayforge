@@ -69,7 +69,7 @@ class SketchRenderer(Renderer):
         """
         Generates a preview by rendering the sketch's vectorized geometry.
         """
-        from rayforge.core.matrix import Matrix
+        from raygeo.geo import Matrix
 
         vec_result = import_result.vectorization_result
         if not vec_result:
@@ -90,13 +90,13 @@ class SketchRenderer(Renderer):
             1.0 / width, 1.0 / height
         ) @ Matrix.translation(-min_x, -min_y)
         normalized_boundaries = merged_boundaries.copy()
-        normalized_boundaries.transform(norm_matrix.to_4x4_numpy())
+        normalized_boundaries.transform(norm_matrix)
 
         normalized_fills = []
         for fill_list in vec_result.fills_by_layer.values():
             for fill_data in fill_list:
                 norm_fill = fill_data.geometry.copy()
-                norm_fill.transform(norm_matrix.to_4x4_numpy())
+                norm_fill.transform(norm_matrix)
                 normalized_fills.append(
                     FillRenderData(
                         geometry=norm_fill,

@@ -17,9 +17,8 @@ from typing import (
 
 import numpy as np
 from blinker import Signal
+from raygeo.geo import Matrix
 from raygeo.geo.types import Point, Rect
-
-from .matrix import Matrix
 
 if TYPE_CHECKING:
     from .asset import IAsset

@@ -2,11 +2,11 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from raygeo.geo import Matrix
 
 from rayforge.core.doc import Doc
 from rayforge.core.group import Group
 from rayforge.core.layer import Layer
-from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.vectorization_spec import TraceSpec

@@ -19,6 +19,7 @@ from typing import (
 
 import cairo
 import numpy as np
+from raygeo.geo import Matrix
 from raygeo.geo.types import Point, Rect
 from scipy.ndimage import binary_dilation
 from scipy.signal import fftconvolve
@@ -26,7 +27,6 @@ from scipy.signal import fftconvolve
 from ...context import get_context
 from ...core.group import Group
 from ...core.item import DocItem
-from ...core.matrix import Matrix
 from ...core.stock import StockItem
 from ...core.workpiece import WorkPiece
 from ...image.geo_renderer import geometry_to_cairo
@@ -311,13 +311,8 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         )
 
         # 2. Apply this transform to a copy of the geometry.
-        # The Geometry.transform method expects a 4x4 NumPy array.
-        m4x4 = np.identity(4)
-        m4x4[:2, :2] = translation_to_canvas.m[:2, :2]
-        m4x4[:2, 3] = translation_to_canvas.m[:2, 2]
-
         geometry_for_render = world_geo.copy()
-        geometry_for_render.transform(m4x4)
+        geometry_for_render.transform(translation_to_canvas)
 
         # 3. Render the transformed geometry onto a cairo surface.
         surface = cairo.ImageSurface(cairo.FORMAT_A8, width_px, height_px)

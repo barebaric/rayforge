@@ -8,9 +8,9 @@ import logging
 from typing import Any, Dict, Iterable, List, Optional, TypeVar
 
 from blinker import Signal
+from raygeo.geo import Matrix
 
 from .item import DocItem
-from .matrix import Matrix
 from .step import Step
 
 logger = logging.getLogger(__name__)

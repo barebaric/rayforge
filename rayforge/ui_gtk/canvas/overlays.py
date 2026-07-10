@@ -12,9 +12,9 @@ from typing import (
 )
 
 import cairo
+from raygeo.geo import Matrix
 
 from ...core.color import ColorRGBA
-from ...core.matrix import Matrix
 from .region import (
     CORNER_RESIZE_HANDLES,
     MIDDLE_RESIZE_HANDLES,

@@ -2,9 +2,8 @@ from typing import List
 from unittest.mock import MagicMock
 
 import pytest
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 
-from rayforge.core.matrix import Matrix
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece

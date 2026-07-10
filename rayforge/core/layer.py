@@ -19,11 +19,11 @@ from typing import (
 )
 
 from blinker import Signal
+from raygeo.geo import Matrix
 
 from .color import COLOR_PALETTE
 from .group import Group
 from .item import DocItem
-from .matrix import Matrix
 from .step import Step
 from .workflow import Workflow
 from .workpiece import WorkPiece

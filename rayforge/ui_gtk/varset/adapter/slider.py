@@ -2,7 +2,7 @@ from typing import Any, Optional, Tuple
 
 from gi.repository import Adw, Gtk
 
-from ....core.varset import SliderFloatVar, Var, FloatVar
+from ....core.varset import FloatVar, SliderFloatVar, Var
 from ...shared.slider import create_slider_row
 from .base import RowAdapter, escape_title, register_adapter
 

@@ -4,11 +4,10 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
 
 from .item import DocItem
-from .matrix import Matrix
 
 if TYPE_CHECKING:
     from .asset import IAsset
@@ -187,7 +186,7 @@ class StockItem(DocItem):
 
         # Combine normalizations with world transform before applying
         final_transform = world_transform @ norm_matrix
-        world_geo.transform(final_transform.to_4x4_numpy())
+        world_geo.transform(final_transform)
 
         rect = world_geo.rect()
         logger.debug(
@@ -216,7 +215,7 @@ class StockItem(DocItem):
         geo.close_path()
 
         world_transform = self.get_world_transform()
-        geo.transform(world_transform.to_4x4_numpy())
+        geo.transform(world_transform)
 
         rect = geo.rect()
         logger.debug(

@@ -395,8 +395,8 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/9e/44/fee070a16639d9869bb6a7e0f3a1b3946da1d66f32b9260b4d19cb90d7b2/pypdf-6.12.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9f/56/13ab06b4f93ca7cac71078fbe37fcea175d3216f31f85c3168a6bbd0bb9a/flake8-7.3.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a0/61/5c78b91c3143ed5c14207f463aecfc8f9dbb5092fb2869baf37c273b2705/gitdb-4.0.12-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/aa/37/0b43d776ab8093c2016e6f9b50c631a4021e20eabca264c8628ef735e2d7/raygeo-1.15.2.tar.gz
       - pypi: https://files.pythonhosted.org/packages/b9/2b/614b4752f2e127db5cc206abc23a8c19678e92b23c3db30fc86ab731d3bd/PyYAML-6.0.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/bb/c5/366e332f96911c39f8bea751eb5f5ffa75ffd8be19d168af69f8a29223b3/raygeo-1.15.1.tar.gz
       - pypi: https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c1/d4/59e74daffcb57a07668852eeeb6035af9f32cbfd7a1d2511f17d2fe6a738/smmap-5.0.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c2/2f/81d580a0fb83baeb066698975cb14a618bdbed7720678566f1b046a95fe8/pyflakes-3.4.0-py2.py3-none-any.whl
@@ -5300,7 +5300,7 @@ packages:
 - pypi: .
   name: rayforge
   requires_dist:
-  - raygeo==1.15.1
+  - raygeo==1.15.2
   - aiohttp==3.14.1
   - asyncudp==0.11.0
   - blinker==1.9.0
@@ -5934,15 +5934,10 @@ packages:
   requires_dist:
   - smmap>=3.0.1,<6
   requires_python: '>=3.7'
-- pypi: https://files.pythonhosted.org/packages/b9/2b/614b4752f2e127db5cc206abc23a8c19678e92b23c3db30fc86ab731d3bd/PyYAML-6.0.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-  name: pyyaml
-  version: 6.0.2
-  sha256: 80bab7bfc629882493af4aa31a4cfa43a4c57c83813253626916b8c7ada83476
-  requires_python: '>=3.8'
-- pypi: https://files.pythonhosted.org/packages/bb/c5/366e332f96911c39f8bea751eb5f5ffa75ffd8be19d168af69f8a29223b3/raygeo-1.15.1.tar.gz
+- pypi: https://files.pythonhosted.org/packages/aa/37/0b43d776ab8093c2016e6f9b50c631a4021e20eabca264c8628ef735e2d7/raygeo-1.15.2.tar.gz
   name: raygeo
-  version: 1.15.1
-  sha256: e9a8018bf4da1493a2dcc2832ccdb1fa1fe26242d5e35905bfe510f439291ecc
+  version: 1.15.2
+  sha256: b328be41d235c9ce751de11d26afbe6f9362a0068e3201b3b78ea43465cc429f
   requires_dist:
   - msgpack
   - numpy>=1.20.0
@@ -5959,6 +5954,11 @@ packages:
   - pillow ; extra == 'docs'
   - matplotlib ; extra == 'cli'
   requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/b9/2b/614b4752f2e127db5cc206abc23a8c19678e92b23c3db30fc86ab731d3bd/PyYAML-6.0.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  name: pyyaml
+  version: 6.0.2
+  sha256: 80bab7bfc629882493af4aa31a4cfa43a4c57c83813253626916b8c7ada83476
+  requires_python: '>=3.8'
 - pypi: https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl
   name: pyproject-hooks
   version: 1.2.0

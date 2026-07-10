@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 
 import cairo
+from raygeo.geo import Matrix
 from raygeo.geo.types import Rect
 
 from .item import DocItem
-from .matrix import Matrix
 from .workpiece import WorkPiece
 
 if TYPE_CHECKING:

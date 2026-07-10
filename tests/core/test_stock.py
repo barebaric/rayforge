@@ -1,10 +1,9 @@
 from unittest.mock import MagicMock
 
 import pytest
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 
 from rayforge.core.doc import Doc
-from rayforge.core.matrix import Matrix
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 

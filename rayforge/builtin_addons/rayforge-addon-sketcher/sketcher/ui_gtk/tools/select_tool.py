@@ -13,9 +13,8 @@ from typing import (
 )
 
 import cairo
+from raygeo.geo import Matrix
 from raygeo.geo.types import Point as GeoPoint
-
-from rayforge.core.matrix import Matrix
 
 from ...core.commands import (
     CreateOrEditConstraintCommand,

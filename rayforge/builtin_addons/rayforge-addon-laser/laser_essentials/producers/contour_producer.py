@@ -3,12 +3,11 @@ from enum import Enum, auto
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.geo.algo.overcut import apply_overcut
 from raygeo.ops import Ops
 from raygeo.ops.types import SectionType
 
-from rayforge.core.matrix import Matrix
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.image.tracing import trace_surface
 from rayforge.pipeline.artifact import WorkPieceArtifact
@@ -129,7 +128,7 @@ class ContourProducer(OpsProducer):
             scaled_geo = workpiece.boundaries.copy()
             width_mm, height_mm = workpiece.size
             scaling_matrix = Matrix.scale(width_mm, height_mm)
-            scaled_geo.transform(scaling_matrix.to_4x4_numpy())
+            scaled_geo.transform(scaling_matrix)
             base_contours = scaled_geo.split_into_contours()
         elif surface:
             # Fall back to raster tracing if no vectors OR if override
@@ -157,7 +156,7 @@ class ContourProducer(OpsProducer):
                     scale_x, -scale_y
                 )
                 for geo in traced_contours:
-                    geo.transform(transform.to_4x4_numpy())
+                    geo.transform(transform)
                     base_contours.append(geo)
         else:
             # No vectors and no surface, so there is nothing to trace.

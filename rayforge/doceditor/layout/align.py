@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Dict, Optional, Sequence, Tuple
 
-from ...core.matrix import Matrix
+from raygeo.geo import Matrix
+
 from .base import LayoutStrategy
 
 if TYPE_CHECKING:

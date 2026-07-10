@@ -12,9 +12,8 @@ try:
 except ImportError:
     import fitz as pymupdf
 
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 
-from ...core.matrix import Matrix
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
     LayerImportMode,
