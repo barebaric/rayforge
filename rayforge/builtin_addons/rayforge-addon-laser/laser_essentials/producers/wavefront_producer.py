@@ -1,13 +1,11 @@
 import logging
-import math
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from raygeo.geo import Geometry
-from raygeo.ops.cut.cleared_area import ClearedArea
 from raygeo.geo.shape.polygon import is_point_inside_polygon
 from raygeo.ops import Ops
-from raygeo.cnc.machining.entry import adaptive_entry
-from raygeo.ops.assembly.wavefront import adaptive_wavefronts
+from raygeo.cnc.machining.plan import Workplan
+from raygeo.cnc.machining.wavefront import build_wavefront_workplan
 from raygeo.ops.types import SectionType
 
 from rayforge.core.matrix import Matrix
@@ -251,85 +249,40 @@ class WavefrontProducer(OpsProducer):
         workpiece: "WorkPiece",
         precision: float = 0.03,
     ) -> Ops:
-        """Run entry and wavefront passes for a single pocket."""
-        z_cut = 0.0
-        z_safe = 0.0
-
-        entry_result = None
-        try:
-            entry_result = adaptive_entry(
-                pocket_boundary=pocket_boundary,
-                islands=islands,
-                tool_radius=tool_radius,
-                step_over=step_over,
-                target_z=z_cut,
-                safe_z=z_safe,
-                cut_feed_rate=cut_feed_rate,
-                cut_power=cut_power,
-            )
-        except Exception:
-            logger.exception(
-                "adaptive_entry failed for workpiece '%s', "
-                "continuing with wavefront only",
-                workpiece.name,
-            )
-
-        entry_ops = entry_result.ops if entry_result else Ops()
-        cleared_polys = entry_result.cleared_polygons if entry_result else []
-        logger.info(
-            "  entry: %d ops, %d cleared polys (tool_radius=%.3f)",
-            entry_ops.len(),
-            len(cleared_polys) if cleared_polys else 0,
-            tool_radius,
+        """Run wavefront passes for a single pocket."""
+        wp = Workplan(
+            pocket_boundary=pocket_boundary,
+            islands=islands if islands else None,
+            safe_z=0.0,
         )
 
-        cleared = ClearedArea(
-            boundary=pocket_boundary,
-            islands=islands,
-            initial=cleared_polys,
-        )
-
-        if not cleared.fragments():
-            seed_radius = max(tool_radius, step_over * 0.5)
-            cx = sum(p[0] for p in pocket_boundary) / len(pocket_boundary)
-            cy = sum(p[1] for p in pocket_boundary) / len(pocket_boundary)
-            seed_circle = [
-                (
-                    cx + seed_radius * math.cos(2 * math.pi * i / 16),
-                    cy + seed_radius * math.sin(2 * math.pi * i / 16),
-                )
-                for i in range(16)
-            ]
-            cleared.cut([seed_circle])
-
-        wavefront_ops = Ops()
         try:
-            wavefront_result = adaptive_wavefronts(
-                cleared=cleared,
+            wf_steps = build_wavefront_workplan(
                 pocket_boundary=pocket_boundary,
-                islands=islands,
+                islands=islands if islands else None,
                 tool_radius=tool_radius,
                 step_over=step_over,
-                z=z_cut,
+                target_z=0.0,
                 area_tolerance=self.area_tolerance,
                 precision=precision,
+            )
+            wp.extend(wf_steps)
+            result = wp.execute(
                 cut_feed_rate=cut_feed_rate,
                 cut_power=cut_power,
             )
-            wavefront_ops = wavefront_result.ops
+            logger.info(
+                "  pocket: %d ops (tool_radius=%.3f)",
+                result.ops.len(),
+                tool_radius,
+            )
+            return result.ops
         except Exception:
             logger.exception(
-                "adaptive_wavefronts failed for workpiece '%s'",
+                "workplan failed for workpiece '%s'",
                 workpiece.name,
             )
-
-        logger.info("  wavefront: %d ops", wavefront_ops.len())
-
-        result = Ops()
-        for part in (entry_ops, wavefront_ops):
-            if part.len() > 0:
-                result.extend(part)
-        return result
+            return Ops()
 
     def to_dict(self) -> dict:
         return {

@@ -5,6 +5,35 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.8.2
+
+### Added
+
+- Configurable GRBL protocol variant for Longer Ray5 (by Uwe Woessner)
+- Device profile modifications for Longer Ray5 (by Uwe Woessner)
+
+### Changed
+
+- Upgrade raygeo to 1.15.1
+- Bump addon API version to 17 for incompatible raygeo changes
+- Replace Cairo text path with Pango-based text_to_geometry for robust font
+  fallback (#293)
+- Defer histogram computation to idle callback and cap render resolution in
+  raster widget
+- Update pypdf to version 6.12.2
+- Update macOS setup to use Brewfile (by Lukas Huber)
+- Updated translations
+
+### Fixed
+
+- Various device profiles missing `{extra_cmd}` in G-code dialect causing
+  A axis not emitted (#301)
+- GRBL buffer stall recovery resending G-code to freshly reset firmware
+  after cancel
+- Contour producer dropping open contours in Outside/Inside cut modes
+- Overscan transformer doubling up for drivers with native overscan (Ruida)
+- Website markdown links using trailing-slash bug in React Router
+
 ## 1.8.1
 
 ### Added
