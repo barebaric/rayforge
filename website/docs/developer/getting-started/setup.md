@@ -10,7 +10,7 @@ This guide covers setting up your development environment for Rayforge.
 
 ### Prerequisites
 
-See the [Installation Guide](../../getting-started/installation#linux-pixi) for Pixi installation instructions.
+See the [Installation Guide](../../getting-started/installation.mdx#linux-pixi) for Pixi installation instructions.
 
 ### Pre-commit Hooks (Optional)
 
@@ -34,7 +34,7 @@ All commands are run via `pixi run`:
 
 ### Prerequisites
 
-See the [Installation Guide](../../getting-started/installation#windows-developer) for detailed MSYS2 developer setup instructions.
+See the [Installation Guide](../../getting-started/installation.mdx#windows-developer) for detailed MSYS2 developer setup instructions.
 
 ### Quick Start
 

@@ -164,7 +164,7 @@ ejemplo:
 - **Tandas de producción**: Posicionamiento consistente a través de múltiples
   piezas
 
-Ver [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems)
+Ver [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems.md)
 para documentación completa.
 
 ---
@@ -218,7 +218,7 @@ mundo real:
 - **Colocación precisa**: Requisitos de precisión sub-milimétrica
 - **Diseños complejos**: Múltiples elementos con espaciado específico
 
-Ver [Integración de Cámara](../machine/camera) para documentación completa.
+Ver [Integración de Cámara](../machine/camera.md) para documentación completa.
 
 ---
 
@@ -295,11 +295,11 @@ Para ejecutar el mismo trabajo en diferentes ubicaciones:
 
 - [Enmarcar su Trabajo](framing-your-job) - Documentación detallada de
   enmarcado
-- [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems) -
+- [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems.md) -
   Referencia SCF
-- [Integración de Cámara](../machine/camera) - Configuración y alineación de
+- [Integración de Cámara](../machine/camera.md) - Configuración y alineación de
   cámara
-- [Panel de Control](../ui/bottom-panel) - Controles de movimiento y gestión
+- [Panel de Control](../ui/bottom-panel.md) - Controles de movimiento y gestión
   SCF
-- [Guía de Inicio Rápido](../getting-started/quick-start) - Flujo de trabajo
+- [Guía de Inicio Rápido](../getting-started/quick-start.md) - Flujo de trabajo
   básico

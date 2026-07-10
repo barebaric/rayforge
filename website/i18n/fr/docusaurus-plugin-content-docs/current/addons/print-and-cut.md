@@ -85,5 +85,5 @@ appliquée comme une action annulable.
 
 ## Sujets associés
 
-- [Positionnement des workpieces](../features/workpiece-positioning) - Positionner et transformer les workpieces manuellement
-- [Paramètres du laser](../machine/laser) - Configurer la puissance de mise au point du laser
+- [Positionnement des workpieces](../features/workpiece-positioning.md) - Positionner et transformer les workpieces manuellement
+- [Paramètres du laser](../machine/laser.md) - Configurer la puissance de mise au point du laser

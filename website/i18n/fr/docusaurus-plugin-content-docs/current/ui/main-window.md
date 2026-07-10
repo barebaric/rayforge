@@ -34,7 +34,7 @@ La liste déroulante Machine affiche l'état de connexion de ta machine et son �
 elle affiche aussi une estimation du temps restant.
 
 La liste déroulante WCS te permet de basculer rapidement entre les systèmes de coordonnées.
-Voir [Systèmes de coordonnées de travail](../general-info/coordinate-systems) pour
+Voir [Systèmes de coordonnées de travail](../general-info/coordinate-systems.md) pour
 plus d'informations.
 
 Les bascules de visibilité pour les pièces, les onglets, le flux caméra, les déplacements
@@ -120,7 +120,7 @@ Personnalisez l'interface dans **Édition → Paramètres** :
 
 **Pages connexes :**
 
-- [Systèmes de coordonnées de travail](../general-info/coordinate-systems) - WCS
+- [Systèmes de coordonnées de travail](../general-info/coordinate-systems.md) - WCS
 - [Outils du canevas](canvas-tools) - Outils pour manipuler les conceptions
 - [Panneau inférieur](bottom-panel) - Contrôle manuel de la machine, état et journaux
 - [Prévisualisation 3D](3d-preview) - Visualiser les trajets d'outil en 3D

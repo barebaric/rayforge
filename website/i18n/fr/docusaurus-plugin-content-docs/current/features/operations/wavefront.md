@@ -114,9 +114,9 @@ d'onde s'étendent jusqu'à la limite).
 
 Les opérations de front d'onde supportent :
 
-- **[Lissage de Parcours](../smooth)** — Réduire les bords irréguliers
+- **[Lissage de Parcours](../smooth.md)** — Réduire les bords irréguliers
   dans les trajectoires d'outil
-- **[Optimisation de Parcours](../path-optimization)** — Minimiser la
+- **[Optimisation de Parcours](../path-optimization.md)** — Minimiser la
   distance de déplacement entre les passes
 
 ## Conseils & Meilleures Pratiques
@@ -150,5 +150,5 @@ suffisamment de marge pour la coupe de contour.
   gravure raster
 - **[Enveloppe Rétractable](shrink-wrap)** — Coupe de limite autour des
   objets
-- **[Lissage de Parcours](../smooth)** — Affinage des bords de
+- **[Lissage de Parcours](../smooth.md)** — Affinage des bords de
   trajectoire d'outil

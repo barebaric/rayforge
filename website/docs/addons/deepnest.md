@@ -63,5 +63,5 @@ parts already fit well — the workpieces remain in their original positions.
 
 ## Related Topics
 
-- [Stock Handling](../features/stock-handling) - Define stock material for nesting
-- [Workpiece Positioning](../features/workpiece-positioning) - Position workpieces manually
+- [Stock Handling](../features/stock-handling.md) - Define stock material for nesting
+- [Workpiece Positioning](../features/workpiece-positioning.md) - Position workpieces manually

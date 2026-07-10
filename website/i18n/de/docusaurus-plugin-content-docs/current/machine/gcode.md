@@ -43,6 +43,6 @@ G-Code-Befehle, die am Ende jedes Jobs ausgeführt werden, nach allen Schneideop
 
 ## Siehe auch
 
-- [G-Code-Grundlagen](../general-info/gcode-basics) - G-Code verstehen
-- [G-Code-Dialekte](../reference/gcode-dialects) - Detaillierte Dialekt-Unterschiede
+- [G-Code-Grundlagen](../general-info/gcode-basics.md) - G-Code verstehen
+- [G-Code-Dialekte](../reference/gcode-dialects.md) - Detaillierte Dialekt-Unterschiede
 - [Hooks & Makros](hooks-macros) - Benutzerdefinierte G-Code-Einschubpunkte

@@ -307,8 +307,8 @@ Cuando los límites suaves están habilitados en tu perfil de máquina:
 
 **Páginas Relacionadas:**
 
-- [Sistemas de Coordenadas de Trabajo (WCS)](../general-info/coordinate-systems) - Gestionando WCS
-- [Configuración de Máquina](../machine/general) - Configura tu máquina
-- [Atajos de Teclado](../reference/shortcuts) - Referencia completa de atajos
+- [Sistemas de Coordenadas de Trabajo (WCS)](../general-info/coordinate-systems.md) - Gestionando WCS
+- [Configuración de Máquina](../machine/general.md) - Configura tu máquina
+- [Atajos de Teclado](../reference/shortcuts.md) - Referencia completa de atajos
 - [Ventana Principal](main-window) - Resumen de la interfaz principal
-- [Ajustes Generales](../machine/general) - Configuración del dispositivo
+- [Ajustes Generales](../machine/general.md) - Configuración del dispositivo

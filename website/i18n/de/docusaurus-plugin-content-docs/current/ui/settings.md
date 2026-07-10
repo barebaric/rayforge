@@ -54,13 +54,13 @@ werden.
 Der Einstellungsdialog enthält weitere Seiten zur Verwaltung anderer
 Teile der Anwendung. Jede verfügt über eine eigene Dokumentation:
 
-- [Maschinen](../application-settings/machines) — Maschinen hinzufügen,
+- [Maschinen](../application-settings/machines.md) — Maschinen hinzufügen,
   entfernen und konfigurieren
-- [Materialien](../application-settings/materials) — Materialbibliotheken
+- [Materialien](../application-settings/materials.md) — Materialbibliotheken
   verwalten
-- [Rezepte](../application-settings/recipes) — gespeicherte
+- [Rezepte](../application-settings/recipes.md) — gespeicherte
   Operationsrezepte verwalten
-- [KI-Anbieter](../application-settings/ai-provider) — KI-Anbieter für
+- [KI-Anbieter](../application-settings/ai-provider.md) — KI-Anbieter für
   die Nutzung durch Addons konfigurieren
-- [Addons](../application-settings/addons) — Erweiterungs-Addons
+- [Addons](../application-settings/addons.md) — Erweiterungs-Addons
   installieren, aktualisieren und entfernen

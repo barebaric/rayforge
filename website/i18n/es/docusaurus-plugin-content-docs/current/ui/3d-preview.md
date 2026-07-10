@@ -82,7 +82,7 @@ Personaliza lo que ves:
 
 :::tip Colores por Láser
 Al usar máquinas con múltiples cabezales láser, cada láser puede tener sus propios
-colores de corte y raster configurados en [Ajustes de Láser](../machine/laser).
+colores de corte y raster configurados en [Ajustes de Láser](../machine/laser.md).
 Esto facilita identificar qué láser realizará cada operación.
 :::
 
@@ -90,7 +90,7 @@ Esto facilita identificar qué láser realizará cada operación.
 
 La vista 3D renderiza un modelo de tu cabezal láser que se mueve a lo largo de
 la trayectoria durante la simulación. Puedes asignar un modelo 3D a cada cabezal
-láser en la página de [Ajustes de Láser](../machine/laser) en Configuración de
+láser en la página de [Ajustes de Láser](../machine/laser.md) en Configuración de
 Máquina. La escala, rotación y distancia focal del modelo se pueden ajustar para
 coincidir con tu configuración física.
 
@@ -132,7 +132,7 @@ Antes de enviar a la máquina, verifica:
 - [ ] Las pestañas de sujeción están en las ubicaciones correctas
 
 Algunas comprobaciones adicionales se realizan automáticamente. Cuando ejecutas o
-exportas un trabajo, Rayforge ejecuta [comprobaciones de sanity](../features/sanity-checks)
+exportas un trabajo, Rayforge ejecuta [comprobaciones de sanity](../features/sanity-checks.md)
 que verifican los límites de la máquina, las fronteras del área de trabajo y las
 colisiones con zonas prohibidas.
 
@@ -161,6 +161,6 @@ Para trabajos grandes o complejos:
 
 **Páginas Relacionadas:**
 
-- [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems) - WCS
+- [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems.md) - WCS
 - [Ventana Principal](main-window) - Resumen de la interfaz principal
 - [Ajustes](settings) - Preferencias de la aplicación

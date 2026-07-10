@@ -245,6 +245,6 @@ Run the same grid configuration on different materials to build your material li
 
 ## Related Topics
 
-- **[3D Preview](../../ui/3d-preview)** - Preview test execution before running
+- **[3D Preview](../../ui/3d-preview.md)** - Preview test execution before running
 - **[Engrave](engrave)** - Understanding engrave operations
 - **[Contour Cutting](contour)** - Understanding cut operations

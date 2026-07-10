@@ -19,13 +19,13 @@ um ícone de verificação.
 
 ![Adicionar Máquina](/screenshots/app-settings-machines-add.png)
 
-3. O [diálogo de configurações da máquina](../machine/general) abre onde
+3. O [diálogo de configurações da máquina](../machine/general.md) abre onde
    você pode ajustar a configuração
 
 Alternativamente:
 
 - Clique em **Other Device…** para iniciar o
-  [Assistente de Configuração](../machine/config-wizard), que detecta
+  [Assistente de Configuração](../machine/config-wizard.md), que detecta
   automaticamente as configurações de um dispositivo conectado
 - Clique em **Import from File…** para adicionar uma máquina de um
   perfil exportado anteriormente ou de um perfil de dispositivo LightBurn
@@ -35,7 +35,7 @@ Alternativamente:
 ## Editar uma Máquina
 
 Clique no ícone de edição ao lado de uma máquina para abrir o
-[diálogo de configurações da máquina](../machine/general).
+[diálogo de configurações da máquina](../machine/general.md).
 
 ## Alternar a Máquina Ativa
 

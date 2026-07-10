@@ -438,4 +438,4 @@ du das Tracing vor dem Importieren feinabstimmen kannst.
 
 - [Unterstützte Formate](formats) - Detaillierte Formatspezifikationen
 - [G-Code exportieren](exporting) - Ausgabeoptionen
-- [Schnellstart](../getting-started/quick-start) - Erstes Import-Tutorial
+- [Schnellstart](../getting-started/quick-start.md) - Erstes Import-Tutorial

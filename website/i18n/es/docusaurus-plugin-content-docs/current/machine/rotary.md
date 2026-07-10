@@ -69,7 +69,7 @@ se ejecutarán en modo rotativo.
 
 ## Vista previa 3D en modo rotativo
 
-Cuando el modo rotativo está activo, la [vista 3D](../ui/3d-preview) muestra tu
+Cuando el modo rotativo está activo, la [vista 3D](../ui/3d-preview.md) muestra tu
 trayectoria de herramienta envuelta alrededor de un cilindro en lugar de en una
 superficie plana. El lienzo 2D también se adapta automáticamente al modo rotativo,
 y el lienzo 3D renderiza las trayectorias de herramienta rotativas con precisión en
@@ -84,7 +84,7 @@ cortar.
 ### Modelo 3D del Módulo Rotativo
 
 Cada módulo rotativo puede tener un modelo 3D asignado. El modelo aparece en la
-[vista 3D](../ui/3d-preview) junto a tu trayectoria, dándote una mejor idea de
+[vista 3D](../ui/3d-preview.md) junto a tu trayectoria, dándote una mejor idea de
 cómo se ve la configuración física. Puedes ajustar la escala, posición y rotación
 del modelo para coincidir con tu hardware real.
 
@@ -107,6 +107,6 @@ profundo en piezas de trabajo cilíndricas a través de múltiples pasadas.
 
 ## Páginas relacionadas
 
-- [Flujo de trabajo multicapa](../features/multi-layer) - Ajustes por capa incluyendo rotativo
-- [Vista 3D](../ui/3d-preview) - Vista previa de trayectorias en 3D
+- [Flujo de trabajo multicapa](../features/multi-layer.md) - Ajustes por capa incluyendo rotativo
+- [Vista 3D](../ui/3d-preview.md) - Vista previa de trayectorias en 3D
 - [Ajustes de máquina](general) - Configuración general de máquina

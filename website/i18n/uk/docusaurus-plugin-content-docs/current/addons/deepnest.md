@@ -62,5 +62,5 @@ Deepnest автоматично розташовує ваші workpieces у ко
 
 ## Пов'язані теми
 
-- [Обробка запасу](../features/stock-handling) - Визначити матеріал запасу для вкладання
-- [Позиціонування workpieces](../features/workpiece-positioning) - Позиціонувати workpieces вручну
+- [Обробка запасу](../features/stock-handling.md) - Визначити матеріал запасу для вкладання
+- [Позиціонування workpieces](../features/workpiece-positioning.md) - Позиціонувати workpieces вручну

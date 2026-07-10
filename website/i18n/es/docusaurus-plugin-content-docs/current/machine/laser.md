@@ -75,7 +75,7 @@ posicionamiento.
 Haz clic en el botón de enfoque (icono de láser) en la barra de herramientas
 para alternar el modo enfoque. El láser se encenderá a este nivel de potencia,
 ayudándote a ver exactamente dónde está posicionado el láser. Consulta
-[Posicionamiento de Piezas de Trabajo](../features/workpiece-positioning)
+[Posicionamiento de Piezas de Trabajo](../features/workpiece-positioning.md)
 para más información.
 :::
 
@@ -151,7 +151,7 @@ pueden sobreescribirse por paso si es necesario.
 #### Modelo 3D
 
 Cada cabezal láser puede tener un modelo 3D asignado. Este modelo se renderiza
-en la [vista 3D](../ui/3d-preview) y sigue la trayectoria durante la simulación.
+en la [vista 3D](../ui/3d-preview.md) y sigue la trayectoria durante la simulación.
 
 Haz clic en la fila de selección de modelo para explorar los modelos disponibles.
 Una vez seleccionado un modelo, puedes ajustar su escala, rotación (X/Y/Z) y
@@ -160,5 +160,5 @@ distancia focal para coincidir con tu cabezal láser físico.
 ## Ver También
 
 - [Ajustes de Dispositivo](device) - Ajustes de modo láser de GRBL
-- [Posicionamiento de Piezas de Trabajo](../features/workpiece-positioning) -
+- [Posicionamiento de Piezas de Trabajo](../features/workpiece-positioning.md) -
   Uso del modo enfoque y otros métodos de posicionamiento

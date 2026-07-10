@@ -187,7 +187,7 @@ Common workflow:
 - First: Cut details in parts (while secured)
 - Last: Shrink wrap cuts group free
 
-See [Multi-Layer Workflow](../multi-layer) for details.
+See [Multi-Layer Workflow](../multi-layer.md) for details.
 
 ### Shrink Wrap + Raster
 
@@ -208,12 +208,12 @@ See [Multi-Layer Workflow](../multi-layer) for details.
 
 Shrink Wrap operations support several post-processing options:
 
-- **[Smooth Path](../smooth)** - Reduce jagged edges in the boundary path
-- **[Holding Tabs](../holding-tabs)** - Keep cut pieces attached to stock material
-- **[Crop to Stock](../crop-to-stock)** - Limit cuts to material boundary
-- **[Path Optimization](../path-optimization)** - Reduce travel distance
-- **[Multi-Pass](../multi-pass)** - Repeat cuts for thick materials
-- **[Lead-In/Out](../lead-in-out)** - Add zero-power approach and exit moves for cleaner cut ends
+- **[Smooth Path](../smooth.md)** - Reduce jagged edges in the boundary path
+- **[Holding Tabs](../holding-tabs.md)** - Keep cut pieces attached to stock material
+- **[Crop to Stock](../crop-to-stock.md)** - Limit cuts to material boundary
+- **[Path Optimization](../path-optimization.md)** - Reduce travel distance
+- **[Multi-Pass](../multi-pass.md)** - Repeat cuts for thick materials
+- **[Lead-In/Out](../lead-in-out.md)** - Add zero-power approach and exit moves for cleaner cut ends
 
 ### Part Spacing
 
@@ -256,7 +256,7 @@ Shrink Wrap operations support several post-processing options:
 
 - Check that boundary doesn't overlap parts
 - Verify offset is sufficient
-- Preview in [3D Preview](../../ui/3d-preview)
+- Preview in [3D Preview](../../ui/3d-preview.md)
 - Test on scrap first
 
 **Watch for:**
@@ -301,7 +301,7 @@ Shrink wrap within a larger boundary:
 Before production run:
 
 1. Create shrink wrap
-2. Preview with [3D Preview](../../ui/3d-preview)
+2. Preview with [3D Preview](../../ui/3d-preview.md)
 3. Verify clearance is adequate
 4. Check no parts are intersected
 5. Run test on scrap material
@@ -335,7 +335,7 @@ Before production run:
 
 ### Parts move during cutting
 
-- **Add:** Small tabs to hold parts (see [Holding Tabs](../holding-tabs))
+- **Add:** Small tabs to hold parts (see [Holding Tabs](../holding-tabs.md))
 - **Use:** Cutting order: inside to outside
 - **Ensure:** Material is flat and secured
 - **Check:** Sheet isn't warped
@@ -368,7 +368,7 @@ The boundary path is optimized for:
 ## Related Topics
 
 - **[Contour Cutting](contour)** - Cutting individual object outlines
-- **[Multi-Layer Workflow](../multi-layer)** - Combining operations effectively
-- **[Holding Tabs](../holding-tabs)** - Keeping parts secure during cutting
-- **[3D Preview](../../ui/3d-preview)** - Previewing cutting paths
+- **[Multi-Layer Workflow](../multi-layer.md)** - Combining operations effectively
+- **[Holding Tabs](../holding-tabs.md)** - Keeping parts secure during cutting
+- **[3D Preview](../../ui/3d-preview.md)** - Previewing cutting paths
 - **[Material Test Grid](material-test-grid)** - Finding optimal cutting settings

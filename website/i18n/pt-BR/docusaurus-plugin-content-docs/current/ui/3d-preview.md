@@ -86,7 +86,7 @@ Personalize o que você vê:
 :::tip Cores por Laser
 Ao usar máquinas com múltiplas cabeças de laser, cada laser pode ter suas
 próprias cores de corte e raster configuradas nas
-[Configurações do Laser](../machine/laser). Isso facilita identificar qual laser
+[Configurações do Laser](../machine/laser.md). Isso facilita identificar qual laser
 realizará cada operação.
 :::
 
@@ -95,7 +95,7 @@ realizará cada operação.
 A visualização 3D renderiza um modelo da sua cabeça de laser que se move ao
 longo do caminho da ferramenta durante a simulação. Você pode atribuir um modelo
 3D a cada cabeça de laser na página de [Configurações do
-Laser](../machine/laser) nas Configurações da Máquina. A escala, rotação e
+Laser](../machine/laser.md) nas Configurações da Máquina. A escala, rotação e
 distância focal do modelo podem ser ajustadas para corresponder à sua
 configuração física.
 
@@ -140,7 +140,7 @@ Antes de enviar para a máquina, verifique:
 
 Algumas verificações adicionais são realizadas automaticamente. Quando você
 executa ou exporta um trabalho, o Rayforge executa
-[verificações de sanidade](../features/sanity-checks) que verificam limites
+[verificações de sanidade](../features/sanity-checks.md) que verificam limites
 da máquina, fronteiras da área de trabalho e colisões com zonas de restrição.
 
 ## Dicas de Desempenho
@@ -168,6 +168,6 @@ Para trabalhos grandes ou complexos:
 
 **Páginas Relacionadas:**
 
-- [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems) - WCS
+- [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems.md) - WCS
 - [Janela Principal](main-window) - Visão geral da interface principal
 - [Configurações](settings) - Preferências da aplicação

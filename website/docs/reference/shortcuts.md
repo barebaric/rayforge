@@ -387,7 +387,7 @@ Some lesser-known shortcuts:
 
 ## Related Pages
 
-- [Main Window](../ui/main-window) - UI overview
-- [Canvas Tools](../ui/canvas-tools) - Canvas interaction
-- [3D Preview](../ui/3d-preview) - 3D view controls
-- [3D Preview](../ui/3d-preview) - 3D view controls
+- [Main Window](../ui/main-window.md) - UI overview
+- [Canvas Tools](../ui/canvas-tools.md) - Canvas interaction
+- [3D Preview](../ui/3d-preview.md) - 3D view controls
+- [3D Preview](../ui/3d-preview.md) - 3D view controls

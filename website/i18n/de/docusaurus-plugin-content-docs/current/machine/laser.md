@@ -72,7 +72,7 @@ Der Fokusmodus schaltet den Laser mit niedriger Leistung ein, um als
 Klicke auf die Fokus-Taste (Laser-Symbol) in der Symbolleiste, um den
 Fokusmodus umzuschalten. Der Laser wird bei dieser Leistungsstufe
 eingeschaltet und hilft dir, genau zu sehen, wo der Laser positioniert ist.
-Siehe [Werkstückpositionierung](../features/workpiece-positioning) für weitere
+Siehe [Werkstückpositionierung](../features/workpiece-positioning.md) für weitere
 Informationen.
 :::
 
@@ -150,7 +150,7 @@ Bedarf pro Schritt überschrieben werden können.
 #### 3D-Modell
 
 Jedem Laserkopf kann ein 3D-Modell zugewiesen werden. Dieses Modell wird in
-der [3D-Ansicht](../ui/3d-preview) gerendert und folgt dem Werkzeugweg
+der [3D-Ansicht](../ui/3d-preview.md) gerendert und folgt dem Werkzeugweg
 während der Simulation.
 
 Klicke auf die Modellauswahlzeile, um verfügbare Modelle zu durchsuchen.
@@ -160,5 +160,5 @@ und Fokusabstand an deinen physischen Laserkopf anpassen.
 ## Siehe auch
 
 - [Geräteeinstellungen](device) - GRBL Lasermodus-Einstellungen
-- [Werkstückpositionierung](../features/workpiece-positioning) - Verwendung
+- [Werkstückpositionierung](../features/workpiece-positioning.md) - Verwendung
   von Fokusmodus und anderen Positionierungsmethoden

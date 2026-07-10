@@ -43,6 +43,6 @@ Commandes G-code exécutées à la fin de chaque travail, après toutes les opé
 
 ## Voir Aussi
 
-- [Bases du G-code](../general-info/gcode-basics) - Comprendre le G-code
-- [Dialectes G-code](../reference/gcode-dialects) - Différences détaillées des dialectes
+- [Bases du G-code](../general-info/gcode-basics.md) - Comprendre le G-code
+- [Dialectes G-code](../reference/gcode-dialects.md) - Différences détaillées des dialectes
 - [Hooks & Macros](hooks-macros) - Points d'injection de G-code personnalisé

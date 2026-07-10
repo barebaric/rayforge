@@ -48,7 +48,7 @@ Las operaciones definen cómo Rayforge procesará tu diseño. Las operaciones co
 ![Ajustes de Operación](/screenshots/step-settings-contour-general.png)
 
 :::warning Comienza con Potencia Baja
-Cuando trabajes con materiales nuevos, siempre comienza con ajustes de potencia bajos y ejecuta cortes de prueba. Aumenta gradualmente la potencia hasta lograr el resultado deseado. Usa la función [Cuadrícula de Prueba de Materiales](../features/operations/material-test-grid) para encontrar sistemáticamente los ajustes óptimos.
+Cuando trabajes con materiales nuevos, siempre comienza con ajustes de potencia bajos y ejecuta cortes de prueba. Aumenta gradualmente la potencia hasta lograr el resultado deseado. Usa la función [Cuadrícula de Prueba de Materiales](../features/operations/material-test-grid.md) para encontrar sistemáticamente los ajustes óptimos.
 :::
 
 
@@ -88,7 +88,7 @@ La vista previa 3D te ayuda a detectar problemas como:
 1. Coloca tu material en la cama láser
 2. Enfoca el láser según las instrucciones de tu máquina
 3. Posiciona tu diseño usando uno de los métodos en la
-   [Guía de Posicionamiento de Piezas](../features/workpiece-positioning)
+   [Guía de Posicionamiento de Piezas](../features/workpiece-positioning.md)
 
 ### Iniciando el Trabajo
 
@@ -119,15 +119,15 @@ Una vez que el trabajo se completa:
 ## Siguientes Pasos
 
 Ahora que has completado tu primer trabajo, explora estas funciones:
-- **[Posicionamiento de Piezas de Trabajo](../features/workpiece-positioning)**:
+- **[Posicionamiento de Piezas de Trabajo](../features/workpiece-positioning.md)**:
   Domina todos los métodos de posicionamiento (modo enfoque, enmarcado, WCS, cámara)
-- **[Operaciones Multi-Capa](../features/multi-layer)**: Asigna diferentes
+- **[Operaciones Multi-Capa](../features/multi-layer.md)**: Asigna diferentes
   operaciones a las capas
-- **[Pestañas de Sujeción](../features/holding-tabs)**: Mantén las piezas cortadas
+- **[Pestañas de Sujeción](../features/holding-tabs.md)**: Mantén las piezas cortadas
   en su lugar durante el corte
-- **[Integración de Cámara](../machine/camera)**: Usa una cámara para
+- **[Integración de Cámara](../machine/camera.md)**: Usa una cámara para
   alineación precisa
-- **[Hooks y Macros](../machine/hooks-macros)**: Automatiza tareas repetitivas
+- **[Hooks y Macros](../machine/hooks-macros.md)**: Automatiza tareas repetitivas
 
 ## Consejos para el Éxito
 
@@ -139,4 +139,4 @@ Ahora que has completado tu primer trabajo, explora estas funciones:
 
 ---
 
-**¿Necesitas Ayuda?** Revisa la sección de [Solución de Problemas](../troubleshooting/connection) o visita la página de [GitHub Issues](https://github.com/barebaric/rayforge/issues).
+**¿Necesitas Ayuda?** Revisa la sección de [Solución de Problemas](../troubleshooting/connection.md) o visita la página de [GitHub Issues](https://github.com/barebaric/rayforge/issues).

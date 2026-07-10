@@ -69,5 +69,5 @@ created.
 
 ## Related Topics
 
-- [Camera Setup](../machine/camera) - Configure and calibrate your camera
-- [Stock Handling](../features/stock-handling) - Work with stock items in your document
+- [Camera Setup](../machine/camera.md) - Configure and calibrate your camera
+- [Stock Handling](../features/stock-handling.md) - Work with stock items in your document

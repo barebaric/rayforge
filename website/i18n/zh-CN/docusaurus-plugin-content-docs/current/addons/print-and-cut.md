@@ -46,5 +46,5 @@
 
 ## 相关主题
 
-- [工件定位](../features/workpiece-positioning) - 手动定位和变换工件
-- [激光设置](../machine/laser) - 配置激光的聚焦功率
+- [工件定位](../features/workpiece-positioning.md) - 手动定位和变换工件
+- [激光设置](../machine/laser.md) - 配置激光的聚焦功率

@@ -121,10 +121,10 @@ permaneçam no lugar durante a gravação.
 
 ## Páginas relacionadas
 
-- [Operações](./operations/contour) - Tipos de operações para fluxos
+- [Operações](./operations/contour.md) - Tipos de operações para fluxos
   de trabalho por camada
 
-- [Macros e Hooks](../machine/hooks-macros) - Hooks em nível de camada
+- [Macros e Hooks](../machine/hooks-macros.md) - Hooks em nível de camada
   para automação
-- [Visualização 3D](../ui/3d-preview) - Visualizar pilha de camadas
-- [Navegador de Ativos](../ui/bottom-panel) - Gerenciando ativos com menus de contexto
+- [Visualização 3D](../ui/3d-preview.md) - Visualizar pilha de camadas
+- [Navegador de Ativos](../ui/bottom-panel.md) - Gerenciando ativos com menus de contexto

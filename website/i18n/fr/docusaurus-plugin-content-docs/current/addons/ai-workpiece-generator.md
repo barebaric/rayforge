@@ -15,7 +15,7 @@ pièce prête pour votre découpeuse laser.
 ## Prérequis
 
 Avant d'utiliser ce module, vous devez configurer un fournisseur IA.
-Consultez [Fournisseur IA](../application-settings/ai-provider) pour
+Consultez [Fournisseur IA](../application-settings/ai-provider.md) pour
 les instructions de configuration.
 
 ## Utiliser le Générateur
@@ -47,5 +47,5 @@ les instructions de configuration.
 
 ## Sujets Connexes
 
-- [Fournisseur IA](../application-settings/ai-provider) - Configurer les fournisseurs IA
-- [Ébaucheur](../features/sketcher) - Dessiner des formes manuellement
+- [Fournisseur IA](../application-settings/ai-provider.md) - Configurer les fournisseurs IA
+- [Ébaucheur](../features/sketcher.md) - Dessiner des formes manuellement

@@ -331,6 +331,6 @@ Sempre teste macros e hooks no **modo de simulação** ou com o laser **desabili
 ## Páginas Relacionadas
 
 - [Configurações do Dispositivo](device) - Referência de comandos GRBL
-- [Dialetos de G-code](../reference/gcode-dialects) - Compatibilidade de G-code
+- [Dialetos de G-code](../reference/gcode-dialects.md) - Compatibilidade de G-code
 - [Configurações Gerais](general) - Configuração da máquina
-- [Fluxo de Trabalho Multi-Camadas](../features/multi-layer) - Usando hooks com camadas
+- [Fluxo de Trabalho Multi-Camadas](../features/multi-layer.md) - Usando hooks com camadas

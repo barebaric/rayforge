@@ -71,5 +71,5 @@ diálogo fecha após a criação dos itens.
 
 ## Tópicos relacionados
 
-- [Configuração da câmera](../machine/camera) - Configurar e calibrar sua câmera
-- [Manuseio de estoque](../features/stock-handling) - Trabalhar com itens de material no seu documento
+- [Configuração da câmera](../machine/camera.md) - Configurar e calibrar sua câmera
+- [Manuseio de estoque](../features/stock-handling.md) - Trabalhar com itens de material no seu documento

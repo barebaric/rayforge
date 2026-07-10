@@ -434,4 +434,4 @@ before importing.
 
 - [Supported Formats](formats) - Detailed format specifications
 - [Exporting G-code](exporting) - Output options
-- [Quick Start](../getting-started/quick-start) - First import tutorial
+- [Quick Start](../getting-started/quick-start.md) - First import tutorial

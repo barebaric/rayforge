@@ -52,13 +52,13 @@ Rayforge може надсилати анонімні дані про викор
 Діалог налаштувань також містить сторінки для керування іншими частинами
 програми. Кожна має власну документацію:
 
-- [Машини](../application-settings/machines) — додавати, видаляти та
+- [Машини](../application-settings/machines.md) — додавати, видаляти та
   налаштовувати ваші лазерні різаки
-- [Матеріали](../application-settings/materials) — керувати вашими
+- [Матеріали](../application-settings/materials.md) — керувати вашими
   бібліотеками матеріалів
-- [Рецепти](../application-settings/recipes) — керувати збереженими
+- [Рецепти](../application-settings/recipes.md) — керувати збереженими
   рецептами операцій
-- [AI-провайдери](../application-settings/ai-provider) — налаштувати
+- [AI-провайдери](../application-settings/ai-provider.md) — налаштувати
   AI-провайдерів для використання аддонами
-- [Аддони](../application-settings/addons) — встановлювати, оновлювати та
+- [Аддони](../application-settings/addons.md) — встановлювати, оновлювати та
   видаляти аддони розширень

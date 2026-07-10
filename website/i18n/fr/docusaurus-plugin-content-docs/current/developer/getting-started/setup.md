@@ -6,7 +6,7 @@ Ce guide couvre la configuration de votre environnement de développement pour R
 
 ### Prérequis
 
-Voir le [Guide d'installation](../../getting-started/installation#linux-pixi) pour les instructions d'installation de Pixi.
+Voir le [Guide d'installation](../../getting-started/installation.mdx#linux-pixi) pour les instructions d'installation de Pixi.
 
 ### Hooks pre-commit (Optionnel)
 
@@ -30,7 +30,7 @@ Toutes les commandes sont exécutées via `pixi run` :
 
 ### Prérequis
 
-Voir le [Guide d'installation](../../getting-started/installation#windows-developer) pour les instructions détaillées de configuration du développement MSYS2.
+Voir le [Guide d'installation](../../getting-started/installation.mdx#windows-developer) pour les instructions détaillées de configuration du développement MSYS2.
 
 ### Démarrage rapide
 

@@ -77,6 +77,6 @@ Le système utilise un algorithme de score de spécificité pour prioriser les r
 **Sujets Connexes** :
 
 - [Matériaux](materials) - Gérer les propriétés des matériaux
-- [Gestion du Matériau](../features/stock-handling) - Travailler avec les matériaux de stock
-- [Configuration Machine](../machine/general) - Configurer les machines et têtes laser
-- [Aperçu des Opérations](../features/operations/contour) - Comprendre les différents types d'opérations
+- [Gestion du Matériau](../features/stock-handling.md) - Travailler avec les matériaux de stock
+- [Configuration Machine](../machine/general.md) - Configurer les machines et têtes laser
+- [Aperçu des Opérations](../features/operations/contour.md) - Comprendre les différents types d'opérations

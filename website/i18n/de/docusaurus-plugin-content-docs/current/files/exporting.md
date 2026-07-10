@@ -120,6 +120,6 @@ Das genaue Format, die Befehle, numerische Präzision usw. hängen von den Einst
 
 - [Dateien importieren](importing) - Designs in Rayforge importieren
 - [Unterstützte Formate](formats) - Dateiformat-Details
-- [G-Code-Dialekte](../reference/gcode-dialects) - Dialekt-Unterschiede
-- [Hooks & Makros](../machine/hooks-macros) - Ausgabe anpassen
-- [3D-Vorschau](../ui/3d-preview) - Vor dem Export voranschauen
+- [G-Code-Dialekte](../reference/gcode-dialects.md) - Dialekt-Unterschiede
+- [Hooks & Makros](../machine/hooks-macros.md) - Ausgabe anpassen
+- [3D-Vorschau](../ui/3d-preview.md) - Vor dem Export voranschauen

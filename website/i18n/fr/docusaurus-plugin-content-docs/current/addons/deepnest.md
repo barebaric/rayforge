@@ -65,5 +65,5 @@ dans leurs positions d'origine.
 
 ## Sujets associés
 
-- [Gestion du stock](../features/stock-handling) - Définir le matériau de stock pour le nesting
-- [Positionnement des workpieces](../features/workpiece-positioning) - Positionner les workpieces manuellement
+- [Gestion du stock](../features/stock-handling.md) - Définir le matériau de stock pour le nesting
+- [Positionnement des workpieces](../features/workpiece-positioning.md) - Positionner les workpieces manuellement

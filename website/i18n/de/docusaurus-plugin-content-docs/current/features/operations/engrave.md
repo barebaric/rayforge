@@ -206,7 +206,7 @@ Für beste Qualität, bidirektional deaktivieren. Für Geschwindigkeit, aktivier
 - 2-5mm für die meisten Jobs
 - Größer für hohe Geschwindigkeiten
 
-Siehe [Overscan](../overscan) für Details.
+Siehe [Overscan](../overscan.md) für Details.
 
 ## Nachbearbeitung
 
@@ -214,9 +214,9 @@ Siehe [Overscan](../overscan) für Details.
 
 Gravur-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 
-- **[Overscan](../overscan)** - Rasterzeilen für konsistente Gravurqualität erweitern
-- **[Pfad-Optimierung](../path-optimization)** - Verfahrdistanz reduzieren
-- **[Mehrfach-Durchgang](../multi-pass)** - Gravur für tiefere Ergebnisse wiederholen
+- **[Overscan](../overscan.md)** - Rasterzeilen für konsistente Gravurqualität erweitern
+- **[Pfad-Optimierung](../path-optimization.md)** - Verfahrdistanz reduzieren
+- **[Mehrfach-Durchgang](../multi-pass.md)** - Gravur für tiefere Ergebnisse wiederholen
 
 ## Modus-spezifische Einstellungen
 
@@ -431,6 +431,6 @@ Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder 
 ## Verwandte Themen
 
 - **[Kontur-Schneiden](contour)** - Umrisse und Formen schneiden
-- **[Overscan](../overscan)** - Gravurqualität verbessern
+- **[Overscan](../overscan.md)** - Gravurqualität verbessern
 - **[Materialtest-Raster](material-test-grid)** - Optimale Einstellungen finden
-- **[Mehrschicht-Workflow](../multi-layer)** - Gravur mit anderen Operationen kombinieren
+- **[Mehrschicht-Workflow](../multi-layer.md)** - Gravur mit anderen Operationen kombinieren

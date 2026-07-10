@@ -109,4 +109,4 @@ description: "使用配置向导通过探测已连接设备的固件设置来自
 
 - [常规设置](general) — 手动机器配置
 - [设备设置](device) — 在已配置的机器上读取和写入固件设置
-- [添加机器](../application-settings/machines) — 机器创建流程概述
+- [添加机器](../application-settings/machines.md) — 机器创建流程概述

@@ -81,6 +81,6 @@ O sistema usa um algoritmo de pontuação de especificidade para priorizar as re
 **Tópicos Relacionados**:
 
 - [Materiais](materials) - Gerenciando propriedades de materiais
-- [Manuseio de Material](../features/stock-handling) - Trabalhando com materiais base
-- [Configuração de Máquina](../machine/general) - Configurando máquinas e cabeças de laser
-- [Visão Geral de Operações](../features/operations/contour) - Entendendo diferentes tipos de operação
+- [Manuseio de Material](../features/stock-handling.md) - Trabalhando com materiais base
+- [Configuração de Máquina](../machine/general.md) - Configurando máquinas e cabeças de laser
+- [Visão Geral de Operações](../features/operations/contour.md) - Entendendo diferentes tipos de operação

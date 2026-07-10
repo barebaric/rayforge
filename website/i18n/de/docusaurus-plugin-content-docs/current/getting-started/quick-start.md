@@ -48,7 +48,7 @@ Operationen definieren, wie Rayforge dein Design verarbeitet. Häufige Operation
 ![Operationseinstellungen](/screenshots/step-settings-contour-general.png)
 
 :::warning Mit niedriger Leistung beginnen
-Wenn du mit neuen Materialien arbeitest, beginne immer mit niedrigeren Leistungseinstellungen und führe Testschnitte durch. Erhöhe die Leistung schrittweise, bis du das gewünschte Ergebnis erzielst. Verwende die Funktion [Materialtest-Raster](../features/operations/material-test-grid), um systematisch optimale Einstellungen zu finden.
+Wenn du mit neuen Materialien arbeitest, beginne immer mit niedrigeren Leistungseinstellungen und führe Testschnitte durch. Erhöhe die Leistung schrittweise, bis du das gewünschte Ergebnis erzielst. Verwende die Funktion [Materialtest-Raster](../features/operations/material-test-grid.md), um systematisch optimale Einstellungen zu finden.
 :::
 
 
@@ -88,7 +88,7 @@ Die 3D-Vorschau hilft dir, Probleme zu erkennen wie:
 1. Platziere dein Material auf dem Laserbett
 2. Fokussiere den Laser entsprechend den Anweisungen deiner Maschine
 3. Positioniere dein Design mit einer der Methoden aus dem
-   [Werkstückpositionierungsleitfaden](../features/workpiece-positioning)
+   [Werkstückpositionierungsleitfaden](../features/workpiece-positioning.md)
 
 ### Den Job starten
 
@@ -120,15 +120,15 @@ Du hast deinen ersten Rayforge-Job abgeschlossen! Jetzt kannst du erweiterte Fun
 
 Nachdem du deinen ersten Job abgeschlossen hast, erkunde diese Funktionen:
 
-- **[Werkstückpositionierung](../features/workpiece-positioning)**: Meistere
+- **[Werkstückpositionierung](../features/workpiece-positioning.md)**: Meistere
   alle Positionierungsmethoden (Fokusmodus, Einrahmen, WKS, Kamera)
-- **[Mehrschicht-Operationen](../features/multi-layer)**: Unterschiedliche
+- **[Mehrschicht-Operationen](../features/multi-layer.md)**: Unterschiedliche
   Operationen Ebenen zuweisen
-- **[Halte-Laschen](../features/holding-tabs)**: Geschnittene Teile während des Schneidens an Ort
+- **[Halte-Laschen](../features/holding-tabs.md)**: Geschnittene Teile während des Schneidens an Ort
   und Stelle halten
-- **[Kamera-Integration](../machine/camera)**: Eine Kamera zur präzisen
+- **[Kamera-Integration](../machine/camera.md)**: Eine Kamera zur präzisen
   Ausrichtung verwenden
-- **[Hooks & Makros](../machine/hooks-macros)**: Wiederkehrende Aufgaben automatisieren
+- **[Hooks & Makros](../machine/hooks-macros.md)**: Wiederkehrende Aufgaben automatisieren
 
 ## Tipps für den Erfolg
 
@@ -140,4 +140,4 @@ Nachdem du deinen ersten Job abgeschlossen hast, erkunde diese Funktionen:
 
 ---
 
-**Hilfe benötigt?** Schaue im Abschnitt [Fehlerbehebung](../troubleshooting/connection) nach oder besuche die [GitHub-Issues](https://github.com/barebaric/rayforge/issues)-Seite.
+**Hilfe benötigt?** Schaue im Abschnitt [Fehlerbehebung](../troubleshooting/connection.md) nach oder besuche die [GitHub-Issues](https://github.com/barebaric/rayforge/issues)-Seite.

@@ -76,6 +76,6 @@ Das System verwendet einen Spezifitäts-Bewertungsalgorithmus, um die relevantes
 **Verwandte Themen**:
 
 - [Materialien](materials) - Materialeigenschaften verwalten
-- [Material-Handhabung](../features/stock-handling) - Mit Rohmaterialien arbeiten
-- [Maschinen-Setup](../machine/general) - Maschinen und Laserköpfe konfigurieren
-- [Operationsübersicht](../features/operations/contour) - Verschiedene Operationstypen verstehen
+- [Material-Handhabung](../features/stock-handling.md) - Mit Rohmaterialien arbeiten
+- [Maschinen-Setup](../machine/general.md) - Maschinen und Laserköpfe konfigurieren
+- [Operationsübersicht](../features/operations/contour.md) - Verschiedene Operationstypen verstehen

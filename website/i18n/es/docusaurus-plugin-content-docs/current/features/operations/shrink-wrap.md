@@ -183,7 +183,7 @@ Flujo de trabajo común:
 - Primero: Cortar detalles en las partes (mientras están aseguradas)
 - Último: Envoltura contraída corta el grupo libre
 
-Ver [Flujo de Trabajo Multi-Capa](../multi-layer) para detalles.
+Ver [Flujo de Trabajo Multi-Capa](../multi-layer.md) para detalles.
 
 ### Envoltura Contraída + Rasterizado
 
@@ -204,12 +204,12 @@ Ver [Flujo de Trabajo Multi-Capa](../multi-layer) para detalles.
 
 Las operaciones de Envoltura Contraída soportan varias opciones de post-procesamiento:
 
-- **[Suavizar Trayectoria](../smooth)** - Reduce bordes irregulares en la trayectoria del límite
-- **[Pestañas de Sujeción](../holding-tabs)** - Mantienen las piezas cortadas adjuntas al material base
-- **[Recortar al Material](../crop-to-stock)** - Limita los cortes al límite del material
-- **[Optimización de Trayectoria](../path-optimization)** - Reduce la distancia de viaje
-- **[Multi-Pasada](../multi-pass)** - Repite cortes para materiales gruesos
-- **[Entrada/Salida](../lead-in-out)** - Añade movimientos de aproximación y salida sin potencia para extremos de corte más limpios
+- **[Suavizar Trayectoria](../smooth.md)** - Reduce bordes irregulares en la trayectoria del límite
+- **[Pestañas de Sujeción](../holding-tabs.md)** - Mantienen las piezas cortadas adjuntas al material base
+- **[Recortar al Material](../crop-to-stock.md)** - Limita los cortes al límite del material
+- **[Optimización de Trayectoria](../path-optimization.md)** - Reduce la distancia de viaje
+- **[Multi-Pasada](../multi-pass.md)** - Repite cortes para materiales gruesos
+- **[Entrada/Salida](../lead-in-out.md)** - Añade movimientos de aproximación y salida sin potencia para extremos de corte más limpios
 
 ## Consejos y Mejores Prácticas
 
@@ -335,7 +335,7 @@ Antes de la tanda de producción:
 
 ### Las partes se mueven durante el corte
 
-- **Añade:** Pestañas pequeñas para sostener las partes (ver [Pestañas de Sujeción](../holding-tabs))
+- **Añade:** Pestañas pequeñas para sostener las partes (ver [Pestañas de Sujeción](../holding-tabs.md))
 - **Usa:** Orden de corte: de adentro hacia afuera
 - **Asegúrate:** El material está plano y asegurado
 - **Revisa:** La lámina no está alabeada
@@ -368,7 +368,7 @@ La trayectoria del límite se optimiza para:
 ## Temas Relacionados
 
 - **[Corte de Contorno](contour)** - Cortar contornos de objetos individuales
-- **[Flujo de Trabajo Multi-Capa](../multi-layer)** - Combinando operaciones efectivamente
-- **[Pestañas de Sujeción](../holding-tabs)** - Mantener partes aseguradas durante el corte
+- **[Flujo de Trabajo Multi-Capa](../multi-layer.md)** - Combinando operaciones efectivamente
+- **[Pestañas de Sujeción](../holding-tabs.md)** - Mantener partes aseguradas durante el corte
 - **[Vista Previa 3D](../ui/3d-preview)** - Previsualizando trayectorias de corte
 - **[Cuadrícula de Prueba de Materiales](material-test-grid)** - Encontrar ajustes de corte óptimos

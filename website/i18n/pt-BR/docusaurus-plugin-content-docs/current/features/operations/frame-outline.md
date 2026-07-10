@@ -106,11 +106,11 @@ O contorno de moldura suporta compensação de kerf:
 
 Operações de Contorno de Moldura suportam várias opções de pós-processamento:
 
-- **[Abas de Fixação](../holding-tabs)** - Mantém a peça emoldurada anexada ao estoque
-- **[Cortar para Estoque](../crop-to-stock)** - Limita cortes ao limite do material
-- **[Otimização de Caminho](../path-optimization)** - Reduz distância de deslocamento
-- **[Multi-Passagem](../multi-pass)** - Repete cortes para materiais espessos
-- **[Entrada/Saída](../lead-in-out)** - Adiciona movimentos de aproximação e saída sem potência para extremidades de corte mais limpas
+- **[Abas de Fixação](../holding-tabs.md)** - Mantém a peça emoldurada anexada ao estoque
+- **[Cortar para Estoque](../crop-to-stock.md)** - Limita cortes ao limite do material
+- **[Otimização de Caminho](../path-optimization.md)** - Reduz distância de deslocamento
+- **[Multi-Passagem](../multi-pass.md)** - Repete cortes para materiais espessos
+- **[Entrada/Saída](../lead-in-out.md)** - Adiciona movimentos de aproximação e saída sem potência para extremidades de corte mais limpas
 
 ## Casos de Uso
 
@@ -291,6 +291,6 @@ M5                 ; Laser desligado
 
 - **[Corte de Contorno](contour)** - Cortando contornos de objetos individuais
 - **[Shrink Wrap](shrink-wrap)** - Limites irregulares eficientes
-- **[Abas de Fixação](../holding-tabs)** - Mantendo peças seguras durante o corte
-- **[Fluxo de Trabalho Multi-Camadas](../multi-layer)** - Organizando operações efetivamente
-- **[Compensação de Kerf](../kerf)** - Melhorando precisão dimensional
+- **[Abas de Fixação](../holding-tabs.md)** - Mantendo peças seguras durante o corte
+- **[Fluxo de Trabalho Multi-Camadas](../multi-layer.md)** - Organizando operações efetivamente
+- **[Compensação de Kerf](../kerf.md)** - Melhorando precisão dimensional

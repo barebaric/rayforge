@@ -140,7 +140,7 @@ corte limpio y completamente separado. Esto es especialmente útil para:
 El sobrecorte se aplica tanto a contornos exteriores como a agujeros internos.
 
 :::tip Entrada/Salida vs Sobrecorte
-[Entrada/Salida](../lead-in-out) agrega movimientos de aproximación y
+[Entrada/Salida](../lead-in-out.md) agrega movimientos de aproximación y
 salida con potencia cero antes y después de la trayectoria de corte. El
 sobrecorte extiende la propia trayectoria de corte más allá de la
 unión. Pueden usarse juntos para una calidad de corte óptima.
@@ -152,12 +152,12 @@ unión. Pueden usarse juntos para una calidad de corte óptima.
 
 Las operaciones de contorno soportan varias opciones de post-procesamiento:
 
-- **[Suavizar Trayectoria](../smooth)** - Reduce bordes irregulares en trayectorias de corte
-- **[Pestañas de Sujeción](../holding-tabs)** - Mantienen las piezas cortadas adjuntas al material base
-- **[Recortar al Material](../crop-to-stock)** - Limita los cortes al límite del material
-- **[Optimización de Trayectoria](../path-optimization)** - Reduce la distancia de viaje entre cortes
-- **[Multi-Pasada](../multi-pass)** - Repite cortes para materiales gruesos
-- **[Entrada/Salida](../lead-in-out)** - Agregar movimientos de aproximación y salida sin potencia para extremos de corte más limpios
+- **[Suavizar Trayectoria](../smooth.md)** - Reduce bordes irregulares en trayectorias de corte
+- **[Pestañas de Sujeción](../holding-tabs.md)** - Mantienen las piezas cortadas adjuntas al material base
+- **[Recortar al Material](../crop-to-stock.md)** - Limita los cortes al límite del material
+- **[Optimización de Trayectoria](../path-optimization.md)** - Reduce la distancia de viaje entre cortes
+- **[Multi-Pasada](../multi-pass.md)** - Repite cortes para materiales gruesos
+- **[Entrada/Salida](../lead-in-out.md)** - Agregar movimientos de aproximación y salida sin potencia para extremos de corte más limpios
 
 ### Compensación de Kerf
 
@@ -175,7 +175,7 @@ Kerf es el ancho de material removido por el haz láser:
 3. Para piezas: desplaza **hacia adentro** por kerf/2
 4. Para agujeros: desplaza **hacia afuera** por kerf/2
 
-Ver [Kerf](../kerf) para guía detallada.
+Ver [Kerf](../kerf.md) para guía detallada.
 
 ## Consejos y Mejores Prácticas
 
@@ -217,7 +217,7 @@ Ver [Kerf](../kerf) para guía detallada.
 
 ### Las piezas caen durante el corte
 
-- **Añade:** [Pestañas de sujeción](../holding-tabs)
+- **Añade:** [Pestañas de sujeción](../holding-tabs.md)
 - **Usa:** Optimización de orden de corte
 - **Corta:** Características interiores antes del exterior
 - **Asegura:** El material está plano y asegurado
@@ -272,6 +272,6 @@ M5                  ; Láser apagado
 ## Temas Relacionados
 
 - **[Grabado](engrave)** - Rellenar áreas con patrones de grabado
-- **[Pestañas de Sujeción](../holding-tabs)** - Mantener piezas aseguradas durante el corte
-- **[Kerf](../kerf)** - Mejorar precisión de corte
+- **[Pestañas de Sujeción](../holding-tabs.md)** - Mantener piezas aseguradas durante el corte
+- **[Kerf](../kerf.md)** - Mejorar precisión de corte
 - **[Cuadrícula de Prueba de Material](material-test-grid)** - Encontrar ajustes óptimos de potencia/velocidad

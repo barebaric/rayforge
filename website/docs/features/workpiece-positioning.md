@@ -153,7 +153,7 @@ Use different WCS slots for different fixture positions. For example:
 - **Repeatable jobs**: Same job, different positions
 - **Production runs**: Consistent positioning across multiple pieces
 
-See [Work Coordinate Systems](../general-info/coordinate-systems) for
+See [Work Coordinate Systems](../general-info/coordinate-systems.md) for
 complete documentation.
 
 ---
@@ -202,7 +202,7 @@ Camera alignment maps camera pixels to real-world coordinates:
 - **Precise placement**: Sub-millimeter accuracy requirements
 - **Complex layouts**: Multiple items with specific spacing
 
-See [Camera Integration](../machine/camera) for complete documentation.
+See [Camera Integration](../machine/camera.md) for complete documentation.
 
 ---
 
@@ -277,9 +277,9 @@ For running the same job at different locations:
 ## Related Topics
 
 - [Framing Your Job](framing-your-job) - Detailed framing documentation
-- [Work Coordinate Systems](../general-info/coordinate-systems) - WCS
+- [Work Coordinate Systems](../general-info/coordinate-systems.md) - WCS
   reference
-- [Camera Integration](../machine/camera) - Camera setup and alignment
-- [Control Panel](../ui/bottom-panel) - Jog controls and WCS
+- [Camera Integration](../machine/camera.md) - Camera setup and alignment
+- [Control Panel](../ui/bottom-panel.md) - Jog controls and WCS
   management
-- [Quick Start Guide](../getting-started/quick-start) - Basic workflow
+- [Quick Start Guide](../getting-started/quick-start.md) - Basic workflow

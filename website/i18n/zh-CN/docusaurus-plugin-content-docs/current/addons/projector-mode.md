@@ -30,5 +30,5 @@
 
 ## 相关主题
 
-- [坐标系](../general-info/coordinate-systems) - 了解机器坐标和工作偏移
-- [工作件定位](../features/workpiece-positioning) - 在画布上定位工作件
+- [坐标系](../general-info/coordinate-systems.md) - 了解机器坐标和工作偏移
+- [工作件定位](../features/workpiece-positioning.md) - 在画布上定位工作件

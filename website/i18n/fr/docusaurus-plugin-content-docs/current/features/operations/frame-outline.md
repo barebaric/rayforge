@@ -106,11 +106,11 @@ Le contour de cadrage supporte la compensation de kerf :
 
 Les opérations de Contour de Cadrage supportent plusieurs options de post-traitement :
 
-- **[Ponts de Maintien](../holding-tabs)** - Maintenir la pièce encadrée attachée au stock
-- **[Rognage au Stock](../crop-to-stock)** - Limiter les coupes à la limite du matériau
-- **[Optimisation de Parcours](../path-optimization)** - Réduire la distance de déplacement
-- **[Passe Multiple](../multi-pass)** - Répéter les coupes pour les matériaux épais
-- **[Entrée/Sortie](../lead-in-out)** - Ajouter des mouvements d'approche et de sortie sans puissance pour des extrémités de coupe plus propres
+- **[Ponts de Maintien](../holding-tabs.md)** - Maintenir la pièce encadrée attachée au stock
+- **[Rognage au Stock](../crop-to-stock.md)** - Limiter les coupes à la limite du matériau
+- **[Optimisation de Parcours](../path-optimization.md)** - Réduire la distance de déplacement
+- **[Passe Multiple](../multi-pass.md)** - Répéter les coupes pour les matériaux épais
+- **[Entrée/Sortie](../lead-in-out.md)** - Ajouter des mouvements d'approche et de sortie sans puissance pour des extrémités de coupe plus propres
 
 ## Cas d'Utilisation
 
@@ -291,6 +291,6 @@ M5                 ; Laser éteint
 
 - **[Coupe de Contour](contour)** - Contours d'objets individuels de coupe
 - **[Shrink Wrap](shrink-wrap)** - Limites irrégulières efficaces
-- **[Ponts de Maintien](../holding-tabs)** - Maintenir les pièces sécurisées pendant la coupe
-- **[Flux de Travail Multi-Couches](../multi-layer)** - Organiser efficacement les opérations
-- **[Compensation de Kerf](../kerf)** - Améliorer la précision dimensionnelle
+- **[Ponts de Maintien](../holding-tabs.md)** - Maintenir les pièces sécurisées pendant la coupe
+- **[Flux de Travail Multi-Couches](../multi-layer.md)** - Organiser efficacement les opérations
+- **[Compensation de Kerf](../kerf.md)** - Améliorer la précision dimensionnelle

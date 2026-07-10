@@ -590,6 +590,6 @@ Pour ajouter le support d'un firmware :
 ## Pages connexes
 
 - [Dialectes G-code](gcode-dialects) - Détails des dialectes
-- [Paramètres de l'appareil](../machine/device) - Configuration GRBL
-- [Problèmes de connexion](../troubleshooting/connection) - Dépannage de connexion
-- [Paramètres généraux](../machine/general) - Configuration machine
+- [Paramètres de l'appareil](../machine/device.md) - Configuration GRBL
+- [Problèmes de connexion](../troubleshooting/connection.md) - Dépannage de connexion
+- [Paramètres généraux](../machine/general.md) - Configuration machine

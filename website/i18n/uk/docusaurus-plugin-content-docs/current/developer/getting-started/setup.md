@@ -6,7 +6,7 @@
 
 ### Вимоги
 
-Див. [Посібник з встановлення](../../getting-started/installation#linux-pixi) для інструкцій з встановлення Pixi.
+Див. [Посібник з встановлення](../../getting-started/installation.mdx#linux-pixi) для інструкцій з встановлення Pixi.
 
 ### Pre-commit хуки (Опціонально)
 
@@ -30,7 +30,7 @@ pixi run pre-commit-install
 
 ### Вимоги
 
-Див. [Посібник з встановлення](../../getting-started/installation#windows-developer) для детальних інструкцій з налаштування розробки MSYS2.
+Див. [Посібник з встановлення](../../getting-started/installation.mdx#windows-developer) для детальних інструкцій з налаштування розробки MSYS2.
 
 ### Швидкий старт
 

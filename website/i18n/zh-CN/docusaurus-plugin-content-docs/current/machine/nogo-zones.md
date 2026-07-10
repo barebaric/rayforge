@@ -1,6 +1,6 @@
 # 禁区
 
-禁区定义了工作表面上激光不应进入的限制区域。启用后，它们会作为[作业完整性检查](../features/sanity-checks)的一部分，在运行或导出前进行检查。
+禁区定义了工作表面上激光不应进入的限制区域。启用后，它们会作为[作业完整性检查](../features/sanity-checks.md)的一部分，在运行或导出前进行检查。
 
 ![禁区](/screenshots/machine-nogo-zones.png)
 
@@ -25,5 +25,5 @@
 ## 相关页面
 
 - [硬件设置](hardware) - 机器尺寸和轴配置
-- [作业完整性检查](../features/sanity-checks) - 作业前验证
-- [3D 视图](../ui/3d-preview) - 3D 刀具路径可视化
+- [作业完整性检查](../features/sanity-checks.md) - 作业前验证
+- [3D 视图](../ui/3d-preview.md) - 3D 刀具路径可视化

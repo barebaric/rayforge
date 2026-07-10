@@ -206,7 +206,7 @@ Para mejor calidad, deshabilita bidireccional. Para velocidad, habilítalo.
 - 2-5mm para la mayoría de trabajos
 - Mayor para velocidades altas
 
-Ver [Overscan](../overscan) para detalles.
+Ver [Overscan](../overscan.md) para detalles.
 
 ## Post-Procesamiento
 
@@ -214,9 +214,9 @@ Ver [Overscan](../overscan) para detalles.
 
 Las operaciones de grabado soportan varias opciones de post-procesamiento:
 
-- **[Overscan](../overscan)** - Extiende las líneas rasterizadas para calidad de grabado consistente
-- **[Optimización de Trayectoria](../path-optimization)** - Reduce la distancia de viaje
-- **[Multi-Pasada](../multi-pass)** - Repite el grabado para resultados más profundos
+- **[Overscan](../overscan.md)** - Extiende las líneas rasterizadas para calidad de grabado consistente
+- **[Optimización de Trayectoria](../path-optimization.md)** - Reduce la distancia de viaje
+- **[Multi-Pasada](../multi-pass.md)** - Repite el grabado para resultados más profundos
 
 ## Ajustes Específicos del Modo
 
@@ -431,6 +431,6 @@ Usa invertir para litofanías (áreas claras deberían ser delgadas) o repujado 
 ## Temas Relacionados
 
 - **[Corte de Contorno](contour)** - Cortar contornos y formas
-- **[Overscan](../overscan)** - Mejorando la calidad del grabado
+- **[Overscan](../overscan.md)** - Mejorando la calidad del grabado
 - **[Cuadrícula de Prueba de Materiales](material-test-grid)** - Encontrar ajustes óptimos
-- **[Flujo de Trabajo Multi-Capa](../multi-layer)** - Combinando grabado con otras operaciones
+- **[Flujo de Trabajo Multi-Capa](../multi-layer.md)** - Combinando grabado con otras operaciones

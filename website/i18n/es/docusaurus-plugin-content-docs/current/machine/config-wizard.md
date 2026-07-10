@@ -126,5 +126,5 @@ adicionales.
 - [Ajustes Generales](general) — configuración manual de la máquina
 - [Ajustes de dispositivo](device) — leer y escribir ajustes del firmware
   en una máquina ya configurada
-- [Añadir una Máquina](../application-settings/machines) — descripción
+- [Añadir una Máquina](../application-settings/machines.md) — descripción
   general del proceso de creación de máquinas

@@ -376,5 +376,5 @@ sudo snap connect rayforge:serial-port
 
 - [Problemas de Conexão](connection) - Solução de problemas de conexão serial
 - [Modo de Depuração](debug) - Habilite logging de diagnóstico
-- [Instalação](../getting-started/installation) - Guia de instalação
-- [Configurações Gerais](../machine/general) - Configuração de máquina
+- [Instalação](../getting-started/installation.mdx) - Guia de instalação
+- [Configurações Gerais](../machine/general.md) - Configuração de máquina

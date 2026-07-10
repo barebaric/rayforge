@@ -448,4 +448,4 @@ parâmetros, permitindo refinar a vetorização antes de importar.
 
 - [Formatos suportados](formats) - Especificações detalhadas dos formatos
 - [Exportando G-code](exporting) - Opções de saída
-- [Início rápido](../getting-started/quick-start) - Tutorial de primeira importação
+- [Início rápido](../getting-started/quick-start.md) - Tutorial de primeira importação

@@ -82,4 +82,4 @@ Wenn deaktiviert, werden absolut keine Daten gesendet.
 
 ## Verwandte Seiten
 
-- **[Anwendungseinstellungen](../ui/settings)** – Analyse-Einstellungen konfigurieren
+- **[Anwendungseinstellungen](../ui/settings.md)** – Analyse-Einstellungen konfigurieren

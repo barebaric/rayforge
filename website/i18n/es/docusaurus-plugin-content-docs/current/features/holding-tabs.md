@@ -171,5 +171,5 @@ Alterna pestañas on/off sin eliminarlas:
 
 - [Corte de Contorno](operations/contour) - Operación principal que usa pestañas
 - [Flujo de Trabajo Multi-Capa](multi-layer) - Gestionar pestañas a través de múltiples capas
-- [Previsualización 3D](../ui/3d-preview) - Visualizar pestañas en previsualización
+- [Previsualización 3D](../ui/3d-preview.md) - Visualizar pestañas en previsualización
 

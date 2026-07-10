@@ -308,5 +308,5 @@ Wenn du alles oben versucht hast und immer noch keine Verbindung herstellen kann
 
 - [Snap-Berechtigungen](snap-permissions) - Linux Snap-Berechtigungseinrichtung
 - [Debug-Modus](debug) - Diagnose-Protokollierung aktivieren
-- [Allgemeine Einstellungen](../machine/general) - Maschineneinrichtungsleitfaden
-- [Geräteeinstellungen](../machine/device) - GRBL-Konfigurationsreferenz
+- [Allgemeine Einstellungen](../machine/general.md) - Maschineneinrichtungsleitfaden
+- [Geräteeinstellungen](../machine/device.md) - GRBL-Konfigurationsreferenz

@@ -359,8 +359,8 @@ When soft limits are enabled in your machine profile:
 
 **Related Pages:**
 
-- [Work Coordinate Systems (WCS)](../general-info/coordinate-systems) - Managing WCS
-- [Machine Setup](../machine/general) - Configure your machine
-- [Keyboard Shortcuts](../reference/shortcuts) - Complete shortcut reference
+- [Work Coordinate Systems (WCS)](../general-info/coordinate-systems.md) - Managing WCS
+- [Machine Setup](../machine/general.md) - Configure your machine
+- [Keyboard Shortcuts](../reference/shortcuts.md) - Complete shortcut reference
 - [Main Window](main-window) - Main interface overview
-- [General Settings](../machine/general) - Device configuration
+- [General Settings](../machine/general.md) - Device configuration

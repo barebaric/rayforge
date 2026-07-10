@@ -64,5 +64,5 @@ originales.
 
 ## Temas relacionados
 
-- [Manejo de stock](../features/stock-handling) - Definir material de stock para el nesting
-- [Posicionamiento de workpieces](../features/workpiece-positioning) - Posicionar workpieces manualmente
+- [Manejo de stock](../features/stock-handling.md) - Definir material de stock para el nesting
+- [Posicionamiento de workpieces](../features/workpiece-positioning.md) - Posicionar workpieces manualmente

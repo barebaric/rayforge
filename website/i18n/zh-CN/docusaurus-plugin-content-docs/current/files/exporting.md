@@ -120,6 +120,6 @@ rayforge --export output.gcode input.svg
 
 - [导入文件](importing) - 将设计导入 Rayforge
 - [支持的格式](formats) - 文件格式详情
-- [G 代码方言](../reference/gcode-dialects) - 方言差异
-- [钩子和宏](../machine/hooks-macros) - 自定义输出
-- [3D 预览](../ui/3d-preview) - 导出前预览
+- [G 代码方言](../reference/gcode-dialects.md) - 方言差异
+- [钩子和宏](../machine/hooks-macros.md) - 自定义输出
+- [3D 预览](../ui/3d-preview.md) - 导出前预览

@@ -17,7 +17,7 @@ Haz clic en **Añadir Máquina** para crear una nueva máquina. Selecciona un pe
 ![Añadir Máquina](/screenshots/app-settings-machines-add.png)
 
 Si tu dispositivo está conectado y encendido, puedes hacer clic en **Other Device…**
-para usar el [Asistente de Configuración](../machine/config-wizard), que detecta
+para usar el [Asistente de Configuración](../machine/config-wizard.md), que detecta
 y configura automáticamente tu máquina.
 
 Si tienes un perfil de dispositivo LightBurn (.lbdev) con calibración
@@ -113,7 +113,7 @@ Si tu máquina tiene múltiples módulos láser (ej., diodo y CO2), puedes confi
 
 ![Ajustes de Láser](/screenshots/machine-laser.png)
 
-Ver [Configuración de Láser](../machine/laser) para más detalles.
+Ver [Configuración de Láser](../machine/laser.md) para más detalles.
 
 ### Configuración de Cámara
 
@@ -121,7 +121,7 @@ Si tienes una cámara USB para alineación y posicionamiento, configúrala en la
 
 ![Ajustes de Cámara](/screenshots/machine-camera.png)
 
-Ver [Integración de Cámara](../machine/camera) para más detalles.
+Ver [Integración de Cámara](../machine/camera.md) para más detalles.
 
 ### Configuración de Dispositivo
 
@@ -166,7 +166,7 @@ La página **Dispositivo** te permite leer y modificar configuraciones de firmwa
 - Revisa si hay cables sueltos o conexiones deficientes
 - Apaga y enciende tu cortador láser y vuelve a intentarlo
 
-Para más ayuda, ver [Problemas de Conexión](../troubleshooting/connection).
+Para más ayuda, ver [Problemas de Conexión](../troubleshooting/connection.md).
 
 ---
 

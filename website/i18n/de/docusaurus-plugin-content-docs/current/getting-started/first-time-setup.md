@@ -17,7 +17,7 @@ Klicke auf **Maschine hinzufügen**, um eine neue Maschine zu erstellen. Wähle 
 ![Maschine hinzufügen](/screenshots/app-settings-machines-add.png)
 
 Wenn dein Gerät verbunden und eingeschaltet ist, kannst du auf **Other Device…**
-klicken, um den [Konfigurations-Assistenten](../machine/config-wizard) zu
+klicken, um den [Konfigurations-Assistenten](../machine/config-wizard.md) zu
 verwenden, der deine Maschine automatisch erkennt und konfiguriert.
 
 Wenn du ein LightBurn-Geräteprofil (.lbdev) mit Kamerakalibrierung und
@@ -112,7 +112,7 @@ Wenn deine Maschine über mehrere Lasermodule verfügt (z.B. Diode und CO2), kan
 
 ![Lasereinstellungen](/screenshots/machine-laser.png)
 
-Siehe [Laser-Konfiguration](../machine/laser) für Details.
+Siehe [Laser-Konfiguration](../machine/laser.md) für Details.
 
 ### Kamera-Setup
 
@@ -120,7 +120,7 @@ Wenn du eine USB-Kamera für Ausrichtung und Positionierung hast, konfiguriere s
 
 ![Kameraeinstellungen](/screenshots/machine-camera.png)
 
-Siehe [Kamera-Integration](../machine/camera) für Details.
+Siehe [Kamera-Integration](../machine/camera.md) für Details.
 
 ### Geräte-Einstellungen
 
@@ -165,7 +165,7 @@ Das Bearbeiten von Geräteeinstellungen kann gefährlich sein und kann deine Mas
 - Überprüfe auf lockere Kabel oder schlechte Verbindungen
 - Schalte deinen Laserschneider aus und wieder ein und versuche es erneut
 
-Weitere Hilfe findest du unter [Verbindungsprobleme](../troubleshooting/connection).
+Weitere Hilfe findest du unter [Verbindungsprobleme](../troubleshooting/connection.md).
 
 ---
 

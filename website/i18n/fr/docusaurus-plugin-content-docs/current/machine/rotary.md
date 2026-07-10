@@ -69,7 +69,7 @@ voir d'un coup d'œil quelles couches s'exécuteront en mode rotatif.
 
 ## Aperçu 3D en mode rotatif
 
-Lorsque le mode rotatif est actif, la [vue 3D](../ui/3d-preview) affiche ton
+Lorsque le mode rotatif est actif, la [vue 3D](../ui/3d-preview.md) affiche ton
 parcours d'outil enroulé autour d'un cylindre au lieu d'une surface plane. Le canevas
 2D s'adapte également automatiquement au mode rotatif, et le canevas 3D restitue les
 parcours d'outil rotatifs avec précision dans chaque configuration — y compris pendant
@@ -84,7 +84,7 @@ la découpe.
 ### Modèle 3D du module rotatif
 
 Chaque module rotatif peut avoir un modèle 3D attribué. Le modèle apparaît dans
-la [vue 3D](../ui/3d-preview) à côté de ton parcours d'outil, te donnant une
+la [vue 3D](../ui/3d-preview.md) à côté de ton parcours d'outil, te donnant une
 meilleure idée de l'apparence de l'installation physique. Tu peux ajuster l'échelle,
 la position et la rotation du modèle pour correspondre à ton matériel réel.
 
@@ -107,6 +107,6 @@ progressivement plus profondément sur des pièces cylindriques sur plusieurs pa
 
 ## Pages associées
 
-- [Flux de travail multicouche](../features/multi-layer) - Paramètres par couche incluant le rotatif
-- [Vue 3D](../ui/3d-preview) - Aperçu des parcours d'outil en 3D
+- [Flux de travail multicouche](../features/multi-layer.md) - Paramètres par couche incluant le rotatif
+- [Vue 3D](../ui/3d-preview.md) - Aperçu des parcours d'outil en 3D
 - [Paramètres machine](general) - Configuration générale de la machine

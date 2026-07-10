@@ -48,7 +48,7 @@ Les opérations définissent comment Rayforge traitera votre design. Les opérat
 ![Paramètres d'Opération](/screenshots/step-settings-contour-general.png)
 
 :::warning Commencez avec une Faible Puissance
-Lorsque vous travaillez avec de nouveaux matériaux, commencez toujours avec des paramètres de puissance plus bas et effectuez des tests de coupe. Augmentez progressivement la puissance jusqu'à obtenir le résultat souhaité. Utilisez la fonction [Grille de Test de Matériau](../features/operations/material-test-grid) pour trouver systématiquement les paramètres optimaux.
+Lorsque vous travaillez avec de nouveaux matériaux, commencez toujours avec des paramètres de puissance plus bas et effectuez des tests de coupe. Augmentez progressivement la puissance jusqu'à obtenir le résultat souhaité. Utilisez la fonction [Grille de Test de Matériau](../features/operations/material-test-grid.md) pour trouver systématiquement les paramètres optimaux.
 :::
 
 
@@ -88,7 +88,7 @@ L'aperçu 3D vous aide à repérer les problèmes comme :
 1. Placez votre matériau sur le lit laser
 2. Faites la mise au point du laser selon les instructions de votre machine
 3. Positionnez votre design en utilisant l'une des méthodes du
-   [Guide de Positionnement de la Pièce](../features/workpiece-positioning)
+   [Guide de Positionnement de la Pièce](../features/workpiece-positioning.md)
 
 ### Démarrer le Travail
 
@@ -120,15 +120,15 @@ Vous avez terminé votre premier travail Rayforge ! Vous pouvez maintenant explo
 
 Maintenant que vous avez terminé votre premier travail, explorez ces fonctionnalités :
 
-- **[Positionnement de Pièce](../features/workpiece-positioning)** :
+- **[Positionnement de Pièce](../features/workpiece-positioning.md)** :
   Maîtrise toutes les méthodes de positionnement (mode focus, cadrage, WCS, caméra)
-- **[Opérations Multi-Couches](../features/multi-layer)** : Assigner différentes
+- **[Opérations Multi-Couches](../features/multi-layer.md)** : Assigner différentes
   opérations aux calques
-- **[Ponts de Maintien](../features/holding-tabs)** : Maintenir les pièces coupées
+- **[Ponts de Maintien](../features/holding-tabs.md)** : Maintenir les pièces coupées
   en place pendant la coupe
-- **[Intégration Caméra](../machine/camera)** : Utiliser une caméra pour
+- **[Intégration Caméra](../machine/camera.md)** : Utiliser une caméra pour
   un alignement précis
-- **[Hooks & Macros](../machine/hooks-macros)** : Automatiser les tâches répétitives
+- **[Hooks & Macros](../machine/hooks-macros.md)** : Automatiser les tâches répétitives
 
 ## Conseils pour Réussir
 
@@ -140,4 +140,4 @@ Maintenant que vous avez terminé votre premier travail, explorez ces fonctionna
 
 ---
 
-**Besoin d'Aide ?** Consultez la section [Dépannage](../troubleshooting/connection) ou visitez la page [GitHub Issues](https://github.com/barebaric/rayforge/issues).
+**Besoin d'Aide ?** Consultez la section [Dépannage](../troubleshooting/connection.md) ou visitez la page [GitHub Issues](https://github.com/barebaric/rayforge/issues).

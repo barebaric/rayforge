@@ -311,5 +311,5 @@ Si vous avez tout essayé ci-dessus et que vous ne pouvez toujours pas vous conn
 
 - [Permissions Snap](snap-permissions) - Configuration des permissions Snap Linux
 - [Mode débogage](debug) - Activer la journalisation de diagnostic
-- [Paramètres généraux](../machine/general) - Guide de configuration machine
-- [Paramètres de l'appareil](../machine/device) - Référence de configuration GRBL
+- [Paramètres généraux](../machine/general.md) - Guide de configuration machine
+- [Paramètres de l'appareil](../machine/device.md) - Référence de configuration GRBL

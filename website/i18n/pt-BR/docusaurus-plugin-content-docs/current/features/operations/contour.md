@@ -140,7 +140,7 @@ completamente separado. Isto é especialmente útil para:
 O recorte excessivo se aplica tanto a contornos externos quanto a furos internos.
 
 :::tip Lead-In/Out vs Recorte Excessivo
-[Lead-In/Out](../lead-in-out) adiciona movimentos de aproximação e saída
+[Lead-In/Out](../lead-in-out.md) adiciona movimentos de aproximação e saída
 com potência zero antes e depois do trajeto de corte. O recorte
 excessivo estende o próprio trajeto de corte além da junção. Eles podem
 ser usados juntos para qualidade de corte ideal.
@@ -152,12 +152,12 @@ ser usados juntos para qualidade de corte ideal.
 
 Operações de contorno suportam várias opções de pós-processamento:
 
-- **[Suavização de Caminho](../smooth)** - Reduz bordas irregulares em caminhos de corte
-- **[Abas de Fixação](../holding-tabs)** - Mantém peças cortadas anexadas ao material de estoque
-- **[Cortar para Estoque](../crop-to-stock)** - Limita cortes ao limite do material
-- **[Otimização de Caminho](../path-optimization)** - Reduz distância de deslocamento entre cortes
-- **[Multi-Passagem](../multi-pass)** - Repete cortes para materiais espessos
-- **[Entrada/Saída](../lead-in-out)** - Adicionar movimentos de aproximação e saída sem potência para extremidades de corte mais limpas
+- **[Suavização de Caminho](../smooth.md)** - Reduz bordas irregulares em caminhos de corte
+- **[Abas de Fixação](../holding-tabs.md)** - Mantém peças cortadas anexadas ao material de estoque
+- **[Cortar para Estoque](../crop-to-stock.md)** - Limita cortes ao limite do material
+- **[Otimização de Caminho](../path-optimization.md)** - Reduz distância de deslocamento entre cortes
+- **[Multi-Passagem](../multi-pass.md)** - Repete cortes para materiais espessos
+- **[Entrada/Saída](../lead-in-out.md)** - Adicionar movimentos de aproximação e saída sem potência para extremidades de corte mais limpas
 
 ### Compensação de Kerf
 
@@ -170,7 +170,7 @@ Abas mantêm peças cortadas anexadas ao material de estoque durante o corte:
 - Adicione abas para prevenir peças de caírem
 - Abas são pequenas seções não cortadas
 - Quebre as abas após o trabalho completar
-- Veja [Abas de Fixação](../holding-tabs) para detalhes
+- Veja [Abas de Fixação](../holding-tabs.md) para detalhes
 
 ### Compensação de Kerf
 
@@ -188,7 +188,7 @@ Kerf é a largura do material removido pelo feixe do laser:
 3. Para peças: desloque **dentro** por kerf/2
 4. Para furos: desloque **fora** por kerf/2
 
-Veja [Kerf](../kerf) para guia detalhado.
+Veja [Kerf](../kerf.md) para guia detalhado.
 
 ## Dicas e Melhores Práticas
 
@@ -230,7 +230,7 @@ Veja [Kerf](../kerf) para guia detalhado.
 
 ### Peças caem durante o corte
 
-- **Adicione:** [Abas de fixação](../holding-tabs)
+- **Adicione:** [Abas de fixação](../holding-tabs.md)
 - **Use:** Otimização de ordem de corte
 - **Corte:** Recursos internos antes dos externos
 - **Certifique-se:** Material está plano e fixado
@@ -285,6 +285,6 @@ M5                  ; Laser desligado
 ## Tópicos Relacionados
 
 - **[Gravação](engrave)** - Preenchendo áreas com padrões de gravação
-- **[Abas de Fixação](../holding-tabs)** - Mantendo peças fixadas durante o corte
-- **[Kerf](../kerf)** - Melhorando precisão do corte
+- **[Abas de Fixação](../holding-tabs.md)** - Mantendo peças fixadas durante o corte
+- **[Kerf](../kerf.md)** - Melhorando precisão do corte
 - **[Grade de Teste de Material](material-test-grid)** - Encontrando configurações ideais de potência/velocidade

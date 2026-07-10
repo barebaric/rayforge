@@ -125,5 +125,5 @@ Maschinenerstellungsprozess wird fortgesetzt — der
 - [Allgemeine Einstellungen](general) — manuelle Maschinenkonfiguration
 - [Geräte-Einstellungen](device) — Firmware-Parameter auf einer bereits
   konfigurierten Maschine lesen und schreiben
-- [Maschine hinzufügen](../application-settings/machines) — Übersicht über
+- [Maschine hinzufügen](../application-settings/machines.md) — Übersicht über
   den Maschinenerstellungsprozess

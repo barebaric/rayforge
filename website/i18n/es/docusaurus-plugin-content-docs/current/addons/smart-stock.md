@@ -70,5 +70,5 @@ El diálogo se cierra después de crear los elementos.
 
 ## Temas relacionados
 
-- [Configuración de cámara](../machine/camera) - Configurar y calibrar tu cámara
-- [Manejo de stock](../features/stock-handling) - Trabajar con elementos de stock en tu documento
+- [Configuración de cámara](../machine/camera.md) - Configurar y calibrar tu cámara
+- [Manejo de stock](../features/stock-handling.md) - Trabajar con elementos de stock en tu documento

@@ -125,10 +125,10 @@ Gravur an ihrem Platz bleiben.
 
 ## Verwandte Seiten
 
-- [Operationen](./operations/contour) - Operationstypen für
+- [Operationen](./operations/contour.md) - Operationstypen für
   Ebenen-Workflows
 
-- [Makros & Hooks](../machine/hooks-macros) - Ebenenbezogene Hooks
+- [Makros & Hooks](../machine/hooks-macros.md) - Ebenenbezogene Hooks
   zur Automatisierung
-- [3D-Vorschau](../ui/3d-preview) - Ebenen-Stack visualisieren
-- [Asset-Browser](../ui/bottom-panel) - Assets mit Kontextmenüs verwalten
+- [3D-Vorschau](../ui/3d-preview.md) - Ebenen-Stack visualisieren
+- [Asset-Browser](../ui/bottom-panel.md) - Assets mit Kontextmenüs verwalten

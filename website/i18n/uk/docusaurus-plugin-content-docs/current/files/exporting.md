@@ -124,6 +124,6 @@ rayforge --export output.gcode input.svg
 
 - [Імпорт файлів](importing) - Отримання дизайнів у Rayforge
 - [Підтримувані формати](formats) - Деталі форматів файлів
-- [Діалекти G-code](../reference/gcode-dialects) - Відмінності діалектів
-- [Хуки та макроси](../machine/hooks-macros) - Налаштування виводу
-- [3D Попередній перегляд](../ui/3d-preview) - Попередній перегляд перед експортом
+- [Діалекти G-code](../reference/gcode-dialects.md) - Відмінності діалектів
+- [Хуки та макроси](../machine/hooks-macros.md) - Налаштування виводу
+- [3D Попередній перегляд](../ui/3d-preview.md) - Попередній перегляд перед експортом

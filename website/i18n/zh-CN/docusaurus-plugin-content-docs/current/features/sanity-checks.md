@@ -20,5 +20,5 @@ description: "在运行或导出作业之前，Rayforge 会自动检查常见问
 
 ## 相关页面
 
-- [禁区](../machine/nogo-zones) - 在工作表面上定义限制区域
-- [3D 视图](../ui/3d-preview) - 3D 刀具路径可视化
+- [禁区](../machine/nogo-zones.md) - 在工作表面上定义限制区域
+- [3D 视图](../ui/3d-preview.md) - 3D 刀具路径可视化

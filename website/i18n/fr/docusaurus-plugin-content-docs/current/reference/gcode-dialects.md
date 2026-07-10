@@ -119,7 +119,7 @@ réelle. Consulte la page des paramètres de ton dialecte pour cette option.
 
 ## Pages connexes
 
-- [Exporter du G-code](../files/exporting) - Paramètres d'exportation
+- [Exporter du G-code](../files/exporting.md) - Paramètres d'exportation
 - [Compatibilité des firmwares](firmware) - Versions de firmware
-- [Paramètres de l'appareil](../machine/device) - Configuration GRBL
-- [Macros et Hooks](../machine/hooks-macros) - Injection de G-code personnalisé
+- [Paramètres de l'appareil](../machine/device.md) - Configuration GRBL
+- [Macros et Hooks](../machine/hooks-macros.md) - Injection de G-code personnalisé

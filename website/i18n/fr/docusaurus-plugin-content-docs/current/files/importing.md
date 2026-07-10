@@ -462,4 +462,4 @@ l'importation.
 
 - [Formats pris en charge](formats) - Spécifications détaillées des formats
 - [Exporter du G-code](exporting) - Options de sortie
-- [Démarrage rapide](../getting-started/quick-start) - Tutoriel de première importation
+- [Démarrage rapide](../getting-started/quick-start.md) - Tutoriel de première importation

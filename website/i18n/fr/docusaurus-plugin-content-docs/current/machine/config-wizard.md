@@ -127,5 +127,5 @@ supplémentaires.
 - [Paramètres Généraux](general) — configuration manuelle de la machine
 - [Paramètres du périphérique](device) — lire et écrire les paramètres du
   firmware sur une machine déjà configurée
-- [Ajouter une Machine](../application-settings/machines) — aperçu du
+- [Ajouter une Machine](../application-settings/machines.md) — aperçu du
   processus de création de machine

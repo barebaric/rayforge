@@ -76,6 +76,6 @@ Rayforge 根据以下内容自动建议最合适的配方：
 **相关主题**：
 
 - [材料](materials) - 管理材料属性
-- [材料处理](../features/stock-handling) - 处理材料
-- [机器设置](../machine/general) - 配置机器和激光头
-- [操作概述](../features/operations/contour) - 理解不同的操作类型
+- [材料处理](../features/stock-handling.md) - 处理材料
+- [机器设置](../machine/general.md) - 配置机器和激光头
+- [操作概述](../features/operations/contour.md) - 理解不同的操作类型

@@ -280,7 +280,7 @@ Back up your settings after any calibration or tuning. Store backups in a safe l
 
 - [General Settings](general) - Machine name and speed settings
 - [Laser Settings](laser) - Laser head configuration
-- [Connection Troubleshooting](../troubleshooting/connection) - Fixing connection problems
+- [Connection Troubleshooting](../troubleshooting/connection.md) - Fixing connection problems
 
 ## External Resources
 

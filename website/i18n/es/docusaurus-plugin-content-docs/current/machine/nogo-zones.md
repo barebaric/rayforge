@@ -2,7 +2,7 @@
 
 Las zonas prohibidas definen áreas restringidas en la superficie de trabajo que el láser
 no debería ingresar. Cuando están habilitadas, se verifican como parte de las
-[comprobaciones de sanity del trabajo](../features/sanity-checks) antes de ejecutar o
+[comprobaciones de sanity del trabajo](../features/sanity-checks.md) antes de ejecutar o
 exportar.
 
 ![Zonas Prohibidas](/screenshots/machine-nogo-zones.png)
@@ -32,5 +32,5 @@ recuerda entre sesiones.
 ## Páginas Relacionadas
 
 - [Ajustes de Hardware](hardware) - Dimensiones de máquina y configuración de ejes
-- [Comprobaciones de Sanity del Trabajo](../features/sanity-checks) - Validación previa al trabajo
-- [Vista 3D](../ui/3d-preview) - Visualización de trayectorias en 3D
+- [Comprobaciones de Sanity del Trabajo](../features/sanity-checks.md) - Validación previa al trabajo
+- [Vista 3D](../ui/3d-preview.md) - Visualización de trayectorias en 3D

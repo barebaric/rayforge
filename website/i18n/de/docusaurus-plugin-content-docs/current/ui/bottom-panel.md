@@ -368,8 +368,8 @@ Wenn Software-Endschalter in deinem Maschinenprofil aktiviert sind:
 
 **Verwandte Seiten:**
 
-- [Werkstückkoordinatensysteme (WCS)](../general-info/coordinate-systems) - WCS verwalten
-- [Maschineneinrichtung](../machine/general) - Deine Maschine konfigurieren
-- [Tastaturkürzel](../reference/shortcuts) - Vollständige Kürzelreferenz
+- [Werkstückkoordinatensysteme (WCS)](../general-info/coordinate-systems.md) - WCS verwalten
+- [Maschineneinrichtung](../machine/general.md) - Deine Maschine konfigurieren
+- [Tastaturkürzel](../reference/shortcuts.md) - Vollständige Kürzelreferenz
 - [Hauptfenster](main-window) - Hauptoberflächenübersicht
-- [Allgemeine Einstellungen](../machine/general) - Gerätekonfiguration
+- [Allgemeine Einstellungen](../machine/general.md) - Gerätekonfiguration

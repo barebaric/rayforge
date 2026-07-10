@@ -335,6 +335,6 @@ Always test macros and hooks in **simulation mode** or with the laser **disabled
 ## Related Pages
 
 - [Device Settings](device) - GRBL command reference
-- [G-code Dialects](../reference/gcode-dialects) - G-code compatibility
+- [G-code Dialects](../reference/gcode-dialects.md) - G-code compatibility
 - [General Settings](general) - Machine configuration
-- [Multi-Layer Workflow](../features/multi-layer) - Using hooks with layers
+- [Multi-Layer Workflow](../features/multi-layer.md) - Using hooks with layers

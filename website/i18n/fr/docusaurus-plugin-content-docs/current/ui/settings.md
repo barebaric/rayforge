@@ -54,13 +54,13 @@ pour en savoir plus sur les données collectées et leur utilisation.
 La boîte de dialogue des paramètres inclut également des pages pour gérer
 d'autres parties de l'application. Chacune possède sa propre documentation :
 
-- [Machines](../application-settings/machines) — ajouter, supprimer et
+- [Machines](../application-settings/machines.md) — ajouter, supprimer et
   configurer tes découpeurs laser
-- [Matériaux](../application-settings/materials) — gérer tes bibliothèques
+- [Matériaux](../application-settings/materials.md) — gérer tes bibliothèques
   de matériaux
-- [Recettes](../application-settings/recipes) — gérer les recettes
+- [Recettes](../application-settings/recipes.md) — gérer les recettes
   d'opérations enregistrées
-- [Fournisseurs IA](../application-settings/ai-provider) — configurer les
+- [Fournisseurs IA](../application-settings/ai-provider.md) — configurer les
   fournisseurs IA pour les addons
-- [Addons](../application-settings/addons) — installer, mettre à jour et
+- [Addons](../application-settings/addons.md) — installer, mettre à jour et
   supprimer les addons d'extension

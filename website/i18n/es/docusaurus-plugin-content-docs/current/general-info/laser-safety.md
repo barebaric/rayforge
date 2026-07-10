@@ -93,8 +93,8 @@ La mayoría de los sistemas láser cerrados no requieren gafas durante la operac
 
 Rayforge proporciona herramientas para ayudar a operar de manera segura:
 
-- **[Vista Previa 3D](../ui/3d-preview)** - Previsualiza trabajos antes de ejecutar para identificar problemas
-- **[Cuadrícula de Prueba de Materiales](../features/operations/material-test-grid)** - Encuentra ajustes seguros para nuevos materiales
+- **[Vista Previa 3D](../ui/3d-preview.md)** - Previsualiza trabajos antes de ejecutar para identificar problemas
+- **[Cuadrícula de Prueba de Materiales](../features/operations/material-test-grid.md)** - Encuentra ajustes seguros para nuevos materiales
 - **Enmarcar Trabajo** - Verifica el posicionamiento antes de cortar
 
 **Estas funciones ayudan a prevenir errores pero no reemplazan las prácticas de operación segura.**
@@ -208,8 +208,8 @@ Antes de cada trabajo:
 
 ## Páginas Relacionadas
 
-- **[Vista Previa 3D](../ui/3d-preview)** - Previsualiza trabajos de manera segura
-- **[Cuadrícula de Prueba de Materiales](../features/operations/material-test-grid)** - Encuentra ajustes seguros
+- **[Vista Previa 3D](../ui/3d-preview.md)** - Previsualiza trabajos de manera segura
+- **[Cuadrícula de Prueba de Materiales](../features/operations/material-test-grid.md)** - Encuentra ajustes seguros
 - **[Fundamentos de Código G](gcode-basics)** - Entendiendo comandos de control láser
 
 ---

@@ -88,7 +88,7 @@ M67 E0 Q0    ; 关闭激光
 
 ## 相关页面
 
-- [导出 G 代码](../files/exporting) - 导出设置
+- [导出 G 代码](../files/exporting.md) - 导出设置
 - [固件兼容性](firmware) - 固件版本
-- [设备设置](../machine/device) - GRBL 配置
-- [宏和钩子](../machine/hooks-macros) - 自定义 G 代码注入
+- [设备设置](../machine/device.md) - GRBL 配置
+- [宏和钩子](../machine/hooks-macros.md) - 自定义 G 代码注入

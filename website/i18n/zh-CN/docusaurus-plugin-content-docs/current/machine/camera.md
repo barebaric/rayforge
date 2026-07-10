@@ -336,6 +336,6 @@ sudo lsof /dev/video0
 
 ## 相关页面
 
-- [3D 预览](../ui/3d-preview) — 使用相机叠加预览执行
-- [框选作业](../features/framing-your-job) — 验证作业位置
+- [3D 预览](../ui/3d-preview.md) — 使用相机叠加预览执行
+- [框选作业](../features/framing-your-job.md) — 验证作业位置
 - [常规设置](general) — 机器配置

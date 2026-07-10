@@ -81,6 +81,6 @@ The system uses a specificity scoring algorithm to prioritize the most relevant 
 **Related Topics**:
 
 - [Materials](materials) - Managing material properties
-- [Stock Handling](../features/stock-handling) - Working with stock materials
-- [Machine Setup](../machine/general) - Configuring machines and laser heads
-- [Operations Overview](../features/operations/contour) - Understanding different operation types
+- [Stock Handling](../features/stock-handling.md) - Working with stock materials
+- [Machine Setup](../machine/general.md) - Configuring machines and laser heads
+- [Operations Overview](../features/operations/contour.md) - Understanding different operation types

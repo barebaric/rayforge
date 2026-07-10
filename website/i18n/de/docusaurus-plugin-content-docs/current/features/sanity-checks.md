@@ -29,6 +29,6 @@ bevor du entscheidest, ob du fortfahren möchtest.
 
 ## Verwandte Seiten
 
-- [No-Go-Zonen](../machine/nogo-zones) - Eingeschränkte Bereiche auf der
+- [No-Go-Zonen](../machine/nogo-zones.md) - Eingeschränkte Bereiche auf der
   Arbeitsfläche definieren
-- [3D-Ansicht](../ui/3d-preview) - 3D-Werkzeugweg-Visualisierung
+- [3D-Ansicht](../ui/3d-preview.md) - 3D-Werkzeugweg-Visualisierung

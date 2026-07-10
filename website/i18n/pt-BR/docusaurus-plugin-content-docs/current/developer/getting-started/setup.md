@@ -6,7 +6,7 @@ Este guia cobre a configuração do seu ambiente de desenvolvimento para o Rayfo
 
 ### Pré-requisitos
 
-Veja o [Guia de Instalação](../../getting-started/installation#linux-pixi) para instruções de instalação do Pixi.
+Veja o [Guia de Instalação](../../getting-started/installation.mdx#linux-pixi) para instruções de instalação do Pixi.
 
 ### Hooks Pre-commit (Opcional)
 
@@ -30,7 +30,7 @@ Todos os comandos são executados via `pixi run`:
 
 ### Pré-requisitos
 
-Veja o [Guia de Instalação](../../getting-started/installation#windows-developer) para instruções detalhadas de configuração de desenvolvimento MSYS2.
+Veja o [Guia de Instalação](../../getting-started/installation.mdx#windows-developer) para instruções detalhadas de configuração de desenvolvimento MSYS2.
 
 ### Início Rápido
 

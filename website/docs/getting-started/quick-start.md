@@ -52,7 +52,7 @@ Operations define how Rayforge will process your design. Common operations inclu
 ![Operation Settings](/screenshots/step-settings-contour-general.png)
 
 :::warning Start with Low Power
-When working with new materials, always start with lower power settings and run test cuts. Gradually increase power until you achieve the desired result. Use the [Material Test Grid](../features/operations/material-test-grid) feature to systematically find optimal settings.
+When working with new materials, always start with lower power settings and run test cuts. Gradually increase power until you achieve the desired result. Use the [Material Test Grid](../features/operations/material-test-grid.md) feature to systematically find optimal settings.
 :::
 
 
@@ -92,7 +92,7 @@ The 3D preview helps you spot issues like:
 1. Place your material on the laser bed
 2. Focus the laser according to your machine's instructions
 3. Position your design using one of the methods in the
-   [Workpiece Positioning Guide](../features/workpiece-positioning)
+   [Workpiece Positioning Guide](../features/workpiece-positioning.md)
 
 ### Starting the Job
 
@@ -124,15 +124,15 @@ You've completed your first Rayforge job! Now you can explore more advanced feat
 
 Now that you've completed your first job, explore these features:
 
-- **[Workpiece Positioning](../features/workpiece-positioning)**: Master
+- **[Workpiece Positioning](../features/workpiece-positioning.md)**: Master
   all positioning methods (focus mode, framing, WCS, camera)
-- **[Multi-Layer Operations](../features/multi-layer)**: Assign different
+- **[Multi-Layer Operations](../features/multi-layer.md)**: Assign different
   operations to layers
-- **[Holding Tabs](../features/holding-tabs)**: Keep cut pieces in place
+- **[Holding Tabs](../features/holding-tabs.md)**: Keep cut pieces in place
   during cutting
-- **[Camera Integration](../machine/camera)**: Use a camera for precise
+- **[Camera Integration](../machine/camera.md)**: Use a camera for precise
   alignment
-- **[Hooks & Macros](../machine/hooks-macros)**: Automate repetitive tasks
+- **[Hooks & Macros](../machine/hooks-macros.md)**: Automate repetitive tasks
 
 ## Tips for Success
 
@@ -144,4 +144,4 @@ Now that you've completed your first job, explore these features:
 
 ---
 
-**Need Help?** Check the [Troubleshooting](../troubleshooting/connection) section or visit the [GitHub Issues](https://github.com/barebaric/rayforge/issues) page.
+**Need Help?** Check the [Troubleshooting](../troubleshooting/connection.md) section or visit the [GitHub Issues](https://github.com/barebaric/rayforge/issues) page.

@@ -110,7 +110,7 @@ Gravieren. Überprüfe die Einstellungsseite deines Dialekts auf diese Option.
 
 ## Verwandte Seiten
 
-- [G-Code exportieren](../files/exporting) - Exporteinstellungen
+- [G-Code exportieren](../files/exporting.md) - Exporteinstellungen
 - [Firmware-Kompatibilität](firmware) - Firmware-Versionen
-- [Geräteeinstellungen](../machine/device) - GRBL-Konfiguration
-- [Makros & Hooks](../machine/hooks-macros) - Benutzerdefinierte G-Code-Injektion
+- [Geräteeinstellungen](../machine/device.md) - GRBL-Konfiguration
+- [Makros & Hooks](../machine/hooks-macros.md) - Benutzerdefinierte G-Code-Injektion

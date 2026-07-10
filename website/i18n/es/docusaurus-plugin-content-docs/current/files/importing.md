@@ -450,4 +450,4 @@ estos parámetros, permitiéndote afinar el trazado antes de importar.
 
 - [Formatos admitidos](formats) - Especificaciones detalladas de formatos
 - [Exportar G-code](exporting) - Opciones de salida
-- [Inicio rápido](../getting-started/quick-start) - Tutorial de primera importación
+- [Inicio rápido](../getting-started/quick-start.md) - Tutorial de primera importación

@@ -547,6 +547,6 @@ To add firmware support:
 ## Related Pages
 
 - [G-code Dialects](gcode-dialects) - Dialect details
-- [Device Settings](../machine/device) - GRBL configuration
-- [Connection Issues](../troubleshooting/connection) - Connection troubleshooting
-- [General Settings](../machine/general) - Machine setup
+- [Device Settings](../machine/device.md) - GRBL configuration
+- [Connection Issues](../troubleshooting/connection.md) - Connection troubleshooting
+- [General Settings](../machine/general.md) - Machine setup

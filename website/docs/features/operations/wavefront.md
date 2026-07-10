@@ -108,8 +108,8 @@ boundary).
 
 Wavefront operations support:
 
-- **[Smooth Path](../smooth)** — Reduce jagged edges in the toolpaths
-- **[Path Optimization](../path-optimization)** — Minimize travel distance
+- **[Smooth Path](../smooth.md)** — Reduce jagged edges in the toolpaths
+- **[Path Optimization](../path-optimization.md)** — Minimize travel distance
   between passes
 
 ## Tips & Best Practices
@@ -138,4 +138,4 @@ the offset to leave enough margin for the contour cut.
 - **[Contour](contour)** — Cutting along vector outlines
 - **[Engrave](engrave)** — Filling areas with raster engraving patterns
 - **[Shrink Wrap](shrink-wrap)** — Boundary cutting around objects
-- **[Smooth Path](../smooth)** — Refining toolpath edges
+- **[Smooth Path](../smooth.md)** — Refining toolpath edges

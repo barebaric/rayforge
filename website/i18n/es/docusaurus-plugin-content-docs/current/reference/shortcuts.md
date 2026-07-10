@@ -383,7 +383,7 @@ Algunos atajos menos conocidos:
 
 ## Páginas Relacionadas
 
-- [Ventana Principal](../ui/main-window) - Resumen de UI
-- [Herramientas del Lienzo](../ui/canvas-tools) - Interacción con el lienzo
-- [Vista Previa 3D](../ui/3d-preview) - Controles de vista 3D
+- [Ventana Principal](../ui/main-window.md) - Resumen de UI
+- [Herramientas del Lienzo](../ui/canvas-tools.md) - Interacción con el lienzo
+- [Vista Previa 3D](../ui/3d-preview.md) - Controles de vista 3D
 

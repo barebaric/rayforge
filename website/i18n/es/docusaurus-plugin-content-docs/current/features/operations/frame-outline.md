@@ -106,11 +106,11 @@ El perfilado de marco soporta compensación de kerf:
 
 Las operaciones de Perfilado de Marco soportan varias opciones de post-procesamiento:
 
-- **[Pestañas de Sujeción](../holding-tabs)** - Mantienen la pieza enmarcada adjunta al material
-- **[Recortar al Material](../crop-to-stock)** - Limita los cortes al límite del material
-- **[Optimización de Trayectoria](../path-optimization)** - Reduce la distancia de viaje
-- **[Multi-Pasada](../multi-pass)** - Repite cortes para materiales gruesos
-- **[Entrada/Salida](../lead-in-out)** - Añade movimientos de acercamiento y salida sin potencia para extremos de corte más limpios
+- **[Pestañas de Sujeción](../holding-tabs.md)** - Mantienen la pieza enmarcada adjunta al material
+- **[Recortar al Material](../crop-to-stock.md)** - Limita los cortes al límite del material
+- **[Optimización de Trayectoria](../path-optimization.md)** - Reduce la distancia de viaje
+- **[Multi-Pasada](../multi-pass.md)** - Repite cortes para materiales gruesos
+- **[Entrada/Salida](../lead-in-out.md)** - Añade movimientos de acercamiento y salida sin potencia para extremos de corte más limpios
 
 ## Casos de Uso
 
@@ -291,6 +291,6 @@ M5                 ; Láser apagado
 
 - **[Corte de Contorno](contour)** - Cortar contornos de objetos individuales
 - **[Envoltura Ajustada](shrink-wrap)** - Límites irregulares eficientes
-- **[Pestañas de Sujeción](../holding-tabs)** - Mantener piezas seguras durante el corte
-- **[Flujo de Trabajo Multi-Capa](../multi-layer)** - Organizar operaciones efectivamente
-- **[Compensación de Kerf](../kerf)** - Mejorar precisión dimensional
+- **[Pestañas de Sujeción](../holding-tabs.md)** - Mantener piezas seguras durante el corte
+- **[Flujo de Trabajo Multi-Capa](../multi-layer.md)** - Organizar operaciones efectivamente
+- **[Compensación de Kerf](../kerf.md)** - Mejorar precisión dimensional

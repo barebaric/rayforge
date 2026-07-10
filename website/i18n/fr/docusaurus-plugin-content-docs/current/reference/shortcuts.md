@@ -383,7 +383,7 @@ Certains raccourcis moins connus :
 
 ## Pages connexes
 
-- [Fenêtre principale](../ui/main-window) - Aperçu de l'interface
-- [Outils du canevas](../ui/canvas-tools) - Interaction avec le canevas
-- [Prévisualisation 3D](../ui/3d-preview) - Contrôles de la vue 3D
+- [Fenêtre principale](../ui/main-window.md) - Aperçu de l'interface
+- [Outils du canevas](../ui/canvas-tools.md) - Interaction avec le canevas
+- [Prévisualisation 3D](../ui/3d-preview.md) - Contrôles de la vue 3D
 

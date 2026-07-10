@@ -77,7 +77,7 @@
 3. **在框定前虚拟调整位置**
 4. **框定确认**物理对齐
 
-详见[摄像头集成](../machine/camera)。
+详见[摄像头集成](../machine/camera.md)。
 
 ## 故障排除
 
@@ -99,5 +99,5 @@
 ## 相关主题
 
 - [工件定位](workpiece-positioning) - 完整定位指南
-- [摄像头集成](../machine/camera)
-- [快速入门指南](../getting-started/quick-start)
+- [摄像头集成](../machine/camera.md)
+- [快速入门指南](../getting-started/quick-start.md)

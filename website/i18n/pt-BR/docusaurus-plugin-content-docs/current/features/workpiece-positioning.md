@@ -158,7 +158,7 @@ Use slots SCT diferentes para diferentes posições de fixação. Por exemplo:
 - **Trabalhos repetíveis**: Mesmo trabalho, diferentes posições
 - **Lotes de produção**: Posicionamento consistente através de múltiplas peças
 
-Veja [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems)
+Veja [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems.md)
 para documentação completa.
 
 ---
@@ -211,7 +211,7 @@ real:
 - **Posicionamento preciso**: Requisitos de precisão sub-milimétrica
 - **Layouts complexos**: Múltiplos elementos com espaçamento específico
 
-Veja [Integração de Câmera](../machine/camera) para documentação completa.
+Veja [Integração de Câmera](../machine/camera.md) para documentação completa.
 
 ---
 
@@ -288,11 +288,11 @@ Para executar o mesmo trabalho em diferentes locais:
 
 - [Enquadrando Seu Trabalho](framing-your-job) - Documentação detalhada de
   enquadramento
-- [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems) -
+- [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems.md) -
   Referência SCT
-- [Integração de Câmera](../machine/camera) - Configuração e alinhamento de
+- [Integração de Câmera](../machine/camera.md) - Configuração e alinhamento de
   câmera
-- [Painel de Controle](../ui/bottom-panel) - Controles de movimento e gestão
+- [Painel de Controle](../ui/bottom-panel.md) - Controles de movimento e gestão
   SCT
-- [Guia de Início Rápido](../getting-started/quick-start) - Fluxo de trabalho
+- [Guia de Início Rápido](../getting-started/quick-start.md) - Fluxo de trabalho
   básico

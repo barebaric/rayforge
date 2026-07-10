@@ -17,7 +17,7 @@ Cliquez sur **Ajouter une Machine** pour créer une nouvelle machine. Sélection
 ![Ajouter une Machine](/screenshots/app-settings-machines-add.png)
 
 Si votre appareil est connecté et allumé, vous pouvez cliquer sur **Other Device…**
-pour utiliser l'[Assistant de Configuration](../machine/config-wizard), qui
+pour utiliser l'[Assistant de Configuration](../machine/config-wizard.md), qui
 détecte et configure automatiquement votre machine.
 
 Si vous avez un profil d'appareil LightBurn (.lbdev) avec calibrage
@@ -113,7 +113,7 @@ Si votre machine a plusieurs modules laser (ex : diode et CO2), vous pouvez les 
 
 ![Paramètres Laser](/screenshots/machine-laser.png)
 
-Voir [Configuration Laser](../machine/laser) pour plus de détails.
+Voir [Configuration Laser](../machine/laser.md) pour plus de détails.
 
 ### Configuration Caméra
 
@@ -121,7 +121,7 @@ Si vous avez une caméra USB pour l'alignement et le positionnement, configurez-
 
 ![Paramètres Caméra](/screenshots/machine-camera.png)
 
-Voir [Intégration Caméra](../machine/camera) pour plus de détails.
+Voir [Intégration Caméra](../machine/camera.md) pour plus de détails.
 
 ### Paramètres de l'Appareil
 
@@ -166,7 +166,7 @@ Modifier les paramètres de l'appareil peut être dangereux et peut rendre votre
 - Vérifiez les câbles desserrés ou les mauvaises connexions
 - Éteignez et rallumez votre découpeuse laser et réessayez
 
-Pour plus d'aide, voir [Problèmes de Connexion](../troubleshooting/connection).
+Pour plus d'aide, voir [Problèmes de Connexion](../troubleshooting/connection.md).
 
 ---
 

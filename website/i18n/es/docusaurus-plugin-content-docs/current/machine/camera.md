@@ -400,8 +400,8 @@ real del láser.
 
 ## Páginas Relacionadas
 
-- [Vista Previa 3D](../ui/3d-preview) — Visualizar ejecución con superposición
+- [Vista Previa 3D](../ui/3d-preview.md) — Visualizar ejecución con superposición
   de cámara
-- [Enmarcando Trabajos](../features/framing-your-job) — Verificar posición del
+- [Enmarcando Trabajos](../features/framing-your-job.md) — Verificar posición del
   trabajo
 - [Ajustes Generales](general) — Configuración de máquina

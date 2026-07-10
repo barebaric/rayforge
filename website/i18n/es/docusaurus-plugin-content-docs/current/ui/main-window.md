@@ -34,7 +34,7 @@ actual (ej. Idle, Run) directamente en la barra de herramientas. Durante la ejec
 trabajo, también muestra el tiempo restante estimado.
 
 El menú desplegable WCS te permite cambiar rápidamente entre sistemas de coordenadas.
-Ver [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems) para
+Ver [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems.md) para
 más información.
 
 Los controles de visibilidad para piezas de trabajo, pestañas, transmisión de cámara,
@@ -119,7 +119,7 @@ Personaliza la interfaz en **Editar → Ajustes**:
 
 **Páginas Relacionadas:**
 
-- [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems) - WCS
+- [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems.md) - WCS
 - [Herramientas del Lienzo](canvas-tools) - Herramientas para manipular diseños
 - [Panel Inferior](bottom-panel) - Control manual de máquina, estado y registros
 - [Vista Previa 3D](3d-preview) - Visualizar trayectorias en 3D

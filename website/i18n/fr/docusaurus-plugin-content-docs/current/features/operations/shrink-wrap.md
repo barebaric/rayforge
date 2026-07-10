@@ -183,7 +183,7 @@ Flux de travail courant :
 - D'abord : Couper les détails dans les pièces (pendant sécurisé)
 - Dernier : Shrink wrap coupe le groupe libre
 
-Voir [Flux de Travail Multi-Couches](../multi-layer) pour plus de détails.
+Voir [Flux de Travail Multi-Couches](../multi-layer.md) pour plus de détails.
 
 ### Shrink Wrap + Raster
 
@@ -204,12 +204,12 @@ Voir [Flux de Travail Multi-Couches](../multi-layer) pour plus de détails.
 
 Les opérations Shrink Wrap supportent plusieurs options de post-traitement :
 
-- **[Lissage de Parcours](../smooth)** - Réduire les bords irréguliers dans le parcours de limite
-- **[Ponts de Maintien](../holding-tabs)** - Maintenir les pièces coupées attachées au matériau de stock
-- **[Rognage au Stock](../crop-to-stock)** - Limiter les coupes à la limite du matériau
-- **[Optimisation de Parcours](../path-optimization)** - Réduire la distance de déplacement
-- **[Passe Multiple](../multi-pass)** - Répéter les coupes pour les matériaux épais
-- **[Entrée/Sortie](../lead-in-out)** - Ajouter des mouvements d'approche et de sortie sans puissance pour des extrémités de coupe plus propres
+- **[Lissage de Parcours](../smooth.md)** - Réduire les bords irréguliers dans le parcours de limite
+- **[Ponts de Maintien](../holding-tabs.md)** - Maintenir les pièces coupées attachées au matériau de stock
+- **[Rognage au Stock](../crop-to-stock.md)** - Limiter les coupes à la limite du matériau
+- **[Optimisation de Parcours](../path-optimization.md)** - Réduire la distance de déplacement
+- **[Passe Multiple](../multi-pass.md)** - Répéter les coupes pour les matériaux épais
+- **[Entrée/Sortie](../lead-in-out.md)** - Ajouter des mouvements d'approche et de sortie sans puissance pour des extrémités de coupe plus propres
 
 ### Espacement des Pièces
 
@@ -331,7 +331,7 @@ Avant la production :
 
 ### Les pièces bougent pendant la coupe
 
-- **Ajoutez :** De petits ponts pour maintenir les pièces (voir [Ponts de Maintien](../holding-tabs))
+- **Ajoutez :** De petits ponts pour maintenir les pièces (voir [Ponts de Maintien](../holding-tabs.md))
 - **Utilisez :** Ordre de coupe : de l'intérieur vers l'extérieur
 - **Assurez-vous :** Le matériau est plat et sécurisé
 - **Vérifiez :** La feuille n'est pas gondolée
@@ -364,7 +364,7 @@ Le parcours de limite est optimisé pour :
 ## Sujets Connexes
 
 - **[Coupe de Contour](contour)** - Couper les contours d'objets individuels
-- **[Flux de Travail Multi-Couches](../multi-layer)** - Combiner efficacement les opérations
-- **[Ponts de Maintien](../holding-tabs)** - Maintenir les pièces sécurisées pendant la coupe
+- **[Flux de Travail Multi-Couches](../multi-layer.md)** - Combiner efficacement les opérations
+- **[Ponts de Maintien](../holding-tabs.md)** - Maintenir les pièces sécurisées pendant la coupe
 - **[Aperçu 3D](../ui/3d-preview)** - Prévisualiser les parcours de coupe
 - **[Grille de Test de Matériau](material-test-grid)** - Trouver les paramètres de coupe optimaux

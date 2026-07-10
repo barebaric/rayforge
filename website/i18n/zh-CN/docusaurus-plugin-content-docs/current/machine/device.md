@@ -276,7 +276,7 @@ $132=0.0       ; Z 最大行程
 
 - [常规设置](general) - 机器名称和速度设置
 - [激光设置](laser) - 激光头配置
-- [连接故障排除](../troubleshooting/connection) - 修复连接问题
+- [连接故障排除](../troubleshooting/connection.md) - 修复连接问题
 
 ## 外部资源
 

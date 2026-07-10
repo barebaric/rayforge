@@ -171,5 +171,5 @@ Alterne abas ligado/desligado sem excluí-las:
 
 - [Corte de Contorno](operations/contour) - Operação primária que usa abas
 - [Fluxo de Trabalho Multi-Camadas](multi-layer) - Gerenciando abas através de múltiplas camadas
-- [Visualização 3D](../ui/3d-preview) - Visualizando abas na pré-visualização
+- [Visualização 3D](../ui/3d-preview.md) - Visualizando abas na pré-visualização
 

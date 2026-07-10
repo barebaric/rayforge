@@ -171,5 +171,5 @@ Rayforge 通过**在切割路径中创建小间隙**来实现标签：
 
 - [轮廓切割](operations/contour) - 使用标签的主要操作
 - [多层工作流程](multi-layer) - 跨多个图层管理标签
-- [3D 预览](../ui/3d-preview) - 在预览中可视化标签
+- [3D 预览](../ui/3d-preview.md) - 在预览中可视化标签
 

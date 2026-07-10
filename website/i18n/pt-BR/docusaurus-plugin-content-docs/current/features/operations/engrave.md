@@ -206,7 +206,7 @@ Para melhor qualidade, desabilite bidirecional. Para velocidade, habilite.
 - 2-5mm para a maioria dos trabalhos
 - Maior para altas velocidades
 
-Veja [Overscan](../overscan) para detalhes.
+Veja [Overscan](../overscan.md) para detalhes.
 
 ## Pós-Processamento
 
@@ -214,9 +214,9 @@ Veja [Overscan](../overscan) para detalhes.
 
 Operações de gravação suportam várias opções de pós-processamento:
 
-- **[Overscan](../overscan)** - Estende linhas raster para qualidade de gravação consistente
-- **[Otimização de Caminho](../path-optimization)** - Reduz distância de deslocamento
-- **[Multi-Passagem](../multi-pass)** - Repete gravação para resultados mais profundos
+- **[Overscan](../overscan.md)** - Estende linhas raster para qualidade de gravação consistente
+- **[Otimização de Caminho](../path-optimization.md)** - Reduz distância de deslocamento
+- **[Multi-Passagem](../multi-pass.md)** - Repete gravação para resultados mais profundos
 
 ## Configurações Específicas do Modo
 
@@ -431,6 +431,6 @@ Use inverter para litofanias (áreas claras devem ser finas) ou embossing (área
 ## Tópicos Relacionados
 
 - **[Corte de Contorno](contour)** - Cortando contornos e formas
-- **[Overscan](../overscan)** - Melhorando qualidade de gravação
+- **[Overscan](../overscan.md)** - Melhorando qualidade de gravação
 - **[Grade de Teste de Material](material-test-grid)** - Encontrando configurações ideais
-- **[Fluxo de Trabalho Multi-Camadas](../multi-layer)** - Combinando gravação com outras operações
+- **[Fluxo de Trabalho Multi-Camadas](../multi-layer.md)** - Combinando gravação com outras operações
