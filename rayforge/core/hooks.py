@@ -4,12 +4,19 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 16
-PLUGIN_API_VERSION = 16
+PLUGIN_API_VERSION = 17
 
 
 """
 API Changelog
 ============
+
+Version 17
+----------
+Raygeo 0.15: adaptive_entry, generate_helix_spiral, EntryMethod,
+AdaptiveEntryOptions removed (use Workplan). ToroidOptions: renamed
+step_distance -> step_over, z -> target_z. Assembler option structs:
+renamed radius -> tool_radius, cut_z -> target_z.
 
 Version 16
 ----------

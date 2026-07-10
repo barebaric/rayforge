@@ -66,6 +66,36 @@
   </screenshots>
 
   <releases>
+    <release version="1.8.2" date="2026-07-10">
+      <description>
+        <p>Raygeo upgrade, Pango text rendering, and bug fixes</p>
+        <p>Improvements:</p>
+        <ul>
+          <li>Upgrade raygeo to 1.15.1</li>
+          <li>Bump addon API version to 17 for incompatible raygeo API
+          changes</li>
+          <li>Replace Cairo text path with Pango-based text_to_geometry for
+          robust font fallback (#293)</li>
+          <li>Defer histogram computation to idle callback and cap render
+          resolution in raster widget</li>
+          <li>Configurable GRBL protocol version (by Uwe Woessner)</li>
+          <li>Device profile modifications for Longer Ray5 (by Uwe Woessner)</li>
+          <li>Update pypdf to version 6.12.2</li>
+          <li>Updated translations</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Various device profiles missing {extra_cmd} in G-code dialect
+          causing A axis not emitted (#301)</li>
+          <li>GRBL buffer stall recovery resending G-code to freshly reset
+          firmware after cancel</li>
+          <li>Contour producer dropping open contours in Outside/Inside cut
+          modes</li>
+          <li>Overscan transformer doubling up for drivers with native
+          overscan (Ruida)</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.8.1" date="2026-06-28">
       <description>
         <p>Wavefront adaptive clearing, raygeo PyPI migration, and bug fixes</p>
