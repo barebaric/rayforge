@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 19:14+0200\n"
+"POT-Creation-Date: 2026-06-29 02:21+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -61,6 +61,10 @@ msgstr ""
 
 #: post_processors/widgets/lead_in_out_widget.py
 msgid "Change Lead-Out Distance"
+msgstr ""
+
+#: post_processors/widgets/overscan_widget.py
+msgid "This machine adds overscan automatically; the setting has no effect."
 msgstr ""
 
 #: post_processors/widgets/overscan_widget.py

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-08 19:14+0200\n"
+"POT-Creation-Date: 2026-06-29 02:21+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -64,6 +64,10 @@ msgstr "Змінити відстань в'їзду"
 #: post_processors/widgets/lead_in_out_widget.py
 msgid "Change Lead-Out Distance"
 msgstr "Змінити відстань виїзду"
+
+#: post_processors/widgets/overscan_widget.py
+msgid "This machine adds overscan automatically; the setting has no effect."
+msgstr "Ця машина додає перебіг автоматично; налаштування не має ефекту."
 
 #: post_processors/widgets/overscan_widget.py
 msgid "Overscan Distance"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-15 20:47+0200\n"
+"POT-Creation-Date: 2026-07-05 22:13+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -1487,12 +1487,16 @@ msgid "WebSocket Port"
 msgstr "Puerto WebSocket"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
-msgid "Protocol variant"
-msgstr ""
-
-#: rayforge/machine/driver/grbl/grbl_network.py
 msgid "The WebSocket port for the device"
 msgstr "El puerto WebSocket para el dispositivo"
+
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Protocol variant"
+msgstr "Variante de protocolo"
+
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "ESP3D or Longer GRBL variant"
+msgstr "Variante ESP3D o Longer GRBL"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Host is not configured. Please set a valid IP address or hostname."
