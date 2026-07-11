@@ -10,11 +10,26 @@ from ...shared.units.definitions import (
     get_base_unit_for_quantity,
     get_units_for_quantity,
 )
+from ...shared.util.localized import SUPPORTED_LANGUAGES
 from ...ui_gtk.doceditor import file_dialogs
 from ...usage import get_usage_tracker
 from ..shared.preferences_page import TrackedPreferencesPage
 
 logger = logging.getLogger(__name__)
+
+
+def _get_language_label(code: str) -> str:
+    """Return a human-readable label for a language code."""
+    labels = {
+        "en": _("English"),
+        "de": _("German"),
+        "es": _("Spanish"),
+        "fr": _("French"),
+        "pt": _("Portuguese"),
+        "uk": _("Ukrainian"),
+        "zh_CN": _("Chinese (Simplified)"),
+    }
+    return labels.get(code, code)
 
 
 class GeneralPreferencesPage(TrackedPreferencesPage):
@@ -51,6 +66,12 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         _("Layer Color"),
     ]
 
+    # Language options: None (system default) + supported languages
+    LANGUAGE_MAP = [None] + SUPPORTED_LANGUAGES
+    LANGUAGE_LABELS = [_("System Default")] + [
+        _get_language_label(code) for code in SUPPORTED_LANGUAGES
+    ]
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.set_title(_("General"))
@@ -77,6 +98,23 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
 
         self.theme_row.connect("notify::selected", self.on_theme_changed)
         app_settings_group.add(self.theme_row)
+
+        # Language selector
+        self.language_row = Adw.ComboRow(
+            model=Gtk.StringList.new(self.LANGUAGE_LABELS)
+        )
+        self.language_row.set_title(_("Language"))
+        self.language_row.set_subtitle(
+            _("The application language. Changes require a restart.")
+        )
+        config = get_context().config
+        try:
+            selected_index = self.LANGUAGE_MAP.index(config.language)
+        except ValueError:
+            selected_index = 0
+        self.language_row.set_selected(selected_index)
+        self.language_row.connect("notify::selected", self.on_language_changed)
+        app_settings_group.add(self.language_row)
 
         self.ops_color_mode_row = Adw.ComboRow(
             model=Gtk.StringList.new(self.OPS_COLOR_MODE_LABELS)
@@ -329,6 +367,57 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         selected_index = combo_row.get_selected()
         theme_string = self.THEME_MAP[selected_index]
         get_context().config.set_theme(theme_string)
+
+    def on_language_changed(self, combo_row, _param):
+        """Called when the user selects a new language.
+
+        Saves the preference and prompts the user to restart the
+        application, since gettext translations are loaded at startup
+        and cannot be swapped at runtime.
+        """
+        selected_index = combo_row.get_selected()
+        language = self.LANGUAGE_MAP[selected_index]
+        get_context().config.set_language(language)
+
+        window = combo_row.get_ancestor(Adw.PreferencesWindow)
+        if window is None:
+            window = combo_row.get_ancestor(Gtk.Window)
+        if window is None:
+            return
+
+        dialog = Adw.MessageDialog(
+            transient_for=window,
+            heading=_("Restart required"),
+            body=_(
+                "The language will take effect after restarting Rayforge. "
+                "Would you like to restart now?"
+            ),
+        )
+        dialog.add_response("cancel", _("_Cancel"))
+        dialog.add_response("restart", _("_Restart"))
+        dialog.set_default_response("restart")
+        dialog.set_close_response("cancel")
+        dialog.set_response_appearance(
+            "restart", Adw.ResponseAppearance.SUGGESTED
+        )
+
+        def _on_response(dialog, response):
+            dialog.destroy()
+            if response == "restart":
+                app = window.get_application()
+                if app is None:
+                    # SettingsWindow is an Adw.Window, not a
+                    # Gtk.ApplicationWindow, so get_application()
+                    # may return None. Walk up to the transient parent
+                    # (the MainWindow) which does have the app.
+                    parent = window.get_transient_for()
+                    if parent is not None:
+                        app = parent.get_application()
+                if app is not None:
+                    app.request_restart()
+
+        dialog.connect("response", _on_response)
+        dialog.present()
 
     def on_ops_color_mode_changed(self, combo_row, _):
         """Called when the user selects a new ops color mode."""

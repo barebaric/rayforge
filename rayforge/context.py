@@ -226,6 +226,11 @@ class RayforgeContext:
                     )
                 )[0]
                 self._config.set_machine(machine)
+            # Sync the context language with the configured preference.
+            # This overrides the system-detected language if the user has
+            # explicitly chosen one in settings.
+            if self._config.language:
+                self.language = self._config.language
         return self._config_mgr
 
     @property
