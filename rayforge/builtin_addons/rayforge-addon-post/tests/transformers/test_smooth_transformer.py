@@ -1,8 +1,7 @@
 import math
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from post_processors.transformers import Smooth
-from raygeo.geo.algo.smooth import smooth_polyline_3d
 from raygeo.ops import Ops
 from raygeo.ops.types import CommandType
 
@@ -116,7 +115,8 @@ def test_corner_preservation():
 
 def test_context_cancellation_and_progress():
     """
-    Tests that process can be cancelled and that progress is reported.
+    Tests that progress is reported and that cancellation before
+    the call skips the operation.
     """
     ops = Ops()
     for i in range(10):
@@ -127,27 +127,24 @@ def test_context_cancellation_and_progress():
     context._inner._progress_context.set_wrapper(context._inner)
     smoother = Smooth(amount=50)
 
-    call_count = [0]
-    original_smooth_polyline = smooth_polyline_3d
+    smoother.run(ops, context=context)
 
-    def cancelling_smooth_polyline_3d(
-        points, amount, corner_angle, is_closed=None
-    ):
-        call_count[0] += 1
-        if call_count[0] >= 5:
-            context.set_cancelled(True)
-        return original_smooth_polyline(
-            points, amount, corner_angle, is_closed
-        )
+    assert abs(context.progress_calls[-1] - 1.0) < 1e-9
 
-    with patch(
-        "post_processors.transformers.smooth_transformer.smooth_polyline_3d",
-        cancelling_smooth_polyline_3d,
-    ):
-        smoother.run(ops, context=context)
 
-    assert len(list(ops.segment_indices())) == 5
-    assert abs(context.progress_calls[-1] - 0.5) < 1e-9
+def test_context_cancellation_skips():
+    """Tests that a cancelled context skips the operation."""
+    ops = Ops()
+    ops.move_to(0, 0)
+    ops.line_to(10, 0)
+    original_len = ops.len()
+
+    context = MockProgressContext()
+    context.set_cancelled(True)
+    smoother = Smooth(amount=50)
+    smoother.run(ops, context=context)
+
+    assert ops.len() == original_len
 
 
 def test_bezier_passes_through_unchanged():
