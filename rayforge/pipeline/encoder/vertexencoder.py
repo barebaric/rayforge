@@ -1,13 +1,7 @@
 from __future__ import annotations
 
-from typing import List
-
 import numpy as np
-from raygeo.geo.shape.arc import linearize_arc
-from raygeo.geo.shape.bezier import linearize_bezier_segment
 from raygeo.ops import Ops
-from raygeo.ops.raster import extract_zero_power_segments
-from raygeo.ops.types import CommandCategory, CommandType
 
 from ..artifact.base import VertexData
 from .base import OpsEncoder
@@ -49,124 +43,16 @@ class VertexEncoder(OpsEncoder):
         Returns:
             A VertexData object containing the computed vertex arrays.
         """
-        powered_v: List[float] = []
-        powered_c: List[float] = []
-        travel_v: List[float] = []
-        zero_power_v: List[float] = []
-
-        # Track current state
-        current_power = 0.0
-        current_pos = (0.0, 0.0, 0.0)
-        is_initial_position = True
-
-        for i in range(ops.len()):
-            ct = ops.command_type(i)
-
-            if ct == CommandType.SET_POWER:
-                current_power = ops.power(i)
-                continue
-
-            cat = ops.category(i)
-            if cat != CommandCategory.MOVING:
-                continue
-
-            end = ops.endpoint(i)
-
-            if ct == CommandType.MOVE_TO:
-                start_pos, end_pos = current_pos, end
-                # Skip the initial travel move from machine origin to first
-                # cut point - this is positioning, not actual workpiece
-                # travel
-                if not is_initial_position:
-                    travel_v.extend(start_pos)
-                    travel_v.extend(end_pos)
-                current_pos = end_pos
-                is_initial_position = False
-
-            elif ct == CommandType.LINE_TO:
-                start_pos, end_pos = current_pos, end
-                if current_power > 0.0:
-                    power_byte = min(255, int(current_power * 255.0))
-                    color = self._grayscale_lut[power_byte]
-                    powered_v.extend(start_pos)
-                    powered_v.extend(end_pos)
-                    powered_c.extend(color)
-                    powered_c.extend(color)
-                else:
-                    zero_power_v.extend(start_pos)
-                    zero_power_v.extend(end_pos)
-                current_pos = end_pos
-                is_initial_position = False
-
-            elif ct == CommandType.ARC_TO:
-                start_pos = current_pos
-                i_val, j_val, cw = ops.arc_params(i)
-                arc_row = [
-                    3,
-                    end[0],
-                    end[1],
-                    end[2],
-                    i_val,
-                    j_val,
-                    0.0,
-                    0.0,
-                    0.0,
-                    -1.0 if cw else 1.0,
-                ]
-                segments = linearize_arc(arc_row, start_pos)
-                if current_power > 0.0:
-                    power_byte = min(255, int(current_power * 255.0))
-                    color = self._grayscale_lut[power_byte]
-                    for seg_start, seg_end in segments:
-                        powered_v.extend(seg_start)
-                        powered_v.extend(seg_end)
-                        powered_c.extend(color)
-                        powered_c.extend(color)
-                else:
-                    for seg_start, seg_end in segments:
-                        zero_power_v.extend(seg_start)
-                        zero_power_v.extend(seg_end)
-                current_pos = end
-                is_initial_position = False
-
-            elif ct == CommandType.BEZIER_TO:
-                start_pos = current_pos
-                c1, c2 = ops.bezier_params(i)
-                polyline = linearize_bezier_segment(start_pos, c1, c2, end)
-                if current_power > 0.0:
-                    power_byte = min(255, int(current_power * 255.0))
-                    color = self._grayscale_lut[power_byte]
-                    for j in range(len(polyline) - 1):
-                        powered_v.extend(polyline[j])
-                        powered_v.extend(polyline[j + 1])
-                        powered_c.extend(color)
-                        powered_c.extend(color)
-                else:
-                    for j in range(len(polyline) - 1):
-                        zero_power_v.extend(polyline[j])
-                        zero_power_v.extend(polyline[j + 1])
-                current_pos = end
-                is_initial_position = False
-
-            elif ct == CommandType.SCAN_LINE:
-                segments = extract_zero_power_segments(
-                    current_pos, end, ops.scanline_data(i)
-                )
-                zero_power_v.extend(segments)
-                current_pos = end
-                is_initial_position = False
-
-        powered_verts = np.array(powered_v, dtype=np.float32).reshape(-1, 3)
-        travel_verts = np.array(travel_v, dtype=np.float32).reshape(-1, 3)
-        zero_power_verts = np.array(zero_power_v, dtype=np.float32).reshape(
-            -1, 3
-        )
+        (
+            powered_vertices,
+            powered_colors,
+            travel_vertices,
+            zero_power_vertices,
+        ) = ops.to_vertex_arrays()
 
         return VertexData(
-            powered_vertices=powered_verts,
-            powered_colors=np.array(powered_c, dtype=np.float32).reshape(
-                -1, 4
-            ),
-            travel_vertices=travel_verts,
-            zero_power_vertices=zero_power_verts,
+            powered_vertices=powered_vertices,
+            powered_colors=powered_colors,
+            travel_vertices=travel_vertices,
+            zero_power_vertices=zero_power_vertices,
         )
