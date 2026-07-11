@@ -6,13 +6,8 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 import cairo
 import numpy as np
 from raygeo.image import compute_auto_levels, normalize_grayscale
+from raygeo.image.scan import ScanMode
 from raygeo.ops import Ops
-from raygeo.ops.raster import (
-    ScanMode,
-    rasterize_mask_scan,
-    rasterize_multi_pass,
-    rasterize_power_modulation,
-)
 from raygeo.ops.types import SectionType
 
 from rayforge.image.dither import DitherAlgorithm, surface_to_dithered_array
@@ -309,7 +304,7 @@ class Rasterizer(OpsProducer):
         step_power: float = 1.0,
         angle: float = 0.0,
     ) -> Ops:
-        return rasterize_power_modulation(
+        return Ops.from_power_modulated_image(
             gray_image,
             (alpha * 255).astype(np.uint8),
             pixels_per_mm,
@@ -356,7 +351,7 @@ class Rasterizer(OpsProducer):
                 surface, threshold=self.threshold, invert=self.invert
             )
 
-        return rasterize_mask_scan(
+        return Ops.from_mask_scan(
             mask,
             pixels_per_mm,
             offset_x_mm,
@@ -376,7 +371,7 @@ class Rasterizer(OpsProducer):
         line_interval_mm: float,
         angle: float = 0.0,
     ) -> Ops:
-        return rasterize_multi_pass(
+        return Ops.from_multi_pass_image(
             gray_image,
             pixels_per_mm,
             offset_x_mm,
