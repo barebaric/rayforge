@@ -126,7 +126,16 @@ class GcodeContext:
         dialect validation.
         """
         # Variables for movement commands
-        move_vars = {"x", "y", "z", "f_command"}
+        move_vars = {
+            "x",
+            "y",
+            "z",
+            "x_cmd",
+            "y_cmd",
+            "z_cmd",
+            "extra_cmd",
+            "f_command",
+        }
         # Variables for cutting commands (inherits movement)
         cut_vars = move_vars.union({"i", "j", "s_command", "power"})
 
