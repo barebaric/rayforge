@@ -291,7 +291,7 @@ def get_cursor_for_region(
     base_angle = _region_angles.get(region, 0) if not absolute else 0
     if region is None or region == ElementRegion.NONE:
         return Gdk.Cursor.new_from_name("default")
-    elif region == ElementRegion.BODY:
+    elif region in (ElementRegion.BODY, ElementRegion.MOVE):
         return Gdk.Cursor.new_from_name("move")
     elif region in ROTATE_HANDLES:
         cursor_angle = -base_angle + angle
