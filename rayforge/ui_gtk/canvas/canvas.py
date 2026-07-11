@@ -30,6 +30,7 @@ from .multiselect import MultiSelectionGroup
 from .overlays import render_selection_frame, render_selection_handles
 from .region import (
     BBOX_REGIONS,
+    MOVE_HANDLES,
     RESIZE_HANDLES,
     ROTATE_HANDLES,
     ROTATE_SHEAR_HANDLES,
@@ -396,9 +397,9 @@ class Canvas(Gtk.DrawingArea):
         # We build a set of candidate regions based on the current mode.
         handle_candidates: Optional[Set[ElementRegion]] = None
         if self._selection_mode == SelectionMode.RESIZE:
-            handle_candidates = RESIZE_HANDLES
+            handle_candidates = RESIZE_HANDLES | MOVE_HANDLES
         elif self._selection_mode == SelectionMode.ROTATE_SHEAR:
-            handle_candidates = ROTATE_SHEAR_HANDLES
+            handle_candidates = ROTATE_SHEAR_HANDLES | MOVE_HANDLES
 
         if handle_candidates:
             target: Optional[Union[CanvasElement, MultiSelectionGroup]] = None
@@ -439,7 +440,10 @@ class Canvas(Gtk.DrawingArea):
         if self._selection_group:
             # Check for body or any handle to set the general group hover flag
             all_group_regions = (
-                RESIZE_HANDLES | ROTATE_SHEAR_HANDLES | {ElementRegion.BODY}
+                RESIZE_HANDLES
+                | ROTATE_SHEAR_HANDLES
+                | MOVE_HANDLES
+                | {ElementRegion.BODY}
             )
             if (
                 self._selection_group.check_region_hit(
@@ -776,7 +780,10 @@ class Canvas(Gtk.DrawingArea):
             if not elements_to_transform:
                 return
 
-            if self._active_region == ElementRegion.BODY:
+            if self._active_region in (
+                ElementRegion.BODY,
+                ElementRegion.MOVE,
+            ):
                 self._moving = True
                 self.move_begin.send(
                     self,

@@ -30,6 +30,8 @@ class ElementRegion(Enum):
     SHEAR_RIGHT = auto()
     SHEAR_BOTTOM = auto()
     SHEAR_LEFT = auto()
+    # Move gizmo (outside, below the selection frame)
+    MOVE = auto()
 
 
 RESIZE_HANDLES: Set[ElementRegion] = {
@@ -60,6 +62,8 @@ SHEAR_HANDLES: Set[ElementRegion] = {
 }
 
 ROTATE_SHEAR_HANDLES: Set[ElementRegion] = ROTATE_HANDLES | SHEAR_HANDLES
+
+MOVE_HANDLES: Set[ElementRegion] = {ElementRegion.MOVE}
 
 LEFT_HANDLES: Set[ElementRegion] = {
     ElementRegion.TOP_LEFT,
@@ -228,7 +232,20 @@ def get_region_rect(
     if region == ElementRegion.SHEAR_RIGHT:
         y_pos = h / 2 - effective_hh / 2
         return w + handle_dist, y_pos, effective_hw, effective_hh
-
+    # Move gizmo: centered horizontally below the bottom edge.
+    # It is ~95% larger than the standard resize handles for easier
+    # grabbing on workpieces with little geometry.
+    if region == ElementRegion.MOVE:
+        move_hw = effective_hw * 1.95
+        move_hh = effective_hh * 1.95
+        move_margin = 5.0 / avg_abs_scale
+        y_pos = (
+            -move_hh - handle_dist - move_margin
+            if is_flipped_y
+            else h + handle_dist + move_margin
+        )
+        x_pos = w / 2 - move_hw / 2
+        return x_pos, y_pos, move_hw, move_hh
     if region == ElementRegion.BODY:
         return 0.0, 0.0, w, h
 

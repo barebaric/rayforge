@@ -12,12 +12,15 @@ from typing import (
 )
 
 import cairo
+from gi.repository import Gdk
 from raygeo.geo import Matrix
 
 from ...core.color import ColorRGBA
+from ..icons import get_icon_pixbuf
 from .region import (
     CORNER_RESIZE_HANDLES,
     MIDDLE_RESIZE_HANDLES,
+    MOVE_HANDLES,
     RESIZE_HANDLES,
     ROTATE_HANDLES,
     ROTATE_SHEAR_HANDLES,
@@ -29,6 +32,16 @@ if TYPE_CHECKING:
 
 _DEFAULT_HANDLE_COLOR: ColorRGBA = (0.2, 0.5, 0.8, 1.0)
 _DEFAULT_HANDLE_COLOR_HOVER: ColorRGBA = (0.3, 0.6, 0.9, 1.0)
+
+_move_gizmo_pixbuf = None
+
+
+def _get_move_gizmo_pixbuf(size: int = 24):
+    """Returns a cached pixbuf for the move-symbolic icon."""
+    global _move_gizmo_pixbuf
+    if _move_gizmo_pixbuf is None:
+        _move_gizmo_pixbuf = get_icon_pixbuf("move-symbolic", size)
+    return _move_gizmo_pixbuf
 
 
 def _handle_colors(
@@ -174,6 +187,60 @@ def _draw_arrow_handle(
     ctx.stroke()
 
 
+def _draw_move_gizmo(
+    ctx: cairo.Context,
+    width: float,
+    height: float,
+    is_hovered: bool,
+    color: Optional[ColorRGBA] = None,
+):
+    """Draws a rounded square rotated 45 degrees (diamond) with the
+    move-symbolic icon centered on it, axis-aligned."""
+    size = min(width, height)
+    diamond_side = size / math.sqrt(2)
+    radius = diamond_side * 0.2
+
+    ctx.save()
+    ctx.rotate(math.radians(45))
+    ctx.set_source_rgba(*_handle_colors(color, is_hovered))
+    half = diamond_side / 2
+    path_rounded_square(
+        ctx, -half, -half, diamond_side, diamond_side, radius
+    )
+    ctx.fill()
+    ctx.restore()
+
+    pixbuf = _get_move_gizmo_pixbuf()
+    if pixbuf is not None:
+        icon_size = size * 0.65
+        pb_w = pixbuf.get_width()
+        pb_h = pixbuf.get_height()
+        ctx.save()
+        ctx.scale(icon_size / pb_w, icon_size / pb_h)
+        Gdk.cairo_set_source_pixbuf(ctx, pixbuf, -pb_w / 2, -pb_h / 2)
+        ctx.get_source().set_filter(cairo.FILTER_BILINEAR)
+        ctx.set_operator(cairo.OPERATOR_DEST_OUT)
+        ctx.paint()
+        ctx.restore()
+
+
+def path_rounded_square(
+    ctx: cairo.Context,
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    r: float,
+):
+    """Draws a rounded-rectangle path centered at origin coordinates."""
+    ctx.new_sub_path()
+    ctx.arc(x + w - r, y + r, r, -math.pi / 2, 0)
+    ctx.arc(x + w - r, y + h - r, r, 0, math.pi / 2)
+    ctx.arc(x + r, y + h - r, r, math.pi / 2, math.pi)
+    ctx.arc(x + r, y + r, r, math.pi, 3 * math.pi / 2)
+    ctx.close_path()
+
+
 _ARC_HANDLE_BASE_ANGLES_DEG = {
     ElementRegion.ROTATE_TOP_RIGHT: 315,
     ElementRegion.ROTATE_TOP_LEFT: 225,
@@ -240,6 +307,10 @@ HANDLE_DRAW_INFO.update(
             "draw": _draw_arrow_handle,
             "get_angle": lambda t, r: t.get_y_axis_angle(),
             "swap_dims": True,
+        },
+        ElementRegion.MOVE: {
+            "draw": _draw_move_gizmo,
+            "get_angle": lambda t, r: 0.0,
         },
     }
 )
@@ -405,6 +476,10 @@ def render_selection_handles(
 
     elif mode == SelectionMode.ROTATE_SHEAR:
         regions_to_draw.extend(ROTATE_SHEAR_HANDLES)
+
+    # The move gizmo is always drawn regardless of the selection mode.
+    if mode != SelectionMode.NONE:
+        regions_to_draw.extend(MOVE_HANDLES)
 
     if regions_to_draw:
         _render_handles(
