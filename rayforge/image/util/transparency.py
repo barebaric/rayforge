@@ -4,6 +4,10 @@ Transparency manipulation utilities for Cairo surfaces.
 
 import cairo
 import numpy
+from raygeo.image import (
+    make_transparent_by_brightness,
+    make_transparent_except_color,
+)
 
 
 def make_surface_transparent(
@@ -27,28 +31,18 @@ def make_surface_transparent(
         raise ValueError("Surface must be in ARGB32 format.")
 
     width, height = surface.get_width(), surface.get_height()
-    stride = surface.get_stride()
+    stride_px = surface.get_stride() // 4
 
     data = surface.get_data()
-    buf = numpy.frombuffer(data, dtype=numpy.uint8).reshape((height, stride))
+    buf = numpy.frombuffer(data, dtype=numpy.uint8).copy()
+    make_transparent_by_brightness(buf, width, height, stride_px, threshold)
 
-    argb = buf.view(dtype=numpy.uint32)[:, :width]
-
-    r = (argb >> 16) & 0xFF
-    g = (argb >> 8) & 0xFF
-    b = argb & 0xFF
-
-    brightness = (
-        77 * r.astype(numpy.uint16)
-        + 150 * g.astype(numpy.uint16)
-        + 29 * b.astype(numpy.uint16)
-    ) >> 8
-    mask = brightness >= threshold
-
-    argb[mask] = (0x00 << 24) | (r[mask] << 16) | (g[mask] << 8) | b[mask]
+    dst = numpy.frombuffer(data, dtype=numpy.uint8)
+    dst[:] = buf
+    surface.mark_dirty()
 
 
-def make_transparent_except_color(
+def make_transparent_except(
     surface: cairo.ImageSurface,
     target_r: int,
     target_g: int,
@@ -73,17 +67,14 @@ def make_transparent_except_color(
         raise ValueError("Surface must be in ARGB32 format.")
 
     width, height = surface.get_width(), surface.get_height()
-    stride = surface.get_stride()
+    stride_px = surface.get_stride() // 4
 
     data = surface.get_data()
-    buf = numpy.frombuffer(data, dtype=numpy.uint8).reshape((height, stride))
+    buf = numpy.frombuffer(data, dtype=numpy.uint8).copy()
+    make_transparent_except_color(
+        buf, width, height, stride_px, target_r, target_g, target_b
+    )
 
-    argb = buf.view(dtype=numpy.uint32)[:, :width]
-
-    r = (argb >> 16) & 0xFF
-    g = (argb >> 8) & 0xFF
-    b = argb & 0xFF
-
-    mask = ~((r == target_r) & (g == target_g) & (b == target_b))
-
-    argb[mask] = (0x00 << 24) | (r[mask] << 16) | (g[mask] << 8) | b[mask]
+    dst = numpy.frombuffer(data, dtype=numpy.uint8)
+    dst[:] = buf
+    surface.mark_dirty()

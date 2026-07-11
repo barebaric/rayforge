@@ -204,9 +204,7 @@ def _draw_move_gizmo(
     ctx.rotate(math.radians(45))
     ctx.set_source_rgba(*_handle_colors(color, is_hovered))
     half = diamond_side / 2
-    path_rounded_square(
-        ctx, -half, -half, diamond_side, diamond_side, radius
-    )
+    path_rounded_square(ctx, -half, -half, diamond_side, diamond_side, radius)
     ctx.fill()
     ctx.restore()
 
