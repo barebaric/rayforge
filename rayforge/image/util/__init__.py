@@ -26,7 +26,7 @@ from .srgb import (
 )
 from .transparency import (
     make_surface_transparent,
-    make_transparent_except_color,
+    make_transparent_except,
 )
 from .unit import (
     CAIRO_MAX_DIMENSION,
@@ -59,7 +59,7 @@ __all__ = [
     "get_visible_grayscale_values",
     "linear_to_srgb",
     "make_surface_transparent",
-    "make_transparent_except_color",
+    "make_transparent_except",
     "normalize_grayscale",
     "normalize_to_rgba",
     "parse_length",

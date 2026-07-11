@@ -89,7 +89,7 @@ def test_make_transparent_except_color_keeps_target_color_opaque():
     arr[:, :, 3] = 255
     surface.mark_dirty()
 
-    transparency.make_transparent_except_color(surface, 200, 150, 100)
+    transparency.make_transparent_except(surface, 200, 150, 100)
 
     data = surface.get_data()
     arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
@@ -106,7 +106,7 @@ def test_make_transparent_except_color_makes_other_colors_transparent():
     arr[:, :, 3] = 255
     surface.mark_dirty()
 
-    transparency.make_transparent_except_color(surface, 200, 150, 100)
+    transparency.make_transparent_except(surface, 200, 150, 100)
 
     data = surface.get_data()
     arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
@@ -116,7 +116,7 @@ def test_make_transparent_except_color_makes_other_colors_transparent():
 def test_make_transparent_except_color_raises_for_non_argb32():
     surface = cairo.ImageSurface(cairo.FORMAT_RGB24, 2, 2)
     with pytest.raises(ValueError, match="Surface must be in ARGB32 format"):
-        transparency.make_transparent_except_color(surface, 255, 0, 0)
+        transparency.make_transparent_except(surface, 255, 0, 0)
 
 
 def test_make_transparent_except_color_mixed_colors():
@@ -141,7 +141,7 @@ def test_make_transparent_except_color_mixed_colors():
     arr[1, 1, 3] = 255
     surface.mark_dirty()
 
-    transparency.make_transparent_except_color(surface, 0, 255, 0)
+    transparency.make_transparent_except(surface, 0, 255, 0)
 
     data = surface.get_data()
     arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
@@ -161,7 +161,7 @@ def test_make_transparent_except_color_preserves_color_channels():
     arr[:, :, 3] = 255
     surface.mark_dirty()
 
-    transparency.make_transparent_except_color(surface, 255, 0, 0)
+    transparency.make_transparent_except(surface, 255, 0, 0)
 
     data = surface.get_data()
     arr = np.frombuffer(data, dtype=np.uint8).reshape((2, 2, 4))
