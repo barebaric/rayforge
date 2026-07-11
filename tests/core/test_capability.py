@@ -110,7 +110,11 @@ def test_kerf_capability():
 def test_material_test_capability():
     assert isinstance(MATERIAL_TEST, MaterialTestCapability)
     assert MATERIAL_TEST.name == "MATERIAL_TEST"
-    assert list(MATERIAL_TEST.varset.vars) == []
+    var_keys = [v.key for v in MATERIAL_TEST.varset]
+    assert "air_assist" in var_keys
+    air_var = MATERIAL_TEST.varset["air_assist"]
+    assert isinstance(air_var, BoolVar)
+    assert air_var.default is False
 
 
 def test_capability_or_operator():

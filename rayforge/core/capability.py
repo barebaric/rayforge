@@ -325,7 +325,15 @@ class MaterialTestCapability(Capability):
 
     @property
     def varset(self) -> VarSet:
-        return VarSet(vars=[])
+        return VarSet(
+            vars=[
+                BoolVar(
+                    key="air_assist",
+                    label=_("Air Assist"),
+                    default=False,
+                ),
+            ]
+        )
 
 
 class PWMCapability(Capability):
