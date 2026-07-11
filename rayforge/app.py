@@ -11,7 +11,7 @@ import traceback
 import warnings
 from gettext import gettext as _
 from pathlib import Path
-from typing import cast
+from typing import cast, Optional
 
 # Parse --config early before any rayforge imports, as they may
 # import config.py which computes CONFIG_DIR at module load time
@@ -51,6 +51,32 @@ try:
     locale.setlocale(locale.LC_ALL, "")
 except locale.Error:
     pass
+
+
+# Read the language preference from the config file before initializing
+# gettext. This avoids importing the full Config class (which would
+# create circular dependencies at this early stage). None or missing
+# means "use the system default language".
+def _read_language_from_config() -> Optional[str]:
+    import yaml
+
+    from rayforge.config import CONFIG_FILE
+
+    if not CONFIG_FILE.exists():
+        return None
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            data = yaml.safe_load(f)
+            if data and data.get("language"):
+                return data["language"]
+    except Exception as e:
+        logger.warning(f"Could not read language from config: {e}")
+    return None
+
+
+_configured_language = _read_language_from_config()
+if _configured_language:
+    os.environ["LANGUAGE"] = _configured_language
 
 # Configure gettext with the locale directory
 locale_dir = base_dir / "rayforge" / "locale"
@@ -165,6 +191,7 @@ def main():
 
             self.args = args
             self.win = None
+            self._restart_requested = False
             self._register_app_actions()
             self.set_accels_for_action("app.quit", [f"{PRIMARY_ACCEL}q"])
             self.set_accels_for_action(
@@ -191,6 +218,20 @@ def main():
             if isinstance(self.win, MainWindow):
                 return self.win
             return None
+
+        def request_restart(self):
+            """Mark the app for restart and initiate shutdown.
+
+            Closes the main window, which triggers the unsaved-changes
+            dialog if needed. After the main loop exits, the process
+            is re-executed with the same arguments so the new language
+            takes effect.
+            """
+            self._restart_requested = True
+            if self.win is not None:
+                self.win.close()
+            else:
+                GLib.idle_add(self.quit)
 
         def _on_app_about(self, action, param):
             window = self._get_main_window()
@@ -583,6 +624,12 @@ def main():
     logger.info("Shutting down TaskManager")
     rayforge.shared.tasker.task_mgr.shutdown()
     logger.info("Task manager shut down.")
+
+    # If the user requested a restart (e.g. after changing the
+    # language), re-exec the process with the same arguments.
+    if app._restart_requested:
+        logger.info("Restart requested, re-executing process.")
+        os.execv(sys.executable, [sys.executable] + sys.argv)
 
     return exit_code
 

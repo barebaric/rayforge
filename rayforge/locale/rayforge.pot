@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-05 22:13+0200\n"
+"POT-Creation-Date: 2026-07-11 12:17+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2116,6 +2116,34 @@ msgid "Categories"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "English"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "German"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Spanish"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "French"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Portuguese"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Ukrainian"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Chinese (Simplified)"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/about.py
 msgid "System"
 msgstr ""
@@ -2150,6 +2178,10 @@ msgid "Layer Color"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "System Default"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
@@ -2168,6 +2200,14 @@ msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Theme"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Language"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "The application language. Changes require a restart."
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
@@ -2264,6 +2304,25 @@ msgstr ""
 msgid ""
 "<a href=\"https://rayforge.org/docs/general-info/usage-tracking\">Learn "
 "more</a> about usage tracking and privacy."
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Restart required"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid ""
+"The language will take effect after restarting Rayforge. Would you like to "
+"restart now?"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py rayforge/ui_gtk/project_cmd.py
+msgid "_Cancel"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "_Restart"
 msgstr ""
 
 #: rayforge/ui_gtk/canvas2d/elements/tab_handle.py
@@ -4980,10 +5039,6 @@ msgstr ""
 
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Job Sanity Check"
-msgstr ""
-
-#: rayforge/ui_gtk/shared/sanity_check_dialog.py rayforge/ui_gtk/project_cmd.py
-msgid "_Cancel"
 msgstr ""
 
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py

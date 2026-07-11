@@ -81,6 +81,8 @@ class Config:
         self.usage_consent_date: Optional[str] = None
         # Default DPI for unitless SVG imports
         self.import_dpi: float = 96.0
+        # Language preference: None = system default, or a code like "de"
+        self.language: Optional[str] = None
         self.changed = Signal()
 
     def set_machine(self, machine: Optional[Machine]):
@@ -170,6 +172,17 @@ class Config:
         self.ops_color_mode = mode
         self.changed.send(self)
 
+    def set_language(self, language: Optional[str]):
+        """Sets the UI language preference.
+
+        Args:
+            language: Language code (e.g. "de") or None for system default.
+        """
+        if self.language == language:
+            return
+        self.language = language
+        self.changed.send(self)
+
     def set_usage_consent(self, consent: bool):
         """Sets the usage tracking consent preference."""
         new_value = ""
@@ -222,6 +235,7 @@ class Config:
             "ops_color_mode": self.ops_color_mode.value,
             "usage_consent_date": self.usage_consent_date,
             "import_dpi": self.import_dpi,
+            "language": self.language,
         }
 
     @classmethod
@@ -285,6 +299,9 @@ class Config:
 
         # Load import DPI
         config.import_dpi = data.get("import_dpi", 96.0)
+
+        # Load language preference (None = system default)
+        config.language = data.get("language", None)
 
         # Get the machine by ID. add fallbacks in case the machines
         # no longer exist.

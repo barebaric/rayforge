@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-05 22:13+0200\n"
+"POT-Creation-Date: 2026-07-11 12:17+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -2297,6 +2297,34 @@ msgid "Categories"
 msgstr "Categorias"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "English"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "German"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Spanish"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "French"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Portuguese"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Ukrainian"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Chinese (Simplified)"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/about.py
 msgid "System"
 msgstr "Sistema"
@@ -2331,6 +2359,10 @@ msgid "Layer Color"
 msgstr "Cor da camada"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "System Default"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
@@ -2351,6 +2383,14 @@ msgstr ""
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Theme"
 msgstr "Tema"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Language"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "The application language. Changes require a restart."
+msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Operation Colors"
@@ -2454,6 +2494,25 @@ msgid ""
 msgstr ""
 "<a href=\"https://rayforge.org/docs/general-info/usage-tracking\">Saiba "
 "mais</a> sobre rastreamento de uso e privacidade."
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Restart required"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid ""
+"The language will take effect after restarting Rayforge. Would you like to "
+"restart now?"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py rayforge/ui_gtk/project_cmd.py
+msgid "_Cancel"
+msgstr "_Cancelar"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "_Restart"
+msgstr ""
 
 #: rayforge/ui_gtk/canvas2d/elements/tab_handle.py
 msgid "Move Tab"
@@ -5273,10 +5332,6 @@ msgstr "Selecionar"
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Job Sanity Check"
 msgstr "Verificação do trabalho"
-
-#: rayforge/ui_gtk/shared/sanity_check_dialog.py rayforge/ui_gtk/project_cmd.py
-msgid "_Cancel"
-msgstr "_Cancelar"
 
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "_Proceed"
