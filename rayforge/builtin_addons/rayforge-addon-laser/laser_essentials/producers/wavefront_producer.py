@@ -1,6 +1,7 @@
 import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
+from raygeo import Part
 from raygeo.cnc.machining.plan import Workplan
 from raygeo.cnc.machining.wavefront import build_wavefront_workplan
 from raygeo.geo import Geometry, Matrix
@@ -249,11 +250,15 @@ class WavefrontProducer(OpsProducer):
         precision: float = 0.03,
     ) -> Ops:
         """Run wavefront passes for a single pocket."""
-        wp = Workplan(
-            pocket_boundary=pocket_boundary,
-            islands=islands if islands else None,
-            safe_z=0.0,
-        )
+        part = Part.from_polygons(pocket_boundary, islands)
+        try:
+            wp = Workplan.from_part(part, safe_z=0.0)
+        except ValueError:
+            logger.warning(
+                "Workplan.from_part failed for pocket of '%s' — no boundary.",
+                workpiece.name,
+            )
+            return Ops()
 
         try:
             wf_steps = build_wavefront_workplan(

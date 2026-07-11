@@ -1,8 +1,8 @@
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from raygeo.geo import Geometry
 from raygeo.ops import Ops
+from raygeo.ops.assembly.frame import frame
 from raygeo.ops.types import SectionType
 
 from rayforge.pipeline.artifact import WorkPieceArtifact
@@ -59,55 +59,38 @@ class FrameProducer(OpsProducer):
         if workpiece is None:
             raise ValueError("FrameProducer requires a workpiece context.")
 
-        final_ops = Ops()
+        settings = settings or {}
+        kerf_mm = settings.get("kerf_mm", laser.spot_size_mm[0])
 
-        # 1. Calculate total offset
-        kerf_mm = (settings or {}).get("kerf_mm", laser.spot_size_mm[0])
-        kerf_compensation = kerf_mm / 2.0
-        total_offset = 0.0
-        if self.cut_side == CutSide.CENTERLINE:
-            total_offset = 0.0  # Centerline ignores path offset
-        elif self.cut_side == CutSide.OUTSIDE:
-            # For a frame, OUTSIDE means expanding the boundary
-            total_offset = self.path_offset_mm + kerf_compensation
-        elif self.cut_side == CutSide.INSIDE:
-            # For a frame, INSIDE means shrinking the boundary
-            total_offset = -self.path_offset_mm - kerf_compensation
-
-        # 2. Get the workpiece's final size in millimeters.
-        final_w, final_h = workpiece.size
-
-        # 3. Create a rectangular geometry at the workpiece's final size.
-        geo = Geometry()
-        geo.move_to(0, 0)
-        geo.line_to(final_w, 0)
-        geo.line_to(final_w, final_h)
-        geo.line_to(0, final_h)
-        geo.close_path()
-
-        # 4. Apply the final offset in millimeter space.
-        if abs(total_offset) > 1e-6:
-            # The rectangle is CCW, so a positive offset expands it, and
-            # a negative offset shrinks it. This aligns with our calculation.
-            geo = geo.grow(total_offset)
-
-        if not geo.is_empty():
-            frame_ops = Ops.from_geometry(geo)
-            logger.info(
-                f"Generated frame with final geometry. "
-                f"Rect: {frame_ops.rect()}"
+        # 2. Build a Part from the workpiece and use the frame assembler.
+        #    The assembler computes the total offset from kerf, path
+        #    offset, and cut side internally.
+        part = workpiece.to_part()
+        if part is None:
+            raise ValueError(
+                "FrameProducer: workpiece.to_part() returned None"
             )
-            # Build the final Ops object
+
+        result = frame(
+            part,
+            kerf_mm=kerf_mm,
+            path_offset_mm=self.path_offset_mm,
+            cut_side=self.cut_side.name.lower(),
+        )
+
+        # 3. Wrap assembler ops in head + sections
+        final_ops = Ops()
+        if result.ops.len() > 0:
             final_ops.set_head(laser.uid)
             final_ops.ops_section_start(
                 SectionType.VECTOR_OUTLINE, workpiece.uid
             )
-            final_ops.set_power((settings or {}).get("power", 0))
-            final_ops.extend(frame_ops)
+            final_ops.set_power(settings.get("power", 0))
+            final_ops.extend(result.ops)
             final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
-        # 5. Return a NON-SCALABLE artifact. The ops are already at the correct
-        #    final size, ready for positioning.
+        # 4. Return a NON-SCALABLE artifact. The ops are already at the
+        #    correct final size, ready for positioning.
         return WorkPieceArtifact(
             ops=final_ops,
             is_scalable=False,

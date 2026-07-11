@@ -3,9 +3,10 @@ from enum import Enum, auto
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
+from raygeo import Part
 from raygeo.geo import Geometry, Matrix
-from raygeo.geo.algo.overcut import apply_overcut
 from raygeo.ops import Ops
+from raygeo.ops.assembly.contour import contour
 from raygeo.ops.types import SectionType
 
 from rayforge.core.vectorization_spec import TraceSpec
@@ -77,6 +78,17 @@ class ContourProducer(OpsProducer):
         self.threshold = threshold
         self.overcut = overcut
 
+    @staticmethod
+    def _empty_artifact(workpiece, generation_id):
+        return WorkPieceArtifact(
+            ops=Ops(),
+            is_scalable=False,
+            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+            source_dimensions=workpiece.size,
+            generation_size=workpiece.size,
+            generation_id=generation_id,
+        )
+
     @property
     def requires_full_render(self) -> bool:
         return self.override_threshold
@@ -96,40 +108,21 @@ class ContourProducer(OpsProducer):
         if workpiece is None:
             raise ValueError("ContourProducer requires a workpiece context.")
 
-        # 1. Calculate total offset from producer and step settings
         settings = settings or {}
         kerf_mm = settings.get("kerf_mm", laser.spot_size_mm[0])
-        kerf_compensation = kerf_mm / 2.0
-        total_offset = 0.0
-        if self.cut_side == CutSide.CENTERLINE:
-            total_offset = 0.0  # Centerline ignores path offset
-        elif self.cut_side == CutSide.OUTSIDE:
-            total_offset = self.path_offset_mm + kerf_compensation
-        elif self.cut_side == CutSide.INSIDE:
-            total_offset = -self.path_offset_mm - kerf_compensation
 
-        # 2. Get base contours and determine the correct scaling matrix
-        base_contours = []
-        scaling_matrix = Matrix.identity()
-
-        # Check if we have source vectors.
+        # 2. Build Part and use contour assembler
         has_vector_source = (
             workpiece
             and workpiece.boundaries
             and not workpiece.boundaries.is_empty()
         )
+        part = None
 
-        # If override_threshold is True, we SKIP the vector source and fall
+        # If override_threshold is True, SKIP the vector source and fall
         # through to the raster tracing logic below.
         if has_vector_source and not self.override_threshold:
-            assert workpiece.boundaries is not None
-            # Get the 1x1 normalized geometry and scale it to the final size.
-            # The result is geometry at final size, but at the origin.
-            scaled_geo = workpiece.boundaries.copy()
-            width_mm, height_mm = workpiece.size
-            scaling_matrix = Matrix.scale(width_mm, height_mm)
-            scaled_geo.transform(scaling_matrix)
-            base_contours = scaled_geo.split_into_contours()
+            part = workpiece.to_part()
         elif surface:
             # Fall back to raster tracing if no vectors OR if override
             # is active
@@ -141,183 +134,70 @@ class ContourProducer(OpsProducer):
                     auto_threshold=False,
                     invert=False,
                 )
+            traced = trace_surface(surface, vectorization_spec=spec)
+            if traced:
+                merged = Geometry()
+                width_mm, height_mm = workpiece.size
+                px_w, px_h = surface.get_width(), surface.get_height()
+                if px_w > 0 and px_h > 0:
+                    scale_x = width_mm / px_w
+                    scale_y = height_mm / px_h
+                    transform = Matrix.translation(
+                        0, height_mm
+                    ) @ Matrix.scale(scale_x, -scale_y)
+                    for g in traced:
+                        g.transform(transform)
+                        merged.extend(g)
+                part = Part(geometry=merged, size_mm=workpiece.size)
 
-            traced_contours = trace_surface(surface, vectorization_spec=spec)
+        if part is None or not part.has_geometry():
+            logger.warning(
+                "ContourProducer for '%s': no geometry available — "
+                "returning empty artifact",
+                workpiece.name,
+            )
+            return self._empty_artifact(workpiece, generation_id)
 
-            width_mm, height_mm = workpiece.size
-            px_width, px_height = surface.get_width(), surface.get_height()
-            if px_width > 0 and px_height > 0:
-                scale_x = width_mm / px_width
-                scale_y = height_mm / px_height
-
-                # The geometry is in pixel space (Y-down). Scale it to mm space
-                # (Y-up) at the origin.
-                transform = Matrix.translation(0, height_mm) @ Matrix.scale(
-                    scale_x, -scale_y
-                )
-                for geo in traced_contours:
-                    geo.transform(transform)
-                    base_contours.append(geo)
-        else:
-            # No vectors and no surface, so there is nothing to trace.
-            pass
-
-        # 3. Normalize winding orders.
-        target_contours = []
-        if base_contours:
-            merged = Geometry()
-            for g in base_contours:
-                merged.extend(g)
-            merged.normalize_winding_orders()
-            target_contours = merged.split_into_contours()
-
-        # 4. Apply offsets.
-        # Separate open contours so they survive the grow() operation,
-        # which only operates on closed contours.
-        closed_contours = [g for g in target_contours if g.is_closed()]
-        open_contours = [g for g in target_contours if not g.is_closed()]
-
-        composite_geo = Geometry()
-        for geo in closed_contours:
-            composite_geo.extend(geo)
-
-        if abs(total_offset) > 1e-6:
-            original_geo = composite_geo.copy()
-            composite_geo.grow(total_offset)
-
-            if composite_geo.is_empty() and not original_geo.is_empty():
-                logger.warning(
-                    f"ContourProducer for '{workpiece.name}' failed to apply "
-                    f"an offset of {total_offset:.3f} mm. This can be "
-                    "caused by micro-gaps or self-intersections in the "
-                    "source geometry. Falling back to the un-offset path."
-                )
-                final_geometry = original_geo
-            else:
-                final_geometry = composite_geo
-        else:
-            # No offset was requested, so use the composite geometry.
-            final_geometry = composite_geo
-
-        # Re-add open contours (not offset, as grow() cannot apply to them).
-        for geo in open_contours:
-            final_geometry.extend(geo)
-
-        # 5. Optimize for machining
+        # 3. Run the contour assembler (handles kerf, offset, overcut,
+        #    ordering, and curve fitting internally)
+        cut_order_str = (
+            "inside_outside"
+            if self.cut_order == CutOrder.INSIDE_OUTSIDE
+            else "outside_inside"
+        )
         tolerance = settings.get("arc_tolerance", 0.03)
-
-        # Check if the machine supports arcs. The machine setting takes
-        # precedence over the step setting.
         allow_arcs = settings.get(
             "machine_supports_arcs", settings.get("output_arcs", True)
         )
         supports_curves = settings.get("machine_supports_curves", False)
 
-        if not final_geometry.is_empty():
-            if allow_arcs or supports_curves:
-                if context:
-                    context.set_message(_("Optimizing path with curves..."))
-                final_geometry = final_geometry.fit_curves(
-                    tolerance,
-                    beziers=supports_curves,
-                    arcs=allow_arcs,
-                    on_progress=(
-                        lambda current, total: (
-                            context.set_progress(current / total)
-                            if context
-                            else None
-                        )
-                    ),
-                )
-            else:
-                final_geometry = final_geometry.linearize(tolerance)
+        result = contour(
+            part,
+            kerf_mm=kerf_mm,
+            path_offset_mm=self.path_offset_mm,
+            cut_side=self.cut_side.name.lower(),
+            overcut=self.overcut,
+            cut_order=cut_order_str,
+            remove_inner=self.remove_inner_paths,
+            arc_tolerance=tolerance,
+            allow_arcs=allow_arcs,
+            supports_curves=supports_curves,
+        )
 
-        # 6. Create Ops by splitting into optimizable groups
+        # 4. Create Ops — one section per contour to enable proper travel
         final_ops = Ops()
-        if not final_geometry.is_empty():
+        if result.ops.len() > 0:
             final_ops.set_head(laser.uid)
-
-            if self.remove_inner_paths:
-                # Simple case: remove inner paths and create one optimizable
-                # group
-                final_geometry = final_geometry.remove_inner_edges()
-                if self.overcut > 0:
-                    contour_list = final_geometry.split_into_contours()
-                    contour_list = [
-                        apply_overcut(c, self.overcut) for c in contour_list
-                    ]
-                    final_geometry = Geometry()
-                    for c in contour_list:
-                        final_geometry.extend(c)
+            contour_geo = result.ops.to_geometry()
+            contour_list = contour_geo.split_into_contours()
+            for c in contour_list:
                 final_ops.ops_section_start(
                     SectionType.VECTOR_OUTLINE, workpiece.uid
                 )
-                final_ops.extend(Ops.from_geometry(final_geometry))
+                final_ops.extend(Ops.from_geometry(c))
                 final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-            else:
-                # Complex case: separate inner and outer paths into two
-                # groups. Open contours (e.g. straight lines) are not
-                # handled by split_inner_and_outer_contours(), so we
-                # must separate them first and add them back afterwards.
-                all_contours = final_geometry.split_into_contours()
-                open_contours = [c for c in all_contours if not c.is_closed()]
-                closed_geo = Geometry()
-                for c in all_contours:
-                    if c.is_closed():
-                        closed_geo.extend(c)
 
-                inner_contours = []
-                outer_contours = []
-                if not closed_geo.is_empty():
-                    inner_contours, outer_contours = (
-                        closed_geo.split_inner_and_outer_contours()
-                    )
-
-                outer_contours.extend(open_contours)
-
-                if self.overcut > 0:
-                    inner_contours = [
-                        apply_overcut(c, self.overcut) for c in inner_contours
-                    ]
-                    outer_contours = [
-                        apply_overcut(c, self.overcut) for c in outer_contours
-                    ]
-
-                # Combine the lists of contours into composite Geometry objects
-                outer_geo = Geometry()
-                for geo in outer_contours:
-                    outer_geo.extend(geo)
-
-                inner_geo = Geometry()
-                for geo in inner_contours:
-                    inner_geo.extend(geo)
-
-                group1 = (
-                    inner_geo
-                    if self.cut_order == CutOrder.INSIDE_OUTSIDE
-                    else outer_geo
-                )
-                group2 = (
-                    outer_geo
-                    if self.cut_order == CutOrder.INSIDE_OUTSIDE
-                    else inner_geo
-                )
-
-                if not group1.is_empty():
-                    final_ops.ops_section_start(
-                        SectionType.VECTOR_OUTLINE, workpiece.uid
-                    )
-                    final_ops.extend(Ops.from_geometry(group1))
-                    final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-
-                if not group2.is_empty():
-                    final_ops.ops_section_start(
-                        SectionType.VECTOR_OUTLINE, workpiece.uid
-                    )
-                    final_ops.extend(Ops.from_geometry(group2))
-                    final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-
-        # 7. Create the artifact.
+        # 5. Create the artifact.
         return WorkPieceArtifact(
             ops=final_ops,
             is_scalable=False,
