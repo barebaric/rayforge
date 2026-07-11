@@ -1,9 +1,7 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from raygeo.geo.algo.smooth import compute_gaussian_kernel, smooth_polyline_3d
 from raygeo.ops import Ops
-from raygeo.ops.types import CommandType
 
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
@@ -45,8 +43,6 @@ class Smooth(OpsTransformer):
         """
         super().__init__(enabled=enabled)
         self._corner_angle_threshold = corner_angle_threshold
-        self._kernel: Optional[List[float]] = None
-        self._sigma: float = 0.1
         self._amount = -1
         self.amount = amount
 
@@ -62,12 +58,11 @@ class Smooth(OpsTransformer):
 
     @amount.setter
     def amount(self, value: int) -> None:
-        """Updates the smoothing amount and pre-computes the kernel."""
+        """Updates the smoothing amount."""
         new_amount = max(0, min(100, value))
         if self._amount == new_amount:
             return
         self._amount = new_amount
-        self._kernel, self._sigma = compute_gaussian_kernel(new_amount)
         self.changed.send(self)
 
     @property
@@ -109,46 +104,13 @@ class Smooth(OpsTransformer):
         if self.amount == 0:
             return
 
-        ops.linearize_arcs()
-        all_indices = list(ops.segment_indices())
-        source = ops.copy()
-        ops.clear()
-        total_segments = len(all_indices)
+        if context and context.is_cancelled():
+            return
 
-        for i, indices in enumerate(all_indices):
-            if context and context.is_cancelled():
-                break
-            if self._is_line_only_segment(source, indices):
-                # Extract points. The `end` property may be typed as Optional.
-                points_to_smooth = [source.endpoint(idx) for idx in indices]
-                smoothed = smooth_polyline_3d(
-                    points_to_smooth,
-                    self.amount,
-                    self.corner_angle_threshold,
-                )
-                if smoothed:
-                    ops.move_to(*smoothed[0])
-                    for point in smoothed[1:]:
-                        ops.line_to(*point)
-            else:
-                # For complex segments (e.g., with curves) or malformed ones,
-                # add them back without modification.
-                for idx in indices:
-                    ops.transfer_command_from(source, idx)
+        ops.smooth(self.amount, self.corner_angle_threshold)
 
-            if context and total_segments > 0:
-                context.set_progress((i + 1) / total_segments)
-
-    def _is_line_only_segment(self, ops: Ops, indices: List[int]) -> bool:
-        """Checks if a segment contains only MoveTo and LineTo commands."""
-        return (
-            len(indices) > 1
-            and ops.command_type(indices[0]) == CommandType.MOVE_TO
-            and all(
-                ops.command_type(idx) == CommandType.LINE_TO
-                for idx in indices[1:]
-            )
-        )
+        if context:
+            context.set_progress(1.0)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the transformer's configuration to a dictionary."""
