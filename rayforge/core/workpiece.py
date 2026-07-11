@@ -26,6 +26,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
+from raygeo import Part
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Point, Rect
 
@@ -488,6 +489,25 @@ class WorkPiece(DocItem):
         scale_matrix = Matrix.scale(w, h)
         scaled.transform(scale_matrix)
         return scaled
+
+    def to_part(self) -> Optional[Part]:
+        """
+        Create a :class:`raygeo.Part` from this workpiece's geometry and size.
+
+        The resulting ``Part`` carries the workpiece's vector geometry scaled
+        to physical millimetre dimensions, ready for use with any raygeo
+        assembler (``profile_inner_part``, ``Workplan.from_part``, …).
+
+        Returns ``None`` if the workpiece has no boundaries.
+        """
+        boundaries = self.boundaries
+        if boundaries is None or boundaries.is_empty():
+            return None
+        w, h = self.size
+        geo = boundaries.copy()
+        if w > 0 and h > 0:
+            geo.transform(Matrix.scale(w, h))
+        return Part(geometry=geo, size_mm=(w, h))
 
     @property
     def _boundaries_y_down(self) -> Optional[Geometry]:

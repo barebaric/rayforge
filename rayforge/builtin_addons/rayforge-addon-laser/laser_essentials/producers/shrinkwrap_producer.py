@@ -1,13 +1,11 @@
-from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import cairo
 import numpy as np
-from raygeo.geo import Matrix
 from raygeo.ops import Ops
+from raygeo.ops.assembly.shrinkwrap import shrinkwrap
 from raygeo.ops.types import SectionType
 
-from rayforge.image.hull import get_concave_hull
 from rayforge.image.tracing import prepare_surface
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
@@ -17,8 +15,6 @@ from rayforge.shared.tasker.progress import ProgressContext
 if TYPE_CHECKING:
     from rayforge.core.workpiece import WorkPiece
     from rayforge.machine.models.laser import Laser
-
-BORDER_SIZE = 2
 
 
 class ShrinkWrapProducer(OpsProducer):
@@ -68,90 +64,55 @@ class ShrinkWrapProducer(OpsProducer):
                 "ShrinkWrapProducer requires a workpiece context."
             )
 
-        final_ops = Ops()
         settings = settings or {}
-
-        # 1. Calculate total offset
         kerf_mm = settings.get("kerf_mm", laser.spot_size_mm[0])
-        kerf_compensation = kerf_mm / 2.0
-        total_offset = 0.0
-        if self.cut_side == CutSide.CENTERLINE:
-            total_offset = 0.0  # Centerline ignores path offset
-        elif self.cut_side == CutSide.OUTSIDE:
-            total_offset = self.path_offset_mm + kerf_compensation
-        elif self.cut_side == CutSide.INSIDE:
-            total_offset = -self.path_offset_mm - kerf_compensation
 
-        # 2. Generate base geometry in pixel space
+        # 1. Prepare boolean image (Cairo-specific)
         boolean_image = prepare_surface(surface)
-        hull_geometry = None
+
+        final_ops = Ops()
         if np.any(boolean_image):
-            hull_geometry = get_concave_hull(
-                boolean_image=boolean_image,
-                scale_x=1.0,
-                scale_y=1.0,
-                height_px=surface.get_height(),
-                border_size=BORDER_SIZE,
-                gravity=self.gravity,
-            )
+            part = workpiece.to_part()
+            if part is None:
+                raise ValueError(
+                    "ShrinkWrapProducer: workpiece.to_part() returned None"
+                )
 
-        if hull_geometry and not hull_geometry.is_empty():
-            # 3. Scale the pixel-based geometry to final millimeter size first
-            width_mm, height_mm = workpiece.size
-            px_width, px_height = surface.get_width(), surface.get_height()
-            if px_width > 0 and px_height > 0:
-                scale_x = width_mm / px_width
-                scale_y = height_mm / px_height
-                scaling_matrix = Matrix.scale(scale_x, scale_y)
-                hull_geometry.transform(scaling_matrix)
-
-            # 4. Normalize winding order BEFORE offsetting (grow). This ensures
-            #    that a positive offset correctly expands the shape.
-            hull_geometry.normalize_winding_orders()
-            if hull_geometry.is_empty():
-                hull_geometry = None
-
-        if hull_geometry and not hull_geometry.is_empty():
-            # 5. Apply offset in millimeter space
-            if abs(total_offset) > 1e-6:
-                hull_geometry = hull_geometry.grow(total_offset)
-
-            # 6. Optimize for machining with arc fitting
             tolerance = settings.get("arc_tolerance", 0.03)
             allow_arcs = settings.get(
-                "machine_supports_arcs", settings.get("output_arcs", True)
+                "machine_supports_arcs",
+                settings.get("output_arcs", True),
             )
             supports_curves = settings.get("machine_supports_curves", False)
 
-            if (
-                allow_arcs or supports_curves
-            ) and not hull_geometry.is_empty():
-                if context:
-                    context.set_message(_("Optimizing path with curves..."))
-                hull_geometry.fit_curves(
-                    tolerance,
-                    beziers=supports_curves,
-                    arcs=allow_arcs,
-                    on_progress=(
-                        lambda current, total: (
-                            context.set_progress(current / total)
-                            if context
-                            else None
-                        )
-                    ),
-                )
-
-            # 7. Convert to Ops
-            final_ops.set_head(laser.uid)
-            final_ops.ops_section_start(
-                SectionType.VECTOR_OUTLINE, workpiece.uid
+            # 2. The shrinkwrap assembler computes the total offset
+            #    from kerf, path offset, and cut side internally.
+            result = shrinkwrap(
+                part,
+                boolean_image,
+                gravity=self.gravity,
+                kerf_mm=kerf_mm,
+                path_offset_mm=self.path_offset_mm,
+                cut_side=self.cut_side.name.lower(),
+                arc_tolerance=tolerance,
+                allow_arcs=allow_arcs,
+                supports_curves=supports_curves,
             )
-            final_ops.set_power(settings.get("power", 0))
-            final_ops.extend(Ops.from_geometry(hull_geometry))
-            final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
-        # 8. Create the artifact. The ops are pre-scaled, so they are not
-        #    scalable in the pipeline cache sense.
+            hull_ops = result.ops
+
+            # 3. Wrap in sections
+            if hull_ops.len() > 0:
+                final_ops.set_head(laser.uid)
+                final_ops.ops_section_start(
+                    SectionType.VECTOR_OUTLINE, workpiece.uid
+                )
+                final_ops.set_power(settings.get("power", 0))
+                final_ops.extend(hull_ops)
+                final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+
+        # 4. Create the artifact. The ops are pre-scaled, so they are
+        #    not scalable in the pipeline cache sense.
         return WorkPieceArtifact(
             ops=final_ops,
             is_scalable=False,

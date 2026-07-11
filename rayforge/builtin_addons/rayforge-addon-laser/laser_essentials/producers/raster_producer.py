@@ -5,9 +5,11 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import cairo
 import numpy as np
+from raygeo import Part
 from raygeo.image import compute_auto_levels, normalize_grayscale
 from raygeo.image.scan import ScanMode
 from raygeo.ops import Ops
+from raygeo.ops.assembly.raster import raster
 from raygeo.ops.types import SectionType
 
 from rayforge.image.dither import DitherAlgorithm, surface_to_dithered_array
@@ -197,89 +199,98 @@ class Rasterizer(OpsProducer):
         y_offset_mm = workpiece.bbox[1] + y_offset_mm
 
         if width_px > 0 and height_px > 0:
-            gray_image, alpha = surface_to_grayscale(surface)
+            # Map DepthMode enum to raster assembler mode string
+            mode_map = {
+                DepthMode.POWER_MODULATION: "power_modulated",
+                DepthMode.CONSTANT_POWER: "mask_scan",
+                DepthMode.DITHER: "dither",
+                DepthMode.MULTI_PASS: "multi_pass",
+            }
+            mode = mode_map[self.depth_mode]
 
-            if self.invert:
-                alpha_mask = alpha > 0
-                gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
-
-            if self.auto_levels:
-                if self._computed_auto_levels is not None:
-                    black_pt, white_pt = self._computed_auto_levels
-                else:
-                    black_pt, white_pt = compute_auto_levels(
-                        gray_image[alpha > 0]
+            if mode == "multi_pass":
+                gray_image, alpha = surface_to_grayscale(surface)
+                if self.invert:
+                    alpha_mask = alpha > 0
+                    gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
+                gray_image = self._apply_levels(gray_image, alpha)
+                image = gray_image
+            elif mode == "power_modulated":
+                gray_image, alpha = surface_to_grayscale(surface)
+                if self.invert:
+                    alpha_mask = alpha > 0
+                    gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
+                gray_image = self._apply_levels(gray_image, alpha)
+                image = gray_image
+            elif mode in ("dither", "mask_scan"):
+                if mode == "dither":
+                    min_feature_px = max(
+                        1,
+                        int(round(laser.spot_size_mm[0] * pixels_per_mm[0])),
                     )
+                    dither_algo = (
+                        self.dither_algorithm
+                        or DitherAlgorithm.FLOYD_STEINBERG
+                    )
+                    image = surface_to_dithered_array(
+                        surface,
+                        dither_algo,
+                        invert=self.invert,
+                        min_feature_px=min_feature_px,
+                    )
+                else:
+                    image = surface_to_binary(
+                        surface,
+                        threshold=self.threshold,
+                        invert=self.invert,
+                    )
+                alpha = None
             else:
-                black_pt, white_pt = self.black_point, self.white_point
+                image = None
+                alpha = None
 
-            if black_pt > 0 or white_pt < 255:
-                gray_image = normalize_grayscale(
-                    gray_image, black_pt, white_pt
+            if image is not None:
+                step_power = settings.get("power", 1.0) if settings else 1.0
+                sample_interval_mm = (
+                    self.sample_interval_mm
+                    if self.sample_interval_mm is not None
+                    else laser.spot_size_mm[0]
                 )
 
-            step_power = settings.get("power", 1.0) if settings else 1.0
+                # Build Part with pixels_per_mm for the raster assembler
+                part = Part(
+                    size_mm=workpiece.size,
+                    pixels_per_mm=pixels_per_mm,
+                )
 
-            sample_interval_mm = (
-                self.sample_interval_mm
-                if self.sample_interval_mm is not None
-                else laser.spot_size_mm[0]
-            )
+                result = raster(
+                    part,
+                    image,
+                    alpha=(
+                        (alpha * 255).astype(np.uint8)
+                        if alpha is not None
+                        else None
+                    ),
+                    mode=mode,
+                    line_interval_mm=line_interval_mm,
+                    sample_interval_mm=sample_interval_mm,
+                    min_power=self.min_power,
+                    max_power=self.max_power,
+                    step_power=step_power,
+                    num_power_levels=self.num_power_levels,
+                    angle=self.scan_angle,
+                    offset_x_mm=x_offset_mm,
+                    offset_y_mm=y_offset_mm,
+                    scan_mode=self.scan_mode.name.lower(),
+                    cross_hatch=self.cross_hatch,
+                    num_depth_levels=self.num_depth_levels,
+                    z_step_down=self.z_step_down,
+                    angle_increment=self.angle_increment,
+                )
 
-            angles = [self.scan_angle]
-            if self.cross_hatch:
-                angles.append(self.scan_angle + 90.0)
-
-            for angle in angles:
-                if self.depth_mode == DepthMode.POWER_MODULATION:
-                    mode_ops = self._run_power_modulation(
-                        gray_image,
-                        alpha,
-                        pixels_per_mm,
-                        x_offset_mm,
-                        y_offset_mm,
-                        line_interval_mm,
-                        sample_interval_mm,
-                        step_power,
-                        angle,
-                    )
-                elif self.depth_mode == DepthMode.CONSTANT_POWER:
-                    mode_ops = self._run_constant_power(
-                        surface,
-                        pixels_per_mm,
-                        x_offset_mm,
-                        y_offset_mm,
-                        line_interval_mm,
-                        laser,
-                        step_power,
-                        angle,
-                        use_dither=False,
-                    )
-                elif self.depth_mode == DepthMode.DITHER:
-                    mode_ops = self._run_constant_power(
-                        surface,
-                        pixels_per_mm,
-                        x_offset_mm,
-                        y_offset_mm,
-                        line_interval_mm,
-                        laser,
-                        step_power,
-                        angle,
-                        use_dither=True,
-                    )
-                else:
-                    mode_ops = self._run_multi_pass(
-                        gray_image,
-                        pixels_per_mm,
-                        x_offset_mm,
-                        y_offset_mm,
-                        line_interval_mm,
-                        angle,
-                    )
-
-                if not mode_ops.is_empty():
+                if not result.ops.is_empty():
                     final_ops.set_head(laser.uid)
-                    final_ops.extend(mode_ops)
+                    final_ops.extend(result.ops)
 
         final_ops.ops_section_end(SectionType.RASTER_FILL)
 
@@ -292,97 +303,23 @@ class Rasterizer(OpsProducer):
             generation_id=generation_id,
         )
 
-    def _run_power_modulation(
+    def _apply_levels(
         self,
         gray_image: np.ndarray,
         alpha: np.ndarray,
-        pixels_per_mm: tuple,
-        offset_x_mm: float,
-        offset_y_mm: float,
-        line_interval_mm: float,
-        sample_interval_mm: float,
-        step_power: float = 1.0,
-        angle: float = 0.0,
-    ) -> Ops:
-        return Ops.from_power_modulated_image(
-            gray_image,
-            (alpha * 255).astype(np.uint8),
-            pixels_per_mm,
-            offset_x_mm,
-            offset_y_mm,
-            line_interval_mm,
-            sample_interval_mm,
-            min_power=self.min_power,
-            max_power=self.max_power,
-            step_power=step_power,
-            num_power_levels=self.num_power_levels,
-            angle=angle,
-            scan_mode=self.scan_mode,
-        )
-
-    def _run_constant_power(
-        self,
-        surface,
-        pixels_per_mm: tuple,
-        offset_x_mm: float,
-        offset_y_mm: float,
-        line_interval_mm: float,
-        laser: "Laser",
-        step_power: float = 1.0,
-        angle: float = 0.0,
-        use_dither: bool = False,
-    ) -> Ops:
-        min_feature_px = max(
-            1, int(round(laser.spot_size_mm[0] * pixels_per_mm[0]))
-        )
-
-        if use_dither:
-            dither_algo = (
-                self.dither_algorithm or DitherAlgorithm.FLOYD_STEINBERG
-            )
-            mask = surface_to_dithered_array(
-                surface,
-                dither_algo,
-                invert=self.invert,
-                min_feature_px=min_feature_px,
-            )
+    ) -> np.ndarray:
+        """Apply auto-levels or manual black/white point normalization."""
+        if self.auto_levels:
+            if self._computed_auto_levels is not None:
+                black_pt, white_pt = self._computed_auto_levels
+            else:
+                black_pt, white_pt = compute_auto_levels(gray_image[alpha > 0])
         else:
-            mask = surface_to_binary(
-                surface, threshold=self.threshold, invert=self.invert
-            )
+            black_pt, white_pt = self.black_point, self.white_point
 
-        return Ops.from_mask_scan(
-            mask,
-            pixels_per_mm,
-            offset_x_mm,
-            offset_y_mm,
-            line_interval_mm,
-            step_power=step_power,
-            angle=angle,
-            scan_mode=self.scan_mode,
-        )
-
-    def _run_multi_pass(
-        self,
-        gray_image: np.ndarray,
-        pixels_per_mm: tuple,
-        offset_x_mm: float,
-        offset_y_mm: float,
-        line_interval_mm: float,
-        angle: float = 0.0,
-    ) -> Ops:
-        return Ops.from_multi_pass_image(
-            gray_image,
-            pixels_per_mm,
-            offset_x_mm,
-            offset_y_mm,
-            line_interval_mm,
-            self.num_depth_levels,
-            self.z_step_down,
-            angle=angle,
-            angle_increment=self.angle_increment,
-            scan_mode=self.scan_mode,
-        )
+        if black_pt > 0 or white_pt < 255:
+            gray_image = normalize_grayscale(gray_image, black_pt, white_pt)
+        return gray_image
 
     @staticmethod
     def _has_no_fills(workpiece: "WorkPiece") -> bool:
