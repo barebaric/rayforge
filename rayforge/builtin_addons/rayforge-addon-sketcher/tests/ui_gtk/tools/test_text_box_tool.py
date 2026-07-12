@@ -6,7 +6,7 @@ from sketcher.ui_gtk.tools import TextBoxTool
 from sketcher.ui_gtk.tools.base import SketcherKey
 from sketcher.ui_gtk.tools.text_box_tool import TextBoxState
 
-from rayforge.core.font_config import FontConfig
+from raygeo.geo.shape.text import FontConfig
 
 
 @pytest.fixture
@@ -97,7 +97,7 @@ def test_text_box_tool_on_press_outside_box_creates_new(
     mock_entity.height_id = 2
     mock_entity.content = "Test Text"
     mock_entity.font_config = FontConfig(
-        font_family="sans-serif", font_size=10.0
+        family="sans-serif", size=10.0
     )
 
     new_entity = TextBoxEntity(
@@ -237,7 +237,7 @@ def test_text_box_tool_handle_key_event_return(text_box_tool, mock_element):
     mock_entity = Mock()
     mock_entity.id = 5
     mock_entity.font_config = FontConfig(
-        font_family="sans-serif", font_size=10.0
+        family="sans-serif", size=10.0
     )
     mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
 
@@ -303,7 +303,7 @@ def test_text_box_tool_start_editing(text_box_tool, mock_element):
         5, 0, 1, 2, content="Existing text", construction_line_ids=[]
     )
     mock_entity.font_config = FontConfig(
-        font_family="sans-serif", font_size=10.0
+        family="sans-serif", size=10.0
     )
     mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
 
@@ -402,7 +402,7 @@ def test_text_box_tool_is_click_inside_box(text_box_tool, mock_element):
         5, 0, 1, 2, content="", construction_line_ids=[]
     )
     mock_entity.font_config = FontConfig(
-        font_family="sans-serif", font_size=10.0
+        family="sans-serif", size=10.0
     )
 
     mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
@@ -445,8 +445,8 @@ def test_text_box_tool_draw_overlay_editing_state(text_box_tool, mock_element):
     mock_entity.width_id = 1
     mock_entity.height_id = 2
     mock_entity.font_config = FontConfig(
-        font_family="sans-serif",
-        font_size=10.0,
+        family="sans-serif",
+        size=10.0,
         bold=False,
         italic=False,
     )

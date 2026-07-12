@@ -249,7 +249,7 @@ class TestWorkPieceWithSketch:
         Two workpiece instances from the same sketch each get their own
         uuid4 value, and it stays stable across boundary accesses.
         """
-        from rayforge.core.font_config import FontConfig
+        from raygeo.geo.shape.text import FontConfig
 
         sketch = Sketch(name="UUID Sketch")
         origin = sketch.add_point(0, 0)
@@ -278,7 +278,7 @@ class TestWorkPieceWithSketch:
         A workpiece instance returns the same uuid4 on repeated
         boundary accesses (cache survives).
         """
-        from rayforge.core.font_config import FontConfig
+        from raygeo.geo.shape.text import FontConfig
 
         sketch = Sketch(name="UUID Sketch")
         origin = sketch.add_point(0, 0)
@@ -305,7 +305,7 @@ class TestWorkPieceWithSketch:
         in_world carries the resolved_text_cache so the subprocess
         uses the same uuid4.
         """
-        from rayforge.core.font_config import FontConfig
+        from raygeo.geo.shape.text import FontConfig
 
         sketch = Sketch(name="UUID Sketch")
         origin = sketch.add_point(0, 0)
@@ -329,7 +329,7 @@ class TestWorkPieceWithSketch:
         The resolved_text_cache round-trips through
         to_dict / from_dict.
         """
-        from rayforge.core.font_config import FontConfig
+        from raygeo.geo.shape.text import FontConfig
 
         sketch = Sketch(name="UUID Sketch")
         origin = sketch.add_point(0, 0)
@@ -354,7 +354,7 @@ class TestWorkPieceWithSketch:
         When the sketch is edited, the workpiece's cache is cleared
         and a new uuid4 is generated.
         """
-        from rayforge.core.font_config import FontConfig
+        from raygeo.geo.shape.text import FontConfig
 
         sketch = Sketch(name="UUID Sketch")
         origin = sketch.add_point(0, 0)

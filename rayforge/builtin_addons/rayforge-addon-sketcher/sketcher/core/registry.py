@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from raygeo.geo.types import Point as GeoPoint
 
-from rayforge.core.font_config import FontConfig
+from raygeo.geo.shape.text import FontConfig
 
 from .entities.arc import Arc
 from .entities.bezier import Bezier

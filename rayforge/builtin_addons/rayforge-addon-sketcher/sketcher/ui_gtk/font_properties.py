@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 
 from gi.repository import Adw, Gtk, Pango
 
-from rayforge.core.font_config import FontConfig
+from raygeo.geo.shape.text import FontConfig
 from rayforge.ui_gtk.icons import get_icon
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
 
@@ -114,10 +114,10 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
         """Updates the UI widgets from the font configuration."""
         self._in_update = True
         try:
-            self.font_size_row.set_value(font_config.font_size)
+            self.font_size_row.set_value(font_config.size)
             self.bold_switch.set_active(font_config.bold)
             self.italic_switch.set_active(font_config.italic)
-            self._current_font_family = font_config.font_family
+            self._current_font_family = font_config.family
             self.font_family_row.set_subtitle(self._current_font_family)
         finally:
             self._in_update = False
@@ -125,8 +125,8 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
     def _get_font_config_from_ui(self) -> FontConfig:
         """Creates a FontConfig from the current UI values."""
         return FontConfig(
-            font_family=self._current_font_family,
-            font_size=get_spinrow_float(self.font_size_row),
+            family=self._current_font_family,
+            size=get_spinrow_float(self.font_size_row),
             bold=self.bold_switch.get_active(),
             italic=self.italic_switch.get_active(),
         )

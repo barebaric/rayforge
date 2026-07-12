@@ -8,7 +8,7 @@ from sketcher.core.entities import (
 )
 from sketcher.core.registry import EntityRegistry
 
-from rayforge.core.font_config import FontConfig
+from raygeo.geo.shape.text import FontConfig
 
 
 @pytest.fixture
@@ -201,7 +201,7 @@ def test_add_text_box(registry):
         p2,
         p3,
         content="Hello World",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     tb = registry.get_entity(tb_id)
@@ -211,7 +211,7 @@ def test_add_text_box(registry):
     assert tb.height_id == p3
     assert tb.content == "Hello World"
     assert tb.font_config == FontConfig(
-        font_family="sans-serif", font_size=10.0
+        family="sans-serif", size=10.0
     )
 
 

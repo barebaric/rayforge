@@ -4,7 +4,7 @@ from typing import cast
 from sketcher.core import Sketch
 from sketcher.core.entities.text_box import TextBoxEntity
 
-from rayforge.core.font_config import FontConfig
+from raygeo.geo.shape.text import FontConfig
 from rayforge.core.varset import FloatVar, Var
 
 

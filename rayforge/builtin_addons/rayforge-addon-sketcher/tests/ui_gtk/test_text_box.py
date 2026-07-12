@@ -20,7 +20,7 @@ from sketcher.ui_gtk.sketchelement import SketchElement
 from sketcher.ui_gtk.tools import TextBoxTool
 from sketcher.ui_gtk.tools.text_box_tool import TextBoxState
 
-from rayforge.core.font_config import FontConfig
+from raygeo.geo.shape.text import FontConfig
 
 
 @pytest.fixture
@@ -37,7 +37,7 @@ def sketch_with_text_box():
         p_width,
         p_height,
         content="Hello",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     return sketch, tb_id
@@ -57,7 +57,7 @@ def sketch_with_empty_text_box():
         p_width,
         p_height,
         content="",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     return sketch, tb_id
@@ -243,8 +243,8 @@ def test_text_box_rendering_with_different_font_params(
 
     tb = sketch.registry.get_entity(tb_id)
     tb.font_config = FontConfig(
-        font_family="serif",
-        font_size=14.0,
+        family="serif",
+        size=14.0,
         bold=True,
         italic=False,
     )
@@ -252,8 +252,8 @@ def test_text_box_rendering_with_different_font_params(
     renderer = SketchRenderer(mock_element)
     renderer.draw(mock_cairo_context)
 
-    assert tb.font_config.font_family == "serif"
-    assert tb.font_config.font_size == 14.0
+    assert tb.font_config.family == "serif"
+    assert tb.font_config.size == 14.0
     assert tb.font_config.bold is True
 
 

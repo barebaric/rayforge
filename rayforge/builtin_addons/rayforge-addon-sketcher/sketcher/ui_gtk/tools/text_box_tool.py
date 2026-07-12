@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Optional, cast
 import cairo
 from blinker import Signal
 from raygeo.geo.shape.polygon import is_point_inside_polygon
+from raygeo.geo.shape.text import text_to_geometry
 
-from rayforge.core.geo_helpers import geometry_from_text
 from rayforge.image.geo_renderer import geometry_to_cairo
 
 from ...core.commands import TextBoxCommand
@@ -840,16 +840,16 @@ class TextBoxTool(SketchTool):
         p_width = self.element.sketch.registry.get_point(entity.width_id)
         p_height = self.element.sketch.registry.get_point(entity.height_id)
 
-        natural_geo = geometry_from_text(self.text_buffer, entity.font_config)
-        natural_geo.flip_y()
-        logger.debug(f"Natural geometry: {natural_geo.rect()}")
+        natural_geo = text_to_geometry(
+            self.text_buffer, font_config=entity.font_config
+        )
 
         _, nat_min_y, _, nat_max_y = natural_geo.rect()
 
         # Handle empty text case for frame mapping logic
         if not self.text_buffer:
             nat_min_y = 0.0
-            nat_max_y = entity.font_config.font_size
+            nat_max_y = entity.font_config.size
 
         advance_width = (
             entity.font_config.get_text_width(self.text_buffer)
@@ -904,7 +904,7 @@ class TextBoxTool(SketchTool):
 
             cursor_height = nat_max_y - nat_min_y
             if cursor_height <= 0:
-                cursor_height = entity.font_config.font_size
+                cursor_height = entity.font_config.size
 
             c_center_y = (nat_min_y + nat_max_y) / 2
 

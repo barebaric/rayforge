@@ -1,6 +1,6 @@
 import pytest
 
-from rayforge.core.font_config import FontConfig
+from raygeo.geo.shape.text import FontConfig
 
 
 class TestFontConfig:
@@ -19,8 +19,8 @@ class TestFontConfig:
     def test_custom_values(self):
         """Test that custom values are set correctly."""
         config = FontConfig(
-            font_family="Arial",
-            font_size=12.0,
+            family="Arial",
+            size=12.0,
             bold=True,
             italic=True,
         )
@@ -34,8 +34,8 @@ class TestFontConfig:
     def test_to_dict(self):
         """Test serialization to dictionary."""
         config = FontConfig(
-            font_family="serif",
-            font_size=14.0,
+            family="serif",
+            size=14.0,
             bold=True,
             italic=False,
         )
@@ -52,8 +52,8 @@ class TestFontConfig:
     def test_to_dict_with_extra(self):
         """Test serialization includes extra fields."""
         config = FontConfig(
-            font_family="monospace",
-            font_size=9.0,
+            family="monospace",
+            size=9.0,
         )
         config.extra["custom_field"] = "custom_value"
 
@@ -126,8 +126,8 @@ class TestFontConfig:
     def test_roundtrip_serialization(self):
         """Test that serialization and deserialization are inverse."""
         original = FontConfig(
-            font_family="Courier",
-            font_size=11.0,
+            family="Courier",
+            size=11.0,
             bold=False,
             italic=True,
         )
@@ -143,8 +143,8 @@ class TestFontConfig:
     def test_copy(self):
         """Test that copy creates independent instance."""
         original = FontConfig(
-            font_family="Arial",
-            font_size=12.0,
+            family="Arial",
+            size=12.0,
             bold=True,
         )
 
@@ -166,15 +166,15 @@ class TestFontConfig:
     def test_equality(self):
         """Test equality comparison."""
         config1 = FontConfig(
-            font_family="Arial",
-            font_size=12.0,
+            family="Arial",
+            size=12.0,
             bold=True,
             italic=False,
         )
 
         config2 = FontConfig(
-            font_family="Arial",
-            font_size=12.0,
+            family="Arial",
+            size=12.0,
             bold=True,
             italic=False,
         )
@@ -183,27 +183,27 @@ class TestFontConfig:
 
     def test_inequality(self):
         """Test inequality comparison."""
-        config1 = FontConfig(font_family="Arial", font_size=12.0)
-        config2 = FontConfig(font_family="serif", font_size=12.0)
+        config1 = FontConfig(family="Arial", size=12.0)
+        config2 = FontConfig(family="serif", size=12.0)
 
         assert config1 != config2
 
     def test_equality_with_extra(self):
         """Test equality includes extra fields."""
-        config1 = FontConfig(font_family="Arial", font_size=12.0)
+        config1 = FontConfig(family="Arial", size=12.0)
         config1.extra["custom"] = "value"
 
-        config2 = FontConfig(font_family="Arial", font_size=12.0)
+        config2 = FontConfig(family="Arial", size=12.0)
         config2.extra["custom"] = "value"
 
         assert config1 == config2
 
     def test_inequality_with_extra(self):
         """Test inequality with different extra fields."""
-        config1 = FontConfig(font_family="Arial", font_size=12.0)
+        config1 = FontConfig(family="Arial", size=12.0)
         config1.extra["custom"] = "value1"
 
-        config2 = FontConfig(font_family="Arial", font_size=12.0)
+        config2 = FontConfig(family="Arial", size=12.0)
         config2.extra["custom"] = "value2"
 
         assert config1 != config2
@@ -211,29 +211,29 @@ class TestFontConfig:
     def test_hash(self):
         """Test that hash is consistent with equality."""
         config1 = FontConfig(
-            font_family="Arial",
-            font_size=12.0,
+            family="Arial",
+            size=12.0,
             bold=True,
         )
 
         config2 = FontConfig(
-            font_family="Arial",
-            font_size=12.0,
+            family="Arial",
+            size=12.0,
             bold=True,
         )
 
         assert hash(config1) == hash(config2)
 
-        config3 = FontConfig(font_family="serif", font_size=12.0)
+        config3 = FontConfig(family="serif", size=12.0)
 
         assert hash(config1) != hash(config3)
 
     def test_hash_with_extra(self):
         """Test hash includes extra fields."""
-        config1 = FontConfig(font_family="Arial", font_size=12.0)
+        config1 = FontConfig(family="Arial", size=12.0)
         config1.extra["custom"] = "value"
 
-        config2 = FontConfig(font_family="Arial", font_size=12.0)
+        config2 = FontConfig(family="Arial", size=12.0)
         config2.extra["custom"] = "value"
 
         assert hash(config1) == hash(config2)
@@ -273,8 +273,8 @@ class TestFontConfig:
 
     def test_get_font_metrics_font_size_scaling(self):
         """Tests that font size scales metrics approximately."""
-        config_10 = FontConfig(font_size=10.0)
-        config_20 = FontConfig(font_size=20.0)
+        config_10 = FontConfig(size=10.0)
+        config_20 = FontConfig(size=20.0)
         metrics_10 = config_10.get_font_metrics()
         metrics_20 = config_20.get_font_metrics()
 
@@ -288,8 +288,8 @@ class TestFontConfig:
 
     def test_get_font_metrics_font_family(self):
         """Tests that font family parameter is accepted."""
-        config_sans = FontConfig(font_family="sans-serif")
-        config_serif = FontConfig(font_family="serif")
+        config_sans = FontConfig(family="sans-serif")
+        config_serif = FontConfig(family="serif")
         metrics_sans = config_sans.get_font_metrics()
         metrics_serif = config_serif.get_font_metrics()
 
@@ -335,8 +335,8 @@ class TestFontConfig:
 
     def test_get_text_width_font_size_scaling(self):
         """Tests that font size scales width approximately."""
-        config_10 = FontConfig(font_size=10.0)
-        config_20 = FontConfig(font_size=20.0)
+        config_10 = FontConfig(size=10.0)
+        config_20 = FontConfig(size=20.0)
         width_10 = config_10.get_text_width("A")
         width_20 = config_20.get_text_width("A")
         assert width_20 == pytest.approx(2 * width_10, rel=0.1)
@@ -364,8 +364,8 @@ class TestFontConfig:
         """Tests that different font families have different widths."""
         # Use 'W' to maximize difference between proportional and fixed width
         # fonts
-        config_sans = FontConfig(font_family="sans-serif")
-        config_mono = FontConfig(font_family="monospace")
+        config_sans = FontConfig(family="sans-serif")
+        config_mono = FontConfig(family="monospace")
         width_sans = config_sans.get_text_width("W")
         width_mono = config_mono.get_text_width("W")
 
