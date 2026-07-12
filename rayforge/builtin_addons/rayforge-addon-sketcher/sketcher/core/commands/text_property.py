@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from raygeo.geo.types import Point as GeoPoint
 
-from rayforge.core.font_config import FontConfig
+from raygeo.geo.shape.text import FontConfig
 
 from ..constraints import (
     AspectRatioConstraint,

@@ -1,8 +1,7 @@
 import numpy as np
 from raygeo.geo import Move
 
-from rayforge.core.font_config import FontConfig
-from rayforge.core.text import text_to_geometry
+from raygeo.geo.shape.text import FontConfig, text_to_geometry
 
 
 def test_text_to_geometry_empty_string():
@@ -60,8 +59,8 @@ def test_text_to_geometry_bezier_curves():
 
 def test_text_to_geometry_font_family():
     """Tests that different font families generate geometry."""
-    config1 = FontConfig(font_family="sans-serif")
-    config2 = FontConfig(font_family="serif")
+    config1 = FontConfig(family="sans-serif")
+    config2 = FontConfig(family="serif")
     geo1 = text_to_geometry("A", font_config=config1)
     geo2 = text_to_geometry("A", font_config=config2)
     assert not geo1.is_empty()
@@ -72,8 +71,8 @@ def test_text_to_geometry_font_family():
 
 def test_text_to_geometry_font_size():
     """Tests that font size affects geometry scale."""
-    config_small = FontConfig(font_size=10.0)
-    config_large = FontConfig(font_size=20.0)
+    config_small = FontConfig(size=10.0)
+    config_large = FontConfig(size=20.0)
     geo_small = text_to_geometry("A", font_config=config_small)
     geo_large = text_to_geometry("A", font_config=config_large)
     assert not geo_small.is_empty()
@@ -178,14 +177,14 @@ def test_text_to_geometry_mixed_content():
 
 def test_text_to_geometry_small_font_size():
     """Tests that very small font size works."""
-    config = FontConfig(font_size=1.0)
+    config = FontConfig(size=1.0)
     geo = text_to_geometry("A", font_config=config)
     assert not geo.is_empty()
 
 
 def test_text_to_geometry_large_font_size():
     """Tests that large font size works."""
-    config = FontConfig(font_size=100.0)
+    config = FontConfig(size=100.0)
     geo = text_to_geometry("A", font_config=config)
     assert not geo.is_empty()
 

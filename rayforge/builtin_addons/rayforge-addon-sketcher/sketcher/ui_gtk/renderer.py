@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Optional, Set
 
 import cairo
 from raygeo.geo import Geometry, Matrix
+from raygeo.geo.shape.text import text_to_geometry
 from raygeo.geo.types import Point as GeoPoint
 
-from rayforge.core.geo_helpers import geometry_from_text
 from rayforge.image.geo_renderer import geometry_to_cairo
 from rayforge.ui_gtk.canvas import WorldSurface
 
@@ -556,11 +556,12 @@ class SketchRenderer:
         if not (p_origin and p_width and p_height):
             return False
 
-        natural_geo = geometry_from_text(entity.content, entity.font_config)
-        natural_geo.flip_y()
-
-        advance_width = entity.font_config.get_text_width(entity.content)
+        natural_geo = text_to_geometry(
+            entity.content, font_config=entity.font_config
+        )
         _, geo_min_y, _, geo_max_y = natural_geo.rect()
+        text_width = entity.font_config.get_text_width(entity.content)
+        advance_width = text_width or 1.0
 
         transformed_geo = natural_geo.map_to_frame(
             (p_origin.x, p_origin.y),

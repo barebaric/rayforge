@@ -6,11 +6,10 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import cairo
 from raygeo.geo import Geometry, Matrix
+from raygeo.geo.shape.text import FontConfig, text_to_geometry
 from raygeo.ops import Ops
 from raygeo.ops.types import SectionType
 
-from rayforge.core.font_config import FontConfig
-from rayforge.core.text import text_to_geometry
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.producer.base import OpsProducer
@@ -448,8 +447,8 @@ class MaterialTestGridProducer(OpsProducer):
         params: Dict[str, Any], width_mm: float, height_mm: float
     ) -> Ops:
         """
-        Generates clean vector outlines for text using Pango for robust font
-        resolution and fallback, then converts to Ops.
+        Generates clean vector outlines for text using raygeo's swash-based
+        text-to-geometry, then converts to Ops.
         """
         label_elements = [
             el
@@ -462,13 +461,6 @@ class MaterialTestGridProducer(OpsProducer):
         if not label_elements:
             return Ops()
 
-        # text_to_geometry renders into a Cairo context whose user-space
-        # coincides with Pango's native coordinate system where 1 unit =
-        # 1 device pixel at 96 DPI.  We work in a virtual 96 DPI pixel
-        # space here and scale the final geometry to mm.
-        PANGO_DPI = 96.0
-        PX_PER_MM = PANGO_DPI / _MM_PER_INCH  # = 96 / 25.4
-
         result_geo = Geometry()
 
         for el in label_elements:
@@ -479,19 +471,17 @@ class MaterialTestGridProducer(OpsProducer):
             if font_size_mm <= 0 or not el.get("text"):
                 continue
 
-            # Convert mm font size to Pango points:
-            # 1 point = 1/72 inch; Pango at PANGO_DPI maps 1 point to
-            # PANGO_DPI/72 device pixels.
+            # Convert mm font size to points (1pt = 1/72 inch).
             font_size_pt = font_size_mm * 72.0 / _MM_PER_INCH
 
             font_config = FontConfig(
-                font_family="sans-serif",
-                font_size=font_size_pt,
+                family="sans-serif",
+                size=font_size_pt,
                 bold=is_axis,
             )
 
             geo = text_to_geometry(el["text"], font_config=font_config)
-            if geo.is_empty():
+            if geo is None or geo.is_empty():
                 logger.warning(
                     "Empty geometry for text label '%s' at font size %.1f",
                     el["text"],
@@ -499,51 +489,50 @@ class MaterialTestGridProducer(OpsProducer):
                 )
                 continue
 
-            # text_to_geometry output, get_text_width() and metrics are
-            # all in Pango's device-pixel space (96 DPI).
-            text_width_px = font_config.get_text_width(el["text"])
-            ascent_px, descent_neg_px, _ = font_config.get_font_metrics()
+            # raygeo text_to_geometry returns geometry in mm space with
+            # Y-UP (font coords). The caller applies scale(1,-1) +
+            # translate(0, height) to the combined ops, so we convert
+            # to Y-DOWN here so the final flip produces Y-UP.
+
+            # Compute alignment offset from the bounding rect.
+            xmin, ymin, xmax, ymax = geo.rect()
+            text_width_mm = xmax - xmin
 
             if align_h == "right":
-                x_offset_px = -text_width_px
+                x_offset = -text_width_mm
             elif align_h == "left":
-                x_offset_px = 0.0
+                x_offset = 0.0
             else:
-                x_offset_px = -text_width_px / 2.0
+                x_offset = -text_width_mm / 2.0
 
-            y_offset_px = (ascent_px + descent_neg_px) / 2.0
-
-            # Translate element position from mm to Pango pixel space
-            el_x_px = el["x"] * PX_PER_MM
-            el_y_px = el["y"] * PX_PER_MM
+            # raygeo output is Y-UP.  The caller does
+            # scale(1,-1)+translate(0,height) on the combined ops
+            # (grid + labels).  We flip the glyphs to Y-DOWN in
+            # place (at origin) BEFORE translating, so the final
+            # flip makes them Y-UP at the correct position.
+            geo.transform(Matrix.scale(1, -1))
+            y_offset = 0.0
 
             if "transform" in el:
                 match = re.search(r"rotate\((.+?)\)", el["transform"])
                 if match:
                     angle_deg = float(match.group(1))
                     combined = (
-                        Matrix.translation(el_x_px, el_y_px)
+                        Matrix.translation(el["x"], el["y"])
                         @ Matrix.rotation(angle_deg)
-                        @ Matrix.translation(x_offset_px, y_offset_px)
+                        @ Matrix.translation(x_offset, y_offset)
                     )
                     geo.transform(combined)
                 else:
-                    transform = Matrix.translation(
-                        el_x_px + x_offset_px, el_y_px + y_offset_px
-                    )
-                    geo.transform(transform)
+                    geo.transform(Matrix.translation(
+                        el["x"] + x_offset, el["y"] + y_offset
+                    ))
             else:
-                transform = Matrix.translation(
-                    el_x_px + x_offset_px, el_y_px + y_offset_px
-                )
-                geo.transform(transform)
+                geo.transform(Matrix.translation(
+                    el["x"] + x_offset, el["y"] + y_offset
+                ))
 
             result_geo.extend(geo)
-
-        # Scale from 96 DPI pixel space back to mm
-        scale_back = 1.0 / PX_PER_MM
-        scaling_matrix = Matrix.scale(scale_back, scale_back)
-        result_geo.transform(scaling_matrix)
 
         if result_geo.is_empty():
             if label_elements:
@@ -560,10 +549,9 @@ class MaterialTestGridProducer(OpsProducer):
         ctx: cairo.Context, preview_px: float, **el
     ):
         """
-        Configures a Cairo context and adds a text path using the same
-        text_to_geometry / Pango pipeline as _vectorize_text_to_ops.
-        The context is expected to be in pixel space; the pixel-to-Pango
-        conversion is handled internally.
+        Configures a Cairo context and adds a text path using raygeo's
+        text_to_geometry.  The context is expected to be in pixel space
+        (96 DPI, Y-down).
         """
         from rayforge.image.geo_renderer import geometry_to_cairo
 
@@ -577,36 +565,37 @@ class MaterialTestGridProducer(OpsProducer):
             ctx.restore()
             return
 
-        # Pango at 96 DPI maps 1 point to 96/72 pixels.
-        # font_size_px * 72/96 converts to Pango points.
+        # Convert pixel font size to points (1pt = 1/72 inch at 96 DPI).
         font_size_pt = font_size_px * 72.0 / 96.0
 
         font_config = FontConfig(
-            font_family="sans-serif",
-            font_size=font_size_pt,
+            family="sans-serif",
+            size=font_size_pt,
             bold=is_axis,
         )
 
         geo = text_to_geometry(text, font_config=font_config)
-        if geo.is_empty():
+        if geo is None or geo.is_empty():
             ctx.restore()
             return
 
-        # text_to_geometry and metrics are in Pango's 96 DPI pixel space,
-        # which matches the canvas pixel space (standard 96 DPI screen).
-        text_width = font_config.get_text_width(text)
-        ascent, descent_neg, _ = font_config.get_font_metrics()
+        # raygeo returns mm-space Y-UP. Convert to pixel-space Y-DOWN
+        # at 96 DPI for the Cairo canvas (mirrors the Ops path).
+        px_per_mm = 96.0 / 25.4
+        geo.transform(Matrix.scale(px_per_mm, -px_per_mm))
+
+        # Compute alignment offsets from geometry bounding rect.
+        xmin, ymin, xmax, ymax = geo.rect()
+        text_w = xmax - xmin
 
         if align_h == "right":
-            x_offset = -text_width
+            x_offset = -text_w
         elif align_h == "left":
             x_offset = 0.0
         else:
-            x_offset = -text_width / 2.0
+            x_offset = -text_w / 2.0
 
-        y_offset = (ascent + descent_neg) / 2.0
-
-        geo.transform(Matrix.translation(x_offset, y_offset))
+        geo.transform(Matrix.translation(x_offset, 0.0))
 
         ctx.translate(el["x"], el["y"])
         if "transform" in el:

@@ -3,7 +3,7 @@ from raygeo.geo import Geometry
 from sketcher.core.entities import TextBoxEntity
 from sketcher.core.registry import EntityRegistry
 
-from rayforge.core.font_config import FontConfig
+from raygeo.geo.shape.text import FontConfig
 
 
 @pytest.fixture
@@ -20,8 +20,8 @@ def test_text_box_serialization_round_trip():
         height_id=3,
         content="Hello World",
         font_config=FontConfig(
-            font_family="sans-serif",
-            font_size=10.0,
+            family="sans-serif",
+            size=10.0,
             bold=False,
             italic=False,
         ),

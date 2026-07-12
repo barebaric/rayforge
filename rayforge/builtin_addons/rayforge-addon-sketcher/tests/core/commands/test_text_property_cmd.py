@@ -3,7 +3,7 @@ from sketcher.core import Sketch
 from sketcher.core.commands import ModifyTextPropertyCommand
 from sketcher.core.entities.text_box import TextBoxEntity
 
-from rayforge.core.font_config import FontConfig
+from raygeo.geo.shape.text import FontConfig
 from rayforge.core.undo import HistoryManager
 
 
@@ -22,8 +22,8 @@ def sketch_with_text_box():
         p_height,
         content="Original Text",
         font_config=FontConfig(
-            font_family="sans-serif",
-            font_size=10.0,
+            family="sans-serif",
+            size=10.0,
             bold=False,
             italic=False,
         ),
@@ -40,8 +40,8 @@ def test_modify_text_property_command_initialization(
 
     new_content = "New Text"
     new_font_config = FontConfig(
-        font_family="serif",
-        font_size=14.0,
+        family="serif",
+        size=14.0,
         bold=True,
         italic=False,
     )
@@ -64,8 +64,8 @@ def test_modify_text_property_command_execute(sketch_with_text_box):
 
     new_content = "New Text"
     new_font_config = FontConfig(
-        font_family="serif",
-        font_size=14.0,
+        family="serif",
+        size=14.0,
         bold=True,
         italic=False,
     )
@@ -76,7 +76,7 @@ def test_modify_text_property_command_execute(sketch_with_text_box):
 
     tb = sketch.registry.get_entity(tb_id)
     assert tb.content == "Original Text"
-    assert tb.font_config.font_family == "sans-serif"
+    assert tb.font_config.family == "sans-serif"
 
     cmd.execute()
 
@@ -84,8 +84,8 @@ def test_modify_text_property_command_execute(sketch_with_text_box):
     assert tb.font_config == new_font_config
     assert cmd.old_content == "Original Text"
     assert cmd.old_font_config is not None
-    assert cmd.old_font_config.font_family == "sans-serif"
-    assert cmd.old_font_config.font_size == 10.0
+    assert cmd.old_font_config.family == "sans-serif"
+    assert cmd.old_font_config.size == 10.0
 
 
 def test_modify_text_property_command_undo(sketch_with_text_box):
@@ -94,8 +94,8 @@ def test_modify_text_property_command_undo(sketch_with_text_box):
 
     new_content = "New Text"
     new_font_config = FontConfig(
-        font_family="serif",
-        font_size=14.0,
+        family="serif",
+        size=14.0,
         bold=True,
         italic=False,
     )
@@ -113,8 +113,8 @@ def test_modify_text_property_command_undo(sketch_with_text_box):
     cmd.undo()
 
     assert tb.content == "Original Text"
-    assert tb.font_config.font_family == "sans-serif"
-    assert tb.font_config.font_size == 10.0
+    assert tb.font_config.family == "sans-serif"
+    assert tb.font_config.size == 10.0
     assert tb.font_config.bold is False
 
 
@@ -124,8 +124,8 @@ def test_modify_text_property_command_execute_undo_cycle(sketch_with_text_box):
 
     new_content = "New Text"
     new_font_config = FontConfig(
-        font_family="serif",
-        font_size=14.0,
+        family="serif",
+        size=14.0,
         bold=True,
         italic=False,
     )
@@ -143,10 +143,10 @@ def test_modify_text_property_command_execute_undo_cycle(sketch_with_text_box):
         cmd.undo()
         tb = sketch.registry.get_entity(tb_id)
         assert tb.content == "Original Text"
-        assert tb.font_config.font_family == "sans-serif"
-        assert tb.font_config.font_size == 10.0
+        assert tb.font_config.family == "sans-serif"
+        assert tb.font_config.size == 10.0
         assert tb.font_config.bold is False
-        assert tb.font_config.font_size == 10.0
+        assert tb.font_config.size == 10.0
         assert tb.font_config.bold is False
 
 
@@ -174,8 +174,8 @@ def test_modify_text_property_command_full_font_update(
     sketch, tb_id = sketch_with_text_box
 
     new_font_config = FontConfig(
-        font_family="serif",
-        font_size=14.0,
+        family="serif",
+        size=14.0,
         bold=True,
         italic=True,
     )
@@ -185,8 +185,8 @@ def test_modify_text_property_command_full_font_update(
     cmd.execute()
 
     tb = sketch.registry.get_entity(tb_id)
-    assert tb.font_config.font_family == "serif"
-    assert tb.font_config.font_size == 14.0
+    assert tb.font_config.family == "serif"
+    assert tb.font_config.size == 14.0
     assert tb.font_config.bold is True
     assert tb.font_config.italic is True
 
@@ -208,8 +208,8 @@ def test_text_property_command_undo_with_history_manager():
         p_height,
         content="Original Text",
         font_config=FontConfig(
-            font_family="sans-serif",
-            font_size=10.0,
+            family="sans-serif",
+            size=10.0,
             bold=False,
             italic=False,
         ),
@@ -220,12 +220,12 @@ def test_text_property_command_undo_with_history_manager():
     tb = sketch.registry.get_entity(tb_id)
     assert isinstance(tb, TextBoxEntity)
     assert tb.content == "Original Text"
-    assert tb.font_config.font_size == 10.0
+    assert tb.font_config.size == 10.0
 
     new_content = "New Text"
     new_font_config = FontConfig(
-        font_family="serif",
-        font_size=14.0,
+        family="serif",
+        size=14.0,
         bold=True,
         italic=False,
     )
@@ -252,12 +252,12 @@ def test_text_property_command_undo_with_history_manager():
     tb = sketch.registry.get_entity(tb_id)
     assert isinstance(tb, TextBoxEntity)
     assert tb.content == "Original Text"
-    assert tb.font_config.font_family == "sans-serif"
-    assert tb.font_config.font_size == 10.0
+    assert tb.font_config.family == "sans-serif"
+    assert tb.font_config.size == 10.0
     assert tb.font_config.bold is False
-    assert tb.font_config.font_size == 10.0
+    assert tb.font_config.size == 10.0
     assert tb.font_config.bold is False
-    assert tb.font_config.font_size == 10.0
+    assert tb.font_config.size == 10.0
     assert tb.font_config.bold is False
 
 
@@ -276,7 +276,7 @@ def test_text_property_command_redo_after_undo():
         p_width,
         p_height,
         content="Original",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     history = HistoryManager()
@@ -285,7 +285,7 @@ def test_text_property_command_redo_after_undo():
         sketch,
         tb_id,
         "Modified",
-        FontConfig(font_family="serif", font_size=12.0),
+        FontConfig(family="serif", size=12.0),
     )
 
     history.execute(cmd)
@@ -295,8 +295,8 @@ def test_text_property_command_redo_after_undo():
     tb = sketch.registry.get_entity(tb_id)
     assert isinstance(tb, TextBoxEntity)
     assert tb.content == "Modified"
-    assert tb.font_config.font_family == "serif"
-    assert tb.font_config.font_size == 12.0
+    assert tb.font_config.family == "serif"
+    assert tb.font_config.size == 12.0
 
 
 def test_text_property_command_multiple_edits_with_history():
@@ -314,7 +314,7 @@ def test_text_property_command_multiple_edits_with_history():
         p_width,
         p_height,
         content="Initial",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     history = HistoryManager()
@@ -323,13 +323,13 @@ def test_text_property_command_multiple_edits_with_history():
         sketch,
         tb_id,
         "First Edit",
-        FontConfig(font_family="serif", font_size=12.0),
+        FontConfig(family="serif", size=12.0),
     )
     cmd2 = ModifyTextPropertyCommand(
         sketch,
         tb_id,
         "Second Edit",
-        FontConfig(font_family="monospace", font_size=14.0),
+        FontConfig(family="monospace", size=14.0),
     )
 
     history.execute(cmd1)
@@ -338,31 +338,31 @@ def test_text_property_command_multiple_edits_with_history():
     tb = sketch.registry.get_entity(tb_id)
     assert isinstance(tb, TextBoxEntity)
     assert tb.content == "Second Edit"
-    assert tb.font_config.font_family == "monospace"
+    assert tb.font_config.family == "monospace"
 
     history.undo()
     tb = sketch.registry.get_entity(tb_id)
     assert isinstance(tb, TextBoxEntity)
     assert tb.content == "First Edit"
-    assert tb.font_config.font_family == "serif"
+    assert tb.font_config.family == "serif"
 
     history.undo()
     tb = sketch.registry.get_entity(tb_id)
     assert isinstance(tb, TextBoxEntity)
     assert tb.content == "Initial"
-    assert tb.font_config.font_family == "sans-serif"
-    assert tb.font_config.font_size == 10.0
+    assert tb.font_config.family == "sans-serif"
+    assert tb.font_config.size == 10.0
     assert tb.font_config.bold is False
-    assert tb.font_config.font_size == 10.0
+    assert tb.font_config.size == 10.0
     assert tb.font_config.bold is False
-    assert tb.font_config.font_size == 10.0
+    assert tb.font_config.size == 10.0
     assert tb.font_config.bold is False
 
     history.redo()
     tb = sketch.registry.get_entity(tb_id)
     assert isinstance(tb, TextBoxEntity)
     assert tb.content == "First Edit"
-    assert tb.font_config.font_family == "serif"
+    assert tb.font_config.family == "serif"
 
 
 def test_should_skip_undo_both_empty():
@@ -378,7 +378,7 @@ def test_should_skip_undo_both_empty():
         p_width,
         p_height,
         content="",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -399,7 +399,7 @@ def test_should_skip_undo_old_empty_new_not_empty():
         p_width,
         p_height,
         content="",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "New Text", FontConfig())
@@ -420,7 +420,7 @@ def test_should_skip_undo_old_not_empty_new_empty():
         p_width,
         p_height,
         content="Original",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -442,7 +442,7 @@ def test_should_skip_undo_both_not_empty():
         p_width,
         p_height,
         content="Original",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "New Text", FontConfig())
@@ -463,7 +463,7 @@ def test_empty_text_box_removed_on_execute():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -491,7 +491,7 @@ def test_empty_text_box_points_removed():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -518,7 +518,7 @@ def test_empty_text_box_constraints_removed():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -544,7 +544,7 @@ def test_empty_text_box_undo_restores_entity():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -573,7 +573,7 @@ def test_empty_text_box_undo_restores_points():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -605,7 +605,7 @@ def test_empty_text_box_with_history_manager():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     history = HistoryManager()
@@ -638,7 +638,7 @@ def test_empty_text_box_undo_restores_constraints():
         p_width,
         p_height,
         content="Original Text",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     cmd = ModifyTextPropertyCommand(sketch, tb_id, "", FontConfig())
@@ -677,11 +677,11 @@ def test_undo_removes_text_box_when_reverting_to_empty():
         p_width,
         p_height,
         content="",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     cmd = ModifyTextPropertyCommand(
-        sketch, tb_id, "New Text", FontConfig(font_family="sans-serif")
+        sketch, tb_id, "New Text", FontConfig(family="sans-serif")
     )
 
     cmd.execute()
@@ -715,13 +715,13 @@ def test_redo_restores_text_box_after_undo_to_empty():
         p_width,
         p_height,
         content="",
-        font_config=FontConfig(font_family="sans-serif", font_size=10.0),
+        font_config=FontConfig(family="sans-serif", size=10.0),
     )
 
     history = HistoryManager()
 
     cmd = ModifyTextPropertyCommand(
-        sketch, tb_id, "New Text", FontConfig(font_family="sans-serif")
+        sketch, tb_id, "New Text", FontConfig(family="sans-serif")
     )
 
     history.execute(cmd)

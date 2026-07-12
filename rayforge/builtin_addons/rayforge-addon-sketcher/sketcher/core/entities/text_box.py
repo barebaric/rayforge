@@ -8,8 +8,7 @@ from raygeo.geo.shape.polygon import is_point_inside_polygon
 from raygeo.geo.types import Rect
 
 from rayforge.core.color import ColorRGBA
-from rayforge.core.font_config import FontConfig
-from rayforge.core.geo_helpers import geometry_from_text
+from raygeo.geo.shape.text import text_to_geometry, FontConfig
 
 from ..types import EntityID
 from .entity import Entity
@@ -103,21 +102,20 @@ class TextBoxEntity(Entity):
         None content yields a minimum width of 10.
 
         The height is derived from the actual geometry bounding box
-        after flip_y, so the frame matches the ink extent exactly
-        and map_to_frame does not stretch the text.
+        so the frame matches the ink extent exactly and map_to_frame
+        does not stretch the text.  raygeo returns Y-UP geometry.`
         """
         text = content if content is not None else self.content
 
         if not text:
-            return 10.0, self.font_config.font_size
+            return 10.0, self.font_config.size
 
-        geo = geometry_from_text(text, self.font_config)
-        geo.flip_y()
+        geo = text_to_geometry(text, font_config=self.font_config)
         _, geo_min_y, _, geo_max_y = geo.rect()
         geo_height = geo_max_y - geo_min_y
 
         return (
-            max(self.font_config.get_text_width(text), 1.0),
+            max(self.font_config.get_text_width(text) or 0, 1.0),
             max(geo_height, 1.0),
         )
 
@@ -302,11 +300,9 @@ class TextBoxEntity(Entity):
             resolved_content if resolved_content is not None else self.content
         )
         origin, pw, ph = self._build_frame_for_content(registry, text)
-        advance_width = self.font_config.get_text_width(text) if text else 1.0
-        txt_geo = geometry_from_text(text, self.font_config)
-        txt_geo.flip_y()
-
+        txt_geo = text_to_geometry(text, font_config=self.font_config)
         _, geo_min_y, _, geo_max_y = txt_geo.rect()
+        advance_width = self.font_config.get_text_width(text) or 1.0
         return txt_geo.map_to_frame(
             origin,
             pw,
@@ -327,11 +323,9 @@ class TextBoxEntity(Entity):
             resolved_content if resolved_content is not None else self.content
         )
         origin, pw, ph = self._build_frame_for_content(registry, text)
-        advance_width = self.font_config.get_text_width(text) if text else 1.0
-        txt_geo = geometry_from_text(text, self.font_config)
-        txt_geo.flip_y()
-
+        txt_geo = text_to_geometry(text, font_config=self.font_config)
         _, geo_min_y, _, geo_max_y = txt_geo.rect()
+        advance_width = self.font_config.get_text_width(text) or 1.0
         return txt_geo.map_to_frame(
             origin,
             pw,
