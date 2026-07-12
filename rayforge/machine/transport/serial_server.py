@@ -24,6 +24,7 @@ class SerialServerTransport(Transport):
         super().__init__()
         self.baudrate = baudrate
         self._master_fd: Optional[int] = None
+        self._slave_fd: Optional[int] = None
         self._slave_path: Optional[str] = None
         self._running = False
 
@@ -48,7 +49,9 @@ class SerialServerTransport(Transport):
             master_fd, slave_fd = pty.openpty()
             self._master_fd = master_fd
             self._slave_path = os.ttyname(slave_fd)
-            os.close(slave_fd)  # Close slave fd - clients will open their own
+            self._slave_fd = slave_fd
+            # Keep the slave fd open: macOS's PTY driver raises EIO on the
+            # master once no process holds the slave end.
 
             attrs = termios.tcgetattr(master_fd)
             attrs[4] = termios.B115200
@@ -103,6 +106,13 @@ class SerialServerTransport(Transport):
             except OSError:
                 pass
             self._master_fd = None
+
+        if self._slave_fd is not None:
+            try:
+                os.close(self._slave_fd)
+            except OSError:
+                pass
+            self._slave_fd = None
 
         self._slave_path = None
         self.status_changed.send(self, status=TransportStatus.DISCONNECTED)

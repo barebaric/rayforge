@@ -7,6 +7,14 @@ from rayforge.machine.transport import TransportStatus
 from rayforge.machine.transport.telnet import TelnetTransport
 
 
+async def _wait_until(predicate, attempts=20, interval=0.05):
+    """Polls `predicate` until it's truthy."""
+    for _ in range(attempts):
+        if predicate():
+            return
+        await asyncio.sleep(interval)
+
+
 class SignalTracker:
     """A helper to track calls to a blinker Signal."""
 
@@ -112,7 +120,7 @@ async def telnet_server():
 @pytest.mark.asyncio
 class TestTelnetTransportIntegration:
     """
-    Tests the TelnetTransport against a live, local mock server. This provides
+    Tests the TelnetTransport against a live, local mock serveis provides
     a higher level of confidence than just mocking asyncio.open_connection.
     """
 
@@ -125,6 +133,8 @@ class TestTelnetTransportIntegration:
         assert not transport.is_connected
         await transport.connect()
         assert transport.is_connected
+
+        await _wait_until(lambda: len(telnet_server.clients) == 1)
         assert len(telnet_server.clients) == 1
 
         await transport.disconnect()
@@ -202,6 +212,7 @@ class TestTelnetTransportIntegration:
 
         try:
             await transport.connect()
+            await _wait_until(lambda: len(telnet_server.clients) == 1)
 
             server_message = b"ok\r\n"
             await telnet_server.send_to_clients(server_message)
@@ -225,6 +236,7 @@ class TestTelnetTransportIntegration:
 
         await transport.connect()
         assert transport.is_connected
+        await _wait_until(lambda: len(telnet_server.clients) == 1)
 
         # Abruptly close the connection from the server side
         server_writer = telnet_server.clients[0]
@@ -252,6 +264,7 @@ class TestTelnetTransportIntegration:
         try:
             await transport.connect()
             assert transport.is_connected
+            await _wait_until(lambda: len(telnet_server.clients) == 1)
 
             # Send buffered data from server
             server_message = b"buffered\r\n"

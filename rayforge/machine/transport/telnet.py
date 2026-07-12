@@ -79,6 +79,9 @@ class TelnetTransport(Transport):
                 await self._connection_task
             except asyncio.CancelledError:
                 pass  # Expected
+            # _manage_connection's finally block already closed the writer
+            # and sent DISCONNECTED.
+            return
         if self.writer:
             self.writer.close()
             try:
