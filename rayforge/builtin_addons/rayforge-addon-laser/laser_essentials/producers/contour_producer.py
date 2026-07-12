@@ -3,17 +3,16 @@ from enum import Enum, auto
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from raygeo.geo import Geometry, Matrix
-from raygeo.ops.part import Part
 from raygeo.ops import Ops
 from raygeo.ops.assembly.contour import contour
-from raygeo.ops.types import SectionType
 
-from rayforge.core.vectorization_spec import TraceSpec
-from rayforge.image.tracing import trace_surface
 from rayforge.pipeline.artifact import WorkPieceArtifact
-from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.producer.base import CutSide, OpsProducer
+from rayforge.pipeline.stage.assembler_helpers import (
+    build_part_vector,
+    make_artifact,
+    wrap_assembler_result,
+)
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
@@ -80,13 +79,8 @@ class ContourProducer(OpsProducer):
 
     @staticmethod
     def _empty_artifact(workpiece, generation_id):
-        return WorkPieceArtifact(
-            ops=Ops(),
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=workpiece.size,
-            generation_size=workpiece.size,
-            generation_id=generation_id,
+        return make_artifact(
+            Ops(), workpiece, generation_id, is_vector=True
         )
 
     @property
@@ -111,44 +105,12 @@ class ContourProducer(OpsProducer):
         settings = settings or {}
         kerf_mm = settings.get("kerf_mm", laser.spot_size_mm[0])
 
-        # 2. Build Part and use contour assembler
-        has_vector_source = (
-            workpiece
-            and workpiece.boundaries
-            and not workpiece.boundaries.is_empty()
+        part = build_part_vector(
+            workpiece,
+            surface=surface,
+            override_threshold=self.override_threshold,
+            threshold=self.threshold,
         )
-        part = None
-
-        # If override_threshold is True, SKIP the vector source and fall
-        # through to the raster tracing logic below.
-        if has_vector_source and not self.override_threshold:
-            part = workpiece.to_part()
-        elif surface:
-            # Fall back to raster tracing if no vectors OR if override
-            # is active
-            spec = None
-            if self.override_threshold:
-                # Create a spec to force the specific threshold
-                spec = TraceSpec(
-                    threshold=self.threshold,
-                    auto_threshold=False,
-                    invert=False,
-                )
-            traced = trace_surface(surface, vectorization_spec=spec)
-            if traced:
-                merged = Geometry()
-                width_mm, height_mm = workpiece.size
-                px_w, px_h = surface.get_width(), surface.get_height()
-                if px_w > 0 and px_h > 0:
-                    scale_x = width_mm / px_w
-                    scale_y = height_mm / px_h
-                    transform = Matrix.translation(
-                        0, height_mm
-                    ) @ Matrix.scale(scale_x, -scale_y)
-                    for g in traced:
-                        g.transform(transform)
-                        merged.extend(g)
-                part = Part(geometry=merged, size_mm=workpiece.size)
 
         if part is None or not part.has_geometry():
             logger.warning(
@@ -184,27 +146,12 @@ class ContourProducer(OpsProducer):
             supports_curves=supports_curves,
         )
 
-        # 4. Create Ops — one section per contour to enable proper travel
-        final_ops = Ops()
-        if result.ops.len() > 0:
-            final_ops.set_head(laser.uid)
-            contour_geo = result.ops.to_geometry()
-            contour_list = contour_geo.split_into_contours()
-            for c in contour_list:
-                final_ops.ops_section_start(
-                    SectionType.VECTOR_OUTLINE, workpiece.uid
-                )
-                final_ops.extend(Ops.from_geometry(c))
-                final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-
-        # 5. Create the artifact.
-        return WorkPieceArtifact(
-            ops=final_ops,
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=workpiece.size,
-            generation_size=workpiece.size,
-            generation_id=generation_id,
+        return wrap_assembler_result(
+            result,
+            workpiece,
+            laser,
+            generation_id,
+            split_contours=True,
         )
 
     def to_dict(self) -> dict:

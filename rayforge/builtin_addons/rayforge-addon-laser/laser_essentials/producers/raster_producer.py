@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 import cairo
 import numpy as np
 from raygeo.image import compute_auto_levels, normalize_grayscale
-from raygeo.ops.part import Part
 from raygeo.image.scan import ScanMode
 from raygeo.ops import Ops
 from raygeo.ops.assembly.raster import raster
@@ -18,8 +17,11 @@ from rayforge.image.util import (
     surface_to_grayscale,
 )
 from rayforge.pipeline.artifact import WorkPieceArtifact
-from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.producer.base import OpsProducer
+from rayforge.pipeline.stage.assembler_helpers import (
+    build_part_raster,
+    make_artifact,
+)
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
@@ -178,13 +180,12 @@ class Rasterizer(OpsProducer):
             width_px = surface.get_width()
             height_px = surface.get_height()
             final_ops.ops_section_end(SectionType.RASTER_FILL)
-            return WorkPieceArtifact(
-                ops=final_ops,
-                is_scalable=False,
-                source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
+            return make_artifact(
+                final_ops,
+                workpiece,
+                generation_id,
+                is_vector=False,
                 source_dimensions=(width_px, height_px),
-                generation_size=workpiece.size,
-                generation_id=generation_id,
             )
 
         width_px = surface.get_width()
@@ -258,10 +259,7 @@ class Rasterizer(OpsProducer):
                 )
 
                 # Build Part with pixels_per_mm for the raster assembler
-                part = Part(
-                    size_mm=workpiece.size,
-                    pixels_per_mm=pixels_per_mm,
-                )
+                part = build_part_raster(workpiece, pixels_per_mm)
 
                 result = raster(
                     part,
@@ -294,13 +292,12 @@ class Rasterizer(OpsProducer):
 
         final_ops.ops_section_end(SectionType.RASTER_FILL)
 
-        return WorkPieceArtifact(
-            ops=final_ops,
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
+        return make_artifact(
+            final_ops,
+            workpiece,
+            generation_id,
+            is_vector=False,
             source_dimensions=(width_px, height_px),
-            generation_size=workpiece.size,
-            generation_id=generation_id,
         )
 
     def _apply_levels(

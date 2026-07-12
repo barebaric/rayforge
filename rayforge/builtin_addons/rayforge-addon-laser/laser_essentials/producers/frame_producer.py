@@ -1,13 +1,14 @@
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from raygeo.ops import Ops
 from raygeo.ops.assembly.frame import frame
-from raygeo.ops.types import SectionType
 
 from rayforge.pipeline.artifact import WorkPieceArtifact
-from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.producer.base import CutSide, OpsProducer
+from rayforge.pipeline.stage.assembler_helpers import (
+    build_part_vector,
+    wrap_assembler_result,
+)
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
@@ -65,10 +66,10 @@ class FrameProducer(OpsProducer):
         # 2. Build a Part from the workpiece and use the frame assembler.
         #    The assembler computes the total offset from kerf, path
         #    offset, and cut side internally.
-        part = workpiece.to_part()
+        part = build_part_vector(workpiece)
         if part is None:
             raise ValueError(
-                "FrameProducer: workpiece.to_part() returned None"
+                "FrameProducer: workpiece has no vector geometry"
             )
 
         result = frame(
@@ -78,26 +79,12 @@ class FrameProducer(OpsProducer):
             cut_side=self.cut_side.name.lower(),
         )
 
-        # 3. Wrap assembler ops in head + sections
-        final_ops = Ops()
-        if result.ops.len() > 0:
-            final_ops.set_head(laser.uid)
-            final_ops.ops_section_start(
-                SectionType.VECTOR_OUTLINE, workpiece.uid
-            )
-            final_ops.set_power(settings.get("power", 0))
-            final_ops.extend(result.ops)
-            final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-
-        # 4. Return a NON-SCALABLE artifact. The ops are already at the
-        #    correct final size, ready for positioning.
-        return WorkPieceArtifact(
-            ops=final_ops,
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=workpiece.size,
-            generation_size=workpiece.size,
-            generation_id=generation_id,
+        return wrap_assembler_result(
+            result,
+            workpiece,
+            laser,
+            generation_id,
+            set_power=settings.get("power", 0),
         )
 
     @property

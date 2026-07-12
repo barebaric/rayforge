@@ -4,12 +4,15 @@ import cairo
 import numpy as np
 from raygeo.ops import Ops
 from raygeo.ops.assembly.shrinkwrap import shrinkwrap
-from raygeo.ops.types import SectionType
 
 from rayforge.image.tracing import prepare_surface
 from rayforge.pipeline.artifact import WorkPieceArtifact
-from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.producer.base import CutSide, OpsProducer
+from rayforge.pipeline.stage.assembler_helpers import (
+    build_part_vector,
+    make_artifact,
+    wrap_assembler_result,
+)
 from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
@@ -70,56 +73,44 @@ class ShrinkWrapProducer(OpsProducer):
         # 1. Prepare boolean image (Cairo-specific)
         boolean_image = prepare_surface(surface)
 
-        final_ops = Ops()
-        if np.any(boolean_image):
-            part = workpiece.to_part()
-            if part is None:
-                raise ValueError(
-                    "ShrinkWrapProducer: workpiece.to_part() returned None"
-                )
-
-            tolerance = settings.get("arc_tolerance", 0.03)
-            allow_arcs = settings.get(
-                "machine_supports_arcs",
-                settings.get("output_arcs", True),
-            )
-            supports_curves = settings.get("machine_supports_curves", False)
-
-            # 2. The shrinkwrap assembler computes the total offset
-            #    from kerf, path offset, and cut side internally.
-            result = shrinkwrap(
-                part,
-                boolean_image,
-                gravity=self.gravity,
-                kerf_mm=kerf_mm,
-                path_offset_mm=self.path_offset_mm,
-                cut_side=self.cut_side.name.lower(),
-                arc_tolerance=tolerance,
-                allow_arcs=allow_arcs,
-                supports_curves=supports_curves,
+        if not np.any(boolean_image):
+            return make_artifact(
+                Ops(), workpiece, generation_id, is_vector=True
             )
 
-            hull_ops = result.ops
+        part = build_part_vector(workpiece)
+        if part is None:
+            raise ValueError(
+                "ShrinkWrapProducer: workpiece has no vector geometry"
+            )
 
-            # 3. Wrap in sections
-            if hull_ops.len() > 0:
-                final_ops.set_head(laser.uid)
-                final_ops.ops_section_start(
-                    SectionType.VECTOR_OUTLINE, workpiece.uid
-                )
-                final_ops.set_power(settings.get("power", 0))
-                final_ops.extend(hull_ops)
-                final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
+        tolerance = settings.get("arc_tolerance", 0.03)
+        allow_arcs = settings.get(
+            "machine_supports_arcs",
+            settings.get("output_arcs", True),
+        )
+        supports_curves = settings.get("machine_supports_curves", False)
 
-        # 4. Create the artifact. The ops are pre-scaled, so they are
-        #    not scalable in the pipeline cache sense.
-        return WorkPieceArtifact(
-            ops=final_ops,
-            is_scalable=False,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=workpiece.size,
-            generation_size=workpiece.size,
-            generation_id=generation_id,
+        # 2. The shrinkwrap assembler computes the total offset
+        #    from kerf, path offset, and cut side internally.
+        result = shrinkwrap(
+            part,
+            boolean_image,
+            gravity=self.gravity,
+            kerf_mm=kerf_mm,
+            path_offset_mm=self.path_offset_mm,
+            cut_side=self.cut_side.name.lower(),
+            arc_tolerance=tolerance,
+            allow_arcs=allow_arcs,
+            supports_curves=supports_curves,
+        )
+
+        return wrap_assembler_result(
+            result,
+            workpiece,
+            laser,
+            generation_id,
+            set_power=settings.get("power", 0),
         )
 
     @property
