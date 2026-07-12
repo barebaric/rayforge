@@ -2,7 +2,7 @@
 name = "rayforge"
 version = "0.1.0"
 channels = ["conda-forge", "bioconda", "msys2", "coastline"]
-platforms = ["linux-64"]
+platforms = ["linux-64", "osx-arm64"]
 
 [environments]
 default = { features = ["app", "test"], solve-group = "default" }
@@ -19,12 +19,14 @@ gettext = "*"
 gobject-introspection = "*"
 gtk4 = "*"
 libheif = "*"
+libvips = "*"
 openslide = "*"
 poppler = "*"
 python = ">=3.11"
 librsvg = ">=2.58.4,<3"
 svgelements = ">=1.9.6,<2"
-scipy = "*"
+scipy = "==1.17.1"
+numpy = "~=2.4.3"
 pycairo = "==1.28.0"
 PyOpenGL = "==3.1.10"
 PyOpenGL-accelerate = "==3.1.10"
@@ -56,7 +58,6 @@ vtracer = "==0.6.11"
 websockets = "==14.2"
 
 [feature.app.target.linux-64.dependencies]
-libvips = "*"
 xorg-xproto = "*"
 xorg-libx11 = "*"
 xorg-kbproto = "*"
@@ -155,8 +156,10 @@ cmd = "bash scripts/build-deb.sh --source"
 depends-on = ["compile-translations"]
 
 [dependencies]
-libglvnd = ">=1.7.0,<2"
 libadwaita = ">=1.8.4,<2"
+
+[target.linux-64.dependencies]
+libglvnd = ">=1.7.0,<2"
 
 # Tasks for developing and generating the website
 [feature.website.tasks]

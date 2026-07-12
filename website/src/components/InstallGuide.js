@@ -504,8 +504,8 @@ function LinuxPixiInstall() {
         </Translate>
       </p>
 
-      <Admonition type="info" title={translate({ id: 'install.linuxOnly', message: 'Linux Only' })}>
-        <Translate id="install.pixi.linuxOnly">Pixi installation is currently only available on Linux.</Translate>
+      <Admonition type="info" title={translate({ id: 'install.pixiPlatforms', message: 'Supported Platforms' })}>
+        <Translate id="install.pixi.platforms">Pixi installation is supported on Linux and macOS (Apple Silicon / osx-arm64). Windows is not yet supported.</Translate>
       </Admonition>
 
       <div className="install-step">
