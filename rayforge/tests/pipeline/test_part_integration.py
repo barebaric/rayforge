@@ -1,10 +1,9 @@
 """Integration tests: Part-based workflow end-to-end."""
 
 import pytest
-from raygeo import Part
 from raygeo.geo import Geometry
+from raygeo.ops.part import Part
 from raygeo.ops.assembly.profile import profile_inner
-from raygeo.ops.cut.cleared_area import ClearedArea
 from raygeo.cnc.machining.plan import Workplan
 
 
@@ -43,14 +42,11 @@ def test_part_without_geometry():
 
 def test_profile_inner_with_part_produces_ops():
     """profile_inner accepts a Part and returns ops."""
-    geo = create_rect(0, 0, 100, 50)
-    part = Part(geometry=geo, size_mm=(100, 50))
-
     boundary = [(0, 0), (100, 0), (100, 50), (0, 50)]
-    cleared = ClearedArea(boundary)
+    part = Part.from_polygons(boundary, size_mm=(100, 50))
+
     result = profile_inner(
         part,
-        cleared,
         tool_radius=0.0,
         step_over=1.0,
         target_z=0.0,
@@ -84,15 +80,11 @@ def test_workplan_from_part_no_geometry():
 def test_profile_inner_produces_same_ops_equivalently():
     """profile_inner works the same whether geometry comes from Part or
     is passed inline."""
-    geo = create_rect(0, 0, 100, 50)
-    part = Part(geometry=geo, size_mm=(100, 50))
-
     boundary = [(0, 0), (100, 0), (100, 50), (0, 50)]
-    cleared = ClearedArea(boundary)
+    part = Part.from_polygons(boundary, size_mm=(100, 50))
 
     result = profile_inner(
         part,
-        cleared,
         tool_radius=0.0,
         step_over=1.0,
         target_z=0.0,
@@ -137,11 +129,8 @@ def test_part_with_workpiece_flow():
     assert part.size_mm == (20, 20)
 
     # Use Part with assembler
-    boundary = [(0, 0), (20, 0), (20, 20), (0, 20)]
-    cleared = ClearedArea(boundary)
     result = profile_inner(
         part,
-        cleared,
         tool_radius=0.0,
         step_over=1.0,
         target_z=0.0,
