@@ -79,15 +79,18 @@ class TelnetTransport(Transport):
                 await self._connection_task
             except asyncio.CancelledError:
                 pass  # Expected
-            # _manage_connection's finally block already closed the writer
-            # and sent DISCONNECTED.
+            self._connection_task = None
+
+        if self.writer is None:
+            # Already cleaned up by _manage_connection's finally block,
+            # unless the task never got to run before being cancelled.
             return
-        if self.writer:
-            self.writer.close()
-            try:
-                await self.writer.wait_closed()
-            except ConnectionResetError:
-                pass  # The other end might have already closed it.
+
+        self.writer.close()
+        try:
+            await self.writer.wait_closed()
+        except (ConnectionResetError, OSError):
+            pass  # The other end might have already closed it.
         self.writer = None
         self.reader = None
         self.status_changed.send(self, status=TransportStatus.DISCONNECTED)
