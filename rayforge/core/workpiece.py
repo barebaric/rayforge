@@ -26,8 +26,8 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
-from raygeo import Part
 from raygeo.geo import Geometry, Matrix
+from raygeo.ops.part import Part
 from raygeo.geo.types import Point, Rect
 
 from ..context import get_context

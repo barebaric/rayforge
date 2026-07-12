@@ -1,8 +1,8 @@
 import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-from raygeo import Part
 from raygeo.cnc.machining.plan import Workplan
+from raygeo.ops.part import Part
 from raygeo.cnc.machining.wavefront import build_wavefront_workplan
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.shape.polygon import is_point_inside_polygon

@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import cairo
 import numpy as np
-from raygeo import Part
 from raygeo.image import compute_auto_levels, normalize_grayscale
+from raygeo.ops.part import Part
 from raygeo.image.scan import ScanMode
 from raygeo.ops import Ops
 from raygeo.ops.assembly.raster import raster

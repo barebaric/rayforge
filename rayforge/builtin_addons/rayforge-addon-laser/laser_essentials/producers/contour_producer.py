@@ -3,8 +3,8 @@ from enum import Enum, auto
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from raygeo import Part
 from raygeo.geo import Geometry, Matrix
+from raygeo.ops.part import Part
 from raygeo.ops import Ops
 from raygeo.ops.assembly.contour import contour
 from raygeo.ops.types import SectionType
