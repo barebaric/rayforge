@@ -28,9 +28,7 @@ class WavefrontStep(Step):
     def get_default_transformers_dicts(cls) -> Tuple[List, List]:
         CropTransformer = transformer_registry.get("CropTransformer")
         Optimize = transformer_registry.get("Optimize")
-        MultiPassTransformer = transformer_registry.get(
-            "MultiPassTransformer"
-        )
+        MultiPassTransformer = transformer_registry.get("MultiPassTransformer")
         assert CropTransformer is not None
         assert Optimize is not None
         assert MultiPassTransformer is not None

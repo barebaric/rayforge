@@ -79,9 +79,7 @@ class ContourProducer(OpsProducer):
 
     @staticmethod
     def _empty_artifact(workpiece, generation_id):
-        return make_artifact(
-            Ops(), workpiece, generation_id, is_vector=True
-        )
+        return make_artifact(Ops(), workpiece, generation_id, is_vector=True)
 
     @property
     def requires_full_render(self) -> bool:

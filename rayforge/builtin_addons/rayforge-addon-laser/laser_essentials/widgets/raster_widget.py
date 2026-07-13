@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 from gi.repository import Adw, GLib, GObject, Gtk
-from raygeo.image import compute_auto_levels
+from raygeo.image.grayscale import compute_auto_levels
 
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.image.util import (

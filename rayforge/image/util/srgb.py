@@ -10,7 +10,7 @@ from typing import Tuple
 
 import cv2
 import numpy as np
-from raygeo.image import linear_to_srgb, srgb_to_linear
+from raygeo.image.srgb import linear_to_srgb, srgb_to_linear
 
 
 def create_lut_from_color(

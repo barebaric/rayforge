@@ -4,7 +4,7 @@ Transparency manipulation utilities for Cairo surfaces.
 
 import cairo
 import numpy
-from raygeo.image import (
+from raygeo.image.transparency import (
     make_transparent_by_brightness,
     make_transparent_except_color,
 )

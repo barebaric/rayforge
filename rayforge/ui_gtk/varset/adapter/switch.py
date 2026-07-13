@@ -23,9 +23,7 @@ class SwitchAdapter(RowAdapter):
         if var.description:
             row.set_subtitle(var.description)
         initial_val = getattr(var, target_property)
-        row.set_active(
-            bool(initial_val) if initial_val is not None else False
-        )
+        row.set_active(bool(initial_val) if initial_val is not None else False)
         return row, cls(row)
 
     def get_value(self) -> Optional[Any]:
