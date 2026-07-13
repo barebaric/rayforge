@@ -260,10 +260,10 @@ class Rasterizer(OpsProducer):
 
                 # Build Part with pixels_per_mm for the raster assembler
                 part = build_part_raster(workpiece, pixels_per_mm)
+                part.image = image
 
                 result = raster(
                     part,
-                    image,
                     alpha=(
                         (alpha * 255).astype(np.uint8)
                         if alpha is not None

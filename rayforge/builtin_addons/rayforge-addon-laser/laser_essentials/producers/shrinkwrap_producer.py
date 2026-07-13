@@ -93,9 +93,9 @@ class ShrinkWrapProducer(OpsProducer):
 
         # 2. The shrinkwrap assembler computes the total offset
         #    from kerf, path offset, and cut side internally.
+        part.image = boolean_image
         result = shrinkwrap(
             part,
-            boolean_image,
             gravity=self.gravity,
             kerf_mm=kerf_mm,
             path_offset_mm=self.path_offset_mm,
