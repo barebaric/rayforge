@@ -142,6 +142,7 @@ class GcodeContext:
         return {
             # Machine Control
             "laser_on": {"power"},
+            "focus_laser_on": {"power"},
             "laser_off": set(),
             "tool_change": {"tool_number"},
             "set_speed": {"speed"},
@@ -154,9 +155,11 @@ class GcodeContext:
             "clear_alarm": set(),
             "set_wcs_offset": {"p_num", "x", "y", "z"},
             "probe_cycle": {"axis_letter", "max_travel", "feed_rate"},
+            "dwell": {"seconds", "milliseconds"},
             # Movement
-            "travel_move": move_vars,
+            "travel_move": move_vars | {"s_command"},
             "linear_move": cut_vars,
             "arc_cw": cut_vars,
             "arc_ccw": cut_vars,
+            "bezier_cubic": cut_vars | {"p", "q"},
         }

@@ -108,6 +108,102 @@ Gravieren. Überprüfe die Einstellungsseite deines Dialekts auf diese Option.
 
 ---
 
+## Vorlagen-Platzhalter
+
+Beim Erstellen oder Bearbeiten eines benutzerdefinierten Dialekts verwenden
+alle Befehlsvorlagen
+[Python-Formatierungsstrings](https://docs.python.org/3/library/string.html#format-string-syntax)
+mit Platzhaltern, um dynamische Werte einzufügen. Verwende die Syntax `{name}`
+oder `{name:.0f}` (z.B. `{power:.0f}` für eine Ganzzahl ohne Nachkommastellen).
+
+### Verfügbare Platzhalter nach Vorlage
+
+| Vorlage               | Platzhalter                                                                                                  |
+| --------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Laser Ein**         | `power`                                                                                                      |
+| **Fokus-Laser Ein**   | `power`                                                                                                      |
+| **Laser Aus**         | _(keine)_                                                                                                    |
+| **Werkzeugwechsel**   | `tool_number`                                                                                                |
+| **Geschw. setzen**    | `speed`                                                                                                      |
+| **Hub-Bewegung**      | `x`, `y`, `z`, `x_cmd`, `y_cmd`, `z_cmd`, `extra_cmd`, `f_command`, `s_command`                              |
+| **Linear-Bewegung**   | `x`, `y`, `z`, `x_cmd`, `y_cmd`, `z_cmd`, `extra_cmd`, `f_command`, `s_command`, `i`, `j`, `power`           |
+| **Bogen (CW)**        | `x`, `y`, `z`, `x_cmd`, `y_cmd`, `z_cmd`, `extra_cmd`, `f_command`, `s_command`, `i`, `j`, `power`           |
+| **Bogen (CCW)**       | `x`, `y`, `z`, `x_cmd`, `y_cmd`, `z_cmd`, `extra_cmd`, `f_command`, `s_command`, `i`, `j`, `power`           |
+| **Bézier-Kubisch**    | `x`, `y`, `z`, `x_cmd`, `y_cmd`, `z_cmd`, `extra_cmd`, `f_command`, `s_command`, `i`, `j`, `p`, `q`, `power` |
+| **Luft An/Aus**       | _(keine)_                                                                                                    |
+| **Alle homen**        | _(keine)_                                                                                                    |
+| **Achse home**        | `axis_letter`                                                                                                |
+| **Bewegen zu**        | `speed`, `x`, `y`, `z`                                                                                       |
+| **Jog**               | `speed`                                                                                                      |
+| **Alarm löschen**     | _(keine)_                                                                                                    |
+| **WCS-Offset setzen** | `p_num`, `x`, `y`, `z`                                                                                       |
+| **Proben-Zyklus**     | `axis_letter`, `max_travel`, `feed_rate`                                                                     |
+| **Verweilen**         | `seconds`, `milliseconds`                                                                                    |
+
+### Platzhalter-Referenz
+
+#### Koordinaten
+
+| Platzhalter | Beschreibung                                                                                                                                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x`         | Ziel-X-Koordinate als Float (z.B. `100.0`)                                                                                                  |
+| `y`         | Ziel-Y-Koordinate als Float (z.B. `200.0`)                                                                                                  |
+| `z`         | Ziel-Z-Koordinate als Float (z.B. `5.0`)                                                                                                    |
+| `x_cmd`     | X-Achsen-Befehlsstring, z.B. `" X100.0"`. Wird bei unverändertem Wert weggelassen (wenn „Unveränderte Koordinaten auslassen" aktiviert ist) |
+| `y_cmd`     | Y-Achsen-Befehlsstring, z.B. `" Y200.0"`. Wird bei unverändertem Wert weggelassen                                                           |
+| `z_cmd`     | Z-Achsen-Befehlsstring, z.B. `" Z5.0"`. Wird bei unverändertem Wert weggelassen                                                             |
+| `extra_cmd` | Befehlsstring für zusätzliche Achsen (A, B, C), z.B. `" A90.0"`. Leer, wenn keine zusätzlichen Achsen konfiguriert sind                     |
+
+#### Bewegung
+
+| Platzhalter | Beschreibung                                                                                                              |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `f_command` | Vorschub-Befehlsstring, z.B. `" F3000"`. Wird bei modalem und unverändertem Wert weggelassen                              |
+| `s_command` | Spindel-/Leistungs-Befehlsstring, z.B. `" S500"`. Verwendet in dynamischen/Raster-Modi und im kontinuierlichen Lasermodus |
+| `i`         | Bogen- oder Bézier-Kontrollpunkt X-Offset von der Startposition                                                           |
+| `j`         | Bogen- oder Bézier-Kontrollpunkt Y-Offset von der Startposition                                                           |
+| `p`         | Zweiter Bézier-Kontrollpunkt X-Offset von der Endposition (nur Bézier-Kubisch)                                            |
+| `q`         | Zweiter Bézier-Kontrollpunkt Y-Offset von der Endposition (nur Bézier-Kubisch)                                            |
+
+#### Leistung und Geschwindigkeit
+
+| Platzhalter   | Beschreibung                                                                                  |
+| ------------- | --------------------------------------------------------------------------------------------- |
+| `power`       | Absolute Laserleistung als Float. Unterstützt Formatierung, z.B. `{power:.0f}` für Ganzzahlen |
+| `speed`       | Geschwindigkeitswert (für Bewegen-zu- und Jog-Befehle)                                        |
+| `tool_number` | Werkzeug-/Laserkopf-Nummer                                                                    |
+
+#### Maschine und Probing
+
+| Platzhalter   | Beschreibung                                                                    |
+| ------------- | ------------------------------------------------------------------------------- |
+| `axis_letter` | Einzelner Achsenbuchstabe, z.B. `"X"`, `"Y"`, `"Z"` (für Achse home und Proben) |
+| `p_num`       | WCS P-Nummer (z.B. `1` für G54)                                                 |
+| `max_travel`  | Maximaler Proben-Verfahrweg (nur Proben-Zyklus)                                 |
+| `feed_rate`   | Proben-Vorschub (nur Proben-Zyklus)                                             |
+
+#### Verweilen
+
+| Platzhalter    | Beschreibung                                             |
+| -------------- | -------------------------------------------------------- |
+| `seconds`      | Verweildauer in Sekunden als Float (z.B. `1.5`)          |
+| `milliseconds` | Verweildauer in Millisekunden als Ganzzahl (z.B. `1500`) |
+
+### Tipps
+
+- **Formatierungsspezifikationen** werden unterstützt: `{power:.0f}` formatiert Leistung als Ganzzahl,
+  `{power:.2f}` mit zwei Nachkommastellen.
+- Die Einstellung **„Unveränderte Koordinaten auslassen"** steuert, ob `x_cmd`, `y_cmd`
+  und `z_cmd` leer bleiben, wenn sich die Achsenposition seit dem letzten Befehl
+  nicht geändert hat. Dies reduziert die G-Code-Größe.
+- Die Einstellung **„Modaler Vorschub"** steuert, ob `f_command` weggelassen wird,
+  wenn sich der Vorschub nicht geändert hat.
+- Lass ein Vorlagenfeld **leer**, um diesen Befehl vollständig zu überspringen
+  (z.B. `bezier_cubic` auf `""` setzen, um native Bézier-Ausgabe zu deaktivieren
+  und auf Linearisierung zurückzugreifen).
+
+---
+
 ## Verwandte Seiten
 
 - [G-Code exportieren](../files/exporting.md) - Exporteinstellungen
