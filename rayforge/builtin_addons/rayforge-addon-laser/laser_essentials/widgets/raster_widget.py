@@ -372,6 +372,29 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
         group.add(self.sample_interval_row)
 
+        bidir_x_offset_adj = Gtk.Adjustment(
+            lower=-5.0,
+            upper=5.0,
+            step_increment=0.01,
+            value=producer.bidir_x_offset_mm,
+        )
+        self.bidir_x_offset_row = Adw.SpinRow(
+            title=_("Bidirectional Scan Offset"),
+            subtitle=_(
+                "Corrects X misalignment between left-to-right and "
+                "right-to-left raster passes (in mm)"
+            ),
+            adjustment=bidir_x_offset_adj,
+            digits=3,
+        )
+        self.bidir_x_offset_row.connect(
+            "changed",
+            lambda r: self._debounce(
+                self._on_bidir_x_offset_changed, get_spinrow_float(r)
+            ),
+        )
+        group.add(self.bidir_x_offset_row)
+
         self.invert_row = Adw.SwitchRow(
             title=_("Invert"),
             subtitle=_("Engrave white areas instead of black areas"),
@@ -593,6 +616,9 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         if value is not None and value <= 0:
             value = None
         self._on_param_changed("sample_interval_mm", value)
+
+    def _on_bidir_x_offset_changed(self, value: Optional[float]):
+        self._on_param_changed("bidir_x_offset_mm", value or 0.0)
 
     def _on_param_changed(self, key: str, value: Any):
         target_dict = self.target_dict.setdefault("params", {})

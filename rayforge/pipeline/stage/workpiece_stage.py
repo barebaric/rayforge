@@ -121,6 +121,10 @@ class WorkPiecePipelineStage(PipelineStage):
         settings["driver_native_overscan"] = (
             self._machine.driver.native_overscan
         )
+        producer_params = (step.opsproducer_dict or {}).get("params", {})
+        settings["bidir_x_offset_mm"] = producer_params.get(
+            "bidir_x_offset_mm", 0.0
+        )
 
         try:
             selected_laser = step.get_selected_laser(self._machine)
