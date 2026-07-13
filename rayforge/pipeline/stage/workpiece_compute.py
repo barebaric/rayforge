@@ -398,6 +398,18 @@ def _process_raster_chunk(
     return chunk_artifact, progress
 
 
+def _has_no_fills(workpiece: WorkPiece) -> bool:
+    """Check if a workpiece has vector geometry but no fills.
+
+    Returns True for geometry-provider-based workpieces (e.g. sketches)
+    that contain only stroked lines with no filled regions. Such
+    workpieces should be handled by the vector pipeline, not rasterized.
+    Returns False for image workpieces and workpieces with fills.
+    """
+    fills = workpiece.fills
+    return fills is not None and len(fills) == 0
+
+
 def _execute_raster(
     workpiece: WorkPiece,
     opsproducer: OpsProducer,
@@ -425,6 +437,9 @@ def _execute_raster(
     size = workpiece.size
 
     if not _validate_workpiece_size(size):
+        return
+
+    if _has_no_fills(workpiece):
         return
 
     px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]

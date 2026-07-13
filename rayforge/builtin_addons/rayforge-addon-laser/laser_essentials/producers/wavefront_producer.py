@@ -1,15 +1,14 @@
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from raygeo.ops import Ops
+from raygeo.ops.assembly import AssemblyResult
 from raygeo.ops.assembly.wavefront import adaptive_wavefronts_multi_pocket
-from raygeo.ops.types import SectionType
 
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.pipeline.stage.assembler_helpers import (
     build_part_vector,
-    make_artifact,
+    wrap_assembler_result,
 )
 from rayforge.shared.tasker.progress import ProgressContext
 
@@ -53,7 +52,6 @@ class WavefrontProducer(OpsProducer):
         if workpiece is None:
             raise ValueError("WavefrontProducer requires a workpiece context.")
 
-        tool_radius = laser.spot_size_mm[0] / 2.0
         step_over = (
             self.step_over_mm
             if self.step_over_mm is not None
@@ -70,23 +68,23 @@ class WavefrontProducer(OpsProducer):
             normalize_windings=True,
         )
         if part is None or not part.has_geometry():
-            logger.error(
-                "WavefrontProducer: build_part_vector returned no geometry"
-                " for '%s'",
+            logger.warning(
+                "WavefrontProducer: no geometry available for '%s' — "
+                "returning empty artifact",
                 workpiece.name,
             )
-            raise ValueError(
-                "WavefrontProducer could not derive vector geometry. "
-                "No workpiece boundaries and surface tracing yielded "
-                "no contours."
+            return wrap_assembler_result(
+                AssemblyResult(),
+                workpiece,
+                laser,
+                generation_id,
             )
 
         logger.info(
             "WavefrontProducer: calling adaptive_wavefronts_multi_pocket for"
-            " '%s' (tr=%.2f, step=%.2f, off=%.2f, tol=%.4f, prec=%.4f,"
+            " '%s' (step=%.2f, off=%.2f, tol=%.4f, prec=%.4f,"
             " feed=%d, pwr=%.2f)",
             workpiece.name,
-            tool_radius,
             step_over,
             self.offset_mm,
             self.area_tolerance,
@@ -104,10 +102,9 @@ class WavefrontProducer(OpsProducer):
                 cut_feed_rate=cut_feed_rate,
                 cut_power=cut_power,
             )
-            result_ops = result.ops
             logger.info(
                 "WavefrontProducer: returned %d ops for '%s'",
-                result_ops.len(),
+                result.ops.len(),
                 workpiece.name,
             )
         except Exception:
@@ -116,16 +113,18 @@ class WavefrontProducer(OpsProducer):
                 "for workpiece '%s'",
                 workpiece.name,
             )
-            result_ops = Ops()
+            return wrap_assembler_result(
+                AssemblyResult(),
+                workpiece,
+                laser,
+                generation_id,
+            )
 
-        final_ops = Ops()
-        final_ops.set_head(laser.uid)
-        final_ops.ops_section_start(SectionType.VECTOR_OUTLINE, workpiece.uid)
-        final_ops.extend(result_ops)
-        final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-
-        return make_artifact(
-            final_ops, workpiece, generation_id, is_vector=True
+        return wrap_assembler_result(
+            result,
+            workpiece,
+            laser,
+            generation_id,
         )
 
     def to_dict(self) -> dict:

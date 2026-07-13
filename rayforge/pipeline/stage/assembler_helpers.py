@@ -10,7 +10,8 @@ needing producer class instances.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional, Tuple
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 from raygeo.geo import Geometry, Matrix
 from raygeo.ops import Ops
@@ -30,6 +31,65 @@ if TYPE_CHECKING:
     from ...machine.models.laser import Laser
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class MachineDefaults:
+    """Resolved machine-level defaults for assembler parameters.
+
+    Every producer currently inlines its own resolution of these
+    values from the ``Laser`` model and the step ``settings`` dict.
+    This dataclass centralises that logic so callers can resolve
+    once and pass the result through.
+    """
+
+    kerf_mm: float
+    arc_tolerance: float
+    allow_arcs: bool
+    supports_curves: bool
+    line_interval_mm: float
+    step_power: float
+    tool_radius: float
+    step_over: float
+
+
+def resolve_machine_defaults(
+    laser: Laser,
+    settings: Optional[Dict[str, Any]] = None,
+) -> MachineDefaults:
+    """Resolve machine defaults from a Laser model and step settings.
+
+    Resolution order for each field mirrors the existing per-producer
+    logic:
+
+    * ``kerf_mm`` — ``settings["kerf_mm"]`` → ``laser.spot_size_mm[0]``
+    * ``arc_tolerance`` — ``settings["arc_tolerance"]`` → ``0.03``
+    * ``allow_arcs`` — ``settings["machine_supports_arcs"]`` →
+      ``settings["output_arcs"]`` → ``True``
+    * ``supports_curves`` — ``settings["machine_supports_curves"]`` →
+      ``False``
+    * ``line_interval_mm`` — ``laser.spot_size_mm[1]``
+    * ``step_power`` — ``settings["power"]`` → ``1.0``
+    * ``tool_radius`` — ``laser.spot_size_mm[0] / 2``
+    * ``step_over`` — ``laser.spot_size_mm[0]``
+    """
+    s = settings or {}
+
+    spot_x = laser.spot_size_mm[0]
+    spot_y = laser.spot_size_mm[1]
+
+    return MachineDefaults(
+        kerf_mm=s.get("kerf_mm", spot_x),
+        arc_tolerance=s.get("arc_tolerance", 0.03),
+        allow_arcs=s.get(
+            "machine_supports_arcs", s.get("output_arcs", True)
+        ),
+        supports_curves=s.get("machine_supports_curves", False),
+        line_interval_mm=spot_y,
+        step_power=s.get("power", 1.0),
+        tool_radius=spot_x / 2.0,
+        step_over=spot_x,
+    )
 
 
 def _trace_surface_to_mm_geometry(
@@ -221,6 +281,7 @@ def wrap_assembler_result(
     set_power: Optional[float] = None,
     is_vector: bool = True,
     source_dimensions: Optional[Tuple[float, float]] = None,
+    always_wrap: bool = False,
 ) -> WorkPieceArtifact:
     """Wrap an ``AssemblyResult`` into a ``WorkPieceArtifact``.
 
@@ -252,9 +313,11 @@ def wrap_assembler_result(
     """
     final_ops = Ops()
 
-    if result.ops.len() > 0:
+    has_ops = result.ops.len() > 0
+    if has_ops:
         final_ops.set_head(laser.uid)
 
+    if always_wrap or has_ops:
         if split_contours:
             contour_geo = result.ops.to_geometry()
             contour_list = contour_geo.split_into_contours()
