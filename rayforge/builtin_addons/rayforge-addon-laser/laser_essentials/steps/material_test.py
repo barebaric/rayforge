@@ -76,8 +76,15 @@ class MaterialTestStep(Step):
             transformer_registry.get("OverscanTransformer"),
         )
         assert OverscanTransformer is not None
-        auto_distance = OverscanTransformer.calculate_auto_distance(
-            step.cut_speed, machine.acceleration
+        # Double the usual auto-calculated distance: individual test blocks
+        # benefit from extra run-up/run-out so backlash settling happens
+        # outside the visible engrave area, keeping it distinguishable from
+        # whatever parameter the grid is testing.
+        auto_distance = (
+            OverscanTransformer.calculate_auto_distance(
+                step.cut_speed, machine.acceleration
+            )
+            * 2
         )
         for t in per_wp:
             if t.get("name") == "OverscanTransformer":
