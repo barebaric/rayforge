@@ -97,7 +97,6 @@ class WavefrontProducer(OpsProducer):
         try:
             result = adaptive_wavefronts_multi_pocket(
                 part,
-                tool_radius=tool_radius,
                 step_over=step_over,
                 offset_mm=self.offset_mm,
                 area_tolerance=self.area_tolerance,
@@ -121,9 +120,7 @@ class WavefrontProducer(OpsProducer):
 
         final_ops = Ops()
         final_ops.set_head(laser.uid)
-        final_ops.ops_section_start(
-            SectionType.VECTOR_OUTLINE, workpiece.uid
-        )
+        final_ops.ops_section_start(SectionType.VECTOR_OUTLINE, workpiece.uid)
         final_ops.extend(result_ops)
         final_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 

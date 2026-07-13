@@ -68,9 +68,7 @@ class FrameProducer(OpsProducer):
         #    offset, and cut side internally.
         part = build_part_vector(workpiece)
         if part is None:
-            raise ValueError(
-                "FrameProducer: workpiece has no vector geometry"
-            )
+            raise ValueError("FrameProducer: workpiece has no vector geometry")
 
         result = frame(
             part,

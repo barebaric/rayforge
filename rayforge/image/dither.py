@@ -3,11 +3,11 @@
 from enum import Enum
 
 import numpy as np
-from raygeo.image import (
+from raygeo.image.convert import rgba_to_grayscale
+from raygeo.image.dither import (
     apply_bayer_dither,
     apply_floyd_steinberg_dither,
     apply_minimum_run_length,
-    rgba_to_grayscale,
 )
 
 

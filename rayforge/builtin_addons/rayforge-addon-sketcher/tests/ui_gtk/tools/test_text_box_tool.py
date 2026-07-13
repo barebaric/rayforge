@@ -96,9 +96,7 @@ def test_text_box_tool_on_press_outside_box_creates_new(
     mock_entity.width_id = 1
     mock_entity.height_id = 2
     mock_entity.content = "Test Text"
-    mock_entity.font_config = FontConfig(
-        family="sans-serif", size=10.0
-    )
+    mock_entity.font_config = FontConfig(family="sans-serif", size=10.0)
 
     new_entity = TextBoxEntity(
         6, 0, 1, 2, content="", construction_line_ids=[]
@@ -236,9 +234,7 @@ def test_text_box_tool_handle_key_event_return(text_box_tool, mock_element):
 
     mock_entity = Mock()
     mock_entity.id = 5
-    mock_entity.font_config = FontConfig(
-        family="sans-serif", size=10.0
-    )
+    mock_entity.font_config = FontConfig(family="sans-serif", size=10.0)
     mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
 
     result = text_box_tool.handle_key_event(SketcherKey.RETURN)
@@ -302,9 +298,7 @@ def test_text_box_tool_start_editing(text_box_tool, mock_element):
     mock_entity = TextBoxEntity(
         5, 0, 1, 2, content="Existing text", construction_line_ids=[]
     )
-    mock_entity.font_config = FontConfig(
-        family="sans-serif", size=10.0
-    )
+    mock_entity.font_config = FontConfig(family="sans-serif", size=10.0)
     mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
 
     text_box_tool.start_editing(5)
@@ -401,9 +395,7 @@ def test_text_box_tool_is_click_inside_box(text_box_tool, mock_element):
     mock_entity = TextBoxEntity(
         5, 0, 1, 2, content="", construction_line_ids=[]
     )
-    mock_entity.font_config = FontConfig(
-        family="sans-serif", size=10.0
-    )
+    mock_entity.font_config = FontConfig(family="sans-serif", size=10.0)
 
     mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
 

@@ -210,9 +210,7 @@ def test_add_text_box(registry):
     assert tb.width_id == p2
     assert tb.height_id == p3
     assert tb.content == "Hello World"
-    assert tb.font_config == FontConfig(
-        family="sans-serif", size=10.0
-    )
+    assert tb.font_config == FontConfig(family="sans-serif", size=10.0)
 
 
 def test_add_text_box_with_default_font_params(registry):

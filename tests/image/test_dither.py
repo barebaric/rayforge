@@ -1,6 +1,9 @@
 import cairo
 import numpy as np
-from raygeo.image import apply_bayer_dither, apply_floyd_steinberg_dither
+from raygeo.image.dither import (
+    apply_bayer_dither,
+    apply_floyd_steinberg_dither,
+)
 
 from rayforge.image.dither import (
     BAYER_MATRICES,

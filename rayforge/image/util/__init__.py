@@ -9,7 +9,7 @@ This module provides utilities for:
 - Unit conversion and layout (unit module)
 """
 
-from raygeo.image import compute_auto_levels, normalize_grayscale
+from raygeo.image.grayscale import compute_auto_levels, normalize_grayscale
 
 from .cairo_util import rgba_to_cairo_surface
 from .grayscale import (
