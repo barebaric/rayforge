@@ -1241,6 +1241,16 @@ class TestScanModeSerialization:
         assert recreated.scan_angle == 45.0
         assert recreated.depth_mode == DepthMode.POWER_MODULATION
 
+    def test_to_dict_roundtrip_preserves_bidir_x_offset_mm(self):
+        original = Rasterizer(bidir_x_offset_mm=0.35)
+        data = original.to_dict()
+        assert data["params"]["bidir_x_offset_mm"] == 0.35
+        recreated = Rasterizer.from_dict(data)
+        assert recreated.bidir_x_offset_mm == 0.35
+
+    def test_bidir_x_offset_mm_defaults_to_zero(self):
+        assert Rasterizer().bidir_x_offset_mm == 0.0
+
     def test_backward_compat_segmented_upper(self):
         data = {
             "type": "Rasterizer",

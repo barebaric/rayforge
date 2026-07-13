@@ -192,10 +192,23 @@ For images, line interval should match or exceed image resolution. If your image
 
 **Bidirectional Scanning:**
 
-- **Enabled:** Laser engraves in both directions (left-to-right and right-to-left), doubling speed
-- **Disabled:** Laser only engraves left-to-right, returning without firing between lines
+Rayforge always scans bidirectionally (left-to-right, then right-to-left), since firing on every pass roughly doubles engraving speed compared to returning without firing between lines.
 
-Bidirectional scanning is faster because the laser fires on every pass. However, slight mechanical differences between directions can cause visible banding on some materials. For critical quality work, especially on photos, disable bidirectional scanning for more consistent results.
+Slight mechanical or firing delay differences between the two directions can cause visible banding on some machines. If you see this, calibrate the **Bidirectional Scan Offset** below to correct it directly, rather than losing the speed benefit.
+
+### Bidirectional Scan Offset
+
+Corrects a fixed mechanical or firing delay skew between left-to-right and right-to-left raster passes, which otherwise misaligns alternate scan rows (visible as banding, especially in photo engraves).
+
+- Set in millimeters, positive or negative depending on which direction needs to shift
+- Applies a constant shift regardless of speed; if the skew varies with speed, calibrate for your typical engraving speed
+- Defaults to 0 (no correction)
+
+**Calibrating the offset:**
+
+1. Engrave a test pattern with visible vertical detail (e.g. a fine grid) using bidirectional scanning
+2. Compare alternate rows to find the direction and amount of misalignment
+3. Adjust the offset in small increments (0.01-0.05mm) and re-test until alternating rows line up
 
 ### Overscan
 
@@ -353,7 +366,7 @@ Use invert for lithophanes (light areas should be thin) or embossing (raised are
 **For best quality:**
 
 - Use smaller line interval (0.05-0.1mm)
-- Disable bidirectional scanning
+- Calibrate the Bidirectional Scan Offset if you see banding
 - Increase overscan (3-5mm)
 - Use lower power, multiple passes
 - Ensure material is flat and secured
@@ -361,7 +374,6 @@ Use invert for lithophanes (light areas should be thin) or embossing (raised are
 **For faster engraving:**
 
 - Use larger line interval (0.15-0.2mm)
-- Enable bidirectional scanning
 - Minimum overscan (1-2mm)
 - Single pass at higher power
 
@@ -388,7 +400,7 @@ Use invert for lithophanes (light areas should be thin) or embossing (raised are
 
 **Banding (dark/light stripes):**
 
-- Disable bidirectional scanning
+- Calibrate the [Bidirectional Scan Offset](#bidirectional-scan-offset)
 - Check belt tension
 - Reduce speed
 - Try different scan angle
