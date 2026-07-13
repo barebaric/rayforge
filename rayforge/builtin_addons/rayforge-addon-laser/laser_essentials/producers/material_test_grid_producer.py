@@ -9,6 +9,7 @@ from raygeo.ops.assembly.material_test_grid import (
     generate_material_test_grid,
     generate_material_test_grid_preview,
 )
+from raygeo.ops.types import SectionType
 
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
@@ -210,7 +211,11 @@ class MaterialTestGridProducer(OpsProducer):
         )
         main_ops = Ops()
         main_ops.set_head(laser.uid)
+        main_ops.ops_section_start(
+            SectionType.VECTOR_OUTLINE, workpiece.uid
+        )
         main_ops.extend(result.ops)
+        main_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
         return WorkPieceArtifact(
             ops=main_ops,
