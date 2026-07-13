@@ -115,6 +115,101 @@ seu dialeto para esta opção.
 
 ---
 
+## Espaços Reservados de Modelos
+
+Ao criar ou editar um dialeto personalizado, cada modelo de comando utiliza
+[strings de formatação do Python](https://docs.python.org/3/library/string.html#format-string-syntax)
+com espaços reservados para injetar valores dinâmicos. Use a sintaxe `{nome}`
+ou `{nome:.0f}` (ex., `{power:.0f}` para formatar como inteiro sem decimais).
+
+### Espaços Reservados Disponíveis por Modelo
+
+| Modelo                | Espaços Reservados                                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Laser Ligado**      | `power`                                                                                                      |
+| **Laser Foco**        | `power`                                                                                                      |
+| **Laser Desligado**   | _(nenhum)_                                                                                                   |
+| **Troca Ferram.**     | `tool_number`                                                                                                |
+| **Ajustar Vel.**      | `speed`                                                                                                      |
+| **Mov. Rápido**       | `x`, `y`, `z`, `x_cmd`, `y_cmd`, `z_cmd`, `extra_cmd`, `f_command`, `s_command`                              |
+| **Mov. Linear**       | `x`, `y`, `z`, `x_cmd`, `y_cmd`, `z_cmd`, `extra_cmd`, `f_command`, `s_command`, `i`, `j`, `power`           |
+| **Arco (CW)**         | `x`, `y`, `z`, `x_cmd`, `y_cmd`, `z_cmd`, `extra_cmd`, `f_command`, `s_command`, `i`, `j`, `power`           |
+| **Arco (CCW)**        | `x`, `y`, `z`, `x_cmd`, `y_cmd`, `z_cmd`, `extra_cmd`, `f_command`, `s_command`, `i`, `j`, `power`           |
+| **Bézier Cúbico**     | `x`, `y`, `z`, `x_cmd`, `y_cmd`, `z_cmd`, `extra_cmd`, `f_command`, `s_command`, `i`, `j`, `p`, `q`, `power` |
+| **Ar On/Off**         | _(nenhum)_                                                                                                   |
+| **Origem Todos**      | _(nenhum)_                                                                                                   |
+| **Origem Eixo**       | `axis_letter`                                                                                                |
+| **Mover Para**        | `speed`, `x`, `y`, `z`                                                                                       |
+| **Jog**               | `speed`                                                                                                      |
+| **Limpar Alarme**     | _(nenhum)_                                                                                                   |
+| **Ajuste WCS**        | `p_num`, `x`, `y`, `z`                                                                                       |
+| **Ciclo de Sondagem** | `axis_letter`, `max_travel`, `feed_rate`                                                                     |
+| **Espera**            | `seconds`, `milliseconds`                                                                                    |
+
+### Referência dos Espaços Reservados
+
+#### Coordenadas
+
+| Espaço Reservado | Descrição                                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `x`              | Coordenada X alvo como float (ex., `100.0`)                                                                              |
+| `y`              | Coordenada Y alvo como float (ex., `200.0`)                                                                              |
+| `z`              | Coordenada Z alvo como float (ex., `5.0`)                                                                                |
+| `x_cmd`          | String de comando do eixo X, ex., `" X100.0"`. Omitido se inalterado (se "Omitir coordenadas inalteradas" estiver ativo) |
+| `y_cmd`          | String de comando do eixo Y, ex., `" Y200.0"`. Omitido se inalterado                                                     |
+| `z_cmd`          | String de comando do eixo Z, ex., `" Z5.0"`. Omitido se inalterado                                                       |
+| `extra_cmd`      | String de comando para eixos extras (A, B, C), ex., `" A90.0"`. Vazio se nenhum eixo extra estiver configurado           |
+
+#### Movimento
+
+| Espaço Reservado | Descrição                                                                                                       |
+| ---------------- | --------------------------------------------------------------------------------------------------------------- |
+| `f_command`      | String de comando de taxa de avanço, ex., `" F3000"`. Omitido se modal e inalterado                             |
+| `s_command`      | String de comando de spindle/potência, ex., `" S500"`. Usado nos modos dinâmico/raster e em modo laser contínuo |
+| `i`              | Deslocamento X do ponto de controle do arco ou Bézier a partir da posição inicial                               |
+| `j`              | Deslocamento Y do ponto de controle do arco ou Bézier a partir da posição inicial                               |
+| `p`              | Deslocamento X do segundo ponto de controle Bézier a partir da posição final (apenas Bézier Cúbico)             |
+| `q`              | Deslocamento Y do segundo ponto de controle Bézier a partir da posição final (apenas Bézier Cúbico)             |
+
+#### Potência e velocidade
+
+| Espaço Reservado | Descrição                                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------- |
+| `power`          | Valor absoluto de potência do laser como float. Suporta formatação, ex., `{power:.0f}` para inteiros |
+| `speed`          | Valor de velocidade (para comandos Mover Para e Jog)                                                 |
+| `tool_number`    | Número da ferramenta/cabeça do laser                                                                 |
+
+#### Máquina e Sondagem
+
+| Espaço Reservado | Descrição                                                                   |
+| ---------------- | --------------------------------------------------------------------------- |
+| `axis_letter`    | Letra do eixo única, ex., `"X"`, `"Y"`, `"Z"` (para Origem Eixo e Sondagem) |
+| `p_num`          | Número P do WCS (ex., `1` para G54)                                         |
+| `max_travel`     | Distância máxima de deslocamento da sonda (apenas Ciclo de Sondagem)        |
+| `feed_rate`      | Taxa de avanço da sonda (apenas Ciclo de Sondagem)                          |
+
+#### Espera
+
+| Espaço Reservado | Descrição                                                     |
+| ---------------- | ------------------------------------------------------------- |
+| `seconds`        | Duração da espera em segundos como float (ex., `1.5`)         |
+| `milliseconds`   | Duração da espera em milissegundos como inteiro (ex., `1500`) |
+
+### Dicas
+
+- **Especificações de formatação** são suportadas: `{power:.0f}` formata a potência como
+  inteiro, `{power:.2f}` com duas casas decimais.
+- A configuração **«Omitir coordenadas inalteradas»** controla se `x_cmd`, `y_cmd`
+  e `z_cmd` ficam vazios quando a posição do eixo não mudou desde o último comando.
+  Isso reduz o tamanho do G-code.
+- A configuração **«Taxa de Avanço Modal»** controla se `f_command` é omitida quando
+  a taxa de avanço não mudou.
+- Deixe um campo de modelo **vazio** para pular esse comando completamente
+  (ex., definir `bezier_cubic` como `""` desativa a saída Bézier nativa e usa
+  linearização como alternativa).
+
+---
+
 ## Páginas Relacionadas
 
 - [Exportando G-code](../files/exporting.md) - Configurações de exportação

@@ -113,6 +113,101 @@ or engraving. Check your dialect's settings page for this option.
 
 ---
 
+## Template Placeholders
+
+When creating or editing a custom dialect, each command template uses
+[Python format string](https://docs.python.org/3/library/string.html#format-string-syntax)
+placeholders to inject dynamic values. Use `{name}` or `{name:.0f}` syntax
+(e.g., `{power:.0f}` to format as a decimal with no fractional digits).
+
+### Available Placeholders by Template
+
+| Template           | Placeholders                                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------------------------ |
+| **Laser On**       | `power`                                                                                                      |
+| **Focus Laser On** | `power`                                                                                                      |
+| **Laser Off**      | _(none)_                                                                                                     |
+| **Tool Change**    | `tool_number`                                                                                                |
+| **Set Speed**      | `speed`                                                                                                      |
+| **Travel Move**    | `x`, `y`, `z`, `x_cmd`, `y_cmd`, `z_cmd`, `extra_cmd`, `f_command`, `s_command`                              |
+| **Linear Move**    | `x`, `y`, `z`, `x_cmd`, `y_cmd`, `z_cmd`, `extra_cmd`, `f_command`, `s_command`, `i`, `j`, `power`           |
+| **Arc (CW)**       | `x`, `y`, `z`, `x_cmd`, `y_cmd`, `z_cmd`, `extra_cmd`, `f_command`, `s_command`, `i`, `j`, `power`           |
+| **Arc (CCW)**      | `x`, `y`, `z`, `x_cmd`, `y_cmd`, `z_cmd`, `extra_cmd`, `f_command`, `s_command`, `i`, `j`, `power`           |
+| **Bezier Cubic**   | `x`, `y`, `z`, `x_cmd`, `y_cmd`, `z_cmd`, `extra_cmd`, `f_command`, `s_command`, `i`, `j`, `p`, `q`, `power` |
+| **Air On/Off**     | _(none)_                                                                                                     |
+| **Home All**       | _(none)_                                                                                                     |
+| **Home Axis**      | `axis_letter`                                                                                                |
+| **Move To**        | `speed`, `x`, `y`, `z`                                                                                       |
+| **Jog**            | `speed`                                                                                                      |
+| **Clear Alarm**    | _(none)_                                                                                                     |
+| **Set WCS Offset** | `p_num`, `x`, `y`, `z`                                                                                       |
+| **Probe Cycle**    | `axis_letter`, `max_travel`, `feed_rate`                                                                     |
+| **Dwell**          | `seconds`, `milliseconds`                                                                                    |
+
+### Placeholder Reference
+
+#### Coordinates
+
+| Placeholder | Description                                                                                                   |
+| ----------- | ------------------------------------------------------------------------------------------------------------- |
+| `x`         | Target X coordinate as a float (e.g., `100.0`)                                                                |
+| `y`         | Target Y coordinate as a float (e.g., `200.0`)                                                                |
+| `z`         | Target Z coordinate as a float (e.g., `5.0`)                                                                  |
+| `x_cmd`     | X-axis command string, e.g., `" X100.0"`. Omitted when unchanged (if "Omit unchanged coordinates" is enabled) |
+| `y_cmd`     | Y-axis command string, e.g., `" Y200.0"`. Omitted when unchanged                                              |
+| `z_cmd`     | Z-axis command string, e.g., `" Z5.0"`. Omitted when unchanged                                                |
+| `extra_cmd` | Extra axes command string for A, B, C axes (e.g., `" A90.0"`). Empty if no extra axes are configured          |
+
+#### Motion
+
+| Placeholder | Description                                                                                           |
+| ----------- | ----------------------------------------------------------------------------------------------------- |
+| `f_command` | Feedrate command string, e.g., `" F3000"`. Omitted when modal and unchanged                           |
+| `s_command` | Spindle/power command string, e.g., `" S500"`. Used in dynamic/raster modes and continuous laser mode |
+| `i`         | Arc or Bézier control point X offset from start position                                              |
+| `j`         | Arc or Bézier control point Y offset from start position                                              |
+| `p`         | Second Bézier control point X offset from end position (Bezier Cubic only)                            |
+| `q`         | Second Bézier control point Y offset from end position (Bezier Cubic only)                            |
+
+#### Power and Speed
+
+| Placeholder   | Description                                                                                         |
+| ------------- | --------------------------------------------------------------------------------------------------- |
+| `power`       | Absolute laser power value (float). Supports format specifiers, e.g., `{power:.0f}` for no decimals |
+| `speed`       | Speed value (for Move To and Jog commands)                                                          |
+| `tool_number` | Tool/laser head number                                                                              |
+
+#### Machine and Probing
+
+| Placeholder   | Description                                                             |
+| ------------- | ----------------------------------------------------------------------- |
+| `axis_letter` | Single axis letter, e.g., `"X"`, `"Y"`, `"Z"` (for Home Axis and Probe) |
+| `p_num`       | WCS P-number (e.g., `1` for G54)                                        |
+| `max_travel`  | Maximum probe travel distance (Probe Cycle only)                        |
+| `feed_rate`   | Probe feedrate (Probe Cycle only)                                       |
+
+#### Dwell
+
+| Placeholder    | Description                                                 |
+| -------------- | ----------------------------------------------------------- |
+| `seconds`      | Dwell duration in seconds as a float (e.g., `1.5`)          |
+| `milliseconds` | Dwell duration in milliseconds as an integer (e.g., `1500`) |
+
+### Tips
+
+- **Format specifiers** are supported: `{power:.0f}` formats power as an integer,
+  `{power:.2f}` as two decimal places.
+- The **"Omit unchanged coordinates"** setting controls whether `x_cmd`, `y_cmd`,
+  and `z_cmd` are left empty when the axis position has not changed since the
+  last command. This reduces G-code size.
+- The **"Modal Feedrate"** setting controls whether `f_command` is omitted when
+  the feedrate has not changed.
+- Leave a template field **empty** to skip that command entirely (e.g., setting
+  `bezier_cubic` to `""` disables native Bézier output and falls back to
+  linearization).
+
+---
+
 ## Related Pages
 
 - [Exporting G-code](../files/exporting.md) - Export settings
