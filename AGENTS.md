@@ -25,6 +25,21 @@ cause of an issue is in Raygeo, you should fix it there instead of building a
 workaround.
 Source repository: https://github.com/barebaric/raygeo
 
+### Testing with a local Raygeo checkout
+
+A `local-raygeo` pixi environment builds raygeo from a local checkout instead
+of pulling the PyPI wheel.
+
+```bash
+ln -s /path/to/raygeo external/raygeo    # one-time symlink (external/ is gitignored)
+pixi install -e local-raygeo
+pixi run -e local-raygeo rayforge        # run against local raygeo
+pixi run -e local-raygeo test            # test against local raygeo
+pixi run -e local-raygeo rebuild-raygeo  # rebuild after editing raygeo source
+```
+
+To go back to the PyPI raygeo, just use `pixi run rayforge`.
+
 ## Other rules
 
 - Do not run the full test suite prematurely. Fix all linter errors first. Run targeted tests.

@@ -9,6 +9,13 @@ default = { features = ["app", "test"], solve-group = "default" }
 website = { features = ["website"], solve-group = "default" }
 build = { features = ["build-tools"], solve-group = "build" }
 video = { features = ["video-tools"], solve-group = "video" }
+local-raygeo = { features = ["app", "test", "local-raygeo"], solve-group = "local-raygeo" }
+
+[feature.local-raygeo.pypi-options.dependency-overrides]
+raygeo = { path = "external/raygeo", editable = true }
+
+[feature.local-raygeo.tasks]
+rebuild-raygeo = "bash scripts/rebuild-raygeo.sh"
 
 [feature.app.dependencies]
 adwaita-icon-theme = "*"
@@ -36,7 +43,7 @@ rust = "*"
 patchelf = "*"
 
 [feature.app.pypi-dependencies]
-raygeo = "==1.20.0"
+raygeo = "==1.20.1"
 rayforge = { editable = true, path = "." }
 aiohttp = "==3.14.1"
 asyncudp = "==0.11.0"
