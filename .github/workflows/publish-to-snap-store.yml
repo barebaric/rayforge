@@ -37,7 +37,7 @@ jobs:
           environments: build
 
       - name: Compile Translations
-        run: pixi run -e build compile-translations
+        run: pixi run --frozen -e build compile-translations
 
       - name: Build snap
         uses: snapcore/action-build@v1
