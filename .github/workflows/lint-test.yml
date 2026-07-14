@@ -29,14 +29,11 @@ jobs:
           cache: true
           cache-key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
 
-      - name: Setup environment
-        run: pixi install
-
       - name: Compile Translations
-        run: pixi run compile-translations
+        run: pixi run --frozen compile-translations
 
       - name: Run flake8 Lint
-        run: pixi run lint
+        run: pixi run --frozen lint
 
   test-backend:
     name: Backend Tests
@@ -56,14 +53,11 @@ jobs:
           cache: true
           cache-key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
 
-      - name: Setup environment
-        run: pixi install
-
       - name: Compile Translations
-        run: pixi run compile-translations
+        run: pixi run --frozen compile-translations
 
       - name: Run backend tests
-        run: pixi run test -m "not ui and not stress" --log-cli-level=DEBUG
+        run: pixi run --frozen test -m "not ui and not stress" --log-cli-level=DEBUG
 
   test-stress:
     name: Stress Tests
@@ -83,14 +77,11 @@ jobs:
           cache: true
           cache-key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
 
-      - name: Setup environment
-        run: pixi install
-
       - name: Compile Translations
-        run: pixi run compile-translations
+        run: pixi run --frozen compile-translations
 
       - name: Run stress tests
-        run: pixi run test -m stress --log-cli-level=DEBUG
+        run: pixi run --frozen test -m stress --log-cli-level=DEBUG
 
   test-ui:
     name: UI Tests
@@ -110,14 +101,11 @@ jobs:
           cache: true
           cache-key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
 
-      - name: Setup environment
-        run: pixi install
-
       - name: Install Xvfb
         run: sudo apt-get update && sudo apt-get install -y xvfb
 
       - name: Compile Translations
-        run: pixi run compile-translations
+        run: pixi run --frozen compile-translations
 
       - name: Run UI tests
-        run: xvfb-run pixi run uitest --log-cli-level=DEBUG
+        run: xvfb-run pixi run --frozen uitest --log-cli-level=DEBUG

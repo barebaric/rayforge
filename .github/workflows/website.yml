@@ -41,11 +41,11 @@ jobs:
           git config user.email github-actions@github.com
 
       - name: Install website dependencies
-        run: pixi run -e website site-install
+        run: pixi run --frozen -e website site-install
 
       - name: Build documentation for PR Preview
         if: github.event_name == 'pull_request'
-        run: pixi run -e website site-build
+        run: pixi run --frozen -e website site-build
 
       - name: Upload artifact for pull request review
         if: github.event_name == 'pull_request'
@@ -96,4 +96,4 @@ jobs:
           DEPLOY_BRANCH: main
           IS_TAGGED_RELEASE: ${{ github.ref_type == 'tag' }}
           IS_PRERELEASE: ${{ steps.get_version.outputs.is_prerelease }}
-        run: pixi run -e website site-deploy
+        run: pixi run --frozen -e website site-deploy
