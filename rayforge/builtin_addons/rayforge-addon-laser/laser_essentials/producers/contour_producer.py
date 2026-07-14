@@ -4,7 +4,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from raygeo.ops import Ops
-from raygeo.ops.assembly.contour import contour
+from rayforge.pipeline.assembler.registry import assembler_registry
 
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.producer.base import CutSide, OpsProducer
@@ -131,7 +131,8 @@ class ContourProducer(OpsProducer):
         )
         supports_curves = settings.get("machine_supports_curves", False)
 
-        result = contour(
+        result = assembler_registry.assemble(
+            "contour",
             part,
             kerf_mm=kerf_mm,
             path_offset_mm=self.path_offset_mm,

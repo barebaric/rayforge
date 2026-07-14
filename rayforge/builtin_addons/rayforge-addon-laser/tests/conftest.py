@@ -1,13 +1,15 @@
 """
 Pytest configuration for laser_essentials builtin addon tests.
 
-This conftest ensures that producers and steps are registered
+This conftest ensures that producers, steps, and assemblers are registered
 with their respective registries before tests run.
 """
 
 import pytest
+from unittest.mock import MagicMock
 
 from rayforge.core.step_registry import step_registry
+from rayforge.pipeline.assembler.registry import assembler_registry
 from rayforge.pipeline.producer.registry import producer_registry
 from rayforge.pipeline.transformer.registry import transformer_registry
 
@@ -58,6 +60,142 @@ def _register_steps():
     step_registry.register(ShrinkWrapStep, addon_name="laser_essentials")
 
 
+def _register_assemblers():
+    """Register all assembler functions from laser_essentials addon."""
+    from rayforge.pipeline.assembler.registry import AssemblerMeta
+    from raygeo.ops.assembly.contour import contour
+    from raygeo.ops.assembly.frame import frame
+    from raygeo.ops.assembly.material_test_grid import (
+        generate_material_test_grid,
+    )
+    from raygeo.ops.assembly.raster import raster
+    from raygeo.ops.assembly.shrinkwrap import shrinkwrap
+    from raygeo.ops.assembly.wavefront import (
+        adaptive_wavefronts_multi_pocket,
+    )
+
+    assembler_registry.register(
+        "contour",
+        AssemblerMeta(
+            assemble=contour,
+            is_vector=True,
+            requires_full_render=False,
+            param_keys=(
+                "kerf_mm",
+                "path_offset_mm",
+                "cut_side",
+                "overcut",
+                "cut_order",
+                "remove_inner",
+                "arc_tolerance",
+                "allow_arcs",
+                "supports_curves",
+            ),
+        ),
+        addon_name="laser_essentials",
+    )
+    assembler_registry.register(
+        "frame",
+        AssemblerMeta(
+            assemble=frame,
+            is_vector=True,
+            requires_full_render=False,
+            param_keys=("kerf_mm", "path_offset_mm", "cut_side"),
+        ),
+        addon_name="laser_essentials",
+    )
+    assembler_registry.register(
+        "shrinkwrap",
+        AssemblerMeta(
+            assemble=shrinkwrap,
+            is_vector=True,
+            requires_full_render=True,
+            param_keys=(
+                "gravity",
+                "kerf_mm",
+                "path_offset_mm",
+                "cut_side",
+                "arc_tolerance",
+                "allow_arcs",
+                "supports_curves",
+            ),
+        ),
+        addon_name="laser_essentials",
+    )
+    assembler_registry.register(
+        "raster",
+        AssemblerMeta(
+            assemble=raster,
+            is_vector=False,
+            requires_full_render=False,
+            param_keys=(
+                "alpha",
+                "mode",
+                "line_interval_mm",
+                "sample_interval_mm",
+                "min_power",
+                "max_power",
+                "step_power",
+                "num_power_levels",
+                "angle",
+                "offset_x_mm",
+                "offset_y_mm",
+                "scan_mode",
+                "cross_hatch",
+                "num_depth_levels",
+                "z_step_down",
+                "angle_increment",
+            ),
+        ),
+        addon_name="laser_essentials",
+    )
+    assembler_registry.register(
+        "wavefront",
+        AssemblerMeta(
+            assemble=adaptive_wavefronts_multi_pocket,
+            is_vector=True,
+            requires_full_render=False,
+            param_keys=(
+                "step_over",
+                "offset_mm",
+                "area_tolerance",
+                "precision",
+                "cut_feed_rate",
+                "cut_power",
+            ),
+        ),
+        addon_name="laser_essentials",
+    )
+    assembler_registry.register(
+        "material_test_grid",
+        AssemblerMeta(
+            assemble=generate_material_test_grid,
+            is_vector=True,
+            requires_full_render=False,
+            param_keys=(
+                "size_mm",
+                "cols",
+                "rows",
+                "min_speed",
+                "max_speed",
+                "min_power",
+                "max_power",
+                "min_passes",
+                "max_passes",
+                "fixed_speed",
+                "fixed_power",
+                "shape_size",
+                "spacing",
+                "line_interval_mm",
+                "mode",
+                "grid_mode",
+                "include_labels",
+            ),
+        ),
+        addon_name="laser_essentials",
+    )
+
+
 @pytest.fixture(scope="session", autouse=True)
 def register_laser_essentials():
     """
@@ -82,10 +220,13 @@ def register_laser_essentials():
     plugin_mgr = pluggy.PluginManager("rayforge")
     plugin_mgr.add_hookspecs(RayforgeSpecs)
 
-    mgr = AddonManager([BUILTIN_ADDONS_DIR], BUILTIN_ADDONS_DIR, plugin_mgr)
+    mgr = AddonManager(
+        [BUILTIN_ADDONS_DIR], BUILTIN_ADDONS_DIR, plugin_mgr, MagicMock()
+    )
     mgr.set_registries({"transformer_registry": transformer_registry})
     mgr.load_addon_by_name("post_processors", worker_only=True)
 
     _register_producers()
     _register_steps()
+    _register_assemblers()
     yield

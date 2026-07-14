@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import cairo
+import numpy as np
 import pytest
 from raygeo.geo import Geometry, Matrix
 from raygeo.ops import Ops
@@ -16,13 +17,17 @@ from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
+from rayforge.image.dither import DitherAlgorithm
 from rayforge.machine.models.machine import Laser
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.stage.assembler_helpers import (
+    DepthMode,
     build_part_raster,
     build_part_vector,
+    compute_raster_auto_levels,
     make_artifact,
+    preprocess_raster_image,
     wrap_assembler_result,
 )
 
@@ -362,3 +367,210 @@ class TestWrapAssemblerResult:
 
         assert artifact.ops.is_empty()
         assert isinstance(artifact, WorkPieceArtifact)
+
+
+class TestPreprocessRasterImage:
+    """Tests for preprocess_raster_image()."""
+
+    def _black_surface(self, w=10, h=10):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(0, 0, 0)
+        ctx.paint()
+        return surface
+
+    def _gray_surface(self, w=10, h=10):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(0.5, 0.5, 0.5)
+        ctx.paint()
+        return surface
+
+    def test_power_modulated_returns_grayscale_with_alpha(self):
+        surface = self._black_surface()
+        image, alpha = preprocess_raster_image(
+            surface, mode=DepthMode.POWER_MODULATION, auto_levels=False
+        )
+
+        assert image is not None
+        assert alpha is not None
+        assert image.shape == (10, 10)
+        assert alpha.shape == (10, 10)
+        assert image.dtype == np.uint8
+
+    def test_multi_pass_returns_grayscale_with_alpha(self):
+        surface = self._gray_surface()
+        image, alpha = preprocess_raster_image(
+            surface, mode=DepthMode.MULTI_PASS, auto_levels=False
+        )
+
+        assert image is not None
+        assert alpha is not None
+        assert image.dtype == np.uint8
+
+    def test_dither_returns_binary_no_alpha(self):
+        surface = self._gray_surface()
+        image, alpha = preprocess_raster_image(
+            surface,
+            mode=DepthMode.DITHER,
+            dither_algorithm=DitherAlgorithm.FLOYD_STEINBERG,
+            laser_spot_x_mm=0.1,
+            pixels_per_mm_x=10.0,
+        )
+
+        assert image is not None
+        assert alpha is None
+        assert set(np.unique(image)).issubset({0, 1})
+
+    def test_mask_scan_returns_binary_no_alpha(self):
+        surface = self._black_surface()
+        image, alpha = preprocess_raster_image(
+            surface, mode=DepthMode.CONSTANT_POWER, threshold=128
+        )
+
+        assert image is not None
+        assert alpha is None
+        assert set(np.unique(image)).issubset({0, 1})
+
+    def test_invert_flips_grayscale(self):
+        surface = self._black_surface()
+        image_normal, _ = preprocess_raster_image(
+            surface,
+            mode=DepthMode.POWER_MODULATION,
+            invert=False,
+            auto_levels=False,
+        )
+        image_inverted, _ = preprocess_raster_image(
+            surface,
+            mode=DepthMode.POWER_MODULATION,
+            invert=True,
+            auto_levels=False,
+        )
+
+        assert image_normal is not None
+        assert image_inverted is not None
+        assert np.mean(image_inverted) > np.mean(image_normal)
+
+    def test_auto_levels_normalizes_grayscale(self):
+        surface = self._gray_surface()
+        image_no_levels, _ = preprocess_raster_image(
+            surface,
+            mode=DepthMode.POWER_MODULATION,
+            auto_levels=False,
+        )
+        image_auto_levels, _ = preprocess_raster_image(
+            surface,
+            mode=DepthMode.POWER_MODULATION,
+            auto_levels=True,
+        )
+
+        assert image_no_levels is not None
+        assert image_auto_levels is not None
+        assert image_auto_levels.dtype == np.uint8
+
+    def test_computed_auto_levels_used_when_provided(self):
+        surface = self._gray_surface()
+        image, _ = preprocess_raster_image(
+            surface,
+            mode=DepthMode.POWER_MODULATION,
+            auto_levels=True,
+            computed_auto_levels=(50, 200),
+        )
+
+        assert image is not None
+        assert image.dtype == np.uint8
+
+    def test_manual_levels_applied_when_auto_disabled(self):
+        surface = self._gray_surface()
+        image, _ = preprocess_raster_image(
+            surface,
+            mode=DepthMode.POWER_MODULATION,
+            auto_levels=False,
+            black_point=100,
+            white_point=200,
+        )
+
+        assert image is not None
+
+    def test_mask_scan_threshold_affects_output(self):
+        surface = self._gray_surface()
+        image_low, _ = preprocess_raster_image(
+            surface, mode=DepthMode.CONSTANT_POWER, threshold=100
+        )
+        image_high, _ = preprocess_raster_image(
+            surface, mode=DepthMode.CONSTANT_POWER, threshold=200
+        )
+
+        assert image_low is not None
+        assert image_high is not None
+        assert np.sum(image_low) != np.sum(image_high)
+
+
+class TestComputeRasterAutoLevels:
+    """Tests for compute_raster_auto_levels()."""
+
+    def test_returns_levels_for_gray_surface(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(0.5, 0.5, 0.5)
+        ctx.paint()
+
+        mock_wp = MagicMock()
+        mock_wp.size = (10.0, 10.0)
+        mock_wp.render_to_pixels.return_value = surface
+
+        result = compute_raster_auto_levels(mock_wp, (10.0, 10.0))
+
+        assert result is not None
+        black_pt, white_pt = result
+        assert 0 <= black_pt <= 253
+        assert 2 <= white_pt <= 255
+        assert black_pt < white_pt
+
+    def test_returns_none_when_render_fails(self):
+        mock_wp = MagicMock()
+        mock_wp.size = (10.0, 10.0)
+        mock_wp.render_to_pixels.return_value = None
+
+        result = compute_raster_auto_levels(mock_wp, (10.0, 10.0))
+        assert result is None
+
+    def test_invert_affects_levels(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(0.2, 0.2, 0.2)
+        ctx.paint()
+
+        mock_wp = MagicMock()
+        mock_wp.size = (10.0, 10.0)
+        mock_wp.render_to_pixels.return_value = surface
+
+        result_normal = compute_raster_auto_levels(
+            mock_wp, (10.0, 10.0), invert=False
+        )
+        result_inverted = compute_raster_auto_levels(
+            mock_wp, (10.0, 10.0), invert=True
+        )
+
+        assert result_normal is not None
+        assert result_inverted is not None
+        assert result_normal != result_inverted
+
+    def test_preview_size_limited_by_max_preview_pixels(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 100, 100)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(0.5, 0.5, 0.5)
+        ctx.paint()
+
+        mock_wp = MagicMock()
+        mock_wp.size = (100.0, 100.0)
+        mock_wp.render_to_pixels.return_value = surface
+
+        result = compute_raster_auto_levels(
+            mock_wp, (10.0, 10.0), max_preview_pixels=50
+        )
+
+        assert result is not None
+        call_args = mock_wp.render_to_pixels.call_args
+        assert call_args[0][0] <= 50
+        assert call_args[0][1] <= 50

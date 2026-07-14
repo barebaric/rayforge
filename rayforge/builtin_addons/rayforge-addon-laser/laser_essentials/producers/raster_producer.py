@@ -1,27 +1,23 @@
 import logging
-from enum import Enum, auto
-from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import cairo
 import numpy as np
-from raygeo.image.grayscale import compute_auto_levels, normalize_grayscale
 from raygeo.image.scan import ScanMode
 from raygeo.ops import Ops
 from raygeo.ops.assembly import AssemblyResult
-from raygeo.ops.assembly.raster import raster
 from raygeo.ops.types import SectionType
 
-from rayforge.image.dither import DitherAlgorithm, surface_to_dithered_array
-from rayforge.image.util import (
-    surface_to_binary,
-    surface_to_grayscale,
-)
+from rayforge.image.dither import DitherAlgorithm
+from rayforge.pipeline.assembler.registry import assembler_registry
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.pipeline.stage.assembler_helpers import (
+    DepthMode,
     build_part_raster,
+    compute_raster_auto_levels,
     make_artifact,
+    preprocess_raster_image,
     wrap_assembler_result,
 )
 from rayforge.shared.tasker.progress import ProgressContext
@@ -31,33 +27,6 @@ if TYPE_CHECKING:
     from rayforge.machine.models.laser import Laser
 
 logger = logging.getLogger(__name__)
-
-
-class DepthMode(Enum):
-    POWER_MODULATION = auto()
-    CONSTANT_POWER = auto()
-    DITHER = auto()
-    MULTI_PASS = auto()
-
-    @property
-    def display_name(self) -> str:
-        names = {
-            DepthMode.POWER_MODULATION: _("Variable Power"),
-            DepthMode.CONSTANT_POWER: _("Constant Power"),
-            DepthMode.DITHER: _("Dither"),
-            DepthMode.MULTI_PASS: _("Multiple Depths"),
-        }
-        return names[self]
-
-    @property
-    def short_name(self) -> str:
-        names = {
-            DepthMode.POWER_MODULATION: _("Variable"),
-            DepthMode.CONSTANT_POWER: _("Constant"),
-            DepthMode.DITHER: _("Dither"),
-            DepthMode.MULTI_PASS: _("Multi-Pass"),
-        }
-        return names[self]
 
 
 class Rasterizer(OpsProducer):
@@ -128,32 +97,11 @@ class Rasterizer(OpsProducer):
         if not self.auto_levels:
             return
 
-        px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
-        size = workpiece.size
-
-        max_preview_pixels = 512
-        scale = min(
-            1.0,
-            max_preview_pixels / (size[0] * px_per_mm_x),
-            max_preview_pixels / (size[1] * px_per_mm_y),
+        self._computed_auto_levels = compute_raster_auto_levels(
+            workpiece,
+            settings["pixels_per_mm"],
+            invert=self.invert,
         )
-
-        preview_width = max(1, int(size[0] * px_per_mm_x * scale))
-        preview_height = max(1, int(size[1] * px_per_mm_y * scale))
-
-        surface = workpiece.render_to_pixels(preview_width, preview_height)
-        if not surface:
-            return
-
-        gray_image, alpha = surface_to_grayscale(surface)
-
-        if self.invert:
-            alpha_mask = alpha > 0
-            gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
-
-        surface.flush()
-
-        self._computed_auto_levels = compute_auto_levels(gray_image[alpha > 0])
 
     def run(
         self,
@@ -177,9 +125,7 @@ class Rasterizer(OpsProducer):
 
         if width_px == 0 or height_px == 0:
             final_ops = Ops()
-            final_ops.ops_section_start(
-                SectionType.RASTER_FILL, workpiece.uid
-            )
+            final_ops.ops_section_start(SectionType.RASTER_FILL, workpiece.uid)
             final_ops.ops_section_end(SectionType.RASTER_FILL)
             return make_artifact(
                 final_ops,
@@ -197,55 +143,19 @@ class Rasterizer(OpsProducer):
         x_offset_mm = workpiece.bbox[0]
         y_offset_mm = workpiece.bbox[1] + y_offset_mm
 
-        # Map DepthMode enum to raster assembler mode string
-        mode_map = {
-            DepthMode.POWER_MODULATION: "power_modulated",
-            DepthMode.CONSTANT_POWER: "mask_scan",
-            DepthMode.DITHER: "dither",
-            DepthMode.MULTI_PASS: "multi_pass",
-        }
-        mode = mode_map[self.depth_mode]
-
-        if mode == "multi_pass":
-            gray_image, alpha = surface_to_grayscale(surface)
-            if self.invert:
-                alpha_mask = alpha > 0
-                gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
-            gray_image = self._apply_levels(gray_image, alpha)
-            image = gray_image
-        elif mode == "power_modulated":
-            gray_image, alpha = surface_to_grayscale(surface)
-            if self.invert:
-                alpha_mask = alpha > 0
-                gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
-            gray_image = self._apply_levels(gray_image, alpha)
-            image = gray_image
-        elif mode in ("dither", "mask_scan"):
-            if mode == "dither":
-                min_feature_px = max(
-                    1,
-                    int(round(laser.spot_size_mm[0] * pixels_per_mm[0])),
-                )
-                dither_algo = (
-                    self.dither_algorithm
-                    or DitherAlgorithm.FLOYD_STEINBERG
-                )
-                image = surface_to_dithered_array(
-                    surface,
-                    dither_algo,
-                    invert=self.invert,
-                    min_feature_px=min_feature_px,
-                )
-            else:
-                image = surface_to_binary(
-                    surface,
-                    threshold=self.threshold,
-                    invert=self.invert,
-                )
-            alpha = None
-        else:
-            image = None
-            alpha = None
+        image, alpha = preprocess_raster_image(
+            surface,
+            mode=self.depth_mode,
+            invert=self.invert,
+            auto_levels=self.auto_levels,
+            computed_auto_levels=self._computed_auto_levels,
+            black_point=self.black_point,
+            white_point=self.white_point,
+            threshold=self.threshold,
+            dither_algorithm=self.dither_algorithm,
+            laser_spot_x_mm=laser.spot_size_mm[0],
+            pixels_per_mm_x=pixels_per_mm[0],
+        )
 
         if image is None:
             return wrap_assembler_result(
@@ -268,14 +178,13 @@ class Rasterizer(OpsProducer):
         part = build_part_raster(workpiece, pixels_per_mm)
         part.image = image
 
-        result = raster(
+        result = assembler_registry.assemble(
+            "raster",
             part,
             alpha=(
-                (alpha * 255).astype(np.uint8)
-                if alpha is not None
-                else None
+                (alpha * 255).astype(np.uint8) if alpha is not None else None
             ),
-            mode=mode,
+            mode=self.depth_mode.raygeo_name,
             line_interval_mm=line_interval_mm,
             sample_interval_mm=sample_interval_mm,
             min_power=self.min_power,
@@ -302,24 +211,6 @@ class Rasterizer(OpsProducer):
             source_dimensions=(width_px, height_px),
             always_wrap=True,
         )
-
-    def _apply_levels(
-        self,
-        gray_image: np.ndarray,
-        alpha: np.ndarray,
-    ) -> np.ndarray:
-        """Apply auto-levels or manual black/white point normalization."""
-        if self.auto_levels:
-            if self._computed_auto_levels is not None:
-                black_pt, white_pt = self._computed_auto_levels
-            else:
-                black_pt, white_pt = compute_auto_levels(gray_image[alpha > 0])
-        else:
-            black_pt, white_pt = self.black_point, self.white_point
-
-        if black_pt > 0 or white_pt < 255:
-            gray_image = normalize_grayscale(gray_image, black_pt, white_pt)
-        return gray_image
 
     def is_vector_producer(self) -> bool:
         return False

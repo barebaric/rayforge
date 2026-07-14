@@ -10,27 +10,231 @@ from typing import (
     Tuple,
 )
 
+import numpy as np
 from raygeo.ops import Ops
 from raygeo.ops.state import AirAssistMode
+from raygeo.ops.types import SectionType
 
+from ...core.step import Step
 from ...core.workpiece import WorkPiece
 from ...machine.models.laser import Laser
 from ...shared.tasker.progress import ProgressContext, set_progress
 from ..artifact import WorkPieceArtifact
-from ..producer import OpsProducer
+from ..assembler.registry import assembler_registry
 from ..transformer import ExecutionPhase, OpsTransformer
+from .assembler_helpers import (
+    DepthMode,
+    MachineDefaults,
+    build_part_raster,
+    build_part_vector,
+    compute_raster_auto_levels,
+    make_artifact,
+    preprocess_raster_image,
+    resolve_machine_defaults,
+    wrap_assembler_result,
+)
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
+
+logger = logging.getLogger(__name__)
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 MAX_RASTER_RENDER_PIXELS = 16 * 1024 * 1024
 
 
+def run_assembler_on_surface(
+    step: "Step",
+    workpiece: WorkPiece,
+    laser: Laser,
+    generation_id: int,
+    surface: Any = None,
+    pixels_per_mm: Optional[Tuple[float, float]] = None,
+    *,
+    machine_defaults: MachineDefaults,
+    y_offset_mm: float = 0.0,
+    computed_auto_levels: Optional[Tuple[int, int]] = None,
+) -> WorkPieceArtifact:
+    """Run an assembler on a surface (or vector data) and return an artifact.
+
+    This replaces per-producer ``run()`` methods with a single generic
+    dispatch driven by :class:`AssemblerMeta` orchestration metadata.
+    """
+    rp = step.get_assembler_kwargs(machine_defaults, workpiece)
+    meta = assembler_registry.get(step.ASSEMBLER_NAME)
+    if meta is None:
+        raise KeyError(
+            f"No assembler registered under '{step.ASSEMBLER_NAME}'"
+        )
+
+    # --- Build Part ------------------------------------------------
+    if meta.build_part_mode == "vector":
+        use_surface = surface is not None and (
+            rp.get("override_threshold", False)
+            or not workpiece.boundaries
+            or workpiece.boundaries.is_empty()
+        )
+        part = build_part_vector(
+            workpiece,
+            surface=surface if use_surface else None,
+            override_threshold=rp.get("override_threshold", False),
+            threshold=rp.get("threshold", 0.5),
+            normalize_windings=meta.normalize_windings,
+        )
+    elif meta.build_part_mode == "raster":
+        assert pixels_per_mm is not None
+        part = build_part_raster(workpiece, pixels_per_mm)
+    else:
+        part = None
+
+    # --- Surface preprocessing (shrinkwrap etc.) -------------------
+    if meta.prepare_surface is not None and surface is not None:
+        assert part is not None
+        boolean_image = meta.prepare_surface(surface)
+
+        if not np.any(boolean_image):
+            section_type = getattr(SectionType, meta.section_type)
+            return make_artifact(
+                Ops(),
+                workpiece,
+                generation_id,
+                is_vector=meta.is_vector,
+            )
+        part.image = boolean_image
+
+    # --- Raster image preprocessing --------------------------------
+    if meta.build_part_mode == "raster" and surface is not None:
+        assert part is not None
+        width_px = surface.get_width()
+        height_px = surface.get_height()
+
+        if width_px == 0 or height_px == 0:
+            section_type = getattr(SectionType, meta.section_type)
+            final_ops = Ops()
+            final_ops.ops_section_start(section_type, workpiece.uid)
+            final_ops.ops_section_end(section_type)
+            return make_artifact(
+                final_ops,
+                workpiece,
+                generation_id,
+                is_vector=False,
+                source_dimensions=(0, 0),
+            )
+
+        depth_mode_str = rp.get("depth_mode", "POWER_MODULATION")
+
+        depth_mode = DepthMode[depth_mode_str]
+        image, alpha = preprocess_raster_image(
+            surface,
+            mode=depth_mode,
+            invert=rp.get("invert", False),
+            auto_levels=rp.get("auto_levels", True),
+            computed_auto_levels=computed_auto_levels,
+            black_point=rp.get("black_point", 0),
+            white_point=rp.get("white_point", 255),
+            threshold=rp.get("threshold", 128),
+            laser_spot_x_mm=laser.spot_size_mm[0],
+            pixels_per_mm_x=pixels_per_mm[0] if pixels_per_mm else 1.0,
+        )
+        if image is None:
+            section_type = getattr(SectionType, meta.section_type)
+            return make_artifact(
+                Ops(),
+                workpiece,
+                generation_id,
+                is_vector=False,
+                source_dimensions=(width_px, height_px),
+            )
+        part.image = image
+
+        # Resolve raster-specific params
+        spot_y = laser.spot_size_mm[1]
+        line_interval_mm = rp.get("line_interval_mm") or spot_y
+        x_offset_mm = workpiece.bbox[0]
+        y_off_mm = workpiece.bbox[1] + y_offset_mm
+        sample_interval_mm = (
+            rp.get("sample_interval_mm") or laser.spot_size_mm[0]
+        )
+        step_power = machine_defaults.step_power
+        alpha_arr = (
+            (alpha * 255).astype(np.uint8) if alpha is not None else None
+        )
+
+        result = assembler_registry.assemble(
+            step.ASSEMBLER_NAME,
+            part,
+            alpha=alpha_arr,
+            mode=depth_mode.raygeo_name,
+            line_interval_mm=line_interval_mm,
+            sample_interval_mm=sample_interval_mm,
+            min_power=rp.get("min_power", 0),
+            max_power=rp.get("max_power", 100),
+            step_power=step_power,
+            num_power_levels=rp.get("num_power_levels", 256),
+            angle=rp.get("scan_angle", 0),
+            offset_x_mm=x_offset_mm,
+            offset_y_mm=y_off_mm,
+            scan_mode=rp.get("scan_mode", "segmented").lower(),
+            cross_hatch=rp.get("cross_hatch", False),
+            num_depth_levels=rp.get("num_depth_levels", 1),
+            z_step_down=rp.get("z_step_down", 0.0),
+            angle_increment=rp.get("angle_increment", 0),
+        )
+
+        section_type = getattr(SectionType, meta.section_type)
+        return wrap_assembler_result(
+            result,
+            workpiece,
+            laser,
+            generation_id,
+            section_type=section_type,
+            is_vector=False,
+            source_dimensions=(width_px, height_px),
+            always_wrap=meta.always_wrap,
+        )
+
+    # --- Vector / none path (contour / frame / shrinkwrap / wavefront
+    #     / material_test_grid) ----------------------------------------
+    if meta.build_part_mode == "vector" and (
+        part is None or not part.has_geometry()
+    ):
+        logger.warning(
+            "Assembler '%s' for '%s': no geometry available",
+            step.ASSEMBLER_NAME,
+            workpiece.name,
+        )
+        return make_artifact(
+            Ops(),
+            workpiece,
+            generation_id,
+            is_vector=meta.is_vector,
+        )
+
+    vec_kwargs = step.get_assembler_kwargs(machine_defaults, workpiece)
+
+    result = assembler_registry.assemble(
+        step.ASSEMBLER_NAME,
+        part,
+        **vec_kwargs,
+    )
+
+    set_power = machine_defaults.step_power if meta.set_power else None
+
+    return wrap_assembler_result(
+        result,
+        workpiece,
+        laser,
+        generation_id,
+        split_contours=meta.split_contours,
+        set_power=set_power,
+        is_vector=meta.is_vector,
+    )
+
+
 def _run_producer_on_surface(
     surface: Optional[Any],
     render_pixels_per_mm: Optional[Tuple[float, float]],
-    opsproducer: OpsProducer,
+    step: "Step",
     laser: Laser,
     workpiece: WorkPiece,
     settings: dict,
@@ -38,16 +242,16 @@ def _run_producer_on_surface(
     generation_size: Optional[Tuple[float, float]] = None,
     y_offset_mm: float = 0.0,
     context: Optional[ProgressContext] = None,
+    computed_auto_levels: Optional[Tuple[int, int]] = None,
 ) -> WorkPieceArtifact:
     """
-    Run the OpsProducer on a surface or vector data.
+    Run an assembler on a surface or vector data.
 
     Args:
         surface: The cairo.ImageSurface to process, or None for direct
             vector paths.
         render_pixels_per_mm: The actual pixels per mm used for rendering,
             or None for direct vector paths.
-        opsproducer: The OpsProducer to use for generation.
         laser: The Laser model with machine parameters.
         workpiece: The WorkPiece to generate operations for.
         settings: Dictionary of settings from the Step.
@@ -56,19 +260,22 @@ def _run_producer_on_surface(
             workpiece size.
         y_offset_mm: The vertical offset in mm for the current chunk.
         context: Optional ProgressContext for progress reporting.
+        computed_auto_levels: Pre-computed auto-levels for raster.
 
     Returns:
         A WorkPieceArtifact containing the generated operations.
     """
-    artifact = opsproducer.run(
+    machine_defaults = resolve_machine_defaults(laser, settings)
+    artifact = run_assembler_on_surface(
+        step,
+        workpiece,
         laser,
-        surface,
-        render_pixels_per_mm,
-        workpiece=workpiece,
-        settings=settings,
-        generation_id=generation_id,
+        generation_id,
+        surface=surface,
+        pixels_per_mm=render_pixels_per_mm,
+        machine_defaults=machine_defaults,
         y_offset_mm=y_offset_mm,
-        context=context,
+        computed_auto_levels=computed_auto_levels,
     )
     if generation_size is not None:
         artifact.generation_size = generation_size
@@ -148,7 +355,7 @@ def _calculate_vector_render_size(
 
 def _process_vector_render_and_trace(
     workpiece: WorkPiece,
-    opsproducer: OpsProducer,
+    step: "Step",
     laser: Laser,
     settings: dict,
     generation_id: int,
@@ -160,7 +367,6 @@ def _process_vector_render_and_trace(
 
     Args:
         workpiece: The WorkPiece to generate operations for.
-        opsproducer: The OpsProducer to use for generation.
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
         generation_id: The generation ID for staleness checking.
@@ -184,7 +390,7 @@ def _process_vector_render_and_trace(
     artifact = _run_producer_on_surface(
         surface,
         None,
-        opsproducer,
+        step,
         laser,
         workpiece,
         settings,
@@ -199,7 +405,7 @@ def _process_vector_render_and_trace(
 
 def _execute_vector(
     workpiece: WorkPiece,
-    opsproducer: OpsProducer,
+    step: "Step",
     laser: Laser,
     settings: dict,
     generation_id: int,
@@ -211,7 +417,6 @@ def _execute_vector(
 
     Args:
         workpiece: The WorkPiece to generate operations for.
-        opsproducer: The OpsProducer to use for generation.
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
         generation_id: The generation ID for staleness checking.
@@ -227,12 +432,15 @@ def _execute_vector(
     if not _validate_workpiece_size(size_mm):
         return
 
+    meta = assembler_registry.get(step.ASSEMBLER_NAME)
+    requires_full_render = meta.requires_full_render if meta else False
+
     if workpiece._edited_boundaries is not None:
         if not workpiece._edited_boundaries.is_empty():
             artifact = _run_producer_on_surface(
                 surface=None,
                 render_pixels_per_mm=None,
-                opsproducer=opsproducer,
+                step=step,
                 laser=laser,
                 workpiece=workpiece,
                 settings=settings,
@@ -244,11 +452,11 @@ def _execute_vector(
                 yield artifact, 1.0
         return
 
-    if workpiece.boundaries and not opsproducer.requires_full_render:
+    if workpiece.boundaries and not requires_full_render:
         artifact = _run_producer_on_surface(
             surface=None,
             render_pixels_per_mm=None,
-            opsproducer=opsproducer,
+            step=step,
             laser=laser,
             workpiece=workpiece,
             settings=settings,
@@ -262,7 +470,7 @@ def _execute_vector(
 
     artifact = _process_vector_render_and_trace(
         workpiece,
-        opsproducer,
+        step,
         laser,
         settings,
         generation_id,
@@ -275,7 +483,7 @@ def _execute_vector(
 
 def _process_raster_full_render(
     workpiece: WorkPiece,
-    opsproducer: OpsProducer,
+    step: "Step",
     laser: Laser,
     settings: dict,
     generation_id: int,
@@ -287,7 +495,7 @@ def _process_raster_full_render(
 
     Args:
         workpiece: The WorkPiece to generate operations for.
-        opsproducer: The OpsProducer to use for generation.
+        step: The Step object.
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
         generation_id: The generation ID for staleness checking.
@@ -319,7 +527,7 @@ def _process_raster_full_render(
     artifact = _run_producer_on_surface(
         surface,
         (effective_ppm_x, effective_ppm_y),
-        opsproducer,
+        step,
         laser,
         workpiece,
         settings,
@@ -337,13 +545,14 @@ def _process_raster_chunk(
     x_offset_px: float,
     y_offset_px: float,
     workpiece: WorkPiece,
-    opsproducer: OpsProducer,
+    step: "Step",
     laser: Laser,
     settings: dict,
     generation_id: int,
     total_height_px: float,
     generation_size: Tuple[float, float],
     context: Optional[ProgressContext] = None,
+    computed_auto_levels: Optional[Tuple[int, int]] = None,
 ) -> Tuple[WorkPieceArtifact, float]:
     """
     Process a single raster chunk and calculate progress.
@@ -353,7 +562,7 @@ def _process_raster_chunk(
         x_offset_px: Horizontal offset in pixels.
         y_offset_px: Vertical offset in pixels.
         workpiece: The WorkPiece to generate operations for.
-        opsproducer: The OpsProducer to use for generation.
+        step: The Step object.
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
         generation_id: The generation ID for staleness checking.
@@ -376,7 +585,7 @@ def _process_raster_chunk(
     chunk_artifact = _run_producer_on_surface(
         surface,
         (px_per_mm_x, px_per_mm_y),
-        opsproducer,
+        step,
         laser,
         workpiece,
         settings,
@@ -384,6 +593,7 @@ def _process_raster_chunk(
         generation_size=generation_size,
         y_offset_mm=y_offset_from_top_mm,
         context=context,
+        computed_auto_levels=computed_auto_levels,
     )
 
     size = workpiece.size
@@ -412,7 +622,7 @@ def _has_no_fills(workpiece: WorkPiece) -> bool:
 
 def _execute_raster(
     workpiece: WorkPiece,
-    opsproducer: OpsProducer,
+    step: "Step",
     laser: Laser,
     settings: dict,
     generation_id: int,
@@ -424,7 +634,6 @@ def _execute_raster(
 
     Args:
         workpiece: The WorkPiece to generate operations for.
-        opsproducer: The OpsProducer to use for generation.
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
         generation_id: The generation ID for staleness checking.
@@ -435,6 +644,9 @@ def _execute_raster(
         A tuple for each chunk: (chunk_artifact, progress).
     """
     size = workpiece.size
+    rp = step.get_assembler_kwargs(
+        resolve_machine_defaults(laser, settings), workpiece
+    )
 
     if not _validate_workpiece_size(size):
         return
@@ -454,10 +666,13 @@ def _execute_raster(
     else:
         raster_settings = settings
 
-    if opsproducer.requires_full_render:
+    meta = assembler_registry.get(step.ASSEMBLER_NAME)
+    requires_full_render = meta.requires_full_render if meta else False
+
+    if requires_full_render:
         artifact = _process_raster_full_render(
             workpiece,
-            opsproducer,
+            step,
             laser,
             raster_settings,
             generation_id,
@@ -468,7 +683,13 @@ def _execute_raster(
             yield artifact, 1.0
         return
 
-    opsproducer.prepare(workpiece, raster_settings)
+    computed_auto_levels = None
+    if rp.get("auto_levels", False):
+        computed_auto_levels = compute_raster_auto_levels(
+            workpiece,
+            raster_settings["pixels_per_mm"],
+            invert=rp.get("invert", False),
+        )
 
     total_height_px = size[1] * px_per_mm_y
 
@@ -484,13 +705,14 @@ def _execute_raster(
             x_offset_px,
             y_offset_px,
             workpiece,
-            opsproducer,
+            step,
             laser,
             raster_settings,
             generation_id,
             total_height_px,
             generation_size,
             context,
+            computed_auto_levels,
         )
 
         yield chunk_artifact, progress
@@ -597,7 +819,7 @@ def _merge_artifact_ops(
 
 def compute_workpiece_artifact_vector(
     workpiece: WorkPiece,
-    opsproducer: OpsProducer,
+    step: "Step",
     laser: Laser,
     settings: dict,
     generation_id: int,
@@ -609,7 +831,6 @@ def compute_workpiece_artifact_vector(
 
     Args:
         workpiece: The WorkPiece to generate operations for.
-        opsproducer: The OpsProducer to use for generation.
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
         generation_id: The generation ID for staleness checking.
@@ -634,7 +855,7 @@ def compute_workpiece_artifact_vector(
 
     for chunk_artifact, execute_progress in _execute_vector(
         workpiece,
-        opsproducer,
+        step,
         laser,
         settings,
         generation_id,
@@ -668,7 +889,7 @@ def compute_workpiece_artifact_vector(
 
 def compute_workpiece_artifact_raster(
     workpiece: WorkPiece,
-    opsproducer: OpsProducer,
+    step: "Step",
     laser: Laser,
     settings: dict,
     generation_id: int,
@@ -681,7 +902,6 @@ def compute_workpiece_artifact_raster(
 
     Args:
         workpiece: The WorkPiece to generate operations for.
-        opsproducer: The OpsProducer to use for generation.
         laser: The Laser model with machine parameters.
         settings: Dictionary of settings from the Step.
         generation_id: The generation ID for staleness checking.
@@ -707,7 +927,7 @@ def compute_workpiece_artifact_raster(
 
     for chunk_artifact, execute_progress in _execute_raster(
         workpiece,
-        opsproducer,
+        step,
         laser,
         settings,
         generation_id,
@@ -744,7 +964,6 @@ def compute_workpiece_artifact_raster(
 
 def compute_workpiece_artifact(
     workpiece: WorkPiece,
-    opsproducer: OpsProducer,
     laser: Laser,
     transformers: List[OpsTransformer],
     settings: dict,
@@ -756,18 +975,18 @@ def compute_workpiece_artifact(
     stock_geometries: Optional[List["Geometry"]] = None,
 ) -> Optional[WorkPieceArtifact]:
     """
-    Computes a WorkPieceArtifact from a WorkPiece using the given producer.
+    Compute a WorkPieceArtifact from a WorkPiece.
 
     This is the core logic function that generates operations for a single
-    (Step, WorkPiece) pair. It orchestrates the pipeline of producers
+    (Step, WorkPiece) pair. It orchestrates the pipeline of assemblers
     and transformers.
 
     Args:
         workpiece: The WorkPiece to generate operations for.
-        opsproducer: The OpsProducer to use for generation.
         laser: The Laser model with machine parameters.
         transformers: List of OpsTransformer objects to apply to results.
-        settings: Dictionary of settings from the Step.
+        settings: Dictionary of settings from the Step
+            (``step.to_dict()`` plus machine-derived keys).
         pixels_per_mm: Tuple of (x, y) pixels per millimeter.
         generation_size: The size of the generation in mm.
         generation_id: Unique identifier for this generation.
@@ -779,12 +998,14 @@ def compute_workpiece_artifact(
         A WorkPieceArtifact containing the generated operations and metadata,
         or None if no artifact could be produced.
     """
-    is_vector = opsproducer.is_vector_producer()
+    step = Step.from_dict(settings)
+    meta = assembler_registry.get(step.ASSEMBLER_NAME)
+    is_vector = meta.is_vector if meta else False
 
     if is_vector:
         final_artifact = compute_workpiece_artifact_vector(
             workpiece,
-            opsproducer,
+            step,
             laser,
             settings,
             generation_id,
@@ -794,7 +1015,7 @@ def compute_workpiece_artifact(
     else:
         final_artifact = compute_workpiece_artifact_raster(
             workpiece,
-            opsproducer,
+            step,
             laser,
             settings,
             generation_id,

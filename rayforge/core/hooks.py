@@ -197,6 +197,17 @@ class RayforgeSpecs:
         """
 
     @hookspec
+    def register_assemblers(self, assembler_registry):
+        """
+        Called to allow addons to register assembler functions.
+
+        .. versionadded:: 9
+
+        Args:
+            assembler_registry: The global AssemblerRegistry instance.
+        """
+
+    @hookspec
     def register_transformers(self, transformer_registry):
         """
         Called to allow addons to register custom ops transformers.

@@ -6,11 +6,11 @@ import cairo
 import numpy as np
 from raygeo.ops import Ops
 from raygeo.ops.assembly.material_test_grid import (
-    generate_material_test_grid,
     generate_material_test_grid_preview,
 )
 from raygeo.ops.types import SectionType
 
+from rayforge.pipeline.assembler.registry import assembler_registry
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.producer.base import OpsProducer
@@ -183,7 +183,8 @@ class MaterialTestGridProducer(OpsProducer):
             test_type,
             self.include_labels,
         )
-        result = generate_material_test_grid(
+        result = assembler_registry.assemble(
+            "material_test_grid",
             size_mm=(width_mm, height_mm),
             cols=self.grid_dimensions[0],
             rows=self.grid_dimensions[1],
@@ -211,9 +212,7 @@ class MaterialTestGridProducer(OpsProducer):
         )
         main_ops = Ops()
         main_ops.set_head(laser.uid)
-        main_ops.ops_section_start(
-            SectionType.VECTOR_OUTLINE, workpiece.uid
-        )
+        main_ops.ops_section_start(SectionType.VECTOR_OUTLINE, workpiece.uid)
         main_ops.extend(result.ops)
         main_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 

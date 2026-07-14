@@ -130,11 +130,13 @@ class RayforgeContext:
                 BUILTIN_ADDONS_DIR,
                 PRIVATE_ADDONS_DIR,
             )
+            from .shared.tasker import task_mgr
 
             self._addon_mgr = AddonManager(
                 [BUILTIN_ADDONS_DIR, PRIVATE_ADDONS_DIR, ADDONS_DIR],
                 ADDONS_DIR,
                 self.plugin_mgr,
+                task_mgr,
                 self.addon_config,
                 license_validator=self.license_validator,
             )

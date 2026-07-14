@@ -25,11 +25,24 @@ if TYPE_CHECKING:
     from ..context import RayforgeContext
     from ..machine.models.laser import Laser
     from ..machine.models.machine import Machine
+    from ..pipeline.stage.assembler_helpers import MachineDefaults
     from .layer import Layer
+    from .workpiece import WorkPiece
     from .workflow import Workflow
 
 
 logger = logging.getLogger(__name__)
+
+PRODUCER_TO_ASSEMBLER = {
+    "ContourProducer": "contour",
+    "FrameProducer": "frame",
+    "Rasterizer": "raster",
+    "DepthEngraver": "raster",
+    "DitherRasterizer": "raster",
+    "ShrinkWrapProducer": "shrinkwrap",
+    "WavefrontProducer": "wavefront",
+    "MaterialTestGridProducer": "material_test_grid",
+}
 
 
 class Step(DocItem, ABC):
@@ -45,6 +58,7 @@ class Step(DocItem, ABC):
     ICON: str = ""
     CAPABILITIES: Tuple[Capability, ...] = ()
     PRODUCER_CLASS: ClassVar[Any] = None
+    ASSEMBLER_NAME: ClassVar[str] = ""
 
     def __init__(
         self,
@@ -59,8 +73,15 @@ class Step(DocItem, ABC):
         self.applied_recipe_uid: Optional[str] = None
 
         self.opsproducer_dict: Optional[Dict[str, Any]] = None
-        self.per_workpiece_transformers_dicts: List[Dict[str, Any]] = []
-        self.per_step_transformers_dicts: List[Dict[str, Any]] = []
+        per_wp_defaults, per_sp_defaults = (
+            self.get_default_transformers_dicts()
+        )
+        self.per_workpiece_transformers_dicts: List[Dict[str, Any]] = list(
+            per_wp_defaults
+        )
+        self.per_step_transformers_dicts: List[Dict[str, Any]] = list(
+            per_sp_defaults
+        )
 
         self.pixels_per_mm = 50, 50
 
@@ -142,6 +163,28 @@ class Step(DocItem, ABC):
         raise NotImplementedError(
             f"{cls.__name__}.create() must be implemented by subclass"
         )
+
+    def prepare(
+        self,
+        workpiece: "WorkPiece",
+        settings: Dict[str, Any],
+        resolved_params: Dict[str, Any],
+    ) -> None:
+        """
+        Run once before chunked processing begins.
+
+        Override in subclasses to compute global state (e.g. raster
+        auto-levels). The base implementation is a no-op.
+        """
+        pass
+
+    def get_assembler_kwargs(
+        self,
+        machine_defaults: "MachineDefaults",
+        workpiece: "WorkPiece",
+    ) -> Dict[str, Any]:
+        """Build the kwargs dict for :meth:`~.AssemblerRegistry.assemble`."""
+        return {}
 
     def to_dict(self) -> Dict:
         """Serializes the step and its configuration to a dictionary."""
@@ -247,17 +290,17 @@ class Step(DocItem, ABC):
         step.applied_recipe_uid = data.get("applied_recipe_uid")
 
         step.opsproducer_dict = data["opsproducer_dict"]
-        loaded_per_wp = data["per_workpiece_transformers_dicts"]
-        loaded_per_step = data["per_step_transformers_dicts"]
 
         default_per_wp, default_per_step = (
             step_class.get_default_transformers_dicts()
         )
         step.per_workpiece_transformers_dicts = Step._merge_transformer_dicts(
-            loaded_per_wp, default_per_wp
+            data.get("per_workpiece_transformers_dicts", []),
+            default_per_wp,
         )
         step.per_step_transformers_dicts = Step._merge_transformer_dicts(
-            loaded_per_step, default_per_step
+            data.get("per_step_transformers_dicts", []),
+            default_per_step,
         )
 
         # Share dict references for transformers that appear in both lists

@@ -2,8 +2,8 @@ import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from raygeo.ops.assembly import AssemblyResult
-from raygeo.ops.assembly.wavefront import adaptive_wavefronts_multi_pocket
 
+from rayforge.pipeline.assembler.registry import assembler_registry
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.pipeline.stage.assembler_helpers import (
@@ -93,7 +93,8 @@ class WavefrontProducer(OpsProducer):
             cut_power,
         )
         try:
-            result = adaptive_wavefronts_multi_pocket(
+            result = assembler_registry.assemble(
+                "wavefront",
                 part,
                 step_over=step_over,
                 offset_mm=self.offset_mm,

@@ -114,7 +114,7 @@ class WorkPiecePipelineStage(PipelineStage):
             logger.error("Cannot generate ops: No machine is configured.")
             return None
 
-        settings = step.get_settings()
+        settings = step.to_dict()
         settings["machine_supports_arcs"] = self._machine.supports_arcs
         settings["machine_supports_curves"] = self._machine.supports_curves
         settings["arc_tolerance"] = self._machine.arc_tolerance
@@ -363,7 +363,6 @@ class WorkPiecePipelineStage(PipelineStage):
             make_workpiece_artifact_in_subprocess,
             self._artifact_manager.get_store(),
             workpiece_dict,
-            step.opsproducer_dict,
             step.per_workpiece_transformers_dicts,
             laser_dict,
             settings,
