@@ -1,7 +1,7 @@
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from raygeo.ops.assembly.frame import frame
+from rayforge.pipeline.assembler.registry import assembler_registry
 
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.producer.base import CutSide, OpsProducer
@@ -70,7 +70,8 @@ class FrameProducer(OpsProducer):
         if part is None:
             raise ValueError("FrameProducer: workpiece has no vector geometry")
 
-        result = frame(
+        result = assembler_registry.assemble(
+            "frame",
             part,
             kerf_mm=kerf_mm,
             path_offset_mm=self.path_offset_mm,

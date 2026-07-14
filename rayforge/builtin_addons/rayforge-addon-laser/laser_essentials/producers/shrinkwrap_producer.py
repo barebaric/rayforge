@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 import cairo
 import numpy as np
 from raygeo.ops import Ops
-from raygeo.ops.assembly.shrinkwrap import shrinkwrap
+from rayforge.pipeline.assembler.registry import assembler_registry
 
 from rayforge.image.tracing import prepare_surface
 from rayforge.pipeline.artifact import WorkPieceArtifact
@@ -94,7 +94,8 @@ class ShrinkWrapProducer(OpsProducer):
         # 2. The shrinkwrap assembler computes the total offset
         #    from kerf, path offset, and cut side internally.
         part.image = boolean_image
-        result = shrinkwrap(
+        result = assembler_registry.assemble(
+            "shrinkwrap",
             part,
             gravity=self.gravity,
             kerf_mm=kerf_mm,

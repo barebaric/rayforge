@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple, cast
 
 from rayforge.core.capability import CUT, SCORE, WITH_KERF, Capability
 from rayforge.core.step import Step
 from rayforge.pipeline.producer.base import CutSide
+from rayforge.pipeline.stage.assembler_helpers import MachineDefaults
 from rayforge.pipeline.transformer.registry import transformer_registry
 
 from ..producers import ContourProducer
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
+    from rayforge.core.workpiece import WorkPiece
 
 
 class ContourStep(Step):
@@ -19,23 +21,59 @@ class ContourStep(Step):
     ICON = "step-contour-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (CUT, SCORE, WITH_KERF)
     PRODUCER_CLASS = ContourProducer
+    ASSEMBLER_NAME = "contour"
 
     def __init__(
         self, name: Optional[str] = None, typelabel: Optional[str] = None
     ):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)
+        self.cut_side = "CENTERLINE"
+        self.cut_order = "INSIDE_OUTSIDE"
+        self.remove_inner_paths = False
+        self.path_offset_mm = 0.0
+        self.overcut = 0.0
 
     def get_operation_mode_short(self):
-        if not self.opsproducer_dict:
-            return None
-        params = self.opsproducer_dict.get("params", {})
-        cut_side_str = params.get("cut_side")
-        if not cut_side_str:
-            return None
         try:
-            return CutSide[cut_side_str].label()
-        except KeyError:
+            return CutSide[self.cut_side].label()
+        except (KeyError, TypeError):
             return None
+
+    def get_assembler_kwargs(
+        self,
+        machine_defaults: MachineDefaults,
+        workpiece: "WorkPiece",
+    ) -> dict:
+        kwargs: dict = {}
+        kwargs["cut_side"] = str(self.cut_side).lower()
+        kwargs["cut_order"] = str(self.cut_order).lower()
+        kwargs["remove_inner"] = self.remove_inner_paths
+        kwargs["path_offset_mm"] = self.path_offset_mm
+        kwargs["overcut"] = self.overcut
+        kwargs["kerf_mm"] = machine_defaults.kerf_mm
+        kwargs["arc_tolerance"] = machine_defaults.arc_tolerance
+        kwargs["allow_arcs"] = machine_defaults.allow_arcs
+        kwargs["supports_curves"] = machine_defaults.supports_curves
+        return kwargs
+
+    def to_dict(self) -> dict:
+        data = super().to_dict()
+        data["cut_side"] = self.cut_side
+        data["cut_order"] = self.cut_order
+        data["remove_inner_paths"] = self.remove_inner_paths
+        data["path_offset_mm"] = self.path_offset_mm
+        data["overcut"] = self.overcut
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ContourStep":
+        step = cast("ContourStep", super().from_dict(data))
+        step.cut_side = data.get("cut_side", "CENTERLINE")
+        step.cut_order = data.get("cut_order", "INSIDE_OUTSIDE")
+        step.remove_inner_paths = data.get("remove_inner_paths", False)
+        step.path_offset_mm = data.get("path_offset_mm", 0.0)
+        step.overcut = data.get("overcut", 0.0)
+        return step
 
     @classmethod
     def get_default_transformers_dicts(cls) -> Tuple[List, List]:
@@ -83,7 +121,8 @@ class ContourStep(Step):
         default_head = machine.get_default_head()
 
         step = cls(name=name)
-        step.opsproducer_dict = cls.PRODUCER_CLASS().to_dict()
+        default_dict = cls.PRODUCER_CLASS().to_dict()
+        step.opsproducer_dict = default_dict
         per_wp, per_step = cls.get_default_transformers_dicts()
         if not optimize:
             per_wp = [t for t in per_wp if t.get("name") != "Optimize"]

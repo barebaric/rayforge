@@ -7,6 +7,7 @@ from raygeo.geo import Matrix
 from rayforge.core.capability import CUT, SCORE, WITH_KERF
 from rayforge.core.step import Step
 from rayforge.core.step_registry import step_registry
+from rayforge.pipeline.stage.assembler_helpers import MachineDefaults
 
 
 @pytest.fixture
@@ -22,6 +23,21 @@ def mock_context():
     machine.get_default_head.return_value = default_head
     context.machine = machine
     return context
+
+
+@pytest.fixture
+def machine_defaults():
+    return MachineDefaults(
+        kerf_mm=0.1,
+        arc_tolerance=0.03,
+        allow_arcs=True,
+        supports_curves=False,
+        line_interval_mm=0.1,
+        step_power=1.0,
+        tool_radius=0.05,
+        step_over=0.1,
+        cut_speed=500,
+    )
 
 
 class TestContourStep:
@@ -80,7 +96,6 @@ class TestContourStep:
             "per_workpiece_transformers_dicts": [
                 {"name": "TabOpsTransformer", "enabled": True},
             ],
-            "per_step_transformers_dicts": [],
             "children": [],
         }
 
@@ -144,7 +159,6 @@ class TestContourStep:
             "per_workpiece_transformers_dicts": [
                 {"name": "TabOpsTransformer", "enabled": True},
             ],
-            "per_step_transformers_dicts": [],
             "children": [],
         }
 
@@ -190,3 +204,34 @@ class TestContourStep:
         )
 
         assert wp_optimize is step_optimize
+
+    def test_get_assembler_kwargs(self, machine_defaults):
+        step = ContourStep(name="Test")
+        workpiece = MagicMock(spec=["size"])
+        workpiece.size = (100, 100)
+        kwargs = step.get_assembler_kwargs(machine_defaults, workpiece)
+        assert isinstance(kwargs, dict)
+        expected_keys = {
+            "cut_side",
+            "cut_order",
+            "remove_inner",
+            "path_offset_mm",
+            "overcut",
+            "kerf_mm",
+            "arc_tolerance",
+            "allow_arcs",
+            "supports_curves",
+        }
+        assert set(kwargs.keys()) == expected_keys
+
+    def test_roundtrip_serialization(self):
+        step_registry.register(ContourStep)
+        step = ContourStep(name="Test")
+        step.cut_side = "OUTSIDE"
+        step.cut_order = "OUTSIDE_INSIDE"
+        step.remove_inner_paths = True
+        step.path_offset_mm = 0.5
+        step.overcut = 1.0
+        data = step.to_dict()
+        restored = ContourStep.from_dict(data)
+        assert data == restored.to_dict()

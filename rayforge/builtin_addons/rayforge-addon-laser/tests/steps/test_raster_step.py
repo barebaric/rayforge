@@ -5,6 +5,7 @@ from laser_essentials.steps import EngraveStep
 
 from rayforge.core.capability import ENGRAVE
 from rayforge.core.step_registry import step_registry
+from rayforge.pipeline.stage.assembler_helpers import MachineDefaults
 
 
 @pytest.fixture
@@ -20,6 +21,21 @@ def mock_context():
     machine.get_default_head.return_value = default_head
     context.machine = machine
     return context
+
+
+@pytest.fixture
+def machine_defaults():
+    return MachineDefaults(
+        kerf_mm=0.1,
+        arc_tolerance=0.03,
+        allow_arcs=True,
+        supports_curves=False,
+        line_interval_mm=0.1,
+        step_power=1.0,
+        tool_radius=0.05,
+        step_over=0.1,
+        cut_speed=500,
+    )
 
 
 class TestEngraveStep:
@@ -46,3 +62,37 @@ class TestEngraveStep:
         assert StepClass is not None
         step = StepClass.create(mock_context, name="FromRegistry")
         assert type(step).__name__ == "EngraveStep"
+
+    def test_get_assembler_kwargs(self, machine_defaults):
+        step = EngraveStep(name="Test")
+        workpiece = MagicMock(spec=["size"])
+        workpiece.size = (100, 100)
+        kwargs = step.get_assembler_kwargs(machine_defaults, workpiece)
+        assert isinstance(kwargs, dict)
+        expected_keys = {
+            "mode",
+            "line_interval_mm",
+            "sample_interval_mm",
+            "min_power",
+            "max_power",
+            "step_power",
+            "num_power_levels",
+            "angle",
+            "offset_x_mm",
+            "offset_y_mm",
+            "scan_mode",
+            "cross_hatch",
+            "num_depth_levels",
+            "z_step_down",
+            "angle_increment",
+        }
+        assert set(kwargs.keys()) == expected_keys
+
+    def test_roundtrip_serialization(self):
+        step = EngraveStep(name="Test")
+        step.scan_angle = 45.0
+        step.depth_mode = "MULTI_PASS"
+        step.line_interval_mm = 0.2  # type: ignore[assignment]
+        data = step.to_dict()
+        restored = EngraveStep.from_dict(data)
+        assert data == restored.to_dict()

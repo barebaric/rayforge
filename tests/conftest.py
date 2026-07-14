@@ -261,12 +261,10 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
     context = get_context()
     context._headless = True
 
-    # 4. Access addon_mgr to trigger lazy loading (worker_only=True)
-    # This happens before setting shared state, so we'll get a warning
-    # about missing shared state, but set_shared_state will rebuild it.
-    shared_state = task_mgr.get_shared_state()
-    context.addon_mgr.set_task_manager(task_mgr)
-    context.addon_mgr.set_shared_state(shared_state)
+    # 4. Access addon_mgr to trigger lazy loading (worker_only=True).
+    # task_mgr is already passed to AddonManager at construction time,
+    # so the manifest is built and pushed to shared_state automatically.
+    _ = context.addon_mgr
 
     yield context
 
@@ -493,10 +491,9 @@ def ui_context_initializer(tmp_path, monkeypatch, ui_task_mgr):
 
     context = get_context()
 
-    # Wire up AddonManager with the UI task manager's shared state
-    shared_state = ui_task_mgr.get_shared_state()
-    context.addon_mgr.set_task_manager(ui_task_mgr)
-    context.addon_mgr.set_shared_state(shared_state)
+    # Trigger addon loading. task_mgr is passed at construction time
+    # via the global proxy, so the manifest is built automatically.
+    _ = context.addon_mgr
 
     yield context
 

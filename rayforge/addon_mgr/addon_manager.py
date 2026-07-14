@@ -52,7 +52,7 @@ from .addon import (
 from .manifest import AddonManifest
 
 if TYPE_CHECKING:
-    from ..shared.tasker.manager import TaskManagerProxy
+    from ..shared.tasker.manager import TaskManager
 
 logger = logging.getLogger(__name__)
 
@@ -126,11 +126,11 @@ class AddonManager:
         addon_dirs: List[Path],
         install_dir: Path,
         plugin_mgr: pluggy.PluginManager,
+        task_mgr: "TaskManager",
         addon_config: Optional[AddonConfig] = None,
         is_job_active_callback: Optional[Callable[[], bool]] = None,
         registries: Optional[Dict[str, "AddonRegistry"]] = None,
         shared_state: Optional[Dict[str, Any]] = None,
-        task_mgr: Optional["TaskManagerProxy"] = None,
         license_validator: Optional[LicenseValidator] = None,
     ):
         """
@@ -139,6 +139,8 @@ class AddonManager:
             install_dir (Path): Directory for installing new addons.
             plugin_mgr (pluggy.PluginManager): The core plugin manager
                 instance for registration.
+            task_mgr (TaskManager): Task manager for shared state access
+                and worker pool restarts on configuration changes.
             addon_config (Optional[AddonConfig]): Addon state persistence
                 manager. If None, addons will always be loaded.
             is_job_active_callback (Optional[Callable]): A callback that
@@ -150,8 +152,6 @@ class AddonManager:
                 'menu_registry', 'layout_registry'.
             shared_state (Optional[Any]): Shared dict for worker state,
                 used to populate addon module paths for worker processes.
-            task_mgr (Optional[TaskManagerProxy]): Proxy to trigger worker
-                pool restarts upon configuration changes.
             license_validator (Optional[LicenseValidator]): License validator
                 for checking paid addon licenses.
         """
@@ -204,12 +204,6 @@ class AddonManager:
             window: The MainWindow instance for registering actions.
         """
         self._window = window
-
-    def set_task_manager(self, task_mgr: "TaskManagerProxy"):
-        """
-        Set the task manager proxy to trigger worker pool restarts.
-        """
-        self._task_mgr = task_mgr
 
     def set_shared_state(self, shared_state: Dict[str, Any]):
         """

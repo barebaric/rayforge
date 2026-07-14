@@ -34,6 +34,14 @@ REGISTRY_TABLE = [
         needs_window=False,
     ),
     RegistryEntry(
+        "register_assemblers",
+        "assembler_registry",
+        "rayforge.pipeline.assembler.registry",
+        "assembler_registry",
+        worker_ok=True,
+        needs_window=False,
+    ),
+    RegistryEntry(
         "register_transformers",
         "transformer_registry",
         "rayforge.pipeline.transformer.registry",

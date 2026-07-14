@@ -4,6 +4,7 @@ import pytest
 from laser_essentials.steps import FrameStep
 
 from rayforge.core.capability import CUT, SCORE, WITH_KERF
+from rayforge.pipeline.stage.assembler_helpers import MachineDefaults
 
 
 @pytest.fixture
@@ -19,6 +20,21 @@ def mock_context():
     machine.get_default_head.return_value = default_head
     context.machine = machine
     return context
+
+
+@pytest.fixture
+def machine_defaults():
+    return MachineDefaults(
+        kerf_mm=0.1,
+        arc_tolerance=0.03,
+        allow_arcs=True,
+        supports_curves=False,
+        line_interval_mm=0.1,
+        step_power=1.0,
+        tool_radius=0.05,
+        step_over=0.1,
+        cut_speed=500,
+    )
 
 
 class TestFrameStep:
@@ -37,3 +53,20 @@ class TestFrameStep:
         step = FrameStep(name="Test")
         data = step.to_dict()
         assert data["step_type"] == "FrameStep"
+
+    def test_get_assembler_kwargs(self, machine_defaults):
+        step = FrameStep(name="Test")
+        workpiece = MagicMock(spec=["size"])
+        workpiece.size = (100, 100)
+        kwargs = step.get_assembler_kwargs(machine_defaults, workpiece)
+        assert isinstance(kwargs, dict)
+        expected_keys = {"cut_side", "path_offset_mm", "kerf_mm"}
+        assert set(kwargs.keys()) == expected_keys
+
+    def test_roundtrip_serialization(self):
+        step = FrameStep(name="Test")
+        step.cut_side = "OUTSIDE"
+        step.path_offset_mm = 0.5
+        data = step.to_dict()
+        restored = FrameStep.from_dict(data)
+        assert data == restored.to_dict()
