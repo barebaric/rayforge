@@ -25,6 +25,7 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.4
         with:
           pixi-version: v0.68.1
+          frozen: true
           cache: true
           cache-key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
 
@@ -51,6 +52,7 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.4
         with:
           pixi-version: v0.68.1
+          frozen: true
           cache: true
           cache-key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
 
@@ -77,6 +79,7 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.4
         with:
           pixi-version: v0.68.1
+          frozen: true
           cache: true
           cache-key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
 
@@ -103,6 +106,7 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.9.4
         with:
           pixi-version: v0.68.1
+          frozen: true
           cache: true
           cache-key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
 
