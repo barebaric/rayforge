@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 from raygeo.geo.types import Point3D
 from raygeo.ops import Ops
+from raygeo.ops.state import AirAssistMode
 from raygeo.ops.types import CommandType
 
 from ....pipeline.encoder.base import (
@@ -250,7 +251,7 @@ class RuidaEncoder(OpsEncoder):
     ) -> None:
         """Handle SetAirAssistCommand - update air assist state."""
         mode = ops.air_assist(idx)
-        if mode == "On":
+        if mode == AirAssistMode.ON:
             if not self.air_assist:
                 self.air_assist = True
                 binary.append(b"\xca\x13")

@@ -317,7 +317,7 @@ def test_workpiece_uid_in_section_commands(
     ops = artifact.ops
     section_indices = ops.indices_of(CommandType.OPS_SECTION_START)
     assert len(section_indices) > 0
-    _, wp_uid = ops.section_params(section_indices[0])
+    _, wp_uid, _raster_mode = ops.section_params(section_indices[0])
     assert wp_uid == mock_workpiece.uid
 
 

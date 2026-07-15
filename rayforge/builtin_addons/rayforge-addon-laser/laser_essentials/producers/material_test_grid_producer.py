@@ -211,9 +211,7 @@ class MaterialTestGridProducer(OpsProducer):
         )
         main_ops = Ops()
         main_ops.set_head(laser.uid)
-        main_ops.ops_section_start(
-            SectionType.VECTOR_OUTLINE, workpiece.uid
-        )
+        main_ops.ops_section_start(SectionType.VECTOR_OUTLINE, workpiece.uid)
         main_ops.extend(result.ops)
         main_ops.ops_section_end(SectionType.VECTOR_OUTLINE)
 
