@@ -33,7 +33,11 @@ class TestEngraveStep:
         assert isinstance(step, EngraveStep)
         assert step.opsproducer_dict is not None
         assert step.opsproducer_dict["type"] == "Rasterizer"
-        assert len(step.per_workpiece_transformers_dicts) == 2
+        assert len(step.per_workpiece_transformers_dicts) == 3
+        transformer_names = {
+            t.get("name") for t in step.per_workpiece_transformers_dicts
+        }
+        assert "BidirScanOffsetTransformer" in transformer_names
         assert step.selected_laser_uid == "test-laser-uid"
 
     def test_serialization_includes_step_type(self):

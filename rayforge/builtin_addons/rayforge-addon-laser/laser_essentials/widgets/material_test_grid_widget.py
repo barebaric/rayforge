@@ -290,6 +290,39 @@ class MaterialTestGridSettingsWidget(
             lambda r: self._debounce(self._on_passes_max_changed, r),
         )
 
+        # Offset Range (used in Speed vs Offset mode)
+        min_offset, max_offset = producer.offset_range
+        min_offset_adj = Gtk.Adjustment(
+            lower=-10.0, upper=10.0, step_increment=0.05, value=min_offset
+        )
+        self.offset_min_row = Adw.SpinRow(
+            title=_("Minimum Offset"),
+            subtitle=_("Bidir scan X-offset for first row (mm)"),
+            adjustment=min_offset_adj,
+            digits=2,
+        )
+        group.add(self.offset_min_row)
+
+        max_offset_adj = Gtk.Adjustment(
+            lower=-10.0, upper=10.0, step_increment=0.05, value=max_offset
+        )
+        self.offset_max_row = Adw.SpinRow(
+            title=_("Maximum Offset"),
+            subtitle=_("Bidir scan X-offset for last row (mm)"),
+            adjustment=max_offset_adj,
+            digits=2,
+        )
+        group.add(self.offset_max_row)
+
+        self.offset_min_row.connect(
+            "changed",
+            lambda r: self._debounce(self._on_offset_min_changed, r),
+        )
+        self.offset_max_row.connect(
+            "changed",
+            lambda r: self._debounce(self._on_offset_max_changed, r),
+        )
+
         # Label settings
         power_adj = Gtk.Adjustment(
             lower=1,
@@ -586,6 +619,28 @@ class MaterialTestGridSettingsWidget(
         self._update_control_visibility()
         self._update_dimension_labels()
 
+        if mode_text == "Speed vs Offset":
+            self._apply_speed_vs_offset_defaults()
+
+    def _apply_speed_vs_offset_defaults(self):
+        """Bidir scan offset calibration only makes sense for raster
+        engraving (Cut has no bidirectional scanning to calibrate), and
+        needs wide line spacing to make row-to-row misalignment clearly
+        visible by eye. Can't default the preset dropdown too, since
+        there are multiple Engrave presets (Diode/CO2) with different
+        ranges."""
+        test_type_model = cast(Gtk.StringList, self.test_type_row.get_model())
+        for i in range(test_type_model.get_n_items()):
+            if test_type_model.get_string(i) == "Engrave":
+                self.test_type_row.set_selected(i)
+                break
+
+        if self._debounce_timer > 0:
+            GLib.source_remove(self._debounce_timer)
+            self._debounce_timer = 0
+        self.line_interval_row.set_value(0.5)
+        self._update_param("line_interval_mm", 0.5)
+
     def _on_fixed_speed_changed(self, spin_row):
         new_value = get_spinrow_float(spin_row)
         self._update_param("fixed_speed", new_value)
@@ -601,6 +656,14 @@ class MaterialTestGridSettingsWidget(
         new_value = get_spinrow_int(spin_row)
         self._update_range_param("passes_range", 1, new_value)
 
+    def _on_offset_min_changed(self, spin_row):
+        new_value = get_spinrow_float(spin_row)
+        self._update_range_param("offset_range", 0, new_value)
+
+    def _on_offset_max_changed(self, spin_row):
+        new_value = get_spinrow_float(spin_row)
+        self._update_range_param("offset_range", 1, new_value)
+
     def _get_current_grid_mode(self) -> str:
         from ..producers.material_test_grid_producer import GridMode
 
@@ -614,10 +677,15 @@ class MaterialTestGridSettingsWidget(
     def _update_control_visibility(self):
         mode = self._get_current_grid_mode()
         show_power_range = mode in ("Power vs Speed", "Power vs Passes")
-        show_speed_range = mode in ("Power vs Speed", "Speed vs Passes")
+        show_speed_range = mode in (
+            "Power vs Speed",
+            "Speed vs Passes",
+            "Speed vs Offset",
+        )
         show_passes_range = mode in ("Power vs Passes", "Speed vs Passes")
+        show_offset_range = mode == "Speed vs Offset"
         show_fixed_speed = mode == "Power vs Passes"
-        show_fixed_power = mode == "Speed vs Passes"
+        show_fixed_power = mode in ("Speed vs Passes", "Speed vs Offset")
 
         self.fixed_speed_row.set_visible(show_fixed_speed)
         self.fixed_power_row.set_visible(show_fixed_power)
@@ -633,6 +701,9 @@ class MaterialTestGridSettingsWidget(
         self.passes_min_row.set_visible(show_passes_range)
         self.passes_max_row.set_visible(show_passes_range)
 
+        self.offset_min_row.set_visible(show_offset_range)
+        self.offset_max_row.set_visible(show_offset_range)
+
     def _update_dimension_labels(self):
         mode = self._get_current_grid_mode()
         if mode == "Power vs Passes":
@@ -645,6 +716,11 @@ class MaterialTestGridSettingsWidget(
             col_sub = _("Number of speed variations")
             row_title = _("Rows (Passes Steps)")
             row_sub = _("Number of passes variations")
+        elif mode == "Speed vs Offset":
+            col_title = _("Columns (Speed Steps)")
+            col_sub = _("Number of speed variations")
+            row_title = _("Rows (Offset Steps)")
+            row_sub = _("Number of offset variations")
         else:
             col_title = _("Columns (Power Steps)")
             col_sub = _("Number of power variations")

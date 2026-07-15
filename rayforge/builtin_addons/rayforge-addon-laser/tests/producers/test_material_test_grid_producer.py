@@ -13,6 +13,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from laser_essentials.producers import (
+    GridMode,
     MaterialTestGridProducer,
     MaterialTestGridType,
     draw_material_test_preview,
@@ -350,3 +351,89 @@ def test_grid_cell_count(laser: Laser):
         ]
         assert len(speeds) == cols * rows
         assert artifact.source_dimensions == wp_size
+
+
+def test_offset_range_default_and_custom():
+    """Verify offset_range has a sensible default and stores custom values."""
+    default_producer = MaterialTestGridProducer()
+    assert default_producer.offset_range == (-0.5, 0.5)
+
+    custom_producer = MaterialTestGridProducer(offset_range=(-1.0, 1.0))
+    assert custom_producer.offset_range == (-1.0, 1.0)
+
+
+def test_serialization_includes_offset_range():
+    """Verify offset_range and Speed vs Offset grid_mode round-trip."""
+    original = MaterialTestGridProducer(
+        grid_mode=GridMode.SPEED_VS_OFFSET, offset_range=(-0.75, 0.75)
+    )
+    data = original.to_dict()
+    assert data["params"]["offset_range"] == [-0.75, 0.75]
+    assert data["params"]["grid_mode"] == "Speed vs Offset"
+
+    recreated = OpsProducer.from_dict(data)
+    assert isinstance(recreated, MaterialTestGridProducer)
+    assert tuple(recreated.offset_range) == (-0.75, 0.75)
+    assert recreated.grid_mode == GridMode.SPEED_VS_OFFSET
+
+
+def test_speed_vs_offset_power_scales_with_speed_and_clamps(
+    laser: Laser, mock_workpiece: WorkPiece
+):
+    """Engrave mode with Speed vs Offset must scale power with speed
+    (anchored at fixed_power at min_speed, clamped to 100%) -- raygeo
+    does this internally so darkness stays comparable across the row."""
+    producer = MaterialTestGridProducer(
+        test_type=MaterialTestGridType.ENGRAVE,
+        grid_mode=GridMode.SPEED_VS_OFFSET,
+        speed_range=(1000.0, 4000.0),
+        offset_range=(-0.5, 0.5),
+        fixed_power=40.0,
+        grid_dimensions=(2, 2),
+        shape_size=10.0,
+        spacing=2.0,
+        include_labels=False,
+        line_interval_mm=2.0,
+    )
+    artifact = producer.run(
+        laser=laser,
+        surface=None,
+        pixels_per_mm=None,
+        generation_id=0,
+        workpiece=mock_workpiece,
+        settings={},
+    )
+    ops = artifact.ops
+    speeds = [ops.rate(i) for i in ops.indices_of(CommandType.SET_FEED_RATE)]
+    all_powers = [ops.power(i) for i in ops.indices_of(CommandType.SET_POWER)]
+    powers = [p for p in all_powers if p > 0]
+
+    assert set(speeds) == {1000.0, 4000.0}
+    # 40% * 1000/1000 = 40%; 40% * 4000/1000 = 160%, clamped to 100%.
+    assert any(abs(p - 0.40) < 1e-6 for p in powers)
+    assert any(abs(p - 1.00) < 1e-6 for p in powers)
+    assert all(p <= 1.0 for p in powers)
+
+
+def test_speed_vs_offset_grid_cell_count(
+    laser: Laser, mock_workpiece: WorkPiece
+):
+    """Speed vs Offset must still produce one cell per grid position."""
+    producer = MaterialTestGridProducer(
+        grid_mode=GridMode.SPEED_VS_OFFSET,
+        speed_range=(500.0, 2000.0),
+        offset_range=(-0.3, 0.3),
+        grid_dimensions=(3, 4),
+        include_labels=False,
+    )
+    artifact = producer.run(
+        laser=laser,
+        surface=None,
+        pixels_per_mm=None,
+        generation_id=0,
+        workpiece=mock_workpiece,
+        settings={},
+    )
+    ops = artifact.ops
+    speeds = [ops.rate(i) for i in ops.indices_of(CommandType.SET_FEED_RATE)]
+    assert len(speeds) == 3 * 4
