@@ -10,8 +10,6 @@ from ...core.capability import Capability, LaserHeadVar
 from ...core.step import Step
 from ...core.undo import ChangePropertyCommand, HistoryManager
 from ...core.varset import VarSet
-from ...pipeline.producer import OpsProducer
-from ...pipeline.producer.placeholder import PlaceholderProducer
 from ...pipeline.transformer import OpsTransformer
 from ...pipeline.transformer.placeholder import PlaceholderTransformer
 from ..icons import get_icon
@@ -36,39 +34,19 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         self.editor = editor
         self.doc = editor.doc
         self.step = step
-        producer_type = (
-            step.opsproducer_dict.get("type", "unknown")
-            if step.opsproducer_dict
-            else "unknown"
-        )
-        self.key = producer_type.lower().replace("producer", "")
+        producer_type = step.ASSEMBLER_NAME or "unknown"
+        self.key = producer_type.lower()
         self.path_prefix = "/step-settings/"
         self.history_manager: HistoryManager = self.doc.history_manager
 
-        # 1. Producer Settings
-        producer_dict = self.step.opsproducer_dict
+        # 1. Producer Settings (no longer deserialized — widgets read step
+        #    attributes directly via set_step_property)
         producer = None
-        if producer_dict:
-            producer_name = producer_dict.get("type")
-            if producer_name:
-                producer = OpsProducer.from_dict(producer_dict)
 
         context = get_context()
         if context:
             context.plugin_mgr.hook.step_settings_loaded(
-                dialog=self, step=self.step, producer=producer
-            )
-
-        # Add placeholder widget if producer is not available
-        if isinstance(producer, PlaceholderProducer) and producer_dict:
-            self.add(
-                PlaceholderSettingsWidget(
-                    self.editor,
-                    producer.label,
-                    producer,
-                    self,
-                    self.step,
-                )
+                dialog=self, step=self.step, producer=None
             )
 
         # Build settings UI from capability VarSet.
@@ -223,12 +201,8 @@ class PostProcessingSettingsView(TrackedPreferencesPage):
         super().__init__()
         self.editor = editor
         self.step = step
-        producer_type = (
-            step.opsproducer_dict.get("type", "unknown")
-            if step.opsproducer_dict
-            else "unknown"
-        )
-        producer_key = producer_type.lower().replace("producer", "")
+        producer_type = step.ASSEMBLER_NAME or "unknown"
+        producer_key = producer_type.lower()
         self.key = f"{producer_key}/post-processing"
         self.path_prefix = "/step-settings/"
 

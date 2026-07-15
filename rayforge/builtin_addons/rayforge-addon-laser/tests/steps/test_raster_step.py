@@ -47,8 +47,6 @@ class TestEngraveStep:
     def test_create(self, mock_context):
         step = EngraveStep.create(mock_context, name="Created")
         assert isinstance(step, EngraveStep)
-        assert step.opsproducer_dict is not None
-        assert step.opsproducer_dict["type"] == "Rasterizer"
         assert len(step.per_workpiece_transformers_dicts) == 2
         assert step.selected_laser_uid == "test-laser-uid"
 

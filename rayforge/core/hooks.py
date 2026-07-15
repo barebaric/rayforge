@@ -127,7 +127,7 @@ resource registration, and UI integration:
 - ``on_unload``: Called when addon is disabled or unloaded
 - ``register_machines``: Register new machine drivers
 - ``register_steps``: Register custom step types
-- ``register_producers``: Register custom ops producers
+- ``register_producers``: Register custom ops producers (removed v18)
 - ``register_step_widgets``: Register step settings widgets (removed v5)
 - ``register_menu_items``: Register menu items (removed in v4)
 - ``register_commands``: Register editor commands
@@ -183,17 +183,6 @@ class RayforgeSpecs:
 
         Args:
             step_registry: The global StepRegistry instance.
-        """
-
-    @hookspec
-    def register_producers(self, producer_registry):
-        """
-        Called to allow addons to register custom ops producers.
-
-        .. versionadded:: 1
-
-        Args:
-            producer_registry: The global ProducerRegistry instance.
         """
 
     @hookspec

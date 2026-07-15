@@ -148,7 +148,7 @@ class AddonManager:
                 addon unloading until jobs complete.
             registries (Optional[Dict[str, AddonRegistry]]): Dict mapping
                 hook parameter names to registry instances. Expected keys:
-                'step_registry', 'producer_registry', 'widget_registry',
+                'step_registry', 'widget_registry',
                 'menu_registry', 'layout_registry'.
             shared_state (Optional[Any]): Shared dict for worker state,
                 used to populate addon module paths for worker processes.
@@ -188,7 +188,7 @@ class AddonManager:
         Args:
             registries: Dict mapping hook parameter names to registry
                 instances. Expected keys: 'step_registry',
-                'producer_registry', 'widget_registry', 'action_registry',
+                'widget_registry', 'action_registry',
                 'layout_registry'.
         """
         logger.debug(

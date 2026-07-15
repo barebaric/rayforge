@@ -4,11 +4,13 @@ from typing import TYPE_CHECKING, Any, Optional
 import numpy as np
 from gi.repository import Adw, GLib, GObject, Gtk
 from raygeo.image.grayscale import compute_auto_levels
+from raygeo.image.scan import ScanMode
 
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.image.util import (
     get_visible_grayscale_values,
 )
+from rayforge.pipeline.stage.assembler_helpers import DepthMode
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
@@ -18,7 +20,6 @@ from rayforge.ui_gtk.shared.direction_preview import DirectionPreview
 from rayforge.ui_gtk.shared.histogram_preview import HistogramPreview
 from rayforge.ui_gtk.shared.slider import create_slider, create_slider_row
 
-from ..producers import DepthMode, ScanMode
 
 _SCAN_MODES = [ScanMode.SEGMENTED, ScanMode.FULL_SWEEP]
 
@@ -33,7 +34,6 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self,
         editor: "DocEditor",
         title: str,
-        producer,
         page: Adw.PreferencesPage,
         step: Any,
         **kwargs,
@@ -41,7 +41,6 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         super().__init__(
             editor,
             title,
-            component=producer,
             page=page,
             step=step,
             description=_("Configure how the laser engraves your image."),
@@ -83,9 +82,7 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             subtitle=_("Algorithm for converting grayscale to binary"),
             model=Gtk.StringList.new(dither_choices),
         )
-        current_algo = (
-            step.dither_algorithm or DitherAlgorithm.FLOYD_STEINBERG
-        )
+        current_algo = step.dither_algorithm or DitherAlgorithm.FLOYD_STEINBERG
         self.dither_algorithm_row.set_selected(
             list(DitherAlgorithm).index(current_algo)
         )
@@ -99,9 +96,7 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
         # --- Histogram (Black/White Point) ---
         self.histogram_preview = HistogramPreview()
-        self.histogram_preview.set_points(
-            step.black_point, step.white_point
-        )
+        self.histogram_preview.set_points(step.black_point, step.white_point)
         self.histogram_preview.auto_mode = step.auto_levels
         self.histogram_preview.black_point_changed.connect(
             self._on_black_point_changed
@@ -323,7 +318,7 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             model=Gtk.StringList.new(scan_mode_choices),
         )
         self.scan_mode_row.set_selected(
-            _SCAN_MODES.index(ScanMode[self.step.scan_mode])
+            _SCAN_MODES.index(getattr(ScanMode, self.step.scan_mode))
         )
         self.scan_mode_row.connect(
             "notify::selected", self._on_scan_mode_changed

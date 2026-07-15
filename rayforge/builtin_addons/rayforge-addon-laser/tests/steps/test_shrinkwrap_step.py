@@ -46,8 +46,6 @@ class TestShrinkWrapStep:
     def test_create(self, mock_context):
         step = ShrinkWrapStep.create(mock_context)
         assert isinstance(step, ShrinkWrapStep)
-        assert step.opsproducer_dict is not None
-        assert step.opsproducer_dict["type"] == "ShrinkWrapProducer"
 
     def test_serialization_includes_step_type(self):
         step = ShrinkWrapStep(name="Test")

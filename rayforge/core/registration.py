@@ -26,14 +26,6 @@ REGISTRY_TABLE = [
         needs_window=False,
     ),
     RegistryEntry(
-        "register_producers",
-        "producer_registry",
-        "rayforge.pipeline.producer.registry",
-        "producer_registry",
-        worker_ok=True,
-        needs_window=False,
-    ),
-    RegistryEntry(
         "register_assemblers",
         "assembler_registry",
         "rayforge.pipeline.assembler.registry",

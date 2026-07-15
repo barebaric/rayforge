@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 from gi.repository import Adw, Gtk
 
-from rayforge.pipeline.producer.base import CutSide
+from rayforge.core.cut_side import CutSide
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
@@ -21,7 +21,6 @@ class FrameProducerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self,
         editor: "DocEditor",
         title: str,
-        producer,
         page: Adw.PreferencesPage,
         step: Any,
         **kwargs,
@@ -29,7 +28,6 @@ class FrameProducerSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         super().__init__(
             editor,
             title,
-            component=producer,
             page=page,
             step=step,
             **kwargs,

@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 from gi.repository import Adw, GLib, GObject, Gtk
 
-from rayforge.core.undo import DictItemCommand
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
@@ -17,10 +16,7 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
 from rayforge.ui_gtk.shared.slider import create_slider_row
 
-from ..producers import MaterialTestGridProducer
-
 if TYPE_CHECKING:
-    from rayforge.core.step import Step
     from rayforge.doceditor.editor import DocEditor
 
 
@@ -53,39 +49,37 @@ PRESETS = {
 class MaterialTestGridSettingsWidget(
     DebounceMixin, StepComponentSettingsWidget
 ):
-    """MaterialTestGridProducer UI."""
+    """Material Test Grid settings widget."""
 
     def __init__(
         self,
         editor: "DocEditor",
         title: str,
-        producer: MaterialTestGridProducer,
-        page: Adw.PreferencesPage,
-        step: "Step",
+        page: Any,
+        step: Any,
         **kwargs,
     ):
         super().__init__(
             editor,
             title,
-            component=producer,
             page=page,
             step=step,
             **kwargs,
         )
 
-        self._build_preset_selector(producer)
-        self._build_test_type_selector(producer)
-        self._build_grid_mode_selector(producer)
-        self._build_grid_dimensions(producer)
-        self._build_shape_size(producer)
-        self._build_spacing(producer)
-        self._build_label_settings(producer)
+        self._build_preset_selector()
+        self._build_test_type_selector()
+        self._build_grid_mode_selector()
+        self._build_grid_dimensions()
+        self._build_shape_size()
+        self._build_spacing()
+        self._build_label_settings()
 
         # Schedule the creation of the second group to run after this widget
         # has been added to its parent page, ensuring correct order.
-        GLib.idle_add(self._build_power_and_speed_group, producer)
+        GLib.idle_add(self._build_power_and_speed_group)
 
-    def _build_preset_selector(self, producer: MaterialTestGridProducer):
+    def _build_preset_selector(self):
         """Builds the preset dropdown."""
         string_list = Gtk.StringList()
         string_list.append(PRESET_NONE)
@@ -101,7 +95,7 @@ class MaterialTestGridSettingsWidget(
         self.add(self.preset_row)
         self.preset_row.connect("notify::selected", self._on_preset_changed)
 
-    def _build_test_type_selector(self, producer: MaterialTestGridProducer):
+    def _build_test_type_selector(self):
         """Builds the test type dropdown (Cut/Engrave)."""
         string_list = Gtk.StringList.new(["Cut", "Engrave"])
         self.test_type_row = Adw.ComboRow(
@@ -109,7 +103,7 @@ class MaterialTestGridSettingsWidget(
             subtitle=_("Cut: outlines; Engrave: fills with raster lines"),
             model=string_list,
         )
-        current_text = producer.test_type.value
+        current_text = self.step.test_type
         if current_text == "Cut":
             self.test_type_row.set_selected(0)
         else:
@@ -119,9 +113,9 @@ class MaterialTestGridSettingsWidget(
             "notify::selected", self._on_test_type_changed
         )
 
-    def _build_grid_mode_selector(self, producer: MaterialTestGridProducer):
+    def _build_grid_mode_selector(self):
         """Builds the grid mode dropdown."""
-        from ..producers.material_test_grid_producer import GridMode
+        from ..material_test_helpers import GridMode
 
         mode_labels = [m.value for m in GridMode]
         string_list = Gtk.StringList.new(mode_labels)
@@ -130,7 +124,7 @@ class MaterialTestGridSettingsWidget(
             subtitle=_("Choose which parameters to vary on axes"),
             model=string_list,
         )
-        current_mode = producer.grid_mode.value
+        current_mode = self.step.grid_mode
         for i, label in enumerate(mode_labels):
             if label == current_mode:
                 self.grid_mode_row.set_selected(i)
@@ -140,7 +134,7 @@ class MaterialTestGridSettingsWidget(
             "notify::selected", self._on_grid_mode_changed
         )
 
-    def _build_power_and_speed_group(self, producer: MaterialTestGridProducer):
+    def _build_power_and_speed_group(self):
         """Builds the group for power and speed settings."""
         group = Adw.PreferencesGroup(
             title=_("Parameters"),
@@ -156,7 +150,7 @@ class MaterialTestGridSettingsWidget(
             lower=1.0,
             upper=machine_max_speed,
             step_increment=10.0,
-            value=min(producer.fixed_speed, machine_max_speed),
+            value=min(self.step.fixed_speed, machine_max_speed),
         )
         self.fixed_speed_row = Adw.SpinRow(
             title=_("Fixed Speed"),
@@ -175,7 +169,7 @@ class MaterialTestGridSettingsWidget(
             lower=1,
             upper=100,
             step_increment=0.1,
-            value=producer.fixed_power,
+            value=self.step.fixed_power,
         )
         self.fixed_power_row, self.fixed_power_scale = create_slider_row(
             title=_("Fixed Power (%)"),
@@ -189,7 +183,7 @@ class MaterialTestGridSettingsWidget(
         group.add(self.fixed_power_row)
 
         # Power Range (used in Power vs Speed and Power vs Passes modes)
-        min_power, max_power = producer.power_range
+        min_power, max_power = self.step.power_range
         self.min_power_adj = Gtk.Adjustment(
             lower=1, upper=100, step_increment=0.1, value=min_power
         )
@@ -222,7 +216,7 @@ class MaterialTestGridSettingsWidget(
         )
 
         # Speed Range (used in Power vs Speed and Speed vs Passes modes)
-        min_speed, max_speed = producer.speed_range
+        min_speed, max_speed = self.step.speed_range
         machine_max_speed = self.step.max_cut_speed
         min_speed = min(min_speed, machine_max_speed)
         max_speed = min(max_speed, machine_max_speed)
@@ -258,7 +252,7 @@ class MaterialTestGridSettingsWidget(
         )
 
         # Passes Range (used in Power vs Passes and Speed vs Passes modes)
-        min_passes, max_passes = producer.passes_range
+        min_passes, max_passes = self.step.passes_range
         min_passes_adj = Gtk.Adjustment(
             lower=1, upper=50, step_increment=1, value=min_passes
         )
@@ -295,7 +289,7 @@ class MaterialTestGridSettingsWidget(
             lower=1,
             upper=100,
             step_increment=0.1,
-            value=producer.label_power_percent,
+            value=self.step.label_power_percent,
         )
         self.label_power_row, power_scale = create_slider_row(
             title=_("Label Engrave Power (%)"),
@@ -311,7 +305,7 @@ class MaterialTestGridSettingsWidget(
             lower=1.0,
             upper=machine_max_speed,
             step_increment=10.0,
-            value=min(producer.label_speed, machine_max_speed),
+            value=min(self.step.label_speed, machine_max_speed),
         )
         self.label_speed_row = Adw.SpinRow(
             title=_("Label Engrave Speed"),
@@ -326,7 +320,7 @@ class MaterialTestGridSettingsWidget(
         )
 
         self._on_labels_toggled(
-            self.include_labels_switch, producer.include_labels
+            self.include_labels_switch, self.step.include_labels
         )
 
         self._update_control_visibility()
@@ -334,9 +328,9 @@ class MaterialTestGridSettingsWidget(
 
         return False  # for GLib.idle_add
 
-    def _build_grid_dimensions(self, producer: MaterialTestGridProducer):
+    def _build_grid_dimensions(self):
         """Builds grid dimension controls."""
-        cols, rows = producer.grid_dimensions
+        cols, rows = self.step.grid_dimensions
 
         cols_adj = Gtk.Adjustment(lower=2, upper=20, step_increment=1)
         self.cols_row = Adw.SpinRow(
@@ -365,7 +359,7 @@ class MaterialTestGridSettingsWidget(
             "changed", lambda r: self._debounce(self._on_grid_rows_changed, r)
         )
 
-    def _build_shape_size(self, producer: MaterialTestGridProducer):
+    def _build_shape_size(self):
         """Builds shape size control."""
         adj = Gtk.Adjustment(lower=1, upper=100, step_increment=1)
         self.shape_size_row = Adw.SpinRow(
@@ -373,14 +367,14 @@ class MaterialTestGridSettingsWidget(
             subtitle=_("Size of each test square (mm)"),
             adjustment=adj,
             digits=1,
-            value=producer.shape_size,
+            value=self.step.shape_size,
         )
         self.add(self.shape_size_row)
         self.shape_size_row.connect(
             "changed", lambda r: self._debounce(self._on_shape_size_changed, r)
         )
 
-    def _build_spacing(self, producer: MaterialTestGridProducer):
+    def _build_spacing(self):
         """Builds spacing control."""
         adj = Gtk.Adjustment(lower=0, upper=50, step_increment=0.5)
         self.spacing_row = Adw.SpinRow(
@@ -388,7 +382,7 @@ class MaterialTestGridSettingsWidget(
             subtitle=_("Gap between test squares (mm)"),
             adjustment=adj,
             digits=1,
-            value=producer.spacing,
+            value=self.step.spacing,
         )
         self.add(self.spacing_row)
         self.spacing_row.connect(
@@ -399,7 +393,7 @@ class MaterialTestGridSettingsWidget(
             lower=0.01,
             upper=10.0,
             step_increment=0.01,
-            value=producer.line_interval_mm or 0.1,
+            value=self.step.line_interval_mm or 0.1,
         )
         self.line_interval_row = Adw.SpinRow(
             title=_("Line Interval"),
@@ -416,10 +410,10 @@ class MaterialTestGridSettingsWidget(
             lambda r: self._debounce(self._on_line_interval_changed, r),
         )
 
-    def _build_label_settings(self, producer: MaterialTestGridProducer):
+    def _build_label_settings(self):
         """Builds controls for label appearance and behavior."""
         self.include_labels_switch = Gtk.Switch(
-            valign=Gtk.Align.CENTER, active=producer.include_labels
+            valign=Gtk.Align.CENTER, active=self.step.include_labels
         )
         labels_row = Adw.ActionRow(
             title=_("Include Labels"),
@@ -468,8 +462,7 @@ class MaterialTestGridSettingsWidget(
             GLib.source_remove(self._debounce_timer)
             self._debounce_timer = 0
 
-        self._update_range_param("speed_range", 0, min_speed)
-        self._update_range_param("speed_range", 1, max_speed)
+        self._update_range_param("speed_range", (min_speed, max_speed))
         self._commit_power_range_change()
 
         model = cast(Gtk.StringList, self.test_type_row.get_model())
@@ -487,35 +480,26 @@ class MaterialTestGridSettingsWidget(
             self._update_param("test_type", test_type_text)
 
     def _on_speed_min_changed(self, spin_row):
-        new_value = get_spinrow_float(spin_row)
-        self._update_range_param("speed_range", 0, new_value)
+        min_speed = get_spinrow_float(spin_row)
+        max_speed = get_spinrow_float(self.speed_max_row)
+        self._update_range_param("speed_range", (min_speed, max_speed))
 
     def _on_speed_max_changed(self, spin_row):
-        new_value = get_spinrow_float(spin_row)
-        self._update_range_param("speed_range", 1, new_value)
+        min_speed = get_spinrow_float(self.speed_min_row)
+        max_speed = get_spinrow_float(spin_row)
+        self._update_range_param("speed_range", (min_speed, max_speed))
 
     def _commit_power_range_change(self):
-        """Commits the min/max power range to the model via a command."""
+        """Commits the min/max power range to the step."""
         min_p = self.min_power_adj.get_value()
         max_p = self.max_power_adj.get_value()
-        new_range = [min_p, max_p]
+        new_range = (min_p, max_p)
 
-        params_dict = self.target_dict.setdefault("params", {})
-        if params_dict.get("power_range") == new_range:
+        if self.step.power_range == new_range:
             return
 
-        def on_change():
-            self._exit_preview_mode_if_active()
-            self.step.updated.send(self.step)
-
-        command = DictItemCommand(
-            target_dict=params_dict,
-            key="power_range",
-            new_value=new_range,
-            name=_("Change Power Range"),
-            on_change_callback=on_change,
-        )
-        self.history_manager.execute(command)
+        self._exit_preview_mode_if_active()
+        self.set_step_property("power_range", new_range)
 
     def _on_min_power_scale_changed(self, scale: Gtk.Scale):
         new_min_value = self.min_power_adj.get_value()
@@ -542,20 +526,20 @@ class MaterialTestGridSettingsWidget(
         self._debounce(self._commit_power_range_change)
 
     def _on_grid_cols_changed(self, spin_row):
-        new_value = get_spinrow_int(spin_row)
-        self._update_grid_param(0, new_value)
+        cols = get_spinrow_int(spin_row)
+        _, rows = self.step.grid_dimensions
+        self._update_grid_param((cols, rows))
 
     def _on_grid_rows_changed(self, spin_row):
-        new_value = get_spinrow_int(spin_row)
-        self._update_grid_param(1, new_value)
+        cols, _ = self.step.grid_dimensions
+        rows = get_spinrow_int(spin_row)
+        self._update_grid_param((cols, rows))
 
     def _on_shape_size_changed(self, spin_row):
-        new_value = get_spinrow_float(spin_row)
-        self._update_param("shape_size", new_value)
+        self._update_param("shape_size", get_spinrow_float(spin_row))
 
     def _on_spacing_changed(self, spin_row):
-        new_value = get_spinrow_float(spin_row)
-        self._update_param("spacing", new_value)
+        self._update_param("spacing", get_spinrow_float(spin_row))
 
     def _on_line_interval_changed(self, spin_row):
         value = get_spinrow_float(spin_row)
@@ -573,8 +557,7 @@ class MaterialTestGridSettingsWidget(
         self._update_param("label_power_percent", scale.get_value())
 
     def _on_label_speed_changed(self, spin_row):
-        new_value = get_spinrow_float(spin_row)
-        self._update_param("label_speed", new_value)
+        self._update_param("label_speed", get_spinrow_float(spin_row))
 
     def _on_grid_mode_changed(self, row: Adw.ComboRow, _pspec):
         selected_idx = row.get_selected()
@@ -587,22 +570,23 @@ class MaterialTestGridSettingsWidget(
         self._update_dimension_labels()
 
     def _on_fixed_speed_changed(self, spin_row):
-        new_value = get_spinrow_float(spin_row)
-        self._update_param("fixed_speed", new_value)
+        self._update_param("fixed_speed", get_spinrow_float(spin_row))
 
     def _on_fixed_power_changed(self, scale: Gtk.Scale):
         self._update_param("fixed_power", scale.get_value())
 
     def _on_passes_min_changed(self, spin_row):
-        new_value = get_spinrow_int(spin_row)
-        self._update_range_param("passes_range", 0, new_value)
+        min_passes = get_spinrow_int(spin_row)
+        _, max_passes = self.step.passes_range
+        self._update_range_param("passes_range", (min_passes, max_passes))
 
     def _on_passes_max_changed(self, spin_row):
-        new_value = get_spinrow_int(spin_row)
-        self._update_range_param("passes_range", 1, new_value)
+        min_passes, _ = self.step.passes_range
+        max_passes = get_spinrow_int(spin_row)
+        self._update_range_param("passes_range", (min_passes, max_passes))
 
     def _get_current_grid_mode(self) -> str:
-        from ..producers.material_test_grid_producer import GridMode
+        from ..material_test_helpers import GridMode
 
         selected_idx = self.grid_mode_row.get_selected()
         if selected_idx == Gtk.INVALID_LIST_POSITION:
@@ -657,63 +641,30 @@ class MaterialTestGridSettingsWidget(
 
     # Helper methods
     def _update_param(self, param_name: str, new_value: Any):
-        """Updates a simple parameter in the step's producer dictionary."""
-        params_dict = self.target_dict.setdefault("params", {})
-        if params_dict.get(param_name) == new_value:
+        """Updates a simple parameter on the step."""
+        current = getattr(self.step, param_name, None)
+        if current == new_value:
             return
-
-        def on_change():
-            self._exit_preview_mode_if_active()
-            self.step.updated.send(self.step)
-
-        command = DictItemCommand(
-            target_dict=params_dict,
-            key=param_name,
-            new_value=new_value,
-            name=_("Change {param_name}").format(param_name=param_name),
-            on_change_callback=on_change,
-        )
-        self.history_manager.execute(command)
+        self._exit_preview_mode_if_active()
+        self.set_step_property(param_name, new_value)
 
     def _update_range_param(
-        self, param_name: str, index: int, new_value: float
+        self, param_name: str, new_value: Any
     ):
-        """Updates one element of a range tuple."""
-        params_dict = self.target_dict.setdefault("params", {})
-        current_range = list(params_dict.get(param_name, [0.0, 0.0]))
-        current_range[index] = new_value
+        """Updates a range tuple parameter on the step."""
+        current = getattr(self.step, param_name, None)
+        if current == new_value:
+            return
+        self._exit_preview_mode_if_active()
+        self.set_step_property(param_name, new_value)
 
-        def on_change():
-            self._exit_preview_mode_if_active()
-            self.step.updated.send(self.step)
-
-        command = DictItemCommand(
-            target_dict=params_dict,
-            key=param_name,
-            new_value=current_range,
-            name=_("Change {param_name}").format(param_name=param_name),
-            on_change_callback=on_change,
-        )
-        self.history_manager.execute(command)
-
-    def _update_grid_param(self, index: int, new_value: int):
-        """Updates grid dimensions and triggers a sync."""
-        params_dict = self.target_dict.setdefault("params", {})
-        current_grid = list(params_dict.get("grid_dimensions", [5, 5]))
-        current_grid[index] = new_value
-
-        def on_change():
-            self._exit_preview_mode_if_active()
-            self.step.updated.send(self.step)
-
-        command = DictItemCommand(
-            target_dict=params_dict,
-            key="grid_dimensions",
-            new_value=current_grid,
-            name=_("Change Grid Dimensions"),
-            on_change_callback=on_change,
-        )
-        self.history_manager.execute(command)
+    def _update_grid_param(self, new_value: Any):
+        """Updates grid dimensions on the step."""
+        current = self.step.grid_dimensions
+        if current == new_value:
+            return
+        self._exit_preview_mode_if_active()
+        self.set_step_property("grid_dimensions", new_value)
 
     def _exit_preview_mode_if_active(self):
         """Exits execution preview mode if currently active."""

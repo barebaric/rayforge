@@ -1,10 +1,9 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from gi.repository import Adw
 
 from rayforge.core.undo import ChangePropertyCommand
-from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
@@ -27,9 +26,9 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
         self,
         editor: "DocEditor",
         title: str,
-        component: Union[OpsProducer, OpsTransformer],
         page: Adw.PreferencesPage,
         step: Any,
+        component: Optional[OpsTransformer] = None,
         **kwargs,
     ):
         """
@@ -38,11 +37,11 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
         Args:
             editor: The DocEditor instance.
             title: The title for the preferences group.
-            component: The OpsProducer or OpsTransformer instance this widget
-                will modify.
             page: The parent Adw.PreferencesPage to which conditional groups
                   can be added or removed.
             step: The parent Step object, for context and signaling.
+            component: Optional OpsTransformer instance. When provided,
+                       an enable/disable switch is added automatically.
         """
         super().__init__(title=title, **kwargs)
         self.editor = editor
@@ -134,18 +133,8 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
     @property
     def target_dict(self) -> Dict[str, Any]:
         """
-        Get the dictionary backing this component.
-
-        For producers, returns step.opsproducer_dict.
-        For transformers, finds matching dict from step's
-        transformer lists.
+        Get the dictionary backing the transformer component.
         """
-        if isinstance(self.component, OpsProducer):
-            result = self.step.opsproducer_dict
-            if result is None:
-                raise ValueError("Step has no opsproducer_dict")
-            return result
-
         component_name = type(self.component).__name__
         for t_dict in self.step.per_workpiece_transformers_dicts or []:
             if t_dict.get("name") == component_name:

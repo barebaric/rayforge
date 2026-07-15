@@ -41,23 +41,7 @@ def parse_target(target: str) -> tuple[str, str, str | None]:
 
 def set_engrave_mode(dialog, mode_name: str):
     """Set the engrave mode in the dialog's engraver widget."""
-    from rayforge.pipeline.producer.registry import producer_registry
-
-    Rasterizer = producer_registry.get("Rasterizer")
-    if Rasterizer is None:
-        logger.error("Rasterizer not found in registry")
-        return False
-
-    DepthMode = getattr(Rasterizer, "__module__", None)
-    if DepthMode:
-        import importlib
-
-        module = importlib.import_module(DepthMode)
-        DepthMode = getattr(module, "DepthMode", None)
-
-    if DepthMode is None:
-        logger.error("DepthMode not found")
-        return False
+    from rayforge.pipeline.stage.assembler_helpers import DepthMode
 
     mode_enum = DepthMode[mode_name]
     mode_index = list(DepthMode).index(mode_enum)

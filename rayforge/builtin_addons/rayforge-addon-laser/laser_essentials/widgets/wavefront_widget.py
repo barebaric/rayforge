@@ -20,7 +20,6 @@ class WavefrontSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self,
         editor: "DocEditor",
         title: str,
-        producer,
         page: Adw.PreferencesPage,
         step: Any,
         **kwargs,
@@ -28,7 +27,6 @@ class WavefrontSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         super().__init__(
             editor,
             title,
-            component=producer,
             page=page,
             step=step,
             **kwargs,
