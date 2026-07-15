@@ -79,6 +79,7 @@ class GridMode(Enum):
     POWER_VS_SPEED = "Power vs Speed"
     POWER_VS_PASSES = "Power vs Passes"
     SPEED_VS_PASSES = "Speed vs Passes"
+    SPEED_VS_OFFSET = "Speed vs Offset"
 
 
 class MaterialTestGridProducer(OpsProducer):
@@ -95,6 +96,7 @@ class MaterialTestGridProducer(OpsProducer):
         speed_range: Tuple[float, float] = (100.0, 500.0),
         power_range: Tuple[float, float] = (10.0, 100.0),
         passes_range: Tuple[int, int] = (1, 5),
+        offset_range: Tuple[float, float] = (-0.5, 0.5),
         fixed_speed: float = 1000.0,
         fixed_power: float = 50.0,
         grid_dimensions: Tuple[int, int] = (5, 5),
@@ -117,6 +119,7 @@ class MaterialTestGridProducer(OpsProducer):
         self.speed_range = speed_range
         self.power_range = power_range
         self.passes_range = passes_range
+        self.offset_range = offset_range
         self.fixed_speed = fixed_speed
         self.fixed_power = fixed_power
         self.grid_dimensions = grid_dimensions
@@ -193,6 +196,8 @@ class MaterialTestGridProducer(OpsProducer):
             max_power=self.power_range[1],
             min_passes=self.passes_range[0],
             max_passes=self.passes_range[1],
+            min_offset=self.offset_range[0],
+            max_offset=self.offset_range[1],
             fixed_speed=self.fixed_speed,
             fixed_power=self.fixed_power,
             shape_size=self.shape_size,
@@ -252,6 +257,8 @@ class MaterialTestGridProducer(OpsProducer):
             max_power=params.get("power_range", (10.0, 100.0))[1],
             min_passes=params.get("passes_range", (1, 5))[0],
             max_passes=params.get("passes_range", (1, 5))[1],
+            min_offset=params.get("offset_range", (-0.5, 0.5))[0],
+            max_offset=params.get("offset_range", (-0.5, 0.5))[1],
             fixed_speed=params.get("fixed_speed", 1000.0),
             fixed_power=params.get("fixed_power", 50.0),
             shape_size=params.get("shape_size", 10.0),
@@ -291,6 +298,7 @@ class MaterialTestGridProducer(OpsProducer):
                 "speed_range": list(self.speed_range),
                 "power_range": list(self.power_range),
                 "passes_range": list(self.passes_range),
+                "offset_range": list(self.offset_range),
                 "fixed_speed": self.fixed_speed,
                 "fixed_power": self.fixed_power,
                 "grid_dimensions": list(self.grid_dimensions),
