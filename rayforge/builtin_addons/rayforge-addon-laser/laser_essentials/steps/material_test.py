@@ -35,14 +35,24 @@ class MaterialTestStep(Step):
     def get_default_transformers_dicts(cls) -> Tuple[List, List]:
         OverscanTransformer = transformer_registry.get("OverscanTransformer")
         Optimize = transformer_registry.get("Optimize")
+        BidirScanOffsetTransformer = transformer_registry.get(
+            "BidirScanOffsetTransformer"
+        )
         assert OverscanTransformer is not None
         assert Optimize is not None
-        optimize_dict = Optimize().to_dict()
+        assert BidirScanOffsetTransformer is not None
+        # Off by default: Optimize's nearest-neighbor travel reordering has
+        # no concept of "cell" boundaries, so it can interleave lines from
+        # different cells instead of engraving each one fully before moving
+        # to the next. Left toggleable (rather than removed outright) so
+        # it's easy to compare with/without.
+        optimize_dict = Optimize(enabled=False).to_dict()
         return [
             OverscanTransformer(
                 enabled=True, distance_mm=0, auto=True
             ).to_dict(),
             optimize_dict,
+            BidirScanOffsetTransformer(enabled=True).to_dict(),
         ], [
             optimize_dict,
         ]
@@ -66,8 +76,15 @@ class MaterialTestStep(Step):
             transformer_registry.get("OverscanTransformer"),
         )
         assert OverscanTransformer is not None
-        auto_distance = OverscanTransformer.calculate_auto_distance(
-            step.cut_speed, machine.acceleration
+        # Double the usual auto-calculated distance: individual test blocks
+        # benefit from extra run-up/run-out so backlash settling happens
+        # outside the visible engrave area, keeping it distinguishable from
+        # whatever parameter the grid is testing.
+        auto_distance = (
+            OverscanTransformer.calculate_auto_distance(
+                step.cut_speed, machine.acceleration
+            )
+            * 2
         )
         for t in per_wp:
             if t.get("name") == "OverscanTransformer":

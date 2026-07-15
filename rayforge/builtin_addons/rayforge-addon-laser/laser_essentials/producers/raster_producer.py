@@ -98,6 +98,7 @@ class Rasterizer(OpsProducer):
         white_point: int = 255,
         auto_levels: bool = True,
         angle_increment: float = 0.0,
+        bidir_x_offset_mm: float = 0.0,
     ):
         self.scan_angle = scan_angle
         self.depth_mode = depth_mode
@@ -118,6 +119,7 @@ class Rasterizer(OpsProducer):
         self.white_point = white_point
         self.auto_levels = auto_levels
         self.angle_increment = angle_increment
+        self.bidir_x_offset_mm = bidir_x_offset_mm
         self._computed_auto_levels: Optional[Tuple[int, int]] = None
 
     def prepare(
@@ -374,6 +376,7 @@ class Rasterizer(OpsProducer):
                 "white_point": self.white_point,
                 "auto_levels": self.auto_levels,
                 "angle_increment": self.angle_increment,
+                "bidir_x_offset_mm": self.bidir_x_offset_mm,
             },
         }
 
@@ -413,6 +416,7 @@ class Rasterizer(OpsProducer):
             "white_point",
             "auto_levels",
             "angle_increment",
+            "bidir_x_offset_mm",
         }
 
         init_args = {k: v for k, v in params_in.items() if k in valid_params}
