@@ -10,7 +10,7 @@ from raygeo.ops import Ops
 from raygeo.ops.assembly import AssemblyResult
 from raygeo.ops.assembly.contour import contour
 from raygeo.ops.part import Part
-from raygeo.ops.types import SectionType
+from raygeo.ops.types import RasterMode, SectionType
 
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
@@ -338,6 +338,7 @@ class TestWrapAssemblerResult:
             laser,
             generation_id=1,
             section_type=SectionType.RASTER_FILL,
+            raster_mode=RasterMode.CONSTANT_POWER,
             is_vector=False,
             source_dimensions=(100, 100),
         )
