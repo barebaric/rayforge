@@ -4,7 +4,7 @@ Frontend entry point for laser-essentials addon.
 Registers UI widgets and actions with the main application.
 """
 
-import gettext
+from gettext import gettext as _
 from pathlib import Path
 
 from gi.repository import Gio
@@ -15,12 +15,6 @@ from rayforge.ui_gtk.icons import register_icon_path
 
 from .commands import MaterialTestCmd
 from .widgets import ASSEMBLER_WIDGETS
-
-_localedir = Path(__file__).parent.parent / "locale"
-_t = gettext.translation(
-    "laser_essentials", localedir=_localedir, fallback=True
-)
-_ = _t.gettext
 
 ADDON_NAME = "laser_essentials"
 _ICONS_DIR = Path(__file__).parent / "resources" / "icons"

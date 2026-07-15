@@ -4,17 +4,11 @@ Frontend entry point for sketcher addon.
 Registers UI widgets with the main application.
 """
 
-import gettext
 import logging
-from pathlib import Path
 
 from rayforge.core.hooks import hookimpl
 
 logger = logging.getLogger(__name__)
-
-_localedir = Path(__file__).parent.parent / "locale"
-_t = gettext.translation("sketcher", localedir=_localedir, fallback=True)
-_ = _t.gettext
 
 ADDON_NAME = "sketcher"
 

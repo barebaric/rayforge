@@ -7,7 +7,7 @@ Provides UI for configuring material test array parameters.
 import logging
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from gi.repository import Adw, GLib, GObject, Gtk
 
@@ -17,6 +17,7 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
 from rayforge.ui_gtk.shared.slider import create_slider_row
+from ..material_test_helpers import GridMode
 
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
@@ -24,7 +25,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-PRESET_NONE = "Select"
+PRESET_KEYS = [
+    "Diode Engrave",
+    "Diode Cut",
+    "CO2 Engrave",
+    "CO2 Cut",
+]
 
 PRESETS = {
     "Diode Engrave": {
@@ -85,10 +91,16 @@ class MaterialTestGridSettingsWidget(
 
     def _build_preset_selector(self):
         """Builds the preset dropdown."""
+        _PRESET_LABELS = {
+            "Diode Engrave": _("Diode Engrave"),
+            "Diode Cut": _("Diode Cut"),
+            "CO2 Engrave": _("CO2 Engrave"),
+            "CO2 Cut": _("CO2 Cut"),
+        }
         string_list = Gtk.StringList()
-        string_list.append(PRESET_NONE)
-        for preset_name in PRESETS:
-            string_list.append(preset_name)
+        string_list.append(_("Select"))
+        for key in PRESET_KEYS:
+            string_list.append(_PRESET_LABELS[key])
 
         self.preset_row = Adw.ComboRow(
             title=_("Presets"),
@@ -101,17 +113,21 @@ class MaterialTestGridSettingsWidget(
 
     def _build_test_type_selector(self):
         """Builds the test type dropdown (Cut/Engrave)."""
-        string_list = Gtk.StringList.new(["Cut", "Engrave"])
+        from ..material_test_helpers import MaterialTestGridType
+
+        self._test_type_values = [m.value for m in MaterialTestGridType]
+        test_type_labels = [m.label() for m in MaterialTestGridType]
+        string_list = Gtk.StringList.new(test_type_labels)
         self.test_type_row = Adw.ComboRow(
             title=_("Test Type"),
             subtitle=_("Cut: outlines; Engrave: fills with raster lines"),
             model=string_list,
         )
         current_text = self.step.test_type
-        if current_text == "Cut":
-            self.test_type_row.set_selected(0)
-        else:
-            self.test_type_row.set_selected(1)
+        for i, val in enumerate(self._test_type_values):
+            if val == current_text:
+                self.test_type_row.set_selected(i)
+                break
         self.add(self.test_type_row)
         self.test_type_row.connect(
             "notify::selected", self._on_test_type_changed
@@ -121,16 +137,17 @@ class MaterialTestGridSettingsWidget(
         """Builds the grid mode dropdown."""
         from ..material_test_helpers import GridMode
 
-        mode_labels = [m.value for m in GridMode]
-        string_list = Gtk.StringList.new(mode_labels)
+        self._grid_mode_values = [m.value for m in GridMode]
+        grid_mode_labels = [m.label() for m in GridMode]
+        string_list = Gtk.StringList.new(grid_mode_labels)
         self.grid_mode_row = Adw.ComboRow(
             title=_("Grid Mode"),
             subtitle=_("Choose which parameters to vary on axes"),
             model=string_list,
         )
         current_mode = self.step.grid_mode
-        for i, label in enumerate(mode_labels):
-            if label == current_mode:
+        for i, val in enumerate(self._grid_mode_values):
+            if val == current_mode:
                 self.grid_mode_row.set_selected(i)
                 break
         self.add(self.grid_mode_row)
@@ -468,16 +485,10 @@ class MaterialTestGridSettingsWidget(
     def _on_preset_changed(self, row: Adw.ComboRow, _pspec):
         """Loads preset values."""
         selected_idx = row.get_selected()
-        if selected_idx == Gtk.INVALID_LIST_POSITION:
+        if selected_idx == Gtk.INVALID_LIST_POSITION or selected_idx == 0:
             return
-        model = cast(Gtk.StringList, row.get_model())
-        preset_name = model.get_string(selected_idx)
-        if not preset_name or preset_name == PRESET_NONE:
-            return
-        if preset_name not in PRESETS:
-            return
-
-        preset = PRESETS[preset_name]
+        preset_key = PRESET_KEYS[selected_idx - 1]
+        preset = PRESETS[preset_key]
         speed_range = preset["speed_range"]
         power_range = preset["power_range"]
         test_type = preset.get("test_type", "Cut")
@@ -502,9 +513,8 @@ class MaterialTestGridSettingsWidget(
         self._update_range_param("speed_range", (min_speed, max_speed))
         self._commit_power_range_change()
 
-        model = cast(Gtk.StringList, self.test_type_row.get_model())
-        for i in range(model.get_n_items()):
-            if model.get_string(i) == test_type:
+        for i, val in enumerate(self._test_type_values):
+            if val == test_type:
                 self.test_type_row.set_selected(i)
                 break
 
@@ -512,8 +522,7 @@ class MaterialTestGridSettingsWidget(
         """Updates the test type parameter."""
         selected_idx = row.get_selected()
         if selected_idx != Gtk.INVALID_LIST_POSITION:
-            model = cast(Gtk.StringList, row.get_model())
-            test_type_text = model.get_string(selected_idx)
+            test_type_text = self._test_type_values[selected_idx]
             self._update_param("test_type", test_type_text)
 
     def _on_speed_min_changed(self, spin_row):
@@ -602,13 +611,12 @@ class MaterialTestGridSettingsWidget(
         selected_idx = row.get_selected()
         if selected_idx == Gtk.INVALID_LIST_POSITION:
             return
-        model = cast(Gtk.StringList, row.get_model())
-        mode_text = model.get_string(selected_idx)
-        self._update_param("grid_mode", mode_text)
+        mode_value = self._grid_mode_values[selected_idx]
+        self._update_param("grid_mode", mode_value)
         self._update_control_visibility()
         self._update_dimension_labels()
 
-        if mode_text == "Speed vs Offset":
+        if mode_value == "Speed vs Offset":
             self._apply_speed_vs_offset_defaults()
 
     def _apply_speed_vs_offset_defaults(self):
@@ -618,9 +626,8 @@ class MaterialTestGridSettingsWidget(
         visible by eye. Can't default the preset dropdown too, since
         there are multiple Engrave presets (Diode/CO2) with different
         ranges."""
-        test_type_model = cast(Gtk.StringList, self.test_type_row.get_model())
-        for i in range(test_type_model.get_n_items()):
-            if test_type_model.get_string(i) == "Engrave":
+        for i, val in enumerate(self._test_type_values):
+            if val == "Engrave":
                 self.test_type_row.set_selected(i)
                 break
 
@@ -657,14 +664,10 @@ class MaterialTestGridSettingsWidget(
         self._update_range_param("offset_range", (min_offset, max_offset))
 
     def _get_current_grid_mode(self) -> str:
-        from ..material_test_helpers import GridMode
-
         selected_idx = self.grid_mode_row.get_selected()
         if selected_idx == Gtk.INVALID_LIST_POSITION:
             return GridMode.POWER_VS_SPEED.value
-        model = cast(Gtk.StringList, self.grid_mode_row.get_model())
-        text = model.get_string(selected_idx)
-        return text if text else GridMode.POWER_VS_SPEED.value
+        return self._grid_mode_values[selected_idx]
 
     def _update_control_visibility(self):
         mode = self._get_current_grid_mode()

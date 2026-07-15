@@ -28,7 +28,7 @@ class LaserHeadVar(ChoiceVar):
     def __init__(
         self,
         key: str = "selected_laser_uid",
-        label: str = "Laser Head",
+        label: str = _("Laser Head"),
         description: Optional[str] = None,
         default: Optional[str] = None,
         value: Optional[str] = None,
