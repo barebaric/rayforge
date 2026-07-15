@@ -21,6 +21,7 @@ from rayforge.core.step import Step
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.pipeline.assembler.registry import assembler_registry
 from rayforge.pipeline.stage.assembler_helpers import (
+    DepthMode,
     MachineDefaults,
     build_part_raster,
     compute_raster_auto_levels,
@@ -30,7 +31,6 @@ from rayforge.pipeline.stage.assembler_helpers import (
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 
-from ..producers import DepthMode, Rasterizer
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
@@ -49,7 +49,6 @@ class EngraveStep(Step):
     TYPELABEL = _("Engrave")
     ICON = "step-raster-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (ENGRAVE,)
-    PRODUCER_CLASS = Rasterizer
     ASSEMBLER_NAME = "raster"
     IS_VECTOR = False
     ALWAYS_WRAP = True
@@ -273,7 +272,7 @@ class EngraveStep(Step):
             max_power=rp.get("max_power", 100),
             step_power=step_power,
             num_power_levels=rp.get("num_power_levels", 256),
-            angle=rp.get("scan_angle", 0),
+            angle=self.scan_angle,
             offset_x_mm=x_offset_mm,
             offset_y_mm=y_off_mm,
             scan_mode=rp.get("scan_mode", "segmented").lower(),
@@ -325,8 +324,6 @@ class EngraveStep(Step):
         default_head = machine.get_default_head()
 
         step = cls(name=name)
-        default_dict = cls.PRODUCER_CLASS().to_dict()
-        step.opsproducer_dict = default_dict
         per_wp, per_step = cls.get_default_transformers_dicts()
 
         OverscanTransformer = cast(

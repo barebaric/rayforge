@@ -12,7 +12,6 @@ from rayforge.pipeline.stage.assembler_helpers import (
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 
-from ..producers import MaterialTestGridProducer
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
@@ -31,7 +30,6 @@ class MaterialTestStep(Step):
     TYPELABEL = _("Material Test Grid")
     ICON = "test-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (MATERIAL_TEST,)
-    PRODUCER_CLASS = MaterialTestGridProducer
     ASSEMBLER_NAME = "material_test_grid"
     HIDDEN = True
 
@@ -176,8 +174,6 @@ class MaterialTestStep(Step):
         assert machine is not None
 
         step = cls(name=name)
-        default_dict = cls.PRODUCER_CLASS().to_dict()
-        step.opsproducer_dict = default_dict
         per_wp, per_step = cls.get_default_transformers_dicts()
 
         OverscanTransformer = cast(

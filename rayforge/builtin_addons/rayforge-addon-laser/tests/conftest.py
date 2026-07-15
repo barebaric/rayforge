@@ -10,37 +10,7 @@ from unittest.mock import MagicMock
 
 from rayforge.core.step_registry import step_registry
 from rayforge.pipeline.assembler.registry import assembler_registry
-from rayforge.pipeline.producer.registry import producer_registry
 from rayforge.pipeline.transformer.registry import transformer_registry
-
-
-def _register_producers():
-    """Register all producers from laser_essentials addon."""
-    from laser_essentials.producers import (
-        ContourProducer,
-        FrameProducer,
-        MaterialTestGridProducer,
-        Rasterizer,
-        ShrinkWrapProducer,
-    )
-
-    producer_registry.register(ContourProducer, addon_name="laser_essentials")
-    producer_registry.register(Rasterizer, addon_name="laser_essentials")
-    producer_registry.register(
-        Rasterizer, name="DepthEngraver", addon_name="laser_essentials"
-    )
-    producer_registry.register(
-        Rasterizer,
-        name="DitherRasterizer",
-        addon_name="laser_essentials",
-    )
-    producer_registry.register(FrameProducer, addon_name="laser_essentials")
-    producer_registry.register(
-        MaterialTestGridProducer, addon_name="laser_essentials"
-    )
-    producer_registry.register(
-        ShrinkWrapProducer, addon_name="laser_essentials"
-    )
 
 
 def _register_steps():
@@ -125,7 +95,6 @@ def register_laser_essentials():
     mgr.set_registries({"transformer_registry": transformer_registry})
     mgr.load_addon_by_name("post_processors", worker_only=True)
 
-    _register_producers()
     _register_steps()
     _register_assemblers()
     yield

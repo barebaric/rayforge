@@ -46,8 +46,6 @@ class TestFrameStep:
     def test_create(self, mock_context):
         step = FrameStep.create(mock_context)
         assert isinstance(step, FrameStep)
-        assert step.opsproducer_dict is not None
-        assert step.opsproducer_dict["type"] == "FrameProducer"
 
     def test_serialization_includes_step_type(self):
         step = FrameStep(name="Test")

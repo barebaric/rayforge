@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
 from rayforge.core.capability import CUT, SCORE, WITH_KERF, Capability
 from rayforge.core.step import Step
 from rayforge.pipeline.assembler.registry import assembler_registry
-from rayforge.pipeline.producer.base import CutSide
+from rayforge.core.cut_side import CutSide
 from rayforge.pipeline.stage.assembler_helpers import (
     MachineDefaults,
     build_part_vector,
@@ -15,8 +15,6 @@ from rayforge.pipeline.stage.assembler_helpers import (
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 from raygeo.ops import Ops
-
-from ..producers import ContourProducer
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
@@ -29,7 +27,6 @@ class ContourStep(Step):
     TYPELABEL = _("Contour")
     ICON = "step-contour-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (CUT, SCORE, WITH_KERF)
-    PRODUCER_CLASS = ContourProducer
     ASSEMBLER_NAME = "contour"
     SPLIT_CONTOURS = True
 
@@ -182,8 +179,6 @@ class ContourStep(Step):
         default_head = machine.get_default_head()
 
         step = cls(name=name)
-        default_dict = cls.PRODUCER_CLASS().to_dict()
-        step.opsproducer_dict = default_dict
         per_wp, per_step = cls.get_default_transformers_dicts()
         if not optimize:
             per_wp = [t for t in per_wp if t.get("name") != "Optimize"]

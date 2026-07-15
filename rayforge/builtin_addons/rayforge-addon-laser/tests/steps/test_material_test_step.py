@@ -46,8 +46,6 @@ class TestMaterialTestStep:
     def test_create(self, mock_context):
         step = MaterialTestStep.create(mock_context)
         assert isinstance(step, MaterialTestStep)
-        assert step.opsproducer_dict is not None
-        assert step.opsproducer_dict["type"] == "MaterialTestGridProducer"
 
     def test_serialization_includes_step_type(self):
         step = MaterialTestStep(name="Test")

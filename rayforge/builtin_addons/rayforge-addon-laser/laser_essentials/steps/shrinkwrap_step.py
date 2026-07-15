@@ -8,7 +8,7 @@ import numpy as np
 from rayforge.core.capability import CUT, SCORE, WITH_KERF, Capability
 from rayforge.core.step import Step
 from rayforge.pipeline.assembler.registry import assembler_registry
-from rayforge.pipeline.producer.base import CutSide
+from rayforge.core.cut_side import CutSide
 from rayforge.pipeline.stage.assembler_helpers import (
     MachineDefaults,
     build_part_vector,
@@ -19,7 +19,6 @@ from rayforge.pipeline.transformer.registry import transformer_registry
 from rayforge.image.tracing import prepare_surface
 from raygeo.ops import Ops
 
-from ..producers import ShrinkWrapProducer
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
@@ -32,7 +31,6 @@ class ShrinkWrapStep(Step):
     TYPELABEL = _("Shrink Wrap")
     ICON = "step-shrinkwrap-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (CUT, SCORE, WITH_KERF)
-    PRODUCER_CLASS = ShrinkWrapProducer
     ASSEMBLER_NAME = "shrinkwrap"
     SET_POWER = True
 
@@ -180,8 +178,6 @@ class ShrinkWrapStep(Step):
         default_head = machine.get_default_head()
 
         step = cls(name=name)
-        default_dict = cls.PRODUCER_CLASS().to_dict()
-        step.opsproducer_dict = default_dict
         per_wp, per_step = cls.get_default_transformers_dicts()
 
         LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")

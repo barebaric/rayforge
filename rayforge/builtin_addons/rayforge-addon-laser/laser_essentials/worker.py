@@ -20,14 +20,6 @@ from raygeo.ops.assembly.wavefront import (
 
 from rayforge.core.hooks import hookimpl
 
-from .producers import (
-    ContourProducer,
-    FrameProducer,
-    MaterialTestGridProducer,
-    Rasterizer,
-    ShrinkWrapProducer,
-    WavefrontProducer,
-)
 from .steps import (
     ContourStep,
     EngraveStep,
@@ -44,24 +36,6 @@ _t = gettext.translation(
 _ = _t.gettext
 
 ADDON_NAME = "laser_essentials"
-
-
-@hookimpl
-def register_producers(producer_registry):
-    """Register producers with the producer registry."""
-    producer_registry.register(WavefrontProducer, addon_name=ADDON_NAME)
-    producer_registry.register(ContourProducer, addon_name=ADDON_NAME)
-    producer_registry.register(Rasterizer, addon_name=ADDON_NAME)
-    # DepthEngraver and DitherRasterizer are aliases for Rasterizer
-    producer_registry.register(
-        Rasterizer, name="DepthEngraver", addon_name=ADDON_NAME
-    )
-    producer_registry.register(
-        Rasterizer, name="DitherRasterizer", addon_name=ADDON_NAME
-    )
-    producer_registry.register(FrameProducer, addon_name=ADDON_NAME)
-    producer_registry.register(MaterialTestGridProducer, addon_name=ADDON_NAME)
-    producer_registry.register(ShrinkWrapProducer, addon_name=ADDON_NAME)
 
 
 @hookimpl

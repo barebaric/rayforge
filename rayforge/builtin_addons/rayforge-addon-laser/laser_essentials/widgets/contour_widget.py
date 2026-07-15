@@ -3,15 +3,13 @@ from typing import TYPE_CHECKING, Any
 
 from gi.repository import Adw, Gtk
 
-from rayforge.pipeline.producer.base import CutSide
+from rayforge.core.cut_side import CutSide, CutOrder
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
 from rayforge.ui_gtk.shared.slider import create_slider_row
-
-from ..producers import CutOrder
 
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
@@ -26,7 +24,6 @@ class ContourProducerSettingsWidget(
         self,
         editor: "DocEditor",
         title: str,
-        producer,
         page: Adw.PreferencesPage,
         step: Any,
         **kwargs,
@@ -34,7 +31,6 @@ class ContourProducerSettingsWidget(
         super().__init__(
             editor,
             title,
-            component=producer,
             page=page,
             step=step,
             **kwargs,
