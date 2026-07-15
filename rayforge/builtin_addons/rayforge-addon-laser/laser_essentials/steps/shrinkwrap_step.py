@@ -88,7 +88,9 @@ class ShrinkWrapStep(Step):
             boolean_image = prepare_surface(surface)
             if not np.any(boolean_image):
                 return make_artifact(
-                    Ops(), workpiece, generation_id,
+                    Ops(),
+                    workpiece,
+                    generation_id,
                     is_vector=self.IS_VECTOR,
                 )
             part.image = boolean_image
@@ -102,9 +104,7 @@ class ShrinkWrapStep(Step):
         result = assembler_registry.assemble(
             self.ASSEMBLER_NAME, part, **kwargs
         )
-        set_power = (
-            machine_defaults.step_power if self.SET_POWER else None
-        )
+        set_power = machine_defaults.step_power if self.SET_POWER else None
         return wrap_assembler_result(
             result,
             workpiece,

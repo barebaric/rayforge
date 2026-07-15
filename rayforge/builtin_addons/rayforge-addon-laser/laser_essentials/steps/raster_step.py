@@ -77,6 +77,7 @@ class EngraveStep(Step):
         self.z_step_down = 0.0
         self.angle_increment = 0.0
         self.dither_algorithm = None
+        self.bidir_x_offset_mm = 0.0
 
     def get_operation_mode_short(self):
         if not self.depth_mode:
@@ -137,10 +138,9 @@ class EngraveStep(Step):
         result["z_step_down"] = self.z_step_down
         result["angle_increment"] = self.angle_increment
         result["dither_algorithm"] = (
-            self.dither_algorithm.value
-            if self.dither_algorithm
-            else None
+            self.dither_algorithm.value if self.dither_algorithm else None
         )
+        result["bidir_x_offset_mm"] = self.bidir_x_offset_mm
         return result
 
     @classmethod
@@ -168,6 +168,7 @@ class EngraveStep(Step):
         dither_val = data.get("dither_algorithm")
         if dither_val is not None:
             step.dither_algorithm = DitherAlgorithm(dither_val)
+        step.bidir_x_offset_mm = data.get("bidir_x_offset_mm", 0.0)
         return step
 
     def prepare(
@@ -215,11 +216,13 @@ class EngraveStep(Step):
         if width_px == 0 or height_px == 0:
             final_ops = Ops()
             final_ops.ops_section_start(
-                self.SECTION_TYPE, workpiece.uid,
+                self.SECTION_TYPE,
+                workpiece.uid,
                 raster_mode=depth_mode.raster_mode,
             )
             final_ops.ops_section_end(
-                self.SECTION_TYPE, raster_mode=depth_mode.raster_mode,
+                self.SECTION_TYPE,
+                raster_mode=depth_mode.raster_mode,
             )
             return make_artifact(
                 final_ops,
@@ -256,9 +259,9 @@ class EngraveStep(Step):
         line_interval_mm = rp.get("line_interval_mm") or spot_y
         x_offset_mm = workpiece.bbox[0]
         y_off_mm = workpiece.bbox[1] + y_offset_mm
-        sample_interval_mm = rp.get(
-            "sample_interval_mm"
-        ) or laser.spot_size_mm[0]
+        sample_interval_mm = (
+            rp.get("sample_interval_mm") or laser.spot_size_mm[0]
+        )
         step_power = machine_defaults.step_power
         alpha_arr = (
             (alpha * 255).astype(np.uint8) if alpha is not None else None
@@ -305,15 +308,20 @@ class EngraveStep(Step):
         OverscanTransformer = transformer_registry.get("OverscanTransformer")
         Optimize = transformer_registry.get("Optimize")
         MultiPassTransformer = transformer_registry.get("MultiPassTransformer")
+        BidirScanOffsetTransformer = transformer_registry.get(
+            "BidirScanOffsetTransformer"
+        )
         assert OverscanTransformer is not None
         assert Optimize is not None
         assert MultiPassTransformer is not None
+        assert BidirScanOffsetTransformer is not None
         optimize_dict = Optimize().to_dict()
         return [
             OverscanTransformer(
                 enabled=True, distance_mm=0, auto=True
             ).to_dict(),
             optimize_dict,
+            BidirScanOffsetTransformer(enabled=True).to_dict(),
         ], [
             optimize_dict,
             MultiPassTransformer(passes=1, z_step_down=0.0).to_dict(),

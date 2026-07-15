@@ -45,12 +45,14 @@ def test_no_op_when_disabled(transformer: OverscanTransformer):
     """Verify the run method does nothing if the transformer is disabled."""
     ops = Ops()
     ops.ops_section_start(
-        SectionType.RASTER_FILL, "wp_123",
+        SectionType.RASTER_FILL,
+        "wp_123",
         raster_mode=RasterMode.CONSTANT_POWER,
     )
     ops.move_to(10, 10, 0)
     ops.ops_section_end(
-        SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER,
+        SectionType.RASTER_FILL,
+        raster_mode=RasterMode.CONSTANT_POWER,
     )
     original_len = ops.len()
 
@@ -64,12 +66,14 @@ def test_no_op_with_native_overscan(transformer: OverscanTransformer):
     """Verify the transformer is skipped when the driver does overscan."""
     ops = Ops()
     ops.ops_section_start(
-        SectionType.RASTER_FILL, "wp_123",
+        SectionType.RASTER_FILL,
+        "wp_123",
         raster_mode=RasterMode.CONSTANT_POWER,
     )
     ops.move_to(10, 10, 0)
     ops.ops_section_end(
-        SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER,
+        SectionType.RASTER_FILL,
+        raster_mode=RasterMode.CONSTANT_POWER,
     )
     original_len = ops.len()
 
@@ -82,12 +86,14 @@ def test_no_op_with_zero_distance(transformer: OverscanTransformer):
     """Verify the run method does nothing if the distance is zero."""
     ops = Ops()
     ops.ops_section_start(
-        SectionType.RASTER_FILL, "wp_123",
+        SectionType.RASTER_FILL,
+        "wp_123",
         raster_mode=RasterMode.CONSTANT_POWER,
     )
     ops.move_to(10, 10, 0)
     ops.ops_section_end(
-        SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER,
+        SectionType.RASTER_FILL,
+        raster_mode=RasterMode.CONSTANT_POWER,
     )
     original_len = ops.len()
 
@@ -111,13 +117,15 @@ def test_run_with_constant_power_lines_from_rasterizer(
     """
     ops = Ops()
     ops.ops_section_start(
-        SectionType.RASTER_FILL, "wp_123",
+        SectionType.RASTER_FILL,
+        "wp_123",
         raster_mode=RasterMode.CONSTANT_POWER,
     )
     ops.move_to(10, 20, 5)  # Horizontal line, length 20mm, at z=5
     ops.line_to(30, 20, 5)
     ops.ops_section_end(
-        SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER,
+        SectionType.RASTER_FILL,
+        raster_mode=RasterMode.CONSTANT_POWER,
     )
     transformer.run(ops)
 
@@ -146,7 +154,8 @@ def test_preserves_state_for_constant_power_lines(
     ops.set_power(0.8)
     ops.set_air_assist(AirAssistMode.ON)
     ops.ops_section_start(
-        SectionType.RASTER_FILL, "wp_123",
+        SectionType.RASTER_FILL,
+        "wp_123",
         raster_mode=RasterMode.CONSTANT_POWER,
     )
     # Line 1: Standard
@@ -157,7 +166,8 @@ def test_preserves_state_for_constant_power_lines(
     ops.set_power(0.4)
     ops.line_to(40, 20, 0)
     ops.ops_section_end(
-        SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER,
+        SectionType.RASTER_FILL,
+        raster_mode=RasterMode.CONSTANT_POWER,
     )
 
     # Act
@@ -219,13 +229,15 @@ def test_run_with_variable_power_scanlines_from_depth(
     power_vals = bytearray(range(1, 41))
     ops = Ops()
     ops.ops_section_start(
-        SectionType.RASTER_FILL, "wp_123",
+        SectionType.RASTER_FILL,
+        "wp_123",
         raster_mode=RasterMode.CONSTANT_POWER,
     )
     ops.move_to(10, 20, 0)
     ops.scan_to(30, 20, 0, power_values=power_vals)
     ops.ops_section_end(
-        SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER,
+        SectionType.RASTER_FILL,
+        raster_mode=RasterMode.CONSTANT_POWER,
     )
     transformer.run(ops)
 
@@ -256,13 +268,15 @@ def test_preserves_state_for_scanline_commands(
     ops = Ops()
     ops.set_power(0.5)  # Master power setting
     ops.ops_section_start(
-        SectionType.RASTER_FILL, "wp_123",
+        SectionType.RASTER_FILL,
+        "wp_123",
         raster_mode=RasterMode.CONSTANT_POWER,
     )
     ops.move_to(10, 20, 0)
     ops.scan_to(20, 20, 0, power_values=bytearray([100, 200]))
     ops.ops_section_end(
-        SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER,
+        SectionType.RASTER_FILL,
+        raster_mode=RasterMode.CONSTANT_POWER,
     )
 
     # The transformer should have a 5mm distance from the fixture
@@ -324,13 +338,15 @@ def test_does_not_modify_commands_outside_raster_section(
     ops.move_to(0, 0, 0)
     ops.line_to(5, 5, 0)
     ops.ops_section_start(
-        SectionType.RASTER_FILL, "wp_123",
+        SectionType.RASTER_FILL,
+        "wp_123",
         raster_mode=RasterMode.CONSTANT_POWER,
     )
     ops.move_to(10, 10, 0)
     ops.line_to(20, 10, 0)
     ops.ops_section_end(
-        SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER,
+        SectionType.RASTER_FILL,
+        raster_mode=RasterMode.CONSTANT_POWER,
     )
     original_ep0 = ops.endpoint(0)
     original_ep1 = ops.endpoint(1)
@@ -350,7 +366,8 @@ def test_handles_multiple_bidirectional_lines(
     """
     ops = Ops()
     ops.ops_section_start(
-        SectionType.RASTER_FILL, "wp_123",
+        SectionType.RASTER_FILL,
+        "wp_123",
         raster_mode=RasterMode.CONSTANT_POWER,
     )
     ops.move_to(10, 20, 0)
@@ -360,7 +377,8 @@ def test_handles_multiple_bidirectional_lines(
     ops.move_to(5, 30, 0)
     ops.line_to(15, 40, 0)
     ops.ops_section_end(
-        SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER,
+        SectionType.RASTER_FILL,
+        raster_mode=RasterMode.CONSTANT_POWER,
     )
     dist = transformer.distance_mm
 
@@ -409,13 +427,15 @@ def test_handles_zero_length_line(transformer: OverscanTransformer):
     """
     ops = Ops()
     ops.ops_section_start(
-        SectionType.RASTER_FILL, "wp_123",
+        SectionType.RASTER_FILL,
+        "wp_123",
         raster_mode=RasterMode.CONSTANT_POWER,
     )
     ops.move_to(10, 10, 0)
     ops.line_to(10, 10, 0)
     ops.ops_section_end(
-        SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER,
+        SectionType.RASTER_FILL,
+        raster_mode=RasterMode.CONSTANT_POWER,
     )
     original_len = ops.len()
 

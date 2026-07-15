@@ -97,9 +97,7 @@ class ContourStep(Step):
         result = assembler_registry.assemble(
             self.ASSEMBLER_NAME, part, **kwargs
         )
-        set_power = (
-            machine_defaults.step_power if self.SET_POWER else None
-        )
+        set_power = machine_defaults.step_power if self.SET_POWER else None
         return wrap_assembler_result(
             result,
             workpiece,

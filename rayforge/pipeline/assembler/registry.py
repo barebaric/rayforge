@@ -96,9 +96,7 @@ class AssemblerRegistry:
             func = self._assemblers.get(name)
         return func
 
-    def assemble(
-        self, name: str, part: Any = None, **kwargs: Any
-    ) -> Any:
+    def assemble(self, name: str, part: Any = None, **kwargs: Any) -> Any:
         """
         Look up an assembler by name and call it.
 

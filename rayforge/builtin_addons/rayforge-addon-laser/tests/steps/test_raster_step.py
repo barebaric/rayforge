@@ -47,7 +47,11 @@ class TestEngraveStep:
     def test_create(self, mock_context):
         step = EngraveStep.create(mock_context, name="Created")
         assert isinstance(step, EngraveStep)
-        assert len(step.per_workpiece_transformers_dicts) == 2
+        assert len(step.per_workpiece_transformers_dicts) == 3
+        transformer_names = {
+            t.get("name") for t in step.per_workpiece_transformers_dicts
+        }
+        assert "BidirScanOffsetTransformer" in transformer_names
         assert step.selected_laser_uid == "test-laser-uid"
 
     def test_serialization_includes_step_type(self):

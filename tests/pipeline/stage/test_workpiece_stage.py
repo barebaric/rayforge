@@ -220,3 +220,48 @@ class TestWorkPiecePipelineStage:
         mock_artifact_manager.invalidate_for_workpiece.assert_called_once_with(
             key
         )
+
+    def test_prepare_task_settings_reads_bidir_x_offset_from_step(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+    ):
+        """The offset must flow from the step's to_dict() output."""
+        stage = WorkPiecePipelineStage(
+            mock_task_mgr,
+            mock_artifact_manager,
+            mock_machine,
+        )
+        mock_machine.heads = [MagicMock()]
+        mock_step = MagicMock()
+        mock_step.to_dict.return_value = {"bidir_x_offset_mm": 0.35}
+
+        prep_result = stage.prepare_task_settings(mock_step)
+        assert prep_result is not None
+        settings, _ = prep_result
+
+        assert settings["bidir_x_offset_mm"] == 0.35
+
+    def test_prepare_task_settings_bidir_x_offset_defaults_to_zero(
+        self,
+        mock_task_mgr,
+        mock_artifact_manager,
+        mock_machine,
+    ):
+        """No bidir_x_offset_mm key in to_dict() should default to 0.0,
+        not raise or leave the key missing."""
+        stage = WorkPiecePipelineStage(
+            mock_task_mgr,
+            mock_artifact_manager,
+            mock_machine,
+        )
+        mock_machine.heads = [MagicMock()]
+        mock_step = MagicMock()
+        mock_step.to_dict.return_value = {}
+
+        prep_result = stage.prepare_task_settings(mock_step)
+        assert prep_result is not None
+        settings, _ = prep_result
+
+        assert settings["bidir_x_offset_mm"] == 0.0

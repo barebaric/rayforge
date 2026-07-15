@@ -42,6 +42,7 @@ class MaterialTestStep(Step):
         self.speed_range = (100.0, 500.0)
         self.power_range = (10.0, 100.0)
         self.passes_range = (1, 5)
+        self.offset_range = (-0.5, 0.5)
         self.fixed_speed = 1000.0
         self.fixed_power = 50.0
         self.grid_dimensions = (5, 5)
@@ -67,6 +68,8 @@ class MaterialTestStep(Step):
         kwargs["max_power"] = self.power_range[1]
         kwargs["min_passes"] = self.passes_range[0]
         kwargs["max_passes"] = self.passes_range[1]
+        kwargs["min_offset"] = self.offset_range[0]
+        kwargs["max_offset"] = self.offset_range[1]
         kwargs["mode"] = "cut" if self.test_type == "Cut" else "engrave"
         kwargs["grid_mode"] = self.grid_mode
         kwargs["fixed_speed"] = self.fixed_speed
@@ -97,9 +100,7 @@ class MaterialTestStep(Step):
         result = assembler_registry.assemble(
             self.ASSEMBLER_NAME, None, **kwargs
         )
-        set_power = (
-            machine_defaults.step_power if self.SET_POWER else None
-        )
+        set_power = machine_defaults.step_power if self.SET_POWER else None
         return wrap_assembler_result(
             result,
             workpiece,
@@ -117,6 +118,7 @@ class MaterialTestStep(Step):
         result["speed_range"] = list(self.speed_range)
         result["power_range"] = list(self.power_range)
         result["passes_range"] = list(self.passes_range)
+        result["offset_range"] = list(self.offset_range)
         result["fixed_speed"] = self.fixed_speed
         result["fixed_power"] = self.fixed_power
         result["grid_dimensions"] = list(self.grid_dimensions)
@@ -136,6 +138,7 @@ class MaterialTestStep(Step):
         step.speed_range = tuple(data.get("speed_range", (100.0, 500.0)))
         step.power_range = tuple(data.get("power_range", (10.0, 100.0)))
         step.passes_range = tuple(data.get("passes_range", (1, 5)))
+        step.offset_range = tuple(data.get("offset_range", (-0.5, 0.5)))
         step.fixed_speed = data.get("fixed_speed", 1000.0)
         step.fixed_power = data.get("fixed_power", 50.0)
         step.grid_dimensions = tuple(data.get("grid_dimensions", (5, 5)))
@@ -151,14 +154,24 @@ class MaterialTestStep(Step):
     def get_default_transformers_dicts(cls) -> Tuple[List, List]:
         OverscanTransformer = transformer_registry.get("OverscanTransformer")
         Optimize = transformer_registry.get("Optimize")
+        BidirScanOffsetTransformer = transformer_registry.get(
+            "BidirScanOffsetTransformer"
+        )
         assert OverscanTransformer is not None
         assert Optimize is not None
-        optimize_dict = Optimize().to_dict()
+        assert BidirScanOffsetTransformer is not None
+        # Off by default: Optimize's nearest-neighbor travel reordering has
+        # no concept of "cell" boundaries, so it can interleave lines from
+        # different cells instead of engraving each one fully before moving
+        # to the next. Left toggleable (rather than removed outright) so
+        # it's easy to compare with/without.
+        optimize_dict = Optimize(enabled=False).to_dict()
         return [
             OverscanTransformer(
                 enabled=True, distance_mm=0, auto=True
             ).to_dict(),
             optimize_dict,
+            BidirScanOffsetTransformer(enabled=True).to_dict(),
         ], [
             optimize_dict,
         ]
@@ -181,8 +194,15 @@ class MaterialTestStep(Step):
             transformer_registry.get("OverscanTransformer"),
         )
         assert OverscanTransformer is not None
-        auto_distance = OverscanTransformer.calculate_auto_distance(
-            step.cut_speed, machine.acceleration
+        # Double the usual auto-calculated distance: individual test blocks
+        # benefit from extra run-up/run-out so backlash settling happens
+        # outside the visible engrave area, keeping it distinguishable from
+        # whatever parameter the grid is testing.
+        auto_distance = (
+            OverscanTransformer.calculate_auto_distance(
+                step.cut_speed, machine.acceleration
+            )
+            * 2
         )
         for t in per_wp:
             if t.get("name") == "OverscanTransformer":

@@ -208,13 +208,15 @@ def test_does_not_modify_commands_outside_vector_section(
 def test_does_not_modify_raster_sections(transformer: LeadInOutTransformer):
     ops = Ops()
     ops.ops_section_start(
-        SectionType.RASTER_FILL, "wp_123",
+        SectionType.RASTER_FILL,
+        "wp_123",
         raster_mode=RasterMode.CONSTANT_POWER,
     )
     ops.move_to(10, 10, 0)
     ops.line_to(30, 10, 0)
     ops.ops_section_end(
-        SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER,
+        SectionType.RASTER_FILL,
+        raster_mode=RasterMode.CONSTANT_POWER,
     )
     original_len = ops.len()
 

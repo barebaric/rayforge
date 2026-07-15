@@ -412,9 +412,7 @@ def wrap_assembler_result(
             if set_power is not None:
                 final_ops.set_power(set_power)
             final_ops.extend(result.ops)
-            final_ops.ops_section_end(
-                section_type, raster_mode=raster_mode
-            )
+            final_ops.ops_section_end(section_type, raster_mode=raster_mode)
 
     return make_artifact(
         final_ops,

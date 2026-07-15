@@ -46,9 +46,7 @@ def _register_assemblers():
     assembler_registry.register(
         "contour", contour, addon_name="laser_essentials"
     )
-    assembler_registry.register(
-        "frame", frame, addon_name="laser_essentials"
-    )
+    assembler_registry.register("frame", frame, addon_name="laser_essentials")
     assembler_registry.register(
         "shrinkwrap", shrinkwrap, addon_name="laser_essentials"
     )
@@ -56,11 +54,13 @@ def _register_assemblers():
         "raster", raster, addon_name="laser_essentials"
     )
     assembler_registry.register(
-        "wavefront", adaptive_wavefronts_multi_pocket,
+        "wavefront",
+        adaptive_wavefronts_multi_pocket,
         addon_name="laser_essentials",
     )
     assembler_registry.register(
-        "material_test_grid", generate_material_test_grid,
+        "material_test_grid",
+        generate_material_test_grid,
         addon_name="laser_essentials",
     )
 
