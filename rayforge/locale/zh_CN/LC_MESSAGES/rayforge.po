@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-15 13:04+0200\n"
+"POT-Creation-Date: 2026-07-16 00:05+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -216,6 +216,31 @@ msgstr "串口不能为空。"
 #: rayforge/core/varset/serialportvar.py
 msgid "Serial Port"
 msgstr "串口"
+
+#: rayforge/core/cut_side.py
+msgid "Centerline"
+msgstr "中心线"
+
+#: rayforge/core/cut_side.py
+msgid "Inside"
+msgstr "内部"
+
+#: rayforge/core/cut_side.py
+msgid "Outside"
+msgstr "外部"
+
+#: rayforge/core/cut_side.py
+msgid "Inside-Outside"
+msgstr "内-外"
+
+#: rayforge/core/cut_side.py
+msgid "Outside-Inside"
+msgstr "外-内"
+
+#: rayforge/core/capability.py rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Laser Head"
+msgstr "激光头"
 
 #: rayforge/core/capability.py rayforge/ui_gtk/main_menu.py
 #: rayforge/ui_gtk/doceditor/asset_browser.py
@@ -1448,11 +1473,6 @@ msgstr "矩阵+畸变已导入"
 #, python-brace-format
 msgid "{label} (for {machine_name})"
 msgstr "{label}（用于{machine_name}）"
-
-#: rayforge/machine/models/laser.py
-#: rayforge/ui_gtk/machine/laser_control_widget.py
-msgid "Laser Head"
-msgstr "激光头"
 
 #: rayforge/machine/models/machine.py
 msgid "Default Machine"
@@ -5776,6 +5796,12 @@ msgstr "启用 {}"
 msgid "Toggle {}"
 msgstr "切换 {}"
 
+#: rayforge/ui_gtk/doceditor/step_settings/base.py
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
+#, python-brace-format
+msgid "Change {key}"
+msgstr "更改{key}"
+
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "1 material"
 msgstr "1 种材料"
@@ -5845,11 +5871,6 @@ msgstr "此操作的功率、速度和激光头选择。"
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Change Laser"
 msgstr "更改激光"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-#, python-brace-format
-msgid "Change {key}"
-msgstr "更改{key}"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "No post-processing options available for this step."
@@ -6859,27 +6880,6 @@ msgid ""
 "configs."
 msgstr "自定义配置目录的路径。适用于使用独立配置进行测试。"
 
-#: rayforge/pipeline/producer/placeholder.py
-msgid "Missing Producer"
-msgstr "缺少生产者"
-
-#: rayforge/pipeline/producer/placeholder.py
-#: rayforge/pipeline/transformer/placeholder.py
-msgid "Missing: {}"
-msgstr "缺失：{}"
-
-#: rayforge/pipeline/producer/base.py
-msgid "Centerline"
-msgstr "中心线"
-
-#: rayforge/pipeline/producer/base.py
-msgid "Inside"
-msgstr "内部"
-
-#: rayforge/pipeline/producer/base.py
-msgid "Outside"
-msgstr "外部"
-
 #: rayforge/pipeline/stage/step_runner.py
 msgid "Assembling step..."
 msgstr "正在组装步骤..."
@@ -6899,6 +6899,34 @@ msgstr "正在存储最终作业制品..."
 #: rayforge/pipeline/stage/job_runner.py rayforge/pipeline/stage/job_compute.py
 msgid "Job finalization complete"
 msgstr "作业定稿完成"
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Variable Power"
+msgstr "可变功率"
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Constant Power"
+msgstr "恒定功率"
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Dither"
+msgstr "抖动"
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Multiple Depths"
+msgstr "多深度"
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Variable"
+msgstr "可变"
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Constant"
+msgstr "恒定"
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Multi-Pass"
+msgstr "多遍"
 
 #: rayforge/pipeline/stage/workpiece_compute.py
 #, python-brace-format
@@ -6952,6 +6980,10 @@ msgstr "正在渲染纹理..."
 #: rayforge/pipeline/view/view_compute.py
 msgid "Rendering complete."
 msgstr "渲染完成。"
+
+#: rayforge/pipeline/transformer/placeholder.py
+msgid "Missing: {}"
+msgstr "缺失：{}"
 
 #: rayforge/pipeline/transformer/placeholder.py
 msgid "This transformer is not available."
@@ -7377,3 +7409,19 @@ msgstr "无效或不支持的BMP数据。"
 #: rayforge/image/ruida/importer.py
 msgid "File contains no vector commands."
 msgstr "文件不包含矢量命令。"
+
+#: rayforge/image/dither.py
+msgid "Floyd Steinberg"
+msgstr "Floyd Steinberg"
+
+#: rayforge/image/dither.py
+msgid "Bayer 2"
+msgstr "Bayer 2"
+
+#: rayforge/image/dither.py
+msgid "Bayer 4"
+msgstr "Bayer 4"
+
+#: rayforge/image/dither.py
+msgid "Bayer 8"
+msgstr "Bayer 8"

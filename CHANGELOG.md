@@ -5,6 +5,26 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.8.4
+
+### Added
+
+- Speed vs Offset mode in the material test grid for empirical
+  bidirectional offset calibration (#312) by Github user vyvcodd.
+
+### Changed
+
+- Major pipeline refactor: replace OpsProducer system with
+  assembler registry; all step settings now read/write step
+  attributes directly (#309)
+- Updated translations
+
+### Fixed
+
+- Upgrade raygeo to 1.12.2 to fix label power in material test
+  grid
+- Text from addons not translated
+
 ## 1.8.3
 
 ### Added

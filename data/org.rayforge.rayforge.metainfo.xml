@@ -66,6 +66,31 @@
   </screenshots>
 
   <releases>
+    <release version="1.8.4" date="2026-07-15">
+      <description>
+        <p>Assembler registry refactor, material test grid enhancements,
+        and bug fixes</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Speed vs Offset mode in the material test grid for empirical
+          bidirectional offset calibration (#312) by Github user
+          vyvcodd.</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Major pipeline refactor: replace OpsProducer with assembler
+          registry; step settings now read/write step attributes directly
+          (#309)</li>
+          <li>Updated translations</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Upgrade raygeo to 1.12.2 to fix label power in material test
+          grid</li>
+          <li>Text from addons not being translated properly</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.8.3" date="2026-07-15">
       <description>
         <p>Language selector, selection drag handle, and performance

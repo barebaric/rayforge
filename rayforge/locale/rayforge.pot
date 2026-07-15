@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-15 13:04+0200\n"
+"POT-Creation-Date: 2026-07-16 00:05+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -216,6 +216,31 @@ msgstr ""
 
 #: rayforge/core/varset/serialportvar.py
 msgid "Serial Port"
+msgstr ""
+
+#: rayforge/core/cut_side.py
+msgid "Centerline"
+msgstr ""
+
+#: rayforge/core/cut_side.py
+msgid "Inside"
+msgstr ""
+
+#: rayforge/core/cut_side.py
+msgid "Outside"
+msgstr ""
+
+#: rayforge/core/cut_side.py
+msgid "Inside-Outside"
+msgstr ""
+
+#: rayforge/core/cut_side.py
+msgid "Outside-Inside"
+msgstr ""
+
+#: rayforge/core/capability.py rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Laser Head"
 msgstr ""
 
 #: rayforge/core/capability.py rayforge/ui_gtk/main_menu.py
@@ -1439,11 +1464,6 @@ msgstr ""
 #: rayforge/machine/models/machine.py
 #, python-brace-format
 msgid "{label} (for {machine_name})"
-msgstr ""
-
-#: rayforge/machine/models/laser.py
-#: rayforge/ui_gtk/machine/laser_control_widget.py
-msgid "Laser Head"
 msgstr ""
 
 #: rayforge/machine/models/machine.py
@@ -5719,6 +5739,12 @@ msgstr ""
 msgid "Toggle {}"
 msgstr ""
 
+#: rayforge/ui_gtk/doceditor/step_settings/base.py
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
+#, python-brace-format
+msgid "Change {key}"
+msgstr ""
+
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "1 material"
 msgstr ""
@@ -5787,11 +5813,6 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Change Laser"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-#, python-brace-format
-msgid "Change {key}"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
@@ -6799,27 +6820,6 @@ msgid ""
 "configs."
 msgstr ""
 
-#: rayforge/pipeline/producer/placeholder.py
-msgid "Missing Producer"
-msgstr ""
-
-#: rayforge/pipeline/producer/placeholder.py
-#: rayforge/pipeline/transformer/placeholder.py
-msgid "Missing: {}"
-msgstr ""
-
-#: rayforge/pipeline/producer/base.py
-msgid "Centerline"
-msgstr ""
-
-#: rayforge/pipeline/producer/base.py
-msgid "Inside"
-msgstr ""
-
-#: rayforge/pipeline/producer/base.py
-msgid "Outside"
-msgstr ""
-
 #: rayforge/pipeline/stage/step_runner.py
 msgid "Assembling step..."
 msgstr ""
@@ -6838,6 +6838,34 @@ msgstr ""
 
 #: rayforge/pipeline/stage/job_runner.py rayforge/pipeline/stage/job_compute.py
 msgid "Job finalization complete"
+msgstr ""
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Variable Power"
+msgstr ""
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Constant Power"
+msgstr ""
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Dither"
+msgstr ""
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Multiple Depths"
+msgstr ""
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Variable"
+msgstr ""
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Constant"
+msgstr ""
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Multi-Pass"
 msgstr ""
 
 #: rayforge/pipeline/stage/workpiece_compute.py
@@ -6891,6 +6919,10 @@ msgstr ""
 
 #: rayforge/pipeline/view/view_compute.py
 msgid "Rendering complete."
+msgstr ""
+
+#: rayforge/pipeline/transformer/placeholder.py
+msgid "Missing: {}"
 msgstr ""
 
 #: rayforge/pipeline/transformer/placeholder.py
@@ -7316,4 +7348,20 @@ msgstr ""
 
 #: rayforge/image/ruida/importer.py
 msgid "File contains no vector commands."
+msgstr ""
+
+#: rayforge/image/dither.py
+msgid "Floyd Steinberg"
+msgstr ""
+
+#: rayforge/image/dither.py
+msgid "Bayer 2"
+msgstr ""
+
+#: rayforge/image/dither.py
+msgid "Bayer 4"
+msgstr ""
+
+#: rayforge/image/dither.py
+msgid "Bayer 8"
 msgstr ""

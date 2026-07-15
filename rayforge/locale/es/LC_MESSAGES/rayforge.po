@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-15 13:04+0200\n"
+"POT-Creation-Date: 2026-07-16 00:05+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -217,6 +217,31 @@ msgstr "El puerto serie no puede estar vacío."
 #: rayforge/core/varset/serialportvar.py
 msgid "Serial Port"
 msgstr "Puerto serie"
+
+#: rayforge/core/cut_side.py
+msgid "Centerline"
+msgstr "Línea central"
+
+#: rayforge/core/cut_side.py
+msgid "Inside"
+msgstr "Interior"
+
+#: rayforge/core/cut_side.py
+msgid "Outside"
+msgstr "Exterior"
+
+#: rayforge/core/cut_side.py
+msgid "Inside-Outside"
+msgstr "Interior-Exterior"
+
+#: rayforge/core/cut_side.py
+msgid "Outside-Inside"
+msgstr "Exterior-Interior"
+
+#: rayforge/core/capability.py rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Laser Head"
+msgstr "Cabezal láser"
 
 #: rayforge/core/capability.py rayforge/ui_gtk/main_menu.py
 #: rayforge/ui_gtk/doceditor/asset_browser.py
@@ -1587,11 +1612,6 @@ msgstr "matriz + distorsión importada"
 #, python-brace-format
 msgid "{label} (for {machine_name})"
 msgstr "{label} (para {machine_name})"
-
-#: rayforge/machine/models/laser.py
-#: rayforge/ui_gtk/machine/laser_control_widget.py
-msgid "Laser Head"
-msgstr "Cabezal láser"
 
 #: rayforge/machine/models/machine.py
 msgid "Default Machine"
@@ -6061,6 +6081,12 @@ msgstr "Habilitar {}"
 msgid "Toggle {}"
 msgstr "Alternar {}"
 
+#: rayforge/ui_gtk/doceditor/step_settings/base.py
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
+#, python-brace-format
+msgid "Change {key}"
+msgstr "Cambiar {key}"
+
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "1 material"
 msgstr "1 material"
@@ -6133,11 +6159,6 @@ msgstr "Potencia, velocidad y selección de cabezal láser para esta operación.
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "Change Laser"
 msgstr "Cambiar láser"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-#, python-brace-format
-msgid "Change {key}"
-msgstr "Cambiar {key}"
 
 #: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 msgid "No post-processing options available for this step."
@@ -7182,27 +7203,6 @@ msgstr ""
 "Ruta a un directorio de configuración personalizado. Útil para pruebas con "
 "configuraciones aisladas."
 
-#: rayforge/pipeline/producer/placeholder.py
-msgid "Missing Producer"
-msgstr "Productor faltante"
-
-#: rayforge/pipeline/producer/placeholder.py
-#: rayforge/pipeline/transformer/placeholder.py
-msgid "Missing: {}"
-msgstr "Falta: {}"
-
-#: rayforge/pipeline/producer/base.py
-msgid "Centerline"
-msgstr "Línea central"
-
-#: rayforge/pipeline/producer/base.py
-msgid "Inside"
-msgstr "Interior"
-
-#: rayforge/pipeline/producer/base.py
-msgid "Outside"
-msgstr "Exterior"
-
 #: rayforge/pipeline/stage/step_runner.py
 msgid "Assembling step..."
 msgstr "Ensamblando paso..."
@@ -7222,6 +7222,34 @@ msgstr "Almacenando artefacto del trabajo final..."
 #: rayforge/pipeline/stage/job_runner.py rayforge/pipeline/stage/job_compute.py
 msgid "Job finalization complete"
 msgstr "Finalización del trabajo completada"
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Variable Power"
+msgstr "Potencia variable"
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Constant Power"
+msgstr "Potencia constante"
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Dither"
+msgstr "Difuminado"
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Multiple Depths"
+msgstr "Múltiples profundidades"
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Variable"
+msgstr "Variable"
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Constant"
+msgstr "Constante"
+
+#: rayforge/pipeline/stage/assembler_helpers.py
+msgid "Multi-Pass"
+msgstr "Múltiples pasadas"
 
 #: rayforge/pipeline/stage/workpiece_compute.py
 #, python-brace-format
@@ -7275,6 +7303,10 @@ msgstr "Renderizando textura..."
 #: rayforge/pipeline/view/view_compute.py
 msgid "Rendering complete."
 msgstr "Renderizado completo."
+
+#: rayforge/pipeline/transformer/placeholder.py
+msgid "Missing: {}"
+msgstr "Falta: {}"
 
 #: rayforge/pipeline/transformer/placeholder.py
 msgid "This transformer is not available."
@@ -7705,3 +7737,19 @@ msgstr "Datos BMP no válidos o no compatibles."
 #: rayforge/image/ruida/importer.py
 msgid "File contains no vector commands."
 msgstr "El archivo no contiene comandos de vector."
+
+#: rayforge/image/dither.py
+msgid "Floyd Steinberg"
+msgstr "Floyd Steinberg"
+
+#: rayforge/image/dither.py
+msgid "Bayer 2"
+msgstr "Bayer 2"
+
+#: rayforge/image/dither.py
+msgid "Bayer 4"
+msgstr "Bayer 4"
+
+#: rayforge/image/dither.py
+msgid "Bayer 8"
+msgstr "Bayer 8"

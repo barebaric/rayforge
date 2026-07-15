@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-15 13:04+0200\n"
+"POT-Creation-Date: 2026-07-15 23:32+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -17,41 +17,30 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: laser_essentials/producers/raster_producer.py
-msgid "Variable Power"
-msgstr "可变功率"
+#: laser_essentials/material_test_helpers.py
+msgid "Cut"
+msgstr "切割"
 
-#: laser_essentials/producers/raster_producer.py
-msgid "Constant Power"
-msgstr "恒定功率"
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/raster_step.py
+msgid "Engrave"
+msgstr "雕刻"
 
-#: laser_essentials/producers/raster_producer.py
-msgid "Dither"
-msgstr "抖动"
+#: laser_essentials/material_test_helpers.py
+msgid "Power vs Speed"
+msgstr "功率 vs 速度"
 
-#: laser_essentials/producers/raster_producer.py
-msgid "Multiple Depths"
-msgstr "多深度"
+#: laser_essentials/material_test_helpers.py
+msgid "Power vs Passes"
+msgstr "功率 vs 次数"
 
-#: laser_essentials/producers/raster_producer.py
-msgid "Variable"
-msgstr "可变"
+#: laser_essentials/material_test_helpers.py
+msgid "Speed vs Passes"
+msgstr "速度 vs 次数"
 
-#: laser_essentials/producers/raster_producer.py
-msgid "Constant"
-msgstr "恒定"
-
-#: laser_essentials/producers/raster_producer.py
-msgid "Multi-Pass"
-msgstr "多次扫描"
-
-#: laser_essentials/producers/contour_producer.py
-msgid "Inside-Outside"
-msgstr "内-外"
-
-#: laser_essentials/producers/contour_producer.py
-msgid "Outside-Inside"
-msgstr "外-内"
+#: laser_essentials/material_test_helpers.py
+msgid "Speed vs Offset"
+msgstr "速度 vs 偏移"
 
 #: laser_essentials/widgets/wavefront_widget.py
 msgid "Step Over"
@@ -68,10 +57,6 @@ msgstr "偏移"
 #: laser_essentials/widgets/wavefront_widget.py
 msgid "Extra offset from walls (mm)"
 msgstr "距壁额外偏移 (mm)"
-
-#: laser_essentials/widgets/wavefront_widget.py
-msgid "Change Wavefront Setting"
-msgstr "更改波前设置"
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Configure how the laser engraves your image."
@@ -220,6 +205,16 @@ msgid ""
 msgstr "扫描线上功率采样点之间的距离。较低的值可提高精度，但会增加输出大小。"
 
 #: laser_essentials/widgets/raster_widget.py
+msgid "Bidirectional Scan Offset"
+msgstr "双向扫描偏移"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid ""
+"Corrects X misalignment between left-to-right and right-to-left raster "
+"passes (in mm)"
+msgstr "纠正从左到右和从右到左的栅格扫描之间的X方向偏差（毫米）"
+
+#: laser_essentials/widgets/raster_widget.py
 msgid "Invert"
 msgstr "反转"
 
@@ -228,17 +223,8 @@ msgid "Engrave white areas instead of black areas"
 msgstr "雕刻白色区域而不是黑色区域"
 
 #: laser_essentials/widgets/raster_widget.py
-#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Change Power Range"
 msgstr "更改功率范围"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Change Min Power"
-msgstr "更改最小功率"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Change Max Power"
-msgstr "更改最大功率"
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Min Power (Black)"
@@ -255,10 +241,6 @@ msgstr "最小功率 (白)"
 #: laser_essentials/widgets/raster_widget.py
 msgid "Max Power (Black)"
 msgstr "最大功率 (黑)"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Change engraving setting"
-msgstr "更改雕刻设置"
 
 #: laser_essentials/widgets/shrinkwrap_widget.py
 msgid "Gravity"
@@ -287,17 +269,9 @@ msgid ""
 "controlled by Cut Side"
 msgstr "与原始路径的绝对距离（以机器单位计），方向由切割侧控制"
 
-#: laser_essentials/widgets/shrinkwrap_widget.py
-msgid "Change Shrinkwrap Setting"
-msgstr "更改收缩包裹设置"
-
 #: laser_essentials/widgets/frame_widget.py
 msgid "Absolute distance from content boundary in machine units"
 msgstr "与内容边界的绝对距离（以机器单位计）"
-
-#: laser_essentials/widgets/frame_widget.py
-msgid "Change Frame Setting"
-msgstr "更改边框设置"
 
 #: laser_essentials/widgets/contour_widget.py
 msgid "Remove Inner Paths"
@@ -340,9 +314,25 @@ msgstr "描摹阈值"
 msgid "Brightness level (0.0-1.0) to define edges"
 msgstr "定义边缘的亮度级别 (0.0-1.0)"
 
-#: laser_essentials/widgets/contour_widget.py
-msgid "Change Edge Tracer Setting"
-msgstr "更改边缘描摹器设置"
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Diode Engrave"
+msgstr "二极管雕刻"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Diode Cut"
+msgstr "二极管切割"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "CO2 Engrave"
+msgstr "CO2 雕刻"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "CO2 Cut"
+msgstr "CO2 切割"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Select"
+msgstr "选择"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Presets"
@@ -441,6 +431,22 @@ msgid "Ending number of passes"
 msgstr "结束通过次数"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Minimum Offset"
+msgstr "最小偏移"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Bidir scan X-offset for first row (mm)"
+msgstr "第一行的双向扫描X偏移（毫米）"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Maximum Offset"
+msgstr "最大偏移"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Bidir scan X-offset for last row (mm)"
+msgstr "最后一行的双向扫描X偏移（毫米）"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Label Engrave Power (%)"
 msgstr "标签雕刻功率 (%)"
 
@@ -515,13 +521,12 @@ msgid "Columns (Speed Steps)"
 msgstr "列（速度步进）"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
-#, python-brace-format
-msgid "Change {param_name}"
-msgstr "更改 {param_name}"
+msgid "Rows (Offset Steps)"
+msgstr "行（偏移步数）"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Change Grid Dimensions"
-msgstr "更改网格尺寸"
+msgid "Number of offset variations"
+msgstr "偏移变化次数"
 
 #: laser_essentials/steps/shrinkwrap_step.py
 msgid "Shrink Wrap"
@@ -534,10 +539,6 @@ msgstr "波前"
 #: laser_essentials/steps/frame_step.py
 msgid "Frame"
 msgstr "边框"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Engrave"
-msgstr "雕刻"
 
 #: laser_essentials/steps/contour_step.py
 msgid "Contour"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-29 02:21+0200\n"
+"POT-Creation-Date: 2026-07-15 21:39+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -216,6 +216,17 @@ msgstr "Minimise la distance de déplacement en réorganisant les segments."
 #: post_processors/transformers/optimize_transformer.py
 msgid "Optimization complete"
 msgstr "Optimisation terminée"
+
+#: post_processors/transformers/bidir_scan_offset_transformer.py
+msgid "Bidirectional Scan Offset"
+msgstr "Décalage de balayage bidirectionnel"
+
+#: post_processors/transformers/bidir_scan_offset_transformer.py
+msgid ""
+"Shifts right-to-left raster passes along X to correct scan-direction skew."
+msgstr ""
+"Décale les passages raster de droite à gauche le long de X pour corriger "
+"l'obliquité de la direction de balayage."
 
 #: post_processors/transformers/smooth_transformer.py
 msgid "Smooth Path"
