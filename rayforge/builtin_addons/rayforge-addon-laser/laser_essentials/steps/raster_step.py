@@ -27,7 +27,6 @@ from rayforge.pipeline.stage.assembler_helpers import (
     compute_raster_auto_levels,
     make_artifact,
     preprocess_raster_image,
-    wrap_assembler_result,
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 
@@ -211,12 +210,17 @@ class EngraveStep(Step):
         width_px = surface.get_width()
         height_px = surface.get_height()
 
+        depth_mode = DepthMode[self.depth_mode]
+
         if width_px == 0 or height_px == 0:
             final_ops = Ops()
             final_ops.ops_section_start(
-                self.SECTION_TYPE, workpiece.uid
+                self.SECTION_TYPE, workpiece.uid,
+                raster_mode=depth_mode.raster_mode,
             )
-            final_ops.ops_section_end(self.SECTION_TYPE)
+            final_ops.ops_section_end(
+                self.SECTION_TYPE, raster_mode=depth_mode.raster_mode,
+            )
             return make_artifact(
                 final_ops,
                 workpiece,
@@ -225,7 +229,6 @@ class EngraveStep(Step):
                 source_dimensions=(0, 0),
             )
 
-        depth_mode = DepthMode[self.depth_mode]
         image, alpha = preprocess_raster_image(
             surface,
             mode=depth_mode,
@@ -282,15 +285,19 @@ class EngraveStep(Step):
             angle_increment=rp.get("angle_increment", 0),
         )
 
-        return wrap_assembler_result(
-            result,
+        final_ops = result.ops
+        if final_ops.len() > 2:
+            head_ops = Ops()
+            head_ops.set_head(laser.uid)
+            head_ops.extend(final_ops)
+            final_ops = head_ops
+
+        return make_artifact(
+            final_ops,
             workpiece,
-            laser,
             generation_id,
-            section_type=self.SECTION_TYPE,
             is_vector=self.IS_VECTOR,
             source_dimensions=(width_px, height_px),
-            always_wrap=self.ALWAYS_WRAP,
         )
 
     @classmethod
