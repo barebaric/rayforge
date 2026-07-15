@@ -3,11 +3,11 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from gi.repository import Adw
 
+from rayforge.core.undo import ChangePropertyCommand
 from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
-    from ....core.step import Step
     from ....doceditor.editor import DocEditor
 
 
@@ -29,7 +29,7 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
         title: str,
         component: Union[OpsProducer, OpsTransformer],
         page: Adw.PreferencesPage,
-        step: "Step",
+        step: Any,
         **kwargs,
     ):
         """
@@ -99,6 +99,37 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
         False by default.
         """
         return False
+
+    def set_step_property(
+        self,
+        key: str,
+        new_value: Any,
+        name: Optional[str] = None,
+    ):
+        """Set a step attribute with an undoable command.
+
+        Args:
+            key: The step attribute name.
+            new_value: The new value for the attribute.
+            name: The command name for the undo stack.
+        """
+        current = getattr(self.step, key, None)
+        if current == new_value:
+            return
+
+        def _notify():
+            self.step.updated.send(self.step)
+
+        command = ChangePropertyCommand(
+            target=self.step,
+            property_name=key,
+            new_value=new_value,
+            name=name or _(
+                "Change {key}"
+            ).format(key=key.replace("_", " ")),
+            on_change_callback=_notify,
+        )
+        self.history_manager.execute(command)
 
     @property
     def target_dict(self) -> Dict[str, Any]:

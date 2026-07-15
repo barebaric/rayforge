@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional, Protocol, Tuple, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Protocol, Tuple, cast
 
 from rayforge.core.capability import MATERIAL_TEST, Capability
 from rayforge.core.step import Step
-from rayforge.pipeline.stage.assembler_helpers import MachineDefaults
+from rayforge.pipeline.assembler.registry import assembler_registry
+from rayforge.pipeline.stage.assembler_helpers import (
+    MachineDefaults,
+    wrap_assembler_result,
+)
 from rayforge.pipeline.transformer.registry import transformer_registry
 
 from ..producers import MaterialTestGridProducer
@@ -13,6 +17,8 @@ from ..producers import MaterialTestGridProducer
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
     from rayforge.core.workpiece import WorkPiece
+    from rayforge.machine.models.laser import Laser
+    from rayforge.pipeline.artifact import WorkPieceArtifact
 
     class OverscanTransformerType(Protocol):
         @staticmethod
@@ -76,6 +82,35 @@ class MaterialTestStep(Step):
             else machine_defaults.line_interval_mm
         )
         return kwargs
+
+    def assemble_on_surface(
+        self,
+        workpiece: "WorkPiece",
+        laser: "Laser",
+        generation_id: int,
+        surface: Any = None,
+        pixels_per_mm: Optional[Tuple[float, float]] = None,
+        *,
+        machine_defaults: "MachineDefaults",
+        y_offset_mm: float = 0.0,
+        computed_auto_levels: Optional[Tuple[int, int]] = None,
+    ) -> "WorkPieceArtifact":
+        kwargs = self.get_assembler_kwargs(machine_defaults, workpiece)
+        result = assembler_registry.assemble(
+            self.ASSEMBLER_NAME, None, **kwargs
+        )
+        set_power = (
+            machine_defaults.step_power if self.SET_POWER else None
+        )
+        return wrap_assembler_result(
+            result,
+            workpiece,
+            laser,
+            generation_id,
+            split_contours=self.SPLIT_CONTOURS,
+            set_power=set_power,
+            is_vector=self.IS_VECTOR,
+        )
 
     def to_dict(self) -> dict:
         result = super().to_dict()

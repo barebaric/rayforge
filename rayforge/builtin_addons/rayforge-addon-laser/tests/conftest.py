@@ -62,7 +62,6 @@ def _register_steps():
 
 def _register_assemblers():
     """Register all assembler functions from laser_essentials addon."""
-    from rayforge.pipeline.assembler.registry import AssemblerMeta
     from raygeo.ops.assembly.contour import contour
     from raygeo.ops.assembly.frame import frame
     from raygeo.ops.assembly.material_test_grid import (
@@ -75,123 +74,23 @@ def _register_assemblers():
     )
 
     assembler_registry.register(
-        "contour",
-        AssemblerMeta(
-            assemble=contour,
-            is_vector=True,
-            requires_full_render=False,
-            param_keys=(
-                "kerf_mm",
-                "path_offset_mm",
-                "cut_side",
-                "overcut",
-                "cut_order",
-                "remove_inner",
-                "arc_tolerance",
-                "allow_arcs",
-                "supports_curves",
-            ),
-        ),
+        "contour", contour, addon_name="laser_essentials"
+    )
+    assembler_registry.register(
+        "frame", frame, addon_name="laser_essentials"
+    )
+    assembler_registry.register(
+        "shrinkwrap", shrinkwrap, addon_name="laser_essentials"
+    )
+    assembler_registry.register(
+        "raster", raster, addon_name="laser_essentials"
+    )
+    assembler_registry.register(
+        "wavefront", adaptive_wavefronts_multi_pocket,
         addon_name="laser_essentials",
     )
     assembler_registry.register(
-        "frame",
-        AssemblerMeta(
-            assemble=frame,
-            is_vector=True,
-            requires_full_render=False,
-            param_keys=("kerf_mm", "path_offset_mm", "cut_side"),
-        ),
-        addon_name="laser_essentials",
-    )
-    assembler_registry.register(
-        "shrinkwrap",
-        AssemblerMeta(
-            assemble=shrinkwrap,
-            is_vector=True,
-            requires_full_render=True,
-            param_keys=(
-                "gravity",
-                "kerf_mm",
-                "path_offset_mm",
-                "cut_side",
-                "arc_tolerance",
-                "allow_arcs",
-                "supports_curves",
-            ),
-        ),
-        addon_name="laser_essentials",
-    )
-    assembler_registry.register(
-        "raster",
-        AssemblerMeta(
-            assemble=raster,
-            is_vector=False,
-            requires_full_render=False,
-            param_keys=(
-                "alpha",
-                "mode",
-                "line_interval_mm",
-                "sample_interval_mm",
-                "min_power",
-                "max_power",
-                "step_power",
-                "num_power_levels",
-                "angle",
-                "offset_x_mm",
-                "offset_y_mm",
-                "scan_mode",
-                "cross_hatch",
-                "num_depth_levels",
-                "z_step_down",
-                "angle_increment",
-            ),
-        ),
-        addon_name="laser_essentials",
-    )
-    assembler_registry.register(
-        "wavefront",
-        AssemblerMeta(
-            assemble=adaptive_wavefronts_multi_pocket,
-            is_vector=True,
-            requires_full_render=False,
-            param_keys=(
-                "step_over",
-                "offset_mm",
-                "area_tolerance",
-                "precision",
-                "cut_feed_rate",
-                "cut_power",
-            ),
-        ),
-        addon_name="laser_essentials",
-    )
-    assembler_registry.register(
-        "material_test_grid",
-        AssemblerMeta(
-            assemble=generate_material_test_grid,
-            is_vector=True,
-            requires_full_render=False,
-            param_keys=(
-                "size_mm",
-                "cols",
-                "rows",
-                "min_speed",
-                "max_speed",
-                "min_power",
-                "max_power",
-                "min_passes",
-                "max_passes",
-                "fixed_speed",
-                "fixed_power",
-                "shape_size",
-                "spacing",
-                "line_interval_mm",
-                "mode",
-                "grid_mode",
-                "include_labels",
-            ),
-        ),
+        "material_test_grid", generate_material_test_grid,
         addon_name="laser_essentials",
     )
 
