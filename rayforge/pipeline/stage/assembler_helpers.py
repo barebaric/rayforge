@@ -81,9 +81,7 @@ def resolve_machine_defaults(
     return MachineDefaults(
         kerf_mm=s.get("kerf_mm", spot_x),
         arc_tolerance=s.get("arc_tolerance", 0.03),
-        allow_arcs=s.get(
-            "machine_supports_arcs", s.get("output_arcs", True)
-        ),
+        allow_arcs=s.get("machine_supports_arcs", s.get("output_arcs", True)),
         supports_curves=s.get("machine_supports_curves", False),
         line_interval_mm=spot_y,
         step_power=s.get("power", 1.0),

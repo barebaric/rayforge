@@ -51,6 +51,13 @@ class GcodeDialect:
     probe_cycle: str
     dwell: str = "G4 P{seconds:.3f}"
 
+    spindle_on_cw: str = "M3 S{rpm}"
+    spindle_on_ccw: str = "M4 S{rpm}"
+    spindle_off: str = "M5"
+    coolant_flood: str = "M8"
+    coolant_mist: str = "M7"
+    coolant_off: str = "M9"
+
     preamble: List[str] = field(default_factory=list)
     postscript: List[str] = field(default_factory=list)
 
@@ -155,6 +162,12 @@ class GcodeDialect:
             ("set_wcs_offset", _("Set WCS Offset")),
             ("probe_cycle", _("Probe Cycle")),
             ("dwell", _("Dwell")),
+            ("spindle_on_cw", _("Spindle On (CW)")),
+            ("spindle_on_ccw", _("Spindle On (CCW)")),
+            ("spindle_off", _("Spindle Off")),
+            ("coolant_flood", _("Coolant Flood")),
+            ("coolant_mist", _("Coolant Mist")),
+            ("coolant_off", _("Coolant Off")),
         ]
         for key, label in template_fields:
             templates_vs.add(Var(key, label, str, value=getattr(self, key)))

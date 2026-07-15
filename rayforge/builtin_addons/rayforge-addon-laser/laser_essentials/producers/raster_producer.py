@@ -177,9 +177,7 @@ class Rasterizer(OpsProducer):
 
         if width_px == 0 or height_px == 0:
             final_ops = Ops()
-            final_ops.ops_section_start(
-                SectionType.RASTER_FILL, workpiece.uid
-            )
+            final_ops.ops_section_start(SectionType.RASTER_FILL, workpiece.uid)
             final_ops.ops_section_end(SectionType.RASTER_FILL)
             return make_artifact(
                 final_ops,
@@ -227,8 +225,7 @@ class Rasterizer(OpsProducer):
                     int(round(laser.spot_size_mm[0] * pixels_per_mm[0])),
                 )
                 dither_algo = (
-                    self.dither_algorithm
-                    or DitherAlgorithm.FLOYD_STEINBERG
+                    self.dither_algorithm or DitherAlgorithm.FLOYD_STEINBERG
                 )
                 image = surface_to_dithered_array(
                     surface,
@@ -271,9 +268,7 @@ class Rasterizer(OpsProducer):
         result = raster(
             part,
             alpha=(
-                (alpha * 255).astype(np.uint8)
-                if alpha is not None
-                else None
+                (alpha * 255).astype(np.uint8) if alpha is not None else None
             ),
             mode=mode,
             line_interval_mm=line_interval_mm,

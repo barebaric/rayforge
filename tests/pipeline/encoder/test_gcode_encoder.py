@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
+from raygeo.ops.state import CoolantMode
 
 from rayforge.machine.models.dialect.grbl import GRBL_DIALECT
 from rayforge.machine.models.dialect.grbl_raster import GRBL_RASTER_DIALECT
@@ -321,3 +322,170 @@ def test_encode_resets_frequency_and_pulse_width():
 
     assert encoder.frequency is None
     assert encoder.pulse_width is None
+
+
+class TestSpindle:
+    def test_spindle_on_emits_m3_with_rpm(self):
+        encoder = _make_encoder(GRBL_DIALECT)
+        context = _make_context()
+
+        ops = Ops()
+        ops.set_spindle_rpm(12000)
+
+        gcode = []
+        encoder._handle_command(gcode, ops, 0, context)
+
+        assert gcode == ["M3 S12000"]
+        assert encoder.spindle_rpm == 12000
+
+    def test_spindle_off_when_rpm_zero_after_on(self):
+        encoder = _make_encoder(GRBL_DIALECT)
+        encoder.spindle_rpm = 12000
+        context = _make_context()
+
+        ops = Ops()
+        ops.set_spindle_rpm(0)
+
+        gcode = []
+        encoder._handle_command(gcode, ops, 0, context)
+
+        assert gcode == ["M5"]
+        assert encoder.spindle_rpm == 0
+
+    def test_spindle_off_when_rpm_zero_and_already_off(self):
+        encoder = _make_encoder(GRBL_DIALECT)
+        encoder.spindle_rpm = 0
+        context = _make_context()
+
+        ops = Ops()
+        ops.set_spindle_rpm(0)
+
+        gcode = []
+        encoder._handle_command(gcode, ops, 0, context)
+
+        assert gcode == []
+
+    def test_spindle_change_reissues_off_then_on(self):
+        encoder = _make_encoder(GRBL_DIALECT)
+        encoder.spindle_rpm = 8000
+        context = _make_context()
+
+        ops = Ops()
+        ops.set_spindle_rpm(12000)
+
+        gcode = []
+        encoder._handle_command(gcode, ops, 0, context)
+
+        assert gcode == ["M5", "M3 S12000"]
+        assert encoder.spindle_rpm == 12000
+
+
+class TestCoolant:
+    def test_coolant_flood_emits_m8(self):
+        encoder = _make_encoder(GRBL_DIALECT)
+        context = _make_context()
+
+        ops = Ops()
+        ops.set_coolant(CoolantMode.FLOOD)
+
+        gcode = []
+        encoder._handle_command(gcode, ops, 0, context)
+
+        assert gcode == ["M8"]
+        assert encoder.coolant_mode == CoolantMode.FLOOD
+
+    def test_coolant_mist_emits_m7(self):
+        encoder = _make_encoder(GRBL_DIALECT)
+        context = _make_context()
+
+        ops = Ops()
+        ops.set_coolant(CoolantMode.MIST)
+
+        gcode = []
+        encoder._handle_command(gcode, ops, 0, context)
+
+        assert gcode == ["M7"]
+        assert encoder.coolant_mode == CoolantMode.MIST
+
+    def test_coolant_off_emits_m9(self):
+        encoder = _make_encoder(GRBL_DIALECT)
+        encoder.coolant_mode = CoolantMode.FLOOD
+        context = _make_context()
+
+        ops = Ops()
+        ops.set_coolant(CoolantMode.OFF)
+
+        gcode = []
+        encoder._handle_command(gcode, ops, 0, context)
+
+        assert gcode == ["M9"]
+        assert encoder.coolant_mode == CoolantMode.OFF
+
+    def test_coolant_noop_when_same_mode(self):
+        encoder = _make_encoder(GRBL_DIALECT)
+        encoder.coolant_mode = CoolantMode.FLOOD
+        context = _make_context()
+
+        ops = Ops()
+        ops.set_coolant(CoolantMode.FLOOD)
+
+        gcode = []
+        encoder._handle_command(gcode, ops, 0, context)
+
+        assert gcode == []
+
+
+def test_job_end_shuts_off_spindle_and_coolant():
+    encoder = _make_encoder(GRBL_DIALECT)
+    encoder.spindle_rpm = 12000
+    encoder.coolant_mode = CoolantMode.FLOOD
+    context = _make_context()
+
+    ops = Ops()
+    ops.job_start()
+    ops.job_end()
+
+    gcode = []
+    _dispatch_all(gcode, ops, encoder, context)
+
+    assert "M5" in gcode
+    assert "M9" in gcode
+    assert encoder.spindle_rpm == 0
+    assert encoder.coolant_mode == CoolantMode.OFF
+
+
+def test_encode_resets_spindle_and_coolant():
+    encoder = _make_encoder(GRBL_DIALECT)
+    encoder.spindle_rpm = 12000
+    encoder.coolant_mode = CoolantMode.FLOOD
+
+    machine = MagicMock()
+    machine.dialect = GRBL_DIALECT
+    machine.gcode_precision = 3
+    machine.max_travel_speed = 5000.0
+    machine.active_wcs = "G54"
+    machine.get_active_wcs_offset.return_value = (0.0, 0.0, 0.0)
+    machine.hookmacros = {}
+    machine.heads = []
+    doc = MagicMock()
+    doc.find_descendant_by_uid.return_value = None
+
+    ops = Ops()
+    ops.job_start()
+    ops.job_end()
+
+    encoder.encode(ops, machine, doc)
+
+    assert encoder.spindle_rpm == 0
+    assert encoder.coolant_mode is None
+
+
+def test_dialect_template_fields_include_spindle_coolant():
+    varsets = GRBL_DIALECT.get_editor_varsets()
+    keys = list(varsets["templates"].keys())
+    assert "spindle_on_cw" in keys
+    assert "spindle_on_ccw" in keys
+    assert "spindle_off" in keys
+    assert "coolant_flood" in keys
+    assert "coolant_mist" in keys
+    assert "coolant_off" in keys

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from raygeo.geo.types import Point3D
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
+from raygeo.ops.state import AirAssistMode, CoolantMode
 from raygeo.ops.types import CommandCategory, CommandType
 
 from ...core.layer import Layer
@@ -52,6 +53,8 @@ class GcodeEncoder(OpsEncoder):
         self.active_laser_uid: Optional[str] = None
         self.frequency: Optional[int] = None
         self.pulse_width: Optional[float] = None
+        self.spindle_rpm: int = 0
+        self.coolant_mode: Optional[CoolantMode] = None
         self.current_pos: Dict[Axis, float] = {
             Axis.X: 0.0,
             Axis.Y: 0.0,
@@ -217,6 +220,8 @@ class GcodeEncoder(OpsEncoder):
         self._emitted_cut_feed = None
         self.frequency = None
         self.pulse_width = None
+        self.spindle_rpm = 0
+        self.coolant_mode = None
 
         context = GcodeContext(
             machine=machine, doc=doc, job=JobInfo(extents=ops.rect())
@@ -319,6 +324,8 @@ class GcodeEncoder(OpsEncoder):
             self._handle_air_assist(context, gcode, ops.air_assist(idx))
         elif ct == CommandType.SET_COOLANT:
             self._handle_coolant(context, gcode, ops.coolant(idx))
+        elif ct == CommandType.SET_SPINDLE_RPM:
+            self._handle_spindle(context, gcode, ops.spindle_rpm(idx))
         elif ct == CommandType.SET_HEAD:
             self._handle_set_laser(context, gcode, ops.head_uid(idx))
         elif cat == CommandCategory.MOVING:
@@ -352,7 +359,13 @@ class GcodeEncoder(OpsEncoder):
             # first M5 and updates the internal state.
             self._laser_off(context, gcode)
             if self.air_assist:
-                self._handle_air_assist(context, gcode, "Off")
+                self._handle_air_assist(context, gcode, AirAssistMode.OFF)
+            if self.spindle_rpm > 0:
+                self._handle_spindle(context, gcode, 0)
+            if self.coolant_mode is not None and (
+                self.coolant_mode != CoolantMode.OFF
+            ):
+                self._handle_coolant(context, gcode, CoolantMode.OFF)
             gcode.extend(
                 self._format_script_lines(self.dialect.postscript, context)
             )
@@ -505,10 +518,10 @@ class GcodeEncoder(OpsEncoder):
                 self._laser_off(context, gcode)
 
     def _handle_air_assist(
-        self, context: GcodeContext, gcode: List[str], mode: str
+        self, context: GcodeContext, gcode: List[str], mode: AirAssistMode
     ) -> None:
         """Update air assist state with dialect commands"""
-        coolant_on = mode == "On"
+        coolant_on = mode == AirAssistMode.ON
         if self.air_assist == coolant_on:
             return
         self.air_assist = coolant_on
@@ -521,9 +534,39 @@ class GcodeEncoder(OpsEncoder):
             gcode.append(cmd)
 
     def _handle_coolant(
-        self, context: GcodeContext, gcode: List[str], mode: str
+        self, context: GcodeContext, gcode: List[str], mode: CoolantMode
     ) -> None:
-        """Handle coolant commands (not used on laser cutters)."""
+        """Handle coolant commands for CNC milling operations."""
+        if mode == self.coolant_mode:
+            return
+        if mode == CoolantMode.FLOOD:
+            cmd = self.dialect.coolant_flood
+        elif mode == CoolantMode.MIST:
+            cmd = self.dialect.coolant_mist
+        else:
+            cmd = self.dialect.coolant_off
+        if cmd:
+            gcode.append(cmd)
+        self.coolant_mode = mode
+
+    def _handle_spindle(
+        self, context: GcodeContext, gcode: List[str], rpm: int
+    ) -> None:
+        """Handle spindle RPM commands for CNC milling operations."""
+        if rpm and rpm > 0:
+            if self.spindle_rpm > 0 and rpm != self.spindle_rpm:
+                off = self.dialect.spindle_off
+                if off:
+                    gcode.append(off)
+            on = self.dialect.spindle_on_cw.format(rpm=rpm)
+            if on:
+                gcode.append(on)
+        else:
+            if self.spindle_rpm > 0:
+                off = self.dialect.spindle_off
+                if off:
+                    gcode.append(off)
+        self.spindle_rpm = rpm
 
     def _handle_move_to(
         self,
