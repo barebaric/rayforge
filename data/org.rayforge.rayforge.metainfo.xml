@@ -66,6 +66,43 @@
   </screenshots>
 
   <releases>
+    <release version="1.8.3" date="2026-07-15">
+      <description>
+        <p>Language selector, selection drag handle, and performance
+        improvements</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Language selector in General settings to change UI language
+          at runtime (#303)</li>
+          <li>Drag handle grab gizmo below the selection frame for
+          easier workpiece grabbing (#173)</li>
+          <li>Support for tool numbers outside 0-255 range, with new
+          device profile for Makera Carvera (#302)</li>
+          <li>Air assist toggle for the material test grid (#304)</li>
+          <li>CNC spindle and coolant fields in the G-code dialect</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Faster smoothing and 3D rendering performance</li>
+          <li>Text rendering now handled by raygeo for better font
+          support across platforms</li>
+          <li>Updated translations</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>G-code placeholders being incorrectly rejected in the
+          encoder context</li>
+          <li>Axis replacement mode emitting duplicate Y words causing
+          GRBL error 25 (#310)</li>
+          <li>Toggle buttons of varsets not changing background color
+          when toggled on</li>
+          <li>Material test grid missing workpiece UID section
+          commands</li>
+          <li>Out of memory crash when opening SVG files containing
+          circles</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.8.2" date="2026-07-10">
       <description>
         <p>Raygeo upgrade, Pango text rendering, and bug fixes</p>
