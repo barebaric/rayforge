@@ -74,9 +74,7 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.add(self.threshold_row)
 
         # --- Dither Algorithm (for Dither mode) ---
-        dither_choices = [
-            m.name.replace("_", " ").title() for m in DitherAlgorithm
-        ]
+        dither_choices = [m.display_name for m in DitherAlgorithm]
         self.dither_algorithm_row = Adw.ComboRow(
             title=_("Engraving Method"),
             subtitle=_("Algorithm for converting grayscale to binary"),

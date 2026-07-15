@@ -1,8 +1,7 @@
-import gettext
 import logging
-from pathlib import Path
 
 from gi.repository import Gio
+from gettext import gettext as _
 
 from rayforge.core.group import Group
 from rayforge.core.hooks import hookimpl
@@ -12,10 +11,6 @@ from rayforge.ui_gtk.action_registry import (
     action_registry,
 )
 from rayforge.ui_gtk.actions import action_extension_registry
-
-_localedir = Path(__file__).parent.parent / "locale"
-_t = gettext.translation("print_and_cut", localedir=_localedir, fallback=True)
-_ = _t.gettext
 
 ADDON_NAME = "print_and_cut"
 logger = logging.getLogger(__name__)

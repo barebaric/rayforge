@@ -4,9 +4,6 @@ Backend entry point for laser-essentials addon.
 Registers producers, steps, and assemblers with the main application.
 """
 
-import gettext
-from pathlib import Path
-
 from raygeo.ops.assembly.contour import contour
 from raygeo.ops.assembly.frame import frame
 from raygeo.ops.assembly.material_test_grid import (
@@ -28,12 +25,6 @@ from .steps import (
     ShrinkWrapStep,
     WavefrontStep,
 )
-
-_localedir = Path(__file__).parent.parent / "locale"
-_t = gettext.translation(
-    "laser_essentials", localedir=_localedir, fallback=True
-)
-_ = _t.gettext
 
 ADDON_NAME = "laser_essentials"
 

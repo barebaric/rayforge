@@ -5,8 +5,10 @@ This module provides the LocalizedField class which extends str to provide
 transparent localization of text content.
 """
 
+import gettext
 import locale
 import os
+from pathlib import Path
 from typing import Dict, Optional, Union
 
 SUPPORTED_LANGUAGES = ["en", "de", "es", "fr", "pt", "uk", "zh_CN"]
@@ -230,3 +232,28 @@ class LocalizedField(str):
         if not self._translations:
             return f"LocalizedField({self._default!r})"
         return f"LocalizedField({self._default!r}, {self._translations!r})"
+
+
+def register_addon_domain(domain: str, locale_dir: Path) -> None:
+    """Merge an addon's gettext domain into the global gettext lookup.
+
+    Patches ``gettext.gettext`` so that all modules using
+    ``from gettext import gettext as _`` can translate strings from
+    both the main ``rayforge`` domain and the given addon domain.
+
+    Args:
+        domain: The addon's gettext domain (e.g. ``"laser_essentials"``).
+        locale_dir: Path to the addon's ``locale/`` directory.
+    """
+    addon_translator = gettext.translation(
+        domain, localedir=str(locale_dir), fallback=True
+    )
+    original_gettext = gettext.gettext
+
+    def _patched_gettext(msg: str) -> str:
+        result = original_gettext(msg)
+        if result == msg:
+            result = addon_translator.gettext(msg)
+        return result
+
+    gettext.gettext = _patched_gettext

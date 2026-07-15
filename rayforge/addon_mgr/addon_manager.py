@@ -28,6 +28,8 @@ import pluggy
 import yaml
 from blinker import Signal
 
+from rayforge.shared.util.localized import register_addon_domain
+
 from .. import __version__
 from ..config import ADDON_REGISTRY_URL
 from ..core.addon_config import AddonConfig
@@ -674,6 +676,12 @@ class AddonManager:
 
             self.compile_translations(addon_path)
 
+            locale_dir = addon_path / "locale"
+            if not locale_dir.is_dir():
+                locale_dir = addon_path / "locales"
+            if locale_dir.is_dir():
+                register_addon_domain(addon_name, locale_dir)
+
             self._import_and_register(addon, addon.metadata.provides.worker)
             if not worker_only:
                 self._import_and_register(
@@ -896,6 +904,8 @@ class AddonManager:
             The number of .mo files compiled.
         """
         locales_dir = addon_path / "locales"
+        if not locales_dir.exists():
+            locales_dir = addon_path / "locale"
         if not locales_dir.exists():
             return 0
 

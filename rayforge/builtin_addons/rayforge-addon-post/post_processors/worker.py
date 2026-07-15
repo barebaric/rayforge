@@ -4,9 +4,6 @@ Backend entry point for post_processors addon.
 Registers post-processing transformers with the main application.
 """
 
-import gettext
-from pathlib import Path
-
 from rayforge.core.hooks import hookimpl
 
 from .transformers import (
@@ -20,12 +17,6 @@ from .transformers import (
     Smooth,
     TabOpsTransformer,
 )
-
-_localedir = Path(__file__).parent.parent / "locale"
-_t = gettext.translation(
-    "post_processors", localedir=_localedir, fallback=True
-)
-_ = _t.gettext
 
 ADDON_NAME = "post_processors"
 

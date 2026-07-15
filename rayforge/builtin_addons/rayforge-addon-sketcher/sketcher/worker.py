@@ -4,14 +4,7 @@ Backend entry point for sketcher addon.
 Registers asset types and renderers with the main application.
 """
 
-import gettext
-from pathlib import Path
-
 from rayforge.core.hooks import hookimpl
-
-_localedir = Path(__file__).parent.parent / "locale"
-_t = gettext.translation("sketcher", localedir=_localedir, fallback=True)
-_ = _t.gettext
 
 ADDON_NAME = "sketcher"
 

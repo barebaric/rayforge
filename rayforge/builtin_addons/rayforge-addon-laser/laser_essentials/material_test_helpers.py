@@ -7,6 +7,7 @@ widget and command for preview rendering and size calculation.
 """
 
 from enum import Enum
+from gettext import gettext as _
 from typing import Any, Dict, Tuple
 
 import cairo
@@ -24,6 +25,13 @@ class MaterialTestGridType(Enum):
     CUT = "Cut"
     ENGRAVE = "Engrave"
 
+    def label(self) -> str:
+        labels = {
+            self.CUT: _("Cut"),
+            self.ENGRAVE: _("Engrave"),
+        }
+        return labels[self]
+
 
 class GridMode(Enum):
     """Defines which parameters vary on grid axes."""
@@ -32,6 +40,15 @@ class GridMode(Enum):
     POWER_VS_PASSES = "Power vs Passes"
     SPEED_VS_PASSES = "Speed vs Passes"
     SPEED_VS_OFFSET = "Speed vs Offset"
+
+    def label(self) -> str:
+        labels = {
+            self.POWER_VS_SPEED: _("Power vs Speed"),
+            self.POWER_VS_PASSES: _("Power vs Passes"),
+            self.SPEED_VS_PASSES: _("Speed vs Passes"),
+            self.SPEED_VS_OFFSET: _("Speed vs Offset"),
+        }
+        return labels[self]
 
 
 def get_material_test_proportional_size(
