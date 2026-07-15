@@ -86,6 +86,8 @@ class TestMaterialTestStep:
             "shape_size",
             "spacing",
             "include_labels",
+            "label_power_percent",
+            "label_speed",
             "line_interval_mm",
         }
         assert set(kwargs.keys()) == expected_keys

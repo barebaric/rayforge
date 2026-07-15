@@ -77,6 +77,8 @@ class MaterialTestStep(Step):
         kwargs["shape_size"] = self.shape_size
         kwargs["spacing"] = self.spacing
         kwargs["include_labels"] = self.include_labels
+        kwargs["label_power_percent"] = self.label_power_percent
+        kwargs["label_speed"] = self.label_speed
         kwargs["line_interval_mm"] = (
             self.line_interval_mm
             if self.line_interval_mm is not None

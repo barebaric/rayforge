@@ -98,6 +98,8 @@ def draw_preview(
         mode=("cut" if params.get("test_type", "Cut") == "Cut" else "engrave"),
         grid_mode=params.get("grid_mode", "Power vs Speed"),
         include_labels=params.get("include_labels", True),
+        label_power_percent=params.get("label_power_percent", 10.0),
+        label_speed=params.get("label_speed", 1000.0),
     )
 
     h, w = img.shape[:2]

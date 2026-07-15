@@ -4,6 +4,8 @@ Material Test Grid Settings Widget
 Provides UI for configuring material test array parameters.
 """
 
+import logging
+
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, cast
 
@@ -19,6 +21,8 @@ from rayforge.ui_gtk.shared.slider import create_slider_row
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
 
+
+logger = logging.getLogger(__name__)
 
 PRESET_NONE = "Select"
 
@@ -587,7 +591,9 @@ class MaterialTestGridSettingsWidget(
         return False
 
     def _on_label_power_changed(self, scale: Gtk.Scale):
-        self._update_param("label_power_percent", scale.get_value())
+        val = scale.get_value()
+        logger.debug("Label power slider changed: %s", val)
+        self._update_param("label_power_percent", val)
 
     def _on_label_speed_changed(self, spin_row):
         self._update_param("label_speed", get_spinrow_float(spin_row))
