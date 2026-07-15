@@ -30,7 +30,7 @@ from raygeo.image.grayscale import (
 from raygeo.ops import Ops
 from raygeo.ops.assembly import AssemblyResult
 from raygeo.ops.part import Part
-from raygeo.ops.types import SectionType
+from raygeo.ops.types import RasterMode, SectionType
 
 from ...core.vectorization_spec import TraceSpec
 from ...image.dither import DitherAlgorithm, surface_to_dithered_array
@@ -94,6 +94,17 @@ class DepthMode(Enum):
             DepthMode.MULTI_PASS: "multi_pass",
         }
         return names[self]
+
+    @property
+    def raster_mode(self) -> RasterMode:
+        """Return the :class:`RasterMode` for this depth mode."""
+        _raster_mode_map = {
+            DepthMode.POWER_MODULATION: RasterMode.VARIABLE_POWER,
+            DepthMode.CONSTANT_POWER: RasterMode.CONSTANT_POWER,
+            DepthMode.DITHER: RasterMode.CONSTANT_POWER,
+            DepthMode.MULTI_PASS: RasterMode.DEPTH_MAP,
+        }
+        return _raster_mode_map[self]
 
 
 @dataclass(frozen=True)
@@ -343,6 +354,7 @@ def wrap_assembler_result(
     section_type: SectionType = SectionType.VECTOR_OUTLINE,
     split_contours: bool = False,
     set_power: Optional[float] = None,
+    raster_mode: Optional[RasterMode] = None,
     is_vector: bool = True,
     source_dimensions: Optional[Tuple[float, float]] = None,
     always_wrap: bool = False,
@@ -386,15 +398,23 @@ def wrap_assembler_result(
             contour_geo = result.ops.to_geometry()
             contour_list = contour_geo.split_into_contours()
             for c in contour_list:
-                final_ops.ops_section_start(section_type, workpiece.uid)
+                final_ops.ops_section_start(
+                    section_type, workpiece.uid, raster_mode=raster_mode
+                )
                 final_ops.extend(Ops.from_geometry(c))
-                final_ops.ops_section_end(section_type)
+                final_ops.ops_section_end(
+                    section_type, raster_mode=raster_mode
+                )
         else:
-            final_ops.ops_section_start(section_type, workpiece.uid)
+            final_ops.ops_section_start(
+                section_type, workpiece.uid, raster_mode=raster_mode
+            )
             if set_power is not None:
                 final_ops.set_power(set_power)
             final_ops.extend(result.ops)
-            final_ops.ops_section_end(section_type)
+            final_ops.ops_section_end(
+                section_type, raster_mode=raster_mode
+            )
 
     return make_artifact(
         final_ops,

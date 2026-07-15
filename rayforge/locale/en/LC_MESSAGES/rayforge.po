@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-11 12:17+0200\n"
+"POT-Creation-Date: 2026-07-15 13:04+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -1658,6 +1658,30 @@ msgstr ""
 
 #: rayforge/machine/models/dialect/base.py
 msgid "Dwell"
+msgstr ""
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Spindle On (CW)"
+msgstr ""
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Spindle On (CCW)"
+msgstr ""
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Spindle Off"
+msgstr ""
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Coolant Flood"
+msgstr ""
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Coolant Mist"
+msgstr ""
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Coolant Off"
 msgstr ""
 
 #: rayforge/machine/models/dialect/base.py

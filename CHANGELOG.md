@@ -5,6 +5,40 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.8.3
+
+### Added
+
+- Language selector in the General settings page to change the UI
+  language at runtime (#303)
+- Drag handle grab gizmo below the selection frame for easier
+  workpiece grabbing (#173)
+- Support for tool numbers outside the 0-255 range, with new device
+  profile for Makera Carvera (#302)
+- Air assist toggle to the material test grid (#304)
+- CNC spindle and coolant fields in the G-code dialect
+
+### Changed
+
+- Upgrade raygeo to 1.21.1 with faster smoothing and 3D rendering
+  performance
+- Text rendering now handled by raygeo for better font support
+  across platforms
+- Updated translations
+
+### Fixed
+
+- G-code placeholders being incorrectly rejected in the encoder
+  context
+- Axis replacement mode emitting duplicate Y words causing GRBL
+  error 25 (#310)
+- Toggle buttons of varsets not changing background color when
+  toggled on
+- Material test grid missing workpiece UID section commands
+- Out of memory crash when opening SVG files containing circles
+- macOS-only transport test failures (#306)
+- Pixi environment solving for osx-arm64 (#306)
+
 ## 1.8.2
 
 ### Added

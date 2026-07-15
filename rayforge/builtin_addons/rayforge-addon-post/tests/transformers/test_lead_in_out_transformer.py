@@ -3,7 +3,7 @@ import math
 import pytest
 from post_processors.transformers import LeadInOutTransformer
 from raygeo.ops import Ops
-from raygeo.ops.types import CommandType, SectionType
+from raygeo.ops.types import CommandType, RasterMode, SectionType
 
 from rayforge.pipeline.transformer.base import ExecutionPhase
 
@@ -207,10 +207,15 @@ def test_does_not_modify_commands_outside_vector_section(
 
 def test_does_not_modify_raster_sections(transformer: LeadInOutTransformer):
     ops = Ops()
-    ops.ops_section_start(SectionType.RASTER_FILL, "wp_123")
+    ops.ops_section_start(
+        SectionType.RASTER_FILL, "wp_123",
+        raster_mode=RasterMode.CONSTANT_POWER,
+    )
     ops.move_to(10, 10, 0)
     ops.line_to(30, 10, 0)
-    ops.ops_section_end(SectionType.RASTER_FILL)
+    ops.ops_section_end(
+        SectionType.RASTER_FILL, raster_mode=RasterMode.CONSTANT_POWER,
+    )
     original_len = ops.len()
 
     transformer.run(ops)

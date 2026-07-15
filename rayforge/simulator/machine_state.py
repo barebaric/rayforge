@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, Optional
 
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
+from raygeo.ops.state import AirAssistMode
 from raygeo.ops.types import CommandCategory, CommandType
 
 if TYPE_CHECKING:
@@ -51,7 +52,7 @@ class MachineState:
             elif ct == CommandType.SET_RAPID_RATE:
                 self.travel_speed = int(ops.rate(idx))
             elif ct == CommandType.SET_AIR_ASSIST:
-                self.air_assist = ops.air_assist(idx) == "On"
+                self.air_assist = ops.air_assist(idx) == AirAssistMode.ON
             elif ct == CommandType.SET_HEAD:
                 self.active_laser_uid = ops.head_uid(idx)
             elif ct == CommandType.SET_FREQUENCY:
