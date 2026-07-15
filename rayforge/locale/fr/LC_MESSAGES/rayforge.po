@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-11 12:17+0200\n"
+"POT-Creation-Date: 2026-07-15 13:04+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -1830,6 +1830,30 @@ msgid "Dwell"
 msgstr "Temporisation"
 
 #: rayforge/machine/models/dialect/base.py
+msgid "Spindle On (CW)"
+msgstr "Broche marche (CW)"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Spindle On (CCW)"
+msgstr "Broche marche (CCW)"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Spindle Off"
+msgstr "Broche arrêt"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Coolant Flood"
+msgstr "Liquidide de refroidissement inondation"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Coolant Mist"
+msgstr "Liquidide de refroidissement brouillard"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Coolant Off"
+msgstr "Liquidide de refroidissement arrêt"
+
+#: rayforge/machine/models/dialect/base.py
 msgid "Scripts"
 msgstr "Scripts"
 
@@ -2316,31 +2340,31 @@ msgstr "Catégories"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "English"
-msgstr ""
+msgstr "Anglais"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "German"
-msgstr ""
+msgstr "Allemand"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Spanish"
-msgstr ""
+msgstr "Espagnol"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "French"
-msgstr ""
+msgstr "Français"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Portuguese"
-msgstr ""
+msgstr "Portugais"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Ukrainian"
-msgstr ""
+msgstr "Ukrainien"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Chinese (Simplified)"
-msgstr ""
+msgstr "Chinois (simplifié)"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/about.py
@@ -2378,7 +2402,7 @@ msgstr "Couleur du calque"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "System Default"
-msgstr ""
+msgstr "Par défaut du système"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
@@ -2403,11 +2427,12 @@ msgstr "Thème"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Language"
-msgstr ""
+msgstr "Langue"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "The application language. Changes require a restart."
 msgstr ""
+"La langue de l'application. Les modifications nécessitent un redémarrage."
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Operation Colors"
@@ -2517,13 +2542,15 @@ msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Restart required"
-msgstr ""
+msgstr "Redémarrage requis"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid ""
 "The language will take effect after restarting Rayforge. Would you like to "
 "restart now?"
 msgstr ""
+"La langue prendra effet après le redémarrage de Rayforge. Voulez-vous "
+"redémarrer maintenant ?"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py rayforge/ui_gtk/project_cmd.py
@@ -2532,7 +2559,7 @@ msgstr "_Annuler"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "_Restart"
-msgstr ""
+msgstr "_Redémarrer"
 
 #: rayforge/ui_gtk/canvas2d/elements/tab_handle.py
 msgid "Move Tab"
