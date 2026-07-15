@@ -8,9 +8,8 @@ import numpy as np
 from raygeo.image.grayscale import compute_auto_levels, normalize_grayscale
 from raygeo.image.scan import ScanMode
 from raygeo.ops import Ops
-from raygeo.ops.assembly import AssemblyResult
 from raygeo.ops.assembly.raster import raster
-from raygeo.ops.types import SectionType
+from raygeo.ops.types import RasterMode, SectionType
 
 from rayforge.image.dither import DitherAlgorithm, surface_to_dithered_array
 from rayforge.image.util import (
@@ -22,7 +21,6 @@ from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.pipeline.stage.assembler_helpers import (
     build_part_raster,
     make_artifact,
-    wrap_assembler_result,
 )
 from rayforge.shared.tasker.progress import ProgressContext
 
@@ -58,6 +56,16 @@ class DepthMode(Enum):
             DepthMode.MULTI_PASS: _("Multi-Pass"),
         }
         return names[self]
+
+    @property
+    def raster_mode(self) -> RasterMode:
+        _raster_mode_map = {
+            DepthMode.POWER_MODULATION: RasterMode.VARIABLE_POWER,
+            DepthMode.CONSTANT_POWER: RasterMode.CONSTANT_POWER,
+            DepthMode.DITHER: RasterMode.CONSTANT_POWER,
+            DepthMode.MULTI_PASS: RasterMode.DEPTH_MAP,
+        }
+        return _raster_mode_map[self]
 
 
 class Rasterizer(OpsProducer):
@@ -177,8 +185,15 @@ class Rasterizer(OpsProducer):
 
         if width_px == 0 or height_px == 0:
             final_ops = Ops()
-            final_ops.ops_section_start(SectionType.RASTER_FILL, workpiece.uid)
-            final_ops.ops_section_end(SectionType.RASTER_FILL)
+            final_ops.ops_section_start(
+                SectionType.RASTER_FILL,
+                workpiece.uid,
+                raster_mode=self.depth_mode.raster_mode,
+            )
+            final_ops.ops_section_end(
+                SectionType.RASTER_FILL,
+                raster_mode=self.depth_mode.raster_mode,
+            )
             return make_artifact(
                 final_ops,
                 workpiece,
@@ -245,12 +260,20 @@ class Rasterizer(OpsProducer):
             alpha = None
 
         if image is None:
-            return wrap_assembler_result(
-                AssemblyResult(),
+            final_ops = Ops()
+            final_ops.ops_section_start(
+                SectionType.RASTER_FILL,
+                workpiece.uid,
+                raster_mode=self.depth_mode.raster_mode,
+            )
+            final_ops.ops_section_end(
+                SectionType.RASTER_FILL,
+                raster_mode=self.depth_mode.raster_mode,
+            )
+            return make_artifact(
+                final_ops,
                 workpiece,
-                laser,
                 generation_id,
-                section_type=SectionType.RASTER_FILL,
                 is_vector=False,
                 source_dimensions=(width_px, height_px),
             )
@@ -287,15 +310,19 @@ class Rasterizer(OpsProducer):
             angle_increment=self.angle_increment,
         )
 
-        return wrap_assembler_result(
-            result,
+        final_ops = result.ops
+        if final_ops.len() > 2:
+            head_ops = Ops()
+            head_ops.set_head(laser.uid)
+            head_ops.extend(final_ops)
+            final_ops = head_ops
+
+        return make_artifact(
+            final_ops,
             workpiece,
-            laser,
             generation_id,
-            section_type=SectionType.RASTER_FILL,
             is_vector=False,
             source_dimensions=(width_px, height_px),
-            always_wrap=True,
         )
 
     def _apply_levels(

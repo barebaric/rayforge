@@ -239,7 +239,7 @@ def test_run_wraps_ops_in_section_markers(
     assert ops.command_type(0) == CommandType.OPS_SECTION_START
     sec_type, wp_uid, _raster_mode = ops.section_params(0)
     assert sec_type == SectionType.RASTER_FILL
-    assert wp_uid == "wp_123"
+    assert wp_uid == "raster"
     assert ops.command_type(1) == CommandType.OPS_SECTION_END
     sec_type_end, _wp, _raster_mode = ops.section_params(1)
     assert sec_type_end == SectionType.RASTER_FILL
