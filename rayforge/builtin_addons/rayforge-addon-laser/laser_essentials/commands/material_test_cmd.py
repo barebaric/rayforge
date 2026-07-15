@@ -1,7 +1,7 @@
 import json
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict
 
 from rayforge.core.item import DocItem
 from rayforge.core.step import Step
@@ -11,8 +11,7 @@ from rayforge.core.vectorization_spec import ProceduralSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.procedural import ProceduralImporter
 
-from ..producers import (
-    MaterialTestGridProducer,
+from ..material_test_helpers import (
     draw_material_test_preview,
     get_material_test_proportional_size,
 )
@@ -21,6 +20,30 @@ if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
 
 logger = logging.getLogger(__name__)
+
+
+_PARAM_KEYS = (
+    "test_type",
+    "grid_mode",
+    "speed_range",
+    "power_range",
+    "passes_range",
+    "offset_range",
+    "fixed_speed",
+    "fixed_power",
+    "grid_dimensions",
+    "shape_size",
+    "spacing",
+    "include_labels",
+    "label_power_percent",
+    "label_speed",
+    "line_interval_mm",
+)
+
+
+def _extract_params(step: Step) -> Dict[str, Any]:
+    """Extract material test params from step attributes."""
+    return {k: getattr(step, k, None) for k in _PARAM_KEYS}
 
 
 class MaterialTestCmd:
@@ -65,18 +88,14 @@ class MaterialTestCmd:
         and adds them to the document.
         """
         with self._history_manager.transaction(_("Add Material Test")) as t:
-            # The producer holds all parameters for the grid.
-            producer = MaterialTestGridProducer()
-            opsproducer_dict = producer.to_dict()
-            params = opsproducer_dict.get("params", {})
             name = _("Material Test Grid")
 
-            # Instantiate a new Step, then assign its producer dictionary.
             MaterialTestClass = step_registry.get("MaterialTestStep")
             assert MaterialTestClass is not None
             step = MaterialTestClass.create(self._editor.context)
             step.name = name
-            step.opsproducer_dict = opsproducer_dict
+
+            params = _extract_params(step)
 
             # Get function paths programmatically for type safety.
             draw_func_path = (
@@ -141,9 +160,9 @@ class MaterialTestCmd:
     def _on_step_updated(
         self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
     ):
-        if not isinstance(origin, Step) or not origin.opsproducer_dict:
+        if not isinstance(origin, Step):
             return
-        if origin.opsproducer_dict.get("type") != "MaterialTestGridProducer":
+        if origin.ASSEMBLER_NAME != "material_test_grid":
             return
         self.sync_preview_from_step(origin)
 
@@ -160,12 +179,8 @@ class MaterialTestCmd:
         if not workpiece_to_update.source:
             return
 
-        opsproducer_dict = step.opsproducer_dict
-        if opsproducer_dict is None:
-            return
-
         source = workpiece_to_update.source
-        new_params = opsproducer_dict.get("params", {})
+        params = _extract_params(step)
 
         # Re-create the recipe with the updated geometric parameters.
         try:
@@ -173,7 +188,7 @@ class MaterialTestCmd:
             new_recipe_dict = {
                 "drawing_function_path": old_recipe["drawing_function_path"],
                 "size_function_path": old_recipe["size_function_path"],
-                "params": new_params,
+                "params": params,
             }
             new_recipe_data = json.dumps(new_recipe_dict).encode("utf-8")
             source.original_data = new_recipe_data
@@ -183,7 +198,7 @@ class MaterialTestCmd:
 
         # Recalculate size first so the re-render uses correct dimensions.
         new_width_mm, new_height_mm = get_material_test_proportional_size(
-            new_params
+            params
         )
         workpiece_to_update.clear_render_cache()
         workpiece_to_update.set_size(new_width_mm, new_height_mm)

@@ -1,9 +1,8 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from gi.repository import Adw
 
-from rayforge.pipeline.producer.base import OpsProducer
 from rayforge.pipeline.transformer.base import OpsTransformer
 
 from .base import StepComponentSettingsWidget
@@ -15,11 +14,9 @@ if TYPE_CHECKING:
 
 class PlaceholderSettingsWidget(StepComponentSettingsWidget):
     """
-    Error display for missing producer/transformer widget.
+    Error display for missing transformer widget.
 
-    This widget is shown when a step's producer or transformer type
-    is not available (e.g., because the addon that provides it is
-    not installed or disabled).
+    This widget is shown when a step's transformer type is not available.
     """
 
     show_general_settings = False
@@ -28,7 +25,7 @@ class PlaceholderSettingsWidget(StepComponentSettingsWidget):
         self,
         editor: "DocEditor",
         title: str,
-        component: Union[OpsProducer, OpsTransformer],
+        component: OpsTransformer,
         page: Adw.PreferencesPage,
         step: "Step",
         **kwargs,

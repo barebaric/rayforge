@@ -1,7 +1,6 @@
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import cairo
 import pytest
 from raygeo.geo import Geometry, Matrix
 from raygeo.ops import Ops
@@ -9,23 +8,19 @@ from raygeo.ops.types import CommandType
 
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
+from rayforge.core.step import Step
+
+
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
-from rayforge.machine.models.machine import Laser
 from rayforge.pipeline.artifact import WorkPieceArtifact
 from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.stage.workpiece_compute import (
     MAX_VECTOR_TRACE_PIXELS,
     _apply_transformers,
     _calculate_vector_render_size,
-    _create_initial_ops,
-    _execute_raster,
-    _execute_vector,
     _merge_artifact_ops,
     _validate_workpiece_size,
-    compute_workpiece_artifact,
-    compute_workpiece_artifact_raster,
-    compute_workpiece_artifact_vector,
 )
 from rayforge.pipeline.transformer.base import OpsTransformer
 from rayforge.shared.tasker.progress import set_progress
@@ -57,118 +52,6 @@ def base_workpiece():
     return wp
 
 
-def test_compute_workpiece_artifact_returns_valid_artifact(
-    base_workpiece,
-    contour_producer_class,
-):
-    """Test that compute_workpiece_artifact returns a valid artifact."""
-    opsproducer = contour_producer_class()
-    laser = Laser()
-    transformers = []
-    settings = {
-        "pixels_per_mm": (10.0, 10.0),
-        "power": 1.0,
-        "cut_speed": 10,
-        "travel_speed": 20,
-        "air_assist": False,
-    }
-    pixels_per_mm = (10.0, 10.0)
-    generation_size = (25.0, 25.0)
-
-    result = compute_workpiece_artifact(
-        workpiece=base_workpiece,
-        opsproducer=opsproducer,
-        laser=laser,
-        transformers=transformers,
-        settings=settings,
-        pixels_per_mm=pixels_per_mm,
-        generation_size=generation_size,
-        generation_id=1,
-    )
-
-    assert result is not None
-    assert isinstance(result, WorkPieceArtifact)
-    assert not result.ops.is_empty()
-    assert result.generation_size == generation_size
-
-
-def test_compute_workpiece_artifact_with_progress_callback(
-    base_workpiece, mock_progress_context, contour_producer_class
-):
-    """Test that compute_workpiece_artifact calls progress callback."""
-    opsproducer = contour_producer_class()
-    laser = Laser()
-    transformers = []
-    settings = {
-        "pixels_per_mm": (10.0, 10.0),
-        "power": 1.0,
-        "cut_speed": 10,
-        "travel_speed": 20,
-        "air_assist": False,
-    }
-    pixels_per_mm = (10.0, 10.0)
-    generation_size = (25.0, 25.0)
-
-    result = compute_workpiece_artifact(
-        workpiece=base_workpiece,
-        opsproducer=opsproducer,
-        laser=laser,
-        transformers=transformers,
-        settings=settings,
-        pixels_per_mm=pixels_per_mm,
-        generation_size=generation_size,
-        generation_id=1,
-        context=mock_progress_context,
-    )
-
-    assert result is not None
-    assert len(mock_progress_context.progress_calls) > 0
-    assert mock_progress_context.progress_calls[-1][0] == 1.0
-
-
-def test_compute_workpiece_artifact_with_empty_workpiece(
-    contour_producer_class,
-):
-    """Test compute_workpiece_artifact returns None for empty workpiece."""
-    empty_source = SourceAsset(
-        source_file=Path("empty"), original_data=b"", renderer=MagicMock()
-    )
-    empty_segment = SourceAssetSegment(
-        source_asset_uid=empty_source.uid,
-        pristine_geometry=Geometry(),
-        vectorization_spec=PassthroughSpec(),
-        normalization_matrix=Matrix.identity(),
-    )
-    empty_workpiece = WorkPiece(name="empty_wp", source_segment=empty_segment)
-    empty_workpiece.set_size(10, 10)
-
-    opsproducer = contour_producer_class()
-    laser = Laser()
-    transformers = []
-    settings = {
-        "pixels_per_mm": (10.0, 10.0),
-        "power": 1.0,
-        "cut_speed": 10,
-        "travel_speed": 20,
-        "air_assist": False,
-    }
-    pixels_per_mm = (10.0, 10.0)
-    generation_size = (10.0, 10.0)
-
-    result = compute_workpiece_artifact(
-        workpiece=empty_workpiece,
-        opsproducer=opsproducer,
-        laser=laser,
-        transformers=transformers,
-        settings=settings,
-        pixels_per_mm=pixels_per_mm,
-        generation_size=generation_size,
-        generation_id=1,
-    )
-
-    assert result is None
-
-
 def test_set_progress_with_callback(mock_progress_context):
     """Test set_progress calls callback when provided."""
     set_progress(mock_progress_context, 0.5, "Test message")
@@ -185,32 +68,30 @@ def test_set_progress_without_callback():
 
 
 def test_create_initial_ops():
-    """Test _create_initial_ops creates configured Ops."""
-    settings = {
-        "power": 0.8,
-        "cut_speed": 15,
-        "travel_speed": 30,
-        "air_assist": True,
-    }
+    """Test Step.create_initial_ops creates configured Ops."""
+    step = Step(typelabel="test")
+    step.power = 0.8
+    step.cut_speed = 15
+    step.travel_speed = 30
+    step.air_assist = True
 
-    ops = _create_initial_ops(settings)
+    ops = step.create_initial_ops()
 
     assert isinstance(ops, Ops)
     assert not ops.is_empty()
 
 
 def test_create_initial_ops_with_frequency_and_pulse_width():
-    """Test _create_initial_ops injects frequency/pulse_width commands."""
-    settings = {
-        "power": 0.8,
-        "cut_speed": 15,
-        "travel_speed": 30,
-        "air_assist": True,
-        "frequency": 1000,
-        "pulse_width": 50,
-    }
+    """Test Step.create_initial_ops injects frequency/pulse_width cmds."""
+    step = Step(typelabel="test")
+    step.power = 0.8
+    step.cut_speed = 15
+    step.travel_speed = 30
+    step.air_assist = True
+    step.frequency = 1000
+    step.pulse_width = 50
 
-    ops = _create_initial_ops(settings)
+    ops = step.create_initial_ops()
 
     freq_idxs = [
         i
@@ -229,16 +110,15 @@ def test_create_initial_ops_with_frequency_and_pulse_width():
 
 
 def test_create_initial_ops_zero_frequency_no_command():
-    """Test _create_initial_ops skips frequency when value is 0."""
-    settings = {
-        "power": 0.8,
-        "cut_speed": 15,
-        "travel_speed": 30,
-        "air_assist": True,
-        "frequency": 0,
-    }
+    """Test Step.create_initial_ops skips frequency when value is 0."""
+    step = Step(typelabel="test")
+    step.power = 0.8
+    step.cut_speed = 15
+    step.travel_speed = 30
+    step.air_assist = True
+    step.frequency = 0
 
-    ops = _create_initial_ops(settings)
+    ops = step.create_initial_ops()
 
     freq_idxs = [
         i
@@ -249,15 +129,14 @@ def test_create_initial_ops_zero_frequency_no_command():
 
 
 def test_create_initial_ops_missing_frequency_no_error():
-    """Test _create_initial_ops handles missing frequency key."""
-    settings = {
-        "power": 0.8,
-        "cut_speed": 15,
-        "travel_speed": 30,
-        "air_assist": True,
-    }
+    """Test Step.create_initial_ops handles empty frequency."""
+    step = Step(typelabel="test")
+    step.power = 0.8
+    step.cut_speed = 15
+    step.travel_speed = 30
+    step.air_assist = True
 
-    ops = _create_initial_ops(settings)
+    ops = step.create_initial_ops()
 
     freq_idxs = [
         i
@@ -373,38 +252,6 @@ def test_merge_artifact_ops_subsequent_chunks():
     assert result is final_artifact
 
 
-def test_execute_vector_with_boundaries(
-    base_workpiece, contour_producer_class
-):
-    """Test _execute_vector with boundaries (vector path)."""
-    base_workpiece._edited_boundaries = base_workpiece.boundaries
-
-    opsproducer = contour_producer_class()
-    laser = Laser()
-    settings = {
-        "pixels_per_mm": (10.0, 10.0),
-        "power": 1.0,
-        "cut_speed": 10,
-        "travel_speed": 20,
-        "air_assist": False,
-    }
-
-    results = list(
-        _execute_vector(
-            base_workpiece,
-            opsproducer,
-            laser,
-            settings,
-            1,
-            base_workpiece.size,
-        )
-    )
-
-    assert len(results) == 1
-    artifact, progress = results[0]
-    assert progress == 1.0
-
-
 def test_apply_transformers_empty_list(base_workpiece, mock_progress_context):
     """Test _apply_transformers with empty transformer list."""
     ops = Ops()
@@ -442,324 +289,3 @@ def test_apply_transformers_disabled(
     )
 
     assert len(mock_progress_context.progress_calls) == 0
-
-
-def test_compute_workpiece_artifact_vector(
-    base_workpiece, contour_producer_class
-):
-    """Test compute_workpiece_artifact_vector returns valid artifact."""
-    opsproducer = contour_producer_class()
-    laser = Laser()
-    settings = {
-        "pixels_per_mm": (10.0, 10.0),
-        "power": 1.0,
-        "cut_speed": 10,
-        "travel_speed": 20,
-        "air_assist": False,
-    }
-
-    result = compute_workpiece_artifact_vector(
-        workpiece=base_workpiece,
-        opsproducer=opsproducer,
-        laser=laser,
-        settings=settings,
-        generation_id=1,
-        generation_size=base_workpiece.size,
-    )
-
-    assert result is not None
-    assert isinstance(result, WorkPieceArtifact)
-
-
-def test_compute_workpiece_artifact_vector_with_progress(
-    base_workpiece, mock_progress_context, contour_producer_class
-):
-    """Test compute_workpiece_artifact_vector with progress callback."""
-    opsproducer = contour_producer_class()
-    laser = Laser()
-    settings = {
-        "pixels_per_mm": (10.0, 10.0),
-        "power": 1.0,
-        "cut_speed": 10,
-        "travel_speed": 20,
-        "air_assist": False,
-    }
-
-    result = compute_workpiece_artifact_vector(
-        workpiece=base_workpiece,
-        opsproducer=opsproducer,
-        laser=laser,
-        settings=settings,
-        generation_id=1,
-        generation_size=base_workpiece.size,
-        context=mock_progress_context,
-    )
-
-    assert result is not None
-    assert len(mock_progress_context.progress_calls) > 0
-
-
-def test_compute_workpiece_artifact_vector_with_boundaries(
-    base_workpiece, contour_producer_class
-):
-    """Test compute_workpiece_artifact_vector with boundaries."""
-    base_workpiece._edited_boundaries = base_workpiece.boundaries
-
-    opsproducer = contour_producer_class()
-    laser = Laser()
-    settings = {
-        "pixels_per_mm": (10.0, 10.0),
-        "power": 1.0,
-        "cut_speed": 10,
-        "travel_speed": 20,
-        "air_assist": False,
-    }
-
-    result = compute_workpiece_artifact_vector(
-        workpiece=base_workpiece,
-        opsproducer=opsproducer,
-        laser=laser,
-        settings=settings,
-        generation_id=1,
-        generation_size=base_workpiece.size,
-    )
-
-    assert result is not None
-
-
-def test_execute_raster_invalid_size(base_workpiece, contour_producer_class):
-    """Test _execute_raster returns nothing for invalid size."""
-    base_workpiece.set_size(0, 0)
-
-    opsproducer = contour_producer_class()
-    laser = Laser()
-    settings = {
-        "pixels_per_mm": (10.0, 10.0),
-        "power": 1.0,
-        "cut_speed": 10,
-        "travel_speed": 20,
-        "air_assist": False,
-    }
-
-    results = list(
-        _execute_raster(
-            base_workpiece,
-            opsproducer,
-            laser,
-            settings,
-            1,
-            base_workpiece.size,
-        )
-    )
-
-    assert len(results) == 0
-
-
-def test_compute_workpiece_artifact_with_air_assist(
-    base_workpiece, contour_producer_class
-):
-    """Test compute_workpiece_artifact with air assist enabled."""
-    opsproducer = contour_producer_class()
-    laser = Laser()
-    transformers = []
-    settings = {
-        "pixels_per_mm": (10.0, 10.0),
-        "power": 1.0,
-        "cut_speed": 10,
-        "travel_speed": 20,
-        "air_assist": True,
-    }
-    pixels_per_mm = (10.0, 10.0)
-    generation_size = (25.0, 25.0)
-
-    result = compute_workpiece_artifact(
-        workpiece=base_workpiece,
-        opsproducer=opsproducer,
-        laser=laser,
-        transformers=transformers,
-        settings=settings,
-        pixels_per_mm=pixels_per_mm,
-        generation_size=generation_size,
-        generation_id=1,
-    )
-
-    assert result is not None
-    assert isinstance(result, WorkPieceArtifact)
-
-
-def test_compute_workpiece_artifact_raster(base_workpiece, rasterizer_class):
-    """Test compute_workpiece_artifact_raster returns valid artifact."""
-    opsproducer = rasterizer_class()
-    laser = Laser()
-    settings = {
-        "pixels_per_mm": (10.0, 10.0),
-        "power": 1.0,
-        "cut_speed": 10,
-        "travel_speed": 20,
-        "air_assist": False,
-    }
-
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 250, 250)
-    ctx = cairo.Context(surface)
-    ctx.set_source_rgb(0, 0, 0)
-    ctx.paint()
-
-    with patch.object(
-        base_workpiece, "render_chunk", return_value=[(surface, (0, 0))]
-    ):
-        result = compute_workpiece_artifact_raster(
-            workpiece=base_workpiece,
-            opsproducer=opsproducer,
-            laser=laser,
-            settings=settings,
-            generation_id=1,
-            generation_size=base_workpiece.size,
-        )
-
-    assert result is not None
-    assert isinstance(result, WorkPieceArtifact)
-
-
-def test_compute_workpiece_artifact_raster_with_progress(
-    base_workpiece, mock_progress_context, rasterizer_class
-):
-    """Test compute_workpiece_artifact_raster with progress callback."""
-    opsproducer = rasterizer_class()
-    laser = Laser()
-    settings = {
-        "pixels_per_mm": (10.0, 10.0),
-        "power": 1.0,
-        "cut_speed": 10,
-        "travel_speed": 20,
-        "air_assist": False,
-    }
-
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 250, 250)
-    ctx = cairo.Context(surface)
-    ctx.set_source_rgb(0, 0, 0)
-    ctx.paint()
-
-    with patch.object(
-        base_workpiece, "render_chunk", return_value=[(surface, (0, 0))]
-    ):
-        result = compute_workpiece_artifact_raster(
-            workpiece=base_workpiece,
-            opsproducer=opsproducer,
-            laser=laser,
-            settings=settings,
-            generation_id=1,
-            generation_size=base_workpiece.size,
-            context=mock_progress_context,
-        )
-
-    assert result is not None
-    assert len(mock_progress_context.progress_calls) > 0
-
-
-def test_compute_workpiece_artifact_raster_empty_workpiece(rasterizer_class):
-    """Test compute_workpiece_artifact_raster with empty workpiece."""
-    empty_source = SourceAsset(
-        source_file=Path("empty"), original_data=b"", renderer=MagicMock()
-    )
-    empty_segment = SourceAssetSegment(
-        source_asset_uid=empty_source.uid,
-        pristine_geometry=Geometry(),
-        vectorization_spec=PassthroughSpec(),
-        normalization_matrix=Matrix.identity(),
-    )
-    empty_workpiece = WorkPiece(name="empty_wp", source_segment=empty_segment)
-    empty_workpiece.set_size(10, 10)
-
-    opsproducer = rasterizer_class()
-    laser = Laser()
-    settings = {
-        "pixels_per_mm": (10.0, 10.0),
-        "power": 1.0,
-        "cut_speed": 10,
-        "travel_speed": 20,
-        "air_assist": False,
-    }
-
-    result = compute_workpiece_artifact_raster(
-        workpiece=empty_workpiece,
-        opsproducer=opsproducer,
-        laser=laser,
-        settings=settings,
-        generation_id=1,
-        generation_size=empty_workpiece.size,
-    )
-
-    assert result is None
-
-
-def test_compute_workpiece_artifact_with_transformers(
-    base_workpiece, contour_producer_class, get_transformer
-):
-    """Test compute_workpiece_artifact applies transformers."""
-    Optimize = get_transformer("Optimize")
-    opsproducer = contour_producer_class()
-    laser = Laser()
-    transformers: list[OpsTransformer] = [Optimize()]
-    settings = {
-        "pixels_per_mm": (10.0, 10.0),
-        "power": 1.0,
-        "cut_speed": 10,
-        "travel_speed": 20,
-        "air_assist": False,
-    }
-    pixels_per_mm = (10.0, 10.0)
-    generation_size = (25.0, 25.0)
-
-    result = compute_workpiece_artifact(
-        workpiece=base_workpiece,
-        opsproducer=opsproducer,
-        laser=laser,
-        transformers=transformers,
-        settings=settings,
-        pixels_per_mm=pixels_per_mm,
-        generation_size=generation_size,
-        generation_id=1,
-    )
-
-    assert result is not None
-    assert isinstance(result, WorkPieceArtifact)
-
-
-def test_chunk_artifact_has_generation_size(base_workpiece, rasterizer_class):
-    """Test that chunk artifacts carry the full generation_size."""
-    opsproducer = rasterizer_class()
-    laser = Laser()
-    settings = {
-        "pixels_per_mm": (10.0, 10.0),
-        "power": 1.0,
-        "cut_speed": 10,
-        "travel_speed": 20,
-        "air_assist": False,
-    }
-
-    chunks_received = []
-
-    def on_chunk_callback(chunk_artifact):
-        chunks_received.append(chunk_artifact)
-
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 250, 250)
-    ctx = cairo.Context(surface)
-    ctx.set_source_rgb(0, 0, 0)
-    ctx.paint()
-
-    with patch.object(
-        base_workpiece, "render_chunk", return_value=[(surface, (0, 0))]
-    ):
-        compute_workpiece_artifact_raster(
-            workpiece=base_workpiece,
-            opsproducer=opsproducer,
-            laser=laser,
-            settings=settings,
-            generation_id=1,
-            generation_size=base_workpiece.size,
-            on_chunk=on_chunk_callback,
-        )
-
-    assert len(chunks_received) > 0
-    for chunk in chunks_received:
-        assert chunk.generation_size == base_workpiece.size

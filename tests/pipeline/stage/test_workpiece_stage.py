@@ -221,14 +221,13 @@ class TestWorkPiecePipelineStage:
             key
         )
 
-    def test_prepare_task_settings_reads_bidir_x_offset_from_producer(
+    def test_prepare_task_settings_reads_bidir_x_offset_from_step(
         self,
         mock_task_mgr,
         mock_artifact_manager,
         mock_machine,
     ):
-        """The offset must flow from the producer's params, not just the
-        step's own settings."""
+        """The offset must flow from the step's to_dict() output."""
         stage = WorkPiecePipelineStage(
             mock_task_mgr,
             mock_artifact_manager,
@@ -236,10 +235,7 @@ class TestWorkPiecePipelineStage:
         )
         mock_machine.heads = [MagicMock()]
         mock_step = MagicMock()
-        mock_step.get_settings.return_value = {}
-        mock_step.opsproducer_dict = {
-            "params": {"bidir_x_offset_mm": 0.35}
-        }
+        mock_step.to_dict.return_value = {"bidir_x_offset_mm": 0.35}
 
         prep_result = stage.prepare_task_settings(mock_step)
         assert prep_result is not None
@@ -253,7 +249,7 @@ class TestWorkPiecePipelineStage:
         mock_artifact_manager,
         mock_machine,
     ):
-        """No producer params (or no matching key) should default to 0.0,
+        """No bidir_x_offset_mm key in to_dict() should default to 0.0,
         not raise or leave the key missing."""
         stage = WorkPiecePipelineStage(
             mock_task_mgr,
@@ -262,8 +258,7 @@ class TestWorkPiecePipelineStage:
         )
         mock_machine.heads = [MagicMock()]
         mock_step = MagicMock()
-        mock_step.get_settings.return_value = {}
-        mock_step.opsproducer_dict = None
+        mock_step.to_dict.return_value = {}
 
         prep_result = stage.prepare_task_settings(mock_step)
         assert prep_result is not None

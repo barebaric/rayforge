@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gtk
 
-from rayforge.context import get_context
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
@@ -31,11 +30,6 @@ class CropTransformerSettingsWidget(
         step: "Step",
         **kwargs,
     ):
-        machine = get_context().machine
-        target_dict = step.opsproducer_dict
-        if machine and target_dict and "tolerance" not in target_dict:
-            target_dict["tolerance"] = machine.arc_tolerance
-
         super().__init__(
             editor,
             title,

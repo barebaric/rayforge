@@ -83,7 +83,7 @@ def manager():
     with tempfile.TemporaryDirectory() as temp_dir:
         addons_dir = Path(temp_dir) / "addons"
         plugin_mgr = Mock()
-        yield AddonManager([addons_dir], addons_dir, plugin_mgr)
+        yield AddonManager([addons_dir], addons_dir, plugin_mgr, MagicMock())
 
 
 def create_mock_addon(
@@ -144,7 +144,7 @@ class TestAddonManagerLoading:
 
             plugin_mgr = Mock()
             manager = AddonManager(
-                [builtin_dir, addons_dir], addons_dir, plugin_mgr
+                [builtin_dir, addons_dir], addons_dir, plugin_mgr, MagicMock()
             )
 
             with patch.object(manager, "load_addon") as mock_load:
@@ -914,7 +914,7 @@ class TestAddonManagerDisabledAddons:
             addon_config.load()
             plugin_mgr = Mock()
             manager = AddonManager(
-                [addons_dir], addons_dir, plugin_mgr, addon_config
+                [addons_dir], addons_dir, plugin_mgr, MagicMock(), addon_config
             )
             yield manager
 
@@ -1127,6 +1127,7 @@ class TestAddonManagerDeferredUnload:
                 [addons_dir],
                 addons_dir,
                 plugin_mgr,
+                MagicMock(),
                 addon_config,
                 is_job_active_callback=lambda: job_callback.active,
             )
@@ -1263,7 +1264,7 @@ class TestAddonManagerDependencies:
             addon_config.load()
             plugin_mgr = Mock()
             manager = AddonManager(
-                [addons_dir], addons_dir, plugin_mgr, addon_config
+                [addons_dir], addons_dir, plugin_mgr, MagicMock(), addon_config
             )
             yield manager
 

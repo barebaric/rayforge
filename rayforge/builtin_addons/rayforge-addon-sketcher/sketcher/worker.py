@@ -1,7 +1,7 @@
 """
 Backend entry point for sketcher addon.
 
-Registers producers and renderers with the main application.
+Registers asset types and renderers with the main application.
 """
 
 import gettext
@@ -14,12 +14,6 @@ _t = gettext.translation("sketcher", localedir=_localedir, fallback=True)
 _ = _t.gettext
 
 ADDON_NAME = "sketcher"
-
-
-@hookimpl
-def register_producers(producer_registry):
-    """Register producers with the producer registry."""
-    pass
 
 
 @hookimpl

@@ -1241,8 +1241,8 @@ class MainWindow(Adw.ApplicationWindow):
         # Initialize new document
         self._initialize_document()
 
-        # Check for missing producer types and show dialog if needed
-        missing_types = new_doc.missing_producer_types
+        # Check for missing step types and show dialog if needed
+        missing_types = new_doc.missing_step_types
         if missing_types:
             dialog = MissingFeaturesDialog(self, missing_types)
             dialog.present()

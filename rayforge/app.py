@@ -558,13 +558,6 @@ def main():
         main_thread_scheduler=idle_add,
     )
 
-    # Wire up addon module paths from WorkerPoolManager to AddonManager.
-    # This allows workers to resolve rayforge_addons.* modules during
-    # unpickling without loading all addons at startup.
-    shared_state = task_mgr_proxy.get_shared_state()
-    get_context().addon_mgr.set_task_manager(task_mgr_proxy)
-    get_context().addon_mgr.set_shared_state(shared_state)
-
     # Run application
     app = App(args)
     exit_code = app.run(None)

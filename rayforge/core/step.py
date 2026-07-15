@@ -14,6 +14,9 @@ from typing import (
 
 from blinker import Signal
 from raygeo.geo import Matrix
+from raygeo.ops import Ops
+from raygeo.ops.state import AirAssistMode
+from raygeo.ops.types import SectionType
 
 from ..pipeline.transformer.registry import transformer_registry
 from ..shared.units.formatter import format_value
@@ -25,11 +28,25 @@ if TYPE_CHECKING:
     from ..context import RayforgeContext
     from ..machine.models.laser import Laser
     from ..machine.models.machine import Machine
+    from ..pipeline.artifact import WorkPieceArtifact
+    from ..pipeline.stage.assembler_helpers import MachineDefaults
     from .layer import Layer
+    from .workpiece import WorkPiece
     from .workflow import Workflow
 
 
 logger = logging.getLogger(__name__)
+
+PRODUCER_TO_ASSEMBLER = {
+    "ContourProducer": "contour",
+    "FrameProducer": "frame",
+    "Rasterizer": "raster",
+    "DepthEngraver": "raster",
+    "DitherRasterizer": "raster",
+    "ShrinkWrapProducer": "shrinkwrap",
+    "WavefrontProducer": "wavefront",
+    "MaterialTestGridProducer": "material_test_grid",
+}
 
 
 class Step(DocItem, ABC):
@@ -45,6 +62,13 @@ class Step(DocItem, ABC):
     ICON: str = ""
     CAPABILITIES: Tuple[Capability, ...] = ()
     PRODUCER_CLASS: ClassVar[Any] = None
+    ASSEMBLER_NAME: ClassVar[str] = ""
+    IS_VECTOR: ClassVar[bool] = True
+    NORMALIZE_WINDINGS: ClassVar[bool] = False
+    SPLIT_CONTOURS: ClassVar[bool] = False
+    SET_POWER: ClassVar[bool] = False
+    ALWAYS_WRAP: ClassVar[bool] = False
+    SECTION_TYPE: ClassVar[SectionType] = SectionType.VECTOR_OUTLINE
 
     def __init__(
         self,
@@ -59,8 +83,15 @@ class Step(DocItem, ABC):
         self.applied_recipe_uid: Optional[str] = None
 
         self.opsproducer_dict: Optional[Dict[str, Any]] = None
-        self.per_workpiece_transformers_dicts: List[Dict[str, Any]] = []
-        self.per_step_transformers_dicts: List[Dict[str, Any]] = []
+        per_wp_defaults, per_sp_defaults = (
+            self.get_default_transformers_dicts()
+        )
+        self.per_workpiece_transformers_dicts: List[Dict[str, Any]] = list(
+            per_wp_defaults
+        )
+        self.per_step_transformers_dicts: List[Dict[str, Any]] = list(
+            per_sp_defaults
+        )
 
         self.pixels_per_mm = 50, 50
 
@@ -141,6 +172,82 @@ class Step(DocItem, ABC):
         """
         raise NotImplementedError(
             f"{cls.__name__}.create() must be implemented by subclass"
+        )
+
+    def prepare(
+        self,
+        workpiece: "WorkPiece",
+        settings: Dict[str, Any],
+        resolved_params: Dict[str, Any],
+    ) -> None:
+        """
+        Run once before chunked processing begins.
+
+        Override in subclasses to compute global state (e.g. raster
+        auto-levels). The base implementation is a no-op.
+        """
+        pass
+
+    def get_assembler_kwargs(
+        self,
+        machine_defaults: "MachineDefaults",
+        workpiece: "WorkPiece",
+    ) -> Dict[str, Any]:
+        """Build the kwargs dict for :meth:`~.AssemblerRegistry.assemble`."""
+        return {}
+
+    def create_initial_ops(self) -> "Ops":
+        """Build the initial Ops object with step-wide machine settings."""
+        ops = Ops()
+        ops.set_power(self.power)
+        ops.set_feed_rate(self.cut_speed)
+        ops.set_rapid_rate(self.travel_speed)
+        ops.set_air_assist(
+            AirAssistMode.ON if self.air_assist else AirAssistMode.OFF
+        )
+        if self.frequency:
+            ops.set_frequency(self.frequency)
+        if self.pulse_width:
+            ops.set_pulse_width(self.pulse_width)
+        return ops
+
+    def should_skip_workpiece(self, workpiece: "WorkPiece") -> bool:
+        """Return True if this step should skip the given workpiece entirely.
+
+        Override in subclasses that need to bail out early (e.g. raster
+        steps skip workpieces with no fills).
+        """
+        return False
+
+    def requires_full_render(self) -> bool:
+        """Return True if this step needs a full bitmap render before assembly.
+
+        The base implementation returns False. Steps that rasterize the
+        entire workpiece before operating on it (e.g. shrinkwrap) should
+        override to return True.
+        """
+        return False
+
+    def assemble_on_surface(
+        self,
+        workpiece: "WorkPiece",
+        laser: "Laser",
+        generation_id: int,
+        surface: Any = None,
+        pixels_per_mm: Optional[Tuple[float, float]] = None,
+        *,
+        machine_defaults: "MachineDefaults",
+        y_offset_mm: float = 0.0,
+        computed_auto_levels: Optional[Tuple[int, int]] = None,
+    ) -> "WorkPieceArtifact":
+        """Run the assembler on a surface (or vector data) and return an
+        artifact.
+
+        Subclasses must override this.  The base implementation raises
+        :class:`NotImplementedError`.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} must implement assemble_on_surface"
         )
 
     def to_dict(self) -> Dict:
@@ -235,6 +342,9 @@ class Step(DocItem, ABC):
             if typelabel:
                 step_class = step_registry.get_by_typelabel(typelabel)
 
+        if step_class is not None and step_class is not cls:
+            return step_class.from_dict(data)
+
         if step_class is None:
             step_class = cls
 
@@ -247,17 +357,17 @@ class Step(DocItem, ABC):
         step.applied_recipe_uid = data.get("applied_recipe_uid")
 
         step.opsproducer_dict = data["opsproducer_dict"]
-        loaded_per_wp = data["per_workpiece_transformers_dicts"]
-        loaded_per_step = data["per_step_transformers_dicts"]
 
         default_per_wp, default_per_step = (
             step_class.get_default_transformers_dicts()
         )
         step.per_workpiece_transformers_dicts = Step._merge_transformer_dicts(
-            loaded_per_wp, default_per_wp
+            data.get("per_workpiece_transformers_dicts", []),
+            default_per_wp,
         )
         step.per_step_transformers_dicts = Step._merge_transformer_dicts(
-            loaded_per_step, default_per_step
+            data.get("per_step_transformers_dicts", []),
+            default_per_step,
         )
 
         # Share dict references for transformers that appear in both lists
