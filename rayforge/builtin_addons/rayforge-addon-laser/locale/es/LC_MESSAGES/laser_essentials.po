@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-15 13:04+0200\n"
+"POT-Creation-Date: 2026-07-15 23:32+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -17,41 +17,30 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: laser_essentials/producers/raster_producer.py
-msgid "Variable Power"
-msgstr "Potencia variable"
+#: laser_essentials/material_test_helpers.py
+msgid "Cut"
+msgstr "Corte"
 
-#: laser_essentials/producers/raster_producer.py
-msgid "Constant Power"
-msgstr "Potencia constante"
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/raster_step.py
+msgid "Engrave"
+msgstr "Grabar"
 
-#: laser_essentials/producers/raster_producer.py
-msgid "Dither"
-msgstr "Tramado"
+#: laser_essentials/material_test_helpers.py
+msgid "Power vs Speed"
+msgstr "Potencia vs Velocidad"
 
-#: laser_essentials/producers/raster_producer.py
-msgid "Multiple Depths"
-msgstr "Múltiples profundidades"
+#: laser_essentials/material_test_helpers.py
+msgid "Power vs Passes"
+msgstr "Potencia vs Pasadas"
 
-#: laser_essentials/producers/raster_producer.py
-msgid "Variable"
-msgstr "Variable"
+#: laser_essentials/material_test_helpers.py
+msgid "Speed vs Passes"
+msgstr "Velocidad vs Pasadas"
 
-#: laser_essentials/producers/raster_producer.py
-msgid "Constant"
-msgstr "Constante"
-
-#: laser_essentials/producers/raster_producer.py
-msgid "Multi-Pass"
-msgstr "Multipaso"
-
-#: laser_essentials/producers/contour_producer.py
-msgid "Inside-Outside"
-msgstr "Interior-Exterior"
-
-#: laser_essentials/producers/contour_producer.py
-msgid "Outside-Inside"
-msgstr "Exterior-Interior"
+#: laser_essentials/material_test_helpers.py
+msgid "Speed vs Offset"
+msgstr "Velocidad vs Desplazamiento"
 
 #: laser_essentials/widgets/wavefront_widget.py
 msgid "Step Over"
@@ -68,10 +57,6 @@ msgstr "Desplazamiento"
 #: laser_essentials/widgets/wavefront_widget.py
 msgid "Extra offset from walls (mm)"
 msgstr "Desplazamiento adicional desde paredes (mm)"
-
-#: laser_essentials/widgets/wavefront_widget.py
-msgid "Change Wavefront Setting"
-msgstr "Cambiar ajuste de frente de onda"
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Configure how the laser engraves your image."
@@ -228,6 +213,18 @@ msgstr ""
 "valores más bajos mejoran la precisión, pero aumentan el tamaño de salida."
 
 #: laser_essentials/widgets/raster_widget.py
+msgid "Bidirectional Scan Offset"
+msgstr "Desplazamiento de escaneo bidireccional"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid ""
+"Corrects X misalignment between left-to-right and right-to-left raster "
+"passes (in mm)"
+msgstr ""
+"Corrige la desalineación X entre los barridos de rasterizado de izquierda a "
+"derecha y de derecha a izquierda (en mm)"
+
+#: laser_essentials/widgets/raster_widget.py
 msgid "Invert"
 msgstr "Invertir"
 
@@ -236,17 +233,8 @@ msgid "Engrave white areas instead of black areas"
 msgstr "Grabar áreas blancas en lugar de áreas negras"
 
 #: laser_essentials/widgets/raster_widget.py
-#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Change Power Range"
 msgstr "Cambiar rango de potencia"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Change Min Power"
-msgstr "Cambiar potencia mínima"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Change Max Power"
-msgstr "Cambiar potencia máxima"
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Min Power (Black)"
@@ -263,10 +251,6 @@ msgstr "Potencia mín. (Blanco)"
 #: laser_essentials/widgets/raster_widget.py
 msgid "Max Power (Black)"
 msgstr "Potencia máx. (Negro)"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Change engraving setting"
-msgstr "Cambiar ajuste de grabado"
 
 #: laser_essentials/widgets/shrinkwrap_widget.py
 msgid "Gravity"
@@ -298,18 +282,10 @@ msgstr ""
 "Distancia absoluta desde la trayectoria original en unidades de máquina, la "
 "dirección está controlada por el lado de corte"
 
-#: laser_essentials/widgets/shrinkwrap_widget.py
-msgid "Change Shrinkwrap Setting"
-msgstr "Cambiar ajuste de envoltura"
-
 #: laser_essentials/widgets/frame_widget.py
 msgid "Absolute distance from content boundary in machine units"
 msgstr ""
 "Distancia absoluta desde el límite del contenido en unidades de máquina"
-
-#: laser_essentials/widgets/frame_widget.py
-msgid "Change Frame Setting"
-msgstr "Cambiar ajuste de marco"
 
 #: laser_essentials/widgets/contour_widget.py
 msgid "Remove Inner Paths"
@@ -355,9 +331,25 @@ msgstr "Umbral de trazado"
 msgid "Brightness level (0.0-1.0) to define edges"
 msgstr "Nivel de brillo (0.0-1.0) para definir bordes"
 
-#: laser_essentials/widgets/contour_widget.py
-msgid "Change Edge Tracer Setting"
-msgstr "Cambiar ajuste del trazador de bordes"
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Diode Engrave"
+msgstr "Grabado con diodo"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Diode Cut"
+msgstr "Corte con diodo"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "CO2 Engrave"
+msgstr "Grabado con CO2"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "CO2 Cut"
+msgstr "Corte con CO2"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Select"
+msgstr "Seleccionar"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Presets"
@@ -456,6 +448,22 @@ msgid "Ending number of passes"
 msgstr "NÃºmero final de pases"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Minimum Offset"
+msgstr "Desplazamiento mínimo"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Bidir scan X-offset for first row (mm)"
+msgstr "Desplazamiento X de escaneo bidireccional para la primera fila (mm)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Maximum Offset"
+msgstr "Desplazamiento máximo"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
+msgid "Bidir scan X-offset for last row (mm)"
+msgstr "Desplazamiento X de escaneo bidireccional para la última fila (mm)"
+
+#: laser_essentials/widgets/material_test_grid_widget.py
 msgid "Label Engrave Power (%)"
 msgstr "Potencia de grabado de etiqueta (%)"
 
@@ -532,13 +540,12 @@ msgid "Columns (Speed Steps)"
 msgstr "Columnas (Pasos de velocidad)"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
-#, python-brace-format
-msgid "Change {param_name}"
-msgstr "Cambiar {param_name}"
+msgid "Rows (Offset Steps)"
+msgstr "Filas (pasos de desplazamiento)"
 
 #: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Change Grid Dimensions"
-msgstr "Cambiar dimensiones de la cuadrícula"
+msgid "Number of offset variations"
+msgstr "Número de variaciones de desplazamiento"
 
 #: laser_essentials/steps/shrinkwrap_step.py
 msgid "Shrink Wrap"
@@ -551,10 +558,6 @@ msgstr "Frente de onda"
 #: laser_essentials/steps/frame_step.py
 msgid "Frame"
 msgstr "Marco"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Engrave"
-msgstr "Grabar"
 
 #: laser_essentials/steps/contour_step.py
 msgid "Contour"

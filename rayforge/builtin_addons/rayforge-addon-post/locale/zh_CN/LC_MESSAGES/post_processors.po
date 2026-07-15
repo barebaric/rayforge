@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-29 02:21+0200\n"
+"POT-Creation-Date: 2026-07-15 21:39+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -205,6 +205,15 @@ msgstr "通过重新排序段来最小化移动距离。"
 #: post_processors/transformers/optimize_transformer.py
 msgid "Optimization complete"
 msgstr "优化完成"
+
+#: post_processors/transformers/bidir_scan_offset_transformer.py
+msgid "Bidirectional Scan Offset"
+msgstr "双向扫描偏移"
+
+#: post_processors/transformers/bidir_scan_offset_transformer.py
+msgid ""
+"Shifts right-to-left raster passes along X to correct scan-direction skew."
+msgstr "沿X方向移动从右到左的栅格扫描以纠正扫描方向偏差。"
 
 #: post_processors/transformers/smooth_transformer.py
 msgid "Smooth Path"

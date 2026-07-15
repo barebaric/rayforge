@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-29 02:21+0200\n"
+"POT-Creation-Date: 2026-07-15 21:39+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -210,6 +210,17 @@ msgstr "Мінімізує відстань переміщення шляхом 
 #: post_processors/transformers/optimize_transformer.py
 msgid "Optimization complete"
 msgstr "Оптимізація завершена"
+
+#: post_processors/transformers/bidir_scan_offset_transformer.py
+msgid "Bidirectional Scan Offset"
+msgstr "Двоспрямований зсув сканування"
+
+#: post_processors/transformers/bidir_scan_offset_transformer.py
+msgid ""
+"Shifts right-to-left raster passes along X to correct scan-direction skew."
+msgstr ""
+"Зміщує растрові проходи справа-наліво вздовж X для виправлення перекосу "
+"напрямку сканування."
 
 #: post_processors/transformers/smooth_transformer.py
 msgid "Smooth Path"
