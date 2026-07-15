@@ -1,26 +1,41 @@
 """
 Helper functions for the assembler-based pipeline.
 
-These functions absorb the Part-construction and result-wrapping
-logic that currently lives inside each producer's ``run()`` method,
-so that the stage can call raygeo assemblers directly without
-needing producer class instances.
+These functions absorb the Part-construction, image-preprocessing,
+and result-wrapping logic that currently lives inside each producer's
+``run()`` method, so that the stage can call raygeo assemblers
+directly without needing producer class instances.
 """
 
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from enum import Enum, auto
+from gettext import gettext as _
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Optional,
+    Tuple,
+)
 
+import numpy as np
 from raygeo.geo import Geometry, Matrix
+from raygeo.image.grayscale import (
+    compute_auto_levels,
+    normalize_grayscale,
+)
 from raygeo.ops import Ops
 from raygeo.ops.assembly import AssemblyResult
 from raygeo.ops.part import Part
 from raygeo.ops.types import RasterMode, SectionType
 
 from ...core.vectorization_spec import TraceSpec
+from ...image.dither import DitherAlgorithm, surface_to_dithered_array
 from ...image.tracing import trace_surface
+from ...image.util.grayscale import surface_to_binary, surface_to_grayscale
 from ..artifact import WorkPieceArtifact
 from ..coord import CoordinateSystem
 
@@ -31,6 +46,65 @@ if TYPE_CHECKING:
     from ...machine.models.laser import Laser
 
 logger = logging.getLogger(__name__)
+
+
+class DepthMode(Enum):
+    """Rasterisation depth mode.
+
+    Each mode controls how pixel intensity maps to laser output:
+
+    * ``POWER_MODULATION`` — variable power proportional to darkness.
+    * ``CONSTANT_POWER`` — binary mask, constant-power scan lines.
+    * ``DITHER`` — Floyd-Steinberg / ordered dither to binary.
+    * ``MULTI_PASS`` — repeated Z-stepped passes through the depth.
+    """
+
+    POWER_MODULATION = auto()
+    CONSTANT_POWER = auto()
+    DITHER = auto()
+    MULTI_PASS = auto()
+
+    @property
+    def display_name(self) -> str:
+        names = {
+            DepthMode.POWER_MODULATION: _("Variable Power"),
+            DepthMode.CONSTANT_POWER: _("Constant Power"),
+            DepthMode.DITHER: _("Dither"),
+            DepthMode.MULTI_PASS: _("Multiple Depths"),
+        }
+        return names[self]
+
+    @property
+    def short_name(self) -> str:
+        names = {
+            DepthMode.POWER_MODULATION: _("Variable"),
+            DepthMode.CONSTANT_POWER: _("Constant"),
+            DepthMode.DITHER: _("Dither"),
+            DepthMode.MULTI_PASS: _("Multi-Pass"),
+        }
+        return names[self]
+
+    @property
+    def raygeo_name(self) -> str:
+        """Return the string expected by the raygeo ``raster()`` call."""
+        names = {
+            DepthMode.POWER_MODULATION: "power_modulated",
+            DepthMode.CONSTANT_POWER: "mask_scan",
+            DepthMode.DITHER: "dither",
+            DepthMode.MULTI_PASS: "multi_pass",
+        }
+        return names[self]
+
+    @property
+    def raster_mode(self) -> RasterMode:
+        """Return the :class:`RasterMode` for this depth mode."""
+        _raster_mode_map = {
+            DepthMode.POWER_MODULATION: RasterMode.VARIABLE_POWER,
+            DepthMode.CONSTANT_POWER: RasterMode.CONSTANT_POWER,
+            DepthMode.DITHER: RasterMode.CONSTANT_POWER,
+            DepthMode.MULTI_PASS: RasterMode.DEPTH_MAP,
+        }
+        return _raster_mode_map[self]
 
 
 @dataclass(frozen=True)
@@ -51,6 +125,7 @@ class MachineDefaults:
     step_power: float
     tool_radius: float
     step_over: float
+    cut_speed: int
 
 
 def resolve_machine_defaults(
@@ -72,6 +147,7 @@ def resolve_machine_defaults(
     * ``step_power`` — ``settings["power"]`` → ``1.0``
     * ``tool_radius`` — ``laser.spot_size_mm[0] / 2``
     * ``step_over`` — ``laser.spot_size_mm[0]``
+    * ``cut_speed`` — ``settings["cut_speed"]`` → ``500``
     """
     s = settings or {}
 
@@ -87,6 +163,7 @@ def resolve_machine_defaults(
         step_power=s.get("power", 1.0),
         tool_radius=spot_x / 2.0,
         step_over=spot_x,
+        cut_speed=s.get("cut_speed", 500),
     )
 
 
@@ -335,9 +412,7 @@ def wrap_assembler_result(
             if set_power is not None:
                 final_ops.set_power(set_power)
             final_ops.extend(result.ops)
-            final_ops.ops_section_end(
-                section_type, raster_mode=raster_mode
-            )
+            final_ops.ops_section_end(section_type, raster_mode=raster_mode)
 
     return make_artifact(
         final_ops,
@@ -346,3 +421,171 @@ def wrap_assembler_result(
         is_vector=is_vector,
         source_dimensions=source_dimensions,
     )
+
+
+def preprocess_raster_image(
+    surface: "cairo.ImageSurface",
+    *,
+    mode: DepthMode,
+    invert: bool = False,
+    auto_levels: bool = True,
+    computed_auto_levels: Optional[Tuple[int, int]] = None,
+    black_point: int = 0,
+    white_point: int = 255,
+    threshold: int = 128,
+    dither_algorithm: Optional[DitherAlgorithm] = None,
+    laser_spot_x_mm: float = 0.1,
+    pixels_per_mm_x: float = 1.0,
+) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+    """Convert a Cairo surface into an image array for a raster assembler.
+
+    Handles depth-mode preprocessing: grayscale with optional levels,
+    dithering, or binary thresholding.
+
+    Args:
+        surface: The rendered Cairo ARGB32 surface.
+        mode: The rasterisation depth mode.
+        invert: If True, invert grayscale before further processing.
+        auto_levels: For grayscale modes, if True, auto-compute
+            black/white points from the image histogram.
+        computed_auto_levels: Pre-computed ``(black, white)`` points
+            from a low-resolution preview (e.g. from
+            ``compute_raster_auto_levels``).  When provided, skips
+            per-chunk auto-level computation.
+        black_point: Manual black-point (0–255) when
+            ``auto_levels`` is False.
+        white_point: Manual white-point (0–255) when
+            ``auto_levels`` is False.
+        threshold: Brightness threshold (0–255) for binary
+            ``CONSTANT_POWER`` mode.
+        dither_algorithm: Dithering algorithm for ``DITHER`` mode.
+        laser_spot_x_mm: Laser spot X diameter in mm, used to
+            compute minimum feature size for dithering.
+        pixels_per_mm_x: Rendered pixels-per-mm in X, used with
+            ``laser_spot_x_mm`` for dither minimum feature size.
+
+    Returns:
+        ``(image, alpha)`` where *image* is a 2-D ``uint8`` array
+        (grayscale or binary depending on mode) and *alpha* is a
+        ``float32`` alpha array (grayscale modes) or ``None``
+        (dither / constant-power modes).
+    """
+    if mode in (DepthMode.MULTI_PASS, DepthMode.POWER_MODULATION):
+        gray_image, alpha = surface_to_grayscale(surface)
+        if invert:
+            alpha_mask = alpha > 0
+            gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
+        gray_image = _apply_raster_levels(
+            gray_image,
+            alpha,
+            auto_levels=auto_levels,
+            computed_auto_levels=computed_auto_levels,
+            black_point=black_point,
+            white_point=white_point,
+        )
+        return gray_image, alpha
+
+    if mode == DepthMode.DITHER:
+        min_feature_px = max(
+            1,
+            int(round(laser_spot_x_mm * pixels_per_mm_x)),
+        )
+        algo = dither_algorithm or DitherAlgorithm.FLOYD_STEINBERG
+        image = surface_to_dithered_array(
+            surface,
+            algo,
+            invert=invert,
+            min_feature_px=min_feature_px,
+        )
+        return image, None
+
+    if mode == DepthMode.CONSTANT_POWER:
+        image = surface_to_binary(
+            surface,
+            threshold=threshold,
+            invert=invert,
+        )
+        return image, None
+
+    return None, None
+
+
+def _apply_raster_levels(
+    gray_image: np.ndarray,
+    alpha: np.ndarray,
+    *,
+    auto_levels: bool = True,
+    computed_auto_levels: Optional[Tuple[int, int]] = None,
+    black_point: int = 0,
+    white_point: int = 255,
+) -> np.ndarray:
+    """Apply auto-levels or manual black/white-point normalization.
+
+    This is the standalone equivalent of ``Rasterizer._apply_levels``.
+    """
+    if auto_levels:
+        if computed_auto_levels is not None:
+            bp, wp = computed_auto_levels
+        else:
+            bp, wp = compute_auto_levels(gray_image[alpha > 0])
+    else:
+        bp, wp = black_point, white_point
+
+    if bp > 0 or wp < 255:
+        gray_image = normalize_grayscale(gray_image, bp, wp)
+    return gray_image
+
+
+def compute_raster_auto_levels(
+    workpiece: "WorkPiece",
+    pixels_per_mm: Tuple[float, float],
+    *,
+    invert: bool = False,
+    max_preview_pixels: int = 512,
+) -> Optional[Tuple[int, int]]:
+    """Compute auto-levels from a low-resolution preview render.
+
+    Renders a small preview of the workpiece, converts it to
+    grayscale, and returns the ``(black_point, white_point)`` tuple
+    suitable for passing to ``preprocess_raster_image`` as
+    ``computed_auto_levels``.
+
+    This ensures consistent black/white points across all chunks
+    when processing large images.
+
+    Args:
+        workpiece: The WorkPiece to render a preview of.
+        pixels_per_mm: The ``(x, y)`` resolution of the full render.
+        invert: If True, invert the grayscale before computing
+            levels.
+        max_preview_pixels: Maximum preview dimension in pixels.
+
+    Returns:
+        ``(black_point, white_point)`` tuple, or ``None`` if the
+        preview render failed or auto-levels are not applicable.
+    """
+    px_per_mm_x, px_per_mm_y = pixels_per_mm
+    size = workpiece.size
+
+    scale = min(
+        1.0,
+        max_preview_pixels / (size[0] * px_per_mm_x),
+        max_preview_pixels / (size[1] * px_per_mm_y),
+    )
+
+    preview_width = max(1, int(size[0] * px_per_mm_x * scale))
+    preview_height = max(1, int(size[1] * px_per_mm_y * scale))
+
+    surface = workpiece.render_to_pixels(preview_width, preview_height)
+    if not surface:
+        return None
+
+    gray_image, alpha = surface_to_grayscale(surface)
+
+    if invert:
+        alpha_mask = alpha > 0
+        gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
+
+    surface.flush()
+
+    return compute_auto_levels(gray_image[alpha > 0])

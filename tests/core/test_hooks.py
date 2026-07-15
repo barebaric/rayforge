@@ -147,28 +147,6 @@ class TestRegistryHooks:
         assert len(received_registry) == 1
         assert received_registry[0] is step_registry
 
-    def test_register_producers_hook(self):
-        """Test that register_producers hook receives the producer registry."""
-        received_registry = []
-
-        class ProducerRegistryPlugin:
-            @hookimpl
-            def register_producers(self, producer_registry):
-                received_registry.append(producer_registry)
-
-        context = RayforgeContext()
-        plugin = ProducerRegistryPlugin()
-        context.plugin_mgr.register(plugin)
-
-        from rayforge.pipeline.producer.registry import producer_registry
-
-        context.plugin_mgr.hook.register_producers(
-            producer_registry=producer_registry
-        )
-
-        assert len(received_registry) == 1
-        assert received_registry[0] is producer_registry
-
     def test_step_settings_loaded_hook(self):
         """Test step_settings_loaded hook receives step and producer."""
         received_data = []

@@ -15,7 +15,6 @@ from blinker import Signal
 from raygeo.geo import Geometry
 
 from ..core.undo import HistoryManager
-from ..pipeline.producer.registry import producer_registry
 from .asset import IAsset, UnknownAsset
 from .color import COLOR_PALETTE
 from .item import DocItem
@@ -490,21 +489,15 @@ class Doc(DocItem):
         return None
 
     @property
-    def missing_producer_types(self) -> Set[str]:
-        """
-        Returns a set of producer type names that are used in this document
-        but are not available (not registered in the producer registry).
+    def missing_step_types(self) -> Set[str]:
+        """Step type names referenced but not registered in step_registry."""
+        from .step_registry import step_registry
 
-        This is used to detect when a document uses features from an addon
-        that is not installed.
-        """
-        missing = set()
+        missing: Set[str] = set()
         for layer in self.layers:
             if layer.workflow:
                 for step in layer.workflow.steps:
-                    if step.opsproducer_dict:
-                        producer_type = step.opsproducer_dict.get("type")
-                        if producer_type:
-                            if producer_registry.get(producer_type) is None:
-                                missing.add(producer_type)
+                    name = type(step).__name__
+                    if step_registry.get(name) is None:
+                        missing.add(name)
         return missing

@@ -9,37 +9,30 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
 
-from ..producers import WavefrontProducer
-
 if TYPE_CHECKING:
-    from rayforge.core.step import Step
     from rayforge.doceditor.editor import DocEditor
 
 
 class WavefrontSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
-    """UI for configuring the WavefrontProducer."""
+    """UI for configuring the WavefrontStep."""
 
     def __init__(
         self,
         editor: "DocEditor",
         title: str,
-        producer: WavefrontProducer,
         page: Adw.PreferencesPage,
-        step: "Step",
+        step: Any,
         **kwargs,
     ):
         super().__init__(
             editor,
             title,
-            component=producer,
             page=page,
             step=step,
             **kwargs,
         )
 
-        self.producer = producer
-
-        step_over = producer.step_over_mm or 0.1
+        step_over = step.step_over_mm or 0.1
         self._add_spin_row(
             label=_("Step Over"),
             subtitle=_("Lateral step-over between wavefront passes (mm)"),
@@ -53,7 +46,7 @@ class WavefrontSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self._add_spin_row(
             label=_("Offset"),
             subtitle=_("Extra offset from walls (mm)"),
-            value=producer.offset_mm,
+            value=step.offset_mm,
             lower=0.0,
             upper=20.0,
             step_increment=0.1,
@@ -92,11 +85,4 @@ class WavefrontSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
 
     def _on_param_changed(self, key: str, new_value: Any):
-        params_dict = self.target_dict.setdefault("params", {})
-        self.editor.step.set_step_param(
-            target_dict=params_dict,
-            key=key,
-            new_value=new_value,
-            name=_("Change Wavefront Setting"),
-            on_change_callback=lambda: self.step.updated.send(self.step),
-        )
+        self.set_step_property(key, new_value)

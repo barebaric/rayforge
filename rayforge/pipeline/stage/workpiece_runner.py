@@ -16,7 +16,6 @@ def make_workpiece_artifact_in_subprocess(
     proxy: ExecutionContextProxy,
     artifact_store: ArtifactStore,
     workpiece_dict: dict[str, Any],
-    opsproducer_dict: dict[str, Any],
     per_workpiece_transformers_dicts: List[dict],
     laser_dict: dict[str, Any],
     settings: dict,
@@ -43,11 +42,11 @@ def make_workpiece_artifact_in_subprocess(
         proxy: The execution context proxy for progress reporting and events.
         artifact_store: The shared memory artifact store for serialization.
         workpiece_dict: Dictionary representation of the WorkPiece.
-        opsproducer_dict: Dictionary representation of the OpsProducer.
         per_workpiece_transformers_dicts: List of dictionaries for
             OpsTransformers.
         laser_dict: Dictionary representation of the Laser.
-        settings: The dictionary of settings from the Step.
+        settings: The dictionary of settings from the Step
+            (step.to_dict() plus machine-derived keys).
         generation_id: Unique identifier for this generation.
         generation_size: The size of the generation in mm.
         creator_tag: Tag for artifact tracking.
@@ -65,12 +64,10 @@ def make_workpiece_artifact_in_subprocess(
 
     from ...core.workpiece import WorkPiece
     from ...machine.models.laser import Laser
-    from ..producer import OpsProducer
     from ..transformer import OpsTransformer
 
     logger.debug("Imports completed")
 
-    opsproducer = OpsProducer.from_dict(opsproducer_dict)
     opstransformers = [
         OpsTransformer.from_dict(m) for m in per_workpiece_transformers_dicts
     ]
@@ -120,7 +117,6 @@ def make_workpiece_artifact_in_subprocess(
     with profile_if_enabled("workpiece", generation_id):
         final_artifact = compute_workpiece_artifact(
             workpiece=workpiece,
-            opsproducer=opsproducer,
             laser=laser,
             transformers=opstransformers,
             settings=settings,
