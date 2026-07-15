@@ -83,9 +83,7 @@ def manager():
     with tempfile.TemporaryDirectory() as temp_dir:
         addons_dir = Path(temp_dir) / "addons"
         plugin_mgr = Mock()
-        yield AddonManager(
-            [addons_dir], addons_dir, plugin_mgr, MagicMock()
-        )
+        yield AddonManager([addons_dir], addons_dir, plugin_mgr, MagicMock())
 
 
 def create_mock_addon(

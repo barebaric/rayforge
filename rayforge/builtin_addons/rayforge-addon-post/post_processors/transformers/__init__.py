@@ -5,6 +5,7 @@ This module provides all built-in transformers that can be applied
 to Ops objects for various post-processing operations.
 """
 
+from .bidir_scan_offset_transformer import BidirScanOffsetTransformer
 from .crop_transformer import CropTransformer
 from .lead_in_out_transformer import LeadInOutTransformer
 from .merge_lines_transformer import MergeLinesTransformer
@@ -15,6 +16,7 @@ from .smooth_transformer import Smooth
 from .tabs_transformer import TabOpsTransformer
 
 __all__ = [
+    "BidirScanOffsetTransformer",
     "CropTransformer",
     "LeadInOutTransformer",
     "MergeLinesTransformer",

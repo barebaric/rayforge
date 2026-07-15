@@ -121,6 +121,7 @@ class WorkPiecePipelineStage(PipelineStage):
         settings["driver_native_overscan"] = (
             self._machine.driver.native_overscan
         )
+        settings.setdefault("bidir_x_offset_mm", 0.0)
 
         try:
             selected_laser = step.get_selected_laser(self._machine)

@@ -31,6 +31,7 @@ class GridMode(Enum):
     POWER_VS_SPEED = "Power vs Speed"
     POWER_VS_PASSES = "Power vs Passes"
     SPEED_VS_PASSES = "Speed vs Passes"
+    SPEED_VS_OFFSET = "Speed vs Offset"
 
 
 def get_material_test_proportional_size(
@@ -88,13 +89,13 @@ def draw_preview(
         max_power=params.get("power_range", (10.0, 100.0))[1],
         min_passes=params.get("passes_range", (1, 5))[0],
         max_passes=params.get("passes_range", (1, 5))[1],
+        min_offset=params.get("offset_range", (-0.5, 0.5))[0],
+        max_offset=params.get("offset_range", (-0.5, 0.5))[1],
         fixed_speed=params.get("fixed_speed", 1000.0),
         fixed_power=params.get("fixed_power", 50.0),
         shape_size=params.get("shape_size", 10.0),
         spacing=params.get("spacing", 2.0),
-        mode=(
-            "cut" if params.get("test_type", "Cut") == "Cut" else "engrave"
-        ),
+        mode=("cut" if params.get("test_type", "Cut") == "Cut" else "engrave"),
         grid_mode=params.get("grid_mode", "Power vs Speed"),
         include_labels=params.get("include_labels", True),
     )

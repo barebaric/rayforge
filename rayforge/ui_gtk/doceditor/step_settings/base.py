@@ -123,9 +123,7 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
             target=self.step,
             property_name=key,
             new_value=new_value,
-            name=name or _(
-                "Change {key}"
-            ).format(key=key.replace("_", " ")),
+            name=name or _("Change {key}").format(key=key.replace("_", " ")),
             on_change_callback=_notify,
         )
         self.history_manager.execute(command)

@@ -23,10 +23,21 @@ logger = logging.getLogger(__name__)
 
 
 _PARAM_KEYS = (
-    "test_type", "grid_mode", "speed_range", "power_range",
-    "passes_range", "fixed_speed", "fixed_power", "grid_dimensions",
-    "shape_size", "spacing", "include_labels", "label_power_percent",
-    "label_speed", "line_interval_mm",
+    "test_type",
+    "grid_mode",
+    "speed_range",
+    "power_range",
+    "passes_range",
+    "offset_range",
+    "fixed_speed",
+    "fixed_power",
+    "grid_dimensions",
+    "shape_size",
+    "spacing",
+    "include_labels",
+    "label_power_percent",
+    "label_speed",
+    "line_interval_mm",
 )
 
 
