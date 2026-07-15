@@ -11,25 +11,24 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
 from rayforge.ui_gtk.shared.slider import create_slider_row
 
-from ..producers import ContourProducer, CutOrder
+from ..producers import CutOrder
 
 if TYPE_CHECKING:
-    from rayforge.core.step import Step
     from rayforge.doceditor.editor import DocEditor
 
 
 class ContourProducerSettingsWidget(
     DebounceMixin, StepComponentSettingsWidget
 ):
-    """UI for configuring the ContourProducer."""
+    """UI for configuring the ContourStep."""
 
     def __init__(
         self,
         editor: "DocEditor",
         title: str,
-        producer: ContourProducer,
+        producer,
         page: Adw.PreferencesPage,
-        step: "Step",
+        step: Any,
         **kwargs,
     ):
         super().__init__(
@@ -41,13 +40,11 @@ class ContourProducerSettingsWidget(
             **kwargs,
         )
 
-        self.producer = producer
-
         switch_row = Adw.SwitchRow(
             title=_("Remove Inner Paths"),
             subtitle=_("If enabled, only trace the outer outline of shapes"),
         )
-        switch_row.set_active(producer.remove_inner_paths)
+        switch_row.set_active(step.remove_inner_paths)
         self.add(switch_row)
 
         # Cut Side
@@ -55,7 +52,7 @@ class ContourProducerSettingsWidget(
         cut_side_row = Adw.ComboRow(
             title=_("Cut Side"), model=Gtk.StringList.new(cut_side_choices)
         )
-        cut_side_row.set_selected(list(CutSide).index(producer.cut_side))
+        cut_side_row.set_selected(list(CutSide).index(CutSide[step.cut_side]))
         self.add(cut_side_row)
 
         # Cut Order
@@ -65,7 +62,9 @@ class ContourProducerSettingsWidget(
             subtitle=_("Processing order for nested paths"),
             model=Gtk.StringList.new(cut_order_choices),
         )
-        cut_order_row.set_selected(list(CutOrder).index(producer.cut_order))
+        cut_order_row.set_selected(
+            list(CutOrder).index(CutOrder[step.cut_order])
+        )
         self.add(cut_order_row)
 
         # Path Offset
@@ -84,7 +83,7 @@ class ContourProducerSettingsWidget(
             adjustment=offset_adj,
             digits=2,
         )
-        offset_adj.set_value(producer.path_offset_mm)
+        offset_adj.set_value(step.path_offset_mm)
         self.add(self.offset_row)
 
         # Overcut
@@ -103,7 +102,7 @@ class ContourProducerSettingsWidget(
             adjustment=overcut_adj,
             digits=2,
         )
-        overcut_adj.set_value(producer.overcut)
+        overcut_adj.set_value(step.overcut)
         self.add(self.overcut_row)
 
         # Threshold Override Toggle
@@ -113,7 +112,7 @@ class ContourProducerSettingsWidget(
                 "Ignore source geometry and re-trace within the workpiece"
             ),
         )
-        self.override_switch_row.set_active(producer.override_threshold)
+        self.override_switch_row.set_active(step.override_threshold)
         self.add(self.override_switch_row)
 
         threshold_adj = Gtk.Adjustment(
@@ -121,7 +120,7 @@ class ContourProducerSettingsWidget(
             upper=1.0,
             step_increment=0.01,
             page_increment=0.1,
-            value=producer.threshold,
+            value=step.threshold,
         )
         self.threshold_row, self.threshold_scale = create_slider_row(
             title=_("Tracing Threshold"),
@@ -161,8 +160,8 @@ class ContourProducerSettingsWidget(
         )
 
         # Set initial sensitivity
-        self._update_offset_sensitivity(producer.cut_side)
-        self._update_threshold_sensitivity(producer.override_threshold)
+        self._update_offset_sensitivity(CutSide[step.cut_side])
+        self._update_threshold_sensitivity(step.override_threshold)
 
         cut_side_row.connect(
             "notify::selected",
@@ -178,14 +177,7 @@ class ContourProducerSettingsWidget(
         self.threshold_row.set_sensitive(active)
 
     def _on_param_changed(self, key: str, new_value: Any):
-        params_dict = self.target_dict.setdefault("params", {})
-        self.editor.step.set_step_param(
-            target_dict=params_dict,
-            key=key,
-            new_value=new_value,
-            name=_("Change Edge Tracer Setting"),
-            on_change_callback=lambda: self.step.updated.send(self.step),
-        )
+        self.set_step_property(key, new_value)
 
     def _on_cut_side_changed(self, row, _):
         selected_idx = row.get_selected()

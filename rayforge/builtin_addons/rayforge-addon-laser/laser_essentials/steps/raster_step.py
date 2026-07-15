@@ -12,11 +12,21 @@ from typing import (
     cast,
 )
 
+import numpy as np
+from raygeo.ops import Ops
+from raygeo.ops.types import SectionType
+
 from rayforge.core.capability import ENGRAVE, Capability
 from rayforge.core.step import Step
+from rayforge.image.dither import DitherAlgorithm
+from rayforge.pipeline.assembler.registry import assembler_registry
 from rayforge.pipeline.stage.assembler_helpers import (
     MachineDefaults,
+    build_part_raster,
     compute_raster_auto_levels,
+    make_artifact,
+    preprocess_raster_image,
+    wrap_assembler_result,
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 
@@ -25,6 +35,8 @@ from ..producers import DepthMode, Rasterizer
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
     from rayforge.core.workpiece import WorkPiece
+    from rayforge.machine.models.laser import Laser
+    from rayforge.pipeline.artifact import WorkPieceArtifact
 
     class OverscanTransformerType(Protocol):
         @staticmethod
@@ -39,6 +51,9 @@ class EngraveStep(Step):
     CAPABILITIES: Tuple[Capability, ...] = (ENGRAVE,)
     PRODUCER_CLASS = Rasterizer
     ASSEMBLER_NAME = "raster"
+    IS_VECTOR = False
+    ALWAYS_WRAP = True
+    SECTION_TYPE = SectionType.RASTER_FILL
 
     def __init__(
         self, name: Optional[str] = None, typelabel: Optional[str] = None
@@ -63,6 +78,7 @@ class EngraveStep(Step):
         self.num_depth_levels = 5
         self.z_step_down = 0.0
         self.angle_increment = 0.0
+        self.dither_algorithm = None
 
     def get_operation_mode_short(self):
         if not self.depth_mode:
@@ -122,6 +138,11 @@ class EngraveStep(Step):
         result["num_depth_levels"] = self.num_depth_levels
         result["z_step_down"] = self.z_step_down
         result["angle_increment"] = self.angle_increment
+        result["dither_algorithm"] = (
+            self.dither_algorithm.value
+            if self.dither_algorithm
+            else None
+        )
         return result
 
     @classmethod
@@ -146,6 +167,9 @@ class EngraveStep(Step):
         step.num_depth_levels = data.get("num_depth_levels", 5)
         step.z_step_down = data.get("z_step_down", 0.0)
         step.angle_increment = data.get("angle_increment", 0.0)
+        dither_val = data.get("dither_algorithm")
+        if dither_val is not None:
+            step.dither_algorithm = DitherAlgorithm(dither_val)
         return step
 
     def prepare(
@@ -155,12 +179,119 @@ class EngraveStep(Step):
         resolved_params: Dict[str, Any],
     ) -> None:
         self._computed_auto_levels = None
-        if not resolved_params.get("auto_levels", False):
+        if not self.auto_levels:
             return
         self._computed_auto_levels = compute_raster_auto_levels(
             workpiece,
             settings["pixels_per_mm"],
-            invert=resolved_params.get("invert", False),
+            invert=self.invert,
+        )
+
+    def should_skip_workpiece(self, workpiece: "WorkPiece") -> bool:
+        fills = workpiece.fills
+        return fills is not None and len(fills) == 0
+
+    def assemble_on_surface(
+        self,
+        workpiece: "WorkPiece",
+        laser: "Laser",
+        generation_id: int,
+        surface: Any = None,
+        pixels_per_mm: Optional[Tuple[float, float]] = None,
+        *,
+        machine_defaults: "MachineDefaults",
+        y_offset_mm: float = 0.0,
+        computed_auto_levels: Optional[Tuple[int, int]] = None,
+    ) -> "WorkPieceArtifact":
+        assert pixels_per_mm is not None
+        assert surface is not None
+
+        part = build_part_raster(workpiece, pixels_per_mm)
+        rp = self.get_assembler_kwargs(machine_defaults, workpiece)
+
+        width_px = surface.get_width()
+        height_px = surface.get_height()
+
+        if width_px == 0 or height_px == 0:
+            final_ops = Ops()
+            final_ops.ops_section_start(
+                self.SECTION_TYPE, workpiece.uid
+            )
+            final_ops.ops_section_end(self.SECTION_TYPE)
+            return make_artifact(
+                final_ops,
+                workpiece,
+                generation_id,
+                is_vector=False,
+                source_dimensions=(0, 0),
+            )
+
+        depth_mode = DepthMode[self.depth_mode]
+        image, alpha = preprocess_raster_image(
+            surface,
+            mode=depth_mode,
+            invert=self.invert,
+            auto_levels=self.auto_levels,
+            computed_auto_levels=computed_auto_levels,
+            black_point=self.black_point,
+            white_point=self.white_point,
+            threshold=self.threshold,
+            dither_algorithm=self.dither_algorithm,
+            laser_spot_x_mm=laser.spot_size_mm[0],
+            pixels_per_mm_x=pixels_per_mm[0],
+        )
+        if image is None:
+            return make_artifact(
+                Ops(),
+                workpiece,
+                generation_id,
+                is_vector=False,
+                source_dimensions=(width_px, height_px),
+            )
+        part.image = image
+
+        spot_y = laser.spot_size_mm[1]
+        line_interval_mm = rp.get("line_interval_mm") or spot_y
+        x_offset_mm = workpiece.bbox[0]
+        y_off_mm = workpiece.bbox[1] + y_offset_mm
+        sample_interval_mm = rp.get(
+            "sample_interval_mm"
+        ) or laser.spot_size_mm[0]
+        step_power = machine_defaults.step_power
+        alpha_arr = (
+            (alpha * 255).astype(np.uint8) if alpha is not None else None
+        )
+
+        result = assembler_registry.assemble(
+            self.ASSEMBLER_NAME,
+            part,
+            alpha=alpha_arr,
+            mode=depth_mode.raygeo_name,
+            line_interval_mm=line_interval_mm,
+            sample_interval_mm=sample_interval_mm,
+            min_power=rp.get("min_power", 0),
+            max_power=rp.get("max_power", 100),
+            step_power=step_power,
+            num_power_levels=rp.get("num_power_levels", 256),
+            angle=rp.get("scan_angle", 0),
+            offset_x_mm=x_offset_mm,
+            offset_y_mm=y_off_mm,
+            scan_mode=rp.get("scan_mode", "segmented").lower(),
+            cross_hatch=rp.get("cross_hatch", False),
+            num_depth_levels=rp.get("num_depth_levels", 1),
+            z_step_down=rp.get("z_step_down", 0.0),
+            angle_increment=rp.get("angle_increment", 0),
+        )
+
+        return wrap_assembler_result(
+            result,
+            workpiece,
+            laser,
+            generation_id,
+            section_type=self.SECTION_TYPE,
+            is_vector=self.IS_VECTOR,
+            source_dimensions=(width_px, height_px),
+            always_wrap=self.ALWAYS_WRAP,
         )
 
     @classmethod

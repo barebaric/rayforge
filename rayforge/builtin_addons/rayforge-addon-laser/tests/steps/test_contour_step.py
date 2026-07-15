@@ -235,3 +235,20 @@ class TestContourStep:
         data = step.to_dict()
         restored = ContourStep.from_dict(data)
         assert data == restored.to_dict()
+
+    def test_step_from_dict_preserves_subclass_attrs(self):
+        """Step.from_dict (base call) must delegate to subclass from_dict."""
+        step_registry.register(ContourStep)
+        step = ContourStep(name="Test")
+        step.cut_side = "OUTSIDE"
+        step.kerf_mm = 0.5
+        step.cut_speed = 200
+        step.power = 80
+        data = step.to_dict()
+
+        restored = Step.from_dict(data)
+        assert isinstance(restored, ContourStep)
+        assert restored.cut_side == "OUTSIDE"
+        assert restored.kerf_mm == 0.5
+        assert restored.cut_speed == 200
+        assert restored.power == 80

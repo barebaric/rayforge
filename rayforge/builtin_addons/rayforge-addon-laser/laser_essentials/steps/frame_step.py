@@ -1,19 +1,28 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
 
 from rayforge.core.capability import CUT, SCORE, WITH_KERF, Capability
 from rayforge.core.step import Step
+from rayforge.pipeline.assembler.registry import assembler_registry
 from rayforge.pipeline.producer.base import CutSide
-from rayforge.pipeline.stage.assembler_helpers import MachineDefaults
+from rayforge.pipeline.stage.assembler_helpers import (
+    MachineDefaults,
+    build_part_vector,
+    make_artifact,
+    wrap_assembler_result,
+)
 from rayforge.pipeline.transformer.registry import transformer_registry
+from raygeo.ops import Ops
 
 from ..producers import FrameProducer
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
     from rayforge.core.workpiece import WorkPiece
+    from rayforge.machine.models.laser import Laser
+    from rayforge.pipeline.artifact import WorkPieceArtifact
 
 
 class FrameStep(Step):
@@ -22,6 +31,7 @@ class FrameStep(Step):
     CAPABILITIES: Tuple[Capability, ...] = (CUT, SCORE, WITH_KERF)
     PRODUCER_CLASS = FrameProducer
     ASSEMBLER_NAME = "frame"
+    SET_POWER = True
 
     def __init__(
         self, name: Optional[str] = None, typelabel: Optional[str] = None
@@ -46,6 +56,47 @@ class FrameStep(Step):
         kwargs["path_offset_mm"] = self.path_offset_mm
         kwargs["kerf_mm"] = machine_defaults.kerf_mm
         return kwargs
+
+    def assemble_on_surface(
+        self,
+        workpiece: "WorkPiece",
+        laser: "Laser",
+        generation_id: int,
+        surface: Any = None,
+        pixels_per_mm: Optional[Tuple[float, float]] = None,
+        *,
+        machine_defaults: "MachineDefaults",
+        y_offset_mm: float = 0.0,
+        computed_auto_levels: Optional[Tuple[int, int]] = None,
+    ) -> "WorkPieceArtifact":
+        use_surface = surface is not None and (
+            not workpiece.boundaries or workpiece.boundaries.is_empty()
+        )
+        part = build_part_vector(
+            workpiece,
+            surface=surface if use_surface else None,
+            normalize_windings=self.NORMALIZE_WINDINGS,
+        )
+        if part is None or not part.has_geometry():
+            return make_artifact(
+                Ops(), workpiece, generation_id, is_vector=self.IS_VECTOR
+            )
+        kwargs = self.get_assembler_kwargs(machine_defaults, workpiece)
+        result = assembler_registry.assemble(
+            self.ASSEMBLER_NAME, part, **kwargs
+        )
+        set_power = (
+            machine_defaults.step_power if self.SET_POWER else None
+        )
+        return wrap_assembler_result(
+            result,
+            workpiece,
+            laser,
+            generation_id,
+            split_contours=self.SPLIT_CONTOURS,
+            set_power=set_power,
+            is_vector=self.IS_VECTOR,
+        )
 
     def to_dict(self) -> dict:
         data = super().to_dict()

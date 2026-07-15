@@ -8,6 +8,7 @@ from raygeo.ops.types import CommandType
 
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
+from rayforge.core.step import Step
 
 
 from rayforge.core.vectorization_spec import PassthroughSpec
@@ -18,7 +19,6 @@ from rayforge.pipeline.stage.workpiece_compute import (
     MAX_VECTOR_TRACE_PIXELS,
     _apply_transformers,
     _calculate_vector_render_size,
-    _create_initial_ops,
     _merge_artifact_ops,
     _validate_workpiece_size,
 )
@@ -68,32 +68,30 @@ def test_set_progress_without_callback():
 
 
 def test_create_initial_ops():
-    """Test _create_initial_ops creates configured Ops."""
-    settings = {
-        "power": 0.8,
-        "cut_speed": 15,
-        "travel_speed": 30,
-        "air_assist": True,
-    }
+    """Test Step.create_initial_ops creates configured Ops."""
+    step = Step(typelabel="test")
+    step.power = 0.8
+    step.cut_speed = 15
+    step.travel_speed = 30
+    step.air_assist = True
 
-    ops = _create_initial_ops(settings)
+    ops = step.create_initial_ops()
 
     assert isinstance(ops, Ops)
     assert not ops.is_empty()
 
 
 def test_create_initial_ops_with_frequency_and_pulse_width():
-    """Test _create_initial_ops injects frequency/pulse_width commands."""
-    settings = {
-        "power": 0.8,
-        "cut_speed": 15,
-        "travel_speed": 30,
-        "air_assist": True,
-        "frequency": 1000,
-        "pulse_width": 50,
-    }
+    """Test Step.create_initial_ops injects frequency/pulse_width cmds."""
+    step = Step(typelabel="test")
+    step.power = 0.8
+    step.cut_speed = 15
+    step.travel_speed = 30
+    step.air_assist = True
+    step.frequency = 1000
+    step.pulse_width = 50
 
-    ops = _create_initial_ops(settings)
+    ops = step.create_initial_ops()
 
     freq_idxs = [
         i
@@ -112,16 +110,15 @@ def test_create_initial_ops_with_frequency_and_pulse_width():
 
 
 def test_create_initial_ops_zero_frequency_no_command():
-    """Test _create_initial_ops skips frequency when value is 0."""
-    settings = {
-        "power": 0.8,
-        "cut_speed": 15,
-        "travel_speed": 30,
-        "air_assist": True,
-        "frequency": 0,
-    }
+    """Test Step.create_initial_ops skips frequency when value is 0."""
+    step = Step(typelabel="test")
+    step.power = 0.8
+    step.cut_speed = 15
+    step.travel_speed = 30
+    step.air_assist = True
+    step.frequency = 0
 
-    ops = _create_initial_ops(settings)
+    ops = step.create_initial_ops()
 
     freq_idxs = [
         i
@@ -132,15 +129,14 @@ def test_create_initial_ops_zero_frequency_no_command():
 
 
 def test_create_initial_ops_missing_frequency_no_error():
-    """Test _create_initial_ops handles missing frequency key."""
-    settings = {
-        "power": 0.8,
-        "cut_speed": 15,
-        "travel_speed": 30,
-        "air_assist": True,
-    }
+    """Test Step.create_initial_ops handles empty frequency."""
+    step = Step(typelabel="test")
+    step.power = 0.8
+    step.cut_speed = 15
+    step.travel_speed = 30
+    step.air_assist = True
 
-    ops = _create_initial_ops(settings)
+    ops = step.create_initial_ops()
 
     freq_idxs = [
         i

@@ -10,28 +10,16 @@ from typing import (
     Tuple,
 )
 
-import numpy as np
 from raygeo.ops import Ops
-from raygeo.ops.state import AirAssistMode
-from raygeo.ops.types import SectionType
 
 from ...core.step import Step
 from ...core.workpiece import WorkPiece
 from ...machine.models.laser import Laser
 from ...shared.tasker.progress import ProgressContext, set_progress
 from ..artifact import WorkPieceArtifact
-from ..assembler.registry import assembler_registry
 from ..transformer import ExecutionPhase, OpsTransformer
 from .assembler_helpers import (
-    DepthMode,
-    MachineDefaults,
-    build_part_raster,
-    build_part_vector,
-    compute_raster_auto_levels,
-    make_artifact,
-    preprocess_raster_image,
     resolve_machine_defaults,
-    wrap_assembler_result,
 )
 
 if TYPE_CHECKING:
@@ -41,194 +29,6 @@ logger = logging.getLogger(__name__)
 
 MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 MAX_RASTER_RENDER_PIXELS = 16 * 1024 * 1024
-
-
-def run_assembler_on_surface(
-    step: "Step",
-    workpiece: WorkPiece,
-    laser: Laser,
-    generation_id: int,
-    surface: Any = None,
-    pixels_per_mm: Optional[Tuple[float, float]] = None,
-    *,
-    machine_defaults: MachineDefaults,
-    y_offset_mm: float = 0.0,
-    computed_auto_levels: Optional[Tuple[int, int]] = None,
-) -> WorkPieceArtifact:
-    """Run an assembler on a surface (or vector data) and return an artifact.
-
-    This replaces per-producer ``run()`` methods with a single generic
-    dispatch driven by :class:`AssemblerMeta` orchestration metadata.
-    """
-    rp = step.get_assembler_kwargs(machine_defaults, workpiece)
-    meta = assembler_registry.get(step.ASSEMBLER_NAME)
-    if meta is None:
-        raise KeyError(
-            f"No assembler registered under '{step.ASSEMBLER_NAME}'"
-        )
-
-    # --- Build Part ------------------------------------------------
-    if meta.build_part_mode == "vector":
-        use_surface = surface is not None and (
-            rp.get("override_threshold", False)
-            or not workpiece.boundaries
-            or workpiece.boundaries.is_empty()
-        )
-        part = build_part_vector(
-            workpiece,
-            surface=surface if use_surface else None,
-            override_threshold=rp.get("override_threshold", False),
-            threshold=rp.get("threshold", 0.5),
-            normalize_windings=meta.normalize_windings,
-        )
-    elif meta.build_part_mode == "raster":
-        assert pixels_per_mm is not None
-        part = build_part_raster(workpiece, pixels_per_mm)
-    else:
-        part = None
-
-    # --- Surface preprocessing (shrinkwrap etc.) -------------------
-    if meta.prepare_surface is not None and surface is not None:
-        assert part is not None
-        boolean_image = meta.prepare_surface(surface)
-
-        if not np.any(boolean_image):
-            section_type = getattr(SectionType, meta.section_type)
-            return make_artifact(
-                Ops(),
-                workpiece,
-                generation_id,
-                is_vector=meta.is_vector,
-            )
-        part.image = boolean_image
-
-    # --- Raster image preprocessing --------------------------------
-    if meta.build_part_mode == "raster" and surface is not None:
-        assert part is not None
-        width_px = surface.get_width()
-        height_px = surface.get_height()
-
-        if width_px == 0 or height_px == 0:
-            section_type = getattr(SectionType, meta.section_type)
-            final_ops = Ops()
-            final_ops.ops_section_start(section_type, workpiece.uid)
-            final_ops.ops_section_end(section_type)
-            return make_artifact(
-                final_ops,
-                workpiece,
-                generation_id,
-                is_vector=False,
-                source_dimensions=(0, 0),
-            )
-
-        depth_mode_str = rp.get("depth_mode", "POWER_MODULATION")
-
-        depth_mode = DepthMode[depth_mode_str]
-        image, alpha = preprocess_raster_image(
-            surface,
-            mode=depth_mode,
-            invert=rp.get("invert", False),
-            auto_levels=rp.get("auto_levels", True),
-            computed_auto_levels=computed_auto_levels,
-            black_point=rp.get("black_point", 0),
-            white_point=rp.get("white_point", 255),
-            threshold=rp.get("threshold", 128),
-            laser_spot_x_mm=laser.spot_size_mm[0],
-            pixels_per_mm_x=pixels_per_mm[0] if pixels_per_mm else 1.0,
-        )
-        if image is None:
-            section_type = getattr(SectionType, meta.section_type)
-            return make_artifact(
-                Ops(),
-                workpiece,
-                generation_id,
-                is_vector=False,
-                source_dimensions=(width_px, height_px),
-            )
-        part.image = image
-
-        # Resolve raster-specific params
-        spot_y = laser.spot_size_mm[1]
-        line_interval_mm = rp.get("line_interval_mm") or spot_y
-        x_offset_mm = workpiece.bbox[0]
-        y_off_mm = workpiece.bbox[1] + y_offset_mm
-        sample_interval_mm = (
-            rp.get("sample_interval_mm") or laser.spot_size_mm[0]
-        )
-        step_power = machine_defaults.step_power
-        alpha_arr = (
-            (alpha * 255).astype(np.uint8) if alpha is not None else None
-        )
-
-        result = assembler_registry.assemble(
-            step.ASSEMBLER_NAME,
-            part,
-            alpha=alpha_arr,
-            mode=depth_mode.raygeo_name,
-            line_interval_mm=line_interval_mm,
-            sample_interval_mm=sample_interval_mm,
-            min_power=rp.get("min_power", 0),
-            max_power=rp.get("max_power", 100),
-            step_power=step_power,
-            num_power_levels=rp.get("num_power_levels", 256),
-            angle=rp.get("scan_angle", 0),
-            offset_x_mm=x_offset_mm,
-            offset_y_mm=y_off_mm,
-            scan_mode=rp.get("scan_mode", "segmented").lower(),
-            cross_hatch=rp.get("cross_hatch", False),
-            num_depth_levels=rp.get("num_depth_levels", 1),
-            z_step_down=rp.get("z_step_down", 0.0),
-            angle_increment=rp.get("angle_increment", 0),
-        )
-
-        section_type = getattr(SectionType, meta.section_type)
-        return wrap_assembler_result(
-            result,
-            workpiece,
-            laser,
-            generation_id,
-            section_type=section_type,
-            is_vector=False,
-            source_dimensions=(width_px, height_px),
-            always_wrap=meta.always_wrap,
-        )
-
-    # --- Vector / none path (contour / frame / shrinkwrap / wavefront
-    #     / material_test_grid) ----------------------------------------
-    if meta.build_part_mode == "vector" and (
-        part is None or not part.has_geometry()
-    ):
-        logger.warning(
-            "Assembler '%s' for '%s': no geometry available",
-            step.ASSEMBLER_NAME,
-            workpiece.name,
-        )
-        return make_artifact(
-            Ops(),
-            workpiece,
-            generation_id,
-            is_vector=meta.is_vector,
-        )
-
-    vec_kwargs = step.get_assembler_kwargs(machine_defaults, workpiece)
-
-    result = assembler_registry.assemble(
-        step.ASSEMBLER_NAME,
-        part,
-        **vec_kwargs,
-    )
-
-    set_power = machine_defaults.step_power if meta.set_power else None
-
-    return wrap_assembler_result(
-        result,
-        workpiece,
-        laser,
-        generation_id,
-        split_contours=meta.split_contours,
-        set_power=set_power,
-        is_vector=meta.is_vector,
-    )
 
 
 def _run_producer_on_surface(
@@ -266,8 +66,7 @@ def _run_producer_on_surface(
         A WorkPieceArtifact containing the generated operations.
     """
     machine_defaults = resolve_machine_defaults(laser, settings)
-    artifact = run_assembler_on_surface(
-        step,
+    artifact = step.assemble_on_surface(
         workpiece,
         laser,
         generation_id,
@@ -280,30 +79,6 @@ def _run_producer_on_surface(
     if generation_size is not None:
         artifact.generation_size = generation_size
     return artifact
-
-
-def _create_initial_ops(settings: dict) -> Ops:
-    """
-    Create and configure the initial Ops object with settings from the Step.
-
-    Args:
-        settings: Dictionary of settings from the Step.
-
-    Returns:
-        Configured Ops object.
-    """
-    initial_ops = Ops()
-    initial_ops.set_power(settings["power"])
-    initial_ops.set_feed_rate(settings["cut_speed"])
-    initial_ops.set_rapid_rate(settings["travel_speed"])
-    initial_ops.set_air_assist(
-        AirAssistMode.ON if settings["air_assist"] else AirAssistMode.OFF
-    )
-    if settings.get("frequency"):
-        initial_ops.set_frequency(settings["frequency"])
-    if settings.get("pulse_width"):
-        initial_ops.set_pulse_width(settings["pulse_width"])
-    return initial_ops
 
 
 def _validate_workpiece_size(
@@ -432,8 +207,7 @@ def _execute_vector(
     if not _validate_workpiece_size(size_mm):
         return
 
-    meta = assembler_registry.get(step.ASSEMBLER_NAME)
-    requires_full_render = meta.requires_full_render if meta else False
+    requires_full_render = step.requires_full_render()
 
     if workpiece._edited_boundaries is not None:
         if not workpiece._edited_boundaries.is_empty():
@@ -608,18 +382,6 @@ def _process_raster_chunk(
     return chunk_artifact, progress
 
 
-def _has_no_fills(workpiece: WorkPiece) -> bool:
-    """Check if a workpiece has vector geometry but no fills.
-
-    Returns True for geometry-provider-based workpieces (e.g. sketches)
-    that contain only stroked lines with no filled regions. Such
-    workpieces should be handled by the vector pipeline, not rasterized.
-    Returns False for image workpieces and workpieces with fills.
-    """
-    fills = workpiece.fills
-    return fills is not None and len(fills) == 0
-
-
 def _execute_raster(
     workpiece: WorkPiece,
     step: "Step",
@@ -644,14 +406,11 @@ def _execute_raster(
         A tuple for each chunk: (chunk_artifact, progress).
     """
     size = workpiece.size
-    rp = step.get_assembler_kwargs(
-        resolve_machine_defaults(laser, settings), workpiece
-    )
 
     if not _validate_workpiece_size(size):
         return
 
-    if _has_no_fills(workpiece):
+    if step.should_skip_workpiece(workpiece):
         return
 
     px_per_mm_x, px_per_mm_y = settings["pixels_per_mm"]
@@ -666,10 +425,7 @@ def _execute_raster(
     else:
         raster_settings = settings
 
-    meta = assembler_registry.get(step.ASSEMBLER_NAME)
-    requires_full_render = meta.requires_full_render if meta else False
-
-    if requires_full_render:
+    if step.requires_full_render():
         artifact = _process_raster_full_render(
             workpiece,
             step,
@@ -683,13 +439,8 @@ def _execute_raster(
             yield artifact, 1.0
         return
 
-    computed_auto_levels = None
-    if rp.get("auto_levels", False):
-        computed_auto_levels = compute_raster_auto_levels(
-            workpiece,
-            raster_settings["pixels_per_mm"],
-            invert=rp.get("invert", False),
-        )
+    step.prepare(workpiece, raster_settings, {})
+    computed_auto_levels = getattr(step, "_computed_auto_levels", None)
 
     total_height_px = size[1] * px_per_mm_y
 
@@ -848,7 +599,7 @@ def compute_workpiece_artifact_vector(
         ),
     )
 
-    initial_ops = _create_initial_ops(settings)
+    initial_ops = step.create_initial_ops()
     final_artifact: Optional[WorkPieceArtifact] = None
 
     execute_weight = 0.20
@@ -920,7 +671,7 @@ def compute_workpiece_artifact_raster(
         ),
     )
 
-    initial_ops = _create_initial_ops(settings)
+    initial_ops = step.create_initial_ops()
     final_artifact: Optional[WorkPieceArtifact] = None
 
     execute_weight = 0.20
@@ -999,8 +750,7 @@ def compute_workpiece_artifact(
         or None if no artifact could be produced.
     """
     step = Step.from_dict(settings)
-    meta = assembler_registry.get(step.ASSEMBLER_NAME)
-    is_vector = meta.is_vector if meta else False
+    is_vector = step.IS_VECTOR
 
     if is_vector:
         final_artifact = compute_workpiece_artifact_vector(
@@ -1041,7 +791,6 @@ def compute_workpiece_artifact(
         settings,
     )
 
-    logger = logging.getLogger(__name__)
     logger.debug(
         "compute_workpiece_artifact: Creating final_artifact_to_store: "
         f"final_artifact.source_dimensions="

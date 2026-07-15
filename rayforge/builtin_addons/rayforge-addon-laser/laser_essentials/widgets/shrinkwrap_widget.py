@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any
 
 from gi.repository import Adw, Gtk
 
-from rayforge.core.undo import DictItemCommand
 from rayforge.pipeline.producer.base import CutSide
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
@@ -12,25 +11,22 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
 from rayforge.ui_gtk.shared.slider import create_slider_row
 
-from ..producers import ShrinkWrapProducer
-
 if TYPE_CHECKING:
-    from rayforge.core.step import Step
     from rayforge.doceditor.editor import DocEditor
 
 
 class ShrinkWrapProducerSettingsWidget(
     DebounceMixin, StepComponentSettingsWidget
 ):
-    """UI for configuring the ShrinkWrapProducer."""
+    """UI for configuring the ShrinkWrapStep."""
 
     def __init__(
         self,
         editor: "DocEditor",
         title: str,
-        producer: ShrinkWrapProducer,
+        producer,
         page: Adw.PreferencesPage,
-        step: "Step",
+        step: Any,
         **kwargs,
     ):
         super().__init__(
@@ -45,7 +41,7 @@ class ShrinkWrapProducerSettingsWidget(
         gravity_adj = Gtk.Adjustment(
             lower=0.0, upper=1.0, step_increment=0.01, page_increment=0.1
         )
-        gravity_adj.set_value(producer.gravity)
+        gravity_adj.set_value(step.gravity)
         gravity_row, gravity_scale = create_slider_row(
             title=_("Gravity"),
             adjustment=gravity_adj,
@@ -62,7 +58,7 @@ class ShrinkWrapProducerSettingsWidget(
         cut_side_row = Adw.ComboRow(
             title=_("Cut Side"), model=Gtk.StringList.new(cut_side_choices)
         )
-        cut_side_row.set_selected(list(CutSide).index(producer.cut_side))
+        cut_side_row.set_selected(list(CutSide).index(CutSide[step.cut_side]))
         self.add(cut_side_row)
 
         # Path Offset
@@ -81,7 +77,7 @@ class ShrinkWrapProducerSettingsWidget(
             adjustment=offset_adj,
             digits=2,
         )
-        offset_adj.set_value(producer.path_offset_mm)
+        offset_adj.set_value(step.path_offset_mm)
         self.add(self.offset_row)
 
         # Connect signals
@@ -96,7 +92,7 @@ class ShrinkWrapProducerSettingsWidget(
         cut_side_row.connect("notify::selected", self._on_cut_side_changed)
 
         # Set initial sensitivity
-        self._update_offset_sensitivity(producer.cut_side)
+        self._update_offset_sensitivity(CutSide[step.cut_side])
         cut_side_row.connect(
             "notify::selected",
             lambda r, _: self._update_offset_sensitivity(
@@ -108,22 +104,7 @@ class ShrinkWrapProducerSettingsWidget(
         self.offset_row.set_sensitive(cut_side != CutSide.CENTERLINE)
 
     def _on_param_changed(self, key: str, new_value: Any):
-        params_dict = self.target_dict.setdefault("params", {})
-
-        if isinstance(new_value, float):
-            if abs(new_value - params_dict.get(key, 0.0)) < 1e-6:
-                return
-        elif new_value == params_dict.get(key):
-            return
-
-        command = DictItemCommand(
-            target_dict=params_dict,
-            key=key,
-            new_value=new_value,
-            name=_("Change Shrinkwrap Setting"),
-            on_change_callback=lambda: self.step.updated.send(self.step),
-        )
-        self.history_manager.execute(command)
+        self.set_step_property(key, new_value)
 
     def _on_cut_side_changed(self, row, _):
         selected_idx = row.get_selected()
