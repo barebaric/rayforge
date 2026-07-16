@@ -159,6 +159,12 @@ class MainMenu(Gio.Menu):
         flip_submenu.append(_("Flip Vertical"), "win.flip-vertical")
         arrange_menu.append_submenu(_("Flip"), flip_submenu)
 
+        array_submenu = Gio.Menu()
+        array_submenu.append(_("Grid"), "win.array-grid")
+        array_submenu.append(_("Point Rotation"), "win.array-point-rotation")
+        array_submenu.append(_("Circular"), "win.array-circular")
+        arrange_menu.append_submenu(_("Array"), array_submenu)
+
         self._layout_group = Gio.Menu()
         arrange_menu.append_section(None, self._layout_group)
 

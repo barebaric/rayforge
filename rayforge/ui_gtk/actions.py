@@ -10,8 +10,14 @@ from ..core.item import DocItem
 from ..core.layer import Layer
 from ..core.stock import StockItem
 from ..core.workpiece import WorkPiece
+from ..doceditor.array import ArrayMode
 from ..doceditor.layout.registry import layout_registry
 from .action_registry import MenuPlacement, ToolbarPlacement, action_registry
+from .array_dialog import (
+    CircularArrayDialog,
+    GridArrayDialog,
+    PointRotationArrayDialog,
+)
 from .doceditor.add_tabs_popover import AddTabsPopover
 from .doceditor.stock_properties_dialog import StockPropertiesDialog
 from .shared.keyboard import PRIMARY_ACCEL
@@ -410,6 +416,11 @@ class ActionManager:
         # Transform Actions
         self._add_action("flip-horizontal", self.on_flip_horizontal)
         self._add_action("flip-vertical", self.on_flip_vertical)
+
+        # Array / Pattern tool (menu entries live under Arrange -> Array)
+        self._add_action("array-grid", self.on_array_grid)
+        self._add_action("array-point-rotation", self.on_array_point_rotation)
+        self._add_action("array-circular", self.on_array_circular)
 
         # Macro Actions
         self._add_action(
@@ -810,6 +821,32 @@ class ActionManager:
         """Handler for the 'flip-vertical' action."""
         items = list(self.win.surface.get_selected_items())
         self.editor.transform.flip_vertical(items)
+
+    def on_array_grid(self, action, param):
+        """Handler for the 'array-grid' action: opens the grid dialog."""
+        self._open_array_dialog(ArrayMode.GRID)
+
+    def on_array_point_rotation(self, action, param):
+        """Handler for 'array-point-rotation': opens the point-rotation
+        dialog."""
+        self._open_array_dialog(ArrayMode.POINT_ROTATION)
+
+    def on_array_circular(self, action, param):
+        """Handler for the 'array-circular' action: opens the circular
+        dialog."""
+        self._open_array_dialog(ArrayMode.CIRCULAR)
+
+    def _open_array_dialog(self, mode: ArrayMode) -> None:
+        items = list(self.win.surface.get_selected_items())
+        if not items:
+            return
+        cls = {
+            ArrayMode.GRID: GridArrayDialog,
+            ArrayMode.POINT_ROTATION: PointRotationArrayDialog,
+            ArrayMode.CIRCULAR: CircularArrayDialog,
+        }[mode]
+        dialog = cls(self.win, self.editor, self.win.surface, items)
+        dialog.present()
 
     def _add_action(
         self,

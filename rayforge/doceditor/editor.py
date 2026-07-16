@@ -16,6 +16,7 @@ from ..core.vectorization_spec import VectorizationSpec
 from ..pipeline.artifact import JobArtifact, JobArtifactHandle
 from ..pipeline.pipeline import Pipeline
 from ..pipeline.view import ViewManager
+from .array_cmd import ArrayCmd
 from .asset_cmd import AssetCmd
 from .command_registry import command_registry
 from .edit_cmd import EditCmd
@@ -130,6 +131,7 @@ class DocEditor:
 
         # Instantiate and link command handlers, passing dependencies.
         self.asset = AssetCmd(self)
+        self.array = ArrayCmd(self)
         self.edit = EditCmd(self)
         self.file = FileCmd(self, self.task_manager)
         self.group = GroupCmd(self, self.task_manager)
