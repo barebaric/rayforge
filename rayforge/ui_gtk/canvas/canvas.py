@@ -133,6 +133,12 @@ class Canvas(Gtk.DrawingArea):
         # Fired after any transform gesture ends.
         self.transform_end = Signal()
 
+        # Fired during an active transform gesture on each mouse-move
+        # (after the elements have been repositioned).  Receives one
+        # argument ``elements`` — the list of canvas elements that
+        # were just moved / resized / rotated / sheared.
+        self.transform_moved = Signal()
+
         self.elements_deleted = Signal()
         self.selection_changed = Signal()
         self.active_element_changed = Signal()
@@ -913,6 +919,9 @@ class Canvas(Gtk.DrawingArea):
         if self._selection_group:
             if self._moving:
                 self._selection_group.apply_move(world_dx, world_dy)
+                self.transform_moved.send(
+                    self, elements=self._selection_group.elements
+                )
             elif self._resizing:
                 if self._active_origin:
                     self._selection_group.resize_from_drag(
@@ -966,6 +975,9 @@ class Canvas(Gtk.DrawingArea):
                             constrained_dy,
                             self._initial_world_transform,
                         )
+                        self.transform_moved.send(
+                            self, elements=[self._drag_target]
+                        )
                         self.queue_draw()
                     else:
                         # Standard, unconstrained move.
@@ -974,6 +986,9 @@ class Canvas(Gtk.DrawingArea):
                             world_dx,
                             world_dy,
                             self._initial_world_transform,
+                        )
+                        self.transform_moved.send(
+                            self, elements=[self._drag_target]
                         )
                         self.queue_draw()
             elif self._resizing:
