@@ -9,6 +9,7 @@ from ....core.group import Group
 from ....core.item import DocItem
 from ....core.stock import StockItem
 from ....core.workpiece import WorkPiece
+from ....doceditor.transform_cmd import TransformCmd
 from ...icons import get_icon
 from ...shared.adwfix import get_spinrow_float
 from .base import PropertyProvider
@@ -43,46 +44,74 @@ class TransformPropertyProvider(PropertyProvider):
         self.editor = editor
         self.items = items
 
-        item = self.items[0]
+        is_multi = len(items) > 1
         machine = get_context().machine
 
-        # Calculate X/Y position in REFERENCE coordinates
+        # Calculate X/Y position in REFERENCE coordinates. For a
+        # multi-selection, this is the position of the combined bounding
+        # box (the same corner the machine origin refers to), so the spin
+        # rows show where the group as a whole sits.
         if machine:
             space = machine.get_coordinate_space()
-            pos_machine = space.world_item_to_machine(item.pos, item.size)
-            pos_machine_x, pos_machine_y = pos_machine
 
-            # Get reference offset
-            # - WCS mode: offset is in MACHINE space, use directly
-            # - Workarea mode: offset is in WORLD space, transform to MACHINE
-            if machine.wcs_origin_is_workarea_origin:
-                offset_world = machine.get_reference_offset()
-                offset_machine = space.world_point_to_machine(
-                    offset_world[0], offset_world[1]
+            if is_multi:
+                pos_machine = TransformCmd.get_position_group(items)
+            else:
+                pos_machine = space.world_item_to_machine(
+                    items[0].pos, items[0].size
+                )
+
+            if pos_machine is not None:
+                pos_machine_x, pos_machine_y = pos_machine
+
+                # Get reference offset
+                # - WCS mode: offset is in MACHINE space, use directly
+                # - Workarea mode: offset is in WORLD space, transform to
+                #   MACHINE
+                if machine.wcs_origin_is_workarea_origin:
+                    offset_world = machine.get_reference_offset()
+                    offset_machine = space.world_point_to_machine(
+                        offset_world[0], offset_world[1]
+                    )
+                else:
+                    offset_machine = machine.get_reference_offset()[:2]
+
+                pos_ref_x = pos_machine_x - offset_machine[0]
+                pos_ref_y = pos_machine_y - offset_machine[1]
+
+                # Update subtitles to indicate coordinate system
+                wcs_name = machine.active_wcs
+                self.x_row.set_subtitle(
+                    _("Relative to {wcs} origin").format(wcs=wcs_name)
+                )
+                self.y_row.set_subtitle(
+                    _("Relative to {wcs} origin").format(wcs=wcs_name)
                 )
             else:
-                offset_machine = machine.get_reference_offset()[:2]
-
-            pos_ref_x = pos_machine_x - offset_machine[0]
-            pos_ref_y = pos_machine_y - offset_machine[1]
-
-            # Update subtitles to indicate coordinate system
-            wcs_name = machine.active_wcs
-            self.x_row.set_subtitle(
-                _("Relative to {wcs} origin").format(wcs=wcs_name)
-            )
-            self.y_row.set_subtitle(
-                _("Relative to {wcs} origin").format(wcs=wcs_name)
-            )
+                pos_ref_x, pos_ref_y = 0.0, 0.0
         else:
             # Fallback if no machine
-            pos_ref_x, pos_ref_y = item.pos
+            if is_multi:
+                ref = TransformCmd.get_position_group(items)
+                pos_ref_x, pos_ref_y = ref if ref is not None else (0.0, 0.0)
+            else:
+                pos_ref_x, pos_ref_y = items[0].pos
             self.x_row.set_subtitle("")
             self.y_row.set_subtitle("")
 
-        angle_local = item.angle
-        shear_local = item.shear
-        size_world = item.size
+        # ── Size (group bbox for multi, per-item for single) ──
+        if is_multi:
+            size_world = TransformCmd.get_size_group(items) or (0.0, 0.0)
+        else:
+            size_world = items[0].size
+
+        # ── Angle / Shear (anchor represents group) ──
+        if is_multi:
+            angle_local = TransformCmd.get_angle_group(items) or 0.0
+            shear_local = TransformCmd.get_shear_group(items) or 0.0
+        else:
+            angle_local = items[0].angle
+            shear_local = items[0].shear
 
         # Use a safe re-entrant pattern for updating widgets
         was_in_update = getattr(self, "_in_update", False)
@@ -243,20 +272,13 @@ class TransformPropertyProvider(PropertyProvider):
 
     def _update_row_visibility_and_details(self):
         item = self.items[0]
-        is_single_workpiece = len(self.items) == 1 and isinstance(
-            item, WorkPiece
+        size_capable = (WorkPiece, StockItem, Group)
+        all_have_size = bool(self.items) and all(
+            isinstance(i, size_capable) for i in self.items
         )
-        is_single_stockitem = len(self.items) == 1 and isinstance(
-            item, StockItem
-        )
-        is_single_group = len(self.items) == 1 and isinstance(item, Group)
-        is_single_item_with_size = (
-            is_single_workpiece or is_single_stockitem or is_single_group
-        )
+        is_single_item_with_size = len(self.items) == 1 and all_have_size
 
-        self.fixed_ratio_switch.set_sensitive(
-            is_single_item_with_size or is_single_group
-        )
+        self.fixed_ratio_switch.set_sensitive(all_have_size)
         self.reset_width_button.set_sensitive(is_single_item_with_size)
         self.reset_height_button.set_sensitive(is_single_item_with_size)
         self.reset_aspect_button.set_sensitive(is_single_item_with_size)
@@ -312,12 +334,20 @@ class TransformPropertyProvider(PropertyProvider):
 
             logger.debug(f"Handling width change to {new_width_from_ui}")
 
-            self.editor.transform.set_size(
-                items=self.items,
-                width=new_width_from_ui,
-                height=None,  # Signal that this dimension should be calculated
-                fixed_ratio=self.fixed_ratio_switch.get_active(),
-            )
+            if len(self.items) > 1:
+                self.editor.transform.set_size_group(
+                    self.items,
+                    width=new_width_from_ui,
+                    height=None,
+                    fixed_ratio=self.fixed_ratio_switch.get_active(),
+                )
+            else:
+                self.editor.transform.set_size(
+                    items=self.items,
+                    width=new_width_from_ui,
+                    height=None,
+                    fixed_ratio=self.fixed_ratio_switch.get_active(),
+                )
         finally:
             self._in_update = False
             logger.debug("_on_width_changed finished.")
@@ -337,12 +367,18 @@ class TransformPropertyProvider(PropertyProvider):
 
             logger.debug(f"Handling height change to {new_height_from_ui}")
 
-            self.editor.transform.set_size(
-                items=self.items,
-                width=None,  # Signal that this dimension should be calculated
-                height=new_height_from_ui,
-                fixed_ratio=self.fixed_ratio_switch.get_active(),
-            )
+            if len(self.items) > 1:
+                self.editor.transform.set_size_group(
+                    self.items,
+                    height=new_height_from_ui,
+                    fixed_ratio=self.fixed_ratio_switch.get_active(),
+                )
+            else:
+                self.editor.transform.set_size(
+                    items=self.items,
+                    height=new_height_from_ui,
+                    fixed_ratio=self.fixed_ratio_switch.get_active(),
+                )
         finally:
             self._in_update = False
             logger.debug("_on_height_changed finished.")
@@ -378,9 +414,14 @@ class TransformPropertyProvider(PropertyProvider):
             current_y_machine = current_y_wcs + offset_machine[1]
 
             logger.debug(f"Handling X change to {new_x_machine} (machine)")
-            self.editor.transform.set_position(
-                self.items, new_x_machine, current_y_machine
-            )
+            if len(self.items) > 1:
+                self.editor.transform.set_position_group(
+                    self.items, new_x_machine, current_y_machine
+                )
+            else:
+                self.editor.transform.set_position(
+                    self.items, new_x_machine, current_y_machine
+                )
         finally:
             self._in_update = False
             logger.debug("_on_x_changed finished.")
@@ -416,9 +457,14 @@ class TransformPropertyProvider(PropertyProvider):
             current_x_machine = current_x_wcs + offset_machine[0]
 
             logger.debug(f"Handling Y change to {new_y_machine} (machine)")
-            self.editor.transform.set_position(
-                self.items, current_x_machine, new_y_machine
-            )
+            if len(self.items) > 1:
+                self.editor.transform.set_position_group(
+                    self.items, current_x_machine, new_y_machine
+                )
+            else:
+                self.editor.transform.set_position(
+                    self.items, current_x_machine, new_y_machine
+                )
         finally:
             self._in_update = False
             logger.debug("_on_y_changed finished.")
@@ -433,7 +479,10 @@ class TransformPropertyProvider(PropertyProvider):
             new_angle = -new_angle_from_ui
             logger.debug(f"Handling angle change to {new_angle}")
 
-            self.editor.transform.set_angle(self.items, new_angle)
+            if len(self.items) > 1:
+                self.editor.transform.set_angle_group(self.items, new_angle)
+            else:
+                self.editor.transform.set_angle(self.items, new_angle)
         finally:
             self._in_update = False
             logger.debug("_on_angle_changed finished.")
@@ -446,7 +495,13 @@ class TransformPropertyProvider(PropertyProvider):
         try:
             new_shear_from_ui = spin_row.get_value()
             logger.debug(f"Handling shear change to {new_shear_from_ui}")
-            self.editor.transform.set_shear(self.items, new_shear_from_ui)
+
+            if len(self.items) > 1:
+                self.editor.transform.set_shear_group(
+                    self.items, new_shear_from_ui
+                )
+            else:
+                self.editor.transform.set_shear(self.items, new_shear_from_ui)
         finally:
             self._in_update = False
             logger.debug("_on_shear_changed finished.")
@@ -536,16 +591,22 @@ class TransformPropertyProvider(PropertyProvider):
     def _on_reset_angle_clicked(self, button):
         if not self.items:
             return
-        items_to_reset = [item for item in self.items if item.angle != 0.0]
-        if items_to_reset:
-            self.editor.transform.set_angle(items_to_reset, 0.0)
+        if len(self.items) > 1:
+            self.editor.transform.reset_angle_group(self.items)
+        else:
+            items_to_reset = [item for item in self.items if item.angle != 0.0]
+            if items_to_reset:
+                self.editor.transform.set_angle(items_to_reset, 0.0)
 
     def _on_reset_shear_clicked(self, button):
         if not self.items:
             return
-        items_to_reset = [item for item in self.items if item.shear != 0.0]
-        if items_to_reset:
-            self.editor.transform.set_shear(items_to_reset, 0.0)
+        if len(self.items) > 1:
+            self.editor.transform.reset_shear_group(self.items)
+        else:
+            items_to_reset = [item for item in self.items if item.shear != 0.0]
+            if items_to_reset:
+                self.editor.transform.set_shear(items_to_reset, 0.0)
 
     def _on_reset_x_clicked(self, button):
         if not self.items:
@@ -566,15 +627,24 @@ class TransformPropertyProvider(PropertyProvider):
                 offset_machine = machine.get_reference_offset()[:2]
         else:
             offset_machine = (0.0, 0.0)
-        target_x_machine = offset_machine[0]
 
-        # Get current Y in reference coordinates and convert to machine
-        current_y_wcs = self.y_row.get_value()
-        current_y_machine = current_y_wcs + offset_machine[1]
+        if len(self.items) > 1:
+            # Keep current Y, reset X to the reference origin
+            cur_y_wcs = self.y_row.get_value()
+            cur_y_machine = cur_y_wcs + offset_machine[1]
+            self.editor.transform.set_position_group(
+                self.items, offset_machine[0], cur_y_machine
+            )
+        else:
+            target_x_machine = offset_machine[0]
 
-        self.editor.transform.set_position(
-            self.items, target_x_machine, current_y_machine
-        )
+            # Get current Y in reference coordinates and convert to machine
+            current_y_wcs = self.y_row.get_value()
+            current_y_machine = current_y_wcs + offset_machine[1]
+
+            self.editor.transform.set_position(
+                self.items, target_x_machine, current_y_machine
+            )
 
     def _on_reset_y_clicked(self, button):
         if not self.items:
@@ -595,12 +665,21 @@ class TransformPropertyProvider(PropertyProvider):
                 offset_machine = machine.get_reference_offset()[:2]
         else:
             offset_machine = (0.0, 0.0)
-        target_y_machine = offset_machine[1]
 
-        # Get current X in reference coordinates and convert to machine
-        current_x_wcs = self.x_row.get_value()
-        current_x_machine = current_x_wcs + offset_machine[0]
+        if len(self.items) > 1:
+            # Keep current X, reset Y to the reference origin
+            cur_x_wcs = self.x_row.get_value()
+            cur_x_machine = cur_x_wcs + offset_machine[0]
+            self.editor.transform.set_position_group(
+                self.items, cur_x_machine, offset_machine[1]
+            )
+        else:
+            target_y_machine = offset_machine[1]
 
-        self.editor.transform.set_position(
-            self.items, current_x_machine, target_y_machine
-        )
+            # Get current X in reference coordinates and convert to machine
+            current_x_wcs = self.x_row.get_value()
+            current_x_machine = current_x_wcs + offset_machine[0]
+
+            self.editor.transform.set_position(
+                self.items, current_x_machine, target_y_machine
+            )
