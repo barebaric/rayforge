@@ -5,6 +5,17 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.8.5
+
+### Changed
+
+- Upgrade raygeo to 1.21.3 to fix adaptive wavefronts generating
+  wave duplicates and mask_scan/dither raster mode ignoring
+  step_power
+- Group selections in the properties panel no longer reset
+  relative positions, angles, and transformations between
+  grouped workpieces (#311)
+
 ## 1.8.4
 
 ### Added

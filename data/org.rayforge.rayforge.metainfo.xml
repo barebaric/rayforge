@@ -66,6 +66,20 @@
   </screenshots>
 
   <releases>
+    <release version="1.8.5" date="2026-07-16">
+      <description>
+        <p>raygeo upgrade, group selection improvements</p>
+        <p>Improvements:</p>
+        <ul>
+          <li>Upgrade raygeo to 1.21.3 fixing adaptive wavefronts
+          generating wave duplicates and mask_scan/dither raster
+          mode ignoring step_power</li>
+          <li>Group selections in the properties panel no longer reset
+          relative positions, angles, and transformations between
+          grouped workpieces (#311)</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.8.4" date="2026-07-15">
       <description>
         <p>Assembler registry refactor, material test grid enhancements,
