@@ -16,6 +16,9 @@ TEST_CONFIG_DIR = PROJECT_ROOT / "tests" / "config"
 
 TARGETS = {
     "addon:ai-workpiece-generator": "ai_workpiece_generator",
+    "main:array:grid": "array_grid",
+    "main:array:point-rotation": "array_point_rotation",
+    "main:array:circular": "array_circular",
     "addon:deepnest": "deepnest",
     "addon:print-and-cut:pick": "print_and_cut",
     "addon:print-and-cut:jog": "print_and_cut",

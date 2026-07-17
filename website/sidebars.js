@@ -81,6 +81,7 @@ module.exports = {
               ],
             },
             'features/sketcher',
+            'features/arrays',
             'features/multi-layer',
             'features/stock-handling',
             'features/framing-your-job',
