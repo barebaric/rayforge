@@ -64,6 +64,12 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
             debounce_ms=300,
         )
 
+        self.name_row = Adw.EntryRow(title=_("Name"))
+        self.name_row.set_text(step.name)
+        self.name_row.connect("changed", self._on_name_changed)
+        self._updating_name = False
+        self.varset_widget.add(self.name_row)
+
         self.recipe_control = RecipeControlWidget(self.editor, self.step)
         self.recipe_control.recipe_applied.connect(self._sync_widgets_to_model)
         self.varset_widget.add(self.recipe_control)
@@ -94,6 +100,9 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
                 continue
             values[key] = getattr(self.step, key, None)
         self.varset_widget.set_values(values)
+        self._updating_name = True
+        self.name_row.set_text(self.step.name)
+        self._updating_name = False
 
         # Sync laser head selector using UID-to-name mapping
         if "selected_laser_uid" in self.varset_widget.widget_map:
@@ -190,6 +199,14 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         )
         self.history_manager.execute(command)
         self.changed.send(self)
+
+    def _on_name_changed(self, row):
+        if self._updating_name:
+            return
+        new_name = row.get_text().strip()
+        if not new_name or new_name == self.step.name:
+            return
+        self.editor.step.rename_step(self.step, new_name)
 
 
 class PostProcessingSettingsView(TrackedPreferencesPage):

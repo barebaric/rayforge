@@ -433,7 +433,9 @@ class LayerColumn(Gtk.Box):
         toplevel = self.get_ancestor(Gtk.Window)
         if not toplevel:
             return
-        dialog = LayerSettingsDialog(self.layer, transient_for=toplevel)
+        dialog = LayerSettingsDialog(
+            self.layer, transient_for=toplevel, editor=self.editor
+        )
         dialog.present()
 
     def _on_delete_clicked(self, button):

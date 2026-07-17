@@ -11,7 +11,6 @@ from ..core.layer import Layer
 from ..core.undo import (
     ChangePropertyCommand,
     Command,
-    CompositeCommand,
 )
 from ..core.undo.list_cmd import ReorderListCommand
 from ..core.workpiece import WorkPiece
@@ -304,27 +303,12 @@ class LayerCmd:
 
     def reorder_layers(self, new_order: List[Layer]):
         """Reorders layers with an undoable command."""
-        base_name = _("Layer")
-        commands: List[Command] = [
-            ReorderListCommand(
-                target_obj=self._editor.doc,
-                list_property_name="layers",
-                new_list=new_order,
-                setter_method_name="set_layers",
-            )
-        ]
-        for i, layer in enumerate(new_order):
-            expected_name = f"{base_name} {i + 1}"
-            if layer.name != expected_name:
-                commands.append(
-                    ChangePropertyCommand(
-                        target=layer,
-                        property_name="name",
-                        new_value=expected_name,
-                        setter_method_name="set_name",
-                    )
-                )
-        cmd = CompositeCommand(commands, name=_("Reorder layers"))
+        cmd = ReorderListCommand(
+            target_obj=self._editor.doc,
+            list_property_name="layers",
+            new_list=new_order,
+            setter_method_name="set_layers",
+        )
         self._editor.history_manager.execute(cmd)
 
     def reorder_workpieces(self, layer: Layer, new_order: List[WorkPiece]):

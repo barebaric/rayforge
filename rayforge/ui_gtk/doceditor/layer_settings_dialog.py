@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from gi.repository import Adw, Gdk, Gtk
 
@@ -10,13 +10,23 @@ from ..machine.wcs_dialog import WcsDialog
 from ..shared.adwfix import get_spinrow_float
 from ..shared.patched_dialog_window import PatchedDialogWindow
 
+if TYPE_CHECKING:
+    from ...doceditor.editor import DocEditor
+
 
 class LayerSettingsDialog(PatchedDialogWindow):
     """Dialog for configuring layer-level settings including rotary."""
 
-    def __init__(self, layer: Layer, transient_for: Gtk.Window, **kwargs):
+    def __init__(
+        self,
+        layer: Layer,
+        transient_for: Gtk.Window,
+        editor: Optional["DocEditor"] = None,
+        **kwargs,
+    ):
         super().__init__(transient_for=transient_for, **kwargs)
         self.layer = layer
+        self.editor = editor
         self._is_initializing = True
 
         self.set_title(_("{name} - Settings").format(name=layer.name))
@@ -45,6 +55,11 @@ class LayerSettingsDialog(PatchedDialogWindow):
             ),
         )
         content.add(general_group)
+
+        self.name_row = Adw.EntryRow(title=_("Name"))
+        self.name_row.set_text(layer.name)
+        self.name_row.connect("changed", self._on_name_changed)
+        general_group.add(self.name_row)
 
         color_dialog = Gtk.ColorDialog()
         color_dialog.set_with_alpha(False)
@@ -256,3 +271,12 @@ class LayerSettingsDialog(PatchedDialogWindow):
         b = int(round(rgba.blue * 255))
         hex_color = f"#{r:02x}{g:02x}{b:02x}"
         self.layer.set_color(hex_color)
+
+    def _on_name_changed(self, row):
+        if self._is_initializing:
+            return
+        new_name = row.get_text().strip()
+        if not new_name:
+            return
+        if self.editor:
+            self.editor.layer.rename_layer(self.layer, new_name)

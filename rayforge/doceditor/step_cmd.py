@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import logging
+from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict
 
 from ..core.step_registry import step_registry
-from ..core.undo import DictItemCommand
+from ..core.undo import ChangePropertyCommand, DictItemCommand
 
 if TYPE_CHECKING:
     from ..core.step import Step
@@ -95,6 +96,19 @@ class StepCmd:
 
             # Store a reference to the applied recipe
             step.applied_recipe_uid = best_recipe.uid
+
+    def rename_step(self, step: "Step", new_name: str):
+        """Renames a step with an undoable command."""
+        if new_name == step.name:
+            return
+        cmd = ChangePropertyCommand(
+            target=step,
+            property_name="name",
+            new_value=new_name,
+            setter_method_name="set_name",
+            name=_("Rename step"),
+        )
+        self._editor.history_manager.execute(cmd)
 
     def initialize_default_steps(self):
         """
