@@ -500,6 +500,10 @@ class Step(DocItem, ABC):
             self.selected_laser_uid = uid
             self.updated.send(self)
 
+    def set_name(self, name: str):
+        if self.name != name:
+            self.name = name
+
     def set_visible(self, visible: bool):
         if self.visible != visible:
             self.visible = visible
