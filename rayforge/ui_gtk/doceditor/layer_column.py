@@ -728,6 +728,8 @@ class LayerColumn(Gtk.Box):
         return (50.0, 50.0)
 
     def _on_drop_accept(self, drop_target, drop):
+        if LayerColumn.dragging:
+            return False
         formats = drop.get_formats() if drop else None
         logger.debug(
             "Accept(%s): formats=%s",
