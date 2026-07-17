@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-16 00:05+0200\n"
+"POT-Creation-Date: 2026-07-16 23:19+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -2540,6 +2540,102 @@ msgstr "_Скасувати"
 msgid "_Restart"
 msgstr "_Перезапустити"
 
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Copies keep their original layers."
+msgstr "Копії зберігають свої оригінальні шари."
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "_Apply"
+msgstr "_Застосувати"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Grid Array"
+msgstr "Решітка"
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/main_menu.py
+msgid "Grid"
+msgstr "Решітка"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Rows"
+msgstr "Рядки"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Columns"
+msgstr "Стовпці"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Displacement"
+msgstr "Зміщення"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Gap"
+msgstr "Проміжок"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Spacing"
+msgstr "Відстань"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Displacement is center-to-center; gap is edge-to-edge."
+msgstr "Зміщення від центру до центру; проміжок від краю до краю."
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Column spacing"
+msgstr "Відстань між стовпцями"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Row spacing"
+msgstr "Відстань між рядками"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Point Rotation Array"
+msgstr "Масив ротації точок"
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/main_menu.py
+msgid "Point Rotation"
+msgstr "Ротація точок"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Rotates copies in place around the selection's centre."
+msgstr "Обертає копії на місці навколо центру виділення."
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Count"
+msgstr "Кількість"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Total angle (deg)"
+msgstr "Загальний кут (градуси)"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Circular Array"
+msgstr "Круговий масив"
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/main_menu.py
+msgid "Circular"
+msgstr "Круговий"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Places copies along a circular arc around a centre."
+msgstr "Розміщує копії вздовж дуги навколо центру."
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Center X"
+msgstr "Центр X"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Center Y"
+msgstr "Центр Y"
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/machine/nogo_zones_page.py
+msgid "Radius"
+msgstr "Радіус"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Rotate copies"
+msgstr "Обернути копії"
+
 #: rayforge/ui_gtk/canvas2d/elements/tab_handle.py
 msgid "Move Tab"
 msgstr "Перемістити вкладку"
@@ -3459,10 +3555,6 @@ msgstr "Глибина"
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Depth (Z extent) in mm"
 msgstr "Глибина (Z) в мм"
-
-#: rayforge/ui_gtk/machine/nogo_zones_page.py
-msgid "Radius"
-msgstr "Радіус"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Cylinder radius in mm"
@@ -5582,6 +5674,10 @@ msgid "Flip"
 msgstr "Віддзеркалити"
 
 #: rayforge/ui_gtk/main_menu.py
+msgid "Array"
+msgstr "Масив"
+
+#: rayforge/ui_gtk/main_menu.py
 msgid "Arrange"
 msgstr "Впорядкувати"
 
@@ -7330,16 +7426,16 @@ msgid "Move item(s)"
 msgstr "Перемістити елемент(и)"
 
 #: rayforge/doceditor/transform_cmd.py
-msgid "Resize item(s)"
-msgstr "Змінити розмір елемента(ів)"
-
-#: rayforge/doceditor/transform_cmd.py
 msgid "Change item angle"
 msgstr "Змінити кут елемента"
 
 #: rayforge/doceditor/transform_cmd.py
 msgid "Change item shear"
 msgstr "Змінити нахил елемента"
+
+#: rayforge/doceditor/transform_cmd.py
+msgid "Resize item(s)"
+msgstr "Змінити розмір елемента(ів)"
 
 #: rayforge/doceditor/asset_cmd.py
 msgid "Update Asset"
@@ -7540,6 +7636,14 @@ msgstr "Перевпорядкувати деталі"
 #: rayforge/doceditor/layer_cmd.py
 msgid "Reorder items"
 msgstr "Змінити порядок елементів"
+
+#: rayforge/doceditor/array_cmd.py
+msgid "Create Array"
+msgstr "Створити масив"
+
+#: rayforge/doceditor/array_cmd.py
+msgid "Create array copy"
+msgstr "Створити копію масиву"
 
 #: rayforge/doceditor/editor.py
 #, python-brace-format

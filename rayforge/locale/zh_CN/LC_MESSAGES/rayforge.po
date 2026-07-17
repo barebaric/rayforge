@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-16 00:05+0200\n"
+"POT-Creation-Date: 2026-07-16 23:19+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -2394,6 +2394,102 @@ msgstr "取消(_C)"
 msgid "_Restart"
 msgstr "重启(_R)"
 
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Copies keep their original layers."
+msgstr "副本保留其原始图层。"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "_Apply"
+msgstr "_应用"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Grid Array"
+msgstr "网格阵列"
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/main_menu.py
+msgid "Grid"
+msgstr "网格"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Rows"
+msgstr "行"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Columns"
+msgstr "列"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Displacement"
+msgstr "位移"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Gap"
+msgstr "间隙"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Spacing"
+msgstr "间距"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Displacement is center-to-center; gap is edge-to-edge."
+msgstr "位移为中心到中心；间隙为边缘到边缘。"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Column spacing"
+msgstr "列间距"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Row spacing"
+msgstr "行间距"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Point Rotation Array"
+msgstr "点旋转阵列"
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/main_menu.py
+msgid "Point Rotation"
+msgstr "点旋转"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Rotates copies in place around the selection's centre."
+msgstr "围绕选择中心原地旋转副本。"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Count"
+msgstr "数量"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Total angle (deg)"
+msgstr "总角度（度）"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Circular Array"
+msgstr "圆形阵列"
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/main_menu.py
+msgid "Circular"
+msgstr "圆形"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Places copies along a circular arc around a centre."
+msgstr "围绕中心沿圆弧放置副本。"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Center X"
+msgstr "中心 X"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Center Y"
+msgstr "中心 Y"
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/machine/nogo_zones_page.py
+msgid "Radius"
+msgstr "半径"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Rotate copies"
+msgstr "旋转副本"
+
 #: rayforge/ui_gtk/canvas2d/elements/tab_handle.py
 msgid "Move Tab"
 msgstr "移动标签"
@@ -3297,10 +3393,6 @@ msgstr "深度"
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Depth (Z extent) in mm"
 msgstr "深度 (Z范围) (mm)"
-
-#: rayforge/ui_gtk/machine/nogo_zones_page.py
-msgid "Radius"
-msgstr "半径"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Cylinder radius in mm"
@@ -5364,6 +5456,10 @@ msgid "Flip"
 msgstr "翻转"
 
 #: rayforge/ui_gtk/main_menu.py
+msgid "Array"
+msgstr "阵列"
+
+#: rayforge/ui_gtk/main_menu.py
 msgid "Arrange"
 msgstr "排列"
 
@@ -7070,16 +7166,16 @@ msgid "Move item(s)"
 msgstr "移动项目"
 
 #: rayforge/doceditor/transform_cmd.py
-msgid "Resize item(s)"
-msgstr "调整项目大小"
-
-#: rayforge/doceditor/transform_cmd.py
 msgid "Change item angle"
 msgstr "更改项目角度"
 
 #: rayforge/doceditor/transform_cmd.py
 msgid "Change item shear"
 msgstr "更改项目剪切"
+
+#: rayforge/doceditor/transform_cmd.py
+msgid "Resize item(s)"
+msgstr "调整项目大小"
 
 #: rayforge/doceditor/asset_cmd.py
 msgid "Update Asset"
@@ -7276,6 +7372,14 @@ msgstr "重新排列工件"
 #: rayforge/doceditor/layer_cmd.py
 msgid "Reorder items"
 msgstr "重新排序项目"
+
+#: rayforge/doceditor/array_cmd.py
+msgid "Create Array"
+msgstr "创建阵列"
+
+#: rayforge/doceditor/array_cmd.py
+msgid "Create array copy"
+msgstr "创建阵列副本"
 
 #: rayforge/doceditor/editor.py
 #, python-brace-format

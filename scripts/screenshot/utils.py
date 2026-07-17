@@ -29,6 +29,7 @@ from PIL.PngImagePlugin import PngInfo
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
+    from rayforge.ui_gtk.array_dialog import _BaseArrayDialog
     from rayforge.ui_gtk.doceditor.edit_recipe_dialog import (
         AddEditRecipeDialog,
     )
@@ -161,6 +162,107 @@ def take_screenshot(output_name: str) -> bool:
                 img = Image.open(temp_path)
                 _save_png_deterministic(img, output_path)
                 temp_path.unlink()
+                return True
+            except Exception as e:
+                logger.error(f"Failed to process screenshot: {e}")
+                if temp_path.exists():
+                    temp_path.unlink()
+                return False
+
+    logger.error("Failed to take screenshot with available tools")
+    return False
+
+
+def take_window_screenshot(win: "MainWindow", output_name: str) -> bool:
+    """
+    Take a screenshot of the main window including any open non-modal
+    dialogs.  Captures the full screen via ``gnome-screenshot`` (no
+    ``-w`` flag) and crops to the main-window geometry obtained from
+    ``xwininfo``.
+    """
+    output_path = OUTPUT_DIR / output_name
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    time.sleep(0.5)
+
+    def _get_xid():
+        from gi.repository import GdkX11
+
+        surface = win.get_surface()
+        if isinstance(surface, GdkX11.X11Surface):
+            return surface.get_xid()
+        return None
+
+    xid = run_on_main_thread(_get_xid)
+    if xid is None:
+        logger.error("Could not get X11 window id")
+        return False
+
+    result = subprocess.run(
+        ["xwininfo", "-id", str(xid)],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        logger.error(f"xwininfo failed: {result.stderr}")
+        return False
+
+    logger.debug(f"xwininfo output:\n{result.stdout}")
+
+    info = {}
+    for line in result.stdout.splitlines():
+        stripped = line.strip()
+        for key in (
+            "Absolute upper-left X",
+            "Absolute upper-left Y",
+            "Width",
+            "Height",
+        ):
+            if stripped.startswith(key):
+                info[key] = int(stripped.split(":")[-1].strip())
+
+    wx = info.get("Absolute upper-left X", 0)
+    wy = info.get("Absolute upper-left Y", 0)
+    ww = info.get("Width", 0)
+    wh = info.get("Height", 0)
+    if ww == 0 or wh == 0:
+        logger.error("Could not parse window geometry from xwininfo")
+        return False
+
+    logger.info(f"Window geometry: x={wx} y={wy} w={ww} h={wh}")
+
+    def _get_gtk_size():
+        return win.get_width(), win.get_height()
+
+    gtk_w, gtk_h = run_on_main_thread(_get_gtk_size)
+    shadow_x = (ww - gtk_w) // 2
+    shadow_y = (wh - gtk_h) // 2
+    logger.info(
+        f"GTK size: {gtk_w}x{gtk_h}, shadow offset: {shadow_x},{shadow_y}"
+    )
+
+    temp_path = output_path.with_suffix(".temp.png")
+
+    for cmd_args, tool_name in SCREENSHOT_TOOLS:
+        args = [a for a in cmd_args if a != "-w"]
+        result = subprocess.run(
+            [*args, str(temp_path)],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            try:
+                img = Image.open(temp_path)
+                crop_box = (
+                    wx + shadow_x,
+                    wy + shadow_y,
+                    wx + shadow_x + gtk_w,
+                    wy + shadow_y + gtk_h,
+                )
+                cropped = img.crop(crop_box)
+                _save_png_deterministic(cropped, output_path)
+                temp_path.unlink()
+                logger.info(f"Window screenshot saved to {output_path}")
                 return True
             except Exception as e:
                 logger.error(f"Failed to process screenshot: {e}")
@@ -595,6 +697,38 @@ def open_material_test(win: "MainWindow") -> "StepSettingsDialog":
     dialog = run_on_main_thread(_open)
     logger.info("Opened material test grid dialog")
     return dialog
+
+
+def open_array_dialog(
+    win: "MainWindow", mode: str = "grid"
+) -> "_BaseArrayDialog":
+    """Open an array dialog for the current selection."""
+    from rayforge.doceditor.array import ArrayMode
+    from rayforge.ui_gtk.array_dialog import (
+        CircularArrayDialog,
+        GridArrayDialog,
+        PointRotationArrayDialog,
+    )
+
+    mode_map = {
+        "grid": (ArrayMode.GRID, GridArrayDialog),
+        "point_rotation": (
+            ArrayMode.POINT_ROTATION,
+            PointRotationArrayDialog,
+        ),
+        "circular": (ArrayMode.CIRCULAR, CircularArrayDialog),
+    }
+    array_mode, cls = mode_map[mode]
+
+    def _open():
+        items = list(win.surface.get_selected_items())
+        if not items:
+            raise ValueError("No items selected")
+        dialog = cls(win, win.doc_editor, win.surface, items)
+        dialog.present()
+        return dialog
+
+    return run_on_main_thread(_open)
 
 
 def clear_window_subtitle(win: "MainWindow") -> None:

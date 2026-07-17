@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-16 00:05+0200\n"
+"POT-Creation-Date: 2026-07-16 23:19+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -2368,6 +2368,102 @@ msgstr ""
 msgid "_Restart"
 msgstr ""
 
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Copies keep their original layers."
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "_Apply"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Grid Array"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/main_menu.py
+msgid "Grid"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Rows"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Columns"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Displacement"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Gap"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Spacing"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Displacement is center-to-center; gap is edge-to-edge."
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Column spacing"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Row spacing"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Point Rotation Array"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/main_menu.py
+msgid "Point Rotation"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Rotates copies in place around the selection's centre."
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Count"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Total angle (deg)"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Circular Array"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/main_menu.py
+msgid "Circular"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Places copies along a circular arc around a centre."
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Center X"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Center Y"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/machine/nogo_zones_page.py
+msgid "Radius"
+msgstr ""
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Rotate copies"
+msgstr ""
+
 #: rayforge/ui_gtk/canvas2d/elements/tab_handle.py
 msgid "Move Tab"
 msgstr ""
@@ -3258,10 +3354,6 @@ msgstr ""
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Depth (Z extent) in mm"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/nogo_zones_page.py
-msgid "Radius"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
@@ -5310,6 +5402,10 @@ msgid "Flip"
 msgstr ""
 
 #: rayforge/ui_gtk/main_menu.py
+msgid "Array"
+msgstr ""
+
+#: rayforge/ui_gtk/main_menu.py
 msgid "Arrange"
 msgstr ""
 
@@ -7009,15 +7105,15 @@ msgid "Move item(s)"
 msgstr ""
 
 #: rayforge/doceditor/transform_cmd.py
-msgid "Resize item(s)"
-msgstr ""
-
-#: rayforge/doceditor/transform_cmd.py
 msgid "Change item angle"
 msgstr ""
 
 #: rayforge/doceditor/transform_cmd.py
 msgid "Change item shear"
+msgstr ""
+
+#: rayforge/doceditor/transform_cmd.py
+msgid "Resize item(s)"
 msgstr ""
 
 #: rayforge/doceditor/asset_cmd.py
@@ -7214,6 +7310,14 @@ msgstr ""
 
 #: rayforge/doceditor/layer_cmd.py
 msgid "Reorder items"
+msgstr ""
+
+#: rayforge/doceditor/array_cmd.py
+msgid "Create Array"
+msgstr ""
+
+#: rayforge/doceditor/array_cmd.py
+msgid "Create array copy"
 msgstr ""
 
 #: rayforge/doceditor/editor.py

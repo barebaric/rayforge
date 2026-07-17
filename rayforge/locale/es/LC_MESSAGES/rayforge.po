@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-16 00:05+0200\n"
+"POT-Creation-Date: 2026-07-16 23:19+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -2572,6 +2572,103 @@ msgstr "_Cancelar"
 msgid "_Restart"
 msgstr "_Reiniciar"
 
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Copies keep their original layers."
+msgstr "Las copias mantienen sus capas originales."
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "_Apply"
+msgstr "_Aplicar"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Grid Array"
+msgstr "Cuadrícula"
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/main_menu.py
+msgid "Grid"
+msgstr "Cuadrícula"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Rows"
+msgstr "Filas"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Columns"
+msgstr "Columnas"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Displacement"
+msgstr "Desplazamiento"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Gap"
+msgstr "Espacio"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Spacing"
+msgstr "Espaciado"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Displacement is center-to-center; gap is edge-to-edge."
+msgstr ""
+"El desplazamiento es de centro a centro; el espacio es de borde a borde."
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Column spacing"
+msgstr "Espaciado de columnas"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Row spacing"
+msgstr "Espaciado de filas"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Point Rotation Array"
+msgstr "Matriz de rotación de puntos"
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/main_menu.py
+msgid "Point Rotation"
+msgstr "Rotación de puntos"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Rotates copies in place around the selection's centre."
+msgstr "Rota las copias en su lugar alrededor del centro de la selección."
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Count"
+msgstr "Cantidad"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Total angle (deg)"
+msgstr "Ángulo total (grados)"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Circular Array"
+msgstr "Matriz circular"
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/main_menu.py
+msgid "Circular"
+msgstr "Circular"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Places copies along a circular arc around a centre."
+msgstr "Coloca copias a lo largo de un arco circular alrededor de un centro."
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Center X"
+msgstr "Centro X"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Center Y"
+msgstr "Centro Y"
+
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/machine/nogo_zones_page.py
+msgid "Radius"
+msgstr "Radio"
+
+#: rayforge/ui_gtk/array_dialog.py
+msgid "Rotate copies"
+msgstr "Rotar copias"
+
 #: rayforge/ui_gtk/canvas2d/elements/tab_handle.py
 msgid "Move Tab"
 msgstr "Mover pestaña de sujeción"
@@ -3493,10 +3590,6 @@ msgstr "Profundidad"
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Depth (Z extent) in mm"
 msgstr "Profundidad (extensión Z) en mm"
-
-#: rayforge/ui_gtk/machine/nogo_zones_page.py
-msgid "Radius"
-msgstr "Radio"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Cylinder radius in mm"
@@ -5637,6 +5730,10 @@ msgid "Flip"
 msgstr "Voltear"
 
 #: rayforge/ui_gtk/main_menu.py
+msgid "Array"
+msgstr "Matriz"
+
+#: rayforge/ui_gtk/main_menu.py
 msgid "Arrange"
 msgstr "Organizar"
 
@@ -7394,16 +7491,16 @@ msgid "Move item(s)"
 msgstr "Mover elemento(s)"
 
 #: rayforge/doceditor/transform_cmd.py
-msgid "Resize item(s)"
-msgstr "Redimensionar elemento(s)"
-
-#: rayforge/doceditor/transform_cmd.py
 msgid "Change item angle"
 msgstr "Cambiar ángulo del elemento"
 
 #: rayforge/doceditor/transform_cmd.py
 msgid "Change item shear"
 msgstr "Cambiar inclinación del elemento"
+
+#: rayforge/doceditor/transform_cmd.py
+msgid "Resize item(s)"
+msgstr "Redimensionar elemento(s)"
 
 #: rayforge/doceditor/asset_cmd.py
 msgid "Update Asset"
@@ -7604,6 +7701,14 @@ msgstr "Reordenar piezas de trabajo"
 #: rayforge/doceditor/layer_cmd.py
 msgid "Reorder items"
 msgstr "Reordenar elementos"
+
+#: rayforge/doceditor/array_cmd.py
+msgid "Create Array"
+msgstr "Crear matriz"
+
+#: rayforge/doceditor/array_cmd.py
+msgid "Create array copy"
+msgstr "Crear copia de matriz"
 
 #: rayforge/doceditor/editor.py
 #, python-brace-format
