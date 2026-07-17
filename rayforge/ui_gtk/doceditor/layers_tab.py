@@ -61,7 +61,7 @@ class LayersTab(Gtk.Box):
         drop_target.connect("drop", self._on_layer_drop)
         drop_target.connect("motion", self._on_layer_drop_motion)
         drop_target.connect("leave", self._on_layer_drop_leave)
-        self.columns_box.add_controller(drop_target)
+        self.scrolled.add_controller(drop_target)
 
         add_button = Gtk.Button(child=get_icon("add-symbolic"))
         add_button.add_css_class("flat")
@@ -180,7 +180,7 @@ class LayersTab(Gtk.Box):
         self.editor.layer.add_layer_and_set_active()
 
     def _find_column_at(self, x, y):
-        picked = self.columns_box.pick(x, y, Gtk.PickFlags.DEFAULT)
+        picked = self.scrolled.pick(x, y, Gtk.PickFlags.DEFAULT)
         while picked:
             if isinstance(picked, LayerColumn):
                 return picked
@@ -247,19 +247,27 @@ class LayersTab(Gtk.Box):
 
     def _on_layer_drop_motion(self, drop_target, x, y):
         if not LayerColumn.dragging:
-            logger.debug("Motion(columns_box): rejected, not layer drag")
+            logger.debug("Motion(scrolled): rejected, not layer drag")
             return 0
 
         self._remove_layer_drop_markers()
 
         col = self._find_column_at(x, y)
         if not col:
+            self._layer_drop_index = len(self._columns)
+            if self._columns:
+                self._columns[-1].add_css_class("drop-right")
             return Gdk.DragAction.MOVE
+
+        coords = self.scrolled.translate_coordinates(self.columns_box, x, y)
+        if not coords:
+            return Gdk.DragAction.MOVE
+        cb_x, _ = coords
 
         col_alloc = col.get_allocation()
         col_center_x = col_alloc.x + col_alloc.width / 2
 
-        if x < col_center_x:
+        if cb_x < col_center_x:
             col.add_css_class("drop-left")
             self._layer_drop_index = self._columns.index(col)
         else:
