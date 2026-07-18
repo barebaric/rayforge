@@ -32,7 +32,13 @@ class WavefrontSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             **kwargs,
         )
 
-        step_over = step.step_over_mm or 0.1
+        laser = self.get_selected_laser()
+        default_step_over_mm = laser.spot_size_mm[0] if laser else 0.1
+        step_over = (
+            step.step_over_mm
+            if step.step_over_mm is not None
+            else default_step_over_mm
+        )
         self._add_spin_row(
             label=_("Step Over"),
             subtitle=_("Lateral step-over between wavefront passes (mm)"),
