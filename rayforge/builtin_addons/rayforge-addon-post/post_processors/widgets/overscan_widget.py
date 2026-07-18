@@ -132,7 +132,7 @@ class OverscanSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
 
         # Use the stored references to the rows
         self.enable_switch.set_sensitive(not native)
-        self.auto_row.set_sensitive(enabled and not auto and not native)
+        self.auto_row.set_sensitive(enabled and not native)
         self.distance_row.set_sensitive(enabled and not auto and not native)
 
     def _on_auto_toggled(self, row, pspec):
