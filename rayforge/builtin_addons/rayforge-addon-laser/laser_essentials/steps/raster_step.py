@@ -341,18 +341,6 @@ class EngraveStep(Step):
         step = cls(name=name)
         per_wp, per_step = cls.get_default_transformers_dicts()
 
-        OverscanTransformer = cast(
-            "OverscanTransformerType",
-            transformer_registry.get("OverscanTransformer"),
-        )
-        assert OverscanTransformer is not None
-        auto_distance = OverscanTransformer.calculate_auto_distance(
-            machine.max_cut_speed, machine.acceleration
-        )
-        for t in per_wp:
-            if t.get("name") == "OverscanTransformer":
-                t["distance_mm"] = auto_distance
-
         step.per_workpiece_transformers_dicts = per_wp
         step.per_step_transformers_dicts = per_step
         step.selected_laser_uid = default_head.uid
@@ -361,4 +349,18 @@ class EngraveStep(Step):
         for cap in machine.get_laser_capabilities(default_head):
             for var in cap.varset:
                 setattr(step, var.key, var.default)
+
+        # step.cut_speed is only final after the loop above.
+        OverscanTransformer = cast(
+            "OverscanTransformerType",
+            transformer_registry.get("OverscanTransformer"),
+        )
+        assert OverscanTransformer is not None
+        auto_distance = OverscanTransformer.calculate_auto_distance(
+            step.cut_speed, machine.acceleration
+        )
+        for t in per_wp:
+            if t.get("name") == "OverscanTransformer":
+                t["distance_mm"] = auto_distance
+
         return step
