@@ -5,10 +5,8 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from blinker import Signal
-from raygeo.ops import Ops
 
 from ...core.workpiece import WorkPiece
-from ...shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -86,26 +84,22 @@ class OpsTransformer(ABC):
         pass
 
     @abstractmethod
-    def run(
+    def to_spec(
         self,
-        ops: Ops,
-        workpiece: Optional[WorkPiece] = None,
-        context: Optional[ProgressContext] = None,
-        stock_geometries: Optional[List["Geometry"]] = None,
-        settings: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        """
-        Runs the transformation.
+        workpiece: Optional[WorkPiece],
+        stock_geometries: Optional[List["Geometry"]],
+        settings: Optional[Dict[str, Any]],
+    ):
+        """Return the typed Rust spec for this transformer.
 
-        Args:
-            ops: The Ops object to transform in-place.
-            workpiece: The WorkPiece model being processed.
-            context: Optional progress context for reporting progress and
-                    checking cancellation.
-            stock_geometries: List of stock boundary geometries in world space.
-            settings: Optional dictionary of step settings.
+        The returned object is one of the ``*Spec`` pyclasses defined in
+        :mod:`raygeo.ops.transform`. Implementations must not return
+        ``None``: if the transformer cannot run, raise an exception
+        describing the misconfiguration instead. ``build_transformer_specs``
+        only invokes this on enabled transformers, so a non-None return
+        is the contract for "this transformer should run".
         """
-        pass
+        raise NotImplementedError
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the transformer's configuration to a dictionary."""

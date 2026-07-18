@@ -17,10 +17,12 @@ from ...core.workpiece import WorkPiece
 from ...machine.models.laser import Laser
 from ...shared.tasker.progress import ProgressContext, set_progress
 from ..artifact import WorkPieceArtifact
-from ..transformer import ExecutionPhase, OpsTransformer
-from .assembler_helpers import (
-    resolve_machine_defaults,
+from ..transformer import OpsTransformer
+from ..transformer.specs import (
+    apply_transformer_specs,
+    build_transformer_specs,
 )
+from .assembler_helpers import resolve_machine_defaults
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -481,7 +483,13 @@ def _apply_transformers(
     settings: Optional[dict] = None,
 ) -> None:
     """
-    Apply enabled transformers to the operations in phases.
+    Apply enabled transformers to the operations in a single Rust call.
+
+    The transformers are converted to typed Rust specs (via
+    ``to_spec()``) and dispatched through ``Ops.apply_transformers()``,
+    which sorts them by ``ExecutionPhase`` and applies them in order.
+    Progress and cancellation flow through the Rust dispatch via a
+    small adapter wrapping ``context``.
 
     Args:
         ops: The Ops object to transform.
@@ -493,52 +501,32 @@ def _apply_transformers(
         stock_geometries: Optional list of stock boundary geometries.
         settings: Optional dictionary of step settings.
     """
-    enabled_transformers = [t for t in transformers if t.enabled]
-    if not enabled_transformers:
+    specs = build_transformer_specs(
+        transformers, workpiece, stock_geometries, settings
+    )
+    if not specs:
         return
 
-    phase_order = (
-        ExecutionPhase.GEOMETRY_REFINEMENT,
-        ExecutionPhase.PATH_INTERRUPTION,
-        ExecutionPhase.POST_PROCESSING,
+    if context is not None:
+        context.set_total(1.0)
+
+    set_progress(
+        context,
+        execute_weight,
+        _("Applying transformers on '{workpiece}'").format(
+            workpiece=workpiece.name
+        ),
     )
-    transformers_by_phase = {phase: [] for phase in phase_order}
-    for t in enabled_transformers:
-        transformers_by_phase[t.execution_phase].append(t)
 
-    processed_count = 0
-    total_to_process = len(enabled_transformers)
+    apply_transformer_specs(ops, specs, context)
 
-    for phase in phase_order:
-        for transformer in transformers_by_phase[phase]:
-            base = (
-                execute_weight
-                + (processed_count / total_to_process) * transform_weight
-            )
-            span = transform_weight / total_to_process
-            if context is not None:
-                transformer_ctx = context.sub_context(
-                    base_progress=base,
-                    progress_range=span,
-                    total=1.0,
-                )
-            else:
-                transformer_ctx = None
-            set_progress(
-                context,
-                base,
-                _("Applying '{transformer}' on '{workpiece}'").format(
-                    transformer=transformer.label, workpiece=workpiece.name
-                ),
-            )
-            transformer.run(
-                ops,
-                workpiece=workpiece,
-                context=transformer_ctx,
-                stock_geometries=stock_geometries,
-                settings=settings,
-            )
-            processed_count += 1
+    set_progress(
+        context,
+        execute_weight + transform_weight,
+        _("Transformers applied on '{workpiece}'").format(
+            workpiece=workpiece.name
+        ),
+    )
 
 
 def _merge_artifact_ops(

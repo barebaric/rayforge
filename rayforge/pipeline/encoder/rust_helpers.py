@@ -85,9 +85,7 @@ def _build_machine_path_vars(machine: "Machine") -> Dict[str, str]:
     }
 
 
-def _build_job_path_vars(
-    ops: Ops, doc: "Doc"
-) -> Dict[str, str]:
+def _build_job_path_vars(ops: Ops, doc: "Doc") -> Dict[str, str]:
     """Job-level path variables (depend on ops extents and doc name)."""
     xmin, ymin, xmax, ymax = ops.rect()
     return {
@@ -164,7 +162,9 @@ def _build_macro_table(machine: "Machine") -> Dict:
     all_macros: Dict[str, Dict] = {}
     for name, m in macros.items():
         all_macros[name] = {
-            "name": m.name, "code": m.code, "enabled": m.enabled,
+            "name": m.name,
+            "code": m.code,
+            "enabled": m.enabled,
         }
     table["all_macros"] = all_macros
 
@@ -188,9 +188,7 @@ def _build_heads(machine: "Machine") -> List[Dict]:
 # ── Layer WCS ─────────────────────────────────────────────────────
 
 
-def _build_layer_wcs(
-    doc: "Doc", machine: "Machine"
-) -> Dict[str, str]:
+def _build_layer_wcs(doc: "Doc", machine: "Machine") -> Dict[str, str]:
     """Per-layer WCS command, keyed by layer UID."""
     result: Dict[str, str] = {}
     if not doc:
@@ -203,9 +201,7 @@ def _build_layer_wcs(
 # ── Public entry points ──────────────────────────────────────────
 
 
-def build_encode_context(
-    ops: Ops, machine: "Machine", doc: "Doc"
-) -> Dict:
+def build_encode_context(ops: Ops, machine: "Machine", doc: "Doc") -> Dict:
     """Build the EncodeContext dict for raygeo.ops.encode_gcode."""
     path_vars: Dict[str, str] = {}
     path_vars.update(_build_machine_path_vars(machine))

@@ -3,6 +3,17 @@ from post_processors.transformers import MultiPassTransformer
 from raygeo.ops import Ops
 from raygeo.ops.types import CommandType
 
+from rayforge.pipeline.transformer.specs import (
+    apply_transformer_specs,
+    build_transformer_specs,
+)
+
+
+def _apply(transformer, ops):
+    """Run a transformer through the Rust spec dispatch."""
+    specs = build_transformer_specs([transformer], None, None, None)
+    apply_transformer_specs(ops, specs)
+
 
 class TestMultiPassTransformer:
     """
@@ -23,7 +34,7 @@ class TestMultiPassTransformer:
         transformer = MultiPassTransformer(passes=3, z_step_down=0.0)
 
         # Act
-        transformer.run(ops)
+        _apply(transformer, ops)
 
         # Assert
         # Original commands + 2 copies = 3 total passes
@@ -62,7 +73,7 @@ class TestMultiPassTransformer:
         )
 
         # Act
-        transformer.run(ops)
+        _apply(transformer, ops)
 
         # Assert
         assert ops.len() == 3
@@ -82,7 +93,7 @@ class TestMultiPassTransformer:
     def test_no_op_for_single_pass_and_no_z_step(self):
         """
         Tests the optimization that if passes=1 and z_step_down=0, the
-        run method does nothing.
+        dispatch does nothing.
         """
         # Arrange
         ops = Ops()
@@ -92,7 +103,7 @@ class TestMultiPassTransformer:
         transformer = MultiPassTransformer(passes=1, z_step_down=0.0)
 
         # Act
-        transformer.run(ops)
+        _apply(transformer, ops)
 
         # Assert
         # The ops should not have been modified.
@@ -101,22 +112,23 @@ class TestMultiPassTransformer:
 
     def test_no_op_for_empty_commands(self):
         """
-        Tests that if the initial Ops object has no commands, the transformer
-        does nothing.
+        Tests that if the initial Ops object has no commands, the
+        dispatch does nothing.
         """
         # Arrange
         ops = Ops()
         transformer = MultiPassTransformer(passes=5)
 
         # Act
-        transformer.run(ops)
+        _apply(transformer, ops)
 
         # Assert
         assert ops.len() == 0
 
     def test_passes_property_validation(self):
         """
-        Tests that the 'passes' property setter enforces a minimum value of 1.
+        Tests that the 'passes' property setter enforces a minimum
+        value of 1.
         """
         # Arrange
         transformer = MultiPassTransformer()
@@ -165,7 +177,7 @@ class TestMultiPassTransformer:
         ops.bezier_to((3.0, 5.0, 0.0), (7.0, 5.0, 0.0), (10.0, 0.0, 0.0))
 
         transformer = MultiPassTransformer(passes=2, z_step_down=0.0)
-        transformer.run(ops)
+        _apply(transformer, ops)
 
         bezier_indices = [
             i
@@ -184,7 +196,7 @@ class TestMultiPassTransformer:
         ops.bezier_to((3.0, 5.0, 2.0), (7.0, 5.0, 2.0), (10.0, 0.0, 2.0))
 
         transformer = MultiPassTransformer(passes=2, z_step_down=0.5)
-        transformer.run(ops)
+        _apply(transformer, ops)
 
         bezier_indices = [
             i

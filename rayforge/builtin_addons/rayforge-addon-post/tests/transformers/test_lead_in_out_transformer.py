@@ -6,6 +6,16 @@ from raygeo.ops import Ops
 from raygeo.ops.types import CommandType, RasterMode, SectionType
 
 from rayforge.pipeline.transformer.base import ExecutionPhase
+from rayforge.pipeline.transformer.specs import (
+    apply_transformer_specs,
+    build_transformer_specs,
+)
+
+
+def _apply(transformer, ops):
+    """Run a transformer through the Rust spec dispatch."""
+    specs = build_transformer_specs([transformer], None, None, None)
+    apply_transformer_specs(ops, specs)
 
 
 @pytest.fixture
@@ -56,7 +66,7 @@ def test_no_op_when_disabled(transformer: LeadInOutTransformer):
     original_len = ops.len()
 
     transformer.enabled = False
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     assert ops.len() == original_len
 
@@ -71,7 +81,7 @@ def test_no_op_with_zero_distances(transformer: LeadInOutTransformer):
 
     transformer.lead_in_mm = 0.0
     transformer.lead_out_mm = 0.0
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     assert ops.len() == original_len
 
@@ -92,7 +102,7 @@ def test_square_contour_with_both_lead_in_out(
     ops.line_to(10, 30, 0)
     ops.line_to(10, 10, 0)
     ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     # Expected: SP(0.8), Start, Move, SP(0), Line, SP(0.8), Line*4,
     #           SP(0), Line, End
@@ -109,7 +119,8 @@ def test_square_contour_with_both_lead_in_out(
     # Lead-out at end
     lead_out_idx = ops.len() - 2
     assert ops.command_type(lead_out_idx) == CommandType.LINE_TO
-    # Last segment direction is (10-10, 10-30) = (0, -20) normalized = (0, -1)
+    # Last segment direction is (10-10, 10-30) = (0, -20) normalized
+    # = (0, -1)
     # Lead-out end: (10, 10) + 5*(0, -1) = (10, 5)
     assert ops.endpoint(lead_out_idx) == pytest.approx((10.0, 5.0, 0.0))
     assert ops.command_type(ops.len() - 1) == CommandType.OPS_SECTION_END
@@ -123,7 +134,7 @@ def test_lead_in_only(transformer: LeadInOutTransformer):
     ops.move_to(10, 10, 0)
     ops.line_to(30, 10, 0)
     ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     move_indices = [
         i
@@ -147,7 +158,7 @@ def test_lead_out_only(transformer: LeadInOutTransformer):
     ops.move_to(10, 10, 0)
     ops.line_to(30, 10, 0)
     ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     # MoveTo should be unchanged
     assert ops.command_type(2) == CommandType.MOVE_TO
@@ -167,7 +178,7 @@ def test_diagonal_contour(transformer: LeadInOutTransformer):
     ops.line_to(10, 10, 0)
     ops.line_to(0, 0, 0)
     ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     # First segment: (10,10) - (0,0) = (10,10), normalized = (1/√2, 1/√2)
     # Lead-in start: (0,0) - 5*(1/√2, 1/√2) = (-5/√2, -5/√2)
@@ -198,7 +209,7 @@ def test_does_not_modify_commands_outside_vector_section(
     original_ep0 = ops.endpoint(0)
     original_ep1 = ops.endpoint(1)
 
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     assert ops.endpoint(0) == original_ep0
     assert ops.endpoint(1) == original_ep1
@@ -220,7 +231,7 @@ def test_does_not_modify_raster_sections(transformer: LeadInOutTransformer):
     )
     original_len = ops.len()
 
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     assert ops.len() == original_len
 
@@ -233,7 +244,7 @@ def test_handles_zero_length_first_segment(transformer: LeadInOutTransformer):
     ops.line_to(10, 10, 0)
     ops.line_to(30, 10, 0)
     ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     # Lead-in is skipped because first segment has zero length,
     # but lead-out should still be applied using the last segment's
@@ -268,7 +279,7 @@ def test_handles_multiple_contours_in_section(
     ops.line_to(70, 50, 0)
     ops.line_to(50, 50, 0)
     ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     move_indices = [
         i
@@ -312,7 +323,7 @@ def test_with_z_height(transformer: LeadInOutTransformer):
     ops.line_to(30, 10, 3.0)
     ops.line_to(10, 10, 3.0)
     ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     assert ops.command_type(2) == CommandType.MOVE_TO
     assert ops.endpoint(2) == pytest.approx((5.0, 10.0, 3.0))
@@ -331,7 +342,7 @@ def test_separate_lead_in_out_distances():
     ops.line_to(30, 10, 0)
     ops.line_to(10, 10, 0)
     ops.ops_section_end(SectionType.VECTOR_OUTLINE)
-    t.run(ops)
+    _apply(t, ops)
 
     move_idx = next(
         i

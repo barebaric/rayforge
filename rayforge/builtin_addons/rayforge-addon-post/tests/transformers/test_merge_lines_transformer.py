@@ -4,6 +4,17 @@ from post_processors.transformers import MergeLinesTransformer
 from raygeo.ops import Ops
 from raygeo.ops.types import CommandType
 
+from rayforge.pipeline.transformer.specs import (
+    apply_transformer_specs,
+    build_transformer_specs,
+)
+
+
+def _apply(transformer, ops):
+    """Run a transformer through the Rust spec dispatch."""
+    specs = build_transformer_specs([transformer], None, None, None)
+    apply_transformer_specs(ops, specs)
+
 
 def test_no_duplicate_lines():
     """Test that non-overlapping lines are preserved."""
@@ -19,7 +30,7 @@ def test_no_duplicate_lines():
     original_line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     move_count = len(ops.indices_of(CommandType.MOVE_TO))
     line_count = len(ops.indices_of(CommandType.LINE_TO))
@@ -40,7 +51,7 @@ def test_identical_duplicate_lines_removed():
     ops.line_to(10, 0)
 
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     line_count = len(ops.indices_of(CommandType.LINE_TO))
 
@@ -59,7 +70,7 @@ def test_opposite_direction_duplicate_lines_removed():
     ops.line_to(0, 0)
 
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     line_count = len(ops.indices_of(CommandType.LINE_TO))
 
@@ -79,13 +90,13 @@ def test_tolerance_affects_merging():
 
     transformer_tight = MergeLinesTransformer(enabled=True, tolerance=0.01)
     ops_copy_tight = ops.copy()
-    transformer_tight.run(ops_copy_tight)
+    _apply(transformer_tight, ops_copy_tight)
     line_count_tight = len(ops_copy_tight.indices_of(CommandType.LINE_TO))
     assert line_count_tight == 2
 
     transformer_loose = MergeLinesTransformer(enabled=True, tolerance=0.2)
     ops_copy_loose = ops.copy()
-    transformer_loose.run(ops_copy_loose)
+    _apply(transformer_loose, ops_copy_loose)
     line_count_loose = len(ops_copy_loose.indices_of(CommandType.LINE_TO))
     assert line_count_loose == 1
 
@@ -110,7 +121,7 @@ def test_adjacent_rectangles_shared_edge():
     original_line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     line_count = len(ops.indices_of(CommandType.LINE_TO))
 
@@ -130,7 +141,7 @@ def test_disabled_transformer():
     original_line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     transformer = MergeLinesTransformer(enabled=False)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     line_count = len(ops.indices_of(CommandType.LINE_TO))
 
@@ -142,7 +153,7 @@ def test_empty_ops():
     ops = Ops()
 
     transformer = MergeLinesTransformer(enabled=True)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     assert ops.is_empty()
 
@@ -169,7 +180,8 @@ def test_serialization_default_values():
 
 def test_overlapping_collinear_segments():
     """
-    Test that partially overlapping collinear segments are sliced correctly.
+    Test that partially overlapping collinear segments are sliced
+    correctly.
     """
     ops = Ops()
     ops.set_power(1.0)
@@ -181,13 +193,14 @@ def test_overlapping_collinear_segments():
     ops.line_to(15, 0)
 
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     line_count = len(ops.indices_of(CommandType.LINE_TO))
 
-    # Under the 1D boolean union logic with horizontal tolerance expansion,
-    # the second segment is trimmed so we have exactly two LineToCommands.
-    # The total cut length is perfectly merged, minus the tolerance padding.
+    # Under the 1D boolean union logic with horizontal tolerance
+    # expansion, the second segment is trimmed so we have exactly two
+    # LineToCommands. The total cut length is perfectly merged, minus
+    # the tolerance padding.
     assert line_count == 2
     assert math.isclose(ops.cut_distance(), 15.0 - transformer.tolerance)
 
@@ -206,7 +219,7 @@ def test_perpendicular_lines_not_merged():
     original_line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     line_count = len(ops.indices_of(CommandType.LINE_TO))
 
@@ -231,7 +244,7 @@ def test_triangle_shared_edge():
     original_line_count = len(ops.indices_of(CommandType.LINE_TO))
 
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     line_count = len(ops.indices_of(CommandType.LINE_TO))
 
@@ -247,7 +260,7 @@ def test_bezier_passes_through_unchanged():
     ops.bezier_to((3.0, 5.0, 0.0), (7.0, 5.0, 0.0), (10.0, 0.0, 0.0))
 
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     bezier_indices = ops.indices_of(CommandType.BEZIER_TO)
     assert len(bezier_indices) == 1
@@ -272,7 +285,7 @@ def test_mixed_lines_and_bezier():
     ops.line_to(10, 0)
 
     transformer = MergeLinesTransformer(enabled=True, tolerance=0.1)
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     bezier_indices = ops.indices_of(CommandType.BEZIER_TO)
     assert len(bezier_indices) == 1

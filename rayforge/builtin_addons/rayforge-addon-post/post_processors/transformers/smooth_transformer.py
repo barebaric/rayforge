@@ -1,11 +1,10 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from raygeo.ops import Ops
+from raygeo.ops.transform.smooth import SmoothSpec
 
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
-from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -86,31 +85,16 @@ class Smooth(OpsTransformer):
     def description(self) -> str:
         return _("Smooths the path by applying a Gaussian filter.")
 
-    def run(
+    def to_spec(
         self,
-        ops: Ops,
-        workpiece: Optional[WorkPiece] = None,
-        context: Optional[ProgressContext] = None,
-        stock_geometries: Optional[List["Geometry"]] = None,
-        settings: Optional[Dict[str, Any]] = None,
-    ):
-        """
-        Executes the smoothing transformation on a set of operations.
-
-        Args:
-            ops: The operations object containing path data.
-            context: Optional progress context for reporting progress.
-        """
-        if self.amount == 0:
-            return
-
-        if context and context.is_cancelled():
-            return
-
-        ops.smooth(self.amount, self.corner_angle_threshold)
-
-        if context:
-            context.set_progress(1.0)
+        workpiece: Optional[WorkPiece],
+        stock_geometries: Optional[List["Geometry"]],
+        settings: Optional[Dict[str, Any]],
+    ) -> SmoothSpec:
+        return SmoothSpec(
+            amount=self.amount,
+            corner_angle_threshold=self.corner_angle_threshold,
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the transformer's configuration to a dictionary."""

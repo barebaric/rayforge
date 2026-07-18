@@ -4,11 +4,10 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from raygeo.ops import Ops
+from raygeo.ops.transform.multipass import MultiPassSpec
 
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
-from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -85,22 +84,13 @@ class MultiPassTransformer(OpsTransformer):
             "Repeats the path multiple times, optionally stepping down in Z."
         )
 
-    def run(
+    def to_spec(
         self,
-        ops: Ops,
-        workpiece: Optional[WorkPiece] = None,
-        context: Optional[ProgressContext] = None,
-        stock_geometries: Optional[List["Geometry"]] = None,
-        settings: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        """
-        Executes the multi-pass transformation on the Ops object.
-
-        Args:
-            ops: The Ops object to transform in-place.
-            context: Execution context for cancellation (not used here).
-        """
-        ops.apply_multipass(self.passes, self._z_step_down)
+        workpiece: Optional[WorkPiece],
+        stock_geometries: Optional[List["Geometry"]],
+        settings: Optional[Dict[str, Any]],
+    ) -> MultiPassSpec:
+        return MultiPassSpec(passes=self.passes, z_step_down=self.z_step_down)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the transformer's configuration to a dictionary."""

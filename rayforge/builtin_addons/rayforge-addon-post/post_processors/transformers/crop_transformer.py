@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from raygeo.geo import Matrix
-from raygeo.ops import Ops
+from raygeo.ops.transform.clip import CropSpec
 
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
-from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -70,25 +69,32 @@ class CropTransformer(OpsTransformer):
             self._offset = value
             self.changed.send(self)
 
-    def run(
+    def to_spec(
         self,
-        ops: Ops,
-        workpiece: Optional[WorkPiece] = None,
-        context: Optional[ProgressContext] = None,
-        stock_geometries: Optional[List["Geometry"]] = None,
-        settings: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        if not self.enabled:
-            return
+        workpiece: Optional[WorkPiece],
+        stock_geometries: Optional[List["Geometry"]],
+        settings: Optional[Dict[str, Any]],
+    ) -> CropSpec:
+        if not stock_geometries or workpiece is None:
+            return CropSpec(
+                tolerance=self._tolerance,
+                offset=self._offset,
+                regions=[],
+            )
+        regions = self._resolve_regions(workpiece, stock_geometries)
+        return CropSpec(
+            tolerance=self._tolerance,
+            offset=self._offset,
+            regions=regions,
+        )
 
-        if not stock_geometries:
-            return
-
-        if workpiece is None:
-            return
-
+    def _resolve_regions(
+        self,
+        workpiece: WorkPiece,
+        stock_geometries: List["Geometry"],
+    ) -> List[List[Tuple[float, float]]]:
         world_to_local = workpiece.get_world_transform().invert()
-        regions = []
+        regions: List[List[Tuple[float, float]]] = []
 
         wp_size = workpiece.size
         scale_x, scale_y = wp_size if wp_size else (1.0, 1.0)
@@ -101,13 +107,10 @@ class CropTransformer(OpsTransformer):
                 scale_matrix = Matrix.scale(scale_x, scale_y)
                 local_geo = local_geo.transform(scale_matrix)
             polygons = local_geo.to_polygons(self._tolerance)
-            regions.extend(p for p in polygons if len(p) >= 3)
-
-        if not regions:
-            return
-
-        ops.preload_state()
-        ops.clip_ops_to_regions(regions, tolerance=self._tolerance)
+            for p in polygons:
+                if len(p) >= 3:
+                    regions.append(p)
+        return regions
 
     def to_dict(self) -> Dict[str, Any]:
         return {

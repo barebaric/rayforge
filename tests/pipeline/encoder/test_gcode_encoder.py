@@ -21,9 +21,7 @@ def _make_machine_mock(dialect=GRBL_DIALECT):
     machine.get_wcs_offset.return_value = (0.0, 0.0, 0.0)
     machine.hookmacros = {}
     machine.macros = {}
-    machine.heads = [
-        MagicMock(uid="head0", max_power=100.0, tool_number=1)
-    ]
+    machine.heads = [MagicMock(uid="head0", max_power=100.0, tool_number=1)]
     machine.get_default_head.return_value = MagicMock(
         uid="head0", max_power=100.0, tool_number=1
     )

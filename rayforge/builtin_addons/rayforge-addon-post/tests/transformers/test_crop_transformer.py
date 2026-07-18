@@ -8,6 +8,18 @@ from raygeo.ops.types import CommandCategory, CommandType
 
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.transformer.base import ExecutionPhase
+from rayforge.pipeline.transformer.specs import (
+    apply_transformer_specs,
+    build_transformer_specs,
+)
+
+
+def _apply(transformer, ops, workpiece=None, stock_geometries=None):
+    """Run a transformer through the Rust spec dispatch."""
+    specs = build_transformer_specs(
+        [transformer], workpiece, stock_geometries, None
+    )
+    apply_transformer_specs(ops, specs)
 
 
 @pytest.fixture
@@ -123,8 +135,11 @@ class TestCropTransformerNoOp:
 
         transformer.enabled = False
         stock_geo = create_rect_geometry(0, 0, 100, 100)
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
 
         assert ops.len() == original_len
@@ -135,7 +150,9 @@ class TestCropTransformerNoOp:
         ops.line_to(200, 0)
         original_len = ops.len()
 
-        transformer.run(ops, workpiece=mock_workpiece, stock_geometries=None)
+        _apply(
+            transformer, ops, workpiece=mock_workpiece, stock_geometries=None
+        )
 
         assert ops.len() == original_len
 
@@ -147,7 +164,7 @@ class TestCropTransformerNoOp:
         ops.line_to(200, 0)
         original_len = ops.len()
 
-        transformer.run(ops, workpiece=mock_workpiece, stock_geometries=[])
+        _apply(transformer, ops, workpiece=mock_workpiece, stock_geometries=[])
 
         assert ops.len() == original_len
 
@@ -158,7 +175,7 @@ class TestCropTransformerNoOp:
         original_len = ops.len()
 
         stock_geo = create_rect_geometry(0, 0, 100, 100)
-        transformer.run(ops, workpiece=None, stock_geometries=[stock_geo])
+        _apply(transformer, ops, workpiece=None, stock_geometries=[stock_geo])
 
         assert ops.len() == original_len
 
@@ -170,8 +187,11 @@ class TestCropTransformerCropping:
         ops.line_to(1, 0.5)
         stock_geo = create_rect_geometry(0.3, 0, 0.4, 1)
 
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
 
         segments = list(ops.segment_indices())
@@ -192,8 +212,11 @@ class TestCropTransformerCropping:
         original_segment_count = len(list(ops.segment_indices()))
 
         stock_geo = create_rect_geometry(0, 0, 1, 1)
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
 
         segments = list(ops.segment_indices())
@@ -205,8 +228,11 @@ class TestCropTransformerCropping:
         ops.line_to(2, 2)
         stock_geo = create_rect_geometry(0, 0, 1, 1)
 
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
 
         segments = list(ops.segment_indices())
@@ -219,8 +245,11 @@ class TestCropTransformerCropping:
         ops.line_to(1, 0.5)
 
         stock_geo = create_rect_geometry(0.4, 0, 0.2, 1)
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
 
         segments = list(ops.segment_indices())
@@ -240,8 +269,11 @@ class TestCropTransformerCropping:
         ops.line_to(1, 0.5)
 
         stock_geo = create_rect_geometry(0.3, 0, 0.4, 1)
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
 
         segments = list(ops.segment_indices())
@@ -262,7 +294,8 @@ class TestCropTransformerCropping:
 
         stock_geo1 = create_rect_geometry(0, 0, 0.4, 1)
         stock_geo2 = create_rect_geometry(0.6, 0, 0.4, 1)
-        transformer.run(
+        _apply(
+            transformer,
             ops,
             workpiece=mock_workpiece,
             stock_geometries=[stock_geo1, stock_geo2],
@@ -294,7 +327,7 @@ class TestCropTransformerCropping:
         ops.line_to(1, 0.5)
 
         stock_geo = create_rect_geometry(0, 0, 1, 1)
-        transformer.run(ops, workpiece=wp, stock_geometries=[stock_geo])
+        _apply(transformer, ops, workpiece=wp, stock_geometries=[stock_geo])
 
         segments = list(ops.segment_indices())
         assert len(segments) == 1
@@ -313,7 +346,7 @@ class TestCropTransformerCropping:
         ops.line_to(0.5, 0.5)
 
         stock_geo = create_rect_geometry(-1, -1, 2, 2)
-        transformer.run(ops, workpiece=wp, stock_geometries=[stock_geo])
+        _apply(transformer, ops, workpiece=wp, stock_geometries=[stock_geo])
 
         segments = list(ops.segment_indices())
         assert len(segments) >= 0
@@ -322,8 +355,11 @@ class TestCropTransformerCropping:
         ops = Ops()
         stock_geo = create_rect_geometry(0, 0, 100, 100)
 
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
 
         assert ops.len() == 0
@@ -340,7 +376,7 @@ class TestCropTransformerCropping:
         original_len = ops.len()
 
         stock_geo = create_rect_geometry(0, 0, 50, 50)
-        transformer.run(ops, workpiece=wp, stock_geometries=[stock_geo])
+        _apply(transformer, ops, workpiece=wp, stock_geometries=[stock_geo])
 
         assert ops.len() <= original_len
 
@@ -351,8 +387,11 @@ class TestCropTransformerCropping:
         ops.line_to(1, 0.5)
 
         stock_geo = create_rect_geometry(0.3, 0, 0.4, 1)
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
 
         segments = list(ops.segment_indices())
@@ -367,8 +406,11 @@ class TestCropTransformerArcPreservation:
         ops.move_to(0.4, 0.5)
         ops.arc_to(0.6, 0.5, 0.1, 0.0, clockwise=True)
         stock_geo = create_rect_geometry(0, 0, 1, 1)
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
         arc_indices = [
             i
@@ -387,8 +429,11 @@ class TestCropTransformerArcPreservation:
         ops.move_to(0.1, 0.5)
         ops.arc_to(0.9, 0.5, 0.4, 0.0, clockwise=True)
         stock_geo = create_rect_geometry(0.3, 0, 0.4, 1)
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
         arc_indices = [
             i
@@ -409,8 +454,11 @@ class TestCropTransformerArcPreservation:
         ops.move_to(1.5, 0.5)
         ops.arc_to(1.7, 0.5, 0.1, 0.0, clockwise=True)
         stock_geo = create_rect_geometry(0, 0, 1, 1)
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
         segments = list(ops.segment_indices())
         assert len(segments) == 0
@@ -424,8 +472,11 @@ class TestCropTransformerArcPreservation:
         ops.arc_to(0.6, 0.5, 0.1, 0.0, clockwise=True)
         ops.line_to(0.8, 0.5)
         stock_geo = create_rect_geometry(0, 0, 1, 1)
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
         arc_indices = [
             i
@@ -453,8 +504,11 @@ class TestCropTransformerArcPreservation:
         ops.line_to(x, y + r)
         ops.arc_to(x + r, y, r, 0.0, clockwise=True)
         stock_geo = create_rect_geometry(0, 0, 1, 1)
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
         arc_indices = [
             i
@@ -472,8 +526,11 @@ class TestCropTransformerBezierPreservation:
         ops.move_to(0.3, 0.5)
         ops.bezier_to((0.4, 0.3, 0.0), (0.6, 0.7, 0.0), (0.7, 0.5, 0.0))
         stock_geo = create_rect_geometry(0, 0, 1, 1)
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
         bezier_indices = [
             i
@@ -492,8 +549,11 @@ class TestCropTransformerBezierPreservation:
         ops.move_to(0.1, 0.5)
         ops.bezier_to((0.3, 0.3, 0.0), (0.7, 0.7, 0.0), (0.9, 0.5, 0.0))
         stock_geo = create_rect_geometry(0.3, 0, 0.4, 1)
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
         segments = list(ops.segment_indices())
         assert len(segments) >= 1
@@ -509,8 +569,11 @@ class TestCropTransformerBezierPreservation:
         ops.move_to(1.5, 0.5)
         ops.bezier_to((1.6, 0.3, 0.0), (1.7, 0.7, 0.0), (1.8, 0.5, 0.0))
         stock_geo = create_rect_geometry(0, 0, 1, 1)
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
         segments = list(ops.segment_indices())
         assert len(segments) == 0
@@ -524,8 +587,11 @@ class TestCropTransformerBezierPreservation:
         ops.bezier_to((0.35, 0.3, 0.0), (0.55, 0.7, 0.0), (0.7, 0.5, 0.0))
         ops.line_to(0.8, 0.5)
         stock_geo = create_rect_geometry(0, 0, 1, 1)
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
         bezier_indices = [
             i
@@ -544,8 +610,11 @@ class TestCropTransformerBezierPreservation:
         ops.set_power(0.8)
         ops.bezier_to((0.3, 0.3, 0.0), (0.7, 0.7, 0.0), (0.9, 0.5, 0.0))
         stock_geo = create_rect_geometry(0.3, 0, 0.4, 1)
-        transformer.run(
-            ops, workpiece=mock_workpiece, stock_geometries=[stock_geo]
+        _apply(
+            transformer,
+            ops,
+            workpiece=mock_workpiece,
+            stock_geometries=[stock_geo],
         )
         cutting_indices = [
             i
@@ -553,6 +622,7 @@ class TestCropTransformerBezierPreservation:
             if ops.command_type(i)
             in (CommandType.LINE_TO, CommandType.BEZIER_TO)
         ]
+        ops.preload_state()
         for i in cutting_indices:
             state = ops.inspect(i).state
             assert state is not None
