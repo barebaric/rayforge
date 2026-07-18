@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, List
 if TYPE_CHECKING:
     from ...machine.models.machine import Machine
     from ...machine.models.macro import Macro
-    from ...pipeline.encoder.gcode import GcodeContext
+    from ...pipeline.encoder.context import GcodeContext
 
 
 class TemplateFormatter:
