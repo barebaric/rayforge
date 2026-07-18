@@ -100,29 +100,7 @@ class MultiPassTransformer(OpsTransformer):
             ops: The Ops object to transform in-place.
             context: Execution context for cancellation (not used here).
         """
-        # No-op if only one pass and no Z movement is needed.
-        if self.passes <= 1 and self._z_step_down == 0.0:
-            return
-
-        # No-op if there are no commands to duplicate.
-        if ops.is_empty():
-            return
-
-        # Make a pristine copy of the original commands for subsequent passes.
-        original_ops = ops.copy()
-
-        # Generate and append subsequent passes
-        for i in range(1, self.passes):
-            # Create a fresh copy for this pass
-            pass_ops = original_ops.copy()
-
-            # Apply Z step-down if configured
-            if self._z_step_down != 0.0:
-                z_offset = i * self._z_step_down
-                # Translate by a negative amount to move down the Z axis
-                pass_ops.translate(0, 0, -abs(z_offset))
-
-            ops.extend(pass_ops)
+        ops.apply_multipass(self.passes, self._z_step_down)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the transformer's configuration to a dictionary."""

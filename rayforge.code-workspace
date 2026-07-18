@@ -4,6 +4,9 @@
 			"path": "."
 		},
 		{
+			"path": "external"
+		},
+		{
 			"path": "rayforge/private_addons"
 		}
 	],
