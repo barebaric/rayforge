@@ -180,15 +180,6 @@ class ShrinkWrapStep(Step):
         step = cls(name=name)
         per_wp, per_step = cls.get_default_transformers_dicts()
 
-        LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")
-        if LeadInOutTransformer:
-            calc = getattr(LeadInOutTransformer, "calculate_auto_distance")
-            auto_distance = calc(machine.max_cut_speed, machine.acceleration)
-            for t in per_wp:
-                if t.get("name") == "LeadInOutTransformer":
-                    t["lead_in_mm"] = auto_distance
-                    t["lead_out_mm"] = auto_distance
-
         step.per_workpiece_transformers_dicts = per_wp
         step.per_step_transformers_dicts = per_step
         step.selected_laser_uid = default_head.uid
@@ -198,4 +189,15 @@ class ShrinkWrapStep(Step):
         for cap in machine.get_laser_capabilities(default_head):
             for var in cap.varset:
                 setattr(step, var.key, var.default)
+
+        # step.cut_speed is only final after the loop above.
+        LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")
+        if LeadInOutTransformer:
+            calc = getattr(LeadInOutTransformer, "calculate_auto_distance")
+            auto_distance = calc(step.cut_speed, machine.acceleration)
+            for t in per_wp:
+                if t.get("name") == "LeadInOutTransformer":
+                    t["lead_in_mm"] = auto_distance
+                    t["lead_out_mm"] = auto_distance
+
         return step

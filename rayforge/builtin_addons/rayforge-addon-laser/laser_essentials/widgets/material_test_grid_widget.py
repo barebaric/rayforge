@@ -443,11 +443,17 @@ class MaterialTestGridSettingsWidget(
             "changed", lambda r: self._debounce(self._on_spacing_changed, r)
         )
 
+        laser = self.get_selected_laser()
+        default_line_interval_mm = laser.spot_size_mm[1] if laser else 0.1
         line_interval_adj = Gtk.Adjustment(
             lower=0.01,
             upper=10.0,
             step_increment=0.01,
-            value=self.step.line_interval_mm or 0.1,
+            value=(
+                self.step.line_interval_mm
+                if self.step.line_interval_mm is not None
+                else default_line_interval_mm
+            ),
         )
         self.line_interval_row = Adw.SpinRow(
             title=_("Line Interval"),
