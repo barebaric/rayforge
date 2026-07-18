@@ -5,10 +5,9 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from raygeo.ops import Ops
+from raygeo.ops.transform.lead_in_out import LeadInOutSpec
 
 from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
-from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -116,20 +115,15 @@ class LeadInOutTransformer(OpsTransformer):
             "Adds zero-power lead-in and lead-out moves to vector contours."
         )
 
-    def run(
+    def to_spec(
         self,
-        ops: Ops,
-        workpiece: Optional[WorkPiece] = None,
-        context: Optional[ProgressContext] = None,
-        stock_geometries: Optional[List["Geometry"]] = None,
-        settings: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        has_lead_in = self.enabled and not math.isclose(self.lead_in_mm, 0.0)
-        has_lead_out = self.enabled and not math.isclose(self.lead_out_mm, 0.0)
-        if not has_lead_in and not has_lead_out:
-            return
-
-        ops.apply_lead_in_out(self.lead_in_mm, self.lead_out_mm)
+        workpiece: Optional[WorkPiece],
+        stock_geometries: Optional[List["Geometry"]],
+        settings: Optional[Dict[str, Any]],
+    ) -> LeadInOutSpec:
+        return LeadInOutSpec(
+            lead_in_mm=self.lead_in_mm, lead_out_mm=self.lead_out_mm
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         return {

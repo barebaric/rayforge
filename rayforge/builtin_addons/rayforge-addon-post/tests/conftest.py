@@ -66,7 +66,10 @@ def register_post_processors():
 
     # Import and register transformers directly from the addon
     from post_processors.transformers import (
+        BidirScanOffsetTransformer,
         CropTransformer,
+        LeadInOutTransformer,
+        MergeLinesTransformer,
         MultiPassTransformer,
         Optimize,
         OverscanTransformer,
@@ -76,10 +79,15 @@ def register_post_processors():
 
     ADDON_NAME = "post_processors"
     transformer_registry.register(Smooth, addon_name=ADDON_NAME)
-    transformer_registry.register(TabOpsTransformer, addon_name=ADDON_NAME)
-    transformer_registry.register(CropTransformer, addon_name=ADDON_NAME)
     transformer_registry.register(Optimize, addon_name=ADDON_NAME)
-    transformer_registry.register(MultiPassTransformer, addon_name=ADDON_NAME)
+    transformer_registry.register(MergeLinesTransformer, addon_name=ADDON_NAME)
     transformer_registry.register(OverscanTransformer, addon_name=ADDON_NAME)
+    transformer_registry.register(LeadInOutTransformer, addon_name=ADDON_NAME)
+    transformer_registry.register(MultiPassTransformer, addon_name=ADDON_NAME)
+    transformer_registry.register(CropTransformer, addon_name=ADDON_NAME)
+    transformer_registry.register(TabOpsTransformer, addon_name=ADDON_NAME)
+    transformer_registry.register(
+        BidirScanOffsetTransformer, addon_name=ADDON_NAME
+    )
 
     yield

@@ -2,11 +2,10 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from raygeo.ops import Ops
+from raygeo.ops.transform.optimize import OptimizeSpec
 
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
-from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -49,41 +48,17 @@ class Optimize(OpsTransformer):
     def description(self) -> str:
         return _("Minimizes travel distance by reordering segments.")
 
-    def run(
+    def to_spec(
         self,
-        ops: Ops,
-        workpiece: Optional[WorkPiece] = None,
-        context: Optional[ProgressContext] = None,
-        stock_geometries: Optional[List["Geometry"]] = None,
-        settings: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        if context is None:
-            return
-        if context.is_cancelled():
-            return
-
-        context.set_total(1.0)
-
-        class _Cb:
-            def is_cancelled(self) -> bool:
-                return context.is_cancelled()
-
-            def __call__(self, progress: float, message: str) -> None:
-                context.set_progress(progress)
-                if message:
-                    context.set_message(message)
-
-        ops.optimize_travel(
+        workpiece: Optional[WorkPiece],
+        stock_geometries: Optional[List["Geometry"]],
+        settings: Optional[Dict[str, Any]],
+    ) -> OptimizeSpec:
+        return OptimizeSpec(
             allow_flip=self.allow_flip,
             preserve_first=self.preserve_first,
-            preserve_order=self.preserve_order,
-            progress_cb=_Cb(),
+            preserve_order=list(self.preserve_order),
         )
-
-        logger.debug("Optimization finished")
-        context.set_message(_("Optimization complete"))
-        context.set_progress(1.0)
-        context.flush()
 
     def to_dict(self) -> Dict[str, Any]:
         result = super().to_dict()

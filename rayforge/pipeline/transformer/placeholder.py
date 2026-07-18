@@ -7,10 +7,8 @@ from .base import OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
-    from raygeo.ops import Ops
 
     from ...core.workpiece import WorkPiece
-    from ...shared.tasker.progress import ProgressContext
 
 
 class PlaceholderTransformer(OpsTransformer):
@@ -48,15 +46,16 @@ class PlaceholderTransformer(OpsTransformer):
         """Returns the preserved original configuration."""
         return self._config.copy()
 
-    def run(
+    def to_spec(
         self,
-        ops: "Ops",
-        workpiece: Optional["WorkPiece"] = None,
-        context: Optional["ProgressContext"] = None,
-        stock_geometries: Optional[List["Geometry"]] = None,
-        settings: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        pass
+        workpiece: Optional["WorkPiece"],
+        stock_geometries: Optional[List["Geometry"]],
+        settings: Optional[Dict[str, Any]],
+    ):
+        raise RuntimeError(
+            f"Transformer '{self._original_name}' is not available "
+            f"and cannot be run"
+        )
 
     @classmethod
     def from_dict(cls, data: dict) -> "PlaceholderTransformer":

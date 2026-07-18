@@ -14,6 +14,10 @@ from ..artifact import (
     StepOpsArtifact,
     WorkPieceArtifact,
 )
+from ..transformer.specs import (
+    apply_transformer_specs,
+    build_transformer_specs,
+)
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -93,29 +97,31 @@ def _apply_transformers_to_ops(
     transformers: List["OpsTransformer"],
     context: Optional[ProgressContext] = None,
     stock_geometries: Optional[List["Geometry"]] = None,
+    settings: Optional[dict] = None,
 ) -> None:
     """
-    Applies transformers to ops.
+    Applies transformers to ops via the Rust batch dispatch.
 
     Args:
         ops: The ops to transform.
         transformers: List of transformers to apply.
         context: Optional progress context.
         stock_geometries: List of stock boundary geometries in world space.
+        settings: Optional dictionary of step settings.
     """
-    for i, transformer in enumerate(transformers):
-        base_progress = 0.5 + (i / len(transformers) * 0.4)
+    specs = build_transformer_specs(
+        transformers, None, stock_geometries, settings
+    )
+    if not specs:
+        return
+    if context is not None:
+        context.set_total(1.0)
         set_progress(
             context,
-            base_progress,
-            _("Applying '{t}'").format(t=transformer.label),
+            0.5,
+            _("Applying transformers"),
         )
-        transformer.run(
-            ops,
-            workpiece=None,
-            context=context,
-            stock_geometries=stock_geometries,
-        )
+    apply_transformer_specs(ops, specs, context)
 
 
 def compute_step_artifacts(

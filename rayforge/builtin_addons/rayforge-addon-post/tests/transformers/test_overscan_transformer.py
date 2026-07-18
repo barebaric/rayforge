@@ -7,6 +7,16 @@ from raygeo.ops.state import AirAssistMode
 from raygeo.ops.types import CommandType, RasterMode, SectionType
 
 from rayforge.pipeline.transformer.base import ExecutionPhase
+from rayforge.pipeline.transformer.specs import (
+    apply_transformer_specs,
+    build_transformer_specs,
+)
+
+
+def _apply(transformer, ops, settings=None):
+    """Run a transformer through the Rust spec dispatch."""
+    specs = build_transformer_specs([transformer], None, None, settings)
+    apply_transformer_specs(ops, specs)
 
 
 @pytest.fixture
@@ -42,7 +52,7 @@ def test_serialization_and_deserialization():
 
 
 def test_no_op_when_disabled(transformer: OverscanTransformer):
-    """Verify the run method does nothing if the transformer is disabled."""
+    """Verify the dispatch does nothing if the transformer is disabled."""
     ops = Ops()
     ops.ops_section_start(
         SectionType.RASTER_FILL,
@@ -57,7 +67,7 @@ def test_no_op_when_disabled(transformer: OverscanTransformer):
     original_len = ops.len()
 
     transformer.enabled = False
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     assert ops.len() == original_len
 
@@ -77,13 +87,13 @@ def test_no_op_with_native_overscan(transformer: OverscanTransformer):
     )
     original_len = ops.len()
 
-    transformer.run(ops, settings={"driver_native_overscan": True})
+    _apply(transformer, ops, settings={"driver_native_overscan": True})
 
     assert ops.len() == original_len
 
 
 def test_no_op_with_zero_distance(transformer: OverscanTransformer):
-    """Verify the run method does nothing if the distance is zero."""
+    """Verify the dispatch does nothing if the distance is zero."""
     ops = Ops()
     ops.ops_section_start(
         SectionType.RASTER_FILL,
@@ -98,7 +108,7 @@ def test_no_op_with_zero_distance(transformer: OverscanTransformer):
     original_len = ops.len()
 
     transformer.distance_mm = 0.0
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     assert ops.len() == original_len
 
@@ -127,7 +137,7 @@ def test_run_with_constant_power_lines_from_rasterizer(
         SectionType.RASTER_FILL,
         raster_mode=RasterMode.CONSTANT_POWER,
     )
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     # Expected: Start, [Move, SP(0), Line, SP(orig), Line, SP(0), Line], End
     assert ops.len() == 9
@@ -171,7 +181,7 @@ def test_preserves_state_for_constant_power_lines(
     )
 
     # Act
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     # --- Verification for Line 1 ---
     # Expected sequence: Move, SP(0), Line, SP(0.8), Line, SP(0), Line
@@ -198,8 +208,8 @@ def test_preserves_state_for_constant_power_lines(
     assert ops.endpoint(12) == pytest.approx((30.0, 20.0, 0.0))
     # This is the critical check: the original intermediate SetPower
     # is preserved.
-    # Note: Because the original buffer is extended, the power command is at
-    # index 3, and the original LineTo is at index 4.
+    # Note: Because the original buffer is extended, the power command
+    # is at index 3, and the original LineTo is at index 4.
     assert (
         ops.command_type(13) == CommandType.SET_POWER and ops.power(13) == 0.4
     )
@@ -239,7 +249,7 @@ def test_run_with_variable_power_scanlines_from_depth(
         SectionType.RASTER_FILL,
         raster_mode=RasterMode.CONSTANT_POWER,
     )
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     assert ops.len() == 4  # Start, Move, ScanLine, End
 
@@ -259,12 +269,13 @@ def test_preserves_state_for_scanline_commands(
     transformer: OverscanTransformer,
 ):
     """
-    Verify the overscan transformation for ScanLinePowerCommands is precise
-    and does not rely on preload_state. Checks for correct geometry extension
-    and power value padding, while preserving preceding state commands.
+    Verify the overscan transformation for ScanLinePowerCommands is
+    precise and does not rely on preload_state. Checks for correct
+    geometry extension and power value padding, while preserving
+    preceding state commands.
     """
-    # Arrange: A master power setting followed by a raster section with a
-    # single ScanLine. This simulates a Rasterizer output.
+    # Arrange: A master power setting followed by a raster section with
+    # a single ScanLine. This simulates a Rasterizer output.
     ops = Ops()
     ops.set_power(0.5)  # Master power setting
     ops.ops_section_start(
@@ -283,10 +294,10 @@ def test_preserves_state_for_scanline_commands(
     assert transformer.distance_mm == 5.0
 
     # Act
-    transformer.run(ops)
+    _apply(transformer, ops)
 
-    # Assert: Manually verify the exact command sequence and their properties
-    # without using preload_state, which could mask bugs.
+    # Assert: Manually verify the exact command sequence and their
+    # properties without using preload_state, which could mask bugs.
     # Expected output structure:
     # [0] SetPower(0.5) - Preserved from before the section
     # [1] OpsSectionStart - Preserved
@@ -351,7 +362,7 @@ def test_does_not_modify_commands_outside_raster_section(
     original_ep0 = ops.endpoint(0)
     original_ep1 = ops.endpoint(1)
 
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     assert ops.endpoint(0) == original_ep0
     assert ops.endpoint(1) == original_ep1
@@ -382,7 +393,7 @@ def test_handles_multiple_bidirectional_lines(
     )
     dist = transformer.distance_mm
 
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     # Each line is rewritten from 2 moving commands to 4 + state changes
     # so we can't just count moving commands easily.
@@ -439,6 +450,6 @@ def test_handles_zero_length_line(transformer: OverscanTransformer):
     )
     original_len = ops.len()
 
-    transformer.run(ops)
+    _apply(transformer, ops)
 
     assert ops.len() == original_len

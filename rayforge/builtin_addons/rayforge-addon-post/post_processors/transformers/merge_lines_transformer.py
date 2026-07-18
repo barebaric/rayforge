@@ -9,11 +9,10 @@ from typing import (
     Sequence,
 )
 
-from raygeo.ops import Ops
+from raygeo.ops.transform.merge_lines import MergeLinesSpec
 
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
-from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -60,21 +59,13 @@ class MergeLinesTransformer(OpsTransformer):
     def description(self) -> str:
         return _("Merges overlapping lines to avoid double passing.")
 
-    def run(
+    def to_spec(
         self,
-        ops: Ops,
-        workpiece: Optional[WorkPiece] = None,
-        context: Optional[ProgressContext] = None,
-        stock_geometries: Optional[Sequence["Geometry"]] = None,
-        settings: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        if not self.enabled:
-            return
-
-        if ops.is_empty():
-            return
-
-        ops.merge_overlapping_lines(self._tolerance)
+        workpiece: Optional[WorkPiece],
+        stock_geometries: Optional[Sequence["Geometry"]],
+        settings: Optional[Dict[str, Any]],
+    ) -> MergeLinesSpec:
+        return MergeLinesSpec(tolerance=self._tolerance)
 
     def to_dict(self) -> Dict[str, Any]:
         data = super().to_dict()

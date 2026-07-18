@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from raygeo.ops import Ops
+from raygeo.ops.transform.bidir_scan_offset import BidirScanOffsetSpec
 
 from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
-from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -46,18 +44,14 @@ class BidirScanOffsetTransformer(OpsTransformer):
             "scan-direction skew."
         )
 
-    def run(
+    def to_spec(
         self,
-        ops: Ops,
-        workpiece: Optional["WorkPiece"] = None,
-        context: Optional[ProgressContext] = None,
-        stock_geometries: Optional[List["Geometry"]] = None,
-        settings: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        offset_mm = settings.get("bidir_x_offset_mm", 0.0) if settings else 0.0
-        if not self.enabled or math.isclose(offset_mm, 0.0):
-            return
-        ops.apply_bidir_scan_offset(offset_mm)
+        workpiece: Optional["WorkPiece"],
+        stock_geometries: Optional[List["Geometry"]],
+        settings: Optional[Dict[str, Any]],
+    ) -> BidirScanOffsetSpec:
+        offset = settings.get("bidir_x_offset_mm", 0.0) if settings else 0.0
+        return BidirScanOffsetSpec(offset_mm=offset)
 
     def to_dict(self) -> Dict[str, Any]:
         return {**super().to_dict()}

@@ -10,11 +10,10 @@ from typing import (
     Optional,
 )
 
-from raygeo.ops import Ops
+from raygeo.ops.transform.tabs import TabsSpec
 
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
-from rayforge.shared.tasker.progress import ProgressContext
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -113,72 +112,43 @@ class TabOpsTransformer(OpsTransformer):
         logger.debug(f"TabOps: Finished generating clip data: {clip_data}")
         return clip_data
 
-    def run(
+    def to_spec(
         self,
-        ops: Ops,
-        workpiece: Optional[WorkPiece] = None,
-        context: Optional[ProgressContext] = None,
-        stock_geometries: Optional[List["Geometry"]] = None,
-        settings: Optional[Dict] = None,
-    ) -> None:
-        if not self.enabled:
-            return
-        if not workpiece:
-            logger.debug("TabOpsTransformer: No workpiece provided, skipping.")
-            return
-        if not workpiece.tabs_enabled or not workpiece.tabs:
-            logger.debug(
-                "TabOpsTransformer: Tabs disabled or no tabs on workpiece "
-                f"'{workpiece.name}', skipping."
+        workpiece: Optional[WorkPiece],
+        stock_geometries: Optional[List["Geometry"]],
+        settings: Optional[Dict],
+    ) -> TabsSpec:
+        tab_power = settings.get("tab_power", 0.0) if settings else 0.0
+        original_power = settings.get("power", 1.0) if settings else 1.0
+
+        if not workpiece or not workpiece.tabs_enabled or not workpiece.tabs:
+            return TabsSpec(
+                tab_power=tab_power,
+                original_power=original_power,
+                clips=[],
             )
-            return
-
-        tab_power = 0.0
-        original_power = 1.0
-        if settings:
-            tab_power = settings.get("tab_power", 0.0)
-            original_power = settings.get("power", 1.0)
-
-        logger.debug(
-            f"TabOpsTransformer running for workpiece '{workpiece.name}' "
-            f"with {len(workpiece.tabs)} tabs, tab_power={tab_power}."
-        )
 
         tab_clip_data = self._generate_tab_clip_data(workpiece)
         if not tab_clip_data:
-            logger.debug("No tab clip data was generated. Skipping clipping.")
-            return
-
-        logger.debug(
-            f"Generated {len(tab_clip_data)} tab clip points for clipping."
-        )
+            return TabsSpec(
+                tab_power=tab_power,
+                original_power=original_power,
+                clips=[],
+            )
 
         processed_clip_data = tab_clip_data
         final_w, final_h = workpiece.size
         if final_w > 1e-6 and final_h > 1e-6:
-            logger.debug(
-                "TabOps: Scaling tab clip points from vector "
-                "space to final ops space. "
-                f"Scale=({final_w:.3f}, {final_h:.3f})"
-            )
             processed_clip_data = [
                 (cp.x * final_w, cp.y * final_h, cp.width)
                 for cp in tab_clip_data
             ]
 
-        logger.debug(
-            f"TabOps: Clipping points to be used: {processed_clip_data}"
+        return TabsSpec(
+            tab_power=tab_power,
+            original_power=original_power,
+            clips=processed_clip_data,
         )
-
-        if tab_power > 0:
-            actual_tab_power = tab_power * original_power
-            ops.apply_tab_power(
-                processed_clip_data,
-                actual_tab_power,
-                original_power,
-            )
-        else:
-            ops.apply_tab_gaps(processed_clip_data)
 
     @classmethod
     def from_dict(cls, data: Dict) -> "TabOpsTransformer":
