@@ -306,5 +306,16 @@ def register_addon_domain(domain: str, locale_dir: Path) -> None:
     addon_translator = gettext.translation(
         domain, localedir=str(locale_dir), fallback=True
     )
+    # ``gettext.translation`` returns a bare NullTranslations when no
+    # .mo file matches the system locale (e.g. ``LANG=C`` or unset).
+    # That silently drops every addon translation. Fall back to English
+    # so the addon's strings are still resolved from its ``en`` catalog.
+    if type(addon_translator) is gettext.NullTranslations:
+        addon_translator = gettext.translation(
+            domain,
+            localedir=str(locale_dir),
+            languages=["en"],
+            fallback=True,
+        )
     _chain.register(addon_translator)
     _chain.install()
