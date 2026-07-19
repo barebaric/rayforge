@@ -253,7 +253,13 @@ def register_addon_domain(domain: str, locale_dir: Path) -> None:
     def _patched_gettext(msg: str) -> str:
         result = original_gettext(msg)
         if result == msg:
-            result = addon_translator.gettext(msg)
+            addon_result = addon_translator.gettext(msg)
+            # An empty translation usually means the .mo file was
+            # compiled with empty msgstr entries (untranslated). Treat
+            # those as "no translation" and fall back to the original
+            # message rather than rendering blank UI text (issue #315).
+            if addon_result:
+                result = addon_result
         return result
 
     gettext.gettext = _patched_gettext

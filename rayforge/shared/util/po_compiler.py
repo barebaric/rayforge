@@ -194,6 +194,11 @@ def compile_po_to_mo(po_path: Path, mo_path: Path) -> bool:
     """
     Compile a .po file to a .mo file.
 
+    Entries with an empty msgstr (i.e. untranslated strings) are skipped,
+    matching the behavior of GNU ``msgfmt``. Including them would make
+    ``gettext`` resolve the message to an empty string instead of falling
+    back to the msgid, which breaks UI text (see issue #315).
+
     Args:
         po_path: Path to the source .po file.
         mo_path: Path to write the destination .mo file.
@@ -205,7 +210,14 @@ def compile_po_to_mo(po_path: Path, mo_path: Path) -> bool:
         entries = parse_po_file(po_path)
         if not entries:
             return False
-        write_mo_file(mo_path, entries)
+        translated = [
+            (msgid, msgstr)
+            for msgid, msgstr in entries
+            if msgstr or msgid == ""
+        ]
+        if not translated:
+            return False
+        write_mo_file(mo_path, translated)
         return True
     except Exception:
         return False

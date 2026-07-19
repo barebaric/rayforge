@@ -248,6 +248,65 @@ msgstr ""
 
         assert result is False
 
+    def test_compile_skips_empty_msgstr(self, tmp_path: Path):
+        """Entries with empty msgstr must be skipped (issue #315).
+
+        GNU msgfmt omits untranslated entries from the .mo file so
+        that gettext falls back to the msgid. Including them would
+        make gettext return an empty string, blanking out UI labels.
+        """
+        import gettext
+
+        po_content = """msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\\n"
+
+msgid "Translated"
+msgstr "Ubersetzt"
+
+msgid "Untranslated"
+msgstr ""
+"""
+        po_file = tmp_path / "test.po"
+        mo_file = tmp_path / "en" / "LC_MESSAGES" / "test.mo"
+        po_file.write_text(po_content)
+
+        result = compile_po_to_mo(po_file, mo_file)
+
+        assert result is True
+        translation = gettext.translation(
+            "test", localedir=tmp_path, languages=["en"], fallback=True
+        )
+        # Translated entry is taken from the catalog.
+        assert translation.gettext("Translated") == "Ubersetzt"
+        # Untranslated entry falls back to the msgid, NOT empty string.
+        assert translation.gettext("Untranslated") == "Untranslated"
+
+    def test_compile_all_empty_msgstr_still_includes_header(
+        self, tmp_path: Path
+    ):
+        """A .po with only empty translations still yields a valid .mo."""
+        import gettext
+
+        po_content = """msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\\n"
+
+msgid "Untranslated"
+msgstr ""
+"""
+        po_file = tmp_path / "test.po"
+        mo_file = tmp_path / "en" / "LC_MESSAGES" / "test.mo"
+        po_file.write_text(po_content)
+
+        result = compile_po_to_mo(po_file, mo_file)
+
+        assert result is True
+        translation = gettext.translation(
+            "test", localedir=tmp_path, languages=["en"], fallback=True
+        )
+        assert translation.gettext("Untranslated") == "Untranslated"
+
     def test_compile_preserves_unicode(self, tmp_path: Path):
         """Test that Unicode characters are preserved."""
         po_content = """msgid ""
