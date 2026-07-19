@@ -66,6 +66,39 @@
   </screenshots>
 
   <releases>
+    <release version="1.9.0" date="2026-07-19">
+      <description>
+        <p>Array/Pattern tool, Rust pipeline migration, and bug fixes</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Array / Pattern tool with Grid, Point Rotation, and
+          Circular modes</li>
+          <li>Allow renaming layers and steps directly in the
+          layer/step settings dialogs</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Upgrade raygeo to 1.23.0 with migrated G-code encoder,
+          BidirScanOffsetTransformer, and MultiPassTransformer to
+          Rust; transformer application now uses Rust
+          apply_transformers dispatch</li>
+          <li>Improved addon translation fallback: English is now used
+          when no matching locale is found</li>
+          <li>Wavefront icon and improved Gtk SVG compatibility for
+          other icons</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Blank sketcher UI text on packaged installs (#315)</li>
+          <li>Dragging of layers now works correctly</li>
+          <li>Settings widget auto-value bugs: raster/wavefront sliders
+          showing wrong defaults, overscan Automatic Distance switch
+          permanently greyed out, and auto overscan/lead-in-out
+          distance recalculating to a smaller value on toggle
+          (#314, by vyvcodd)</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.8.5" date="2026-07-16">
       <description>
         <p>raygeo upgrade, group selection improvements</p>

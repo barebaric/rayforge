@@ -5,6 +5,32 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.0
+
+### Added
+
+- Array / Pattern tool with Grid, Point Rotation, and Circular modes
+- Allow renaming layers and steps directly in the layer/step
+  settings dialogs
+
+### Changed
+
+- Upgrade raygeo to 1.23.0 with migrated G-code encoder,
+  BidirScanOffsetTransformer, and MultiPassTransformer to Rust;
+  transformer application now uses Rust apply_transformers dispatch
+- Improved addon translation fallback: English is now used when
+  no matching locale is found
+- Wavefront icon and improved Gtk SVG compatibility for other icons
+
+### Fixed
+
+- Blank sketcher UI text on packaged installs (#315)
+- Dragging of layers now works correctly
+- Settings widget auto-value bugs: raster/wavefront sliders
+  showing wrong defaults, overscan Automatic Distance switch
+  permanently greyed out, and auto overscan/lead-in-out distance
+  recalculating to a smaller value on toggle (#314, by vyvcodd)
+
 ## 1.8.5
 
 ### Changed

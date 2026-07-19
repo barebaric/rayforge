@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-16 23:19+0200\n"
+"POT-Creation-Date: 2026-07-19 16:19+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -2222,9 +2222,11 @@ msgstr "Цей провайдер ШІ буде остаточно видале�
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Name"
 msgstr "Назва"
 
@@ -7286,8 +7288,13 @@ msgstr "Багатопрохідний"
 
 #: rayforge/pipeline/stage/workpiece_compute.py
 #, python-brace-format
-msgid "Applying '{transformer}' on '{workpiece}'"
-msgstr "Застосування '{transformer}' до '{workpiece}'"
+msgid "Applying transformers on '{workpiece}'"
+msgstr "Застосування трансформерів до '{workpiece}'"
+
+#: rayforge/pipeline/stage/workpiece_compute.py
+#, python-brace-format
+msgid "Transformers applied on '{workpiece}'"
+msgstr "Трансформери застосовано до '{workpiece}'"
 
 #: rayforge/pipeline/stage/workpiece_compute.py
 #, python-brace-format
@@ -7300,9 +7307,8 @@ msgid "Finalizing '{workpiece}'"
 msgstr "Завершення '{workpiece}'"
 
 #: rayforge/pipeline/stage/step_compute.py
-#, python-brace-format
-msgid "Applying '{t}'"
-msgstr "Застосування '{t}'"
+msgid "Applying transformers"
+msgstr "Застосування трансформерів"
 
 #: rayforge/pipeline/stage/job_compute.py
 msgid "Assembling final job..."
@@ -7563,6 +7569,10 @@ msgstr "Помилка завантаження: {error}"
 msgid "Could not fit the following items: {item_names}"
 msgstr "Не вдалося розмістити наступні елементи: {item_names}"
 
+#: rayforge/doceditor/step_cmd.py
+msgid "Rename step"
+msgstr "Перейменувати крок"
+
 #: rayforge/doceditor/stock_cmd.py
 msgid "Remove Stock Asset"
 msgstr "Видалити матеріал"
@@ -7624,10 +7634,6 @@ msgstr "Встановити активний шар"
 #, python-brace-format
 msgid "Remove layer '{name}'"
 msgstr "Видалити шар '{name}'"
-
-#: rayforge/doceditor/layer_cmd.py
-msgid "Reorder layers"
-msgstr "Змінити порядок шарів"
 
 #: rayforge/doceditor/layer_cmd.py
 msgid "Reorder workpieces"
