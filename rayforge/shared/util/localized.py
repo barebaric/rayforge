@@ -9,7 +9,7 @@ import gettext
 import locale
 import os
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 SUPPORTED_LANGUAGES = ["en", "de", "es", "fr", "pt", "uk", "zh_CN"]
 
@@ -234,6 +234,69 @@ class LocalizedField(str):
         return f"LocalizedField({self._default!r}, {self._translations!r})"
 
 
+class _AddonDomainChain:
+    """Single installed gettext patch that delegates to addon domains.
+
+    Earlier implementations chained one closure per addon domain, each
+    capturing the previous ``gettext.gettext`` as its fallback. That
+    design produced RecursionError in some test-suite orderings when
+    the chain could no longer terminate cleanly.
+
+    This version installs exactly one patch function - bound to a
+    singleton instance - and looks up every loaded addon translator
+    from a single list. There is no recursion path.
+    """
+
+    def __init__(self) -> None:
+        self._translators: List[gettext.NullTranslations] = []
+        self._original = None
+        self._installed = False
+
+    def register(self, translator: "gettext.NullTranslations") -> None:
+        """Add a translator to the fallback chain (deduplicated)."""
+        if translator not in self._translators:
+            self._translators.append(translator)
+
+    def install(self) -> None:
+        """Patch ``gettext.gettext`` exactly once."""
+        if self._installed:
+            return
+        self._original = gettext.gettext
+        gettext.gettext = self._translate
+        self._installed = True
+
+    def uninstall(self) -> None:
+        """Restore the original gettext.gettext (used by tests)."""
+        if not self._installed:
+            return
+        gettext.gettext = self._original
+        self._original = None
+        self._installed = False
+        self._translators.clear()
+
+    def _translate(self, msg: str) -> str:
+        if self._original is None:
+            return msg
+        result = self._original(msg)
+        if result != msg:
+            return result
+        for translator in self._translators:
+            try:
+                addon_result = translator.gettext(msg)
+            except Exception:
+                continue
+            # An empty translation usually means the .mo file was
+            # compiled with empty msgstr entries (untranslated). Treat
+            # those as "no translation" and fall back to the original
+            # message rather than rendering blank UI text (issue #315).
+            if addon_result and addon_result != msg:
+                return addon_result
+        return result
+
+
+_chain = _AddonDomainChain()
+
+
 def register_addon_domain(domain: str, locale_dir: Path) -> None:
     """Merge an addon's gettext domain into the global gettext lookup.
 
@@ -248,18 +311,5 @@ def register_addon_domain(domain: str, locale_dir: Path) -> None:
     addon_translator = gettext.translation(
         domain, localedir=str(locale_dir), fallback=True
     )
-    original_gettext = gettext.gettext
-
-    def _patched_gettext(msg: str) -> str:
-        result = original_gettext(msg)
-        if result == msg:
-            addon_result = addon_translator.gettext(msg)
-            # An empty translation usually means the .mo file was
-            # compiled with empty msgstr entries (untranslated). Treat
-            # those as "no translation" and fall back to the original
-            # message rather than rendering blank UI text (issue #315).
-            if addon_result:
-                result = addon_result
-        return result
-
-    gettext.gettext = _patched_gettext
+    _chain.register(addon_translator)
+    _chain.install()
