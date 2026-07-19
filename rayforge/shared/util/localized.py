@@ -250,7 +250,6 @@ class _AddonDomainChain:
     def __init__(self) -> None:
         self._translators: List[gettext.NullTranslations] = []
         self._original = None
-        self._installed = False
 
     def register(self, translator: "gettext.NullTranslations") -> None:
         """Add a translator to the fallback chain (deduplicated)."""
@@ -258,21 +257,17 @@ class _AddonDomainChain:
             self._translators.append(translator)
 
     def install(self) -> None:
-        """Patch ``gettext.gettext`` exactly once."""
-        if self._installed:
-            return
-        self._original = gettext.gettext
-        gettext.gettext = self._translate
-        self._installed = True
+        """Ensure ``gettext.gettext`` is our patch.
 
-    def uninstall(self) -> None:
-        """Restore the original gettext.gettext (used by tests)."""
-        if not self._installed:
+        Re-installs if a third party (e.g. a test fixture) has restored
+        ``gettext.gettext`` to its pre-patch value, so the addon
+        translators are always consulted.
+        """
+        if gettext.gettext is self._translate:
             return
-        gettext.gettext = self._original
-        self._original = None
-        self._installed = False
-        self._translators.clear()
+        if self._original is None:
+            self._original = gettext.gettext
+        gettext.gettext = self._translate
 
     def _translate(self, msg: str) -> str:
         if self._original is None:

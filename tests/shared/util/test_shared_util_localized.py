@@ -32,24 +32,35 @@ def _build_addon_locale(
 
 @pytest.fixture
 def isolated_gettext():
-    """Snapshot and restore gettext.gettext and the addon domain chain.
+    """Reset gettext.gettext and the addon domain chain around each test.
 
     register_addon_domain patches the global ``gettext.gettext`` and
-    appends to a process-wide chain of addon translators. Without
-    clean teardown, that state leaks across tests.
+    appends to a process-wide chain of addon translators. Other tests
+    in the suite (e.g. laser_essentials' session conftest) may have
+    already mutated that state, so each test here starts from a clean
+    slate and restores whatever was there before on exit.
     """
     import rayforge.shared.util.localized as mod
 
     saved_gettext = gettext_module.gettext
     saved_translators = list(mod._chain._translators)
-    saved_installed = mod._chain._installed
     saved_original = mod._chain._original
+
+    # Determine the truly-unpatched gettext.gettext: prefer the captured
+    # original (only set once we've installed at least once); otherwise
+    # the current gettext.gettext *is* the original.
+    pristine = saved_original if saved_original is not None else saved_gettext
+
+    # Reset to a clean slate for the test body.
+    gettext_module.gettext = pristine
+    mod._chain._translators = []
+    mod._chain._original = None
+
     try:
         yield
     finally:
         gettext_module.gettext = saved_gettext
         mod._chain._translators = saved_translators
-        mod._chain._installed = saved_installed
         mod._chain._original = saved_original
 
 
