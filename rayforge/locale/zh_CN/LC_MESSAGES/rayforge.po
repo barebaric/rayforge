@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-16 23:19+0200\n"
+"POT-Creation-Date: 2026-07-19 16:19+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -2085,9 +2085,11 @@ msgstr "此AI提供商将被永久删除。此操作无法撤销。"
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Name"
 msgstr "名称"
 
@@ -7026,8 +7028,13 @@ msgstr "多遍"
 
 #: rayforge/pipeline/stage/workpiece_compute.py
 #, python-brace-format
-msgid "Applying '{transformer}' on '{workpiece}'"
-msgstr "正在对 '{workpiece}' 应用 '{transformer}'"
+msgid "Applying transformers on '{workpiece}'"
+msgstr "正在对 '{workpiece}' 应用变换器"
+
+#: rayforge/pipeline/stage/workpiece_compute.py
+#, python-brace-format
+msgid "Transformers applied on '{workpiece}'"
+msgstr "已对 '{workpiece}' 应用变换器"
 
 #: rayforge/pipeline/stage/workpiece_compute.py
 #, python-brace-format
@@ -7040,9 +7047,8 @@ msgid "Finalizing '{workpiece}'"
 msgstr "正在定稿 '{workpiece}'"
 
 #: rayforge/pipeline/stage/step_compute.py
-#, python-brace-format
-msgid "Applying '{t}'"
-msgstr "正在应用 '{t}'"
+msgid "Applying transformers"
+msgstr "应用变换器"
 
 #: rayforge/pipeline/stage/job_compute.py
 msgid "Assembling final job..."
@@ -7299,6 +7305,10 @@ msgstr "加载失败：{error}"
 msgid "Could not fit the following items: {item_names}"
 msgstr "无法容纳以下项目：{item_names}"
 
+#: rayforge/doceditor/step_cmd.py
+msgid "Rename step"
+msgstr "重命名步骤"
+
 #: rayforge/doceditor/stock_cmd.py
 msgid "Remove Stock Asset"
 msgstr "移除材料"
@@ -7360,10 +7370,6 @@ msgstr "设置活动图层"
 #, python-brace-format
 msgid "Remove layer '{name}'"
 msgstr "移除图层 '{name}'"
-
-#: rayforge/doceditor/layer_cmd.py
-msgid "Reorder layers"
-msgstr "重新排序图层"
 
 #: rayforge/doceditor/layer_cmd.py
 msgid "Reorder workpieces"

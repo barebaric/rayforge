@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-16 23:19+0200\n"
+"POT-Creation-Date: 2026-07-19 16:19+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -2255,9 +2255,11 @@ msgstr ""
 #: rayforge/ui_gtk/machine/laser_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
+#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Name"
 msgstr "Nom"
 
@@ -7377,8 +7379,13 @@ msgstr "Passages multiples"
 
 #: rayforge/pipeline/stage/workpiece_compute.py
 #, python-brace-format
-msgid "Applying '{transformer}' on '{workpiece}'"
-msgstr "Application de « {transformer} » sur « {workpiece} »"
+msgid "Applying transformers on '{workpiece}'"
+msgstr "Application des transformers sur « {workpiece} »"
+
+#: rayforge/pipeline/stage/workpiece_compute.py
+#, python-brace-format
+msgid "Transformers applied on '{workpiece}'"
+msgstr "Transformers appliqués sur « {workpiece} »"
 
 #: rayforge/pipeline/stage/workpiece_compute.py
 #, python-brace-format
@@ -7391,9 +7398,8 @@ msgid "Finalizing '{workpiece}'"
 msgstr "Finalisation de « {workpiece} »"
 
 #: rayforge/pipeline/stage/step_compute.py
-#, python-brace-format
-msgid "Applying '{t}'"
-msgstr "Application de « {t} »"
+msgid "Applying transformers"
+msgstr "Application des transformers"
 
 #: rayforge/pipeline/stage/job_compute.py
 msgid "Assembling final job..."
@@ -7655,6 +7661,10 @@ msgstr "Échec du chargement : {error}"
 msgid "Could not fit the following items: {item_names}"
 msgstr "Impossible de placer les éléments suivants : {item_names}"
 
+#: rayforge/doceditor/step_cmd.py
+msgid "Rename step"
+msgstr "Renommer l'étape"
+
 #: rayforge/doceditor/stock_cmd.py
 msgid "Remove Stock Asset"
 msgstr "Supprimer le matériau"
@@ -7716,10 +7726,6 @@ msgstr "Définir le calque actif"
 #, python-brace-format
 msgid "Remove layer '{name}'"
 msgstr "Supprimer le calque « {name} »"
-
-#: rayforge/doceditor/layer_cmd.py
-msgid "Reorder layers"
-msgstr "Réorganiser les calques"
 
 #: rayforge/doceditor/layer_cmd.py
 msgid "Reorder workpieces"
