@@ -7,7 +7,7 @@
    version="1.1"
    id="svg1"
    sodipodi:docname="sketch-construction-symbolic.svg"
-   inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -25,15 +25,15 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:zoom="36.916667"
      inkscape:cx="12.975169"
-     inkscape:cy="12"
-     inkscape:window-width="3840"
-     inkscape:window-height="2020"
-     inkscape:window-x="0"
-     inkscape:window-y="32"
-     inkscape:window-maximized="1"
+     inkscape:cy="12.027088"
+     inkscape:window-width="2880"
+     inkscape:window-height="1696"
+     inkscape:window-x="50"
+     inkscape:window-y="82"
+     inkscape:window-maximized="0"
      inkscape:current-layer="svg1" />
   <path
-     style="fill:none;stroke:#000000;stroke-width:2.1;stroke-dasharray:6.29999971,2.0999999;stroke-dashoffset:0;stroke-opacity:1"
-     d="m 3.9387 3.5793 16.2615 16.9748"
+     style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;stroke-dasharray:6.3, 2.1;enable-background:accumulate;stop-color:#000000;stop-opacity:1;opacity:1"
+     d="m 4.6972656,2.8535156 -1.5175781,1.4511719 4.359375,4.5507813 1.515625,-1.4531251 z m 5.8105474,6.0644532 -1.5156255,1.4531252 4.3574215,4.548828 1.515625,-1.451172 z m 5.810546,6.0664062 -1.515625,1.453125 4.357422,4.548828 1.517578,-1.453125 z"
      id="path2" />
 </svg>

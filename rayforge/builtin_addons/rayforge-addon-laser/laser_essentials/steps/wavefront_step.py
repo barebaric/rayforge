@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 class WavefrontStep(Step):
     TYPELABEL = _("Wavefront")
-    ICON = "step-contour-symbolic"
+    ICON = "step-wavefront-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (CUT,)
     ASSEMBLER_NAME = "wavefront"
     NORMALIZE_WINDINGS = True

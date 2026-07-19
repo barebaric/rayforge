@@ -7,7 +7,7 @@
    version="1.1"
    id="svg1"
    sodipodi:docname="sketch-constrain-point-symbolic.svg"
-   inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -23,9 +23,9 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="6.5260065"
-     inkscape:cx="-37.235636"
-     inkscape:cy="61.599693"
+     inkscape:zoom="26.104026"
+     inkscape:cx="3.2178944"
+     inkscape:cy="26.31778"
      inkscape:window-width="3840"
      inkscape:window-height="2020"
      inkscape:window-x="0"
@@ -41,20 +41,20 @@
        style="stroke:none;stroke-width:0.0062"
        sodipodi:nodetypes="sssssssssssssssss" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:2.3571;stroke-dasharray:none;stroke-dashoffset:0"
-       d="m -113.42113,-465.41583 h 5.5259"
+       style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;enable-background:accumulate;stop-color:#000000;stop-opacity:1;opacity:1"
+       d="m -113.42188,-466.59375 v 2.35742 h 5.52735 v -2.35742 z"
        id="path2" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:2.3571;stroke-dasharray:none;stroke-dashoffset:0"
-       d="m -98.836931,-465.41583 h 5.526"
+       style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;enable-background:accumulate;stop-color:#000000;stop-opacity:1;opacity:1"
+       d="m -98.837891,-466.59375 v 2.35742 h 5.527344 v -2.35742 z"
        id="path3" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:2.3571;stroke-dasharray:none;stroke-dashoffset:0"
-       d="m -103.36623,-475.47093 v 5.5259"
+       style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;enable-background:accumulate;stop-color:#000000;stop-opacity:1;opacity:1"
+       d="m -104.54492,-475.4707 v 5.52539 h 2.35742 v -5.52539 z"
        id="path5" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:2.3571;stroke-dasharray:none;stroke-dashoffset:0"
-       d="m -103.36623,-460.88673 v 5.5259"
+       style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;enable-background:accumulate;stop-color:#000000;stop-opacity:1;opacity:1"
+       d="m -104.54492,-460.88672 v 5.52539 h 2.35742 v -5.52539 z"
        id="path6" />
   </g>
 </svg>
