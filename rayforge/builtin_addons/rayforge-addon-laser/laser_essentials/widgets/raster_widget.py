@@ -394,9 +394,8 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         self.dot_width_correction_row = Adw.SpinRow(
             title=_("Dot Width Correction"),
             subtitle=_(
-                "Shortens each engraved run by this distance at both "
-                "ends to compensate for the physical width of the "
-                "laser spot. Does not affect toolpath movement."
+                "Reduces engrave length at both ends to compensate "
+                "for physical dot width"
             ),
             adjustment=dot_width_correction_adj,
             digits=3,
