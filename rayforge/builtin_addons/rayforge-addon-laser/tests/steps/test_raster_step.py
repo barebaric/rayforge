@@ -1,5 +1,6 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 from laser_essentials.steps import EngraveStep
 
@@ -75,6 +76,7 @@ class TestEngraveStep:
             "mode",
             "line_interval_mm",
             "sample_interval_mm",
+            "dot_width_correction_mm",
             "min_power",
             "max_power",
             "step_power",
@@ -95,6 +97,70 @@ class TestEngraveStep:
         step.scan_angle = 45.0
         step.depth_mode = "MULTI_PASS"
         step.line_interval_mm = 0.2  # type: ignore[assignment]
+        step.dot_width_correction_mm = 0.05  # type: ignore[assignment]
         data = step.to_dict()
         restored = EngraveStep.from_dict(data)
         assert data == restored.to_dict()
+        assert restored.dot_width_correction_mm == 0.05
+
+
+class TestAssembleOnSurfaceAutoDefaults:
+    """
+    assemble_on_surface must resolve dot_width_correction_mm the same
+    way line_interval_mm/sample_interval_mm already do: None falls back
+    to a laser-spot-size-derived value actually used at generation
+    time, an explicit override is passed through unchanged.
+    """
+
+    def _run(self, step, machine_defaults, laser_spot_size_mm):
+        laser = MagicMock()
+        laser.uid = "laser-1"
+        laser.spot_size_mm = laser_spot_size_mm
+
+        surface = MagicMock()
+        surface.get_width.return_value = 10
+        surface.get_height.return_value = 10
+
+        workpiece = MagicMock()
+        workpiece.size = (10.0, 10.0)
+        workpiece.bbox = (0.0, 0.0, 10.0, 10.0)
+        workpiece.uid = "wp-1"
+
+        fake_image = np.zeros((10, 10), dtype=np.uint8)
+        fake_alpha = np.ones((10, 10), dtype=np.float32)
+
+        with (
+            patch(
+                "laser_essentials.steps.raster_step.preprocess_raster_image",
+                return_value=(fake_image, fake_alpha),
+            ),
+            patch("laser_essentials.steps.raster_step.make_artifact"),
+            patch(
+                "laser_essentials.steps.raster_step.assembler_registry"
+            ) as mock_registry,
+        ):
+            mock_result = MagicMock()
+            mock_result.ops = MagicMock(len=MagicMock(return_value=0))
+            mock_registry.assemble.return_value = mock_result
+
+            step.assemble_on_surface(
+                workpiece,
+                laser,
+                generation_id=1,
+                surface=surface,
+                pixels_per_mm=(1.0, 1.0),
+                machine_defaults=machine_defaults,
+            )
+
+        return mock_registry.assemble.call_args.kwargs
+
+    def test_auto_default_uses_half_spot_size(self, machine_defaults):
+        step = EngraveStep(name="Test")
+        kwargs = self._run(step, machine_defaults, (0.2, 0.15))
+        assert kwargs["dot_width_correction_mm"] == pytest.approx(0.1)
+
+    def test_explicit_override_is_respected(self, machine_defaults):
+        step = EngraveStep(name="Test")
+        step.dot_width_correction_mm = 0.5  # type: ignore[assignment]
+        kwargs = self._run(step, machine_defaults, (0.2, 0.15))
+        assert kwargs["dot_width_correction_mm"] == pytest.approx(0.5)
