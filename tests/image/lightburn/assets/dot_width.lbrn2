@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightBurnProject AppVersion="1.4.03" FormatVersion="1">
+    <CutSetting_Img type="Image">
+        <index Value="0"/>
+        <name Value="C00"/>
+        <minPower Value="10"/>
+        <maxPower Value="50"/>
+        <speed Value="200"/>
+        <dotWidth Value="0.08"/>
+        <interval Value="0.04"/>
+        <angle Value="45"/>
+    </CutSetting_Img>
+    <Shape Type="Rect" CutIndex="0" W="40" H="40" Cr="0">
+        <XForm>1 0 0 1 50 50</XForm>
+    </Shape>
+</LightBurnProject>

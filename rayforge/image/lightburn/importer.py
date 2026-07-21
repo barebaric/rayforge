@@ -368,12 +368,27 @@ def _build_step_config(
     max_power = cs.get("maxPower")
     if max_power is not None:
         config["power"] = float(max_power) / 100.0
+    min_power = cs.get("minPower")
+    if min_power is not None:
+        config["min_power"] = float(min_power) / 100.0
     speed = cs.get("speed")
     if speed is not None:
         config["cut_speed"] = round(float(speed) * 60.0)
     kerf = cs.get("kerf")
     if kerf is not None:
         config["kerf_mm"] = float(kerf)
+    dot_width = cs.get("dotWidth")
+    if dot_width is not None:
+        # LightBurn's dotWidth is the total amount shortened per run;
+        # raygeo's dot_width_correction_mm is applied at each end, so
+        # halve the imported value to preserve behaviour.
+        config["dot_width_correction_mm"] = float(dot_width) / 2.0
+    interval = cs.get("interval")
+    if interval is not None:
+        config["line_interval_mm"] = float(interval)
+    angle = cs.get("angle")
+    if angle is not None:
+        config["scan_angle"] = float(angle)
     num_passes = cs.get("numPasses")
     if num_passes is not None:
         config["passes"] = int(num_passes)
@@ -394,6 +409,7 @@ class LightBurnImporter(Importer):
         super().__init__(data, source_file)
         self._geometries_by_layer: Dict[str, Geometry] = {}
         self._cut_settings: Dict[int, Dict[str, Any]] = {}
+        self._cut_setting_kinds: Dict[int, str] = {}
         self._project_title: str = ""
         self._bitmaps: List[BitmapInfo] = []
 
@@ -459,6 +475,9 @@ class LightBurnImporter(Importer):
                 else:
                     params[tag] = child.text or ""
             cut_settings[idx] = params
+            self._cut_setting_kinds[idx] = (
+                "image" if cs_elem.tag == "CutSetting_Img" else "cut"
+            )
         return cut_settings
 
     def _render_bitmaps_to_svg(self) -> Optional[bytes]:
@@ -646,14 +665,18 @@ class LightBurnImporter(Importer):
             if layer_id is None:
                 continue
             try:
-                cs = self._cut_settings.get(int(layer_id))
+                layer_idx = int(layer_id)
             except (ValueError, TypeError):
-                cs = None
+                continue
+            cs = self._cut_settings.get(layer_idx)
             if cs is None:
                 continue
             config = _build_step_config(cs)
-            if config:
-                layer_settings[layer_id] = config
+            if not config:
+                continue
+            if self._cut_setting_kinds.get(layer_idx) == "image":
+                config["_is_image_layer"] = True
+            layer_settings[layer_id] = config
 
         return VectorizationResult(
             geometries_by_layer=final_geometries,
