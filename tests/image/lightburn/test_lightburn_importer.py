@@ -4,9 +4,11 @@ import math
 from pathlib import Path
 from typing import Dict, List
 
+import pytest
 from raygeo.geo import Matrix
 
 from rayforge.core.layer import Layer
+from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.image.lightburn.importer import (
     LightBurnImporter,
     _apply_xform_to_geo,
@@ -194,6 +196,33 @@ class TestBuildStepConfig:
         config = _build_step_config(cs)
         assert config is not None
         assert config == {"kerf_mm": 0.06}
+
+    def test_dot_width_mapping_halves_value(self):
+        # LightBurn's dotWidth is the total shortening per run; raygeo's
+        # dot_width_correction_mm is applied at each end, so the importer
+        # halves the value on the way through.
+        cs = {"dotWidth": 0.08}
+        config = _build_step_config(cs)
+        assert config is not None
+        assert config == {"dot_width_correction_mm": 0.04}
+
+    def test_min_power_mapping(self):
+        cs = {"minPower": 10}
+        config = _build_step_config(cs)
+        assert config is not None
+        assert config == {"min_power": 0.1}
+
+    def test_interval_mapping(self):
+        cs = {"interval": 0.04}
+        config = _build_step_config(cs)
+        assert config is not None
+        assert config == {"line_interval_mm": 0.04}
+
+    def test_angle_mapping(self):
+        cs = {"angle": 45}
+        config = _build_step_config(cs)
+        assert config is not None
+        assert config == {"scan_angle": 45.0}
 
     def test_num_passes_mapping(self):
         cs = {"numPasses": 3}
@@ -484,6 +513,28 @@ class TestLightBurnImporter:
         assert s["cut_speed"] == 400
         assert s["kerf_mm"] == 0.06
 
+    def test_vectorization_layer_settings_dot_width_halved(self):
+        importer = self._import("dot_width.lbrn2")
+        parse_result = importer.parse()
+        assert parse_result is not None
+        vec = importer.vectorize(parse_result, PassthroughSpec())
+        assert "0" in vec.layer_settings
+        s = vec.layer_settings["0"]
+        # The fixture uses CutSetting_Img, so the layer must be tagged
+        # so the assembler knows to create an EngraveStep for it.
+        assert s["_is_image_layer"] is True
+        # Fixture has dotWidth=0.08; importer halves to 0.04 (LightBurn
+        # stores the total shortening, raygeo applies at each end).
+        assert s["dot_width_correction_mm"] == 0.04
+        # minPower=10 -> 0.1 (LightBurn uses 0-100, raygeo uses 0-1).
+        assert s["min_power"] == 0.1
+        # maxPower=50 -> 0.5, surfaced as `power` for the base Step.
+        assert s["power"] == 0.5
+        # interval=0.04 -> line_interval_mm=0.04 (already in mm).
+        assert s["line_interval_mm"] == 0.04
+        # angle=45 -> scan_angle=45.0 (already in degrees).
+        assert s["scan_angle"] == 45.0
+
     def test_assembler_creates_step_from_settings(self):
         importer = self._import("rect.lbrn2")
         result = importer.get_doc_items()
@@ -534,3 +585,148 @@ class TestLightBurnImporter:
                 wf = item.workflow
                 # No settings available → no step pre-created
                 assert wf is None or not wf.has_steps()
+
+    def test_image_layer_import_produces_engrave_step(self):
+        """End-to-end: dot_width.lbrn2 (CutSetting_Img) must produce a
+        Layer whose workflow has an EngraveStep (not a ContourStep),
+        with dot_width_correction_mm and the other raster settings
+        applied. This is the test that catches the silent-fallback-to-
+        contour regression.
+        """
+        from rayforge.core.step_registry import step_registry
+
+        engrave_cls = step_registry.get("EngraveStep")
+        if engrave_cls is None:
+            pytest.skip("EngraveStep not registered")
+        contour_cls = step_registry.get("ContourStep")
+        assert contour_cls is not None, "ContourStep not registered"
+
+        importer = self._import("dot_width.lbrn2")
+        result = importer.get_doc_items()
+        assert result is not None
+        assert result.payload is not None
+
+        layer = None
+        for item in result.payload.items:
+            if isinstance(item, Layer):
+                layer = item
+                break
+        assert layer is not None, "No Layer in imported items"
+
+        wf = layer.workflow
+        assert wf is not None and wf.has_steps(), (
+            "Image layer ended up with no step — _apply_settings "
+            "likely swallowed an EngraveStep construction error."
+        )
+        step = wf.steps[0]
+        assert isinstance(step, engrave_cls), (
+            f"Expected EngraveStep for CutSetting_Img, got "
+            f"{type(step).__name__} — dispatch fell back to contour."
+        )
+        # All raster settings from the fixture should be applied.
+        assert getattr(step, "dot_width_correction_mm") == 0.04
+        assert getattr(step, "line_interval_mm") == 0.04
+        assert getattr(step, "scan_angle") == 45.0
+        assert getattr(step, "min_power") == 0.1
+        assert getattr(step, "max_power") == 0.5
+
+
+class TestApplySettingsDispatch:
+    """ItemAssembler._apply_settings must pick its step type from
+    the importer's layer-settings marker: image layers get an
+    EngraveStep (so dot_width_correction_mm lands somewhere useful),
+    everything else gets a ContourStep as before.
+    """
+
+    @staticmethod
+    def _register_mock_steps(monkeypatch):
+        from rayforge.core.step import Step
+        from rayforge.core.step_registry import step_registry
+
+        class ContourStep(Step):
+            pass
+
+        class EngraveStep(Step):
+            def __init__(self, typelabel="Engrave", name=None):
+                super().__init__(typelabel=typelabel, name=name)
+                self.dot_width_correction_mm = None
+                self.line_interval_mm = None
+                self.scan_angle = 0.0
+                self.min_power = 0.0
+                self.max_power = 1.0
+
+        monkeypatch.setitem(
+            step_registry._steps, "ContourStep", ContourStep
+        )
+        monkeypatch.setitem(
+            step_registry._steps, "EngraveStep", EngraveStep
+        )
+        return ContourStep, EngraveStep
+
+    def test_image_layer_creates_engrave_step(self, monkeypatch):
+        contour_cls, engrave_cls = self._register_mock_steps(monkeypatch)
+        from rayforge.image.assembler import ItemAssembler
+
+        layer = Layer(name="img")
+        ItemAssembler._apply_settings(
+            layer,
+            {
+                "power": 0.5,
+                "min_power": 0.1,
+                "cut_speed": 600,
+                "dot_width_correction_mm": 0.04,
+                "line_interval_mm": 0.04,
+                "scan_angle": 45.0,
+                "_is_image_layer": True,
+            },
+        )
+        wf = layer.workflow
+        assert wf is not None and wf.has_steps()
+        step = wf.steps[0]
+        assert isinstance(step, engrave_cls)
+        assert not isinstance(step, contour_cls)
+        # EngraveStep-specific raster settings must all be applied.
+        assert step.dot_width_correction_mm == 0.04
+        assert step.line_interval_mm == 0.04
+        assert step.scan_angle == 45.0
+        # EngraveStep modulates between min_power/max_power, so `power`
+        # (maxPower/100) is mirrored into max_power; min_power is set
+        # directly.
+        assert step.min_power == 0.1
+        assert step.max_power == 0.5
+
+    def test_vector_layer_creates_contour_step(self, monkeypatch):
+        contour_cls, engrave_cls = self._register_mock_steps(monkeypatch)
+        from rayforge.image.assembler import ItemAssembler
+
+        layer = Layer(name="cut")
+        ItemAssembler._apply_settings(
+            layer,
+            {"power": 0.7, "cut_speed": 400, "kerf_mm": 0.06},
+        )
+        wf = layer.workflow
+        assert wf is not None and wf.has_steps()
+        step = wf.steps[0]
+        assert isinstance(step, contour_cls)
+        assert not isinstance(step, engrave_cls)
+        # ContourStep has no dot_width_correction_mm attribute.
+        assert not hasattr(step, "dot_width_correction_mm")
+        assert step.kerf_mm == 0.06
+
+    def test_image_layer_without_dot_width_still_uses_engrave_step(
+        self, monkeypatch
+    ):
+        # _is_image_layer alone — without dot_width_correction_mm — must
+        # still route to EngraveStep. kerf is a vector concept but should
+        # be tolerated on image layers without crashing.
+        contour_cls, engrave_cls = self._register_mock_steps(monkeypatch)
+        from rayforge.image.assembler import ItemAssembler
+
+        layer = Layer(name="img")
+        ItemAssembler._apply_settings(
+            layer,
+            {"_is_image_layer": True, "kerf_mm": 0.0},
+        )
+        wf = layer.workflow
+        assert wf is not None and wf.has_steps()
+        assert isinstance(wf.steps[0], engrave_cls)

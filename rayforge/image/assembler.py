@@ -199,13 +199,23 @@ class ItemAssembler:
 
     @staticmethod
     def _apply_settings(layer: Layer, settings: Dict[str, Any]) -> None:
-        """Create a configured step on the layer from importer settings."""
-        cls = step_registry.get("ContourStep")
+        """Create a configured step on the layer from importer settings.
+
+        Layers tagged ``_is_image_layer`` (e.g. LightBurn
+        ``CutSetting_Img``) get an ``EngraveStep``; everything else gets
+        a ``ContourStep``.
+        """
+        is_image = bool(settings.get("_is_image_layer"))
+        if is_image:
+            step_name, typelabel = "EngraveStep", "Engrave"
+        else:
+            step_name, typelabel = "ContourStep", "Contour"
+        cls = step_registry.get(step_name)
         if cls is None:
             return
 
         try:
-            step = cls(typelabel="Contour", name=layer.name)
+            step = cls(typelabel=typelabel, name=layer.name)
             if cls.PRODUCER_CLASS is not None:
                 step.opsproducer_dict = cls.PRODUCER_CLASS().to_dict()
             per_wp, per_step = cls.get_default_transformers_dicts()
@@ -242,6 +252,29 @@ class ItemAssembler:
                 if t.get("name") == "MultiPassTransformer":
                     t["passes"] = passes
                     break
+
+        if is_image:
+            # EngraveStep modulates between min_power/max_power; the base
+            # Step.power attribute set above is unused by raster output,
+            # so mirror the value (already maxPower/100) into max_power.
+            if power is not None and hasattr(step, "max_power"):
+                setattr(step, "max_power", power)
+            min_power = settings.get("min_power")
+            if min_power is not None and hasattr(step, "min_power"):
+                setattr(step, "min_power", min_power)
+            dot_width = settings.get("dot_width_correction_mm")
+            if dot_width is not None and hasattr(
+                step, "dot_width_correction_mm"
+            ):
+                setattr(step, "dot_width_correction_mm", dot_width)
+            line_interval = settings.get("line_interval_mm")
+            if line_interval is not None and hasattr(
+                step, "line_interval_mm"
+            ):
+                setattr(step, "line_interval_mm", line_interval)
+            scan_angle = settings.get("scan_angle")
+            if scan_angle is not None and hasattr(step, "scan_angle"):
+                setattr(step, "scan_angle", scan_angle)
 
         workflow = layer.workflow
         if workflow is not None:
