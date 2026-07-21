@@ -66,6 +66,7 @@ class EngraveStep(Step):
         self.threshold = 128
         self.line_interval_mm = None
         self.sample_interval_mm = None
+        self.dot_width_correction_mm = None
         self.min_power = 0.0
         self.max_power = 1.0
         self.num_power_levels = 25
@@ -102,6 +103,7 @@ class EngraveStep(Step):
             "mode": DepthMode[self.depth_mode].raygeo_name,
             "line_interval_mm": line_interval,
             "sample_interval_mm": self.sample_interval_mm,
+            "dot_width_correction_mm": self.dot_width_correction_mm,
             "min_power": self.min_power,
             "max_power": self.max_power,
             "step_power": step_power,
@@ -127,6 +129,7 @@ class EngraveStep(Step):
         result["threshold"] = self.threshold
         result["line_interval_mm"] = self.line_interval_mm
         result["sample_interval_mm"] = self.sample_interval_mm
+        result["dot_width_correction_mm"] = self.dot_width_correction_mm
         result["min_power"] = self.min_power
         result["max_power"] = self.max_power
         result["num_power_levels"] = self.num_power_levels
@@ -155,6 +158,9 @@ class EngraveStep(Step):
         step.threshold = data.get("threshold", 128)
         step.line_interval_mm = data.get("line_interval_mm", None)
         step.sample_interval_mm = data.get("sample_interval_mm", None)
+        step.dot_width_correction_mm = data.get(
+            "dot_width_correction_mm", None
+        )
         step.min_power = data.get("min_power", 0.0)
         step.max_power = data.get("max_power", 1.0)
         step.num_power_levels = data.get("num_power_levels", 25)
@@ -262,6 +268,11 @@ class EngraveStep(Step):
         sample_interval_mm = (
             rp.get("sample_interval_mm") or laser.spot_size_mm[0]
         )
+        dot_width_correction_mm = (
+            rp.get("dot_width_correction_mm")
+            if rp.get("dot_width_correction_mm") is not None
+            else laser.spot_size_mm[0] / 2.0
+        )
         step_power = machine_defaults.step_power
         alpha_arr = (
             (alpha * 255).astype(np.uint8) if alpha is not None else None
@@ -286,6 +297,7 @@ class EngraveStep(Step):
             num_depth_levels=rp.get("num_depth_levels", 1),
             z_step_down=rp.get("z_step_down", 0.0),
             angle_increment=rp.get("angle_increment", 0),
+            dot_width_correction_mm=dot_width_correction_mm,
         )
 
         final_ops = result.ops

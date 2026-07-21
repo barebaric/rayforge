@@ -378,6 +378,36 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
         group.add(self.sample_interval_row)
 
+        default_dot_width_correction_mm = (
+            laser.spot_size_mm[0] / 2.0 if laser else 0.05
+        )
+        dot_width_correction_adj = Gtk.Adjustment(
+            lower=0.0,
+            upper=5.0,
+            step_increment=0.01,
+            value=(
+                self.step.dot_width_correction_mm
+                if self.step.dot_width_correction_mm is not None
+                else default_dot_width_correction_mm
+            ),
+        )
+        self.dot_width_correction_row = Adw.SpinRow(
+            title=_("Dot Width Correction"),
+            subtitle=_(
+                "Reduces engrave length at both ends to compensate "
+                "for physical dot width"
+            ),
+            adjustment=dot_width_correction_adj,
+            digits=3,
+        )
+        self.dot_width_correction_row.connect(
+            "changed",
+            lambda r: self._debounce(
+                self._on_dot_width_correction_changed, get_spinrow_float(r)
+            ),
+        )
+        group.add(self.dot_width_correction_row)
+
         bidir_x_offset_adj = Gtk.Adjustment(
             lower=-5.0,
             upper=5.0,
@@ -616,6 +646,11 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         if value is not None and value <= 0:
             value = None
         self._on_param_changed("sample_interval_mm", value)
+
+    def _on_dot_width_correction_changed(self, value: Optional[float]):
+        # Unlike line/sample interval, 0.0 is a meaningful explicit value
+        # here (no correction), not a sentinel for "reset to auto".
+        self._on_param_changed("dot_width_correction_mm", value or 0.0)
 
     def _on_bidir_x_offset_changed(self, value: Optional[float]):
         self._on_param_changed("bidir_x_offset_mm", value or 0.0)
