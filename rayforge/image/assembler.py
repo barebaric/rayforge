@@ -268,9 +268,7 @@ class ItemAssembler:
             ):
                 setattr(step, "dot_width_correction_mm", dot_width)
             line_interval = settings.get("line_interval_mm")
-            if line_interval is not None and hasattr(
-                step, "line_interval_mm"
-            ):
+            if line_interval is not None and hasattr(step, "line_interval_mm"):
                 setattr(step, "line_interval_mm", line_interval)
             scan_angle = settings.get("scan_angle")
             if scan_angle is not None and hasattr(step, "scan_angle"):

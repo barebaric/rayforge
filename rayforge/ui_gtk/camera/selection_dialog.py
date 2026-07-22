@@ -6,6 +6,7 @@ from gi.repository import Adw, GdkPixbuf, Gtk
 
 from ...camera.controller import CameraController
 from ...camera.models.camera import Camera
+from ...camera.v4l import display_name
 from ...context import get_context
 from ..shared.gtk import apply_css
 
@@ -158,11 +159,12 @@ class CameraSelectionDialog(Adw.MessageDialog):
         image_widget.set_margin_top(10)
         image_widget.set_margin_bottom(5)
 
-        label = Gtk.Label(
-            label=_("{name} (Device ID: {device_id})").format(
-                name=name, device_id=device_id
-            )
-        )
+        label_text = name
+        dev_name = display_name(device_id)
+        if dev_name == device_id:
+            label_text = _("Camera {device_id}").format(device_id=device_id)
+
+        label = Gtk.Label(label=label_text)
         label.set_halign(Gtk.Align.CENTER)
         label.set_valign(Gtk.Align.CENTER)
         label.set_margin_bottom(12)
@@ -188,6 +190,10 @@ class CameraSelectionDialog(Adw.MessageDialog):
 
         self.carousel.append(box)
 
+    @staticmethod
+    def _get_display_name(device_id: str) -> str:
+        return display_name(device_id)
+
     def list_available_cameras(self):
         self.available_devices = CameraController.list_available_devices()
         if not self.available_devices:
@@ -196,8 +202,9 @@ class CameraSelectionDialog(Adw.MessageDialog):
             return
 
         for device_id in self.available_devices:
+            name = display_name(device_id)
             temp_config = Camera(
-                name=_("Camera {device_id}").format(device_id=device_id),
+                name=name,
                 device_id=device_id,
             )
             temp_controller = CameraController(temp_config)
