@@ -5,6 +5,7 @@ from gi.repository import Adw, Gtk
 
 from ....context import get_context
 from ....core.varset import SpeedVar, Var
+from ...shared.adwfix import ensure_spinrow_min_width
 from ...shared.unit_spin_row import UnitSpinRowHelper
 from .base import RowAdapter, escape_title, register_adapter
 
@@ -59,6 +60,7 @@ class SpeedRowAdapter(RowAdapter):
             title=escape_title(var.label),
             subtitle=_("Max: {max_speed}"),
         )
+        ensure_spinrow_min_width(row)
         helper = UnitSpinRowHelper(
             spin_row=row,
             quantity="speed",
