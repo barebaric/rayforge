@@ -655,12 +655,8 @@ class TestApplySettingsDispatch:
                 self.min_power = 0.0
                 self.max_power = 1.0
 
-        monkeypatch.setitem(
-            step_registry._steps, "ContourStep", ContourStep
-        )
-        monkeypatch.setitem(
-            step_registry._steps, "EngraveStep", EngraveStep
-        )
+        monkeypatch.setitem(step_registry._steps, "ContourStep", ContourStep)
+        monkeypatch.setitem(step_registry._steps, "EngraveStep", EngraveStep)
         return ContourStep, EngraveStep
 
     def test_image_layer_creates_engrave_step(self, monkeypatch):

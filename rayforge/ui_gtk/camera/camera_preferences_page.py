@@ -6,6 +6,7 @@ from gi.repository import Adw, Gtk
 
 from ...camera.controller import CameraController
 from ...camera.models.camera import Camera
+from ...camera.v4l import display_name
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
@@ -65,14 +66,8 @@ class CameraRow(Gtk.Box):
 
     def _get_subtitle_text(self) -> str:
         """Generates the subtitle text from camera properties."""
-        device_id = self.camera.device_id
-        if device_id.startswith("/dev/v4l/by-id/"):
-            from ...camera.v4l import friendly_name_from_by_id
-
-            return friendly_name_from_by_id(device_id)
-        return _("Device ID: {device_id}").format(
-            device_id=device_id
-        )
+        name = display_name(self.camera.device_id)
+        return _("Device ID: {device_id}").format(device_id=name)
 
     def _on_remove_clicked(self, button: Gtk.Button):
         """Emits a signal requesting the removal of this camera."""

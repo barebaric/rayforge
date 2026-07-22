@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 import yaml
 
 from ...camera.models.camera import Camera
+from ...camera.v4l import migrate_camera_data
 from ...core.model import Model
 from ...machine.driver import get_driver_cls
 from ...machine.models.dialect import GcodeDialect
@@ -449,7 +450,7 @@ class DeviceProfile:
         m.cameras = []
         if cfg.cameras is not None:
             for cam_data in cfg.cameras:
-                m.add_camera(Camera.from_dict(cam_data))
+                m.add_camera(Camera.from_dict(migrate_camera_data(cam_data)))
 
         if cfg.heads is not None:
             for head in m.heads[:]:
