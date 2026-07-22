@@ -3,7 +3,7 @@ from typing import Any, Optional, Tuple
 from gi.repository import Adw, Gtk
 
 from ....core.varset import FloatVar, IntVar, Var
-from ...shared.adwfix import get_spinrow_int
+from ...shared.adwfix import ensure_spinrow_min_width, get_spinrow_int
 from .base import RowAdapter, escape_title, register_adapter
 
 
@@ -41,6 +41,9 @@ class SpinRowAdapter(RowAdapter):
             digits=3 if not is_int else 0,
             title=escape_title(var.label),
         )
+        # Ensure the entry field has a consistent minimum width across
+        # all rows regardless of their adjustment range.
+        ensure_spinrow_min_width(row)
         if var.description:
             row.set_subtitle(var.description)
         return row, cls(row, is_int)
