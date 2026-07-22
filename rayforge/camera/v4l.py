@@ -8,7 +8,7 @@ cameras using persistent /dev/v4l/by-id/ symlinks instead.
 import logging
 import sys
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -102,10 +102,34 @@ def resolve_device_id(device_id: str) -> str:
         )
         return mapping[target]
 
-    logger.debug(
-        f"No by-id path found for {target}, keeping numeric ID"
-    )
+    logger.debug(f"No by-id path found for {target}, keeping numeric ID")
     return device_id
+
+
+def display_name(device_id: str) -> str:
+    """Return a human-readable display name for a camera device.
+
+    For by-id paths, extracts the friendly name. For other IDs,
+    returns the device_id as-is.
+    """
+    if device_id.startswith("/dev/v4l/by-id/"):
+        return friendly_name_from_by_id(device_id)
+    return device_id
+
+
+def migrate_camera_data(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Migrate numeric device IDs to persistent by-id paths.
+
+    On Linux, numeric device IDs like "0" are replaced with
+    their corresponding /dev/v4l/by-id/ path when available.
+    Returns a copy with the migrated device_id.
+    """
+    if "device_id" not in data:
+        return data
+
+    migrated = dict(data)
+    migrated["device_id"] = resolve_device_id(data["device_id"])
+    return migrated
 
 
 def friendly_name_from_by_id(by_id_path: str) -> str:
@@ -118,7 +142,7 @@ def friendly_name_from_by_id(by_id_path: str) -> str:
 
     for prefix in ("usb-", "pci-"):
         if filename.startswith(prefix):
-            filename = filename[len(prefix):]
+            filename = filename[len(prefix) :]
             break
 
     idx = filename.find("-video-index")

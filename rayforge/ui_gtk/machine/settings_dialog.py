@@ -8,6 +8,7 @@ from gi.repository import Adw, Gdk, GLib, Gtk
 
 from ... import const
 from ...camera.models import Camera
+from ...camera.v4l import display_name
 from ...context import get_context
 from ...machine.driver import (
     DRIVER_MATURITY_LABELS,
@@ -381,7 +382,7 @@ class MachineSettingsDialog(PatchedDialogWindow):
             return  # Safety check
 
         new_camera = Camera(
-            _("Camera {device_id}").format(device_id=device_id),
+            display_name(device_id),
             device_id,
         )
         new_camera.enabled = True

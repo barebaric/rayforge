@@ -308,9 +308,7 @@ class CameraController:
                     if cap.isOpened():
                         devices.append(str(target))
                         cap.release()
-                        logger.debug(
-                            f"Found camera {target} via {name}"
-                        )
+                        logger.debug(f"Found camera {target} via {name}")
                         break
                 except cv2.error as e:
                     logger.debug(f"OpenCV error camera {target} {name}: {e}")
