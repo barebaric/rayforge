@@ -40,6 +40,20 @@ COMMON_RESOLUTIONS = [
 ]
 
 
+def _get_linux_scan_targets() -> List[str]:
+    """Get device identifiers to scan on Linux.
+
+    Prefers persistent /dev/v4l/by-id/ paths. Falls back to
+    numeric indices if by-id is not available.
+    """
+    from .v4l import get_sorted_by_id_paths
+
+    by_id_paths = get_sorted_by_id_paths()
+    if by_id_paths:
+        return by_id_paths
+    return [str(i) for i in range(10)]
+
+
 def _probe_camera_device(args):
     """Probe a single camera device. Runs in subprocess."""
     device_id, backend = args
@@ -64,8 +78,13 @@ def _scan_cameras_in_subprocess() -> List[str]:
     else:
         backends = [cv2.CAP_ANY]
 
+    if sys.platform.startswith("linux"):
+        targets = _get_linux_scan_targets()
+    else:
+        targets = [str(i) for i in range(10)]
+
     devices = []
-    work = [(i, b) for i in range(10) for b in backends]
+    work = [(t, b) for t in targets for b in backends]
 
     try:
         ctx = mp.get_context("spawn")
@@ -92,18 +111,23 @@ def _scan_cameras_fallback() -> List[str]:
     else:
         backends = [(cv2.CAP_ANY, "default")]
 
-    for i in range(10):
+    if sys.platform.startswith("linux"):
+        targets = _get_linux_scan_targets()
+    else:
+        targets = [str(i) for i in range(10)]
+
+    for target in targets:
         for backend, name in backends:
             try:
-                cap = cv2.VideoCapture(i, backend)
+                cap = cv2.VideoCapture(target, backend)
                 if cap.isOpened():
-                    devices.append(str(i))
+                    devices.append(str(target))
                     cap.release()
                     break
                 if cap:
                     cap.release()
             except Exception as e:
-                logger.debug(f"Error probing camera {i}: {e}")
+                logger.debug(f"Error probing camera {target}: {e}")
 
     return devices
 
@@ -266,24 +290,32 @@ class CameraController:
         """
         Lists available camera device IDs.
         Returns a list of strings, where each string is a device ID.
+        On Linux, prefers persistent /dev/v4l/by-id/ paths.
         """
         logger.debug("Scanning for camera devices...")
         devices = []
         backends = get_backends_for_platform()
 
-        for i in range(10):
+        if sys.platform.startswith("linux"):
+            targets = _get_linux_scan_targets()
+        else:
+            targets = [str(i) for i in range(10)]
+
+        for target in targets:
             for backend, name in backends:
                 try:
-                    cap = cv2.VideoCapture(i, backend)
+                    cap = cv2.VideoCapture(target, backend)
                     if cap.isOpened():
-                        devices.append(str(i))
+                        devices.append(str(target))
                         cap.release()
-                        logger.debug(f"Found camera {i} via {name}")
+                        logger.debug(
+                            f"Found camera {target} via {name}"
+                        )
                         break
                 except cv2.error as e:
-                    logger.debug(f"OpenCV error camera {i} {name}: {e}")
+                    logger.debug(f"OpenCV error camera {target} {name}: {e}")
                 except Exception as e:
-                    logger.debug(f"Error camera {i}: {e}")
+                    logger.debug(f"Error camera {target}: {e}")
 
         logger.info(f"Available cameras: {devices}")
         return devices
