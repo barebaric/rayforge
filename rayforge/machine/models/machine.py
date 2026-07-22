@@ -14,6 +14,7 @@ from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 
 from ...camera.models.camera import Camera
+from ...camera.v4l import migrate_camera_data
 from ...context import RayforgeContext, get_context
 from ...core.layer import Layer
 from ...core.model import Model
@@ -1771,7 +1772,7 @@ class Machine:
             ma.add_head(Laser.from_dict(obj))
         ma.cameras = []
         for obj in ma_data.get("cameras", {}):
-            ma.add_camera(Camera.from_dict(obj))
+            ma.add_camera(Camera.from_dict(migrate_camera_data(obj)))
         for obj in ma_data.get("rotary_modules", []):
             ma.add_rotary_module(RotaryModule.from_dict(obj))
         for obj in ma_data.get("nogo_zones", []):
