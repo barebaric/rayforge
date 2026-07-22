@@ -158,11 +158,13 @@ class CameraSelectionDialog(Adw.MessageDialog):
         image_widget.set_margin_top(10)
         image_widget.set_margin_bottom(5)
 
-        label = Gtk.Label(
-            label=_("{name} (Device ID: {device_id})").format(
+        label_text = name
+        if not device_id.startswith("/dev/"):
+            label_text = _("{name} (Device ID: {device_id})").format(
                 name=name, device_id=device_id
             )
-        )
+
+        label = Gtk.Label(label=label_text)
         label.set_halign(Gtk.Align.CENTER)
         label.set_valign(Gtk.Align.CENTER)
         label.set_margin_bottom(12)
@@ -187,6 +189,14 @@ class CameraSelectionDialog(Adw.MessageDialog):
         box.add_controller(motion_controller)
 
         self.carousel.append(box)
+
+    @staticmethod
+    def _get_display_name(device_id: str) -> str:
+        if device_id.startswith("/dev/v4l/by-id/"):
+            from ...camera.v4l import friendly_name_from_by_id
+
+            return friendly_name_from_by_id(device_id)
+        return _("Camera {device_id}").format(device_id=device_id)
 
     def list_available_cameras(self):
         self.available_devices = CameraController.list_available_devices()

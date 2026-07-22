@@ -1,5 +1,6 @@
 import json
 import logging
+import sys
 from datetime import datetime
 from typing import Any, Dict, Optional, Sequence, Tuple
 
@@ -615,7 +616,13 @@ class Camera:
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
-        camera = cls(data["name"], data["device_id"])
+        device_id = data["device_id"]
+        if sys.platform.startswith("linux"):
+            from ..v4l import resolve_device_id
+
+            device_id = resolve_device_id(device_id)
+
+        camera = cls(data["name"], device_id)
         camera.enabled = data.get("enabled", camera.enabled)
         camera.white_balance = data.get("white_balance", None)
         camera.contrast = data.get("contrast", camera.contrast)
