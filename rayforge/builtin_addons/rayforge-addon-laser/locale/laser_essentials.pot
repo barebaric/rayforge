@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-15 23:32+0200\n"
+"POT-Creation-Date: 2026-07-25 00:03+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -202,6 +202,15 @@ msgstr ""
 msgid ""
 "Distance between power samples along scan line. Lower values improve "
 "accuracy, but increase output size."
+msgstr ""
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Dot Width Correction"
+msgstr ""
+
+#: laser_essentials/widgets/raster_widget.py
+msgid ""
+"Reduces engrave length at both ends to compensate for physical dot width"
 msgstr ""
 
 #: laser_essentials/widgets/raster_widget.py

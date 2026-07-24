@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-19 16:19+0200\n"
+"POT-Creation-Date: 2026-07-22 17:00+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -2809,18 +2809,12 @@ msgstr "Не вдалося завантажити зображення для I
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #, python-brace-format
-msgid "{name} (Device ID: {device_id})"
-msgstr "{name} (ID пристрою: {device_id})"
+msgid "Camera {device_id}"
+msgstr "Камера {device_id}"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "No cameras found."
 msgstr "Камери не знайдено."
-
-#: rayforge/ui_gtk/camera/selection_dialog.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
-#, python-brace-format
-msgid "Camera {device_id}"
-msgstr "Камера {device_id}"
 
 #: rayforge/ui_gtk/camera/point_bubble_widget.py
 #, python-brace-format
