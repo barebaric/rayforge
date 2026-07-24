@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-15 23:32+0200\n"
+"POT-Creation-Date: 2026-07-25 00:03+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -209,6 +209,17 @@ msgid ""
 msgstr ""
 "Abstand zwischen Leistungsabtastungen entlang der Scanzeile. Niedrigere "
 "Werte verbessern die Genauigkeit, erhöhen aber die Ausgabegröße."
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Dot Width Correction"
+msgstr "Punktbreitenkorrektur"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid ""
+"Reduces engrave length at both ends to compensate for physical dot width"
+msgstr ""
+"Verkürzt die Gravurlänge an beiden Enden, um die physikalische Punktbreite "
+"auszugleichen"
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Bidirectional Scan Offset"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-19 16:19+0200\n"
+"POT-Creation-Date: 2026-07-22 17:00+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -2850,18 +2850,12 @@ msgstr "Échec du chargement de l'image pour l'ID de périphérique : {device_i
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #, python-brace-format
-msgid "{name} (Device ID: {device_id})"
-msgstr "{name} (ID de périphérique : {device_id})"
+msgid "Camera {device_id}"
+msgstr "Caméra {device_id}"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "No cameras found."
 msgstr "Aucune caméra trouvée."
-
-#: rayforge/ui_gtk/camera/selection_dialog.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
-#, python-brace-format
-msgid "Camera {device_id}"
-msgstr "Caméra {device_id}"
 
 #: rayforge/ui_gtk/camera/point_bubble_widget.py
 #, python-brace-format

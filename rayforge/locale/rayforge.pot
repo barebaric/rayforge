@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-19 16:19+0200\n"
+"POT-Creation-Date: 2026-07-22 17:00+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2636,17 +2636,11 @@ msgstr ""
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #, python-brace-format
-msgid "{name} (Device ID: {device_id})"
+msgid "Camera {device_id}"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "No cameras found."
-msgstr ""
-
-#: rayforge/ui_gtk/camera/selection_dialog.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
-#, python-brace-format
-msgid "Camera {device_id}"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/point_bubble_widget.py

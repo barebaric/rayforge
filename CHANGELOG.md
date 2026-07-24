@@ -10,22 +10,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Array / Pattern tool with Grid, Point Rotation, and Circular modes
+- Dot width correction for raster engraving (#316, by vyvcodd)
+- LightBurn import: support for importing raster settings
+  (dotWidth, interval, angle, scan_angle)
 - Allow renaming layers and steps directly in the layer/step
   settings dialogs
 
 ### Changed
 
-- Upgrade raygeo to 1.23.0 with migrated G-code encoder,
+- Upgrade raygeo to 1.24.0 with migrated G-code encoder,
   BidirScanOffsetTransformer, and MultiPassTransformer to Rust;
   transformer application now uses Rust apply_transformers dispatch
 - Improved addon translation fallback: English is now used when
   no matching locale is found
 - Wavefront icon and improved Gtk SVG compatibility for other icons
+- Bump pypdf to 6.13.3
+- Bump GitPython to 3.1.51
 
 ### Fixed
 
 - Blank sketcher UI text on packaged installs (#315)
 - Dragging of layers now works correctly
+- Use persistent /dev/v4l/by-id/ paths for camera identification
+  on Linux (#318)
+- Spinrow input field too narrow in some cases
 - Settings widget auto-value bugs: raster/wavefront sliders
   showing wrong defaults, overscan Automatic Distance switch
   permanently greyed out, and auto overscan/lead-in-out distance

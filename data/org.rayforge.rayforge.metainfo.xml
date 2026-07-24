@@ -66,19 +66,23 @@
   </screenshots>
 
   <releases>
-    <release version="1.9.0" date="2026-07-19">
+    <release version="1.9.0" date="2026-07-25">
       <description>
         <p>Array/Pattern tool, Rust pipeline migration, and bug fixes</p>
         <p>New Features:</p>
         <ul>
           <li>Array / Pattern tool with Grid, Point Rotation, and
           Circular modes</li>
+          <li>Dot width correction for raster engraving (#316,
+          by vyvcodd)</li>
+          <li>LightBurn import: support for importing raster settings
+          (dotWidth, interval, angle, scan_angle)</li>
           <li>Allow renaming layers and steps directly in the
           layer/step settings dialogs</li>
         </ul>
         <p>Improvements:</p>
         <ul>
-          <li>Upgrade raygeo to 1.23.0 with migrated G-code encoder,
+          <li>Upgrade raygeo to 1.24.0 with migrated G-code encoder,
           BidirScanOffsetTransformer, and MultiPassTransformer to
           Rust; transformer application now uses Rust
           apply_transformers dispatch</li>
@@ -86,11 +90,16 @@
           when no matching locale is found</li>
           <li>Wavefront icon and improved Gtk SVG compatibility for
           other icons</li>
+          <li>Bump pypdf to 6.13.3</li>
+          <li>Bump GitPython to 3.1.51</li>
         </ul>
         <p>Bug Fixes:</p>
         <ul>
           <li>Blank sketcher UI text on packaged installs (#315)</li>
           <li>Dragging of layers now works correctly</li>
+          <li>Use persistent /dev/v4l/by-id/ paths for camera
+          identification on Linux (#318)</li>
+          <li>Spinrow input field too narrow in some cases</li>
           <li>Settings widget auto-value bugs: raster/wavefront sliders
           showing wrong defaults, overscan Automatic Distance switch
           permanently greyed out, and auto overscan/lead-in-out

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-15 23:32+0200\n"
+"POT-Creation-Date: 2026-07-25 00:03+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -203,6 +203,15 @@ msgid ""
 "Distance between power samples along scan line. Lower values improve "
 "accuracy, but increase output size."
 msgstr "扫描线上功率采样点之间的距离。较低的值可提高精度，但会增加输出大小。"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid "Dot Width Correction"
+msgstr "点宽校正"
+
+#: laser_essentials/widgets/raster_widget.py
+msgid ""
+"Reduces engrave length at both ends to compensate for physical dot width"
+msgstr "减少两端雕刻长度以补偿物理点宽度"
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Bidirectional Scan Offset"
