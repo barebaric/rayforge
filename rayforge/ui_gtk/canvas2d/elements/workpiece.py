@@ -13,7 +13,6 @@ from ....core.workpiece import WorkPiece
 from ....pipeline.artifact import (
     BaseArtifactHandle,
     WorkPieceArtifact,
-    WorkPieceViewArtifact,
 )
 from ...canvas import CanvasElement
 from ...shared.gtk_color import GtkColorResolver
@@ -303,43 +302,35 @@ class WorkPieceElement(CanvasElement):
         self._update_future = None
         return False
 
-    def _update_ops_cache_from_handle(self, step_uid: str):
+    def _update_ops_cache(self, step_uid: str):
         """
-        Loads the view artifact from shared memory and caches it.
+        Loads the view bitmap from the ViewManager and caches it.
 
-        Reads the current bitmap from the live view buffer in shared
-        memory, creates a Cairo surface wrapper around it, and stores
-        the result in the per-step ops cache.
+        Reads the current bitmap from the ViewManager's in-memory cache,
+        creates a Cairo surface wrapper around it, and stores the result
+        in the per-step ops cache.
 
-        Skips if the handle is absent, the artifact is not yet ready,
-        or the buffer is entirely blank (no chunks written yet).
-
-        Note: the numpy array backing the surface is a view into shared
-        memory, not a heap copy.  It is therefore NOT registered in the
-        ops-cache-registry (which tracks heap allocations only).
+        Skips if no view is available or the buffer is entirely blank.
         """
-        view_handle = self.view_manager.get_view_handle(
-            self.data.uid, step_uid
-        )
-        if view_handle is None:
+        result = self.view_manager.get_view_bitmap(self.data.uid, step_uid)
+        if result is None:
             return
 
-        artifact = self.view_manager.store.get(view_handle)
-        if not isinstance(artifact, WorkPieceViewArtifact):
+        bitmap, bbox_mm, workpiece_size_mm = result
+        if bitmap is None:
             return
 
         try:
-            new_data = artifact.bitmap_data
-            if not np.any(new_data):
+            if not np.any(bitmap):
                 self._remove_ops_surface(step_uid)
                 self._invalidate_composited()
                 return
-            height, width, _ = new_data.shape
+            height, width, _ = bitmap.shape
             stride = cairo.ImageSurface.format_stride_for_width(
                 cairo.FORMAT_ARGB32, width
             )
             new_surface = cairo.ImageSurface.create_for_data(
-                new_data,
+                bitmap,
                 cairo.FORMAT_ARGB32,
                 width,
                 height,
@@ -348,8 +339,8 @@ class WorkPieceElement(CanvasElement):
             self._store_ops_surface(
                 step_uid,
                 new_surface,
-                new_data,
-                (artifact.bbox_mm, artifact.workpiece_size_mm),
+                bitmap,
+                (bbox_mm, workpiece_size_mm),
             )
         except Exception as e:
             logger.warning(
@@ -442,7 +433,7 @@ class WorkPieceElement(CanvasElement):
             if not self._ops_visibility.get(step.uid, True):
                 continue
             if step.uid not in self._ops_surface_cache:
-                self._update_ops_cache_from_handle(step.uid)
+                self._update_ops_cache(step.uid)
             meta = self._ops_metadata_cache.get(step.uid)
             if meta is None:
                 continue
@@ -663,7 +654,7 @@ class WorkPieceElement(CanvasElement):
             self._remove_ops_surface(step_uid)
             self._invalidate_composited()
             return
-        self._update_ops_cache_from_handle(step_uid)
+        self._update_ops_cache(step_uid)
         self._composited_dirty = True
         if self.canvas:
             self.canvas.queue_draw()

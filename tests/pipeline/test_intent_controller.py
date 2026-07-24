@@ -1,0 +1,405 @@
+"""
+Tests for :mod:`rayforge.pipeline.intent_controller`.
+
+These tests use the existing :class:`~rayforge.core.doc.Doc` /
+:class:`Step` / :class:`WorkPiece` classes (real signal wiring) and a
+fake :class:`TaskManager` so they do not require a running GTK event
+loop.
+"""
+
+from typing import Any, Callable, List, Optional
+
+from rayforge.core.doc import Doc
+from rayforge.core.step import Step
+from rayforge.core.workpiece import WorkPiece
+from rayforge.pipeline.intent_builder import (
+    job_key,
+    step_key,
+    workpiece_key,
+)
+from rayforge.pipeline.intent_controller import (
+    IntentController,
+    REBUILD_DEBOUNCE_MS,
+)
+
+
+class _TestStep(Step):
+    """Concrete ``Step`` for tests; controls the position-sensitive
+    flag without pulling in the transformer addon registry."""
+
+    def __init__(self, name: str = "test", position_sensitive: bool = False):
+        super().__init__(typelabel="test", name=name)
+        self._position_sensitive = position_sensitive
+
+    def is_position_sensitive(self) -> bool:
+        return self._position_sensitive
+
+
+class FakeCancelHandle:
+    def __init__(self):
+        self._cancelled = False
+
+    def cancel(self):
+        self._cancelled = True
+
+    @property
+    def cancelled(self):
+        return self._cancelled
+
+
+class _ScheduledCall(FakeCancelHandle):
+    def __init__(self, delay: int, fn: Callable[[], None]):
+        super().__init__()
+        self.delay = delay
+        self.fn = fn
+        self._fired = False
+
+    @property
+    def cancelled(self) -> bool:
+        return self._cancelled
+
+    def fire(self):
+        if not self._cancelled and not self._fired:
+            self._fired = True
+            self.fn()
+
+
+class FakeTaskManager:
+    """
+    Drop-in replacement for :class:`TaskManager` that records scheduled
+    calls and lets tests fire them deterministically.
+    """
+
+    def __init__(self):
+        self.delayed: List[_ScheduledCall] = []
+        self.main_thread_calls: List[Callable[..., Any]] = []
+
+    def schedule_on_main_thread(
+        self,
+        callback: Callable[..., Any],
+        *_args: Any,
+        **_kw: Any,
+    ) -> FakeCancelHandle:
+        self.main_thread_calls.append(callback)
+        return FakeCancelHandle()
+
+    def schedule_delayed_on_main_thread(
+        self,
+        delay_ms: int,
+        callback: Callable[..., Any],
+        *_args,
+        **_kw,
+    ) -> FakeCancelHandle:
+        call = _ScheduledCall(delay_ms, callback)
+        self.delayed.append(call)
+        return call
+
+    def fire_latest(self) -> None:
+        """Fire the most recently scheduled delayed call and remove it
+        from the pending list."""
+        assert self.delayed, "no delayed call scheduled"
+        call = self.delayed.pop()
+        call.fire()
+
+
+class _StubNode:
+    """Minimal stand-in for ``raygeo.CompletedNode`` for tests."""
+
+    def __init__(self, key: str, generation_id: int, output: Any = None):
+        self.key = key
+        self.generation_id = generation_id
+        self.output = output
+
+
+def _make_doc(step: _TestStep, *workpieces: WorkPiece) -> Doc:
+    doc = Doc()
+    layer = doc.active_layer
+    workflow = layer.workflow
+    assert workflow is not None
+    workflow.add_child(step)
+    for wp in workpieces:
+        layer.add_child(wp)
+    return doc
+
+
+# ----------------------------------------------------------------------
+# Construction
+# ----------------------------------------------------------------------
+
+
+def test_default_dispatch_is_false():
+    doc = _make_doc(_TestStep(name="s1"), WorkPiece(name="wp"))
+    ctrl = IntentController(doc, FakeTaskManager())
+    assert ctrl.dispatch is False
+    assert ctrl.intent is None
+    assert ctrl.generation_id == 0
+
+
+def test_raygeo_pipeline_default_constructed():
+    doc = _make_doc(_TestStep(name="s1"), WorkPiece(name="wp"))
+    ctrl = IntentController(doc, FakeTaskManager())
+    assert ctrl.raygeo_pipeline is not None
+
+
+# ----------------------------------------------------------------------
+# Debounced rebuild
+# ----------------------------------------------------------------------
+
+
+def test_signal_triggers_debounced_rebuild():
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+    tm = FakeTaskManager()
+    ctrl = IntentController(doc, tm)
+    ctrl.connect()
+
+    # Trigger a change and verify a debounced call is scheduled.
+    wp.updated.send(wp)
+    assert len(tm.delayed) == 1
+    assert tm.delayed[0].delay == REBUILD_DEBOUNCE_MS
+
+    # Fire the debounced callback and verify the intent was built.
+    tm.fire_latest()
+    assert ctrl.intent is not None
+    assert ctrl.generation_id == 1
+    ctrl.shutdown()
+
+
+def test_second_change_reschedules_debounce():
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+    tm = FakeTaskManager()
+    ctrl = IntentController(doc, tm)
+    ctrl.connect()
+
+    wp.updated.send(wp)
+    timer = ctrl._rebuild_timer
+    assert timer is not None
+
+    wp.updated.send(wp)  # immediately sends again — should cancel first
+    assert timer.cancelled
+    assert len(tm.delayed) == 2
+    tm.fire_latest()
+    assert ctrl.generation_id == 1
+    ctrl.shutdown()
+
+
+# ----------------------------------------------------------------------
+# intent.update semantics
+# ----------------------------------------------------------------------
+
+
+def test_intent_updates_on_subsequent_rebuilds():
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+    tm = FakeTaskManager()
+    ctrl = IntentController(doc, tm)
+    ctrl.connect()
+
+    wp.updated.send(wp)
+    tm.fire_latest()
+    intent_first = ctrl.intent
+    assert intent_first is not None
+    gen_first = ctrl.generation_id
+
+    step.cut_speed = 4321
+    # No signal fired — the controller does not rebuild on plain
+    # attribute assignment that bypasses the Step's signal-emitting
+    # setters.
+    assert not tm.delayed
+    assert ctrl.generation_id == gen_first
+
+    # Now fire a signal and rebuild.
+    step.updated.send(step)
+    assert tm.delayed
+    tm.fire_latest()
+    assert ctrl.generation_id > gen_first
+    assert ctrl.intent is intent_first  # updated in place
+    ctrl.shutdown()
+
+
+# ----------------------------------------------------------------------
+# Dispatch gate
+# ----------------------------------------------------------------------
+
+
+def test_dispatch_false_does_not_run_intent(monkeypatch):
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+    tm = FakeTaskManager()
+    ctrl = IntentController(doc, tm, dispatch=False)
+    ctrl.connect()
+
+    run_calls: List[Any] = []
+
+    def _capture_run(*a, **kw):
+        run_calls.append((a, kw))
+
+    monkeypatch.setattr(
+        "rayforge.pipeline.intent_controller.run_intent", _capture_run
+    )
+    wp.updated.send(wp)
+    tm.fire_latest()
+    assert run_calls == []
+    ctrl.shutdown()
+
+
+def test_dispatch_true_runs_intent(monkeypatch):
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+    tm = FakeTaskManager()
+    ctrl = IntentController(doc, tm, dispatch=True)
+    ctrl.connect()
+
+    run_calls: List[Any] = []
+
+    def _capture_run(
+        intent, on_completed=None, on_batch_progress=None, pipeline=None
+    ):
+        run_calls.append((intent, on_completed, pipeline))
+
+    monkeypatch.setattr(
+        "rayforge.pipeline.intent_controller.run_intent", _capture_run
+    )
+    wp.updated.send(wp)
+    tm.fire_latest()
+    assert len(run_calls) == 1
+    intent, on_completed, pipeline = run_calls[0]
+    assert intent is ctrl.intent
+    # Bound methods create a new object on each attribute access, so
+    # compare by equality rather than identity.
+    assert on_completed == ctrl._on_completed
+    assert pipeline is ctrl.raygeo_pipeline
+    ctrl.shutdown()
+
+
+# ----------------------------------------------------------------------
+# Epoch filter
+# ----------------------------------------------------------------------
+
+
+def _make_controller_for_completed_test(
+    monkeypatch,
+    dispatch: bool = False,
+    idle_calls: Optional[List] = None,
+):
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+    tm = FakeTaskManager()
+    idle_calls = idle_calls if idle_calls is not None else []
+
+    def _capture(callback: Callable[..., Any], *args: Any, **_kw: Any):
+        idle_calls.append((callback, args))
+        return FakeCancelHandle()
+
+    tm.schedule_on_main_thread = _capture
+    ctrl = IntentController(doc, tm, dispatch=dispatch)
+    ctrl.connect()
+
+    # Build once so the key map is populated.
+    wp.updated.send(wp)
+    tm.fire_latest()
+    return ctrl, wp, step
+
+
+def test_on_completed_superseded_generation_discarded(monkeypatch):
+    idle_calls: List = []
+    ctrl, wp, step = _make_controller_for_completed_test(
+        monkeypatch, idle_calls=idle_calls
+    )
+    wpk = workpiece_key(wp.uid, step.uid)
+
+    # Simulate a stale result (older generation).
+    stale = _StubNode(key=wpk, generation_id=0, output="stale")
+    ctrl._on_completed(stale)
+    assert idle_calls == []
+
+    # Simulate a current result.
+    current = _StubNode(
+        key=wpk, generation_id=ctrl.generation_id, output="fresh"
+    )
+    ctrl._on_completed(current)
+    assert len(idle_calls) == 1
+    fn, args = idle_calls[0]
+    assert isinstance(args, tuple) and len(args) == 3
+    ctrl.shutdown()
+
+
+def test_on_completed_unknown_key_skipped(monkeypatch):
+    idle_calls: List = []
+    ctrl, wp, step = _make_controller_for_completed_test(
+        monkeypatch, idle_calls=idle_calls
+    )
+
+    # Generate a key not in the map.
+    node = _StubNode(key="nonexistent", generation_id=ctrl.generation_id)
+    ctrl._on_completed(node)
+    assert idle_calls == []
+    ctrl.shutdown()
+
+
+def test_on_completed_reaches_correct_doc_item(monkeypatch):
+    idle_calls: List = []
+    ctrl, wp, step = _make_controller_for_completed_test(
+        monkeypatch, idle_calls=idle_calls
+    )
+
+    # Verify the key->DocItem map includes workpiece, step, and job keys.
+    wpk = workpiece_key(wp.uid, step.uid)
+    assert ctrl._key_to_item[wpk] is wp
+
+    sk = step_key(step.uid)
+    assert ctrl._key_to_item[sk] is step
+
+    jk = job_key()
+    assert ctrl._key_to_item[jk] is ctrl._doc
+
+    # Fire a completion for the workpiece key.
+    node = _StubNode(key=wpk, generation_id=ctrl.generation_id, output="ok")
+    ctrl._on_completed(node)
+    assert len(idle_calls) == 1
+    fn, args = idle_calls[0]
+    key, item, output = args
+    assert key == wpk
+    assert item is wp
+    assert output == "ok"
+    ctrl.shutdown()
+
+
+# ----------------------------------------------------------------------
+# Lifecycle
+# ----------------------------------------------------------------------
+
+
+def test_shutdown_cancels_pending_timer():
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+    tm = FakeTaskManager()
+    ctrl = IntentController(doc, tm)
+    ctrl.connect()
+
+    wp.updated.send(wp)
+    timer = ctrl._rebuild_timer
+    assert timer is not None
+    ctrl.shutdown()
+    assert ctrl._rebuild_timer is None
+
+
+def test_disconnect_prevents_further_rebuilds():
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+    tm = FakeTaskManager()
+    ctrl = IntentController(doc, tm)
+    ctrl.connect()
+    ctrl.disconnect()
+
+    wp.updated.send(wp)
+    assert tm.delayed == []

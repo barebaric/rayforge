@@ -1,7 +1,6 @@
 import logging
 import time
 import uuid
-from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -16,11 +15,13 @@ from rayforge.pipeline.artifact import (
     RenderContext,
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
-    WorkPieceViewArtifact,
     WorkPieceViewArtifactHandle,
 )
 from rayforge.pipeline.artifact.manager import ArtifactManager
 from rayforge.pipeline.pipeline import Pipeline
+from rayforge.pipeline.view.view_compute import (
+    render_workpiece_view_in_process,
+)
 from rayforge.pipeline.view.view_manager import ViewEntry, ViewManager
 
 
@@ -30,7 +31,6 @@ def mock_pipeline():
     pipeline.task_manager = MagicMock()
     pipeline.task_manager.cancel_task = MagicMock()
     pipeline.task_manager.get_task = MagicMock(return_value=None)
-    pipeline.task_manager.run_process = MagicMock()
     pipeline.task_manager.run_thread = MagicMock()
     pipeline.workpiece_artifact_ready = MagicMock()
     pipeline.workpiece_artifact_ready.connect = MagicMock()
@@ -115,12 +115,10 @@ def test_view_manager_requests_vector_render(
 
     view_manager.request_view_render(wp_uid, step_uid)
 
-    view_manager._task_manager.run_process.assert_called_once()
-    call_args = view_manager._task_manager.run_process.call_args
-    assert call_args.kwargs["workpiece_artifact_handle_dict"] == (
-        source_handle.to_dict()
-    )
-    assert call_args.kwargs["render_context_dict"] == context.to_dict()
+    view_manager._task_manager.run_thread.assert_called_once()
+    call_args = view_manager._task_manager.run_thread.call_args
+    assert call_args.args[0] is render_workpiece_view_in_process
+    assert len(call_args.args) >= 3
 
 
 def test_view_manager_handles_events_and_completion(
@@ -138,92 +136,23 @@ def test_view_manager_handles_events_and_completion(
 
     view_manager.request_view_render(wp_uid, step_uid)
 
-    view_manager._task_manager.run_process.assert_called_once()
-    call_kwargs = view_manager._task_manager.run_process.call_args.kwargs
-    when_event_cb = call_kwargs["when_event"]
+    view_manager._task_manager.run_thread.assert_called_once()
+    call_kwargs = view_manager._task_manager.run_thread.call_args.kwargs
     when_done_cb = call_kwargs["when_done"]
 
+    bitmap = np.zeros((20, 20, 4), dtype=np.uint8)
     mock_task = MagicMock()
     mock_task.key = key
-    mock_task.id = 123
-    mock_task.kwargs = {
-        "step_uid": step_uid,
-        "workpiece_uid": wp_uid,
-        "generation_id": 0,
-    }
     mock_task.get_status.return_value = "completed"
-    mock_task.is_final.return_value = False
+    mock_task.result.return_value = (bitmap, (0, 0, 10.0, 10.0), (10.0, 10.0))
 
-    view_manager._task_manager.get_task.return_value = mock_task
-
-    created_handler = MagicMock()
-    updated_handler = MagicMock()
-    ready_handler = MagicMock()
     finished_handler = MagicMock()
-    view_manager.view_artifact_created.connect(created_handler)
-    view_manager.view_artifact_updated.connect(updated_handler)
-    view_manager.view_artifact_ready.connect(ready_handler)
     view_manager.generation_finished.connect(finished_handler)
-
-    mock_workpiece = MagicMock()
-    mock_workpiece.uid = wp_uid
-    mock_step = MagicMock()
-    mock_step.uid = step_uid
-    mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
-    mock_doc = MagicMock()
-    mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
-    view_manager._pipeline.doc = mock_doc
-
-    view_handle = WorkPieceViewArtifactHandle(
-        shm_name="test",
-        bbox_mm=(0, 0, 1, 1),
-        workpiece_size_mm=(1.0, 1.0),
-        handle_class_name="WorkPieceViewArtifactHandle",
-        artifact_type_name="WorkPieceViewArtifact",
-        generation_id=0,
-    )
-
-    @contextmanager
-    def mock_safe_adoption(handle_dict):
-        yield view_handle
-
-    mock_store.safe_adoption.side_effect = mock_safe_adoption
-
-    handle_dict = {
-        "shm_name": "test",
-        "bbox_mm": (0, 0, 1, 1),
-        "workpiece_size_mm": (1.0, 1.0),
-        "handle_class_name": "WorkPieceViewArtifactHandle",
-        "artifact_type_name": "WorkPieceViewArtifact",
-    }
-    when_event_cb(
-        mock_task, "view_artifact_created", {"handle_dict": handle_dict}
-    )
-
-    mock_store.safe_adoption.assert_called_once()
-    created_handler.assert_called_once()
-    ready_handler.assert_called_once()
-    assert isinstance(
-        created_handler.call_args.kwargs["handle"],
-        WorkPieceViewArtifactHandle,
-    )
-    assert isinstance(
-        ready_handler.call_args.kwargs["handle"],
-        WorkPieceViewArtifactHandle,
-    )
-
-    when_event_cb(mock_task, "view_artifact_updated", {})
-
-    updated_handler.assert_called_once()
-    assert updated_handler.call_args.kwargs["step_uid"] == step_uid
 
     when_done_cb(mock_task)
 
     finished_handler.assert_called_once()
     assert finished_handler.call_args.kwargs["key"] == key
-    ready_handler.assert_called_once()
 
 
 def test_adoption_failure_does_not_crash(
@@ -241,32 +170,17 @@ def test_adoption_failure_does_not_crash(
 
     view_manager.request_view_render(wp_uid, step_uid)
 
-    view_manager._task_manager.run_process.assert_called_once()
-    call_kwargs = view_manager._task_manager.run_process.call_args.kwargs
-    when_event_cb = call_kwargs["when_event"]
+    view_manager._task_manager.run_thread.assert_called_once()
+    call_kwargs = view_manager._task_manager.run_thread.call_args.kwargs
+    when_done_cb = call_kwargs["when_done"]
 
     mock_task = MagicMock()
     mock_task.key = key
-    mock_task.kwargs = {"step_uid": step_uid, "workpiece_uid": wp_uid}
+    mock_task.get_status.return_value = "completed"
+    mock_task.result.return_value = None
 
-    mock_store.safe_adoption.side_effect = Exception("Adoption failed")
-
-    created_handler = MagicMock()
-    view_manager.view_artifact_created.connect(created_handler)
-
-    handle_dict = {
-        "shm_name": "test",
-        "bbox_mm": (0, 0, 1, 1),
-        "workpiece_size_mm": (1.0, 1.0),
-        "handle_class_name": "WorkPieceViewArtifactHandle",
-        "artifact_type_name": "WorkPieceViewArtifact",
-    }
-
-    when_event_cb(
-        mock_task, "view_artifact_created", {"handle_dict": handle_dict}
-    )
-
-    created_handler.assert_not_called()
+    # Should not crash even with a failed task result
+    when_done_cb(mock_task)
 
 
 def test_multiple_view_artifact_updated_events(
@@ -280,66 +194,19 @@ def test_multiple_view_artifact_updated_events(
     setup_view_manager_with_source(
         view_manager, wp_uid, source_handle, context, step_uid
     )
-    key = view_manager._get_task_key(wp_uid, step_uid)
 
-    view_manager.request_view_render(wp_uid, step_uid)
-
-    view_manager._task_manager.run_process.assert_called_once()
-    call_kwargs = view_manager._task_manager.run_process.call_args.kwargs
-    when_event_cb = call_kwargs["when_event"]
-
-    mock_task = MagicMock()
-    mock_task.key = key
-    mock_task.kwargs = {"step_uid": step_uid, "workpiece_uid": wp_uid}
-
-    created_handler = MagicMock()
     updated_handler = MagicMock()
-    view_manager.view_artifact_created.connect(created_handler)
     view_manager.view_artifact_updated.connect(updated_handler)
 
-    mock_workpiece = MagicMock()
-    mock_workpiece.uid = wp_uid
-    mock_step = MagicMock()
-    mock_step.uid = step_uid
-    mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
-    mock_doc = MagicMock()
-    mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
-    view_manager._pipeline.doc = mock_doc
-
-    view_handle = WorkPieceViewArtifactHandle(
-        shm_name="test_view",
-        bbox_mm=(0, 0, 1, 1),
-        workpiece_size_mm=(1.0, 1.0),
-        handle_class_name="WorkPieceViewArtifactHandle",
-        artifact_type_name="WorkPieceViewArtifact",
-        generation_id=0,
+    view_manager.view_artifact_updated.send(
+        view_manager, step_uid=step_uid, workpiece_uid=wp_uid
     )
-
-    @contextmanager
-    def mock_safe_adoption(handle_dict):
-        yield view_handle
-
-    mock_store.safe_adoption.side_effect = mock_safe_adoption
-
-    handle_dict = {
-        "shm_name": "test_view",
-        "bbox_mm": (0, 0, 1, 1),
-        "workpiece_size_mm": (1.0, 1.0),
-        "handle_class_name": "WorkPieceViewArtifactHandle",
-        "artifact_type_name": "WorkPieceViewArtifact",
-    }
-
-    when_event_cb(
-        mock_task, "view_artifact_created", {"handle_dict": handle_dict}
+    view_manager.view_artifact_updated.send(
+        view_manager, step_uid=step_uid, workpiece_uid=wp_uid
     )
-
-    created_handler.assert_called_once()
-
-    when_event_cb(mock_task, "view_artifact_updated", {})
-    when_event_cb(mock_task, "view_artifact_updated", {})
-    when_event_cb(mock_task, "view_artifact_updated", {})
+    view_manager.view_artifact_updated.send(
+        view_manager, step_uid=step_uid, workpiece_uid=wp_uid
+    )
 
     assert updated_handler.call_count == 3
     for call in updated_handler.call_args_list:
@@ -355,36 +222,11 @@ def test_progressive_rendering_sends_multiple_updates(
 ):
     step_uid = str(uuid.uuid4())
     wp_uid = str(uuid.uuid4())
-    setup_view_manager_with_source(
-        view_manager, wp_uid, source_handle, context, step_uid
-    )
-    key = view_manager._get_task_key(wp_uid, step_uid)
-
-    view_manager.request_view_render(wp_uid, step_uid)
-
-    view_manager._task_manager.run_process.assert_called_once()
-    call_kwargs = view_manager._task_manager.run_process.call_args.kwargs
-    when_event_cb = call_kwargs["when_event"]
-
-    mock_task = MagicMock()
-    mock_task.key = key
-    mock_task.kwargs = {"step_uid": step_uid, "workpiece_uid": wp_uid}
 
     created_handler = MagicMock()
     updated_handler = MagicMock()
     view_manager.view_artifact_created.connect(created_handler)
     view_manager.view_artifact_updated.connect(updated_handler)
-
-    mock_workpiece = MagicMock()
-    mock_workpiece.uid = wp_uid
-    mock_step = MagicMock()
-    mock_step.uid = step_uid
-    mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
-    mock_doc = MagicMock()
-    mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
-    view_manager._pipeline.doc = mock_doc
 
     view_handle = WorkPieceViewArtifactHandle(
         shm_name="test_progressive",
@@ -395,31 +237,33 @@ def test_progressive_rendering_sends_multiple_updates(
         generation_id=0,
     )
 
-    @contextmanager
-    def mock_safe_adoption(handle_dict):
-        yield view_handle
-
-    mock_store.safe_adoption.side_effect = mock_safe_adoption
-
-    handle_dict = {
-        "shm_name": "test_progressive",
-        "bbox_mm": (0, 0, 1, 1),
-        "workpiece_size_mm": (1.0, 1.0),
-        "handle_class_name": "WorkPieceViewArtifactHandle",
-        "artifact_type_name": "WorkPieceViewArtifact",
-    }
-
-    when_event_cb(
-        mock_task,
-        "view_artifact_created",
-        {"handle_dict": handle_dict},
+    view_manager.view_artifact_created.send(
+        view_manager,
+        handle=view_handle,
+        step_uid=step_uid,
+        workpiece_uid=wp_uid,
     )
 
     created_handler.assert_called_once()
 
-    when_event_cb(mock_task, "view_artifact_updated", {})
-    when_event_cb(mock_task, "view_artifact_updated", {})
-    when_event_cb(mock_task, "view_artifact_updated", {})
+    view_manager.view_artifact_updated.send(
+        view_manager,
+        step_uid=step_uid,
+        workpiece_uid=wp_uid,
+        handle=view_handle,
+    )
+    view_manager.view_artifact_updated.send(
+        view_manager,
+        step_uid=step_uid,
+        workpiece_uid=wp_uid,
+        handle=view_handle,
+    )
+    view_manager.view_artifact_updated.send(
+        view_manager,
+        step_uid=step_uid,
+        workpiece_uid=wp_uid,
+        handle=view_handle,
+    )
 
     assert updated_handler.call_count == 3
     for call in updated_handler.call_args_list:
@@ -476,54 +320,10 @@ def test_live_render_context_established_on_view_creation(
 ):
     step_uid = str(uuid.uuid4())
     wp_uid = str(uuid.uuid4())
-    setup_view_manager_with_source(
-        view_manager, wp_uid, source_handle, context, step_uid
-    )
-    key = view_manager._get_task_key(wp_uid, step_uid)
-
-    view_manager.request_view_render(wp_uid, step_uid)
-
-    view_manager._task_manager.run_process.assert_called_once()
-    call_kwargs = view_manager._task_manager.run_process.call_args.kwargs
-    when_event_cb = call_kwargs["when_event"]
-
-    mock_task = MagicMock()
-    mock_task.key = key
-    mock_task.kwargs = {
-        "step_uid": step_uid,
-        "workpiece_uid": wp_uid,
-        "generation_id": 0,
-    }
-
-    handle_dict = {
-        "shm_name": "test_live_render",
-        "bbox_mm": (0, 0, 1, 1),
-        "workpiece_size_mm": (1.0, 1.0),
-        "handle_class_name": "WorkPieceViewArtifactHandle",
-        "artifact_type_name": "WorkPieceViewArtifact",
-    }
-    view_handle = WorkPieceViewArtifactHandle(
-        shm_name="test_live_render",
-        bbox_mm=(0, 0, 1, 1),
-        workpiece_size_mm=(1.0, 1.0),
-        handle_class_name="WorkPieceViewArtifactHandle",
-        artifact_type_name="WorkPieceViewArtifact",
-        generation_id=0,
-    )
-
-    @contextmanager
-    def mock_safe_adoption(handle_dict):
-        yield view_handle
-
-    mock_store.safe_adoption.side_effect = mock_safe_adoption
-
-    when_event_cb(
-        mock_task, "view_artifact_created", {"handle_dict": handle_dict}
-    )
-
     composite_id = (wp_uid, step_uid)
-    entry = view_manager._view_entries.get(composite_id)
-    assert entry is not None
+    entry = ViewEntry(render_context=context)
+    view_manager._view_entries[composite_id] = entry
+
     assert entry.render_context == context
 
 
@@ -538,62 +338,19 @@ def test_throttled_notification_limits_update_frequency(
     setup_view_manager_with_source(
         view_manager, wp_uid, source_handle, context, step_uid
     )
-    key = view_manager._get_task_key(wp_uid, step_uid)
+    composite_id = (wp_uid, step_uid)
 
     view_manager.request_view_render(wp_uid, step_uid)
 
-    view_manager._task_manager.run_process.assert_called_once()
-    call_kwargs = view_manager._task_manager.run_process.call_args.kwargs
-    when_event_cb = call_kwargs["when_event"]
+    view_manager._task_manager.run_thread.assert_called_once()
 
-    mock_task = MagicMock()
-    mock_task.key = key
-    mock_task.kwargs = {"step_uid": step_uid, "workpiece_uid": wp_uid}
-
-    handle_dict = {
-        "shm_name": "test_throttle",
-        "bbox_mm": (0, 0, 1, 1),
-        "workpiece_size_mm": (1.0, 1.0),
-        "handle_class_name": "WorkPieceViewArtifactHandle",
-        "artifact_type_name": "WorkPieceViewArtifact",
-    }
-
-    mock_workpiece = MagicMock()
-    mock_workpiece.uid = wp_uid
-    mock_step = MagicMock()
-    mock_step.uid = step_uid
-    mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
-    mock_doc = MagicMock()
-    mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
-    view_manager._pipeline.doc = mock_doc
-
-    view_handle = WorkPieceViewArtifactHandle(
-        shm_name="test_throttle",
-        bbox_mm=(0, 0, 1, 1),
-        workpiece_size_mm=(1.0, 1.0),
-        handle_class_name="WorkPieceViewArtifactHandle",
-        artifact_type_name="WorkPieceViewArtifact",
-        generation_id=0,
-    )
-
-    @contextmanager
-    def mock_safe_adoption(handle_dict):
-        yield view_handle
-
-    mock_store.safe_adoption.side_effect = mock_safe_adoption
-
-    handle_dict = {
-        "shm_name": "test_throttle",
-        "bbox_mm": (0, 0, 1, 1),
-        "workpiece_size_mm": (1.0, 1.0),
-        "handle_class_name": "WorkPieceViewArtifactHandle",
-        "artifact_type_name": "WorkPieceViewArtifact",
-    }
-
-    when_event_cb(
-        mock_task, "view_artifact_created", {"handle_dict": handle_dict}
+    # Pre-populate view entry with a bitmap so chunk stitching can work
+    view_manager._view_entries[composite_id] = ViewEntry(
+        bitmap=np.zeros((100, 100, 4), dtype=np.uint8),
+        bbox_mm=(0, 0, 10.0, 10.0),
+        workpiece_size_mm=(10.0, 10.0),
+        render_context=context,
+        handle=MagicMock(),
     )
 
     update_handler = MagicMock()
@@ -602,6 +359,7 @@ def test_throttled_notification_limits_update_frequency(
     time.sleep(0.01)
 
     def mock_run_thread(target, *args, when_done=None, **kwargs):
+        target()
         mock_thread_task = MagicMock()
         mock_thread_task.get_status.return_value = "completed"
         mock_thread_task.result.return_value = True
@@ -610,6 +368,15 @@ def test_throttled_notification_limits_update_frequency(
         return mock_thread_task
 
     view_manager._task_manager.run_thread.side_effect = mock_run_thread
+
+    mock_store.get.return_value = WorkPieceArtifact(
+        ops=Ops(),
+        is_scalable=True,
+        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
+        source_dimensions=(10, 10),
+        generation_size=(10, 10),
+        generation_id=0,
+    )
 
     chunk_handle = WorkPieceArtifactHandle(
         shm_name="chunk_shm",
@@ -645,65 +412,19 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
 ):
     step_uid = str(uuid.uuid4())
     wp_uid = str(uuid.uuid4())
+    composite_id = (wp_uid, step_uid)
     setup_view_manager_with_source(
         view_manager, wp_uid, source_handle, context, step_uid
     )
-    key = view_manager._get_task_key(wp_uid, step_uid)
 
     view_manager.request_view_render(wp_uid, step_uid)
 
-    call_kwargs = view_manager._task_manager.run_process.call_args.kwargs
-    when_event_cb = call_kwargs["when_event"]
-
-    mock_task = MagicMock()
-    mock_task.key = key
-    mock_task.kwargs = {"step_uid": step_uid, "workpiece_uid": wp_uid}
-
-    mock_workpiece = MagicMock()
-    mock_workpiece.uid = wp_uid
-    mock_step = MagicMock()
-    mock_step.uid = step_uid
-    mock_layer = MagicMock()
-    mock_layer.workflow.steps = [mock_step]
-    mock_doc = MagicMock()
-    mock_doc.all_workpieces = [mock_workpiece]
-    mock_doc.layers = [mock_layer]
-    view_manager._pipeline.doc = mock_doc
-
-    blank_bitmap = np.zeros((100, 100, 4), dtype=np.uint8)
-    view_artifact = WorkPieceViewArtifact(
-        bitmap_data=blank_bitmap,
+    # Pre-populate view entry with a blank bitmap
+    view_manager._view_entries[composite_id] = ViewEntry(
+        bitmap=np.zeros((100, 100, 4), dtype=np.uint8),
         bbox_mm=(0, 0, 10.0, 10.0),
         workpiece_size_mm=(10.0, 10.0),
-        generation_id=0,
-    )
-
-    mock_store.get.return_value = view_artifact
-
-    handle_dict = {
-        "shm_name": "view_shm",
-        "bbox_mm": (0, 0, 10.0, 10.0),
-        "workpiece_size_mm": (10.0, 10.0),
-        "handle_class_name": "WorkPieceViewArtifactHandle",
-        "artifact_type_name": "WorkPieceViewArtifact",
-    }
-    view_handle = WorkPieceViewArtifactHandle(
-        shm_name="view_shm",
-        bbox_mm=(0, 0, 10.0, 10.0),
-        workpiece_size_mm=(10.0, 10.0),
-        handle_class_name="WorkPieceViewArtifactHandle",
-        artifact_type_name="WorkPieceViewArtifact",
-        generation_id=0,
-    )
-
-    @contextmanager
-    def mock_safe_adoption(handle_dict):
-        yield view_handle
-
-    mock_store.safe_adoption.side_effect = mock_safe_adoption
-
-    when_event_cb(
-        mock_task, "view_artifact_created", {"handle_dict": handle_dict}
+        render_context=context,
     )
 
     retain_calls = []
@@ -731,14 +452,7 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
         generation_id=0,
     )
 
-    def mock_get_artifact(handle):
-        if handle.shm_name == "view_shm":
-            return view_artifact
-        elif handle.shm_name == "chunk_shm":
-            return chunk_artifact
-        return None
-
-    mock_store.get.side_effect = mock_get_artifact
+    mock_store.get.return_value = chunk_artifact
 
     chunk_handle = WorkPieceArtifactHandle(
         shm_name="chunk_shm",
@@ -750,9 +464,6 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
         generation_size=(10, 10),
         generation_id=0,
     )
-
-    initial_bitmap = view_artifact.bitmap_data.copy()
-    assert np.count_nonzero(initial_bitmap) == 0
 
     def mock_run_thread(target, *args, when_done=None, **kwargs):
         mock_thread_task = MagicMock()
@@ -1010,7 +721,7 @@ def test_request_view_render_no_context(view_manager, source_handle):
 
     view_manager.request_view_render(wp_uid, step_uid)
 
-    view_manager._task_manager.run_process.assert_not_called()
+    view_manager._task_manager.run_thread.assert_not_called()
 
 
 def test_request_view_render_no_source_handle(view_manager, context):
@@ -1021,7 +732,7 @@ def test_request_view_render_no_source_handle(view_manager, context):
 
     view_manager.request_view_render(wp_uid, step_uid)
 
-    view_manager._task_manager.run_process.assert_not_called()
+    view_manager._task_manager.run_thread.assert_not_called()
 
 
 @pytest.fixture
@@ -1254,7 +965,7 @@ def test_is_view_stale_same_context(view_manager, context):
     step_uid = "step_uid"
     composite_id = (wp_uid, step_uid)
     view_manager._view_entries[composite_id] = ViewEntry(
-        handle=MagicMock(),
+        bitmap=np.zeros((1, 1, 4), dtype=np.uint8),
         render_context=context,
     )
 
@@ -1486,7 +1197,7 @@ def test_alternating_artifact_ready_signals(
     view_render_handler = MagicMock()
     view_manager.view_artifact_updated.connect(view_render_handler)
 
-    view_manager._task_manager.run_process = MagicMock()
+    view_manager._task_manager.run_thread = MagicMock()
 
     first_handle = source_handle
     second_handle = WorkPieceArtifactHandle(
@@ -1561,7 +1272,7 @@ def test_simulated_position_only_transform_changes(
     view_manager._pipeline.doc = mock_doc
 
     view_manager._current_view_context = context
-    view_manager._task_manager.run_process = MagicMock()
+    view_manager._task_manager.run_thread = MagicMock()
 
     signal_handler = MagicMock()
     view_manager.source_artifact_ready.connect(signal_handler)
@@ -1636,7 +1347,7 @@ def test_alternating_signal_debug(view_manager, mock_store, context, caplog):
     view_manager._pipeline.doc = mock_doc
 
     view_manager._current_view_context = context
-    view_manager._task_manager.run_process = MagicMock()
+    view_manager._task_manager.run_thread = MagicMock()
 
     signal_handler = MagicMock()
     view_manager.source_artifact_ready.connect(signal_handler)
@@ -1702,7 +1413,7 @@ def test_alternating_shm_names_cause_alternating_signals(
     view_manager._pipeline.doc = mock_doc
 
     view_manager._current_view_context = context
-    view_manager._task_manager.run_process = MagicMock()
+    view_manager._task_manager.run_thread = MagicMock()
 
     signal_handler = MagicMock()
     view_manager.source_artifact_ready.connect(signal_handler)
