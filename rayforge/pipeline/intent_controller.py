@@ -59,6 +59,7 @@ from .intent_builder import IntentBuilder
 if TYPE_CHECKING:
     from ..core.doc import Doc
     from ..core.item import DocItem
+    from ..machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
 
@@ -105,11 +106,13 @@ class IntentController:
         self,
         doc: "Doc",
         task_manager: "_DelayedScheduler",
+        machine: "Optional[Machine]" = None,
         raygeo_pipeline: Optional[RaygeoPipeline] = None,
         dispatch: bool = False,
     ):
         self._doc = doc
         self._task_manager = task_manager
+        self._machine = machine
         self._raygeo_pipeline: RaygeoPipeline = (
             raygeo_pipeline or RaygeoPipeline()
         )
@@ -191,7 +194,9 @@ class IntentController:
         """Build a fresh intent from the doc and update the cache."""
         self._rebuild_timer = None
         self._generation_id += 1
-        builder = IntentBuilder(generation_id=self._generation_id)
+        builder = IntentBuilder(
+            machine=self._machine, generation_id=self._generation_id
+        )
         nodes = builder.build(self._doc)
         self._refresh_key_to_item_map(nodes)
         new_intent = create_intent_from_nodes(nodes)
