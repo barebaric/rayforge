@@ -44,6 +44,7 @@ from typing import (
     Dict,
     List,
     Mapping,
+    Optional,
     Sequence,
     Tuple,
 )
@@ -52,21 +53,24 @@ from raygeo.cnc.execution.specs import (
     AggregateGroup,
     AggregateInput,
     AggregateSpec,
-    ComputePayload,
     MachineParams,
     Marker,
 )
-from raygeo.ops.assembly import Assembler
-from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.part import Part
 from raygeo.pipeline.request import NodeRequest
 from raygeo.pipeline.stage import StageSpec
+
+from .stage.assembler_helpers import (
+    MachineDefaults,
+    resolve_machine_defaults,
+)
 
 if TYPE_CHECKING:
     from ..core.doc import Doc
     from ..core.layer import Layer
     from ..core.step import Step
     from ..core.workpiece import WorkPiece
+    from ..machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +103,12 @@ class IntentBuilder:
     :class:`Intent`.
     """
 
-    def __init__(self, generation_id: int = 0):
+    def __init__(
+        self,
+        machine: "Optional[Machine]" = None,
+        generation_id: int = 0,
+    ):
+        self._machine = machine
         self._generation_id = generation_id
 
     @property
@@ -163,7 +172,8 @@ class IntentBuilder:
             key = workpiece_key(wp.uid, step.uid)
             token = self._compute_token(step, wp, pos_sensitive)
             tokens.append((key, token))
-            out.append(self._make_request(key, token, _wp_stage(wp)))
+            stage = self._wp_stage(step, wp)
+            out.append(self._make_request(key, token, stage))
         return tokens
 
     def _build_step_node(
@@ -196,6 +206,7 @@ class IntentBuilder:
             "wp_uid": wp.uid,
             "geo_rev": wp.geometry_revision,
             "step_params": _step_compute_params(step),
+            "assembler_params": _canonical(self._assembler_params(step, wp)),
             "wpxf": _canonical(step.per_workpiece_transformers_dicts),
         }
         if pos_sensitive:
@@ -247,6 +258,85 @@ class IntentBuilder:
             stage=stage,
             version_token=token,
         )
+
+    # ------------------------------------------------------------------
+    # Compute stage construction
+    # ------------------------------------------------------------------
+
+    def _wp_stage(self, step: "Step", wp: "WorkPiece") -> StageSpec.Compute:
+        """
+        Build a compute :class:`StageSpec.Compute` for the workpiece
+        node by delegating to :meth:`Step.build_compute_payload`.
+
+        Step kinds that wire a real raygeo assembler override
+        ``build_compute_payload`` (e.g. :class:`ContourStep`); the
+        base :class:`Step` returns a default :class:`ContourSpec`
+        payload, which keeps the migration's later slices valid.
+        """
+        part = wp.to_part()
+        if part is None:
+            part = Part(size_mm=wp.size)
+        machine_defaults = self._resolve_machine_defaults(step)
+        payload = step.build_compute_payload(machine_defaults, wp)
+        return StageSpec.Compute(part=part, params=payload)
+
+    def _resolve_machine_defaults(self, step: "Step") -> MachineDefaults:
+        """
+        Resolve :class:`MachineDefaults` for *step*.
+
+        When no machine is available (e.g. in tests that construct a
+        bare :class:`IntentBuilder`), fall back to the step's own
+        parameters and conservative defaults so the assembler still
+        receives a valid spec.
+        """
+        if self._machine is not None:
+            try:
+                laser = step.get_selected_laser(self._machine)
+            except ValueError:
+                laser = None
+            settings = step.to_dict()
+            settings["arc_tolerance"] = self._machine.arc_tolerance
+            settings["machine_supports_arcs"] = self._machine.supports_arcs
+            settings["machine_supports_curves"] = self._machine.supports_curves
+            if laser is not None:
+                return resolve_machine_defaults(laser, settings)
+        return MachineDefaults(
+            kerf_mm=step.kerf_mm,
+            arc_tolerance=0.03,
+            allow_arcs=True,
+            supports_curves=False,
+            line_interval_mm=0.1,
+            step_power=step.power,
+            tool_radius=step.kerf_mm / 2.0,
+            step_over=step.kerf_mm,
+            cut_speed=step.cut_speed,
+        )
+
+    def _assembler_params(self, step: "Step", wp: "WorkPiece") -> Any:
+        """
+        Return a JSON-serialisable representation of the assembler spec
+        parameters that the step resolves for its machine.
+
+        Delegates to :meth:`Step.assembler_token_params`.  Returns
+        :data:`None` when no machine is configured or the step exposes
+        no assembler params; the compute token is unaffected in that
+        case.
+        """
+        if self._machine is None:
+            return None
+        try:
+            laser = step.get_selected_laser(self._machine)
+        except ValueError:
+            return None
+        settings = step.to_dict()
+        settings["arc_tolerance"] = self._machine.arc_tolerance
+        settings["machine_supports_arcs"] = self._machine.supports_arcs
+        settings["machine_supports_curves"] = self._machine.supports_curves
+        defaults = resolve_machine_defaults(laser, settings)
+        try:
+            return step.assembler_token_params(defaults, wp)
+        except Exception:
+            return None
 
 
 # ----------------------------------------------------------------------
@@ -308,13 +398,10 @@ def _hash_int(payload: Mapping[str, Any]) -> int:
 # ----------------------------------------------------------------------
 # Stage construction
 # ----------------------------------------------------------------------
-# Build minimal but valid raygeo :class:`StageSpec` instances.  For
-# B0 nothing actually dispatches; the assembler / aggregate contents
-# do not need to be meaningful, only valid enough for raygeo's
-# converter (``convert_node_request`` validates StageSpec instances at
-# :func:`create_intent_from_nodes` time).  Per-step-type assemblers
-# (Contour, Raster, ...) replace this wiring during the contour and
-# raster cutover slices.
+# Build raygeo :class:`StageSpec` instances for the step aggregate and
+# job aggregate nodes.  The per-workpiece compute stage is built by
+# :meth:`IntentBuilder._wp_stage`, which selects the assembler spec
+# from the step's ``ASSEMBLER_NAME``.
 
 
 _IDENTITY_4X4: List[List[float]] = [
@@ -323,19 +410,6 @@ _IDENTITY_4X4: List[List[float]] = [
     [0.0, 0.0, 1.0, 0.0],
     [0.0, 0.0, 0.0, 1.0],
 ]
-
-
-def _wp_stage(wp: "WorkPiece") -> StageSpec.Compute:
-    """
-    Build a compute :class:`StageSpec.Compute` for the workpiece node.
-
-    Uses an empty :class:`Part` and a default :class:`ContourSpec`
-    assembler as the smallest valid payload.  Concrete assemblers for
-    each step kind replace this during the per-step cutover.
-    """
-    part = Part()
-    payload = ComputePayload(assembler=Assembler(ContourSpec()))
-    return StageSpec.Compute(part=part, params=payload)
 
 
 def _step_stage(

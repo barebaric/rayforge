@@ -13,8 +13,11 @@ from typing import (
 )
 
 from blinker import Signal
+from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.geo import Matrix
 from raygeo.ops import Ops
+from raygeo.ops.assembly import Assembler
+from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.state import AirAssistMode
 from raygeo.ops.types import SectionType
 
@@ -31,8 +34,8 @@ if TYPE_CHECKING:
     from ..pipeline.artifact import WorkPieceArtifact
     from ..pipeline.stage.assembler_helpers import MachineDefaults
     from .layer import Layer
-    from .workpiece import WorkPiece
     from .workflow import Workflow
+    from .workpiece import WorkPiece
 
 
 logger = logging.getLogger(__name__)
@@ -195,6 +198,47 @@ class Step(DocItem, ABC):
     ) -> Dict[str, Any]:
         """Build the kwargs dict for :meth:`~.AssemblerRegistry.assemble`."""
         return {}
+
+    def build_compute_payload(
+        self,
+        machine_defaults: "MachineDefaults",
+        workpiece: "WorkPiece",
+    ) -> "ComputePayload":
+        """
+        Build the raygeo :class:`ComputePayload` for a workpiece compute
+        node of the new intent pipeline.
+
+        The base implementation returns a default payload wrapping a
+        bare :class:`ContourSpec` assembler, which is the smallest valid
+        payload (used during the staged migration).  Step kinds with a
+        real raygeo assembler override this to populate the assembler
+        spec from their :meth:`get_assembler_kwargs` (see
+        :class:`ContourStep`).
+
+        :param machine_defaults: Resolved machine-level defaults.
+        :param workpiece: The workpiece this compute node runs against.
+        """
+        return ComputePayload(assembler=Assembler(ContourSpec()))
+
+    def assembler_token_params(
+        self,
+        machine_defaults: "MachineDefaults",
+        workpiece: "WorkPiece",
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Return a JSON-serialisable dict of the assembler spec
+        parameters that this step resolves for *machine_defaults*.
+
+        The value is folded into the workpiece compute token so that
+        changes to step-specific assembler inputs (e.g. ``cut_side``
+        for ContourStep) invalidate the cache even when the generic
+        step parameters are unchanged.
+
+        The base implementation returns :data:`None`, leaving the
+        compute token unaffected.  Step kinds that wire a real
+        assembler spec override this (see :class:`ContourStep`).
+        """
+        return None
 
     def create_initial_ops(self) -> "Ops":
         """Build the initial Ops object with step-wide machine settings."""

@@ -6,6 +6,13 @@ single step (and two workpieces) and verify the keys, version tokens,
 and the position-sensitive folding rule.
 """
 
+from raygeo.cnc.execution.intent import create_intent_from_nodes
+from raygeo.geo import Geometry
+from raygeo.ops.assembly import Assembler
+from raygeo.ops.assembly.contour import ContourSpec
+from raygeo.pipeline.execute import execute_stages
+from raygeo.pipeline.stage import StageSpec
+
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
@@ -324,9 +331,6 @@ def test_generation_id_propagated_to_nodes():
 def test_stage_payload_is_valid_raygeo_stagespec():
     """The IntentBuilder's stage payloads must be real raygeo StageSpec
     instances so ``create_intent_from_nodes`` accepts them."""
-    from raygeo.cnc.execution.intent import create_intent_from_nodes
-    from raygeo.pipeline.stage import StageSpec
-
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
@@ -344,8 +348,6 @@ def test_stage_payload_is_valid_raygeo_stagespec():
 
 
 def test_stage_wpspec_for_workpiece_node_is_compute():
-    from raygeo.pipeline.stage import StageSpec
-
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
@@ -358,8 +360,6 @@ def test_stage_wpspec_for_workpiece_node_is_compute():
 
 
 def test_stage_step_node_is_aggregate():
-    from raygeo.pipeline.stage import StageSpec
-
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
@@ -370,8 +370,6 @@ def test_stage_step_node_is_aggregate():
 
 
 def test_stage_job_node_is_aggregate():
-    from raygeo.pipeline.stage import StageSpec
-
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
@@ -379,3 +377,111 @@ def test_stage_job_node_is_aggregate():
     nodes = IntentBuilder().build(doc)
     job_node = next(n for n in nodes if n.key == job_key())
     assert isinstance(job_node.stage, StageSpec.Aggregate)
+
+
+# ----------------------------------------------------------------------
+# Contour compute spec wiring (B2)
+# ----------------------------------------------------------------------
+
+
+def test_contour_workpiece_node_uses_contour_spec(
+    contour_step_class, test_machine_and_config
+):
+    """Contour workpiece compute nodes must carry a ContourSpec assembler
+    populated from the step's resolved assembler kwargs and machine
+    defaults."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+
+    nodes = IntentBuilder(machine=machine).build(doc)
+    wpk = workpiece_key(wp.uid, step.uid)
+    wp_node = next(n for n in nodes if n.key == wpk)
+    assert isinstance(wp_node.stage, StageSpec.Compute)
+    payload = wp_node.stage.params
+    assert isinstance(payload.assembler, Assembler)
+    assert isinstance(payload.assembler.spec, ContourSpec)
+
+
+def test_contour_spec_reflects_step_params(
+    contour_step_class, test_machine_and_config
+):
+    """Changing the step's ``cut_side`` is reflected in the ContourSpec
+    and in the compute version token."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    step.cut_side = "outside"
+    step.path_offset_mm = 0.5
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+
+    nodes = IntentBuilder(machine=machine).build(doc)
+    wpk = workpiece_key(wp.uid, step.uid)
+    wp_node = next(n for n in nodes if n.key == wpk)
+    spec = wp_node.stage.params.assembler.spec
+    assert spec.cut_side == "outside"
+    assert spec.path_offset_mm == 0.5
+
+    # The compute token must change when the contour params change.
+    step.cut_side = "inside"
+    after = IntentBuilder(machine=machine).build(doc)
+    after_t = next(n.version_token for n in after if n.key == wpk)
+    assert after_t != wp_node.version_token
+
+
+def test_compute_token_changes_on_machine_arc_tolerance(
+    contour_step_class, test_machine_and_config
+):
+    """A machine-level default (arc_tolerance) folds into the compute
+    token via the resolved assembler kwargs, so a machine swap
+    invalidates contour workpiece caches."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+
+    before = IntentBuilder(machine=machine).build(doc)
+    wpk = workpiece_key(wp.uid, step.uid)
+
+    machine.arc_tolerance = 0.25
+    after = IntentBuilder(machine=machine).build(doc)
+    before_t = next(n.version_token for n in before if n.key == wpk)
+    after_t = next(n.version_token for n in after if n.key == wpk)
+    assert before_t != after_t
+
+
+def test_contour_compute_node_executes_through_raygeo(
+    contour_step_class, test_machine_and_config
+):
+    """The contour compute stage built by IntentBuilder must run end-to-end
+    through ``execute_stages`` and produce a non-empty Ops output."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+
+    geo = Geometry()
+    geo.move_to(0.0, 0.0)
+    geo.line_to(10.0, 0.0)
+    geo.line_to(10.0, 10.0)
+    geo.line_to(0.0, 10.0)
+    geo.close_path()
+
+    wp = WorkPiece(name="rect")
+    wp._edited_boundaries = geo
+    wp.set_size(50.0, 30.0)
+    doc = _make_doc(step, wp)
+
+    nodes = IntentBuilder(machine=machine, generation_id=1).build(doc)
+    wpk = workpiece_key(wp.uid, step.uid)
+
+    completed = []
+
+    def on_completed(node):
+        completed.append(node)
+
+    execute_stages(nodes, on_completed)
+
+    wp_result = next(c for c in completed if c.key == wpk)
+    assert wp_result.error is None, wp_result.error
+    assert wp_result.output is not None
+    assert wp_result.output.ops.len() > 0

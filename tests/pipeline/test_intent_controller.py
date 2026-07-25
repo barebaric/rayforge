@@ -18,8 +18,8 @@ from rayforge.pipeline.intent_builder import (
     workpiece_key,
 )
 from rayforge.pipeline.intent_controller import (
-    IntentController,
     REBUILD_DEBOUNCE_MS,
+    IntentController,
 )
 
 
