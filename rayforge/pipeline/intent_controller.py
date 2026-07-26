@@ -46,6 +46,7 @@ from typing import (
     runtime_checkable,
 )
 
+from blinker import Signal
 from raygeo.cnc.execution.intent import (
     Intent,
     create_intent_from_nodes,
@@ -59,6 +60,8 @@ from .intent_builder import IntentBuilder
 if TYPE_CHECKING:
     from ..core.doc import Doc
     from ..core.item import DocItem
+    from ..core.step import Step
+    from ..core.workpiece import WorkPiece
     from ..machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
@@ -124,6 +127,19 @@ class IntentController:
         # for DOM reattachment.  Rebuilt on every successful
         # ``IntentBuilder.build`` call.
         self._key_to_item: Dict[str, DocItem] = {}
+        self._workpieces_by_uid: Dict[str, "WorkPiece"] = {}
+        self._steps_by_uid: Dict[str, "Step"] = {}
+
+        # Signals for notifying the UI of generation progress.
+        # These mirror the legacy :class:`~rayforge.pipeline.pipeline.
+        # Pipeline` signals so the two paths are interchangeable from
+        # the UI's perspective once ``dispatch`` is enabled.
+        self.workpiece_artifact_ready = Signal()
+        self.step_artifact_ready = Signal()
+        self.job_aggregate_ready = Signal()
+        self.job_generation_finished = Signal()
+        self.job_time_updated = Signal()
+        self.progress_changed = Signal()
 
     # ------------------------------------------------------------------
     # Properties
@@ -208,6 +224,7 @@ class IntentController:
             run_intent(
                 self._intent,
                 on_completed=self._on_completed,
+                on_batch_progress=self._on_batch_progress,
                 pipeline=self._raygeo_pipeline,
             )
 
@@ -248,17 +265,67 @@ class IntentController:
             self._reattach, key, item, output
         )
 
+    def _on_batch_progress(self, fraction: float, message: str) -> None:
+        """raygeo ``on_batch_progress`` callback.
+
+        Invoked on a rayon worker thread with the GIL held.  Relays
+        the aggregate progress fraction and status message to
+        listeners via :attr:`progress_changed` (marshalled onto the
+        application main thread so signal handlers never run on a
+        worker).
+        """
+        self._task_manager.schedule_on_main_thread(
+            self._emit_progress, fraction, message
+        )
+
+    def _emit_progress(self, fraction: float, message: str) -> None:
+        """Emit :attr:`progress_changed` on the main thread."""
+        self.progress_changed.send(self, fraction=fraction, message=message)
+
     def _reattach(self, key: str, item: "DocItem", output: Any) -> None:
         """
-        Reattach a completed node's output onto the owning DocItem.
+        Reattach a completed node's output onto the owning DocItem and
+        emit the corresponding signal so the UI can update.
 
-        Runs on the GTK main loop.  The default implementation is a
-        no-op stub; concrete reattachment is supplied by callers or
-        subclasses once the new pipeline becomes authoritative.
+        Runs on the application main thread.  Dispatches on the node
+        key shape:
+
+        * ``workpiece:{wp_uid}:{step_uid}`` →
+          :attr:`workpiece_artifact_ready`
+        * ``step:{step_uid}`` → :attr:`step_artifact_ready`
+        * ``job`` → :attr:`job_aggregate_ready`
+        * ``job:encode`` → :attr:`job_generation_finished` (and
+          :attr:`job_time_updated` when a time estimate is available)
         """
-        logger.debug(
-            "Reattaching output for %s onto %s", key, type(item).__name__
-        )
+        gen = self._generation_id
+        if key.startswith("workpiece:"):
+            wp_uid, step_uid = key.split(":", 1)[1].rsplit(":", 1)
+            workpiece = self._find_workpiece(wp_uid)
+            step = self._find_step(step_uid)
+            if workpiece is not None and step is not None:
+                self.workpiece_artifact_ready.send(
+                    self,
+                    step=step,
+                    workpiece=workpiece,
+                    output=output,
+                    generation_id=gen,
+                )
+        elif key.startswith("step:"):
+            step = self._find_step(key.split(":", 1)[1])
+            if step is not None:
+                self.step_artifact_ready.send(
+                    self, step=step, output=output, generation_id=gen
+                )
+        elif key == "job":
+            self.job_aggregate_ready.send(
+                self, output=output, generation_id=gen
+            )
+            time_estimate = getattr(output, "time_estimate", None)
+            self.job_time_updated.send(self, total_seconds=time_estimate)
+        elif key == "job:encode":
+            self.job_generation_finished.send(
+                self, handle=output, task_status="completed"
+            )
 
     # ------------------------------------------------------------------
     # Helpers
@@ -275,7 +342,9 @@ class IntentController:
         from ..core.workpiece import WorkPiece
 
         self._key_to_item = {}
-        # Index workpieces and steps by uid for fast lookup.
+        # Index workpieces and steps by uid for fast lookup.  Kept on
+        # the instance so :meth:`_reattach` can resolve the owning
+        # DocItem for a node key without re-walking the doc.
         workpieces: Dict[str, WorkPiece] = {}
         steps: Dict[str, Step] = {}
         for layer in self._doc.layers:
@@ -284,6 +353,8 @@ class IntentController:
             if layer.workflow:
                 for step in layer.workflow.steps:
                     steps[step.uid] = step
+        self._workpieces_by_uid = workpieces
+        self._steps_by_uid = steps
 
         for n in nodes:
             key = n.key
@@ -299,9 +370,15 @@ class IntentController:
                 step = steps.get(s_uid)
                 if step is not None:
                     self._key_to_item[key] = step
-            # ``job``
-            elif key == "job":
+            # ``job`` or ``job:encode``
+            elif key == "job" or key == "job:encode":
                 self._key_to_item[key] = self._doc
+
+    def _find_workpiece(self, uid: str) -> "Optional[WorkPiece]":
+        return self._workpieces_by_uid.get(uid)
+
+    def _find_step(self, uid: str) -> "Optional[Step]":
+        return self._steps_by_uid.get(uid)
 
     def shutdown(self) -> None:
         """Cancel any pending rebuild timer and disconnect signals."""

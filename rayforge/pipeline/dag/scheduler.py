@@ -57,6 +57,29 @@ class DagScheduler:
         self._workpiece_stage: Optional["WorkPiecePipelineStage"] = None
         self._step_stage: Optional["StepPipelineStage"] = None
         self._job_stage: Optional["JobPipelineStage"] = None
+        # Step UIDs whose compute/aggregate/encode is handled by an
+        # external controller (the raygeo-backed IntentController).
+        # The scheduler skips launching subprocess tasks for these so
+        # multiprocessing is unreachable for the claimed step kinds
+        # (see target-architecture.md slice B2 / B4).
+        self._claimed_step_uids: set[str] = set()
+
+    def claim_steps(self, step_uids: List[str]) -> None:
+        """Mark *step_uids* as handled by an external controller.
+
+        The scheduler will not launch workpiece or step subprocess
+        tasks for claimed steps.  The job stage still runs the final
+        encode for claimed steps unless the caller also claims the
+        job (see :meth:`claim_job`).
+        """
+        self._claimed_step_uids.update(step_uids)
+
+    def release_steps(self, step_uids: List[str]) -> None:
+        """Release previously claimed steps back to the scheduler."""
+        self._claimed_step_uids.difference_update(step_uids)
+
+    def is_step_claimed(self, step_uid: str) -> bool:
+        return step_uid in self._claimed_step_uids
 
     @property
     def is_job_running(self) -> bool:
@@ -260,6 +283,13 @@ class DagScheduler:
             )
 
             if isinstance(workpiece, WorkPiece) and isinstance(step, Step):
+                if self.is_step_claimed(step.uid):
+                    logger.debug(
+                        f"DagScheduler: skipping claimed step "
+                        f"{step.uid} for workpiece {workpiece.uid}"
+                    )
+                    self._artifact_manager.mark_done(key, self._generation_id)
+                    continue
                 logger.debug(
                     f"DagScheduler: Launching task for "
                     f"step_uid={step.uid}, workpiece_uid={workpiece.uid}"
@@ -311,6 +341,13 @@ class DagScheduler:
             )
 
             if isinstance(step, Step):
+                if self.is_step_claimed(step.uid):
+                    logger.debug(
+                        f"DagScheduler: skipping claimed step "
+                        f"{step.uid} for step assembly"
+                    )
+                    self._artifact_manager.mark_done(key, self._generation_id)
+                    continue
                 logger.debug(
                     f"DagScheduler: Launching assembly task for "
                     f"step_uid={step_uid}"

@@ -7,6 +7,7 @@ from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops import Ops
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
+from raygeo.ops.part import Part
 
 from rayforge.core.capability import CUT, SCORE, WITH_KERF, Capability
 from rayforge.core.cut_side import CutSide
@@ -73,9 +74,14 @@ class ContourStep(Step):
         self,
         machine_defaults: MachineDefaults,
         workpiece: "WorkPiece",
-    ) -> "ComputePayload":
-        """Build a :class:`ComputePayload` carrying a :class:`ContourSpec`
-        populated from this step's resolved assembler kwargs."""
+    ) -> "Tuple[Part, ComputePayload]":
+        """Build a :class:`Part` (from the workpiece's vector
+        geometry) and a :class:`ComputePayload` carrying a
+        :class:`ContourSpec` populated from this step's resolved
+        assembler kwargs."""
+        part = workpiece.to_part()
+        if part is None:
+            part = Part(size_mm=workpiece.size)
         kwargs = self.get_assembler_kwargs(machine_defaults, workpiece)
         spec = ContourSpec(
             kerf_mm=kwargs["kerf_mm"],
@@ -88,7 +94,7 @@ class ContourStep(Step):
             allow_arcs=kwargs["allow_arcs"],
             supports_curves=kwargs["supports_curves"],
         )
-        return ComputePayload(assembler=Assembler(spec))
+        return part, ComputePayload(assembler=Assembler(spec))
 
     def assembler_token_params(
         self,

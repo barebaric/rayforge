@@ -19,6 +19,7 @@ from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.intent_builder import (
     IntentBuilder,
+    job_encode_key,
     job_key,
     step_key,
     workpiece_key,
@@ -473,6 +474,7 @@ def test_contour_compute_node_executes_through_raygeo(
 
     nodes = IntentBuilder(machine=machine, generation_id=1).build(doc)
     wpk = workpiece_key(wp.uid, step.uid)
+    sk = step_key(step.uid)
 
     completed = []
 
@@ -485,3 +487,176 @@ def test_contour_compute_node_executes_through_raygeo(
     assert wp_result.error is None, wp_result.error
     assert wp_result.output is not None
     assert wp_result.output.ops.len() > 0
+
+    # The step aggregate must also run and concatenate the workpiece
+    # ops with placement + workpiece start/end markers.
+    step_result = next(c for c in completed if c.key == sk)
+    assert step_result.error is None, step_result.error
+    assert step_result.output is not None
+    assert step_result.output.ops.len() >= wp_result.output.ops.len()
+
+
+def test_step_aggregate_carries_workpiece_placement(
+    contour_step_class, test_machine_and_config
+):
+    """The step aggregate's AggregateInput must carry the workpiece's
+    world placement (translation + rotation, scale normalised) and the
+    workpiece's physical size as target_dimensions."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+
+    geo = Geometry()
+    geo.move_to(0.0, 0.0)
+    geo.line_to(10.0, 0.0)
+    geo.line_to(10.0, 10.0)
+    geo.line_to(0.0, 10.0)
+    geo.close_path()
+
+    wp = WorkPiece(name="rect")
+    wp._edited_boundaries = geo
+    wp.set_size(50.0, 30.0)
+    wp.pos = 10.0, 20.0
+    doc = _make_doc(step, wp)
+
+    nodes = IntentBuilder(machine=machine, generation_id=1).build(doc)
+    sk = step_key(step.uid)
+    step_node = next(n for n in nodes if n.key == sk)
+    assert isinstance(step_node.stage, StageSpec.Aggregate)
+    group = step_node.stage.spec.groups[0]
+    inp = group.inputs[0]
+    assert inp.source_key == workpiece_key(wp.uid, step.uid)
+    assert inp.target_dimensions == (50.0, 30.0)
+
+    # Placement matrix should carry the translation (10, 20) but not
+    # the absolute scale (scale normalised to 1).
+    tx = inp.placement_matrix[0][3]
+    ty = inp.placement_matrix[1][3]
+    assert (tx, ty) == (10.0, 20.0)
+    sx = inp.placement_matrix[0][0]
+    sy = inp.placement_matrix[1][1]
+    assert abs(sx - 1.0) < 1e-9
+    assert abs(abs(sy) - 1.0) < 1e-9
+
+
+def test_step_aggregate_machine_params_from_machine(
+    contour_step_class, test_machine_and_config
+):
+    """The step aggregate's MachineParams is populated from the
+    resolved machine so the aggregate's time estimate is correct."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+
+    nodes = IntentBuilder(machine=machine).build(doc)
+    sk = step_key(step.uid)
+    step_node = next(n for n in nodes if n.key == sk)
+    mp = step_node.stage.spec.machine
+    assert mp.default_feed_rate == float(machine.max_cut_speed)
+    assert mp.default_rapid_rate == float(machine.max_travel_speed)
+    assert mp.acceleration == float(machine.acceleration)
+
+
+def test_job_aggregate_has_layer_and_job_markers(
+    contour_step_class, test_machine_and_config
+):
+    """The job aggregate wraps layers with LayerStart/End and the whole
+    job with JobStart/End."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+
+    nodes = IntentBuilder(machine=machine).build(doc)
+    job_node = next(n for n in nodes if n.key == job_key())
+    assert isinstance(job_node.stage, StageSpec.Aggregate)
+    spec = job_node.stage.spec
+    assert len(spec.wrap_start) == 1
+    assert len(spec.wrap_end) == 1
+    # One group per layer (single layer here).
+    assert len(spec.groups) == 1
+    group = spec.groups[0]
+    assert len(group.start_markers) == 1
+    assert len(group.end_markers) == 1
+
+
+def test_job_encode_node_emits_encode_spec(
+    contour_step_class, test_machine_and_config
+):
+    """The IntentBuilder appends a job encode node carrying an
+    EncodeSpec (Compute stage wrapping an encoder) after the job
+    aggregate."""
+    from raygeo.cnc.execution.specs import EncodeSpec
+
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+
+    nodes = IntentBuilder(machine=machine).build(doc)
+    ek = job_encode_key()
+    encode_nodes = [n for n in nodes if n.key == ek]
+    assert len(encode_nodes) == 1
+    assert isinstance(encode_nodes[0].stage, EncodeSpec)
+    assert encode_nodes[0].stage.source_key == job_key()
+
+
+def test_job_encode_token_changes_on_machine_swap(
+    contour_step_class, test_machine_and_config
+):
+    """A machine-level change (gcode_precision) invalidates the encode
+    token."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+
+    before = IntentBuilder(machine=machine).build(doc)
+    ek = job_encode_key()
+    before_t = next(n.version_token for n in before if n.key == ek)
+
+    machine.gcode_precision = 5
+    after = IntentBuilder(machine=machine).build(doc)
+    after_t = next(n.version_token for n in after if n.key == ek)
+    assert before_t != after_t
+
+
+def test_contour_job_encodes_through_raygeo(
+    contour_step_class, test_machine_and_config
+):
+    """A contour-only document runs end-to-end through execute_stages:
+    workpiece compute → step aggregate → job aggregate → encode,
+    producing G-code machine output."""
+    machine, context = test_machine_and_config
+    machine.hydrate()
+
+    step = contour_step_class.create(context, name="cut")
+
+    geo = Geometry()
+    geo.move_to(0.0, 0.0)
+    geo.line_to(10.0, 0.0)
+    geo.line_to(10.0, 10.0)
+    geo.line_to(0.0, 10.0)
+    geo.close_path()
+
+    wp = WorkPiece(name="rect")
+    wp._edited_boundaries = geo
+    wp.set_size(50.0, 30.0)
+    doc = _make_doc(step, wp)
+
+    nodes = IntentBuilder(machine=machine, generation_id=1).build(doc)
+    ek = job_encode_key()
+
+    completed = []
+
+    def on_completed(node):
+        completed.append(node)
+
+    execute_stages(nodes, on_completed)
+
+    enc_result = next(c for c in completed if c.key == ek)
+    assert enc_result.error is None, enc_result.error
+    assert enc_result.output is not None
+    # The MachineCode variant carries non-empty G-code text.
+    assert enc_result.output.text is not None
+    assert len(enc_result.output.text) > 0

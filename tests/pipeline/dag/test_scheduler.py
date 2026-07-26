@@ -248,6 +248,52 @@ def test_process_graph():
     scheduler.process_graph()
 
 
+def test_claim_steps_skips_workpiece_and_step_dispatch():
+    """A claimed step's workpiece and step nodes are marked done without
+    launching subprocess tasks (B2.5 conditional routing)."""
+    scheduler = _make_scheduler()
+    wp_stage = cast(MagicMock, scheduler._workpiece_stage)
+    step_stage = cast(MagicMock, scheduler._step_stage)
+
+    wp_key = ArtifactKey.for_workpiece(WP_UID_1, STEP_UID_1)
+    step_key = ArtifactKey.for_step(STEP_UID_1)
+    manager = MagicMock()
+    manager.get_state.return_value = NodeState.DIRTY
+    scheduler.graph.add_node(
+        create_node_with_state(wp_key, NodeState.DIRTY, manager=manager)
+    )
+    scheduler.graph.add_node(
+        create_node_with_state(step_key, NodeState.DIRTY, manager=manager)
+    )
+
+    doc = MagicMock()
+    wp = MagicMock()
+    wp.uid = WP_UID_1
+    step = MagicMock()
+    step.uid = STEP_UID_1
+    doc.find_descendant_by_uid = lambda uid: wp if uid == WP_UID_1 else step
+    scheduler.set_doc(doc)
+    scheduler.set_generation_id(1)
+
+    scheduler.claim_steps([STEP_UID_1])
+
+    scheduler.process_graph()
+
+    wp_stage.launch_task.assert_not_called()
+    step_stage.launch_task.assert_not_called()
+    am = cast(MagicMock, scheduler._artifact_manager)
+    assert am.mark_done.call_count >= 2
+
+
+def test_release_steps_restores_dispatch():
+    """Releasing a claimed step resumes subprocess dispatch."""
+    scheduler = _make_scheduler()
+    scheduler.claim_steps([STEP_UID_1])
+    assert scheduler.is_step_claimed(STEP_UID_1)
+    scheduler.release_steps([STEP_UID_1])
+    assert not scheduler.is_step_claimed(STEP_UID_1)
+
+
 def test_on_artifact_state_changed_valid():
     """Test that callback updates node to VALID."""
     scheduler = _make_scheduler()

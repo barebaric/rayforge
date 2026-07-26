@@ -219,6 +219,21 @@ class Pipeline:
         machine.changed.connect(self._on_machine_changed)
         self.recalculate(force=True)
 
+    def claim_steps(self, step_uids: List[str]) -> None:
+        """Mark *step_uids* as handled by an external controller.
+
+        The scheduler will skip launching subprocess compute / step
+        tasks for claimed steps, making multiprocessing unreachable
+        for them.  Used by the raygeo-backed IntentController to take
+        ownership of step kinds it runs through ``execute_stages``
+        (see target-architecture.md slice B2).
+        """
+        self._scheduler.claim_steps(step_uids)
+
+    def release_steps(self, step_uids: List[str]) -> None:
+        """Release previously claimed steps back to the scheduler."""
+        self._scheduler.release_steps(step_uids)
+
     def shutdown(self) -> None:
         """
         Releases all shared memory resources held in the cache. This must be
