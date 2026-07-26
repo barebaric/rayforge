@@ -13,6 +13,7 @@ from rayforge.core.doc import Doc
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.intent_builder import (
+    job_encode_key,
     job_key,
     step_key,
     workpiece_key,
@@ -369,6 +370,154 @@ def test_on_completed_reaches_correct_doc_item(monkeypatch):
     assert key == wpk
     assert item is wp
     assert output == "ok"
+    ctrl.shutdown()
+
+
+# ----------------------------------------------------------------------
+# Reattachment → signals (B2.4)
+# ----------------------------------------------------------------------
+
+
+def test_reattach_workpiece_emits_signal(monkeypatch):
+    idle_calls: List = []
+    ctrl, wp, step = _make_controller_for_completed_test(
+        monkeypatch, idle_calls=idle_calls
+    )
+    wpk = workpiece_key(wp.uid, step.uid)
+
+    received = []
+
+    def _on_wp(sender, **kw):
+        received.append(kw)
+
+    ctrl.workpiece_artifact_ready.connect(_on_wp)
+
+    node = _StubNode(key=wpk, generation_id=ctrl.generation_id, output="ops")
+    ctrl._on_completed(node)
+    assert len(idle_calls) == 1
+    fn, args = idle_calls[0]
+    fn(*args)
+    assert len(received) == 1
+    payload = received[0]
+    assert payload["step"] is step
+    assert payload["workpiece"] is wp
+    assert payload["output"] == "ops"
+    ctrl.shutdown()
+
+
+def test_reattach_step_emits_signal(monkeypatch):
+    idle_calls: List = []
+    ctrl, wp, step = _make_controller_for_completed_test(
+        monkeypatch, idle_calls=idle_calls
+    )
+    sk = step_key(step.uid)
+
+    received = []
+
+    def _on_step(sender, **kw):
+        received.append(kw)
+
+    ctrl.step_artifact_ready.connect(_on_step)
+
+    node = _StubNode(key=sk, generation_id=ctrl.generation_id, output="agg")
+    ctrl._on_completed(node)
+    assert len(idle_calls) == 1
+    fn, args = idle_calls[0]
+    fn(*args)
+    assert len(received) == 1
+    assert received[0]["step"] is step
+    assert received[0]["output"] == "agg"
+    ctrl.shutdown()
+
+
+def test_reattach_job_emits_aggregate_and_time(monkeypatch):
+    idle_calls: List = []
+    ctrl, wp, step = _make_controller_for_completed_test(
+        monkeypatch, idle_calls=idle_calls
+    )
+
+    class _AggOutput:
+        time_estimate = 12.5
+
+    agg_received = []
+    time_received = []
+
+    def _on_agg(sender, **kw):
+        agg_received.append(kw)
+
+    def _on_time(sender, **kw):
+        time_received.append(kw)
+
+    ctrl.job_aggregate_ready.connect(_on_agg)
+    ctrl.job_time_updated.connect(_on_time)
+
+    node = _StubNode(
+        key=job_key(), generation_id=ctrl.generation_id, output=_AggOutput()
+    )
+    ctrl._on_completed(node)
+    assert len(idle_calls) == 1
+    fn, args = idle_calls[0]
+    fn(*args)
+    assert len(agg_received) == 1
+    assert len(time_received) == 1
+    assert time_received[0]["total_seconds"] == 12.5
+    ctrl.shutdown()
+
+
+def test_reattach_job_encode_emits_finished(monkeypatch):
+    idle_calls: List = []
+    ctrl, wp, step = _make_controller_for_completed_test(
+        monkeypatch, idle_calls=idle_calls
+    )
+    # The controller has no machine, so the builder doesn't emit a
+    # job:encode node; inject the key manually so _on_completed
+    # routes it.
+    ctrl._key_to_item[job_encode_key()] = ctrl._doc
+
+    received = []
+
+    def _on_finished(sender, **kw):
+        received.append(kw)
+
+    ctrl.job_generation_finished.connect(_on_finished)
+
+    node = _StubNode(
+        key=job_encode_key(),
+        generation_id=ctrl.generation_id,
+        output="encoded",
+    )
+    ctrl._on_completed(node)
+    assert len(idle_calls) == 1
+    fn, args = idle_calls[0]
+    fn(*args)
+    assert len(received) == 1
+    assert received[0]["handle"] == "encoded"
+    assert received[0]["task_status"] == "completed"
+    ctrl.shutdown()
+
+
+def test_on_batch_progress_emits_progress_changed(monkeypatch):
+    idle_calls: List = []
+    ctrl, wp, step = _make_controller_for_completed_test(
+        monkeypatch, idle_calls=idle_calls
+    )
+
+    received = []
+
+    def _on_progress(sender, **kw):
+        received.append(kw)
+
+    ctrl.progress_changed.connect(_on_progress)
+
+    ctrl._on_batch_progress(0.5, "halfway")
+    # _on_batch_progress marshals onto the main thread via
+    # schedule_on_main_thread, which the fake captures.
+    assert len(idle_calls) == 1
+    fn, args = idle_calls[0]
+    fn(*args)
+    assert len(received) == 1
+    assert received[0]["fraction"] == 0.5
+    assert received[0]["message"] == "halfway"
     ctrl.shutdown()
 
 

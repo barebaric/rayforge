@@ -271,7 +271,9 @@ class TestContourComputePayload:
         step.path_offset_mm = 0.5
         step.overcut = 0.2
 
-        payload = step.build_compute_payload(machine_defaults, self._wp())
+        part, payload = step.build_compute_payload(
+            machine_defaults, self._wp()
+        )
         assert isinstance(payload, ComputePayload)
         assert isinstance(payload.assembler, Assembler)
         spec = payload.assembler.spec
@@ -289,7 +291,8 @@ class TestContourComputePayload:
         step.cut_order = "OUTSIDE_INSIDE"
 
         wp = self._wp()
-        spec = step.build_compute_payload(machine_defaults, wp).assembler.spec
+        _part, payload = step.build_compute_payload(machine_defaults, wp)
+        spec = payload.assembler.spec
         assert spec.cut_order == "outside_inside"
 
     def test_assembler_token_params_mirrors_assembler_kwargs(

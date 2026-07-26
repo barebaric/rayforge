@@ -18,6 +18,7 @@ from raygeo.geo import Matrix
 from raygeo.ops import Ops
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
+from raygeo.ops.part import Part
 from raygeo.ops.state import AirAssistMode
 from raygeo.ops.types import SectionType
 
@@ -203,22 +204,28 @@ class Step(DocItem, ABC):
         self,
         machine_defaults: "MachineDefaults",
         workpiece: "WorkPiece",
-    ) -> "ComputePayload":
+    ) -> "Tuple[Part, ComputePayload]":
         """
-        Build the raygeo :class:`ComputePayload` for a workpiece compute
-        node of the new intent pipeline.
+        Build the raygeo :class:`Part` and :class:`ComputePayload` for
+        a workpiece compute node of the new intent pipeline.
 
         The base implementation returns a default payload wrapping a
-        bare :class:`ContourSpec` assembler, which is the smallest valid
-        payload (used during the staged migration).  Step kinds with a
-        real raygeo assembler override this to populate the assembler
-        spec from their :meth:`get_assembler_kwargs` (see
-        :class:`ContourStep`).
+        bare :class:`ContourSpec` assembler and a :class:`Part`
+        built from the workpiece's vector geometry (or an empty
+        :class:`Part` when the workpiece has no boundaries).  Step
+        kinds with a real raygeo assembler override this to populate
+        the assembler spec from their :meth:`get_assembler_kwargs`
+        and to attach an image source for raster steps (see
+        :class:`ContourStep`, :class:`EngraveStep`).
 
         :param machine_defaults: Resolved machine-level defaults.
         :param workpiece: The workpiece this compute node runs against.
+        :returns: ``(part, payload)`` for ``StageSpec.Compute``.
         """
-        return ComputePayload(assembler=Assembler(ContourSpec()))
+        part = workpiece.to_part()
+        if part is None:
+            part = Part(size_mm=workpiece.size)
+        return part, ComputePayload(assembler=Assembler(ContourSpec()))
 
     def assembler_token_params(
         self,
