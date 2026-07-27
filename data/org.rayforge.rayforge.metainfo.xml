@@ -66,9 +66,9 @@
   </screenshots>
 
   <releases>
-    <release version="1.9.0" date="2026-07-25">
+    <release version="1.9.0" date="2026-07-27">
       <description>
-        <p>Array/Pattern tool, Rust pipeline migration, and bug fixes</p>
+        <p>Array/Pattern tool, raygeo compute pipeline, and bug fixes</p>
         <p>New Features:</p>
         <ul>
           <li>Array / Pattern tool with Grid, Point Rotation, and
@@ -86,6 +86,11 @@
           BidirScanOffsetTransformer, and MultiPassTransformer to
           Rust; transformer application now uses Rust
           apply_transformers dispatch</li>
+          <li>Replaced multiprocessing pipeline with raygeo intent
+          orchestration: compute, raster, shrinkwrap, wavefront,
+          contour, and view rendering now run in raygeo threads
+          instead of subprocesses for improved performance and
+          reliability</li>
           <li>Improved addon translation fallback: English is now used
           when no matching locale is found</li>
           <li>Wavefront icon and improved Gtk SVG compatibility for
