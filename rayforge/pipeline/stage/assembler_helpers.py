@@ -27,17 +27,13 @@ from raygeo.image.grayscale import (
     compute_auto_levels,
     normalize_grayscale,
 )
-from raygeo.ops import Ops
-from raygeo.ops.assembly import AssemblyResult
 from raygeo.ops.part import Part
-from raygeo.ops.types import RasterMode, SectionType
+from raygeo.ops.types import RasterMode
 
 from ...core.vectorization_spec import TraceSpec
 from ...image.dither import DitherAlgorithm, surface_to_dithered_array
 from ...image.tracing import trace_surface
 from ...image.util.grayscale import surface_to_binary, surface_to_grayscale
-from ..artifact import WorkPieceArtifact
-from ..coord import CoordinateSystem
 
 if TYPE_CHECKING:
     import cairo
@@ -345,148 +341,6 @@ def build_part_vector_with_raster_fallback(
     if part is not None:
         return part
     return Part(size_mm=size_mm)
-
-
-def build_part_raster(
-    workpiece: WorkPiece,
-    pixels_per_mm: Tuple[float, float],
-) -> Part:
-    """Build a ``Part`` for a raster assembler.
-
-    Raster assemblers (``raster()``, ``shrinkwrap()``) do not need
-    vector geometry — they work from image data passed separately.
-    The Part carries only physical metadata: ``size_mm`` and
-    ``pixels_per_mm``.
-
-    Args:
-        workpiece: The WorkPiece being processed.
-        pixels_per_mm: The (x, y) resolution of the rendered surface.
-    """
-    return Part(
-        size_mm=workpiece.size,
-        pixels_per_mm=pixels_per_mm,
-    )
-
-
-def make_artifact(
-    ops: Ops,
-    workpiece: WorkPiece,
-    generation_id: int,
-    *,
-    is_vector: bool = True,
-    source_dimensions: Optional[Tuple[float, float]] = None,
-) -> WorkPieceArtifact:
-    """Create a ``WorkPieceArtifact`` from already-assembled ops.
-
-    This absorbs the common artifact-creation code shared by every
-    producer's ``run()`` return statement.
-
-    Args:
-        ops: The final, fully-wrapped Ops sequence.
-        workpiece: The WorkPiece that was processed.
-        generation_id: The generation ID for staleness tracking.
-        is_vector: If True, the coordinate system is
-            ``MILLIMETER_SPACE`` and ``source_dimensions`` defaults
-            to ``workpiece.size``.  If False, ``PIXEL_SPACE`` and
-            ``source_dimensions`` must be provided.
-        source_dimensions: Override for ``source_dimensions``.  For
-            raster producers, pass ``(width_px, height_px)``.
-    """
-    if source_dimensions is None:
-        source_dimensions = workpiece.size
-
-    coord_sys = (
-        CoordinateSystem.MILLIMETER_SPACE
-        if is_vector
-        else CoordinateSystem.PIXEL_SPACE
-    )
-
-    return WorkPieceArtifact(
-        ops=ops,
-        is_scalable=False,
-        source_coordinate_system=coord_sys,
-        source_dimensions=source_dimensions,
-        generation_size=workpiece.size,
-        generation_id=generation_id,
-    )
-
-
-def wrap_assembler_result(
-    result: AssemblyResult,
-    workpiece: WorkPiece,
-    laser: Laser,
-    generation_id: int,
-    *,
-    section_type: SectionType = SectionType.VECTOR_OUTLINE,
-    split_contours: bool = False,
-    set_power: Optional[float] = None,
-    raster_mode: Optional[RasterMode] = None,
-    is_vector: bool = True,
-    source_dimensions: Optional[Tuple[float, float]] = None,
-    always_wrap: bool = False,
-) -> WorkPieceArtifact:
-    """Wrap an ``AssemblyResult`` into a ``WorkPieceArtifact``.
-
-    This absorbs the post-processing logic shared by
-    ``ContourProducer``, ``FrameProducer``, ``ShrinkWrapProducer``,
-    and ``Rasterizer`` — building an ``Ops`` sequence with section
-    markers, head assignment, and optional power, then wrapping it
-    in a ``WorkPieceArtifact``.
-
-    Args:
-        result: The ``AssemblyResult`` from a raygeo assembler.
-        workpiece: The WorkPiece being processed.
-        laser: The Laser model (used for ``laser.uid`` head
-            assignment).
-        generation_id: The generation ID for staleness tracking.
-        section_type: The ``SectionType`` for section markers.
-            Defaults to ``VECTOR_OUTLINE``.
-        split_contours: If True, split the result ops into
-            individual contours and wrap each in its own section
-            (used by ContourProducer).  If False, all ops go in a
-            single section.
-        set_power: If not None, emit a ``set_power`` command
-            inside each section (used by Frame/ShrinkWrap).
-        is_vector: If True, use ``MILLIMETER_SPACE`` coordinate
-            system.  If False, ``PIXEL_SPACE`` (used by Rasterizer).
-        source_dimensions: Override for ``source_dimensions``.
-            For raster producers, pass
-            ``(width_px, height_px)``.
-    """
-    final_ops = Ops()
-
-    has_ops = result.ops.len() > 0
-    if has_ops:
-        final_ops.set_head(laser.uid)
-
-    if always_wrap or has_ops:
-        if split_contours:
-            contour_geo = result.ops.to_geometry()
-            contour_list = contour_geo.split_into_contours()
-            for c in contour_list:
-                final_ops.ops_section_start(
-                    section_type, workpiece.uid, raster_mode=raster_mode
-                )
-                final_ops.extend(Ops.from_geometry(c))
-                final_ops.ops_section_end(
-                    section_type, raster_mode=raster_mode
-                )
-        else:
-            final_ops.ops_section_start(
-                section_type, workpiece.uid, raster_mode=raster_mode
-            )
-            if set_power is not None:
-                final_ops.set_power(set_power)
-            final_ops.extend(result.ops)
-            final_ops.ops_section_end(section_type, raster_mode=raster_mode)
-
-    return make_artifact(
-        final_ops,
-        workpiece,
-        generation_id,
-        is_vector=is_vector,
-        source_dimensions=source_dimensions,
-    )
 
 
 def preprocess_raster_image(

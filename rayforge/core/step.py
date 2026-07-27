@@ -20,7 +20,6 @@ from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.part import Part
 from raygeo.ops.state import AirAssistMode
-from raygeo.ops.types import SectionType
 
 from ..pipeline.transformer.registry import transformer_registry
 from ..shared.units.formatter import format_value
@@ -32,7 +31,6 @@ if TYPE_CHECKING:
     from ..context import RayforgeContext
     from ..machine.models.laser import Laser
     from ..machine.models.machine import Machine
-    from ..pipeline.artifact import WorkPieceArtifact
     from ..pipeline.stage.assembler_helpers import MachineDefaults
     from .layer import Layer
     from .workflow import Workflow
@@ -67,12 +65,6 @@ class Step(DocItem, ABC):
     CAPABILITIES: Tuple[Capability, ...] = ()
     PRODUCER_CLASS: ClassVar[Any] = None
     ASSEMBLER_NAME: ClassVar[str] = ""
-    IS_VECTOR: ClassVar[bool] = True
-    NORMALIZE_WINDINGS: ClassVar[bool] = False
-    SPLIT_CONTOURS: ClassVar[bool] = False
-    SET_POWER: ClassVar[bool] = False
-    ALWAYS_WRAP: ClassVar[bool] = False
-    SECTION_TYPE: ClassVar[SectionType] = SectionType.VECTOR_OUTLINE
 
     def __init__(
         self,
@@ -178,20 +170,6 @@ class Step(DocItem, ABC):
             f"{cls.__name__}.create() must be implemented by subclass"
         )
 
-    def prepare(
-        self,
-        workpiece: "WorkPiece",
-        settings: Dict[str, Any],
-        resolved_params: Dict[str, Any],
-    ) -> None:
-        """
-        Run once before chunked processing begins.
-
-        Override in subclasses to compute global state (e.g. raster
-        auto-levels). The base implementation is a no-op.
-        """
-        pass
-
     def get_assembler_kwargs(
         self,
         machine_defaults: "MachineDefaults",
@@ -261,45 +239,6 @@ class Step(DocItem, ABC):
         if self.pulse_width:
             ops.set_pulse_width(self.pulse_width)
         return ops
-
-    def should_skip_workpiece(self, workpiece: "WorkPiece") -> bool:
-        """Return True if this step should skip the given workpiece entirely.
-
-        Override in subclasses that need to bail out early (e.g. raster
-        steps skip workpieces with no fills).
-        """
-        return False
-
-    def requires_full_render(self) -> bool:
-        """Return True if this step needs a full bitmap render before assembly.
-
-        The base implementation returns False. Steps that rasterize the
-        entire workpiece before operating on it (e.g. shrinkwrap) should
-        override to return True.
-        """
-        return False
-
-    def assemble_on_surface(
-        self,
-        workpiece: "WorkPiece",
-        laser: "Laser",
-        generation_id: int,
-        surface: Any = None,
-        pixels_per_mm: Optional[Tuple[float, float]] = None,
-        *,
-        machine_defaults: "MachineDefaults",
-        y_offset_mm: float = 0.0,
-        computed_auto_levels: Optional[Tuple[int, int]] = None,
-    ) -> "WorkPieceArtifact":
-        """Run the assembler on a surface (or vector data) and return an
-        artifact.
-
-        Subclasses must override this.  The base implementation raises
-        :class:`NotImplementedError`.
-        """
-        raise NotImplementedError(
-            f"{type(self).__name__} must implement assemble_on_surface"
-        )
 
     def to_dict(self) -> Dict:
         """Serializes the step and its configuration to a dictionary."""

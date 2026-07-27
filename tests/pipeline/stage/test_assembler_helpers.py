@@ -7,28 +7,17 @@ import cairo
 import numpy as np
 import pytest
 from raygeo.geo import Geometry, Matrix
-from raygeo.ops import Ops
-from raygeo.ops.assembly import AssemblyResult
-from raygeo.ops.assembly.contour import contour
-from raygeo.ops.part import Part
-from raygeo.ops.types import RasterMode, SectionType
 
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.dither import DitherAlgorithm
-from rayforge.machine.models.machine import Laser
-from rayforge.pipeline.artifact import WorkPieceArtifact
-from rayforge.pipeline.coord import CoordinateSystem
 from rayforge.pipeline.stage.assembler_helpers import (
     DepthMode,
-    build_part_raster,
     build_part_vector,
     compute_raster_auto_levels,
-    make_artifact,
     preprocess_raster_image,
-    wrap_assembler_result,
 )
 
 
@@ -188,186 +177,6 @@ class TestBuildPartVector:
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 100, 100)
         part = build_part_vector(empty_workpiece, surface=surface)
         assert part is None
-
-
-class TestBuildPartRaster:
-    """Tests for build_part_raster()."""
-
-    def test_raster_part_has_no_geometry(self, vector_workpiece):
-        """Raster Part carries metadata only, no vector geometry."""
-        part = build_part_raster(vector_workpiece, (10.0, 10.0))
-
-        assert not part.has_geometry()
-        assert part.geometry is None
-        assert part.size_mm == (50, 30)
-        assert part.pixels_per_mm == (10.0, 10.0)
-
-    def test_raster_part_with_empty_workpiece(self, empty_workpiece):
-        """Raster Part works without vector boundaries."""
-        part = build_part_raster(empty_workpiece, (5.0, 5.0))
-
-        assert not part.has_geometry()
-        assert part.size_mm == (40, 40)
-        assert part.pixels_per_mm == (5.0, 5.0)
-
-
-def _make_assembly_result_with_rect(w, h):
-    """Create an AssemblyResult containing a simple rectangle."""
-    geo = Geometry()
-    geo.move_to(0, 0)
-    geo.line_to(w, 0)
-    geo.line_to(w, h)
-    geo.line_to(0, h)
-    geo.close_path()
-    # AssemblyResult is a Rust/PyO3 object; we can't easily set ops
-    # directly, so use a contour assembler call to get a real result.
-    part = Part(geometry=geo, size_mm=(w, h))
-    return contour(
-        part,
-        kerf_mm=0.0,
-        path_offset_mm=0.0,
-        cut_side="centerline",
-    )
-
-
-class TestMakeArtifact:
-    """Tests for make_artifact()."""
-
-    def test_vector_artifact(self, vector_workpiece):
-        """make_artifact with is_vector=True uses MILLIMETER_SPACE."""
-        ops = Ops()
-        artifact = make_artifact(
-            ops, vector_workpiece, generation_id=42, is_vector=True
-        )
-
-        assert isinstance(artifact, WorkPieceArtifact)
-        assert artifact.ops is ops
-        assert artifact.is_scalable is False
-        assert (
-            artifact.source_coordinate_system
-            == CoordinateSystem.MILLIMETER_SPACE
-        )
-        assert artifact.source_dimensions == (50, 30)
-        assert artifact.generation_size == (50, 30)
-        assert artifact.generation_id == 42
-
-    def test_raster_artifact(self, vector_workpiece):
-        """make_artifact with is_vector=False uses PIXEL_SPACE and
-        custom source_dimensions."""
-        ops = Ops()
-        artifact = make_artifact(
-            ops,
-            vector_workpiece,
-            generation_id=99,
-            is_vector=False,
-            source_dimensions=(200, 150),
-        )
-
-        assert (
-            artifact.source_coordinate_system == CoordinateSystem.PIXEL_SPACE
-        )
-        assert artifact.source_dimensions == (200, 150)
-        assert artifact.generation_size == (50, 30)
-
-    def test_empty_ops(self, vector_workpiece):
-        """make_artifact works with empty Ops."""
-        artifact = make_artifact(Ops(), vector_workpiece, generation_id=1)
-
-        assert artifact.ops.is_empty()
-        assert isinstance(artifact, WorkPieceArtifact)
-
-
-class TestWrapAssemblerResult:
-    """Tests for wrap_assembler_result()."""
-
-    def test_single_section_vector(self, vector_workpiece):
-        """Default: single VECTOR_OUTLINE section wrapping all ops."""
-        laser = Laser()
-        result = _make_assembly_result_with_rect(50, 30)
-
-        artifact = wrap_assembler_result(
-            result, vector_workpiece, laser, generation_id=1
-        )
-
-        assert isinstance(artifact, WorkPieceArtifact)
-        assert not artifact.ops.is_empty()
-        assert (
-            artifact.source_coordinate_system
-            == CoordinateSystem.MILLIMETER_SPACE
-        )
-        assert artifact.source_dimensions == (50, 30)
-
-    def test_split_contours(self, vector_workpiece):
-        """split_contours=True wraps each contour in its own section."""
-        laser = Laser()
-        result = _make_assembly_result_with_rect(50, 30)
-
-        artifact = wrap_assembler_result(
-            result,
-            vector_workpiece,
-            laser,
-            generation_id=1,
-            split_contours=True,
-        )
-
-        assert not artifact.ops.is_empty()
-        sections = artifact.ops.sections()
-        typed = [s for s in sections if s.section_type is not None]
-        assert len(typed) >= 1
-        for section in typed:
-            assert section.section_type == SectionType.VECTOR_OUTLINE
-
-    def test_set_power(self, vector_workpiece):
-        """set_power emits a power command inside the section."""
-        laser = Laser()
-        result = _make_assembly_result_with_rect(50, 30)
-
-        artifact = wrap_assembler_result(
-            result,
-            vector_workpiece,
-            laser,
-            generation_id=1,
-            set_power=0.5,
-        )
-
-        assert not artifact.ops.is_empty()
-
-    def test_raster_section_type(self, vector_workpiece):
-        """section_type=RASTER_FILL wraps ops in a raster section."""
-        laser = Laser()
-        result = _make_assembly_result_with_rect(50, 30)
-
-        artifact = wrap_assembler_result(
-            result,
-            vector_workpiece,
-            laser,
-            generation_id=1,
-            section_type=SectionType.RASTER_FILL,
-            raster_mode=RasterMode.CONSTANT_POWER,
-            is_vector=False,
-            source_dimensions=(100, 100),
-        )
-
-        assert (
-            artifact.source_coordinate_system == CoordinateSystem.PIXEL_SPACE
-        )
-        assert artifact.source_dimensions == (100, 100)
-        sections = artifact.ops.sections()
-        typed = [s for s in sections if s.section_type is not None]
-        assert len(typed) >= 1
-        assert typed[0].section_type == SectionType.RASTER_FILL
-
-    def test_empty_result_ops(self, vector_workpiece):
-        """When result.ops is empty, artifact has empty ops."""
-        laser = Laser()
-        result = AssemblyResult()
-
-        artifact = wrap_assembler_result(
-            result, vector_workpiece, laser, generation_id=1
-        )
-
-        assert artifact.ops.is_empty()
-        assert isinstance(artifact, WorkPieceArtifact)
 
 
 class TestPreprocessRasterImage:
