@@ -11,7 +11,7 @@ import traceback
 import warnings
 from gettext import gettext as _
 from pathlib import Path
-from typing import cast, Optional
+from typing import Optional, cast
 
 # Parse --config early before any rayforge imports, as they may
 # import config.py which computes CONFIG_DIR at module load time

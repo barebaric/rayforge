@@ -5,7 +5,6 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Callable, Coroutine, Dict, Optional
 
 import numpy as np
-
 from blinker import Signal
 from raygeo.ops import Ops
 

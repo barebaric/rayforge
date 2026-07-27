@@ -18,7 +18,6 @@ from ..artifact.workpiece_view import (
 )
 from ..encoder.vertexencoder import VertexEncoder
 
-
 logger = logging.getLogger(__name__)
 
 CAIRO_MAX_DIMENSION = 8192

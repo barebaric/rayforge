@@ -59,8 +59,6 @@ def register_post_processors():
     """
     Automatically register post_processors transformers for all tests.
     """
-    from rayforge.pipeline.transformer.registry import transformer_registry
-
     # Import and register transformers directly from the addon
     from post_processors.transformers import (
         BidirScanOffsetTransformer,
@@ -73,6 +71,8 @@ def register_post_processors():
         Smooth,
         TabOpsTransformer,
     )
+
+    from rayforge.pipeline.transformer.registry import transformer_registry
 
     ADDON_NAME = "post_processors"
     transformer_registry.register(Smooth, addon_name=ADDON_NAME)

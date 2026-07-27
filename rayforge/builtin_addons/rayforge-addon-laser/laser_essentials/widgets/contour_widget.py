@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 from gi.repository import Adw, Gtk
 
-from rayforge.core.cut_side import CutSide, CutOrder
+from rayforge.core.cut_side import CutOrder, CutSide
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,

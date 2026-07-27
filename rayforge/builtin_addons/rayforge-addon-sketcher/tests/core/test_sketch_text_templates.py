@@ -1,10 +1,10 @@
 from datetime import date
 from typing import cast
 
+from raygeo.geo.shape.text import FontConfig
 from sketcher.core import Sketch
 from sketcher.core.entities.text_box import TextBoxEntity
 
-from raygeo.geo.shape.text import FontConfig
 from rayforge.core.varset import FloatVar, Var
 
 

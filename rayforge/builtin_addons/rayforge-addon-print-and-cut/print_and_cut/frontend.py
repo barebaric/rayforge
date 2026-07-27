@@ -1,7 +1,7 @@
 import logging
+from gettext import gettext as _
 
 from gi.repository import Gio
-from gettext import gettext as _
 
 from rayforge.core.group import Group
 from rayforge.core.hooks import hookimpl

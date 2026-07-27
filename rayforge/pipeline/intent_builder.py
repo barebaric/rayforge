@@ -52,7 +52,6 @@ from typing import (
 )
 
 import numpy as np
-
 from raygeo.cnc.execution.specs import (
     AggregateGroup,
     AggregateInput,
@@ -88,7 +87,6 @@ from .stage.assembler_helpers import (
 )
 from .transformer import OpsTransformer
 from .transformer.registry import transformer_registry
-
 
 if TYPE_CHECKING:
     from ..core.doc import Doc

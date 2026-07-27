@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import logging
-import weakref
 import uuid
+import weakref
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,

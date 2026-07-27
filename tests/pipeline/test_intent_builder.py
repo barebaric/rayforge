@@ -25,9 +25,9 @@ from raygeo.cnc.execution.specs import (
 from raygeo.geo import Geometry, Matrix
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
-from raygeo.ops.part import Part
 from raygeo.ops.axis import Axis
 from raygeo.ops.convert import Encoder, GcodeSpec
+from raygeo.ops.part import Part
 from raygeo.pipeline.execute import execute_stages
 from raygeo.pipeline.request import NodeRequest
 from raygeo.pipeline.stage import StageSpec
@@ -47,8 +47,8 @@ from rayforge.pipeline.intent_builder import (
     job_encode_key,
     job_key,
     job_machinexform_key,
-    workpiece_key,
     step_key,
+    workpiece_key,
 )
 
 
@@ -815,68 +815,97 @@ def _build_rotary_pipeline(
     """Helper: create a 4-node pipeline (compute → aggregate → mxform
     → encode) that feeds known geometry through the machine-transform
     stage with a rotary module and encodes the result."""
-    cs = ContourSpec(cut_side='centerline', cut_order='inside_outside',
-                     remove_inner=False, kerf_mm=0.0, path_offset_mm=0.0,
-                     overcut=0.0)
+    cs = ContourSpec(
+        cut_side="centerline",
+        cut_order="inside_outside",
+        remove_inner=False,
+        kerf_mm=0.0,
+        path_offset_mm=0.0,
+        overcut=0.0,
+    )
     assembler = Assembler(cs)
     payload = ComputePayload(assembler=assembler)
 
     compute_node = NodeRequest(
-        key='src', generation_id=1,
+        key="src",
+        generation_id=1,
         stage=StageSpec.Compute(part=part, params=payload),
         version_token=0,
     )
 
     agg_spec = AggregateSpec(
         wrap_start=[Marker.JobStart(_tag=True)],
-        groups=[AggregateGroup(
-            start_markers=[Marker.LayerStart(uid='test', _tag=True)],
-            inputs=[AggregateInput(
-                source_key='src',
-                placement_matrix=[[1, 0, 0, 0], [0, 1, 0, 0],
-                                  [0, 0, 1, 0], [0, 0, 0, 1]],
-            )],
-            end_markers=[Marker.LayerEnd(uid='test', _tag=True)],
-        )],
+        groups=[
+            AggregateGroup(
+                start_markers=[Marker.LayerStart(uid="test", _tag=True)],
+                inputs=[
+                    AggregateInput(
+                        source_key="src",
+                        placement_matrix=[
+                            [1, 0, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 1, 0],
+                            [0, 0, 0, 1],
+                        ],
+                    )
+                ],
+                end_markers=[Marker.LayerEnd(uid="test", _tag=True)],
+            )
+        ],
         wrap_end=[Marker.JobEnd(_tag=True)],
         machine=MachineParams(),
     )
     agg_node = NodeRequest(
-        key='agg', generation_id=1,
+        key="agg",
+        generation_id=1,
         stage=StageSpec.Aggregate(spec=agg_spec),
         version_token=0,
     )
 
     rotary = RotaryMappingSpec(
-        layer_uid='test', diameter=diameter, gear_ratio=1.0, reverse=False,
-        axis_position_3d=[0, 0, 0], cylinder_dir=[1, 0, 0],
+        layer_uid="test",
+        diameter=diameter,
+        gear_ratio=1.0,
+        reverse=False,
+        axis_position_3d=[0, 0, 0],
+        cylinder_dir=[1, 0, 0],
         rotary_axis=axis,
-        replaced_axis=None if mode == 'true_4th_axis' else axis,
+        replaced_axis=None if mode == "true_4th_axis" else axis,
         mu_per_rotation=mu_per_rotation,
     )
 
     mt_spec = MachineTransformSpec(
-        source_key='agg', linearize_curves=False,
-        world_to_machine=[[1, 0, 0, 0], [0, 1, 0, 0],
-                          [0, 0, 1, 0], [0, 0, 0, 1]],
-        default_wcs_offset=[0, 0, 0], layer_wcs_offsets=[], reverse_z=False,
+        source_key="agg",
+        linearize_curves=False,
+        world_to_machine=[
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ],
+        default_wcs_offset=[0, 0, 0],
+        layer_wcs_offsets=[],
+        reverse_z=False,
         rotary_mappings=[rotary],
     )
     mt_node = NodeRequest(
-        key='mx', generation_id=1,
-        stage=mt_spec, version_token=0,
+        key="mx",
+        generation_id=1,
+        stage=mt_spec,
+        version_token=0,
     )
 
     mm = MagicMock()
     mm.gcode_precision = 3
     dialect_spec = dialect_to_spec(GRBL_DIALECT, mm)
-    context_json = '{}'
+    context_json = "{}"
     gcode_spec = GcodeSpec(dialect=dialect_spec, context_json=context_json)
     encoder = Encoder(gcode_spec)
 
     enc_node = NodeRequest(
-        key='enc', generation_id=1,
-        stage=EncodeSpec(source_key='mx', encoder=encoder),
+        key="enc",
+        generation_id=1,
+        stage=EncodeSpec(source_key="mx", encoder=encoder),
         version_token=0,
     )
 
@@ -949,7 +978,10 @@ def test_machine_transform_axis_replacement():
         [(0, 0), (10, 0), (10, 10), (0, 10)], size_mm=(10, 10)
     )
     completed = _build_rotary_pipeline(
-        part, 25.0, axis="Y", mode="axis_replacement",
+        part,
+        25.0,
+        axis="Y",
+        mode="axis_replacement",
         mu_per_rotation=100.0,
     )
 

@@ -1,9 +1,9 @@
 import pytest
+from raygeo.geo.shape.text import FontConfig
 from sketcher.core import Sketch
 from sketcher.core.commands import ModifyTextPropertyCommand
 from sketcher.core.entities.text_box import TextBoxEntity
 
-from raygeo.geo.shape.text import FontConfig
 from rayforge.core.undo import HistoryManager
 
 

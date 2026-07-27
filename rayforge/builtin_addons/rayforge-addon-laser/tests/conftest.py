@@ -5,8 +5,9 @@ This conftest ensures that producers, steps, and assemblers are registered
 with their respective registries before tests run.
 """
 
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from rayforge.core.step_registry import step_registry
 from rayforge.pipeline.transformer.registry import transformer_registry
@@ -40,11 +41,10 @@ def register_laser_essentials():
     module path (rayforge_addons.*) causing isinstance() checks
     to fail in tests.
     """
-    from rayforge.addon_mgr.addon_manager import AddonManager
-    from rayforge.config import BUILTIN_ADDONS_DIR
-
     import pluggy
 
+    from rayforge.addon_mgr.addon_manager import AddonManager
+    from rayforge.config import BUILTIN_ADDONS_DIR
     from rayforge.core.hooks import RayforgeSpecs
 
     plugin_mgr = pluggy.PluginManager("rayforge")
