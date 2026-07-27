@@ -39,17 +39,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-PRODUCER_TO_ASSEMBLER = {
-    "ContourProducer": "contour",
-    "FrameProducer": "frame",
-    "Rasterizer": "raster",
-    "DepthEngraver": "raster",
-    "DitherRasterizer": "raster",
-    "ShrinkWrapProducer": "shrinkwrap",
-    "WavefrontProducer": "wavefront",
-    "MaterialTestGridProducer": "material_test_grid",
-}
-
 
 class Step(DocItem, ABC):
     """
@@ -78,7 +67,6 @@ class Step(DocItem, ABC):
         self.generated_workpiece_uid: Optional[str] = None
         self.applied_recipe_uid: Optional[str] = None
 
-        self.opsproducer_dict: Optional[Dict[str, Any]] = None
         per_wp_defaults, per_sp_defaults = (
             self.get_default_transformers_dicts()
         )
@@ -253,7 +241,6 @@ class Step(DocItem, ABC):
             "selected_laser_uid": self.selected_laser_uid,
             "generated_workpiece_uid": self.generated_workpiece_uid,
             "applied_recipe_uid": self.applied_recipe_uid,
-            "opsproducer_dict": self.opsproducer_dict,
             "per_workpiece_transformers_dicts": (
                 self.per_workpiece_transformers_dicts
             ),
@@ -302,7 +289,6 @@ class Step(DocItem, ABC):
             "generated_workpiece_uid",
             "applied_recipe_uid",
             "modifiers_dicts",
-            "opsproducer_dict",
             "per_workpiece_transformers_dicts",
             "per_step_transformers_dicts",
             "pixels_per_mm",
@@ -345,8 +331,6 @@ class Step(DocItem, ABC):
         step.selected_laser_uid = data.get("selected_laser_uid")
         step.generated_workpiece_uid = data.get("generated_workpiece_uid")
         step.applied_recipe_uid = data.get("applied_recipe_uid")
-
-        step.opsproducer_dict = data["opsproducer_dict"]
 
         default_per_wp, default_per_step = (
             step_class.get_default_transformers_dicts()

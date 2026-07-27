@@ -94,7 +94,6 @@ class TestContourStep:
             "matrix": Matrix.identity().to_list(),
             "typelabel": "Contour",
             "visible": True,
-            "opsproducer_dict": {"type": "ContourProducer"},
             "per_workpiece_transformers_dicts": [
                 {"name": "TabOpsTransformer", "enabled": True},
             ],
@@ -126,7 +125,6 @@ class TestContourStep:
             "matrix": Matrix.identity().to_list(),
             "typelabel": "Contour",
             "visible": True,
-            "opsproducer_dict": {"type": "ContourProducer"},
             "per_workpiece_transformers_dicts": [
                 {
                     "name": "TabOpsTransformer",
@@ -157,7 +155,6 @@ class TestContourStep:
             "matrix": Matrix.identity().to_list(),
             "typelabel": "Contour",
             "visible": True,
-            "opsproducer_dict": {"type": "ContourProducer"},
             "per_workpiece_transformers_dicts": [
                 {"name": "TabOpsTransformer", "enabled": True},
             ],
@@ -182,7 +179,6 @@ class TestContourStep:
             "matrix": Matrix.identity().to_list(),
             "typelabel": "Contour",
             "visible": True,
-            "opsproducer_dict": {"type": "ContourProducer"},
             "per_workpiece_transformers_dicts": [
                 {"name": "Optimize", "enabled": True},
             ],

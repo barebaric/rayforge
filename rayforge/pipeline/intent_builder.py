@@ -1049,7 +1049,6 @@ def _step_compute_params(step: "Step") -> Dict[str, Any]:
         "frequency": step.frequency,
         "pulse_width": step.pulse_width,
         "pixels_per_mm": list(step.pixels_per_mm),
-        "opsproducer": step.opsproducer_dict,
     }
 
 

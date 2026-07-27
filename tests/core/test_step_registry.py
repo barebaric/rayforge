@@ -95,7 +95,6 @@ class TestStepRegistry:
                 "typelabel": "Mock",
                 "visible": True,
                 "matrix": Matrix.identity().to_list(),
-                "opsproducer_dict": None,
                 "per_workpiece_transformers_dicts": [],
                 "per_step_transformers_dicts": [],
             }
@@ -114,7 +113,6 @@ class TestStepRegistry:
             "typelabel": "Unknown",
             "visible": True,
             "matrix": Matrix.identity().to_list(),
-            "opsproducer_dict": None,
             "per_workpiece_transformers_dicts": [],
             "per_step_transformers_dicts": [],
         }
@@ -130,7 +128,6 @@ class TestStepRegistry:
             "typelabel": "OldType",
             "visible": True,
             "matrix": Matrix.identity().to_list(),
-            "opsproducer_dict": None,
             "per_workpiece_transformers_dicts": [],
             "per_step_transformers_dicts": [],
         }
