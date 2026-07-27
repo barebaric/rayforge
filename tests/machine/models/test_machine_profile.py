@@ -15,6 +15,13 @@ if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
 
 
+def _encode(ops, machine, doc):
+    """Encode ops via the driver encoder (bypasses deleted encode_ops)."""
+    driver_cls = get_driver_cls(machine.driver_name)
+    encoder = driver_cls.create_encoder(machine)
+    return encoder.encode(ops, machine, doc)
+
+
 @pytest_asyncio.fixture
 async def carvera_air_machine(
     context_initializer: "RayforgeContext",
@@ -44,7 +51,7 @@ async def test_carvera_air_gcode_generation(carvera_air_machine: "Machine"):
     doc = Doc()
 
     # --- Act ---
-    gcode_str = machine.encode_ops(ops, doc).text
+    gcode_str = _encode(ops, machine, doc).text
 
     # --- Assert ---
     # The Carvera profile specifies gcode_precision=4.
@@ -95,7 +102,7 @@ async def test_inject_wcs_after_preamble_flag(carvera_air_machine: "Machine"):
     doc = Doc()
 
     # --- Act: With inject_wcs_after_preamble=True (default) ---
-    gcode_str = machine.encode_ops(ops, doc).text
+    gcode_str = _encode(ops, machine, doc).text
     gcode_lines = gcode_str.split("\n")
 
     # --- Assert: WCS should be present ---
@@ -133,7 +140,7 @@ async def test_inject_wcs_after_preamble_flag(carvera_air_machine: "Machine"):
     machine.context.dialect_mgr.register(custom_dialect)
     machine.set_dialect_uid(custom_dialect.uid)
 
-    gcode_str = machine.encode_ops(ops, doc).text
+    gcode_str = _encode(ops, machine, doc).text
     gcode_lines = gcode_str.split("\n")
 
     # --- Assert: WCS should NOT be present ---

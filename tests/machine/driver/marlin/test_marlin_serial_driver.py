@@ -448,7 +448,7 @@ class TestMarlinSerialDriverRealSerial:
         ops.move_to(10, 10, 0)
         ops.line_to(20, 20, 0)
         doc = Doc()
-        encoded = machine.encode_ops(ops, doc)
+        encoded = driver.get_encoder().encode(ops, machine, doc)
         await asyncio.wait_for(driver.run(encoded, doc, ops), timeout=5.0)
         job_finished.assert_called_once()
 

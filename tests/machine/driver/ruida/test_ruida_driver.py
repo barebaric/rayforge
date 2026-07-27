@@ -508,7 +508,7 @@ async def test_run_with_machine_code(driver, ruida_simulator):
     ops.move_to(10.0, 20.0)
     ops.line_to(30.0, 40.0)
 
-    encoded = driver._machine.encode_ops(ops, doc)
+    encoded = driver.get_encoder().encode(ops, driver._machine, doc)
 
     assert await wait_for_connection(driver)
 

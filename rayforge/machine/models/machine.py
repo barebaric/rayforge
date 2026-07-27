@@ -7,10 +7,8 @@ from gettext import gettext as _
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 
-import numpy as np
 from blinker import Signal
 from raygeo.geo.types import Point3D, Rect
-from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 
 from ...camera.models.camera import Camera
@@ -19,12 +17,10 @@ from ...context import RayforgeContext, get_context
 from ...core.layer import Layer
 from ...core.model import Model
 from ...pipeline.coordspace import MachineSpace
-from ...pipeline.encoder.base import EncodedOutput
 from ...shared.tasker import task_mgr
 from ..assembly import Assembly
 from ..driver import get_driver_cls
 from ..driver.driver import DeviceState, Pos
-from ..kinematic_mapping import KinematicMapping
 from ..kinematics import HeadSpec, Kinematics, build_assembly
 from ..models.axis import AxisConfig, AxisDirection, AxisSet, AxisType
 from ..transport import TransportStatus
@@ -37,7 +33,6 @@ from .zone import Zone
 
 if TYPE_CHECKING:
     from ...core.capability import Capability
-    from ...core.doc import Doc
     from ...core.varset import VarSet
     from ..driver.driver import Driver
     from .controller import MachineController
@@ -1291,198 +1286,6 @@ class Machine:
     async def sync_active_wcs_from_device(self):
         """Queries the device for its active WCS and updates state."""
         await self.controller.sync_active_wcs_from_device()
-
-    def _prepare_ops_for_encoding(
-        self,
-        ops: "Ops",
-        doc: Optional["Doc"] = None,
-        _pre_prepared: bool = False,
-    ) -> "Ops":
-        """
-        Prepares an Ops object for encoding by applying machine-specific
-        coordinate transformations.
-
-        The pipeline produces ops in world coordinates. This method converts
-        them to machine coordinates, and then to command coordinates for the
-        G-code output.
-
-        When doc is provided, per-layer WCS offsets are applied by reading
-        the layer's wcs attribute at LayerStartCommand boundaries. When doc
-        is None, the machine's active WCS offset is applied uniformly.
-
-        Args:
-            ops: The Ops object to prepare.
-            doc: Optional Doc for per-layer WCS lookup.
-            _pre_prepared: If True, the caller has already copied and
-                linearized the ops. Used internally by encode_ops() when
-                axis mapping runs before this step.
-
-        Returns:
-            A transformed Ops object ready for encoding.
-        """
-        if _pre_prepared:
-            ops_for_encoder = ops
-        else:
-            ops_for_encoder = ops.copy()
-
-            if not self.supports_curves:
-                ops_for_encoder.linearize_curves()
-
-        space = self.get_coordinate_space()
-
-        combined = np.identity(4)
-
-        transform = space.get_world_to_machine_matrix()
-        if not np.allclose(transform, np.identity(4)):
-            combined = transform @ combined
-
-        if doc is not None:
-            self._apply_per_layer_wcs_offset(ops_for_encoder, space, doc)
-        else:
-            wcs_offset = self.get_active_wcs_offset()
-            x_offset, y_offset, z_offset = space.get_command_offset(
-                wcs_offset=wcs_offset,
-                wcs_is_workarea_origin=self.wcs_origin_is_workarea_origin,
-            )
-            if x_offset != 0.0 or y_offset != 0.0 or z_offset != 0.0:
-                offset_matrix = np.identity(4)
-                offset_matrix[0, 3] = -x_offset
-                offset_matrix[1, 3] = -y_offset
-                offset_matrix[2, 3] = -z_offset
-                combined = offset_matrix @ combined
-
-        if self.reverse_z_axis:
-            z_flip = np.diag([1.0, 1.0, -1.0, 1.0])
-            combined = z_flip @ combined
-
-        if not np.allclose(combined, np.identity(4)):
-            ops_for_encoder.transform(combined)
-
-        return ops_for_encoder
-
-    def _apply_per_layer_wcs_offset(
-        self, ops: "Ops", space: "MachineSpace", doc: "Doc"
-    ) -> None:
-        """Apply per-layer WCS offsets."""
-        default_offset = self.get_active_wcs_offset()
-        default_cmd_offset = space.get_command_offset(
-            wcs_offset=default_offset,
-            wcs_is_workarea_origin=self.wcs_origin_is_workarea_origin,
-        )
-
-        layer_offsets: Dict[str, Tuple[float, float, float]] = {}
-        for layer in doc.layers:
-            effective_wcs = layer.get_effective_wcs(self)
-            wcs_off = self.get_wcs_offset(effective_wcs)
-            layer_cmd_offset = space.get_command_offset(
-                wcs_offset=wcs_off,
-                wcs_is_workarea_origin=self.wcs_origin_is_workarea_origin,
-            )
-            layer_offsets[layer.uid] = layer_cmd_offset
-
-        ops.translate_layers(default_cmd_offset, layer_offsets)
-
-    def _apply_replacement_downstream(self, ops: "Ops", doc: "Doc") -> None:
-        """Run degrees→scaled-mu downstream pass for AXIS_REPLACEMENT layers.
-
-        This is called after world→machine + WCS has been applied, so that
-        the scaled-mu values are placed into already-transformed commands.
-        """
-
-        def _on_layer(layer_uid: str, layer_ops: Ops) -> None:
-            descendant = doc.find_descendant_by_uid(layer_uid)
-            if not isinstance(descendant, Layer):
-                return
-            if (
-                not descendant.rotary_module_uid
-                or not descendant.rotary_enabled
-            ):
-                return
-            module = self.rotary_modules.get(descendant.rotary_module_uid)
-            if module is None:
-                return
-            if module.mode != RotaryMode.AXIS_REPLACEMENT:
-                return
-            KinematicMapping.degrees_to_scaled_mu_pass(
-                layer_ops,
-                module.mu_per_rotation,
-                target_axis=module.axis,
-            )
-
-        ops.transform_layers(_on_layer)
-
-    def encode_ops(
-        self,
-        ops: "Ops",
-        doc: "Doc",
-    ) -> EncodedOutput:
-        """
-        Encodes an Ops object into machine code and a corresponding
-        operation map. This method is safe to run in a worker process as it
-        uses static driver instantiation to get the encoder.
-
-        The encoding pipeline applies transforms in this order:
-        1. Copy + linearize curves (if machine doesn't support curves)
-        2. Rotary axis mapping (world-space Y→degrees)
-        3. World→machine + WCS offset + Z-flip
-        4. Degrees→scaled-mu downstream pass (AXIS_REPLACEMENT only)
-        5. G-code encoding via driver
-
-        Args:
-            ops: The Ops object to encode (world-space, unmapped).
-            doc: The document context for the job.
-
-        Returns:
-            An EncodedOutput object containing the machine code text,
-            operation map, and any driver-specific data.
-        """
-        # 1. Copy ops and linearize curves if needed (world-space).
-        ops_work = ops.copy()
-        if not self.supports_curves:
-            ops_work.linearize_curves()
-
-        # 2. Apply rotary axis mapping per-layer on world-space ops.
-        #    The mapper converts Y→degrees on MovingCommands including
-        #    bezier control points and arc center offsets, so native
-        #    curve support (e.g. G5) is preserved.
-        #    The scaled-mu pass is deferred until after world→machine
-        #    for AXIS_REPLACEMENT layers.
-        if doc:
-            KinematicMapping.apply_to_job_ops(ops_work, doc, self)
-
-        # 3. Apply world→machine + WCS + Z-flip (no copy, no linearize).
-        ops_for_encoder = self._prepare_ops_for_encoding(
-            ops_work, doc, _pre_prepared=True
-        )
-
-        # 4. Downstream pass: convert degrees→scaled-mu for
-        #    AXIS_REPLACEMENT layers. This must happen after world→machine
-        #    so the scaled values land in machine-coordinate commands.
-        if doc:
-            self._apply_replacement_downstream(ops_for_encoder, doc)
-
-        # 5. Instantiate the correct encoder via the driver factory
-        from ...pipeline.encoder.base import EncodedOutput
-        from ..driver import get_driver_cls
-        from ..driver.dummy import NoDeviceDriver
-
-        if self.driver_name:
-            try:
-                driver_cls = get_driver_cls(self.driver_name)
-            except (ValueError, ImportError):
-                driver_cls = NoDeviceDriver
-        else:
-            driver_cls = NoDeviceDriver
-
-        encoder = driver_cls.create_encoder(self)
-
-        # 6. Perform encoding
-        result = encoder.encode(ops_for_encoder, self, doc)
-        if not isinstance(result, EncodedOutput):
-            raise TypeError(
-                f"Encoder must return EncodedOutput, got {type(result)}"
-            )
-        return result
 
     def refresh_settings(self):
         """Public API for the UI to request a settings refresh."""

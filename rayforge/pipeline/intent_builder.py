@@ -51,13 +51,17 @@ from typing import (
     Tuple,
 )
 
+import numpy as np
+
 from raygeo.cnc.execution.specs import (
     AggregateGroup,
     AggregateInput,
     AggregateSpec,
     EncodeSpec,
     MachineParams,
+    MachineTransformSpec,
     Marker,
+    RotaryMappingSpec,
 )
 from raygeo.geo import Geometry, Matrix
 from raygeo.ops import Ops
@@ -70,7 +74,12 @@ from raygeo.ops.convert import (
 from raygeo.pipeline.request import NodeRequest
 from raygeo.pipeline.stage import StageSpec
 
+from ..machine.driver import get_driver_cls
+from ..machine.driver.dummy import NoDeviceDriver
+from ..machine.kinematic_math import KinematicMath
 from ..machine.models.dialect import GRBL_DIALECT
+from ..machine.models.rotary_module import RotaryMode, RotaryType
+from .coordspace import MachineSpace
 from .encoder.base import EncodedOutput
 from .encoder.rust_helpers import build_encode_context, dialect_to_spec
 from .stage.assembler_helpers import (
@@ -98,6 +107,7 @@ WORKPIECE_KEY_FMT = "workpiece:{wp_uid}:{step_uid}"
 STEP_KEY_FMT = "step:{step_uid}"
 JOB_KEY = "job"
 JOB_ENCODE_KEY = "job:encode"
+JOB_MACHINEXFORM_KEY = "job:machinexform"
 
 
 def workpiece_key(wp_uid: str, step_uid: str) -> str:
@@ -114,6 +124,10 @@ def job_key() -> str:
 
 def job_encode_key() -> str:
     return JOB_ENCODE_KEY
+
+
+def job_machinexform_key() -> str:
+    return JOB_MACHINEXFORM_KEY
 
 
 class IntentBuilder:
@@ -182,6 +196,7 @@ class IntentBuilder:
                 )
 
         self._build_job_node(doc, nodes, step_tokens)
+        self._build_machine_transform_node(doc, nodes, step_tokens)
         self._build_encoder_node(doc, nodes, step_tokens)
         return nodes
 
@@ -232,23 +247,44 @@ class IntentBuilder:
         token = self._job_token(doc, step_tokens)
         out.append(self._make_request(key, token, self._job_stage(doc)))
 
+    def _build_machine_transform_node(
+        self,
+        doc: "Doc",
+        out: List[NodeRequest],
+        step_tokens: Dict[str, int],
+    ) -> None:
+        """Append the machine-transform compute node between the job
+        aggregate and the encoder.
+
+        This node consumes the job aggregate's world-space Ops and
+        produces machine-space Ops by applying curve linearization,
+        rotary axis mapping, world→machine coordinate transforms,
+        WCS offsets, Z-flip, and AXIS_REPLACEMENT downstream.
+        The encoder then reads from this node instead of directly
+        from the job aggregate.
+        """
+        if self._machine is None:
+            return
+        key = job_machinexform_key()
+        token = self._machine_transform_token(doc, step_tokens)
+        stage = self._build_machine_transform_stage(doc)
+        out.append(self._make_request(key, token, stage))
+
     def _build_encoder_node(
         self,
         doc: "Doc",
         out: List[NodeRequest],
         step_tokens: Dict[str, int],
     ) -> None:
-        """Append the encoder compute node that consumes the job
-        aggregate's Ops and produces the machine code (G-code /
-        vertex / texture).
+        """Append the encoder compute node that consumes the
+        machine-transform node's machine-space Ops and produces
+        the machine code (G-code / vertex / texture).
 
         The encoder runs through raygeo's ``EncoderCompute`` stage.
         For Grbl the native Rust ``GcodeSpec`` is used directly; for
-        any other machine the full ``machine.encode_ops`` Python path
-        (including rotary mapping, world→machine, and WCS offset
-        pre-processing) is wrapped in a :class:`PythonEncoder` so it
-        runs under the GIL on a rayon worker thread — off the GTK
-        main thread.
+        any other machine the driver-specific encoder is wrapped in a
+        :class:`PythonEncoder` so it runs under the GIL on a rayon
+        worker thread — off the GTK main thread.
         """
         if self._machine is None:
             return
@@ -583,8 +619,6 @@ class IntentBuilder:
 
         if self._machine is not None and not geos:
             try:
-                from .coordspace import MachineSpace
-
                 space = MachineSpace.from_machine(self._machine)
                 wx, wy, w, h = space.get_workarea_world_rect()
                 geo = Geometry()
@@ -732,20 +766,26 @@ class IntentBuilder:
         """Build the encoder :class:`EncodeSpec` for the job encode
         node.
 
-        Routes Grbl machines to the native Rust ``GcodeSpec`` and
-        every other machine to a :class:`PythonEncoder` wrapping the
-        full ``machine.encode_ops`` path (rotary mapping,
-        world→machine, WCS offset, and the driver-specific encoder).
+        The encoder receives machine-space ops from the upstream
+        ``job:machinexform`` node (the machine transform stage).
+        For Grbl machines the native Rust ``GcodeSpec`` is used
+        directly; for any other machine a
+        :class:`PythonEncoder` wraps the driver-specific encoder
+        callable.
         """
         encoder = self._build_encoder(doc)
-        return EncodeSpec(source_key=job_key(), encoder=Encoder(encoder))
+        return EncodeSpec(
+            source_key=job_machinexform_key(), encoder=Encoder(encoder)
+        )
 
     def _build_encoder(self, doc: "Doc") -> Any:
         """Resolve the encoder for the configured machine.
 
         Routes Grbl machines to the native Rust ``GcodeSpec`` and
         every other machine to a :class:`PythonEncoder` wrapping the
-        full ``machine.encode_ops`` path.
+        driver-specific encoder callable.  The pre-processing
+        transforms are handled by the upstream machine-transform
+        stage.
         """
         machine = self._machine
         assert machine is not None
@@ -756,43 +796,167 @@ class IntentBuilder:
 
         return PythonEncoder(
             self._make_python_encoder_callable(machine, doc),
-            "machine.encode_ops",
+            "driver.encode",
         )
 
     def _grbl_encoder_spec(self, doc: "Doc") -> GcodeSpec:
         """Build a native ``GcodeSpec`` for a Grbl machine.
 
-        The Rust ``GcodeSpec`` encoder expects pre-processed
-        machine-space ops; the world→machine, rotary mapping, and
-        WCS pre-processing that ``machine.encode_ops`` performs are
-        not yet ported, so for the staged migration we route even
-        Grbl through the Python-callable encoder for byte-identical
-        output.  This method is retained for the future cutover.
+        Receives machine-space ops from the upstream
+        ``job:machinexform`` node and encodes them directly on a
+        rayon thread without crossing the GIL.
         """
         machine = self._machine
         assert machine is not None
         dialect = machine.dialect
         assert dialect is not None
-        context = build_encode_context(Ops(), machine, doc)
+        # Build a minimal Ops with estimated extents so path variables
+        # like ``job.extents[0..3]`` used in dialect templates are
+        # populated with reasonable values.  The exact extents are
+        # computed later from the real ops at encode time (the
+        # machine-transform stage preserves bounding-box metadata).
+        approx_ops = _approximate_job_ops(doc)
+        context = build_encode_context(approx_ops, machine, doc)
         return GcodeSpec(
             dialect=dialect_to_spec(dialect, machine),
             context_json=json.dumps(context),
         )
 
+    def _build_machine_transform_stage(
+        self, doc: "Doc"
+    ) -> MachineTransformSpec:
+        """Build the :class:`MachineTransformSpec` for the machine-
+        transform pipeline node.
+
+        Collects the world→machine matrix, WCS offsets, and per-layer
+        rotary mapping config from the machine and document and
+        packages them into a serialisable spec that the Rust
+        ``MachineTransformCompute`` stage consumes.
+        """
+        machine = self._machine
+        assert machine is not None
+
+        space = MachineSpace.from_machine(machine)
+
+        # World→machine 4x4 matrix.
+        w2m = space.get_world_to_machine_matrix()
+
+        # Default WCS command offset.
+        default_wcs_offset = list(
+            space.get_command_offset(
+                wcs_offset=machine.get_active_wcs_offset(),
+                wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+            )
+        )
+
+        # Per-layer WCS offsets.
+        layer_wcs_offsets: list[tuple[str, list[float]]] = []
+        for layer in doc.layers:
+            effective_wcs = layer.get_effective_wcs(machine)
+            wcs_off = machine.get_wcs_offset(effective_wcs)
+            cmd_offset = space.get_command_offset(
+                wcs_offset=wcs_off,
+                wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+            )
+            layer_wcs_offsets.append((layer.uid, list(cmd_offset)))
+
+        # Per-layer rotary mappings.
+        rotary_mappings = self._build_rotary_mappings(doc, machine)
+
+        return MachineTransformSpec(
+            source_key=job_key(),
+            linearize_curves=not machine.supports_curves,
+            world_to_machine=w2m.tolist(),
+            default_wcs_offset=default_wcs_offset,
+            layer_wcs_offsets=layer_wcs_offsets,
+            reverse_z=machine.reverse_z_axis,
+            rotary_mappings=rotary_mappings,
+        )
+
+    @staticmethod
+    def _build_rotary_mappings(
+        doc: "Doc",
+        machine: "Machine",
+    ) -> list:
+        """Build per-layer :class:`RotaryMappingSpec` entries."""
+        mappings: list = []
+        for layer in doc.layers:
+            if not layer.rotary_module_uid or not layer.rotary_enabled:
+                continue
+            module = machine.rotary_modules.get(layer.rotary_module_uid or "")
+            if module is None:
+                continue
+
+            diameter = layer.rotary_diameter
+            gear_ratio = KinematicMath.gear_ratio(
+                module.rotary_type == RotaryType.ROLLERS,
+                diameter,
+                module.roller_diameter,
+            )
+
+            # Extract axis position and cylinder direction.
+            rot3 = module.transform[:3, :3].astype(np.float64).copy()
+            for col in range(3):
+                norm = np.linalg.norm(rot3[:, col])
+                if norm > 1e-12:
+                    rot3[:, col] /= norm
+
+            mod_pos = module.transform[:3, 3].astype(np.float64)
+            axis_position_3d = mod_pos + rot3 @ module.axis_position
+            cylinder_dir = rot3[:, 0].copy()
+            norm = np.linalg.norm(cylinder_dir)
+            if norm > 1e-12:
+                cylinder_dir /= norm
+
+            if module.mode == RotaryMode.TRUE_4TH_AXIS:
+                rotary_axis = module.axis.name
+                replaced_axis = None
+            else:
+                rotary_axis = "Y"
+                replaced_axis = module.axis.name
+
+            mappings.append(
+                RotaryMappingSpec(
+                    layer_uid=layer.uid,
+                    diameter=diameter,
+                    gear_ratio=gear_ratio,
+                    reverse=module.reverse_axis,
+                    axis_position_3d=axis_position_3d.tolist(),
+                    cylinder_dir=cylinder_dir.tolist(),
+                    rotary_axis=rotary_axis,
+                    replaced_axis=replaced_axis,
+                    mu_per_rotation=module.mu_per_rotation,
+                )
+            )
+        return mappings
+
     def _make_python_encoder_callable(
         self, machine: "Machine", doc: "Doc"
     ) -> Callable[[Any], Any]:
         """Build a Python callable ``(ops) -> EncodeOutput`` that
-        invokes the full ``machine.encode_ops`` path and adapts the
-        rayforge :class:`EncodedOutput` to raygeo's
-        :class:`EncodeOutput`.
+        invokes the driver-specific encoder directly on
+        machine-space ops.
+
+        The pre-processing transforms (linearization, rotary mapping,
+        world→machine, WCS offset, Z-flip, AXIS_REPLACEMENT) are
+        handled by the upstream machine-transform stage, so this
+        callable only applies the final driver encoding step.
         """
+        if machine.driver_name:
+            try:
+                driver_cls = get_driver_cls(machine.driver_name)
+            except (ValueError, ImportError):
+                driver_cls = NoDeviceDriver
+        else:
+            driver_cls = NoDeviceDriver
+
+        driver_encoder = driver_cls.create_encoder(machine)
 
         def encode(ops: Any) -> EncodeOutput:
-            encoded = machine.encode_ops(ops, doc)
+            encoded = driver_encoder.encode(ops, machine, doc)
             if not isinstance(encoded, EncodedOutput):
                 raise TypeError(
-                    "machine.encode_ops must return EncodedOutput, "
+                    "encoder must return EncodedOutput, "
                     f"got {type(encoded).__name__}"
                 )
             return EncodeOutput.MachineCode(
@@ -810,15 +974,34 @@ class IntentBuilder:
     def _encode_token(self, doc: "Doc", step_tokens: Dict[str, int]) -> int:
         """Compute the version token for the job encode node.
 
-        Folds in the job aggregate's token plus the machine identity
-        (driver name, dialect, gcode precision, WCS, rotary config)
-        so a machine swap invalidates the encoded output cache.
+        Folds in the machine-transform node's token plus the encoder
+        identity so the cache invalidates when either the machine
+        transforms or the encoder config change.
         """
         payload = {
             "kind": "encode",
+            "mxform_token": self._machine_transform_token(doc, step_tokens),
+            "machine": _machine_token_payload(self._machine),
+        }
+        return _hash_int(payload)
+
+    def _machine_transform_token(
+        self, doc: "Doc", step_tokens: Dict[str, int]
+    ) -> int:
+        """Compute the version token for the machine-transform node.
+
+        Folds in the job aggregate's token plus the machine identity
+        (supports_curves, reverse_z, WCS config, rotary module config)
+        so any change to the machine or job invalidates the cache.
+        """
+        payload = {
+            "kind": "machine_transform",
             "job_token": self._job_token(doc, step_tokens),
             "machine": _machine_token_payload(self._machine),
         }
+        if self._machine is not None:
+            cfg = _machine_transform_config_payload(self._machine, doc)
+            payload.update(cfg)
         return _hash_int(payload)
 
 
@@ -935,3 +1118,66 @@ def _machine_token_payload(machine: "Optional[Machine]") -> Any:
         "acceleration": machine.acceleration,
         "axis_extents": list(machine.axis_extents),
     }
+
+
+def _machine_transform_config_payload(
+    machine: "Machine", doc: "Doc"
+) -> Dict[str, Any]:
+    """Build a JSON-serialisable payload of machine transform config
+    for the machine-transform token."""
+
+    payload: Dict[str, Any] = {
+        "wcs_origin_is_workarea_origin": machine.wcs_origin_is_workarea_origin,
+    }
+    # Rotary module UIDs per layer (to detect rotary config changes).
+    for layer in doc.layers:
+        uid = layer.uid
+        if layer.rotary_module_uid and layer.rotary_enabled:
+            module = machine.rotary_modules.get(layer.rotary_module_uid)
+            if module is not None:
+                payload[f"rotary:{uid}"] = {
+                    "module_uid": module.uid,
+                    "mode": module.mode.value,
+                    "axis": module.axis.name,
+                    "mu_per_rotation": module.mu_per_rotation,
+                    "diameter": layer.rotary_diameter,
+                    "roller_diameter": module.roller_diameter,
+                    "rotary_type": module.rotary_type.value,
+                    "reverse_axis": module.reverse_axis,
+                }
+    return payload
+
+
+def _approximate_job_ops(doc: "Doc") -> "Ops":
+    """Build a minimal Ops spanning the estimated job extents.
+
+    Used by :meth:`IntentBuilder._grbl_encoder_spec` so that
+    path variables like ``job.extents[0..3]`` are populated with
+    reasonable values before the real ops are available from the
+    pipeline.
+
+    The extents are estimated from workpiece positions and sizes
+    in world space.
+    """
+    xmin = ymin = float("inf")
+    xmax = ymax = float("-inf")
+
+    for layer in doc.layers:
+        for wp in layer.all_workpieces:
+            tx, ty = wp.pos
+            sx, sy = wp.size if wp.size else (0, 0)
+            if sx > 0 and sy > 0:
+                xmin = min(xmin, tx)
+                ymin = min(ymin, ty)
+                xmax = max(xmax, tx + sx)
+                ymax = max(ymax, ty + sy)
+
+    if xmin == float("inf"):
+        return Ops()
+
+    ops = Ops()
+    ops.job_start()
+    ops.move_to(xmin, ymin, 0.0)
+    ops.line_to(xmax, ymax, 0.0)
+    ops.job_end()
+    return ops
