@@ -17,7 +17,6 @@ def test_workpiece_handle_serialization_round_trip():
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=False,
-        source_coordinate_system_name="PIXEL_SPACE",
         source_dimensions=(1024, 768),
         time_estimate=123.4,
         generation_size=(100.0, 75.0),

@@ -1,5 +1,4 @@
 from .artifact import BaseArtifactHandle, JobArtifact, WorkPieceArtifact
-from .coord import CoordinateSystem
 from .coordspace import (
     AxisDirection,
     CoordinateSpace,
@@ -14,7 +13,6 @@ __all__ = [
     "AxisDirection",
     "BaseArtifactHandle",
     "CoordinateSpace",
-    "CoordinateSystem",
     "JobArtifact",
     "MachineSpace",
     "OriginCorner",
