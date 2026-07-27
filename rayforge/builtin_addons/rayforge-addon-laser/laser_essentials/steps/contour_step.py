@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, List, Optional, Tuple, cast
 
 from raygeo.cnc.execution.specs import ComputePayload
-from raygeo.ops import Ops
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.part import Part
@@ -12,21 +11,15 @@ from raygeo.ops.part import Part
 from rayforge.core.capability import CUT, SCORE, WITH_KERF, Capability
 from rayforge.core.cut_side import CutSide
 from rayforge.core.step import Step
-from rayforge.pipeline.assembler.registry import assembler_registry
 from rayforge.pipeline.stage.assembler_helpers import (
     MachineDefaults,
-    build_part_vector,
     build_part_vector_with_raster_fallback,
-    make_artifact,
-    wrap_assembler_result,
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
     from rayforge.core.workpiece import WorkPiece
-    from rayforge.machine.models.laser import Laser
-    from rayforge.pipeline.artifact import WorkPieceArtifact
 
 
 class ContourStep(Step):
@@ -34,7 +27,6 @@ class ContourStep(Step):
     ICON = "step-contour-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (CUT, SCORE, WITH_KERF)
     ASSEMBLER_NAME = "contour"
-    SPLIT_CONTOURS = True
 
     def __init__(
         self, name: Optional[str] = None, typelabel: Optional[str] = None
@@ -112,49 +104,6 @@ class ContourStep(Step):
     ) -> Optional[dict]:
         """Expose the resolved assembler kwargs for the compute token."""
         return self.get_assembler_kwargs(machine_defaults, workpiece)
-
-    def assemble_on_surface(
-        self,
-        workpiece: "WorkPiece",
-        laser: "Laser",
-        generation_id: int,
-        surface: Any = None,
-        pixels_per_mm: Optional[Tuple[float, float]] = None,
-        *,
-        machine_defaults: "MachineDefaults",
-        y_offset_mm: float = 0.0,
-        computed_auto_levels: Optional[Tuple[int, int]] = None,
-    ) -> "WorkPieceArtifact":
-        use_surface = surface is not None and (
-            not workpiece.boundaries
-            or workpiece.boundaries.is_empty()
-            or self.override_threshold
-        )
-        part = build_part_vector(
-            workpiece,
-            surface=surface if use_surface else None,
-            override_threshold=self.override_threshold,
-            threshold=self.threshold,
-            normalize_windings=self.NORMALIZE_WINDINGS,
-        )
-        if part is None or not part.has_geometry():
-            return make_artifact(
-                Ops(), workpiece, generation_id, is_vector=self.IS_VECTOR
-            )
-        kwargs = self.get_assembler_kwargs(machine_defaults, workpiece)
-        result = assembler_registry.assemble(
-            self.ASSEMBLER_NAME, part, **kwargs
-        )
-        set_power = machine_defaults.step_power if self.SET_POWER else None
-        return wrap_assembler_result(
-            result,
-            workpiece,
-            laser,
-            generation_id,
-            split_contours=self.SPLIT_CONTOURS,
-            set_power=set_power,
-            is_vector=self.IS_VECTOR,
-        )
 
     def to_dict(self) -> dict:
         data = super().to_dict()

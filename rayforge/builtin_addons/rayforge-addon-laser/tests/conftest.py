@@ -9,7 +9,6 @@ import pytest
 from unittest.mock import MagicMock
 
 from rayforge.core.step_registry import step_registry
-from rayforge.pipeline.assembler.registry import assembler_registry
 from rayforge.pipeline.transformer.registry import transformer_registry
 
 
@@ -28,41 +27,6 @@ def _register_steps():
     step_registry.register(FrameStep, addon_name="laser_essentials")
     step_registry.register(MaterialTestStep, addon_name="laser_essentials")
     step_registry.register(ShrinkWrapStep, addon_name="laser_essentials")
-
-
-def _register_assemblers():
-    """Register all assembler functions from laser_essentials addon."""
-    from raygeo.ops.assembly.contour import contour
-    from raygeo.ops.assembly.frame import frame
-    from raygeo.ops.assembly.material_test_grid import (
-        generate_material_test_grid,
-    )
-    from raygeo.ops.assembly.raster import raster
-    from raygeo.ops.assembly.shrinkwrap import shrinkwrap
-    from raygeo.ops.assembly.wavefront import (
-        adaptive_wavefronts_multi_pocket,
-    )
-
-    assembler_registry.register(
-        "contour", contour, addon_name="laser_essentials"
-    )
-    assembler_registry.register("frame", frame, addon_name="laser_essentials")
-    assembler_registry.register(
-        "shrinkwrap", shrinkwrap, addon_name="laser_essentials"
-    )
-    assembler_registry.register(
-        "raster", raster, addon_name="laser_essentials"
-    )
-    assembler_registry.register(
-        "wavefront",
-        adaptive_wavefronts_multi_pocket,
-        addon_name="laser_essentials",
-    )
-    assembler_registry.register(
-        "material_test_grid",
-        generate_material_test_grid,
-        addon_name="laser_essentials",
-    )
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -93,5 +57,4 @@ def register_laser_essentials():
     mgr.load_addon_by_name("post_processors", worker_only=True)
 
     _register_steps()
-    _register_assemblers()
     yield
