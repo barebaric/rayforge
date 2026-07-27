@@ -1,33 +1,19 @@
 import asyncio
 import logging
 from pathlib import Path
-from unittest.mock import ANY, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from raygeo.geo import Geometry
-from raygeo.ops import Ops
 
-from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
-from rayforge.pipeline.artifact import (
-    ArtifactKey,
-    JobArtifact,
-    StepOpsArtifact,
-    WorkPieceArtifactHandle,
-)
+from rayforge.pipeline.artifact import WorkPieceArtifactHandle
 from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.stage.job_runner import make_job_artifact_in_subprocess
-from rayforge.pipeline.stage.step_runner import (
-    make_step_artifact_in_subprocess,
-)
-from rayforge.pipeline.stage.workpiece_runner import (
-    make_workpiece_artifact_in_subprocess,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -84,99 +70,6 @@ class TestPipeline:
         doc.active_layer.add_workpiece(workpiece)
         return doc.active_layer
 
-    def _complete_all_tasks(
-        self, mock_task_mgr, workpiece_handle, step_time=42.0
-    ):
-        """
-        Helper to find and complete all outstanding tasks to bring the
-        pipeline to an idle state. Simulates the new event-driven flow.
-        """
-        processed_tasks = set()
-        while True:
-            # Filter by object identity to handle multiple tasks with same key
-            tasks_to_process = [
-                t
-                for t in mock_task_mgr.created_tasks
-                if id(t) not in processed_tasks
-            ]
-            if not tasks_to_process:
-                break
-
-            for task_info in tasks_to_process:
-                # Use the actual task object that the stage is holding
-                task_obj = task_info.returned_task_obj
-                task_obj.key = task_info.key
-                task_obj.get_status.return_value = "completed"
-                task_obj.result.return_value = None
-
-                if task_info.target is make_job_artifact_in_subprocess:
-                    if task_info.when_event:
-                        store = get_context().artifact_store
-                        job_artifact = JobArtifact(
-                            ops=Ops(), distance=0.0, generation_id=1
-                        )
-                        job_handle = store.put(job_artifact)
-                        # Extract gen_id from kwargs
-                        gen_id = task_info.kwargs.get("generation_id")
-                        event_data = {
-                            "handle_dict": job_handle.to_dict(),
-                            "generation_id": gen_id,
-                        }
-                        task_info.when_event(
-                            task_obj, "artifact_created", event_data
-                        )
-                    if task_info.when_done:
-                        task_info.when_done(task_obj)
-
-                elif task_info.target is make_step_artifact_in_subprocess:
-                    gen_id = task_info.args[3]
-                    task_obj.result.return_value = gen_id
-                    if task_info.when_event:
-                        # Create real artifacts and handles so the SHM blocks
-                        # exist and can be adopted by the main process store.
-                        store = get_context().artifact_store
-                        ops_artifact = StepOpsArtifact(
-                            ops=Ops(), generation_id=0
-                        )
-                        ops_handle = store.put(ops_artifact)
-
-                        ops_event = {
-                            "handle_dict": ops_handle.to_dict(),
-                            "generation_id": gen_id,
-                        }
-                        task_info.when_event(
-                            task_obj, "ops_artifact_ready", ops_event
-                        )
-
-                        # Simulate time estimate event
-                        time_event = {
-                            "time_estimate": step_time,
-                            "generation_id": gen_id,
-                        }
-                        task_info.when_event(
-                            task_obj, "time_estimate_ready", time_event
-                        )
-                    if task_info.when_done:
-                        task_info.when_done(task_obj)
-
-                elif task_info.target is make_workpiece_artifact_in_subprocess:
-                    gen_id = task_info.args[7]
-                    task_obj.result.return_value = gen_id
-                    if task_info.when_event:
-                        event_data = {
-                            "handle_dict": workpiece_handle.to_dict(),
-                            "generation_id": gen_id,
-                        }
-                        task_info.when_event(
-                            task_obj, "artifact_created", event_data
-                        )
-                    if task_info.when_done:
-                        task_info.when_done(task_obj)
-
-                processed_tasks.add(id(task_info))
-
-        mock_task_mgr.created_tasks.clear()
-
     def test_generate_job_fire_and_forget(
         self,
         doc,
@@ -218,61 +111,41 @@ class TestPipeline:
     def test_generate_job_artifact_no_machine(
         self, doc, mock_task_mgr, context_initializer
     ):
-        """Tests that job generation fails if no machine is configured."""
-        # Arrange
-        pipeline = Pipeline(
-            doc,
-            mock_task_mgr,
-            context_initializer.artifact_store,
-            context_initializer.machine,
-        )
-        pipeline._machine = None  # type: ignore
+        """Tests that pipeline construction fails if no machine is
+        configured."""
+        # Arrange & Act & Assert
+        with pytest.raises(RuntimeError, match="Machine is not configured"):
+            Pipeline(
+                doc,
+                mock_task_mgr,
+                context_initializer.artifact_store,
+                None,  # type: ignore
+            )
 
-        callback_mock = MagicMock()
-
-        # Act
-        pipeline.generate_job_artifact(when_done=callback_mock)
-
-        # Assert
-        callback_mock.assert_called_once_with(ANY, ANY)
-        error = callback_mock.call_args[0][1]
-        assert isinstance(error, RuntimeError)
-        assert "No machine is configured" in str(error)
-
-    def test_generate_job_artifact_missing_dependencies(
+    @pytest.mark.asyncio
+    async def test_generate_job_artifact_no_doc(
         self,
         doc,
-        real_workpiece,
         mock_task_mgr,
         context_initializer,
         contour_step_class,
     ):
-        """
-        Tests that job generation fails if step artifacts are not ready.
-        """
-        # Arrange
-        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
-        step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
-
+        """Tests that job generation fails when no document is loaded."""
         pipeline = Pipeline(
             doc,
             mock_task_mgr,
             context_initializer.artifact_store,
             context_initializer.machine,
         )
+        pipeline.doc = None
 
         callback_mock = MagicMock()
-
-        # Act
         pipeline.generate_job_artifact(when_done=callback_mock)
 
-        # Assert
-        callback_mock.assert_called_once_with(None, ANY)
-        error = callback_mock.call_args[0][1]
+        callback_mock.assert_called_once()
+        handle, error = callback_mock.call_args[0]
+        assert handle is None
         assert isinstance(error, RuntimeError)
-        assert "Job dependencies are not ready" in str(error)
 
     @pytest.mark.asyncio
     async def test_rapid_invalidation_does_not_corrupt_busy_state(
@@ -288,7 +161,7 @@ class TestPipeline:
         cancelling an in-progress task and starting a new one. This test
         verifies that the pipeline correctly handles rapid invalidations
         without corrupting its busy state, using the real task manager
-        and subprocess execution.
+        and raygeo execution.
         """
         # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
@@ -311,34 +184,22 @@ class TestPipeline:
 
         assert pipeline.is_busy is False
 
-        # Act 2: Set the doc property. This triggers reconcile_data() and
-        # starts the first task.
+        # Act 2: Set the doc property. This triggers a rebuild.
         pipeline.doc = doc
 
-        # Wait for the pipeline to become busy and for the first task to start
+        # Wait for the pipeline to settle after the first rebuild.
         await asyncio.sleep(0.5)
-        assert pipeline.is_busy is True, (
-            "Pipeline should be busy after doc set"
-        )
+        gen1 = pipeline.data_generation_id
+        assert gen1 > 0, "Pipeline should have rebuilt after doc set"
 
-        # Verify the state change signal was fired
-        mock_processing_state_handler.assert_called_with(
-            ANY, is_processing=True
-        )
-
-        # Act 3: Trigger a second regeneration, cancelling the
-        # first task and starting a new one. Changing the power emits a
-        # changed signal that bubbles to the doc and from there to the
-        # pipeline. We wait a bit to ensure the first task has started before
-        # invalidating.
+        # Act 3: Trigger a second regeneration. Changing the power
+        # emits a changed signal that bubbles to the doc and triggers
+        # a rebuild.
         step.set_power(0.5)
 
-        # Wait for tasks to settle - the rapid invalidation should cancel
-        # the first task and start the second one.
+        # Wait for tasks to settle - the rapid invalidation should
+        # trigger a new rebuild.
         await asyncio.sleep(0.1)
-        assert pipeline.is_busy is True, (
-            "Pipeline should remain busy during rapid invalidation"
-        )
 
         deadline = asyncio.get_running_loop().time() + 10.0
         while (
@@ -350,13 +211,10 @@ class TestPipeline:
             "Pipeline should be idle after all tasks complete"
         )
 
-        deadline = asyncio.get_running_loop().time() + 1.0
-        while (
-            mock_processing_state_handler.call_count < 2
-            and asyncio.get_running_loop().time() < deadline
-        ):
-            await asyncio.sleep(0.05)
+        gen2 = pipeline.data_generation_id
+        assert gen2 > gen1, "Pipeline should have rebuilt after power change"
 
+        # Verify the state change signal was fired for busy and idle.
         assert mock_processing_state_handler.call_count >= 2, (
             f"Expected at least 2 state changes, got "
             f"{mock_processing_state_handler.call_count}"
@@ -373,131 +231,72 @@ class TestPipeline:
         await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
 
     @pytest.mark.asyncio
-    async def test_reconcile_data_triggers_view_rerender_on_workpiece_resize(
-        self, doc, real_workpiece, mock_task_mgr, contour_step_class
-    ):
-        """
-        Tests that pipeline.reconcile_data() triggers view re-rendering
-        when a workpiece is resized.
-
-        This reproduces the issue where rasters don't update properly
-        after resize because:
-        1. pipeline.reconcile_data() does NOT call view_stage.reconcile()
-        2. If it did, request_view_render() would return early
-           when old task is active
-        """
-        # Arrange: Set up doc with workpiece and step
-        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
-        ctx = get_context()
-        step = contour_step_class.create(ctx)
-        layer.workflow.add_step(step)
-
-        # Create pipeline
-        pipeline = Pipeline(
-            doc,
-            mock_task_mgr,
-            ctx.artifact_store,
-            ctx.machine,
-        )
-
-        # Clear any tasks created during pipeline initialization
-        mock_task_mgr.run_process.reset_mock()
-        mock_task_mgr.created_tasks.clear()
-
-        # Arrange: Simulate initial workpiece artifact being created
-        initial_workpiece_handle = WorkPieceArtifactHandle(
-            shm_name="initial_workpiece",
-            handle_class_name="WorkPieceArtifactHandle",
-            artifact_type_name="WorkPieceArtifact",
-            is_scalable=False,
-            source_coordinate_system_name="MILLIMETER_SPACE",
-            source_dimensions=(100, 100),
-            generation_size=(50.0, 30.0),
-            generation_id=1,
-        )
-        ledger_key = ArtifactKey.for_workpiece(real_workpiece.uid)
-
-        # Note: The pipeline initialization already triggered a task, so the
-        # state is already PROCESSING with generation_id=1. We can just cache.
-        pipeline.artifact_manager.cache_handle(
-            ledger_key, initial_workpiece_handle, 1
-        )
-
-        # Arrange: Complete initial workpiece task
-        # Don't call _complete_all_tasks here because we manually put the
-        # handle. The pipeline will trigger view render when workpiece
-        # artifact is adopted
-        mock_task_mgr.run_process.reset_mock()
-        mock_task_mgr.created_tasks.clear()
-
-        # Act: Resize workpiece (double the size). This should trigger
-        # a pipeline data reconcile.
-        real_workpiece.set_size(20.0, 20.0)
-        await asyncio.sleep(0)
-
-        # Assert: Workpiece stage should detect size change and regenerate
-        # Find the workpiece task that was created
-        workpiece_tasks = [
-            t
-            for t in mock_task_mgr.created_tasks
-            if t.target is make_workpiece_artifact_in_subprocess
-        ]
-        assert len(workpiece_tasks) == 1, (
-            "Expected 1 workpiece task to be created after resize"
-        )
-        resized_workpiece_task = workpiece_tasks[0]
-
-        # Verify the new workpiece has the resized dimensions
-        new_workpiece_handle = WorkPieceArtifactHandle(
-            shm_name="resized_workpiece",
-            handle_class_name="WorkPieceArtifactHandle",
-            artifact_type_name="WorkPieceArtifact",
-            is_scalable=False,
-            source_coordinate_system_name="MILLIMETER_SPACE",
-            source_dimensions=(200, 200),
-            generation_size=(20.0, 20.0),
-            generation_id=2,
-        )
-        ledger_key = ArtifactKey.for_workpiece(real_workpiece.uid)
-        # We just cache the result to simulate completion.
-        pipeline.artifact_manager.cache_handle(
-            ledger_key, new_workpiece_handle, 2
-        )
-
-        # Complete the resized workpiece task
-        # The result should be the generation_id (2), not the number of chunks
-        resized_workpiece_task.returned_task_obj.get_status.return_value = (
-            "completed"
-        )
-        resized_workpiece_task.returned_task_obj.result.return_value = 2
-        if resized_workpiece_task.when_done:
-            resized_workpiece_task.when_done(
-                resized_workpiece_task.returned_task_obj
-            )
-
-        # Reset mocks to check for view render task
-        mock_task_mgr.run_process.reset_mock()
-        mock_task_mgr.created_tasks.clear()
-
-    def test_get_existing_job_handle_returns_none_when_no_job_cached(
+    async def test_workpiece_resize_triggers_rebuild(
         self,
         doc,
         real_workpiece,
-        mock_task_mgr,
+        task_mgr,
         context_initializer,
         contour_step_class,
     ):
         """
-        Tests that get_existing_job_handle returns None when no job
-        artifact has been cached yet.
+        Tests that resizing a workpiece triggers a pipeline rebuild
+        and the artifact reflects the new size.
         """
-        # Arrange
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
+        pipeline = Pipeline(
+            doc,
+            task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+
+        # Let the initial rebuild complete
+        deadline = asyncio.get_running_loop().time() + 10.0
+        while (
+            pipeline.is_busy and asyncio.get_running_loop().time() < deadline
+        ):
+            await asyncio.sleep(0.05)
+
+        handle1 = pipeline.get_artifact_handle(step.uid, real_workpiece.uid)
+        assert handle1 is not None
+        assert isinstance(handle1, WorkPieceArtifactHandle)
+        size1 = handle1.generation_size
+
+        # Resize the workpiece — this should trigger a new rebuild
+        real_workpiece.set_size(20.0, 20.0)
+
+        deadline = asyncio.get_running_loop().time() + 10.0
+        while (
+            pipeline.is_busy and asyncio.get_running_loop().time() < deadline
+        ):
+            await asyncio.sleep(0.05)
+
+        handle2 = pipeline.get_artifact_handle(step.uid, real_workpiece.uid)
+        assert handle2 is not None
+        assert isinstance(handle2, WorkPieceArtifactHandle)
+        assert handle2.generation_size != size1, (
+            "Artifact generation_size should reflect the new workpiece "
+            "size after resize"
+        )
+
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+    def test_get_existing_job_handle_returns_none_when_no_job_cached(
+        self,
+        doc,
+        mock_task_mgr,
+        context_initializer,
+    ):
+        """
+        Tests that get_existing_job_handle returns None when no job
+        artifact has been cached yet (no workflow content).
+        """
+        # Arrange - empty doc with no steps or workpieces
         pipeline = Pipeline(
             doc,
             mock_task_mgr,
@@ -514,21 +313,14 @@ class TestPipeline:
     def test_get_existing_job_handle_returns_none_when_no_handle(
         self,
         doc,
-        real_workpiece,
         mock_task_mgr,
         context_initializer,
-        contour_step_class,
     ):
         """
         Tests that get_existing_job_handle returns None when no
-        job handle exists.
+        job handle exists (empty doc, no steps).
         """
-        # Arrange
-        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
-        step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
-
+        # Arrange - empty doc with no steps or workpieces
         pipeline = Pipeline(
             doc,
             mock_task_mgr,

@@ -73,6 +73,7 @@ class JobArtifact(BaseArtifact):
         time_estimate: Optional[float] = None,
         encoded_output_bytes: Optional[np.ndarray] = None,
         mapped_ops: Optional[Ops] = None,
+        encoded_output: Optional["EncodedOutput"] = None,
     ):
         super().__init__()
         self.ops = ops
@@ -82,7 +83,7 @@ class JobArtifact(BaseArtifact):
         self.encoded_output_bytes: Optional[np.ndarray] = encoded_output_bytes
         self.mapped_ops: Optional[Ops] = mapped_ops
 
-        self._encoded_output: Optional["EncodedOutput"] = None
+        self._encoded_output: Optional["EncodedOutput"] = encoded_output
 
     @property
     def machine_code(self) -> Optional[str]:

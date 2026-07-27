@@ -59,7 +59,7 @@ from raygeo.cnc.execution.specs import (
     MachineParams,
     Marker,
 )
-from raygeo.geo import Matrix
+from raygeo.geo import Geometry, Matrix
 from raygeo.ops import Ops
 from raygeo.ops.convert import (
     EncodeOutput,
@@ -77,12 +77,16 @@ from .stage.assembler_helpers import (
     MachineDefaults,
     resolve_machine_defaults,
 )
+from .transformer import OpsTransformer
+from .transformer.registry import transformer_registry
+from .transformer.specs import build_transformer_specs
 
 if TYPE_CHECKING:
     from ..core.doc import Doc
     from ..core.layer import Layer
     from ..core.step import Step
     from ..core.workpiece import WorkPiece
+    from ..machine.models.dialect import GcodeDialect
     from ..machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
@@ -128,6 +132,7 @@ class IntentBuilder:
     ):
         self._machine = machine
         self._generation_id = generation_id
+        self._stock_geometries: Optional[List[Any]] = None
 
     @property
     def generation_id(self) -> int:
@@ -143,6 +148,10 @@ class IntentBuilder:
         # inputs — the step aggregate token and placement depend on all
         # of them.
         step_compute_inputs: Dict[str, List[Tuple[str, int, WorkPiece]]] = {}
+        # Per-step aggregate version tokens, used by the job aggregate
+        # token so a position change that invalidates one step's
+        # aggregate also invalidates the job aggregate (and encode).
+        step_tokens: Dict[str, int] = {}
 
         for layer in doc.layers:
             if not layer.workflow or not layer.workflow.steps:
@@ -166,9 +175,12 @@ class IntentBuilder:
                 if not upstream:
                     continue
                 self._build_step_node(step, layer, upstream, nodes)
+                step_tokens[step.uid] = self._aggregate_token(
+                    step, layer, upstream
+                )
 
-        self._build_job_node(doc, nodes)
-        self._build_encoder_node(doc, nodes)
+        self._build_job_node(doc, nodes, step_tokens)
+        self._build_encoder_node(doc, nodes, step_tokens)
         return nodes
 
     # ------------------------------------------------------------------
@@ -208,12 +220,22 @@ class IntentBuilder:
         stage = self._step_stage(step, upstream)
         out.append(self._make_request(key, token, stage))
 
-    def _build_job_node(self, doc: "Doc", out: List[NodeRequest]) -> None:
+    def _build_job_node(
+        self,
+        doc: "Doc",
+        out: List[NodeRequest],
+        step_tokens: Dict[str, int],
+    ) -> None:
         key = job_key()
-        token = self._job_token(doc)
+        token = self._job_token(doc, step_tokens)
         out.append(self._make_request(key, token, self._job_stage(doc)))
 
-    def _build_encoder_node(self, doc: "Doc", out: List[NodeRequest]) -> None:
+    def _build_encoder_node(
+        self,
+        doc: "Doc",
+        out: List[NodeRequest],
+        step_tokens: Dict[str, int],
+    ) -> None:
         """Append the encoder compute node that consumes the job
         aggregate's Ops and produces the machine code (G-code /
         vertex / texture).
@@ -229,7 +251,7 @@ class IntentBuilder:
         if self._machine is None:
             return
         key = job_encode_key()
-        token = self._encode_token(doc)
+        token = self._encode_token(doc, step_tokens)
         stage = self._encode_stage(doc)
         out.append(self._make_request(key, token, stage))
 
@@ -245,6 +267,7 @@ class IntentBuilder:
             "step_uid": step.uid,
             "wp_uid": wp.uid,
             "geo_rev": wp.geometry_revision,
+            "wp_size": list(wp.size) if wp.size else [0, 0],
             "step_params": _step_compute_params(step),
             "assembler_params": _canonical(self._assembler_params(step, wp)),
             "wpxf": _canonical(step.per_workpiece_transformers_dicts),
@@ -259,17 +282,38 @@ class IntentBuilder:
         layer: "Layer",
         upstream: List[Tuple[str, int, "WorkPiece"]],
     ) -> int:
+        # Fold the per-workpiece placement matrix and target dimensions
+        # into the token. The aggregate applies the placement matrix
+        # to the (possibly cached) workpiece compute output, so a move
+        # that leaves the compute cache untouched must still invalidate
+        # the aggregate — otherwise the cached step ops are displayed
+        # at their previous world position.
+        placements: List[Any] = []
+        for _k, _t, wp in upstream:
+            placements.append(
+                {
+                    "matrix": _workpiece_placement_matrix(wp),
+                    "size": list(wp.size) if wp.size else [0, 0],
+                }
+            )
         payload = {
             "kind": "step_aggregate",
             "step_uid": step.uid,
             "upstream": [[k, t] for k, t, _wp in upstream],
             "step_params": _step_compute_params(step),
             "spxf": _canonical(step.per_step_transformers_dicts),
+            "wpxf": _canonical(step.per_workpiece_transformers_dicts),
             "position_sensitive": step.is_position_sensitive(),
+            "placements": placements,
         }
         return _hash_int(payload)
 
-    def _job_token(self, doc: "Doc") -> int:
+    def _job_token(self, doc: "Doc", step_tokens: Dict[str, int]) -> int:
+        # The job aggregate concatenates the step aggregates' outputs
+        # verbatim (identity placement at the job level). Its token
+        # therefore folds in the per-step aggregate tokens so that any
+        # upstream change (workpiece move, transformer edit, step
+        # param change) propagates through to the job/encode cache.
         payloads = []
         for layer in doc.layers:
             if not layer.workflow:
@@ -280,6 +324,7 @@ class IntentBuilder:
                 payloads.append(
                     {
                         "step_uid": step.uid,
+                        "step_token": step_tokens.get(step.uid, 0),
                         "step_params": _step_compute_params(step),
                         "spxf": _canonical(step.per_step_transformers_dicts),
                     }
@@ -313,9 +358,30 @@ class IntentBuilder:
         :class:`EngraveStep`) to return both the :class:`Part`
         (carrying vector geometry or an image source) and the
         :class:`ComputePayload` (carrying the assembler spec).
+
+        Per-workpiece transformers (e.g. ``OverscanTransformer``,
+        ``BidirScanOffsetTransformer``) are resolved into typed Rust
+        specs and attached to the payload so the Rust compute stage
+        applies them after assembly.
         """
         machine_defaults = self._resolve_machine_defaults(step)
         part, payload = step.build_compute_payload(machine_defaults, wp)
+        payload.power = step.power
+        payload.cut_speed = step.cut_speed
+        if self._machine is not None:
+            try:
+                laser = step.get_selected_laser(self._machine)
+                payload.head_uid = laser.uid if laser else None
+            except ValueError:
+                logger.debug(
+                    "Step %s has no laser heads on machine; "
+                    "head_uid left unset",
+                    step.uid,
+                )
+        payload.transformers = self._build_transformer_specs(
+            step.per_workpiece_transformers_dicts,
+            workpiece=wp,
+        )
         return StageSpec.Compute(part=part, params=payload)
 
     def _resolve_machine_defaults(self, step: "Step") -> MachineDefaults:
@@ -331,6 +397,10 @@ class IntentBuilder:
             try:
                 laser = step.get_selected_laser(self._machine)
             except ValueError:
+                logger.debug(
+                    "Step %s has no laser heads; using bare defaults",
+                    step.uid,
+                )
                 laser = None
             settings = step.to_dict()
             settings["arc_tolerance"] = self._machine.arc_tolerance
@@ -365,6 +435,10 @@ class IntentBuilder:
         try:
             laser = step.get_selected_laser(self._machine)
         except ValueError:
+            logger.debug(
+                "Step %s has no laser heads; skipping assembler params",
+                step.uid,
+            )
             return None
         settings = step.to_dict()
         settings["arc_tolerance"] = self._machine.arc_tolerance
@@ -374,7 +448,112 @@ class IntentBuilder:
         try:
             return step.assembler_token_params(defaults, wp)
         except Exception:
+            logger.debug(
+                "Step %s has no assembler token params",
+                step.uid,
+                exc_info=True,
+            )
             return None
+
+    # ------------------------------------------------------------------
+    # Transformer spec construction
+    # ------------------------------------------------------------------
+
+    def _build_transformer_specs(
+        self,
+        transformer_dicts: List[Dict[str, Any]],
+        *,
+        workpiece: "Optional[WorkPiece]" = None,
+    ) -> List[Any]:
+        """Build typed Rust ``*Spec`` pyclasses from a list of
+        serialised transformer dicts.
+
+        Instantiates each enabled transformer via the registry and
+        calls ``to_spec`` to produce the typed spec the Rust compute
+        and aggregate stages consume.  ``workpiece`` is forwarded so
+        that position-sensitive transformers (e.g. CropTransformer)
+        can resolve their regions.
+        """
+        transformers: List[OpsTransformer] = []
+        for t_dict in transformer_dicts:
+            if not t_dict.get("enabled", True):
+                continue
+            name = t_dict.get("name")
+            if not name or not isinstance(name, str):
+                continue
+            cls = transformer_registry.get(name)
+            if cls is None:
+                logger.warning(
+                    "Transformer %r not found in registry; skipping",
+                    name,
+                )
+                continue
+            try:
+                transformers.append(cls.from_dict(t_dict))
+            except Exception:
+                logger.exception(
+                    "Failed to instantiate transformer %r; skipping",
+                    name,
+                )
+        if not transformers:
+            return []
+        stock = self._resolve_stock_geometries()
+        settings = self._transformer_settings()
+        return build_transformer_specs(
+            transformers,
+            workpiece,
+            stock,
+            settings,
+        )
+
+    def _transformer_settings(self) -> Optional[Dict[str, Any]]:
+        """Return the settings dict forwarded to ``to_spec``.
+
+        Currently this carries the ``driver_native_overscan`` flag so
+        :class:`OverscanTransformer` can short-circuit when the
+        machine driver handles overscan itself.
+        """
+        if self._machine is None:
+            return None
+        try:
+            native = bool(self._machine.driver.native_overscan)
+        except AttributeError:
+            native = False
+        return {"driver_native_overscan": native}
+
+    def _resolve_stock_geometries(self) -> Optional[List[Any]]:
+        """Return the world-space stock boundary geometries.
+
+        Resolved once per :meth:`build` call and cached on the
+        builder. Transformers such as CropTransformer use this to
+        clip per-workpiece ops to the machine's work area or to
+        explicit StockItems.
+        """
+        if self._stock_geometries is not None:
+            return self._stock_geometries
+        from .coordspace import MachineSpace
+
+        geos: List[Any] = []
+        # Doc-owned stock items are resolved lazily via the builder's
+        # caller; we only fold in machine workarea fallback here.
+        if self._machine is not None:
+            try:
+                space = MachineSpace.from_machine(self._machine)
+                wx, wy, w, h = space.get_workarea_world_rect()
+                geo = Geometry()
+                geo.move_to(wx, wy)
+                geo.line_to(wx + w, wy)
+                geo.line_to(wx + w, wy + h)
+                geo.line_to(wx, wy + h)
+                geo.close_path()
+                geos.append(geo)
+            except Exception:
+                logger.debug(
+                    "Failed to resolve machine workarea for stock",
+                    exc_info=True,
+                )
+        self._stock_geometries = geos
+        return self._stock_geometries
 
     # ------------------------------------------------------------------
     # Step aggregate stage
@@ -396,8 +575,10 @@ class IntentBuilder:
         ``target_dimensions`` for scalable artifacts) and the
         workpiece's physical size as ``target_dimensions``.
 
-        Per-step transformers are not wired here; they land in B5 with
-        the typed ``TransformerDecl`` hierarchy.  ``MachineParams`` is
+        Per-step transformers (e.g. ``MultiPassTransformer``,
+        ``Optimize``) are resolved into typed Rust specs and attached
+        to :attr:`AggregateSpec.transformers` so the Rust aggregate
+        stage applies them after concatenation.  ``MachineParams`` is
         populated from the resolved machine so the aggregate's time
         estimate is correct.
         """
@@ -425,6 +606,9 @@ class IntentBuilder:
             groups=groups,
             wrap_end=[],
             machine=self._machine_params(),
+            transformers=self._build_transformer_specs(
+                step.per_step_transformers_dicts
+            ),
         )
         return StageSpec.Aggregate(spec=spec)
 
@@ -511,14 +695,14 @@ class IntentBuilder:
     def _build_encoder(self, doc: "Doc") -> Any:
         """Resolve the encoder for the configured machine.
 
-        Returns a Python-side encoder spec object (either a
-        ``GcodeSpec`` or a ``PythonEncoder``) suitable for wrapping in
-        ``raygeo.ops.convert.Encoder``.
+        Routes Grbl machines to the native Rust ``GcodeSpec`` and
+        every other machine to a :class:`PythonEncoder` wrapping the
+        full ``machine.encode_ops`` path.
         """
         machine = self._machine
         assert machine is not None
 
-        dialect = getattr(machine, "dialect", None)
+        dialect = machine.dialect
         if dialect is not None and _is_grbl(dialect):
             return self._grbl_encoder_spec(doc)
 
@@ -575,7 +759,7 @@ class IntentBuilder:
     # Encoder token
     # ------------------------------------------------------------------
 
-    def _encode_token(self, doc: "Doc") -> int:
+    def _encode_token(self, doc: "Doc", step_tokens: Dict[str, int]) -> int:
         """Compute the version token for the job encode node.
 
         Folds in the job aggregate's token plus the machine identity
@@ -584,7 +768,7 @@ class IntentBuilder:
         """
         payload = {
             "kind": "encode",
-            "job_token": self._job_token(doc),
+            "job_token": self._job_token(doc, step_tokens),
             "machine": _machine_token_payload(self._machine),
         }
         return _hash_int(payload)
@@ -681,9 +865,9 @@ _IDENTITY_4X4: List[List[float]] = [
 ]
 
 
-def _is_grbl(dialect: Any) -> bool:
+def _is_grbl(dialect: "GcodeDialect") -> bool:
     """Return True if *dialect* is the Grbl G-code dialect."""
-    return getattr(dialect, "uid", None) == GRBL_DIALECT.uid
+    return dialect.uid == GRBL_DIALECT.uid
 
 
 def _machine_token_payload(machine: "Optional[Machine]") -> Any:
@@ -692,14 +876,14 @@ def _machine_token_payload(machine: "Optional[Machine]") -> Any:
     if machine is None:
         return None
     return {
-        "driver_name": getattr(machine, "driver_name", None),
-        "active_wcs": getattr(machine, "active_wcs", None),
-        "gcode_precision": getattr(machine, "gcode_precision", None),
-        "supports_curves": getattr(machine, "supports_curves", None),
-        "supports_arcs": getattr(machine, "supports_arcs", None),
-        "reverse_z_axis": getattr(machine, "reverse_z_axis", None),
-        "max_cut_speed": getattr(machine, "max_cut_speed", None),
-        "max_travel_speed": getattr(machine, "max_travel_speed", None),
-        "acceleration": getattr(machine, "acceleration", None),
-        "axis_extents": list(getattr(machine, "axis_extents", ())),
+        "driver_name": machine.driver_name,
+        "active_wcs": machine.active_wcs,
+        "gcode_precision": machine.gcode_precision,
+        "supports_curves": machine.supports_curves,
+        "supports_arcs": machine.supports_arcs,
+        "reverse_z_axis": machine.reverse_z_axis,
+        "max_cut_speed": machine.max_cut_speed,
+        "max_travel_speed": machine.max_travel_speed,
+        "acceleration": machine.acceleration,
+        "axis_extents": list(machine.axis_extents),
     }

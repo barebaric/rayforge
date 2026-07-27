@@ -238,26 +238,29 @@ class ShrinkWrapStep(Step):
 def _build_shrinkwrap_part(workpiece: "WorkPiece") -> Part:
     """Build a :class:`Part` for the shrinkwrap assembler.
 
-    Uses the workpiece's vector boundaries when available, falling
-    back to a traced boolean image from a rendered surface.  The
-    boolean image is attached as a :class:`WholeImageSource` so the
-    Rust assembler can read it on a rayon worker.
+    The shrinkwrap assembler needs both vector geometry (for the
+    boundary constraint) and a boolean image (for the hull
+    computation).  This function always renders the workpiece to a
+    surface and prepares the boolean image, then attaches it as a
+    :class:`WholeImageSource` alongside any vector geometry.
     """
+    size = workpiece.size
+    if size[0] <= 0 or size[1] <= 0:
+        return Part(size_mm=size)
+
+    px_per_mm = (50.0, 50.0)
+    target_w = max(1, int(size[0] * px_per_mm[0]))
+    target_h = max(1, int(size[1] * px_per_mm[1]))
+    surface = workpiece.render_to_pixels(target_w, target_h)
+    if surface is None:
+        return Part(size_mm=size)
+
+    boolean = prepare_surface(surface)
+    if not np.any(boolean):
+        return Part(size_mm=size)
+
     part = build_part_vector(workpiece)
     if part is None or not part.has_geometry():
-        size = workpiece.size
-        if size[0] <= 0 or size[1] <= 0:
-            return Part(size_mm=size)
-        px_per_mm = (50.0, 50.0)
-        target_w = max(1, int(size[0] * px_per_mm[0]))
-        target_h = max(1, int(size[1] * px_per_mm[1]))
-        surface = workpiece.render_to_pixels(target_w, target_h)
-        if surface is None:
-            return Part(size_mm=size)
-        boolean = prepare_surface(surface)
-        if not np.any(boolean):
-            return Part(size_mm=size)
         part = Part(size_mm=size)
-        part.image_source = WholeImageSource(boolean)
-        return part
+    part.image_source = WholeImageSource(boolean)
     return part

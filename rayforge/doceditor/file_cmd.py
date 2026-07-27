@@ -49,7 +49,8 @@ from ..image.base_exporter import Exporter
 from ..image.dxf.exporter import GeometryDxfExporter
 from ..image.structures import ImportPayload, ImportResult, ParsingResult
 from ..image.svg.exporter import GeometrySvgExporter
-from ..pipeline.artifact import JobArtifact, JobArtifactHandle
+from ..pipeline.artifact import JobArtifact
+from ..pipeline.artifact.handle import BaseArtifactHandle
 from .layout.align import PositionAtStrategy
 
 if TYPE_CHECKING:
@@ -927,7 +928,7 @@ class FileCmd:
     def assemble_job_in_background(
         self,
         when_done: Callable[
-            [Optional[JobArtifactHandle], Optional[Exception]], None
+            [Optional[BaseArtifactHandle], Optional[Exception]], None
         ],
     ):
         """
@@ -946,16 +947,17 @@ class FileCmd:
         Asynchronously generates and exports G-code to a specific path.
         This is a non-blocking, fire-and-forget method for the UI.
         """
-        artifact_manager = self._editor.pipeline.artifact_manager
+        artifact_store = self._editor.pipeline.artifact_store
 
         def _on_export_assembly_done(
-            handle: Optional[JobArtifactHandle], error: Optional[Exception]
+            handle: Optional[BaseArtifactHandle],
+            error: Optional[Exception],
         ):
             try:
                 if error:
                     raise error
 
-                with artifact_manager.checkout_handle(handle) as artifact:
+                with artifact_store.checkout_handle(handle) as artifact:
                     if not artifact:
                         raise ValueError(
                             "Assembly process returned no artifact."

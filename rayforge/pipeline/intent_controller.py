@@ -95,6 +95,15 @@ class _DelayedScheduler(Protocol):
         **kwargs: Any,
     ) -> Any: ...
 
+    def run_thread(
+        self,
+        func: Callable[..., Any],
+        *args: Any,
+        key: Optional[Any] = None,
+        when_done: Optional[Callable[[Any], None]] = None,
+        **kwargs: Any,
+    ) -> Any: ...
+
 
 class IntentController:
     """
@@ -107,13 +116,13 @@ class IntentController:
 
     def __init__(
         self,
-        doc: "Doc",
+        doc: "Optional[Doc]",
         task_manager: "_DelayedScheduler",
         machine: "Optional[Machine]" = None,
         raygeo_pipeline: Optional[RaygeoPipeline] = None,
         dispatch: bool = False,
     ):
-        self._doc = doc
+        self._doc: Optional[Doc] = doc
         self._task_manager = task_manager
         self._machine = machine
         self._raygeo_pipeline: RaygeoPipeline = (
@@ -123,6 +132,11 @@ class IntentController:
         self._intent: Optional[Intent] = None
         self._generation_id: int = 0
         self._rebuild_timer: Optional[Any] = None
+        self._rebuilding: bool = False
+        self._rebuild_pending: bool = False
+        self._pause_count: int = 0
+        self._auto_rebuild: bool = True
+        self._data_stale_flag: bool = False
         # Flat map from node key back to the originating :class:`DocItem`
         # for DOM reattachment.  Rebuilt on every successful
         # ``IntentBuilder.build`` call.
@@ -131,15 +145,15 @@ class IntentController:
         self._steps_by_uid: Dict[str, "Step"] = {}
 
         # Signals for notifying the UI of generation progress.
-        # These mirror the legacy :class:`~rayforge.pipeline.pipeline.
-        # Pipeline` signals so the two paths are interchangeable from
-        # the UI's perspective once ``dispatch`` is enabled.
         self.workpiece_artifact_ready = Signal()
         self.step_artifact_ready = Signal()
         self.job_aggregate_ready = Signal()
         self.job_generation_finished = Signal()
         self.job_time_updated = Signal()
         self.progress_changed = Signal()
+        self.rebuild_started = Signal()
+        self.rebuild_finished = Signal()
+        self.data_stale = Signal()
 
     # ------------------------------------------------------------------
     # Properties
@@ -166,12 +180,51 @@ class IntentController:
     def generation_id(self) -> int:
         return self._generation_id
 
+    @property
+    def is_paused(self) -> bool:
+        return self._pause_count > 0
+
+    @property
+    def is_rebuild_pending(self) -> bool:
+        return self._rebuild_timer is not None or self._rebuilding
+
+    @property
+    def is_data_stale(self) -> bool:
+        return self._data_stale_flag
+
+    @property
+    def auto_rebuild(self) -> bool:
+        return self._auto_rebuild
+
+    @auto_rebuild.setter
+    def auto_rebuild(self, value: bool) -> None:
+        if self._auto_rebuild == value:
+            return
+        self._auto_rebuild = value
+        if value and self._data_stale_flag:
+            self._data_stale_flag = False
+            self._schedule_rebuild()
+
+    def pause(self) -> None:
+        self._pause_count += 1
+
+    def resume(self) -> None:
+        if self._pause_count == 0:
+            return
+        self._pause_count -= 1
+        if self._pause_count == 0 and self._data_stale_flag:
+            self._data_stale_flag = False
+            if self._auto_rebuild:
+                self._schedule_rebuild()
+
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
 
     def connect(self) -> None:
         """Connect to the document's bubbled signals."""
+        if self._doc is None:
+            return
         doc = self._doc
         doc.descendant_updated.connect(self._on_doc_changed)
         doc.descendant_transform_changed.connect(self._on_doc_changed)
@@ -181,6 +234,8 @@ class IntentController:
 
     def disconnect(self) -> None:
         """Disconnect from the document's signals."""
+        if self._doc is None:
+            return
         doc = self._doc
         doc.descendant_updated.disconnect(self._on_doc_changed)
         doc.descendant_transform_changed.disconnect(self._on_doc_changed)
@@ -194,11 +249,34 @@ class IntentController:
 
     def _on_doc_changed(self, *args: Any, **kwargs: Any) -> None:
         """Trigger a debounced intent rebuild on any doc change."""
+        if self._pause_count > 0 or not self._auto_rebuild:
+            if not self._data_stale_flag:
+                self._data_stale_flag = True
+                self.data_stale.send(self)
+            return
         self._schedule_rebuild()
+
+    def force_rebuild(self) -> None:
+        """Cancel any pending debounce and rebuild immediately.
+
+        If a rebuild is already running on the background thread, the
+        request is coalesced — a new rebuild will be triggered as soon
+        as the current one finishes.
+        """
+        if self._rebuild_timer is not None:
+            self._rebuild_timer.cancel()
+            self._rebuild_timer = None
+        if self._rebuilding:
+            self._rebuild_pending = True
+            return
+        self._rebuild()
 
     def _schedule_rebuild(self) -> None:
         if self._rebuild_timer is not None:
             self._rebuild_timer.cancel()
+        if self._rebuilding:
+            self._rebuild_pending = True
+            return
         self._rebuild_timer = (
             self._task_manager.schedule_delayed_on_main_thread(
                 REBUILD_DEBOUNCE_MS,
@@ -207,26 +285,60 @@ class IntentController:
         )
 
     def _rebuild(self) -> None:
-        """Build a fresh intent from the doc and update the cache."""
+        """Build a fresh intent from the doc and execute it.
+
+        The heavy work (intent construction including raster rendering,
+        and pipeline execution) runs on a background thread via the
+        task manager so the GTK main loop stays responsive.
+        ``rebuild_started`` fires before the thread starts;
+        ``rebuild_finished`` fires on the main thread after the thread
+        completes.
+        """
         self._rebuild_timer = None
         self._generation_id += 1
-        builder = IntentBuilder(
-            machine=self._machine, generation_id=self._generation_id
+        self._rebuilding = True
+        gen = self._generation_id
+        self.rebuild_started.send(self)
+
+        def _worker() -> None:
+            if self._doc is None:
+                return
+            builder = IntentBuilder(machine=self._machine, generation_id=gen)
+            nodes = builder.build(self._doc)
+            self._refresh_key_to_item_map(nodes)
+            new_intent = create_intent_from_nodes(nodes)
+            if self._intent is None:
+                self._intent = new_intent
+            else:
+                self._intent.update(new_intent, pipeline=self._raygeo_pipeline)
+            if self._dispatch and nodes:
+                try:
+                    run_intent(
+                        self._intent,
+                        on_completed=self._on_completed,
+                        on_batch_progress=self._on_batch_progress,
+                        pipeline=self._raygeo_pipeline,
+                    )
+                except RuntimeError as exc:
+                    logger.debug("run_intent failed: %s", exc)
+
+        def _on_done(_task: Any) -> None:
+            self._rebuilding = False
+            if self._rebuild_pending:
+                self._rebuild_pending = False
+                self._task_manager.schedule_on_main_thread(self._rebuild)
+            else:
+                self._task_manager.schedule_on_main_thread(
+                    self._emit_rebuild_finished
+                )
+
+        self._task_manager.run_thread(
+            _worker, when_done=_on_done, key="intent-rebuild"
         )
-        nodes = builder.build(self._doc)
-        self._refresh_key_to_item_map(nodes)
-        new_intent = create_intent_from_nodes(nodes)
-        if self._intent is None:
-            self._intent = new_intent
-        else:
-            self._intent.update(new_intent, pipeline=self._raygeo_pipeline)
-        if self._dispatch:
-            run_intent(
-                self._intent,
-                on_completed=self._on_completed,
-                on_batch_progress=self._on_batch_progress,
-                pipeline=self._raygeo_pipeline,
-            )
+
+    def _emit_rebuild_finished(self) -> None:
+        """Emit ``rebuild_finished`` on the main thread."""
+        self.rebuild_finished.send(self)
 
     # ------------------------------------------------------------------
     # on_completed → epoch filter → DOM reattachment via main-thread
@@ -243,16 +355,16 @@ class IntentController:
         DOM reattachment onto the application main thread via the
         shared task manager.
         """
-        gen = getattr(node, "generation_id", -1)
+        gen = node.generation_id
         if gen < self._generation_id:
             logger.debug(
                 "Discarding superseded result for %s (gen %s < %s)",
-                getattr(node, "key", "?"),
+                node.key,
                 gen,
                 self._generation_id,
             )
             return
-        key = getattr(node, "key", "")
+        key = node.key
         item = self._key_to_item.get(key)
         if item is None:
             logger.debug(
@@ -260,7 +372,7 @@ class IntentController:
                 key,
             )
             return
-        output = getattr(node, "output", None)
+        output = node.output
         self._task_manager.schedule_on_main_thread(
             self._reattach, key, item, output
         )
@@ -320,7 +432,9 @@ class IntentController:
             self.job_aggregate_ready.send(
                 self, output=output, generation_id=gen
             )
-            time_estimate = getattr(output, "time_estimate", None)
+            time_estimate = (
+                output.time_estimate if output is not None else None
+            )
             self.job_time_updated.send(self, total_seconds=time_estimate)
         elif key == "job:encode":
             self.job_generation_finished.send(
@@ -342,6 +456,8 @@ class IntentController:
         from ..core.workpiece import WorkPiece
 
         self._key_to_item = {}
+        if self._doc is None:
+            return
         # Index workpieces and steps by uid for fast lookup.  Kept on
         # the instance so :meth:`_reattach` can resolve the owning
         # DocItem for a node key without re-walking the doc.
@@ -388,4 +504,7 @@ class IntentController:
         try:
             self.disconnect()
         except Exception:
-            pass
+            logger.warning(
+                "Error during IntentController shutdown",
+                exc_info=True,
+            )

@@ -17,7 +17,6 @@ from rayforge.pipeline.artifact import (
     WorkPieceArtifactHandle,
     WorkPieceViewArtifactHandle,
 )
-from rayforge.pipeline.artifact.manager import ArtifactManager
 from rayforge.pipeline.pipeline import Pipeline
 from rayforge.pipeline.view.view_compute import (
     render_workpiece_view_in_process,
@@ -736,8 +735,8 @@ def test_request_view_render_no_source_handle(view_manager, context):
 
 
 @pytest.fixture
-def real_artifact_manager(context_initializer):
-    return ArtifactManager(context_initializer.artifact_store)
+def real_artifact_store(context_initializer):
+    return context_initializer.artifact_store
 
 
 @pytest.fixture
@@ -762,7 +761,7 @@ def real_view_manager(real_pipeline, context_initializer):
 
 @pytest.mark.usefixtures("context_initializer")
 def test_on_workpiece_artifact_ready_refcount_increased(
-    real_view_manager, real_artifact_manager
+    real_view_manager, real_artifact_store
 ):
     """
     Verify that when ViewManager receives workpiece_artifact_ready signal,
@@ -787,7 +786,7 @@ def test_on_workpiece_artifact_ready_refcount_increased(
         generation_id=0,
     )
 
-    handle = real_artifact_manager._store.put(artifact)
+    handle = real_artifact_store.put(artifact)
 
     initial_refcount = handle.refcount
     assert initial_refcount == 1, (
@@ -827,7 +826,7 @@ def test_on_workpiece_artifact_ready_refcount_increased(
 
 @pytest.mark.usefixtures("context_initializer")
 def test_on_workpiece_artifact_ready_releases_old_and_refcount_decreased(
-    real_view_manager, real_artifact_manager
+    real_view_manager, real_artifact_store
 ):
     """
     Verify that when ViewManager receives a new handle for same workpiece:
@@ -849,7 +848,7 @@ def test_on_workpiece_artifact_ready_releases_old_and_refcount_decreased(
         generation_id=0,
     )
 
-    old_handle = real_artifact_manager._store.put(artifact1)
+    old_handle = real_artifact_store.put(artifact1)
 
     mock_step = MagicMock()
     mock_step.uid = str(uuid.uuid4())
@@ -890,7 +889,7 @@ def test_on_workpiece_artifact_ready_releases_old_and_refcount_decreased(
         generation_id=0,
     )
 
-    new_handle = real_artifact_manager._store.put(artifact2)
+    new_handle = real_artifact_store.put(artifact2)
 
     real_view_manager.on_workpiece_artifact_ready(
         sender=None,

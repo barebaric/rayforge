@@ -7,7 +7,7 @@ from .compiled_scene import (
 )
 from .render_config import LayerRenderConfig, RenderConfig3D
 from .scene_compiler import compile_scene
-from .scene_compiler_runner import compile_scene_in_subprocess
+from .scene_compiler_runner import compile_scene_in_thread
 
 __all__ = [
     "LayerRenderConfig",
@@ -18,5 +18,5 @@ __all__ = [
     "TextureLayer",
     "VertexLayer",
     "compile_scene",
-    "compile_scene_in_subprocess",
+    "compile_scene_in_thread",
 ]

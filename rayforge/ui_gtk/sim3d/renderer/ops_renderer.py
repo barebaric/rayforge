@@ -200,6 +200,7 @@ class OpsRenderer(BaseRenderer):
             set_line_width(line_width)
             shader.set_float("uUsePowerLUT", 0.0)
             shader.set_float("uUseVertexColor", 0.0)
+            shader.set_float("uEmissive", 0.0)
             shader.set_int(
                 "uExecutedVertexCount", executed_travel_vertex_count
             )
