@@ -52,7 +52,6 @@ from .addon import (
     VersionType,
 )
 
-
 if TYPE_CHECKING:
     from ..shared.tasker.manager import TaskManager
 

@@ -1,12 +1,11 @@
 from unittest.mock import MagicMock, Mock
 
 import pytest
+from raygeo.geo.shape.text import FontConfig
 from sketcher.core.entities import TextBoxEntity
 from sketcher.ui_gtk.tools import TextBoxTool
 from sketcher.ui_gtk.tools.base import SketcherKey
 from sketcher.ui_gtk.tools.text_box_tool import TextBoxState
-
-from raygeo.geo.shape.text import FontConfig
 
 
 @pytest.fixture

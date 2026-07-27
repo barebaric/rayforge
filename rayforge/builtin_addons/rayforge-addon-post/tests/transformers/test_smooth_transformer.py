@@ -5,6 +5,7 @@ import pytest
 from post_processors.transformers import Smooth
 from raygeo.ops import Ops
 from raygeo.ops.types import CommandType
+
 from tests.conftest import MockProgressContext
 
 

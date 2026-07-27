@@ -14,10 +14,10 @@ from typing import TYPE_CHECKING, List, Optional
 
 from gi.repository import Adw, Gtk
 
+from ..context import get_context
 from ..core.group import Group
 from ..core.item import DocItem
 from ..core.workpiece import WorkPiece
-from ..context import get_context
 from ..doceditor.array import (
     ArrayMode,
     ArrayParams,

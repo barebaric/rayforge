@@ -27,8 +27,8 @@ with warnings.catch_warnings():
     import pyvips
 
 from raygeo.geo import Geometry, Matrix
-from raygeo.ops.part import Part
 from raygeo.geo.types import Point, Rect
+from raygeo.ops.part import Part
 
 from ..context import get_context
 from .asset_registry import asset_type_registry

@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
 from raygeo.geo import Geometry
 from raygeo.geo.shape.line import does_line_segment_intersect_rect
 from raygeo.geo.shape.polygon import is_point_inside_polygon
+from raygeo.geo.shape.text import FontConfig, text_to_geometry
 from raygeo.geo.types import Rect
 
 from rayforge.core.color import ColorRGBA
-from raygeo.geo.shape.text import text_to_geometry, FontConfig
 
 from ..types import EntityID
 from .entity import Entity

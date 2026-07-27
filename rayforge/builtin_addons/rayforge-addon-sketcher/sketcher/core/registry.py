@@ -1,8 +1,7 @@
 from typing import Any, Dict, List, Optional, Set
 
-from raygeo.geo.types import Point as GeoPoint
-
 from raygeo.geo.shape.text import FontConfig
+from raygeo.geo.types import Point as GeoPoint
 
 from .entities.arc import Arc
 from .entities.bezier import Bezier

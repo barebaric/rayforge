@@ -20,7 +20,6 @@ from rayforge.ui_gtk.shared.direction_preview import DirectionPreview
 from rayforge.ui_gtk.shared.histogram_preview import HistogramPreview
 from rayforge.ui_gtk.shared.slider import create_slider, create_slider_row
 
-
 _SCAN_MODES = [ScanMode.SEGMENTED, ScanMode.FULL_SWEEP]
 
 if TYPE_CHECKING:

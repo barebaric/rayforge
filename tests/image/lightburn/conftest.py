@@ -27,9 +27,6 @@ for _p in (_LASER_ADDON, _POST_ADDON):
 
 @pytest.fixture(scope="session", autouse=True)
 def _register_laser_addons():
-    from rayforge.core.step_registry import step_registry
-    from rayforge.pipeline.transformer.registry import transformer_registry
-
     from laser_essentials.steps import ContourStep, EngraveStep
     from post_processors.transformers import (
         BidirScanOffsetTransformer,
@@ -42,6 +39,9 @@ def _register_laser_addons():
         Smooth,
         TabOpsTransformer,
     )
+
+    from rayforge.core.step_registry import step_registry
+    from rayforge.pipeline.transformer.registry import transformer_registry
 
     if step_registry.get("ContourStep") is None:
         step_registry.register(ContourStep)

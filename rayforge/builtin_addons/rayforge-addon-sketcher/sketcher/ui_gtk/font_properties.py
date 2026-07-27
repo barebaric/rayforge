@@ -3,8 +3,8 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional
 
 from gi.repository import Adw, Gtk, Pango
-
 from raygeo.geo.shape.text import FontConfig
+
 from rayforge.ui_gtk.icons import get_icon
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
 

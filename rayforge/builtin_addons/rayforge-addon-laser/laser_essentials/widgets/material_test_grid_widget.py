@@ -5,7 +5,6 @@ Provides UI for configuring material test array parameters.
 """
 
 import logging
-
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -17,6 +16,7 @@ from rayforge.ui_gtk.doceditor.step_settings.base import (
 )
 from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
 from rayforge.ui_gtk.shared.slider import create_slider_row
+
 from ..material_test_helpers import GridMode
 
 if TYPE_CHECKING:

@@ -2,9 +2,10 @@
 Tests for the localized utilities, including the addon domain patch.
 """
 
-import pytest
-from pathlib import Path
 import gettext as gettext_module
+from pathlib import Path
+
+import pytest
 
 from rayforge.shared.util.localized import register_addon_domain
 from rayforge.shared.util.po_compiler import write_mo_file

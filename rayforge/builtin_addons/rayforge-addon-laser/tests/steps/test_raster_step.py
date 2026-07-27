@@ -2,7 +2,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from laser_essentials.steps import EngraveStep
-
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.raster import RasterSpec
