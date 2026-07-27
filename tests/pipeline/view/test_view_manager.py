@@ -45,8 +45,6 @@ def mock_store():
     store.release = MagicMock()
     store.get = MagicMock()
     store.put = MagicMock()
-    store.adopt = MagicMock()
-    store.safe_adoption = MagicMock()
     return store
 
 

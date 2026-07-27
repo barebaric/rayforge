@@ -458,9 +458,7 @@ class AddonManager:
             logger.info(f"Scanning for addons in {addon_dir}...")
             for child in addon_dir.iterdir():
                 if child.is_dir():
-                    self.load_addon(
-                        child.resolve(), worker_only=worker_only
-                    )
+                    self.load_addon(child.resolve(), worker_only=worker_only)
 
     def load_addon(
         self,

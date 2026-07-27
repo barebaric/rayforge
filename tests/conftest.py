@@ -939,31 +939,13 @@ class _InnerMockProgressContext:
 @pytest.fixture
 def adopting_mock_proxy():
     """
-    Creates a mock ExecutionContextProxy that adopts artifacts when
-    send_event_and_wait is called.
-
-    On Windows, shared memory is destroyed when all handles are closed.
-    When tests run runner functions in-process (not in a real subprocess),
-    the runner calls forget() after send_event_and_wait returns, which
-    closes the only handle. This mock simulates the main process adopting
-    the artifact before the runner forgets it.
+    Creates a mock ExecutionContextProxy that returns True for
+    send_event_and_wait.
     """
     from unittest.mock import MagicMock
 
-    from rayforge.context import get_context
-    from rayforge.pipeline.artifact import create_handle_from_dict
-
-    artifact_store = get_context().artifact_store
-
-    def mock_send_event_and_wait(event_name, data, logger=None):
-        handle_dict = data.get("handle_dict")
-        if handle_dict:
-            handle = create_handle_from_dict(handle_dict)
-            artifact_store.adopt(handle)
-        return True
-
     proxy = MagicMock()
-    proxy.send_event_and_wait.side_effect = mock_send_event_and_wait
+    proxy.send_event_and_wait.return_value = True
     return proxy
 
 
