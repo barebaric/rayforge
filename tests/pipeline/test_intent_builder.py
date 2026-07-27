@@ -8,7 +8,7 @@ and the position-sensitive folding rule.
 
 from raygeo.cnc.execution.intent import create_intent_from_nodes
 from raygeo.cnc.execution.specs import EncodeSpec
-from raygeo.geo import Geometry
+from raygeo.geo import Geometry, Matrix
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.pipeline.execute import execute_stages
@@ -17,7 +17,10 @@ from raygeo.pipeline.stage import StageSpec
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
+from rayforge.core.stock import StockItem
+from rayforge.core.stock_asset import StockAsset
 from rayforge.core.workpiece import WorkPiece
+from rayforge.machine.models.machine import Machine
 from rayforge.pipeline.intent_builder import (
     IntentBuilder,
     job_encode_key,
@@ -824,3 +827,103 @@ def test_raster_step_is_position_sensitive(engrave_step_class):
     compute token."""
     step = engrave_step_class(name="engrave")
     assert step.is_position_sensitive() is True
+
+
+# ----------------------------------------------------------------------
+# Stock resolution
+# ----------------------------------------------------------------------
+
+
+def _make_doc_with_stock(
+    step: _TestStep,
+    wp: WorkPiece,
+    stock_visible: bool = True,
+) -> Doc:
+    """Build a Doc containing *step*, *wp*, and a single visible
+    StockItem backed by a rectangular StockAsset."""
+    doc = _make_doc(step, wp)
+    asset = StockAsset(name="sheet", geometry=None)
+
+    # Give the asset a 100×80 mm rectangle.
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(100, 0)
+    geo.line_to(100, 80)
+    geo.line_to(0, 80)
+    geo.close_path()
+    asset.geometry = geo
+    doc.add_asset(asset)
+    item = StockItem(stock_asset_uid=asset.uid, name="sheet")
+    item.visible = stock_visible
+    doc.add_child(item)
+    return doc
+
+
+def test_stock_items_resolved_into_geometries():
+    """Visible StockItems must produce world-rect geometries in the
+    resolved stock list (not just the machine workarea fallback)."""
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc_with_stock(step, wp)
+
+    builder = IntentBuilder()
+    builder.build(doc)
+    geos = builder._resolve_stock_geometries()
+
+    assert geos is not None
+    assert len(geos) == 1
+    assert not geos[0].is_empty()
+
+
+def test_hidden_stock_skipped():
+    """Hidden StockItems must not appear in the stock geometries."""
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc_with_stock(step, wp, stock_visible=False)
+
+    builder = IntentBuilder()
+    builder.build(doc)
+    geos = builder._resolve_stock_geometries()
+
+    assert geos is not None
+    assert len(geos) == 0
+
+
+def test_no_stock_falls_back_to_workarea(lite_context):
+    """When no StockItems exist, the machine workarea rectangle must be
+    used as the stock geometry fallback."""
+    machine = Machine(lite_context)
+    machine.set_axis_extents(300, 200)
+
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+
+    builder = IntentBuilder(machine=machine)
+    builder.build(doc)
+    geos = builder._resolve_stock_geometries()
+
+    assert geos is not None
+    assert len(geos) == 1
+    assert not geos[0].is_empty()
+
+
+def test_stock_move_invalidates_compute_token():
+    """Moving a StockItem must change the compute token for a
+    position-sensitive step (e.g. one with CropTransformer)."""
+    step = _TestStep(name="s1", position_sensitive=True)
+    wp = WorkPiece(name="wp")
+    doc = _make_doc_with_stock(step, wp)
+
+    before = IntentBuilder().build(doc)
+
+    # Move the stock item by translating its matrix.
+    stock_item = doc.stock_items[0]
+    stock_item.matrix = stock_item.matrix @ Matrix.translation(50, 50)
+
+    after = IntentBuilder().build(doc)
+
+    wpk = workpiece_key(wp.uid, step.uid)
+    before_t = next(n.version_token for n in before if n.key == wpk)
+    after_t = next(n.version_token for n in after if n.key == wpk)
+    assert before_t != after_t

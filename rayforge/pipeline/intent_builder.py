@@ -133,6 +133,7 @@ class IntentBuilder:
         self._machine = machine
         self._generation_id = generation_id
         self._stock_geometries: Optional[List[Any]] = None
+        self._doc: Optional["Doc"] = None
 
     @property
     def generation_id(self) -> int:
@@ -143,6 +144,7 @@ class IntentBuilder:
         Walk *doc* and produce one NodeRequest per workpiece-step pair,
         one per step, and one final job aggregate.
         """
+        self._doc = doc
         nodes: List[NodeRequest] = []
         # Map each step's key to the list of upstream workpiece compute
         # inputs — the step aggregate token and placement depend on all
@@ -259,6 +261,27 @@ class IntentBuilder:
     # Token computation
     # ------------------------------------------------------------------
 
+    def _stock_revision(self) -> int:
+        """Hash of visible stock items' world transforms and asset UIDs.
+
+        Ensures that moving, adding, or removing a stock item
+        invalidates crop-dependent compute caches.
+        """
+        if self._doc is None:
+            return 0
+        payload = []
+        for item in self._doc.stock_items:
+            if not item.visible:
+                continue
+            payload.append(
+                {
+                    "uid": item.uid,
+                    "matrix": item.matrix.to_list(),
+                    "asset_uid": item.stock_asset_uid,
+                }
+            )
+        return _hash_int({"kind": "stock", "items": payload})
+
     def _compute_token(
         self, step: "Step", wp: "WorkPiece", pos_sensitive: bool
     ) -> int:
@@ -274,6 +297,7 @@ class IntentBuilder:
         }
         if pos_sensitive:
             payload["xf_rev"] = wp.transform_revision
+            payload["stock_rev"] = self._stock_revision()
         return _hash_int(payload)
 
     def _aggregate_token(
@@ -306,6 +330,8 @@ class IntentBuilder:
             "position_sensitive": step.is_position_sensitive(),
             "placements": placements,
         }
+        if step.is_position_sensitive():
+            payload["stock_rev"] = self._stock_revision()
         return _hash_int(payload)
 
     def _job_token(self, doc: "Doc", step_tokens: Dict[str, int]) -> int:
@@ -529,16 +555,36 @@ class IntentBuilder:
         builder. Transformers such as CropTransformer use this to
         clip per-workpiece ops to the machine's work area or to
         explicit StockItems.
+
+        Doc-owned :class:`StockItem` entries take precedence. The
+        machine workarea rectangle is used as a fallback only when
+        no doc stock exists.
         """
         if self._stock_geometries is not None:
             return self._stock_geometries
-        from .coordspace import MachineSpace
 
         geos: List[Any] = []
-        # Doc-owned stock items are resolved lazily via the builder's
-        # caller; we only fold in machine workarea fallback here.
-        if self._machine is not None:
+
+        if self._doc is not None:
+            for item in self._doc.stock_items:
+                if not item.visible:
+                    continue
+                try:
+                    geo = item.get_world_rect_geometry()
+                except Exception:
+                    logger.debug(
+                        "Failed to resolve stock geometry for %s",
+                        item.uid,
+                        exc_info=True,
+                    )
+                    continue
+                if geo is not None and not geo.is_empty():
+                    geos.append(geo)
+
+        if self._machine is not None and not geos:
             try:
+                from .coordspace import MachineSpace
+
                 space = MachineSpace.from_machine(self._machine)
                 wx, wy, w, h = space.get_workarea_world_rect()
                 geo = Geometry()
@@ -553,6 +599,7 @@ class IntentBuilder:
                     "Failed to resolve machine workarea for stock",
                     exc_info=True,
                 )
+
         self._stock_geometries = geos
         return self._stock_geometries
 
