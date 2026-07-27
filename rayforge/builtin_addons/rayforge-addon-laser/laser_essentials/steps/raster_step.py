@@ -92,6 +92,18 @@ class EngraveStep(Step):
         except KeyError:
             return None
 
+    def is_position_sensitive(self) -> bool:
+        """The raster assembler bakes ``workpiece.bbox`` into its
+        output via ``offset_x_mm`` / ``offset_y_mm`` so the compute
+        result depends on the workpiece's absolute world position
+        (not just on per-workpiece transformers like CropTransformer).
+        Returning True ensures the compute token folds in
+        ``transform_revision`` so a pure move invalidates the
+        workpiece compute cache rather than leaving stale,
+        wrong-position ops to be re-displaced by the aggregate's new
+        placement matrix."""
+        return True
+
     def get_assembler_kwargs(
         self,
         machine_defaults: MachineDefaults,
@@ -136,7 +148,7 @@ class EngraveStep(Step):
         assembler on the rayon worker only reads slabs from the
         attached image source.
         """
-        part = _build_raster_part(self, machine_defaults, workpiece)
+        part, alpha = _build_raster_part(self, machine_defaults, workpiece)
         kwargs = self.get_assembler_kwargs(machine_defaults, workpiece)
         depth_mode = DepthMode[self.depth_mode]
         spot_x = machine_defaults.tool_radius * 2.0
@@ -150,9 +162,10 @@ class EngraveStep(Step):
             else spot_x / 2.0
         )
         x_off, y_off, _w, _h = workpiece.bbox
-        alpha = getattr(part, "_raster_alpha", None)
         alpha_arr = (
-            (alpha * 255).astype(np.uint8) if alpha is not None else None
+            (alpha * 255).astype(np.uint8).tobytes()
+            if alpha is not None
+            else None
         )
         spec = RasterSpec(
             mode=depth_mode.raygeo_name,
@@ -339,7 +352,9 @@ class EngraveStep(Step):
         )
         step_power = machine_defaults.step_power
         alpha_arr = (
-            (alpha * 255).astype(np.uint8) if alpha is not None else None
+            (alpha * 255).astype(np.uint8).tobytes()
+            if alpha is not None
+            else None
         )
 
         result = assembler_registry.assemble(
@@ -446,10 +461,11 @@ def _build_raster_part(
     step: "EngraveStep",
     machine_defaults: MachineDefaults,
     workpiece: "WorkPiece",
-) -> Part:
+) -> Tuple[Part, Optional[np.ndarray]]:
     """Render and preprocess the workpiece into a :class:`Part`
-    carrying a :class:`WholeImageSource` (and an ``_raster_alpha``
-    attribute the caller folds into the :class:`RasterSpec`).
+    carrying a :class:`WholeImageSource`, and return the alpha
+    channel separately so the caller can fold it into the
+    :class:`RasterSpec`.
 
     The rendering resolution is clamped to
     :data:`MAX_RASTER_RENDER_PIXELS` to bound memory.  Auto-levels
@@ -458,7 +474,7 @@ def _build_raster_part(
     """
     size = workpiece.size
     if size[0] <= 0 or size[1] <= 0:
-        return Part(size_mm=size)
+        return Part(size_mm=size), None
 
     spot_x = machine_defaults.tool_radius * 2.0
     spot_y = machine_defaults.line_interval_mm
@@ -477,7 +493,7 @@ def _build_raster_part(
 
     surface = workpiece.render_to_pixels(target_w, target_h)
     if surface is None:
-        return Part(size_mm=size)
+        return Part(size_mm=size), None
 
     depth_mode = DepthMode[step.depth_mode]
 
@@ -504,15 +520,14 @@ def _build_raster_part(
     )
     surface.flush()
     if image is None:
-        return Part(size_mm=size)
+        return Part(size_mm=size), None
 
     part = Part(
         size_mm=size,
         pixels_per_mm=(px_per_mm_x, px_per_mm_y),
     )
     part.image_source = WholeImageSource(image)
-    part._raster_alpha = alpha  # type: ignore[attr-defined]
-    return part
+    return part, alpha
 
 
 MAX_RASTER_RENDER_PIXELS = 16 * 1024 * 1024

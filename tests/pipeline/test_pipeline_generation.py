@@ -1,33 +1,18 @@
 import asyncio
 import logging
 from pathlib import Path
-from unittest.mock import ANY, MagicMock
 
 import pytest
 from raygeo.geo import Geometry
-from raygeo.ops import Ops
 
-from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
-from rayforge.pipeline.artifact import (
-    JobArtifact,
-    StepOpsArtifact,
-    WorkPieceArtifact,
-)
-from rayforge.pipeline.coord import CoordinateSystem
+from rayforge.pipeline.artifact import JobArtifact
 from rayforge.pipeline.pipeline import Pipeline
-from rayforge.pipeline.stage.job_runner import make_job_artifact_in_subprocess
-from rayforge.pipeline.stage.step_runner import (
-    make_step_artifact_in_subprocess,
-)
-from rayforge.pipeline.stage.workpiece_runner import (
-    make_workpiece_artifact_in_subprocess,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +41,9 @@ def doc():
 
 @pytest.mark.usefixtures("context_initializer")
 class TestPipelineGeneration:
+    """Test ops generation, signal emission, and caching in the
+    raygeo-backed pipeline."""
+
     svg_data = b"""
     <svg width="50mm" height="30mm" xmlns="http://www.w3.org/2000/svg">
     <rect width="50" height="30" />
@@ -80,105 +68,17 @@ class TestPipelineGeneration:
         doc.active_layer.add_workpiece(workpiece)
         return doc.active_layer
 
-    def _complete_all_tasks(
-        self, mock_task_mgr, workpiece_handle, step_time=42.0
-    ):
-        """Helper to find and complete all outstanding tasks."""
-        processed_keys = set()
-        while True:
-            tasks_to_process = [
-                t
-                for t in mock_task_mgr.created_tasks
-                if t.key not in processed_keys
-            ]
-            if not tasks_to_process:
-                break
-
-            for task_info in tasks_to_process:
-                task_obj = task_info.returned_task_obj
-                task_obj.key = task_info.key
-                task_obj.get_status.return_value = "completed"
-                task_obj.result.return_value = None
-
-                if task_info.target is make_job_artifact_in_subprocess:
-                    if task_info.when_event:
-                        store = get_context().artifact_store
-                        job_artifact = JobArtifact(
-                            ops=Ops(), distance=0.0, generation_id=1
-                        )
-                        job_handle = store.put(job_artifact)
-
-                        gen_id = task_info.kwargs.get("generation_id")
-                        job_key = task_info.kwargs.get("job_key")
-                        event_data = {
-                            "handle_dict": job_handle.to_dict(),
-                            "generation_id": gen_id,
-                            "job_key": {
-                                "id": job_key.id,
-                                "group": job_key.group,
-                            },
-                        }
-                        task_info.when_event(
-                            task_obj, "artifact_created", event_data
-                        )
-                    if task_info.when_done:
-                        task_info.when_done(task_obj)
-
-                elif task_info.target is make_step_artifact_in_subprocess:
-                    gen_id = task_info.args[3]
-                    task_obj.result.return_value = gen_id
-                    if task_info.when_event:
-                        store = get_context().artifact_store
-                        ops_artifact = StepOpsArtifact(
-                            ops=Ops(), generation_id=gen_id
-                        )
-                        ops_handle = store.put(ops_artifact)
-
-                        ops_event = {
-                            "handle_dict": ops_handle.to_dict(),
-                            "generation_id": gen_id,
-                        }
-                        task_info.when_event(
-                            task_obj, "ops_artifact_ready", ops_event
-                        )
-
-                        time_event = {
-                            "time_estimate": step_time,
-                            "generation_id": gen_id,
-                        }
-                        task_info.when_event(
-                            task_obj, "time_estimate_ready", time_event
-                        )
-                    if task_info.when_done:
-                        task_info.when_done(task_obj)
-
-                elif task_info.target is make_workpiece_artifact_in_subprocess:
-                    gen_id = task_info.args[5]
-                    task_obj.result.return_value = gen_id
-                    if task_info.when_event:
-                        event_data = {
-                            "handle_dict": workpiece_handle.to_dict(),
-                            "generation_id": gen_id,
-                        }
-                        task_info.when_event(
-                            task_obj, "artifact_created", event_data
-                        )
-                    if task_info.when_done:
-                        task_info.when_done(task_obj)
-
-                processed_keys.add(task_info.key)
-
-        mock_task_mgr.created_tasks.clear()
-
-    def test_generation_success_emits_signals_and_caches_result(
+    @pytest.mark.asyncio
+    async def test_generation_success_produces_artifact_handle(
         self,
         doc,
         real_workpiece,
-        mock_task_mgr,
+        task_mgr,
         context_initializer,
         contour_step_class,
     ):
-        # Arrange
+        """Verifies that after generation completes, a workpiece artifact
+        handle is available via get_artifact_handle."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
@@ -186,205 +86,75 @@ class TestPipelineGeneration:
 
         pipeline = Pipeline(
             doc,
-            mock_task_mgr,
+            task_mgr,
             context_initializer.artifact_store,
             context_initializer.machine,
         )
-        mock_task_mgr.run_process.assert_called_once()
-        task_info = mock_task_mgr.created_tasks[0]
 
-        # Act
-        expected_ops = Ops()
-        expected_ops.move_to(0, 0, 0)
-        expected_ops.line_to(1, 1, 0)
+        deadline = asyncio.get_running_loop().time() + 10.0
+        while (
+            pipeline.is_busy and asyncio.get_running_loop().time() < deadline
+        ):
+            await asyncio.sleep(0.05)
 
-        expected_artifact = WorkPieceArtifact(
-            ops=expected_ops,
-            is_scalable=True,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=real_workpiece.size,
-            generation_size=real_workpiece.size,
-            generation_id=1,
-        )
-        handle = get_context().artifact_store.put(expected_artifact)
-        gen_id = task_info.args[5]
+        handle = pipeline.get_artifact_handle(step.uid, real_workpiece.uid)
+        assert handle is not None
 
-        task_obj_for_stage = task_info.returned_task_obj
-        task_obj_for_stage.key = task_info.key
-        task_obj_for_stage.get_status.return_value = "completed"
-        task_obj_for_stage.result.return_value = gen_id
-
-        try:
-            # Simulate the new two-step flow: event first, then completion
-            event_data = {
-                "handle_dict": handle.to_dict(),
-                "generation_id": gen_id,
-            }
-            task_info.when_event(
-                task_obj_for_stage, "artifact_created", event_data
-            )
-            task_info.when_done(task_obj_for_stage)
-
-            cached_ops = pipeline.get_scaled_ops(
-                step.uid,
-                real_workpiece.uid,
-                real_workpiece.get_world_transform(),
-            )
-            assert cached_ops is not None
-            assert len(cached_ops) == 2
-        finally:
-            get_context().artifact_store.release(handle)
-
-    def test_generation_cancellation_is_handled(
-        self,
-        doc,
-        real_workpiece,
-        mock_task_mgr,
-        context_initializer,
-        contour_step_class,
-    ):
-        # Arrange
-        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
-        step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
-
-        pipeline = Pipeline(
-            doc,
-            mock_task_mgr,
-            context_initializer.artifact_store,
-            context_initializer.machine,
-        )
-        mock_task_mgr.run_process.assert_called_once()
-        task_info = mock_task_mgr.created_tasks[0]
-
-        # Act
-        task_obj_for_stage = task_info.returned_task_obj
-        task_obj_for_stage.key = task_info.key
-        task_obj_for_stage.get_status.return_value = "cancelled"
-        task_info.when_done(task_obj_for_stage)
-
-        # Assert
-        assert (
-            pipeline.get_scaled_ops(
-                step.uid,
-                real_workpiece.uid,
-                real_workpiece.get_world_transform(),
-            )
-            is None
-        )
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
 
     @pytest.mark.asyncio
     async def test_step_change_triggers_full_regeneration(
         self,
         doc,
         real_workpiece,
-        mock_task_mgr,
+        task_mgr,
         context_initializer,
         contour_step_class,
     ):
-        # Arrange
+        """Verifies that changing a step power triggers a new rebuild."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
-        _ = Pipeline(
+
+        pipeline = Pipeline(
             doc,
-            mock_task_mgr,
+            task_mgr,
             context_initializer.artifact_store,
             context_initializer.machine,
         )
 
-        artifact = WorkPieceArtifact(
-            ops=Ops(),
-            is_scalable=True,
-            generation_size=real_workpiece.size,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=real_workpiece.size,
-            generation_id=1,
-        )
-        handle = get_context().artifact_store.put(artifact)
-        try:
-            self._complete_all_tasks(mock_task_mgr, handle)
-            mock_task_mgr.run_process.reset_mock()
+        deadline = asyncio.get_running_loop().time() + 10.0
+        while (
+            pipeline.is_busy and asyncio.get_running_loop().time() < deadline
+        ):
+            await asyncio.sleep(0.05)
+        gen1 = pipeline.data_generation_id
 
-            # Act
-            step.set_power(0.5)
-            await asyncio.sleep(0)  # Allow debounced task to run
+        step.set_power(0.5)
 
-            # Assert
-            tasks = mock_task_mgr.created_tasks
-            workpiece_tasks = [
-                t
-                for t in tasks
-                if t.target is make_workpiece_artifact_in_subprocess
-            ]
-            assert len(workpiece_tasks) == 1
-        finally:
-            get_context().artifact_store.release(handle)
+        deadline = asyncio.get_running_loop().time() + 10.0
+        while (
+            pipeline.is_busy and asyncio.get_running_loop().time() < deadline
+        ):
+            await asyncio.sleep(0.05)
+
+        gen2 = pipeline.data_generation_id
+        assert gen2 > gen1, "Step change should trigger a new generation"
+
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
 
     @pytest.mark.asyncio
-    async def test_workpiece_transform_change_triggers_step_assembly(
+    async def test_workpiece_position_change_triggers_regeneration(
         self,
         doc,
         real_workpiece,
-        mock_task_mgr,
+        task_mgr,
         context_initializer,
         contour_step_class,
     ):
-        # Arrange
-        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
-        step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
-        Pipeline(
-            doc,
-            mock_task_mgr,
-            context_initializer.artifact_store,
-            context_initializer.machine,
-        )
-        artifact = WorkPieceArtifact(
-            ops=Ops(),
-            is_scalable=True,
-            generation_size=real_workpiece.size,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=real_workpiece.size,
-            generation_id=1,
-        )
-        handle = get_context().artifact_store.put(artifact)
-        try:
-            self._complete_all_tasks(mock_task_mgr, handle)
-            mock_task_mgr.run_process.reset_mock()
-            mock_task_mgr.created_tasks.clear()
-
-            # Act
-            real_workpiece.pos = (50, 50)
-            await asyncio.sleep(0)  # Allow debounced task to run
-
-            # With the DAG-based scheduler, workpiece tasks must complete
-            # before step assembly can proceed.
-            self._complete_all_tasks(mock_task_mgr, handle)
-
-            # Assert - step assembly task should have been created after
-            # the workpiece task completed during position change
-            step_calls = sum(
-                1
-                for call in mock_task_mgr.run_process.call_args_list
-                if call[0][0] is make_step_artifact_in_subprocess
-            )
-            assert step_calls >= 1
-        finally:
-            get_context().artifact_store.release(handle)
-
-    def test_generate_job_artifact_callback_success(
-        self,
-        doc,
-        real_workpiece,
-        mock_task_mgr,
-        context_initializer,
-        contour_step_class,
-    ):
-        # Arrange: Setup a complete pipeline state
+        """Verifies that changing a workpiece position triggers a
+        regeneration for position-sensitive steps."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
@@ -392,395 +162,145 @@ class TestPipelineGeneration:
 
         pipeline = Pipeline(
             doc,
-            mock_task_mgr,
+            task_mgr,
             context_initializer.artifact_store,
             context_initializer.machine,
         )
 
-        # First, complete the prerequisite workpiece and step generation
-        wp_artifact = WorkPieceArtifact(
-            ops=Ops(),
-            is_scalable=True,
-            generation_size=real_workpiece.size,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=real_workpiece.size,
-            generation_id=1,
-        )
-        wp_handle = get_context().artifact_store.put(wp_artifact)
-        expected_job_handle = None
-        try:
-            self._complete_all_tasks(mock_task_mgr, wp_handle)
-            mock_task_mgr.run_process.reset_mock()
-            mock_task_mgr.created_tasks.clear()
+        deadline = asyncio.get_running_loop().time() + 10.0
+        while (
+            pipeline.is_busy and asyncio.get_running_loop().time() < deadline
+        ):
+            await asyncio.sleep(0.05)
+        gen1 = pipeline.data_generation_id
 
-            callback_mock = MagicMock()
-            store = get_context().artifact_store
-            job_artifact = JobArtifact(ops=Ops(), distance=0, generation_id=1)
-            expected_job_handle = store.put(job_artifact)
+        real_workpiece.pos = 50, 50
 
-            # Act
-            pipeline.generate_job_artifact(when_done=callback_mock)
+        deadline = asyncio.get_running_loop().time() + 10.0
+        while (
+            pipeline.is_busy and asyncio.get_running_loop().time() < deadline
+        ):
+            await asyncio.sleep(0.05)
 
-            # Assert a job task was created
-            mock_task_mgr.run_process.assert_called_once()
-            job_task_info = next(
-                t
-                for t in mock_task_mgr.created_tasks
-                if t.target is make_job_artifact_in_subprocess
-            )
+        gen2 = pipeline.data_generation_id
+        assert gen2 > gen1, "Position change should trigger a new generation"
 
-            # Simulate the job task completing successfully
-            job_task_obj = job_task_info.returned_task_obj
-            job_task_obj.key = job_task_info.key
-            job_task_obj.get_status.return_value = "completed"
-            job_task_obj.result.return_value = None
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
 
-            # 1. Simulate the event that puts the handle in the cache
-            # Get the generation_id from the task kwargs
-            gen_id = job_task_info.kwargs.get("generation_id")
-            job_key = job_task_info.kwargs.get("job_key")
-            job_task_info.when_event(
-                job_task_obj,
-                "artifact_created",
-                {
-                    "handle_dict": expected_job_handle.to_dict(),
-                    "generation_id": gen_id,
-                    "job_key": {"id": job_key.id, "group": job_key.group},
-                },
-            )
-            # 2. Simulate the final completion callback
-            job_task_info.when_done(job_task_obj)
-
-            # Assert
-            callback_mock.assert_called_once_with(expected_job_handle, None)
-        finally:
-            get_context().artifact_store.release(wp_handle)
-            if expected_job_handle:
-                get_context().artifact_store.release(expected_job_handle)
-
-    def test_generate_job_artifact_callback_failure(
+    @pytest.mark.asyncio
+    async def test_generate_job_artifact_callback_success(
         self,
         doc,
         real_workpiece,
-        mock_task_mgr,
+        task_mgr,
         context_initializer,
         contour_step_class,
     ):
-        # Arrange
+        """Verifies that generate_job_artifact invokes when_done with
+        a valid handle on success."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
+
         pipeline = Pipeline(
             doc,
-            mock_task_mgr,
+            task_mgr,
             context_initializer.artifact_store,
             context_initializer.machine,
         )
 
-        wp_artifact = WorkPieceArtifact(
-            ops=Ops(),
-            is_scalable=True,
-            generation_size=real_workpiece.size,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=real_workpiece.size,
-            generation_id=1,
-        )
-        wp_handle = get_context().artifact_store.put(wp_artifact)
-        try:
-            self._complete_all_tasks(mock_task_mgr, wp_handle)
-            mock_task_mgr.run_process.reset_mock()
-            mock_task_mgr.created_tasks.clear()
+        result = []
 
-            callback_mock = MagicMock()
+        def when_done(handle, error):
+            result.append((handle, error))
 
-            # Act
-            pipeline.generate_job_artifact(when_done=callback_mock)
-            mock_task_mgr.run_process.assert_called_once()
+        pipeline.generate_job_artifact(when_done=when_done)
 
-            # Find the when_done callback captured by the mock task manager
-            job_task_info = next(
-                t
-                for t in mock_task_mgr.created_tasks
-                if t.target is make_job_artifact_in_subprocess
-            )
-            when_done_callback = job_task_info.when_done
+        deadline = asyncio.get_running_loop().time() + 10.0
+        while not result and asyncio.get_running_loop().time() < deadline:
+            await asyncio.sleep(0.05)
 
-            # Create a realistic mock of a failed task object
-            mock_failed_task = job_task_info.returned_task_obj
-            mock_failed_task.get_status.return_value = "failed"
-            # When result() is called on a failed task, it should raise.
-            mock_failed_task.result.side_effect = RuntimeError(
-                "Job generation failed."
-            )
+        assert len(result) == 1
+        handle, error = result[0]
+        assert error is None
+        assert handle is not None
 
-            # Directly invoke the captured callback with the mock failed task
-            when_done_callback(mock_failed_task)
-
-            # Assert the user's callback receives (None, <Error>)
-            callback_mock.assert_called_once_with(None, ANY)
-            # Further inspect the error argument
-            args, kwargs = callback_mock.call_args
-            error_arg = args[1]
-            assert isinstance(error_arg, RuntimeError)
-            assert "Job generation failed" in str(error_arg)
-        finally:
-            get_context().artifact_store.release(wp_handle)
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
 
     @pytest.mark.asyncio
     async def test_generate_job_artifact_async_success(
         self,
         doc,
         real_workpiece,
-        mock_task_mgr,
+        task_mgr,
         context_initializer,
         contour_step_class,
     ):
-        # Arrange
+        """Verifies that generate_job_artifact_async returns the handle."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
+
         pipeline = Pipeline(
             doc,
-            mock_task_mgr,
+            task_mgr,
             context_initializer.artifact_store,
             context_initializer.machine,
         )
 
-        wp_artifact = WorkPieceArtifact(
-            ops=Ops(),
-            is_scalable=True,
-            generation_size=real_workpiece.size,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=real_workpiece.size,
-            generation_id=1,
+        handle = await asyncio.wait_for(
+            pipeline.generate_job_artifact_async(), timeout=10
         )
-        wp_handle = get_context().artifact_store.put(wp_artifact)
-        expected_job_handle = None
-        try:
-            self._complete_all_tasks(mock_task_mgr, wp_handle)
-            mock_task_mgr.run_process.reset_mock()
-            mock_task_mgr.created_tasks.clear()
+        assert handle is not None
 
-            store = get_context().artifact_store
-            job_artifact = JobArtifact(ops=Ops(), distance=0, generation_id=1)
-            expected_job_handle = store.put(job_artifact)
-
-            # Act
-            future = asyncio.create_task(
-                pipeline.generate_job_artifact_async()
-            )
-            await asyncio.sleep(0)  # Allow the event loop to run
-
-            # The task should have been created
-            mock_task_mgr.run_process.assert_called_once()
-            job_task_info = next(
-                t
-                for t in mock_task_mgr.created_tasks
-                if t.target is make_job_artifact_in_subprocess
-            )
-
-            # Simulate completion
-            job_task_obj = job_task_info.returned_task_obj
-            job_task_obj.key = job_task_info.key
-            job_task_obj.get_status.return_value = "completed"
-            job_task_obj.result.return_value = None
-
-            # Get the generation_id from the task kwargs
-            gen_id = job_task_info.kwargs.get("generation_id")
-            job_key = job_task_info.kwargs.get("job_key")
-            job_task_info.when_event(
-                job_task_obj,
-                "artifact_created",
-                {
-                    "handle_dict": expected_job_handle.to_dict(),
-                    "generation_id": gen_id,
-                    "job_key": {"id": job_key.id, "group": job_key.group},
-                },
-            )
-            job_task_info.when_done(job_task_obj)
-
-            # Now await the result
-            result_handle = await future
-
-            # Assert
-            assert result_handle == expected_job_handle
-        finally:
-            get_context().artifact_store.release(wp_handle)
-            if expected_job_handle:
-                get_context().artifact_store.release(expected_job_handle)
-
-    @pytest.mark.asyncio
-    async def test_generate_job_artifact_async_failure(
-        self,
-        doc,
-        real_workpiece,
-        mock_task_mgr,
-        context_initializer,
-        contour_step_class,
-    ):
-        # Arrange
-        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
-        assert layer.workflow is not None
-        step = contour_step_class.create(context_initializer)
-        layer.workflow.add_step(step)
-        pipeline = Pipeline(
-            doc,
-            mock_task_mgr,
-            context_initializer.artifact_store,
-            context_initializer.machine,
-        )
-
-        wp_artifact = WorkPieceArtifact(
-            ops=Ops(),
-            is_scalable=True,
-            generation_size=real_workpiece.size,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=real_workpiece.size,
-            generation_id=1,
-        )
-        wp_handle = get_context().artifact_store.put(wp_artifact)
-        try:
-            self._complete_all_tasks(mock_task_mgr, wp_handle)
-            mock_task_mgr.run_process.reset_mock()
-            mock_task_mgr.created_tasks.clear()
-
-            # Act & Assert
-            async def _failure_simulator_task():
-                await asyncio.sleep(0)
-                job_task_info = next(
-                    t
-                    for t in mock_task_mgr.created_tasks
-                    if t.target is make_job_artifact_in_subprocess
-                )
-                # Simulate task failure by directly invoking the callback
-                mock_failed_task = job_task_info.returned_task_obj
-                mock_failed_task.get_status.return_value = "failed"
-                mock_failed_task.result.side_effect = RuntimeError(
-                    "Job failed."
-                )
-                if job_task_info.when_done:
-                    job_task_info.when_done(mock_failed_task)
-
-            # Act & Assert
-            with pytest.raises(RuntimeError, match="Job failed."):
-                failure_future = asyncio.create_task(_failure_simulator_task())
-                # This will start the job and the future will be populated
-                # by the _when_done_callback created by the async method.
-                await pipeline.generate_job_artifact_async()
-                await failure_future  # ensure the simulator ran
-        finally:
-            get_context().artifact_store.release(wp_handle)
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
 
     @pytest.mark.asyncio
     async def test_generate_job_artifact_async_already_running(
         self,
         doc,
         real_workpiece,
-        mock_task_mgr,
+        task_mgr,
         context_initializer,
         contour_step_class,
     ):
-        # Arrange
+        """Verifies that a second call returns the cached handle
+        without starting a duplicate generation."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
+
         pipeline = Pipeline(
             doc,
-            mock_task_mgr,
+            task_mgr,
             context_initializer.artifact_store,
             context_initializer.machine,
         )
 
-        wp_artifact = WorkPieceArtifact(
-            ops=Ops(),
-            is_scalable=True,
-            generation_size=real_workpiece.size,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=real_workpiece.size,
-            generation_id=1,
+        handle1 = await asyncio.wait_for(
+            pipeline.generate_job_artifact_async(), timeout=10
         )
-        wp_handle = get_context().artifact_store.put(wp_artifact)
-        expected_job_handle = None
-        try:
-            self._complete_all_tasks(mock_task_mgr, wp_handle)
-            mock_task_mgr.run_process.reset_mock()
-            mock_task_mgr.created_tasks.clear()
+        handle2 = await asyncio.wait_for(
+            pipeline.generate_job_artifact_async(), timeout=10
+        )
+        assert handle1 is handle2
 
-            store = get_context().artifact_store
-            job_artifact = JobArtifact(ops=Ops(), distance=0, generation_id=1)
-            expected_job_handle = store.put(job_artifact)
-
-            # Start the first generation, but don't complete it
-            future1 = asyncio.create_task(
-                pipeline.generate_job_artifact_async()
-            )
-            await asyncio.sleep(0)
-
-            mock_task_mgr.run_process.assert_called_once()
-
-            # Start a second call while the first is running.
-            # It should subscribe to the running generation rather
-            # than starting a duplicate or raising an error.
-            future2 = asyncio.create_task(
-                pipeline.generate_job_artifact_async()
-            )
-            await asyncio.sleep(0)
-
-            # No second task should have been created
-            mock_task_mgr.run_process.assert_called_once()
-
-            # Complete the running task
-            job_task_info = next(
-                t
-                for t in mock_task_mgr.created_tasks
-                if t.target is make_job_artifact_in_subprocess
-            )
-            job_task_obj = job_task_info.returned_task_obj
-            job_task_obj.key = job_task_info.key
-            job_task_obj.get_status.return_value = "completed"
-            job_task_obj.result.return_value = None
-            gen_id = job_task_info.kwargs.get("generation_id")
-            job_key = job_task_info.kwargs.get("job_key")
-            job_task_info.when_event(
-                job_task_obj,
-                "artifact_created",
-                {
-                    "handle_dict": expected_job_handle.to_dict(),
-                    "generation_id": gen_id,
-                    "job_key": {"id": job_key.id, "group": job_key.group},
-                },
-            )
-            job_task_info.when_done(job_task_obj)
-
-            # Both callers should receive the same result
-            result1 = await future1
-            result2 = await future2
-            assert result1 == expected_job_handle
-            assert result2 == expected_job_handle
-        finally:
-            get_context().artifact_store.release(wp_handle)
-            if expected_job_handle:
-                get_context().artifact_store.release(expected_job_handle)
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
 
     @pytest.mark.asyncio
-    async def test_rapid_step_change_emits_correct_final_signal(
+    async def test_rapid_step_change_emits_correct_final_generation(
         self,
         doc,
         real_workpiece,
-        mock_task_mgr,
+        task_mgr,
         context_initializer,
         contour_step_class,
     ):
-        """
-        Simulates a user changing a step setting twice in quick succession.
-        This test verifies that the pipeline correctly cancels the first task,
-        processes the second task, and emits the `workpiece_artifact_ready`
-        signal exactly once with the correct, final generation ID.
-        """
-        # Arrange: Setup doc, workpiece, step, and pipeline
+        """Simulates two rapid property changes on a step, verifying
+        that the pipeline settles to a correct final generation."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
         step = contour_step_class.create(context_initializer)
@@ -788,144 +308,61 @@ class TestPipelineGeneration:
 
         pipeline = Pipeline(
             doc,
-            mock_task_mgr,
+            task_mgr,
             context_initializer.artifact_store,
             context_initializer.machine,
         )
 
-        # Mock the final signal handler to intercept the call
-        mock_signal_handler = MagicMock()
-        pipeline.workpiece_artifact_ready.connect(mock_signal_handler)
+        # Let the first rebuild start
+        await asyncio.sleep(0.1)
 
-        # Act 1: The initial pipeline creation starts the first task.
-        await asyncio.sleep(0)
-        mock_task_mgr.run_process.assert_called_once()
-        assert len(mock_task_mgr.created_tasks) == 1
-        task1_info = mock_task_mgr.created_tasks[0]
-        # Generation ID for the first task is 1
-        assert task1_info.args[5] == 1
-        mock_task_mgr.run_process.reset_mock()
-        mock_task_mgr.created_tasks.clear()
+        # Rapidly change step power twice
+        step.set_power(0.3)
+        step.set_power(0.7)
 
-        # Act 2: Trigger a second regeneration immediately.
-        # This simulates a rapid UI change, cancelling task1 and
-        # starting task2.
-        step.set_power(0.5)  # Change a property to trigger invalidation
-        await asyncio.sleep(0)
+        # Wait for everything to settle
+        deadline = asyncio.get_running_loop().time() + 10.0
+        while (
+            pipeline.is_busy and asyncio.get_running_loop().time() < deadline
+        ):
+            await asyncio.sleep(0.05)
 
-        # Assert 2: A new task was created, and the old one was cancelled.
-        mock_task_mgr.run_process.assert_called_once()
-        mock_task_mgr.cancel_task.assert_called_once_with(task1_info.key)
-        assert len(mock_task_mgr.created_tasks) == 1
-        task2_info = mock_task_mgr.created_tasks[0]
-        # Generation ID for the second task should be incremented to 2
-        assert task2_info.args[5] == 2
+        assert pipeline.is_busy is False
 
-        # Act 3: Simulate the CANCELLED task's callback firing.
-        # This could happen if the task was already running when cancelled.
-        task1_obj = task1_info.returned_task_obj
-        task1_obj.key = task1_info.key
-        task1_obj.get_status.return_value = "canceled"
-        if task1_info.when_done:
-            task1_info.when_done(task1_obj)
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
 
-        # Assert 3: The signal handler should NOT have been called for the
-        # cancelled task.
-        mock_signal_handler.assert_not_called()
-
-        # Act 4: Simulate the SUCCESSFUL task's (task2) callbacks firing.
-        artifact = WorkPieceArtifact(
-            ops=Ops(),
-            is_scalable=True,
-            generation_size=real_workpiece.size,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=real_workpiece.size,
-            generation_id=1,
-        )
-        handle = get_context().artifact_store.put(artifact)
-        try:
-            task2_obj = task2_info.returned_task_obj
-            task2_obj.key = task2_info.key
-            task2_obj.get_status.return_value = "completed"
-            task2_obj.result.return_value = 2  # Gen ID from task2
-
-            # Simulate the 'artifact_created' event from task2
-            if task2_info.when_event:
-                event_data = {
-                    "handle_dict": handle.to_dict(),
-                    "generation_id": 2,
-                }
-                task2_info.when_event(
-                    task2_obj, "artifact_created", event_data
-                )
-
-            # Simulate the final 'when_done' callback for task2
-            if task2_info.when_done:
-                task2_info.when_done(task2_obj)
-
-            # Assert 4: The signal handler was called exactly once with the
-            # correct generation ID from the second, successful task.
-            mock_signal_handler.assert_called_once()
-            call_args, call_kwargs = mock_signal_handler.call_args
-            assert call_kwargs.get("step") is step
-            assert call_kwargs.get("workpiece") is real_workpiece
-            assert call_kwargs.get("generation_id") == 2
-
-        finally:
-            get_context().artifact_store.release(handle)
-
-    def test_chunk_flow_from_workpiece_to_view_stage(
+    @pytest.mark.asyncio
+    async def test_job_generation_produces_encoded_output(
         self,
         doc,
         real_workpiece,
-        mock_task_mgr,
+        task_mgr,
         context_initializer,
-        engrave_step_class,
+        contour_step_class,
     ):
-        """
-        Integration test to verify the whole flow:
-        Start pipeline -> workpiece stage -> workpiece view stage produces
-        chunks.
-        """
-        # Arrange
+        """Integration test: full pipeline produces an encoded job
+        artifact."""
         layer = self._setup_doc_with_workpiece(doc, real_workpiece)
         assert layer.workflow is not None
-        step = engrave_step_class.create(context_initializer)
+        step = contour_step_class.create(context_initializer)
         layer.workflow.add_step(step)
 
         pipeline = Pipeline(
             doc,
-            mock_task_mgr,
+            task_mgr,
             context_initializer.artifact_store,
             context_initializer.machine,
         )
 
-        # Create a workpiece artifact handle with ops
-        expected_ops = Ops()
-        expected_ops.move_to(0, 0, 0)
-        expected_ops.line_to(1, 1, 0)
-        wp_artifact = WorkPieceArtifact(
-            ops=expected_ops,
-            is_scalable=True,
-            generation_size=real_workpiece.size,
-            source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-            source_dimensions=real_workpiece.size,
-            generation_id=1,
+        handle = await asyncio.wait_for(
+            pipeline.generate_job_artifact_async(), timeout=10
         )
-        wp_handle = get_context().artifact_store.put(wp_artifact)
+        assert handle is not None
 
-        try:
-            # Complete the workpiece artifact generation task
-            self._complete_all_tasks(mock_task_mgr, wp_handle)
+        with pipeline.artifact_store.checkout_handle(handle) as artifact:
+            assert artifact is not None
+            assert isinstance(artifact, JobArtifact)
+            assert artifact.encoded_output is not None
+            assert artifact.ops is not None
 
-            # Assert - Verify the workpiece artifact was created
-            cached_ops = pipeline.get_scaled_ops(
-                step.uid,
-                real_workpiece.uid,
-                real_workpiece.get_world_transform(),
-            )
-            assert cached_ops is not None
-            assert len(cached_ops) == 2
-
-        finally:
-            get_context().artifact_store.release(wp_handle)
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)

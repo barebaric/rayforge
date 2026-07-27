@@ -95,12 +95,31 @@ class FakeTaskManager:
         self.delayed.append(call)
         return call
 
+    def run_thread(
+        self,
+        func: Callable[..., Any],
+        *args: Any,
+        key: Optional[Any] = None,
+        when_done: Optional[Callable[..., Any]] = None,
+        **kwargs: Any,
+    ) -> Any:
+        func(*args, **kwargs)
+        if when_done:
+            when_done(None)
+        return None
+
     def fire_latest(self) -> None:
         """Fire the most recently scheduled delayed call and remove it
-        from the pending list."""
+        from the pending list.
+
+        Any main-thread calls produced as a side-effect of the
+        rebuild (e.g. ``_emit_rebuild_finished``) are cleared so the
+        caller only sees calls it produces itself.
+        """
         assert self.delayed, "no delayed call scheduled"
         call = self.delayed.pop()
         call.fire()
+        self.main_thread_calls.clear()
 
 
 class _StubNode:
@@ -306,6 +325,7 @@ def _make_controller_for_completed_test(
     # Build once so the key map is populated.
     wp.updated.send(wp)
     tm.fire_latest()
+    idle_calls.clear()
     return ctrl, wp, step
 
 
@@ -472,6 +492,7 @@ def test_reattach_job_encode_emits_finished(monkeypatch):
     # The controller has no machine, so the builder doesn't emit a
     # job:encode node; inject the key manually so _on_completed
     # routes it.
+    assert ctrl._doc is not None
     ctrl._key_to_item[job_encode_key()] = ctrl._doc
 
     received = []

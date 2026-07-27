@@ -7,6 +7,7 @@ and the position-sensitive folding rule.
 """
 
 from raygeo.cnc.execution.intent import create_intent_from_nodes
+from raygeo.cnc.execution.specs import EncodeSpec
 from raygeo.geo import Geometry
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
@@ -586,8 +587,6 @@ def test_job_encode_node_emits_encode_spec(
     """The IntentBuilder appends a job encode node carrying an
     EncodeSpec (Compute stage wrapping an encoder) after the job
     aggregate."""
-    from raygeo.cnc.execution.specs import EncodeSpec
-
     machine, context = test_machine_and_config
     step = contour_step_class.create(context, name="cut")
     wp = WorkPiece(name="wp")
@@ -660,3 +659,168 @@ def test_contour_job_encodes_through_raygeo(
     # The MachineCode variant carries non-empty G-code text.
     assert enc_result.output.text is not None
     assert len(enc_result.output.text) > 0
+
+
+# ----------------------------------------------------------------------
+# Post-process transformer wiring (regression: raster ops too small,
+# overscan missing, post-processors had no effect on Raster)
+# ----------------------------------------------------------------------
+
+
+def test_contour_workpiece_node_carries_per_workpiece_transformers(
+    contour_step_class, test_machine_and_config
+):
+    """Per-workpiece transformer dicts must be resolved into typed
+    Rust specs and attached to the workpiece compute node's
+    ComputePayload so that the Rust compute stage applies them after
+    assembly."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    wp = WorkPiece(name="wp")
+    wp.set_size(10.0, 10.0)
+    doc = _make_doc(step, wp)
+
+    # The default contour step ships with several per-workpiece
+    # transformers (Optimize, LeadInOut, Tabs, ...). At least one
+    # must be wired.
+    assert len(step.per_workpiece_transformers_dicts) > 0
+
+    nodes = IntentBuilder(machine=machine).build(doc)
+    wpk = workpiece_key(wp.uid, step.uid)
+    wp_node = next(n for n in nodes if n.key == wpk)
+    assert isinstance(wp_node.stage, StageSpec.Compute)
+    payload = wp_node.stage.params
+    assert len(payload.transformers) > 0
+
+
+def test_step_aggregate_carries_per_step_transformers(
+    contour_step_class, test_machine_and_config
+):
+    """Per-step transformer dicts must be resolved into typed Rust
+    specs and attached to the step aggregate's AggregateSpec so that
+    the Rust aggregate stage applies them after concatenation."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    wp = WorkPiece(name="wp")
+    wp.set_size(10.0, 10.0)
+    doc = _make_doc(step, wp)
+
+    # The default contour step ships with per-step transformers
+    # (Optimize, MultiPass).
+    assert len(step.per_step_transformers_dicts) > 0
+
+    nodes = IntentBuilder(machine=machine).build(doc)
+    sk = step_key(step.uid)
+    step_node = next(n for n in nodes if n.key == sk)
+    assert isinstance(step_node.stage, StageSpec.Aggregate)
+    spec = step_node.stage.spec
+    assert len(spec.transformers) > 0
+
+
+def test_disabled_per_workpiece_transformer_not_wired(
+    contour_step_class, test_machine_and_config
+):
+    """A transformer dict with ``enabled=False`` must be skipped."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    # Disable every per-workpiece transformer.
+    for t in step.per_workpiece_transformers_dicts:
+        t["enabled"] = False
+    wp = WorkPiece(name="wp")
+    wp.set_size(10.0, 10.0)
+    doc = _make_doc(step, wp)
+
+    nodes = IntentBuilder(machine=machine).build(doc)
+    wpk = workpiece_key(wp.uid, step.uid)
+    wp_node = next(n for n in nodes if n.key == wpk)
+    payload = wp_node.stage.params
+    assert payload.transformers == []
+
+
+# ----------------------------------------------------------------------
+# Workpiece-move cache invalidation (regression: 3D canvas stale)
+# ----------------------------------------------------------------------
+
+
+def test_step_aggregate_token_changes_on_workpiece_move(
+    contour_step_class, test_machine_and_config
+):
+    """A pure position change (no geometry_revision bump) must
+    invalidate the step aggregate cache because the aggregate applies
+    the workpiece placement matrix to the (possibly cached) workpiece
+    compute output. If the token did not change, the cached aggregate
+    would be reused with the old placement baked in and the 3D canvas
+    would display a stale position."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    wp = WorkPiece(name="wp")
+    wp.set_size(50.0, 30.0)
+    doc = _make_doc(step, wp)
+
+    before = IntentBuilder(machine=machine).build(doc)
+    sk = step_key(step.uid)
+    before_t = next(n.version_token for n in before if n.key == sk)
+
+    # Pure move — bumps transform_revision but not geometry_revision.
+    wp.pos = 100.0, 100.0
+    assert wp.geometry_revision == 0
+    after = IntentBuilder(machine=machine).build(doc)
+    after_t = next(n.version_token for n in after if n.key == sk)
+    assert before_t != after_t
+
+
+def test_job_token_changes_on_workpiece_move(
+    contour_step_class, test_machine_and_config
+):
+    """The job aggregate token folds in the step aggregate tokens, so
+    a workpiece move must propagate through to the job/encode cache
+    too. Without this, the encoded G-code shown in the 3D canvas
+    would be the pre-move output."""
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    wp = WorkPiece(name="wp")
+    wp.set_size(50.0, 30.0)
+    doc = _make_doc(step, wp)
+
+    before = IntentBuilder(machine=machine).build(doc)
+    jk = job_key()
+    before_t = next(n.version_token for n in before if n.key == jk)
+
+    wp.pos = 25.0, 25.0
+    after = IntentBuilder(machine=machine).build(doc)
+    after_t = next(n.version_token for n in after if n.key == jk)
+    assert before_t != after_t
+
+
+def test_raster_compute_token_changes_on_workpiece_move(
+    engrave_step_class, test_machine_and_config
+):
+    """The raster assembler bakes ``workpiece.bbox`` into its output
+    via ``offset_x_mm`` / ``offset_y_mm``, so a position change must
+    invalidate the workpiece compute cache. Otherwise the cached
+    workpiece-local-but-offset ops would be re-displaced by the
+    aggregate's new placement matrix and land at the wrong world
+    position."""
+    machine, context = test_machine_and_config
+    step = engrave_step_class.create(context, name="engrave")
+    wp = WorkPiece(name="wp")
+    wp.set_size(20.0, 20.0)
+    doc = _make_doc(step, wp)
+
+    before = IntentBuilder(machine=machine).build(doc)
+    wpk = workpiece_key(wp.uid, step.uid)
+    before_t = next(n.version_token for n in before if n.key == wpk)
+
+    wp.pos = 50.0, 50.0
+    after = IntentBuilder(machine=machine).build(doc)
+    after_t = next(n.version_token for n in after if n.key == wpk)
+    assert before_t != after_t
+
+
+def test_raster_step_is_position_sensitive(engrave_step_class):
+    """EngraveStep.assemble's RasterSpec uses ``workpiece.bbox`` for
+    its offsets, so the step must declare itself position-sensitive
+    so the IntentBuilder folds ``transform_revision`` into the
+    compute token."""
+    step = engrave_step_class(name="engrave")
+    assert step.is_position_sensitive() is True

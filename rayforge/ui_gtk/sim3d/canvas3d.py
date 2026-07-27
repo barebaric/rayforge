@@ -15,8 +15,11 @@ from ...machine.assembly import LinkRole
 from ...machine.kinematic_mapping import KinematicMapping
 from ...machine.models.colors import OpsColorSet
 from ...pipeline.artifact.base import TextureData
-from ...pipeline.artifact.handle import create_handle_from_dict
-from ...pipeline.artifact.job import JobArtifact, JobArtifactHandle
+from ...pipeline.artifact.handle import (
+    BaseArtifactHandle,
+    create_handle_from_dict,
+)
+from ...pipeline.artifact.job import JobArtifact
 from ...pipeline.pipeline import Pipeline
 from ...shared.tasker import Task, task_mgr
 from ...simulator.machine_state import MachineState
@@ -25,7 +28,7 @@ from ...simulator.scene3d import (
     CompiledSceneArtifact,
     LayerRenderConfig,
     RenderConfig3D,
-    compile_scene_in_subprocess,
+    compile_scene_in_thread,
 )
 from ..shared.gtk_color import GtkColorResolver
 from .camera import Camera, ViewDirection, rotation_matrix_from_axis_angle
@@ -118,7 +121,7 @@ class Canvas3D(Gtk.GLArea):
         self._scene_preparation_task: Optional[Task] = None
         self._compiled_artifact: Optional[CompiledSceneArtifact] = None
         self._pending_scene_handle_dict: Optional[Dict] = None
-        self._current_job_handle: Optional[JobArtifactHandle] = None
+        self._current_job_handle: Optional[BaseArtifactHandle] = None
         self._op_player: Optional[OpPlayer] = None
         self._playback_overlay = None
         self._world_to_cyl_local = np.identity(4, dtype=np.float32)
@@ -1400,10 +1403,11 @@ class Canvas3D(Gtk.GLArea):
 
     def _on_scene_prepared(self, task: Task):
         """
-        Callback for when the background scene compilation task is finished.
+        Callback for when the background scene compilation task is
+        finished.  The compiled artifact is available directly as
+        ``task.result_value`` since the compilation runs in-process.
         """
         if task.get_status() != "completed":
-            self._release_pending_scene_handle()
             self._compiled_artifact = None
             self._op_player = None
             logger.error(
@@ -1413,34 +1417,16 @@ class Canvas3D(Gtk.GLArea):
             self.queue_render()
             return
 
-        handle_dict = self._pending_scene_handle_dict
-        self._pending_scene_handle_dict = None
-
-        if handle_dict is None:
+        artifact = task.result()
+        if artifact is None:
             logger.warning(
-                "[CANVAS3D] Scene task completed but no artifact handle "
-                "was received (possibly empty scene)."
+                "[CANVAS3D] Scene task completed but produced no "
+                "artifact (possibly empty scene)."
             )
             self._compiled_artifact = None
             self._artifact_gl_dirty = True
             self.queue_render()
             return
-
-        logger.debug(
-            "[CANVAS3D] Scene compilation finished. Loading artifact."
-        )
-        try:
-            handle = create_handle_from_dict(handle_dict)
-            artifact = self._context.artifact_store.get(handle)
-        except Exception as e:
-            logger.error(f"[CANVAS3D] Failed to load compiled scene: {e}")
-            self._release_scene_shm(handle_dict)
-            self._compiled_artifact = None
-            self._artifact_gl_dirty = True
-            self.queue_render()
-            return
-
-        self._release_scene_shm(handle_dict)
 
         if not isinstance(artifact, CompiledSceneArtifact):
             logger.error(
@@ -1452,6 +1438,7 @@ class Canvas3D(Gtk.GLArea):
             self.queue_render()
             return
 
+        logger.debug("[CANVAS3D] Scene compilation finished.")
         self._compiled_artifact = artifact
         self._artifact_gl_dirty = True
         self.queue_render()
@@ -1981,12 +1968,11 @@ class Canvas3D(Gtk.GLArea):
 
             logger.debug("[CANVAS3D] Scheduling scene compilation task.")
             assert render_config_dict is not None
-            self._scene_preparation_task = task_mgr.run_process(
-                compile_scene_in_subprocess,
+            self._scene_preparation_task = task_mgr.run_thread(
+                compile_scene_in_thread,
                 self._context.artifact_store,
                 job_handle.to_dict(),
                 render_config_dict,
                 key=task_key,
                 when_done=self._on_scene_prepared,
-                when_event=self._on_scene_compiled_event,
             )

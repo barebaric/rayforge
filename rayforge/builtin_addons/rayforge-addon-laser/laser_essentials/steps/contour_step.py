@@ -16,6 +16,7 @@ from rayforge.pipeline.assembler.registry import assembler_registry
 from rayforge.pipeline.stage.assembler_helpers import (
     MachineDefaults,
     build_part_vector,
+    build_part_vector_with_raster_fallback,
     make_artifact,
     wrap_assembler_result,
 )
@@ -78,10 +79,18 @@ class ContourStep(Step):
         """Build a :class:`Part` (from the workpiece's vector
         geometry) and a :class:`ComputePayload` carrying a
         :class:`ContourSpec` populated from this step's resolved
-        assembler kwargs."""
-        part = workpiece.to_part()
-        if part is None:
-            part = Part(size_mm=workpiece.size)
+        assembler kwargs.
+
+        When the workpiece has no vector boundaries (e.g. an SVG
+        with empty ``pristine_geometry``), the source is rendered
+        to pixels and traced into geometry before assembling.
+        """
+        part = build_part_vector_with_raster_fallback(
+            workpiece,
+            self.pixels_per_mm,
+            override_threshold=self.override_threshold,
+            threshold=self.threshold,
+        )
         kwargs = self.get_assembler_kwargs(machine_defaults, workpiece)
         spec = ContourSpec(
             kerf_mm=kwargs["kerf_mm"],

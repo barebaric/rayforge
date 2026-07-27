@@ -26,7 +26,8 @@ from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.models.machine import Machine
 from ..machine.sanity import CheckMode, SanityChecker
 from ..machine.transport import TransportStatus
-from ..pipeline.artifact import JobArtifact, JobArtifactHandle
+from ..pipeline.artifact import JobArtifact
+from ..pipeline.artifact.handle import BaseArtifactHandle
 from ..pipeline.encoder.gcode import MachineCodeOpMap
 from ..shared.tasker import task_mgr
 from ..shared.util.time_format import format_hours_to_hm
@@ -1303,7 +1304,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_assembly_for_preview_finished(
         self,
-        handle: Optional[JobArtifactHandle],
+        handle: Optional[BaseArtifactHandle],
         error: Optional[Exception],
     ):
         """Callback for when the job assembly for previews is complete."""
@@ -1314,23 +1315,21 @@ class MainWindow(Adw.ApplicationWindow):
             )
             # Release handle on error if it exists
             if handle:
-                self.doc_editor.pipeline.artifact_manager.release_handle(
-                    handle
-                )
+                self.doc_editor.pipeline.artifact_store.release(handle)
             handle = None
 
         # Schedule the UI update on the main thread, passing the handle.
         # The handle will be released in the main thread callback.
         GLib.idle_add(self._on_previews_ready, handle)
 
-    def _on_previews_ready(self, handle: Optional[JobArtifactHandle]):
+    def _on_previews_ready(self, handle: Optional[BaseArtifactHandle]):
         """
         Main-thread callback to distribute assembled Ops to all consumers.
         This method is responsible for releasing the artifact handle.
         """
-        artifact_manager = self.doc_editor.pipeline.artifact_manager
+        artifact_store = self.doc_editor.pipeline.artifact_store
 
-        with artifact_manager.checkout_handle(handle) as final_artifact:
+        with artifact_store.checkout_handle(handle) as final_artifact:
             if final_artifact is None:
                 if handle is None:
                     self._update_gcode_preview(None, None)
@@ -1948,9 +1947,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         existing = self.doc_editor.pipeline.get_existing_job_handle()
         if existing is not None:
-            artifact_manager = self.doc_editor.pipeline.artifact_manager
+            artifact_store = self.doc_editor.pipeline.artifact_store
             try:
-                with artifact_manager.checkout_handle(existing) as artifact:
+                with artifact_store.checkout_handle(existing) as artifact:
                     if isinstance(artifact, JobArtifact):
                         _handle_ops(artifact.ops)
                         return
@@ -1964,8 +1963,8 @@ class MainWindow(Adw.ApplicationWindow):
                 proceed_callback()
                 return
             try:
-                artifact_manager = self.doc_editor.pipeline.artifact_manager
-                with artifact_manager.checkout_handle(handle) as artifact:
+                artifact_store = self.doc_editor.pipeline.artifact_store
+                with artifact_store.checkout_handle(handle) as artifact:
                     if isinstance(artifact, JobArtifact):
                         _handle_ops(artifact.ops)
                         return

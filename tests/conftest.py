@@ -583,6 +583,12 @@ def mock_task_mgr():
         future.cancel = MagicMock()
         return future
 
+    def run_thread_impl(func, *args, key=None, when_done=None, **kwargs):
+        func(*args, **kwargs)
+        if when_done:
+            when_done(None)
+        return None
+
     def has_tasks_impl():
         return len(created_tasks) > 0
 
@@ -596,6 +602,7 @@ def mock_task_mgr():
     mock_mgr.schedule_delayed_on_main_thread = MagicMock(
         side_effect=schedule_delayed_impl
     )
+    mock_mgr.run_thread = MagicMock(side_effect=run_thread_impl)
     mock_mgr.has_tasks = MagicMock(side_effect=has_tasks_impl)
     mock_mgr.created_tasks = created_tasks
     return mock_mgr
@@ -611,9 +618,9 @@ def zero_debounce_delay(monkeypatch):
         def _zero_debounce_delay(zero_debounce_delay):
             pass
     """
-    from rayforge.pipeline.pipeline import Pipeline
-
-    monkeypatch.setattr(Pipeline, "RECONCILIATION_DELAY_MS", 0)
+    monkeypatch.setattr(
+        "rayforge.pipeline.intent_controller.REBUILD_DEBOUNCE_MS", 0
+    )
 
 
 @pytest_asyncio.fixture

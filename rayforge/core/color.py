@@ -96,6 +96,8 @@ class ColorSet:
         rgba = self._data.get(name)
         if isinstance(rgba, tuple) and len(rgba) == 4:
             return rgba
+        if isinstance(rgba, np.ndarray) and rgba.shape == (256, 4):
+            return tuple(rgba[255])
 
         logger.warning(
             f"RGBA color '{name}' not found or invalid in ColorSet. "
