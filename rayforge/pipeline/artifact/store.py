@@ -19,7 +19,7 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Dict, Generator, Optional
 
 from .base import BaseArtifact
-from .handle import BaseArtifactHandle, create_handle_from_dict
+from .handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
     pass
@@ -51,29 +51,6 @@ class ArtifactStore:
         proto_handle.refcount = 1
         self._handles[key] = proto_handle
         return proto_handle
-
-    def adopt(self, handle: BaseArtifactHandle) -> BaseArtifactHandle:
-        """Register an externally-created handle for refcount tracking."""
-        return self._get_or_create_handle(handle)
-
-    def adopt_from_dict(
-        self, handle_dict: Dict[str, Any]
-    ) -> BaseArtifactHandle:
-        proto_handle = create_handle_from_dict(handle_dict)
-        return self.adopt(proto_handle)
-
-    @contextmanager
-    def safe_adoption(
-        self, handle_dict: Dict[str, Any]
-    ) -> Generator[BaseArtifactHandle, None, None]:
-        handle = self.adopt_from_dict(handle_dict)
-        committed = False
-        try:
-            yield handle
-            committed = True
-        finally:
-            if not committed:
-                self.release(handle)
 
     def put(
         self,
