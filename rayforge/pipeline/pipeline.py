@@ -24,7 +24,6 @@ from .artifact import (
     WorkPieceArtifact,
 )
 from .artifact.store import ArtifactStore
-from .coord import CoordinateSystem
 from .encoder.base import EncodedOutput, MachineCodeOpMap
 from .intent_controller import IntentController
 
@@ -277,17 +276,11 @@ class Pipeline:
     ) -> None:
         if self._is_shutting_down or output is None:
             return
-        coord_sys = (
-            CoordinateSystem.MILLIMETER_SPACE
-            if output.is_scalable
-            else CoordinateSystem.PIXEL_SPACE
-        )
         source_dims = output.source_dimensions
         gen_size = workpiece.size if workpiece else (0.0, 0.0)
         artifact = WorkPieceArtifact(
             ops=output.ops,
             is_scalable=output.is_scalable,
-            source_coordinate_system=coord_sys,
             generation_size=gen_size,
             generation_id=generation_id,
             source_dimensions=source_dims,

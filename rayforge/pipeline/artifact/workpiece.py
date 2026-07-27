@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 
-from ..coord import CoordinateSystem
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
 
@@ -17,7 +16,6 @@ class WorkPieceArtifactHandle(BaseArtifactHandle):
     def __init__(
         self,
         is_scalable: bool,
-        source_coordinate_system_name: str,
         generation_size: Tuple[float, float],
         key: str,
         handle_class_name: str,
@@ -35,7 +33,6 @@ class WorkPieceArtifactHandle(BaseArtifactHandle):
             array_metadata=array_metadata,
         )
         self.is_scalable = is_scalable
-        self.source_coordinate_system_name = source_coordinate_system_name
         self.source_dimensions = source_dimensions
         self.generation_size = generation_size
 
@@ -67,7 +64,6 @@ class WorkPieceArtifact(BaseArtifact):
         self,
         ops: "Ops",
         is_scalable: bool,
-        source_coordinate_system: CoordinateSystem,
         generation_size: Tuple[float, float],
         generation_id: int,
         source_dimensions: Optional[Tuple[float, float]] = None,
@@ -75,7 +71,6 @@ class WorkPieceArtifact(BaseArtifact):
         super().__init__()
         self.ops = ops
         self.is_scalable = is_scalable
-        self.source_coordinate_system = source_coordinate_system
         self.source_dimensions = source_dimensions
         self.generation_size = generation_size
         self.generation_id = generation_id
@@ -85,7 +80,6 @@ class WorkPieceArtifact(BaseArtifact):
         result = {
             "ops": self.ops.to_dict(),
             "is_scalable": self.is_scalable,
-            "source_coordinate_system": self.source_coordinate_system.name,
             "source_dimensions": self.source_dimensions,
             "generation_size": self.generation_size,
             "generation_id": self.generation_id,
@@ -106,9 +100,6 @@ class WorkPieceArtifact(BaseArtifact):
         artifact = cls(
             ops=ops,
             is_scalable=data["is_scalable"],
-            source_coordinate_system=CoordinateSystem[
-                data["source_coordinate_system"]
-            ],
             source_dimensions=data.get("source_dimensions"),
             generation_size=tuple(data["generation_size"]),
             generation_id=data["generation_id"],
@@ -127,7 +118,6 @@ class WorkPieceArtifact(BaseArtifact):
             artifact_type_name=self.__class__.__name__,
             generation_id=self.generation_id,
             is_scalable=self.is_scalable,
-            source_coordinate_system_name=self.source_coordinate_system.name,
             source_dimensions=self.source_dimensions,
             generation_size=self.generation_size,
         )

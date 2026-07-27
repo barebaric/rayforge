@@ -2,7 +2,6 @@ import numpy as np
 from raygeo.ops import Ops
 
 from rayforge.core.color import ColorSet
-from rayforge.pipeline import CoordinateSystem
 from rayforge.pipeline.artifact import (
     RenderContext,
     WorkPieceArtifact,
@@ -43,7 +42,6 @@ def _make_vector_artifact():
     return WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20, 20),
         generation_id=0,
     )
@@ -58,7 +56,6 @@ def _make_texture_artifact():
     return WorkPieceArtifact(
         ops=ops,
         is_scalable=False,
-        source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         generation_size=(50, 50),
         generation_id=0,
     )
@@ -119,7 +116,6 @@ def test_render_workpiece_view_empty_ops():
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20.0, 20.0),
         generation_id=0,
     )
@@ -147,7 +143,6 @@ def test_render_workpiece_view_travel_moves_shown():
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20.0, 20.0),
         generation_id=0,
     )
@@ -181,7 +176,6 @@ def test_stitch_chunk_to_bitmap():
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(10.0, 10.0),
         generation_id=0,
     )
@@ -213,7 +207,6 @@ def test_stitch_chunk_to_bitmap_texture():
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=False,
-        source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
         generation_size=(10, 10),
         generation_id=0,
     )
@@ -269,7 +262,6 @@ def test_get_content_bbox_empty():
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
         generation_size=(20.0, 20.0),
         generation_id=0,
     )

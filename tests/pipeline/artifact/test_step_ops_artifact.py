@@ -20,4 +20,3 @@ def test_ops_preserved():
     assert artifact.ops.to_dict() == ops.to_dict()
     assert artifact.generation_id == 1
     assert not hasattr(artifact, "is_scalable")
-    assert not hasattr(artifact, "source_coordinate_system")
