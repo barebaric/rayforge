@@ -5,17 +5,15 @@ import threading
 import time
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, Optional, Set, Tuple, cast
+from typing import TYPE_CHECKING, Dict, Optional, Tuple, cast
 
 import numpy as np
 from blinker import Signal
 
 from ..artifact import (
     BaseArtifactHandle,
-    WorkPieceArtifact,
     WorkPieceArtifactHandle,
 )
-from ..artifact.key import ArtifactKey
 from ..artifact.workpiece_view import (
     RenderContext,
     WorkPieceViewArtifact,
@@ -24,7 +22,6 @@ from ..artifact.workpiece_view import (
 from .view_compute import (
     calculate_render_dimensions,
     render_workpiece_view_in_process,
-    stitch_chunk_to_bitmap,
 )
 
 if TYPE_CHECKING:
@@ -108,17 +105,13 @@ class ViewManager:
         ] = {}
         self._view_entries: Dict[Tuple[str, str], ViewEntry] = {}
 
-        # Mapping from (workpiece_uid, step_uid) to a stable ArtifactKey
-        # used for task management (deduplication/cancellation).
-        self._view_task_keys: Dict[Tuple[str, str], ArtifactKey] = {}
+        # Stable task keys for view computation (deduplication/cancellation).
+        self._view_task_keys: Dict[Tuple[str, str], str] = {}
 
         # Throttling state keyed by the composite key (workpiece_uid, step_uid)
         self._pending_updates: Dict[Tuple[str, str], bool] = {}
         self._last_update_time: Dict[Tuple[str, str], float] = {}
         self._throttle_timers: Dict[Tuple[str, str], threading.Timer] = {}
-
-        # Track in-flight chunk handles for cleanup during shutdown
-        self._inflight_chunk_handles: Set[BaseArtifactHandle] = set()
 
         self.view_artifact_ready = Signal()
         self.view_artifact_created = Signal()
@@ -137,8 +130,6 @@ class ViewManager:
         self._pipeline.step_assembly_starting.connect(
             self.on_workpiece_artifact_ready
         )
-        self._pipeline.visual_chunk_available.connect(self.on_chunk_available)
-
         if self._pipeline.doc:
             self._pipeline.doc.descendant_removed.connect(
                 self._on_doc_item_removed
@@ -155,10 +146,6 @@ class ViewManager:
         self._pipeline.step_assembly_starting.disconnect(
             self.on_workpiece_artifact_ready
         )
-        self._pipeline.visual_chunk_available.disconnect(
-            self.on_chunk_available
-        )
-
         if self._pipeline.doc:
             self._pipeline.doc.descendant_removed.disconnect(
                 self._on_doc_item_removed
@@ -188,19 +175,6 @@ class ViewManager:
         for composite_id in keys_to_remove:
             self._remove_view_entry(composite_id)
 
-        # Release any inflight chunk handles for this workpiece.
-        # These are chunks that were being stitched to views when the
-        # workpiece was deleted.
-        handles_to_release = list(self._inflight_chunk_handles)
-        for handle in handles_to_release:
-            self._inflight_chunk_handles.discard(handle)
-            self._store.release(handle)
-        if handles_to_release:
-            logger.debug(
-                f"Released {len(handles_to_release)} inflight chunk handles "
-                f"for deleted workpiece {workpiece_uid}"
-            )
-
         if keys_to_remove:
             logger.debug(
                 f"Cleaned up {len(keys_to_remove)} view entries for "
@@ -220,17 +194,6 @@ class ViewManager:
         ]
         for composite_id in keys_to_remove:
             self._remove_view_entry(composite_id)
-
-        # Release any inflight chunk handles for this step.
-        handles_to_release = list(self._inflight_chunk_handles)
-        for handle in handles_to_release:
-            self._inflight_chunk_handles.discard(handle)
-            self._store.release(handle)
-        if handles_to_release:
-            logger.debug(
-                f"Released {len(handles_to_release)} inflight chunk handles "
-                f"for deleted step {step_uid}"
-            )
 
         if keys_to_remove:
             logger.debug(
@@ -271,16 +234,14 @@ class ViewManager:
         """Returns the artifact store."""
         return self._store
 
-    def _get_task_key(self, workpiece_uid: str, step_uid: str) -> ArtifactKey:
+    def _get_task_key(self, workpiece_uid: str, step_uid: str) -> str:
         """
-        Retrieves or creates a stable ArtifactKey for managing tasks associated
+        Retrieves or creates a stable task key for managing tasks associated
         with a specific (workpiece, step) view.
         """
         composite_id = (workpiece_uid, step_uid)
         if composite_id not in self._view_task_keys:
-            self._view_task_keys[composite_id] = ArtifactKey(
-                id=str(uuid.uuid4()), group="view"
-            )
+            self._view_task_keys[composite_id] = str(uuid.uuid4())
         return self._view_task_keys[composite_id]
 
     def _is_view_stale(
@@ -599,7 +560,7 @@ class ViewManager:
 
     def _request_view_render_internal(
         self,
-        key: ArtifactKey,
+        key: str,
         context: RenderContext,
         view_id: int,
         source_handle: WorkPieceArtifactHandle,
@@ -610,7 +571,7 @@ class ViewManager:
         Internal method to request a view render.
 
         Args:
-            key: The ArtifactKey for the workpiece view.
+            key: The task key for the workpiece view.
             context: The render context to use.
             view_id: The view generation ID for this render.
             source_handle: The source WorkPieceArtifact handle.
@@ -770,11 +731,6 @@ class ViewManager:
             self._store.release(handle)
         self._source_artifact_handles.clear()
 
-        # Release any in-flight chunk handles that weren't cleaned up
-        for handle in self._inflight_chunk_handles:
-            self._store.release(handle)
-        self._inflight_chunk_handles.clear()
-
     def _send_view_artifact_created_signals(
         self,
         step_uid: str,
@@ -802,7 +758,7 @@ class ViewManager:
     def _on_render_complete(
         self,
         task: "Task",
-        key: ArtifactKey,
+        key: str,
         view_id: int,
         workpiece_uid: str,
         step_uid: str,
@@ -814,165 +770,6 @@ class ViewManager:
             workpiece_uid=workpiece_uid,
             step_uid=step_uid,
         )
-
-    def on_chunk_available(
-        self,
-        sender,
-        *,
-        key: ArtifactKey,
-        chunk_handle: BaseArtifactHandle,
-        generation_id: int,
-        step_uid: Optional[str] = None,
-        **kwargs,
-    ):
-        """
-        Receives chunk data from the pipeline.
-
-        Implements incremental rendering by drawing the chunk directly
-        onto the view bitmap held in ``ViewEntry``.
-
-        Args:
-            sender: The signal sender.
-            key: The artifact key containing workpiece identifier.
-            chunk_handle: Handle to the chunk artifact to render.
-            generation_id: The generation ID for staleness checking.
-            step_uid: The step UID, required for processing.
-            **kwargs: Additional keyword arguments.
-        """
-        if step_uid is None:
-            logger.debug(
-                f"on_chunk_available: Missing step_uid for key {key.id}, "
-                "skipping"
-            )
-            return
-
-        workpiece_uid = self._extract_workpiece_uid_from_key(key.id)
-        composite_id = (workpiece_uid, step_uid)
-
-        entry = self._view_entries.get(composite_id)
-        if entry is None:
-            logger.debug(
-                f"on_chunk_available: No view entry for {composite_id}, "
-                "skipping chunk"
-            )
-            return
-
-        render_context = entry.render_context or self._current_view_context
-        if render_context is None:
-            logger.debug(
-                f"on_chunk_available: Missing render context for "
-                f"{composite_id}, skipping chunk"
-            )
-            return
-
-        self._process_chunk_async(composite_id, chunk_handle, render_context)
-
-    def _extract_workpiece_uid_from_key(self, key_id: str) -> str:
-        """
-        Extract the workpiece UID from a key ID string.
-
-        The key ID format may be "workpiece_uid:extra" or just "workpiece_uid".
-        In either case, we extract and return the workpiece_uid portion.
-
-        Args:
-            key_id: The key ID string to parse.
-
-        Returns:
-            The workpiece_uid portion of the key.
-        """
-        if ":" in key_id:
-            return key_id.split(":", 1)[0]
-        return key_id
-
-    def _process_chunk_async(
-        self,
-        composite_id: Tuple[str, str],
-        chunk_handle: BaseArtifactHandle,
-        render_context: RenderContext,
-    ) -> None:
-        """
-        Process a chunk asynchronously in a background thread.
-
-        Loads the chunk from the store and composites it into the view
-        bitmap held in ``ViewEntry``.
-
-        Args:
-            composite_id: The (workpiece_uid, step_uid) identifier.
-            chunk_handle: Handle to the chunk to render.
-            view_handle: Handle to the view to render onto.
-            render_context: The render context for the operation.
-        """
-        _, step_uid = composite_id
-        doc = self._pipeline.doc
-        laser_uid = doc.get_laser_uid_for_step(step_uid) if doc else None
-        layer_uid = doc.get_layer_uid_for_step(step_uid) if doc else None
-
-        try:
-            self._store.retain(chunk_handle)
-            self._inflight_chunk_handles.add(chunk_handle)
-            chunk_artifact = self._store.get(chunk_handle)
-            if not isinstance(chunk_artifact, WorkPieceArtifact):
-                logger.error(
-                    f"Chunk artifact is not a WorkPieceArtifact: "
-                    f"{type(chunk_artifact)}"
-                )
-                self._inflight_chunk_handles.discard(chunk_handle)
-                self._store.release(chunk_handle)
-                return
-            entry = self._view_entries.get(composite_id)
-
-            def _run_stitch():
-                if (
-                    entry is None
-                    or entry.bitmap is None
-                    or entry.bbox_mm is None
-                ):
-                    return
-                stitch_chunk_to_bitmap(
-                    chunk_artifact,
-                    render_context,
-                    entry.bitmap,
-                    entry.bbox_mm,
-                    laser_uid,
-                    layer_uid,
-                )
-
-            def _cleanup_chunk_handle(task):
-                self._on_stitch_complete(task, composite_id, chunk_handle)
-
-            self._task_manager.run_thread(
-                _run_stitch,
-                when_done=_cleanup_chunk_handle,
-            )
-        except Exception as e:
-            logger.error(
-                f"Error starting chunk processing thread for "
-                f"{composite_id}: {e}"
-            )
-            self._inflight_chunk_handles.discard(chunk_handle)
-            self._store.release(chunk_handle)
-
-    def _on_stitch_complete(
-        self,
-        task: "Task",
-        composite_id: Tuple[str, str],
-        chunk_handle: BaseArtifactHandle,
-    ):
-        """Callback for when stitching completes."""
-        self._inflight_chunk_handles.discard(chunk_handle)
-
-        if self._is_shutdown:
-            self._store.release(chunk_handle)
-            return
-
-        try:
-            if task.get_status() == "completed" and task.result():
-                view_id = self._view_generation_id
-                self._schedule_throttled_update(composite_id, view_id)
-            else:
-                logger.warning(f"Stitching failed for {composite_id}")
-        finally:
-            self._store.release(chunk_handle)
 
     def _get_render_components(
         self,
