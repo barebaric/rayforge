@@ -1,3 +1,14 @@
+"""
+Tests for AppUpdateChecker.
+
+The retry/network behavior of ``_fetch_latest_release`` is delegated to
+``rayforge.shared.util.http.resilient_async_get`` and is covered in
+``tests/shared/util/test_http.py``.  These tests focus on:
+  * the high-level check_on_startup / _check_worker orchestration
+  * JSON payload parsing inside _fetch_latest_release
+"""
+
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -121,3 +132,49 @@ class TestCheckWorker:
             await checker._check_worker(ctx)
 
         checker._task_mgr.schedule_on_main_thread.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestFetchLatestRelease:
+    async def test_returns_parsed_dict_on_success(self, checker):
+        payload = {"tag_name": "1.2.3"}
+        with patch(
+            "rayforge.updater.resilient_async_get",
+            return_value=json.dumps(payload).encode(),
+        ):
+            result = await checker._fetch_latest_release()
+        assert result == payload
+
+    async def test_returns_none_when_util_returns_none(self, checker):
+        with patch(
+            "rayforge.updater.resilient_async_get", return_value=None
+        ):
+            result = await checker._fetch_latest_release()
+        assert result is None
+
+    async def test_returns_none_on_invalid_json(self, checker):
+        with patch(
+            "rayforge.updater.resilient_async_get",
+            return_value=b"not json {{{",
+        ):
+            result = await checker._fetch_latest_release()
+        assert result is None
+
+    async def test_returns_none_on_non_object_payload(self, checker):
+        # JSON list, not a dict — should be rejected
+        with patch(
+            "rayforge.updater.resilient_async_get",
+            return_value=b'["not", "an", "object"]',
+        ):
+            result = await checker._fetch_latest_release()
+        assert result is None
+
+    async def test_passes_correct_headers(self, checker):
+        with patch(
+            "rayforge.updater.resilient_async_get",
+            return_value=b'{"tag_name": "1.0.0"}',
+        ) as mock_get:
+            await checker._fetch_latest_release()
+        # The util is called with the GitHub Accept header
+        kwargs = mock_get.call_args.kwargs
+        assert kwargs["headers"]["Accept"] == "application/vnd.github+json"

@@ -1,14 +1,14 @@
-import asyncio
+import json
 import logging
 import webbrowser
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional
 
-import aiohttp
 from blinker import Signal
 
 from . import __version__
 from .const import DOWNLOAD_URL, GITHUB_RELEASES_API
+from .shared.util.http import resilient_async_get
 from .shared.util.versioning import is_newer_version
 
 if TYPE_CHECKING:
@@ -80,18 +80,25 @@ class AppUpdateChecker:
             ctx.set_message(_("Rayforge is up to date."))
 
     async def _fetch_latest_release(self) -> Optional[dict]:
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    GITHUB_RELEASES_API,
-                    timeout=aiohttp.ClientTimeout(total=15),
-                ) as response:
-                    if response.status == 200:
-                        return await response.json()
-                    logger.warning(
-                        f"GitHub API returned status {response.status}"
-                    )
-                    return None
-        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            logger.error(f"Error fetching release info: {e}")
+        """
+        Fetch the latest release info from the GitHub Releases API.
+
+        Retries on transient HTTP and network failures via
+        ``resilient_async_get`` (3 attempts, 0.75s backoff by default).
+        Returns ``None`` on any failure; never raises.
+        """
+        body = await resilient_async_get(
+            GITHUB_RELEASES_API,
+            headers={"Accept": "application/vnd.github+json"},
+        )
+        if body is None:
             return None
+        try:
+            payload = json.loads(body)
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Failed to parse GitHub release payload: {e}")
+            return None
+        if not isinstance(payload, dict):
+            logger.warning("GitHub API payload is not an object")
+            return None
+        return payload
