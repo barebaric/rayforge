@@ -4,16 +4,25 @@ from raygeo.ops import Ops
 from raygeo.ops.state import AirAssistMode
 from raygeo.ops.types import CommandCategory, CommandType
 
-from rayforge.pipeline.transformer.specs import (
-    apply_transformer_specs,
-    build_transformer_specs,
-)
+
+class _ProgressCallback:
+    def __init__(self, context):
+        self._context = context
+
+    def __call__(self, progress, message):
+        self._context.set_progress(progress)
+        if message:
+            self._context.set_message(message)
+
+    def is_cancelled(self):
+        return self._context.is_cancelled()
 
 
 def _apply(optimizer, ops, context=None):
     """Run the optimizer through the Rust spec dispatch."""
-    specs = build_transformer_specs([optimizer], None, None, None)
-    apply_transformer_specs(ops, specs, context)
+    specs = [optimizer.to_spec(None, None, None)]
+    cb = _ProgressCallback(context) if context else None
+    Ops.apply_transformers(ops, specs, progress_cb=cb)
 
 
 def _make_seg(start: tuple, end: tuple) -> Ops:

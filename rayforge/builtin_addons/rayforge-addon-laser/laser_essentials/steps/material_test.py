@@ -3,6 +3,11 @@ from __future__ import annotations
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, List, Optional, Protocol, Tuple, cast
 
+from raygeo.cnc.execution.specs import ComputePayload
+from raygeo.ops.assembly import Assembler
+from raygeo.ops.assembly.material_test_grid import MaterialTestGridSpec
+from raygeo.ops.part import Part
+
 from rayforge.core.capability import MATERIAL_TEST, Capability
 from rayforge.core.step import Step
 from rayforge.pipeline.assembler.registry import assembler_registry
@@ -11,7 +16,6 @@ from rayforge.pipeline.stage.assembler_helpers import (
     wrap_assembler_result,
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
-
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
@@ -85,6 +89,49 @@ class MaterialTestStep(Step):
             else machine_defaults.line_interval_mm
         )
         return kwargs
+
+    def build_compute_payload(
+        self,
+        machine_defaults: MachineDefaults,
+        workpiece: "WorkPiece",
+    ) -> "Tuple[Part, ComputePayload]":
+        """Build a :class:`Part` (empty — the material-test grid
+        needs no geometry) and a :class:`ComputePayload` carrying a
+        :class:`MaterialTestGridSpec`."""
+        size = workpiece.size if workpiece else (0.0, 0.0)
+        part = Part(size_mm=size)
+        kwargs = self.get_assembler_kwargs(machine_defaults, workpiece)
+        spec = MaterialTestGridSpec(
+            size_mm=kwargs["size_mm"],
+            cols=kwargs["cols"],
+            rows=kwargs["rows"],
+            min_speed=kwargs["min_speed"],
+            max_speed=kwargs["max_speed"],
+            min_power=kwargs["min_power"],
+            max_power=kwargs["max_power"],
+            min_passes=kwargs["min_passes"],
+            max_passes=kwargs["max_passes"],
+            fixed_speed=kwargs["fixed_speed"],
+            fixed_power=kwargs["fixed_power"],
+            shape_size=kwargs["shape_size"],
+            spacing=kwargs["spacing"],
+            line_interval_mm=kwargs["line_interval_mm"],
+            mode=kwargs["mode"],
+            grid_mode=kwargs["grid_mode"],
+            include_labels=kwargs["include_labels"],
+            label_power_percent=kwargs["label_power_percent"],
+            label_speed=kwargs["label_speed"],
+            min_offset=kwargs["min_offset"],
+            max_offset=kwargs["max_offset"],
+        )
+        return part, ComputePayload(assembler=Assembler(spec))
+
+    def assembler_token_params(
+        self,
+        machine_defaults: MachineDefaults,
+        workpiece: "WorkPiece",
+    ) -> Optional[dict]:
+        return self.get_assembler_kwargs(machine_defaults, workpiece)
 
     def assemble_on_surface(
         self,

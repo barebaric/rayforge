@@ -13,7 +13,7 @@ from typing import (
 from raygeo.ops.transform.tabs import TabsSpec
 
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
+from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -36,11 +36,6 @@ class TabOpsTransformer(OpsTransformer):
 
     def __init__(self, enabled: bool = True):
         super().__init__(enabled=enabled)
-
-    @property
-    def execution_phase(self) -> ExecutionPhase:
-        """Tabs intentionally break paths, so they must run after smoothing."""
-        return ExecutionPhase.PATH_INTERRUPTION
 
     @property
     def label(self) -> str:

@@ -281,6 +281,72 @@ def build_part_vector(
     return None
 
 
+MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
+
+
+def build_part_vector_with_raster_fallback(
+    workpiece: WorkPiece,
+    pixels_per_mm: Tuple[float, float],
+    *,
+    override_threshold: bool = False,
+    threshold: float = 0.5,
+    normalize_windings: bool = False,
+) -> Part:
+    """Build a vector :class:`Part`, rendering the workpiece source to a
+    raster surface and tracing it when no vector boundaries are
+    available.
+
+    This mirrors the old ``_execute_vector`` pipeline path that
+    fell back to render-and-trace when a workpiece had no boundaries
+    (e.g. an SVG whose ``pristine_geometry`` is empty).
+
+    Returns a :class:`Part` with at least ``size_mm`` set.  The
+    geometry may be empty (``None``) if neither the vector source
+    nor the raster trace yields any contours.
+    """
+    boundaries = workpiece.boundaries
+    has_vector = boundaries is not None and not boundaries.is_empty()
+    if has_vector and not override_threshold:
+        part = build_part_vector(
+            workpiece,
+            surface=None,
+            override_threshold=False,
+            normalize_windings=normalize_windings,
+        )
+        if part is not None and part.has_geometry():
+            return part
+
+    size_mm = workpiece.size
+    if not size_mm or size_mm[0] <= 0 or size_mm[1] <= 0:
+        return Part(size_mm=size_mm)
+
+    target_w = int(size_mm[0] * pixels_per_mm[0])
+    target_h = int(size_mm[1] * pixels_per_mm[1])
+    num_pixels = target_w * target_h
+    if num_pixels > MAX_VECTOR_TRACE_PIXELS:
+        scale = (MAX_VECTOR_TRACE_PIXELS / num_pixels) ** 0.5
+        target_w = int(target_w * scale)
+        target_h = int(target_h * scale)
+
+    if target_w <= 0 or target_h <= 0:
+        return Part(size_mm=size_mm)
+
+    surface = workpiece.render_to_pixels(target_w, target_h)
+    if surface is None:
+        return Part(size_mm=size_mm)
+
+    part = build_part_vector(
+        workpiece,
+        surface=surface,
+        override_threshold=True,
+        threshold=threshold,
+        normalize_windings=normalize_windings,
+    )
+    if part is not None:
+        return part
+    return Part(size_mm=size_mm)
+
+
 def build_part_raster(
     workpiece: WorkPiece,
     pixels_per_mm: Tuple[float, float],

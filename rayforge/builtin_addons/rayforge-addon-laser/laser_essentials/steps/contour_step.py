@@ -3,18 +3,24 @@ from __future__ import annotations
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
 
+from raygeo.cnc.execution.specs import ComputePayload
+from raygeo.ops import Ops
+from raygeo.ops.assembly import Assembler
+from raygeo.ops.assembly.contour import ContourSpec
+from raygeo.ops.part import Part
+
 from rayforge.core.capability import CUT, SCORE, WITH_KERF, Capability
+from rayforge.core.cut_side import CutSide
 from rayforge.core.step import Step
 from rayforge.pipeline.assembler.registry import assembler_registry
-from rayforge.core.cut_side import CutSide
 from rayforge.pipeline.stage.assembler_helpers import (
     MachineDefaults,
     build_part_vector,
+    build_part_vector_with_raster_fallback,
     make_artifact,
     wrap_assembler_result,
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
-from raygeo.ops import Ops
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
@@ -64,6 +70,48 @@ class ContourStep(Step):
         kwargs["allow_arcs"] = machine_defaults.allow_arcs
         kwargs["supports_curves"] = machine_defaults.supports_curves
         return kwargs
+
+    def build_compute_payload(
+        self,
+        machine_defaults: MachineDefaults,
+        workpiece: "WorkPiece",
+    ) -> "Tuple[Part, ComputePayload]":
+        """Build a :class:`Part` (from the workpiece's vector
+        geometry) and a :class:`ComputePayload` carrying a
+        :class:`ContourSpec` populated from this step's resolved
+        assembler kwargs.
+
+        When the workpiece has no vector boundaries (e.g. an SVG
+        with empty ``pristine_geometry``), the source is rendered
+        to pixels and traced into geometry before assembling.
+        """
+        part = build_part_vector_with_raster_fallback(
+            workpiece,
+            self.pixels_per_mm,
+            override_threshold=self.override_threshold,
+            threshold=self.threshold,
+        )
+        kwargs = self.get_assembler_kwargs(machine_defaults, workpiece)
+        spec = ContourSpec(
+            kerf_mm=kwargs["kerf_mm"],
+            path_offset_mm=kwargs["path_offset_mm"],
+            cut_side=kwargs["cut_side"],
+            overcut=kwargs["overcut"],
+            cut_order=kwargs["cut_order"],
+            remove_inner=kwargs["remove_inner"],
+            arc_tolerance=kwargs["arc_tolerance"],
+            allow_arcs=kwargs["allow_arcs"],
+            supports_curves=kwargs["supports_curves"],
+        )
+        return part, ComputePayload(assembler=Assembler(spec))
+
+    def assembler_token_params(
+        self,
+        machine_defaults: MachineDefaults,
+        workpiece: "WorkPiece",
+    ) -> Optional[dict]:
+        """Expose the resolved assembler kwargs for the compute token."""
+        return self.get_assembler_kwargs(machine_defaults, workpiece)
 
     def assemble_on_surface(
         self,

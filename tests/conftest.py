@@ -201,11 +201,6 @@ def clean_context_singleton():
     # starts with a completely fresh context.
     rayforge_context._context_instance = None
 
-    # Also reset the lazy loader to prevent pollution of sys.meta_path across tests
-    from rayforge.addon_mgr.lazy_loader import reset_addon_finder
-
-    reset_addon_finder()
-
     gc.collect()
 
 
@@ -261,9 +256,7 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
     context = get_context()
     context._headless = True
 
-    # 4. Access addon_mgr to trigger lazy loading (worker_only=True).
-    # task_mgr is already passed to AddonManager at construction time,
-    # so the manifest is built and pushed to shared_state automatically.
+    # 4. Access addon_mgr to trigger lazy loading.
     _ = context.addon_mgr
 
     yield context
@@ -583,6 +576,12 @@ def mock_task_mgr():
         future.cancel = MagicMock()
         return future
 
+    def run_thread_impl(func, *args, key=None, when_done=None, **kwargs):
+        func(*args, **kwargs)
+        if when_done:
+            when_done(None)
+        return None
+
     def has_tasks_impl():
         return len(created_tasks) > 0
 
@@ -596,6 +595,7 @@ def mock_task_mgr():
     mock_mgr.schedule_delayed_on_main_thread = MagicMock(
         side_effect=schedule_delayed_impl
     )
+    mock_mgr.run_thread = MagicMock(side_effect=run_thread_impl)
     mock_mgr.has_tasks = MagicMock(side_effect=has_tasks_impl)
     mock_mgr.created_tasks = created_tasks
     return mock_mgr
@@ -611,9 +611,9 @@ def zero_debounce_delay(monkeypatch):
         def _zero_debounce_delay(zero_debounce_delay):
             pass
     """
-    from rayforge.pipeline.pipeline import Pipeline
-
-    monkeypatch.setattr(Pipeline, "RECONCILIATION_DELAY_MS", 0)
+    monkeypatch.setattr(
+        "rayforge.pipeline.intent_controller.REBUILD_DEBOUNCE_MS", 0
+    )
 
 
 @pytest_asyncio.fixture
@@ -939,31 +939,13 @@ class _InnerMockProgressContext:
 @pytest.fixture
 def adopting_mock_proxy():
     """
-    Creates a mock ExecutionContextProxy that adopts artifacts when
-    send_event_and_wait is called.
-
-    On Windows, shared memory is destroyed when all handles are closed.
-    When tests run runner functions in-process (not in a real subprocess),
-    the runner calls forget() after send_event_and_wait returns, which
-    closes the only handle. This mock simulates the main process adopting
-    the artifact before the runner forgets it.
+    Creates a mock ExecutionContextProxy that returns True for
+    send_event_and_wait.
     """
     from unittest.mock import MagicMock
 
-    from rayforge.context import get_context
-    from rayforge.pipeline.artifact import create_handle_from_dict
-
-    artifact_store = get_context().artifact_store
-
-    def mock_send_event_and_wait(event_name, data, logger=None):
-        handle_dict = data.get("handle_dict")
-        if handle_dict:
-            handle = create_handle_from_dict(handle_dict)
-            artifact_store.adopt(handle)
-        return True
-
     proxy = MagicMock()
-    proxy.send_event_and_wait.side_effect = mock_send_event_and_wait
+    proxy.send_event_and_wait.return_value = True
     return proxy
 
 

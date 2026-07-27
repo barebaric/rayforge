@@ -51,7 +51,7 @@ from .addon import (
     AddonValidationError,
     VersionType,
 )
-from .manifest import AddonManifest
+
 
 if TYPE_CHECKING:
     from ..shared.tasker.manager import TaskManager
@@ -132,7 +132,6 @@ class AddonManager:
         addon_config: Optional[AddonConfig] = None,
         is_job_active_callback: Optional[Callable[[], bool]] = None,
         registries: Optional[Dict[str, "AddonRegistry"]] = None,
-        shared_state: Optional[Dict[str, Any]] = None,
         license_validator: Optional[LicenseValidator] = None,
     ):
         """
@@ -152,8 +151,6 @@ class AddonManager:
                 hook parameter names to registry instances. Expected keys:
                 'step_registry', 'widget_registry',
                 'menu_registry', 'layout_registry'.
-            shared_state (Optional[Any]): Shared dict for worker state,
-                used to populate addon module paths for worker processes.
             license_validator (Optional[LicenseValidator]): License validator
                 for checking paid addon licenses.
         """
@@ -170,7 +167,6 @@ class AddonManager:
         self.license_required_addons: Dict[str, Addon] = {}
         self._pending_unloads: Set[str] = set()
         self._load_errors: Dict[str, str] = {}
-        self._shared_state = shared_state
         self._task_mgr = task_mgr
         self.license_validator = license_validator
 
@@ -206,113 +202,6 @@ class AddonManager:
             window: The MainWindow instance for registering actions.
         """
         self._window = window
-
-    def set_shared_state(self, shared_state: Dict[str, Any]):
-        """
-        Set the shared state dict and immediately build the addon manifest.
-
-        Args:
-            shared_state: Shared dict for worker state.
-        """
-        self._shared_state = shared_state
-        self._build_and_update_manifest()
-
-    def _restart_workers(self):
-        """
-        Restarts the worker pool to ensure runtime modifications to addons
-        are securely reflected in background processes.
-        """
-        if self._task_mgr is not None:
-            logger.info("Restarting worker pool due to addon changes...")
-            self._task_mgr.restart_worker_pool()
-
-    def _build_and_update_manifest(self):
-        """
-        Scans all known addons to build a comprehensive manifest and
-        updates the shared state for worker processes.
-
-        The namespace structure for addons is:
-        rayforge_addons.<ADDON_NAME>.<MODULE_STRUCTURE>
-
-        Where <ADDON_NAME> is the name from the rayforge-addon.yaml.
-        This guarantees isolation between addons even if they have internal
-        modules with the same name.
-        """
-        manifest = AddonManifest()
-        all_addons = (
-            list(self.loaded_addons.values())
-            + list(self.disabled_addons.values())
-            + list(self.incompatible_addons.values())
-            + list(self.license_required_addons.values())
-        )
-
-        root_ns = "rayforge_addons"
-        manifest.namespaces.add(root_ns)
-
-        for addon in all_addons:
-            addon_id = addon.metadata.name
-
-            # Root namespace for this addon
-            addon_ns = f"rayforge_addons.{addon_id}"
-            manifest.namespaces.add(addon_ns)
-
-            # Scan all python files to register every potential module
-            for py_file in addon.root_path.rglob("*.py"):
-                # Ignore hidden files/directories
-                if any(p.startswith(".") for p in py_file.parts):
-                    continue
-
-                rel_path = py_file.relative_to(addon.root_path)
-                parts = rel_path.with_suffix("").parts
-
-                if py_file.name == "__init__.py":
-                    mod_parts = parts[:-1]
-                else:
-                    mod_parts = parts
-
-                if not mod_parts:
-                    continue
-
-                # Ensure it's a valid python identifier sequence
-                if not all(p.isidentifier() for p in mod_parts):
-                    continue
-
-                module_name = f"{addon_ns}.{'.'.join(mod_parts)}"
-                manifest.module_paths[module_name] = str(py_file)
-
-                # Add namespaces for parent packages
-                for i in range(1, len(mod_parts)):
-                    manifest.namespaces.add(
-                        f"{addon_ns}.{'.'.join(mod_parts[:i])}"
-                    )
-
-        # Populate enabled worker entry points using the namespaced structure
-        for addon in self.loaded_addons.values():
-            if addon.metadata.provides.worker:
-                worker_module = (
-                    f"rayforge_addons.{addon.metadata.name}."
-                    f"{addon.metadata.provides.worker}"
-                )
-                manifest.enabled_worker_modules.append(worker_module)
-
-        # Prefer the shared state from the active task manager, as it may have
-        # changed after a pool restart. Fall back to the stored shared state.
-        target_state = None
-        if self._task_mgr:
-            target_state = self._task_mgr.get_shared_state()
-
-        if target_state is None:
-            target_state = self._shared_state
-
-        if target_state is not None:
-            logger.debug(
-                f"Updating addon manifest in shared state. "
-                f"{len(manifest.module_paths)} modules, "
-                f"{len(manifest.enabled_worker_modules)} enabled workers."
-            )
-            target_state["addon_manifest"] = manifest
-        else:
-            logger.debug("No shared state available to update addon manifest.")
 
     def _parse_registry_dict(
         self, registry_data: Dict[str, Any]
@@ -520,7 +409,8 @@ class AddonManager:
 
         Args:
             addon_name: The canonical name of the addon to load.
-            worker_only: If True, only load worker entry points.
+            worker_only: If True, only load worker entry points
+                (skip frontend to avoid pulling in GTK dependencies).
 
         Returns:
             True if the addon was loaded successfully, False otherwise.
@@ -556,9 +446,8 @@ class AddonManager:
         Scans the addon directories and loads valid addons.
 
         Args:
-            worker_only: If True, only load worker entry points (skip
-                frontend/widgets to avoid pulling in GTK dependencies).
-                Used by worker processes.
+            worker_only: If True, only load worker entry points
+                (skip frontend to avoid pulling in GTK dependencies).
         """
         for addon_dir in self.addon_dirs:
             if not addon_dir.exists():
@@ -571,9 +460,6 @@ class AddonManager:
                 if child.is_dir():
                     self.load_addon(child.resolve(), worker_only=worker_only)
 
-        # Build manifest at the end of the batch load
-        self._build_and_update_manifest()
-
     def load_addon(
         self,
         addon_path: Path,
@@ -585,9 +471,8 @@ class AddonManager:
 
         Args:
             addon_path: Path to the addon directory.
-            worker_only: If True, only load worker entry points (skip
-                frontend/widgets to avoid pulling in GTK dependencies).
-                Used by worker processes.
+            worker_only: If True, only load worker entry points
+                (skip frontend to avoid pulling in GTK dependencies).
             version: If provided, skip version resolution and use
                 this version directly.
         """
@@ -1023,8 +908,6 @@ class AddonManager:
         logger.info(f"Successfully installed addon to {final_path}")
         self.load_addon(final_path, version=version)
         call_registration_hooks(self.plugin_mgr, registries=self.registries)
-        self._build_and_update_manifest()
-        self._restart_workers()
         logger.info(f"Addon '{addon_name}' fully loaded and registered")
         return final_path
 
@@ -1159,8 +1042,6 @@ class AddonManager:
             if self.addon_config:
                 self.addon_config.remove_state(addon_name)
 
-            self._build_and_update_manifest()
-            self._restart_workers()
             return True
 
         except Exception as e:
@@ -1358,8 +1239,6 @@ class AddonManager:
             )
             logger.info(f"Addon '{addon_name}' enabled and loaded")
 
-        self._build_and_update_manifest()
-        self._restart_workers()
         self.addon_state_changed.send(self, addon_name=addon_name)
         return True
 
@@ -1388,8 +1267,6 @@ class AddonManager:
             return False
 
         self._do_unload_addon(addon_name, addon)
-        self._build_and_update_manifest()
-        self._restart_workers()
         self.addon_state_changed.send(self, addon_name=addon_name)
         return True
 
@@ -1464,10 +1341,6 @@ class AddonManager:
             if addon:
                 self._do_unload_addon(addon_name, addon)
                 unloaded.append(addon_name)
-
-        if unloaded:
-            self._build_and_update_manifest()
-            self._restart_workers()
 
         return unloaded
 
@@ -1546,8 +1419,6 @@ class AddonManager:
         call_registration_hooks(self.plugin_mgr, registries=self.registries)
         if addon_name in self.loaded_addons:
             logger.info(f"Addon '{addon_name}' reloaded successfully")
-            self._build_and_update_manifest()
-            self._restart_workers()
             self.addon_state_changed.send(self, addon_name=addon_name)
             return True
         else:
@@ -1685,8 +1556,6 @@ class AddonManager:
             call_registration_hooks(
                 self.plugin_mgr, registries=self.registries
             )
-            self._build_and_update_manifest()
-            self._restart_workers()
             return True, "License validated, addon loaded successfully"
 
         return False, "Failed to load addon after license validation"

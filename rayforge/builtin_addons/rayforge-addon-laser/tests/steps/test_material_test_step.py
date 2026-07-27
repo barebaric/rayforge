@@ -5,6 +5,7 @@ import pytest
 from laser_essentials.steps import MaterialTestStep
 
 from rayforge.core.capability import MATERIAL_TEST
+from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.stage.assembler_helpers import MachineDefaults
 
 if TYPE_CHECKING:
@@ -148,3 +149,37 @@ class TestMaterialTestStep:
             t.get("name") for t in step.per_workpiece_transformers_dicts
         }
         assert "BidirScanOffsetTransformer" in per_wp_names
+
+
+class TestMaterialTestComputePayload:
+    def test_build_compute_payload_returns_material_test_spec(
+        self, machine_defaults
+    ):
+        from raygeo.cnc.execution.specs import ComputePayload
+        from raygeo.ops.assembly import Assembler
+        from raygeo.ops.assembly.material_test_grid import (
+            MaterialTestGridSpec,
+        )
+        from raygeo.ops.part import Part
+
+        step = MaterialTestStep(name="mtg")
+        step.test_type = "Cut"
+        wp = WorkPiece(name="wp")
+        wp.set_size(100.0, 100.0)
+
+        part, payload = step.build_compute_payload(machine_defaults, wp)
+        assert isinstance(part, Part)
+        assert isinstance(payload, ComputePayload)
+        assert isinstance(payload.assembler, Assembler)
+        spec = payload.assembler.spec
+        assert isinstance(spec, MaterialTestGridSpec)
+        assert spec.mode == "cut"
+        assert spec.size_mm == (100.0, 100.0)
+
+    def test_assembler_token_params_mirrors_kwargs(self, machine_defaults):
+        step = MaterialTestStep(name="mtg")
+        wp = WorkPiece(name="wp")
+        wp.set_size(100.0, 100.0)
+        token = step.assembler_token_params(machine_defaults, wp)
+        kwargs = step.get_assembler_kwargs(machine_defaults, wp)
+        assert token == kwargs

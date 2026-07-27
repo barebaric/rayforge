@@ -6,6 +6,7 @@ from laser_essentials.steps import EngraveStep
 
 from rayforge.core.capability import ENGRAVE
 from rayforge.core.step_registry import step_registry
+from rayforge.core.workpiece import WorkPiece
 from rayforge.pipeline.stage.assembler_helpers import MachineDefaults
 
 
@@ -164,3 +165,39 @@ class TestAssembleOnSurfaceAutoDefaults:
         step.dot_width_correction_mm = 0.5  # type: ignore[assignment]
         kwargs = self._run(step, machine_defaults, (0.2, 0.15))
         assert kwargs["dot_width_correction_mm"] == pytest.approx(0.5)
+
+
+class TestEngraveComputePayload:
+    """Verifies EngraveStep's build_compute_payload (B3)."""
+
+    def test_build_compute_payload_returns_raster_spec(self, machine_defaults):
+        from raygeo.cnc.execution.specs import ComputePayload
+        from raygeo.ops.assembly import Assembler
+        from raygeo.ops.assembly.raster import RasterSpec
+        from raygeo.ops.part import Part
+
+        step = EngraveStep(name="engrave")
+        step.min_power = 0.1
+        step.max_power = 0.9
+        wp = WorkPiece(name="wp")
+        wp.set_size(10.0, 10.0)
+
+        with patch.object(WorkPiece, "render_to_pixels", return_value=None):
+            part, payload = step.build_compute_payload(machine_defaults, wp)
+
+        assert isinstance(part, Part)
+        assert isinstance(payload, ComputePayload)
+        assert isinstance(payload.assembler, Assembler)
+        spec = payload.assembler.spec
+        assert isinstance(spec, RasterSpec)
+        assert spec.min_power == 0.1
+        assert spec.max_power == 0.9
+        assert spec.mode == "power_modulated"
+
+    def test_assembler_token_params_mirrors_kwargs(self, machine_defaults):
+        step = EngraveStep(name="engrave")
+        wp = WorkPiece(name="wp")
+        wp.set_size(10.0, 10.0)
+        token = step.assembler_token_params(machine_defaults, wp)
+        kwargs = step.get_assembler_kwargs(machine_defaults, wp)
+        assert token == kwargs

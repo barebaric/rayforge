@@ -7260,26 +7260,6 @@ msgstr ""
 "Caminho para um diretório de configuração personalizado. Útil para testes "
 "com configurações isoladas."
 
-#: rayforge/pipeline/stage/step_runner.py
-msgid "Assembling step..."
-msgstr "Montando etapa..."
-
-#: rayforge/pipeline/stage/step_runner.py
-msgid "Storing step data..."
-msgstr "Armazenando dados da etapa..."
-
-#: rayforge/pipeline/stage/step_runner.py
-msgid "Calculating time estimate..."
-msgstr "Calculando estimativa de tempo..."
-
-#: rayforge/pipeline/stage/job_runner.py
-msgid "Storing final job artifact..."
-msgstr "Armazenando artefato do trabalho final..."
-
-#: rayforge/pipeline/stage/job_runner.py rayforge/pipeline/stage/job_compute.py
-msgid "Job finalization complete"
-msgstr "Finalização do trabalho completa"
-
 #: rayforge/pipeline/stage/assembler_helpers.py
 msgid "Variable Power"
 msgstr "Potência variável"
@@ -7307,63 +7287,6 @@ msgstr "Constante"
 #: rayforge/pipeline/stage/assembler_helpers.py
 msgid "Multi-Pass"
 msgstr "Múltiplas passadas"
-
-#: rayforge/pipeline/stage/workpiece_compute.py
-#, python-brace-format
-msgid "Applying transformers on '{workpiece}'"
-msgstr "Aplicando transformadores em '{workpiece}'"
-
-#: rayforge/pipeline/stage/workpiece_compute.py
-#, python-brace-format
-msgid "Transformers applied on '{workpiece}'"
-msgstr "Transformadores aplicados em '{workpiece}'"
-
-#: rayforge/pipeline/stage/workpiece_compute.py
-#, python-brace-format
-msgid "Generating path for '{workpiece}'"
-msgstr "Gerando caminho para '{workpiece}'"
-
-#: rayforge/pipeline/stage/workpiece_compute.py
-#, python-brace-format
-msgid "Finalizing '{workpiece}'"
-msgstr "Finalizando '{workpiece}'"
-
-#: rayforge/pipeline/stage/step_compute.py
-msgid "Applying transformers"
-msgstr "Aplicando transformadores"
-
-#: rayforge/pipeline/stage/job_compute.py
-msgid "Assembling final job..."
-msgstr "Montando trabalho final..."
-
-#: rayforge/pipeline/stage/job_compute.py
-#, python-brace-format
-msgid "Processing final ops for '{step}'"
-msgstr "Processando operações finais para '{step}'"
-
-#: rayforge/pipeline/stage/job_compute.py
-msgid "Calculating final time and distance estimates..."
-msgstr "Calculando estimativas finais de tempo e distância..."
-
-#: rayforge/pipeline/stage/job_compute.py
-msgid "Generating machine code..."
-msgstr "Gerando código de máquina..."
-
-#: rayforge/pipeline/view/view_compute.py
-msgid "Rendering vertices..."
-msgstr "Renderizando vértices..."
-
-#: rayforge/pipeline/view/view_compute.py
-msgid "Preparing 2D preview..."
-msgstr "Preparando pré-visualização 2D..."
-
-#: rayforge/pipeline/view/view_compute.py
-msgid "Rendering texture..."
-msgstr "Renderizando textura..."
-
-#: rayforge/pipeline/view/view_compute.py
-msgid "Rendering complete."
-msgstr "Renderização concluída."
 
 #: rayforge/pipeline/transformer/placeholder.py
 msgid "Missing: {}"

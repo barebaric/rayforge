@@ -3,18 +3,24 @@ from __future__ import annotations
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple, cast
 
+from raygeo.cnc.execution.specs import ComputePayload
+from raygeo.ops import Ops
+from raygeo.ops.assembly import Assembler
+from raygeo.ops.assembly.frame import FrameSpec
+from raygeo.ops.part import Part
+
 from rayforge.core.capability import CUT, SCORE, WITH_KERF, Capability
+from rayforge.core.cut_side import CutSide
 from rayforge.core.step import Step
 from rayforge.pipeline.assembler.registry import assembler_registry
-from rayforge.core.cut_side import CutSide
 from rayforge.pipeline.stage.assembler_helpers import (
     MachineDefaults,
     build_part_vector,
+    build_part_vector_with_raster_fallback,
     make_artifact,
     wrap_assembler_result,
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
-from raygeo.ops import Ops
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
@@ -53,6 +59,36 @@ class FrameStep(Step):
         kwargs["path_offset_mm"] = self.path_offset_mm
         kwargs["kerf_mm"] = machine_defaults.kerf_mm
         return kwargs
+
+    def build_compute_payload(
+        self,
+        machine_defaults: MachineDefaults,
+        workpiece: "WorkPiece",
+    ) -> "Tuple[Part, ComputePayload]":
+        """Build a :class:`Part` (from the workpiece's vector
+        geometry) and a :class:`ComputePayload` carrying a
+        :class:`FrameSpec`.
+
+        When the workpiece has no vector boundaries, the source is
+        rendered to pixels and traced into geometry before assembling.
+        """
+        part = build_part_vector_with_raster_fallback(
+            workpiece, self.pixels_per_mm
+        )
+        kwargs = self.get_assembler_kwargs(machine_defaults, workpiece)
+        spec = FrameSpec(
+            kerf_mm=kwargs["kerf_mm"],
+            path_offset_mm=kwargs["path_offset_mm"],
+            cut_side=kwargs["cut_side"],
+        )
+        return part, ComputePayload(assembler=Assembler(spec))
+
+    def assembler_token_params(
+        self,
+        machine_defaults: MachineDefaults,
+        workpiece: "WorkPiece",
+    ) -> Optional[dict]:
+        return self.get_assembler_kwargs(machine_defaults, workpiece)
 
     def assemble_on_surface(
         self,

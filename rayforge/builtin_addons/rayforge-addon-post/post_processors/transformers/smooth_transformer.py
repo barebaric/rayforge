@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from raygeo.ops.transform.smooth import SmoothSpec
 
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
+from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -44,11 +44,6 @@ class Smooth(OpsTransformer):
         self._corner_angle_threshold = corner_angle_threshold
         self._amount = -1
         self.amount = amount
-
-    @property
-    def execution_phase(self) -> ExecutionPhase:
-        """Smooth needs to run on continuous paths before they are broken."""
-        return ExecutionPhase.GEOMETRY_REFINEMENT
 
     @property
     def amount(self) -> int:

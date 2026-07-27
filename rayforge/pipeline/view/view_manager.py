@@ -12,6 +12,7 @@ from blinker import Signal
 
 from ..artifact import (
     BaseArtifactHandle,
+    WorkPieceArtifact,
     WorkPieceArtifactHandle,
 )
 from ..artifact.key import ArtifactKey
@@ -20,10 +21,10 @@ from ..artifact.workpiece_view import (
     WorkPieceViewArtifact,
     WorkPieceViewArtifactHandle,
 )
-from .view_compute import calculate_render_dimensions
-from .view_runner import (
-    make_workpiece_view_artifact_in_subprocess,
-    render_chunk_to_view,
+from .view_compute import (
+    calculate_render_dimensions,
+    render_workpiece_view_in_process,
+    stitch_chunk_to_bitmap,
 )
 
 if TYPE_CHECKING:
@@ -46,6 +47,9 @@ MAX_CONCURRENT_VIEW_RENDERS = 3
 class ViewEntry:
     """Holds state for a single view artifact."""
 
+    bitmap: Optional[np.ndarray] = None
+    bbox_mm: Optional[Tuple[float, float, float, float]] = None
+    workpiece_size_mm: Optional[Tuple[float, float]] = None
     handle: Optional[WorkPieceViewArtifactHandle] = None
     render_context: Optional[RenderContext] = None
     source_handle: Optional[WorkPieceArtifactHandle] = None
@@ -236,10 +240,7 @@ class ViewManager:
 
     def _remove_view_entry(self, composite_id: tuple):
         """Remove a view entry and release its resources."""
-        entry = self._view_entries.pop(composite_id, None)
-        if entry:
-            if entry.handle:
-                self._store.release(entry.handle)
+        self._view_entries.pop(composite_id, None)
 
         source_handle = self._source_artifact_handles.pop(composite_id, None)
         if source_handle:
@@ -295,7 +296,7 @@ class ViewManager:
         composite_id = (workpiece_uid, step_uid)
         entry = self._view_entries.get(composite_id)
 
-        if entry is None or entry.handle is None:
+        if entry is None or entry.bitmap is None:
             logger.debug(f"_is_view_stale[{composite_id}]: no entry -> STALE")
             return True
 
@@ -317,10 +318,9 @@ class ViewManager:
                     f"_is_view_stale[{composite_id}]: no src handle -> STALE"
                 )
                 return True
-            if entry.source_handle.shm_name != source_handle.shm_name:
+            if entry.source_handle.key != source_handle.key:
                 logger.debug(
-                    f"_is_view_stale[{composite_id}]: "
-                    f"shm_name changed -> STALE"
+                    f"_is_view_stale[{composite_id}]: key changed -> STALE"
                 )
                 return True
             entry_gen_size = entry.source_handle.generation_size
@@ -415,7 +415,7 @@ class ViewManager:
         Check if two handles represent the same artifact.
 
         Two handles represent the same artifact if they point to the same
-        shared memory (shm_name), have the same generation_size, and the
+        shared memory (key), have the same generation_size, and the
         same source_dimensions.
 
         Returns True if both handles are None, or if they represent the
@@ -426,7 +426,7 @@ class ViewManager:
         if handle1 is None or handle2 is None:
             return False
         return (
-            handle1.shm_name == handle2.shm_name
+            handle1.key == handle2.key
             and handle1.generation_size == handle2.generation_size
             and handle1.source_dimensions == handle2.source_dimensions
         )
@@ -499,8 +499,8 @@ class ViewManager:
 
         logger.debug(
             f"on_workpiece_artifact_ready: composite_id={composite_id}, "
-            f"old_handle={old_handle.shm_name if old_handle else None}, "
-            f"new_handle={wp_handle.shm_name}, "
+            f"old_handle={old_handle.key if old_handle else None}, "
+            f"new_handle={wp_handle.key}, "
             f"same_artifact={same_artifact}"
         )
 
@@ -619,7 +619,7 @@ class ViewManager:
         """
         logger.debug(
             f"_request_view_render_internal: workpiece_uid={workpiece_uid}, "
-            f"step_uid={step_uid}, source_shm={source_handle.shm_name}"
+            f"step_uid={step_uid}, source_handle={source_handle.key}"
         )
 
         doc = self._pipeline.doc
@@ -662,6 +662,10 @@ class ViewManager:
         self._store.retain(source_handle)
         task_source_handle = source_handle
 
+        # Load the artifact before the thread starts so the thread is
+        # pure computation — no store access.
+        artifact = self._store.get(source_handle)
+
         def when_done_callback(task: "Task"):
             logger.debug(
                 f"[{key}] when_done_callback called, "
@@ -674,26 +678,29 @@ class ViewManager:
                     f"[{key}] Task was cancelled, skipping "
                     "_on_render_complete signal."
                 )
-            else:
+            elif task.result() is not None:
+                bitmap, bbox_mm, workpiece_size_mm = task.result()
+                entry.bitmap = bitmap
+                entry.bbox_mm = bbox_mm
+                entry.workpiece_size_mm = workpiece_size_mm
                 self._on_render_complete(
                     task, key, view_id, workpiece_uid, step_uid
                 )
+            else:
+                # Task completed but returned nothing — clear stale view.
+                entry.bitmap = None
+                entry.bbox_mm = None
+                entry.workpiece_size_mm = None
             self._store.release(task_source_handle)
 
-        self._task_manager.run_process(
-            make_workpiece_view_artifact_in_subprocess,
-            self._store,
-            workpiece_artifact_handle_dict=source_handle.to_dict(),
-            render_context_dict=context.to_dict(),
-            creator_tag="wp_view",
+        self._task_manager.run_thread(
+            render_workpiece_view_in_process,
+            artifact,
+            context,
+            laser_uid,
+            layer_uid,
             key=key,
-            generation_id=view_id,
-            step_uid=step_uid,
-            workpiece_uid=workpiece_uid,
-            laser_uid=laser_uid,
-            layer_uid=layer_uid,
             when_done=when_done_callback,
-            when_event=self._on_render_event_received,
         )
 
     def _drain_pending_render_queue(self):
@@ -768,143 +775,6 @@ class ViewManager:
             self._store.release(handle)
         self._inflight_chunk_handles.clear()
 
-    def _on_render_event_received(
-        self, task: "Task", event_name: str, data: dict
-    ):
-        """Handles progressive rendering events from the worker process."""
-        step_uid = task.kwargs.get("step_uid")
-        workpiece_uid = task.kwargs.get("workpiece_uid")
-
-        if step_uid is None or workpiece_uid is None:
-            logger.warning("Missing uids in _on_render_event_received")
-            return
-
-        key = task.key
-        view_id = task.kwargs.get("generation_id", 0)
-
-        if event_name == "view_artifact_created":
-            self._handle_view_artifact_created(
-                task, key, step_uid, workpiece_uid, data, view_id
-            )
-        elif event_name == "view_artifact_updated":
-            self._handle_view_artifact_updated(
-                key, step_uid, workpiece_uid, view_id
-            )
-
-    def _handle_view_artifact_created(
-        self,
-        task: "Task",
-        key: ArtifactKey,
-        step_uid: str,
-        workpiece_uid: str,
-        data: dict,
-        view_id: int,
-    ):
-        """
-        Handles the view_artifact_created event from a worker process.
-
-        Adopts the handle from the worker and stores it in the view entry.
-        The safe_adoption context manager ensures the handle is released
-        if any validation fails.
-
-        Args:
-            task: The task that produced this event.
-            key: The artifact key for the task.
-            step_uid: The step UID for this view.
-            workpiece_uid: The workpiece UID for this view.
-            data: Event data containing handle_dict.
-            view_id: The view generation ID.
-        """
-        handle_dict = data.get("handle_dict")
-        if handle_dict is None:
-            logger.warning(
-                f"_handle_view_artifact_created: Missing handle_dict in "
-                f"event data for {key}"
-            )
-            return
-
-        try:
-            with self._store.safe_adoption(handle_dict) as handle:
-                self._validate_and_store_view_handle(
-                    handle, step_uid, workpiece_uid
-                )
-        except ValueError as e:
-            logger.debug(
-                f"_handle_view_artifact_created: Validation failed for "
-                f"{key}: {e}"
-            )
-        except Exception as e:
-            logger.error(
-                f"Failed to process view_artifact_created for {key}: {e}",
-                exc_info=True,
-            )
-
-    def _validate_and_store_view_handle(
-        self,
-        handle: BaseArtifactHandle,
-        step_uid: str,
-        workpiece_uid: str,
-    ) -> None:
-        """
-        Validate and store a view handle in the appropriate entry.
-
-        This method is called within the safe_adoption context, so any
-        exception will cause the handle to be released automatically.
-
-        Args:
-            handle: The handle to validate and store.
-            step_uid: The step UID for this view.
-            workpiece_uid: The workpiece UID for this view.
-
-        Raises:
-            ValueError: If validation fails.
-            TypeError: If handle type is incorrect.
-        """
-        if self._is_shutdown:
-            raise ValueError("ViewManager is shutdown")
-
-        doc = self._pipeline.doc
-        if doc is None:
-            raise ValueError("No document")
-
-        workpiece_exists = any(
-            wp.uid == workpiece_uid for wp in doc.all_workpieces
-        )
-        step_exists = any(
-            step.uid == step_uid
-            for layer in doc.layers
-            if layer.workflow
-            for step in layer.workflow.steps
-        )
-
-        if not workpiece_exists or not step_exists:
-            raise ValueError("Workpiece or Step deleted")
-
-        if not isinstance(handle, WorkPieceViewArtifactHandle):
-            raise TypeError(
-                f"Expected WorkPieceViewArtifactHandle, got {type(handle)}"
-            )
-
-        composite_id = (workpiece_uid, step_uid)
-        entry = self._view_entries.get(composite_id)
-        if entry is None:
-            entry = ViewEntry()
-            self._view_entries[composite_id] = entry
-
-        # Release old handle before storing new one
-        if entry.handle is not None:
-            self._store.release(entry.handle)
-
-        self._cancel_pending_throttled_update(composite_id)
-
-        # Store the handle - safe_adoption already gave us ownership
-        # with refcount=1, so no retain() needed here
-        entry.handle = handle
-
-        self._send_view_artifact_created_signals(
-            step_uid, workpiece_uid, handle
-        )
-
     def _send_view_artifact_created_signals(
         self,
         step_uid: str,
@@ -923,24 +793,6 @@ class ViewManager:
             handle=handle,
         )
         self.view_artifact_ready.send(
-            self,
-            step_uid=step_uid,
-            workpiece_uid=workpiece_uid,
-            handle=handle,
-        )
-
-    def _handle_view_artifact_updated(
-        self, key: ArtifactKey, step_uid: str, workpiece_uid: str, view_id: int
-    ):
-        """Handles the view_artifact_updated event."""
-        logger.debug(
-            f"_handle_view_artifact_updated: step_uid={step_uid}, "
-            f"workpiece_uid={workpiece_uid}, view_id={view_id}"
-        )
-        composite_id = (workpiece_uid, step_uid)
-        entry = self._view_entries.get(composite_id)
-        handle = entry.handle if entry else None
-        self.view_artifact_updated.send(
             self,
             step_uid=step_uid,
             workpiece_uid=workpiece_uid,
@@ -976,10 +828,8 @@ class ViewManager:
         """
         Receives chunk data from the pipeline.
 
-        Implements incremental rendering by drawing the chunk onto
-        the live view artifact bitmap. The chunk_handle is passed
-        directly from the signal emitter and must be retained if we
-        want to keep it.
+        Implements incremental rendering by drawing the chunk directly
+        onto the view bitmap held in ``ViewEntry``.
 
         Args:
             sender: The signal sender.
@@ -1007,19 +857,15 @@ class ViewManager:
             )
             return
 
-        view_handle, render_context = self._get_render_components(
-            composite_id, entry
-        )
-        if view_handle is None or render_context is None:
+        render_context = entry.render_context or self._current_view_context
+        if render_context is None:
             logger.debug(
-                f"on_chunk_available: Missing render components for "
+                f"on_chunk_available: Missing render context for "
                 f"{composite_id}, skipping chunk"
             )
             return
 
-        self._process_chunk_async(
-            composite_id, chunk_handle, view_handle, render_context
-        )
+        self._process_chunk_async(composite_id, chunk_handle, render_context)
 
     def _extract_workpiece_uid_from_key(self, key_id: str) -> str:
         """
@@ -1042,14 +888,13 @@ class ViewManager:
         self,
         composite_id: Tuple[str, str],
         chunk_handle: BaseArtifactHandle,
-        view_handle: BaseArtifactHandle,
         render_context: RenderContext,
     ) -> None:
         """
         Process a chunk asynchronously in a background thread.
 
-        Both handles are retained for the duration of the thread operation
-        and released in the completion callback.
+        Loads the chunk from the store and composites it into the view
+        bitmap held in ``ViewEntry``.
 
         Args:
             composite_id: The (workpiece_uid, step_uid) identifier.
@@ -1063,23 +908,40 @@ class ViewManager:
         layer_uid = doc.get_layer_uid_for_step(step_uid) if doc else None
 
         try:
-            self._store.retain(view_handle)
             self._store.retain(chunk_handle)
             self._inflight_chunk_handles.add(chunk_handle)
+            chunk_artifact = self._store.get(chunk_handle)
+            if not isinstance(chunk_artifact, WorkPieceArtifact):
+                logger.error(
+                    f"Chunk artifact is not a WorkPieceArtifact: "
+                    f"{type(chunk_artifact)}"
+                )
+                self._inflight_chunk_handles.discard(chunk_handle)
+                self._store.release(chunk_handle)
+                return
+            entry = self._view_entries.get(composite_id)
 
-            def _cleanup_chunk_handle(task):
-                self._on_stitch_complete(
-                    task, composite_id, chunk_handle, view_handle
+            def _run_stitch():
+                if (
+                    entry is None
+                    or entry.bitmap is None
+                    or entry.bbox_mm is None
+                ):
+                    return
+                stitch_chunk_to_bitmap(
+                    chunk_artifact,
+                    render_context,
+                    entry.bitmap,
+                    entry.bbox_mm,
+                    laser_uid,
+                    layer_uid,
                 )
 
+            def _cleanup_chunk_handle(task):
+                self._on_stitch_complete(task, composite_id, chunk_handle)
+
             self._task_manager.run_thread(
-                render_chunk_to_view,
-                self._store,
-                chunk_handle.to_dict(),
-                view_handle.to_dict(),
-                render_context.to_dict(),
-                laser_uid,
-                layer_uid,
+                _run_stitch,
                 when_done=_cleanup_chunk_handle,
             )
         except Exception as e:
@@ -1089,45 +951,28 @@ class ViewManager:
             )
             self._inflight_chunk_handles.discard(chunk_handle)
             self._store.release(chunk_handle)
-            self._store.release(view_handle)
 
     def _on_stitch_complete(
         self,
         task: "Task",
         composite_id: Tuple[str, str],
         chunk_handle: BaseArtifactHandle,
-        view_handle: BaseArtifactHandle,
     ):
         """Callback for when stitching completes."""
-        # Remove from tracking first
         self._inflight_chunk_handles.discard(chunk_handle)
 
         if self._is_shutdown:
-            # If shutdown occurred while task was running, force clean up
             self._store.release(chunk_handle)
-            self._store.release(view_handle)
             return
 
         try:
             if task.get_status() == "completed" and task.result():
-                entry = self._view_entries.get(composite_id)
-                if (
-                    entry is None
-                    or entry.handle is None
-                    or entry.handle.shm_name != view_handle.shm_name
-                ):
-                    logger.debug(
-                        f"Stale stitch for {composite_id}, "
-                        "view has been replaced. Skipping update."
-                    )
-                else:
-                    view_id = self._view_generation_id
-                    self._schedule_throttled_update(composite_id, view_id)
+                view_id = self._view_generation_id
+                self._schedule_throttled_update(composite_id, view_id)
             else:
                 logger.warning(f"Stitching failed for {composite_id}")
         finally:
             self._store.release(chunk_handle)
-            self._store.release(view_handle)
 
     def _get_render_components(
         self,
@@ -1249,6 +1094,9 @@ class ViewManager:
             if entry.handle is not None:
                 self._store.release(entry.handle)
             self._cancel_pending_throttled_update(composite_id)
+            entry.bitmap = bitmap
+            entry.bbox_mm = bbox
+            entry.workpiece_size_mm = (w_mm, h_mm)
             entry.handle = view_handle
             entry.render_context = context
             entry.source_handle = None
@@ -1301,6 +1149,13 @@ class ViewManager:
                 need_new_buffer = True
 
         if need_new_buffer:
+            # Invalidate the old view bitmap so the canvas doesn't
+            # display stale content at the wrong size while the new
+            # generation is being computed.
+            if entry is not None:
+                entry.bitmap = None
+                entry.bbox_mm = None
+                entry.workpiece_size_mm = None
             self.allocate_live_buffer(
                 workpiece=workpiece,
                 step_uid=step.uid,
@@ -1353,3 +1208,23 @@ class ViewManager:
         composite_id = (workpiece_uid, step_uid)
         entry = self._view_entries.get(composite_id)
         return entry.handle if entry else None
+
+    def get_view_bitmap(
+        self, workpiece_uid: str, step_uid: str
+    ) -> Optional[
+        Tuple[
+            np.ndarray, Tuple[float, float, float, float], Tuple[float, float]
+        ]
+    ]:
+        """Get the view bitmap for a specific workpiece and step.
+
+        Returns ``(bitmap, bbox_mm, workpiece_size_mm)`` or ``None``
+        if no view is available.
+        """
+        composite_id = (workpiece_uid, step_uid)
+        entry = self._view_entries.get(composite_id)
+        if entry is None or entry.bitmap is None:
+            return None
+        if entry.bbox_mm is None or entry.workpiece_size_mm is None:
+            return None
+        return entry.bitmap, entry.bbox_mm, entry.workpiece_size_mm

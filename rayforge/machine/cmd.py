@@ -8,7 +8,8 @@ from blinker import Signal
 from raygeo.ops import Ops
 
 from ..context import get_context
-from ..pipeline.artifact import JobArtifact, JobArtifactHandle
+from ..pipeline.artifact import JobArtifact
+from ..pipeline.artifact.handle import BaseArtifactHandle
 from ..pipeline.encoder.base import EncodedOutput
 from ..pipeline.encoder.context import GcodeContext, JobInfo
 from ..shared.util.template import TemplateFormatter
@@ -229,8 +230,8 @@ class MachineCmd:
         Generic, awaitable job starter that orchestrates assembly and
         execution.
         """
-        handle: Optional[JobArtifactHandle] = None
-        artifact_manager = self._editor.pipeline.artifact_manager
+        handle: Optional[BaseArtifactHandle] = None
+        artifact_store = self._editor.pipeline.artifact_store
 
         try:
             # 1. Await the job artifact generation from the pipeline
@@ -244,7 +245,7 @@ class MachineCmd:
 
             # 2. Use the safe context manager to acquire and release the
             # artifact
-            with artifact_manager.checkout_handle(handle) as artifact:
+            with artifact_store.checkout_handle(handle) as artifact:
                 if not artifact:
                     raise ValueError(
                         "Failed to retrieve artifact from handle."
@@ -264,7 +265,7 @@ class MachineCmd:
             )
             # Manually release handle on error if checkout was not entered
             if handle and "artifact" not in locals():
-                artifact_manager.release_handle(handle)
+                artifact_store.release(handle)
             raise
 
     async def frame_job(

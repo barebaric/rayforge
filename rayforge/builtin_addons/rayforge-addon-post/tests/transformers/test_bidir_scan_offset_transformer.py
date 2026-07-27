@@ -3,17 +3,13 @@ from post_processors.transformers import BidirScanOffsetTransformer
 from raygeo.ops import Ops
 from raygeo.ops.types import CommandType
 
-from rayforge.pipeline.transformer.base import ExecutionPhase
-from rayforge.pipeline.transformer.specs import (
-    apply_transformer_specs,
-    build_transformer_specs,
-)
-
 
 def _apply(transformer, ops, settings=None):
     """Run a transformer through the Rust spec dispatch."""
-    specs = build_transformer_specs([transformer], None, None, settings)
-    apply_transformer_specs(ops, specs)
+    if not transformer.enabled:
+        return
+    specs = [transformer.to_spec(None, None, settings)]
+    Ops.apply_transformers(ops, specs, progress_cb=None)
 
 
 @pytest.fixture
@@ -32,10 +28,6 @@ def _build_zigzag() -> Ops:
     ops.move_to(0.0, 0.4, 0.0)
     ops.scan_to(2.0, 0.4, 0.0, power_values=[220, 220, 220, 220])
     return ops
-
-
-def test_execution_phase_is_correct(transformer: BidirScanOffsetTransformer):
-    assert transformer.execution_phase == ExecutionPhase.POST_PROCESSING
 
 
 def test_serialization_and_deserialization():

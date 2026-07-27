@@ -395,7 +395,6 @@ class TestAddonManagerInstallation:
 
         with (
             patch.object(manager, "_fetch_addon_source") as mock_fetch,
-            patch.object(manager, "_restart_workers"),
         ):
             mock_fetch.side_effect = lambda url, dest: (
                 manager._download_addon_zip(url, dest)
@@ -428,7 +427,6 @@ class TestAddonManagerInstallation:
 
         with (
             patch.object(manager, "_fetch_addon_source") as mock_fetch,
-            patch.object(manager, "_restart_workers"),
         ):
             mock_fetch.side_effect = lambda url, dest: (
                 manager._download_addon_zip(url, dest)
@@ -515,7 +513,6 @@ class TestAddonManagerInstallation:
 
         with (
             patch.object(manager, "_fetch_addon_source") as mock_fetch,
-            patch.object(manager, "_restart_workers"),
         ):
             mock_fetch.side_effect = lambda url, dest: (
                 manager._download_addon_zip(url, dest)
@@ -532,7 +529,6 @@ class TestAddonManagerInstallation:
 
         with (
             patch.object(manager, "_fetch_addon_source") as mock_fetch,
-            patch.object(manager, "_restart_workers"),
         ):
             mock_fetch.side_effect = lambda url, dest: (
                 manager._download_addon_zip(url, dest)

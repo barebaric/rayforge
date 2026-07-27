@@ -1,4 +1,3 @@
-import cairo
 import numpy as np
 from raygeo.ops import Ops
 
@@ -7,22 +6,12 @@ from rayforge.pipeline import CoordinateSystem
 from rayforge.pipeline.artifact import (
     RenderContext,
     WorkPieceArtifact,
-    WorkPieceViewArtifact,
 )
-from rayforge.pipeline.artifact.base import TextureData, VertexData
 from rayforge.pipeline.view.view_compute import (
-    _draw_powered_vertices_batch,
-    _draw_travel_vertices,
-    _draw_zero_power_vertices,
-    _encode_vertex_and_texture_data,
     _get_content_bbox,
-    _prepare_powered_vertices_for_batching,
-    _setup_cairo_context,
     calculate_render_dimensions,
-    compute_view_dimensions,
-    compute_workpiece_view,
-    compute_workpiece_view_to_buffer,
-    render_chunk_to_buffer,
+    render_workpiece_view_in_process,
+    stitch_chunk_to_bitmap,
 )
 
 
@@ -43,11 +32,7 @@ def create_test_color_set(spec: dict) -> ColorSet:
     return ColorSet(_data=resolved_data)
 
 
-def test_compute_workpiece_view_vector_returns_valid_artifact():
-    """
-    Test that compute_workpiece_view returns a valid WorkPieceViewArtifact
-    for vector data.
-    """
+def _make_vector_artifact():
     ops = Ops()
     ops.set_power(1.0)
     ops.move_to(5.0, 5.0, 0.0)
@@ -55,7 +40,7 @@ def test_compute_workpiece_view_vector_returns_valid_artifact():
     ops.line_to(15.0, 15.0, 0.0)
     ops.line_to(5.0, 15.0, 0.0)
     ops.line_to(5.0, 5.0, 0.0)
-    artifact = WorkPieceArtifact(
+    return WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
         source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
@@ -63,6 +48,30 @@ def test_compute_workpiece_view_vector_returns_valid_artifact():
         generation_id=0,
     )
 
+
+def _make_texture_artifact():
+    ops = Ops()
+    for mm_y in range(1, 51):
+        power_values = bytearray([128] * 50)
+        ops.move_to(0.0, float(mm_y), 0.0)
+        ops.scan_to(50.0, float(mm_y), 0.0, power_values=power_values)
+    return WorkPieceArtifact(
+        ops=ops,
+        is_scalable=False,
+        source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
+        generation_size=(50, 50),
+        generation_id=0,
+    )
+
+
+# ──────────────────────────────────────────────────────────────────
+# render_workpiece_view_in_process
+# ──────────────────────────────────────────────────────────────────
+
+
+def test_render_workpiece_view_vector():
+    """Render a vector-only workpiece."""
+    artifact = _make_vector_artifact()
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
     context = RenderContext(
         pixels_per_mm=(1.0, 1.0),
@@ -71,32 +80,20 @@ def test_compute_workpiece_view_vector_returns_valid_artifact():
         color_set_dict=color_set.to_dict(),
     )
 
-    result = compute_workpiece_view(artifact, context, generation_id=0)
+    result = render_workpiece_view_in_process(artifact, context)
 
     assert result is not None
-    assert isinstance(result, WorkPieceViewArtifact)
-    assert result.bbox_mm == (5.0, 5.0, 10.0, 10.0)
-    assert result.bitmap_data.shape == (12, 12, 4)
+    bitmap, bbox, wp_size = result
+    assert bbox == (5.0, 5.0, 10.0, 10.0)
+    assert wp_size == (20, 20)
+    assert bitmap.shape[2] == 4
+    assert bitmap.shape[0] > 0
+    assert bitmap.shape[1] > 0
 
 
-def test_compute_workpiece_view_texture_returns_valid_artifact():
-    """
-    Test that compute_workpiece_view returns a valid WorkPieceViewArtifact
-    for texture data.
-    """
-    ops = Ops()
-    for mm_y in range(1, 51):
-        power_values = bytearray([128] * 50)
-        ops.move_to(0.0, float(mm_y), 0.0)
-        ops.scan_to(50.0, float(mm_y), 0.0, power_values=power_values)
-    artifact = WorkPieceArtifact(
-        ops=ops,
-        is_scalable=False,
-        source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
-        generation_size=(50, 50),
-        generation_id=0,
-    )
-
+def test_render_workpiece_view_texture():
+    """Render a texture (raster) workpiece."""
+    artifact = _make_texture_artifact()
     color_set = create_test_color_set({"engrave": ("#000", "#FFF")})
     context = RenderContext(
         pixels_per_mm=(1.0, 1.0),
@@ -105,54 +102,19 @@ def test_compute_workpiece_view_texture_returns_valid_artifact():
         color_set_dict=color_set.to_dict(),
     )
 
-    result = compute_workpiece_view(artifact, context, generation_id=0)
+    result = render_workpiece_view_in_process(artifact, context)
 
     assert result is not None
-    assert isinstance(result, WorkPieceViewArtifact)
-    assert result.bbox_mm == (0.0, 0.0, 50.0, 50.0)
-    assert result.bitmap_data.shape == (50, 50, 4)
+    bitmap, bbox, wp_size = result
+    assert bbox == (0.0, 0.0, 50.0, 50.0)
+    assert wp_size == (50, 50)
+    assert bitmap.shape[2] == 4
+    assert bitmap.shape[0] > 0
+    assert bitmap.shape[1] > 0
 
 
-def test_compute_workpiece_view_with_progress_callback(mock_progress_context):
-    """Test that compute_workpiece_view calls progress callback."""
-    ops = Ops()
-    ops.set_power(1.0)
-    ops.move_to(0.0, 0.0, 0.0)
-    ops.line_to(10.0, 10.0, 0.0)
-    artifact = WorkPieceArtifact(
-        ops=ops,
-        is_scalable=True,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-        generation_size=(20.0, 20.0),
-        generation_id=0,
-    )
-
-    color_set = create_test_color_set({"cut": ("#000", "#F00")})
-    context = RenderContext(
-        pixels_per_mm=(1.0, 1.0),
-        show_travel_moves=False,
-        margin_px=0,
-        color_set_dict=color_set.to_dict(),
-    )
-
-    result = compute_workpiece_view(
-        artifact,
-        context,
-        generation_id=0,
-        progress_context=mock_progress_context,
-    )
-
-    assert result is not None
-    assert isinstance(result, WorkPieceViewArtifact)
-    assert result.bbox_mm == (0.0, 0.0, 10.0, 10.0)
-    assert result.bitmap_data.shape == (10, 10, 4)
-
-    assert len(mock_progress_context.progress_calls) > 0
-    assert mock_progress_context.progress_calls[-1][0] == 1.0
-
-
-def test_compute_workpiece_view_empty_ops_returns_none():
-    """Test that compute_workpiece_view returns None for empty ops."""
+def test_render_workpiece_view_empty_ops():
+    """Empty ops with no texture returns None."""
     ops = Ops()
     artifact = WorkPieceArtifact(
         ops=ops,
@@ -170,13 +132,12 @@ def test_compute_workpiece_view_empty_ops_returns_none():
         color_set_dict=color_set.to_dict(),
     )
 
-    result = compute_workpiece_view(artifact, context, generation_id=0)
-
+    result = render_workpiece_view_in_process(artifact, context)
     assert result is None
 
 
-def test_compute_workpiece_view_travel_moves_shown():
-    """Test that compute_workpiece_view renders travel moves when enabled."""
+def test_render_workpiece_view_travel_moves_shown():
+    """Travel moves are rendered when enabled."""
     ops = Ops()
     ops.set_power(0.0)
     ops.move_to(0.0, 0.0, 0.0)
@@ -199,203 +160,20 @@ def test_compute_workpiece_view_travel_moves_shown():
         color_set_dict=color_set.to_dict(),
     )
 
-    result = compute_workpiece_view(artifact, context, generation_id=0)
+    result = render_workpiece_view_in_process(artifact, context)
 
     assert result is not None
-    assert isinstance(result, WorkPieceViewArtifact)
-    assert result.bitmap_data.shape == (10, 10, 4)
+    bitmap, bbox, wp_size = result
+    assert bitmap.shape[2] == 4
 
 
-def test_compute_view_dimensions_vector():
-    """Test compute_view_dimensions with vector data."""
-    ops = Ops()
-    ops.set_power(1.0)
-    ops.move_to(5.0, 5.0, 0.0)
-    ops.line_to(15.0, 15.0, 0.0)
-    artifact = WorkPieceArtifact(
-        ops=ops,
-        is_scalable=True,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-        generation_size=(20, 20),
-        generation_id=0,
-    )
-
-    color_set = create_test_color_set({"cut": ("#000", "#F00")})
-    context = RenderContext(
-        pixels_per_mm=(1.0, 1.0),
-        show_travel_moves=False,
-        margin_px=1,
-        color_set_dict=color_set.to_dict(),
-    )
-
-    result = compute_view_dimensions(artifact, context)
-
-    assert result is not None
-    x_mm, y_mm, w_mm, h_mm, width_px, height_px = result
-    assert x_mm == 5.0
-    assert y_mm == 5.0
-    assert w_mm == 10.0
-    assert h_mm == 10.0
-    assert width_px == 12
-    assert height_px == 12
+# ──────────────────────────────────────────────────────────────────
+# stitch_chunk_to_bitmap
+# ──────────────────────────────────────────────────────────────────
 
 
-def test_compute_view_dimensions_texture():
-    """Test compute_view_dimensions with texture data."""
-    ops = Ops()
-    for mm_y in range(1, 11):
-        power_values = bytearray([128] * 10)
-        ops.move_to(0.0, float(mm_y), 0.0)
-        ops.scan_to(10.0, float(mm_y), 0.0, power_values=power_values)
-    artifact = WorkPieceArtifact(
-        ops=ops,
-        is_scalable=False,
-        source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
-        generation_size=(10, 10),
-        generation_id=0,
-    )
-
-    color_set = create_test_color_set({"engrave": ("#000", "#FFF")})
-    context = RenderContext(
-        pixels_per_mm=(1.0, 1.0),
-        show_travel_moves=False,
-        margin_px=0,
-        color_set_dict=color_set.to_dict(),
-    )
-
-    result = compute_view_dimensions(artifact, context)
-
-    assert result is not None
-    x_mm, y_mm, w_mm, h_mm, width_px, height_px = result
-    assert x_mm == 0.0
-    assert y_mm == 0.0
-    assert w_mm == 10.0
-    assert h_mm == 10.0
-    assert width_px == 10
-    assert height_px == 10
-
-
-def test_compute_view_dimensions_empty_ops():
-    """Test compute_view_dimensions returns None for empty ops."""
-    ops = Ops()
-    artifact = WorkPieceArtifact(
-        ops=ops,
-        is_scalable=True,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-        generation_size=(20.0, 20.0),
-        generation_id=0,
-    )
-
-    color_set = create_test_color_set({"cut": ("#000", "#F00")})
-    context = RenderContext(
-        pixels_per_mm=(1.0, 1.0),
-        show_travel_moves=False,
-        margin_px=0,
-        color_set_dict=color_set.to_dict(),
-    )
-
-    result = compute_view_dimensions(artifact, context)
-
-    assert result is None
-
-
-def test_compute_workpiece_view_to_buffer():
-    """Test compute_workpiece_view_to_buffer renders to buffer."""
-    ops = Ops()
-    ops.set_power(1.0)
-    ops.move_to(0.0, 0.0, 0.0)
-    ops.line_to(10.0, 10.0, 0.0)
-    artifact = WorkPieceArtifact(
-        ops=ops,
-        is_scalable=True,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-        generation_size=(20.0, 20.0),
-        generation_id=0,
-    )
-
-    color_set = create_test_color_set({"cut": ("#000", "#F00")})
-    context = RenderContext(
-        pixels_per_mm=(1.0, 1.0),
-        show_travel_moves=False,
-        margin_px=0,
-        color_set_dict=color_set.to_dict(),
-    )
-
-    bitmap = np.zeros((10, 10, 4), dtype=np.uint8)
-
-    result = compute_workpiece_view_to_buffer(artifact, context, bitmap)
-
-    assert result is not None
-    x, y, w, h = result
-    assert x == 0.0
-    assert y == 0.0
-    assert w == 10.0
-    assert h == 10.0
-
-
-def test_compute_workpiece_view_to_buffer_with_progress(
-    mock_progress_context,
-):
-    """Test compute_workpiece_view_to_buffer with progress callback."""
-    ops = Ops()
-    ops.set_power(1.0)
-    ops.move_to(0.0, 0.0, 0.0)
-    ops.line_to(10.0, 10.0, 0.0)
-    artifact = WorkPieceArtifact(
-        ops=ops,
-        is_scalable=True,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-        generation_size=(20.0, 20.0),
-        generation_id=0,
-    )
-
-    color_set = create_test_color_set({"cut": ("#000", "#F00")})
-    context = RenderContext(
-        pixels_per_mm=(1.0, 1.0),
-        show_travel_moves=False,
-        margin_px=0,
-        color_set_dict=color_set.to_dict(),
-    )
-
-    bitmap = np.zeros((10, 10, 4), dtype=np.uint8)
-
-    result = compute_workpiece_view_to_buffer(
-        artifact, context, bitmap, progress_context=mock_progress_context
-    )
-
-    assert result is not None
-    assert len(mock_progress_context.progress_calls) > 0
-    assert mock_progress_context.progress_calls[-1][0] == 1.0
-
-
-def test_compute_workpiece_view_to_buffer_empty_ops():
-    """Test compute_workpiece_view_to_buffer returns None for empty ops."""
-    ops = Ops()
-    artifact = WorkPieceArtifact(
-        ops=ops,
-        is_scalable=True,
-        source_coordinate_system=CoordinateSystem.MILLIMETER_SPACE,
-        generation_size=(20.0, 20.0),
-        generation_id=0,
-    )
-
-    color_set = create_test_color_set({"cut": ("#000", "#F00")})
-    context = RenderContext(
-        pixels_per_mm=(1.0, 1.0),
-        show_travel_moves=False,
-        margin_px=0,
-        color_set_dict=color_set.to_dict(),
-    )
-
-    bitmap = np.zeros((10, 10, 4), dtype=np.uint8)
-
-    result = compute_workpiece_view_to_buffer(artifact, context, bitmap)
-
-    assert result is None
-
-
-def test_render_chunk_to_buffer():
-    """Test render_chunk_to_buffer renders chunk to buffer."""
+def test_stitch_chunk_to_bitmap():
+    """Stitch a chunk into a pre-allocated bitmap."""
     ops = Ops()
     ops.set_power(1.0)
     ops.move_to(0.0, 0.0, 0.0)
@@ -419,13 +197,14 @@ def test_render_chunk_to_buffer():
     bitmap = np.zeros((10, 10, 4), dtype=np.uint8)
     view_bbox_mm = (0.0, 0.0, 10.0, 10.0)
 
-    result = render_chunk_to_buffer(artifact, context, bitmap, view_bbox_mm)
+    result = stitch_chunk_to_bitmap(artifact, context, bitmap, view_bbox_mm)
 
     assert result is True
+    assert bitmap[:, :, 3].max() > 0
 
 
-def test_render_chunk_to_buffer_texture():
-    """Test render_chunk_to_buffer with texture data."""
+def test_stitch_chunk_to_bitmap_texture():
+    """Stitch a texture chunk into a pre-allocated bitmap."""
     ops = Ops()
     for mm_y in range(1, 6):
         power_values = bytearray([128] * 10)
@@ -450,109 +229,43 @@ def test_render_chunk_to_buffer_texture():
     bitmap = np.zeros((10, 10, 4), dtype=np.uint8)
     view_bbox_mm = (0.0, 0.0, 10.0, 10.0)
 
-    result = render_chunk_to_buffer(artifact, context, bitmap, view_bbox_mm)
+    result = stitch_chunk_to_bitmap(artifact, context, bitmap, view_bbox_mm)
 
     assert result is True
 
 
-def test_get_content_bbox_powered_vertices():
-    """Test _get_content_bbox with powered vertices."""
-    vertex_data = VertexData(
-        powered_vertices=np.array(
-            [
-                [0.0, 0.0, 0.0],
-                [10.0, 0.0, 0.0],
-            ]
-        ),
-        powered_colors=np.array(
-            [
-                [1.0, 0.0, 0.0],
-                [1.0, 0.0, 0.0],
-            ]
-        ),
-        travel_vertices=np.array([]),
-        zero_power_vertices=np.array([]),
-    )
-
-    result = _get_content_bbox(vertex_data, None, False)
-
-    assert result is not None
-    x, y, w, h = result
-    assert x == 0.0
-    assert y == 0.0
-    assert w == 10.0
-    assert h == 0.0
+# ──────────────────────────────────────────────────────────────────
+# _get_content_bbox
+# ──────────────────────────────────────────────────────────────────
 
 
-def test_get_content_bbox_travel_vertices():
-    """Test _get_content_bbox with travel vertices."""
-    vertex_data = VertexData(
-        powered_vertices=np.array([]),
-        powered_colors=np.array([]),
-        travel_vertices=np.array(
-            [
-                [0.0, 0.0, 0.0],
-                [10.0, 10.0, 0.0],
-            ]
-        ),
-        zero_power_vertices=np.array([]),
-    )
-
-    result = _get_content_bbox(vertex_data, None, True)
-
-    assert result is not None
-    x, y, w, h = result
-    assert x == 0.0
-    assert y == 0.0
+def test_get_content_bbox_vector():
+    """Content bbox of a vector-only workpiece."""
+    artifact = _make_vector_artifact()
+    bbox = _get_content_bbox(artifact, show_travel=False)
+    assert bbox is not None
+    x, y, w, h = bbox
+    assert x == 5.0
+    assert y == 5.0
     assert w == 10.0
     assert h == 10.0
 
 
-def test_get_content_bbox_texture_data():
-    """Test _get_content_bbox with texture data."""
-    vertex_data = VertexData(
-        powered_vertices=np.array([]),
-        powered_colors=np.array([]),
-        travel_vertices=np.array([]),
-        zero_power_vertices=np.array([]),
-    )
-
-    texture_data = TextureData(
-        power_texture_data=np.zeros((10, 10), dtype=np.uint8),
-        dimensions_mm=(10.0, 10.0),
-        position_mm=(0.0, 0.0),
-    )
-
-    result = _get_content_bbox(vertex_data, texture_data, False)
-
-    assert result is not None
-    x, y, w, h = result
+def test_get_content_bbox_texture():
+    """Content bbox of a texture workpiece covers generation_size."""
+    artifact = _make_texture_artifact()
+    bbox = _get_content_bbox(artifact, show_travel=False)
+    assert bbox is not None
+    x, y, w, h = bbox
     assert x == 0.0
     assert y == 0.0
-    assert w == 10.0
-    assert h == 10.0
+    assert w == 50.0
+    assert h == 50.0
 
 
 def test_get_content_bbox_empty():
-    """Test _get_content_bbox returns None for empty data."""
-    vertex_data = VertexData(
-        powered_vertices=np.array([]),
-        powered_colors=np.array([]),
-        travel_vertices=np.array([]),
-        zero_power_vertices=np.array([]),
-    )
-
-    result = _get_content_bbox(vertex_data, None, False)
-
-    assert result is None
-
-
-def test_encode_vertex_and_texture_data_vector():
-    """Test _encode_vertex_and_texture_data with vector data."""
+    """Empty ops with scalable artifact returns None."""
     ops = Ops()
-    ops.set_power(1.0)
-    ops.move_to(0.0, 0.0, 0.0)
-    ops.line_to(10.0, 10.0, 0.0)
     artifact = WorkPieceArtifact(
         ops=ops,
         is_scalable=True,
@@ -560,97 +273,39 @@ def test_encode_vertex_and_texture_data_vector():
         generation_size=(20.0, 20.0),
         generation_id=0,
     )
-
-    color_set = create_test_color_set({"cut": ("#000", "#F00")})
-    context = RenderContext(
-        pixels_per_mm=(1.0, 1.0),
-        show_travel_moves=False,
-        margin_px=0,
-        color_set_dict=color_set.to_dict(),
-    )
-
-    vertex_data, texture_data = _encode_vertex_and_texture_data(
-        artifact, context
-    )
-
-    assert vertex_data is not None
-    assert vertex_data.powered_vertices.size > 0
-    assert texture_data is None
+    bbox = _get_content_bbox(artifact, show_travel=False)
+    assert bbox is None
 
 
-def test_encode_vertex_and_texture_data_texture():
-    """Test _encode_vertex_and_texture_data with texture data."""
-    ops = Ops()
-    for mm_y in range(1, 6):
-        power_values = bytearray([128] * 10)
-        ops.move_to(0.0, float(mm_y), 0.0)
-        ops.scan_to(10.0, float(mm_y), 0.0, power_values=power_values)
-    artifact = WorkPieceArtifact(
-        ops=ops,
-        is_scalable=False,
-        source_coordinate_system=CoordinateSystem.PIXEL_SPACE,
-        generation_size=(10, 10),
-        generation_id=0,
-    )
-
-    color_set = create_test_color_set({"engrave": ("#000", "#FFF")})
-    context = RenderContext(
-        pixels_per_mm=(1.0, 1.0),
-        show_travel_moves=False,
-        margin_px=0,
-        color_set_dict=color_set.to_dict(),
-    )
-
-    vertex_data, texture_data = _encode_vertex_and_texture_data(
-        artifact, context
-    )
-
-    assert vertex_data is not None
-    assert texture_data is not None
-    assert texture_data.power_texture_data.size > 0
+# ──────────────────────────────────────────────────────────────────
+# calculate_render_dimensions
+# ──────────────────────────────────────────────────────────────────
 
 
 def test_calculate_render_dimensions():
-    """Test calculate_render_dimensions returns valid dimensions."""
+    """Valid bbox produces valid dimensions."""
     bbox = (0.0, 0.0, 10.0, 10.0)
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
     context = RenderContext(
         pixels_per_mm=(1.0, 1.0),
         show_travel_moves=False,
-        margin_px=1,
+        margin_px=0,
         color_set_dict=color_set.to_dict(),
     )
 
     result = calculate_render_dimensions(bbox, context)
 
     assert result is not None
-    width_px, height_px, effective_ppm_x, effective_ppm_y = result
-    assert width_px == 12
-    assert height_px == 12
-    assert effective_ppm_x == 1.0
-    assert effective_ppm_y == 1.0
+    width_px, height_px, eff_ppm_x, eff_ppm_y = result
+    assert width_px == 10
+    assert height_px == 10
+    assert eff_ppm_x == 1.0
+    assert eff_ppm_y == 1.0
 
 
 def test_calculate_render_dimensions_invalid():
-    """Test calculate_render_dimensions returns None for invalid bbox."""
+    """Degenerate bbox returns None."""
     bbox = (0.0, 0.0, 0.0, 0.0)
-    color_set = create_test_color_set({"cut": ("#000", "#F00")})
-    context = RenderContext(
-        pixels_per_mm=(1.0, 1.0),
-        show_travel_moves=False,
-        margin_px=1,
-        color_set_dict=color_set.to_dict(),
-    )
-
-    result = calculate_render_dimensions(bbox, context)
-
-    assert result is None
-
-
-def test_setup_cairo_context():
-    """Test _setup_cairo_context creates valid cairo context."""
-    bitmap = np.zeros((10, 10, 4), dtype=np.uint8)
-    bbox = (0.0, 0.0, 10.0, 10.0)
     color_set = create_test_color_set({"cut": ("#000", "#F00")})
     context = RenderContext(
         pixels_per_mm=(1.0, 1.0),
@@ -659,106 +314,6 @@ def test_setup_cairo_context():
         color_set_dict=color_set.to_dict(),
     )
 
-    ctx, line_width_mm = _setup_cairo_context(bitmap, bbox, context)
+    result = calculate_render_dimensions(bbox, context)
 
-    assert ctx is not None
-    assert line_width_mm == 1.0
-
-
-def test_draw_travel_vertices():
-    """Test _draw_travel_vertices draws travel vertices."""
-    vertex_data = VertexData(
-        powered_vertices=np.array([]),
-        powered_colors=np.array([]),
-        travel_vertices=np.array(
-            [
-                [0.0, 0.0, 0.0],
-                [10.0, 10.0, 0.0],
-            ]
-        ),
-        zero_power_vertices=np.array([]),
-    )
-
-    color_set = create_test_color_set(
-        {"cut": ("#000", "#F00"), "travel": ("#00F", "#00F")}
-    )
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 20, 20)
-    ctx = cairo.Context(surface)
-
-    _draw_travel_vertices(ctx, vertex_data, color_set)
-
-
-def test_draw_zero_power_vertices():
-    """Test _draw_zero_power_vertices draws zero-power vertices."""
-    vertex_data = VertexData(
-        powered_vertices=np.array([]),
-        powered_colors=np.array([]),
-        travel_vertices=np.array([]),
-        zero_power_vertices=np.array(
-            [
-                [0.0, 0.0, 0.0],
-                [10.0, 10.0, 0.0],
-            ]
-        ),
-    )
-
-    color_set = create_test_color_set(
-        {"cut": ("#000", "#F00"), "zero_power": ("#0F0", "#0F0")}
-    )
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 20, 20)
-    ctx = cairo.Context(surface)
-
-    _draw_zero_power_vertices(ctx, vertex_data, color_set)
-
-
-def test_prepare_powered_vertices_for_batching():
-    """Test _prepare_powered_vertices_for_batching."""
-    vertex_data = VertexData(
-        powered_vertices=np.array(
-            [
-                [0.0, 0.0, 0.0],
-                [10.0, 0.0, 0.0],
-                [10.0, 0.0, 0.0],
-                [10.0, 10.0, 0.0],
-            ]
-        ),
-        powered_colors=np.array(
-            [
-                [1.0, 0.0, 0.0],
-                [1.0, 0.0, 0.0],
-                [0.5, 0.0, 0.0],
-                [0.5, 0.0, 0.0],
-            ]
-        ),
-        travel_vertices=np.array([]),
-        zero_power_vertices=np.array([]),
-    )
-
-    color_set = create_test_color_set({"cut": ("#000", "#F00")})
-
-    powered_v, unique_colors, inverse_indices = (
-        _prepare_powered_vertices_for_batching(vertex_data, color_set)
-    )
-
-    assert powered_v.shape == (2, 2, 3)
-    assert unique_colors.shape[0] > 0
-    assert len(inverse_indices) == 2
-
-
-def test_draw_powered_vertices_batch():
-    """Test _draw_powered_vertices_batch draws a batch of vertices."""
-    powered_v = np.array(
-        [
-            [[0.0, 0.0, 0.0], [10.0, 0.0, 0.0]],
-            [[10.0, 0.0, 0.0], [10.0, 10.0, 0.0]],
-        ]
-    )
-    unique_colors = np.array([[1.0, 0.0, 0.0, 1.0]])
-    inverse_indices = np.array([0, 0])
-
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 20, 20)
-    ctx = cairo.Context(surface)
-
-    _draw_powered_vertices_batch(
-        ctx, powered_v, unique_colors, inverse_indices, 0, 2
-    )
+    assert result is None

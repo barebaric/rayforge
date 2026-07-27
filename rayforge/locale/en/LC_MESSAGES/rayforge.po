@@ -6911,26 +6911,6 @@ msgid ""
 "configs."
 msgstr ""
 
-#: rayforge/pipeline/stage/step_runner.py
-msgid "Assembling step..."
-msgstr ""
-
-#: rayforge/pipeline/stage/step_runner.py
-msgid "Storing step data..."
-msgstr ""
-
-#: rayforge/pipeline/stage/step_runner.py
-msgid "Calculating time estimate..."
-msgstr ""
-
-#: rayforge/pipeline/stage/job_runner.py
-msgid "Storing final job artifact..."
-msgstr ""
-
-#: rayforge/pipeline/stage/job_runner.py rayforge/pipeline/stage/job_compute.py
-msgid "Job finalization complete"
-msgstr ""
-
 #: rayforge/pipeline/stage/assembler_helpers.py
 msgid "Variable Power"
 msgstr ""
@@ -6957,63 +6937,6 @@ msgstr ""
 
 #: rayforge/pipeline/stage/assembler_helpers.py
 msgid "Multi-Pass"
-msgstr ""
-
-#: rayforge/pipeline/stage/workpiece_compute.py
-#, python-brace-format
-msgid "Applying transformers on '{workpiece}'"
-msgstr ""
-
-#: rayforge/pipeline/stage/workpiece_compute.py
-#, python-brace-format
-msgid "Transformers applied on '{workpiece}'"
-msgstr ""
-
-#: rayforge/pipeline/stage/workpiece_compute.py
-#, python-brace-format
-msgid "Generating path for '{workpiece}'"
-msgstr ""
-
-#: rayforge/pipeline/stage/workpiece_compute.py
-#, python-brace-format
-msgid "Finalizing '{workpiece}'"
-msgstr ""
-
-#: rayforge/pipeline/stage/step_compute.py
-msgid "Applying transformers"
-msgstr ""
-
-#: rayforge/pipeline/stage/job_compute.py
-msgid "Assembling final job..."
-msgstr ""
-
-#: rayforge/pipeline/stage/job_compute.py
-#, python-brace-format
-msgid "Processing final ops for '{step}'"
-msgstr ""
-
-#: rayforge/pipeline/stage/job_compute.py
-msgid "Calculating final time and distance estimates..."
-msgstr ""
-
-#: rayforge/pipeline/stage/job_compute.py
-msgid "Generating machine code..."
-msgstr ""
-
-#: rayforge/pipeline/view/view_compute.py
-msgid "Rendering vertices..."
-msgstr ""
-
-#: rayforge/pipeline/view/view_compute.py
-msgid "Preparing 2D preview..."
-msgstr ""
-
-#: rayforge/pipeline/view/view_compute.py
-msgid "Rendering texture..."
-msgstr ""
-
-#: rayforge/pipeline/view/view_compute.py
-msgid "Rendering complete."
 msgstr ""
 
 #: rayforge/pipeline/transformer/placeholder.py

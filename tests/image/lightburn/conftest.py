@@ -27,12 +27,8 @@ for _p in (_LASER_ADDON, _POST_ADDON):
 
 @pytest.fixture(scope="session", autouse=True)
 def _register_laser_addons():
-    from rayforge import worker_init
     from rayforge.core.step_registry import step_registry
     from rayforge.pipeline.transformer.registry import transformer_registry
-
-    # Prevent the auto-loader from clobbering these registrations.
-    worker_init._worker_addons_loaded = True
 
     from laser_essentials.steps import ContourStep, EngraveStep
     from post_processors.transformers import (

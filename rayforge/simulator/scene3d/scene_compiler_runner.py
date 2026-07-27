@@ -6,36 +6,32 @@ from typing import Any, Dict, Optional
 
 from ...pipeline.artifact.handle import create_handle_from_dict
 from ...pipeline.artifact.job import JobArtifact
-from ...pipeline.artifact.store import (
-    ArtifactStore,
-    SharedMemoryNotFoundError,
-)
-from ...shared.tasker.proxy import ExecutionContextProxy
+from ...pipeline.artifact.store import ArtifactStore
+from .compiled_scene import CompiledSceneArtifact
 from .render_config import RenderConfig3D
 from .scene_compiler import compile_scene
 
 logger = logging.getLogger(__name__)
 
 
-def compile_scene_in_subprocess(
-    proxy: ExecutionContextProxy,
+def compile_scene_in_thread(
     artifact_store: ArtifactStore,
     job_handle_dict: Dict[str, Any],
     render_config_dict: dict,
-) -> Optional[Dict[str, Any]]:
-    config = RenderConfig3D.from_dict(render_config_dict)
+) -> Optional[CompiledSceneArtifact]:
+    """Compile a 3D scene from a job artifact on the calling thread.
 
-    if proxy.is_cancelled():
-        return None
+    Runs in-process (via ``run_thread``) and returns the compiled
+    artifact directly, avoiding pickling of raygeo ``Ops`` objects
+    through multiprocessing queues.
+    """
+    config = RenderConfig3D.from_dict(render_config_dict)
 
     try:
         handle = create_handle_from_dict(job_handle_dict)
         artifact = artifact_store.get(handle)
-    except (SharedMemoryNotFoundError, RuntimeError) as e:
-        logger.warning(f"Job artifact SHM no longer available: {e}. Aborting.")
-        return None
-    except Exception as e:
-        logger.error(f"Failed to load job artifact: {e}")
+    except Exception:
+        logger.warning("Job artifact no longer available. Aborting.")
         return None
 
     if not isinstance(artifact, JobArtifact):
@@ -54,20 +50,4 @@ def compile_scene_in_subprocess(
         f"[SCENE_COMPILER] Compilation took {elapsed:.1f}ms "
         f"(commands={len(ops)})"
     )
-
-    compiled_handle = artifact_store.put(compiled, creator_tag="scene3d")
-    logger.debug(f"Stored compiled scene: {compiled_handle.shm_name}")
-
-    acked = proxy.send_event_and_wait(
-        "scene_compiled",
-        {"handle_dict": compiled_handle.to_dict()},
-        logger=logger,
-    )
-
-    if acked:
-        artifact_store.forget(compiled_handle)
-    else:
-        logger.warning("Scene artifact not acknowledged. Releasing handle.")
-        artifact_store.release(compiled_handle)
-
-    return None
+    return compiled

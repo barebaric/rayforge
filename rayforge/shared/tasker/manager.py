@@ -63,17 +63,27 @@ class TaskManager:
         self._main_thread_scheduler = main_thread_scheduler
         self._thread.start()
 
-        # TaskManager owns the persistent Manager and shared state
-        self._manager = get_context("spawn").Manager()
-        if shared_state is None:
-            shared_state = self._manager.dict()
-        self._shared_state = shared_state
-
+        # Multiprocessing pool is created lazily on first run_process call.
+        # This avoids spawning worker processes at app startup.
+        self._manager: Any = None
+        self._shared_state: Any = None
+        self._pool: Any = None
         self._pool_kwargs = {
             "initializer": worker_initializer,
             "initargs": worker_initargs,
-            "shared_state": self._shared_state,
         }
+
+    def _ensure_pool(self) -> None:
+        """
+        Lazily create the multiprocessing pool and its supporting
+        Manager and shared state on first use.
+        """
+        if self._pool is not None:
+            return
+        logger.debug("Lazily creating multiprocessing pool.")
+        self._manager = get_context("spawn").Manager()
+        self._shared_state = self._manager.dict()
+        self._pool_kwargs["shared_state"] = self._shared_state
         self._pool = WorkerPoolManager(**self._pool_kwargs)
         self._connect_pool_signals()
 
@@ -82,11 +92,12 @@ class TaskManager:
         Shuts down the current worker pool and starts a new one.
         This is necessary to apply changes like addon installation or updates
         to worker processes. The shared_state is preserved.
+        No-op if the pool has never been started (lazy init).
         """
+        if self._pool is None:
+            logger.info("Worker pool not started yet; restart is a no-op.")
+            return
         logger.info("Restarting worker pool to apply configuration changes...")
-        from rayforge.worker_init import invalidate_worker_addons_cache
-
-        invalidate_worker_addons_cache()
         with self._lock:
             self._pool.shutdown()
             self._pool = WorkerPoolManager(**self._pool_kwargs)
@@ -379,7 +390,8 @@ class TaskManager:
         if visible:
             task._emit_status_changed()
 
-        # Submit the actual work to the pool
+        # Submit the actual work to the pool (creates it lazily if needed)
+        self._ensure_pool()
         self._pool.submit(task.key, task.id, func, *args, **kwargs)
 
         return task
@@ -478,15 +490,6 @@ class TaskManager:
         """Retrieves a task by its key."""
         with self._lock:
             return self._tasks.get(key)
-
-    def get_shared_state(self) -> Any:
-        """
-        Return the shared state dict for worker initialization.
-
-        This provides a generic mechanism for passing data to worker
-        processes. The dict is managed by the TaskManager and persists.
-        """
-        return self._shared_state
 
     async def _run_task(
         self, task: Task, when_done: Optional[Callable[[Task], None]]
@@ -864,10 +867,11 @@ class TaskManager:
                 )
                 self.cancel_task(task.key)
 
-            # Shut down the worker pool. This will wait for workers to exit.
-            self._pool.shutdown()
-
-            self._manager.shutdown()
+            # Shut down the worker pool (only if it was ever started).
+            if self._pool is not None:
+                self._pool.shutdown()
+            if self._manager is not None:
+                self._manager.shutdown()
 
             logger.info("Stopping asyncio event loop...")
             # Stop the asyncio loop

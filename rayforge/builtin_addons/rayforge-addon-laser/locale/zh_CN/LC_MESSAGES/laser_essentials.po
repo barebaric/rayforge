@@ -211,7 +211,7 @@ msgstr "点宽校正"
 #: laser_essentials/widgets/raster_widget.py
 msgid ""
 "Reduces engrave length at both ends to compensate for physical dot width"
-msgstr "减少两端雕刻长度以补偿物理点宽度"
+msgstr "缩短两端雕刻长度以补偿物理点宽"
 
 #: laser_essentials/widgets/raster_widget.py
 msgid "Bidirectional Scan Offset"
