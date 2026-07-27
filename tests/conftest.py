@@ -201,11 +201,6 @@ def clean_context_singleton():
     # starts with a completely fresh context.
     rayforge_context._context_instance = None
 
-    # Also reset the lazy loader to prevent pollution of sys.meta_path across tests
-    from rayforge.addon_mgr.lazy_loader import reset_addon_finder
-
-    reset_addon_finder()
-
     gc.collect()
 
 
@@ -261,9 +256,7 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
     context = get_context()
     context._headless = True
 
-    # 4. Access addon_mgr to trigger lazy loading (worker_only=True).
-    # task_mgr is already passed to AddonManager at construction time,
-    # so the manifest is built and pushed to shared_state automatically.
+    # 4. Access addon_mgr to trigger lazy loading.
     _ = context.addon_mgr
 
     yield context

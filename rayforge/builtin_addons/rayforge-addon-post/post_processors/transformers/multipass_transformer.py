@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from raygeo.ops.transform.multipass import MultiPassSpec
 
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
+from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -42,11 +42,6 @@ class MultiPassTransformer(OpsTransformer):
         # Use property setters to ensure validation logic is applied
         self.passes = passes
         self.z_step_down = z_step_down
-
-    @property
-    def execution_phase(self) -> ExecutionPhase:
-        """Multi-pass duplicates the final path, so it runs late."""
-        return ExecutionPhase.POST_PROCESSING
 
     @property
     def passes(self) -> int:

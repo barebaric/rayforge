@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from raygeo.ops.transform.optimize import OptimizeSpec
 
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
+from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -35,10 +35,6 @@ class Optimize(OpsTransformer):
         self.allow_flip = allow_flip
         self.preserve_first = preserve_first
         self.preserve_order = preserve_order or []
-
-    @property
-    def execution_phase(self) -> ExecutionPhase:
-        return ExecutionPhase.POST_PROCESSING
 
     @property
     def label(self) -> str:

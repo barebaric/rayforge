@@ -39,8 +39,6 @@ def clean_context_singleton():
 @pytest.fixture(scope="class")
 def lite_context(tmp_path_factory):
     """Class-scoped context shared across all TestMachineModel tests."""
-    from rayforge.addon_mgr.lazy_loader import reset_addon_finder
-
     tmp_path = tmp_path_factory.mktemp("machine_model")
     temp_config_dir = tmp_path / "config"
     temp_dialect_dir = temp_config_dir / "dialects"
@@ -61,7 +59,6 @@ def lite_context(tmp_path_factory):
 
     context_module._context_instance = None
     config.CONFIG_DIR, config.DIALECT_DIR, config.MACHINE_DIR = old_config
-    reset_addon_finder()
     gc.collect()
 
 

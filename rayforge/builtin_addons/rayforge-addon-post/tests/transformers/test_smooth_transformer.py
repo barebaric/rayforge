@@ -5,18 +5,27 @@ import pytest
 from post_processors.transformers import Smooth
 from raygeo.ops import Ops
 from raygeo.ops.types import CommandType
-
-from rayforge.pipeline.transformer.specs import (
-    apply_transformer_specs,
-    build_transformer_specs,
-)
 from tests.conftest import MockProgressContext
+
+
+class _ProgressCallback:
+    def __init__(self, context):
+        self._context = context
+
+    def __call__(self, progress, message):
+        self._context.set_progress(progress)
+        if message:
+            self._context.set_message(message)
+
+    def is_cancelled(self):
+        return self._context.is_cancelled()
 
 
 def _apply(transformer, ops, context=None):
     """Run a transformer through the Rust spec dispatch."""
-    specs = build_transformer_specs([transformer], None, None, None)
-    apply_transformer_specs(ops, specs, context)
+    specs = [transformer.to_spec(None, None, None)]
+    cb = _ProgressCallback(context) if context else None
+    Ops.apply_transformers(ops, specs, progress_cb=cb)
 
 
 def assert_points_almost_equal(p1: tuple, p2: tuple, places=5, msg=None):

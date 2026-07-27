@@ -329,16 +329,6 @@ class WorkerPoolManager:
         )
         self._listener_thread.start()
 
-    def get_shared_state(self) -> Any:
-        """
-        Return the shared state dict for worker initialization.
-
-        This provides a generic mechanism for passing data to worker
-        processes. Callers can populate this dict with any data needed
-        during worker initialization.
-        """
-        return self._shared_state
-
     def submit(
         self,
         key: Any,

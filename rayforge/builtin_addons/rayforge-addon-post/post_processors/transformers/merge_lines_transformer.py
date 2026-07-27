@@ -12,7 +12,7 @@ from typing import (
 from raygeo.ops.transform.merge_lines import MergeLinesSpec
 
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
+from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -46,10 +46,6 @@ class MergeLinesTransformer(OpsTransformer):
     def tolerance(self, value: float) -> None:
         self._tolerance = max(0.001, value)
         self.changed.send(self)
-
-    @property
-    def execution_phase(self) -> ExecutionPhase:
-        return ExecutionPhase.POST_PROCESSING
 
     @property
     def label(self) -> str:

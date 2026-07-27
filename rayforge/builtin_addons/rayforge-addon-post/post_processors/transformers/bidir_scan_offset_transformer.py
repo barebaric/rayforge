@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from raygeo.ops.transform.bidir_scan_offset import BidirScanOffsetSpec
 
-from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
+from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -28,10 +28,6 @@ class BidirScanOffsetTransformer(OpsTransformer):
 
     def __init__(self, enabled: bool = True):
         super().__init__(enabled=enabled)
-
-    @property
-    def execution_phase(self) -> ExecutionPhase:
-        return ExecutionPhase.POST_PROCESSING
 
     @property
     def label(self) -> str:

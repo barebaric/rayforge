@@ -76,11 +76,8 @@ def register_laser_essentials():
     module path (rayforge_addons.*) causing isinstance() checks
     to fail in tests.
     """
-    from rayforge import worker_init
     from rayforge.addon_mgr.addon_manager import AddonManager
     from rayforge.config import BUILTIN_ADDONS_DIR
-
-    worker_init._worker_addons_loaded = True
 
     import pluggy
 
