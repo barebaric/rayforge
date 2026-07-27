@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgrade raygeo to 1.24.0 with migrated G-code encoder,
   BidirScanOffsetTransformer, and MultiPassTransformer to Rust;
   transformer application now uses Rust apply_transformers dispatch
+- Replaced multiprocessing pipeline with raygeo intent
+  orchestration: compute, raster, shrinkwrap, wavefront, contour,
+  and view rendering now run in raygeo threads instead of
+  subprocesses for improved performance and reliability
 - Improved addon translation fallback: English is now used when
   no matching locale is found
 - Wavefront icon and improved Gtk SVG compatibility for other icons

@@ -8,8 +8,6 @@ to delegate to raygeo assemblers without importing raygeo directly.
 import logging
 from typing import Any, Callable, Dict, Optional, Set
 
-from rayforge.worker_init import ensure_addons_loaded
-
 logger = logging.getLogger(__name__)
 
 
@@ -90,11 +88,7 @@ class AssemblerRegistry:
         Returns:
             The assembler callable, or None if not found.
         """
-        func = self._assemblers.get(name)
-        if func is None:
-            ensure_addons_loaded()
-            func = self._assemblers.get(name)
-        return func
+        return self._assemblers.get(name)
 
     def assemble(self, name: str, part: Any = None, **kwargs: Any) -> Any:
         """
@@ -112,10 +106,7 @@ class AssemblerRegistry:
         Raises:
             KeyError: If no assembler is registered under the given name.
         """
-        func = self._assemblers.get(name)
-        if func is None:
-            ensure_addons_loaded()
-            func = self._assemblers[name]
+        func = self._assemblers[name]
         if part is not None:
             return func(part, **kwargs)
         return func(**kwargs)

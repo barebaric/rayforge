@@ -74,6 +74,20 @@ class ColorSet:
         default_lut[:, 3] = 1.0  # A
         return default_lut
 
+    def get_lut_argb32(self, name: str) -> np.ndarray:
+        """
+        Gets the named LUT as a 256×4 ``np.uint8`` array in **pre-multiplied
+        ARGB32** order (``[B×α, G×α, R×α, A]``), ready for
+        :class:`~raygeo.ops.convert.ViewSpec`.
+        """
+        lut = self.get_lut(name)
+        argb32 = np.empty((256, 4), dtype=np.uint8)
+        argb32[:, 0] = np.clip(lut[:, 2] * lut[:, 3] * 255 + 0.5, 0, 255)
+        argb32[:, 1] = np.clip(lut[:, 1] * lut[:, 3] * 255 + 0.5, 0, 255)
+        argb32[:, 2] = np.clip(lut[:, 0] * lut[:, 3] * 255 + 0.5, 0, 255)
+        argb32[:, 3] = np.clip(lut[:, 3] * 255 + 0.5, 0, 255)
+        return argb32
+
     def get_rgba(self, name: str) -> ColorRGBA:
         """
         Gets a resolved RGBA color tuple by name.
@@ -82,12 +96,30 @@ class ColorSet:
         rgba = self._data.get(name)
         if isinstance(rgba, tuple) and len(rgba) == 4:
             return rgba
+        if isinstance(rgba, np.ndarray) and rgba.shape == (256, 4):
+            return tuple(rgba[255])
 
         logger.warning(
             f"RGBA color '{name}' not found or invalid in ColorSet. "
             f"Returning default."
         )
         return 1.0, 0.0, 1.0, 1.0
+
+    def get_argb32(self, name: str) -> list:
+        """
+        Gets a named colour as a 4-element byte list in **pre-multiplied
+        ARGB32** order (``[B×α, G×α, R×α, A]``), ready for
+        :class:`~raygeo.ops.convert.ViewSpec`.
+
+        Returns a magenta fallback when the name is missing.
+        """
+        r, g, b, a = self.get_rgba(name)
+        return [
+            int(round(b * a * 255)),
+            int(round(g * a * 255)),
+            int(round(r * a * 255)),
+            int(round(a * 255)),
+        ]
 
     def __repr__(self) -> str:
         keys = sorted(self._data.keys())

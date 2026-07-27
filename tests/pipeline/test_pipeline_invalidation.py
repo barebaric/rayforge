@@ -1,326 +1,324 @@
-"""Tests for pipeline invalidation logic and signal handlers."""
+"""
+Tests for pipeline invalidation behavior.
 
-import uuid
-from unittest.mock import MagicMock, patch
+In the new raygeo-backed pipeline, invalidation is driven by version
+tokens in the :class:`IntentBuilder`.  When a workpiece or step changes,
+the :class:`IntentController` schedules a debounced rebuild.  Each
+rebuild increments the generation ID.  These tests verify that the
+correct changes trigger rebuilds through the public API.
+"""
+
+import asyncio
+import logging
+from pathlib import Path
 
 import pytest
-from raygeo.geo import Matrix
+from raygeo.geo import Geometry, Matrix
 
 from rayforge.core.doc import Doc
 from rayforge.core.group import Group
-from rayforge.core.step import Step
+from rayforge.core.source_asset import SourceAsset
+from rayforge.core.source_asset_segment import SourceAssetSegment
+from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.artifact import (
-    ArtifactKey,
-    StepOpsArtifactHandle,
-    WorkPieceArtifactHandle,
-)
-from rayforge.pipeline.artifact.manager import ArtifactManager
+from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.pipeline import Pipeline
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(autouse=True)
 def _zero_debounce(zero_debounce_delay):
-    """Apply zero debounce delay to all tests in this file."""
     pass
 
 
 @pytest.fixture
-def mock_machine():
-    """Creates a mock machine for testing."""
-    machine = MagicMock()
-    machine.uid = "test-machine-uid"
-    return machine
+def doc():
+    d = Doc()
+    assert d.active_layer.workflow is not None
+    d.active_layer.workflow.set_steps([])
+    return d
 
 
 @pytest.fixture
-def mock_artifact_store():
-    """Creates a mock artifact store for testing."""
-    store = MagicMock()
-    return store
-
-
-@pytest.fixture
-def pipeline(mock_task_mgr, mock_machine, mock_artifact_store):
-    """Creates a Pipeline instance for testing."""
-    doc = Doc()
-    return Pipeline(
-        doc,
-        mock_task_mgr,
-        mock_artifact_store,
-        mock_machine,
-    )
-
-
-@pytest.fixture
-def doc_with_workpieces():
-    """Creates a doc with workpieces and a step for testing."""
-    doc = Doc()
-    layer = doc.active_layer
-
-    wp1 = WorkPiece(name="wp1.svg")
-    wp2 = WorkPiece(name="wp2.svg")
-
-    layer.add_workpiece(wp1)
-    layer.add_workpiece(wp2)
-
-    step = Step(typelabel="contour")
-    assert layer.workflow is not None
-    layer.workflow.add_step(step)
-
-    return doc, layer, wp1, wp2, step
-
-
-@pytest.fixture
-def doc_with_group():
-    """Creates a doc with a group containing workpieces."""
-    doc = Doc()
-    layer = doc.active_layer
-
-    wp1 = WorkPiece(name="wp1.svg")
-    wp2 = WorkPiece(name="wp2.svg")
-
-    group = Group(name="test_group")
-    group.add_child(wp1)
-    group.add_child(wp2)
-
-    layer.add_child(group)
-
-    return doc, layer, group, wp1, wp2
-
-
-def test_collect_single_workpiece(doc_with_workpieces, pipeline):
-    """Test collecting a single workpiece."""
-    _, _, wp1, _, _ = doc_with_workpieces
-    result = pipeline._collect_affected_workpieces(wp1)
-    assert len(result) == 1
-    assert result[0] == wp1
-
-
-def test_collect_from_group(doc_with_group, pipeline):
-    """Test collecting workpieces from a group."""
-    _, _, group, wp1, wp2 = doc_with_group
-    result = pipeline._collect_affected_workpieces(group)
-    assert len(result) == 2
-    assert wp1 in result
-    assert wp2 in result
-
-
-def test_collect_from_layer(doc_with_workpieces, pipeline):
-    """Test collecting workpieces from a layer."""
-    doc, layer, _, _, _ = doc_with_workpieces
-    result = pipeline._collect_affected_workpieces(layer)
-    assert len(result) == 2
-
-
-def test_workpiece_update_invalidates_workpiece(doc_with_workpieces, pipeline):
-    """Test that workpiece update invalidates workpiece-step pairs."""
-    _, _, wp1, _, step = doc_with_workpieces
-
-    with patch.object(pipeline, "_invalidate_node") as mock_invalidate:
-        with patch.object(
-            pipeline, "_schedule_reconciliation"
-        ) as mock_reconcile:
-            pipeline._on_descendant_updated(
-                MagicMock(),
-                origin=wp1,
-                parent_of_origin=wp1.parent,
-            )
-
-            wp_step_key = ArtifactKey.for_workpiece(wp1.uid, step.uid)
-            mock_invalidate.assert_called_once_with(wp_step_key)
-            mock_reconcile.assert_called_once()
-
-
-def test_workpiece_position_only_invalidates_steps(
-    doc_with_workpieces, pipeline
-):
-    """Test that position-only change invalidates steps, not workpiece."""
-    doc, layer, wp1, _, _ = doc_with_workpieces
-
-    old_matrix = Matrix()
-    wp1.matrix = Matrix().set_translation(100, 200)
-
-    with patch.object(pipeline, "_invalidate_node") as mock_invalidate:
-        with patch.object(
-            pipeline, "_schedule_reconciliation"
-        ) as mock_reconcile:
-            pipeline._on_descendant_transform_changed(
-                MagicMock(),
-                origin=wp1,
-                parent_of_origin=wp1.parent,
-                old_matrix=old_matrix,
-            )
-
-            step_key = ArtifactKey.for_step(list(layer.workflow.steps)[0].uid)
-            mock_invalidate.assert_called_once_with(step_key)
-            mock_reconcile.assert_called_once()
-
-
-def test_workpiece_scale_change_invalidates_workpiece(
-    doc_with_workpieces, pipeline
-):
-    """Test that scale change invalidates the workpiece-step pair."""
-    doc, layer, wp1, _, step = doc_with_workpieces
-
-    old_matrix = Matrix()
-    wp1.matrix = Matrix.scale(2.0, 2.0)
-
-    with patch.object(pipeline, "_invalidate_node") as mock_invalidate:
-        with patch.object(
-            pipeline, "_schedule_reconciliation"
-        ) as mock_reconcile:
-            pipeline._on_descendant_transform_changed(
-                MagicMock(),
-                origin=wp1,
-                parent_of_origin=wp1.parent,
-                old_matrix=old_matrix,
-            )
-
-            wp_step_key = ArtifactKey.for_workpiece(wp1.uid, step.uid)
-            assert mock_invalidate.call_count == 2
-            mock_invalidate.assert_any_call(wp_step_key)
-            mock_reconcile.assert_called_once()
-
-
-def test_group_transform_no_invalidations_without_old_matrix(
-    doc_with_group, pipeline
-):
-    """Test that group transform without old_matrix doesn't invalidate."""
-    doc, layer, group, wp1, wp2 = doc_with_group
-
-    with patch.object(pipeline, "_invalidate_node") as mock_invalidate:
-        with patch.object(
-            pipeline, "_schedule_reconciliation"
-        ) as mock_reconcile:
-            pipeline._on_descendant_transform_changed(
-                MagicMock(),
-                origin=group,
-                parent_of_origin=group.parent,
-            )
-
-            mock_invalidate.assert_not_called()
-            mock_reconcile.assert_called_once()
-
-
-def test_layer_transform_no_invalidations_without_old_matrix(
-    doc_with_workpieces, pipeline
-):
-    """Test that layer transform without old_matrix invalidates steps."""
-    doc, layer, wp1, wp2, _ = doc_with_workpieces
-
-    with patch.object(pipeline, "_invalidate_node") as mock_invalidate:
-        with patch.object(
-            pipeline, "_schedule_reconciliation"
-        ) as mock_reconcile:
-            pipeline._on_descendant_transform_changed(
-                MagicMock(),
-                origin=layer,
-                parent_of_origin=layer.parent,
-            )
-
-            step_uid = list(layer.workflow.steps)[0].uid
-            step_key = ArtifactKey.for_step(step_uid)
-            assert mock_invalidate.call_count == 2
-            mock_invalidate.assert_any_call(step_key)
-            mock_reconcile.assert_called_once()
-
-
-def test_workpiece_rotation_only_invalidates_steps(
-    doc_with_workpieces, pipeline
-):
-    """Test that rotation-only change invalidates steps, not workpiece."""
-    doc, layer, wp1, _, _ = doc_with_workpieces
-
-    old_matrix = Matrix()
-    wp1.matrix = Matrix.rotation(45.0)
-
-    with patch.object(pipeline, "_invalidate_node") as mock_invalidate:
-        with patch.object(
-            pipeline, "_schedule_reconciliation"
-        ) as mock_reconcile:
-            pipeline._on_descendant_transform_changed(
-                MagicMock(),
-                origin=wp1,
-                parent_of_origin=wp1.parent,
-                old_matrix=old_matrix,
-            )
-
-            step_uid = list(layer.workflow.steps)[0].uid
-            step_key = ArtifactKey.for_step(step_uid)
-            mock_invalidate.assert_called_once_with(step_key)
-            mock_reconcile.assert_called_once()
-
-
-class TestWorkpieceHandleReuse:
-    """Tests for workpiece handle reuse across generations."""
-
-    @pytest.fixture
-    def mock_artifact_store(self):
-        """Creates a mock artifact store."""
-        store = MagicMock()
-        store.retain = MagicMock()
-        store.release = MagicMock()
-        store._handles = {}
-        return store
-
-    @pytest.fixture
-    def artifact_manager(self, mock_artifact_store):
-        """Creates an ArtifactManager for testing."""
-        return ArtifactManager(mock_artifact_store)
-
-    def test_declare_generation_copies_step_handle_from_previous_gen(
-        self, artifact_manager
-    ):
-        """
-        Test that declare_generation copies step handles from previous
-        generations to avoid unnecessary regeneration.
-        """
-        step_uid = str(uuid.uuid4())
-        step_key = ArtifactKey.for_step(step_uid)
-
-        mock_handle = MagicMock(spec=StepOpsArtifactHandle)
-        mock_handle.shm_name = "test_shm"
-        mock_handle.refcount = 1
-        mock_handle.holders = []
-
-        artifact_manager.declare_generation({step_key}, generation_id=1)
-        artifact_manager.cache_handle(step_key, mock_handle, generation_id=1)
-
-        assert artifact_manager.has_artifact(step_key, 1)
-
-        artifact_manager.declare_generation({step_key}, generation_id=2)
-
-        assert artifact_manager.has_artifact(step_key, 2)
-
-    def test_declare_generation_should_copy_workpiece_handle(
-        self, artifact_manager
-    ):
-        """
-        Test that declare_generation copies workpiece handles from previous
-        generations to avoid unnecessary regeneration.
-
-        This test currently FAILS and demonstrates the bug:
-        When a position-only transform happens, the workpiece artifact
-        should be reused, but declare_generation doesn't copy workpiece
-        handles like it does for step handles.
-        """
-        wp_uid = str(uuid.uuid4())
-        step_uid = str(uuid.uuid4())
-        wp_key = ArtifactKey.for_workpiece(wp_uid, step_uid)
-
-        mock_handle = MagicMock(spec=WorkPieceArtifactHandle)
-        mock_handle.shm_name = "test_shm"
-        mock_handle.refcount = 1
-        mock_handle.holders = []
-
-        artifact_manager.declare_generation({wp_key}, generation_id=1)
-        artifact_manager.cache_handle(wp_key, mock_handle, generation_id=1)
-
-        assert artifact_manager.has_artifact(wp_key, 1)
-
-        artifact_manager.declare_generation({wp_key}, generation_id=2)
-
-        assert artifact_manager.has_artifact(wp_key, 2), (
-            "Workpiece handle should be copied to new generation"
+def real_workpiece():
+    return WorkPiece(name="real_workpiece.svg")
+
+
+@pytest.mark.usefixtures("context_initializer")
+class TestPipelineInvalidation:
+    """Tests that DOM changes trigger pipeline rebuilds."""
+
+    svg_data = b"""
+    <svg width="50mm" height="30mm" xmlns="http://www.w3.org/2000/svg">
+    <rect width="50" height="30" />
+    </svg>"""
+
+    def _setup_doc_with_workpiece(self, doc, workpiece):
+        source = SourceAsset(
+            Path(workpiece.name),
+            original_data=self.svg_data,
+            renderer=SVG_RENDERER,
         )
+        doc.add_asset(source)
+        gen_config = SourceAssetSegment(
+            source_asset_uid=source.uid,
+            pristine_geometry=Geometry(),
+            vectorization_spec=PassthroughSpec(),
+        )
+        workpiece.source_segment = gen_config
+        workpiece.set_size(50, 30)
+        workpiece.pos = 10, 20
+        doc.active_layer.add_workpiece(workpiece)
+        return doc.active_layer
+
+    async def _wait_settled(self, pipeline, timeout=10.0):
+        deadline = asyncio.get_running_loop().time() + timeout
+        while (
+            pipeline.is_busy and asyncio.get_running_loop().time() < deadline
+        ):
+            await asyncio.sleep(0.05)
+
+    @pytest.mark.asyncio
+    async def test_workpiece_geometry_change_triggers_rebuild(
+        self,
+        doc,
+        real_workpiece,
+        task_mgr,
+        context_initializer,
+        contour_step_class,
+    ):
+        """Changing workpiece geometry should trigger a new rebuild."""
+        self._setup_doc_with_workpiece(doc, real_workpiece)
+        step = contour_step_class.create(context_initializer)
+        doc.active_layer.workflow.add_step(step)
+
+        pipeline = Pipeline(
+            doc,
+            task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+        await self._wait_settled(pipeline)
+        gen1 = pipeline.data_generation_id
+
+        real_workpiece.set_size(20, 20)
+        await self._wait_settled(pipeline)
+
+        assert pipeline.data_generation_id > gen1
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+    @pytest.mark.asyncio
+    async def test_workpiece_position_change_triggers_rebuild(
+        self,
+        doc,
+        real_workpiece,
+        task_mgr,
+        context_initializer,
+        contour_step_class,
+    ):
+        """Changing workpiece position should trigger a rebuild."""
+        self._setup_doc_with_workpiece(doc, real_workpiece)
+        step = contour_step_class.create(context_initializer)
+        doc.active_layer.workflow.add_step(step)
+
+        pipeline = Pipeline(
+            doc,
+            task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+        await self._wait_settled(pipeline)
+        gen1 = pipeline.data_generation_id
+
+        real_workpiece.pos = 100, 100
+        await self._wait_settled(pipeline)
+
+        assert pipeline.data_generation_id > gen1
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+    @pytest.mark.asyncio
+    async def test_workpiece_rotation_change_triggers_rebuild(
+        self,
+        doc,
+        real_workpiece,
+        task_mgr,
+        context_initializer,
+        contour_step_class,
+    ):
+        """Changing workpiece rotation should trigger a rebuild."""
+        self._setup_doc_with_workpiece(doc, real_workpiece)
+        step = contour_step_class.create(context_initializer)
+        doc.active_layer.workflow.add_step(step)
+
+        pipeline = Pipeline(
+            doc,
+            task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+        await self._wait_settled(pipeline)
+        gen1 = pipeline.data_generation_id
+
+        real_workpiece.angle = 45
+        await self._wait_settled(pipeline)
+
+        assert pipeline.data_generation_id > gen1
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+    @pytest.mark.asyncio
+    async def test_step_power_change_triggers_rebuild(
+        self,
+        doc,
+        real_workpiece,
+        task_mgr,
+        context_initializer,
+        contour_step_class,
+    ):
+        """Changing step power should trigger a rebuild."""
+        self._setup_doc_with_workpiece(doc, real_workpiece)
+        step = contour_step_class.create(context_initializer)
+        doc.active_layer.workflow.add_step(step)
+
+        pipeline = Pipeline(
+            doc,
+            task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+        await self._wait_settled(pipeline)
+        gen1 = pipeline.data_generation_id
+
+        new_power = 0.5 if step.power != 0.5 else 0.3
+        step.set_power(new_power)
+
+        await asyncio.sleep(0.2)
+
+        await self._wait_settled(pipeline)
+
+        assert pipeline.data_generation_id > gen1
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+    @pytest.mark.asyncio
+    async def test_adding_workpiece_triggers_rebuild(
+        self,
+        doc,
+        real_workpiece,
+        task_mgr,
+        context_initializer,
+        contour_step_class,
+    ):
+        """Adding a workpiece to the doc should trigger a rebuild."""
+        step = contour_step_class.create(context_initializer)
+        doc.active_layer.workflow.add_step(step)
+
+        pipeline = Pipeline(
+            doc,
+            task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+        await self._wait_settled(pipeline)
+        gen1 = pipeline.data_generation_id
+
+        self._setup_doc_with_workpiece(doc, real_workpiece)
+        await self._wait_settled(pipeline)
+
+        assert pipeline.data_generation_id > gen1
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+    @pytest.mark.asyncio
+    async def test_group_transform_triggers_rebuild(
+        self,
+        doc,
+        real_workpiece,
+        task_mgr,
+        context_initializer,
+        contour_step_class,
+    ):
+        """Transforming a group containing workpieces should trigger
+        a rebuild."""
+        self._setup_doc_with_workpiece(doc, real_workpiece)
+
+        group = Group()
+        doc.active_layer.add_child(group)
+        group.add_child(real_workpiece)
+
+        step = contour_step_class.create(context_initializer)
+        doc.active_layer.workflow.add_step(step)
+
+        pipeline = Pipeline(
+            doc,
+            task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+        await self._wait_settled(pipeline)
+        gen1 = pipeline.data_generation_id
+
+        group.matrix = group.matrix @ Matrix.translation(50, 50)
+        await self._wait_settled(pipeline)
+
+        assert pipeline.data_generation_id > gen1
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+    @pytest.mark.asyncio
+    async def test_layer_transform_triggers_rebuild(
+        self,
+        doc,
+        real_workpiece,
+        task_mgr,
+        context_initializer,
+        contour_step_class,
+    ):
+        """Transforming a layer should trigger a rebuild."""
+        self._setup_doc_with_workpiece(doc, real_workpiece)
+        step = contour_step_class.create(context_initializer)
+        doc.active_layer.workflow.add_step(step)
+
+        pipeline = Pipeline(
+            doc,
+            task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+        await self._wait_settled(pipeline)
+        gen1 = pipeline.data_generation_id
+
+        layer = doc.active_layer
+        layer.matrix = layer.matrix @ Matrix.translation(10, 10)
+        await self._wait_settled(pipeline)
+
+        assert pipeline.data_generation_id > gen1
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+    @pytest.mark.asyncio
+    async def test_rapid_multiple_changes_settle_correctly(
+        self,
+        doc,
+        real_workpiece,
+        task_mgr,
+        context_initializer,
+        contour_step_class,
+    ):
+        """Rapid multiple changes should settle to a correct state."""
+        self._setup_doc_with_workpiece(doc, real_workpiece)
+        step = contour_step_class.create(context_initializer)
+        doc.active_layer.workflow.add_step(step)
+
+        pipeline = Pipeline(
+            doc,
+            task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+        await self._wait_settled(pipeline)
+
+        for i in range(5):
+            step.set_power(0.1 * (i + 1))
+            real_workpiece.set_size(50 + i * 10, 30 + i * 10)
+
+        await self._wait_settled(pipeline, timeout=15.0)
+        assert pipeline.is_busy is False
+
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)

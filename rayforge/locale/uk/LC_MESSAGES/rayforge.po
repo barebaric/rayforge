@@ -7232,26 +7232,6 @@ msgstr ""
 "Шлях до каталогу користувацької конфігурації. Корисно для тестування з "
 "ізольованими конфігураціями."
 
-#: rayforge/pipeline/stage/step_runner.py
-msgid "Assembling step..."
-msgstr "Збирання кроку..."
-
-#: rayforge/pipeline/stage/step_runner.py
-msgid "Storing step data..."
-msgstr "Збереження даних кроку..."
-
-#: rayforge/pipeline/stage/step_runner.py
-msgid "Calculating time estimate..."
-msgstr "Розрахунок оцінки часу..."
-
-#: rayforge/pipeline/stage/job_runner.py
-msgid "Storing final job artifact..."
-msgstr "Збереження фінального артефакту завдання..."
-
-#: rayforge/pipeline/stage/job_runner.py rayforge/pipeline/stage/job_compute.py
-msgid "Job finalization complete"
-msgstr "Завершення завдання виконано"
-
 #: rayforge/pipeline/stage/assembler_helpers.py
 msgid "Variable Power"
 msgstr "Змінна потужність"
@@ -7279,63 +7259,6 @@ msgstr "Постійне"
 #: rayforge/pipeline/stage/assembler_helpers.py
 msgid "Multi-Pass"
 msgstr "Багатопрохідний"
-
-#: rayforge/pipeline/stage/workpiece_compute.py
-#, python-brace-format
-msgid "Applying transformers on '{workpiece}'"
-msgstr "Застосування трансформерів до '{workpiece}'"
-
-#: rayforge/pipeline/stage/workpiece_compute.py
-#, python-brace-format
-msgid "Transformers applied on '{workpiece}'"
-msgstr "Трансформери застосовано до '{workpiece}'"
-
-#: rayforge/pipeline/stage/workpiece_compute.py
-#, python-brace-format
-msgid "Generating path for '{workpiece}'"
-msgstr "Генерація шляху для '{workpiece}'"
-
-#: rayforge/pipeline/stage/workpiece_compute.py
-#, python-brace-format
-msgid "Finalizing '{workpiece}'"
-msgstr "Завершення '{workpiece}'"
-
-#: rayforge/pipeline/stage/step_compute.py
-msgid "Applying transformers"
-msgstr "Застосування трансформерів"
-
-#: rayforge/pipeline/stage/job_compute.py
-msgid "Assembling final job..."
-msgstr "Збирання фінального завдання..."
-
-#: rayforge/pipeline/stage/job_compute.py
-#, python-brace-format
-msgid "Processing final ops for '{step}'"
-msgstr "Обробка фінальних операцій для '{step}'"
-
-#: rayforge/pipeline/stage/job_compute.py
-msgid "Calculating final time and distance estimates..."
-msgstr "Розрахунок фінальних оцінок часу та відстані..."
-
-#: rayforge/pipeline/stage/job_compute.py
-msgid "Generating machine code..."
-msgstr "Генерація машинного коду..."
-
-#: rayforge/pipeline/view/view_compute.py
-msgid "Rendering vertices..."
-msgstr "Рендеринг вершин..."
-
-#: rayforge/pipeline/view/view_compute.py
-msgid "Preparing 2D preview..."
-msgstr "Підготовка 2D перегляду..."
-
-#: rayforge/pipeline/view/view_compute.py
-msgid "Rendering texture..."
-msgstr "Рендеринг текстури..."
-
-#: rayforge/pipeline/view/view_compute.py
-msgid "Rendering complete."
-msgstr "Рендеринг завершено."
 
 #: rayforge/pipeline/transformer/placeholder.py
 msgid "Missing: {}"

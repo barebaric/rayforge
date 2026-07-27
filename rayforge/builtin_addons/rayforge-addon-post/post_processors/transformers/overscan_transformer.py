@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from raygeo.ops.transform.overscan import OverscanSpec
 
-from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
+from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -69,14 +69,6 @@ class OverscanTransformer(OpsTransformer):
 
         # Ensure minimum distance for practical purposes
         return max(0.5, distance_mm)
-
-    @property
-    def execution_phase(self) -> ExecutionPhase:
-        """
-        Overscan must run before path optimization to ensure travel moves
-        are planned between the final, extended endpoints of the toolpaths.
-        """
-        return ExecutionPhase.POST_PROCESSING
 
     @property
     def distance_mm(self) -> float:

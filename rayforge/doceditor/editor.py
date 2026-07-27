@@ -13,7 +13,8 @@ from ..core.asset import UnknownAsset
 from ..core.doc import Doc
 from ..core.layer import Layer
 from ..core.vectorization_spec import VectorizationSpec
-from ..pipeline.artifact import JobArtifact, JobArtifactHandle
+from ..pipeline.artifact import JobArtifact
+from ..pipeline.artifact.handle import BaseArtifactHandle
 from ..pipeline.pipeline import Pipeline
 from ..pipeline.view import ViewManager
 from .array_cmd import ArrayCmd
@@ -96,7 +97,7 @@ class DocEditor:
 
         # A set to track temporary artifacts (e.g., for job previews)
         # that don't live in the Pipeline cache.
-        self._transient_artifact_handles: set[JobArtifactHandle] = set()
+        self._transient_artifact_handles: set[BaseArtifactHandle] = set()
 
         # Track the number of active background tasks initiated by editor
         # commands
@@ -161,9 +162,9 @@ class DocEditor:
         )
 
         if self.pipeline:
-            manager = self.pipeline.artifact_manager
+            store = self.pipeline.artifact_store
             for handle in list(self._transient_artifact_handles):
-                manager.release_handle(handle)
+                store.release(handle)
 
         self._transient_artifact_handles.clear()
 
@@ -360,17 +361,18 @@ class DocEditor:
         useful for tests.
         """
         export_future = asyncio.get_running_loop().create_future()
-        artifact_manager = self.pipeline.artifact_manager
+        artifact_store = self.pipeline.artifact_store
 
         def _on_export_assembly_done(
-            handle: Optional[JobArtifactHandle], error: Optional[Exception]
+            handle: Optional[BaseArtifactHandle],
+            error: Optional[Exception],
         ):
             try:
                 if error:
                     export_future.set_exception(error)
                     return
 
-                with artifact_manager.checkout_handle(handle) as artifact:
+                with artifact_store.checkout_handle(handle) as artifact:
                     if not artifact:
                         raise ValueError(
                             "Assembly process returned no artifact."

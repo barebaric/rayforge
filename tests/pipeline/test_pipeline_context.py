@@ -1,7 +1,5 @@
 import logging
-import uuid
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 from raygeo.geo import Geometry
@@ -13,8 +11,6 @@ from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
-from rayforge.pipeline.artifact.key import ArtifactKey
-from rayforge.pipeline.context import GenerationContext
 from rayforge.pipeline.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
@@ -44,7 +40,7 @@ def real_workpiece():
 
 @pytest.mark.usefixtures("context_initializer")
 class TestPipelineContextIntegration:
-    """Test suite for Step 2: Context integration into Pipeline lifecycle."""
+    """Test generation ID and rebuild lifecycle in the new pipeline."""
 
     svg_data = b"""
     <svg width="50mm" height="30mm" xmlns="http://www.w3.org/2000/svg">
@@ -70,10 +66,8 @@ class TestPipelineContextIntegration:
         doc.active_layer.add_workpiece(workpiece)
         return doc.active_layer
 
-    def test_reconcile_data_creates_context(self, doc, mock_task_mgr):
-        """
-        Test that reconcile_data creates a new GenerationContext.
-        """
+    def test_pipeline_creates_initial_generation(self, doc, mock_task_mgr):
+        """Test that pipeline creation sets up an initial generation ID."""
         pipeline = Pipeline(
             doc=doc,
             task_manager=mock_task_mgr,
@@ -81,18 +75,12 @@ class TestPipelineContextIntegration:
             machine=get_context().machine,
         )
 
-        assert pipeline._active_context is not None
-        assert pipeline._active_context.generation_id == 1
-        assert 1 in pipeline._contexts
-        assert pipeline._contexts[1] is pipeline._active_context
+        assert pipeline.data_generation_id >= 0
 
-    def test_reconcile_data_creates_incrementing_context_ids(
+    def test_rebuild_increments_generation_id(
         self, doc, mock_task_mgr, real_workpiece, contour_step_class
     ):
-        """
-        Test that multiple reconcile_data calls create contexts with
-        incrementing IDs.
-        """
+        """Test that triggering a rebuild increments the generation ID."""
         pipeline = Pipeline(
             doc=doc,
             task_manager=mock_task_mgr,
@@ -100,38 +88,15 @@ class TestPipelineContextIntegration:
             machine=get_context().machine,
         )
 
-        initial_id = pipeline._data_generation_id
-        assert pipeline._active_context is not None
-        assert pipeline._active_context.generation_id == initial_id
+        initial_id = pipeline.data_generation_id
 
-        pipeline.pause()
-        step = contour_step_class.create(get_context())
-        doc.active_layer.workflow.add_step(step)
-        self._setup_doc_with_workpiece(doc, real_workpiece)
+        pipeline._intent_ctl.force_rebuild()
 
-        pipeline._reconciliation_timer = MagicMock()
-        pipeline._reconciliation_timer.cancel = MagicMock()
-        pipeline.resume()
+        assert pipeline.data_generation_id > initial_id
 
-        next_id = pipeline._data_generation_id
-        assert next_id >= initial_id
-
-        pipeline.reconcile_data()
-
-        assert pipeline._data_generation_id > next_id
-        assert pipeline._active_context is not None
-        assert (
-            pipeline._active_context.generation_id
-            == pipeline._data_generation_id
-        )
-
-        gen_ids = list(pipeline._contexts.keys())
-        assert gen_ids == sorted(gen_ids)
-
-    def test_scheduler_receives_context(self, doc, mock_task_mgr):
-        """
-        Test that the scheduler receives the active context.
-        """
+    def test_generation_id_matches_intent_controller(self, doc, mock_task_mgr):
+        """Test that pipeline.data_generation_id matches the
+        IntentController's generation_id."""
         pipeline = Pipeline(
             doc=doc,
             task_manager=mock_task_mgr,
@@ -139,21 +104,14 @@ class TestPipelineContextIntegration:
             machine=get_context().machine,
         )
 
-        assert pipeline._scheduler._active_context is not None
-        assert pipeline._scheduler._active_context is pipeline._active_context
-        assert pipeline._active_context is not None
         assert (
-            pipeline._scheduler._generation_id
-            == pipeline._active_context.generation_id
+            pipeline.data_generation_id == pipeline._intent_ctl.generation_id
         )
 
-    def test_context_generation_id_matches_data_generation_id(
-        self, doc, mock_task_mgr, real_workpiece, contour_step_class
+    def test_multiple_rebuilds_produce_incrementing_ids(
+        self, doc, mock_task_mgr
     ):
-        """
-        Test that the context's generation_id matches the pipeline's
-        _data_generation_id (preserving the old integer ID logic).
-        """
+        """Test that multiple rebuilds produce incrementing generation IDs."""
         pipeline = Pipeline(
             doc=doc,
             task_manager=mock_task_mgr,
@@ -161,75 +119,20 @@ class TestPipelineContextIntegration:
             machine=get_context().machine,
         )
 
-        assert pipeline._active_context is not None
-        assert (
-            pipeline._active_context.generation_id
-            == pipeline._data_generation_id
-        )
+        ids = [pipeline.data_generation_id]
+        for _ in range(3):
+            pipeline._intent_ctl.force_rebuild()
+            ids.append(pipeline.data_generation_id)
 
-        pipeline.pause()
-        step = contour_step_class.create(get_context())
-        doc.active_layer.workflow.add_step(step)
-        self._setup_doc_with_workpiece(doc, real_workpiece)
-
-        pipeline._reconciliation_timer = MagicMock()
-        pipeline._reconciliation_timer.cancel = MagicMock()
-        pipeline.resume()
-
-        pipeline.reconcile_data()
-        assert pipeline._active_context is not None
-        assert (
-            pipeline._active_context.generation_id
-            == pipeline._data_generation_id
-        )
-
-    def test_old_contexts_preserved(
-        self, doc, mock_task_mgr, real_workpiece, contour_step_class
-    ):
-        """
-        Test that old contexts are preserved when new ones are created.
-        """
-        pipeline = Pipeline(
-            doc=doc,
-            task_manager=mock_task_mgr,
-            artifact_store=get_context().artifact_store,
-            machine=get_context().machine,
-        )
-
-        first_context = pipeline._active_context
-        first_gen_id = pipeline._data_generation_id
-
-        pipeline.pause()
-        step = contour_step_class.create(get_context())
-        doc.active_layer.workflow.add_step(step)
-        self._setup_doc_with_workpiece(doc, real_workpiece)
-
-        pipeline._reconciliation_timer = MagicMock()
-        pipeline._reconciliation_timer.cancel = MagicMock()
-        pipeline.resume()
-
-        pipeline.reconcile_data()
-
-        assert first_gen_id in pipeline._contexts
-        assert pipeline._contexts[first_gen_id] is first_context
-        assert pipeline._data_generation_id in pipeline._contexts
-        assert (
-            pipeline._contexts[pipeline._data_generation_id]
-            is pipeline._active_context
-        )
-        assert first_context is not pipeline._active_context
+        assert ids == sorted(ids)
+        assert len(set(ids)) == len(ids)
 
 
 @pytest.mark.usefixtures("context_initializer")
 class TestPipelineBusyState:
-    """Test suite for Step 9: Busy state logic with inactive contexts."""
+    """Test busy state logic in the new pipeline."""
 
-    svg_data = b"""
-    <svg width="50mm" height="30mm" xmlns="http://www.w3.org/2000/svg">
-    <rect width="50" height="30" />
-    </svg>"""
-
-    def test_is_busy_false_when_no_active_tasks(self, doc, mock_task_mgr):
+    def test_is_busy_false_when_idle(self, doc, mock_task_mgr):
         """Test that is_busy is False when no tasks are active."""
         pipeline = Pipeline(
             doc=doc,
@@ -238,14 +141,11 @@ class TestPipelineBusyState:
             machine=get_context().machine,
         )
 
-        assert pipeline._reconciliation_timer is None
-        assert not pipeline._scheduler.has_pending_work()
+        assert not pipeline._intent_ctl.is_rebuild_pending
         assert not pipeline.is_busy
 
-    def test_is_busy_false_when_tasks_only_in_inactive_context(
-        self, doc, mock_task_mgr
-    ):
-        """Test is_busy is False when only inactive context has tasks."""
+    def test_is_busy_true_when_rebuild_pending(self, doc, mock_task_mgr):
+        """Test that is_busy is True when a rebuild is pending."""
         pipeline = Pipeline(
             doc=doc,
             task_manager=mock_task_mgr,
@@ -253,50 +153,12 @@ class TestPipelineBusyState:
             machine=get_context().machine,
         )
 
-        old_context = GenerationContext(generation_id=1)
-        key = ArtifactKey.for_workpiece(str(uuid.uuid4()))
-        old_context.add_task(key)
-        pipeline._contexts[1] = old_context
-        pipeline._active_context = GenerationContext(generation_id=2)
-        pipeline._contexts[2] = pipeline._active_context
-
-        assert not pipeline._scheduler.has_pending_work()
-        assert not pipeline.is_busy
-
-    def test_is_busy_false_when_inactive_context_empty(
-        self, doc, mock_task_mgr
-    ):
-        """Test is_busy is False when inactive context has no tasks."""
-        pipeline = Pipeline(
-            doc=doc,
-            task_manager=mock_task_mgr,
-            artifact_store=get_context().artifact_store,
-            machine=get_context().machine,
-        )
-
-        old_context = GenerationContext(generation_id=1)
-        pipeline._contexts[1] = old_context
-        pipeline._active_context = GenerationContext(generation_id=2)
-        pipeline._contexts[2] = pipeline._active_context
-
-        assert not pipeline._scheduler.has_pending_work()
-        assert not pipeline.is_busy
-
-    def test_is_busy_true_with_reconciliation_timer(self, doc, mock_task_mgr):
-        """Test is_busy is True when reconciliation timer is pending."""
-        pipeline = Pipeline(
-            doc=doc,
-            task_manager=mock_task_mgr,
-            artifact_store=get_context().artifact_store,
-            machine=get_context().machine,
-        )
-
-        pipeline._reconciliation_timer = MagicMock()
-
+        pipeline._intent_ctl._rebuild_timer = object()
+        assert pipeline._intent_ctl.is_rebuild_pending
         assert pipeline.is_busy
 
-    def test_is_busy_ignores_inactive_contexts(self, doc, mock_task_mgr):
-        """Test is_busy only checks the active context for tasks."""
+    def test_is_busy_false_after_rebuild_completes(self, doc, mock_task_mgr):
+        """Test that is_busy returns to False after a rebuild completes."""
         pipeline = Pipeline(
             doc=doc,
             task_manager=mock_task_mgr,
@@ -304,22 +166,16 @@ class TestPipelineBusyState:
             machine=get_context().machine,
         )
 
-        ctx1 = GenerationContext(generation_id=1)
-        ctx2 = GenerationContext(generation_id=2)
-        ctx3 = GenerationContext(generation_id=3)
+        pipeline._intent_ctl._rebuild_timer = object()
+        assert pipeline.is_busy
 
-        key = ArtifactKey.for_workpiece(str(uuid.uuid4()))
-        ctx2.add_task(key)
-
-        pipeline._contexts[1] = ctx1
-        pipeline._contexts[2] = ctx2
-        pipeline._contexts[3] = ctx3
-        pipeline._active_context = ctx3
-
+        pipeline._intent_ctl._rebuild_timer = None
         assert not pipeline.is_busy
 
-    def test_is_busy_active_context_tasks_included(self, doc, mock_task_mgr):
-        """Test is_busy includes active tasks in the active context."""
+    def test_is_busy_true_when_task_manager_has_tasks(
+        self, doc, mock_task_mgr
+    ):
+        """Test that is_busy is True when the task manager has tasks."""
         pipeline = Pipeline(
             doc=doc,
             task_manager=mock_task_mgr,
@@ -327,11 +183,8 @@ class TestPipelineBusyState:
             machine=get_context().machine,
         )
 
-        active_ctx = GenerationContext(generation_id=1)
-        key = ArtifactKey.for_workpiece(str(uuid.uuid4()))
-        active_ctx.add_task(key)
-        pipeline._contexts[1] = active_ctx
-        pipeline._active_context = active_ctx
-
-        assert not pipeline._scheduler.has_pending_work()
+        mock_task_mgr.created_tasks.append(object())
         assert pipeline.is_busy
+
+        mock_task_mgr.created_tasks.clear()
+        assert not pipeline.is_busy

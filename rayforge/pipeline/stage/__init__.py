@@ -1,9 +1,4 @@
-from .job_stage import JobPipelineStage
-from .step_stage import StepPipelineStage
-from .workpiece_stage import WorkPiecePipelineStage
-
-__all__ = [
-    "WorkPiecePipelineStage",
-    "StepPipelineStage",
-    "JobPipelineStage",
-]
+# assembler_helpers is the only remaining module from the old
+# stage package.  It is kept here because Step subclasses,
+# IntentBuilder, and tests import MachineDefaults and other
+# helper types from it.

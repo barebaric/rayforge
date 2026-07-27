@@ -15,8 +15,8 @@ from ...machine.assembly import LinkRole
 from ...machine.kinematic_mapping import KinematicMapping
 from ...machine.models.colors import OpsColorSet
 from ...pipeline.artifact.base import TextureData
-from ...pipeline.artifact.handle import create_handle_from_dict
-from ...pipeline.artifact.job import JobArtifact, JobArtifactHandle
+from ...pipeline.artifact.handle import BaseArtifactHandle
+from ...pipeline.artifact.job import JobArtifact
 from ...pipeline.pipeline import Pipeline
 from ...shared.tasker import Task, task_mgr
 from ...simulator.machine_state import MachineState
@@ -25,7 +25,7 @@ from ...simulator.scene3d import (
     CompiledSceneArtifact,
     LayerRenderConfig,
     RenderConfig3D,
-    compile_scene_in_subprocess,
+    compile_scene_in_thread,
 )
 from ..shared.gtk_color import GtkColorResolver
 from .camera import Camera, ViewDirection, rotation_matrix_from_axis_angle
@@ -117,8 +117,7 @@ class Canvas3D(Gtk.GLArea):
         self._had_rotary_layers = False
         self._scene_preparation_task: Optional[Task] = None
         self._compiled_artifact: Optional[CompiledSceneArtifact] = None
-        self._pending_scene_handle_dict: Optional[Dict] = None
-        self._current_job_handle: Optional[JobArtifactHandle] = None
+        self._current_job_handle: Optional[BaseArtifactHandle] = None
         self._op_player: Optional[OpPlayer] = None
         self._playback_overlay = None
         self._world_to_cyl_local = np.identity(4, dtype=np.float32)
@@ -462,7 +461,6 @@ class Canvas3D(Gtk.GLArea):
             machine.wcs_updated.disconnect(self._on_wcs_updated)
             machine.changed.disconnect(self._on_wcs_updated)
         self._context.config.changed.disconnect(self._on_config_changed)
-        self._release_pending_scene_handle()
         try:
             self.make_current()
             if self._scene_preparation_task:
@@ -1349,61 +1347,13 @@ class Canvas3D(Gtk.GLArea):
         self._show_grid = visible
         self.queue_render()
 
-    def _release_scene_shm(self, handle_dict: Dict):
-        """Release a compiled scene SHM block from the artifact store."""
-        handle = create_handle_from_dict(handle_dict)
-        self._context.artifact_store.release(handle)
-
-    def _release_pending_scene_handle(self):
-        """Release the pending compiled scene SHM, if any."""
-        if self._pending_scene_handle_dict is not None:
-            self._release_scene_shm(self._pending_scene_handle_dict)
-            self._pending_scene_handle_dict = None
-
-    def _on_scene_compiled_event(
-        self, task: Task, event_name: str, data: Dict
-    ):
-        """
-        Handles the scene_compiled event from the subprocess.
-        Adopts the shared memory handle so it survives worker cleanup.
-        """
-        if event_name == "scene_compiled":
-            if task.is_cancelled():
-                logger.debug(
-                    "[CANVAS3D] Ignoring scene_compiled event from "
-                    "cancelled task."
-                )
-                return
-            if (
-                self._scene_preparation_task
-                and task.id != self._scene_preparation_task.id
-            ):
-                logger.debug(
-                    "[CANVAS3D] Ignoring stale scene_compiled event "
-                    "(task mismatch)."
-                )
-                return
-            handle_dict = data.get("handle_dict")
-            if handle_dict is not None:
-                try:
-                    self._context.artifact_store.adopt_from_dict(handle_dict)
-                    self._pending_scene_handle_dict = handle_dict
-                    logger.debug(
-                        f"[CANVAS3D] Adopted scene artifact: "
-                        f"{handle_dict.get('shm_name', '?')}"
-                    )
-                except Exception as e:
-                    logger.exception(
-                        f"[CANVAS3D] Failed to adopt scene artifact: {e}"
-                    )
-                    self._pending_scene_handle_dict = None
-
     def _on_scene_prepared(self, task: Task):
         """
-        Callback for when the background scene compilation task is finished.
+        Callback for when the background scene compilation task is
+        finished.  The compiled artifact is available directly as
+        ``task.result_value`` since the compilation runs in-process.
         """
         if task.get_status() != "completed":
-            self._release_pending_scene_handle()
             self._compiled_artifact = None
             self._op_player = None
             logger.error(
@@ -1413,34 +1363,16 @@ class Canvas3D(Gtk.GLArea):
             self.queue_render()
             return
 
-        handle_dict = self._pending_scene_handle_dict
-        self._pending_scene_handle_dict = None
-
-        if handle_dict is None:
+        artifact = task.result()
+        if artifact is None:
             logger.warning(
-                "[CANVAS3D] Scene task completed but no artifact handle "
-                "was received (possibly empty scene)."
+                "[CANVAS3D] Scene task completed but produced no "
+                "artifact (possibly empty scene)."
             )
             self._compiled_artifact = None
             self._artifact_gl_dirty = True
             self.queue_render()
             return
-
-        logger.debug(
-            "[CANVAS3D] Scene compilation finished. Loading artifact."
-        )
-        try:
-            handle = create_handle_from_dict(handle_dict)
-            artifact = self._context.artifact_store.get(handle)
-        except Exception as e:
-            logger.error(f"[CANVAS3D] Failed to load compiled scene: {e}")
-            self._release_scene_shm(handle_dict)
-            self._compiled_artifact = None
-            self._artifact_gl_dirty = True
-            self.queue_render()
-            return
-
-        self._release_scene_shm(handle_dict)
 
         if not isinstance(artifact, CompiledSceneArtifact):
             logger.error(
@@ -1452,6 +1384,7 @@ class Canvas3D(Gtk.GLArea):
             self.queue_render()
             return
 
+        logger.debug("[CANVAS3D] Scene compilation finished.")
         self._compiled_artifact = artifact
         self._artifact_gl_dirty = True
         self.queue_render()
@@ -1970,8 +1903,6 @@ class Canvas3D(Gtk.GLArea):
             if self._scene_preparation_task:
                 self._scene_preparation_task.cancel()
 
-            self._release_pending_scene_handle()
-
             job_handle = self._current_job_handle
             if job_handle is None:
                 logger.debug(
@@ -1981,12 +1912,11 @@ class Canvas3D(Gtk.GLArea):
 
             logger.debug("[CANVAS3D] Scheduling scene compilation task.")
             assert render_config_dict is not None
-            self._scene_preparation_task = task_mgr.run_process(
-                compile_scene_in_subprocess,
+            self._scene_preparation_task = task_mgr.run_thread(
+                compile_scene_in_thread,
                 self._context.artifact_store,
                 job_handle.to_dict(),
                 render_config_dict,
                 key=task_key,
                 when_done=self._on_scene_prepared,
-                when_event=self._on_scene_compiled_event,
             )

@@ -4,16 +4,13 @@ from post_processors.transformers import MergeLinesTransformer
 from raygeo.ops import Ops
 from raygeo.ops.types import CommandType
 
-from rayforge.pipeline.transformer.specs import (
-    apply_transformer_specs,
-    build_transformer_specs,
-)
-
 
 def _apply(transformer, ops):
     """Run a transformer through the Rust spec dispatch."""
-    specs = build_transformer_specs([transformer], None, None, None)
-    apply_transformer_specs(ops, specs)
+    if not transformer.enabled:
+        return
+    specs = [transformer.to_spec(None, None, None)]
+    Ops.apply_transformers(ops, specs, progress_cb=None)
 
 
 def test_no_duplicate_lines():

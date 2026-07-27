@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import logging
+import weakref
 import uuid
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
+    Any,
+    Callable,
     Dict,
     Iterable,
     List,
@@ -32,6 +35,36 @@ T = TypeVar("T", bound="DocItem")
 T_Desc = TypeVar("T_Desc", bound="DocItem")
 
 
+class _RevisionSignal(Signal):
+    """
+    A :class:`~blinker.Signal` subclass that bumps a revision counter on
+    its owning :class:`DocItem` every time :meth:`send` is invoked.
+
+    The bump happens *before* receivers fire, so any handler that reads
+    ``owner.geometry_revision`` / ``owner.transform_revision`` sees the
+    post-bump value.
+
+    The owner is held via a :class:`weakref.ref` so the signal never
+    keeps a DocItem alive. ``send`` is a no-op for the bump when the
+    owner has been garbage-collected.
+    """
+
+    def __init__(
+        self,
+        owner_ref: "weakref.ref",
+        bump: "Callable[[DocItem], None]",
+    ):
+        super().__init__()
+        self._owner_ref = owner_ref
+        self._bump = bump
+
+    def send(self, sender: Any = None, *, _async_wrapper=None, **kwargs):
+        owner = self._owner_ref()
+        if owner is not None:
+            self._bump(owner)
+        return super().send(sender, _async_wrapper=_async_wrapper, **kwargs)
+
+
 class DocItem(ABC):
     """
     An abstract base class for any item that can exist in a document's
@@ -46,11 +79,27 @@ class DocItem(ABC):
         self.children: List[DocItem] = []
         self._matrix: Matrix = Matrix.identity()
 
-        # Signals
-        # Fired when this item's own data (not transform or children) changes.
-        self.updated = Signal()
-        # Fired when this item's own transform changes.
-        self.transform_changed = Signal()
+        # Monotonic revision counters bumped whenever the corresponding
+        # signal fires.  Callers that cache derived data (e.g. raygeo's
+        # NodeRequest version_token) read these to detect changes.
+        # ``geometry_revision`` tracks ``updated`` emissions (geometry,
+        # step parameters, etc.); ``transform_revision`` tracks
+        # ``transform_changed`` emissions (matrix edits).
+        self._geometry_revision: int = 0
+        self._transform_revision: int = 0
+
+        # Signals — wrapped so each ``send`` bumps the matching
+        # revision counter before notifying receivers.  Subclasses and
+        # external code continue to use ``self.updated.send(self)`` and
+        # ``self.transform_changed.send(self, ...)`` exactly as before;
+        # the bump is transparent.
+        owner_ref = weakref.ref(self)
+        self.updated = _RevisionSignal(
+            owner_ref, lambda o: o._bump_geometry_revision()
+        )
+        self.transform_changed = _RevisionSignal(
+            owner_ref, lambda o: o._bump_transform_revision()
+        )
 
         # Bubbled Signals
         # Fired when a descendant is added anywhere in the subtree.
@@ -63,6 +112,40 @@ class DocItem(ABC):
         self.descendant_transform_changed = Signal()
 
         self._natural_size: Tuple[float, float] = (0.0, 0.0)
+
+    # -- Revision counters ------------------------------------------------
+
+    def _bump_geometry_revision(self) -> None:
+        """Increment ``geometry_revision`` (called by the signal)."""
+        self._geometry_revision += 1
+
+    def _bump_transform_revision(self) -> None:
+        """Increment ``transform_revision`` (called by the signal)."""
+        self._transform_revision += 1
+
+    @property
+    def geometry_revision(self) -> int:
+        """
+        Monotonic counter bumped every time ``updated`` is sent.
+
+        Starts at ``0`` for a freshly constructed item and increments by
+        one on each emission.  Used by the pipeline to build stable
+        ``version_token`` values for raygeo :class:`NodeRequest` objects
+        without hashing geometry payloads.
+        """
+        return self._geometry_revision
+
+    @property
+    def transform_revision(self) -> int:
+        """
+        Monotonic counter bumped every time ``transform_changed`` is
+        sent.
+
+        Folded into a workpiece compute token only when the owning step
+        declares a position-sensitive transformer (e.g. ``CropSpec``);
+        otherwise the token omits this revision entirely.
+        """
+        return self._transform_revision
 
     @property
     def name(self) -> str:

@@ -5,17 +5,13 @@ from post_processors.transformers import LeadInOutTransformer
 from raygeo.ops import Ops
 from raygeo.ops.types import CommandType, RasterMode, SectionType
 
-from rayforge.pipeline.transformer.base import ExecutionPhase
-from rayforge.pipeline.transformer.specs import (
-    apply_transformer_specs,
-    build_transformer_specs,
-)
-
 
 def _apply(transformer, ops):
     """Run a transformer through the Rust spec dispatch."""
-    specs = build_transformer_specs([transformer], None, None, None)
-    apply_transformer_specs(ops, specs)
+    if not transformer.enabled:
+        return
+    specs = [transformer.to_spec(None, None, None)]
+    Ops.apply_transformers(ops, specs, progress_cb=None)
 
 
 @pytest.fixture
@@ -84,10 +80,6 @@ def test_no_op_with_zero_distances(transformer: LeadInOutTransformer):
     _apply(transformer, ops)
 
     assert ops.len() == original_len
-
-
-def test_execution_phase(transformer: LeadInOutTransformer):
-    assert transformer.execution_phase == ExecutionPhase.POST_PROCESSING
 
 
 def test_square_contour_with_both_lead_in_out(

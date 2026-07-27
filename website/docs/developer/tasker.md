@@ -4,7 +4,9 @@ description: "The Rayforge tasker system - background task management for long-r
 
 # Tasker: Background Task Management
 
-`tasker` is a module for running long-running tasks in the background of a GTK application without freezing the UI. It provides a simple, unified API for both I/O-bound (`asyncio`) and CPU-bound (`multiprocessing`) work.
+`tasker` is a module for running long-running tasks in the background of a GTK application without freezing the UI. It provides a simple, unified API for both I/O-bound (`asyncio`) and CPU-bound work.
+
+> **Note on multiprocessing.** The subprocess pool is dormant by default — it starts lazily on the first `run_process()` call. Production pipeline work uses [raygeo](https://github.com/barebaric/raygeo)'s internal rayon thread pool instead. The `run_process` examples below remain valid as a forward-looking reference for future use.
 
 ## Core Concepts
 

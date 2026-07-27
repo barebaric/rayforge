@@ -8,7 +8,7 @@ from raygeo.geo import Matrix
 from raygeo.ops.transform.clip import CropSpec
 
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
+from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -36,10 +36,6 @@ class CropTransformer(OpsTransformer):
         self._tolerance = tolerance
         self._offset = offset
         logger.debug(f"CropTransformer enabled={enabled}")
-
-    @property
-    def execution_phase(self) -> ExecutionPhase:
-        return ExecutionPhase.POST_PROCESSING
 
     @property
     def label(self) -> str:

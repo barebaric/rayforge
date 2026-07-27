@@ -41,23 +41,6 @@ class TransformerRegistry:
                 self._addon_items[addon_name] = set()
             self._addon_items[addon_name].add(key)
 
-    def unregister(self, name: str) -> bool:
-        """
-        Unregister a transformer class by name.
-
-        Args:
-            name: The name of the transformer to unregister.
-
-        Returns:
-            True if the transformer was unregistered, False if not found.
-        """
-        if name in self._transformers:
-            del self._transformers[name]
-            for addon_name, items in self._addon_items.items():
-                items.discard(name)
-            return True
-        return False
-
     def unregister_all_from_addon(self, addon_name: str) -> int:
         """
         Unregister all transformers registered by a specific addon.
@@ -88,20 +71,7 @@ class TransformerRegistry:
         Returns:
             The transformer class, or None if not found.
         """
-        from rayforge.worker_init import ensure_addons_loaded
-
-        ensure_addons_loaded()
-
         return self._transformers.get(name)
-
-    def all_transformers(self) -> Dict[str, Type["OpsTransformer"]]:
-        """
-        Return a copy of all registered transformers.
-
-        Returns:
-            Dictionary mapping transformer names to classes.
-        """
-        return self._transformers.copy()
 
 
 transformer_registry = TransformerRegistry()
