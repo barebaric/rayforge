@@ -216,8 +216,6 @@ class ItemAssembler:
 
         try:
             step = cls(typelabel=typelabel, name=layer.name)
-            if cls.PRODUCER_CLASS is not None:
-                step.opsproducer_dict = cls.PRODUCER_CLASS().to_dict()
             per_wp, per_step = cls.get_default_transformers_dicts()
             step.per_workpiece_transformers_dicts = per_wp
             step.per_step_transformers_dicts = per_step
