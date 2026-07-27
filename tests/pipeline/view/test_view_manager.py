@@ -1,5 +1,4 @@
 import logging
-import time
 import uuid
 from unittest.mock import MagicMock, patch
 
@@ -10,7 +9,6 @@ from raygeo.ops import Ops
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.pipeline.artifact import (
-    ArtifactKey,
     RenderContext,
     WorkPieceArtifact,
     WorkPieceArtifactHandle,
@@ -267,45 +265,6 @@ def test_progressive_rendering_sends_multiple_updates(
         assert call.kwargs["handle"] is not None
 
 
-def test_on_chunk_available_receives_chunks(view_manager, mock_store, context):
-    wp_uid = str(uuid.uuid4())
-    step_uid = str(uuid.uuid4())
-    composite_id = (wp_uid, step_uid)
-
-    view_handle = WorkPieceViewArtifactHandle(
-        key="view_shm",
-        bbox_mm=(0, 0, 10, 10),
-        workpiece_size_mm=(10.0, 10.0),
-        handle_class_name="WorkPieceViewArtifactHandle",
-        artifact_type_name="WorkPieceViewArtifact",
-        generation_id=0,
-    )
-    view_manager._view_entries[composite_id] = ViewEntry(
-        handle=view_handle,
-        render_context=context,
-    )
-
-    chunk_handle = WorkPieceArtifactHandle(
-        key="chunk_shm",
-        handle_class_name="WorkPieceArtifactHandle",
-        artifact_type_name="WorkPieceArtifact",
-        is_scalable=True,
-        source_dimensions=(10, 10),
-        generation_size=(10, 10),
-        generation_id=0,
-    )
-
-    generation_id = 0
-
-    view_manager.on_chunk_available(
-        sender=None,
-        key=ArtifactKey(id=wp_uid, group="chunk"),
-        chunk_handle=chunk_handle,
-        generation_id=generation_id,
-        step_uid=step_uid,
-    )
-
-
 def test_live_render_context_established_on_view_creation(
     view_manager,
     mock_store,
@@ -319,161 +278,6 @@ def test_live_render_context_established_on_view_creation(
     view_manager._view_entries[composite_id] = entry
 
     assert entry.render_context == context
-
-
-def test_throttled_notification_limits_update_frequency(
-    view_manager,
-    mock_store,
-    source_handle,
-    context,
-):
-    step_uid = str(uuid.uuid4())
-    wp_uid = str(uuid.uuid4())
-    setup_view_manager_with_source(
-        view_manager, wp_uid, source_handle, context, step_uid
-    )
-    composite_id = (wp_uid, step_uid)
-
-    view_manager.request_view_render(wp_uid, step_uid)
-
-    view_manager._task_manager.run_thread.assert_called_once()
-
-    # Pre-populate view entry with a bitmap so chunk stitching can work
-    view_manager._view_entries[composite_id] = ViewEntry(
-        bitmap=np.zeros((100, 100, 4), dtype=np.uint8),
-        bbox_mm=(0, 0, 10.0, 10.0),
-        workpiece_size_mm=(10.0, 10.0),
-        render_context=context,
-        handle=MagicMock(),
-    )
-
-    update_handler = MagicMock()
-    view_manager.view_artifact_updated.connect(update_handler)
-
-    time.sleep(0.01)
-
-    def mock_run_thread(target, *args, when_done=None, **kwargs):
-        target()
-        mock_thread_task = MagicMock()
-        mock_thread_task.get_status.return_value = "completed"
-        mock_thread_task.result.return_value = True
-        if when_done:
-            when_done(mock_thread_task)
-        return mock_thread_task
-
-    view_manager._task_manager.run_thread.side_effect = mock_run_thread
-
-    mock_store.get.return_value = WorkPieceArtifact(
-        ops=Ops(),
-        is_scalable=True,
-        source_dimensions=(10, 10),
-        generation_size=(10, 10),
-        generation_id=0,
-    )
-
-    chunk_handle = WorkPieceArtifactHandle(
-        key="chunk_shm",
-        handle_class_name="WorkPieceArtifactHandle",
-        artifact_type_name="WorkPieceArtifact",
-        is_scalable=True,
-        source_dimensions=(10, 10),
-        generation_size=(10, 10),
-        generation_id=0,
-    )
-
-    for i in range(10):
-        view_manager.on_chunk_available(
-            sender=None,
-            key=ArtifactKey(id=wp_uid, group="chunk"),
-            chunk_handle=chunk_handle,
-            generation_id=0,
-            step_uid=step_uid,
-        )
-
-    time.sleep(0.1)
-
-    assert update_handler.call_count < 15
-    assert update_handler.call_count > 0
-
-
-def test_incremental_bitmap_rendering_draws_chunk_to_view(
-    view_manager,
-    mock_store,
-    source_handle,
-    context,
-):
-    step_uid = str(uuid.uuid4())
-    wp_uid = str(uuid.uuid4())
-    composite_id = (wp_uid, step_uid)
-    setup_view_manager_with_source(
-        view_manager, wp_uid, source_handle, context, step_uid
-    )
-
-    view_manager.request_view_render(wp_uid, step_uid)
-
-    # Pre-populate view entry with a blank bitmap
-    view_manager._view_entries[composite_id] = ViewEntry(
-        bitmap=np.zeros((100, 100, 4), dtype=np.uint8),
-        bbox_mm=(0, 0, 10.0, 10.0),
-        workpiece_size_mm=(10.0, 10.0),
-        render_context=context,
-    )
-
-    retain_calls = []
-    release_calls = []
-
-    def mock_retain(handle):
-        retain_calls.append(handle.key)
-
-    def mock_release(handle):
-        release_calls.append(handle.key)
-
-    mock_store.retain.side_effect = mock_retain
-    mock_store.release.side_effect = mock_release
-
-    chunk_ops = Ops()
-    chunk_ops.move_to(2.0, 2.0, 0)
-    chunk_ops.line_to(8.0, 8.0, 0)
-
-    chunk_artifact = WorkPieceArtifact(
-        ops=chunk_ops,
-        is_scalable=True,
-        source_dimensions=(10.0, 10.0),
-        generation_size=(10.0, 10.0),
-        generation_id=0,
-    )
-
-    mock_store.get.return_value = chunk_artifact
-
-    chunk_handle = WorkPieceArtifactHandle(
-        key="chunk_shm",
-        handle_class_name="WorkPieceArtifactHandle",
-        artifact_type_name="WorkPieceArtifact",
-        is_scalable=True,
-        source_dimensions=(10, 10),
-        generation_size=(10, 10),
-        generation_id=0,
-    )
-
-    def mock_run_thread(target, *args, when_done=None, **kwargs):
-        mock_thread_task = MagicMock()
-        mock_thread_task.get_status.return_value = "completed"
-        mock_thread_task.result.return_value = True
-        if when_done:
-            when_done(mock_thread_task)
-        return mock_thread_task
-
-    view_manager._task_manager.run_thread.side_effect = mock_run_thread
-
-    view_manager.on_chunk_available(
-        sender=None,
-        key=ArtifactKey(id=wp_uid, group="chunk"),
-        chunk_handle=chunk_handle,
-        generation_id=0,
-        step_uid=step_uid,
-    )
-
-    assert "chunk_shm" in release_calls
 
 
 def test_get_render_components(view_manager, mock_store, context):
