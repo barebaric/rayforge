@@ -316,7 +316,7 @@ class TestSmoothieDriver:
         driver.job_finished.send = job_finished_mock
         callback_mock = MagicMock()
 
-        encoded = driver._machine.encode_ops(ops, doc)
+        encoded = driver.get_encoder().encode(ops, driver._machine, doc)
         await driver.run(encoded, doc, ops, callback_mock)
 
         # Check that the server received the correct G-code

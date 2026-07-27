@@ -11,21 +11,17 @@ MachineController, so this module focuses on the data model aspects.
 """
 
 import gc
-import math
 
 import pytest
-from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
-from raygeo.ops.types import CommandType
 
 from rayforge import config
 from rayforge import context as context_module
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
-from rayforge.machine.kinematic_mapping import KinematicMapping
 from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine, Origin
-from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
+from rayforge.machine.models.rotary_module import RotaryModule
 from rayforge.machine.transport import TransportStatus
 
 
@@ -477,53 +473,8 @@ def rotary_doc(isolated_machine):
     return doc
 
 
-def _encode_rotary_line(machine, doc):
-    ops = Ops()
-    ops.move_to(0.0, 0.0, 0.0)
-    ops.line_to(10.0, 10.0, 0.0)
-    for layer in doc.layers:
-        rotary_axis = machine.get_rotary_axis_for_layer(layer)
-        if rotary_axis is not None:
-            mapping = KinematicMapping(
-                rotary_axis=rotary_axis,
-                diameter=layer.rotary_diameter,
-            )
-            mapping.apply(ops)
-    encoded = machine.encode_ops(ops, doc)
-    return encoded.text
-
-
 @pytest.mark.usefixtures("lite_context")
-class TestRotaryAxisGcodeOutput:
-    def test_default_axis_uses_a(self, isolated_machine, rotary_doc):
-        gcode = _encode_rotary_line(isolated_machine, rotary_doc)
-        assert "A" in gcode
-
-    def test_custom_axis_uses_configured_letter(self, isolated_machine):
-        rm = RotaryModule()
-        rm.set_axis(Axis.U)
-        isolated_machine.add_rotary_module(rm)
-        doc = Doc()
-        doc.active_layer.set_rotary_enabled(True)
-        doc.active_layer.set_rotary_diameter(25.0)
-        doc.active_layer.set_rotary_module_uid(rm.uid)
-        gcode = _encode_rotary_line(isolated_machine, doc)
-        assert "U" in gcode
-
-    def test_non_rotary_uses_y(self, isolated_machine):
-        doc = Doc()
-        doc.active_layer.set_rotary_enabled(False)
-        gcode = _encode_rotary_line(isolated_machine, doc)
-        assert " Y" in gcode
-
-    def test_rotary_axis_degree_conversion(self, isolated_machine, rotary_doc):
-        gcode = _encode_rotary_line(isolated_machine, rotary_doc)
-        diameter = 25.0
-        circumference = diameter * math.pi
-        expected_deg = (10.0 / circumference) * 360.0
-        formatted_deg = f"{expected_deg:.3f}".rstrip("0").rstrip(".")
-        assert formatted_deg in gcode
-
+class TestSupportsCurves:
     # -- Supports curves --
 
     def test_default_is_false(self, lite_context):
@@ -548,228 +499,6 @@ class TestRotaryAxisGcodeOutput:
         data = machine.to_dict()
         restored = Machine.from_dict(data, context=lite_context)
         assert restored.supports_curves is True
-
-    def test_encode_ops_with_layer_markers_uses_b(self, isolated_machine):
-        """encode_ops maps Y to B when layer has rotary enabled."""
-        rm = RotaryModule()
-        rm.set_axis(Axis.B)
-        isolated_machine.add_rotary_module(rm)
-
-        doc = Doc()
-        layer = doc.active_layer
-        layer.set_rotary_enabled(True)
-        layer.set_rotary_diameter(25.0)
-        layer.set_rotary_module_uid(rm.uid)
-
-        ops = Ops()
-        ops.job_start()
-        ops.layer_start(layer_uid=layer.uid)
-        ops.move_to(0, 0, 0)
-        ops.line_to(10, 10, 0)
-        ops.layer_end(layer_uid=layer.uid)
-        ops.job_end()
-
-        gcode = isolated_machine.encode_ops(ops, doc).text
-
-        diameter = 25.0
-        circumference = diameter * math.pi
-        expected_deg = (10.0 / circumference) * 360.0
-        formatted_deg = f"{expected_deg:.3f}".rstrip("0").rstrip(".")
-        assert " B" in gcode
-        assert formatted_deg in gcode
-        assert "G0 X0 Y0" not in gcode.split("M5")[0]
-        assert "G1" in gcode
-        cut_line = [ln for ln in gcode.split("\n") if ln.startswith("G1")][0]
-        assert " Y" not in cut_line
-
-    def test_replacement_raw_y_in_gcode(self, isolated_machine):
-        """AXIS_REPLACEMENT with mm_per_rotation=0 emits raw Y values."""
-        rm = RotaryModule()
-        rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
-        isolated_machine.add_rotary_module(rm)
-
-        doc = Doc()
-        layer = doc.active_layer
-        layer.set_rotary_enabled(True)
-        layer.set_rotary_diameter(25.0)
-        layer.set_rotary_module_uid(rm.uid)
-
-        ops = Ops()
-        ops.job_start()
-        ops.layer_start(layer_uid=layer.uid)
-        ops.move_to(0, 0, 0)
-        ops.line_to(10, 10, 0)
-        ops.layer_end(layer_uid=layer.uid)
-        ops.job_end()
-
-        gcode = isolated_machine.encode_ops(ops, doc).text
-
-        assert " A" not in gcode
-        assert " B" not in gcode
-        cut_lines = [ln for ln in gcode.split("\n") if ln.startswith("G1")]
-        assert len(cut_lines) >= 1
-        assert " Y10" in cut_lines[0]
-
-    def test_replacement_scaled_y_in_gcode(self, isolated_machine):
-        """AXIS_REPLACEMENT with mm_per_rotation>0 scales Y values."""
-        rm = RotaryModule()
-        rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
-        rm.set_mm_per_rotation(100.0)
-        isolated_machine.add_rotary_module(rm)
-
-        doc = Doc()
-        layer = doc.active_layer
-        layer.set_rotary_enabled(True)
-        layer.set_rotary_diameter(25.0)
-        layer.set_rotary_module_uid(rm.uid)
-
-        ops = Ops()
-        ops.job_start()
-        ops.layer_start(layer_uid=layer.uid)
-        ops.move_to(0, 0, 0)
-        ops.line_to(10, 10, 0)
-        ops.layer_end(layer_uid=layer.uid)
-        ops.job_end()
-
-        gcode = isolated_machine.encode_ops(ops, doc).text
-
-        assert " A" not in gcode
-        assert " B" not in gcode
-        expected = 10.0 * 100.0 / (math.pi * 25.0)
-        formatted = f"{expected:.3f}".rstrip("0").rstrip(".")
-        assert formatted in gcode
-
-    def test_prepare_ops_linearizes_by_default(self, lite_context):
-        machine = Machine(lite_context)
-        ops = Ops()
-        ops.move_to(0, 0)
-        ops.bezier_to(
-            control1=(10, 0, 0), control2=(10, 10, 0), end=(0, 10, 0)
-        )
-        prepared = machine._prepare_ops_for_encoding(ops)
-        assert not any(
-            prepared.command_type(i) == CommandType.BEZIER_TO
-            for i in range(prepared.len())
-        )
-        assert any(
-            prepared.command_type(i) == CommandType.LINE_TO
-            for i in range(prepared.len())
-        )
-
-    def test_prepare_ops_preserves_curves_when_enabled(self, lite_context):
-        machine = Machine(lite_context)
-        machine.set_supports_curves(True)
-        ops = Ops()
-        ops.move_to(0, 0)
-        ops.bezier_to(
-            control1=(10, 0, 0), control2=(10, 10, 0), end=(0, 10, 0)
-        )
-        prepared = machine._prepare_ops_for_encoding(ops)
-        assert any(
-            prepared.command_type(i) == CommandType.BEZIER_TO
-            for i in range(prepared.len())
-        )
-
-    def test_true_4th_axis_top_left_origin(self, isolated_machine):
-        """TRUE_4TH_AXIS degrees come from world-space Y regardless of
-        origin.  With TOP_LEFT the world→machine matrix flips Y but the
-        A-axis rotation must still correspond to the world-space distance
-        on the cylinder surface."""
-        rm = RotaryModule()
-        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
-        rm.set_axis(Axis.A)
-        isolated_machine.add_rotary_module(rm)
-        isolated_machine.set_origin(Origin.TOP_LEFT)
-
-        doc = Doc()
-        layer = doc.active_layer
-        layer.set_rotary_enabled(True)
-        layer.set_rotary_diameter(25.0)
-        layer.set_rotary_module_uid(rm.uid)
-
-        ops = Ops()
-        ops.job_start()
-        ops.layer_start(layer_uid=layer.uid)
-        ops.move_to(0, 0, 0)
-        ops.line_to(10, 10, 0)
-        ops.layer_end(layer_uid=layer.uid)
-        ops.job_end()
-
-        gcode = isolated_machine.encode_ops(ops, doc).text
-
-        diameter = 25.0
-        circumference = diameter * math.pi
-        expected_deg = (10.0 / circumference) * 360.0
-        formatted_deg = f"{expected_deg:.3f}".rstrip("0").rstrip(".")
-        assert formatted_deg in gcode
-        assert " A" in gcode
-
-    def test_replacement_scaled_y_top_left_origin(self, isolated_machine):
-        """AXIS_REPLACEMENT computes degrees from world-space Y.
-
-        After Phase 3 the kinematic mapping runs on world-space ops
-        before world→machine, so the scaled-Y value in the G-code
-        reflects the world-space surface distance (not machine-space).
-        """
-        rm = RotaryModule()
-        rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
-        rm.set_mm_per_rotation(100.0)
-        isolated_machine.add_rotary_module(rm)
-        isolated_machine.set_origin(Origin.TOP_LEFT)
-
-        doc = Doc()
-        layer = doc.active_layer
-        layer.set_rotary_enabled(True)
-        layer.set_rotary_diameter(25.0)
-        layer.set_rotary_module_uid(rm.uid)
-
-        ops = Ops()
-        ops.job_start()
-        ops.layer_start(layer_uid=layer.uid)
-        ops.move_to(0, 0, 0)
-        ops.line_to(10, 10, 0)
-        ops.layer_end(layer_uid=layer.uid)
-        ops.job_end()
-
-        gcode = isolated_machine.encode_ops(ops, doc).text
-
-        assert " A" not in gcode
-        assert " B" not in gcode
-        expected = 10.0 * 100.0 / (math.pi * 25.0)
-        formatted = f"{expected:.3f}".rstrip("0").rstrip(".")
-        assert formatted in gcode
-
-    def test_true_4th_axis_reversed_y(self, isolated_machine):
-        """TRUE_4TH_AXIS with reversed Y axis: degrees still match
-        world-space surface distance."""
-        rm = RotaryModule()
-        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
-        rm.set_axis(Axis.A)
-        isolated_machine.add_rotary_module(rm)
-
-        isolated_machine.set_reverse_y_axis(True)
-
-        doc = Doc()
-        layer = doc.active_layer
-        layer.set_rotary_enabled(True)
-        layer.set_rotary_diameter(25.0)
-        layer.set_rotary_module_uid(rm.uid)
-
-        ops = Ops()
-        ops.job_start()
-        ops.layer_start(layer_uid=layer.uid)
-        ops.move_to(0, 0, 0)
-        ops.line_to(10, 10, 0)
-        ops.layer_end(layer_uid=layer.uid)
-        ops.job_end()
-
-        gcode = isolated_machine.encode_ops(ops, doc).text
-
-        diameter = 25.0
-        circumference = diameter * math.pi
-        expected_deg = (10.0 / circumference) * 360.0
-        formatted_deg = f"{expected_deg:.3f}".rstrip("0").rstrip(".")
-        assert formatted_deg in gcode
 
 
 class TestSetSupportsArcs:

@@ -75,7 +75,7 @@ def simple_ops():
 @pytest.fixture
 def job_artifact(simple_ops, machine):
     """Creates a JobArtifact containing simple_ops with encoded G-code."""
-    encoded = machine.encode_ops(simple_ops, None)
+    encoded = machine.driver.get_encoder().encode(simple_ops, machine, None)
     encoded_output_bytes = np.frombuffer(
         encoded.to_json().encode("utf-8"), dtype=np.uint8
     )

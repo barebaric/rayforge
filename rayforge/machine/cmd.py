@@ -4,15 +4,20 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Callable, Coroutine, Dict, Optional
 
+import numpy as np
+
 from blinker import Signal
 from raygeo.ops import Ops
 
 from ..context import get_context
 from ..pipeline.artifact import JobArtifact
 from ..pipeline.artifact.handle import BaseArtifactHandle
+from ..pipeline.coordspace import MachineSpace
 from ..pipeline.encoder.base import EncodedOutput
 from ..pipeline.encoder.context import GcodeContext, JobInfo
 from ..shared.util.template import TemplateFormatter
+from .driver import get_driver_cls
+from .driver.dummy import NoDeviceDriver
 from .job_monitor import JobMonitor
 
 if TYPE_CHECKING:
@@ -111,9 +116,9 @@ class MachineCmd:
             # Signal that the job has started.
             self._scheduler(self.job_started.send, self)
 
-            # If machine code or op map are missing, generate them now
+            # Pipeline must have produced encoded output.
             if encoded is None:
-                encoded = machine.encode_ops(ops, self._editor.doc)
+                raise RuntimeError("Pipeline did not produce encoded output.")
 
             if machine.reports_granular_progress:
                 await machine.driver.run(
@@ -193,7 +198,18 @@ class MachineCmd:
         frame_with_laser = frame_ops * head.frame_repeat_count
         frame_with_laser.job_end()
 
-        encoded = machine.encode_ops(frame_with_laser, self._editor.doc)
+        # Transform world-space frame ops to machine space.
+        space = MachineSpace.from_machine(machine)
+        combined = space.get_world_to_machine_matrix()
+        if machine.reverse_z_axis:
+            z_flip = np.eye(4)
+            z_flip[2, 2] = -1.0
+            combined = z_flip @ combined
+        frame_with_laser.transform(combined)
+
+        # Encode via the driver encoder (no pre-processing needed).
+        encoder = _create_driver_encoder(machine)
+        encoded = encoder.encode(frame_with_laser, machine, self._editor.doc)
 
         await self._execute_monitored_job(
             frame_with_laser,
@@ -425,3 +441,15 @@ class MachineCmd:
             self._editor.task_manager.add_coroutine(
                 lambda ctx: driver.move_to(x, y), key="move-to"
             )
+
+
+def _create_driver_encoder(machine: "Machine"):
+    """Instantiate the machine's driver encoder."""
+    if machine.driver_name:
+        try:
+            driver_cls = get_driver_cls(machine.driver_name)
+        except (ValueError, ImportError):
+            driver_cls = NoDeviceDriver
+    else:
+        driver_cls = NoDeviceDriver
+    return driver_cls.create_encoder(machine)

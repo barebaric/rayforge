@@ -216,7 +216,7 @@ class TestGrblSerialDriver:
         driver.job_finished.send = job_finished_mock
         callback_mock = MagicMock()
 
-        encoded = driver._machine.encode_ops(ops, doc)
+        encoded = driver.get_encoder().encode(ops, driver._machine, doc)
         run_task = asyncio.create_task(
             driver.run(encoded, doc, ops, callback_mock)
         )
@@ -780,7 +780,7 @@ class TestGrblSerialDriver:
         ops.line_to(20, 20, 0)
         ops.line_to(30, 30, 0)
 
-        encoded = driver._machine.encode_ops(ops, doc)
+        encoded = driver.get_encoder().encode(ops, driver._machine, doc)
         run_task = asyncio.create_task(
             driver.run(encoded, doc, ops, callback_mock)
         )

@@ -15,7 +15,6 @@ Coordinate Spaces:
 import gc
 
 import pytest
-from raygeo.ops import Ops
 
 from rayforge import config
 from rayforge import context as context_module
@@ -127,40 +126,6 @@ class TestCoordinateSpaces:
         result = space.world_point_to_machine(10.0, 20.0)
         assert result[0] == pytest.approx(expected_mx)
         assert result[1] == pytest.approx(expected_my)
-
-    @pytest.mark.parametrize(
-        "origin,reverse_x,reverse_y,expected_mx,expected_my",
-        WORLD_TO_MACHINE_SCENARIOS,
-    )
-    def test_world_point_to_machine_matches_encoder(
-        self, machine, origin, reverse_x, reverse_y, expected_mx, expected_my
-    ):
-        """
-        Verify world_point_to_machine matches _prepare_ops_for_encoding.
-        """
-        machine.set_axis_extents(100.0, 100.0)
-        machine.set_origin(origin)
-        machine.set_reverse_x_axis(reverse_x)
-        machine.set_reverse_y_axis(reverse_y)
-        machine.wcs_origin_is_workarea_origin = False
-        machine.update_wcs_offset("G54", (0.0, 0.0, 0.0))
-
-        # Create an ops with a single point
-        ops = Ops()
-        ops.move_to(10.0, 20.0, 0.0)
-
-        # Get encoder output
-        prepared = machine._prepare_ops_for_encoding(ops)
-        end = prepared.endpoint(0)
-        encoder_result = (end[0], end[1])
-
-        # Get world_point_to_machine output
-        space = machine.get_coordinate_space()
-        w2m_result = space.world_point_to_machine(10.0, 20.0)
-
-        # They should match
-        assert w2m_result[0] == pytest.approx(encoder_result[0])
-        assert w2m_result[1] == pytest.approx(encoder_result[1])
 
     # -- Workarea origin offset --
     # Margins are: (left, top, right, bottom) = (10, 20, 30, 40)
