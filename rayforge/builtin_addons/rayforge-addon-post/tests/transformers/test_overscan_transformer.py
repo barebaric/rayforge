@@ -6,17 +6,13 @@ from raygeo.ops import Ops
 from raygeo.ops.state import AirAssistMode
 from raygeo.ops.types import CommandType, RasterMode, SectionType
 
-from rayforge.pipeline.transformer.base import ExecutionPhase
-from rayforge.pipeline.transformer.specs import (
-    apply_transformer_specs,
-    build_transformer_specs,
-)
-
 
 def _apply(transformer, ops, settings=None):
     """Run a transformer through the Rust spec dispatch."""
-    specs = build_transformer_specs([transformer], None, None, settings)
-    apply_transformer_specs(ops, specs)
+    if not transformer.enabled:
+        return
+    specs = [transformer.to_spec(None, None, settings)]
+    Ops.apply_transformers(ops, specs, progress_cb=None)
 
 
 @pytest.fixture
@@ -111,11 +107,6 @@ def test_no_op_with_zero_distance(transformer: OverscanTransformer):
     _apply(transformer, ops)
 
     assert ops.len() == original_len
-
-
-def test_execution_phase_is_correct(transformer: OverscanTransformer):
-    """Overscan must run before optimization."""
-    assert transformer.execution_phase == ExecutionPhase.POST_PROCESSING
 
 
 def test_run_with_constant_power_lines_from_rasterizer(

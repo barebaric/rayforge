@@ -79,7 +79,7 @@ from .stage.assembler_helpers import (
 )
 from .transformer import OpsTransformer
 from .transformer.registry import transformer_registry
-from .transformer.specs import build_transformer_specs
+
 
 if TYPE_CHECKING:
     from ..core.doc import Doc
@@ -499,12 +499,13 @@ class IntentBuilder:
             return []
         stock = self._resolve_stock_geometries()
         settings = self._transformer_settings()
-        return build_transformer_specs(
-            transformers,
-            workpiece,
-            stock,
-            settings,
-        )
+
+        specs: list = []
+        for t in transformers:
+            if not t.enabled:
+                continue
+            specs.append(t.to_spec(workpiece, stock, settings))
+        return specs
 
     def _transformer_settings(self) -> Optional[Dict[str, Any]]:
         """Return the settings dict forwarded to ``to_spec``.

@@ -7,19 +7,14 @@ from raygeo.ops import Ops
 from raygeo.ops.types import CommandCategory, CommandType
 
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.transformer.base import ExecutionPhase
-from rayforge.pipeline.transformer.specs import (
-    apply_transformer_specs,
-    build_transformer_specs,
-)
 
 
 def _apply(transformer, ops, workpiece=None, stock_geometries=None):
     """Run a transformer through the Rust spec dispatch."""
-    specs = build_transformer_specs(
-        [transformer], workpiece, stock_geometries, None
-    )
-    apply_transformer_specs(ops, specs)
+    if not transformer.enabled:
+        return
+    specs = [transformer.to_spec(workpiece, stock_geometries, None)]
+    Ops.apply_transformers(ops, specs, progress_cb=None)
 
 
 @pytest.fixture
@@ -60,9 +55,6 @@ class TestCropTransformerInit:
 
 
 class TestCropTransformerProperties:
-    def test_execution_phase(self, transformer):
-        assert transformer.execution_phase == ExecutionPhase.POST_PROCESSING
-
     def test_position_sensitive(self):
         assert CropTransformer.POSITION_SENSITIVE is True
 

@@ -210,9 +210,6 @@ class RendererRegistry:
 
     def get(self, asset_type: str) -> Optional[Renderer]:
         """Get renderer for an asset type."""
-        from rayforge.worker_init import ensure_addons_loaded
-
-        ensure_addons_loaded()
         return self._renderers.get(asset_type)
 
     def all(self) -> Dict[str, Renderer]:

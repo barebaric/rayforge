@@ -59,10 +59,7 @@ def register_post_processors():
     """
     Automatically register post_processors transformers for all tests.
     """
-    from rayforge import worker_init
     from rayforge.pipeline.transformer.registry import transformer_registry
-
-    worker_init._worker_addons_loaded = True
 
     # Import and register transformers directly from the addon
     from post_processors.transformers import (

@@ -83,12 +83,6 @@ class StepRegistry:
         Returns:
             The step class, or None if not found.
         """
-        # Ensure addons are loaded in worker processes so the registry
-        # is populated before we try to look up step classes.
-        from rayforge.worker_init import ensure_addons_loaded
-
-        ensure_addons_loaded()
-
         return self._steps.get(name)
 
     def get_by_typelabel(self, typelabel: str) -> Optional[Type["Step"]]:
@@ -104,12 +98,6 @@ class StepRegistry:
         Returns:
             The step class, or None if not found.
         """
-        # Ensure addons are loaded in worker processes so the registry
-        # is populated before we try to look up step classes.
-        from rayforge.worker_init import ensure_addons_loaded
-
-        ensure_addons_loaded()
-
         for step_class in self._steps.values():
             class_typelabel = getattr(step_class, "TYPELABEL", None)
             if class_typelabel == typelabel:

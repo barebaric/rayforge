@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from raygeo.ops.transform.lead_in_out import LeadInOutSpec
 
-from rayforge.pipeline.transformer.base import ExecutionPhase, OpsTransformer
+from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
@@ -68,10 +68,6 @@ class LeadInOutTransformer(OpsTransformer):
             2 * max_acceleration * safety_factor
         )
         return max(0.5, distance_mm)
-
-    @property
-    def execution_phase(self) -> ExecutionPhase:
-        return ExecutionPhase.POST_PROCESSING
 
     @property
     def lead_in_mm(self) -> float:

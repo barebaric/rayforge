@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from blinker import Signal
@@ -10,29 +9,6 @@ from ...core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
-
-
-class ExecutionPhase(Enum):
-    """
-    Defines the execution order for different types of OpsTransformers.
-
-    The pipeline runner does not execute transformers in their simple list
-    order; it groups them by phase and runs them sequentially. This ensures
-    a logical flow where path continuity is preserved for transformers that
-    need it.
-
-    The execution order is always:
-    1. GEOMETRY_REFINEMENT: For transformers that modify path geometry but
-       require it to be continuous (e.g., Smooth).
-    2. PATH_INTERRUPTION: For transformers that intentionally create gaps or
-       discontinuities in paths (e.g., TabOpsTransformer).
-    3. POST_PROCESSING: For transformers that operate on the final, potentially
-       segmented paths (e.g., Optimize, MultiPass).
-    """
-
-    GEOMETRY_REFINEMENT = auto()
-    PATH_INTERRUPTION = auto()
-    POST_PROCESSING = auto()
 
 
 class OpsTransformer(ABC):
@@ -67,11 +43,6 @@ class OpsTransformer(ABC):
         self.set_enabled(enabled)
 
     @property
-    def execution_phase(self) -> ExecutionPhase:
-        """Defines when this transformer should run."""
-        return ExecutionPhase.POST_PROCESSING
-
-    @property
     @abstractmethod
     def label(self) -> str:
         """A short label for the transformation, used in UI."""
@@ -89,17 +60,15 @@ class OpsTransformer(ABC):
         workpiece: Optional[WorkPiece],
         stock_geometries: Optional[List["Geometry"]],
         settings: Optional[Dict[str, Any]],
-    ):
+    ) -> Any:
         """Return the typed Rust spec for this transformer.
 
         The returned object is one of the ``*Spec`` pyclasses defined in
         :mod:`raygeo.ops.transform`. Implementations must not return
         ``None``: if the transformer cannot run, raise an exception
-        describing the misconfiguration instead. ``build_transformer_specs``
-        only invokes this on enabled transformers, so a non-None return
-        is the contract for "this transformer should run".
+        describing the misconfiguration instead.
         """
-        raise NotImplementedError
+        pass
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the transformer's configuration to a dictionary."""
