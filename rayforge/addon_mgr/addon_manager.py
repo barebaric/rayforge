@@ -261,16 +261,16 @@ class AddonManager:
 
         try:
             logger.info(f"Fetching registry from {ADDON_REGISTRY_URL}")
-            with urllib.request.urlopen(
-                ADDON_REGISTRY_URL, timeout=10
-            ) as response:
-                if response.status != 200:
-                    logger.error(
-                        f"Registry fetch failed: HTTP {response.status}"
-                    )
-                    return []
-                data = response.read()
-                parsed = yaml.safe_load(data)
+            from ..shared.util.http import resilient_get
+
+            data = resilient_get(
+                ADDON_REGISTRY_URL,
+                headers={"Accept": "application/yaml"},
+            )
+            if data is None:
+                logger.error("Failed to fetch addon registry.")
+                return []
+            parsed = yaml.safe_load(data)
         except Exception as e:
             logger.error(f"Failed to fetch or parse registry: {e}")
             return []
