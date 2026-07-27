@@ -39,12 +39,20 @@ logger = logging.getLogger(__name__)
 
 class Pipeline:
     """
-    Raygeo-backed pipeline.
+    Public facade over the raygeo-backed intent pipeline.
 
-    Wraps an :class:`IntentController` that drives raygeo's
-    ``execute_stages``.  Converts raygeo outputs into rayforge artifacts
-    and exposes the same signal/property surface that the application
-    expects.
+    Owns the :class:`ArtifactStore` integration: translates the raw
+    raygeo outputs emitted by its internal :class:`IntentController`
+    into refcounted artifact handles that the UI and export paths
+    consume, and exposes the signal/property surface the rest of the
+    application expects.
+
+    Consumers (:class:`~rayforge.doceditor.editor.DocEditor`,
+    :class:`ViewManager`, UI widgets, test code) should depend on this
+    class only.  :class:`IntentController` and
+    :class:`~rayforge.pipeline.intent_builder.IntentBuilder` are
+    implementation details of the facade and may change without
+    notice.
     """
 
     def __init__(
