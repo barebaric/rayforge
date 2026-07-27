@@ -3,9 +3,7 @@ In-process artifact storage with reference counting.
 
 Replaces the former shared-memory (SHM) store.  All artifacts live as
 plain Python objects in a dict keyed by a UUID.  Handles carry the UUID
-in their ``shm_name`` field (kept for backward compatibility with
-existing handle subclasses and consumers) plus any metadata the
-artifact type needs.
+in their ``key`` field plus any metadata the artifact type needs.
 
 Lifecycle is managed through reference counting via
 :meth:`retain` / :meth:`release`.
@@ -43,7 +41,7 @@ class ArtifactStore:
     def _get_or_create_handle(
         self, proto_handle: BaseArtifactHandle
     ) -> BaseArtifactHandle:
-        key = proto_handle.shm_name
+        key = proto_handle.key
         canonical = self._handles.get(key)
         if canonical is not None:
             canonical.refcount += 1
@@ -60,7 +58,7 @@ class ArtifactStore:
     ) -> BaseArtifactHandle:
         """Store *artifact* and return a lightweight handle."""
         key = f"rf_{creator_tag}_{uuid.uuid4().hex[:16]}"
-        handle = artifact.create_handle(key, {})
+        handle = artifact.build_handle(key)
         handle.refcount = 1
         self._handles[key] = handle
         self._artifacts[key] = artifact
@@ -69,15 +67,13 @@ class ArtifactStore:
     def get(self, handle: BaseArtifactHandle) -> BaseArtifact:
         """Return the artifact referenced by *handle*."""
         try:
-            return self._artifacts[handle.shm_name]
+            return self._artifacts[handle.key]
         except KeyError:
-            raise RuntimeError(
-                f"Artifact '{handle.shm_name}' not found in store."
-            )
+            raise RuntimeError(f"Artifact '{handle.key}' not found in store.")
 
     def release(self, handle: BaseArtifactHandle) -> None:
         """Decrement refcount; delete artifact when it reaches zero."""
-        key = handle.shm_name
+        key = handle.key
         canonical = self._handles.get(key, handle)
         if canonical.refcount > 1:
             canonical.refcount -= 1
@@ -89,7 +85,7 @@ class ArtifactStore:
         self.release(handle)
 
     def retain(self, handle: BaseArtifactHandle) -> bool:
-        key = handle.shm_name
+        key = handle.key
         canonical = self._handles.get(key)
         if canonical:
             canonical.refcount += 1

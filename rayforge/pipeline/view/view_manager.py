@@ -318,10 +318,9 @@ class ViewManager:
                     f"_is_view_stale[{composite_id}]: no src handle -> STALE"
                 )
                 return True
-            if entry.source_handle.shm_name != source_handle.shm_name:
+            if entry.source_handle.key != source_handle.key:
                 logger.debug(
-                    f"_is_view_stale[{composite_id}]: "
-                    f"shm_name changed -> STALE"
+                    f"_is_view_stale[{composite_id}]: key changed -> STALE"
                 )
                 return True
             entry_gen_size = entry.source_handle.generation_size
@@ -416,7 +415,7 @@ class ViewManager:
         Check if two handles represent the same artifact.
 
         Two handles represent the same artifact if they point to the same
-        shared memory (shm_name), have the same generation_size, and the
+        shared memory (key), have the same generation_size, and the
         same source_dimensions.
 
         Returns True if both handles are None, or if they represent the
@@ -427,7 +426,7 @@ class ViewManager:
         if handle1 is None or handle2 is None:
             return False
         return (
-            handle1.shm_name == handle2.shm_name
+            handle1.key == handle2.key
             and handle1.generation_size == handle2.generation_size
             and handle1.source_dimensions == handle2.source_dimensions
         )
@@ -500,8 +499,8 @@ class ViewManager:
 
         logger.debug(
             f"on_workpiece_artifact_ready: composite_id={composite_id}, "
-            f"old_handle={old_handle.shm_name if old_handle else None}, "
-            f"new_handle={wp_handle.shm_name}, "
+            f"old_handle={old_handle.key if old_handle else None}, "
+            f"new_handle={wp_handle.key}, "
             f"same_artifact={same_artifact}"
         )
 
@@ -620,7 +619,7 @@ class ViewManager:
         """
         logger.debug(
             f"_request_view_render_internal: workpiece_uid={workpiece_uid}, "
-            f"step_uid={step_uid}, source_shm={source_handle.shm_name}"
+            f"step_uid={step_uid}, source_handle={source_handle.key}"
         )
 
         doc = self._pipeline.doc
