@@ -69,7 +69,7 @@ def view_manager(mock_pipeline, mock_store, mock_machine):
 @pytest.fixture
 def source_handle():
     return WorkPieceArtifactHandle(
-        shm_name="source_shm",
+        key="source_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -226,7 +226,7 @@ def test_progressive_rendering_sends_multiple_updates(
     view_manager.view_artifact_updated.connect(updated_handler)
 
     view_handle = WorkPieceViewArtifactHandle(
-        shm_name="test_progressive",
+        key="test_progressive",
         bbox_mm=(0, 0, 1, 1),
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
@@ -275,7 +275,7 @@ def test_on_chunk_available_receives_chunks(view_manager, mock_store, context):
     composite_id = (wp_uid, step_uid)
 
     view_handle = WorkPieceViewArtifactHandle(
-        shm_name="view_shm",
+        key="view_shm",
         bbox_mm=(0, 0, 10, 10),
         workpiece_size_mm=(10.0, 10.0),
         handle_class_name="WorkPieceViewArtifactHandle",
@@ -288,7 +288,7 @@ def test_on_chunk_available_receives_chunks(view_manager, mock_store, context):
     )
 
     chunk_handle = WorkPieceArtifactHandle(
-        shm_name="chunk_shm",
+        key="chunk_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -376,7 +376,7 @@ def test_throttled_notification_limits_update_frequency(
     )
 
     chunk_handle = WorkPieceArtifactHandle(
-        shm_name="chunk_shm",
+        key="chunk_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -428,10 +428,10 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
     release_calls = []
 
     def mock_retain(handle):
-        retain_calls.append(handle.shm_name)
+        retain_calls.append(handle.key)
 
     def mock_release(handle):
-        release_calls.append(handle.shm_name)
+        release_calls.append(handle.key)
 
     mock_store.retain.side_effect = mock_retain
     mock_store.release.side_effect = mock_release
@@ -452,7 +452,7 @@ def test_incremental_bitmap_rendering_draws_chunk_to_view(
     mock_store.get.return_value = chunk_artifact
 
     chunk_handle = WorkPieceArtifactHandle(
-        shm_name="chunk_shm",
+        key="chunk_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -489,7 +489,7 @@ def test_get_render_components(view_manager, mock_store, context):
     composite_id = (wp_uid, step_uid)
 
     handle = WorkPieceViewArtifactHandle(
-        shm_name="test",
+        key="test",
         bbox_mm=(0, 0, 1, 1),
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
@@ -585,7 +585,7 @@ def test_on_workpiece_artifact_ready_releases_old_handle(
     mock_step.uid = step_uid
 
     old_handle = WorkPieceArtifactHandle(
-        shm_name="old_shm",
+        key="old_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -683,7 +683,7 @@ def test_on_workpiece_artifact_ready_different_handle_emits_signal(
     view_manager._pipeline.doc = mock_doc
 
     old_handle = WorkPieceArtifactHandle(
-        shm_name="old_shm",
+        key="old_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -917,7 +917,7 @@ def test_view_entry_defaults():
 
 def test_view_entry_with_values():
     handle = WorkPieceViewArtifactHandle(
-        shm_name="test",
+        key="test",
         bbox_mm=(0, 0, 1, 1),
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
@@ -989,7 +989,7 @@ def test_is_view_stale_entry_exists_but_no_source_handle(
     )
 
 
-def test_is_view_stale_source_handle_shm_name_changed(
+def test_is_view_stale_source_handle_key_changed(
     view_manager, context, source_handle
 ):
     wp_uid = "wp_uid"
@@ -997,7 +997,7 @@ def test_is_view_stale_source_handle_shm_name_changed(
     composite_id = (wp_uid, step_uid)
 
     old_source_handle = WorkPieceArtifactHandle(
-        shm_name="old_shm",
+        key="old_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -1007,7 +1007,7 @@ def test_is_view_stale_source_handle_shm_name_changed(
         generation_id=0,
     )
     new_source_handle = WorkPieceArtifactHandle(
-        shm_name="new_shm",
+        key="new_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -1057,11 +1057,11 @@ def test_handles_represent_same_artifact_same_handle(
     )
 
 
-def test_handles_represent_same_artifact_different_shm_name(
+def test_handles_represent_same_artifact_different_key(
     view_manager, source_handle
 ):
     other_handle = WorkPieceArtifactHandle(
-        shm_name="different_shm",
+        key="different_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -1082,7 +1082,7 @@ def test_handles_represent_same_artifact_different_generation_size(
     view_manager, source_handle
 ):
     other_handle = WorkPieceArtifactHandle(
-        shm_name="source_shm",
+        key="source_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -1103,7 +1103,7 @@ def test_handles_represent_same_artifact_different_source_dimensions(
     view_manager, source_handle
 ):
     other_handle = WorkPieceArtifactHandle(
-        shm_name="source_shm",
+        key="source_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -1198,7 +1198,7 @@ def test_alternating_artifact_ready_signals(
 
     first_handle = source_handle
     second_handle = WorkPieceArtifactHandle(
-        shm_name="second_shm",
+        key="second_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -1275,7 +1275,7 @@ def test_simulated_position_only_transform_changes(
     view_manager.source_artifact_ready.connect(signal_handler)
 
     initial_handle = WorkPieceArtifactHandle(
-        shm_name="initial_shm",
+        key="initial_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -1294,7 +1294,7 @@ def test_simulated_position_only_transform_changes(
     assert signal_handler.call_count == 1, "First call should emit signal"
 
     same_artifact_handle = WorkPieceArtifactHandle(
-        shm_name="initial_shm",
+        key="initial_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -1352,7 +1352,7 @@ def test_alternating_signal_debug(view_manager, mock_store, context, caplog):
     handles = []
     for i in range(10):
         handle = WorkPieceArtifactHandle(
-            shm_name="same_shm",
+            key="same_shm",
             handle_class_name="WorkPieceArtifactHandle",
             artifact_type_name="WorkPieceArtifact",
             is_scalable=True,
@@ -1385,13 +1385,13 @@ def test_alternating_signal_debug(view_manager, mock_store, context, caplog):
     assert call_results == expected, f"Expected all 1s, got {call_results}"
 
 
-def test_alternating_shm_names_cause_alternating_signals(
+def test_alternating_keys_cause_alternating_signals(
     view_manager, mock_store, context
 ):
     """
-    If the pipeline sends different shm_names on alternating calls,
+    If the pipeline sends different keys on alternating calls,
     signals will be emitted on alternating calls. This test verifies
-    that our deduplication logic works based on shm_name comparison.
+    that our deduplication logic works based on key comparison.
     """
     wp_uid = str(uuid.uuid4())
     step_uid = str(uuid.uuid4())
@@ -1416,7 +1416,7 @@ def test_alternating_shm_names_cause_alternating_signals(
     view_manager.source_artifact_ready.connect(signal_handler)
 
     handle_a = WorkPieceArtifactHandle(
-        shm_name="handle_a_shm",
+        key="handle_a_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -1426,7 +1426,7 @@ def test_alternating_shm_names_cause_alternating_signals(
         generation_id=0,
     )
     handle_b = WorkPieceArtifactHandle(
-        shm_name="handle_b_shm",
+        key="handle_b_shm",
         handle_class_name="WorkPieceArtifactHandle",
         artifact_type_name="WorkPieceArtifact",
         is_scalable=True,
@@ -1480,7 +1480,7 @@ def test_shutdown_releases_handles(view_manager, mock_store, source_handle):
     view_manager._source_artifact_handles[composite_id] = source_handle
 
     view_handle = WorkPieceViewArtifactHandle(
-        shm_name="test",
+        key="test",
         bbox_mm=(0, 0, 1, 1),
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
@@ -1500,7 +1500,7 @@ def test_get_view_handle(view_manager):
     wp_uid = "wp_uid"
     step_uid = "step_uid"
     view_handle = WorkPieceViewArtifactHandle(
-        shm_name="test",
+        key="test",
         bbox_mm=(0, 0, 1, 1),
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",
@@ -1529,7 +1529,7 @@ def test_reconcile_removes_obsolete_entries(
     view_manager._source_artifact_handles[composite_id] = source_handle
 
     view_handle = WorkPieceViewArtifactHandle(
-        shm_name="test",
+        key="test",
         bbox_mm=(0, 0, 1, 1),
         workpiece_size_mm=(1.0, 1.0),
         handle_class_name="WorkPieceViewArtifactHandle",

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, Tuple, Type
+from typing import Any, Dict, Tuple
 
 import numpy as np
 
@@ -79,66 +79,10 @@ class TextureData:
 
 
 class BaseArtifact(ABC):
-    """
-    Abstract base class for all artifact types in the pipeline.
-    Contains common fields shared by all artifact types and manages a registry
-    of all its subclasses for dynamic instantiation.
-    """
-
-    _registry: Dict[str, Type[BaseArtifact]] = {}
-
-    def __init_subclass__(cls, **kwargs):
-        """
-        This special method is called whenever a class inherits from
-        BaseArtifact. It automatically registers the new artifact type.
-        """
-        super().__init_subclass__(**kwargs)
-        cls._registry[cls.__name__] = cls
-
-    @classmethod
-    def get_registered_class(cls, name: str) -> Type[BaseArtifact]:
-        """Looks up an artifact class in the registry by its name."""
-        try:
-            return cls._registry[name]
-        except KeyError:
-            raise TypeError(
-                f"Unknown artifact type '{name}'. Was its module imported?"
-            )
-
     @property
     def artifact_type(self) -> str:
-        """Returns the type of the artifact."""
         return self.__class__.__name__
 
     @abstractmethod
-    def create_handle(
-        self,
-        shm_name: str,
-        array_metadata: Dict[str, Dict[str, Any]],
-    ) -> BaseArtifactHandle:
-        """
-        Creates the appropriate, typed handle for this artifact.
-        Each subclass must implement this to return its specific handle type.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_arrays_for_storage(self) -> Dict[str, np.ndarray]:
-        """
-        Gets a dictionary of all NumPy arrays that need to be stored in
-        shared memory for this artifact.
-        """
-        raise NotImplementedError
-
-    @classmethod
-    @abstractmethod
-    def from_storage(
-        cls: Type[BaseArtifact],
-        handle: BaseArtifactHandle,
-        arrays: Dict[str, np.ndarray],
-    ) -> BaseArtifact:
-        """
-        Reconstructs an artifact instance from its handle and a dictionary of
-        NumPy array views from shared memory.
-        """
-        raise NotImplementedError
+    def build_handle(self, key: str) -> BaseArtifactHandle:
+        pass

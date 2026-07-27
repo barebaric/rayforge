@@ -7,23 +7,16 @@ _handle_registry: Dict[str, Type["BaseArtifactHandle"]] = {}
 
 
 class BaseArtifactHandle(ABC):
-    """
-    A lightweight, serializable handle to artifact data stored in shared
-    memory. This object is small and can be passed efficiently between
-    processes.
-    """
-
     def __init__(
         self,
-        shm_name: str,
+        key: str,
         handle_class_name: str,
         artifact_type_name: str,
         generation_id: int,
         array_metadata: Optional[Dict[str, Any]] = None,
         **_kwargs,
     ):
-        """Initializes the base handle."""
-        self.shm_name = shm_name
+        self.key = key
         self.handle_class_name = handle_class_name
         self.artifact_type_name = artifact_type_name
         self.generation_id = generation_id
@@ -58,10 +51,9 @@ class BaseArtifactHandle(ABC):
 
     def __hash__(self) -> int:
         """
-        Provides a hash based on the shared memory name, which is unique
-        per handle.
+        Provides a hash based on the handle key.
         """
-        return hash(self.shm_name)
+        return hash(self.key)
 
     @classmethod
     def from_dict(
