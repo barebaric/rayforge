@@ -314,7 +314,11 @@ class IntentController:
         def _worker() -> None:
             if self._doc is None:
                 return
-            builder = IntentBuilder(machine=self._machine, generation_id=gen)
+            builder = IntentBuilder(
+                machine=self._machine,
+                generation_id=gen,
+                loop=getattr(self._task_manager, "loop", None),
+            )
             nodes = builder.build(self._doc)
             self._refresh_key_to_item_map(nodes)
             new_intent = create_intent_from_nodes(nodes)
