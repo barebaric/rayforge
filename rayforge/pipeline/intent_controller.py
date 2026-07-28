@@ -47,7 +47,7 @@ from raygeo.cnc.execution.intent import (
 from raygeo.pipeline.execute import Pipeline as RaygeoPipeline
 from raygeo.pipeline.request import NodeRequest
 
-from .intent_builder import IntentBuilder
+from .intent_builder import IntentBuilder, parse_workpiece_key
 
 if TYPE_CHECKING:
     from ..core.doc import Doc
@@ -419,7 +419,11 @@ class IntentController:
         """
         gen = self._generation_id
         if key.startswith("workpiece:"):
-            wp_uid, step_uid = key.split(":", 1)[1].rsplit(":", 1)
+            parsed = parse_workpiece_key(key)
+            if parsed is None:
+                logger.warning("Malformed workpiece key: %s", key)
+                return
+            wp_uid, step_uid = parsed
             workpiece = self._find_workpiece(wp_uid)
             step = self._find_step(step_uid)
             if workpiece is not None and step is not None:
@@ -484,7 +488,12 @@ class IntentController:
             key = n.key
             # ``workpiece:{wp_uid}:{step_uid}``
             if key.startswith("workpiece:"):
-                _, wp_uid, _step_uid = key.split(":")
+                parsed = parse_workpiece_key(key)
+                if parsed is None:
+                    raise ValueError(
+                        f"Malformed workpiece key in node key map: {key!r}"
+                    )
+                wp_uid, _step_uid = parsed
                 wp = workpieces.get(wp_uid)
                 if wp is not None:
                     self._key_to_item[key] = wp
