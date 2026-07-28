@@ -14,6 +14,7 @@ from typing import (
 )
 
 from blinker import Signal
+from raygeo.pipeline.completed import ErrorKind
 from raygeo.pipeline.execute import Pipeline as RaygeoPipeline
 
 from ..core.doc import Doc
@@ -62,6 +63,7 @@ class Pipeline:
         task_manager: "TaskManager",
         artifact_store: ArtifactStore,
         machine: Optional["Machine"],
+        cache_budget_bytes: int = 2 * 1024 * 1024 * 1024,
     ):
         if machine is None:
             raise RuntimeError("Machine is not configured in context")
@@ -87,8 +89,9 @@ class Pipeline:
         self.job_time_updated = Signal()
         self.visual_chunk_available = Signal()
         self.data_stale = Signal()
+        self.pipeline_error = Signal()
 
-        self._raygeo_pipeline = RaygeoPipeline()
+        self._raygeo_pipeline = RaygeoPipeline(budget_bytes=cache_budget_bytes)
         self._intent_ctl = IntentController(
             doc=doc,
             task_manager=task_manager,
@@ -122,6 +125,7 @@ class Pipeline:
         ctl.rebuild_started.connect(self._on_rebuild_started)
         ctl.rebuild_finished.connect(self._on_rebuild_finished)
         ctl.data_stale.connect(self._on_data_stale)
+        ctl.pipeline_error.connect(self._on_pipeline_error)
 
     # ------------------------------------------------------------------
     # Properties
@@ -223,6 +227,10 @@ class Pipeline:
     def recalculate(self, force: bool = False) -> None:
         self._intent_ctl.force_rebuild()
 
+    def set_cache_budget_bytes(self, budget: int) -> None:
+        """Update the pipeline cache byte budget dynamically."""
+        self._raygeo_pipeline.set_cache_budget_bytes(budget)
+
     # ------------------------------------------------------------------
     # Shutdown
     # ------------------------------------------------------------------
@@ -254,6 +262,17 @@ class Pipeline:
 
     def _on_data_stale(self, sender) -> None:
         self.data_stale.send(self)
+
+    def _on_pipeline_error(self, sender, *, error_kind) -> None:
+        if error_kind == ErrorKind.CACHE_BUDGET_EXCEEDED:
+            message = (
+                "Scene too complex for the current cache budget. "
+                "Reduce the number of layers or increase the cache budget."
+            )
+        else:
+            message = f"Pipeline error: {error_kind.value}"
+        logger.error("Pipeline execution error: %s", message)
+        self.pipeline_error.send(self, message=message)
 
     def _check_busy(self) -> None:
         self._set_busy(self.is_busy)

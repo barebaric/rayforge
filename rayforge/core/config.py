@@ -81,6 +81,8 @@ class Config:
         self.usage_consent_date: Optional[str] = None
         # Default DPI for unitless SVG imports
         self.import_dpi: float = 96.0
+        # Cache budget for the raygeo pipeline (default 2 GiB)
+        self.cache_budget_bytes: int = 2 * 1024 * 1024 * 1024
         # Language preference: None = system default, or a code like "de"
         self.language: Optional[str] = None
         self.changed = Signal()
@@ -149,6 +151,13 @@ class Config:
         if self.import_dpi == dpi:
             return
         self.import_dpi = dpi
+        self.changed.send(self)
+
+    def set_cache_budget_bytes(self, budget: int):
+        """Sets the pipeline cache budget in bytes."""
+        if self.cache_budget_bytes == budget:
+            return
+        self.cache_budget_bytes = budget
         self.changed.send(self)
 
     def set_auto_pipeline(self, enabled: bool):
@@ -235,6 +244,7 @@ class Config:
             "ops_color_mode": self.ops_color_mode.value,
             "usage_consent_date": self.usage_consent_date,
             "import_dpi": self.import_dpi,
+            "cache_budget_bytes": self.cache_budget_bytes,
             "language": self.language,
         }
 
@@ -299,6 +309,11 @@ class Config:
 
         # Load import DPI
         config.import_dpi = data.get("import_dpi", 96.0)
+
+        # Load cache budget
+        config.cache_budget_bytes = data.get(
+            "cache_budget_bytes", 2 * 1024 * 1024 * 1024
+        )
 
         # Load language preference (None = system default)
         config.language = data.get("language", None)

@@ -1353,6 +1353,7 @@ class Canvas3D(Gtk.GLArea):
         finished.  The compiled artifact is available directly as
         ``task.result_value`` since the compilation runs in-process.
         """
+        self._scene_preparation_task = None
         if task.get_status() != "completed":
             self._compiled_artifact = None
             self._op_player = None
@@ -1900,6 +1901,11 @@ class Canvas3D(Gtk.GLArea):
         if self._gl_initialized and self._color_set is not None:
             if self._scene_preparation_task:
                 self._scene_preparation_task.cancel()
+                logger.debug(
+                    "[CANVAS3D] Scene compilation already in progress, "
+                    "skipping duplicate."
+                )
+                return
 
             job_handle = self._current_job_handle
             if job_handle is None:

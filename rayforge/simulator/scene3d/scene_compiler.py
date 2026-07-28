@@ -10,6 +10,7 @@ are indexed 1:1 with the player's command index.
 from __future__ import annotations
 
 import logging
+from array import array
 from dataclasses import dataclass, field
 from typing import Callable, List, Optional, Tuple
 
@@ -106,10 +107,10 @@ def _apply_cylinder(
     return result_verts, result_colors, cum_subs
 
 
-def _to_arr(raw: List[float], cols: int) -> np.ndarray:
+def _to_arr(raw: array, cols: int) -> np.ndarray:
     if not raw:
         return np.empty((0, cols), dtype=np.float32)
-    return np.array(raw, dtype=np.float32).reshape(-1, cols)
+    return np.frombuffer(raw, dtype=np.float32).reshape(-1, cols)
 
 
 def _to_flat(raw: np.ndarray) -> np.ndarray:
@@ -122,7 +123,7 @@ def _extract_zero_power_segments(
     ops: Ops,
     idx: int,
     start_pos: Tuple[float, float, float],
-    zero_power_v: List[float],
+    zero_power_v: array,
     end_pos: Optional[Tuple[float, float, float]] = None,
 ) -> None:
     end = ops.endpoint(idx)
@@ -155,9 +156,9 @@ def _encode_overlay_segments(
     ops: Ops,
     idx: int,
     start_pos: Tuple[float, float, float],
-    ov_pos: List[float],
-    ov_pow: List[float],
-    ov_lid: List[int],
+    ov_pos: array,
+    ov_pow: array,
+    ov_lid: array,
     laser_index: int = 0,
     end_pos: Optional[Tuple[float, float, float]] = None,
 ) -> int:
@@ -345,14 +346,14 @@ class _LayerAccumulator:
     )
 
     def __init__(self, total_cmds: int, is_rotary: bool):
-        self.pv: List[float] = []
-        self.pvv: List[float] = []
-        self.pvl: List[int] = []
-        self.tv: List[float] = []
-        self.zpv: List[float] = []
-        self.ov_pos: List[float] = []
-        self.ov_pow: List[float] = []
-        self.ov_lid: List[int] = []
+        self.pv: array = array("f")
+        self.pvv: array = array("f")
+        self.pvl: array = array("i")
+        self.tv: array = array("f")
+        self.zpv: array = array("f")
+        self.ov_pos: array = array("f")
+        self.ov_pow: array = array("f")
+        self.ov_lid: array = array("i")
         self.pv_cum = 0
         self.tv_cum = 0
         self.ov_cum = 0
@@ -405,12 +406,20 @@ class _LayerAccumulator:
     ):
         pv_arr = _to_arr(self.pv, 3)
         pvv_arr = _to_arr(self.pvv, 1)
-        pvl_arr = np.array(self.pvl, dtype=np.float32).reshape(-1, 1)
+        pvl_arr = (
+            np.frombuffer(self.pvl, dtype=np.int32)
+            .astype(np.float32)
+            .reshape(-1, 1)
+        )
         tv_arr = _to_arr(self.tv, 3)
         zpv_arr = _to_arr(self.zpv, 3)
         ov_pos_arr = _to_arr(self.ov_pos, 3)
         ov_pow_arr = _to_arr(self.ov_pow, 1)
-        ov_lid_arr = np.array(self.ov_lid, dtype=np.float32).reshape(-1, 1)
+        ov_lid_arr = (
+            np.frombuffer(self.ov_lid, dtype=np.int32)
+            .astype(np.float32)
+            .reshape(-1, 1)
+        )
 
         pv_arr = _transform_verts(pv_arr, transform)
         tv_arr = _transform_verts(tv_arr, transform)
