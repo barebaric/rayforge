@@ -35,6 +35,7 @@ representation of the inputs that affect a node's output:
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -157,9 +158,11 @@ class IntentBuilder:
         self,
         machine: "Optional[Machine]" = None,
         generation_id: int = 0,
+        loop: "Optional[asyncio.AbstractEventLoop]" = None,
     ):
         self._machine = machine
         self._generation_id = generation_id
+        self._loop = loop
         self._doc: Optional["Doc"] = None
 
     @property
@@ -230,11 +233,38 @@ class IntentBuilder:
         """
         pos_sensitive = step.is_position_sensitive()
         inputs: List[Tuple[str, int, WorkPiece]] = []
-        for wp in workpieces:
+
+        # Parallelise per-workpiece Part construction (rendering + image
+        # preprocessing) when we have a reference to the TaskManager's
+        # event loop and more than one workpiece.  The heavy work
+        # (dithering, grayscale, auto-levels) delegates to
+        # raygeo Rust code which releases the GIL, so threads yield
+        # real parallelism.
+        stages: "List[StageSpec.Compute]"
+        loop = self._loop
+        if loop is not None and len(workpieces) > 1:
+
+            async def _gather():
+                coros = [
+                    loop.run_in_executor(
+                        None,
+                        self._wp_stage,
+                        step,
+                        wp,
+                    )
+                    for wp in workpieces
+                ]
+                return await asyncio.gather(*coros)
+
+            future = asyncio.run_coroutine_threadsafe(_gather(), loop)
+            stages = future.result()
+        else:
+            stages = [self._wp_stage(step, wp) for wp in workpieces]
+
+        for wp, stage in zip(workpieces, stages):
             key = workpiece_key(wp.uid, step.uid)
             token = self._compute_token(step, wp, pos_sensitive)
             inputs.append((key, token, wp))
-            stage = self._wp_stage(step, wp)
             out.append(self._make_request(key, token, stage))
         return inputs
 
@@ -480,15 +510,12 @@ class IntentBuilder:
             return None, settings, _fallback_machine_defaults(step)
         settings["arc_tolerance"] = self._machine.arc_tolerance
         settings["machine_supports_arcs"] = self._machine.supports_arcs
-        settings["machine_supports_curves"] = (
-            self._machine.supports_curves
-        )
+        settings["machine_supports_curves"] = self._machine.supports_curves
         try:
             laser = step.get_selected_laser(self._machine)
         except ValueError:
             logger.debug(
-                "Step %s has no laser heads on machine; "
-                "using bare defaults",
+                "Step %s has no laser heads on machine; using bare defaults",
                 step.uid,
             )
             return None, settings, _fallback_machine_defaults(step)
