@@ -879,9 +879,9 @@ class IntentBuilder:
         """Build per-layer :class:`RotaryMappingSpec` entries."""
         mappings: list = []
         for layer in doc.layers:
-            if not layer.rotary_module_uid or not layer.rotary_enabled:
+            if not layer.rotary_enabled:
                 continue
-            module = machine.rotary_modules.get(layer.rotary_module_uid or "")
+            module = machine.get_rotary_module_for_layer(layer)
             if module is None:
                 continue
 
@@ -1129,8 +1129,8 @@ def _machine_transform_config_payload(
     # Rotary module UIDs per layer (to detect rotary config changes).
     for layer in doc.layers:
         uid = layer.uid
-        if layer.rotary_module_uid and layer.rotary_enabled:
-            module = machine.rotary_modules.get(layer.rotary_module_uid)
+        if layer.rotary_enabled:
+            module = machine.get_rotary_module_for_layer(layer)
             if module is not None:
                 payload[f"rotary:{uid}"] = {
                     "module_uid": module.uid,

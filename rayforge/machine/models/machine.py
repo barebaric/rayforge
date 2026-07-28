@@ -296,8 +296,8 @@ class Machine:
 
     def configure_for_layer(self, layer: Optional["Layer"]) -> None:
         required_rotaries: List[RotaryModule] = []
-        if layer and layer.rotary_enabled and layer.rotary_module_uid:
-            module = self.rotary_modules.get(layer.rotary_module_uid)
+        if layer and layer.rotary_enabled:
+            module = self.get_rotary_module_for_layer(layer)
             if module:
                 required_rotaries.append(module)
         if self._assembly_needs_rebuild(required_rotaries):
@@ -964,10 +964,35 @@ class Machine:
             )
         return None
 
-    def get_rotary_axis_for_layer(self, layer: "Layer") -> Optional[Axis]:
-        if not layer.rotary_enabled or not layer.rotary_module_uid:
+    def get_rotary_module_for_layer(
+        self, layer: "Layer"
+    ) -> Optional[RotaryModule]:
+        """Resolve the effective rotary module for *layer*.
+
+        Returns the module referenced by
+        :attr:`layer.rotary_module_uid` when it exists on this
+        machine.  When the layer has rotary enabled but its module
+        UID is missing or invalid, falls back to the machine's
+        default module (or the first available module when no
+        default is set) so that rotary mapping is still applied.
+        """
+        if not layer.rotary_enabled:
             return None
-        module = self.rotary_modules.get(layer.rotary_module_uid)
+        if layer.rotary_module_uid:
+            module = self.rotary_modules.get(layer.rotary_module_uid)
+            if module is not None:
+                return module
+        default = self.get_default_rotary_module()
+        if default is not None:
+            return default
+        if self.rotary_modules:
+            return next(iter(self.rotary_modules.values()))
+        return None
+
+    def get_rotary_axis_for_layer(self, layer: "Layer") -> Optional[Axis]:
+        if not layer.rotary_enabled:
+            return None
+        module = self.get_rotary_module_for_layer(layer)
         return module.axis if module else None
 
     def remove_rotary_module(self, module: RotaryModule):

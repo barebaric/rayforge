@@ -494,6 +494,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.doc_editor.pipeline.job_time_updated.connect(
             self._on_job_time_updated
         )
+        self.doc_editor.pipeline.job_generation_finished.connect(
+            self._on_job_generation_finished_for_preview
+        )
 
         # Set up config signals.
         config.changed.connect(self.on_config_changed)
@@ -1384,8 +1387,9 @@ class MainWindow(Adw.ApplicationWindow):
                 when_done=self._on_assembly_for_preview_finished
             )
 
-    def _refresh_gcode_preview(self, sender=None, **kwargs):
-        """Refresh G-code preview when machine settings change."""
+    def _on_job_generation_finished_for_preview(self, sender, **kwargs):
+        """Refresh G-code preview after the pipeline finishes a
+        rebuild (e.g. triggered by a machine setting change)."""
         if self.bottom_panel.is_item_visible("gcode"):
             self.refresh_previews()
 
@@ -1500,9 +1504,6 @@ class MainWindow(Adw.ApplicationWindow):
                 self._on_job_finished
             )
             self._current_machine.changed.disconnect(self._update_macros_menu)
-            self._current_machine.changed.disconnect(
-                self._refresh_gcode_preview
-            )
             self._current_machine.machine_hours.changed.disconnect(
                 self._on_machine_hours_changed
             )
@@ -1530,7 +1531,6 @@ class MainWindow(Adw.ApplicationWindow):
             )
             self._current_machine.job_finished.connect(self._on_job_finished)
             self._current_machine.changed.connect(self._update_macros_menu)
-            self._current_machine.changed.connect(self._refresh_gcode_preview)
             self._current_machine.machine_hours.changed.connect(
                 self._on_machine_hours_changed
             )

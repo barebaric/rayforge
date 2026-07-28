@@ -97,6 +97,7 @@ class Pipeline:
             dispatch=True,
         )
         self._connect_ctl_signals()
+        machine.changed.connect(self._on_machine_changed)
 
         if doc:
             self._intent_ctl.connect()
@@ -210,8 +211,11 @@ class Pipeline:
     def set_machine(self, machine: "Machine") -> None:
         if self._machine is machine:
             return
+        if self._machine is not None:
+            self._machine.changed.disconnect(self._on_machine_changed)
         self._machine = machine
         self._intent_ctl.set_machine(machine)
+        machine.changed.connect(self._on_machine_changed)
 
     # ------------------------------------------------------------------
     # Recalculate
@@ -226,6 +230,8 @@ class Pipeline:
 
     def shutdown(self) -> None:
         self._is_shutting_down = True
+        if self._machine is not None:
+            self._machine.changed.disconnect(self._on_machine_changed)
         self._intent_ctl.shutdown()
         self._wp_handles.clear()
         self._step_handles.clear()
@@ -235,6 +241,11 @@ class Pipeline:
     # ------------------------------------------------------------------
     # IntentController signal handlers
     # ------------------------------------------------------------------
+
+    def _on_machine_changed(self, sender, **kwargs) -> None:
+        """Trigger a rebuild when the machine config changes (e.g.
+        rotary mode, supports_curves, axis settings)."""
+        self._intent_ctl._schedule_rebuild()
 
     def _on_rebuild_started(self, sender) -> None:
         self._set_busy(True)
