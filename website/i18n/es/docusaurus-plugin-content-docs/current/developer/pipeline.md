@@ -1,13 +1,20 @@
 ---
-description: "El pipeline de procesamiento de Rayforge - cómo los diseños se mueven desde la importación a través de operaciones hasta la generación de G-code."
+description: "La pipeline de intenciones de Rayforge: cómo los diseños pasan del modelo Doc a través de intenciones raygeo hasta la generación de G-code."
 ---
 
-# Arquitectura del Pipeline
+# Arquitectura de la Pipeline
 
-Este documento describe la arquitectura del pipeline, que usa un Grafo Acíclico
-Dirigido (DAG) para orquestar la generación de artefactos. El pipeline transforma
-datos de diseño crudos en salidas finales para visualización y manufactura, con
-programación consciente de dependencias y caché eficiente de artefactos.
+Este documento describe la pipeline que convierte un modelo `Doc` en
+G-code ejecutable por la máquina. Desde la reescritura 1.9.0, la
+pipeline se basa en **intenciones raygeo**: una descripción declarativa
+del trabajo que debe realizar el lado Rust, junto con una fina capa
+de orquestación Python y un almacén de artefactos en proceso con
+conteo de referencias.
+
+El anterior DAG multiproceso (`DagScheduler`, `PipelineGraph`,
+`ArtifactManager`, `GenerationContext`, `WorkPiecePipelineStage`) ha
+sido eliminado. Este documento describe únicamente la arquitectura
+activa.
 
 ```mermaid
 graph TD
@@ -15,38 +22,28 @@ graph TD
         InputNode("Entrada<br/>Modelo Doc")
     end
 
-    subgraph PipelineCore["2. Core del Pipeline"]
-        Pipeline["Pipeline<br/>(Orquestador)"]
-        DAG["DagScheduler<br/>(Grafo y Programación)"]
-        Graph["PipelineGraph<br/>(Grafo de Dependencias)"]
-        AM["ArtifactManager<br/>(Registro + Caché)"]
-        GC["GenerationContext<br/>(Seguimiento de Tareas)"]
+    subgraph PythonOrchestrator["2. Orquestación Python"]
+        Pipeline["Pipeline<br/>(Fachada Pública)"]
+        IC["IntentController<br/>(Reconstrucción + Dispatch)"]
+        IB["IntentBuilder<br/>(Doc &rarr; NodeRequests)"]
     end
 
-    subgraph ArtifactGen["3. Generación de Artefactos"]
-        subgraph WorkPieceNodes["3a. Nodos WorkPiece"]
-            WP["WorkPieceArtifact<br/><i>Ops + Metadatos</i>"]
-        end
-
-        subgraph StepNodes["3b. Nodos Step"]
-            SO["StepOpsArtifact<br/><i>Ops en espacio-mundo</i>"]
-        end
-
-        subgraph JobNode["3c. Nodo Job"]
-            JA["JobArtifact<br/><i>G-code, Tiempo, Distancia</i>"]
-        end
+    subgraph Raygeo["3. Pipeline raygeo"]
+        RI["run_intent<br/>(trabajadores rayon)"]
+        Cache["Caché de Intent<br/>(clave + version_token)"]
     end
 
-    subgraph View2D["4. Capa de Vista 2D (Separada)"]
-        VM["ViewManager"]
-        RC["RenderContext<br/>(Zoom, Pan, etc.)"]
-        WV["WorkPieceViewArtifact<br/><i>Rasterizado para Lienzo 2D</i>"]
+    subgraph Artifacts["4. Almacén de Artefactos (en proceso)"]
+        Store["ArtifactStore<br/>(handles con refcount)"]
+        WP["WorkPieceArtifact<br/>(por workpiece-step)"]
+        SO["StepOpsArtifact<br/>(por step)"]
+        JA["JobArtifact<br/>(ops, código, tiempo)"]
     end
 
-    subgraph View3D["5. Capa 3D / Simulador (Separada)"]
-        SC["Compilador de Escena<br/>(Subproceso)"]
-        CS["CompiledSceneArtifact<br/><i>Datos de Vértices GPU</i>"]
-        OP["OpPlayer<br/>(Backend del Simulador)"]
+    subgraph View["5. Capas de Vista (desacopladas)"]
+        VM["ViewManager<br/>(lienzo 2D)"]
+        SC["Scene Compiler<br/>(subproceso 3D)"]
+        OP["OpPlayer<br/>(Simulador)"]
     end
 
     subgraph Consumers["6. Consumidores"]
@@ -56,199 +53,291 @@ graph TD
     end
 
     InputNode --> Pipeline
-    Pipeline --> DAG
-    DAG --> Graph
-    DAG --> AM
-    DAG --> GC
-
-    Graph -->|"Nodos Sucios"| DAG
-    DAG -->|"Lanzar Tareas"| WP
-    DAG -->|"Lanzar Tareas"| SO
-    DAG -->|"Lanzar Tareas"| JA
-
-    AM -.->|"Caché + Estado"| WP
-    AM -.->|"Caché + Estado"| SO
-    AM -.->|"Caché + Estado"| JA
+    Pipeline --> IC
+    IC --> IB
+    IB -->|"NodeRequests"| RI
+    RI -->|"on_completed /<br/>on_batch_progress"| IC
+    RI --> Cache
+    IC -->|"reattach outputs"| Store
+    Store --> WP
+    Store --> SO
+    Store --> JA
 
     WP --> VM
     JA --> SC
     JA --> OP
     JA --> File
 
-    RC --> VM
-    VM --> WV
-    WV --> Vis2D
-
-    SC --> CS
-    CS --> Vis3D
+    VM --> Vis2D
+    SC --> Vis3D
     OP --> Vis3D
 
     classDef clusterBox fill:#fff3e080,stroke:#ffb74d80,stroke-width:1px,color:#1a1a1a
     classDef inputNode fill:#e1f5fe80,stroke:#03a9f480,color:#0d47a1
-    classDef coreNode fill:#f3e5f580,stroke:#9c27b080,color:#4a148c
+    classDef pyNode fill:#f3e5f580,stroke:#9c27b080,color:#4a148c
+    classDef raygeoNode fill:#ede7f680,stroke:#5e35b180,color:#311b92
     classDef artifactNode fill:#e8f5e980,stroke:#4caf5080,color:#1b5e20
     classDef viewNode fill:#fff8e180,stroke:#ffc10780,color:#e65100
     classDef consumerNode fill:#fce4ec80,stroke:#e91e6380,color:#880e4f
-    class Input,PipelineCore,ArtifactGen,WorkPieceNodes,StepNodes,JobNode,View2D,View3D,Consumers clusterBox
+    class Input,PythonOrchestrator,Raygeo,Artifacts,View,Consumers clusterBox
     class InputNode inputNode
-    class Pipeline,DAG,Graph,AM,GC coreNode
-    class WP,SO,JA artifactNode
-    class VM,RC,WV,SC,CS,OP viewNode
+    class Pipeline,IC,IB pyNode
+    class RI,Cache raygeoNode
+    class Store,WP,SO,JA artifactNode
+    class VM,SC,OP viewNode
     class Vis2D,Vis3D,File consumerNode
 ```
 
-# Conceptos Core
+# Conceptos Clave
 
-## Nodos de Artefacto y el Grafo de Dependencias
+## Pipeline (Fachada Pública)
 
-El pipeline usa un **Grafo Acíclico Dirigido (DAG)** para modelar artefactos y
-sus dependencias. Cada artefacto se representa como un `ArtifactNode` en el
-grafo.
+`rayforge/pipeline/pipeline.py:40` — la clase con la que se comunica
+el resto de la aplicación. `DocEditor`, `ViewManager`, widgets de UI
+y código de prueba deben depender solo de `Pipeline`.
+`IntentController` e `IntentBuilder` son detalles de implementación
+de la fachada y pueden cambiar sin previo aviso.
 
-### ArtifactNode
+`Pipeline` posee la integración con `ArtifactStore`: traduce las
+salidas crudas de raygeo emitidas por su `IntentController` interno
+en handles de artefactos con conteo de referencias que la UI y las
+rutas de exportación consumen, y expone la superficie de
+señales/propiedades que el resto de la aplicación espera (estado
+ocupado, pausa/reanudar, recálculo, cambios de máquina).
 
-Cada nodo contiene:
+Señales clave retransmitidas por la fachada:
 
-- **ArtifactKey**: Un identificador único que consiste en un ID y un tipo de
-  grupo (`workpiece`, `step`, `job`, o `view`)
-- **Dependencias**: Lista de nodos de los que este nodo depende (hijos)
-- **Dependientes**: Lista de nodos que dependen de este nodo (padres)
+| Señal                      | Significado                                                             |
+| -------------------------- | ----------------------------------------------------------------------- |
+| `processing_state_changed` | Transiciones ocupado/inactivo                                           |
+| `workpiece_artifact_ready` | Se publicó un handle de `WorkPieceArtifact`                             |
+| `job_generation_finished`  | Un handle de `JobArtifact` (G-code + ops + estimaciones) listo          |
+| `job_time_updated`         | Estimación de tiempo agregada cambiada durante un rebuild               |
+| `data_stale`               | Rebuild solicitado pero actualmente pausado o modo manual               |
+| `visual_chunk_available`   | Fragmento de ráster progresivo para actualizaciones incrementales de UI |
 
-Los nodos no almacenan estado directamente. En su lugar, delegan lecturas y
-escrituras de estado al `ArtifactManager`, que mantiene un registro de todos
-los artefactos y sus estados.
+## IntentController
 
-### Estados de Nodo
+`rayforge/pipeline/intent_controller.py:108` — posee un `Intent` de
+raygeo y el ciclo de vida de reconstrucción circundante. Escucha las
+mismas señales de Doc que la pipeline heredada (`descendant_updated`,
+`descendant_transform_changed`, `descendant_added`,
+`descendant_removed`, `job_assembly_invalidated`) y reconstruye un
+`Intent` de raygeo cada vez que el documento cambia.
 
-Los nodos progresan a través de cinco estados:
+En cada reconstrucción con debounce (200 ms `REBUILD_DEBOUNCE_MS`):
 
-| Estado        | Descripción                                                        |
-| ------------- | ------------------------------------------------------------------ |
-| `DIRTY`       | El artefacto necesita ser (re)generado                             |
-| `PROCESSING`  | Una tarea está generando actualmente el artefacto                  |
-| `VALID`       | El artefacto está listo y actualizado                              |
-| `ERROR`       | La generación falló                                                |
-| `CANCELLED`   | La generación fue cancelada; se reintentará si aún se necesita     |
+1. Se llama a `IntentBuilder` para producir una lista fresca de
+   objetos `NodeRequest` desde el `Doc` actual.
+2. La nueva lista se envuelve en un `Intent` de raygeo via
+   `create_intent_from_nodes`.
+3. `Intent.update` compara el intent anterior con el nuevo usando el
+   `version_token` por nodo y elimina las entradas de caché
+   obsoletas en la `Pipeline` compartida de raygeo.
+4. Cuando `dispatch=True`, el nuevo intent también se ejecuta via
+   `run_intent`; el callback `on_completed` realiza el filtro de
+   época (descarta resultados cuyo `generation_id` sea anterior a la
+   generación actual del controlador) y luego marshalla un
+   reattachment del DOM de vuelta al hilo principal de la aplicación
+   a través del gestor de tareas compartido.
+5. El callback `on_batch_progress` retransmite el progreso agregado a
+   los oyentes via `progress_changed` (marshalled al hilo principal
+   para que los manejadores de señales nunca se ejecuten en un
+   trabajador rayon).
 
-Cuando un nodo se marca como sucio, todos sus dependientes también se marcan
-como sucios, propagando la invalidación hacia arriba en el grafo.
+El mapa `_key_to_item` del controlador (reconstruido en cada llamada
+exitosa a `IntentBuilder.build`) permite que el callback
+`on_completed` con filtro de época reassigne las salidas al
+`WorkPiece` o `Step` original sin volver a recorrer el Doc. Las
+claves de nodo se despachan por forma:
 
-### PipelineGraph
+| Clave de nodo                   | Reasignado a               | Señal emitida              |
+| ------------------------------- | -------------------------- | -------------------------- |
+| `workpiece:{wp_uid}:{step_uid}` | El `WorkPiece` propietario | `workpiece_artifact_ready` |
+| `step:{step_uid}`               | El `Step` propietario      | `step_artifact_ready`      |
+| `job`                           | El `Doc`                   | `job_aggregate_ready`      |
+| `job:encode`                    | El `Doc`                   | `job_generation_finished`  |
 
-El `PipelineGraph` se construye desde el modelo Doc y contiene:
+## IntentBuilder
 
-- Un nodo para cada par `(WorkPiece, Step)`
-- Un nodo para cada Step
-- Un nodo para el Job
+`rayforge/pipeline/intent_builder.py:133` — recorre un `Doc` y
+produce una lista plana de objetos `NodeRequest` con **claves
+estables** y **tokens de versión deterministas**. El builder no tiene
+estado: cada llamada a `build` produce una lista fresca y
+autocontenida adecuada para envolver en un `Intent` de raygeo.
 
-Las dependencias se establecen:
+### Claves Estables
 
-- Los Steps dependen de sus nodos de par `(WorkPiece, Step)`
-- El Job depende de todos los Steps
+- `workpiece:{wp_uid}:{step_uid}` — un nodo de cómputo por par
+  workpiece/step.
+- `step:{step_uid}` — un nodo agregado por step que concatena las
+  salidas de cómputo de los workpieces y aplica transformers por step.
+- `job` — un nodo agregado final que vincula todas las salidas de los
+  steps con marcadores a nivel de job y parámetros de máquina.
+- `job:machinexform` — nodo de cómputo de transformación de máquina
+  que consume las ops en espacio mundial del agregado de job y
+  produce ops en espacio de máquina (linealización de curvas, mapeo
+  de eje rotatorio, mundo&rarr;máquina, offsets WCS, Z-flip,
+  AXIS_REPLACEMENT).
+- `job:encode` — nodo de cómputo de codificador que consume las ops
+  del nodo de transformación de máquina y produce el código de
+  máquina (G-code / vértice / textura).
 
-## DagScheduler
+Los formatos de clave están centralizados en `intent_builder.py` para
+que el productor y el mapa de reattachment de `IntentController`
+siempre coincidan.
 
-El `DagScheduler` es el orquestador central del pipeline. Es dueño del
-`PipelineGraph` y es responsable de:
+### Tokens de Versión
 
-1. **Construir el grafo** desde el modelo Doc
-2. **Identificar nodos listos** (DIRTY con todas las dependencias VALID)
-3. **Disparar lanzamiento de tareas** a través de las etapas apropiadas del
-   pipeline
-4. **Rastrear estado** a través del proceso de generación
-5. **Notificar consumidores** cuando los artefactos están listos
+La caché de raygeo está indexada solo por clave de nodo; el
+`version_token` es la única señal de invalidación. Los tokens son
+resúmenes SHA-1 de una representación canónica de las entradas que
+afectan la salida de un nodo (ver `_hash_int`,
+`intent_builder.py:1066`):
 
-El scheduler trabaja con IDs de generación para rastrear qué artefactos
-pertenecen a qué versión del documento, permitiendo reuso de artefactos
-válidos a través de generaciones.
+- **Tokens de cómputo** hashean
+  `(geometry_revision, wp_size, step_params, assembler_params,
+per_workpiece_transformers)`. Para ámbitos de step que declaran un
+  transformer sensible a la posición (ver `Step.is_position_sensitive`),
+  `transform_revision` del workpiece y la revisión de stock se
+  incluyen en el token; de lo contrario se omiten para que los
+  movimientos puros no invaliden los resultados de cómputo del
+  workpiece.
+- **Tokens de agregado de step** hashean
+  `(upstream compute tokens, placements, step_params,
+per_step/per_workpiece transformers, position_sensitive())`, más
+  `stock_rev` cuando el step es sensible a la posición.
+- **Token de job** pliega todos los tokens de agregado por step para
+  que cualquier cambio upstream (movimiento de workpiece, edición de
+  transformer, cambio de parámetro de step) se propague hasta la
+  caché de job/encode.
+- **Token de transformación de máquina** pliega el token de job más
+  la identidad de la máquina (`supports_curves`, `reverse_z_axis`,
+  configuración WCS, configuración de módulo rotatorio por capa).
+- **Token de encode** pliega el token de transformación de máquina
+  más la identidad del codificador (`driver_name`, `gcode_precision`,
+  extensiones de ejes, ...).
 
-Comportamientos clave:
+### Construcción de Etapas
 
-- Cuando el grafo se construye, el scheduler sincroniza estados de nodo con
-  el artifact manager para identificar artefactos cacheados que pueden
-  reusarse
-- Los artefactos de la generación anterior pueden reusarse si permanecen
-  válidos
-- Las invalidaciones se rastrean incluso antes de reconstruir el grafo y se
-  vuelven a aplicar después
-- El scheduler delega la creación real de tareas a las etapas pero controla
-  **cuándo** se lanzan las tareas basándose en la disponibilidad de
-  dependencias
+Cada `NodeRequest` lleva una `StageSpec` que describe el trabajo que
+raygeo debe realizar para ese nodo. El builder produce:
 
-## ArtifactManager
+- `StageSpec.Compute` para cada par workpiece/step via
+  `Step.build_compute_payload(machine_defaults, workpiece)`, que
+  devuelve un `Part` (geometría vectorial o fuente de imagen) más un
+  `ComputePayload` (especificación de ensamblador). Los transformers
+  por workpiece (`OverscanTransformer`,
+  `BidirScanOffsetTransformer`, ...) se resuelven via
+  `transformer_registry` en pyclasses Rust tipadas `*Spec` y se
+  adjuntan al payload para que la etapa de cómputo Rust los aplique
+  después del ensamblaje.
+- `StageSpec.Aggregate` para cada step: un `AggregateGroup` por nodo
+  de cómputo de workpiece upstream, envuelto por marcadores
+  `WorkpieceStart`/`WorkpieceEnd`, con cada entrada llevando la
+  matriz de colocación mundial y el tamaño físico del workpiece como
+  `target_dimensions`. Los transformers por step (`MultiPassTransformer`,
+  `Optimize`, ...) se adjuntan a `AggregateSpec.transformers` para
+  que la etapa de agregado Rust los aplique después de la
+  concatenación. `MachineParams` se completa desde la máquina
+  resuelta para que la estimación de tiempo del agregado sea correcta.
+- `StageSpec.Aggregate` para el nodo `job`: un `AggregateGroup` por
+  capa envuelto por marcadores `LayerStart`/`LayerEnd`, cada uno
+  conteniendo un `AggregateInput` por step visible; todo el agregado
+  está envuelto por `JobStart`/`JobEnd`.
+- `MachineTransformSpec` para `job:machinexform`: la matriz
+  4&times;4 mundo&rarr;máquina, offsets WCS por defecto y por capa,
+  entradas `RotaryMappingSpec` por capa, bandera de linealización de
+  curvas y bandera Z-reverse, empaquetados en una especificación
+  serializable que consume la etapa Rust `MachineTransformCompute`.
+- `EncodeSpec` para `job:encode`: enruta máquinas Grbl al
+  `GcodeSpec` nativo Rust (compilado directamente en un hilo rayon
+  sin cruzar el GIL) y cualquier otra máquina a un `PythonEncoder`
+  que envuelve la llamada al codificador específico del driver. El
+  codificador lee ops en espacio de máquina del nodo upstream
+  `job:machinexform`.
 
-El `ArtifactManager` sirve tanto como caché como fuente única de verdad para
-el estado de los artefactos. Este:
+### Resolución de Stock
 
-- Almacena y recupera handles de artefactos mediante un **registro** (indexado
-  por `ArtifactKey` + ID de generación)
-- Rastrea estado (`DIRTY`, `VALID`, `ERROR`, etc.) en entradas del registro
-- Gestiona conteo de referencias para limpieza de memoria compartida
-- Maneja ciclo de vida (creación, retención, liberación, poda)
-- Proporciona gestores de contexto para adopción segura de artefactos,
-  reporte de finalización, fallo y cancelación
+`_resolve_stock_geometries` (llamada una vez por `build` y cacheada
+en el builder) devuelve las geometrías de límite de stock en espacio
+mundial que transformers como `CropTransformer` usan para recortar
+ops por workpiece al área de trabajo de la máquina o a `StockItem`s
+explícitos. Las entradas `StockItem` propiedad del Doc tienen
+prioridad; el rectángulo del área de trabajo de la máquina se usa
+como respaldo solo cuando no existe stock en el Doc.
 
-## GenerationContext
+## Pipeline raygeo & `run_intent`
 
-Cada ciclo de reconciliación crea un `GenerationContext` que rastrea todas
-las tareas activas para esa generación. Asegura que los recursos de memoria
-compartida permanezcan válidos hasta que todas las tareas en vuelo de una
-generación hayan completado, incluso si una generación más nueva ya ha
-comenzado. Cuando un contexto es reemplazado y todas sus tareas finalizan,
-libera automáticamente sus recursos.
+La `Pipeline` de raygeo (`raygeo.pipeline.execute.Pipeline`) posee la
+caché que `Intent.update` invalida. `run_intent` programa los nodos
+del intent en hilos trabajadores rayon bajo el GIL e invoca el
+callback `on_completed` por nodo y `on_batch_progress` para el
+progreso agregado. El trabajo pesado (cómputo, ráster, agregado,
+transformaciones de máquina, codificación) se ejecuta en hilos raygeo
+en lugar de subprocesos, que es el cambio principal destacado en
+CHANGELOG 1.9.0.
 
-## Ciclo de Vida de Memoria Compartida
+## ArtifactStore & Handles de Artefactos
 
-Los artefactos se almacenan en memoria compartida
-(`multiprocessing.shared_memory`) para comunicación eficiente entre procesos
-worker y el proceso principal. El `ArtifactStore` gestiona el ciclo de vida
-de estos bloques de memoria.
+El antiguo `ArtifactStore` de memoria compartida ha sido reemplazado
+por un almacén en proceso con conteo de referencias
+(`rayforge/pipeline/artifact/store.py:29`). Todos los artefactos
+viven como objetos Python simples en un diccionario indexado por UUID;
+los handles llevan el UUID en su campo `key` más cualquier metadato
+que necesite el tipo de artefacto. El ciclo de vida se gestiona
+mediante conteo de referencias via `ArtifactStore.retain`/`release`.
 
-### Patrones de Propiedad
+La fachada `Pipeline` traduce las salidas de raygeo en handles de
+artefactos en el hilo principal:
 
-**Propiedad Local:** El proceso creador es dueño del handle y lo libera cuando
-termina. Este es el patrón más simple.
+| Salida (raygeo)          | Artefacto           | Almacenado bajo tag |
+| ------------------------ | ------------------- | ------------------- |
+| Ops por workpiece-step   | `WorkPieceArtifact` | `wp`                |
+| Ops agregadas por step   | `StepOpsArtifact`   | `step`              |
+| Agregado de job + encode | `JobArtifact`       | `job`               |
 
-**Entrega Entre Procesos:** Un worker crea un artefacto, lo envía al proceso
-principal via IPC, y transfiere propiedad. El worker "olvida" el handle
-(cierra su descriptor de archivo sin desvincular la memoria), mientras el
-proceso principal lo "adopta" y se hace responsable de su eventual liberación.
+`JobArtifact` lleva las `Ops` en espacio mundial, distancia total,
+estimación de tiempo, la `EncodedOutput` (texto más mapa
+op&rarr;código de máquina) y — cuando hay módulos rotatorios
+configurados — ops mapeadas cinemáticamente para la vista previa 3D.
 
-### Detección de Artefactos Obsoletos
+## IDs de Generación y Filtro de Época
 
-El mecanismo `StaleGenerationError` previene que artefactos de generaciones
-reemplazadas sean adoptados. Cuando una generación más nueva ha comenzado, el
-manager detecta artefactos obsoletos durante la adopción y los descarta
-silenciosamente.
+Cada reconstrucción incrementa `IntentController.generation_id`. Cada
+nodo completado lleva la generación de la que fue creado. El callback
+`on_completed` compara el `generation_id` del nodo con la generación
+actual del controlador y descarta silenciosamente los resultados
+obsoletos, por lo que las salidas antiguas de una reconstrucción
+anterior nunca se reassignan al DOM.
 
-## Etapas del Pipeline
+## Pausa, Reanudar y Modo Manual
 
-Las etapas del pipeline (`WorkPiecePipelineStage`, `StepPipelineStage`,
-`JobPipelineStage`) son responsables de la **mecánica** de ejecución de tareas:
-
-- Crean y registran tareas de subproceso mediante el `TaskManager`
-- Manejan eventos de tareas (fragmentos progresivos, resultados intermedios)
-- Gestionan adopción de artefactos y caché al completar tareas
-- Emiten señales para notificar al pipeline de cambios de estado
-
-El **DagScheduler** decide **cuándo** activar cada etapa, pero las etapas
-manejan el lanzamiento real de subprocesos, manejo de eventos y adopción de
-resultados.
+- `Pipeline.pause()`/`resume()` incrementa/decrementa un contador de
+  pausa en el controlador. Mientras está en pausa, los cambios en el
+  Doc establecen una bandera `data_stale` (y emiten `data_stale`) en
+  lugar de programar una reconstrucción; al reanudar, la bandera se
+  limpia y se programa una reconstrucción si `auto_rebuild` está
+  habilitado.
+- `Pipeline.auto_pipeline=False` (modo manual): el recálculo se
+  activa explícitamente via `Pipeline.recalculate()` en lugar de
+  automáticamente en cada cambio del Doc.
 
 ## Estrategia de Invalidación
 
-La invalidación es provocada por cambios al modelo Doc, con diferentes
-estrategias dependiendo de qué cambió:
+La invalidación es implícita y está impulsada por tokens: cualquier
+cambio que afecte las entradas de un nodo hace que el builder
+produzca un `version_token` diferente para la clave de ese nodo.
+`Intent.update` elimina la entrada de caché obsoleta y raygeo
+reejecuta solo ese nodo (y sus consumidores descendentes).
 
-| Tipo de Cambio              | Comportamiento                                                                                                  |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Geometría/parámetros        | Pares workpiece-step invalidados, en cascada a steps y job                                                      |
-| Posición/rotación           | Steps invalidados directamente (en cascada a job); workpieces omitidos a menos que sean sensibles a posición    |
-| Cambio de tamaño            | Igual que geometría: cascada completa desde pares workpiece-step hacia arriba                                   |
-| Configuración de máquina    | Todos los artefactos forzados a invalidación en todas las generaciones                                          |
-
-Los steps sensibles a posición (ej., aquellos con recorte-a-stock habilitado)
-provocan invalidación de workpiece incluso para cambios puros de posición.
+| Tipo de Cambio                        | Efecto en los Tokens                                                                                                                                                                                           |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Geometría / parámetros                | Nuevos tokens de cómputo de workpiece cascada a step, job, machinexform, encode                                                                                                                                |
+| Posición / rotación                   | Tokens de cómputo de workpiece sin cambios a menos que el step sea sensible a posición; los tokens de agregado de step siempre cambian debido a las colocaciones plegadas, lo que cascada a job/encode         |
+| Cambio de tamaño                      | Igual que geometría: los tokens cascada desde los pares workpiece-step hacia arriba                                                                                                                            |
+| Stock items visibles/movidos/añadidos | Afecta `stock_rev` (plegado en tokens de cómputo y agregado de steps sensibles a posición)                                                                                                                     |
+| Configuración de máquina              | Todos los tokens `job:machinexform` y `job:encode` cambian; los tokens de cómputo/agregado de step cambian si `kerf_mm`/`cut_speed`/cabezal láser/tolerancia de arco/`supports_curves`/`supports_arcs` cambian |
 
 # Desglose Detallado
 
@@ -256,58 +345,63 @@ provocan invalidación de workpiece incluso para cambios puros de posición.
 
 El proceso comienza con el **Modelo Doc**, que contiene:
 
-- **WorkPieces:** Elementos de diseño individuales (SVGs, imágenes) colocados
-  en el lienzo
-- **Steps:** Instrucciones de procesamiento (Contour, Raster, etc.) con
-  ajustes
-- **Layers:** Agrupación de workpieces, cada uno con su propio flujo de trabajo
+- **WorkPieces:** Elementos de diseño individuales (SVGs, imágenes)
+  colocados en el lienzo
+- **Steps:** Instrucciones de procesamiento (Contorno, Ráster, etc.)
+  con configuraciones, organizadas en un `Workflow` por capa
+- **Layers:** Agrupación de workpieces, cada uno con su propio
+  workflow, WCS y configuración rotatoria
+- **StockItems:** Límites de stock explícitos opcionales utilizados
+  por transformers sensibles a posición (ej. CropTransformer)
 
-## Core del Pipeline
+## Orquestación Python
 
-### Pipeline (Orquestador)
+### Pipeline (Fachada)
 
-La clase `Pipeline` es el director de alto nivel que:
+La clase `Pipeline`:
 
-- Escucha al modelo Doc para cambios mediante señales
-- **Agrupa cambios** (200ms de retardo de reconciliación, 50ms de retardo de
-  eliminación)
-- Coordina con el DagScheduler para disparar regeneración
-- Gestiona el estado de procesamiento general y detección de ocupado
-- Soporta **pausar/reanudar** para operaciones por lotes
-- Soporta **modo manual** (`auto_pipeline=False`) donde el recálculo se
-  activa explícitamente en lugar de automáticamente
-- Conecta señales entre componentes y las retransmite a los consumidores
+- Escucha los cambios del modelo Doc mediante señales (retransmitidas
+  a través del `IntentController`)
+- **Debouncea** cambios (retardo de reconciliación de 200 ms)
+- Coordina con el `IntentController` para activar la regeneración
+- Gestiona el estado general de procesamiento y la detección de
+  ocupado
+- Soporta **pausa/reanudar** para operaciones por lotes
+- Soporta **modo manual** (`auto_pipeline=False`) donde el recálculo
+  se activa explícitamente
+- Conecta señales entre componentes y las retransmite a los
+  consumidores
+- Publica handles de artefactos con conteo de referencias en el
+  `ArtifactStore`
 
-### DagScheduler
+### IntentController
 
-El `DagScheduler`:
+El `IntentController`:
 
-- Construye y mantiene el `PipelineGraph`
-- Identifica nodos listos para procesamiento
-- Dispara lanzamiento de tareas mediante los métodos `launch_task()` de las
-  etapas
-- Rastrea transiciones de estado de nodo a través del registro
-- Emite señales cuando los artefactos están listos
+- Posee un `Intent` de raygeo y el ciclo de vida de reconstrucción
+- Reconstruye un intent fresco en cada cambio de Doc con debounce
+- Ejecuta el intent via `run_intent` cuando `dispatch=True`
+- Filtra resultados obsoletos por `generation_id` (filtro de época)
+- Marshalla los reattachment del DOM al hilo principal a través del
+  gestor de tareas compartido
 
-### ArtifactManager
+### IntentBuilder
 
-El `ArtifactManager`:
+El `IntentBuilder` no tiene estado; cada llamada a `build` recorre el
+`Doc` y produce un `NodeRequest` por par workpiece/step, un agregado
+por step, y los nodos `job`, `job:machinexform` y `job:encode`.
+Véase [Claves Estables](#claves-estables),
+[Tokens de Versión](#tokens-de-versión) y
+[Construcción de Etapas](#construcción-de-etapas) arriba.
 
-- Mantiene un **registro** de objetos `LedgerEntry`, cada uno rastreando un
-  handle, ID de generación y estado de nodo
-- Cachea handles de artefactos en memoria compartida
-- Gestiona conteo de referencias para limpieza
-- Proporciona búsqueda por ArtifactKey e ID de generación
-- Poda generaciones obsoletas para mantener el registro limpio
+## Pipeline raygeo
 
-### GenerationContext
-
-Cada reconciliación crea un nuevo `GenerationContext` que:
-
-- Rastrea tareas activas mediante keys con conteo de referencias
-- Es dueño de recursos de memoria compartida para su generación
-- Se apaga automáticamente cuando es reemplazado y todas las tareas
-  completan
+`run_intent` programa la ejecución de nodos en hilos trabajadores
+rayon bajo el GIL. La instancia compartida `RaygeoPipeline` mantiene
+la caché de nodos indexada por clave de nodo; `Intent.update` es el
+único punto de entrada de invalidación. Cómputo, ráster, shrinkwrap,
+wavefront, contorno, renderizado de vista y transformación/codificación
+de máquina se ejecutan todos en hilos raygeo.
 
 ## Generación de Artefactos
 
@@ -316,157 +410,155 @@ Cada reconciliación crea un nuevo `GenerationContext` que:
 Generados para cada combinación `(WorkPiece, Step)`. Contiene:
 
 - Toolpaths (`Ops`) en el sistema de coordenadas local del workpiece
-- Flag de escalabilidad y dimensiones fuente para ops independientes de
-  resolución
-- Sistema de coordenadas y metadatos de generación
+- Bandera de escalabilidad y dimensiones de origen para ops
+  independientes de resolución
+- ID de generación
 
-Secuencia de procesamiento:
-
-1. **Productor:** Crea toolpaths crudos (`Ops`) desde los datos del workpiece
-2. **Transformadores:** Modificaciones por workpiece aplicadas en fases
-   ordenadas (Refinamiento de Geometría → Interrupción de Trayectoria →
-   Post Procesamiento)
-
-Los workpieces raster grandes se procesan incrementalmente en fragmentos,
-permitiendo retroalimentación visual progresiva durante la generación.
+Los workpieces de ráster grandes se procesan incrementalmente en
+fragmentos (retransmitidos via `visual_chunk_available`), lo que
+permite retroalimentación visual progresiva durante la generación.
 
 ### StepOpsArtifacts
 
 Generados para cada Step, consumiendo todos los WorkPieceArtifacts
 relacionados:
 
-- Ops combinadas para todos los workpieces en coordenadas de espacio-mundo
-- Transformadores por-step aplicados (Optimize, Multi-Pass, etc.)
+- `Ops` combinados para todos los workpieces en coordenadas de
+  espacio mundial
+- Transformers por step aplicados (`Optimize`, `MultiPass`, ...)
 
 ### JobArtifact
 
-Generado bajo demanda cuando se necesita G-code, consumiendo todos los
-StepOpsArtifacts:
+Generado cuando se necesita G-code, consumiendo el agregado `job` y
+el nodo `job:encode`:
 
-- Código de máquina final (G-code o formato específico del controlador)
-- Ops completas para simulación y reproducción
+- Código de máquina final (G-code o formato específico del driver)
+  via `EncodedOutput` (texto + mapa op&rarr;código de máquina)
+- `Ops` en espacio mundial para simulación y reproducción
 - Estimación de tiempo de alta fidelidad y distancia total
-- Ops mapeadas rotacionalmente para vista previa 3D
+- Ops mapeadas rotatoriamente para vista previa 3D cuando hay
+  módulos rotatorios configurados
 
-## Capa de Vista 2D (Separada)
+## Capa de Vista 2D (Desacoplada)
 
-El `ViewManager` está **desacoplado** del pipeline de datos. Maneja el
-renderizado para el lienzo 2D basándose en el estado de la UI:
+El `ViewManager` está desacoplado de la pipeline de datos. Maneja el
+renderizado para el lienzo 2D basado en el estado de la UI.
 
 ### RenderContext
 
-Contiene los parámetros de vista actuales:
-
-- Píxeles por milímetro (nivel de zoom)
-- Offset del viewport (pan)
-- Opciones de visualización (mostrar movimientos de viaje, etc.)
+Contiene los parámetros de vista actuales (píxeles por milímetro,
+offset del viewport, opciones de visualización).
 
 ### WorkPieceViewArtifacts
 
-El ViewManager crea `WorkPieceViewArtifacts` que:
+El `ViewManager` crea `WorkPieceViewArtifacts` que rasterizan
+`WorkPieceArtifacts` al espacio de pantalla, aplican el
+`RenderContext` actual y se almacenan en caché y se actualizan cuando
+el contexto o la fuente cambian. El re-renderizado está limitado
+(intervalo de 33 ms) y con límite de concurrencia; la unión
+progresiva de fragmentos proporciona actualizaciones visuales
+incrementales. El `ViewManager` indexa las vistas por
+`(workpiece_uid, step_uid)` para soportar la visualización de estados
+intermedios de un workpiece a través de múltiples steps.
 
-- Rasterizan WorkPieceArtifacts a espacio de pantalla
-- Aplican el RenderContext actual
-- Son cacheados y actualizados cuando el contexto o la fuente cambia
+## Capa 3D / Simulador (Desacoplada)
 
-### Ciclo de Vida
+El sistema de visualización y simulación 3D está desacoplado de la
+pipeline de datos, siguiendo un patrón similar al `ViewManager`.
+Consiste en:
 
-1. ViewManager rastrea handles de `WorkPieceArtifact` fuente
-2. Cuando el contexto de renderizado cambia, ViewManager dispara
-   re-renderizado
-3. Cuando el artefacto fuente cambia, ViewManager dispara re-renderizado
-4. El re-renderizado está limitado por throttling (intervalo de 33ms) y
-   concurrencia limitada
-5. La composición progresiva de fragmentos proporciona actualizaciones
-   visuales incrementales
+- Un **Scene Compiler** que se ejecuta en un subproceso para
+  convertir las ops de `JobArtifact` en datos de vértice listos para
+  GPU
+- Un **OpPlayer** que reproduce las ops del job para simulación de
+  máquina en tiempo real con controles de reproducción
 
-El ViewManager indexa vistas por `(workpiece_uid, step_uid)` para soportar
-visualización de estados intermedios de un workpiece a través de múltiples
-steps.
-
-## Capa 3D / Simulador (Separada)
-
-El sistema de visualización 3D y simulación está **desacoplado** del pipeline
-de datos, siguiendo un patrón similar al ViewManager. Consiste en:
-
-- Un **Compilador de Escena** que se ejecuta en un subproceso para convertir
-  las ops del `JobArtifact` en datos de vértices listos para GPU
-- Un **OpPlayer** que reproduce las ops del trabajo para simulación en tiempo
-  real de la máquina con controles de reproducción
-
-Ambos consumen el `JobArtifact` producido por la etapa de job del pipeline.
+Ambos consumen el `JobArtifact` producido por la pipeline.
 
 ### CompiledSceneArtifact
 
-El Compilador de Escena produce un `CompiledSceneArtifact` que contiene:
+El Scene Compiler produce un `CompiledSceneArtifact` que contiene:
 
-- **Capas de vértices:** Buffers de vértices powered/travel/zero-power con
-  offsets por comando para revelado progresivo
-- **Capas de textura:** Mapas de potencia de líneas de escaneo rasterizados
-  para vista previa de grabado
-- **Capas de superposición:** Segmentos de potencia de líneas de escaneo para
-  resaltado en tiempo real
-- Soporte para geometría rotacional (envuelta en cilindro)
+- **Capas de vértice:** Buffers de vértice powered/travel/zero-power
+  con offsets por comando para revelación progresiva
+- **Capas de textura:** Mapas de potencia de líneas de escaneo
+  rasterizados para vista previa de grabado
+- **Capas de superposición:** Segmentos de potencia de líneas de
+  escaneo para resaltado en tiempo real
+- Soporte para geometría rotatoria (envuelta en cilindro)
 
 ### Pipeline de Compilación
 
-1. Canvas3D escucha señales de `job_generation_finished`
-2. Cuando un nuevo job está listo, programa la compilación de escena en un
-   subproceso
-3. El subproceso lee el `JobArtifact` desde memoria compartida y compila las
-   ops en datos de vértices GPU
-4. La escena compilada se adopta de vuelta en memoria compartida y se sube a
-   los renderizadores GPU
+1. Canvas3D escucha las señales `job_generation_finished`
+2. Cuando un nuevo job está listo, programa la compilación de escena
+   en un subproceso
+3. El subproceso lee el `JobArtifact` del almacén y compila las ops
+   en datos de vértice para GPU
+4. La escena compilada se adopta de vuelta y se carga a los
+   renderizadores GPU
 
 ### OpPlayer (Backend del Simulador)
 
-El `OpPlayer` recorre las ops del trabajo comando por comando, manteniendo un
-`MachineState` que rastrea posición, estado del láser y ejes auxiliares. Esto
-impulsa:
-
-- La reproducción del lienzo 3D (revelado progresivo de la trayectoria)
-- Posición de la cabeza de la máquina y visualización del haz láser
-- Avance por comando para el control deslizante de reproducción
+El `OpPlayer` recorre las ops del job comando por comando,
+manteniendo un `MachineState` que rastrea la posición, el estado del
+láser y los ejes auxiliares. Esto impulsa la reproducción del lienzo
+3D (revelación progresiva del toolpath), la visualización de la
+posición del cabezal de la máquina y el rayo láser, y el avance por
+comandos para el control deslizante de reproducción.
 
 ## Consumidores
 
-| Consumidor   | Usa                            | Propósito                                        |
-| ------------ | ------------------------------ | ------------------------------------------------ |
-| Lienzo 2D    | WorkPieceViewArtifacts         | Renderiza workpieces en espacio de pantalla       |
-| Lienzo 3D    | CompiledSceneArtifact          | Renderiza trabajo completo en 3D con reproducción |
-| Máquina      | JobArtifact (código de máquina)| Salida de manufactura                             |
+| Consumidor | Usa                          | Propósito                                        |
+| ---------- | ---------------------------- | ------------------------------------------------ |
+| Lienzo 2D  | WorkPieceViewArtifacts       | Renderiza workpieces en espacio de pantalla      |
+| Lienzo 3D  | CompiledSceneArtifact        | Renderiza el job completo en 3D con reproducción |
+| Máquina    | JobArtifact (código máquina) | Salida de fabricación                            |
 
 # Decisiones Arquitectónicas Clave
 
-1. **Programación basada en DAG:** En lugar de etapas secuenciales, los
-   artefactos se generan a medida que sus dependencias se vuelven
-   disponibles, permitiendo paralelismo.
+1. **Planificación basada en Intenciones:** En lugar de un DAG Python
+   explícito con planificadores residentes en Python, la pipeline
+   declara _qué_ computar (un `Intent` de `NodeRequest`s con claves
+   estables y tokens de versión) y deja que `run_intent` de raygeo
+   planifique el trabajo en hilos rayon. La invalidación de caché es
+   puramente impulsada por tokens via `Intent.update`.
 
-2. **Estado basado en registro:** El estado del nodo se rastrea en las
-   entradas del registro del ArtifactManager en lugar de en los nodos del
-   grafo, proporcionando una fuente única de verdad tanto para estado como
-   para almacenamiento de handles.
+2. **Fachada + Controlador Interno:** `Pipeline` es la única
+   superficie pública; `IntentController` e `IntentBuilder` son
+   detalles de implementación. Esto mantiene estable el contrato
+   público de señales/propiedades mientras permite que los detalles
+   internos de orquestación evolucionen.
 
-3. **Separación de Capa de Vista:** Tanto el lienzo 2D (ViewManager) como el
-   lienzo 3D (Compilador de Escena) están desacoplados del pipeline de datos.
-   Cada uno ejecuta su propio renderizado basado en subprocesos y es impulsado
-   por señales del pipeline en lugar de ser parte del DAG.
+3. **Almacén de Artefactos en Proceso:** Reemplazar el almacén de
+   memoria compartida multiproceso por un diccionario en proceso con
+   conteo de referencias elimina la complejidad de IPC y transferencia
+   de propiedad, manteniendo el contrato de handle/ciclo de vida del
+   que dependen la UI y las rutas de exportación.
 
-4. **IDs de Generación:** Los artefactos se rastrean con IDs de generación,
-   permitiendo reuso eficiente a través de versiones de documento y detección
-   de artefactos obsoletos.
+4. **IDs de Generación:** Cada reconstrucción incrementa un ID de
+   generación; cada nodo completado lleva su generación de origen. El
+   filtro de época de `on_completed` descarta silenciosamente los
+   resultados obsoletos, por lo que las salidas antiguas nunca se
+   reassignan al DOM.
 
-5. **Orquestación Centralizada:** El DagScheduler es el punto único de control
-   para programación de tareas; las etapas manejan la mecánica de ejecución.
+5. **Reattachment en el Hilo Principal:** Los callbacks de raygeo
+   (`on_completed`, `on_batch_progress`) se disparan en hilos
+   trabajadores rayon bajo el GIL; el controlador marshalla cada
+   callback que toca el DOM al hilo principal de la aplicación a
+   través del gestor de tareas compartido, por lo que los manejadores
+   de señales nunca se ejecutan en un trabajador.
 
-6. **Aislamiento de GenerationContext:** Cada generación tiene su propio
-   contexto, asegurando que los recursos permanezcan vivos hasta que todas las
-   tareas en vuelo completen.
+6. **Separación de Capas de Vista:** Tanto el lienzo 2D (`ViewManager`)
+   como el lienzo 3D (Scene Compiler / OpPlayer) están desacoplados de
+   la pipeline de datos. Cada uno es impulsado por señales de la
+   pipeline en lugar de ser parte del intent.
 
-7. **Rastreo de Invalidación:** Las keys marcadas como sucias antes de
-   reconstruir el grafo se preservan y se vuelven a aplicar después de la
-   reconstrucción.
+7. **Invalidación Impulsada por Tokens:** No hay una tabla de
+   invalidación explícita. El builder produce tokens de versión SHA-1
+   canónicos; cualquier cambio en la entrada produce un token
+   diferente, que `Intent.update` usa para eliminar exactamente las
+   entradas de caché afectadas.
 
-8. **Reconciliación con Debounce:** Los cambios se agrupan con retardos
-   configurables para evitar ciclos excesivos del pipeline durante ediciones
-   rápidas.
+8. **Reconciliación con Debounce:** Los cambios en el Doc se agrupan
+   con un debounce de 200 ms (`REBUILD_DEBOUNCE_MS`) para evitar
+   ciclos excesivos de pipeline durante ediciones rápidas.
