@@ -343,7 +343,7 @@ class IntentController:
             self._rebuilding = False
             if self._rebuild_pending:
                 self._rebuild_pending = False
-                self._task_manager.schedule_on_main_thread(self._rebuild)
+                self._rebuild()
             else:
                 self._task_manager.schedule_on_main_thread(
                     self._emit_rebuild_finished
