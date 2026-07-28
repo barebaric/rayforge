@@ -87,6 +87,7 @@ class DocEditor:
             self.task_manager,
             context.artifact_store,
             context.machine,
+            cache_budget_bytes=context.config.cache_budget_bytes,
         )
         self.view_manager = ViewManager(
             self.pipeline,
@@ -116,6 +117,7 @@ class DocEditor:
         self.pipeline.processing_state_changed.connect(
             self._on_processing_state_changed
         )
+        self.pipeline.pipeline_error.connect(self._on_pipeline_error)
 
         # Connect to history manager to track undo/redo for saved state
         self.history_manager.changed.connect(self._on_history_changed)
@@ -193,6 +195,7 @@ class DocEditor:
     def _on_config_changed(self, sender, **kwargs):
         config = self.context.config
         self.pipeline.auto_pipeline = config.auto_pipeline
+        self.pipeline.set_cache_budget_bytes(config.cache_budget_bytes)
 
         new_machine = config.machine
         if new_machine and new_machine is not self.pipeline.machine:
@@ -535,6 +538,10 @@ class DocEditor:
         self.processing_state_changed.send(self, is_processing=effective_state)
         if not effective_state:
             self.document_settled.send(self)
+
+    def _on_pipeline_error(self, sender, *, message: str) -> None:
+        """Show a UI notification on pipeline execution errors."""
+        self.notification_requested.send(self, message=message)
 
     def _on_history_changed(self, sender, command):
         """

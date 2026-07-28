@@ -43,6 +43,10 @@ class OpPlayer:
         interval = _SNAPSHOT_INTERVAL
         for target in range(interval, n, interval):
             temp_player.advance_to(target - 1)
+            # reached_textures is only needed for real-time playback,
+            # not for seeking. Clear before snapshot to avoid copying
+            # a set that grows to millions of entries.
+            temp_player.state.reached_textures.clear()
             self._snapshots.append(
                 (
                     target,

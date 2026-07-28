@@ -56,6 +56,8 @@ if TYPE_CHECKING:
     from ..core.workpiece import WorkPiece
     from ..machine.models.machine import Machine
 
+from raygeo.pipeline.completed import ErrorKind
+
 logger = logging.getLogger(__name__)
 
 
@@ -144,6 +146,7 @@ class IntentController:
         self.rebuild_started = Signal()
         self.rebuild_finished = Signal()
         self.data_stale = Signal()
+        self.pipeline_error = Signal()
 
     # ------------------------------------------------------------------
     # Properties
@@ -348,6 +351,10 @@ class IntentController:
         """Emit ``rebuild_finished`` on the main thread."""
         self.rebuild_finished.send(self)
 
+    def _emit_pipeline_error(self, error_kind: ErrorKind) -> None:
+        """Emit ``pipeline_error`` on the main thread."""
+        self.pipeline_error.send(self, error_kind=error_kind)
+
     # ------------------------------------------------------------------
     # on_completed → epoch filter → DOM reattachment via main-thread
     # schedule
@@ -371,6 +378,23 @@ class IntentController:
                 gen,
                 self._generation_id,
             )
+            return
+        if node.error is not None:
+            kind = node.error_kind
+            if kind == ErrorKind.CANCELLED:
+                logger.debug("Node %s was cancelled", node.key)
+                return
+            if kind == ErrorKind.UPSTREAM_FAILED:
+                logger.debug("Node %s: upstream failed", node.key)
+                return
+            if kind == ErrorKind.CACHE_BUDGET_EXCEEDED:
+                logger.error("Node %s failed: %s", node.key, node.error)
+                self._task_manager.schedule_on_main_thread(
+                    self._emit_pipeline_error, kind
+                )
+                return
+            # Internal errors (cache type mismatch, etc.) — log only.
+            logger.error("Node %s failed: %s", node.key, node.error)
             return
         key = node.key
         item = self._key_to_item.get(key)

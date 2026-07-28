@@ -248,7 +248,7 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
             title=_("Auto-update operations"),
             subtitle=_(
                 "Recalculate operations automatically after each change. "
-                "Disable for manual recalculation via the toolbar button."
+                "Disable for manual recalculation via the toolbar button"
             ),
         )
         self.auto_pipeline_row.set_active(config.auto_pipeline)
@@ -257,10 +257,29 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         )
         startup_group.add(self.auto_pipeline_row)
 
+        self.cache_budget_row = Adw.SpinRow(
+            title=_("Cache budget (MB)"),
+            subtitle=_(
+                "Maximum memory for cache. High complexity scenes require more"
+            ),
+            adjustment=Gtk.Adjustment(
+                value=config.cache_budget_bytes / (1024 * 1024),
+                lower=128,
+                upper=65536,
+                step_increment=128,
+            ),
+            climb_rate=2,
+            digits=0,
+        )
+        self.cache_budget_row.connect(
+            "notify::value", self.on_cache_budget_changed
+        )
+        startup_group.add(self.cache_budget_row)
+
         self.check_updates_row = Adw.SwitchRow(
             title=_("Check for updates"),
             subtitle=_(
-                "Automatically check for new Rayforge versions on startup."
+                "Automatically check for new Rayforge versions on startup"
             ),
         )
         self.check_updates_row.set_active(config.check_for_app_updates)
@@ -501,6 +520,11 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         """Called when the user toggles auto pipeline mode."""
         enabled = switch_row.get_active()
         get_context().config.set_auto_pipeline(enabled)
+
+    def on_cache_budget_changed(self, row, _):
+        """Called when the user adjusts the cache budget."""
+        mb = int(row.get_value())
+        get_context().config.set_cache_budget_bytes(mb * 1024 * 1024)
 
     def on_check_updates_changed(self, switch_row, _):
         """Called when the user toggles the update check setting."""

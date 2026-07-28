@@ -125,10 +125,18 @@ class FakeTaskManager:
 class _StubNode:
     """Minimal stand-in for ``raygeo.CompletedNode`` for tests."""
 
-    def __init__(self, key: str, generation_id: int, output: Any = None):
+    def __init__(
+        self,
+        key: str,
+        generation_id: int,
+        output: Any = None,
+        error: Optional[str] = None,
+    ):
         self.key = key
         self.generation_id = generation_id
         self.output = output
+        self.error = error
+        self.error_kind = None
 
 
 def _make_doc(step: _TestStep, *workpieces: WorkPiece) -> Doc:
