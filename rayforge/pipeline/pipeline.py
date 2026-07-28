@@ -304,6 +304,11 @@ class Pipeline:
     def _on_job_encoded(self, sender, *, handle, task_status) -> None:
         if self._is_shutting_down:
             return
+        if handle is None:
+            self.job_generation_finished.send(
+                self, handle=None, task_status=task_status
+            )
+            return
         agg = self._last_aggregate_output
         if agg is None:
             logger.debug("Encode finished but no aggregate output cached")
