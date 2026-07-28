@@ -443,7 +443,7 @@ class Pipeline:
             self.job_generation_finished.disconnect(_on_finished)
             when_done(handle, None)
 
-        self.job_generation_finished.connect(_on_finished)
+        self.job_generation_finished.connect(_on_finished, weak=False)
         self._intent_ctl.force_rebuild()
 
     async def generate_job_artifact_async(

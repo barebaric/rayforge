@@ -305,6 +305,8 @@ class IntentController:
         ``rebuild_finished`` fires on the main thread after the thread
         completes.
         """
+        if self._rebuilding:
+            return
         self._rebuild_timer = None
         self._generation_id += 1
         self._rebuilding = True
