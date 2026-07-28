@@ -112,6 +112,21 @@ def workpiece_key(wp_uid: str, step_uid: str) -> str:
     return WORKPIECE_KEY_FMT.format(wp_uid=wp_uid, step_uid=step_uid)
 
 
+def parse_workpiece_key(key: str) -> Optional[tuple[str, str]]:
+    """Parse a ``workpiece:{wp_uid}:{step_uid}`` key.
+
+    Returns ``(wp_uid, step_uid)`` or ``None`` if the key does not
+    match the expected format.
+    """
+    if not key.startswith("workpiece:"):
+        return None
+    rest = key[len("workpiece:") :]
+    idx = rest.find(":")
+    if idx == -1 or rest.find(":", idx + 1) != -1:
+        return None
+    return (rest[:idx], rest[idx + 1 :])
+
+
 def step_key(step_uid: str) -> str:
     return STEP_KEY_FMT.format(step_uid=step_uid)
 
