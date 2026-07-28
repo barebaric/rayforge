@@ -597,7 +597,9 @@ def test_on_workpiece_artifact_ready_refcount_increased(
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
     mock_doc.layers = [mock_layer]
-    real_view_manager._pipeline.doc = mock_doc
+    # Bypass the property setter to avoid triggering a pipeline rebuild
+    # on a mock doc (which would crash in intent_builder).
+    real_view_manager._pipeline._doc = mock_doc
 
     real_view_manager.on_workpiece_artifact_ready(
         sender=None,
@@ -652,7 +654,9 @@ def test_on_workpiece_artifact_ready_releases_old_and_refcount_decreased(
     mock_doc = MagicMock()
     mock_doc.all_workpieces = [mock_workpiece]
     mock_doc.layers = [mock_layer]
-    real_view_manager._pipeline.doc = mock_doc
+    # Bypass the property setter to avoid triggering a pipeline rebuild
+    # on a mock doc (which would crash in intent_builder).
+    real_view_manager._pipeline._doc = mock_doc
 
     real_view_manager.on_workpiece_artifact_ready(
         sender=None,

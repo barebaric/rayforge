@@ -283,14 +283,16 @@ class IntentController:
         """Cancel any pending debounce and rebuild immediately.
 
         If a rebuild is already running on the background thread, the
-        request is coalesced — a new rebuild will be triggered as soon
-        as the current one finishes.
+        in-flight run is signalled to cancel so the next generation
+        starts as soon as possible.
         """
         if self._rebuild_timer is not None:
             self._rebuild_timer.cancel()
             self._rebuild_timer = None
         if self._rebuilding:
             self._rebuild_pending = True
+            if self._intent is not None:
+                self._intent.cancel()
             return
         self._rebuild()
 
@@ -299,6 +301,8 @@ class IntentController:
             self._rebuild_timer.cancel()
         if self._rebuilding:
             self._rebuild_pending = True
+            if self._intent is not None:
+                self._intent.cancel()
             return
         self._rebuild_timer = (
             self._task_manager.schedule_delayed_on_main_thread(
