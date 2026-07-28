@@ -159,7 +159,6 @@ class IntentBuilder:
     ):
         self._machine = machine
         self._generation_id = generation_id
-        self._stock_geometries: Optional[List[Any]] = None
         self._doc: Optional["Doc"] = None
 
     @property
@@ -600,18 +599,14 @@ class IntentBuilder:
     def _resolve_stock_geometries(self) -> Optional[List[Any]]:
         """Return the world-space stock boundary geometries.
 
-        Resolved once per :meth:`build` call and cached on the
-        builder. Transformers such as CropTransformer use this to
-        clip per-workpiece ops to the machine's work area or to
-        explicit StockItems.
+        Transformers such as CropTransformer use this to clip
+        per-workpiece ops to the machine's work area or to explicit
+        StockItems.
 
         Doc-owned :class:`StockItem` entries take precedence. The
         machine workarea rectangle is used as a fallback only when
         no doc stock exists.
         """
-        if self._stock_geometries is not None:
-            return self._stock_geometries
-
         geos: List[Any] = []
 
         if self._doc is not None:
@@ -647,8 +642,7 @@ class IntentBuilder:
                     exc_info=True,
                 )
 
-        self._stock_geometries = geos
-        return self._stock_geometries
+        return geos
 
     # ------------------------------------------------------------------
     # Step aggregate stage
