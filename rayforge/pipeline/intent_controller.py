@@ -256,6 +256,29 @@ class IntentController:
             return
         self._schedule_rebuild()
 
+    def set_doc(self, doc: "Optional[Doc]") -> None:
+        """Replace the document and trigger a rebuild.
+
+        Preserves the existing :class:`RaygeoPipeline` and
+        :class:`~raygeo.Intent` so cache entries survive the doc
+        swap.
+        """
+        self.disconnect()
+        self._doc = doc
+        if doc is not None:
+            self.connect()
+        self.force_rebuild()
+
+    def set_machine(self, machine: "Optional[Machine]") -> None:
+        """Replace the machine and trigger a rebuild.
+
+        Preserves the existing :class:`RaygeoPipeline` and
+        :class:`~raygeo.Intent` so cache entries survive the machine
+        swap.
+        """
+        self._machine = machine
+        self.force_rebuild()
+
     def force_rebuild(self) -> None:
         """Cancel any pending debounce and rebuild immediately.
 

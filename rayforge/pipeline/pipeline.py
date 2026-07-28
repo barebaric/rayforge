@@ -14,6 +14,7 @@ from typing import (
 )
 
 from blinker import Signal
+from raygeo.pipeline.execute import Pipeline as RaygeoPipeline
 
 from ..core.doc import Doc
 from ..core.workpiece import WorkPiece
@@ -87,10 +88,12 @@ class Pipeline:
         self.visual_chunk_available = Signal()
         self.data_stale = Signal()
 
+        self._raygeo_pipeline = RaygeoPipeline()
         self._intent_ctl = IntentController(
             doc=doc,
             task_manager=task_manager,
             machine=machine,
+            raygeo_pipeline=self._raygeo_pipeline,
             dispatch=True,
         )
         self._connect_ctl_signals()
@@ -132,23 +135,12 @@ class Pipeline:
     def doc(self, new_doc: Optional[Doc]) -> None:
         if self._doc is new_doc:
             return
-        self._intent_ctl.shutdown()
         self._doc = new_doc
         self._wp_handles.clear()
         self._step_handles.clear()
         self._last_job_handle = None
         self._last_aggregate_output = None
-        self._intent_ctl = IntentController(
-            doc=new_doc,
-            task_manager=self._task_manager,
-            machine=self._machine,
-            dispatch=True,
-        )
-        self._connect_ctl_signals()
-        if new_doc:
-            self._intent_ctl.connect()
-            if self._has_workflow_content():
-                self._intent_ctl._schedule_rebuild()
+        self._intent_ctl.set_doc(new_doc)
 
     @property
     def machine(self) -> Optional["Machine"]:
@@ -219,18 +211,7 @@ class Pipeline:
         if self._machine is machine:
             return
         self._machine = machine
-        self._intent_ctl.shutdown()
-        self._intent_ctl = IntentController(
-            doc=self._doc,
-            task_manager=self._task_manager,
-            machine=machine,
-            dispatch=True,
-        )
-        self._connect_ctl_signals()
-        if self._doc:
-            self._intent_ctl.connect()
-            if self._has_workflow_content():
-                self._intent_ctl._schedule_rebuild()
+        self._intent_ctl.set_machine(machine)
 
     # ------------------------------------------------------------------
     # Recalculate
