@@ -28,7 +28,7 @@ from ..machine.sanity import CheckMode, SanityChecker
 from ..machine.transport import TransportStatus
 from ..pipeline.artifact import JobArtifact
 from ..pipeline.artifact.handle import BaseArtifactHandle
-from ..pipeline.encoder.gcode import MachineCodeOpMap
+from ..pipeline.encoder import MachineCodeOpMap
 from ..shared.tasker import task_mgr
 from ..shared.util.time_format import format_hours_to_hm
 from ..updater import AppUpdateChecker
