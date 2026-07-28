@@ -94,7 +94,6 @@ class Pipeline:
             task_manager=task_manager,
             machine=machine,
             raygeo_pipeline=self._raygeo_pipeline,
-            dispatch=True,
         )
         self._connect_ctl_signals()
         machine.changed.connect(self._on_machine_changed)
