@@ -94,6 +94,7 @@ if TYPE_CHECKING:
     from ..core.step import Step
     from ..core.workpiece import WorkPiece
     from ..machine.models.dialect import GcodeDialect
+    from ..machine.models.laser import Laser
     from ..machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
@@ -438,61 +439,60 @@ class IntentBuilder:
         specs and attached to the payload so the Rust compute stage
         applies them after assembly.
         """
-        machine_defaults = self._resolve_machine_defaults(step)
+        laser, _settings, machine_defaults = self._resolve_laser_and_settings(
+            step
+        )
         part, payload = step.build_compute_payload(machine_defaults, wp)
         payload.power = step.power
         payload.cut_speed = step.cut_speed
-        if self._machine is not None:
-            try:
-                laser = step.get_selected_laser(self._machine)
-                payload.head_uid = laser.uid if laser else None
-            except ValueError:
-                logger.debug(
-                    "Step %s has no laser heads on machine; "
-                    "head_uid left unset",
-                    step.uid,
-                )
+        payload.head_uid = laser.uid if laser is not None else None
         payload.transformers = self._build_transformer_specs(
             step.per_workpiece_transformers_dicts,
             workpiece=wp,
         )
         return StageSpec.Compute(part=part, params=payload)
 
-    def _resolve_machine_defaults(self, step: "Step") -> MachineDefaults:
-        """
-        Resolve :class:`MachineDefaults` for *step*.
+    def _resolve_laser_and_settings(
+        self, step: "Step"
+    ) -> "Tuple[Optional[Laser], Dict[str, Any], MachineDefaults]":
+        """Resolve the selected laser, the assembled settings dict, and
+        the :class:`MachineDefaults` for *step* in one place.
 
-        When no machine is available (e.g. in tests that construct a
-        bare :class:`IntentBuilder`), fall back to the step's own
-        parameters and conservative defaults so the assembler still
-        receives a valid spec.
+        Centralises the "settings assembly" dance previously inlined
+        by :meth:`_wp_stage` and :meth:`_assembler_params`: it builds
+        the step's
+        ``to_dict`` output, folds in the machine's arc/curve
+        capabilities, resolves the selected :class:`Laser` (logging
+        and falling back to ``None`` on ``ValueError`` — i.e. no laser
+        heads configured), and computes :class:`MachineDefaults` from
+        the laser and settings when both a machine and a laser are
+        available.
+
+        Returns ``(laser, settings, defaults)``.  When no machine is
+        configured, ``settings`` is the bare ``step.to_dict()`` output
+        and ``defaults`` is a conservative fallback built from the
+        step's own parameters.  When a machine is configured but no
+        laser heads are attached, ``laser`` is ``None`` and ``defaults``
+        is the same conservative fallback.
         """
-        if self._machine is not None:
-            try:
-                laser = step.get_selected_laser(self._machine)
-            except ValueError:
-                logger.debug(
-                    "Step %s has no laser heads; using bare defaults",
-                    step.uid,
-                )
-                laser = None
-            settings = step.to_dict()
-            settings["arc_tolerance"] = self._machine.arc_tolerance
-            settings["machine_supports_arcs"] = self._machine.supports_arcs
-            settings["machine_supports_curves"] = self._machine.supports_curves
-            if laser is not None:
-                return resolve_machine_defaults(laser, settings)
-        return MachineDefaults(
-            kerf_mm=step.kerf_mm,
-            arc_tolerance=0.03,
-            allow_arcs=True,
-            supports_curves=False,
-            line_interval_mm=0.1,
-            step_power=step.power,
-            tool_radius=step.kerf_mm / 2.0,
-            step_over=step.kerf_mm,
-            cut_speed=step.cut_speed,
+        settings = step.to_dict()
+        if self._machine is None:
+            return None, settings, _fallback_machine_defaults(step)
+        settings["arc_tolerance"] = self._machine.arc_tolerance
+        settings["machine_supports_arcs"] = self._machine.supports_arcs
+        settings["machine_supports_curves"] = (
+            self._machine.supports_curves
         )
+        try:
+            laser = step.get_selected_laser(self._machine)
+        except ValueError:
+            logger.debug(
+                "Step %s has no laser heads on machine; "
+                "using bare defaults",
+                step.uid,
+            )
+            return None, settings, _fallback_machine_defaults(step)
+        return laser, settings, resolve_machine_defaults(laser, settings)
 
     def _assembler_params(self, step: "Step", wp: "WorkPiece") -> Any:
         """
@@ -500,25 +500,13 @@ class IntentBuilder:
         parameters that the step resolves for its machine.
 
         Delegates to :meth:`Step.assembler_token_params`.  Returns
-        :data:`None` when no machine is configured or the step exposes
-        no assembler params; the compute token is unaffected in that
-        case.
+        :data:`None` when no machine is configured, no laser is
+        selected, or the step exposes no assembler params; the compute
+        token is unaffected in that case.
         """
-        if self._machine is None:
+        laser, _settings, defaults = self._resolve_laser_and_settings(step)
+        if laser is None:
             return None
-        try:
-            laser = step.get_selected_laser(self._machine)
-        except ValueError:
-            logger.debug(
-                "Step %s has no laser heads; skipping assembler params",
-                step.uid,
-            )
-            return None
-        settings = step.to_dict()
-        settings["arc_tolerance"] = self._machine.arc_tolerance
-        settings["machine_supports_arcs"] = self._machine.supports_arcs
-        settings["machine_supports_curves"] = self._machine.supports_curves
-        defaults = resolve_machine_defaults(laser, settings)
         try:
             return step.assembler_token_params(defaults, wp)
         except Exception:
@@ -1033,6 +1021,28 @@ def _workpiece_placement_matrix(wp: "WorkPiece") -> List[List[float]]:
         tx, ty, angle, 1.0, math.copysign(1.0, sy), skew
     )
     return placement.to_4x4_list()
+
+
+def _fallback_machine_defaults(step: "Step") -> MachineDefaults:
+    """Build conservative :class:`MachineDefaults` from a step's own
+    parameters.
+
+    Used by :meth:`IntentBuilder._resolve_laser_and_settings` when no
+    machine is configured or the machine has no laser heads attached,
+    so the step's assembler still receives a valid spec (e.g. in tests
+    that construct a bare :class:`IntentBuilder`).
+    """
+    return MachineDefaults(
+        kerf_mm=step.kerf_mm,
+        arc_tolerance=0.03,
+        allow_arcs=True,
+        supports_curves=False,
+        line_interval_mm=0.1,
+        step_power=step.power,
+        tool_radius=step.kerf_mm / 2.0,
+        step_over=step.kerf_mm,
+        cut_speed=step.cut_speed,
+    )
 
 
 def _step_compute_params(step: "Step") -> Dict[str, Any]:
