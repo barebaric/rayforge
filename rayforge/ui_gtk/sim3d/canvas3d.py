@@ -1851,10 +1851,8 @@ class Canvas3D(Gtk.GLArea):
             axis_position_3d = None
             cylinder_dir = None
             if layer.rotary_enabled:
-                if machine and layer.rotary_module_uid:
-                    module = machine.rotary_modules.get(
-                        layer.rotary_module_uid
-                    )
+                if machine:
+                    module = machine.get_rotary_module_for_layer(layer)
                     if module:
                         mapping = KinematicMapping.from_rotary_module(
                             module,

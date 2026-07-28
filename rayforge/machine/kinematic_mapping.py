@@ -21,7 +21,7 @@ def _resolve_rotary_layer_by_uid(layer_uid: str, doc):
     descendant = doc.find_descendant_by_uid(layer_uid)
     if not isinstance(descendant, Layer):
         return None
-    if not descendant.rotary_module_uid or not descendant.rotary_enabled:
+    if not descendant.rotary_enabled:
         return None
     return descendant
 
@@ -208,7 +208,7 @@ class KinematicMapping:
             layer = _resolve_rotary_layer_by_uid(layer_uid, doc)
             if layer is None:
                 return
-            module = machine.rotary_modules.get(layer.rotary_module_uid or "")
+            module = machine.get_rotary_module_for_layer(layer)
             if module is None or not _is_valid_replacement_module(module):
                 return
             mapping = KinematicMapping.from_rotary_module(
