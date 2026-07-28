@@ -17,19 +17,11 @@ On each debounced rebuild:
 3. :meth:`Intent.update` diffs the previous intent against the new one
    using the ``version_token`` values and evicts any stale cache entries
    on the shared :class:`~raygeo.pipeline.execute.Pipeline`.
-4. When :attr:`dispatch` is ``True`` the new intent is also executed via
-   :func:`run_intent`; the ``on_completed`` callback performs the
-   epoch filter (discarding results whose ``generation_id`` is older
-   than the controller's current generation) and then marshals a DOM
-   reattachment back to the application main thread via the shared
-   task manager.
-
-The controller is constructed by application bootstrapping (see
-``app.py``) and lives alongside the legacy multiprocessing path.  The
-legacy path remains authoritative while ``dispatch`` is ``False``; in
-that mode the controller only maintains the cache-invalidation diff.
-Setting ``dispatch`` to ``True`` also drives raygeo :func:`run_intent`
-so the new pipeline runs end-to-end.
+4. The new intent is executed via :func:`run_intent`; the
+   ``on_completed`` callback performs the epoch filter (discarding
+   results whose ``generation_id`` is older than the controller's
+   current generation) and then marshals a DOM reattachment back to the
+   application main thread via the shared task manager.
 """
 
 from __future__ import annotations
@@ -120,7 +112,6 @@ class IntentController:
         task_manager: "_DelayedScheduler",
         machine: "Optional[Machine]" = None,
         raygeo_pipeline: Optional[RaygeoPipeline] = None,
-        dispatch: bool = False,
     ):
         self._doc: Optional[Doc] = doc
         self._task_manager = task_manager
@@ -128,7 +119,6 @@ class IntentController:
         self._raygeo_pipeline: RaygeoPipeline = (
             raygeo_pipeline or RaygeoPipeline()
         )
-        self._dispatch: bool = dispatch
         self._intent: Optional[Intent] = None
         self._generation_id: int = 0
         self._rebuild_timer: Optional[Any] = None
@@ -158,15 +148,6 @@ class IntentController:
     # ------------------------------------------------------------------
     # Properties
     # ------------------------------------------------------------------
-
-    @property
-    def dispatch(self) -> bool:
-        """Whether to execute the intent after each rebuild."""
-        return self._dispatch
-
-    @dispatch.setter
-    def dispatch(self, value: bool) -> None:
-        self._dispatch = bool(value)
 
     @property
     def raygeo_pipeline(self) -> RaygeoPipeline:
@@ -338,7 +319,7 @@ class IntentController:
                 self._intent = new_intent
             else:
                 self._intent.update(new_intent, pipeline=self._raygeo_pipeline)
-            if self._dispatch and nodes:
+            if nodes:
                 try:
                     run_intent(
                         self._intent,

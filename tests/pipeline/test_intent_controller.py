@@ -147,14 +147,6 @@ def _make_doc(step: _TestStep, *workpieces: WorkPiece) -> Doc:
 # ----------------------------------------------------------------------
 
 
-def test_default_dispatch_is_false():
-    doc = _make_doc(_TestStep(name="s1"), WorkPiece(name="wp"))
-    ctrl = IntentController(doc, FakeTaskManager())
-    assert ctrl.dispatch is False
-    assert ctrl.intent is None
-    assert ctrl.generation_id == 0
-
-
 def test_raygeo_pipeline_default_constructed():
     doc = _make_doc(_TestStep(name="s1"), WorkPiece(name="wp"))
     ctrl = IntentController(doc, FakeTaskManager())
@@ -242,38 +234,16 @@ def test_intent_updates_on_subsequent_rebuilds():
 
 
 # ----------------------------------------------------------------------
-# Dispatch gate
+# run_intent is always called
 # ----------------------------------------------------------------------
 
 
-def test_dispatch_false_does_not_run_intent(monkeypatch):
+def test_run_intent_called(monkeypatch):
     step = _TestStep(name="s1")
     wp = WorkPiece(name="wp")
     doc = _make_doc(step, wp)
     tm = FakeTaskManager()
-    ctrl = IntentController(doc, tm, dispatch=False)
-    ctrl.connect()
-
-    run_calls: List[Any] = []
-
-    def _capture_run(*a, **kw):
-        run_calls.append((a, kw))
-
-    monkeypatch.setattr(
-        "rayforge.pipeline.intent_controller.run_intent", _capture_run
-    )
-    wp.updated.send(wp)
-    tm.fire_latest()
-    assert run_calls == []
-    ctrl.shutdown()
-
-
-def test_dispatch_true_runs_intent(monkeypatch):
-    step = _TestStep(name="s1")
-    wp = WorkPiece(name="wp")
-    doc = _make_doc(step, wp)
-    tm = FakeTaskManager()
-    ctrl = IntentController(doc, tm, dispatch=True)
+    ctrl = IntentController(doc, tm)
     ctrl.connect()
 
     run_calls: List[Any] = []
@@ -291,8 +261,6 @@ def test_dispatch_true_runs_intent(monkeypatch):
     assert len(run_calls) == 1
     intent, on_completed, pipeline = run_calls[0]
     assert intent is ctrl.intent
-    # Bound methods create a new object on each attribute access, so
-    # compare by equality rather than identity.
     assert on_completed == ctrl._on_completed
     assert pipeline is ctrl.raygeo_pipeline
     ctrl.shutdown()
@@ -305,7 +273,6 @@ def test_dispatch_true_runs_intent(monkeypatch):
 
 def _make_controller_for_completed_test(
     monkeypatch,
-    dispatch: bool = False,
     idle_calls: Optional[List] = None,
 ):
     step = _TestStep(name="s1")
@@ -319,10 +286,14 @@ def _make_controller_for_completed_test(
         return FakeCancelHandle()
 
     tm.schedule_on_main_thread = _capture
-    ctrl = IntentController(doc, tm, dispatch=dispatch)
+    ctrl = IntentController(doc, tm)
     ctrl.connect()
 
     # Build once so the key map is populated.
+    monkeypatch.setattr(
+        "rayforge.pipeline.intent_controller.run_intent",
+        lambda *a, **kw: None,
+    )
     wp.updated.send(wp)
     tm.fire_latest()
     idle_calls.clear()
