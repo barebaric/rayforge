@@ -37,7 +37,7 @@ class OpPlayer:
         n = self.ops.len()
         if n <= _SNAPSHOT_INTERVAL:
             return
-        temp_player = _SnapshotBuilder(
+        temp_player = SnapshotBuilder(
             self.ops, self._machine, self._doc, self._create_home_state()
         )
         interval = _SNAPSHOT_INTERVAL
@@ -189,7 +189,7 @@ class OpPlayer:
             self.layer_changed.send(self, layer_uid=uid)
 
 
-class _SnapshotBuilder:
+class SnapshotBuilder:
     def __init__(
         self,
         ops: Ops,

@@ -16,8 +16,8 @@ class VertexLayer:
     laser_indices: np.ndarray
     travel_verts: np.ndarray
     zero_power_verts: np.ndarray
-    powered_cmd_offsets: list = field(default_factory=list)
-    travel_cmd_offsets: list = field(default_factory=list)
+    powered_cmd_offsets: Any = field(default_factory=list)
+    travel_cmd_offsets: Any = field(default_factory=list)
     is_rotary: bool = False
 
 
@@ -39,7 +39,7 @@ class ScanlineOverlayLayer:
     positions: np.ndarray
     power_values: np.ndarray
     laser_indices: np.ndarray
-    cmd_offsets: list
+    cmd_offsets: Any
     is_rotary: bool = False
 
 
