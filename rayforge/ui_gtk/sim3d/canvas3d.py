@@ -1,13 +1,15 @@
 import logging
 import math
 import time
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from gi.repository import Gdk, GLib, Gtk, Pango
 from OpenGL import GL
+from blinker import Signal
 from raygeo.geo.types import Point
 from raygeo.ops import Ops
+from raygeo.ops.axis import Axis
 
 from ...context import RayforgeContext
 from ...core.color import OPS_COLOR_SPEC, ColorSet, hex_to_rgba
@@ -20,7 +22,7 @@ from ...pipeline.artifact.job import JobArtifact
 from ...pipeline.pipeline import Pipeline
 from ...shared.tasker import Task, task_mgr
 from ...simulator.machine_state import MachineState
-from ...simulator.op_player import OpPlayer
+from ...simulator.op_player import OpPlayer, SnapshotBuilder
 from ...simulator.scene3d import (
     CompiledSceneArtifact,
     LayerRenderConfig,
@@ -66,9 +68,9 @@ class _LayerRendererGroup:
         self.is_rotary = is_rotary
         self.ops_renderer = OpsRenderer()
         self.ring_renderer = RingBufferRenderer()
-        self.powered_offsets: List[int] = []
-        self.travel_offsets: List[int] = []
-        self.ring_offsets: List[int] = []
+        self.powered_offsets: Any = []
+        self.travel_offsets: Any = []
+        self.ring_offsets: Any = []
 
     def init_gl(self):
         self.ops_renderer.init_gl()
@@ -132,6 +134,7 @@ class Canvas3D(Gtk.GLArea):
         self._gl_initialized = False
         self._scene_gl_dirty = False
         self._artifact_gl_dirty = False
+        self._upload_state = None
 
         self._color_spec = OPS_COLOR_SPEC
         self._color_set: Optional[ColorSet] = None
@@ -712,8 +715,242 @@ class Canvas3D(Gtk.GLArea):
             self._update_zone_renderer()
         if self._artifact_gl_dirty:
             self._artifact_gl_dirty = False
-            self._update_renderers_from_artifact()
-            self._update_op_player()
+            self._start_chunked_artifact_upload()
+
+    def _start_chunked_artifact_upload(self):
+        if not self._compiled_artifact:
+            for group in self._layer_groups:
+                group.ops_renderer.clear()
+            if self._texture_renderer:
+                self._texture_renderer.clear()
+            self.queue_render()
+            return
+
+        if not self._gl_initialized:
+            return
+
+        self.make_current()
+
+        for group in self._layer_groups:
+            group.cleanup()
+        self._layer_groups.clear()
+
+        artifact = self._compiled_artifact
+        upload_items = []
+
+        for vl in artifact.vertex_layers:
+            group = _LayerRendererGroup(is_rotary=vl.is_rotary)
+            group.init_gl()
+            self._layer_groups.append(group)
+
+            if self._show_travel_moves:
+                pv_final = np.concatenate(
+                    (vl.powered_verts, vl.zero_power_verts)
+                )
+                pvv_final = np.concatenate(
+                    (
+                        vl.power_values,
+                        np.zeros(
+                            vl.zero_power_verts.size // 3,
+                            dtype=np.float32,
+                        ),
+                    )
+                )
+                lid_final = np.concatenate(
+                    (
+                        vl.laser_indices,
+                        np.zeros(
+                            vl.zero_power_verts.size // 3,
+                            dtype=np.float32,
+                        ),
+                    )
+                )
+                tv_final = vl.travel_verts
+            else:
+                pv_final = vl.powered_verts
+                pvv_final = vl.power_values
+                lid_final = vl.laser_indices
+                tv_final = np.array([], dtype=np.float32)
+
+            powered_count = vl.powered_verts.size // 3
+            zero_count = vl.zero_power_verts.size // 3
+            logger.debug(
+                f"[UPLOAD] is_rotary={vl.is_rotary} "
+                f"powered={powered_count} "
+                f"zero_power={zero_count} "
+                f"total={pv_final.size // 3} "
+                f"travel={tv_final.size // 3} "
+                f"show_travel={self._show_travel_moves}"
+            )
+
+            upload_items.append(
+                ("ops", group, pv_final, pvv_final, lid_final, tv_final)
+            )
+
+        for ol in artifact.overlay_layers:
+            for group in self._layer_groups:
+                if group.is_rotary == ol.is_rotary:
+                    upload_items.append(("overlay", group, ol))
+                    break
+
+        upload_items.append(("textures", artifact))
+        upload_items.append(("color_luts",))
+        upload_items.append(("op_player",))
+
+        self._upload_state = {
+            "items": upload_items,
+            "index": 0,
+        }
+        GLib.idle_add(self._step_chunked_upload)
+
+    def _step_chunked_upload(self) -> bool:
+        if self._upload_state is None:
+            return False
+
+        items = self._upload_state["items"]
+        idx = self._upload_state["index"]
+
+        if idx >= len(items):
+            self._upload_state = None
+            self.queue_render()
+            return False
+
+        item = items[idx]
+        self._upload_state["index"] = idx + 1
+
+        try:
+            kind = item[0]
+
+            if kind == "ops":
+                _, group, pv, pvv, lid, tv = item
+                group.ops_renderer.update_from_vertex_data(
+                    pv,
+                    pvv,
+                    tv,
+                    laser_indices=lid,
+                )
+
+            elif kind == "overlay":
+                _, group, ol = item
+                group.ring_renderer.upload(
+                    ol.positions.ravel(),
+                    ol.power_values.ravel(),
+                    laser_indices=ol.laser_indices.ravel(),
+                )
+
+            elif kind == "textures":
+                _, artifact = item
+                if self._texture_renderer:
+                    self._texture_renderer.clear()
+                    luo = artifact.laser_uid_order
+                    for tl in artifact.texture_layers:
+                        tex_data = TextureData(
+                            power_texture_data=tl.power_texture,
+                            dimensions_mm=(0.0, 0.0),
+                            position_mm=(0.0, 0.0),
+                        )
+                        laser_index = 0
+                        if tl.laser_uid and tl.laser_uid in luo:
+                            laser_index = luo.index(tl.laser_uid)
+                        self._texture_renderer.add_instance(
+                            tex_data,
+                            tl.model_matrix,
+                            rotary_enabled=tl.rotary_enabled,
+                            rotary_diameter=tl.rotary_diameter,
+                            cylinder_vertices=tl.cylinder_vertices,
+                            laser_index=laser_index,
+                        )
+
+            elif kind == "color_luts":
+                self._update_renderer_color_luts()
+
+            elif kind == "op_player":
+                self._extract_playback_offsets_from_artifact()
+                self._build_op_player_async()
+
+        except Exception:
+            logger.exception("[CANVAS3D] Error during chunked upload")
+            self._upload_state = None
+            return False
+
+        return True
+
+    def _build_op_player_async(self):
+        ops = self._get_ops_for_playback()
+        machine = self._context.machine
+        if machine is None:
+            return
+
+        if ops is None or ops.is_empty():
+            self._op_player = None
+            for group in self._layer_groups:
+                group.powered_offsets = np.array([], dtype=np.int32)
+                group.travel_offsets = np.array([], dtype=np.int32)
+                group.ring_offsets = np.array([], dtype=np.int32)
+            GLib.idle_add(self._notify_playback_overlay, 0)
+            return
+
+        saved_index = None
+        if self._op_player is not None and self._op_player.ops is ops:
+            saved_index = self._op_player.current_index
+
+        player = OpPlayer.__new__(OpPlayer)
+        player.ops = ops
+        player._machine = machine
+        player._doc = self.doc
+        player._current_index = -1
+        player._source_axis = Axis.Y
+        player._rotary_axis = None
+        player._prev_layer_uid = None
+        player.state = player._create_home_state()
+        player.layer_changed = Signal()
+        player._snapshots = []
+        player.layer_changed.connect(self._on_playback_layer_changed)
+
+        def _on_snapshots_done(task):
+            if task.get_status() != "completed":
+                return
+            if saved_index is not None:
+                player.seek(saved_index)
+                initial_index = saved_index
+            else:
+                initial_index = player.seek_to_first_layer()
+            self._op_player = player
+            GLib.idle_add(
+                self._notify_playback_overlay,
+                len(player.ops),
+                initial_index,
+            )
+
+        def _build_snapshots_thread(ops, machine, doc):
+            n = ops.len()
+            if n <= 1000:
+                return
+            temp = SnapshotBuilder(
+                ops, machine, doc, player._create_home_state()
+            )
+            interval = 1000
+            for target in range(interval, n, interval):
+                temp.advance_to(target - 1)
+                temp.state.reached_textures.clear()
+                player._snapshots.append(
+                    (
+                        target,
+                        temp.state.copy(),
+                        temp._source_axis,
+                        temp._rotary_axis,
+                    )
+                )
+            return True
+
+        task_mgr.run_thread(
+            _build_snapshots_thread,
+            ops,
+            machine,
+            self.doc,
+            key=(id(self), "build-snapshots"),
+            when_done=_on_snapshots_done,
+        )
 
     @staticmethod
     def _world_size_to_pixels(
@@ -912,15 +1149,15 @@ class Canvas3D(Gtk.GLArea):
                 exec_ring = -1
                 if self._op_player:
                     idx = self._op_player.current_index
-                    if group.powered_offsets and idx + 1 < len(
+                    if len(group.powered_offsets) > 0 and idx + 1 < len(
                         group.powered_offsets
                     ):
                         exec_powered = group.powered_offsets[idx + 1]
-                    if group.travel_offsets and idx + 1 < len(
+                    if len(group.travel_offsets) > 0 and idx + 1 < len(
                         group.travel_offsets
                     ):
                         exec_travel = group.travel_offsets[idx + 1]
-                    if group.ring_offsets and idx + 1 < len(
+                    if len(group.ring_offsets) > 0 and idx + 1 < len(
                         group.ring_offsets
                     ):
                         exec_ring = group.ring_offsets[idx + 1]
@@ -1353,16 +1590,20 @@ class Canvas3D(Gtk.GLArea):
         finished.  The compiled artifact is available directly as
         ``task.result_value`` since the compilation runs in-process.
         """
-        self._scene_preparation_task = None
         if task.get_status() != "completed":
-            self._compiled_artifact = None
-            self._op_player = None
-            logger.error(
-                "[CANVAS3D] Scene preparation task failed or was cancelled."
-            )
-            self._artifact_gl_dirty = True
-            self.queue_render()
+            if task.is_cancelled():
+                logger.debug(
+                    "[CANVAS3D] Scene preparation task cancelled (superseded)."
+                )
+            else:
+                self._compiled_artifact = None
+                self._op_player = None
+                logger.error("[CANVAS3D] Scene preparation task failed.")
+                self._artifact_gl_dirty = True
+                self.queue_render()
             return
+
+        self._scene_preparation_task = None
 
         artifact = task.result()
         if artifact is None:
@@ -1483,42 +1724,6 @@ class Canvas3D(Gtk.GLArea):
 
         self._update_renderer_color_luts()
         self.queue_render()
-
-    def _update_op_player(self):
-        ops = self._get_ops_for_playback()
-        machine = self._context.machine
-        if machine is None:
-            return
-
-        if ops is None or ops.is_empty():
-            self._op_player = None
-            for group in self._layer_groups:
-                group.powered_offsets = []
-                group.travel_offsets = []
-                group.ring_offsets = []
-            GLib.idle_add(self._notify_playback_overlay, 0)
-            return
-
-        saved_index = None
-        if self._op_player is not None and self._op_player.ops is ops:
-            saved_index = self._op_player.current_index
-
-        self._op_player = OpPlayer(ops, machine=machine, doc=self.doc)
-        self._op_player.layer_changed.connect(self._on_playback_layer_changed)
-        self._extract_playback_offsets_from_artifact()
-
-        if saved_index is not None:
-            self._op_player.seek(saved_index)
-            initial_index = saved_index
-        else:
-            initial_index = self._op_player.seek_to_first_layer()
-
-        GLib.idle_add(
-            self._notify_playback_overlay,
-            len(self._op_player.ops),
-            initial_index,
-        )
-        self._upload_scanline_overlay()
 
     def _on_playback_layer_changed(self, sender, **kwargs):
         machine = self._context.machine
@@ -1898,29 +2103,29 @@ class Canvas3D(Gtk.GLArea):
     ):
         task_key = (id(self), "prepare-3d-scene-vertices")
 
-        if self._gl_initialized and self._color_set is not None:
-            if self._scene_preparation_task:
-                self._scene_preparation_task.cancel()
-                logger.debug(
-                    "[CANVAS3D] Scene compilation already in progress, "
-                    "skipping duplicate."
-                )
-                return
+        if not self._gl_initialized or self._color_set is None:
+            return
 
-            job_handle = self._current_job_handle
-            if job_handle is None:
-                logger.debug(
-                    "[CANVAS3D] No job artifact, skipping compilation."
-                )
-                return
+        job_handle = self._current_job_handle
+        if job_handle is None:
+            logger.debug("[CANVAS3D] No job artifact, skipping compilation.")
+            return
 
-            logger.debug("[CANVAS3D] Scheduling scene compilation task.")
-            assert render_config_dict is not None
-            self._scene_preparation_task = task_mgr.run_thread(
-                compile_scene_in_thread,
-                self._context.artifact_store,
-                job_handle.to_dict(),
-                render_config_dict,
-                key=task_key,
-                when_done=self._on_scene_prepared,
+        if self._scene_preparation_task:
+            self._scene_preparation_task.cancel()
+            self._scene_preparation_task = None
+            logger.debug(
+                "[CANVAS3D] Cancelled in-progress compilation, "
+                "scheduling new one."
             )
+
+        logger.debug("[CANVAS3D] Scheduling scene compilation task.")
+        assert render_config_dict is not None
+        self._scene_preparation_task = task_mgr.run_thread(
+            compile_scene_in_thread,
+            self._context.artifact_store,
+            job_handle.to_dict(),
+            render_config_dict,
+            key=task_key,
+            when_done=self._on_scene_prepared,
+        )
