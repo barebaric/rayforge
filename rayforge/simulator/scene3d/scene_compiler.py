@@ -10,7 +10,7 @@ from typing import Callable, List, Optional, Tuple
 
 import numpy as np
 from raygeo.image import rasterize_scanlines
-from raygeo.ops import Ops
+from raygeo.ops import LayerInfo, Ops
 
 from .compiled_scene import (
     CompiledSceneArtifact,
@@ -76,18 +76,18 @@ def _rasterize_scanlines(
 
 def _generate_texture_layers(
     ops: Ops,
-    layer_infos: List[dict],
+    layer_infos: List[LayerInfo],
     config: RenderConfig3D,
 ) -> List[TextureLayer]:
     texture_layers: List[TextureLayer] = []
 
     for li in layer_infos:
-        if not li["has_scanlines"]:
+        if not li.has_scanlines:
             continue
 
-        layer_ops = ops.extract_range(li["cmd_start"], li["cmd_end"])
+        layer_ops = ops.extract_range(li.cmd_start, li.cmd_end)
 
-        is_rot = li["is_rotary"]
+        is_rot = li.is_rotary
 
         if is_rot:
             layer_ops = layer_ops.bake_visual_positions()
@@ -103,7 +103,7 @@ def _generate_texture_layers(
         tex_buf, w_px, h_px, actual_ppm = raster_result
         x0, y0, bw, bh = bbox
 
-        diameter = li["diameter"]
+        diameter = li.diameter
 
         if is_rot and diameter > 0:
             tex_transform = np.eye(4, dtype=np.float32)
@@ -133,8 +133,8 @@ def _generate_texture_layers(
                 cylinder_vertices=cyl_verts,
                 rotary_diameter=diameter,
                 rotary_enabled=is_rot,
-                activation_cmd_idx=li["activation_cmd_idx"],
-                laser_uid=li.get("scanline_laser", ""),
+                activation_cmd_idx=li.activation_cmd_idx,
+                laser_uid=li.scanline_laser,
             )
         )
 
@@ -162,50 +162,37 @@ def _build_scene_spec(config: RenderConfig3D) -> Tuple[list, dict]:
 
 
 def _wrap_compiled_scene(
-    raw: dict,
+    raw,
     ops: Ops,
     config: RenderConfig3D,
 ) -> CompiledSceneArtifact:
     vertex_layers: List[VertexLayer] = []
     overlay_layers: List[ScanlineOverlayLayer] = []
 
-    for g in raw["groups"]:
+    for g in raw.groups:
         vertex_layers.append(
             VertexLayer(
-                powered_verts=g["powered_verts"],
-                power_values=g["power_values"],
-                laser_indices=g["laser_indices"],
-                travel_verts=g["travel_verts"],
-                zero_power_verts=g["zero_power_verts"],
-                powered_cmd_offsets=g["powered_cmd_offsets"],
-                travel_cmd_offsets=g["travel_cmd_offsets"],
-                is_rotary=g["is_rotary"],
+                powered_verts=g.powered_verts,
+                power_values=g.power_values,
+                laser_indices=g.laser_indices,
+                travel_verts=g.travel_verts,
+                zero_power_verts=g.zero_power_verts,
+                powered_cmd_offsets=g.powered_cmd_offsets,
+                travel_cmd_offsets=g.travel_cmd_offsets,
+                is_rotary=g.is_rotary,
             )
         )
         overlay_layers.append(
             ScanlineOverlayLayer(
-                positions=g["overlay_positions"],
-                power_values=g["overlay_power_values"],
-                laser_indices=g["overlay_laser_indices"],
-                cmd_offsets=g["overlay_cmd_offsets"],
-                is_rotary=g["is_rotary"],
+                positions=g.overlay_positions,
+                power_values=g.overlay_power_values,
+                laser_indices=g.overlay_laser_indices,
+                cmd_offsets=g.overlay_cmd_offsets,
+                is_rotary=g.is_rotary,
             )
         )
 
-    layer_infos = [
-        {
-            "cmd_start": li["cmd_start"],
-            "cmd_end": li["cmd_end"],
-            "is_rotary": li["is_rotary"],
-            "diameter": li["diameter"],
-            "has_scanlines": li["has_scanlines"],
-            "scanline_laser": li["scanline_laser"],
-            "activation_cmd_idx": li["activation_cmd_idx"],
-            "axis_position": li["axis_position"],
-            "reverse": li["reverse"],
-        }
-        for li in raw["layer_infos"]
-    ]
+    layer_infos = raw.layer_infos
     texture_layers = _generate_texture_layers(ops, layer_infos, config)
 
     return CompiledSceneArtifact(
@@ -213,7 +200,7 @@ def _wrap_compiled_scene(
         vertex_layers=vertex_layers,
         texture_layers=texture_layers,
         overlay_layers=overlay_layers,
-        laser_uid_order=raw["laser_uid_order"],
+        laser_uid_order=raw.laser_uid_order,
     )
 
 
