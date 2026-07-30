@@ -3,7 +3,6 @@ from .cairoencoder import CairoEncoder
 from .context import GcodeContext
 from .gcode import GcodeEncoder
 from .textureencoder import TextureEncoder
-from .vertexencoder import VertexEncoder
 
 __all__ = [
     "CairoEncoder",
@@ -12,5 +11,4 @@ __all__ = [
     "MachineCodeOpMap",
     "OpsEncoder",
     "TextureEncoder",
-    "VertexEncoder",
 ]

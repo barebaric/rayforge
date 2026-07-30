@@ -16,7 +16,6 @@ from ..artifact import WorkPieceArtifact
 from ..artifact.workpiece_view import (
     RenderContext,
 )
-from ..encoder.vertexencoder import VertexEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -64,25 +63,11 @@ def _get_content_bbox(
     show_travel: bool,
 ) -> Optional[Rect]:
     """Calculate the union bounding box of all visual content."""
-    encoder = VertexEncoder()
-    vertex_data = encoder.encode(artifact.ops)
+    rect = artifact.ops.rect(include_travel=show_travel)
+    has_content = rect != (0.0, 0.0, 0.0, 0.0)
 
-    all_vertices = []
-    has_content = False
-
-    if vertex_data.powered_vertices.size > 0:
-        all_vertices.append(vertex_data.powered_vertices)
-    if show_travel:
-        if vertex_data.travel_vertices.size > 0:
-            all_vertices.append(vertex_data.travel_vertices)
-        if vertex_data.zero_power_vertices.size > 0:
-            all_vertices.append(vertex_data.zero_power_vertices)
-
-    v_stack = np.vstack(all_vertices) if all_vertices else None
-    if v_stack is not None:
-        v_x1, v_y1, _ = np.min(v_stack, axis=0)
-        v_x2, v_y2, _ = np.max(v_stack, axis=0)
-        has_content = True
+    if has_content:
+        v_x1, v_y1, v_x2, v_y2 = rect
     else:
         v_x1, v_y1 = math.inf, math.inf
         v_x2, v_y2 = -math.inf, -math.inf
