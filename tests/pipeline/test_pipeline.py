@@ -201,10 +201,22 @@ class TestPipeline:
         # trigger a new rebuild.
         await asyncio.sleep(0.1)
 
+        # The is_busy property flips to False as soon as the rebuild
+        # finishes, but the matching "idle" processing_state_changed
+        # signal is emitted a couple of main-thread hops later (via the
+        # deferred _check_busy callback). Wait for the signal to catch
+        # up with the property, otherwise the final-state assertion
+        # below can observe a stale "busy" signal under load.
+        def _last_signal_is_idle() -> bool:
+            calls = mock_processing_state_handler.call_args_list
+            if not calls:
+                return False
+            return calls[-1].kwargs.get("is_processing") is False
+
         deadline = asyncio.get_running_loop().time() + 10.0
         while (
-            pipeline.is_busy and asyncio.get_running_loop().time() < deadline
-        ):
+            pipeline.is_busy or not _last_signal_is_idle()
+        ) and asyncio.get_running_loop().time() < deadline:
             await asyncio.sleep(0.05)
 
         assert pipeline.is_busy is False, (
