@@ -275,8 +275,6 @@ class WorkPieceElement(CanvasElement):
         # (like zooming) shouldn't erase the persistent data needed by
         # other views or future rebuilds.
 
-        # Trigger a re-render of everything at the new resolution.
-        self.trigger_ops_rerender()
         super().trigger_update()  # Re-renders the base image.
         return True
 
@@ -1287,14 +1285,6 @@ class WorkPieceElement(CanvasElement):
                     f"'{self.data.name}': {e}"
                 )
 
-    def push_transform_to_model(self):
-        """Updates the data model's matrix with the view's transform."""
-        if self.data.matrix != self.transform:
-            logger.debug(
-                f"Pushing view transform to model for '{self.data.name}'."
-            )
-            self.data.matrix = self.transform.copy()
-
     def on_travel_visibility_changed(self):
         """Handles changes in travel move visibility."""
         logger.debug("Travel visibility changed. Invalidating composite.")
@@ -1303,13 +1293,6 @@ class WorkPieceElement(CanvasElement):
 
         if self.canvas:
             self.canvas.queue_draw()
-
-    def trigger_ops_rerender(self):
-        """Triggers a re-render of all applicable ops for this workpiece."""
-        if not self.data.layer or not self.data.layer.workflow:
-            return
-
-        logger.debug(f"Triggering ops rerender for '{self.data.name}'.")
 
     def set_tabs_visible_override(self, visible: bool):
         """Sets the global visibility override for tab handles."""

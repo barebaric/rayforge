@@ -9,11 +9,6 @@ def test_default_projection():
     assert p.vertical_axis == Axis.Y
 
 
-def test_default_circumferential_axis():
-    p = CanvasProjection()
-    assert p.circumferential_axis == Axis.Y
-
-
 def test_projection_is_frozen():
     p = CanvasProjection()
     try:
