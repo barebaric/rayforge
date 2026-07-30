@@ -6,6 +6,7 @@ import cairo
 import numpy as np
 from gi.repository import Gdk, GLib
 from raygeo.geo import Arc, Bezier, Geometry, Line, Matrix, Move
+from raygeo.image.composite import composite_views_into
 
 from ....core.color import OPS_COLOR_SPEC, ColorSet, ColorSpecDict
 from ....core.step import Step
@@ -529,8 +530,8 @@ class WorkPieceElement(CanvasElement):
             comp_data, cairo.FORMAT_ARGB32, comp_w_px, comp_h_px, stride
         )
 
-        # Blit each step surface into the composite.
-        comp_ctx = cairo.Context(comp_surf)
+        # Composite each step bitmap into the target buffer.
+        views: list = []
         for step_uid, surf, meta in visible_steps:
             bbox_mm, wp_size_mm = meta
             vx, vy, vw, vh = bbox_mm
@@ -544,7 +545,9 @@ class WorkPieceElement(CanvasElement):
             if vw < 1e-9 or vh < 1e-9:
                 continue
             step_ppm_x = (
-                (surf.get_width() - 2 * OPS_MARGIN_PX) / vw if vw > 1e-9 else 0
+                (surf.get_width() - 2 * OPS_MARGIN_PX) / vw
+                if vw > 1e-9
+                else 0
             )
             step_ppm_y = (
                 (surf.get_height() - 2 * OPS_MARGIN_PX) / vh
@@ -553,7 +556,9 @@ class WorkPieceElement(CanvasElement):
             )
             if step_ppm_x <= 0 or step_ppm_y <= 0:
                 continue
-            dest_x = (vx - OPS_MARGIN_PX / step_ppm_x - union_x) * eff_ppm_x
+            dest_x = (
+                vx - OPS_MARGIN_PX / step_ppm_x - union_x
+            ) * eff_ppm_x
             scale_x = eff_ppm_x / step_ppm_x
             scale_y = eff_ppm_y / step_ppm_y
             surf_h = surf.get_height()
@@ -562,12 +567,10 @@ class WorkPieceElement(CanvasElement):
                 - (vy - union_y) * eff_ppm_y
                 - (surf_h - OPS_MARGIN_PX) * scale_y
             )
-            comp_ctx.save()
-            comp_ctx.translate(dest_x, dest_y)
-            comp_ctx.scale(scale_x, scale_y)
-            comp_ctx.set_source_surface(surf, 0, 0)
-            comp_ctx.paint()
-            comp_ctx.restore()
+            src_data = self._ops_surface_data_cache[step_uid]
+            views.append((src_data, dest_x, dest_y, scale_x, scale_y))
+
+        composite_views_into(comp_data, views)
 
         self._dispose_composited()
         self._composited_surface = comp_surf
