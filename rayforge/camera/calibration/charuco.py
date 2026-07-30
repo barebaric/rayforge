@@ -177,13 +177,24 @@ class CharucoBoard:
         if charuco_corners is None or charuco_ids is None:
             return None
 
-        if len(charuco_corners) < 4:
+        try:
+            corners_array = np.asarray(
+                charuco_corners, dtype=np.float32
+            ).reshape(-1, 2)
+            ids_array = np.asarray(charuco_ids).reshape(-1)
+        except (TypeError, ValueError) as error:
+            logger.debug("Invalid ChArUco detection result: %s", error)
             return None
 
-        corners = [
-            (float(pt[0][0]), float(pt[0][1])) for pt in charuco_corners
-        ]
-        ids = [int(i[0]) for i in charuco_ids]
+        if len(corners_array) < 4 or len(corners_array) != len(ids_array):
+            return None
+
+        try:
+            corners = [(float(x), float(y)) for x, y in corners_array]
+            ids = [int(value) for value in ids_array]
+        except (TypeError, ValueError, OverflowError) as error:
+            logger.debug("Invalid ChArUco detection result: %s", error)
+            return None
 
         return corners, ids
 
