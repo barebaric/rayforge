@@ -19,9 +19,7 @@ class OpsRenderer(BaseRenderer):
 
         self.powered_vbo: int = 0
         self.powered_powers_vbo: int = 0
-        self.powered_index_vbo: int = 0
         self.travel_vbo: int = 0
-        self.travel_index_vbo: int = 0
 
         self.powered_vertex_count: int = 0
         self.travel_vertex_count: int = 0
@@ -32,9 +30,7 @@ class OpsRenderer(BaseRenderer):
     def init_gl(self):
         self.powered_vbo = self._create_vbo()
         self.powered_powers_vbo = self._create_vbo()
-        self.powered_index_vbo = self._create_vbo()
         self.travel_vbo = self._create_vbo()
-        self.travel_index_vbo = self._create_vbo()
         self._color_lut_texture = self._create_texture()
 
         self.powered_vao = self._create_vao()
@@ -45,18 +41,12 @@ class OpsRenderer(BaseRenderer):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.powered_powers_vbo)
         GL.glVertexAttribPointer(1, 4, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
         GL.glEnableVertexAttribArray(1)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.powered_index_vbo)
-        GL.glVertexAttribPointer(3, 1, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
-        GL.glEnableVertexAttribArray(3)
 
         self.travel_vao = self._create_vao()
         GL.glBindVertexArray(self.travel_vao)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.travel_vbo)
         GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
         GL.glEnableVertexAttribArray(0)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.travel_index_vbo)
-        GL.glVertexAttribPointer(3, 1, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
-        GL.glEnableVertexAttribArray(3)
 
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
@@ -81,12 +71,8 @@ class OpsRenderer(BaseRenderer):
             self.powered_powers_vbo,
             np.ascontiguousarray(powered_attrib, dtype=np.float32),
         )
-        indices = np.arange(self.powered_vertex_count, dtype=np.float32)
-        self._load_buffer_data(self.powered_index_vbo, indices)
         self.travel_vertex_count = travel_vertices.size // 3
         self._load_buffer_data(self.travel_vbo, travel_vertices)
-        travel_indices = np.arange(self.travel_vertex_count, dtype=np.float32)
-        self._load_buffer_data(self.travel_index_vbo, travel_indices)
 
     def update_color_lut(self, lut_data: np.ndarray, num_lasers: int = 1):
         if not self._color_lut_texture:
