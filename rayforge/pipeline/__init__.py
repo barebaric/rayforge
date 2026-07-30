@@ -4,9 +4,6 @@ from .coordspace import (
     CoordinateSpace,
     MachineSpace,
     OriginCorner,
-    PixelSpace,
-    WorkareaSpace,
-    WorldSpace,
 )
 
 __all__ = [
@@ -16,8 +13,5 @@ __all__ = [
     "JobArtifact",
     "MachineSpace",
     "OriginCorner",
-    "PixelSpace",
     "WorkPieceArtifact",
-    "WorkareaSpace",
-    "WorldSpace",
 ]
