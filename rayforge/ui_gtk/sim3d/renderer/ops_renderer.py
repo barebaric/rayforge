@@ -2,8 +2,6 @@
 A renderer for visualizing toolpath operations (Ops) in 3D.
 """
 
-from typing import Optional
-
 import numpy as np
 from OpenGL import GL
 
@@ -74,25 +72,15 @@ class OpsRenderer(BaseRenderer):
     def update_from_vertex_data(
         self,
         powered_vertices: np.ndarray,
-        power_values: np.ndarray,
+        powered_attrib: np.ndarray,
         travel_vertices: np.ndarray,
-        laser_indices: Optional[np.ndarray] = None,
     ):
         self.powered_vertex_count = powered_vertices.size // 3
         self._load_buffer_data(self.powered_vbo, powered_vertices)
-        pv_flat = np.ascontiguousarray(power_values, dtype=np.float32).ravel()
-        n = pv_flat.size
-        if laser_indices is not None and laser_indices.size > 0:
-            li_flat = np.ascontiguousarray(
-                laser_indices, dtype=np.float32
-            ).ravel()
-        else:
-            li_flat = np.zeros(n, dtype=np.float32)
-        power_vec4 = np.zeros(n * 4, dtype=np.float32)
-        power_vec4[0::4] = pv_flat
-        power_vec4[1::4] = li_flat
-        power_vec4[3::4] = 1.0
-        self._load_buffer_data(self.powered_powers_vbo, power_vec4)
+        self._load_buffer_data(
+            self.powered_powers_vbo,
+            np.ascontiguousarray(powered_attrib, dtype=np.float32),
+        )
         indices = np.arange(self.powered_vertex_count, dtype=np.float32)
         self._load_buffer_data(self.powered_index_vbo, indices)
         self.travel_vertex_count = travel_vertices.size // 3

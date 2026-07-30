@@ -45,8 +45,8 @@ class TestCompileLineTo:
         np.testing.assert_allclose(pv[0], [1.0, 2.0, 0.0])
         np.testing.assert_allclose(pv[1], [4.0, 6.0, 0.0])
 
-        pvv = vl.power_values
-        assert pvv.shape[0] == 2
+        pv_attr = vl.powered_attrib
+        assert pv_attr.size == 8
 
     def test_travel_move(self):
         ops = Ops()
@@ -102,9 +102,9 @@ class TestCompileScanline:
 
         assert len(artifact.overlay_layers) == 1
         ol = artifact.overlay_layers[0]
-        ov_pow = ol.power_values
-        assert ov_pow.shape[0] == 2
-        assert all(p > 0 for p in ov_pow)
+        ov_attr = ol.overlay_attrib
+        assert ov_attr.size == 8
+        assert all(p > 0 for p in ov_attr[0::4])
 
 
 class TestCompileRotary:

@@ -12,8 +12,7 @@ from ...pipeline.artifact.handle import BaseArtifactHandle
 @dataclass
 class VertexLayer:
     powered_verts: np.ndarray
-    power_values: np.ndarray
-    laser_indices: np.ndarray
+    powered_attrib: np.ndarray
     travel_verts: np.ndarray
     zero_power_verts: np.ndarray
     powered_cmd_offsets: Any = field(default_factory=list)
@@ -37,8 +36,7 @@ class TextureLayer:
 @dataclass
 class ScanlineOverlayLayer:
     positions: np.ndarray
-    power_values: np.ndarray
-    laser_indices: np.ndarray
+    overlay_attrib: np.ndarray
     cmd_offsets: Any
     is_rotary: bool = False
 

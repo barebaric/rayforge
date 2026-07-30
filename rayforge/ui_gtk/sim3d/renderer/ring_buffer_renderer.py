@@ -9,8 +9,6 @@ instance have been fully executed the texture is un-dimmed and those ring
 slots become available for recycling.
 """
 
-from typing import Optional
-
 import numpy as np
 from OpenGL import GL
 
@@ -73,35 +71,21 @@ class RingBufferRenderer(BaseRenderer):
     def upload(
         self,
         positions: np.ndarray,
-        power_values: np.ndarray,
-        laser_indices: Optional[np.ndarray] = None,
+        attrib: np.ndarray,
     ):
         pos = np.ascontiguousarray(positions, dtype=np.float32).ravel()
-        pow_flat = np.ascontiguousarray(power_values, dtype=np.float32).ravel()
         n = pos.size // 3
-        assert pow_flat.size == n
         assert n <= self._capacity, (
             f"Scanline overlay has {n} vertices but ring capacity is "
             f"{self._capacity}"
         )
 
-        if laser_indices is not None and laser_indices.size > 0:
-            li_flat = np.ascontiguousarray(
-                laser_indices, dtype=np.float32
-            ).ravel()
-        else:
-            li_flat = np.zeros(n, dtype=np.float32)
-
-        pow_vec4 = np.zeros(n * 4, dtype=np.float32)
-        pow_vec4[0::4] = pow_flat
-        pow_vec4[1::4] = li_flat
-        pow_vec4[3::4] = 1.0
-
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.pos_vbo)
         GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, pos.nbytes, pos)
 
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.pow_vbo)
-        GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, pow_vec4.nbytes, pow_vec4)
+        a = np.ascontiguousarray(attrib, dtype=np.float32)
+        GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, a.nbytes, a)
 
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         self.vertex_count = n

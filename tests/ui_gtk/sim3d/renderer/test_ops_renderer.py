@@ -75,12 +75,18 @@ def test_init_gl_creates_buffers(renderer):
     assert mock_vao.call_count == 2
 
 
+def _make_attrib(n: int) -> np.ndarray:
+    a = np.zeros((n, 4), dtype=np.float32)
+    a[:, 3] = 1.0
+    return a
+
+
 @pytest.mark.ui
 def test_update_from_vertex_data_sets_counts(renderer):
     _init_renderer(renderer)
 
     powered_verts = np.array([0, 0, 0, 1, 1, 1], dtype=np.float32)
-    power_values = np.array([1, 0, 0, 1, 0, 1, 0, 1], dtype=np.float32)
+    powered_attrib = _make_attrib(2)
     travel_verts = np.array([2, 2, 2, 3, 3, 3], dtype=np.float32)
 
     with (
@@ -88,7 +94,7 @@ def test_update_from_vertex_data_sets_counts(renderer):
         patch("OpenGL.GL.glBufferData"),
     ):
         renderer.update_from_vertex_data(
-            powered_verts, power_values, travel_verts
+            powered_verts, powered_attrib, travel_verts
         )
 
     assert renderer.powered_vertex_count == 2
@@ -100,7 +106,7 @@ def test_clear_resets_counts(renderer):
     _init_renderer(renderer)
 
     powered_verts = np.array([0, 0, 0, 1, 1, 1], dtype=np.float32)
-    power_values = np.array([1, 0, 0, 1, 0, 1, 0, 1], dtype=np.float32)
+    powered_attrib = _make_attrib(2)
     travel_verts = np.array([2, 2, 2, 3, 3, 3], dtype=np.float32)
 
     with (
@@ -108,7 +114,7 @@ def test_clear_resets_counts(renderer):
         patch("OpenGL.GL.glBufferData"),
     ):
         renderer.update_from_vertex_data(
-            powered_verts, power_values, travel_verts
+            powered_verts, powered_attrib, travel_verts
         )
     assert renderer.powered_vertex_count == 2
 
@@ -126,7 +132,7 @@ def test_render_raises_on_invalid_executed_count(renderer, colors):
     _init_renderer(renderer)
 
     powered_verts = np.array([0, 0, 0, 1, 1, 1], dtype=np.float32)
-    power_values = np.array([1, 0, 0, 1, 0, 1, 0, 1], dtype=np.float32)
+    powered_attrib = _make_attrib(2)
     travel_verts = np.array([], dtype=np.float32)
 
     with (
@@ -134,7 +140,7 @@ def test_render_raises_on_invalid_executed_count(renderer, colors):
         patch("OpenGL.GL.glBufferData"),
     ):
         renderer.update_from_vertex_data(
-            powered_verts, power_values, travel_verts
+            powered_verts, powered_attrib, travel_verts
         )
 
     shader = MagicMock()
@@ -162,7 +168,7 @@ def test_render_draws_powered_and_travel(renderer, colors):
     _init_renderer(renderer)
 
     powered_verts = np.array([0, 0, 0, 1, 1, 1], dtype=np.float32)
-    power_values = np.array([1, 0, 0, 1, 0, 1, 0, 1], dtype=np.float32)
+    powered_attrib = _make_attrib(2)
     travel_verts = np.array([2, 2, 2, 3, 3, 3], dtype=np.float32)
 
     with (
@@ -170,7 +176,7 @@ def test_render_draws_powered_and_travel(renderer, colors):
         patch("OpenGL.GL.glBufferData"),
     ):
         renderer.update_from_vertex_data(
-            powered_verts, power_values, travel_verts
+            powered_verts, powered_attrib, travel_verts
         )
 
     shader = MagicMock()
@@ -198,7 +204,7 @@ def test_render_hides_travel_when_disabled(renderer, colors):
     _init_renderer(renderer)
 
     powered_verts = np.array([0, 0, 0, 1, 1, 1], dtype=np.float32)
-    power_values = np.array([1, 0, 0, 1, 0, 1, 0, 1], dtype=np.float32)
+    powered_attrib = _make_attrib(2)
     travel_verts = np.array([2, 2, 2, 3, 3, 3], dtype=np.float32)
 
     with (
@@ -206,7 +212,7 @@ def test_render_hides_travel_when_disabled(renderer, colors):
         patch("OpenGL.GL.glBufferData"),
     ):
         renderer.update_from_vertex_data(
-            powered_verts, power_values, travel_verts
+            powered_verts, powered_attrib, travel_verts
         )
 
     shader = MagicMock()
