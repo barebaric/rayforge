@@ -76,5 +76,8 @@ app = BUNDLE(
     name='Rayforge.app',
     icon=_icon,
     bundle_identifier='org.rayforge.rayforge',
-    info_plist={'CFBundleIconName': 'rayforge'} if _use_car else {},
+    info_plist={
+        **({'CFBundleIconName': 'rayforge'} if _use_car else {}),
+        'LSMinimumSystemVersion': '12.0',
+    },
 )

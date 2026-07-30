@@ -6,8 +6,13 @@ DO_BUNDLE=0
 DO_DMG=0
 DO_RUN_APP=0
 VERSION_OVERRIDE=""
+MACOS_MIN_VERSION="12.0"
+MACOS_NUMPY_VERSION="1.26.4"
+MACOS_SCIPY_VERSION="1.11.4"
 GREEN="\033[0;32m"
 NC="\033[0m"
+
+export MACOSX_DEPLOYMENT_TARGET="$MACOS_MIN_VERSION"
 
 print_info() {
     local title=$1
@@ -110,29 +115,32 @@ VENV_PY="$VENV_PATH/bin/python"
 "$VENV_PY" -m pip install --upgrade pip
 "$VENV_PY" -m pip install --upgrade build pyinstaller
 TMP_REQUIREMENTS=$(mktemp)
+trap 'rm -f "$TMP_REQUIREMENTS" "$TMP_REQUIREMENTS.patched"' EXIT
 grep -Evi '^(PyOpenGL_accelerate|opencv[_-]python)' \
     requirements.txt > "$TMP_REQUIREMENTS"
 
 if [ "$(uname -s)" = "Darwin" ]; then
-    awk '
+    awk \
+        -v numpy_version="$MACOS_NUMPY_VERSION" \
+        -v scipy_version="$MACOS_SCIPY_VERSION" '
         BEGIN { done_numpy = 0; done_scipy = 0 }
         /^numpy[=~><!]/ {
-            print "numpy==1.26.4"
+            print "numpy==" numpy_version
             done_numpy = 1
             next
         }
         /^scipy[=~><!]/ {
-            print "scipy==1.17.1"
+            print "scipy==" scipy_version
             done_scipy = 1
             next
         }
         { print }
         END {
             if (done_numpy == 0) {
-                print "numpy==1.26.4"
+                print "numpy==" numpy_version
             }
             if (done_scipy == 0) {
-                    print "scipy==1.17.1"
+                print "scipy==" scipy_version
             }
         }
     ' "$TMP_REQUIREMENTS" > "$TMP_REQUIREMENTS.patched"
@@ -148,11 +156,32 @@ fi
 "$VENV_PY" -m pip install -r "$TMP_REQUIREMENTS"
 if [ "$(uname -s)" = "Darwin" ]; then
     "$VENV_PY" -m pip install --upgrade --force-reinstall \
-        "numpy==1.26.4" "scipy==1.17.1"
+        --only-binary=:all: \
+        "numpy==$MACOS_NUMPY_VERSION" "scipy==$MACOS_SCIPY_VERSION"
 fi
 rm -f "$TMP_REQUIREMENTS"
+trap - EXIT
 "$VENV_PY" -m pip install PyOpenGL_accelerate==3.1.10 || \
     echo "PyOpenGL_accelerate install failed; continuing."
+
+if [ "$(uname -s)" = "Darwin" ]; then
+    "$VENV_PY" - "$MACOS_NUMPY_VERSION" \
+        "$MACOS_SCIPY_VERSION" <<'PY'
+import sys
+
+import numpy
+import scipy
+from scipy.linalg import null_space
+from scipy.ndimage import binary_dilation
+from scipy.optimize import least_squares
+from scipy.signal import fftconvolve
+
+assert numpy.__version__ == sys.argv[1]
+assert scipy.__version__ == sys.argv[2]
+assert all((null_space, binary_dilation, least_squares, fftconvolve))
+print("Verified SciPy modules used by Rayforge.")
+PY
+fi
 
 bash scripts/update_translations.sh --compile-only
 
@@ -177,7 +206,7 @@ if (( DO_BUNDLE == 1 )); then
     print_info "  .app Bundle"
     print_info "--------------------------------------"
     echo ""
-    python - <<'PY'
+    "$VENV_PY" - <<'PY'
 import os
 import shutil
 import stat
@@ -201,13 +230,15 @@ PY
     ICON_SOURCE=""
     if [ -d "rayforge/resources/icons/rayforge.icon" ]; then
         echo "Compiling rayforge.icon → Assets.car..."
+        rm -f "Assets.car"
         if ! xcrun actool rayforge/resources/icons/rayforge.icon \
                 --compile "$(pwd)" \
                --app-icon rayforge \
                 --platform macosx \
                 --target-device mac \
-                --minimum-deployment-target 10.14 \
-            --output-partial-info-plist /dev/null; then
+                --minimum-deployment-target "$MACOS_MIN_VERSION" \
+            --output-partial-info-plist /dev/null || \
+            [ ! -f "Assets.car" ]; then
             echo "actool failed; falling back to .icns if available." >&2
             ICON_SOURCE="icns"
         else
@@ -440,12 +471,16 @@ SH
                     "$FW_DIR/$libname"
                 changed=1
             fi
-        done < <(otool -L "$BIN_DIR/Rayforge" "$FW_DIR"/*.dylib 2>/dev/null | \
+        done < <(otool -L "$BIN_DIR/Rayforge.bin" \
+            "$FW_DIR"/*.dylib 2>/dev/null | \
             awk '{print $1}' | \
             grep -E '^/usr/local/|^/opt/homebrew/|^@rpath/' | \
             sort -u || true)
 
-        return $changed
+        if (( changed == 1 )); then
+            return 0
+        fi
+        return 1
     }
 
     # Iteratively pull in any Homebrew deps referenced by bundled binaries.
@@ -524,7 +559,7 @@ SH
         for lib in libpng16.16.dylib libfontconfig.1.dylib \
             libfreetype.6.dylib libintl.8.dylib
         do
-            ln -sf ../"$lib" "$lib"
+            ln -sf ../../"$lib" "$lib"
         done
         popd >/dev/null
     fi
