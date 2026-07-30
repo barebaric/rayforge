@@ -28,6 +28,7 @@ from rayforge.logging_setup import setup_logging
 # ===================================================================
 
 logger = logging.getLogger(__name__)
+_unhandled_exception = False
 
 
 # Suppress NumPy longdouble UserWarning when run under mingw on Windows
@@ -148,9 +149,13 @@ def handle_exception(exc_type, exc_value, exc_traceback):
     Catches unhandled exceptions, logs them, and shows a user-friendly dialog.
     This is crucial for --noconsole builds.
     """
+    global _unhandled_exception
+
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
+
+    _unhandled_exception = True
 
     # Print full traceback to stderr (console or log)
     traceback.print_exception(exc_type, exc_value, exc_traceback)
@@ -167,6 +172,10 @@ def main():
     # This function contains all logic that should ONLY run in the
     # main process.
     # ===================================================================
+
+    global _unhandled_exception
+
+    _unhandled_exception = False
 
     # Set the global exception handler.
     sys.excepthook = handle_exception
@@ -563,6 +572,11 @@ def main():
     exit_code = app.run(None)
     logger.info("app.run() returned with exit_code=%s", exit_code)
     if app.win is None:
+        if _unhandled_exception:
+            logger.error(
+                "Application startup failed before creating a window."
+            )
+            return exit_code or 1
         logger.info(
             "No window created (another instance is likely running). Exiting."
         )
