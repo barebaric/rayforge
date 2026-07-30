@@ -8,7 +8,6 @@ import numpy as np
 from raygeo.geo.types import Rect
 from raygeo.ops.convert import ViewSpec
 from raygeo.ops.convert.view import render_ops as raygeo_render_ops
-from raygeo.ops.convert.view import render_ops_into as raygeo_render_ops_into
 
 from ...core.color import ColorSet
 from ...core.config import OpsColorMode
@@ -215,55 +214,4 @@ def render_workpiece_view_in_process(
         np.asarray(result.bitmap, dtype=np.uint8),
         bbox,
         artifact.generation_size,
-    )
-
-
-# ──────────────────────────────────────────────────────────────────
-# Chunk rendering (progressive)
-# ──────────────────────────────────────────────────────────────────
-
-
-def stitch_chunk_to_bitmap(
-    chunk_artifact: WorkPieceArtifact,
-    render_context: RenderContext,
-    view_bitmap: np.ndarray,
-    view_bbox_mm: Rect,
-    laser_uid: Optional[str] = None,
-    layer_uid: Optional[str] = None,
-) -> bool:
-    """
-    Stitch a chunk artifact into a view bitmap in-process.
-
-    Renders the chunk's texture and vertex strokes directly into
-    *view_bitmap* via ``raygeo.render_ops_into``, using *view_bbox_mm*
-    as the coordinate-space area the bitmap covers.
-
-    Args:
-        chunk_artifact: The WorkPieceArtifact chunk to render.
-        render_context: The RenderContext containing rendering parameters.
-        view_bitmap: Pre-allocated numpy array to render into.
-        view_bbox_mm: The bounding box (x, y, width, height) in mm of
-            the view artifact being rendered to.
-        laser_uid: Optional laser UID for color lookup.
-        layer_uid: Optional layer UID for color lookup.
-
-    Returns:
-        True if rendering succeeded, False otherwise.
-    """
-    color_set = _resolve_color_set(render_context, laser_uid, layer_uid)
-
-    # render_ops_into ignores pixels_per_mm and render_bbox from the
-    # spec — it derives ppm from the bitmap dimensions and view_bbox.
-    # We still pass the spec for colours, LUTs, and show_travel.
-    spec = _make_view_spec(
-        render_context,
-        color_set,
-        (0.0, 0.0, 0.0, 0.0),  # unused by render_ops_into
-    )
-
-    min_x, min_y, w_mm, h_mm = view_bbox_mm
-    view_bbox = (min_x, min_y, min_x + w_mm, min_y + h_mm)
-
-    return raygeo_render_ops_into(
-        chunk_artifact.ops, spec, view_bitmap, view_bbox
     )

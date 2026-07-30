@@ -10,7 +10,6 @@ from rayforge.pipeline.view.view_compute import (
     _get_content_bbox,
     calculate_render_dimensions,
     render_workpiece_view_in_process,
-    stitch_chunk_to_bitmap,
 )
 
 
@@ -160,71 +159,6 @@ def test_render_workpiece_view_travel_moves_shown():
     assert result is not None
     bitmap, bbox, wp_size = result
     assert bitmap.shape[2] == 4
-
-
-# ──────────────────────────────────────────────────────────────────
-# stitch_chunk_to_bitmap
-# ──────────────────────────────────────────────────────────────────
-
-
-def test_stitch_chunk_to_bitmap():
-    """Stitch a chunk into a pre-allocated bitmap."""
-    ops = Ops()
-    ops.set_power(1.0)
-    ops.move_to(0.0, 0.0, 0.0)
-    ops.line_to(10.0, 10.0, 0.0)
-    artifact = WorkPieceArtifact(
-        ops=ops,
-        is_scalable=True,
-        generation_size=(10.0, 10.0),
-        generation_id=0,
-    )
-
-    color_set = create_test_color_set({"cut": ("#000", "#F00")})
-    context = RenderContext(
-        pixels_per_mm=(1.0, 1.0),
-        show_travel_moves=False,
-        margin_px=0,
-        color_set_dict=color_set.to_dict(),
-    )
-
-    bitmap = np.zeros((10, 10, 4), dtype=np.uint8)
-    view_bbox_mm = (0.0, 0.0, 10.0, 10.0)
-
-    result = stitch_chunk_to_bitmap(artifact, context, bitmap, view_bbox_mm)
-
-    assert result is True
-    assert bitmap[:, :, 3].max() > 0
-
-
-def test_stitch_chunk_to_bitmap_texture():
-    """Stitch a texture chunk into a pre-allocated bitmap."""
-    ops = Ops()
-    for mm_y in range(1, 6):
-        power_values = bytearray([128] * 10)
-        ops.move_to(0.0, float(mm_y), 0.0)
-        ops.scan_to(10.0, float(mm_y), 0.0, power_values=power_values)
-    artifact = WorkPieceArtifact(
-        ops=ops,
-        is_scalable=False,
-        generation_size=(10, 10),
-        generation_id=0,
-    )
-
-    color_set = create_test_color_set({"engrave": ("#000", "#FFF")})
-    context = RenderContext(
-        pixels_per_mm=(1.0, 1.0),
-        show_travel_moves=False,
-        margin_px=0,
-        color_set_dict=color_set.to_dict(),
-    )
-
-    bitmap = np.zeros((10, 10, 4), dtype=np.uint8)
-    view_bbox_mm = (0.0, 0.0, 10.0, 10.0)
-
-    result = stitch_chunk_to_bitmap(artifact, context, bitmap, view_bbox_mm)
-
-    assert result is True
 
 
 # ──────────────────────────────────────────────────────────────────
