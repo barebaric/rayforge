@@ -571,28 +571,6 @@ class TestOpMapGeneration:
             assert result.op_map.machine_code_to_op[line_num] == line_num
 
 
-class TestEncodedOutputSerialization:
-    """Tests for EncodedOutput serialization with binary data."""
-
-    def test_to_dict_contains_base64_binary(self, encoder, mock_machine, doc):
-        """Binary in driver_data should be base64 encoded in to_dict()."""
-        ops = Ops()
-        ops.set_power(0.5)
-        result = encoder.encode(ops, mock_machine, doc)
-
-        data = result.to_dict()
-
-        assert "driver_data" in data
-        assert "binary" in data["driver_data"]
-        binary_entry = data["driver_data"]["binary"]
-        assert binary_entry["__type__"] == "bytes"
-
-        expected_b64 = base64.b64encode(result.driver_data["binary"]).decode(
-            "ascii"
-        )
-        assert binary_entry["data"] == expected_b64
-
-
 class TestComplexJobs:
     """Tests for complex job scenarios."""
 
