@@ -173,8 +173,7 @@ def _wrap_compiled_scene(
         vertex_layers.append(
             VertexLayer(
                 powered_verts=g.powered_verts,
-                power_values=g.power_values,
-                laser_indices=g.laser_indices,
+                powered_attrib=g.powered_attrib,
                 travel_verts=g.travel_verts,
                 zero_power_verts=g.zero_power_verts,
                 powered_cmd_offsets=g.powered_cmd_offsets,
@@ -185,8 +184,7 @@ def _wrap_compiled_scene(
         overlay_layers.append(
             ScanlineOverlayLayer(
                 positions=g.overlay_positions,
-                power_values=g.overlay_power_values,
-                laser_indices=g.overlay_laser_indices,
+                overlay_attrib=g.overlay_attrib,
                 cmd_offsets=g.overlay_cmd_offsets,
                 is_rotary=g.is_rotary,
             )

@@ -4,9 +4,9 @@ import time
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import numpy as np
+from blinker import Signal
 from gi.repository import Gdk, GLib, Gtk, Pango
 from OpenGL import GL
-from blinker import Signal
 from raygeo.geo.types import Point
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
@@ -747,29 +747,16 @@ class Canvas3D(Gtk.GLArea):
                 pv_final = np.concatenate(
                     (vl.powered_verts, vl.zero_power_verts)
                 )
-                pvv_final = np.concatenate(
-                    (
-                        vl.power_values,
-                        np.zeros(
-                            vl.zero_power_verts.size // 3,
-                            dtype=np.float32,
-                        ),
-                    )
-                )
-                lid_final = np.concatenate(
-                    (
-                        vl.laser_indices,
-                        np.zeros(
-                            vl.zero_power_verts.size // 3,
-                            dtype=np.float32,
-                        ),
-                    )
+                zero_count = vl.zero_power_verts.size // 3
+                zero_attrib = np.zeros(zero_count * 4, dtype=np.float32)
+                zero_attrib[3::4] = 1.0
+                attrib = np.concatenate(
+                    (vl.powered_attrib.ravel(), zero_attrib)
                 )
                 tv_final = vl.travel_verts
             else:
                 pv_final = vl.powered_verts
-                pvv_final = vl.power_values
-                lid_final = vl.laser_indices
+                attrib = vl.powered_attrib
                 tv_final = np.array([], dtype=np.float32)
 
             powered_count = vl.powered_verts.size // 3
@@ -783,9 +770,7 @@ class Canvas3D(Gtk.GLArea):
                 f"show_travel={self._show_travel_moves}"
             )
 
-            upload_items.append(
-                ("ops", group, pv_final, pvv_final, lid_final, tv_final)
-            )
+            upload_items.append(("ops", group, pv_final, attrib, tv_final))
 
         for ol in artifact.overlay_layers:
             for group in self._layer_groups:
@@ -822,20 +807,14 @@ class Canvas3D(Gtk.GLArea):
             kind = item[0]
 
             if kind == "ops":
-                _, group, pv, pvv, lid, tv = item
-                group.ops_renderer.update_from_vertex_data(
-                    pv,
-                    pvv,
-                    tv,
-                    laser_indices=lid,
-                )
+                _, group, pv, attrib, tv = item
+                group.ops_renderer.update_from_vertex_data(pv, attrib, tv)
 
             elif kind == "overlay":
                 _, group, ol = item
                 group.ring_renderer.upload(
                     ol.positions.ravel(),
-                    ol.power_values.ravel(),
-                    laser_indices=ol.laser_indices.ravel(),
+                    ol.overlay_attrib,
                 )
 
             elif kind == "textures":
@@ -1659,27 +1638,16 @@ class Canvas3D(Gtk.GLArea):
                 pv_final = np.concatenate(
                     (vl.powered_verts, vl.zero_power_verts)
                 )
-                pvv_final = np.concatenate(
-                    (
-                        vl.power_values,
-                        np.zeros(
-                            vl.zero_power_verts.size // 3, dtype=np.float32
-                        ),
-                    )
-                )
-                lid_final = np.concatenate(
-                    (
-                        vl.laser_indices,
-                        np.zeros(
-                            vl.zero_power_verts.size // 3, dtype=np.float32
-                        ),
-                    )
+                zero_count = vl.zero_power_verts.size // 3
+                zero_attrib = np.zeros(zero_count * 4, dtype=np.float32)
+                zero_attrib[3::4] = 1.0
+                attrib = np.concatenate(
+                    (vl.powered_attrib.ravel(), zero_attrib)
                 )
                 tv_final = vl.travel_verts
             else:
                 pv_final = vl.powered_verts
-                pvv_final = vl.power_values
-                lid_final = vl.laser_indices
+                attrib = vl.powered_attrib
                 tv_final = np.array([], dtype=np.float32)
 
             powered_count = vl.powered_verts.size // 3
@@ -1695,9 +1663,8 @@ class Canvas3D(Gtk.GLArea):
 
             group.ops_renderer.update_from_vertex_data(
                 pv_final,
-                pvv_final,
+                attrib,
                 tv_final,
-                laser_indices=lid_final,
             )
 
         if self._texture_renderer:
@@ -1811,8 +1778,7 @@ class Canvas3D(Gtk.GLArea):
             if ol is not None:
                 group.ring_renderer.upload(
                     ol.positions.ravel(),
-                    ol.power_values.ravel(),
-                    laser_indices=ol.laser_indices.ravel(),
+                    ol.overlay_attrib,
                 )
             else:
                 group.ring_renderer.clear()
