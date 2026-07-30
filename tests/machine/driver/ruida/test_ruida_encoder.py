@@ -10,8 +10,6 @@ Tests cover:
 - Serialization of EncodedOutput
 """
 
-import base64
-
 import pytest
 from raygeo.ops import Ops
 from raygeo.ops.state import AirAssistMode
