@@ -113,19 +113,6 @@ class GroupElement(ShrinkWrapGroup):
         if self.transform != group.matrix:
             self.set_transform(group.matrix)
 
-    def push_transform_to_model(self):
-        """
-        Updates the data model with the current transformation matrix from the
-        view. Called by the WorkSurface at the end of an interactive operation.
-        (VIEW -> MODEL)
-        """
-        if self.data.matrix != self.transform:
-            logger.debug(
-                "[GroupElem] VIEW->MODEL: Pushing transform for"
-                f" '{self.data.name}'"
-            )
-            self.data.matrix = self.transform.copy()
-
     def sync_with_model(self, *args, **kwargs):
         """
         Reconciles child elements (WorkPieceElement, GroupElement) with the
