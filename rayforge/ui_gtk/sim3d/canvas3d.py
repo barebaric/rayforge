@@ -867,11 +867,16 @@ class Canvas3D(Gtk.GLArea):
                 group.travel_offsets = np.array([], dtype=np.int32)
                 group.ring_offsets = np.array([], dtype=np.int32)
             GLib.idle_add(self._notify_playback_overlay, 0)
+            self.queue_render()
             return
 
+        # Preserve the playhead and seek snapshots when the underlying
+        # ops object has not changed (e.g. only the viewport moved).
         saved_index = None
+        reused_snapshots: Any = []
         if self._op_player is not None and self._op_player.ops is ops:
             saved_index = self._op_player.current_index
+            reused_snapshots = self._op_player._snapshots
 
         player = OpPlayer.__new__(OpPlayer)
         player.ops = ops
@@ -883,36 +888,49 @@ class Canvas3D(Gtk.GLArea):
         player._prev_layer_uid = None
         player.state = player._create_home_state()
         player.layer_changed = Signal()
-        player._snapshots = []
+        player._snapshots = reused_snapshots
         player.layer_changed.connect(self._on_playback_layer_changed)
 
+        # Make the player available right away so that the next render
+        # can dim textures that have not been reached yet.  Seeking to
+        # the first layer is cheap (the first LAYER_START is near the
+        # start of the ops), and reused snapshots keep restores of a
+        # previous playhead fast as well.
+        if saved_index is not None:
+            player.seek(saved_index)
+            initial_index = saved_index
+        else:
+            initial_index = player.seek_to_first_layer()
+        self._op_player = player
+        GLib.idle_add(
+            self._notify_playback_overlay,
+            len(player.ops),
+            initial_index,
+        )
+        self.queue_render()
+
+        # Build seek-acceleration snapshots in the background.  They are
+        # collected into a fresh list and attached from the main thread
+        # to avoid racing with concurrent seeks reading _snapshots.
         def _on_snapshots_done(task):
             if task.get_status() != "completed":
                 return
-            if saved_index is not None:
-                player.seek(saved_index)
-                initial_index = saved_index
-            else:
-                initial_index = player.seek_to_first_layer()
-            self._op_player = player
-            GLib.idle_add(
-                self._notify_playback_overlay,
-                len(player.ops),
-                initial_index,
-            )
+            if self._op_player is player:
+                player._snapshots = task.result()
 
         def _build_snapshots_thread(ops, machine, doc):
             n = ops.len()
             if n <= 1000:
-                return
+                return []
             temp = SnapshotBuilder(
                 ops, machine, doc, player._create_home_state()
             )
             interval = 1000
+            snapshots = []
             for target in range(interval, n, interval):
                 temp.advance_to(target - 1)
                 temp.state.reached_textures.clear()
-                player._snapshots.append(
+                snapshots.append(
                     (
                         target,
                         temp.state.copy(),
@@ -920,7 +938,7 @@ class Canvas3D(Gtk.GLArea):
                         temp._rotary_axis,
                     )
                 )
-            return True
+            return snapshots
 
         task_mgr.run_thread(
             _build_snapshots_thread,

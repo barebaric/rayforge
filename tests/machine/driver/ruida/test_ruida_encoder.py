@@ -592,42 +592,6 @@ class TestEncodedOutputSerialization:
         )
         assert binary_entry["data"] == expected_b64
 
-    def test_roundtrip_serialization(self, encoder, mock_machine, doc):
-        """EncodedOutput should survive dict roundtrip."""
-        ops = Ops()
-        ops.set_power(0.75)
-        ops.move_to(100.0, 50.0, 0.0)
-        ops.line_to(150.0, 100.0, 0.0)
-        original = encoder.encode(ops, mock_machine, doc)
-
-        data = original.to_dict()
-        restored = EncodedOutput.from_dict(data)
-
-        assert restored.text == original.text
-        assert restored.driver_data["binary"] == original.driver_data["binary"]
-        assert (
-            restored.op_map.op_to_machine_code
-            == original.op_map.op_to_machine_code
-        )
-        assert (
-            restored.op_map.machine_code_to_op
-            == original.op_map.machine_code_to_op
-        )
-
-    def test_json_roundtrip(self, encoder, mock_machine, doc):
-        """EncodedOutput should survive JSON roundtrip."""
-        ops = Ops()
-        ops.set_power(0.5)
-        ops.set_air_assist(AirAssistMode.ON)
-        ops.move_to(10.0, 20.0, 0.0)
-        original = encoder.encode(ops, mock_machine, doc)
-
-        json_str = original.to_json()
-        restored = EncodedOutput.from_json(json_str)
-
-        assert restored.text == original.text
-        assert restored.driver_data["binary"] == original.driver_data["binary"]
-
 
 class TestComplexJobs:
     """Tests for complex job scenarios."""

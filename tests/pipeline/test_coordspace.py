@@ -108,42 +108,6 @@ class TestMachineSpace:
         assert x == 30.0
         assert y == 20.0
 
-    def test_to_command_coords_with_wcs(self):
-        """Command coords should subtract WCS offset."""
-        space = MachineSpace(
-            origin=OriginCorner.BOTTOM_LEFT,
-            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
-            y_positive_direction=AxisDirection.POSITIVE_UP,
-            extents=(200.0, 200.0),
-        )
-
-        x, y = space.to_command_coords(
-            100.0, 50.0, wcs_offset=(20.0, 10.0, 0.0)
-        )
-
-        assert x == 80.0
-        assert y == 40.0
-
-    def test_to_command_coords_with_workarea_origin(self):
-        """Command coords should subtract workarea origin when mode set."""
-        space = MachineSpace(
-            origin=OriginCorner.BOTTOM_LEFT,
-            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
-            y_positive_direction=AxisDirection.POSITIVE_UP,
-            extents=(200.0, 200.0),
-            margins=(10.0, 20.0, 30.0, 40.0),
-        )
-
-        x, y = space.to_command_coords(
-            100.0,
-            50.0,
-            wcs_offset=(0.0, 0.0, 0.0),
-            wcs_is_workarea_origin=True,
-        )
-
-        assert x == 90.0
-        assert y == 10.0
-
     def test_transform_top_left_to_world(self):
         """Top-left origin machine coords should transform to world."""
         space = MachineSpace(

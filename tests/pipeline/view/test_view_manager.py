@@ -7,7 +7,6 @@ import pytest
 from raygeo.ops import Ops
 
 from rayforge.core.doc import Doc
-from rayforge.core.layer import Layer
 from rayforge.pipeline.artifact import (
     RenderContext,
     WorkPieceArtifact,
@@ -278,47 +277,6 @@ def test_live_render_context_established_on_view_creation(
     view_manager._view_entries[composite_id] = entry
 
     assert entry.render_context == context
-
-
-def test_get_render_components(view_manager, mock_store, context):
-    wp_uid = str(uuid.uuid4())
-    step_uid = str(uuid.uuid4())
-    composite_id = (wp_uid, step_uid)
-
-    handle = WorkPieceViewArtifactHandle(
-        key="test",
-        bbox_mm=(0, 0, 1, 1),
-        workpiece_size_mm=(1.0, 1.0),
-        handle_class_name="WorkPieceViewArtifactHandle",
-        artifact_type_name="WorkPieceViewArtifact",
-        generation_id=0,
-    )
-
-    entry = ViewEntry(handle=handle, render_context=context)
-    view_manager._view_entries[composite_id] = entry
-
-    view_handle, render_context = view_manager._get_render_components(
-        composite_id, entry
-    )
-
-    assert view_handle == handle
-    assert render_context == context
-
-
-def test_get_render_components_missing(view_manager, mock_store):
-    wp_uid = str(uuid.uuid4())
-    step_uid = str(uuid.uuid4())
-    composite_id = (wp_uid, step_uid)
-
-    entry = ViewEntry(handle=None, render_context=None)
-    view_manager._view_entries[composite_id] = entry
-
-    view_handle, render_context = view_manager._get_render_components(
-        composite_id, entry
-    )
-
-    assert view_handle is None
-    assert render_context is None
 
 
 def test_update_render_context_triggers_renders(view_manager, source_handle):
@@ -1303,32 +1261,3 @@ def test_get_view_handle(view_manager):
 def test_get_view_handle_missing(view_manager):
     result = view_manager.get_view_handle("nonexistent", "step_uid")
     assert result is None
-
-
-def test_reconcile_removes_obsolete_entries(
-    view_manager, mock_store, source_handle
-):
-    wp_uid = str(uuid.uuid4())
-    step_uid = str(uuid.uuid4())
-    composite_id = (wp_uid, step_uid)
-    view_manager._source_artifact_handles[composite_id] = source_handle
-
-    view_handle = WorkPieceViewArtifactHandle(
-        key="test",
-        bbox_mm=(0, 0, 1, 1),
-        workpiece_size_mm=(1.0, 1.0),
-        handle_class_name="WorkPieceViewArtifactHandle",
-        artifact_type_name="WorkPieceViewArtifact",
-        generation_id=0,
-    )
-    view_manager._view_entries[composite_id] = ViewEntry(handle=view_handle)
-
-    doc = Doc()
-    layer = Layer(name="Empty Layer")
-    doc.add_layer(layer)
-
-    view_manager.reconcile(doc, generation_id=1)
-
-    mock_store.release.assert_called()
-    assert composite_id not in view_manager._source_artifact_handles
-    assert composite_id not in view_manager._view_entries

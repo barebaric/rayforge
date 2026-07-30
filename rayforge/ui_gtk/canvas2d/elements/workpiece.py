@@ -543,9 +543,7 @@ class WorkPieceElement(CanvasElement):
             if vw < 1e-9 or vh < 1e-9:
                 continue
             step_ppm_x = (
-                (surf.get_width() - 2 * OPS_MARGIN_PX) / vw
-                if vw > 1e-9
-                else 0
+                (surf.get_width() - 2 * OPS_MARGIN_PX) / vw if vw > 1e-9 else 0
             )
             step_ppm_y = (
                 (surf.get_height() - 2 * OPS_MARGIN_PX) / vh
@@ -554,9 +552,7 @@ class WorkPieceElement(CanvasElement):
             )
             if step_ppm_x <= 0 or step_ppm_y <= 0:
                 continue
-            dest_x = (
-                vx - OPS_MARGIN_PX / step_ppm_x - union_x
-            ) * eff_ppm_x
+            dest_x = (vx - OPS_MARGIN_PX / step_ppm_x - union_x) * eff_ppm_x
             scale_x = eff_ppm_x / step_ppm_x
             scale_y = eff_ppm_y / step_ppm_y
             surf_h = surf.get_height()

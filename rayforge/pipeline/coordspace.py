@@ -417,37 +417,6 @@ class MachineSpace(CoordinateSpace):
         else:
             return wcs_offset
 
-    def to_command_coords(
-        self,
-        machine_x: float,
-        machine_y: float,
-        wcs_offset: Point3D,
-        wcs_is_workarea_origin: bool = False,
-    ) -> Point:
-        """
-        Convert machine coordinates to command coordinates (G-code output).
-
-        Command coordinates are relative to the active WCS or workarea origin.
-
-        Args:
-            machine_x: X coordinate in machine space.
-            machine_y: Y coordinate in machine space.
-            wcs_offset: The (x, y, z) WCS offset.
-            wcs_is_workarea_origin: If True, workarea origin is
-                coordinate zero.
-
-        Returns:
-            Tuple of (x, y) in command space.
-        """
-        if wcs_is_workarea_origin:
-            workarea_origin = self.get_workarea_origin_in_machine()
-            return (
-                machine_x - workarea_origin[0],
-                machine_y - workarea_origin[1],
-            )
-        else:
-            return machine_x - wcs_offset[0], machine_y - wcs_offset[1]
-
     def world_point_to_machine(self, x: float, y: float) -> Point:
         """
         Transform a point from world space to machine space.
