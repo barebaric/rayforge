@@ -8,98 +8,7 @@ from rayforge.pipeline.coordspace import (
     AxisDirection,
     MachineSpace,
     OriginCorner,
-    PixelSpace,
-    WorkareaSpace,
-    WorldSpace,
 )
-
-
-class TestWorldSpace:
-    """Tests for WorldSpace coordinate system."""
-
-    def test_default_properties(self):
-        """WorldSpace should have bottom-left origin, Y-up, X-right."""
-        space = WorldSpace()
-
-        assert space.origin == OriginCorner.BOTTOM_LEFT
-        assert space.x_positive_direction == AxisDirection.POSITIVE_RIGHT
-        assert space.y_positive_direction == AxisDirection.POSITIVE_UP
-        assert not space.x_reversed
-        assert not space.y_reversed
-
-    def test_transform_identity(self):
-        """WorldSpace to world should be identity transform."""
-        space = WorldSpace()
-        extents = (100.0, 200.0)
-
-        matrix = space.get_transform_to_world(extents)
-
-        expected = np.identity(4, dtype=np.float64)
-        np.testing.assert_array_almost_equal(matrix, expected)
-
-    def test_transform_point_identity(self):
-        """Points in world space should remain unchanged."""
-        space = WorldSpace()
-        extents = (100.0, 200.0)
-
-        x, y = space.transform_point_to_world(50.0, 100.0, extents)
-
-        assert x == 50.0
-        assert y == 100.0
-
-
-class TestPixelSpace:
-    """Tests for PixelSpace coordinate system."""
-
-    def test_default_properties(self):
-        """PixelSpace should have top-left origin, Y-down, X-right."""
-        space = PixelSpace()
-
-        assert space.origin == OriginCorner.TOP_LEFT
-        assert space.x_positive_direction == AxisDirection.POSITIVE_RIGHT
-        assert space.y_positive_direction == AxisDirection.POSITIVE_DOWN
-        assert not space.x_reversed
-        assert space.y_reversed
-
-    def test_to_millimeters_top_left(self):
-        """Top-left pixel should map to (0, height) in mm."""
-        space = PixelSpace(dimensions=(100, 100))
-        mm_dims = (50.0, 50.0)
-
-        x, y = space.to_millimeters(0, 0, mm_dims)
-
-        assert x == 0.0
-        assert y == 50.0
-
-    def test_to_millimeters_bottom_left(self):
-        """Bottom-left pixel should map to (0, 0) in mm."""
-        space = PixelSpace(dimensions=(100, 100))
-        mm_dims = (50.0, 50.0)
-
-        x, y = space.to_millimeters(0, 100, mm_dims)
-
-        assert x == 0.0
-        assert y == 0.0
-
-    def test_to_millimeters_center(self):
-        """Center pixel should map to center in mm."""
-        space = PixelSpace(dimensions=(100, 100))
-        mm_dims = (50.0, 50.0)
-
-        x, y = space.to_millimeters(50, 50, mm_dims)
-
-        assert x == 25.0
-        assert y == 25.0
-
-    def test_to_millimeters_top_right(self):
-        """Top-right pixel should map to (width, height) in mm."""
-        space = PixelSpace(dimensions=(100, 100))
-        mm_dims = (50.0, 50.0)
-
-        x, y = space.to_millimeters(100, 0, mm_dims)
-
-        assert x == 50.0
-        assert y == 50.0
 
 
 class TestMachineSpace:
@@ -287,21 +196,6 @@ class TestMachineSpace:
         expected = np.identity(4, dtype=np.float64)
         expected[1, 1] = -1.0
         np.testing.assert_array_almost_equal(matrix, expected)
-
-
-class TestWorkareaSpace:
-    """Tests for WorkareaSpace coordinate system."""
-
-    def test_extents_from_margins(self):
-        """WorkareaSpace extents should be machine extents minus margins."""
-        space = WorkareaSpace(
-            origin=OriginCorner.BOTTOM_LEFT,
-            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
-            y_positive_direction=AxisDirection.POSITIVE_UP,
-            extents=(160.0, 140.0),
-        )
-
-        assert space.extents == (160.0, 140.0)
 
 
 class TestCoordinateSpaceTransforms:
