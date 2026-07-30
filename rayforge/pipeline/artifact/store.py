@@ -81,9 +81,6 @@ class ArtifactStore:
         self._handles.pop(key, None)
         self._artifacts.pop(key, None)
 
-    def close_handle(self, handle: BaseArtifactHandle) -> None:
-        self.release(handle)
-
     def retain(self, handle: BaseArtifactHandle) -> bool:
         key = handle.key
         canonical = self._handles.get(key)
@@ -91,9 +88,6 @@ class ArtifactStore:
             canonical.refcount += 1
             return True
         return False
-
-    def forget(self, handle: BaseArtifactHandle) -> None:
-        self.release(handle)
 
     @contextmanager
     def checkout_handle(

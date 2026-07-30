@@ -2,7 +2,6 @@ import asyncio
 from functools import partial
 from unittest.mock import MagicMock, PropertyMock
 
-import numpy as np
 import pytest
 import pytest_asyncio
 from raygeo.ops import Ops
@@ -76,14 +75,11 @@ def simple_ops():
 def job_artifact(simple_ops, machine):
     """Creates a JobArtifact containing simple_ops with encoded G-code."""
     encoded = machine.driver.get_encoder().encode(simple_ops, machine, None)
-    encoded_output_bytes = np.frombuffer(
-        encoded.to_json().encode("utf-8"), dtype=np.uint8
-    )
     return JobArtifact(
         ops=simple_ops,
         distance=simple_ops.distance(),
         generation_id=1,
-        encoded_output_bytes=encoded_output_bytes,
+        encoded_output=encoded,
     )
 
 

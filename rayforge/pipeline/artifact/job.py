@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-import numpy as np
 from raygeo.ops import Ops
 
 from .base import BaseArtifact
@@ -57,7 +56,6 @@ class JobArtifact(BaseArtifact):
         distance: float,
         generation_id: int,
         time_estimate: Optional[float] = None,
-        encoded_output_bytes: Optional[np.ndarray] = None,
         mapped_ops: Optional[Ops] = None,
         encoded_output: Optional["EncodedOutput"] = None,
     ):
@@ -66,7 +64,6 @@ class JobArtifact(BaseArtifact):
         self.distance = distance
         self.generation_id = generation_id
         self.time_estimate = time_estimate
-        self.encoded_output_bytes: Optional[np.ndarray] = encoded_output_bytes
         self.mapped_ops: Optional[Ops] = mapped_ops
 
         self._encoded_output: Optional["EncodedOutput"] = encoded_output
@@ -89,18 +86,7 @@ class JobArtifact(BaseArtifact):
 
     @property
     def encoded_output(self) -> Optional["EncodedOutput"]:
-        """
-        Lazily decodes and caches the full EncodedOutput from its byte array.
-        This includes text, op_map, and driver_data (e.g., binary for Ruida).
-        """
-        from ..encoder.base import EncodedOutput
-
-        if (
-            self._encoded_output is None
-            and self.encoded_output_bytes is not None
-        ):
-            json_str = self.encoded_output_bytes.tobytes().decode("utf-8")
-            self._encoded_output = EncodedOutput.from_json(json_str)
+        """Returns the cached EncodedOutput, if any."""
         return self._encoded_output
 
     def to_dict(self) -> Dict[str, Any]:
@@ -111,8 +97,6 @@ class JobArtifact(BaseArtifact):
             "distance": self.distance,
             "generation_id": self.generation_id,
         }
-        if self.encoded_output_bytes is not None:
-            result["encoded_output_bytes"] = self.encoded_output_bytes.tolist()
         if self.mapped_ops is not None:
             result["mapped_ops"] = self.mapped_ops.to_dict()
         return result
@@ -127,10 +111,6 @@ class JobArtifact(BaseArtifact):
             "distance": data.get("distance", 0.0),
             "generation_id": data["generation_id"],
         }
-        if "encoded_output_bytes" in data:
-            common_args["encoded_output_bytes"] = np.array(
-                data["encoded_output_bytes"], dtype=np.uint8
-            )
         if "mapped_ops" in data:
             common_args["mapped_ops"] = Ops.from_dict(data["mapped_ops"])
         return cls(**common_args)
