@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-22 17:00+0200\n"
+"POT-Creation-Date: 2026-07-30 11:12+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -2303,7 +2303,15 @@ msgstr ""
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid ""
 "Recalculate operations automatically after each change. Disable for manual "
-"recalculation via the toolbar button."
+"recalculation via the toolbar button"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Cache budget (MB)"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Maximum memory for cache. High complexity scenes require more"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
@@ -2311,7 +2319,7 @@ msgid "Check for updates"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Automatically check for new Rayforge versions on startup."
+msgid "Automatically check for new Rayforge versions on startup"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py

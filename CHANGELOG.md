@@ -5,7 +5,7 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 1.9.0
+## 1.9.0-beta1
 
 ### Added
 
@@ -15,16 +15,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (dotWidth, interval, angle, scan_angle)
 - Allow renaming layers and steps directly in the layer/step
   settings dialogs
+- Asyncio support for parallel workpiece processing in the pipeline
+- Configurable pipeline cache budget in settings
+- Error notifications for pipeline failures
 
 ### Changed
 
-- Upgrade raygeo to 1.24.0 with migrated G-code encoder,
+- Upgrade raygeo to 1.27.0 (from 1.24.0) with migrated G-code encoder,
   BidirScanOffsetTransformer, and MultiPassTransformer to Rust;
   transformer application now uses Rust apply_transformers dispatch
 - Replaced multiprocessing pipeline with raygeo intent
   orchestration: compute, raster, shrinkwrap, wavefront, contour,
   and view rendering now run in raygeo threads instead of
   subprocesses for improved performance and reliability
+- Rewrote 3D scene compiler to use Rust `compile_scene_3d` with
+  chunked GL upload for improved 3D canvas rendering performance
+- Pipeline cache is now preserved across document and machine swaps
+  for faster rebuilds
 - Improved addon translation fallback: English is now used when
   no matching locale is found
 - Wavefront icon and improved Gtk SVG compatibility for other icons
@@ -42,6 +49,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   showing wrong defaults, overscan Automatic Distance switch
   permanently greyed out, and auto overscan/lead-in-out distance
   recalculating to a smaller value on toggle (#314, by vyvcodd)
+- Fixed job generation hangs in the pipeline
+- Fixed in-flight intent not cancelling on force_rebuild
+- Fixed 3D rotary rendering missing mapped operations
+- Fixed rotary module fallback not triggering pipeline rebuild on
+  machine changes
+- Fixed a race condition on Windows
 
 ## 1.8.5
 

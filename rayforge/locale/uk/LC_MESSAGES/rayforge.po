@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-22 17:00+0200\n"
+"POT-Creation-Date: 2026-07-30 11:12+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -2468,18 +2468,27 @@ msgstr "Автоматичне оновлення операцій"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid ""
 "Recalculate operations automatically after each change. Disable for manual "
-"recalculation via the toolbar button."
+"recalculation via the toolbar button"
 msgstr ""
-"Автоматично перераховувати операції після кожної зміни. Вимкнути для ручного "
-"перерахунку через кнопку панелі інструментів."
+"Автоматично перераховувати операції після кожної зміни. Вимкніть для ручного "
+"перерахунку через кнопку на панелі інструментів"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Cache budget (MB)"
+msgstr "Бюджет кешу (МБ)"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Maximum memory for cache. High complexity scenes require more"
+msgstr ""
+"Максимальна пам'ять для кешу. Сцени високої складності потребують більше"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Check for updates"
 msgstr "Перевірити оновлення"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Automatically check for new Rayforge versions on startup."
-msgstr "Автоматично перевіряти нові версії Rayforge при запуску."
+msgid "Automatically check for new Rayforge versions on startup"
+msgstr "Автоматично перевіряти наявність нових версій Rayforge при запуску"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Startup behavior"

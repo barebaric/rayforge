@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-22 17:00+0200\n"
+"POT-Creation-Date: 2026-07-30 11:12+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -2327,16 +2327,24 @@ msgstr "自动更新操作"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid ""
 "Recalculate operations automatically after each change. Disable for manual "
-"recalculation via the toolbar button."
-msgstr "每次更改后自动重新计算操作。禁用后可通过工具栏按钮手动重新计算。"
+"recalculation via the toolbar button"
+msgstr "每次更改后自动重新计算操作。禁用后可通过工具栏按钮手动重新计算"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Cache budget (MB)"
+msgstr "缓存预算 (MB)"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Maximum memory for cache. High complexity scenes require more"
+msgstr "缓存的最大内存。高复杂度场景需要更多内存"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Check for updates"
 msgstr "检查更新"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Automatically check for new Rayforge versions on startup."
-msgstr "启动时自动检查新的Rayforge版本。"
+msgid "Automatically check for new Rayforge versions on startup"
+msgstr "启动时自动检查新版本的 Rayforge"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Startup behavior"
