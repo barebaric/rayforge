@@ -1,8 +1,6 @@
-import numpy as np
 from raygeo.ops import Ops
 
 from rayforge.pipeline.artifact import JobArtifact, WorkPieceArtifact
-from rayforge.pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
 
 
 def test_artifact_type_property():
@@ -83,22 +81,13 @@ def test_hybrid_serialization_round_trip():
 
 def test_final_job_serialization_round_trip():
     """Tests serialization for a final_job artifact."""
-    encoded = EncodedOutput(text="G1 X10", op_map=MachineCodeOpMap())
-    encoded_output_bytes = np.frombuffer(encoded.to_json().encode(), np.uint8)
-
     artifact = JobArtifact(
         ops=Ops(),
         distance=42.5,
-        encoded_output_bytes=encoded_output_bytes,
         generation_id=1,
     )
 
     reconstructed = JobArtifact.from_dict(artifact.to_dict())
 
-    assert reconstructed.encoded_output_bytes is not None
     assert reconstructed.distance == 42.5
-
-    assert artifact.encoded_output_bytes is not None
-    np.testing.assert_array_equal(
-        reconstructed.encoded_output_bytes, artifact.encoded_output_bytes
-    )
+    assert reconstructed.generation_id == 1
