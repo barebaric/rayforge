@@ -6,7 +6,7 @@ PyOpenGL tasks, such as shader compilation and buffer management.
 import logging
 import math
 from dataclasses import dataclass
-from typing import Optional, Protocol, Union, final
+from typing import Optional, Union, final
 
 import numpy as np
 from OpenGL import GL
@@ -205,7 +205,7 @@ class RenderContext:
     Frame-level rendering state shared across all renderers.
 
     Matrices are row-major (NumPy convention).  Renderers that need
-    column-major for OpenGL should transpose: ``ctx.mvp_ui_gl``.
+    column-major for OpenGL should transpose the matrix.
     """
 
     proj_matrix: np.ndarray
@@ -219,24 +219,6 @@ class RenderContext:
     color_set: ColorSet
     show_travel_moves: bool = False
     line_width: float = 1.0
-
-    @property
-    def mvp_ui_gl(self) -> np.ndarray:
-        return self.mvp_ui.T
-
-    @property
-    def mvp_scene_gl(self) -> np.ndarray:
-        return self.mvp_scene.T
-
-
-class SceneRenderer(Protocol):
-    """Protocol for renderers that can participate in the 3D scene."""
-
-    def init_gl(self) -> None: ...
-
-    def render(self, shader: Shader, mvp_matrix: np.ndarray) -> None: ...
-
-    def cleanup(self) -> None: ...
 
 
 class BaseRenderer:
