@@ -17,11 +17,6 @@ class GcodeEncoder(OpsEncoder):
     def __init__(self, dialect: GcodeDialect):
         self.dialect: GcodeDialect = dialect
 
-    @classmethod
-    def for_machine(cls, machine: "Machine") -> "GcodeEncoder":
-        assert machine.dialect is not None
-        return cls(machine.dialect)
-
     def encode(
         self, ops: Ops, machine: "Machine", doc: "Doc"
     ) -> EncodedOutput:

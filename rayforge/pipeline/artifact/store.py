@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import uuid
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional
+from typing import TYPE_CHECKING, Dict, Generator, Optional
 
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
@@ -54,7 +54,6 @@ class ArtifactStore:
         self,
         artifact: BaseArtifact,
         creator_tag: str = "unknown",
-        generation_context: Optional[Any] = None,
     ) -> BaseArtifactHandle:
         """Store *artifact* and return a lightweight handle."""
         key = f"rf_{creator_tag}_{uuid.uuid4().hex[:16]}"

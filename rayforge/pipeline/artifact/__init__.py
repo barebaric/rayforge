@@ -1,7 +1,7 @@
 from .base import BaseArtifact, TextureData
 from .handle import BaseArtifactHandle, create_handle_from_dict
-from .job import JobArtifact, JobArtifactHandle
-from .step_ops import StepOpsArtifact, StepOpsArtifactHandle
+from .job import JobArtifact
+from .step_ops import StepOpsArtifact
 from .store import ArtifactStore
 from .workpiece import WorkPieceArtifact, WorkPieceArtifactHandle
 from .workpiece_view import (
@@ -16,10 +16,8 @@ __all__ = [
     "BaseArtifactHandle",
     "create_handle_from_dict",
     "JobArtifact",
-    "JobArtifactHandle",
     "RenderContext",
     "StepOpsArtifact",
-    "StepOpsArtifactHandle",
     "TextureData",
     "WorkPieceArtifact",
     "WorkPieceArtifactHandle",

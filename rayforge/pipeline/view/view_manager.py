@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import threading
-import time
 import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, cast
@@ -25,7 +24,6 @@ from .view_compute import (
 )
 
 if TYPE_CHECKING:
-    from ...core.doc import Doc
     from ...core.step import Step
     from ...core.workpiece import WorkPiece
     from ...machine.models.machine import Machine
@@ -36,7 +34,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-THROTTLE_INTERVAL = 0.033
 MAX_CONCURRENT_VIEW_RENDERS = 3
 
 
@@ -113,7 +110,6 @@ class ViewManager:
         self._last_update_time: Dict[Tuple[str, str], float] = {}
         self._throttle_timers: Dict[Tuple[str, str], threading.Timer] = {}
 
-        self.view_artifact_ready = Signal()
         self.view_artifact_created = Signal()
         self.view_artifact_updated = Signal()
         self.generation_finished = Signal()
@@ -748,12 +744,6 @@ class ViewManager:
             workpiece_uid=workpiece_uid,
             handle=handle,
         )
-        self.view_artifact_ready.send(
-            self,
-            step_uid=step_uid,
-            workpiece_uid=workpiece_uid,
-            handle=handle,
-        )
 
     def _on_render_complete(
         self,
@@ -771,78 +761,12 @@ class ViewManager:
             step_uid=step_uid,
         )
 
-    def _get_render_components(
-        self,
-        composite_id: Tuple[str, str],
-        entry: ViewEntry,
-    ) -> tuple[WorkPieceViewArtifactHandle | None, RenderContext | None]:
-        """Gets the view handle and render context."""
-        if entry.handle is None:
-            return None, None
-
-        if not isinstance(entry.handle, WorkPieceViewArtifactHandle):
-            return None, None
-
-        render_context = entry.render_context or self._current_view_context
-        if render_context is None:
-            return None, None
-
-        return entry.handle, render_context
-
     def _cancel_pending_throttled_update(self, composite_id: Tuple[str, str]):
         """Cancels any pending throttled update for the given composite."""
         self._pending_updates.pop(composite_id, None)
         timer = self._throttle_timers.pop(composite_id, None)
         if timer:
             timer.cancel()
-
-    def _schedule_throttled_update(
-        self, composite_id: Tuple[str, str], view_id: int
-    ):
-        """Schedules a throttled update notification."""
-        current_time = time.time()
-        last_update = self._last_update_time.get(composite_id, 0)
-
-        existing_timer = self._throttle_timers.pop(composite_id, None)
-        if existing_timer:
-            existing_timer.cancel()
-
-        self._pending_updates[composite_id] = True
-
-        time_since_last = current_time - last_update
-        time_until_next = max(0, THROTTLE_INTERVAL - time_since_last)
-
-        def send_update():
-            self._send_throttled_update(composite_id, view_id)
-
-        if time_until_next <= 0:
-            send_update()
-        else:
-            timer = threading.Timer(time_until_next, send_update)
-            self._throttle_timers[composite_id] = timer
-            timer.start()
-
-    def _send_throttled_update(
-        self, composite_id: Tuple[str, str], view_id: int
-    ):
-        """Sends the view_artifact_updated signal."""
-        self._pending_updates.pop(composite_id, None)
-        self._throttle_timers.pop(composite_id, None)
-        self._last_update_time[composite_id] = time.time()
-
-        workpiece_uid, step_uid = composite_id
-        entry = self._view_entries.get(composite_id)
-        handle = entry.handle if entry else None
-
-        if not handle:
-            return
-
-        self.view_artifact_updated.send(
-            self,
-            step_uid=step_uid,
-            workpiece_uid=workpiece_uid,
-            handle=handle,
-        )
 
     def allocate_live_buffer(
         self,
@@ -960,43 +884,6 @@ class ViewManager:
                 generation_id=self._view_generation_id,
                 context=context,
             )
-
-    def reconcile(self, doc: "Doc", generation_id: int):
-        """
-        Synchronizes the cache with the document, cleaning up obsolete
-        entries and syncing the ledger.
-        """
-        logger.debug("ViewManager reconciling...")
-
-        all_current_pairs = set()
-        for layer in doc.layers:
-            if layer.workflow and layer.workflow.steps:
-                for step in layer.workflow.steps:
-                    for workpiece in layer.all_workpieces:
-                        all_current_pairs.add((workpiece.uid, step.uid))
-
-        tracked_pairs = set(self._source_artifact_handles.keys())
-        obsolete_pairs = tracked_pairs - all_current_pairs
-
-        for composite_id in obsolete_pairs:
-            logger.debug(f"Cleaning up obsolete view pair: {composite_id}")
-            handle = self._source_artifact_handles.pop(composite_id, None)
-            if handle:
-                self._store.release(handle)
-
-            task_key = self._view_task_keys.pop(composite_id, None)
-            if task_key:
-                self._task_manager.cancel_task(task_key)
-
-            entry = self._view_entries.pop(composite_id, None)
-            if entry and entry.handle:
-                self._store.release(entry.handle)
-
-            self._pending_updates.pop(composite_id, None)
-            timer = self._throttle_timers.pop(composite_id, None)
-            if timer:
-                timer.cancel()
-            self._last_update_time.pop(composite_id, None)
 
     def get_view_handle(
         self, workpiece_uid: str, step_uid: str
