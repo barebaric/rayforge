@@ -6,7 +6,6 @@ SIMPLE_VERTEX_SHADER = """
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec4 aColor;
 layout (location = 2) in vec3 aNormal;
-layout (location = 3) in float aVertexIndex;
 uniform mat4 uMVP;
 out vec4 vColor;
 out vec3 vNormal;
@@ -17,7 +16,7 @@ void main() {
     vColor = aColor;
     vNormal = aNormal;
     vPos = aPos;
-    vVertexID = int(aVertexIndex);
+    vVertexID = gl_VertexID;
 }
 """
 
