@@ -115,6 +115,25 @@ class Pipeline:
                     return True
         return False
 
+    def _can_generate_job(self) -> bool:
+        """True when the current doc can produce a job aggregate.
+
+        Mirrors the intent builder's criteria: a visible step with at
+        least one workpiece in its layer.  Without these the builder
+        emits no job node, so any rebuild would be a no-op and asking
+        for a job artifact would spin forever.
+        """
+        if not self._doc:
+            return False
+        for layer in self._doc.layers:
+            if not layer.workflow:
+                continue
+            if not layer.all_workpieces:
+                continue
+            if any(step.visible for step in layer.workflow.steps):
+                return True
+        return False
+
     def _connect_ctl_signals(self) -> None:
         ctl = self._intent_ctl
         ctl.workpiece_artifact_ready.connect(self._on_wp_output)
@@ -437,6 +456,16 @@ class Pipeline:
 
         if self._last_job_handle is not None:
             when_done(self._last_job_handle, None)
+            return
+
+        if not self._can_generate_job():
+            when_done(
+                None,
+                RuntimeError(
+                    "The document has no visible steps with workpieces "
+                    "to assemble."
+                ),
+            )
             return
 
         def _on_finished(sender, *, handle, task_status):

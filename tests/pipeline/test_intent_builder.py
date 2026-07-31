@@ -306,7 +306,7 @@ def test_hidden_steps_excluded():
 
     assert workpiece_key(wp1.uid, step.uid) not in keys
     assert step_key(step.uid) not in keys
-    assert job_key() in keys
+    assert job_key() not in keys
 
 
 def test_layers_without_workpieces_skipped_for_compute():
@@ -322,7 +322,7 @@ def test_layers_without_workpieces_skipped_for_compute():
     keys = [n.key for n in nodes]
     assert step_key(step.uid) not in keys
     assert workpiece_key("any", step.uid) not in keys
-    assert job_key() in keys
+    assert job_key() not in keys
 
 
 def test_second_layer_without_skips_affect_existing():

@@ -148,6 +148,67 @@ class TestPipeline:
         assert isinstance(error, RuntimeError)
 
     @pytest.mark.asyncio
+    async def test_generate_job_artifact_no_workflow_content_fails_fast(
+        self,
+        doc,
+        mock_task_mgr,
+        context_initializer,
+    ):
+        """Job generation must fail fast without scheduling a rebuild when
+        the document has no visible steps with workpieces.  Otherwise the
+        UI settle->refresh loop keeps forcing rebuilds forever."""
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+        tasks_before = len(mock_task_mgr.created_tasks)
+
+        callback_mock = MagicMock()
+        pipeline.generate_job_artifact(when_done=callback_mock)
+
+        callback_mock.assert_called_once()
+        handle, error = callback_mock.call_args[0]
+        assert handle is None
+        assert isinstance(error, RuntimeError)
+        assert len(mock_task_mgr.created_tasks) == tasks_before
+
+    @pytest.mark.asyncio
+    async def test_generate_job_artifact_hidden_steps_fails_fast(
+        self,
+        doc,
+        real_workpiece,
+        mock_task_mgr,
+        context_initializer,
+        contour_step_class,
+    ):
+        """A workflow whose steps are all hidden cannot produce a job
+        aggregate, so generation fails fast instead of rebuilding."""
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = contour_step_class.create(context_initializer)
+        step.visible = False
+        layer.workflow.add_step(step)
+
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            context_initializer.machine,
+        )
+        tasks_before = len(mock_task_mgr.created_tasks)
+
+        callback_mock = MagicMock()
+        pipeline.generate_job_artifact(when_done=callback_mock)
+
+        callback_mock.assert_called_once()
+        handle, error = callback_mock.call_args[0]
+        assert handle is None
+        assert isinstance(error, RuntimeError)
+        assert len(mock_task_mgr.created_tasks) == tasks_before
+
+    @pytest.mark.asyncio
     async def test_rapid_invalidation_does_not_corrupt_busy_state(
         self,
         doc,
