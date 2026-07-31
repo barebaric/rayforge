@@ -211,9 +211,10 @@ class IntentBuilder:
                     step, layer, upstream
                 )
 
-        self._build_job_node(doc, nodes, step_tokens)
-        self._build_machine_transform_node(doc, nodes, step_tokens)
-        self._build_encoder_node(doc, nodes, step_tokens)
+        if step_tokens:
+            self._build_job_node(doc, nodes, step_tokens)
+            self._build_machine_transform_node(doc, nodes, step_tokens)
+            self._build_encoder_node(doc, nodes, step_tokens)
         return nodes
 
     # ------------------------------------------------------------------
@@ -288,7 +289,8 @@ class IntentBuilder:
     ) -> None:
         key = job_key()
         token = self._job_token(doc, step_tokens)
-        out.append(self._make_request(key, token, self._job_stage(doc)))
+        stage = self._job_stage(doc, step_tokens)
+        out.append(self._make_request(key, token, stage))
 
     def _build_machine_transform_node(
         self,
@@ -425,6 +427,8 @@ class IntentBuilder:
                 continue
             for step in layer.workflow.steps:
                 if not step.visible:
+                    continue
+                if step.uid not in step_tokens:
                     continue
                 payloads.append(
                     {
@@ -734,16 +738,20 @@ class IntentBuilder:
     # Job aggregate stage
     # ------------------------------------------------------------------
 
-    def _job_stage(self, doc: "Doc") -> StageSpec.Aggregate:
+    def _job_stage(
+        self, doc: "Doc", step_tokens: Dict[str, int]
+    ) -> StageSpec.Aggregate:
         """
         Build the final job aggregate :class:`StageSpec.Aggregate`.
 
         One :class:`AggregateGroup` per layer, wrapped by
         ``LayerStart`` / ``LayerEnd`` markers, containing one
-        :class:`AggregateInput` per visible step in that layer.  The
-        whole aggregate is wrapped by ``JobStart`` / ``JobEnd``
-        markers.  ``MachineParams`` is populated from the resolved
-        machine so the aggregate's time estimate is correct.
+        :class:`AggregateInput` per visible step in that layer that has
+        workpiece compute nodes upstream (i.e. is present in
+        *step_tokens*).  The whole aggregate is wrapped by
+        ``JobStart`` / ``JobEnd`` markers.  ``MachineParams`` is
+        populated from the resolved machine so the aggregate's time
+        estimate is correct.
         """
         groups: List[AggregateGroup] = []
         for layer in doc.layers:
@@ -752,6 +760,8 @@ class IntentBuilder:
             step_inputs: List[AggregateInput] = []
             for step in layer.workflow.steps:
                 if not step.visible:
+                    continue
+                if step.uid not in step_tokens:
                     continue
                 sk = step_key(step.uid)
                 step_inputs.append(
