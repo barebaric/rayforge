@@ -57,7 +57,7 @@ class TestEngraveStep:
             t.get("name") for t in step.per_workpiece_transformers_dicts
         }
         assert "BidirScanOffsetTransformer" in transformer_names
-        assert step.selected_laser_uid == "test-laser-uid"
+        assert step.selected_head_uid == "test-laser-uid"
 
     def test_serialization_includes_step_type(self):
         step = EngraveStep(name="Test")

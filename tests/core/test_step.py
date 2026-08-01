@@ -38,7 +38,7 @@ def test_step_initialization(step):
     assert step.typelabel == "TestType"
     assert step.name == "Test Step"
     assert step.visible is True
-    assert step.selected_laser_uid is None
+    assert step.selected_head_uid is None
     assert step.generated_workpiece_uid is None
     assert step.applied_recipe_uid is None
     assert step.per_workpiece_transformers_dicts == []
@@ -84,8 +84,8 @@ def test_setters_and_signals(step):
     handler.assert_called_once_with(step)
     handler.reset_mock()
 
-    step.set_selected_laser_uid("laser-123")
-    assert step.selected_laser_uid == "laser-123"
+    step.set_selected_head_uid("laser-123")
+    assert step.selected_head_uid == "laser-123"
     handler.assert_called_once_with(step)
 
 
@@ -125,7 +125,7 @@ def test_hierarchy_properties_when_detached(step):
     assert step.layer is None
 
 
-def test_get_selected_laser(step):
+def test_get_selected_head(step):
     """Tests the logic for retrieving the selected laser from a machine."""
     mock_machine = MagicMock()
     mock_laser1 = MagicMock(spec=LaserHead)
@@ -135,20 +135,20 @@ def test_get_selected_laser(step):
     mock_machine.heads = [mock_laser1, mock_laser2]
 
     # Case 1: UID is set and exists
-    step.set_selected_laser_uid("laser-2")
-    assert step.get_selected_laser(mock_machine) is mock_laser2
+    step.set_selected_head_uid("laser-2")
+    assert step.get_selected_head(mock_machine) is mock_laser2
 
     # Case 2: UID is set but does not exist, should fall back to first
-    step.set_selected_laser_uid("non-existent-laser")
-    assert step.get_selected_laser(mock_machine) is mock_laser1
+    step.set_selected_head_uid("non-existent-laser")
+    assert step.get_selected_head(mock_machine) is mock_laser1
 
     # Case 3: UID is None, should fall back to first
-    step.set_selected_laser_uid(None)
-    assert step.get_selected_laser(mock_machine) is mock_laser1
+    step.set_selected_head_uid(None)
+    assert step.get_selected_head(mock_machine) is mock_laser1
 
     # Case 4: Machine has no lasers
     mock_machine.heads = []
-    assert step.get_selected_laser(mock_machine) is None
+    assert step.get_selected_head(mock_machine) is None
 
 
 def test_serialization_to_dict_all_properties(step):
@@ -159,7 +159,7 @@ def test_serialization_to_dict_all_properties(step):
     step.name = "My Engrave Step"
     step.matrix = Matrix.translation(1, 2)
     step.visible = False
-    step.selected_laser_uid = "laser-abc"
+    step.selected_head_uid = "laser-abc"
     step.generated_workpiece_uid = "wp-xyz"
     step.applied_recipe_uid = "recipe-123"
     step.per_step_transformers_dicts = [{"type": "CoolingPause"}]
@@ -178,7 +178,7 @@ def test_serialization_to_dict_all_properties(step):
     assert data["matrix"] == Matrix.translation(1, 2).to_list()
     assert data["typelabel"] == "TestType"
     assert data["visible"] is False
-    assert data["selected_laser_uid"] == "laser-abc"
+    assert data["selected_head_uid"] == "laser-abc"
     assert data["generated_workpiece_uid"] == "wp-xyz"
     assert data["applied_recipe_uid"] == "recipe-123"
     assert data["per_step_transformers_dicts"] == [{"type": "CoolingPause"}]
@@ -199,7 +199,7 @@ def test_deserialization_from_dict(step):
         "matrix": Matrix.rotation(45).to_list(),
         "typelabel": "RestoredType",
         "visible": False,
-        "selected_laser_uid": "laser-def",
+        "selected_head_uid": "laser-def",
         "generated_workpiece_uid": "wp-123",
         "applied_recipe_uid": "recipe-456",
         "per_workpiece_transformers_dicts": [],
@@ -223,7 +223,7 @@ def test_deserialization_from_dict(step):
     assert restored.matrix == Matrix.rotation(45)
     assert restored.typelabel == "RestoredType"
     assert restored.visible is False
-    assert restored.selected_laser_uid == "laser-def"
+    assert restored.selected_head_uid == "laser-def"
     assert restored.generated_workpiece_uid == "wp-123"
     assert restored.applied_recipe_uid == "recipe-456"
     assert restored.pixels_per_mm == (20, 20)
@@ -252,7 +252,7 @@ def test_deserialization_with_missing_keys(step):
 
     assert restored.uid == "step-min"
     assert restored.name == "MinimalType"  # Falls back to typelabel
-    assert restored.selected_laser_uid is None
+    assert restored.selected_head_uid is None
     assert restored.applied_recipe_uid is None
     assert restored.power == 1.0
     assert restored.cut_speed == 500
@@ -272,7 +272,7 @@ def test_step_roundtrip_serialization():
     original.set_power(0.8)
     original.set_cut_speed(3000)
     original.set_kerf_mm(0.18)
-    original.selected_laser_uid = "the-best-laser"
+    original.selected_head_uid = "the-best-laser"
     original.applied_recipe_uid = "recipe-abc"
     original.matrix = Matrix.translation(50, 50)
 
@@ -290,7 +290,7 @@ def test_step_roundtrip_serialization():
     assert restored.power == original.power
     assert restored.cut_speed == original.cut_speed
     assert restored.kerf_mm == original.kerf_mm
-    assert restored.selected_laser_uid == original.selected_laser_uid
+    assert restored.selected_head_uid == original.selected_head_uid
     assert restored.applied_recipe_uid == original.applied_recipe_uid
     assert restored.matrix == original.matrix
 
@@ -307,7 +307,7 @@ def test_step_forward_compatibility_with_extra_fields():
         "matrix": Matrix.identity().to_list(),
         "typelabel": "FutureType",
         "visible": True,
-        "selected_laser_uid": None,
+        "selected_head_uid": None,
         "generated_workpiece_uid": None,
         "applied_recipe_uid": None,
         "per_workpiece_transformers_dicts": [],
@@ -358,7 +358,7 @@ def test_step_backward_compatibility_with_missing_optional_fields():
 
     step = Step.from_dict(minimal_dict)
 
-    assert step.selected_laser_uid is None
+    assert step.selected_head_uid is None
     assert step.generated_workpiece_uid is None
     assert step.applied_recipe_uid is None
     assert step.pixels_per_mm == (100, 100)
@@ -370,6 +370,32 @@ def test_step_backward_compatibility_with_missing_optional_fields():
     assert step.max_travel_speed == 10000
     assert step.air_assist is False
     assert step.kerf_mm == 0.0
+
+
+def test_legacy_selected_laser_uid_key_migrates():
+    """
+    Old project files keyed head selection as "selected_laser_uid".
+    It must load into selected_head_uid and not pollute extra.
+    """
+    step_dict = {
+        "uid": "step-legacy-123",
+        "type": "step",
+        "typelabel": "LegacyType",
+        "visible": True,
+        "matrix": Matrix.identity().to_list(),
+        "per_workpiece_transformers_dicts": [],
+        "per_step_transformers_dicts": [],
+        "selected_laser_uid": "old-laser-uid",
+    }
+
+    step = Step.from_dict(step_dict)
+
+    assert step.selected_head_uid == "old-laser-uid"
+    assert "selected_laser_uid" not in step.extra
+
+    data = step.to_dict()
+    assert data["selected_head_uid"] == "old-laser-uid"
+    assert "selected_laser_uid" not in data
 
 
 def test_capability_defaults_applied_in_constructor():
@@ -577,7 +603,7 @@ def test_factory_applies_laser_capability_defaults():
         CAPABILITIES = (CUT,)
 
     step = TestCutStep(typelabel="Test")
-    step.selected_laser_uid = mock_laser.uid
+    step.selected_head_uid = mock_laser.uid
     for cap in mock_machine.get_laser_capabilities(mock_laser):
         for var in cap.varset:
             setattr(step, var.key, var.default)

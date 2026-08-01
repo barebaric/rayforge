@@ -64,7 +64,7 @@ class LaserHeadVar(ChoiceVar):
 
     def __init__(
         self,
-        key: str = "selected_laser_uid",
+        key: str = "selected_head_uid",
         label: str = _("Laser Head"),
         description: Optional[str] = None,
         default: Optional[str] = None,
@@ -86,12 +86,13 @@ class LaserHeadVar(ChoiceVar):
 
         active_machine = get_context().machine
         if active_machine and active_machine.heads:
-            self.name_to_uid_map = {
-                h.name: h.uid for h in active_machine.heads
-            }
-            self.uid_to_name_map = {
-                h.uid: h.name for h in active_machine.heads
-            }
+            laser_heads = [
+                h
+                for h in active_machine.heads
+                if h.machine_capability is MachineCapability.LASER
+            ]
+            self.name_to_uid_map = {h.name: h.uid for h in laser_heads}
+            self.uid_to_name_map = {h.uid: h.name for h in laser_heads}
             head_names = sorted(list(self.name_to_uid_map.keys()))
 
         # The value stored in the Var itself is the UID.

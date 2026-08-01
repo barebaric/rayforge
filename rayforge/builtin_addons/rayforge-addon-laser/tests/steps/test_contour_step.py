@@ -57,7 +57,7 @@ class TestContourStep:
         assert step.name == "Created"
         assert len(step.per_workpiece_transformers_dicts) == 5
         assert len(step.per_step_transformers_dicts) == 3
-        assert step.selected_laser_uid == "test-laser-uid"
+        assert step.selected_head_uid == "test-laser-uid"
 
     def test_create_without_optimize(self, mock_context):
         step = ContourStep.create(mock_context, optimize=False)

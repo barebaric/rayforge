@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 from gi.repository import Adw, Gtk
 
+from rayforge.machine.models.laser import LaserHead
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
@@ -32,7 +33,8 @@ class WavefrontSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             **kwargs,
         )
 
-        laser = self.get_selected_laser()
+        head = self.get_selected_head()
+        laser = head if isinstance(head, LaserHead) else None
         default_step_over_mm = laser.spot_size_mm[0] if laser else 0.1
         step_over = (
             step.step_over_mm

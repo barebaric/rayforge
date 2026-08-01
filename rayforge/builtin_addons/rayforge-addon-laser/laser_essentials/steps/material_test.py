@@ -237,7 +237,7 @@ class MaterialTestStep(Step):
         if default_head is None:
             raise ValueError("Machine has no laser heads configured.")
 
-        step.selected_laser_uid = default_head.uid
+        step.selected_head_uid = default_head.uid
         step.max_cut_speed = machine.max_cut_speed
         step.max_travel_speed = machine.max_travel_speed
         for cap in machine.get_laser_capabilities(default_head):

@@ -21,6 +21,7 @@ from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.part import Part
 from raygeo.ops.state import AirAssistMode
 
+from ..machine.models.head import Head
 from ..machine.models.laser import LaserHead
 from ..pipeline.transformer.registry import transformer_registry
 from ..shared.units.formatter import format_value
@@ -30,7 +31,6 @@ from .step_registry import step_registry
 
 if TYPE_CHECKING:
     from ..context import RayforgeContext
-    from ..machine.models.laser import Laser
     from ..machine.models.machine import Machine
     from ..pipeline.stage.assembler_helpers import MachineDefaults
     from .layer import Layer
@@ -66,7 +66,7 @@ class Step(DocItem, ABC):
         super().__init__(name=name or typelabel)
         self.typelabel = typelabel
         self.visible = True
-        self.selected_laser_uid: Optional[str] = None
+        self.selected_head_uid: Optional[str] = None
         self.generated_workpiece_uid: Optional[str] = None
         self.applied_recipe_uid: Optional[str] = None
 
@@ -111,9 +111,9 @@ class Step(DocItem, ABC):
     def get_effective_capabilities(self, machine) -> Tuple[Capability, ...]:
         """Class-level capabilities merged with driver-provided ones."""
         caps = list(type(self).CAPABILITIES)
-        laser = self.get_selected_laser(machine)
-        if laser:
-            caps.extend(machine.get_laser_capabilities(laser))
+        head = self.get_selected_head(machine)
+        if head is not None and isinstance(head, LaserHead):
+            caps.extend(machine.get_laser_capabilities(head))
         return tuple(caps)
 
     def _apply_capability_defaults(self):
@@ -241,7 +241,7 @@ class Step(DocItem, ABC):
             "matrix": self.matrix.to_list(),
             "typelabel": self.typelabel,
             "visible": self.visible,
-            "selected_laser_uid": self.selected_laser_uid,
+            "selected_head_uid": self.selected_head_uid,
             "generated_workpiece_uid": self.generated_workpiece_uid,
             "applied_recipe_uid": self.applied_recipe_uid,
             "per_workpiece_transformers_dicts": (
@@ -284,6 +284,7 @@ class Step(DocItem, ABC):
                 "typelabel",
                 "visible",
                 "selected_laser_uid",
+                "selected_head_uid",
                 "generated_workpiece_uid",
                 "applied_recipe_uid",
                 "modifiers_dicts",
@@ -345,7 +346,9 @@ class Step(DocItem, ABC):
         step.uid = data["uid"]
         step.matrix = Matrix.from_list(data["matrix"])
         step.visible = data["visible"]
-        step.selected_laser_uid = data.get("selected_laser_uid")
+        step.selected_head_uid = data.get(
+            "selected_head_uid", data.get("selected_laser_uid")
+        )
         step.generated_workpiece_uid = data.get("generated_workpiece_uid")
         step.applied_recipe_uid = data.get("applied_recipe_uid")
 
@@ -468,32 +471,27 @@ class Step(DocItem, ABC):
         """
         return True
 
-    def get_selected_laser(self, machine: "Machine") -> Optional["Laser"]:
+    def get_selected_head(self, machine: "Machine") -> Optional["Head"]:
         """
-        Resolves and returns the selected LaserHead instance for this
-        step, or None if the machine has no laser heads. Falls back to
-        the first available laser head on the machine if the selection
-        is invalid or not set.
+        Resolves and returns the selected head for this step, or None
+        if the machine has no heads. Falls back to the first head on
+        the machine if the selection is invalid or not set.
         """
-        if self.selected_laser_uid:
+        if self.selected_head_uid:
             for head in machine.heads:
-                if (
-                    isinstance(head, LaserHead)
-                    and head.uid == self.selected_laser_uid
-                ):
+                if head.uid == self.selected_head_uid:
                     return head
         # Fallback
-        for head in machine.heads:
-            if isinstance(head, LaserHead):
-                return head
+        if machine.heads:
+            return machine.heads[0]
         return None
 
-    def set_selected_laser_uid(self, uid: Optional[str]):
+    def set_selected_head_uid(self, uid: Optional[str]):
         """
-        Sets the UID of the laser to be used by this step.
+        Sets the UID of the head to be used by this step.
         """
-        if self.selected_laser_uid != uid:
-            self.selected_laser_uid = uid
+        if self.selected_head_uid != uid:
+            self.selected_head_uid = uid
             self.updated.send(self)
 
     def set_name(self, name: str):

@@ -462,13 +462,13 @@ class Doc(DocItem):
             step_uid: The unique identifier of the step.
 
         Returns:
-            The selected_laser_uid for the step, or None if not found.
+            The selected_head_uid for the step, or None if not found.
         """
         for layer in self.layers:
             if layer.workflow:
                 for step in layer.workflow.steps:
                     if step.uid == step_uid:
-                        return step.selected_laser_uid
+                        return step.selected_head_uid
         return None
 
     def get_layer_uid_for_step(self, step_uid: str) -> Optional[str]:

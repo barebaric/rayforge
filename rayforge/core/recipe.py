@@ -93,13 +93,13 @@ class Recipe:
         # A recipe is considered compatible up to this point, so now check
         # secondary constraints like laser head.
 
-        # 2. Check laser head compatibility (if specified in settings)
-        target_laser_uid = self.settings.get("selected_laser_uid")
-        if target_laser_uid:
-            # This recipe requires a specific laser head. It can only match if
+        # 2. Check head compatibility (if specified in settings)
+        target_head_uid = self.settings.get("selected_head_uid")
+        if target_head_uid:
+            # This recipe requires a specific head. It can only match if
             # a machine context is provided and that machine has the head.
             if not machine or not any(
-                head.uid == target_laser_uid for head in machine.heads
+                head.uid == target_head_uid for head in machine.heads
             ):
                 return False
 
@@ -165,14 +165,14 @@ class Recipe:
         """
         Calculates a score based on how specific the recipe's criteria are.
         A lower score indicates a more specific (and therefore better) match.
-        The score is a tuple (machine, laser, material, thickness).
+        The score is a tuple (machine, head, material, thickness).
 
         Returns:
             A tuple representing the specificity score.
         """
         # Score 0 for specific, 1 for generic (None or not present)
         machine_score = 0 if self.target_machine_id is not None else 1
-        laser_score = 0 if "selected_laser_uid" in self.settings else 1
+        head_score = 0 if "selected_head_uid" in self.settings else 1
         material_score = 0 if self.material_uid is not None else 1
         thickness_score = (
             0
@@ -180,7 +180,7 @@ class Recipe:
             or self.max_thickness_mm is not None
             else 1
         )
-        return (machine_score, laser_score, material_score, thickness_score)
+        return (machine_score, head_score, material_score, thickness_score)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Recipe to a dictionary suitable for YAML."""
@@ -204,6 +204,16 @@ class Recipe:
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
+        settings = data.get("settings", {})
+        # Legacy alias: old recipe files keyed head selection as
+        # "selected_laser_uid".
+        if (
+            "selected_laser_uid" in settings
+            and "selected_head_uid" not in settings
+        ):
+            settings = dict(settings)
+            settings["selected_head_uid"] = settings.pop("selected_laser_uid")
+
         return cls(
             uid=data.get("uid", str(uuid.uuid4())),
             name=data.get("name", "Unnamed Recipe"),
@@ -215,6 +225,6 @@ class Recipe:
             material_uid=data.get("material_uid"),
             min_thickness_mm=data.get("min_thickness_mm"),
             max_thickness_mm=data.get("max_thickness_mm"),
-            settings=data.get("settings", {}),
+            settings=settings,
             extra=extra,
         )

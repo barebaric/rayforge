@@ -34,7 +34,7 @@ def test_cut_capability(mocker):
     assert "power" in var_keys
     assert "cut_speed" in var_keys
     assert "air_assist" in var_keys
-    assert "selected_laser_uid" in var_keys
+    assert "selected_head_uid" in var_keys
 
     power_var = varset["power"]
     assert isinstance(power_var, SliderFloatVar)
@@ -45,7 +45,7 @@ def test_cut_capability(mocker):
     assert isinstance(air_var, BoolVar)
     assert air_var.default is False
 
-    laser_var = varset["selected_laser_uid"]
+    laser_var = varset["selected_head_uid"]
     assert isinstance(laser_var, LaserHeadVar)
 
 
@@ -61,7 +61,7 @@ def test_engrave_capability(mocker):
     assert "power" in var_keys
     assert "cut_speed" in var_keys
     assert "air_assist" in var_keys
-    assert "selected_laser_uid" in var_keys
+    assert "selected_head_uid" in var_keys
 
     speed_var = varset["cut_speed"]
     assert isinstance(speed_var, IntVar)
@@ -126,7 +126,7 @@ def test_capability_or_operator():
     var_keys = [v.key for v in combined.varset]
     assert "power" in var_keys
     assert "kerf_mm" in var_keys
-    assert "selected_laser_uid" in var_keys
+    assert "selected_head_uid" in var_keys
 
     triple = CUT | SCORE | WITH_KERF
     triple_keys = [v.key for v in triple.varset]

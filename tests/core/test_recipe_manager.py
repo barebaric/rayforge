@@ -157,7 +157,7 @@ class TestRecipeManager:
                 min_thickness_mm=2.9,
                 max_thickness_mm=3.1,
                 target_capability_name=CUT.name,
-                settings={"power": 0.8, "selected_laser_uid": "laser-1"},
+                settings={"power": 0.8, "selected_head_uid": "laser-1"},
             )
         )
 

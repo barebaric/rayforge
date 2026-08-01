@@ -10,6 +10,7 @@ from ...core.capability import Capability, LaserHeadVar
 from ...core.step import Step
 from ...core.undo import ChangePropertyCommand, HistoryManager
 from ...core.varset import VarSet
+from ...machine.models.laser import LaserHead
 from ...pipeline.transformer import OpsTransformer
 from ...pipeline.transformer.placeholder import PlaceholderTransformer
 from ..icons import get_icon
@@ -82,8 +83,8 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         self.add(self.varset_widget)
 
         # Post-process: connect laser head selector for kerf transaction
-        if "selected_laser_uid" in self.varset_widget.widget_map:
-            row, var = self.varset_widget.widget_map["selected_laser_uid"]
+        if "selected_head_uid" in self.varset_widget.widget_map:
+            row, var = self.varset_widget.widget_map["selected_head_uid"]
             if isinstance(row, Adw.ComboRow):
                 row.connect("notify::selected", self._on_laser_selected)
 
@@ -96,7 +97,7 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         """Updates all widgets to reflect the current state of the Step."""
         values = {}
         for key in self.varset_widget.widget_map:
-            if key == "selected_laser_uid":
+            if key == "selected_head_uid":
                 continue
             values[key] = getattr(self.step, key, None)
         self.varset_widget.set_values(values)
@@ -105,11 +106,11 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         self._updating_name = False
 
         # Sync laser head selector using UID-to-name mapping
-        if "selected_laser_uid" in self.varset_widget.widget_map:
-            __, var = self.varset_widget.widget_map["selected_laser_uid"]
+        if "selected_head_uid" in self.varset_widget.widget_map:
+            __, var = self.varset_widget.widget_map["selected_head_uid"]
             if isinstance(var, LaserHeadVar):
                 self.varset_widget.set_values(
-                    {"selected_laser_uid": self.step.selected_laser_uid}
+                    {"selected_head_uid": self.step.selected_head_uid}
                 )
 
     def _on_laser_selected(self, combo_row, pspec):
@@ -121,22 +122,29 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
         selected_index = combo_row.get_selected()
         if selected_index >= len(machine.heads):
             return
-        selected_laser = machine.heads[selected_index]
-        new_uid = selected_laser.uid
+        selected_head = machine.heads[selected_index]
+        new_uid = selected_head.uid
 
-        if self.step.selected_laser_uid == new_uid:
+        if self.step.selected_head_uid == new_uid:
             return
 
-        with self.history_manager.transaction(_("Change Laser")) as t:
+        with self.history_manager.transaction(_("Change Head")) as t:
             t.execute(
                 ChangePropertyCommand(
                     target=self.step,
-                    property_name="selected_laser_uid",
+                    property_name="selected_head_uid",
                     new_value=new_uid,
-                    setter_method_name="set_selected_laser_uid",
+                    setter_method_name="set_selected_head_uid",
                 )
             )
-            new_kerf = selected_laser.spot_size_mm[0]
+            # Kerf sync and laser-capability defaults only apply when
+            # the selected head is a laser. The head selector only
+            # lists laser heads, but guard defensively for safety.
+            if not isinstance(selected_head, LaserHead):
+                self._sync_widgets_to_model()
+                self.changed.send(self)
+                return
+            new_kerf = selected_head.spot_size_mm[0]
             t.execute(
                 ChangePropertyCommand(
                     target=self.step,
@@ -150,7 +158,7 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
                 if isinstance(kerf_row, Adw.SpinRow):
                     kerf_row.set_value(new_kerf)
 
-            for cap in machine.get_laser_capabilities(selected_laser):
+            for cap in machine.get_laser_capabilities(selected_head):
                 for var in cap.varset:
                     t.execute(
                         ChangePropertyCommand(
@@ -172,7 +180,7 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
 
     def _on_data_changed(self, sender, **kwargs):
         key = kwargs.get("key")
-        if not key or key == "selected_laser_uid":
+        if not key or key == "selected_head_uid":
             return
         self._commit_change(key)
 

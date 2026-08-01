@@ -8,6 +8,7 @@ from ...context import get_context
 from ...core.capability import ENGRAVE
 from ...core.step import Step
 from ...core.undo.property_cmd import ChangePropertyCommand
+from ...machine.models.laser import LaserHead
 from ..icons import get_icon
 from ..shared.number_badge import NumberBadge
 from ..shared.tag import TagWidget
@@ -118,15 +119,15 @@ class StepBox(Gtk.Box):
         if not machine or not machine.heads:
             self.badge.set_color(None)
             return
-        laser = self.step.get_selected_laser(machine)
-        if laser is None:
+        head = self.step.get_selected_head(machine)
+        if head is None or not isinstance(head, LaserHead):
             self.badge.set_color(None)
             return
 
         if ENGRAVE in self.step.capabilities:
-            color = laser.raster_color
+            color = head.raster_color
         else:
-            color = laser.cut_color
+            color = head.cut_color
 
         self.badge.set_color(color)
 
