@@ -95,10 +95,7 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
         machine = self.editor.context.machine
         if machine is None:
             return None
-        try:
-            return self.step.get_selected_laser(machine)
-        except ValueError:
-            return None
+        return self.step.get_selected_laser(machine)
 
     def is_unsupported(self) -> bool:
         """

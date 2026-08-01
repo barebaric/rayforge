@@ -27,7 +27,7 @@ def mock_context():
     default_head = MagicMock()
     default_head.uid = "test-laser-uid"
     default_head.spot_size_mm = (0.1, 0.1)
-    machine.get_default_head.return_value = default_head
+    machine.get_default_laser_head.return_value = default_head
     context.machine = machine
     return context
 

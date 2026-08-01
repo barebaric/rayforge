@@ -539,9 +539,8 @@ class IntentBuilder:
         settings["arc_tolerance"] = self._machine.arc_tolerance
         settings["machine_supports_arcs"] = self._machine.supports_arcs
         settings["machine_supports_curves"] = self._machine.supports_curves
-        try:
-            laser = step.get_selected_laser(self._machine)
-        except ValueError:
+        laser = step.get_selected_laser(self._machine)
+        if laser is None:
             logger.debug(
                 "Step %s has no laser heads on machine; using bare defaults",
                 step.uid,

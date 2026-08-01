@@ -306,7 +306,9 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._focus_row.add_suffix(self._focus_btn)
         controls_group.add(self._focus_row)
 
-        head = self._machine.get_default_head() if self._machine else None
+        head = (
+            self._machine.get_default_laser_head() if self._machine else None
+        )
         if head:
             head.changed.connect(self._on_head_changed)
         self._update_focus_sensitivity()
@@ -618,7 +620,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
     def _on_focus_toggled(self, button):
         if not self._machine or not self._machine_cmd:
             return
-        head = self._machine.get_default_head()
+        head = self._machine.get_default_laser_head()
         if not head:
             return
         self._focus_active = button.get_active()
@@ -631,7 +633,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
 
     def _disable_focus(self):
         if self._focus_active and self._machine and self._machine_cmd:
-            head = self._machine.get_default_head()
+            head = self._machine.get_default_laser_head()
             if head:
                 self._machine_cmd.set_focus_power(head, 0)
                 self._focus_active = False
@@ -642,7 +644,9 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._update_focus_sensitivity()
 
     def _update_focus_sensitivity(self):
-        head = self._machine.get_default_head() if self._machine else None
+        head = (
+            self._machine.get_default_laser_head() if self._machine else None
+        )
         if head and head.focus_power_percent > 0:
             self._focus_btn.set_sensitive(True)
             self._focus_row.set_subtitle(

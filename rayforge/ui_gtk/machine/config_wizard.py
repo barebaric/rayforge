@@ -350,12 +350,25 @@ class ConfigWizard(PatchedDialogWindow):
         )
         accel_group.add(accel_row)
 
-        laser_group = Adw.PreferencesGroup(title=_("Laser"))
-        page_box.append(laser_group)
+        head_group = Adw.PreferencesGroup(title=_("Head"))
+        page_box.append(head_group)
+
+        self._head_type_store = Gtk.StringList()
+        self._head_type_store.append(_("Laser Head"))
+        self._head_type_store.append(_("Spindle Head"))
+        self._head_type_row = Adw.ComboRow(
+            title=_("Head Type"),
+            subtitle=_("Type of head attached to this machine"),
+            model=self._head_type_store,
+        )
+        self._head_type_row.connect(
+            "notify::selected", self._on_head_type_changed
+        )
+        head_group.add(self._head_type_row)
 
         self._power_row = Adw.SpinRow(
             title=_("Max Power (S-value)"),
-            subtitle=_("Maximum spindle speed / S-value range"),
+            subtitle=_("Maximum laser power value in GCode"),
             adjustment=Gtk.Adjustment(
                 lower=1,
                 upper=100000,
@@ -363,7 +376,35 @@ class ConfigWizard(PatchedDialogWindow):
                 page_increment=1000,
             ),
         )
-        laser_group.add(self._power_row)
+        head_group.add(self._power_row)
+
+        self._max_rpm_row = Adw.SpinRow(
+            title=_("Max RPM"),
+            subtitle=_("Maximum spindle speed"),
+            adjustment=Gtk.Adjustment(
+                lower=1,
+                upper=100000,
+                step_increment=100,
+                page_increment=1000,
+            ),
+        )
+        self._max_rpm_row.set_value(20000)
+        head_group.add(self._max_rpm_row)
+
+        self._min_rpm_row = Adw.SpinRow(
+            title=_("Min RPM"),
+            subtitle=_("Minimum spindle speed"),
+            adjustment=Gtk.Adjustment(
+                lower=1,
+                upper=100000,
+                step_increment=100,
+                page_increment=1000,
+            ),
+        )
+        self._min_rpm_row.set_value(1000)
+        head_group.add(self._min_rpm_row)
+
+        self._on_head_type_changed(self._head_type_row, None)
 
         behavior_group = Adw.PreferencesGroup(title=_("Behavior"))
         page_box.append(behavior_group)
@@ -422,8 +463,16 @@ class ConfigWizard(PatchedDialogWindow):
         self._accel_helper.set_value_in_base_units(mc.acceleration or 0)
 
         if mc.heads:
-            self._power_row.set_value(mc.heads[0].get("max_power", 1000))
+            first_head = mc.heads[0]
+            if first_head.get("max_rpm") is not None:
+                self._head_type_row.set_selected(1)
+                self._max_rpm_row.set_value(first_head.get("max_rpm", 20000))
+                self._min_rpm_row.set_value(first_head.get("min_rpm", 1000))
+            else:
+                self._head_type_row.set_selected(0)
+                self._power_row.set_value(first_head.get("max_power", 1000))
         else:
+            self._head_type_row.set_selected(0)
             self._power_row.set_value(1000)
 
         self._home_row.set_active(mc.home_on_start or False)
@@ -449,6 +498,13 @@ class ConfigWizard(PatchedDialogWindow):
             self._warning_rows.append(row)
         self._warning_group.set_visible(True)
 
+    def _on_head_type_changed(self, row, _param):
+        """Toggles between laser and spindle head settings."""
+        is_spindle = row.get_selected() == 1
+        self._power_row.set_visible(not is_spindle)
+        self._max_rpm_row.set_visible(is_spindle)
+        self._min_rpm_row.set_visible(is_spindle)
+
     def _build_profile_from_ui(self) -> DeviceProfile:
         assert self._profile is not None
         mc = self._profile.machine_config
@@ -467,8 +523,16 @@ class ConfigWizard(PatchedDialogWindow):
             int(self._accel_helper.get_value_in_base_units()) or None
         )
 
-        max_power = int(self._power_row.get_value())
-        mc.heads = [{"max_power": max_power}] if max_power else None
+        if self._head_type_row.get_selected() == 1:
+            mc.heads = [
+                {
+                    "max_rpm": int(self._max_rpm_row.get_value()),
+                    "min_rpm": int(self._min_rpm_row.get_value()),
+                }
+            ]
+        else:
+            max_power = int(self._power_row.get_value())
+            mc.heads = [{"max_power": max_power}] if max_power else None
 
         mc.home_on_start = self._home_row.get_active() or None
         mc.single_axis_homing_enabled = (

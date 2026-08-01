@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from raygeo.ops import Ops
 from raygeo.ops.convert import GcodeDialectSpec
 
+from ...machine.models.laser import LaserHead
 from ...machine.models.macro import MacroTrigger
 
 if TYPE_CHECKING:
@@ -182,6 +183,7 @@ def _build_heads(machine: "Machine") -> List[Dict]:
             "max_power": float(head.max_power),
         }
         for head in machine.heads
+        if isinstance(head, LaserHead)
     ]
 
 

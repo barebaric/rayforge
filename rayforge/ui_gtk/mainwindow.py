@@ -16,7 +16,6 @@ from ..core.asset_registry import asset_type_registry
 from ..core.group import Group
 from ..core.item import DocItem
 from ..core.registration import call_registration_hooks
-from ..core.step_registry import step_registry
 from ..core.undo import Command, HistoryManager
 from ..core.workpiece import WorkPiece
 from ..doceditor.editor import DocEditor
@@ -385,7 +384,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.workflowview = WorkflowView(
             self.doc_editor,
             initial_workflow,
-            step_factories=step_registry.get_factories(),
         )
         self.workflowview.set_margin_top(6)
         self.workflowview.set_margin_end(12)
@@ -1732,9 +1730,9 @@ class MainWindow(Adw.ApplicationWindow):
                 )
 
             # Update focus button sensitivity
-            head = active_machine.get_default_head()
+            head = active_machine.get_default_laser_head()
             can_focus = (
-                head
+                head is not None
                 and head.focus_power_percent > 0
                 and not is_job_or_task_active
             )
@@ -2145,7 +2143,10 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         is_focus_on = value.get_boolean()
-        head = config.machine.get_default_head()
+        head = config.machine.get_default_laser_head()
+        if head is None:
+            action.set_state(GLib.Variant.new_boolean(False))
+            return
 
         if is_focus_on:
             self.machine_cmd.set_focus_power(head, head.focus_power_percent)

@@ -13,7 +13,7 @@ from ...camera.v4l import migrate_camera_data
 from ...core.model import Model
 from ...machine.driver import get_driver_cls
 from ...machine.models.dialect import GcodeDialect
-from ...machine.models.laser import Laser
+from ...machine.models.head import head_from_dict
 from ...machine.models.machine import Machine, Origin
 from ...machine.models.macro import Macro, MacroTrigger
 from ...machine.models.rotary_module import RotaryModule
@@ -219,6 +219,7 @@ class MachineConfig:
     single_axis_homing_enabled: Optional[bool] = None
     rotary_enabled_default: Optional[bool] = None
     heads: Optional[List[Dict[str, Any]]] = None
+    capabilities: Optional[List[str]] = None
     hookmacros: Optional[List[Dict[str, Any]]] = None
     rotary_modules: Optional[List[Dict[str, Any]]] = None
     nogo_zones: Optional[List[Dict[str, Any]]] = None
@@ -297,6 +298,16 @@ class MachineConfig:
             single_axis_homing_enabled=(machine.single_axis_homing_enabled),
             rotary_enabled_default=machine.rotary_enabled_default,
             heads=heads,
+            capabilities=(
+                [
+                    c.value
+                    for c in sorted(
+                        machine._explicit_capabilities, key=lambda c: c.value
+                    )
+                ]
+                if machine._explicit_capabilities
+                else None
+            ),
             hookmacros=hookmacros,
             rotary_modules=rotary_modules,
             nogo_zones=nogo_zones,
@@ -456,7 +467,12 @@ class DeviceProfile:
             for head in m.heads[:]:
                 m.remove_head(head)
             for head_data in cfg.heads:
-                m.add_head(Laser.from_dict(head_data))
+                m.add_head(head_from_dict(head_data))
+
+        if cfg.capabilities is not None:
+            m.set_explicit_capabilities(
+                Machine._parse_capabilities(cfg.capabilities)
+            )
 
         if cfg.rotary_modules is not None:
             for rm_data in cfg.rotary_modules:

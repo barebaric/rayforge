@@ -4,7 +4,7 @@ from typing import Optional
 from gi.repository import Adw, GLib, Gtk
 
 from ...machine.cmd import MachineCmd
-from ...machine.models.laser import Laser
+from ...machine.models.laser import Laser, LaserHead
 from ...machine.models.machine import Machine
 from ..icons import get_icon
 from ..shared.gtk import apply_css
@@ -165,19 +165,24 @@ class LaserControlWidget(Gtk.Box):
     def _rebuild_head_model(self):
         if not self.machine:
             return
-        heads = self.machine.heads
-        model = Gtk.StringList.new([h.name for h in heads])
+        laser_heads = [
+            h for h in self.machine.heads if isinstance(h, LaserHead)
+        ]
+        model = Gtk.StringList.new([h.name for h in laser_heads])
         self._head_row.set_model(model)
-        if heads:
+        if laser_heads:
             self._head_row.set_selected(0)
-            self._sync_head_fields(heads[0])
+            self._sync_head_fields(laser_heads[0])
 
     def _get_selected_head(self) -> Optional[Laser]:
-        if not self.machine or not self.machine.heads:
+        if not self.machine:
             return None
+        laser_heads = [
+            h for h in self.machine.heads if isinstance(h, LaserHead)
+        ]
         idx = self._head_row.get_selected()
-        if 0 <= idx < len(self.machine.heads):
-            return self.machine.heads[idx]
+        if 0 <= idx < len(laser_heads):
+            return laser_heads[idx]
         return None
 
     def _sync_head_fields(self, head: Laser):

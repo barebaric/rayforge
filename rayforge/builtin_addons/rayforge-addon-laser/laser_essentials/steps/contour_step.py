@@ -8,7 +8,13 @@ from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.part import Part
 
-from rayforge.core.capability import CUT, SCORE, WITH_KERF, Capability
+from rayforge.core.capability import (
+    CUT,
+    SCORE,
+    WITH_KERF,
+    Capability,
+    MachineCapability,
+)
 from rayforge.core.cut_side import CutSide
 from rayforge.core.step import Step
 from rayforge.pipeline.stage.assembler_helpers import (
@@ -26,6 +32,7 @@ class ContourStep(Step):
     TYPELABEL = _("Contour")
     ICON = "step-contour-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (CUT, SCORE, WITH_KERF)
+    REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "contour"
 
     def __init__(
@@ -171,7 +178,9 @@ class ContourStep(Step):
     ) -> "ContourStep":
         machine = context.machine
         assert machine is not None
-        default_head = machine.get_default_head()
+        default_head = machine.get_default_laser_head()
+        if default_head is None:
+            raise ValueError("Machine has no laser heads configured.")
 
         step = cls(name=name)
         per_wp, per_step = cls.get_default_transformers_dicts()

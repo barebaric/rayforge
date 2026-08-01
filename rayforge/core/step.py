@@ -21,9 +21,10 @@ from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.part import Part
 from raygeo.ops.state import AirAssistMode
 
+from ..machine.models.laser import LaserHead
 from ..pipeline.transformer.registry import transformer_registry
 from ..shared.units.formatter import format_value
-from .capability import Capability
+from .capability import Capability, MachineCapability
 from .item import DocItem
 from .step_registry import step_registry
 
@@ -52,6 +53,7 @@ class Step(DocItem, ABC):
     HIDDEN: bool = False
     ICON: str = ""
     CAPABILITIES: Tuple[Capability, ...] = ()
+    REQUIRED_MACHINE_CAPS: ClassVar[frozenset[MachineCapability]] = frozenset()
     PRODUCER_CLASS: ClassVar[Any] = None
     ASSEMBLER_NAME: ClassVar[str] = ""
     uses_global_state: ClassVar[bool] = False
@@ -452,20 +454,25 @@ class Step(DocItem, ABC):
         """
         return True
 
-    def get_selected_laser(self, machine: "Machine") -> "Laser":
+    def get_selected_laser(self, machine: "Machine") -> Optional["Laser"]:
         """
-        Resolves and returns the selected Laser instance for this step.
-        Falls back to the first available laser on the machine if the
-        selection is invalid or not set.
+        Resolves and returns the selected LaserHead instance for this
+        step, or None if the machine has no laser heads. Falls back to
+        the first available laser head on the machine if the selection
+        is invalid or not set.
         """
         if self.selected_laser_uid:
             for head in machine.heads:
-                if head.uid == self.selected_laser_uid:
+                if (
+                    isinstance(head, LaserHead)
+                    and head.uid == self.selected_laser_uid
+                ):
                     return head
         # Fallback
-        if not machine.heads:
-            raise ValueError("Machine has no laser heads configured.")
-        return machine.heads[0]
+        for head in machine.heads:
+            if isinstance(head, LaserHead):
+                return head
+        return None
 
     def set_selected_laser_uid(self, uid: Optional[str]):
         """

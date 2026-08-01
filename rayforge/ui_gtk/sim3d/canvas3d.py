@@ -16,6 +16,7 @@ from ...core.color import OPS_COLOR_SPEC, ColorSet, hex_to_rgba
 from ...machine.assembly import LinkRole
 from ...machine.kinematic_mapping import KinematicMapping
 from ...machine.models.colors import OpsColorSet
+from ...machine.models.laser import LaserHead
 from ...pipeline.artifact.base import TextureData
 from ...pipeline.artifact.handle import BaseArtifactHandle
 from ...pipeline.artifact.job import JobArtifact
@@ -641,6 +642,8 @@ class Canvas3D(Gtk.GLArea):
 
         self._laser_color_sets = {}
         for laser in machine.heads:
+            if not isinstance(laser, LaserHead):
+                continue
             laser_color_set = OpsColorSet.from_laser(laser, self._color_set)
             self._laser_color_sets[laser.uid] = laser_color_set.to_color_set()
 
@@ -967,8 +970,9 @@ class Canvas3D(Gtk.GLArea):
     def _compute_spot_line_width(self, mvp_gl: np.ndarray) -> float:
         machine = self._context.machine
         spot_mm = 0.1
-        if machine and machine.heads:
-            spot_mm = machine.heads[0].spot_size_mm[0]
+        laser_head = machine.get_default_laser_head() if machine else None
+        if laser_head is not None:
+            spot_mm = laser_head.spot_size_mm[0]
         if not self.camera:
             return 2.0
         px = self._world_size_to_pixels(
@@ -1220,6 +1224,8 @@ class Canvas3D(Gtk.GLArea):
                         try:
                             idx = int(name.split("_")[1])
                             laser = machine.heads[idx]
+                            if not isinstance(laser, LaserHead):
+                                continue
                             if laser.focal_distance > 0:
                                 beam_height = laser.focal_distance
                             beam_color = hex_to_rgba(laser.cut_color)
@@ -1309,8 +1315,9 @@ class Canvas3D(Gtk.GLArea):
                                     try:
                                         idx = int(link.name.split("_")[1])
                                         laser = machine.heads[idx]
-                                        if laser.focal_distance > 0:
-                                            focal = laser.focal_distance
+                                        if isinstance(laser, LaserHead):
+                                            if laser.focal_distance > 0:
+                                                focal = laser.focal_distance
                                     except (ValueError, IndexError):
                                         pass
                                 rotary_heads = asm.head_rotary_positions(

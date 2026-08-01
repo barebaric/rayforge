@@ -13,10 +13,21 @@ machine:
   max_cut_speed: 3000
   home_on_start: true
   heads:
-  - tool_number: -1
+  - type: LaserHead
+    name: Laser Module
+    tool_number: -1
     max_power: 1.0
     frame_power_percent: 1.0
     focus_power_percent: 1.0
     spot_size_mm:
     - 0.1
     - 0.1
+  - type: SpindleHead
+    name: Spindle
+    tool_number: 1
+    max_rpm: 20000
+    min_rpm: 1000
+    cooling_methods: []
+  capabilities:
+  - LASER
+  - MILL
