@@ -61,8 +61,8 @@ class EngraveStep(LaserStep):
         self.line_interval_mm = None
         self.sample_interval_mm = None
         self.dot_width_correction_mm = None
-        self.min_power = 0.0
-        self.max_power = 1.0
+        self.min_power_level = 0.0
+        self.max_power_level = 1.0
         self.num_power_levels = 25
         self.offset_x_mm = 0.0
         self.offset_y_mm = 0.0
@@ -110,8 +110,8 @@ class EngraveStep(LaserStep):
             "line_interval_mm": line_interval,
             "sample_interval_mm": self.sample_interval_mm,
             "dot_width_correction_mm": self.dot_width_correction_mm,
-            "min_power": self.min_power,
-            "max_power": self.max_power,
+            "min_power": self.min_power_level,
+            "max_power": self.max_power_level,
             "step_power": step_power,
             "num_power_levels": self.num_power_levels,
             "angle": self.scan_angle,
@@ -197,8 +197,8 @@ class EngraveStep(LaserStep):
         result["line_interval_mm"] = self.line_interval_mm
         result["sample_interval_mm"] = self.sample_interval_mm
         result["dot_width_correction_mm"] = self.dot_width_correction_mm
-        result["min_power"] = self.min_power
-        result["max_power"] = self.max_power
+        result["min_power_level"] = self.min_power_level
+        result["max_power_level"] = self.max_power_level
         result["num_power_levels"] = self.num_power_levels
         result["offset_x_mm"] = self.offset_x_mm
         result["offset_y_mm"] = self.offset_y_mm
@@ -228,8 +228,16 @@ class EngraveStep(LaserStep):
         step.dot_width_correction_mm = data.get(
             "dot_width_correction_mm", None
         )
-        step.min_power = data.get("min_power", 0.0)
-        step.max_power = data.get("max_power", 1.0)
+        step.min_power_level = data.get(
+            "min_power_level", data.get("min_power", 0.0)
+        )
+        step.max_power_level = data.get(
+            "max_power_level", data.get("max_power", 1.0)
+        )
+        if "max_power_level" not in data:
+            # Legacy engrave files stored the raster ceiling under the
+            # max_power key; don't let it leak into the hardware max slot.
+            step.max_power = 1000
         step.num_power_levels = data.get("num_power_levels", 25)
         step.offset_x_mm = data.get("offset_x_mm", 0.0)
         step.offset_y_mm = data.get("offset_y_mm", 0.0)
@@ -243,6 +251,37 @@ class EngraveStep(LaserStep):
             step.dither_algorithm = DitherAlgorithm(dither_val)
         step.bidir_x_offset_mm = data.get("bidir_x_offset_mm", 0.0)
         return step
+
+    @classmethod
+    def _serialized_keys(cls) -> frozenset[str]:
+        return super()._serialized_keys() | frozenset(
+            {
+                "scan_angle",
+                "depth_mode",
+                "invert",
+                "auto_levels",
+                "black_point",
+                "white_point",
+                "threshold",
+                "line_interval_mm",
+                "sample_interval_mm",
+                "dot_width_correction_mm",
+                "min_power_level",
+                "max_power_level",
+                "num_power_levels",
+                "offset_x_mm",
+                "offset_y_mm",
+                "scan_mode",
+                "cross_hatch",
+                "num_depth_levels",
+                "z_step_down",
+                "angle_increment",
+                "dither_algorithm",
+                "bidir_x_offset_mm",
+                "min_power",
+                "max_power",
+            }
+        )
 
     @classmethod
     def get_default_transformers_dicts(cls) -> Tuple[List, List]:
