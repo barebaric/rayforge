@@ -58,6 +58,7 @@ from raygeo.cnc.execution.specs import (
     AggregateInput,
     AggregateSpec,
     EncodeSpec,
+    LinkMode,
     MachineParams,
     MachineTransformSpec,
     Marker,
@@ -379,6 +380,17 @@ class IntentBuilder:
         if pos_sensitive:
             payload["xf_rev"] = wp.transform_revision
             payload["stock_rev"] = self._stock_revision()
+        if step.uses_global_state and step.layer and step.layer.workflow:
+            chain = [
+                s for s in step.layer.workflow.steps if s.uses_global_state
+            ]
+            if step in chain:
+                idx = chain.index(step)
+                if idx > 0:
+                    prev = chain[idx - 1]
+                    payload["predecessor_token"] = self._compute_token(
+                        prev, wp, prev.is_position_sensitive()
+                    )
         return _hash_int(payload)
 
     def _aggregate_token(
@@ -484,6 +496,18 @@ class IntentBuilder:
             step.per_workpiece_transformers_dicts,
             workpiece=wp,
         )
+
+        if step.uses_global_state and step.layer:
+            workflow = step.layer.workflow
+            if workflow:
+                chain = [s for s in workflow.steps if s.uses_global_state]
+                if step in chain:
+                    idx = chain.index(step)
+                    if idx > 0:
+                        prev = chain[idx - 1]
+                        payload.state_source_keys = [
+                            workpiece_key(wp.uid, prev.uid)
+                        ]
         return StageSpec.Compute(part=part, params=payload)
 
     def _resolve_laser_and_settings(
@@ -702,11 +726,17 @@ class IntentBuilder:
             )
             start = Marker.WorkpieceStart(uid=wp.uid, _tag=True)
             end = Marker.WorkpieceEnd(uid=wp.uid, _tag=True)
+            link_mode = LinkMode.none()
+            if step.uses_global_state:
+                link_mode = LinkMode.sequential(
+                    safe_z=getattr(step, "safe_z", 2.0)
+                )
             groups.append(
                 AggregateGroup(
                     start_markers=[start],
                     inputs=[inp],
                     end_markers=[end],
+                    link_mode=link_mode,
                 )
             )
         spec = AggregateSpec(

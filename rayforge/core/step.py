@@ -54,6 +54,7 @@ class Step(DocItem, ABC):
     CAPABILITIES: Tuple[Capability, ...] = ()
     PRODUCER_CLASS: ClassVar[Any] = None
     ASSEMBLER_NAME: ClassVar[str] = ""
+    uses_global_state: ClassVar[bool] = False
 
     def __init__(
         self,

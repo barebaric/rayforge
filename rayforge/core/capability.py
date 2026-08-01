@@ -383,6 +383,79 @@ class PWMCapability(Capability):
         )
 
 
+class MillCapability(Capability):
+    @property
+    def name(self) -> str:
+        return "MILL"
+
+    @property
+    def label(self) -> str:
+        return _("Mill")
+
+    @property
+    def varset(self) -> VarSet:
+        return VarSet(
+            vars=[
+                FloatVar(
+                    "tool_diameter",
+                    _("Tool Diameter"),
+                    default=6.0,
+                    min_val=0.1,
+                    max_val=50.0,
+                ),
+                IntVar(
+                    "spindle_rpm",
+                    _("Spindle RPM"),
+                    default=12000,
+                    min_val=100,
+                    max_val=60000,
+                ),
+                SpeedVar(
+                    "cut_speed",
+                    _("Feed Rate"),
+                    default=500,
+                    min_val=1,
+                    role="cut",
+                ),
+                SpeedVar(
+                    "plunge_speed",
+                    _("Plunge Rate"),
+                    default=200,
+                    min_val=1,
+                    role="cut",
+                ),
+                SpeedVar(
+                    "travel_speed",
+                    _("Travel Speed"),
+                    default=5000,
+                    min_val=1,
+                    role="travel",
+                ),
+                FloatVar(
+                    "target_depth",
+                    _("Target Depth"),
+                    default=-5.0,
+                    min_val=-50.0,
+                    max_val=0.0,
+                ),
+                FloatVar(
+                    "depth_per_pass",
+                    _("Depth per Pass"),
+                    default=1.0,
+                    min_val=0.1,
+                    max_val=10.0,
+                ),
+                FloatVar(
+                    "safe_z",
+                    _("Safe Z Height"),
+                    default=2.0,
+                    min_val=0.0,
+                    max_val=50.0,
+                ),
+            ]
+        )
+
+
 class _CombinedCapability(Capability):
     """
     A capability produced by combining two others with the | operator.
@@ -430,6 +503,7 @@ ENGRAVE = EngraveCapability()
 SCORE = ScoreCapability()
 WITH_KERF = KerfCapability()
 MATERIAL_TEST = MaterialTestCapability()
+MILL = MillCapability()
 
 # A list of all available capability instances, for populating UI dropdowns
 ALL_CAPABILITIES: List[Capability] = [
@@ -438,6 +512,7 @@ ALL_CAPABILITIES: List[Capability] = [
     SCORE,
     WITH_KERF,
     MATERIAL_TEST,
+    MILL,
 ]
 
 # A map for deserializing from a name string back to a capability instance
