@@ -266,6 +266,46 @@ class Step(DocItem, ABC):
         return result
 
     @classmethod
+    def _serialized_keys(cls) -> frozenset[str]:
+        """Keys this class handles in ``to_dict``/``from_dict``.
+
+        Used solely for ``extra``-dict filtering: unknown keys from
+        newer file versions are preserved in ``extra`` rather than
+        silently dropped. Subclasses that serialize additional keys
+        extend this via ``super()`` composition in the MRO.
+        """
+        return frozenset(
+            {
+                "uid",
+                "type",
+                "step_type",
+                "name",
+                "matrix",
+                "typelabel",
+                "visible",
+                "selected_laser_uid",
+                "generated_workpiece_uid",
+                "applied_recipe_uid",
+                "modifiers_dicts",
+                "per_workpiece_transformers_dicts",
+                "per_step_transformers_dicts",
+                "pixels_per_mm",
+                "power",
+                "max_power",
+                "cut_speed",
+                "max_cut_speed",
+                "travel_speed",
+                "max_travel_speed",
+                "air_assist",
+                "kerf_mm",
+                "tab_power",
+                "frequency",
+                "pulse_width",
+                "children",
+            }
+        )
+
+    @classmethod
     def get_default_transformers_dicts(cls) -> Tuple[List, List]:
         """
         Returns default transformer configurations for this step type.
@@ -280,35 +320,9 @@ class Step(DocItem, ABC):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Step":
         """Deserializes a Step instance from a dictionary."""
-        known_keys = {
-            "uid",
-            "type",
-            "step_type",
-            "name",
-            "matrix",
-            "typelabel",
-            "visible",
-            "selected_laser_uid",
-            "generated_workpiece_uid",
-            "applied_recipe_uid",
-            "modifiers_dicts",
-            "per_workpiece_transformers_dicts",
-            "per_step_transformers_dicts",
-            "pixels_per_mm",
-            "power",
-            "max_power",
-            "cut_speed",
-            "max_cut_speed",
-            "travel_speed",
-            "max_travel_speed",
-            "air_assist",
-            "kerf_mm",
-            "tab_power",
-            "frequency",
-            "pulse_width",
-            "children",
+        extra = {
+            k: v for k, v in data.items() if k not in cls._serialized_keys()
         }
-        extra = {k: v for k, v in data.items() if k not in known_keys}
 
         step_type_name = data.get("step_type")
         if step_type_name:
