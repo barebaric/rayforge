@@ -7,6 +7,7 @@ from ...context import get_context
 from ...core.capability import ENGRAVE
 from ...core.step_registry import step_registry
 from ...core.undo.list_cmd import ListItemCommand, ReorderListCommand
+from ...machine.models.laser import LaserHead
 from ..icons import get_icon
 from ..shared.gtk import apply_css
 from ..shared.popover_menu import PopoverMenu
@@ -158,12 +159,12 @@ class WorkflowRow(Gtk.Box):
         machine = get_context().machine
         if not machine or not machine.heads:
             return None
-        laser = step.get_selected_laser(machine)
-        if laser is None:
+        head = step.get_selected_head(machine)
+        if head is None or not isinstance(head, LaserHead):
             return None
         if ENGRAVE in step.capabilities:
-            return laser.raster_color
-        return laser.cut_color
+            return head.raster_color
+        return head.cut_color
 
     def _apply_step_color(self, button: Gtk.Button, step):
         color = self._get_step_color(step)

@@ -802,7 +802,7 @@ def test_get_laser_uid_for_step_returns_laser_uid(doc):
     layer = doc.active_layer
     workflow = layer.workflow
     step = Step(typelabel="test")
-    step.selected_laser_uid = "laser-42"
+    step.selected_head_uid = "laser-42"
     workflow.add_step(step)
 
     assert doc.get_laser_uid_for_step(step.uid) == "laser-42"
@@ -827,12 +827,12 @@ def test_get_laser_uid_for_step_finds_step_in_second_layer(doc):
     doc.add_layer(layer2)
 
     step1 = Step(typelabel="step1")
-    step1.selected_laser_uid = "laser-a"
+    step1.selected_head_uid = "laser-a"
     layer1.workflow.add_step(step1)
 
     assert layer2.workflow is not None
     step2 = Step(typelabel="step2")
-    step2.selected_laser_uid = "laser-b"
+    step2.selected_head_uid = "laser-b"
     layer2.workflow.add_step(step2)
 
     assert doc.get_laser_uid_for_step(step2.uid) == "laser-b"

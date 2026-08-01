@@ -10,6 +10,7 @@ from rayforge.image.dither import DitherAlgorithm
 from rayforge.image.util import (
     get_visible_grayscale_values,
 )
+from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.stage.assembler_helpers import DepthMode
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
@@ -322,7 +323,8 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         )
         group.add(self.scan_mode_row)
 
-        laser = self.get_selected_laser()
+        head = self.get_selected_head()
+        laser = head if isinstance(head, LaserHead) else None
         default_line_interval_mm = laser.spot_size_mm[1] if laser else 0.1
         default_sample_interval_mm = laser.spot_size_mm[0] if laser else 0.1
 

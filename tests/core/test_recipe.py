@@ -30,7 +30,7 @@ class TestRecipe:
             settings={
                 "power": 0.9,
                 "cut_speed": 500,
-                "selected_laser_uid": "laser-1",
+                "selected_head_uid": "laser-1",
             },
         )
 
@@ -95,7 +95,7 @@ class TestRecipe:
         assert sample_recipe.target_machine_id == "machine-a"
         assert sample_recipe.capability is CUT
         assert sample_recipe.settings["power"] == 0.9
-        assert sample_recipe.settings["selected_laser_uid"] == "laser-1"
+        assert sample_recipe.settings["selected_head_uid"] == "laser-1"
 
     def test_recipe_to_dict(self, sample_recipe: Recipe):
         """Test serializing a Recipe to a dictionary."""
@@ -135,11 +135,23 @@ class TestRecipe:
         assert recipe.target_capability_name == CUT.name  # Default
         assert recipe.settings == {}
 
+    def test_recipe_from_dict_migrates_legacy_head_key(self):
+        """Old recipe files keyed head selection as "selected_laser_uid"."""
+        data = {
+            "name": "Legacy Recipe",
+            "settings": {"power": 0.9, "selected_laser_uid": "laser-1"},
+        }
+
+        recipe = Recipe.from_dict(data)
+
+        assert recipe.settings["selected_head_uid"] == "laser-1"
+        assert "selected_laser_uid" not in recipe.settings
+
     def test_get_specificity_score(
         self, sample_recipe: Recipe, generic_recipe: Recipe
     ):
         """Test the specificity scoring."""
-        # Machine, laser, material, thickness -> (0, 0, 0, 0)
+        # Machine, head, material, thickness -> (0, 0, 0, 0)
         assert sample_recipe.get_specificity_score() == (0, 0, 0, 0)
 
         # Generic all -> (1, 1, 1, 1)
@@ -149,9 +161,9 @@ class TestRecipe:
         machine_only = Recipe(target_machine_id="test")
         assert machine_only.get_specificity_score() == (0, 1, 1, 1)
 
-        # Specific laser only
-        laser_only = Recipe(settings={"selected_laser_uid": "laser-x"})
-        assert laser_only.get_specificity_score() == (1, 0, 1, 1)
+        # Specific head only
+        head_only = Recipe(settings={"selected_head_uid": "laser-x"})
+        assert head_only.get_specificity_score() == (1, 0, 1, 1)
 
     # --- MATCHING LOGIC TESTS ---
 
@@ -178,11 +190,11 @@ class TestRecipe:
         stock = stock_item_factory("plywood-6mm", 6.0)
         assert sample_recipe.matches([stock], (CUT,), mock_machine_b) is False
 
-    def test_matches_laser_head_fail(
+    def test_matches_head_fail(
         self, sample_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
     ):
-        """Test match failure due to laser head not on machine."""
-        sample_recipe.settings["selected_laser_uid"] = "non-existent-laser"
+        """Test match failure due to head not on machine."""
+        sample_recipe.settings["selected_head_uid"] = "non-existent-laser"
         stock = stock_item_factory("plywood-6mm", 6.0)
         assert sample_recipe.matches([stock], (CUT,), mock_machine_a) is False
 

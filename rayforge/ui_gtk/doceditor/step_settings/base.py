@@ -8,7 +8,7 @@ from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from ....doceditor.editor import DocEditor
-    from ....machine.models.laser import Laser
+    from ....machine.models.head import Head
 
 
 class StepComponentSettingsWidget(Adw.PreferencesGroup):
@@ -90,12 +90,12 @@ class StepComponentSettingsWidget(Adw.PreferencesGroup):
         for row in self._rows[1:]:
             row.set_sensitive(enabled)
 
-    def get_selected_laser(self) -> Optional["Laser"]:
-        """Selected Laser for this step, or None if unavailable."""
+    def get_selected_head(self) -> Optional["Head"]:
+        """Selected head for this step, or None if unavailable."""
         machine = self.editor.context.machine
         if machine is None:
             return None
-        return self.step.get_selected_laser(machine)
+        return self.step.get_selected_head(machine)
 
     def is_unsupported(self) -> bool:
         """

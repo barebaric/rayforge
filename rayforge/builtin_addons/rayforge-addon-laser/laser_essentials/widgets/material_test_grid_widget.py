@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from gi.repository import Adw, GLib, GObject, Gtk
 
+from rayforge.machine.models.laser import LaserHead
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.base import (
     StepComponentSettingsWidget,
@@ -443,7 +444,8 @@ class MaterialTestGridSettingsWidget(
             "changed", lambda r: self._debounce(self._on_spacing_changed, r)
         )
 
-        laser = self.get_selected_laser()
+        head = self.get_selected_head()
+        laser = head if isinstance(head, LaserHead) else None
         default_line_interval_mm = laser.spot_size_mm[1] if laser else 0.1
         line_interval_adj = Gtk.Adjustment(
             lower=0.01,

@@ -79,6 +79,7 @@ from ..machine.driver import get_driver_cls
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.kinematic_math import KinematicMath
 from ..machine.models.dialect import GRBL_DIALECT
+from ..machine.models.laser import LaserHead
 from ..machine.models.rotary_module import RotaryMode, RotaryType
 from .coordspace import MachineSpace
 from .encoder.base import EncodedOutput
@@ -539,7 +540,8 @@ class IntentBuilder:
         settings["arc_tolerance"] = self._machine.arc_tolerance
         settings["machine_supports_arcs"] = self._machine.supports_arcs
         settings["machine_supports_curves"] = self._machine.supports_curves
-        laser = step.get_selected_laser(self._machine)
+        head = step.get_selected_head(self._machine)
+        laser = head if isinstance(head, LaserHead) else None
         if laser is None:
             logger.debug(
                 "Step %s has no laser heads on machine; using bare defaults",
