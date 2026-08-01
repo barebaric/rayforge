@@ -18,7 +18,6 @@ from raygeo.ops.part import Part
 from raygeo.ops.part.image_source import WholeImageSource
 
 from rayforge.core.capability import ENGRAVE, Capability, MachineCapability
-from rayforge.core.step import Step
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.pipeline.stage.assembler_helpers import (
     DepthMode,
@@ -27,6 +26,8 @@ from rayforge.pipeline.stage.assembler_helpers import (
     preprocess_raster_image,
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
+
+from .laser_step import LaserStep
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
@@ -39,7 +40,7 @@ if TYPE_CHECKING:
         ) -> float: ...
 
 
-class EngraveStep(Step):
+class EngraveStep(LaserStep):
     TYPELABEL = _("Engrave")
     ICON = "step-raster-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (ENGRAVE,)

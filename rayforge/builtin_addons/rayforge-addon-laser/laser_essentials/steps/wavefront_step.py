@@ -10,18 +10,19 @@ from raygeo.ops.assembly.wavefront import AdaptiveWavefrontSpec
 from raygeo.ops.part import Part
 
 from rayforge.core.capability import CUT, Capability, MachineCapability
-from rayforge.core.step import Step
 from rayforge.pipeline.stage.assembler_helpers import (
     MachineDefaults,
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
+
+from .laser_step import LaserStep
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
     from rayforge.core.workpiece import WorkPiece
 
 
-class WavefrontStep(Step):
+class WavefrontStep(LaserStep):
     TYPELABEL = _("Wavefront")
     ICON = "step-wavefront-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (CUT,)

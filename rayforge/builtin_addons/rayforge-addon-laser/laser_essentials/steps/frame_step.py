@@ -16,19 +16,20 @@ from rayforge.core.capability import (
     MachineCapability,
 )
 from rayforge.core.cut_side import CutSide
-from rayforge.core.step import Step
 from rayforge.pipeline.stage.assembler_helpers import (
     MachineDefaults,
     build_part_vector_with_raster_fallback,
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 
+from .laser_step import LaserStep
+
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
     from rayforge.core.workpiece import WorkPiece
 
 
-class FrameStep(Step):
+class FrameStep(LaserStep):
     TYPELABEL = _("Frame")
     ICON = "step-frame-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (CUT, SCORE, WITH_KERF)
