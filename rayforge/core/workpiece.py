@@ -498,6 +498,10 @@ class WorkPiece(DocItem):
         to physical millimetre dimensions, ready for use with any raygeo
         assembler (``profile_inner_part``, ``Workplan.from_part``, …).
 
+        Disjoint pockets in the geometry are exposed as separate faces via
+        ``Part.from_geometry_multi_face``; a single-contour workpiece yields
+        the single default face ``""``.
+
         Returns ``None`` if the workpiece has no boundaries.
         """
         boundaries = self.boundaries
@@ -507,7 +511,7 @@ class WorkPiece(DocItem):
         geo = boundaries.copy()
         if w > 0 and h > 0:
             geo.transform(Matrix.scale(w, h))
-        return Part(geometry=geo, size_mm=(w, h))
+        return Part.from_geometry_multi_face(geometry=geo, size_mm=(w, h))
 
     @property
     def _boundaries_y_down(self) -> Optional[Geometry]:

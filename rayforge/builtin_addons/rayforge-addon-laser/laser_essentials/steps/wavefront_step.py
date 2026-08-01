@@ -139,6 +139,11 @@ def _build_wavefront_part(workpiece: "WorkPiece") -> Part:
     """Build a :class:`Part` with normalised-winding vector geometry
     for the wavefront assembler.
 
+    Disjoint pockets are exposed as separate faces via
+    ``Part.from_geometry_multi_face`` so the per-face compute path
+    clears each pocket independently (the wavefront assembler is a
+    single-face operation since raygeo 1.28).
+
     Mirrors :func:`build_part_vector` with ``normalize_windings=True``
     but lives here so the compute-payload construction is
     self-contained for the raygeo intent pipeline.
@@ -151,4 +156,4 @@ def _build_wavefront_part(workpiece: "WorkPiece") -> Part:
     if w > 0 and h > 0:
         scaled.transform(Matrix.scale(w, h))
     scaled.normalize_winding_orders()
-    return Part(geometry=scaled, size_mm=(w, h))
+    return Part.from_geometry_multi_face(geometry=scaled, size_mm=(w, h))
