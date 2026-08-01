@@ -9,7 +9,7 @@ from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.wavefront import AdaptiveWavefrontSpec
 from raygeo.ops.part import Part
 
-from rayforge.core.capability import CUT, Capability
+from rayforge.core.capability import CUT, Capability, MachineCapability
 from rayforge.core.step import Step
 from rayforge.pipeline.stage.assembler_helpers import (
     MachineDefaults,
@@ -25,6 +25,7 @@ class WavefrontStep(Step):
     TYPELABEL = _("Wavefront")
     ICON = "step-wavefront-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (CUT,)
+    REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "wavefront"
 
     def __init__(
@@ -119,7 +120,9 @@ class WavefrontStep(Step):
     ) -> "WavefrontStep":
         machine = context.machine
         assert machine is not None
-        default_head = machine.get_default_head()
+        default_head = machine.get_default_laser_head()
+        if default_head is None:
+            raise ValueError("Machine has no laser heads configured.")
 
         step = cls(name=name)
         per_wp, per_step = cls.get_default_transformers_dicts()

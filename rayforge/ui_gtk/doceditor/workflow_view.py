@@ -1,9 +1,10 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Callable, List, Optional, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 from gi.repository import Gtk
 
+from ...core.step_registry import step_registry
 from ...core.undo.list_cmd import ListItemCommand, ReorderListCommand
 from ...core.workflow import Workflow
 from ..shared.draglist import DragListBox
@@ -28,12 +29,10 @@ class WorkflowView(ExpanderWithButton):
         self,
         editor: "DocEditor",
         workflow: Workflow,
-        step_factories: List[Callable],
         **kwargs,
     ):
         super().__init__(button_label=_("Add New Step..."), **kwargs)
         self.workflow: Optional[Workflow] = None
-        self.step_factories = step_factories
         self.editor = editor
         self.set_expanded(True)
 
@@ -132,8 +131,12 @@ class WorkflowView(ExpanderWithButton):
         if not self.workflow or not self.workflow.doc:
             return
 
+        machine = self.editor.context.machine
         popup = PopoverMenu(
-            step_factories=self.step_factories, context=self.editor.context
+            step_factories=step_registry.get_factories(
+                machine.get_capabilities() if machine else None
+            ),
+            context=self.editor.context,
         )
         popup.set_parent(button)
         popup.popup()

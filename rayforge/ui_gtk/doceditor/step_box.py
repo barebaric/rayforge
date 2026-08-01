@@ -118,9 +118,8 @@ class StepBox(Gtk.Box):
         if not machine or not machine.heads:
             self.badge.set_color(None)
             return
-        try:
-            laser = self.step.get_selected_laser(machine)
-        except ValueError:
+        laser = self.step.get_selected_laser(machine)
+        if laser is None:
             self.badge.set_color(None)
             return
 

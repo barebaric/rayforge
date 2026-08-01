@@ -1,5 +1,6 @@
 from raygeo.geo import Matrix
 
+from rayforge.core.capability import MachineCapability
 from rayforge.core.step import Step
 from rayforge.core.step_registry import StepRegistry, step_registry
 
@@ -74,6 +75,57 @@ class TestStepRegistry:
         registry.register(HiddenStep)
         factories = registry.get_factories()
         assert len(factories) == 0
+
+    def test_get_factories_filters_by_machine_caps(self):
+        class LaserStep(Step):
+            REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
+
+            def __init__(self):
+                super().__init__(typelabel="Laser")
+
+            @classmethod
+            def create(cls, context=None, name=None, **kwargs):
+                return cls()
+
+        class MillStep(Step):
+            REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.MILL})
+
+            def __init__(self):
+                super().__init__(typelabel="Mill")
+
+            @classmethod
+            def create(cls, context=None, name=None, **kwargs):
+                return cls()
+
+        registry = StepRegistry()
+        registry.register(LaserStep)
+        registry.register(MillStep)
+
+        laser_only = registry.get_factories(
+            machine_caps=frozenset({MachineCapability.LASER})
+        )
+        assert laser_only == [LaserStep.create]
+
+        both = registry.get_factories(
+            machine_caps=frozenset(
+                {MachineCapability.LASER, MachineCapability.MILL}
+            )
+        )
+        assert both == [LaserStep.create, MillStep.create]
+
+    def test_get_factories_no_filter_returns_all(self):
+        class PlainStep(Step):
+            def __init__(self):
+                super().__init__(typelabel="Plain")
+
+            @classmethod
+            def create(cls, context=None, name=None, **kwargs):
+                return cls()
+
+        registry = StepRegistry()
+        registry.register(PlainStep)
+        factories = registry.get_factories()
+        assert factories == [PlainStep.create]
 
     def test_to_dict_includes_step_type(self):
         step = Step(typelabel="Test")

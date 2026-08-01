@@ -415,7 +415,9 @@ class MachineController:
             raise ValueError("No driver configured for this machine.")
 
         if head is None:
-            head = self.machine.get_default_head()
+            head = self.machine.get_default_laser_head()
+        if head is None:
+            raise ValueError("Machine has no laser heads configured.")
 
         await self.driver.set_power(head, percent)
         self.laser_power_changed.send(self, head=head, percent=percent)
@@ -438,7 +440,9 @@ class MachineController:
             raise ValueError("No driver configured for this machine.")
 
         if head is None:
-            head = self.machine.get_default_head()
+            head = self.machine.get_default_laser_head()
+        if head is None:
+            raise ValueError("Machine has no laser heads configured.")
 
         await self.driver.set_focus_power(head, percent)
         self.laser_power_changed.send(self, head=head, percent=percent)

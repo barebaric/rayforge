@@ -158,9 +158,8 @@ class WorkflowRow(Gtk.Box):
         machine = get_context().machine
         if not machine or not machine.heads:
             return None
-        try:
-            laser = step.get_selected_laser(machine)
-        except ValueError:
+        laser = step.get_selected_laser(machine)
+        if laser is None:
             return None
         if ENGRAVE in step.capabilities:
             return laser.raster_color
@@ -367,8 +366,11 @@ class WorkflowRow(Gtk.Box):
         workflow = self._workflow
         if not workflow or not workflow.doc:
             return
+        machine = self.editor.context.machine
         popup = PopoverMenu(
-            step_factories=step_registry.get_factories(),
+            step_factories=step_registry.get_factories(
+                machine.get_capabilities() if machine else None
+            ),
             context=self.editor.context,
         )
         popup.set_parent(self)

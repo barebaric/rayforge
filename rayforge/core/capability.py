@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import enum
 from abc import ABC, abstractmethod
 from gettext import gettext as _
 from typing import Dict, List, Optional
@@ -14,6 +15,42 @@ from .varset import (
     SpeedVar,
     VarSet,
 )
+
+
+class MachineCapability(enum.Enum):
+    """
+    Hardware capabilities of a machine (e.g., LASER, MILL).
+
+    These describe what the machine's hardware can do and are used to
+    filter which steps are offered to the user. They are distinct from
+    the step `Capability` class (CUT, ENGRAVE, ...), which describes
+    operation categories for recipe matching.
+    """
+
+    LASER = "LASER"
+    MILL = "MILL"
+    # Future: PROBE, DWELL, ROTARY, ...
+
+    @property
+    def label(self) -> str:
+        """User-facing label for this capability."""
+        return _MACHINE_CAPABILITY_LABELS[self]
+
+    @property
+    def description(self) -> str:
+        """User-facing description for this capability."""
+        return _MACHINE_CAPABILITY_DESCRIPTIONS[self]
+
+
+_MACHINE_CAPABILITY_LABELS = {
+    MachineCapability.LASER: _("Laser"),
+    MachineCapability.MILL: _("Mill"),
+}
+
+_MACHINE_CAPABILITY_DESCRIPTIONS = {
+    MachineCapability.LASER: _("Cutting and engraving with a laser"),
+    MachineCapability.MILL: _("Milling and routing with a spindle"),
+}
 
 
 class LaserHeadVar(ChoiceVar):

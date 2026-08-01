@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Set, Type
 
 if TYPE_CHECKING:
+    from .capability import MachineCapability
     from .step import Step
 
 
@@ -104,9 +105,18 @@ class StepRegistry:
                 return step_class
         return None
 
-    def get_factories(self) -> List[Callable]:
+    def get_factories(
+        self,
+        machine_caps: Optional[frozenset["MachineCapability"]] = None,
+    ) -> List[Callable]:
         """
         Return all registered step factory methods.
+
+        Args:
+            machine_caps: Optional set of machine capabilities. When
+                given, only steps whose REQUIRED_MACHINE_CAPS are a
+                subset of the machine capabilities are included.
+                When None, no filtering is applied.
 
         Returns:
             List of callable `create` class methods from registered
@@ -116,6 +126,9 @@ class StepRegistry:
         for cls in self._steps.values():
             if cls.HIDDEN:
                 continue
+            if machine_caps is not None:
+                if not cls.REQUIRED_MACHINE_CAPS.issubset(machine_caps):
+                    continue
             factories.append(cls.create)
         return factories
 

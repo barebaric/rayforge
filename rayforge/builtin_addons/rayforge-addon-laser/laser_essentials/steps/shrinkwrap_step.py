@@ -10,7 +10,13 @@ from raygeo.ops.assembly.shrinkwrap import ShrinkwrapSpec
 from raygeo.ops.part import Part
 from raygeo.ops.part.image_source import WholeImageSource
 
-from rayforge.core.capability import CUT, SCORE, WITH_KERF, Capability
+from rayforge.core.capability import (
+    CUT,
+    SCORE,
+    WITH_KERF,
+    Capability,
+    MachineCapability,
+)
 from rayforge.core.cut_side import CutSide
 from rayforge.core.step import Step
 from rayforge.image.tracing import prepare_surface
@@ -29,6 +35,7 @@ class ShrinkWrapStep(Step):
     TYPELABEL = _("Shrink Wrap")
     ICON = "step-shrinkwrap-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (CUT, SCORE, WITH_KERF)
+    REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "shrinkwrap"
 
     def __init__(
@@ -147,7 +154,9 @@ class ShrinkWrapStep(Step):
     ) -> "ShrinkWrapStep":
         machine = context.machine
         assert machine is not None
-        default_head = machine.get_default_head()
+        default_head = machine.get_default_laser_head()
+        if default_head is None:
+            raise ValueError("Machine has no laser heads configured.")
 
         step = cls(name=name)
         per_wp, per_step = cls.get_default_transformers_dicts()

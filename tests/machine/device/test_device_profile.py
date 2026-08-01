@@ -13,7 +13,7 @@ from rayforge.machine.device.profile import (
     DeviceProfile,
     export_machine_to_dir,
 )
-from rayforge.machine.models.laser import LaserType
+from rayforge.machine.models.laser import LaserHead, LaserType
 from rayforge.machine.models.machine import Origin
 from rayforge.shared.tasker.manager import TaskManager
 
@@ -740,6 +740,7 @@ class TestCreateMachine:
 
         assert len(m.heads) == 1
         head = m.heads[0]
+        assert isinstance(head, LaserHead)
         assert head.laser_type == LaserType.CO2
         assert head.pwm_frequency == 1000
         assert head.max_pwm_frequency == 5000
@@ -768,4 +769,5 @@ class TestCreateMachine:
         await _wait_for_tasks(task_mgr)
 
         head = m.heads[0]
+        assert isinstance(head, LaserHead)
         assert head.laser_type == LaserType.DIODE

@@ -8,7 +8,11 @@ from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.material_test_grid import MaterialTestGridSpec
 from raygeo.ops.part import Part
 
-from rayforge.core.capability import MATERIAL_TEST, Capability
+from rayforge.core.capability import (
+    MATERIAL_TEST,
+    Capability,
+    MachineCapability,
+)
 from rayforge.core.step import Step
 from rayforge.pipeline.stage.assembler_helpers import (
     MachineDefaults,
@@ -30,6 +34,7 @@ class MaterialTestStep(Step):
     TYPELABEL = _("Material Test Grid")
     ICON = "test-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (MATERIAL_TEST,)
+    REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "material_test_grid"
     HIDDEN = True
 
@@ -228,7 +233,10 @@ class MaterialTestStep(Step):
 
         step.per_workpiece_transformers_dicts = per_wp
         step.per_step_transformers_dicts = per_step
-        default_head = machine.get_default_head()
+        default_head = machine.get_default_laser_head()
+        if default_head is None:
+            raise ValueError("Machine has no laser heads configured.")
+
         step.selected_laser_uid = default_head.uid
         step.max_cut_speed = machine.max_cut_speed
         step.max_travel_speed = machine.max_travel_speed

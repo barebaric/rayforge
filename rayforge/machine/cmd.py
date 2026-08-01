@@ -161,7 +161,9 @@ class MachineCmd:
             raise ValueError("_run_frame_action received a non-JobArtifact")
         ops = artifact.ops
 
-        head = machine.get_default_head()
+        head = machine.get_default_laser_head()
+        if head is None:
+            raise ValueError("Machine has no laser heads configured.")
         if not head.frame_power_percent:
             logger.warning("Framing cancelled: Frame power is zero.")
             return

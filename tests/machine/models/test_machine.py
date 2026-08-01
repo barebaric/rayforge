@@ -514,7 +514,8 @@ class TestMachine:
         # --- Arrange ---
         await wait_for_tasks_to_finish(task_mgr)
         # Configure the machine to be capable of framing.
-        head = machine.get_default_head()
+        head = machine.get_default_laser_head()
+        assert head is not None
         head.set_frame_power(1)
         assert machine.can_frame() is True
 
@@ -567,7 +568,8 @@ class TestMachine:
         """
         await wait_for_tasks_to_finish(task_mgr)
 
-        head = machine.get_default_head()
+        head = machine.get_default_laser_head()
+        assert head is not None
         head.set_frame_power(1)
         head.set_frame_repeat_count(3)
 
@@ -621,7 +623,8 @@ class TestMachine:
         assert machine.can_focus() is False
 
         # Set focus power on default head
-        head = machine.get_default_head()
+        head = machine.get_default_laser_head()
+        assert head is not None
         head.set_focus_power(0.1)
         assert machine.can_focus() is True
 
@@ -750,7 +753,7 @@ class TestMachine:
     async def test_get_default_head(
         self, machine: Machine, task_mgr: TaskManager
     ):
-        """Returns the first laser head, or raises an error if none exist."""
+        """Returns the first head, or raises an error if none exist."""
         await wait_for_tasks_to_finish(task_mgr)
         default_head = machine.get_default_head()
         assert isinstance(default_head, Laser)
@@ -769,7 +772,7 @@ class TestMachine:
         # Test with empty heads list - should raise ValueError
         machine.heads.clear()
         with pytest.raises(
-            ValueError, match="Machine has no laser heads configured"
+            ValueError, match="Machine has no heads configured"
         ):
             machine.get_default_head()
 

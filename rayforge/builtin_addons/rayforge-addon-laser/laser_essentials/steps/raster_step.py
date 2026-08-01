@@ -17,7 +17,7 @@ from raygeo.ops.assembly.raster import RasterSpec
 from raygeo.ops.part import Part
 from raygeo.ops.part.image_source import WholeImageSource
 
-from rayforge.core.capability import ENGRAVE, Capability
+from rayforge.core.capability import ENGRAVE, Capability, MachineCapability
 from rayforge.core.step import Step
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.pipeline.stage.assembler_helpers import (
@@ -43,6 +43,7 @@ class EngraveStep(Step):
     TYPELABEL = _("Engrave")
     ICON = "step-raster-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (ENGRAVE,)
+    REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "raster"
 
     def __init__(
@@ -275,7 +276,9 @@ class EngraveStep(Step):
     ) -> "EngraveStep":
         machine = context.machine
         assert machine is not None
-        default_head = machine.get_default_head()
+        default_head = machine.get_default_laser_head()
+        if default_head is None:
+            raise ValueError("Machine has no laser heads configured.")
 
         step = cls(name=name)
         per_wp, per_step = cls.get_default_transformers_dicts()

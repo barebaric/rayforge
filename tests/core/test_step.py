@@ -12,6 +12,7 @@ from rayforge.core.capability import (
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
 from rayforge.core.varset import FloatVar, VarSet
+from rayforge.machine.models.laser import LaserHead
 
 
 @pytest.fixture
@@ -127,9 +128,9 @@ def test_hierarchy_properties_when_detached(step):
 def test_get_selected_laser(step):
     """Tests the logic for retrieving the selected laser from a machine."""
     mock_machine = MagicMock()
-    mock_laser1 = MagicMock()
+    mock_laser1 = MagicMock(spec=LaserHead)
     mock_laser1.uid = "laser-1"
-    mock_laser2 = MagicMock()
+    mock_laser2 = MagicMock(spec=LaserHead)
     mock_laser2.uid = "laser-2"
     mock_machine.heads = [mock_laser1, mock_laser2]
 
@@ -147,8 +148,7 @@ def test_get_selected_laser(step):
 
     # Case 4: Machine has no lasers
     mock_machine.heads = []
-    with pytest.raises(ValueError):
-        step.get_selected_laser(mock_machine)
+    assert step.get_selected_laser(mock_machine) is None
 
 
 def test_serialization_to_dict_all_properties(step):
@@ -528,7 +528,7 @@ def test_get_settings_includes_frequency_and_pulse_width(step):
 def test_get_effective_capabilities_with_mock_machine():
     """get_effective_capabilities merges class-level + machine caps."""
     pwm_cap = PWMCapability(1000, 5000, 50, 1, 100)
-    mock_laser = MagicMock()
+    mock_laser = MagicMock(spec=LaserHead)
 
     mock_machine = MagicMock()
     mock_machine.heads = [mock_laser]
@@ -548,6 +548,7 @@ def test_get_effective_capabilities_with_mock_machine():
 def test_get_effective_capabilities_no_laser_selected(step):
     """get_effective_capabilities returns class caps when no laser."""
     mock_machine = MagicMock()
+    mock_machine.heads = []
     mock_machine.get_laser_capabilities.return_value = ()
     caps = step.get_effective_capabilities(mock_machine)
 

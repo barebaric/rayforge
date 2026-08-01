@@ -5,7 +5,16 @@ import uuid
 from enum import Enum
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    FrozenSet,
+    List,
+    Optional,
+    Tuple,
+    Type,
+)
 
 from blinker import Signal
 from raygeo.geo.types import Point3D, Rect
@@ -14,6 +23,7 @@ from raygeo.ops.axis import Axis
 from ...camera.models.camera import Camera
 from ...camera.v4l import migrate_camera_data
 from ...context import RayforgeContext, get_context
+from ...core.capability import MachineCapability
 from ...core.layer import Layer
 from ...core.model import Model
 from ...pipeline.coordspace import MachineSpace
@@ -25,7 +35,8 @@ from ..kinematics import HeadSpec, Kinematics, build_assembly
 from ..models.axis import AxisConfig, AxisDirection, AxisSet, AxisType
 from ..transport import TransportStatus
 from .dialect import GcodeDialect
-from .laser import Laser
+from .head import Head, head_from_dict
+from .laser import Laser, LaserHead
 from .machine_hours import MachineHours
 from .macro import Macro, MacroTrigger
 from .rotary_module import RotaryMode, RotaryModule
@@ -112,7 +123,10 @@ class Machine:
         self.arc_tolerance: float = 0.03
         self.hookmacros: Dict[MacroTrigger, Macro] = {}
         self.macros: Dict[str, Macro] = {}
-        self.heads: List[Laser] = []
+        self.heads: List[Head] = []
+        self._explicit_capabilities: Optional[FrozenSet[MachineCapability]] = (
+            None
+        )
         self.cameras: List[Camera] = []
         self.max_travel_speed: int = 3000  # in mm/min
         self.max_cut_speed: int = 1000  # in mm/min
@@ -168,7 +182,7 @@ class Machine:
             self._on_dialects_changed
         )
 
-        self.add_head(Laser())
+        self.add_head(LaserHead())
 
         self.rotary_modules: Dict[str, RotaryModule] = {}
         self.nogo_zones: Dict[str, Zone] = {}
@@ -207,6 +221,29 @@ class Machine:
         laser head. Delegates to the driver's get_laser_capabilities().
         """
         return self.driver.get_laser_capabilities(laser)
+
+    def get_capabilities(self) -> FrozenSet[MachineCapability]:
+        """
+        Returns the machine capabilities as the union of the explicitly
+        declared capabilities and the capabilities inferred from the
+        configured heads (e.g. a LaserHead implies LASER).
+        """
+        caps: set = set(self._explicit_capabilities or ())
+        for head in self.heads:
+            if head.machine_capability:
+                caps.add(head.machine_capability)
+        return frozenset(caps)
+
+    def set_explicit_capabilities(
+        self, capabilities: Optional[FrozenSet[MachineCapability]]
+    ):
+        """
+        Sets the explicitly declared capabilities. ``None`` means
+        "not set", so capabilities are inferred from the heads.
+        """
+        if self._explicit_capabilities != capabilities:
+            self._explicit_capabilities = capabilities
+            self.changed.send(self)
 
     def _connect_controller_signals(self, controller: "MachineController"):
         """
@@ -326,8 +363,9 @@ class Machine:
         head_specs: List[HeadSpec] = []
         for h in self.heads:
             t = h.transform.copy()
-            if h.focal_distance > 0:
-                t[2, 3] += h.focal_distance
+            focal_distance = getattr(h, "focal_distance", 0.0)
+            if focal_distance > 0:
+                t[2, 3] += focal_distance
             model = (
                 Model.from_path(Path(h.model_path)) if h.model_path else None
             )
@@ -906,25 +944,32 @@ class Machine:
         """Check if machine's supports jogging for the given axis."""
         return self.controller.can_jog(axis)
 
-    def add_head(self, head: Laser):
+    def add_head(self, head: Head):
         self.heads.append(head)
         head.changed.connect(self._on_head_changed)
         self.invalidate_assembly()
         self.changed.send(self)
 
-    def get_head_by_uid(self, uid: str) -> Optional[Laser]:
+    def get_head_by_uid(self, uid: str) -> Optional[Head]:
         for head in self.heads:
             if head.uid == uid:
                 return head
         return None
 
-    def get_default_head(self) -> Laser:
-        """Returns the first laser head, or raises an error if none exist."""
+    def get_default_head(self) -> Head:
+        """Returns the first head, or raises an error if none exist."""
         if not self.heads:
-            raise ValueError("Machine has no laser heads configured.")
+            raise ValueError("Machine has no heads configured.")
         return self.heads[0]
 
-    def remove_head(self, head: Laser):
+    def get_default_laser_head(self) -> Optional[LaserHead]:
+        """Returns the first laser head, or None if none exist."""
+        for head in self.heads:
+            if isinstance(head, LaserHead):
+                return head
+        return None
+
+    def remove_head(self, head: Head):
         head.changed.disconnect(self._on_head_changed)
         self.heads.remove(head)
         self.invalidate_assembly()
@@ -1102,16 +1147,18 @@ class Machine:
         self.changed.send(self)
 
     def can_frame(self):
-        for head in self.heads:
-            if head.frame_power_percent:
-                return True
-        return False
+        return any(
+            h.frame_power_percent
+            for h in self.heads
+            if isinstance(h, LaserHead)
+        )
 
     def can_focus(self):
-        for head in self.heads:
-            if head.focus_power_percent:
-                return True
-        return False
+        return any(
+            h.focus_power_percent
+            for h in self.heads
+            if isinstance(h, LaserHead)
+        )
 
     def validate_driver_setup(self) -> Tuple[bool, Optional[str]]:
         """
@@ -1377,6 +1424,16 @@ class Machine:
                     rm.to_dict() for rm in self.rotary_modules.values()
                 ],
                 "nogo_zones": [z.to_dict() for z in self.nogo_zones.values()],
+                "capabilities": (
+                    [
+                        c.value
+                        for c in sorted(
+                            self._explicit_capabilities, key=lambda c: c.value
+                        )
+                    ]
+                    if self._explicit_capabilities
+                    else None
+                ),
                 "hookmacros": {
                     trigger.name: macro.to_dict()
                     for trigger, macro in self.hookmacros.items()
@@ -1461,6 +1518,25 @@ class Machine:
 
         # Return the new dialect's UID and the cleaned hook data
         return new_dialect.uid, new_hook_data
+
+    @staticmethod
+    def _parse_capabilities(
+        raw: Optional[List[Any]],
+    ) -> Optional[FrozenSet[MachineCapability]]:
+        """
+        Parses a list of capability strings into a frozenset of
+        MachineCapability. Returns None when the list is absent,
+        and skips unknown values with a warning.
+        """
+        if raw is None:
+            return None
+        caps = set()
+        for value in raw:
+            try:
+                caps.add(MachineCapability(value))
+            except ValueError:
+                logger.warning(f"Unknown machine capability '{value}'")
+        return frozenset(caps)
 
     @classmethod
     def from_dict(
@@ -1597,7 +1673,10 @@ class Machine:
 
         ma.heads = []
         for obj in ma_data.get("heads", {}):
-            ma.add_head(Laser.from_dict(obj))
+            ma.add_head(head_from_dict(obj))
+        ma._explicit_capabilities = cls._parse_capabilities(
+            ma_data.get("capabilities")
+        )
         ma.cameras = []
         for obj in ma_data.get("cameras", {}):
             ma.add_camera(Camera.from_dict(migrate_camera_data(obj)))

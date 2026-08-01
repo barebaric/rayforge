@@ -25,6 +25,7 @@ from ...core.stock_asset import StockAsset
 from ...core.workpiece import WorkPiece
 from ...image.util.srgb import create_lut_from_color
 from ...machine.models.colors import OpsColorSet
+from ...machine.models.laser import LaserHead
 from ...machine.models.machine import Machine
 from ...pipeline.artifact import RenderContext
 from ..canvas import Canvas, CanvasElement, WorldSurface
@@ -946,6 +947,8 @@ class WorkSurface(WorldSurface):
         laser_colors: Dict[str, Dict[str, Any]] = {}
 
         for laser in self.machine.heads:
+            if not isinstance(laser, LaserHead):
+                continue
             laser_color_set = OpsColorSet.from_laser(laser, theme_colors)
             laser_colors[laser.uid] = laser_color_set.to_color_set().to_dict()
 
