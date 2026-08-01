@@ -6,6 +6,7 @@ import cairo
 import pytest
 from blinker import Signal
 from raygeo.geo import Geometry, Matrix
+from raygeo.geo.shape.polygon import get_polygon_area
 
 from rayforge.core.doc import Doc
 from rayforge.core.item import DocItem
@@ -64,6 +65,58 @@ def workpiece_instance(
 ):
     """Provides the WorkPiece instance from the doc_with_workpiece fixture."""
     return doc_with_workpiece[1]
+
+
+def _make_loop(pts):
+    """Build a closed Geometry loop from ``(x, y)`` points."""
+    geo = Geometry()
+    geo.move_to(*pts[0])
+    for p in pts[1:]:
+        geo.line_to(*p)
+    geo.close_path()
+    return geo
+
+
+def _make_disjoint_loops():
+    """Two widely-separated square loops plus a small inner square in the
+    first one, exercising the multi-face constructor's inner/outer split.
+    """
+    loops = Geometry()
+    left = [(-30.0, -20.0), (30.0, -20.0), (30.0, 20.0), (-30.0, 20.0)]
+    right = [(70.0, -20.0), (110.0, -20.0), (110.0, 20.0), (70.0, 20.0)]
+    for loop in (left, right):
+        loops.move_to(*loop[0])
+        for p in loop[1:]:
+            loops.line_to(*p)
+        loops.close_path()
+    return loops
+
+
+class _FakeProvider:
+    """A minimal IGeometryProvider returning a fixed Geometry."""
+
+    def __init__(self, geometry: Geometry, name="fake"):
+        self._geometry = geometry
+        self.name = name
+        self.updated = Signal()
+
+    @property
+    def uid(self) -> str:
+        return "fake-provider-uid"
+
+    @property
+    def provider_type_name(self) -> str:
+        return "fake"
+
+    @property
+    def renderer(self):
+        return None
+
+    def get_geometry(self, params=None, *, resolved_text_cache=None):
+        return self._geometry.copy(), []
+
+    def to_dict(self):
+        return {}
 
 
 class TestWorkPiece:
@@ -677,3 +730,41 @@ class TestWorkPiece:
         # Verify defaults are applied for missing optional fields
         assert wp.name == "Old WorkPiece"
         assert wp.extra == {}
+
+    def test_to_part_single_contour_returns_default_face(self):
+        """A single-contour workpiece maps to the default face ``""``."""
+        loop = [(-30.0, -20.0), (30.0, -20.0), (30.0, 20.0), (-30.0, 20.0)]
+        wp = WorkPiece.from_geometry_provider(_FakeProvider(_make_loop(loop)))
+
+        part = wp.to_part()
+
+        assert part is not None
+        assert part.face_ids == [""]
+        face = part.face("")
+        assert face is not None
+        assert len(face.stock_region.boundary) == 4
+
+    def test_to_part_disjoint_contours_split_into_faces(self):
+        """Two disjoint contours become two faces; the largest one keeps
+        the default id ``""``.
+        """
+        wp = WorkPiece.from_geometry_provider(
+            _FakeProvider(_make_disjoint_loops())
+        )
+
+        part = wp.to_part()
+
+        assert part is not None
+        assert len(part.face_ids) == 2
+        assert "" in part.face_ids
+
+        # The largest face (left 60x40 square) must be the default "".
+        def _area(face_id):
+            face = part.face(face_id)
+            assert face is not None
+            return get_polygon_area(face.stock_region.boundary)
+
+        areas = {fid: _area(fid) for fid in part.face_ids}
+        assert areas[""] == max(areas.values())
+        assert areas[""] > 2000.0
+        assert set(areas.values()) == {2400.0, 1600.0}

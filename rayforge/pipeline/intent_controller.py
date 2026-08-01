@@ -147,6 +147,7 @@ class IntentController:
         self.rebuild_finished = Signal()
         self.data_stale = Signal()
         self.pipeline_error = Signal()
+        self.pipeline_warnings = Signal()
 
     # ------------------------------------------------------------------
     # Properties
@@ -361,6 +362,10 @@ class IntentController:
         """Emit ``pipeline_error`` on the main thread."""
         self.pipeline_error.send(self, error_kind=error_kind)
 
+    def _emit_pipeline_warnings(self, warnings: list) -> None:
+        """Emit ``pipeline_warnings`` on the main thread."""
+        self.pipeline_warnings.send(self, warnings=warnings)
+
     # ------------------------------------------------------------------
     # on_completed → epoch filter → DOM reattachment via main-thread
     # schedule
@@ -411,6 +416,11 @@ class IntentController:
             )
             return
         output = node.output
+        warnings = getattr(output, "warnings", None) or []
+        if warnings:
+            self._task_manager.schedule_on_main_thread(
+                self._emit_pipeline_warnings, warnings
+            )
         self._task_manager.schedule_on_main_thread(
             self._reattach, key, item, output
         )

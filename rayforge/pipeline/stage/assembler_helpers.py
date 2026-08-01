@@ -258,7 +258,9 @@ def build_part_vector(
             if w > 0 and h > 0:
                 scaled.transform(Matrix.scale(w, h))
             scaled.normalize_winding_orders()
-            return Part(geometry=scaled, size_mm=(w, h))
+            return Part.from_geometry_multi_face(
+                geometry=scaled, size_mm=(w, h)
+            )
         return workpiece.to_part()
 
     # 2. Raster fallback — trace the surface.

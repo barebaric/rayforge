@@ -90,6 +90,7 @@ class Pipeline:
         self.visual_chunk_available = Signal()
         self.data_stale = Signal()
         self.pipeline_error = Signal()
+        self.assembly_warnings = Signal()
 
         self._raygeo_pipeline = RaygeoPipeline(budget_bytes=cache_budget_bytes)
         self._intent_ctl = IntentController(
@@ -145,6 +146,7 @@ class Pipeline:
         ctl.rebuild_finished.connect(self._on_rebuild_finished)
         ctl.data_stale.connect(self._on_data_stale)
         ctl.pipeline_error.connect(self._on_pipeline_error)
+        ctl.pipeline_warnings.connect(self._on_pipeline_warnings)
 
     # ------------------------------------------------------------------
     # Properties
@@ -292,6 +294,12 @@ class Pipeline:
             message = f"Pipeline error: {error_kind.value}"
         logger.error("Pipeline execution error: %s", message)
         self.pipeline_error.send(self, message=message)
+
+    def _on_pipeline_warnings(self, sender, *, warnings) -> None:
+        """Forward assembler warnings to the UI for translation."""
+        if not warnings:
+            return
+        self.assembly_warnings.send(self, warnings=warnings)
 
     def _check_busy(self) -> None:
         self._set_busy(self.is_busy)

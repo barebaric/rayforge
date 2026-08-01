@@ -112,12 +112,14 @@ class DocEditor:
         self.processing_state_changed = Signal()
         self.document_settled = Signal()  # Fires when processing finishes
         self.notification_requested = Signal()  # For UI feedback
+        self.assembly_warnings = Signal()  # Non-fatal assembler warnings
         self.saved_state_changed = Signal()  # Fires when saved state changes
         self.document_changed = Signal()  # Fires when a new document is set
         self.pipeline.processing_state_changed.connect(
             self._on_processing_state_changed
         )
         self.pipeline.pipeline_error.connect(self._on_pipeline_error)
+        self.pipeline.assembly_warnings.connect(self._on_assembly_warnings)
 
         # Connect to history manager to track undo/redo for saved state
         self.history_manager.changed.connect(self._on_history_changed)
@@ -542,6 +544,16 @@ class DocEditor:
     def _on_pipeline_error(self, sender, *, message: str) -> None:
         """Show a UI notification on pipeline execution errors."""
         self.notification_requested.send(self, message=message)
+
+    def _on_assembly_warnings(self, sender, *, warnings) -> None:
+        """Translate non-fatal assembler warnings and show them as toasts."""
+        from rayforge.pipeline.assembly_warnings import (
+            translate_assembly_warning,
+        )
+
+        for w in warnings:
+            message = translate_assembly_warning(w)
+            self.notification_requested.send(self, message=message)
 
     def _on_history_changed(self, sender, command):
         """

@@ -521,6 +521,73 @@ def test_on_batch_progress_emits_progress_changed(monkeypatch):
     ctrl.shutdown()
 
 
+def test_on_completed_with_warnings_emits_pipeline_warnings(monkeypatch):
+    idle_calls: List = []
+    ctrl, wp, step = _make_controller_for_completed_test(
+        monkeypatch, idle_calls=idle_calls
+    )
+    wpk = workpiece_key(wp.uid, step.uid)
+
+    received = []
+
+    def _on_warnings(sender, **kw):
+        received.append(kw)
+
+    ctrl.pipeline_warnings.connect(_on_warnings)
+
+    class _OutputWithWarnings:
+        warnings = ["warn1", "warn2"]
+
+    node = _StubNode(
+        key=wpk,
+        generation_id=ctrl.generation_id,
+        output=_OutputWithWarnings(),
+    )
+    ctrl._on_completed(node)
+
+    # Two main-thread callbacks: the reattach and the warnings emit.
+    assert len(idle_calls) == 2
+    warning_emit = next(
+        (fn, args)
+        for fn, args in idle_calls
+        if fn.__name__ == "_emit_pipeline_warnings"
+    )
+    fn, args = warning_emit
+    fn(*args)
+    assert len(received) == 1
+    assert received[0]["warnings"] == ["warn1", "warn2"]
+    ctrl.shutdown()
+
+
+def test_on_completed_without_warnings_skips_emit(monkeypatch):
+    idle_calls: List = []
+    ctrl, wp, step = _make_controller_for_completed_test(
+        monkeypatch, idle_calls=idle_calls
+    )
+    wpk = workpiece_key(wp.uid, step.uid)
+
+    received = []
+
+    def _on_warnings(sender, **kw):
+        received.append(kw)
+
+    ctrl.pipeline_warnings.connect(_on_warnings)
+
+    node = _StubNode(
+        key=wpk,
+        generation_id=ctrl.generation_id,
+        output="plain-output",
+    )
+    ctrl._on_completed(node)
+
+    # Only the reattach callback is scheduled; no warnings emit.
+    assert len(idle_calls) == 1
+    fn, _ = idle_calls[0]
+    assert fn.__name__ == "_reattach"
+    assert received == []
+    ctrl.shutdown()
+
+
 # ----------------------------------------------------------------------
 # Lifecycle
 # ----------------------------------------------------------------------
