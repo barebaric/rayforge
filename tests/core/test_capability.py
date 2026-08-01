@@ -4,6 +4,7 @@ from rayforge.core.capability import (
     CUT,
     ENGRAVE,
     MATERIAL_TEST,
+    MILL,
     SCORE,
     WITH_KERF,
     Capability,
@@ -83,19 +84,21 @@ def test_score_capability(mocker):
 
 def test_collections():
     """Tests the global collections of capabilities."""
-    assert len(ALL_CAPABILITIES) == 5
+    assert len(ALL_CAPABILITIES) == 6
     assert CUT in ALL_CAPABILITIES
     assert ENGRAVE in ALL_CAPABILITIES
     assert SCORE in ALL_CAPABILITIES
     assert WITH_KERF in ALL_CAPABILITIES
     assert MATERIAL_TEST in ALL_CAPABILITIES
+    assert MILL in ALL_CAPABILITIES
 
-    assert len(CAPABILITIES_BY_NAME) == 5
+    assert len(CAPABILITIES_BY_NAME) == 6
     assert CAPABILITIES_BY_NAME["CUT"] is CUT
     assert CAPABILITIES_BY_NAME["ENGRAVE"] is ENGRAVE
     assert CAPABILITIES_BY_NAME["SCORE"] is SCORE
     assert CAPABILITIES_BY_NAME["WITH_KERF"] is WITH_KERF
     assert CAPABILITIES_BY_NAME["MATERIAL_TEST"] is MATERIAL_TEST
+    assert CAPABILITIES_BY_NAME["MILL"] is MILL
 
 
 def test_kerf_capability():
