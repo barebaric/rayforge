@@ -107,14 +107,36 @@ class TestEngraveStep:
         assert data == restored.to_dict()
         assert restored.dot_width_correction_mm == 0.05
 
+    def test_legacy_power_keys_migrate(self):
+        """Old files keyed the raster power range as min_power/max_power.
+
+        Those must load into min_power_level/max_power_level and must not
+        pollute extra. The hardware max_power slot is restored to its
+        default rather than inheriting the old raster ceiling.
+        """
+        step = EngraveStep(name="Test")
+        data = step.to_dict()
+        data["min_power"] = data.pop("min_power_level")
+        data["max_power"] = data.pop("max_power_level")
+        data["min_power"] = 0.2
+        data["max_power"] = 1.0
+
+        restored = EngraveStep.from_dict(data)
+
+        assert restored.min_power_level == 0.2
+        assert restored.max_power_level == 1.0
+        assert restored.max_power == 1000
+        assert "min_power" not in restored.extra
+        assert "max_power" not in restored.extra
+
 
 class TestEngraveComputePayload:
     """Verifies EngraveStep's build_compute_payload (B3)."""
 
     def test_build_compute_payload_returns_raster_spec(self, machine_defaults):
         step = EngraveStep(name="engrave")
-        step.min_power = 0.1
-        step.max_power = 0.9
+        step.min_power_level = 0.1
+        step.max_power_level = 0.9
         wp = WorkPiece(name="wp")
         wp.set_size(10.0, 10.0)
 

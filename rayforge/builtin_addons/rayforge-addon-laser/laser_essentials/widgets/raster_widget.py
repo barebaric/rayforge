@@ -129,7 +129,7 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             lower=0,
             upper=100,
             step_increment=0.1,
-            value=step.min_power * 100,
+            value=step.min_power_level * 100,
         )
         self.min_power_row, self.min_power_scale = create_slider_row(
             title=_("Min Power"),
@@ -145,7 +145,7 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
             lower=0,
             upper=100,
             step_increment=0.1,
-            value=step.max_power * 100,
+            value=step.max_power_level * 100,
         )
         self.max_power_row, self.max_power_scale = create_slider_row(
             title=_("Max Power"),
@@ -497,17 +497,17 @@ class RasterSettingsWidget(DebounceMixin, StepComponentSettingsWidget):
         min_p = self.min_power_adj.get_value() / 100.0
         max_p = self.max_power_adj.get_value() / 100.0
 
-        min_changed = abs(self.step.min_power - min_p) > 1e-6
-        max_changed = abs(self.step.max_power - max_p) > 1e-6
+        min_changed = abs(self.step.min_power_level - min_p) > 1e-6
+        max_changed = abs(self.step.max_power_level - max_p) > 1e-6
 
         if not min_changed and not max_changed:
             return
 
         with self.history_manager.transaction(_("Change Power Range")):
             if min_changed:
-                self.set_step_property("min_power", min_p)
+                self.set_step_property("min_power_level", min_p)
             if max_changed:
-                self.set_step_property("max_power", max_p)
+                self.set_step_property("max_power_level", max_p)
 
     def _on_min_power_scale_changed(self, scale: Gtk.Scale):
         new_min_value = self.min_power_adj.get_value()

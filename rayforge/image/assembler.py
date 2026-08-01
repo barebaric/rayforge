@@ -252,14 +252,15 @@ class ItemAssembler:
                     break
 
         if is_image:
-            # EngraveStep modulates between min_power/max_power; the base
-            # Step.power attribute set above is unused by raster output,
-            # so mirror the value (already maxPower/100) into max_power.
-            if power is not None and hasattr(step, "max_power"):
-                setattr(step, "max_power", power)
+            # EngraveStep modulates between min_power_level /
+            # max_power_level; the base Step.power attribute set above is
+            # unused by raster output, so mirror the value (already
+            # maxPower/100) into max_power_level.
+            if power is not None and hasattr(step, "max_power_level"):
+                setattr(step, "max_power_level", power)
             min_power = settings.get("min_power")
-            if min_power is not None and hasattr(step, "min_power"):
-                setattr(step, "min_power", min_power)
+            if min_power is not None and hasattr(step, "min_power_level"):
+                setattr(step, "min_power_level", min_power)
             dot_width = settings.get("dot_width_correction_mm")
             if dot_width is not None and hasattr(
                 step, "dot_width_correction_mm"

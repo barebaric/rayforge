@@ -26,7 +26,7 @@ class LaserStep(Step):
 
     def __init__(self, typelabel, name=None):
         self.power: float = 1.0
-        self.max_power = 1000
+        self.max_power: int = 1000
         self.air_assist: bool = False
         self.kerf_mm: float = 0.0
         self.tab_power: float = 0.0

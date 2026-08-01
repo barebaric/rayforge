@@ -627,8 +627,8 @@ class TestLightBurnImporter:
         assert getattr(step, "dot_width_correction_mm") == 0.04
         assert getattr(step, "line_interval_mm") == 0.04
         assert getattr(step, "scan_angle") == 45.0
-        assert getattr(step, "min_power") == 0.1
-        assert getattr(step, "max_power") == 0.5
+        assert getattr(step, "min_power_level") == 0.1
+        assert getattr(step, "max_power_level") == 0.5
 
 
 class TestApplySettingsDispatch:
@@ -652,8 +652,8 @@ class TestApplySettingsDispatch:
                 self.dot_width_correction_mm = None
                 self.line_interval_mm = None
                 self.scan_angle = 0.0
-                self.min_power = 0.0
-                self.max_power = 1.0
+                self.min_power_level = 0.0
+                self.max_power_level = 1.0
 
         monkeypatch.setitem(step_registry._steps, "ContourStep", ContourStep)
         monkeypatch.setitem(step_registry._steps, "EngraveStep", EngraveStep)
@@ -685,11 +685,11 @@ class TestApplySettingsDispatch:
         assert step.dot_width_correction_mm == 0.04
         assert step.line_interval_mm == 0.04
         assert step.scan_angle == 45.0
-        # EngraveStep modulates between min_power/max_power, so `power`
-        # (maxPower/100) is mirrored into max_power; min_power is set
-        # directly.
-        assert step.min_power == 0.1
-        assert step.max_power == 0.5
+        # EngraveStep modulates between min_power_level / max_power_level,
+        # so `power` (maxPower/100) is mirrored into max_power_level;
+        # min_power_level is set directly.
+        assert step.min_power_level == 0.1
+        assert step.max_power_level == 0.5
 
     def test_vector_layer_creates_contour_step(self, monkeypatch):
         contour_cls, engrave_cls = self._register_mock_steps(monkeypatch)
