@@ -13,11 +13,12 @@ from rayforge.core.capability import (
     Capability,
     MachineCapability,
 )
-from rayforge.core.step import Step
 from rayforge.pipeline.stage.assembler_helpers import (
     MachineDefaults,
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
+
+from .laser_step import LaserStep
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
         ) -> float: ...
 
 
-class MaterialTestStep(Step):
+class MaterialTestStep(LaserStep):
     TYPELABEL = _("Material Test Grid")
     ICON = "test-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (MATERIAL_TEST,)

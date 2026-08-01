@@ -18,7 +18,6 @@ from rayforge.core.capability import (
     MachineCapability,
 )
 from rayforge.core.cut_side import CutSide
-from rayforge.core.step import Step
 from rayforge.image.tracing import prepare_surface
 from rayforge.pipeline.stage.assembler_helpers import (
     MachineDefaults,
@@ -26,12 +25,14 @@ from rayforge.pipeline.stage.assembler_helpers import (
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 
+from .laser_step import LaserStep
+
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
     from rayforge.core.workpiece import WorkPiece
 
 
-class ShrinkWrapStep(Step):
+class ShrinkWrapStep(LaserStep):
     TYPELABEL = _("Shrink Wrap")
     ICON = "step-shrinkwrap-symbolic"
     CAPABILITIES: Tuple[Capability, ...] = (CUT, SCORE, WITH_KERF)
