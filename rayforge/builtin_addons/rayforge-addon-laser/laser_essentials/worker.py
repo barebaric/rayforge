@@ -6,6 +6,7 @@ Registers steps with the main application.
 
 from rayforge.core.hooks import hookimpl
 
+from .capabilities import resolve_pwm_capability
 from .steps import (
     ContourStep,
     EngraveStep,
@@ -16,6 +17,12 @@ from .steps import (
 )
 
 ADDON_NAME = "laser_essentials"
+
+
+@hookimpl
+def register_driver_capabilities(driver_capability_registry):
+    """Register driver-feature resolvers for laser capabilities."""
+    driver_capability_registry.register(resolve_pwm_capability)
 
 
 @hookimpl

@@ -5,8 +5,15 @@ from unittest.mock import MagicMock
 import pytest
 from laser_essentials.steps import ContourStep, EngraveStep, LaserStep
 
+from rayforge.core.driver_capability_registry import (
+    driver_capability_registry,
+)
 from rayforge.core.step import Step
-from rayforge.machine.models.laser import LaserHead
+from rayforge.machine.driver.driver import DriverFeatures, PWMParams
+from rayforge.machine.models.laser import (
+    MIN_SPOT_SIZE_MM,
+    LaserHead,
+)
 from rayforge.machine.models.spindle import SpindleHead
 
 
@@ -39,8 +46,8 @@ def test_engrave_create_derives_cut_speed_from_machine():
     head = MagicMock()
     head.uid = "laser-1"
     head.spot_size_mm = (0.1, 0.1)
+    head.get_defaults.return_value = {}
     machine.get_default_laser_head.return_value = head
-    machine.get_laser_capabilities.return_value = ()
     context.machine = machine
 
     s = EngraveStep.create(context, name="t")
@@ -87,49 +94,41 @@ def test_laser_step_get_selected_laser():
     assert s.get_selected_laser(machine) is None
 
 
-def test_get_laser_spot_uses_head_spot_size():
+def test_laser_get_spot_size_uses_head_spot_size():
     s = ContourStep(name="t")
     machine = MagicMock()
     head = MagicMock(spec=LaserHead)
     head.uid = "laser-1"
     head.spot_size_mm = (0.08, 0.15)
     machine.heads = [head]
-    assert s.get_laser_spot(machine) == (0.08, 0.15)
+    assert LaserHead.get_spot_size(s.get_selected_laser(machine)) == (
+        0.08,
+        0.15,
+    )
 
 
-def test_get_laser_spot_guards_zero_spot_size():
-    """A zero spot size (unconfigured head, or a step with no kerf)
-    must be clamped so the raster pipeline never divides by zero."""
-    s = EngraveStep(name="t")
-    machine = MagicMock()
+def test_laser_get_spot_size_falls_back_without_head():
+    """With no laser head the spot falls back to a sane minimum."""
+    assert LaserHead.get_spot_size(None) == (
+        MIN_SPOT_SIZE_MM,
+        MIN_SPOT_SIZE_MM,
+    )
 
-    # No laser head: the fallback is (kerf_mm, 0.1); kerf is 0 for
-    # engrave, so X must be clamped.
-    machine.heads = []
-    spot_x, spot_y = s.get_laser_spot(machine)
-    assert spot_x > 0
-    assert spot_y > 0
 
-    # Selected head reports a zero spot size.
-    head = MagicMock(spec=LaserHead)
-    head.uid = "laser-1"
+def test_laser_get_spot_size_clamps_zero():
+    """A zero spot size (unconfigured head) is clamped so the raster
+    pipeline never divides by zero."""
+    head = LaserHead()
     head.spot_size_mm = (0.0, 0.0)
-    machine.heads = [head]
-    s.selected_head_uid = "laser-1"
-    spot_x, spot_y = s.get_laser_spot(machine)
+    spot_x, spot_y = LaserHead.get_spot_size(head)
     assert spot_x > 0
     assert spot_y > 0
 
 
-def test_get_laser_spot_guards_negative_spot_size():
-    s = EngraveStep(name="t")
-    machine = MagicMock()
-    head = MagicMock(spec=LaserHead)
-    head.uid = "laser-1"
+def test_laser_get_spot_size_clamps_negative():
+    head = LaserHead()
     head.spot_size_mm = (-0.1, 0.2)
-    machine.heads = [head]
-    s.selected_head_uid = "laser-1"
-    spot_x, spot_y = s.get_laser_spot(machine)
+    spot_x, spot_y = LaserHead.get_spot_size(head)
     assert spot_x > 0
     assert spot_y == 0.2
 
@@ -253,3 +252,62 @@ def test_get_settings_includes_frequency_and_pulse_width():
     settings = s.get_settings()
     assert settings["frequency"] == 1000
     assert settings["pulse_width"] == 50
+
+
+def test_registry_resolves_pwm_capability():
+    """Driver PWM features resolve into a PWMCapability."""
+    features = DriverFeatures(pwm=PWMParams(1000, 5000, 50, 5, 500))
+
+    caps = driver_capability_registry.resolve(features)
+
+    pwm_caps = [c for c in caps if c.name == "PWM"]
+    assert pwm_caps
+    vs = pwm_caps[0].varset
+    assert vs["frequency"].default == 1000
+    assert vs["pulse_width"].default == 50
+
+
+def test_registry_resolves_nothing_without_pwm():
+    caps = driver_capability_registry.resolve(DriverFeatures())
+    assert caps == ()
+
+
+def test_laser_head_get_defaults_returns_pwm_defaults():
+    """A laser head reports the driver-reported PWM defaults."""
+    head = LaserHead()
+    machine = MagicMock()
+    machine.get_driver_features.return_value = DriverFeatures(
+        pwm=PWMParams(1000, 5000, 50, 5, 500)
+    )
+
+    assert head.get_defaults(machine) == {
+        "frequency": 1000,
+        "pulse_width": 50,
+    }
+
+
+def test_laser_head_get_defaults_empty_without_pwm():
+    head = LaserHead()
+    machine = MagicMock()
+    machine.get_driver_features.return_value = DriverFeatures()
+
+    assert head.get_defaults(machine) == {}
+
+
+def test_create_applies_head_pwm_defaults():
+    """create() adopts the default head's PWM defaults."""
+    context = MagicMock()
+    machine = MagicMock()
+    machine.max_cut_speed = 600
+    machine.max_travel_speed = 10000
+    machine.acceleration = 3000
+    head = MagicMock(spec=LaserHead)
+    head.uid = "laser-1"
+    head.spot_size_mm = (0.1, 0.1)
+    head.get_defaults.return_value = {"frequency": 1000, "pulse_width": 50}
+    machine.get_default_laser_head.return_value = head
+    context.machine = machine
+
+    s = ContourStep.create(context, name="t")
+    assert s.frequency == 1000
+    assert s.pulse_width == 50

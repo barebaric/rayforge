@@ -1,7 +1,10 @@
 from unittest.mock import MagicMock
 
-from rayforge.core.capability import PWMCapability
-from rayforge.machine.models.laser import Laser, LaserType
+from rayforge.core.capability import Capability
+from rayforge.core.driver_capability_registry import DriverCapabilityRegistry
+from rayforge.core.varset import VarSet
+from rayforge.machine.driver.driver import DriverFeatures, PWMParams
+from rayforge.machine.models.laser import Laser, LaserHead, LaserType
 
 
 def test_laser_initialization():
@@ -406,38 +409,117 @@ def test_pwm_missing_fields_use_init_defaults():
     assert laser.max_pulse_width == 500
 
 
-def test_base_driver_returns_empty_tuple(isolated_machine):
-    """Driver base class returns () for get_laser_capabilities."""
+def test_base_driver_returns_empty_features(isolated_machine):
+    """Driver base class returns DriverFeatures() with no PWM."""
     laser = Laser()
     mock_driver = isolated_machine.driver
-    mock_driver.get_laser_capabilities = MagicMock(return_value=())
+    mock_driver.get_driver_features = MagicMock(return_value=DriverFeatures())
 
-    result = isolated_machine.get_laser_capabilities(laser)
-    assert result == ()
+    result = isolated_machine.get_driver_features(laser)
+    assert result.pwm is None
 
 
 def test_machine_delegates_to_driver(isolated_machine):
-    """Machine.get_laser_capabilities delegates to driver."""
+    """Machine.get_driver_features delegates to driver."""
     laser = Laser()
     mock_driver = isolated_machine.driver
-    mock_driver.get_laser_capabilities = MagicMock(return_value=())
+    mock_driver.get_driver_features = MagicMock(return_value=DriverFeatures())
 
-    isolated_machine.get_laser_capabilities(laser)
+    isolated_machine.get_driver_features(laser)
 
-    mock_driver.get_laser_capabilities.assert_called_once_with(laser)
+    mock_driver.get_driver_features.assert_called_once_with(laser)
 
 
-def test_machine_returns_driver_capabilities(isolated_machine):
-    """Machine returns whatever the driver's get_laser_capabilities returns."""
+def test_machine_returns_driver_features(isolated_machine):
+    """Machine returns whatever the driver's get_driver_features returns."""
     laser = Laser()
-    pwm_cap = PWMCapability(1000, 5000, 50, 1, 100)
+    features = DriverFeatures()
     mock_driver = isolated_machine.driver
-    mock_driver.get_laser_capabilities = MagicMock(return_value=(pwm_cap,))
+    mock_driver.get_driver_features = MagicMock(return_value=features)
 
-    result = isolated_machine.get_laser_capabilities(laser)
+    result = isolated_machine.get_driver_features(laser)
 
-    assert len(result) == 1
-    assert result[0] is pwm_cap
+    assert result is features
+
+
+def test_get_effective_head_capabilities_defaults_to_first_head(
+    isolated_machine,
+):
+    """get_effective_head_capabilities resolves for the first head."""
+    head = LaserHead()
+    isolated_machine.heads = [head]
+    mock_driver = isolated_machine.driver
+    features = DriverFeatures()
+    mock_driver.get_driver_features = MagicMock(return_value=features)
+
+    result = isolated_machine.get_effective_head_capabilities()
+
+    mock_driver.get_driver_features.assert_called_once_with(head)
+    assert result == ()
+
+
+def test_get_effective_head_capabilities_returns_registered_resolvers(
+    isolated_machine, mocker
+):
+    """Resolvers registered in the capability registry contribute caps."""
+
+    class DummyCapability(Capability):
+        @property
+        def name(self):
+            return "DUMMY"
+
+        @property
+        def label(self):
+            return "Dummy"
+
+        @property
+        def varset(self):
+            return VarSet(vars=[])
+
+    dummy = DummyCapability()
+    head = LaserHead()
+    isolated_machine.heads = [head]
+    mock_driver = isolated_machine.driver
+    mock_driver.get_driver_features = MagicMock(return_value=DriverFeatures())
+
+    registry = DriverCapabilityRegistry()
+    registry.register(lambda _f: (dummy,))
+    mocker.patch(
+        "rayforge.machine.models.machine.driver_capability_registry",
+        registry,
+    )
+
+    result = isolated_machine.get_effective_head_capabilities(head)
+    assert result == (dummy,)
+
+
+def test_get_effective_head_capabilities_empty_without_heads(
+    isolated_machine,
+):
+    isolated_machine.heads = []
+    assert isolated_machine.get_effective_head_capabilities() == ()
+
+
+def test_laser_head_get_defaults_reports_pwm(isolated_machine):
+    """LaserHead.get_defaults returns the driver's PWM defaults."""
+    head = LaserHead()
+    mock_driver = isolated_machine.driver
+    mock_driver.get_driver_features = MagicMock(
+        return_value=DriverFeatures(pwm=PWMParams(1000, 5000, 50, 5, 500))
+    )
+
+    assert head.get_defaults(isolated_machine) == {
+        "frequency": 1000,
+        "pulse_width": 50,
+    }
+
+
+def test_laser_head_get_defaults_empty_without_pwm(isolated_machine):
+    head = LaserHead()
+    mock_driver = isolated_machine.driver
+    mock_driver.get_driver_features = MagicMock(return_value=DriverFeatures())
+
+    assert head.get_defaults(isolated_machine) == {}
 
 
 def test_laser_type_default():

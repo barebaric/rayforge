@@ -161,9 +161,8 @@ class FrameStep(LaserStep):
         # exposes its ceiling, so the default is that ceiling, bounded by
         # the operation's typical feed rate.
         step.cut_speed = min(machine.max_cut_speed, 500)
-        for cap in machine.get_laser_capabilities(default_head):
-            for var in cap.varset:
-                setattr(step, var.key, var.default)
+        for key, value in default_head.get_defaults(machine).items():
+            setattr(step, key, value)
 
         LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")
         if LeadInOutTransformer:

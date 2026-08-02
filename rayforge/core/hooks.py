@@ -186,6 +186,17 @@ class RayforgeSpecs:
         """
 
     @hookspec
+    def register_driver_capabilities(self, driver_capability_registry):
+        """
+        Called to allow addons to register resolvers that interpret
+        driver-reported features into domain capabilities.
+
+        Args:
+            driver_capability_registry: The global
+              DriverCapabilityRegistry instance.
+        """
+
+    @hookspec
     def register_transformers(self, transformer_registry):
         """
         Called to allow addons to register custom ops transformers.

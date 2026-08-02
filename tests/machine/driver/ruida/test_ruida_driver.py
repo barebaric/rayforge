@@ -14,7 +14,6 @@ import pytest_asyncio
 from raygeo.ops import Ops
 
 from rayforge.core.doc import Doc
-from rayforge.core.varset import IntVar
 from rayforge.machine.driver.driver import Axis
 from rayforge.machine.driver.ruida.ruida_driver import RuidaDriver
 from rayforge.machine.driver.ruida.ruida_encoder import RuidaEncoder
@@ -882,17 +881,17 @@ async def test_multiple_keepalive_cycles(driver, ruida_simulator):
     await driver.cleanup()
 
 
-def test_get_laser_capabilities_returns_empty_for_diode():
+def test_get_driver_features_returns_empty_for_diode():
     driver = RuidaDriver.__new__(RuidaDriver)
     laser = Laser()
     laser.laser_type = LaserType.DIODE
 
-    result = driver.get_laser_capabilities(laser)
+    result = driver.get_driver_features(laser)
 
-    assert result == ()
+    assert result.pwm is None
 
 
-def test_get_laser_capabilities_returns_pwm_for_co2():
+def test_get_driver_features_returns_pwm_for_co2():
     driver = RuidaDriver.__new__(RuidaDriver)
     laser = Laser()
     laser.laser_type = LaserType.CO2
@@ -902,35 +901,27 @@ def test_get_laser_capabilities_returns_pwm_for_co2():
     laser.min_pulse_width = 5
     laser.max_pulse_width = 500
 
-    result = driver.get_laser_capabilities(laser)
+    result = driver.get_driver_features(laser)
 
-    assert len(result) == 1
-    cap = result[0]
-    assert cap.name == "PWM"
-    vs = cap.varset
-    freq_var = next(v for v in vs if v.key == "frequency")
-    assert isinstance(freq_var, IntVar)
-    assert freq_var.default == 1000
-    assert freq_var.max_val == 5000
-    pw_var = next(v for v in vs if v.key == "pulse_width")
-    assert isinstance(pw_var, IntVar)
-    assert pw_var.default == 50
-    assert pw_var.min_val == 5
-    assert pw_var.max_val == 500
+    assert result.pwm is not None
+    assert result.pwm.frequency == 1000
+    assert result.pwm.max_frequency == 5000
+    assert result.pwm.pulse_width == 50
+    assert result.pwm.min_pulse_width == 5
+    assert result.pwm.max_pulse_width == 500
 
 
-def test_get_laser_capabilities_returns_pwm_for_fiber():
+def test_get_driver_features_returns_pwm_for_fiber():
     driver = RuidaDriver.__new__(RuidaDriver)
     laser = Laser()
     laser.laser_type = LaserType.FIBER
 
-    result = driver.get_laser_capabilities(laser)
+    result = driver.get_driver_features(laser)
 
-    assert len(result) == 1
-    assert result[0].name == "PWM"
+    assert result.pwm is not None
 
 
-def test_get_laser_capabilities_co2_with_zero_frequency():
+def test_get_driver_features_co2_with_zero_frequency():
     driver = RuidaDriver.__new__(RuidaDriver)
     laser = Laser()
     laser.laser_type = LaserType.CO2
@@ -940,7 +931,6 @@ def test_get_laser_capabilities_co2_with_zero_frequency():
     laser.min_pulse_width = 0
     laser.max_pwm_frequency = 0
 
-    result = driver.get_laser_capabilities(laser)
+    result = driver.get_driver_features(laser)
 
-    assert len(result) == 1
-    assert result[0].name == "PWM"
+    assert result.pwm is not None

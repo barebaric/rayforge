@@ -6,7 +6,7 @@ settlers, serialization of the laser keys).
 """
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
 from raygeo.ops import Ops
 from raygeo.ops.state import AirAssistMode
@@ -17,12 +17,6 @@ from rayforge.shared.units.formatter import format_value
 
 if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine
-
-
-# Minimum sane laser spot size in mm. Guards against unconfigured
-# (zero) spot data reaching the raster resolution code, which divides
-# by the spot size.
-_MIN_SPOT_SIZE_MM = 0.1
 
 
 class LaserStep(Step):
@@ -56,26 +50,6 @@ class LaserStep(Step):
     def populate_payload(self, payload, machine: "Machine"):
         super().populate_payload(payload, machine)
         payload.power = self.power
-
-    def get_laser_spot(self, machine: "Machine") -> Tuple[float, float]:
-        """Return the selected laser head's spot size ``(x, y)`` in mm.
-
-        Falls back to the step's kerf for the X axis and a default
-        line interval for Y when no laser head is selected.  A missing
-        or zero spot size (e.g. an unconfigured head, or an engrave
-        step with no kerf) is clamped to a sane minimum so the raster
-        pipeline never divides by zero.
-        """
-        head = self.get_selected_head(machine)
-        if isinstance(head, LaserHead):
-            spot_x, spot_y = head.spot_size_mm
-        else:
-            spot_x, spot_y = self.kerf_mm, 0.1
-        if not spot_x or spot_x <= 0:
-            spot_x = _MIN_SPOT_SIZE_MM
-        if not spot_y or spot_y <= 0:
-            spot_y = _MIN_SPOT_SIZE_MM
-        return spot_x, spot_y
 
     def get_settings(self) -> Dict[str, Any]:
         """

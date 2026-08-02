@@ -3,10 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 from raygeo.geo import Matrix
 
-from rayforge.core.capability import (
-    CUT,
-    PWMCapability,
-)
+from rayforge.core.capability import CUT
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
 from rayforge.machine.models.laser import LaserHead
@@ -383,31 +380,11 @@ def test_deserialization_with_missing_step_class():
     assert step.extra == {}
 
 
-def test_get_effective_capabilities_with_mock_machine():
-    """get_effective_capabilities merges class-level + machine caps."""
-    pwm_cap = PWMCapability(1000, 5000, 50, 1, 100)
-    mock_laser = MagicMock(spec=LaserHead)
-
-    mock_machine = MagicMock()
-    mock_machine.heads = [mock_laser]
-    mock_machine.get_laser_capabilities.return_value = (pwm_cap,)
+def test_capabilities_property_returns_class_caps():
+    """capabilities exposes the class-level CAPABILITIES."""
 
     class CutStep(Step):
         CAPABILITIES = (CUT,)
 
     cs = CutStep(typelabel="Test")
-    caps = cs.get_effective_capabilities(mock_machine)
-
-    assert CUT in caps
-    assert pwm_cap in caps
-    assert len(caps) == 2
-
-
-def test_get_effective_capabilities_no_laser_selected(step):
-    """get_effective_capabilities returns class caps when no laser."""
-    mock_machine = MagicMock()
-    mock_machine.heads = []
-    mock_machine.get_laser_capabilities.return_value = ()
-    caps = step.get_effective_capabilities(mock_machine)
-
-    assert caps == type(step).CAPABILITIES
+    assert cs.capabilities == (CUT,)

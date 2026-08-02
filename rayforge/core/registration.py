@@ -26,6 +26,14 @@ REGISTRY_TABLE = [
         needs_window=False,
     ),
     RegistryEntry(
+        "register_driver_capabilities",
+        "driver_capability_registry",
+        "rayforge.core.driver_capability_registry",
+        "driver_capability_registry",
+        worker_ok=True,
+        needs_window=False,
+    ),
+    RegistryEntry(
         "register_transformers",
         "transformer_registry",
         "rayforge.pipeline.transformer.registry",

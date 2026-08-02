@@ -15,22 +15,23 @@ from typing import (
 )
 
 from ....context import RayforgeContext
-from ....core.capability import PWMCapability
 from ....core.varset import HostnameVar, PortVar, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ...models.coordinate_system import CoordinateSystem
-from ...models.laser import LaserType
+from ...models.laser import LaserHead, LaserType
 from ...transport import TransportStatus
 from ...transport.udp import UdpTransport
 from ..driver import (
     Axis,
     DeviceStatus,
     Driver,
+    DriverFeatures,
     DriverMaturity,
     DriverPrecheckError,
     DriverSetupError,
     Pos,
+    PWMParams,
 )
 from .ruida_client import RuidaClient
 from .ruida_encoder import RuidaEncoder
@@ -40,6 +41,7 @@ if TYPE_CHECKING:
     from raygeo.ops import Ops
 
     from ....core.doc import Doc
+    from ...models.head import Head
     from ...models.laser import Laser
     from ...models.machine import Machine
 
@@ -141,18 +143,18 @@ class RuidaDriver(Driver):
             ]
         )
 
-    def get_laser_capabilities(self, laser: "Laser"):
-        if laser.laser_type != LaserType.DIODE:
-            return (
-                PWMCapability(
-                    frequency=laser.pwm_frequency,
-                    max_frequency=laser.max_pwm_frequency,
-                    pulse_width=laser.pulse_width,
-                    min_pulse_width=laser.min_pulse_width,
-                    max_pulse_width=laser.max_pulse_width,
-                ),
+    def get_driver_features(self, head: "Head") -> DriverFeatures:
+        if isinstance(head, LaserHead) and head.laser_type != LaserType.DIODE:
+            return DriverFeatures(
+                pwm=PWMParams(
+                    frequency=head.pwm_frequency,
+                    max_frequency=head.max_pwm_frequency,
+                    pulse_width=head.pulse_width,
+                    min_pulse_width=head.min_pulse_width,
+                    max_pulse_width=head.max_pulse_width,
+                )
             )
-        return ()
+        return DriverFeatures()
 
     @classmethod
     def create_encoder(cls, machine: "Machine") -> "OpsEncoder":

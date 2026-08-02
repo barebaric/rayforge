@@ -1,6 +1,6 @@
 from enum import Enum
 from gettext import gettext as _
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from ...core.capability import MachineCapability
 from .head import _HEAD_SERIALIZED_KEYS, Head
@@ -14,6 +14,12 @@ class LaserType(Enum):
     @property
     def supports_pwm(self) -> bool:
         return self in (LaserType.CO2, LaserType.FIBER)
+
+
+# Minimum sane laser spot size in mm. Guards against unconfigured
+# (zero) spot data reaching the raster resolution code, which divides
+# by the spot size.
+MIN_SPOT_SIZE_MM = 0.1
 
 
 class LaserHead(Head):
@@ -44,6 +50,37 @@ class LaserHead(Head):
     @property
     def machine_capability(self) -> MachineCapability:
         return MachineCapability.LASER
+
+    @staticmethod
+    def get_spot_size(head: Optional["LaserHead"]) -> Tuple[float, float]:
+        """The effective spot size ``(x, y)`` in mm for a laser head.
+
+        Falls back to a sane minimum when no laser head is available.
+        A missing or zero spot size (an unconfigured head) is clamped so
+        raster resolution code never divides by zero.
+        """
+        if head is None:
+            return MIN_SPOT_SIZE_MM, MIN_SPOT_SIZE_MM
+        spot_x, spot_y = head.spot_size_mm
+        if not spot_x or spot_x <= 0:
+            spot_x = MIN_SPOT_SIZE_MM
+        if not spot_y or spot_y <= 0:
+            spot_y = MIN_SPOT_SIZE_MM
+        return spot_x, spot_y
+
+    def get_defaults(self, machine) -> Dict[str, Any]:
+        """Default step attributes for this laser head.
+
+        Reports the driver's PWM defaults (frequency and pulse width)
+        when the driver reports PWM support.
+        """
+        features = machine.get_driver_features(self)
+        if features.pwm:
+            return {
+                "frequency": features.pwm.frequency,
+                "pulse_width": features.pwm.pulse_width,
+            }
+        return {}
 
     def set_max_power(self, power):
         self.max_power = power
