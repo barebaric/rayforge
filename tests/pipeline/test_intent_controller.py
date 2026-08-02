@@ -12,6 +12,7 @@ from typing import Any, Callable, List, Optional
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
+from rayforge.machine.models.machine import Machine
 from rayforge.pipeline.intent_builder import (
     job_encode_key,
     job_key,
@@ -155,9 +156,9 @@ def _make_doc(step: _TestStep, *workpieces: WorkPiece) -> Doc:
 # ----------------------------------------------------------------------
 
 
-def test_raygeo_pipeline_default_constructed():
+def test_raygeo_pipeline_default_constructed(isolated_machine):
     doc = _make_doc(_TestStep(name="s1"), WorkPiece(name="wp"))
-    ctrl = IntentController(doc, FakeTaskManager())
+    ctrl = IntentController(doc, FakeTaskManager(), machine=isolated_machine)
     assert ctrl.raygeo_pipeline is not None
 
 
@@ -166,12 +167,12 @@ def test_raygeo_pipeline_default_constructed():
 # ----------------------------------------------------------------------
 
 
-def test_signal_triggers_debounced_rebuild():
+def test_signal_triggers_debounced_rebuild(isolated_machine):
     step = _TestStep(name="s1")
     wp = WorkPiece(name="wp")
     doc = _make_doc(step, wp)
     tm = FakeTaskManager()
-    ctrl = IntentController(doc, tm)
+    ctrl = IntentController(doc, tm, machine=isolated_machine)
     ctrl.connect()
 
     # Trigger a change and verify a debounced call is scheduled.
@@ -186,12 +187,12 @@ def test_signal_triggers_debounced_rebuild():
     ctrl.shutdown()
 
 
-def test_second_change_reschedules_debounce():
+def test_second_change_reschedules_debounce(isolated_machine):
     step = _TestStep(name="s1")
     wp = WorkPiece(name="wp")
     doc = _make_doc(step, wp)
     tm = FakeTaskManager()
-    ctrl = IntentController(doc, tm)
+    ctrl = IntentController(doc, tm, machine=isolated_machine)
     ctrl.connect()
 
     wp.updated.send(wp)
@@ -211,12 +212,12 @@ def test_second_change_reschedules_debounce():
 # ----------------------------------------------------------------------
 
 
-def test_intent_updates_on_subsequent_rebuilds():
+def test_intent_updates_on_subsequent_rebuilds(isolated_machine):
     step = _TestStep(name="s1")
     wp = WorkPiece(name="wp")
     doc = _make_doc(step, wp)
     tm = FakeTaskManager()
-    ctrl = IntentController(doc, tm)
+    ctrl = IntentController(doc, tm, machine=isolated_machine)
     ctrl.connect()
 
     wp.updated.send(wp)
@@ -246,12 +247,12 @@ def test_intent_updates_on_subsequent_rebuilds():
 # ----------------------------------------------------------------------
 
 
-def test_run_intent_called(monkeypatch):
+def test_run_intent_called(monkeypatch, isolated_machine):
     step = _TestStep(name="s1")
     wp = WorkPiece(name="wp")
     doc = _make_doc(step, wp)
     tm = FakeTaskManager()
-    ctrl = IntentController(doc, tm)
+    ctrl = IntentController(doc, tm, machine=isolated_machine)
     ctrl.connect()
 
     run_calls: List[Any] = []
@@ -282,6 +283,7 @@ def test_run_intent_called(monkeypatch):
 def _make_controller_for_completed_test(
     monkeypatch,
     idle_calls: Optional[List] = None,
+    machine: Optional["Machine"] = None,
 ):
     step = _TestStep(name="s1")
     wp = WorkPiece(name="wp")
@@ -294,7 +296,7 @@ def _make_controller_for_completed_test(
         return FakeCancelHandle()
 
     tm.schedule_on_main_thread = _capture
-    ctrl = IntentController(doc, tm)
+    ctrl = IntentController(doc, tm, machine=machine)
     ctrl.connect()
 
     # Build once so the key map is populated.
@@ -308,10 +310,14 @@ def _make_controller_for_completed_test(
     return ctrl, wp, step
 
 
-def test_on_completed_superseded_generation_discarded(monkeypatch):
+def test_on_completed_superseded_generation_discarded(
+    monkeypatch, isolated_machine
+):
     idle_calls: List = []
     ctrl, wp, step = _make_controller_for_completed_test(
-        monkeypatch, idle_calls=idle_calls
+        monkeypatch,
+        idle_calls=idle_calls,
+        machine=isolated_machine,
     )
     wpk = workpiece_key(wp.uid, step.uid)
 
@@ -331,10 +337,12 @@ def test_on_completed_superseded_generation_discarded(monkeypatch):
     ctrl.shutdown()
 
 
-def test_on_completed_unknown_key_skipped(monkeypatch):
+def test_on_completed_unknown_key_skipped(monkeypatch, isolated_machine):
     idle_calls: List = []
     ctrl, wp, step = _make_controller_for_completed_test(
-        monkeypatch, idle_calls=idle_calls
+        monkeypatch,
+        idle_calls=idle_calls,
+        machine=isolated_machine,
     )
 
     # Generate a key not in the map.
@@ -344,10 +352,12 @@ def test_on_completed_unknown_key_skipped(monkeypatch):
     ctrl.shutdown()
 
 
-def test_on_completed_reaches_correct_doc_item(monkeypatch):
+def test_on_completed_reaches_correct_doc_item(monkeypatch, isolated_machine):
     idle_calls: List = []
     ctrl, wp, step = _make_controller_for_completed_test(
-        monkeypatch, idle_calls=idle_calls
+        monkeypatch,
+        idle_calls=idle_calls,
+        machine=isolated_machine,
     )
 
     # Verify the key->DocItem map includes workpiece, step, and job keys.
@@ -377,10 +387,12 @@ def test_on_completed_reaches_correct_doc_item(monkeypatch):
 # ----------------------------------------------------------------------
 
 
-def test_reattach_workpiece_emits_signal(monkeypatch):
+def test_reattach_workpiece_emits_signal(monkeypatch, isolated_machine):
     idle_calls: List = []
     ctrl, wp, step = _make_controller_for_completed_test(
-        monkeypatch, idle_calls=idle_calls
+        monkeypatch,
+        idle_calls=idle_calls,
+        machine=isolated_machine,
     )
     wpk = workpiece_key(wp.uid, step.uid)
 
@@ -404,10 +416,12 @@ def test_reattach_workpiece_emits_signal(monkeypatch):
     ctrl.shutdown()
 
 
-def test_reattach_step_emits_signal(monkeypatch):
+def test_reattach_step_emits_signal(monkeypatch, isolated_machine):
     idle_calls: List = []
     ctrl, wp, step = _make_controller_for_completed_test(
-        monkeypatch, idle_calls=idle_calls
+        monkeypatch,
+        idle_calls=idle_calls,
+        machine=isolated_machine,
     )
     sk = step_key(step.uid)
 
@@ -429,10 +443,12 @@ def test_reattach_step_emits_signal(monkeypatch):
     ctrl.shutdown()
 
 
-def test_reattach_job_emits_aggregate_and_time(monkeypatch):
+def test_reattach_job_emits_aggregate_and_time(monkeypatch, isolated_machine):
     idle_calls: List = []
     ctrl, wp, step = _make_controller_for_completed_test(
-        monkeypatch, idle_calls=idle_calls
+        monkeypatch,
+        idle_calls=idle_calls,
+        machine=isolated_machine,
     )
 
     class _AggOutput:
@@ -463,10 +479,12 @@ def test_reattach_job_emits_aggregate_and_time(monkeypatch):
     ctrl.shutdown()
 
 
-def test_reattach_job_encode_emits_finished(monkeypatch):
+def test_reattach_job_encode_emits_finished(monkeypatch, isolated_machine):
     idle_calls: List = []
     ctrl, wp, step = _make_controller_for_completed_test(
-        monkeypatch, idle_calls=idle_calls
+        monkeypatch,
+        idle_calls=idle_calls,
+        machine=isolated_machine,
     )
     # The controller has no machine, so the builder doesn't emit a
     # job:encode node; inject the key manually so _on_completed
@@ -496,10 +514,14 @@ def test_reattach_job_encode_emits_finished(monkeypatch):
     ctrl.shutdown()
 
 
-def test_on_batch_progress_emits_progress_changed(monkeypatch):
+def test_on_batch_progress_emits_progress_changed(
+    monkeypatch, isolated_machine
+):
     idle_calls: List = []
     ctrl, wp, step = _make_controller_for_completed_test(
-        monkeypatch, idle_calls=idle_calls
+        monkeypatch,
+        idle_calls=idle_calls,
+        machine=isolated_machine,
     )
 
     received = []
@@ -521,10 +543,14 @@ def test_on_batch_progress_emits_progress_changed(monkeypatch):
     ctrl.shutdown()
 
 
-def test_on_completed_with_warnings_emits_pipeline_warnings(monkeypatch):
+def test_on_completed_with_warnings_emits_pipeline_warnings(
+    monkeypatch, isolated_machine
+):
     idle_calls: List = []
     ctrl, wp, step = _make_controller_for_completed_test(
-        monkeypatch, idle_calls=idle_calls
+        monkeypatch,
+        idle_calls=idle_calls,
+        machine=isolated_machine,
     )
     wpk = workpiece_key(wp.uid, step.uid)
 
@@ -559,10 +585,14 @@ def test_on_completed_with_warnings_emits_pipeline_warnings(monkeypatch):
     ctrl.shutdown()
 
 
-def test_on_completed_without_warnings_skips_emit(monkeypatch):
+def test_on_completed_without_warnings_skips_emit(
+    monkeypatch, isolated_machine
+):
     idle_calls: List = []
     ctrl, wp, step = _make_controller_for_completed_test(
-        monkeypatch, idle_calls=idle_calls
+        monkeypatch,
+        idle_calls=idle_calls,
+        machine=isolated_machine,
     )
     wpk = workpiece_key(wp.uid, step.uid)
 
@@ -593,12 +623,12 @@ def test_on_completed_without_warnings_skips_emit(monkeypatch):
 # ----------------------------------------------------------------------
 
 
-def test_shutdown_cancels_pending_timer():
+def test_shutdown_cancels_pending_timer(isolated_machine):
     step = _TestStep(name="s1")
     wp = WorkPiece(name="wp")
     doc = _make_doc(step, wp)
     tm = FakeTaskManager()
-    ctrl = IntentController(doc, tm)
+    ctrl = IntentController(doc, tm, machine=isolated_machine)
     ctrl.connect()
 
     wp.updated.send(wp)
@@ -608,12 +638,12 @@ def test_shutdown_cancels_pending_timer():
     assert ctrl._rebuild_timer is None
 
 
-def test_disconnect_prevents_further_rebuilds():
+def test_disconnect_prevents_further_rebuilds(isolated_machine):
     step = _TestStep(name="s1")
     wp = WorkPiece(name="wp")
     doc = _make_doc(step, wp)
     tm = FakeTaskManager()
-    ctrl = IntentController(doc, tm)
+    ctrl = IntentController(doc, tm, machine=isolated_machine)
     ctrl.connect()
     ctrl.disconnect()
 

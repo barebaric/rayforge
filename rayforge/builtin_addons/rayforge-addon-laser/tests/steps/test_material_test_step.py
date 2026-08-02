@@ -6,7 +6,6 @@ from laser_essentials.steps import MaterialTestStep
 
 from rayforge.core.capability import MATERIAL_TEST
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.stage.assembler_helpers import MachineDefaults
 
 if TYPE_CHECKING:
 
@@ -32,21 +31,6 @@ def mock_context():
     return context
 
 
-@pytest.fixture
-def machine_defaults():
-    return MachineDefaults(
-        kerf_mm=0.1,
-        arc_tolerance=0.03,
-        allow_arcs=True,
-        supports_curves=False,
-        line_interval_mm=0.1,
-        step_power=1.0,
-        tool_radius=0.05,
-        step_over=0.1,
-        cut_speed=500,
-    )
-
-
 class TestMaterialTestStep:
     def test_instantiation(self):
         step = MaterialTestStep(name="Test")
@@ -62,11 +46,11 @@ class TestMaterialTestStep:
         data = step.to_dict()
         assert data["step_type"] == "MaterialTestStep"
 
-    def test_get_assembler_kwargs(self, machine_defaults):
+    def test_get_assembler_kwargs(self, machine):
         step = MaterialTestStep(name="Test")
         workpiece = MagicMock(spec=["size"])
         workpiece.size = (100, 100)
-        kwargs = step.get_assembler_kwargs(machine_defaults, workpiece)
+        kwargs = step.get_assembler_kwargs(machine, workpiece)
         assert isinstance(kwargs, dict)
         expected_keys = {
             "size_mm",
@@ -152,9 +136,7 @@ class TestMaterialTestStep:
 
 
 class TestMaterialTestComputePayload:
-    def test_build_compute_payload_returns_material_test_spec(
-        self, machine_defaults
-    ):
+    def test_build_compute_payload_returns_material_test_spec(self, machine):
         from raygeo.cnc.execution.specs import ComputePayload
         from raygeo.ops.assembly import Assembler
         from raygeo.ops.assembly.material_test_grid import (
@@ -167,7 +149,7 @@ class TestMaterialTestComputePayload:
         wp = WorkPiece(name="wp")
         wp.set_size(100.0, 100.0)
 
-        part, payload = step.build_compute_payload(machine_defaults, wp)
+        part, payload = step.build_compute_payload(machine, wp)
         assert isinstance(part, Part)
         assert isinstance(payload, ComputePayload)
         assert isinstance(payload.assembler, Assembler)
@@ -176,10 +158,10 @@ class TestMaterialTestComputePayload:
         assert spec.mode == "cut"
         assert spec.size_mm == (100.0, 100.0)
 
-    def test_assembler_token_params_mirrors_kwargs(self, machine_defaults):
+    def test_assembler_token_params_mirrors_kwargs(self, machine):
         step = MaterialTestStep(name="mtg")
         wp = WorkPiece(name="wp")
         wp.set_size(100.0, 100.0)
-        token = step.assembler_token_params(machine_defaults, wp)
-        kwargs = step.get_assembler_kwargs(machine_defaults, wp)
+        token = step.assembler_token_params(machine, wp)
+        kwargs = step.get_assembler_kwargs(machine, wp)
         assert token == kwargs

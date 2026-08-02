@@ -13,9 +13,6 @@ from rayforge.core.capability import (
     Capability,
     MachineCapability,
 )
-from rayforge.pipeline.stage.assembler_helpers import (
-    MachineDefaults,
-)
 from rayforge.pipeline.transformer.registry import transformer_registry
 
 from .laser_step import LaserStep
@@ -23,6 +20,7 @@ from .laser_step import LaserStep
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
     from rayforge.core.workpiece import WorkPiece
+    from rayforge.machine.models.machine import Machine
 
     class OverscanTransformerType(Protocol):
         @staticmethod
@@ -61,9 +59,10 @@ class MaterialTestStep(LaserStep):
 
     def get_assembler_kwargs(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> dict:
+        _spot_x, spot_y = self.get_laser_spot(machine)
         kwargs: dict = {}
         kwargs["size_mm"] = workpiece.size if workpiece else (0, 0)
         kwargs["cols"] = self.grid_dimensions[0]
@@ -88,13 +87,13 @@ class MaterialTestStep(LaserStep):
         kwargs["line_interval_mm"] = (
             self.line_interval_mm
             if self.line_interval_mm is not None
-            else machine_defaults.line_interval_mm
+            else spot_y
         )
         return kwargs
 
     def build_compute_payload(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> "Tuple[Part, ComputePayload]":
         """Build a :class:`Part` (empty — the material-test grid
@@ -102,7 +101,7 @@ class MaterialTestStep(LaserStep):
         :class:`MaterialTestGridSpec`."""
         size = workpiece.size if workpiece else (0.0, 0.0)
         part = Part(size_mm=size)
-        kwargs = self.get_assembler_kwargs(machine_defaults, workpiece)
+        kwargs = self.get_assembler_kwargs(machine, workpiece)
         spec = MaterialTestGridSpec(
             size_mm=kwargs["size_mm"],
             cols=kwargs["cols"],
@@ -130,10 +129,10 @@ class MaterialTestStep(LaserStep):
 
     def assembler_token_params(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> Optional[dict]:
-        return self.get_assembler_kwargs(machine_defaults, workpiece)
+        return self.get_assembler_kwargs(machine, workpiece)
 
     def to_dict(self) -> dict:
         result = super().to_dict()

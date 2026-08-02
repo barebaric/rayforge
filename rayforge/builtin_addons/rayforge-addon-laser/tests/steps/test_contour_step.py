@@ -11,7 +11,6 @@ from rayforge.core.capability import CUT, SCORE, WITH_KERF
 from rayforge.core.step import Step
 from rayforge.core.step_registry import step_registry
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.stage.assembler_helpers import MachineDefaults
 
 
 @pytest.fixture
@@ -27,21 +26,6 @@ def mock_context():
     machine.get_default_laser_head.return_value = default_head
     context.machine = machine
     return context
-
-
-@pytest.fixture
-def machine_defaults():
-    return MachineDefaults(
-        kerf_mm=0.1,
-        arc_tolerance=0.03,
-        allow_arcs=True,
-        supports_curves=False,
-        line_interval_mm=0.1,
-        step_power=1.0,
-        tool_radius=0.05,
-        step_over=0.1,
-        cut_speed=500,
-    )
 
 
 class TestContourStep:
@@ -203,11 +187,11 @@ class TestContourStep:
 
         assert wp_optimize is step_optimize
 
-    def test_get_assembler_kwargs(self, machine_defaults):
+    def test_get_assembler_kwargs(self, machine):
         step = ContourStep(name="Test")
         workpiece = MagicMock(spec=["size"])
         workpiece.size = (100, 100)
-        kwargs = step.get_assembler_kwargs(machine_defaults, workpiece)
+        kwargs = step.get_assembler_kwargs(machine, workpiece)
         assert isinstance(kwargs, dict)
         expected_keys = {
             "cut_side",
@@ -259,17 +243,13 @@ class TestContourComputePayload:
     def _wp(self):
         return WorkPiece(name="wp")
 
-    def test_build_compute_payload_returns_contour_spec(
-        self, machine_defaults
-    ):
+    def test_build_compute_payload_returns_contour_spec(self, machine):
         step = ContourStep(name="cut")
         step.cut_side = "outside"
         step.path_offset_mm = 0.5
         step.overcut = 0.2
 
-        part, payload = step.build_compute_payload(
-            machine_defaults, self._wp()
-        )
+        part, payload = step.build_compute_payload(machine, self._wp())
         assert isinstance(payload, ComputePayload)
         assert isinstance(payload.assembler, Assembler)
         spec = payload.assembler.spec
@@ -277,29 +257,27 @@ class TestContourComputePayload:
         assert spec.cut_side == "outside"
         assert spec.path_offset_mm == 0.5
         assert spec.overcut == 0.2
-        assert spec.kerf_mm == machine_defaults.kerf_mm
-        assert spec.arc_tolerance == machine_defaults.arc_tolerance
-        assert spec.allow_arcs == machine_defaults.allow_arcs
-        assert spec.supports_curves == machine_defaults.supports_curves
+        assert spec.kerf_mm == step.kerf_mm
+        assert spec.arc_tolerance == machine.arc_tolerance
+        assert spec.allow_arcs == machine.supports_arcs
+        assert spec.supports_curves == machine.supports_curves
 
-    def test_build_compute_payload_reflects_cut_order(self, machine_defaults):
+    def test_build_compute_payload_reflects_cut_order(self, machine):
         step = ContourStep(name="cut")
         step.cut_order = "OUTSIDE_INSIDE"
 
         wp = self._wp()
-        _part, payload = step.build_compute_payload(machine_defaults, wp)
+        _part, payload = step.build_compute_payload(machine, wp)
         spec = payload.assembler.spec
         assert spec.cut_order == "outside_inside"
 
-    def test_assembler_token_params_mirrors_assembler_kwargs(
-        self, machine_defaults
-    ):
+    def test_assembler_token_params_mirrors_assembler_kwargs(self, machine):
         step = ContourStep(name="cut")
         step.cut_side = "inside"
         wp = self._wp()
 
-        token_params = step.assembler_token_params(machine_defaults, wp)
-        kwargs = step.get_assembler_kwargs(machine_defaults, wp)
+        token_params = step.assembler_token_params(machine, wp)
+        kwargs = step.get_assembler_kwargs(machine, wp)
         assert token_params == kwargs
         assert token_params is not None
         assert token_params["cut_side"] == "inside"

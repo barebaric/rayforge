@@ -10,9 +10,6 @@ from raygeo.ops.assembly.wavefront import AdaptiveWavefrontSpec
 from raygeo.ops.part import Part
 
 from rayforge.core.capability import CUT, Capability, MachineCapability
-from rayforge.pipeline.stage.assembler_helpers import (
-    MachineDefaults,
-)
 from rayforge.pipeline.transformer.registry import transformer_registry
 
 from .laser_step import LaserStep
@@ -20,6 +17,7 @@ from .laser_step import LaserStep
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
     from rayforge.core.workpiece import WorkPiece
+    from rayforge.machine.models.machine import Machine
 
 
 class WavefrontStep(LaserStep):
@@ -39,32 +37,31 @@ class WavefrontStep(LaserStep):
 
     def get_assembler_kwargs(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> dict:
+        spot_x, _spot_y = self.get_laser_spot(machine)
         kwargs: dict = {}
         kwargs["offset_mm"] = self.offset_mm
         kwargs["area_tolerance"] = self.area_tolerance
         kwargs["step_over"] = (
-            self.step_over_mm
-            if self.step_over_mm is not None
-            else machine_defaults.step_over
+            self.step_over_mm if self.step_over_mm is not None else spot_x
         )
-        kwargs["precision"] = machine_defaults.arc_tolerance
-        kwargs["cut_feed_rate"] = machine_defaults.cut_speed
-        kwargs["cut_power"] = machine_defaults.step_power
+        kwargs["precision"] = machine.arc_tolerance
+        kwargs["cut_feed_rate"] = self.cut_speed
+        kwargs["cut_power"] = self.power
         return kwargs
 
     def build_compute_payload(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> "Tuple[Part, ComputePayload]":
         """Build a :class:`Part` with normalised-winding vector
         geometry and a :class:`ComputePayload` carrying an
         :class:`AdaptiveWavefrontSpec`."""
         part = _build_wavefront_part(workpiece)
-        kwargs = self.get_assembler_kwargs(machine_defaults, workpiece)
+        kwargs = self.get_assembler_kwargs(machine, workpiece)
         spec = AdaptiveWavefrontSpec(
             kwargs["step_over"],
             0.0,
@@ -75,10 +72,10 @@ class WavefrontStep(LaserStep):
 
     def assembler_token_params(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> Optional[dict]:
-        return self.get_assembler_kwargs(machine_defaults, workpiece)
+        return self.get_assembler_kwargs(machine, workpiece)
 
     def to_dict(self) -> dict:
         result = super().to_dict()

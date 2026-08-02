@@ -17,7 +17,6 @@ from rayforge.core.capability import (
 )
 from rayforge.core.cut_side import CutSide
 from rayforge.pipeline.stage.assembler_helpers import (
-    MachineDefaults,
     build_part_vector_with_raster_fallback,
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
@@ -27,6 +26,7 @@ from .laser_step import LaserStep
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
     from rayforge.core.workpiece import WorkPiece
+    from rayforge.machine.models.machine import Machine
 
 
 class ContourStep(LaserStep):
@@ -56,7 +56,7 @@ class ContourStep(LaserStep):
 
     def get_assembler_kwargs(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> dict:
         kwargs: dict = {}
@@ -65,15 +65,15 @@ class ContourStep(LaserStep):
         kwargs["remove_inner"] = self.remove_inner_paths
         kwargs["path_offset_mm"] = self.path_offset_mm
         kwargs["overcut"] = self.overcut
-        kwargs["kerf_mm"] = machine_defaults.kerf_mm
-        kwargs["arc_tolerance"] = machine_defaults.arc_tolerance
-        kwargs["allow_arcs"] = machine_defaults.allow_arcs
-        kwargs["supports_curves"] = machine_defaults.supports_curves
+        kwargs["kerf_mm"] = self.kerf_mm
+        kwargs["arc_tolerance"] = machine.arc_tolerance
+        kwargs["allow_arcs"] = machine.supports_arcs
+        kwargs["supports_curves"] = machine.supports_curves
         return kwargs
 
     def build_compute_payload(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> "Tuple[Part, ComputePayload]":
         """Build a :class:`Part` (from the workpiece's vector
@@ -91,7 +91,7 @@ class ContourStep(LaserStep):
             override_threshold=self.override_threshold,
             threshold=self.threshold,
         )
-        kwargs = self.get_assembler_kwargs(machine_defaults, workpiece)
+        kwargs = self.get_assembler_kwargs(machine, workpiece)
         spec = ContourSpec(
             kerf_mm=kwargs["kerf_mm"],
             path_offset_mm=kwargs["path_offset_mm"],
@@ -107,11 +107,11 @@ class ContourStep(LaserStep):
 
     def assembler_token_params(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> Optional[dict]:
         """Expose the resolved assembler kwargs for the compute token."""
-        return self.get_assembler_kwargs(machine_defaults, workpiece)
+        return self.get_assembler_kwargs(machine, workpiece)
 
     def to_dict(self) -> dict:
         data = super().to_dict()

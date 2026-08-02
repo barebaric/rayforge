@@ -10,7 +10,6 @@ from raygeo.ops.part import Part
 from rayforge.core.capability import ENGRAVE
 from rayforge.core.step_registry import step_registry
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.stage.assembler_helpers import MachineDefaults
 
 
 @pytest.fixture
@@ -26,21 +25,6 @@ def mock_context():
     machine.get_default_laser_head.return_value = default_head
     context.machine = machine
     return context
-
-
-@pytest.fixture
-def machine_defaults():
-    return MachineDefaults(
-        kerf_mm=0.1,
-        arc_tolerance=0.03,
-        allow_arcs=True,
-        supports_curves=False,
-        line_interval_mm=0.1,
-        step_power=1.0,
-        tool_radius=0.05,
-        step_over=0.1,
-        cut_speed=500,
-    )
 
 
 class TestEngraveStep:
@@ -70,11 +54,11 @@ class TestEngraveStep:
         step = StepClass.create(mock_context, name="FromRegistry")
         assert type(step).__name__ == "EngraveStep"
 
-    def test_get_assembler_kwargs(self, machine_defaults):
+    def test_get_assembler_kwargs(self, machine):
         step = EngraveStep(name="Test")
         workpiece = MagicMock(spec=["size"])
         workpiece.size = (100, 100)
-        kwargs = step.get_assembler_kwargs(machine_defaults, workpiece)
+        kwargs = step.get_assembler_kwargs(machine, workpiece)
         assert isinstance(kwargs, dict)
         expected_keys = {
             "mode",
@@ -133,7 +117,7 @@ class TestEngraveStep:
 class TestEngraveComputePayload:
     """Verifies EngraveStep's build_compute_payload (B3)."""
 
-    def test_build_compute_payload_returns_raster_spec(self, machine_defaults):
+    def test_build_compute_payload_returns_raster_spec(self, machine):
         step = EngraveStep(name="engrave")
         step.min_power_level = 0.1
         step.max_power_level = 0.9
@@ -141,7 +125,7 @@ class TestEngraveComputePayload:
         wp.set_size(10.0, 10.0)
 
         with patch.object(WorkPiece, "render_to_pixels", return_value=None):
-            part, payload = step.build_compute_payload(machine_defaults, wp)
+            part, payload = step.build_compute_payload(machine, wp)
 
         assert isinstance(part, Part)
         assert isinstance(payload, ComputePayload)
@@ -152,10 +136,10 @@ class TestEngraveComputePayload:
         assert spec.max_power == 0.9
         assert spec.mode == "power_modulated"
 
-    def test_assembler_token_params_mirrors_kwargs(self, machine_defaults):
+    def test_assembler_token_params_mirrors_kwargs(self, machine):
         step = EngraveStep(name="engrave")
         wp = WorkPiece(name="wp")
         wp.set_size(10.0, 10.0)
-        token = step.assembler_token_params(machine_defaults, wp)
-        kwargs = step.get_assembler_kwargs(machine_defaults, wp)
+        token = step.assembler_token_params(machine, wp)
+        kwargs = step.get_assembler_kwargs(machine, wp)
         assert token == kwargs

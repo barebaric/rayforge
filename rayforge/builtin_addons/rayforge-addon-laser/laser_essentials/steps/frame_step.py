@@ -17,7 +17,6 @@ from rayforge.core.capability import (
 )
 from rayforge.core.cut_side import CutSide
 from rayforge.pipeline.stage.assembler_helpers import (
-    MachineDefaults,
     build_part_vector_with_raster_fallback,
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
@@ -27,6 +26,7 @@ from .laser_step import LaserStep
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
     from rayforge.core.workpiece import WorkPiece
+    from rayforge.machine.models.machine import Machine
 
 
 class FrameStep(LaserStep):
@@ -51,18 +51,18 @@ class FrameStep(LaserStep):
 
     def get_assembler_kwargs(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> dict:
         kwargs: dict = {}
         kwargs["cut_side"] = str(self.cut_side).lower()
         kwargs["path_offset_mm"] = self.path_offset_mm
-        kwargs["kerf_mm"] = machine_defaults.kerf_mm
+        kwargs["kerf_mm"] = self.kerf_mm
         return kwargs
 
     def build_compute_payload(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> "Tuple[Part, ComputePayload]":
         """Build a :class:`Part` (from the workpiece's vector
@@ -75,7 +75,7 @@ class FrameStep(LaserStep):
         part = build_part_vector_with_raster_fallback(
             workpiece, self.pixels_per_mm
         )
-        kwargs = self.get_assembler_kwargs(machine_defaults, workpiece)
+        kwargs = self.get_assembler_kwargs(machine, workpiece)
         spec = FrameSpec(
             kerf_mm=kwargs["kerf_mm"],
             path_offset_mm=kwargs["path_offset_mm"],
@@ -85,10 +85,10 @@ class FrameStep(LaserStep):
 
     def assembler_token_params(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> Optional[dict]:
-        return self.get_assembler_kwargs(machine_defaults, workpiece)
+        return self.get_assembler_kwargs(machine, workpiece)
 
     def to_dict(self) -> dict:
         data = super().to_dict()

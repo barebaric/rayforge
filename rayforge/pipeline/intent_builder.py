@@ -79,15 +79,10 @@ from ..machine.driver import get_driver_cls
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.kinematic_math import KinematicMath
 from ..machine.models.dialect import GRBL_DIALECT
-from ..machine.models.laser import LaserHead
 from ..machine.models.rotary_module import RotaryMode, RotaryType
 from .coordspace import MachineSpace
 from .encoder.base import EncodedOutput
 from .encoder.rust_helpers import build_encode_context, dialect_to_spec
-from .stage.assembler_helpers import (
-    MachineDefaults,
-    resolve_machine_defaults,
-)
 from .transformer import OpsTransformer
 from .transformer.registry import transformer_registry
 
@@ -97,7 +92,6 @@ if TYPE_CHECKING:
     from ..core.step import Step
     from ..core.workpiece import WorkPiece
     from ..machine.models.dialect import GcodeDialect
-    from ..machine.models.laser import Laser
     from ..machine.models.machine import Machine
 
 logger = logging.getLogger(__name__)
@@ -158,7 +152,7 @@ class IntentBuilder:
 
     def __init__(
         self,
-        machine: "Optional[Machine]" = None,
+        machine: "Machine",
         generation_id: int = 0,
         loop: "Optional[asyncio.AbstractEventLoop]" = None,
     ):
@@ -374,7 +368,7 @@ class IntentBuilder:
             "wp_uid": wp.uid,
             "geo_rev": wp.geometry_revision,
             "wp_size": list(wp.size) if wp.size else [0, 0],
-            "step_params": _step_compute_params(step),
+            "step_params": step.get_cache_params(),
             "assembler_params": _canonical(self._assembler_params(step, wp)),
             "wpxf": _canonical(step.per_workpiece_transformers_dicts),
         }
@@ -418,7 +412,7 @@ class IntentBuilder:
             "kind": "step_aggregate",
             "step_uid": step.uid,
             "upstream": [[k, t] for k, t, _wp in upstream],
-            "step_params": _step_compute_params(step),
+            "step_params": step.get_cache_params(),
             "spxf": _canonical(step.per_step_transformers_dicts),
             "wpxf": _canonical(step.per_workpiece_transformers_dicts),
             "position_sensitive": step.is_position_sensitive(),
@@ -447,7 +441,7 @@ class IntentBuilder:
                     {
                         "step_uid": step.uid,
                         "step_token": step_tokens.get(step.uid, 0),
-                        "step_params": _step_compute_params(step),
+                        "step_params": step.get_cache_params(),
                         "spxf": _canonical(step.per_step_transformers_dicts),
                     }
                 )
@@ -486,13 +480,8 @@ class IntentBuilder:
         specs and attached to the payload so the Rust compute stage
         applies them after assembly.
         """
-        laser, _settings, machine_defaults = self._resolve_laser_and_settings(
-            step
-        )
-        part, payload = step.build_compute_payload(machine_defaults, wp)
-        payload.power = step.power
-        payload.cut_speed = step.cut_speed
-        payload.head_uid = laser.uid if laser is not None else None
+        part, payload = step.build_compute_payload(self._machine, wp)
+        step.populate_payload(payload, self._machine)
         payload.transformers = self._build_transformer_specs(
             step.per_workpiece_transformers_dicts,
             workpiece=wp,
@@ -511,60 +500,17 @@ class IntentBuilder:
                         ]
         return StageSpec.Compute(part=part, params=payload)
 
-    def _resolve_laser_and_settings(
-        self, step: "Step"
-    ) -> "Tuple[Optional[Laser], Dict[str, Any], MachineDefaults]":
-        """Resolve the selected laser, the assembled settings dict, and
-        the :class:`MachineDefaults` for *step* in one place.
-
-        Centralises the "settings assembly" dance previously inlined
-        by :meth:`_wp_stage` and :meth:`_assembler_params`: it builds
-        the step's
-        ``to_dict`` output, folds in the machine's arc/curve
-        capabilities, resolves the selected :class:`Laser` (logging
-        and falling back to ``None`` on ``ValueError`` — i.e. no laser
-        heads configured), and computes :class:`MachineDefaults` from
-        the laser and settings when both a machine and a laser are
-        available.
-
-        Returns ``(laser, settings, defaults)``.  When no machine is
-        configured, ``settings`` is the bare ``step.to_dict()`` output
-        and ``defaults`` is a conservative fallback built from the
-        step's own parameters.  When a machine is configured but no
-        laser heads are attached, ``laser`` is ``None`` and ``defaults``
-        is the same conservative fallback.
-        """
-        settings = step.to_dict()
-        if self._machine is None:
-            return None, settings, _fallback_machine_defaults(step)
-        settings["arc_tolerance"] = self._machine.arc_tolerance
-        settings["machine_supports_arcs"] = self._machine.supports_arcs
-        settings["machine_supports_curves"] = self._machine.supports_curves
-        head = step.get_selected_head(self._machine)
-        laser = head if isinstance(head, LaserHead) else None
-        if laser is None:
-            logger.debug(
-                "Step %s has no laser heads on machine; using bare defaults",
-                step.uid,
-            )
-            return None, settings, _fallback_machine_defaults(step)
-        return laser, settings, resolve_machine_defaults(laser, settings)
-
     def _assembler_params(self, step: "Step", wp: "WorkPiece") -> Any:
         """
         Return a JSON-serialisable representation of the assembler spec
         parameters that the step resolves for its machine.
 
         Delegates to :meth:`Step.assembler_token_params`.  Returns
-        :data:`None` when no machine is configured, no laser is
-        selected, or the step exposes no assembler params; the compute
-        token is unaffected in that case.
+        :data:`None` when the step exposes no assembler params; the
+        compute token is unaffected in that case.
         """
-        laser, _settings, defaults = self._resolve_laser_and_settings(step)
-        if laser is None:
-            return None
         try:
-            return step.assembler_token_params(defaults, wp)
+            return step.assembler_token_params(self._machine, wp)
         except Exception:
             logger.debug(
                 "Step %s has no assembler token params",
@@ -752,13 +698,7 @@ class IntentBuilder:
         return StageSpec.Aggregate(spec=spec)
 
     def _machine_params(self) -> MachineParams:
-        """Build :class:`MachineParams` from the resolved machine.
-
-        Falls back to zero rates (which disables time estimation) when
-        no machine is configured.
-        """
-        if self._machine is None:
-            return MachineParams()
+        """Build :class:`MachineParams` from the resolved machine."""
         return MachineParams(
             default_feed_rate=float(self._machine.max_cut_speed),
             default_rapid_rate=float(self._machine.max_travel_speed),
@@ -1089,52 +1029,6 @@ def _workpiece_placement_matrix(wp: "WorkPiece") -> List[List[float]]:
         tx, ty, angle, 1.0, math.copysign(1.0, sy), skew
     )
     return placement.to_4x4_list()
-
-
-def _fallback_machine_defaults(step: "Step") -> MachineDefaults:
-    """Build conservative :class:`MachineDefaults` from a step's own
-    parameters.
-
-    Used by :meth:`IntentBuilder._resolve_laser_and_settings` when no
-    machine is configured or the machine has no laser heads attached,
-    so the step's assembler still receives a valid spec (e.g. in tests
-    that construct a bare :class:`IntentBuilder`).
-    """
-    return MachineDefaults(
-        kerf_mm=step.kerf_mm,
-        arc_tolerance=0.03,
-        allow_arcs=True,
-        supports_curves=False,
-        line_interval_mm=0.1,
-        step_power=step.power,
-        tool_radius=step.kerf_mm / 2.0,
-        step_over=step.kerf_mm,
-        cut_speed=step.cut_speed,
-    )
-
-
-def _step_compute_params(step: "Step") -> Dict[str, Any]:
-    """
-    Return a JSON-serialisable dict of step attributes that influence
-    compute output.  UIDs and cosmetic fields are intentionally omitted
-    so the token only changes when the actual compute inputs change.
-    """
-    return {
-        "type": type(step).__name__,
-        "visible": step.visible,
-        "power": step.power,
-        "max_power": step.max_power,
-        "cut_speed": step.cut_speed,
-        "max_cut_speed": step.max_cut_speed,
-        "travel_speed": step.travel_speed,
-        "max_travel_speed": step.max_travel_speed,
-        "air_assist": step.air_assist,
-        "kerf_mm": step.kerf_mm,
-        "tab_power": step.tab_power,
-        "frequency": step.frequency,
-        "pulse_width": step.pulse_width,
-        "pixels_per_mm": list(step.pixels_per_mm),
-    }
 
 
 def _canonical(obj: Any) -> Any:
