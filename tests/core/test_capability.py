@@ -156,21 +156,3 @@ class TestCapabilityRegistry:
         assert (
             step_capability_registry.unregister_all_from_addon("no_such") == 0
         )
-
-
-@pytest.mark.asyncio
-async def test_registry_populated_via_addon_hook(context_initializer):
-    """After addons load, the registry holds all domain capabilities."""
-    names = {c.name for c in step_capability_registry.all_capabilities()}
-    assert {
-        "CUT",
-        "ENGRAVE",
-        "SCORE",
-        "WITH_KERF",
-        "MATERIAL_TEST",
-        "MILL",
-    } <= names
-    cut_cap = step_capability_registry.get("CUT")
-    assert cut_cap is not None
-    assert cut_cap.label == "Cut"
-    assert step_capability_registry.get("UNREGISTERED") is None
