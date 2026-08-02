@@ -55,10 +55,10 @@ from rayforge.pipeline.intent_builder import (
 class _TestStep(Step):
     """
     Concrete ``Step`` subclass for tests.  ``Step`` is normally
-    subclassed by addons (ContourStep, FrameStep, ...) but it is
-    fully instantiable on its own and exposes every attribute the
-    IntentBuilder consumes.  The position-sensitive flag is
-    overridable per-instance via ``_position_sensitive``.
+    subclassed by addons (ContourStep, FrameStep, ...); the generic
+    base exposes every attribute the IntentBuilder consumes.  The
+    position-sensitive flag is overridable per-instance via
+    ``_position_sensitive``.
     """
 
     def __init__(self, name: str = "test", position_sensitive: bool = False):

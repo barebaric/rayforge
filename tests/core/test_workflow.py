@@ -60,7 +60,7 @@ def test_step_change_fires_workflow_descendant_updated_signal(workflow):
     workflow.descendant_updated.connect(handler)
 
     # Act
-    step.set_power(0.5)
+    step.set_cut_speed(2000)
 
     # Assert
     handler.assert_called_once_with(
@@ -171,9 +171,8 @@ def test_workflow_roundtrip_serialization():
     original.matrix = Matrix.translation(5, 10) @ Matrix.rotation(30)
 
     step1 = Step("Step 1")
-    step1.set_power(0.75)
     step1.set_cut_speed(2000)
-    step1.set_kerf_mm(0.2)
+    step1.set_travel_speed(8000)
 
     step2 = Step("Step 2")
     original.add_step(step1)
@@ -194,13 +193,12 @@ def test_workflow_roundtrip_serialization():
     restored_step2 = restored.steps[1]
 
     assert restored_step1.uid == step1.uid
-    assert restored_step1.power == 0.75
     assert restored_step1.cut_speed == 2000
-    assert restored_step1.kerf_mm == 0.2
+    assert restored_step1.travel_speed == 8000
 
     # Verify the second step (with default values) is also correct
     assert restored_step2.uid == step2.uid
-    assert restored_step2.power == 1.0  # Default value
+    assert restored_step2.cut_speed == 500  # Default value
 
 
 def test_workflow_forward_compatibility_with_extra_fields():

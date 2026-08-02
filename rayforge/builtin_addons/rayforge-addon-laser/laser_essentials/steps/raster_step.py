@@ -3,6 +3,8 @@ from __future__ import annotations
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
+    Any,
+    Dict,
     List,
     Optional,
     Protocol,
@@ -51,6 +53,7 @@ class EngraveStep(LaserStep):
         self, name: Optional[str] = None, typelabel: Optional[str] = None
     ):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)
+        self.power = 0.2
         self.scan_angle = 0.0
         self.depth_mode = "POWER_MODULATION"
         self.invert = False
@@ -123,6 +126,19 @@ class EngraveStep(LaserStep):
             "z_step_down": self.z_step_down,
             "angle_increment": self.angle_increment,
         }
+
+    def apply_import_settings(self, settings: Dict[str, Any]) -> None:
+        """Apply importer-provided raster settings this step owns."""
+        super().apply_import_settings(settings)
+        for key in (
+            "min_power_level",
+            "max_power_level",
+            "dot_width_correction_mm",
+            "line_interval_mm",
+            "scan_angle",
+        ):
+            if key in settings:
+                setattr(self, key, settings[key])
 
     def build_compute_payload(
         self,
@@ -326,11 +342,15 @@ class EngraveStep(LaserStep):
         step.selected_head_uid = default_head.uid
         step.max_cut_speed = machine.max_cut_speed
         step.max_travel_speed = machine.max_travel_speed
+        # Operating feed defaults are machine-derived: the machine only
+        # exposes its ceiling, so the default is that ceiling, bounded by
+        # the operation's typical feed rate (engraving is faster than
+        # cutting).
+        step.cut_speed = min(machine.max_cut_speed, 4000)
         for cap in machine.get_laser_capabilities(default_head):
             for var in cap.varset:
                 setattr(step, var.key, var.default)
 
-        # step.cut_speed is only final after the loop above.
         OverscanTransformer = cast(
             "OverscanTransformerType",
             transformer_registry.get("OverscanTransformer"),

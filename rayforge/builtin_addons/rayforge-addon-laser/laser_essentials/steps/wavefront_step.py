@@ -31,6 +31,7 @@ class WavefrontStep(LaserStep):
         self, name: Optional[str] = None, typelabel: Optional[str] = None
     ):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)
+        self.power = 0.8
         self.step_over_mm: Optional[float] = None
         self.offset_mm = 0.0
         self.area_tolerance = 0.01
@@ -130,6 +131,10 @@ class WavefrontStep(LaserStep):
         step.kerf_mm = default_head.spot_size_mm[0]
         step.max_cut_speed = machine.max_cut_speed
         step.max_travel_speed = machine.max_travel_speed
+        # Operating feed defaults are machine-derived: the machine only
+        # exposes its ceiling, so the default is that ceiling, bounded by
+        # the operation's typical feed rate.
+        step.cut_speed = min(machine.max_cut_speed, 500)
         for cap in machine.get_laser_capabilities(default_head):
             for var in cap.varset:
                 setattr(step, var.key, var.default)
