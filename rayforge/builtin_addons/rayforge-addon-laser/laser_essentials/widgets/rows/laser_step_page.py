@@ -13,7 +13,6 @@ from rayforge.ui_gtk.doceditor.step_settings.rows import (
 )
 
 from ..rows.air_assist_row import AirAssistRow
-from ..rows.kerf_row import KerfRow
 from ..rows.power_row import PowerRow
 from ..rows.pwm_row import FrequencyRow, PulseWidthRow
 from ..rows.tab_power_row import TabPowerRow
@@ -47,7 +46,6 @@ class LaserSettingsPage(StepSettingsPage):
                 CutSpeedRow(editor, step, title=cut_speed_title),
                 TravelSpeedRow,
                 AirAssistRow,
-                KerfRow,
             ]
             if include_tab_power:
                 rows.append(TabPowerRow)
@@ -95,14 +93,6 @@ class LaserSettingsPage(StepSettingsPage):
                 )
             )
             if isinstance(head, LaserHead):
-                t.execute(
-                    ChangePropertyCommand(
-                        target=step,
-                        property_name="kerf_mm",
-                        new_value=head.spot_size_mm[0],
-                        setter_method_name="set_kerf_mm",
-                    )
-                )
                 params = machine.get_pwm_params(head) if machine else None
                 if params is not None:
                     t.execute(

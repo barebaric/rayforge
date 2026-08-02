@@ -457,7 +457,7 @@ def test_contour_spec_reflects_step_params(
     machine, context = test_machine_and_config
     step = contour_step_class.create(context, name="cut")
     step.cut_side = "outside"
-    step.path_offset_mm = 0.5
+    step.offset_mm = 0.5
     wp = WorkPiece(name="wp")
     doc = _make_doc(step, wp)
 
@@ -466,7 +466,7 @@ def test_contour_spec_reflects_step_params(
     wp_node = next(n for n in nodes if n.key == wpk)
     spec = wp_node.stage.params.assembler.spec
     assert spec.cut_side == "outside"
-    assert spec.path_offset_mm == 0.5
+    assert spec.offset_mm == 0.5
 
     # The compute token must change when the contour params change.
     step.cut_side = "inside"
@@ -837,8 +837,7 @@ def _build_rotary_pipeline(
         cut_side="centerline",
         cut_order="inside_outside",
         remove_inner=False,
-        kerf_mm=0.0,
-        path_offset_mm=0.0,
+        offset_mm=0.0,
         overcut=0.0,
     )
     assembler = Assembler(cs)

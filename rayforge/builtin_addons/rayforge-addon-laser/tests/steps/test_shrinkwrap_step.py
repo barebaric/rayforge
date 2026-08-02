@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
-from laser_essentials.capabilities import CUT, SCORE, WITH_KERF
+from laser_essentials.capabilities import CUT, SCORE
 from laser_essentials.steps import ShrinkWrapStep
 
 from rayforge.core.workpiece import WorkPiece
@@ -26,7 +26,7 @@ class TestShrinkWrapStep:
     def test_instantiation(self):
         step = ShrinkWrapStep(name="Test")
         assert step.typelabel == "Shrink Wrap"
-        assert step.capabilities == (CUT, SCORE, WITH_KERF)
+        assert step.capabilities == (CUT, SCORE)
 
     def test_create(self, mock_context):
         step = ShrinkWrapStep.create(mock_context)
@@ -46,8 +46,7 @@ class TestShrinkWrapStep:
         expected_keys = {
             "cut_side",
             "gravity",
-            "path_offset_mm",
-            "kerf_mm",
+            "offset_mm",
             "arc_tolerance",
             "allow_arcs",
             "supports_curves",
@@ -57,7 +56,7 @@ class TestShrinkWrapStep:
     def test_roundtrip_serialization(self):
         step = ShrinkWrapStep(name="Test")
         step.cut_side = "OUTSIDE"
-        step.path_offset_mm = 0.5
+        step.offset_mm = 0.5
         step.gravity = 0.5
         data = step.to_dict()
         restored = ShrinkWrapStep.from_dict(data)
@@ -85,7 +84,7 @@ class TestShrinkWrapComputePayload:
         assert isinstance(spec, ShrinkwrapSpec)
         assert spec.cut_side == "outside"
         assert spec.gravity == 0.3
-        assert spec.kerf_mm == step.kerf_mm
+        assert spec.offset_mm == step.offset_mm
 
     def test_assembler_token_params_mirrors_kwargs(self, machine):
         step = ShrinkWrapStep(name="sw")

@@ -17,7 +17,7 @@ from rayforge.machine.models.spindle import SpindleHead
 def test_contour_defaults_preserved():
     s = ContourStep(name="t")
     assert s.power == 0.8, s.power
-    assert s.kerf_mm == 0.1, s.kerf_mm
+    assert s.offset_mm == 0.0, s.offset_mm
     assert s.cut_speed == 500, s.cut_speed
     assert s.air_assist is False
     assert isinstance(s, LaserStep)
@@ -58,7 +58,7 @@ def test_engrave_create_derives_cut_speed_from_machine():
 def test_laser_step_serialization_roundtrip():
     s = ContourStep(name="t")
     s.power = 0.6
-    s.kerf_mm = 0.2
+    s.offset_mm = 0.2
     s.air_assist = True
     s.frequency = 2000
     s.pulse_width = 100
@@ -67,7 +67,7 @@ def test_laser_step_serialization_roundtrip():
     r = Step.from_dict(data)
     assert type(r) is ContourStep
     assert r.power == 0.6
-    assert r.kerf_mm == 0.2
+    assert r.offset_mm == 0.2
     assert r.air_assist is True
     assert r.frequency == 2000
     assert r.pulse_width == 100
@@ -136,7 +136,6 @@ def test_laser_step_base_defaults():
     assert s.power == 1.0
     assert s.max_power == 1000
     assert s.air_assist is False
-    assert s.kerf_mm == 0.0
     assert s.tab_power == 0.0
     assert s.frequency == 0
     assert s.pulse_width == 0
@@ -167,8 +166,8 @@ def test_laser_setters_and_signals():
     handler.assert_called_once_with(s)
     handler.reset_mock()
 
-    s.set_kerf_mm(0.15)
-    assert s.kerf_mm == 0.15
+    s.set_tab_power(0.15)
+    assert s.tab_power == 0.15
     handler.assert_called_once_with(s)
 
 

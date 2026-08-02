@@ -51,6 +51,17 @@ class LaserHead(Head):
     def machine_capability(self) -> MachineCapability:
         return MachineCapability.LASER
 
+    @property
+    def kerf_mm(self) -> float:
+        """The kerf-compensation displacement for this head, in mm.
+
+        Derived from the beam spot size: the path is shifted by half
+        the spot width so the cut part comes out dimensionally
+        accurate. Read-only; change ``spot_size_mm`` to alter it.
+        """
+        spot_x = self.spot_size_mm[0]
+        return spot_x / 2.0
+
     @staticmethod
     def get_spot_size(head: Optional["LaserHead"]) -> Tuple[float, float]:
         """The effective spot size ``(x, y)`` in mm for a laser head.

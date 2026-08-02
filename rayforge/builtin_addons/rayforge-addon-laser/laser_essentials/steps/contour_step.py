@@ -21,7 +21,7 @@ from rayforge.pipeline.stage.assembler_helpers import (
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 
-from ..capabilities import CUT, SCORE, WITH_KERF
+from ..capabilities import CUT, SCORE
 from .laser_step import LaserStep
 
 if TYPE_CHECKING:
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 class ContourStep(LaserStep):
     TYPELABEL = _("Contour")
     ICON = "step-contour-symbolic"
-    CAPABILITIES: Tuple[StepCapability, ...] = (CUT, SCORE, WITH_KERF)
+    CAPABILITIES: Tuple[StepCapability, ...] = (CUT, SCORE)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "contour"
 
@@ -41,7 +41,7 @@ class ContourStep(LaserStep):
         "cut_side",
         "cut_order",
         "remove_inner_paths",
-        "path_offset_mm",
+        "offset_mm",
         "overcut",
     )
 
@@ -68,8 +68,13 @@ class ContourStep(LaserStep):
                     default=False,
                 ),
                 FloatVar(
-                    key="path_offset_mm",
-                    label=_("Path Offset"),
+                    key="offset_mm",
+                    label=_("Offset"),
+                    description=_(
+                        "Shifts the cut path inward/outward per Cut "
+                        "Side (none on Centerline). Defaults to kerf "
+                        "compensation for the head"
+                    ),
                     default=0.0,
                 ),
                 FloatVar(
@@ -86,11 +91,10 @@ class ContourStep(LaserStep):
     ):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)
         self.power = 0.8
-        self.kerf_mm = 0.1
         self.cut_side = "CENTERLINE"
         self.cut_order = "INSIDE_OUTSIDE"
         self.remove_inner_paths = False
-        self.path_offset_mm = 0.0
+        self.offset_mm = 0.0
         self.overcut = 0.0
         self.override_threshold = False
         self.threshold = 0.5
@@ -110,9 +114,8 @@ class ContourStep(LaserStep):
         kwargs["cut_side"] = str(self.cut_side).lower()
         kwargs["cut_order"] = str(self.cut_order).lower()
         kwargs["remove_inner"] = self.remove_inner_paths
-        kwargs["path_offset_mm"] = self.path_offset_mm
+        kwargs["offset_mm"] = self.offset_mm
         kwargs["overcut"] = self.overcut
-        kwargs["kerf_mm"] = self.kerf_mm
         kwargs["arc_tolerance"] = machine.arc_tolerance
         kwargs["allow_arcs"] = machine.supports_arcs
         kwargs["supports_curves"] = machine.supports_curves
@@ -140,8 +143,7 @@ class ContourStep(LaserStep):
         )
         kwargs = self.get_assembler_kwargs(machine, workpiece)
         spec = ContourSpec(
-            kerf_mm=kwargs["kerf_mm"],
-            path_offset_mm=kwargs["path_offset_mm"],
+            offset_mm=kwargs["offset_mm"],
             cut_side=kwargs["cut_side"],
             overcut=kwargs["overcut"],
             cut_order=kwargs["cut_order"],
@@ -160,12 +162,19 @@ class ContourStep(LaserStep):
         """Expose the resolved assembler kwargs for the compute token."""
         return self.get_assembler_kwargs(machine, workpiece)
 
+    def apply_import_settings(self, settings: dict) -> None:
+        """Apply importer-provided settings this step owns."""
+        super().apply_import_settings(settings)
+        offset_mm = settings.get("offset_mm")
+        if offset_mm is not None:
+            self.offset_mm = offset_mm
+
     def to_dict(self) -> dict:
         data = super().to_dict()
         data["cut_side"] = self.cut_side
         data["cut_order"] = self.cut_order
         data["remove_inner_paths"] = self.remove_inner_paths
-        data["path_offset_mm"] = self.path_offset_mm
+        data["offset_mm"] = self.offset_mm
         data["overcut"] = self.overcut
         data["override_threshold"] = self.override_threshold
         data["threshold"] = self.threshold
@@ -177,7 +186,12 @@ class ContourStep(LaserStep):
         step.cut_side = data.get("cut_side", "CENTERLINE")
         step.cut_order = data.get("cut_order", "INSIDE_OUTSIDE")
         step.remove_inner_paths = data.get("remove_inner_paths", False)
-        step.path_offset_mm = data.get("path_offset_mm", 0.0)
+        if "offset_mm" in data:
+            step.offset_mm = data["offset_mm"]
+        else:
+            step.offset_mm = data.get("path_offset_mm", 0.0) + (
+                data.get("kerf_mm", 0.0) / 2.0
+            )
         step.overcut = data.get("overcut", 0.0)
         step.override_threshold = data.get("override_threshold", False)
         step.threshold = data.get("threshold", 0.5)
@@ -238,7 +252,7 @@ class ContourStep(LaserStep):
         step.per_workpiece_transformers_dicts = per_wp
         step.per_step_transformers_dicts = per_step
         step.selected_head_uid = default_head.uid
-        step.kerf_mm = default_head.spot_size_mm[0]
+        step.offset_mm = default_head.kerf_mm
         step.max_cut_speed = machine.max_cut_speed
         step.max_travel_speed = machine.max_travel_speed
         # Operating feed defaults are machine-derived: the machine only

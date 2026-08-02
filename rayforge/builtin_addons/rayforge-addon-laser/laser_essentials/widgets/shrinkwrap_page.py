@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 from rayforge.ui_gtk.doceditor.step_settings.rows import SliderRow
 
-from .rows import CutSideRow, LaserStepSettingsPage, PathOffsetRow
+from .rows import CutSideRow, LaserStepSettingsPage, OffsetRow
 
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
@@ -37,6 +37,6 @@ class ShrinkWrapStepSettingsPage(LaserStepSettingsPage):
             _("Shrink Wrap"),
             GravityRow,
             CutSideRow,
-            PathOffsetRow,
+            OffsetRow,
             description=_("Fit a hull around the content and trace it."),
         )

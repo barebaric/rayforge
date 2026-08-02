@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
-from laser_essentials.capabilities import CUT, SCORE, WITH_KERF
+from laser_essentials.capabilities import CUT, SCORE
 from laser_essentials.steps import ContourStep
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.geo import Matrix
@@ -33,7 +33,7 @@ class TestContourStep:
         step = ContourStep(name="Test")
         assert step.typelabel == "Contour"
         assert step.name == "Test"
-        assert step.capabilities == (CUT, SCORE, WITH_KERF)
+        assert step.capabilities == (CUT, SCORE)
 
     def test_create(self, mock_context):
         step = ContourStep.create(mock_context, name="Created")
@@ -197,9 +197,8 @@ class TestContourStep:
             "cut_side",
             "cut_order",
             "remove_inner",
-            "path_offset_mm",
+            "offset_mm",
             "overcut",
-            "kerf_mm",
             "arc_tolerance",
             "allow_arcs",
             "supports_curves",
@@ -212,18 +211,67 @@ class TestContourStep:
         step.cut_side = "OUTSIDE"
         step.cut_order = "OUTSIDE_INSIDE"
         step.remove_inner_paths = True
-        step.path_offset_mm = 0.5
+        step.offset_mm = 0.5
         step.overcut = 1.0
         data = step.to_dict()
         restored = ContourStep.from_dict(data)
         assert data == restored.to_dict()
+
+    def test_from_dict_migrates_legacy_offset_keys(self):
+        """Legacy files store path_offset_mm and kerf_mm; the combined
+        displacement is offset_mm = path_offset_mm + kerf_mm / 2."""
+        step_registry.register(ContourStep)
+        legacy_data = {
+            "uid": "legacy-step",
+            "type": "step",
+            "step_type": "ContourStep",
+            "name": "Legacy",
+            "matrix": Matrix.identity().to_list(),
+            "typelabel": "Contour",
+            "visible": True,
+            "path_offset_mm": 0.4,
+            "kerf_mm": 0.2,
+            "per_workpiece_transformers_dicts": [],
+            "per_step_transformers_dicts": [],
+            "children": [],
+        }
+
+        restored = Step.from_dict(legacy_data)
+
+        assert isinstance(restored, ContourStep)
+        assert restored.offset_mm == pytest.approx(0.5)
+
+    def test_from_dict_new_offset_key_wins(self):
+        """A current file's offset_mm is used verbatim, ignoring any
+        legacy keys that may also be present."""
+        step_registry.register(ContourStep)
+        data = {
+            "uid": "new-step",
+            "type": "step",
+            "step_type": "ContourStep",
+            "name": "New",
+            "matrix": Matrix.identity().to_list(),
+            "typelabel": "Contour",
+            "visible": True,
+            "path_offset_mm": 0.4,
+            "kerf_mm": 0.2,
+            "offset_mm": 1.5,
+            "per_workpiece_transformers_dicts": [],
+            "per_step_transformers_dicts": [],
+            "children": [],
+        }
+
+        restored = Step.from_dict(data)
+
+        assert isinstance(restored, ContourStep)
+        assert restored.offset_mm == pytest.approx(1.5)
 
     def test_step_from_dict_preserves_subclass_attrs(self):
         """Step.from_dict (base call) must delegate to subclass from_dict."""
         step_registry.register(ContourStep)
         step = ContourStep(name="Test")
         step.cut_side = "OUTSIDE"
-        step.kerf_mm = 0.5
+        step.offset_mm = 0.5
         step.cut_speed = 200
         step.power = 80
         data = step.to_dict()
@@ -231,7 +279,7 @@ class TestContourStep:
         restored = Step.from_dict(data)
         assert isinstance(restored, ContourStep)
         assert restored.cut_side == "OUTSIDE"
-        assert restored.kerf_mm == 0.5
+        assert restored.offset_mm == 0.5
         assert restored.cut_speed == 200
         assert restored.power == 80
 
@@ -246,7 +294,7 @@ class TestContourComputePayload:
     def test_build_compute_payload_returns_contour_spec(self, machine):
         step = ContourStep(name="cut")
         step.cut_side = "outside"
-        step.path_offset_mm = 0.5
+        step.offset_mm = 0.5
         step.overcut = 0.2
 
         part, payload = step.build_compute_payload(machine, self._wp())
@@ -255,9 +303,8 @@ class TestContourComputePayload:
         spec = payload.assembler.spec
         assert isinstance(spec, ContourSpec)
         assert spec.cut_side == "outside"
-        assert spec.path_offset_mm == 0.5
+        assert spec.offset_mm == 0.5
         assert spec.overcut == 0.2
-        assert spec.kerf_mm == step.kerf_mm
         assert spec.arc_tolerance == machine.arc_tolerance
         assert spec.allow_arcs == machine.supports_arcs
         assert spec.supports_curves == machine.supports_curves

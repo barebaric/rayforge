@@ -6,7 +6,7 @@ Registers steps with the main application.
 
 from rayforge.core.hooks import hookimpl
 
-from .capabilities import CUT, ENGRAVE, MATERIAL_TEST, SCORE, WITH_KERF
+from .capabilities import CUT, ENGRAVE, MATERIAL_TEST, SCORE
 from .steps import (
     ContourStep,
     EngraveStep,
@@ -18,7 +18,7 @@ from .steps import (
 
 ADDON_NAME = "laser_essentials"
 
-STEP_CAPABILITIES = (CUT, SCORE, WITH_KERF, ENGRAVE, MATERIAL_TEST)
+STEP_CAPABILITIES = (CUT, SCORE, ENGRAVE, MATERIAL_TEST)
 
 
 @hookimpl

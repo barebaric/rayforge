@@ -14,7 +14,6 @@ from laser_essentials.capabilities import (
     ENGRAVE,
     MATERIAL_TEST,
     SCORE,
-    WITH_KERF,
 )
 from laser_essentials.steps import (
     ContourStep,
@@ -60,7 +59,7 @@ def _register_steps():
 
 def _register_step_capabilities():
     """Register the step capabilities for recipe matching."""
-    for cap in (CUT, SCORE, WITH_KERF, ENGRAVE, MATERIAL_TEST):
+    for cap in (CUT, SCORE, ENGRAVE, MATERIAL_TEST):
         step_capability_registry.register(cap, addon_name="laser_essentials")
 
 

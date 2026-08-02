@@ -161,7 +161,6 @@ class WavefrontStep(LaserStep):
         step.per_workpiece_transformers_dicts = per_wp
         step.per_step_transformers_dicts = per_step
         step.selected_head_uid = default_head.uid
-        step.kerf_mm = default_head.spot_size_mm[0]
         step.max_cut_speed = machine.max_cut_speed
         step.max_travel_speed = machine.max_travel_speed
         # Operating feed defaults are machine-derived: the machine only

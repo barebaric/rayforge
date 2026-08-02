@@ -3,7 +3,7 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from .rows import CutSideRow, LaserStepSettingsPage, PathOffsetRow
+from .rows import CutSideRow, LaserStepSettingsPage, OffsetRow
 
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
@@ -17,6 +17,6 @@ class FrameStepSettingsPage(LaserStepSettingsPage):
         self.add_section(
             _("Geometry"),
             CutSideRow,
-            PathOffsetRow,
+            OffsetRow,
             description=_("Cut a frame around the selected content."),
         )

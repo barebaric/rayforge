@@ -11,7 +11,7 @@ from rayforge.ui_gtk.doceditor.step_settings.rows import (
     SwitchRow,
 )
 
-from .rows import CutSideRow, LaserStepSettingsPage, PathOffsetRow
+from .rows import CutSideRow, LaserStepSettingsPage, OffsetRow
 
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
@@ -110,7 +110,7 @@ class ContourStepSettingsPage(LaserStepSettingsPage):
         self.add_section(
             _("Contour Settings"),
             CutSideRow,
-            PathOffsetRow,
+            OffsetRow,
             CutOrderRow,
             RemoveInnerPathsRow,
             OvercutRow,

@@ -321,7 +321,7 @@ class TestRecipe:
             settings={
                 "power": 0.8,
                 "cut_speed": 1000,
-                "kerf_mm": 0.15,
+                "offset_mm": 0.15,
                 "air_assist": True,
             }
         )
@@ -330,7 +330,7 @@ class TestRecipe:
         mock_step = Mock()
         mock_step.power = 0.8
         mock_step.cut_speed = 1000
-        mock_step.kerf_mm = 0.15
+        mock_step.offset_mm = 0.15
         mock_step.air_assist = True
         mock_step.extra_property = "should_be_ignored"
         assert recipe.matches_step_settings(mock_step) is True
@@ -355,7 +355,7 @@ class TestRecipe:
         assert recipe.matches_step_settings(mock_step) is False
 
         # 6. Mismatch (step is missing an attribute)
-        mock_step_missing = Mock(spec=["power", "kerf_mm", "air_assist"])
+        mock_step_missing = Mock(spec=["power", "offset_mm", "air_assist"])
         mock_step_missing.power = 0.8
         # cut_speed is missing
         assert recipe.matches_step_settings(mock_step_missing) is False
@@ -364,7 +364,7 @@ class TestRecipe:
         mock_step_bad_type = Mock()
         mock_step_bad_type.power = 0.8
         mock_step_bad_type.cut_speed = "1000"  # string vs int
-        mock_step_bad_type.kerf_mm = 0.15
+        mock_step_bad_type.offset_mm = 0.15
         mock_step_bad_type.air_assist = True
         assert recipe.matches_step_settings(mock_step_bad_type) is False
 
