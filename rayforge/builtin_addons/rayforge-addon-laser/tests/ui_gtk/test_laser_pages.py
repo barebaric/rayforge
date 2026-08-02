@@ -12,7 +12,6 @@ gi.require_version("Adw", "1")
 from gi.repository import Adw
 from laser_essentials.widgets.contour_page import (
     ContourStepSettingsPage,
-    PathOffsetRow,
     ThresholdRow,
 )
 from laser_essentials.widgets.material_test_grid_page import (
@@ -21,7 +20,7 @@ from laser_essentials.widgets.material_test_grid_page import (
 from laser_essentials.widgets.raster_page import RasterSettingsPage
 from laser_essentials.widgets.rows import (
     AirAssistRow,
-    KerfRow,
+    OffsetRow,
     PowerRow,
 )
 
@@ -60,14 +59,13 @@ def test_contour_page_composes_step_and_laser_rows(
     assert isinstance(page, Adw.PreferencesPage)
     assert isinstance(laser_page, StepSettingsPage)
 
-    for cls in (PathOffsetRow, ThresholdRow):
+    for cls in (OffsetRow, ThresholdRow):
         _find(page, cls)
     for cls in (
         PowerRow,
         CutSpeedRow,
         TravelSpeedRow,
         AirAssistRow,
-        KerfRow,
         HeadRow,
     ):
         _find(laser_page, cls)
@@ -79,7 +77,7 @@ def test_path_offset_insensitive_on_centerline(
 ):
     step = _contour_step(ui_context)
     page = ContourStepSettingsPage(editor, step)
-    offset = _find(page, PathOffsetRow)
+    offset = _find(page, OffsetRow)
 
     assert step.cut_side == "CENTERLINE"
     assert offset.widget.get_sensitive() is False
@@ -107,17 +105,18 @@ def test_threshold_visible_only_when_rescanning(
 
 
 @pytest.mark.ui
-def test_head_change_syncs_kerf(editor, laser_machine, ui_context):
+def test_head_change_does_not_touch_offset(editor, laser_machine, ui_context):
     step = _contour_step(ui_context)
     page = ContourStepSettingsPage(editor, step)
     laser_page = page.laser_page()
+    offset_before = step.offset_mm
 
     target = laser_machine.heads[1]
     laser_page.head_row.head_changed.send(
         laser_page.head_row, head_uid=target.uid
     )
     assert step.selected_head_uid == target.uid
-    assert step.kerf_mm == target.spot_size_mm[0]
+    assert step.offset_mm == offset_before
 
 
 @pytest.mark.ui

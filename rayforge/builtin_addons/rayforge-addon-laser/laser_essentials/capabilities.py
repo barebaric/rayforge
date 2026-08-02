@@ -1,6 +1,6 @@
 """Laser-domain step capabilities.
 
-Holds the concrete step capabilities (CUT, ENGRAVE, SCORE, WITH_KERF,
+Holds the concrete step capabilities (CUT, ENGRAVE, SCORE,
 MATERIAL_TEST) and the ``LaserHeadVar`` settings var.
 """
 
@@ -12,7 +12,6 @@ from rayforge.core.capability import MachineCapability, StepCapability
 from rayforge.core.varset import (
     BoolVar,
     ChoiceVar,
-    FloatVar,
     SliderFloatVar,
     SpeedVar,
     VarSet,
@@ -251,33 +250,6 @@ class ScoreCapability(StepCapability):
         )
 
 
-class KerfCapability(StepCapability):
-    REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
-
-    @property
-    def name(self) -> str:
-        return "WITH_KERF"
-
-    @property
-    def label(self) -> str:
-        return _("Kerf")
-
-    @property
-    def varset(self) -> VarSet:
-        return VarSet(
-            vars=[
-                FloatVar(
-                    key="kerf_mm",
-                    label=_("Kerf"),
-                    description=_("The effective width of the laser beam"),
-                    default=0.1,
-                    min_val=0.0,
-                    max_val=2.0,
-                ),
-            ]
-        )
-
-
 class MaterialTestCapability(StepCapability):
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
 
@@ -306,5 +278,4 @@ class MaterialTestCapability(StepCapability):
 CUT = CutCapability()
 ENGRAVE = EngraveCapability()
 SCORE = ScoreCapability()
-WITH_KERF = KerfCapability()
 MATERIAL_TEST = MaterialTestCapability()

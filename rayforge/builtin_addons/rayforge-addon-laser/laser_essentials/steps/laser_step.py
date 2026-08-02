@@ -14,7 +14,6 @@ from raygeo.ops.state import AirAssistMode
 from rayforge.core.step import Step
 from rayforge.core.varset import (
     BoolVar,
-    FloatVar,
     SliderFloatVar,
     VarSet,
 )
@@ -33,7 +32,6 @@ class LaserStep(Step):
     RECIPE_KEYS: Tuple[str, ...] = Step.RECIPE_KEYS + (
         "power",
         "air_assist",
-        "kerf_mm",
         "tab_power",
     )
 
@@ -41,7 +39,6 @@ class LaserStep(Step):
         self.power: float = 1.0
         self.max_power: int = 1000
         self.air_assist: bool = False
-        self.kerf_mm: float = 0.0
         self.tab_power: float = 0.0
         self.frequency: int = 0
         self.pulse_width: int = 0
@@ -80,14 +77,6 @@ class LaserStep(Step):
                     key="air_assist",
                     label=_("Air Assist"),
                     default=False,
-                ),
-                FloatVar(
-                    key="kerf_mm",
-                    label=_("Kerf"),
-                    description=_("The effective width of the laser beam"),
-                    default=0.1,
-                    min_val=0.0,
-                    max_val=2.0,
                 ),
             ]
         )
@@ -138,7 +127,6 @@ class LaserStep(Step):
             "travel_speed": self.travel_speed,
             "air_assist": self.air_assist,
             "pixels_per_mm": self.pixels_per_mm,
-            "kerf_mm": self.kerf_mm,
             "tab_power": self.tab_power,
             "frequency": self.frequency,
             "pulse_width": self.pulse_width,
@@ -151,9 +139,6 @@ class LaserStep(Step):
         power = settings.get("power")
         if power is not None:
             self.set_power(power)
-        kerf_mm = settings.get("kerf_mm")
-        if kerf_mm is not None:
-            self.set_kerf_mm(kerf_mm)
 
     def get_cache_params(self) -> Dict[str, Any]:
         params = super().get_cache_params()
@@ -162,7 +147,6 @@ class LaserStep(Step):
                 "power": self.power,
                 "max_power": self.max_power,
                 "air_assist": self.air_assist,
-                "kerf_mm": self.kerf_mm,
                 "tab_power": self.tab_power,
                 "frequency": self.frequency,
                 "pulse_width": self.pulse_width,
@@ -187,12 +171,6 @@ class LaserStep(Step):
     def set_air_assist(self, enabled: bool):
         if self.air_assist != enabled:
             self.air_assist = bool(enabled)
-            self.updated.send(self)
-
-    def set_kerf_mm(self, kerf: float):
-        """Sets the kerf (beam width) in millimeters for this process."""
-        if self.kerf_mm != kerf:
-            self.kerf_mm = float(kerf)
             self.updated.send(self)
 
     def set_tab_power(self, power: float):
@@ -232,7 +210,6 @@ class LaserStep(Step):
                 "power": self.power,
                 "max_power": self.max_power,
                 "air_assist": self.air_assist,
-                "kerf_mm": self.kerf_mm,
                 "tab_power": self.tab_power,
                 "frequency": self.frequency,
                 "pulse_width": self.pulse_width,
@@ -246,7 +223,6 @@ class LaserStep(Step):
         step.power = data.get("power", step.power)
         step.max_power = data.get("max_power", step.max_power)
         step.air_assist = data.get("air_assist", step.air_assist)
-        step.kerf_mm = data.get("kerf_mm", step.kerf_mm)
         step.tab_power = data.get("tab_power", step.tab_power)
         step.frequency = data.get("frequency", step.frequency)
         step.pulse_width = data.get("pulse_width", step.pulse_width)
@@ -259,7 +235,6 @@ class LaserStep(Step):
                 "power",
                 "max_power",
                 "air_assist",
-                "kerf_mm",
                 "tab_power",
                 "frequency",
                 "pulse_width",

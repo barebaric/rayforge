@@ -16,7 +16,7 @@ from rayforge.pipeline.stage.assembler_helpers import (
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 
-from ..capabilities import CUT, SCORE, WITH_KERF
+from ..capabilities import CUT, SCORE
 from .laser_step import LaserStep
 
 if TYPE_CHECKING:
@@ -28,13 +28,13 @@ if TYPE_CHECKING:
 class FrameStep(LaserStep):
     TYPELABEL = _("Frame")
     ICON = "step-frame-symbolic"
-    CAPABILITIES: Tuple[StepCapability, ...] = (CUT, SCORE, WITH_KERF)
+    CAPABILITIES: Tuple[StepCapability, ...] = (CUT, SCORE)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "frame"
 
     RECIPE_KEYS: Tuple[str, ...] = LaserStep.RECIPE_KEYS + (
         "cut_side",
-        "path_offset_mm",
+        "offset_mm",
     )
 
     @classmethod
@@ -49,8 +49,13 @@ class FrameStep(LaserStep):
                     default="CENTERLINE",
                 ),
                 FloatVar(
-                    key="path_offset_mm",
-                    label=_("Path Offset"),
+                    key="offset_mm",
+                    label=_("Offset"),
+                    description=_(
+                        "Shifts the frame inward/outward per Cut Side "
+                        "(none on Centerline). Defaults to kerf "
+                        "compensation for the head"
+                    ),
                     default=0.0,
                 ),
             ]
@@ -61,8 +66,7 @@ class FrameStep(LaserStep):
     ):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)
         self.power = 0.8
-        self.kerf_mm = 0.1
-        self.path_offset_mm = 0.0
+        self.offset_mm = 0.0
         self.cut_side = "CENTERLINE"
 
     def get_operation_mode_short(self):
@@ -78,8 +82,7 @@ class FrameStep(LaserStep):
     ) -> dict:
         kwargs: dict = {}
         kwargs["cut_side"] = str(self.cut_side).lower()
-        kwargs["path_offset_mm"] = self.path_offset_mm
-        kwargs["kerf_mm"] = self.kerf_mm
+        kwargs["offset_mm"] = self.offset_mm
         return kwargs
 
     def build_compute_payload(
@@ -99,8 +102,7 @@ class FrameStep(LaserStep):
         )
         kwargs = self.get_assembler_kwargs(machine, workpiece)
         spec = FrameSpec(
-            kerf_mm=kwargs["kerf_mm"],
-            path_offset_mm=kwargs["path_offset_mm"],
+            offset_mm=kwargs["offset_mm"],
             cut_side=kwargs["cut_side"],
         )
         return part, ComputePayload(assembler=Assembler(spec))
@@ -112,17 +114,29 @@ class FrameStep(LaserStep):
     ) -> Optional[dict]:
         return self.get_assembler_kwargs(machine, workpiece)
 
+    def apply_import_settings(self, settings: dict) -> None:
+        """Apply importer-provided settings this step owns."""
+        super().apply_import_settings(settings)
+        offset_mm = settings.get("offset_mm")
+        if offset_mm is not None:
+            self.offset_mm = offset_mm
+
     def to_dict(self) -> dict:
         data = super().to_dict()
         data["cut_side"] = self.cut_side
-        data["path_offset_mm"] = self.path_offset_mm
+        data["offset_mm"] = self.offset_mm
         return data
 
     @classmethod
     def from_dict(cls, data: dict) -> "FrameStep":
         step = cast("FrameStep", super().from_dict(data))
         step.cut_side = data.get("cut_side", "CENTERLINE")
-        step.path_offset_mm = data.get("path_offset_mm", 0.0)
+        if "offset_mm" in data:
+            step.offset_mm = data["offset_mm"]
+        else:
+            step.offset_mm = data.get("path_offset_mm", 0.0) + (
+                data.get("kerf_mm", 0.0) / 2.0
+            )
         return step
 
     @classmethod
@@ -174,7 +188,7 @@ class FrameStep(LaserStep):
         step.per_workpiece_transformers_dicts = per_wp
         step.per_step_transformers_dicts = per_step
         step.selected_head_uid = default_head.uid
-        step.kerf_mm = default_head.spot_size_mm[0]
+        step.offset_mm = default_head.kerf_mm
         step.max_cut_speed = machine.max_cut_speed
         step.max_travel_speed = machine.max_travel_speed
         # Operating feed defaults are machine-derived: the machine only

@@ -195,7 +195,7 @@ class TestBuildStepConfig:
         cs = {"kerf": 0.06}
         config = _build_step_config(cs)
         assert config is not None
-        assert config == {"kerf_mm": 0.06}
+        assert config == {"offset_mm": 0.03}
 
     def test_dot_width_mapping_halves_value(self):
         # LightBurn's dotWidth is the total shortening per run; raygeo's
@@ -236,7 +236,7 @@ class TestBuildStepConfig:
         assert config is not None
         assert config["power"] == 0.7
         assert config["cut_speed"] == 400
-        assert config["kerf_mm"] == 0.06
+        assert config["offset_mm"] == 0.03
         assert config["passes"] == 2
 
 
@@ -511,7 +511,7 @@ class TestLightBurnImporter:
         s = vec.layer_settings["1"]
         assert s["power"] == 0.7
         assert s["cut_speed"] == 400
-        assert s["kerf_mm"] == 0.06
+        assert s["offset_mm"] == 0.03
 
     def test_vectorization_layer_settings_dot_width_halved(self):
         importer = self._import("dot_width.lbrn2")
@@ -572,7 +572,7 @@ class TestLightBurnImporter:
                     step = wf.steps[0]
                     assert abs(getattr(step, "power") - 0.7) < 1e-6
                     assert step.cut_speed == 400
-                    assert abs(getattr(step, "kerf_mm") - 0.06) < 1e-6
+                    assert abs(getattr(step, "offset_mm") - 0.03) < 1e-6
                 found = True
                 break
         assert found, "No Layer found in imported items"
@@ -688,7 +688,7 @@ class TestApplySettingsDispatch:
         layer = Layer(name="cut")
         ItemAssembler._apply_settings(
             layer,
-            {"power": 0.7, "cut_speed": 400, "kerf_mm": 0.06},
+            {"power": 0.7, "cut_speed": 400, "offset_mm": 0.03},
         )
         wf = layer.workflow
         assert wf is not None and wf.has_steps()
@@ -697,13 +697,13 @@ class TestApplySettingsDispatch:
         assert not isinstance(step, engrave_cls)
         # ContourStep has no dot_width_correction_mm attribute.
         assert not hasattr(step, "dot_width_correction_mm")
-        assert getattr(step, "kerf_mm") == 0.06
+        assert getattr(step, "offset_mm") == 0.03
         assert getattr(step, "power") == 0.7
         assert getattr(step, "cut_speed") == 400
 
     def test_image_layer_without_dot_width_still_uses_engrave_step(self):
         # _is_image_layer alone — without dot_width_correction_mm — must
-        # still route to EngraveStep. kerf is a vector concept but should
+        # still route to EngraveStep. offset is a vector concept but should
         # be tolerated on image layers without crashing.
         contour_cls, engrave_cls = self._step_classes()
         from rayforge.image.assembler import ItemAssembler
@@ -711,7 +711,7 @@ class TestApplySettingsDispatch:
         layer = Layer(name="img")
         ItemAssembler._apply_settings(
             layer,
-            {"_is_image_layer": True, "kerf_mm": 0.0},
+            {"_is_image_layer": True, "offset_mm": 0.0},
         )
         wf = layer.workflow
         assert wf is not None and wf.has_steps()

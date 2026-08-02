@@ -5,10 +5,8 @@ from laser_essentials.capabilities import (
     ENGRAVE,
     MATERIAL_TEST,
     SCORE,
-    WITH_KERF,
     CutCapability,
     EngraveCapability,
-    KerfCapability,
     LaserHeadVar,
     MaterialTestCapability,
     ScoreCapability,
@@ -84,15 +82,6 @@ def test_score_capability(mocker):
     assert speed_var.default == 5000
 
 
-def test_kerf_capability():
-    varset = WITH_KERF.varset
-    assert isinstance(WITH_KERF, KerfCapability)
-    var_keys = [v.key for v in varset]
-    assert "kerf_mm" in var_keys
-    assert "power" not in var_keys
-    assert "cut_speed" not in var_keys
-
-
 def test_material_test_capability():
     assert isinstance(MATERIAL_TEST, MaterialTestCapability)
     assert MATERIAL_TEST.name == "MATERIAL_TEST"
@@ -104,17 +93,15 @@ def test_material_test_capability():
 
 
 def test_capability_or_operator():
-    combined = CUT | WITH_KERF
+    combined = CUT | SCORE
     assert isinstance(combined, _CombinedCapability)
     var_keys = [v.key for v in combined.varset]
     assert "power" in var_keys
-    assert "kerf_mm" in var_keys
     assert "selected_head_uid" in var_keys
 
-    triple = CUT | SCORE | WITH_KERF
+    triple = CUT | SCORE | ENGRAVE
     triple_keys = [v.key for v in triple.varset]
     assert "power" in triple_keys
-    assert "kerf_mm" in triple_keys
     assert "tab_power" in triple_keys
 
 

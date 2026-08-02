@@ -376,7 +376,10 @@ def _build_step_config(
         config["cut_speed"] = round(float(speed) * 60.0)
     kerf = cs.get("kerf")
     if kerf is not None:
-        config["kerf_mm"] = float(kerf)
+        # LightBurn's kerf is the full beam width; rayforge's offset_mm
+        # is the displacement applied to the path (half the width), so
+        # halve the imported value to preserve behaviour.
+        config["offset_mm"] = float(kerf) / 2.0
     dot_width = cs.get("dotWidth")
     if dot_width is not None:
         # LightBurn's dotWidth is the total amount shortened per run;

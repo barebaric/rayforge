@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
-from laser_essentials.capabilities import CUT, SCORE, WITH_KERF
+from laser_essentials.capabilities import CUT, SCORE
 from laser_essentials.steps import FrameStep
 
 from rayforge.core.workpiece import WorkPiece
@@ -26,7 +26,7 @@ class TestFrameStep:
     def test_instantiation(self):
         step = FrameStep(name="Test")
         assert step.typelabel == "Frame"
-        assert step.capabilities == (CUT, SCORE, WITH_KERF)
+        assert step.capabilities == (CUT, SCORE)
 
     def test_create(self, mock_context):
         step = FrameStep.create(mock_context)
@@ -43,13 +43,13 @@ class TestFrameStep:
         workpiece.size = (100, 100)
         kwargs = step.get_assembler_kwargs(machine, workpiece)
         assert isinstance(kwargs, dict)
-        expected_keys = {"cut_side", "path_offset_mm", "kerf_mm"}
+        expected_keys = {"cut_side", "offset_mm"}
         assert set(kwargs.keys()) == expected_keys
 
     def test_roundtrip_serialization(self):
         step = FrameStep(name="Test")
         step.cut_side = "OUTSIDE"
-        step.path_offset_mm = 0.5
+        step.offset_mm = 0.5
         data = step.to_dict()
         restored = FrameStep.from_dict(data)
         assert data == restored.to_dict()
@@ -64,7 +64,7 @@ class TestFrameComputePayload:
 
         step = FrameStep(name="frame")
         step.cut_side = "outside"
-        step.path_offset_mm = 0.3
+        step.offset_mm = 0.3
         wp = WorkPiece(name="wp")
         wp.set_size(10.0, 10.0)
 
@@ -75,8 +75,7 @@ class TestFrameComputePayload:
         spec = payload.assembler.spec
         assert isinstance(spec, FrameSpec)
         assert spec.cut_side == "outside"
-        assert spec.path_offset_mm == 0.3
-        assert spec.kerf_mm == step.kerf_mm
+        assert spec.offset_mm == 0.3
 
     def test_assembler_token_params_mirrors_kwargs(self, machine):
         step = FrameStep(name="frame")
