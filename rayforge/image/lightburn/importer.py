@@ -370,7 +370,7 @@ def _build_step_config(
         config["power"] = float(max_power) / 100.0
     min_power = cs.get("minPower")
     if min_power is not None:
-        config["min_power"] = float(min_power) / 100.0
+        config["min_power_level"] = float(min_power) / 100.0
     speed = cs.get("speed")
     if speed is not None:
         config["cut_speed"] = round(float(speed) * 60.0)
@@ -676,6 +676,11 @@ class LightBurnImporter(Importer):
                 continue
             if self._cut_setting_kinds.get(layer_idx) == "image":
                 config["_is_image_layer"] = True
+                # EngraveStep modulates between min_power_level /
+                # max_power_level; LightBurn's power is the raster
+                # ceiling, so mirror it into max_power_level as well.
+                if "power" in config:
+                    config["max_power_level"] = config["power"]
             layer_settings[layer_id] = config
 
         return VectorizationResult(

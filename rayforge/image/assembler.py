@@ -204,6 +204,12 @@ class ItemAssembler:
         Layers tagged ``_is_image_layer`` (e.g. LightBurn
         ``CutSetting_Img``) get an ``EngraveStep``; everything else gets
         a ``ContourStep``.
+
+        The settings dict uses the step's own attribute names
+        (canonicalised by the importer); the step applies the domain
+        settings it owns via :meth:`Step.apply_import_settings`. Only
+        the structural ``passes`` value (a transformer config) is
+        handled here.
         """
         is_image = bool(settings.get("_is_image_layer"))
         if is_image:
@@ -223,26 +229,7 @@ class ItemAssembler:
             logger.exception("Failed to set up step from settings")
             return
 
-        power = settings.get("power")
-        if power is not None:
-            try:
-                step.set_power(power)
-            except Exception:
-                step.power = power
-
-        cut_speed = settings.get("cut_speed")
-        if cut_speed is not None:
-            try:
-                step.set_cut_speed(cut_speed)
-            except Exception:
-                step.cut_speed = cut_speed
-
-        kerf_mm = settings.get("kerf_mm")
-        if kerf_mm is not None:
-            try:
-                step.set_kerf_mm(kerf_mm)
-            except Exception:
-                step.kerf_mm = kerf_mm
+        step.apply_import_settings(settings)
 
         passes = settings.get("passes")
         if passes is not None:
@@ -250,28 +237,6 @@ class ItemAssembler:
                 if t.get("name") == "MultiPassTransformer":
                     t["passes"] = passes
                     break
-
-        if is_image:
-            # EngraveStep modulates between min_power_level /
-            # max_power_level; the base Step.power attribute set above is
-            # unused by raster output, so mirror the value (already
-            # maxPower/100) into max_power_level.
-            if power is not None and hasattr(step, "max_power_level"):
-                setattr(step, "max_power_level", power)
-            min_power = settings.get("min_power")
-            if min_power is not None and hasattr(step, "min_power_level"):
-                setattr(step, "min_power_level", min_power)
-            dot_width = settings.get("dot_width_correction_mm")
-            if dot_width is not None and hasattr(
-                step, "dot_width_correction_mm"
-            ):
-                setattr(step, "dot_width_correction_mm", dot_width)
-            line_interval = settings.get("line_interval_mm")
-            if line_interval is not None and hasattr(step, "line_interval_mm"):
-                setattr(step, "line_interval_mm", line_interval)
-            scan_angle = settings.get("scan_angle")
-            if scan_angle is not None and hasattr(step, "scan_angle"):
-                setattr(step, "scan_angle", scan_angle)
 
         workflow = layer.workflow
         if workflow is not None:

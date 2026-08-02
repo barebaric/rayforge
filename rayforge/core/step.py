@@ -1,6 +1,5 @@
 import logging
 from abc import ABC
-from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -19,12 +18,10 @@ from raygeo.ops import Ops
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.part import Part
-from raygeo.ops.state import AirAssistMode
 
 from ..machine.models.head import Head
 from ..machine.models.laser import LaserHead
 from ..pipeline.transformer.registry import transformer_registry
-from ..shared.units.formatter import format_value
 from .capability import Capability, MachineCapability
 from .item import DocItem
 from .step_registry import step_registry
@@ -86,22 +83,13 @@ class Step(DocItem, ABC):
         self.visibility_changed = Signal()
 
         # Default machine-dependent values.
-        self.power: float = 1.0
-        self.max_power = 1000
         self.cut_speed: int = 500
         self.max_cut_speed = 10000
         self.travel_speed: int = 5000
         self.max_travel_speed = 10000
-        self.air_assist: bool = False
-        self.kerf_mm: float = 0.0
-        self.tab_power: float = 0.0
-        self.frequency: int = 0
-        self.pulse_width: int = 0
 
         # Forward compatibility: store unknown attributes
         self.extra: Dict[str, Any] = {}
-
-        self._apply_capability_defaults()
 
     @property
     def capabilities(self) -> Tuple[Capability, ...]:
@@ -114,34 +102,6 @@ class Step(DocItem, ABC):
         if head is not None and isinstance(head, LaserHead):
             caps.extend(machine.get_laser_capabilities(head))
         return tuple(caps)
-
-    def _apply_capability_defaults(self):
-        """
-        Overwrites instance attributes with capability VarSet defaults.
-
-        Iterates all capabilities defined on this step's class. For each
-        Var in each capability's VarSet, validates that the attribute
-        exists on the instance, then overwrites it with the Var's
-        default. Raises AttributeError if a capability defines a key
-        that does not exist as an instance attribute.
-
-        When multiple capabilities define the same key, the first
-        capability's default takes precedence (first-wins). This
-        ensures the primary capability's defaults are not overridden
-        by secondary capabilities.
-        """
-        applied_keys = set()
-        for cap in self.capabilities:
-            for var in cap.varset:
-                if not hasattr(self, var.key):
-                    raise AttributeError(
-                        f"{type(self).__name__} has no attribute "
-                        f"'{var.key}' required by capability "
-                        f"'{cap.name}'"
-                    )
-                if var.key not in applied_keys:
-                    setattr(self, var.key, var.default)
-                    applied_keys.add(var.key)
 
     @classmethod
     def create(
@@ -246,19 +206,25 @@ class Step(DocItem, ABC):
         }
 
     def create_initial_ops(self) -> "Ops":
-        """Build the initial Ops object with step-wide machine settings."""
-        ops = Ops()
-        ops.set_power(self.power)
-        ops.set_feed_rate(self.cut_speed)
-        ops.set_rapid_rate(self.travel_speed)
-        ops.set_air_assist(
-            AirAssistMode.ON if self.air_assist else AirAssistMode.OFF
-        )
-        if self.frequency:
-            ops.set_frequency(self.frequency)
-        if self.pulse_width:
-            ops.set_pulse_width(self.pulse_width)
-        return ops
+        """Build the initial Ops object with step-wide machine settings.
+
+        The generic step has no process parameters of its own; domain
+        bases (e.g. :class:`LaserStep`) override this to stamp their
+        machine settings.
+        """
+        return Ops()
+
+    def apply_import_settings(self, settings: Dict[str, Any]) -> None:
+        """Apply importer-provided settings that this step owns.
+
+        The settings dict uses the step's own attribute names
+        (canonicalised by the importer). The base handles the shared
+        motion settings; domain bases override this to apply their own
+        process attributes and call ``super()``.
+        """
+        cut_speed = settings.get("cut_speed")
+        if cut_speed is not None:
+            self.set_cut_speed(cut_speed)
 
     def to_dict(self) -> Dict:
         """Serializes the step and its configuration to a dictionary."""
@@ -278,17 +244,10 @@ class Step(DocItem, ABC):
             ),
             "per_step_transformers_dicts": self.per_step_transformers_dicts,
             "pixels_per_mm": self.pixels_per_mm,
-            "power": self.power,
-            "max_power": self.max_power,
             "cut_speed": self.cut_speed,
             "max_cut_speed": self.max_cut_speed,
             "travel_speed": self.travel_speed,
             "max_travel_speed": self.max_travel_speed,
-            "air_assist": self.air_assist,
-            "kerf_mm": self.kerf_mm,
-            "tab_power": self.tab_power,
-            "frequency": self.frequency,
-            "pulse_width": self.pulse_width,
             "children": [child.to_dict() for child in self.children],
         }
         result.update(self.extra)
@@ -320,17 +279,10 @@ class Step(DocItem, ABC):
                 "per_workpiece_transformers_dicts",
                 "per_step_transformers_dicts",
                 "pixels_per_mm",
-                "power",
-                "max_power",
                 "cut_speed",
                 "max_cut_speed",
                 "travel_speed",
                 "max_travel_speed",
-                "air_assist",
-                "kerf_mm",
-                "tab_power",
-                "frequency",
-                "pulse_width",
                 "children",
             }
         )
@@ -397,19 +349,12 @@ class Step(DocItem, ABC):
         step._unify_shared_transformers()
 
         step.pixels_per_mm = data.get("pixels_per_mm", (100, 100))
-        step.max_power = data.get("max_power", step.max_power)
         step.max_cut_speed = data.get("max_cut_speed", step.max_cut_speed)
         step.max_travel_speed = data.get(
             "max_travel_speed", step.max_travel_speed
         )
-        step.power = data.get("power", step.power)
         step.cut_speed = data.get("cut_speed", step.cut_speed)
         step.travel_speed = data.get("travel_speed", step.travel_speed)
-        step.air_assist = data.get("air_assist", step.air_assist)
-        step.kerf_mm = data.get("kerf_mm", step.kerf_mm)
-        step.tab_power = data.get("tab_power", step.tab_power)
-        step.frequency = data.get("frequency", step.frequency)
-        step.pulse_width = data.get("pulse_width", step.pulse_width)
         step.extra = extra
         return step
 
@@ -448,25 +393,6 @@ class Step(DocItem, ABC):
             name = t.get("name")
             if name and name in per_wp_names:
                 self.per_step_transformers_dicts[i] = per_wp_names[name]
-
-    def get_settings(self) -> Dict[str, Any]:
-        """
-        Bundles all physical process parameters into a dictionary.
-        Only includes settings of the step itself, and not of producer,
-        transformer, etc.
-        """
-        return {
-            "power": self.power,
-            "cut_speed": self.cut_speed,
-            "travel_speed": self.travel_speed,
-            "air_assist": self.air_assist,
-            "pixels_per_mm": self.pixels_per_mm,
-            "kerf_mm": self.kerf_mm,
-            "tab_power": self.tab_power,
-            "frequency": self.frequency,
-            "pulse_width": self.pulse_width,
-            "generated_workpiece_uid": self.generated_workpiece_uid,
-        }
 
     @property
     def layer(self) -> Optional["Layer"]:
@@ -533,13 +459,6 @@ class Step(DocItem, ABC):
             self.visibility_changed.send(self)
             self.updated.send(self)
 
-    def set_power(self, power: float):
-        if not (0.0 <= power <= 1.0):
-            raise ValueError("Power must be between 0.0 and 1.0")
-        if self.power != power:
-            self.power = power
-            self.updated.send(self)
-
     def set_cut_speed(self, speed: int):
         if self.cut_speed != speed:
             self.cut_speed = int(speed)
@@ -550,43 +469,17 @@ class Step(DocItem, ABC):
             self.travel_speed = int(speed)
             self.updated.send(self)
 
-    def set_air_assist(self, enabled: bool):
-        if self.air_assist != enabled:
-            self.air_assist = bool(enabled)
-            self.updated.send(self)
-
-    def set_kerf_mm(self, kerf: float):
-        """Sets the kerf (beam width) in millimeters for this process."""
-        if self.kerf_mm != kerf:
-            self.kerf_mm = float(kerf)
-            self.updated.send(self)
-
-    def set_tab_power(self, power: float):
-        if not (0.0 <= power <= 1.0):
-            raise ValueError("Tab power must be between 0.0 and 1.0")
-        if self.tab_power != power:
-            self.tab_power = power
-            self.updated.send(self)
-
-    def set_frequency(self, frequency: int):
-        if self.frequency != frequency:
-            self.frequency = int(frequency)
-            self.updated.send(self)
-
-    def set_pulse_width(self, width: int):
-        if self.pulse_width != width:
-            self.pulse_width = int(width)
-            self.updated.send(self)
-
     def get_operation_mode_short(self) -> Optional[str]:
         return None
 
     def get_summary(self) -> str:
-        power_percent = round(self.power * 100)
-        speed_str = format_value(self.cut_speed, "speed")
-        return _("{power_percent}% power, {speed_str}").format(
-            power_percent=power_percent, speed_str=speed_str
-        )
+        """Return a short human-readable summary for the UI.
+
+        The generic step has no process parameters of its own, so it
+        falls back to the type label. Domain bases (e.g.
+        :class:`LaserStep`) override this to describe their process.
+        """
+        return self.typelabel
 
     def dump(self, indent: int = 0):
         print("  " * indent, self.name)

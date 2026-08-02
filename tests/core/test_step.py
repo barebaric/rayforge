@@ -5,13 +5,10 @@ from raygeo.geo import Matrix
 
 from rayforge.core.capability import (
     CUT,
-    WITH_KERF,
-    Capability,
     PWMCapability,
 )
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
-from rayforge.core.varset import FloatVar, VarSet
 from rayforge.machine.models.laser import LaserHead
 
 
@@ -44,11 +41,8 @@ def test_step_initialization(step):
     assert step.per_workpiece_transformers_dicts == []
     assert step.per_step_transformers_dicts == []
     assert step.pixels_per_mm == (50, 50)
-    assert step.power == 1.0
     assert step.cut_speed == 500
     assert step.travel_speed == 5000
-    assert step.air_assist is False
-    assert step.kerf_mm == 0.0
 
 
 def test_setters_and_signals(step):
@@ -58,11 +52,6 @@ def test_setters_and_signals(step):
     """
     handler = MagicMock()
     step.updated.connect(handler)
-
-    step.set_power(0.75)
-    assert step.power == 0.75
-    handler.assert_called_once_with(step)
-    handler.reset_mock()
 
     step.set_cut_speed(1200)
     assert step.cut_speed == 1200
@@ -74,27 +63,9 @@ def test_setters_and_signals(step):
     handler.assert_called_once_with(step)
     handler.reset_mock()
 
-    step.set_air_assist(True)
-    assert step.air_assist is True
-    handler.assert_called_once_with(step)
-    handler.reset_mock()
-
-    step.set_kerf_mm(0.15)
-    assert step.kerf_mm == 0.15
-    handler.assert_called_once_with(step)
-    handler.reset_mock()
-
     step.set_selected_head_uid("laser-123")
     assert step.selected_head_uid == "laser-123"
     handler.assert_called_once_with(step)
-
-
-def test_set_power_validation(step):
-    """Tests that set_power raises ValueError for out-of-range values."""
-    with pytest.raises(ValueError):
-        step.set_power(-0.1)
-    with pytest.raises(ValueError):
-        step.set_power(1.1)
 
 
 def test_set_visible_fires_signals(step):
@@ -164,11 +135,8 @@ def test_serialization_to_dict_all_properties(step):
     step.applied_recipe_uid = "recipe-123"
     step.per_step_transformers_dicts = [{"type": "CoolingPause"}]
     step.pixels_per_mm = (100, 100)
-    step.power = 0.65
     step.cut_speed = 1500
     step.travel_speed = 9000
-    step.air_assist = True
-    step.kerf_mm = 0.12
 
     data = step.to_dict()
 
@@ -183,11 +151,8 @@ def test_serialization_to_dict_all_properties(step):
     assert data["applied_recipe_uid"] == "recipe-123"
     assert data["per_step_transformers_dicts"] == [{"type": "CoolingPause"}]
     assert data["pixels_per_mm"] == (100, 100)
-    assert data["power"] == 0.65
     assert data["cut_speed"] == 1500
     assert data["travel_speed"] == 9000
-    assert data["air_assist"] is True
-    assert data["kerf_mm"] == 0.12
 
 
 def test_deserialization_from_dict(step):
@@ -205,14 +170,10 @@ def test_deserialization_from_dict(step):
         "per_workpiece_transformers_dicts": [],
         "per_step_transformers_dicts": [],
         "pixels_per_mm": (20, 20),
-        "power": 0.5,
-        "max_power": 1000,
         "cut_speed": 2500,
         "max_cut_speed": 10000,
         "travel_speed": 10000,
         "max_travel_speed": 10000,
-        "air_assist": True,
-        "kerf_mm": 0.2,
         "children": [],
     }
 
@@ -227,11 +188,8 @@ def test_deserialization_from_dict(step):
     assert restored.generated_workpiece_uid == "wp-123"
     assert restored.applied_recipe_uid == "recipe-456"
     assert restored.pixels_per_mm == (20, 20)
-    assert restored.power == 0.5
     assert restored.cut_speed == 2500
     assert restored.travel_speed == 10000
-    assert restored.air_assist is True
-    assert restored.kerf_mm == 0.2
 
 
 def test_deserialization_with_missing_keys(step):
@@ -254,9 +212,7 @@ def test_deserialization_with_missing_keys(step):
     assert restored.name == "MinimalType"  # Falls back to typelabel
     assert restored.selected_head_uid is None
     assert restored.applied_recipe_uid is None
-    assert restored.power == 1.0
     assert restored.cut_speed == 500
-    assert restored.kerf_mm == 0.0
     assert restored.pixels_per_mm == (100, 100)
 
 
@@ -269,9 +225,7 @@ def test_step_roundtrip_serialization():
     original = Step(typelabel="Roundtrip", name="My Step")
     original.uid = "roundtrip-uid"
     original.visible = False
-    original.set_power(0.8)
     original.set_cut_speed(3000)
-    original.set_kerf_mm(0.18)
     original.selected_head_uid = "the-best-laser"
     original.applied_recipe_uid = "recipe-abc"
     original.matrix = Matrix.translation(50, 50)
@@ -287,9 +241,7 @@ def test_step_roundtrip_serialization():
     assert restored.name == original.name
     assert restored.typelabel == original.typelabel
     assert restored.visible == original.visible
-    assert restored.power == original.power
     assert restored.cut_speed == original.cut_speed
-    assert restored.kerf_mm == original.kerf_mm
     assert restored.selected_head_uid == original.selected_head_uid
     assert restored.applied_recipe_uid == original.applied_recipe_uid
     assert restored.matrix == original.matrix
@@ -313,14 +265,10 @@ def test_step_forward_compatibility_with_extra_fields():
         "per_workpiece_transformers_dicts": [],
         "per_step_transformers_dicts": [],
         "pixels_per_mm": (50, 50),
-        "power": 1.0,
-        "max_power": 1000,
         "cut_speed": 500,
         "max_cut_speed": 10000,
         "travel_speed": 5000,
         "max_travel_speed": 10000,
-        "air_assist": False,
-        "kerf_mm": 0.0,
         "children": [],
         "future_field_string": "some value",
         "future_field_number": 42,
@@ -362,14 +310,10 @@ def test_step_backward_compatibility_with_missing_optional_fields():
     assert step.generated_workpiece_uid is None
     assert step.applied_recipe_uid is None
     assert step.pixels_per_mm == (100, 100)
-    assert step.power == 1.0
-    assert step.max_power == 1000
     assert step.cut_speed == 500
     assert step.max_cut_speed == 10000
     assert step.travel_speed == 5000
     assert step.max_travel_speed == 10000
-    assert step.air_assist is False
-    assert step.kerf_mm == 0.0
 
 
 def test_legacy_selected_laser_uid_key_migrates():
@@ -400,64 +344,16 @@ def test_legacy_selected_laser_uid_key_migrates():
 
 def test_capability_defaults_applied_in_constructor():
     """
-    Tests that _apply_capability_defaults sets instance attributes
-    to their capability VarSet defaults during construction.
+    Capability defaults no longer drive attribute creation on core
+    ``Step`` — domain bases declare their defaults explicitly. Laser
+    defaults are covered by the laser addon tests (see
+    ``test_laser_step.py``).
     """
+    step = Step(typelabel="Test")
 
-    class CutStep(Step):
-        CAPABILITIES = (CUT,)
-
-    step = CutStep(typelabel="Test")
-
-    assert step.power == 0.8
     assert step.cut_speed == 500
     assert step.travel_speed == 5000
-    assert step.air_assist is False
-    assert step.tab_power == 0.0
-
-    step.set_power(0.5)
-    assert step.power == 0.5
-
-
-def test_capability_defaults_with_combined_capabilities():
-    class CutKerfStep(Step):
-        CAPABILITIES = (CUT, WITH_KERF)
-
-    step = CutKerfStep(typelabel="Test")
-
-    assert step.power == 0.8
-    assert step.kerf_mm == 0.1
-    assert step.tab_power == 0.0
-
-
-def test_capability_raises_on_unknown_key():
-    """
-    Tests that _apply_capability_defaults raises if a capability
-    defines a key that does not exist as an instance attribute.
-    """
-
-    class BadCapability(Capability):
-        @property
-        def name(self):
-            return "BAD"
-
-        @property
-        def label(self):
-            return "Bad"
-
-        @property
-        def varset(self):
-            return VarSet(
-                vars=[FloatVar(key="nonexistent", label="X", default=1.0)],
-            )
-
-    BAD = BadCapability()
-
-    class BadStep(Step):
-        CAPABILITIES = (BAD,)
-
-    with pytest.raises(AttributeError, match="nonexistent"):
-        BadStep(typelabel="Test")
+    assert not hasattr(step, "power")
 
 
 def test_deserialization_with_missing_step_class():
@@ -485,70 +381,6 @@ def test_deserialization_with_missing_step_class():
     assert step.name == "Missing Step"
     assert step.typelabel == "UnknownType"
     assert step.extra == {}
-
-
-def test_frequency_and_pulse_width_defaults(step):
-    assert step.frequency == 0
-    assert step.pulse_width == 0
-
-
-def test_set_frequency(step):
-    handler = MagicMock()
-    step.updated.connect(handler)
-    step.set_frequency(1000)
-    assert step.frequency == 1000
-    handler.assert_called_once_with(step)
-
-
-def test_set_pulse_width(step):
-    handler = MagicMock()
-    step.updated.connect(handler)
-    step.set_pulse_width(50)
-    assert step.pulse_width == 50
-    handler.assert_called_once_with(step)
-
-
-def test_setters_no_signal_on_same_value(step):
-    handler = MagicMock()
-    step.updated.connect(handler)
-    step.set_frequency(0)
-    step.set_pulse_width(0)
-    handler.assert_not_called()
-
-
-def test_frequency_pulse_width_serialization_roundtrip(step):
-    step.set_frequency(2000)
-    step.set_pulse_width(100)
-    data = step.to_dict()
-    assert data["frequency"] == 2000
-    assert data["pulse_width"] == 100
-
-    restored = Step.from_dict(data)
-    assert restored.frequency == 2000
-    assert restored.pulse_width == 100
-
-
-def test_frequency_pulse_width_missing_defaults(step):
-    data = {
-        "uid": "step-min",
-        "type": "step",
-        "typelabel": "MinimalType",
-        "visible": True,
-        "matrix": Matrix.identity().to_list(),
-        "per_workpiece_transformers_dicts": [],
-        "per_step_transformers_dicts": [],
-    }
-    restored = Step.from_dict(data)
-    assert restored.frequency == 0
-    assert restored.pulse_width == 0
-
-
-def test_get_settings_includes_frequency_and_pulse_width(step):
-    step.set_frequency(1000)
-    step.set_pulse_width(50)
-    settings = step.get_settings()
-    assert settings["frequency"] == 1000
-    assert settings["pulse_width"] == 50
 
 
 def test_get_effective_capabilities_with_mock_machine():
@@ -579,56 +411,3 @@ def test_get_effective_capabilities_no_laser_selected(step):
     caps = step.get_effective_capabilities(mock_machine)
 
     assert caps == type(step).CAPABILITIES
-
-
-def test_factory_applies_laser_capability_defaults():
-    """Step factories set attributes from driver-provided capabilities."""
-    pwm_cap = PWMCapability(1000, 5000, 50, 1, 100)
-    mock_laser = MagicMock()
-    mock_laser.uid = "test-laser"
-    mock_laser.spot_size_mm = (0.1, 0.1)
-
-    mock_machine = MagicMock()
-    mock_machine.heads = [mock_laser]
-    mock_machine.get_default_head.return_value = mock_laser
-    mock_machine.max_cut_speed = 5000
-    mock_machine.max_travel_speed = 10000
-    mock_machine.acceleration = 1000
-    mock_machine.get_laser_capabilities.return_value = (pwm_cap,)
-
-    mock_context = MagicMock()
-    mock_context.machine = mock_machine
-
-    class TestCutStep(Step):
-        CAPABILITIES = (CUT,)
-
-    step = TestCutStep(typelabel="Test")
-    step.selected_head_uid = mock_laser.uid
-    for cap in mock_machine.get_laser_capabilities(mock_laser):
-        for var in cap.varset:
-            setattr(step, var.key, var.default)
-
-    assert step.frequency == 1000
-    assert step.pulse_width == 50
-
-
-def test_factory_no_defaults_when_driver_returns_empty():
-    """Step factories leave defaults when driver returns no capabilities."""
-    mock_laser = MagicMock()
-    mock_laser.uid = "test-laser"
-    mock_laser.spot_size_mm = (0.1, 0.1)
-
-    mock_machine = MagicMock()
-    mock_machine.heads = [mock_laser]
-    mock_machine.get_default_head.return_value = mock_laser
-    mock_machine.get_laser_capabilities.return_value = ()
-
-    step = Step(typelabel="Test")
-    step.frequency = 0
-    step.pulse_width = 0
-    for cap in mock_machine.get_laser_capabilities(mock_laser):
-        for var in cap.varset:
-            setattr(step, var.key, var.default)
-
-    assert step.frequency == 0
-    assert step.pulse_width == 0

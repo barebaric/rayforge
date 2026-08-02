@@ -210,7 +210,7 @@ class TestBuildStepConfig:
         cs = {"minPower": 10}
         config = _build_step_config(cs)
         assert config is not None
-        assert config == {"min_power": 0.1}
+        assert config == {"min_power_level": 0.1}
 
     def test_interval_mapping(self):
         cs = {"interval": 0.04}
@@ -527,9 +527,11 @@ class TestLightBurnImporter:
         # stores the total shortening, raygeo applies at each end).
         assert s["dot_width_correction_mm"] == 0.04
         # minPower=10 -> 0.1 (LightBurn uses 0-100, raygeo uses 0-1).
-        assert s["min_power"] == 0.1
+        assert s["min_power_level"] == 0.1
         # maxPower=50 -> 0.5, surfaced as `power` for the base Step.
         assert s["power"] == 0.5
+        # Image layers mirror `power` into the raster ceiling.
+        assert s["max_power_level"] == 0.5
         # interval=0.04 -> line_interval_mm=0.04 (already in mm).
         assert s["line_interval_mm"] == 0.04
         # angle=45 -> scan_angle=45.0 (already in degrees).
@@ -551,7 +553,7 @@ class TestLightBurnImporter:
                 # create a default step later.
                 if wf and wf.has_steps():
                     step = wf.steps[0]
-                    assert abs(step.power - 0.2) < 1e-6
+                    assert abs(getattr(step, "power") - 0.2) < 1e-6
                     assert step.cut_speed == 500
                 found = True
                 break
@@ -568,9 +570,9 @@ class TestLightBurnImporter:
                 wf = item.workflow
                 if wf and wf.has_steps():
                     step = wf.steps[0]
-                    assert abs(step.power - 0.7) < 1e-6
+                    assert abs(getattr(step, "power") - 0.7) < 1e-6
                     assert step.cut_speed == 400
-                    assert abs(step.kerf_mm - 0.06) < 1e-6
+                    assert abs(getattr(step, "kerf_mm") - 0.06) < 1e-6
                 found = True
                 break
         assert found, "No Layer found in imported items"
@@ -639,28 +641,17 @@ class TestApplySettingsDispatch:
     """
 
     @staticmethod
-    def _register_mock_steps(monkeypatch):
-        from rayforge.core.step import Step
+    def _step_classes():
         from rayforge.core.step_registry import step_registry
 
-        class ContourStep(Step):
-            pass
+        contour_cls = step_registry.get("ContourStep")
+        engrave_cls = step_registry.get("EngraveStep")
+        assert contour_cls is not None, "ContourStep not registered"
+        assert engrave_cls is not None, "EngraveStep not registered"
+        return contour_cls, engrave_cls
 
-        class EngraveStep(Step):
-            def __init__(self, typelabel="Engrave", name=None):
-                super().__init__(typelabel=typelabel, name=name)
-                self.dot_width_correction_mm = None
-                self.line_interval_mm = None
-                self.scan_angle = 0.0
-                self.min_power_level = 0.0
-                self.max_power_level = 1.0
-
-        monkeypatch.setitem(step_registry._steps, "ContourStep", ContourStep)
-        monkeypatch.setitem(step_registry._steps, "EngraveStep", EngraveStep)
-        return ContourStep, EngraveStep
-
-    def test_image_layer_creates_engrave_step(self, monkeypatch):
-        contour_cls, engrave_cls = self._register_mock_steps(monkeypatch)
+    def test_image_layer_creates_engrave_step(self):
+        contour_cls, engrave_cls = self._step_classes()
         from rayforge.image.assembler import ItemAssembler
 
         layer = Layer(name="img")
@@ -668,7 +659,8 @@ class TestApplySettingsDispatch:
             layer,
             {
                 "power": 0.5,
-                "min_power": 0.1,
+                "min_power_level": 0.1,
+                "max_power_level": 0.5,
                 "cut_speed": 600,
                 "dot_width_correction_mm": 0.04,
                 "line_interval_mm": 0.04,
@@ -682,17 +674,15 @@ class TestApplySettingsDispatch:
         assert isinstance(step, engrave_cls)
         assert not isinstance(step, contour_cls)
         # EngraveStep-specific raster settings must all be applied.
-        assert step.dot_width_correction_mm == 0.04
-        assert step.line_interval_mm == 0.04
-        assert step.scan_angle == 45.0
-        # EngraveStep modulates between min_power_level / max_power_level,
-        # so `power` (maxPower/100) is mirrored into max_power_level;
-        # min_power_level is set directly.
-        assert step.min_power_level == 0.1
-        assert step.max_power_level == 0.5
+        assert getattr(step, "dot_width_correction_mm") == 0.04
+        assert getattr(step, "line_interval_mm") == 0.04
+        assert getattr(step, "scan_angle") == 45.0
+        # The raster range is set directly from the canonical settings.
+        assert getattr(step, "min_power_level") == 0.1
+        assert getattr(step, "max_power_level") == 0.5
 
-    def test_vector_layer_creates_contour_step(self, monkeypatch):
-        contour_cls, engrave_cls = self._register_mock_steps(monkeypatch)
+    def test_vector_layer_creates_contour_step(self):
+        contour_cls, engrave_cls = self._step_classes()
         from rayforge.image.assembler import ItemAssembler
 
         layer = Layer(name="cut")
@@ -707,15 +697,15 @@ class TestApplySettingsDispatch:
         assert not isinstance(step, engrave_cls)
         # ContourStep has no dot_width_correction_mm attribute.
         assert not hasattr(step, "dot_width_correction_mm")
-        assert step.kerf_mm == 0.06
+        assert getattr(step, "kerf_mm") == 0.06
+        assert getattr(step, "power") == 0.7
+        assert getattr(step, "cut_speed") == 400
 
-    def test_image_layer_without_dot_width_still_uses_engrave_step(
-        self, monkeypatch
-    ):
+    def test_image_layer_without_dot_width_still_uses_engrave_step(self):
         # _is_image_layer alone — without dot_width_correction_mm — must
         # still route to EngraveStep. kerf is a vector concept but should
         # be tolerated on image layers without crashing.
-        contour_cls, engrave_cls = self._register_mock_steps(monkeypatch)
+        contour_cls, engrave_cls = self._step_classes()
         from rayforge.image.assembler import ItemAssembler
 
         layer = Layer(name="img")
