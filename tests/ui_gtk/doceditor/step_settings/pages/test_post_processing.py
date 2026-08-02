@@ -19,14 +19,14 @@ def _find_label(widget):
     bound. The placeholder's text is translated, so assert on type.
     """
     pending = [widget]
-    visited = {id(widget)}
+    visited = {hash(widget)}
     while pending:
         current = pending.pop()
         if isinstance(current, Gtk.Label):
             return True
         for child in current:
-            if id(child) not in visited:
-                visited.add(id(child))
+            if hash(child) not in visited:
+                visited.add(hash(child))
                 pending.append(child)
     return False
 
