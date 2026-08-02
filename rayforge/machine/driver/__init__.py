@@ -1,7 +1,13 @@
 import inspect
 from typing import Type, cast
 
-from .driver import DRIVER_MATURITY_LABELS, Driver, DriverMaturity
+from .driver import (
+    DRIVER_MATURITY_LABELS,
+    Driver,
+    DriverFeatures,
+    DriverMaturity,
+    PWMParams,
+)
 from .dummy import NoDeviceDriver
 from .grbl import (
     GrblNetworkDriver,
@@ -39,9 +45,11 @@ def register_driver(driver: Type[Driver]):
 
 __all__ = [
     "Driver",
+    "DriverFeatures",
     "DriverMaturity",
     "DRIVER_MATURITY_LABELS",
     "NoDeviceDriver",
+    "PWMParams",
     "GrblNetworkDriver",
     "GrblSerialDriver",
     "GrblSerialSimpleDriver",

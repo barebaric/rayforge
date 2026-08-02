@@ -45,6 +45,14 @@ class Head(ABC):
         """
         return None
 
+    def get_defaults(self, machine) -> Dict[str, Any]:
+        """Default attribute values a step should adopt for this head.
+
+        Concrete head types may override this to report head-specific
+        defaults (e.g. PWM frequency and pulse width for laser heads).
+        """
+        return {}
+
     def set_name(self, name: str):
         self.name = name
         self.changed.send(self)

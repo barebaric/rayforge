@@ -1,6 +1,6 @@
 from functools import reduce
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -23,6 +23,18 @@ from .step_settings.placeholder import PlaceholderSettingsWidget
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
+
+
+def _effective_capabilities(step: Step, machine) -> Tuple[Capability, ...]:
+    """Class-level step capabilities plus the selected head's
+    driver-derived capabilities."""
+    caps = list(type(step).CAPABILITIES)
+    caps.extend(
+        machine.get_effective_head_capabilities(
+            step.get_selected_head(machine)
+        )
+    )
+    return tuple(caps)
 
 
 class GeneralStepSettingsView(TrackedPreferencesPage):
@@ -52,7 +64,8 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
 
         # Build settings UI from capability VarSet.
         # VarSetWidget IS the general group — no visual split.
-        caps = step.get_effective_capabilities(get_context().machine)
+        machine = get_context().machine
+        caps = _effective_capabilities(step, machine)
         if caps:
             varset = reduce(Capability.__or__, caps).varset
         else:
@@ -158,20 +171,19 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
                 if isinstance(kerf_row, Adw.SpinRow):
                     kerf_row.set_value(new_kerf)
 
-            for cap in machine.get_laser_capabilities(selected_head):
-                for var in cap.varset:
-                    t.execute(
-                        ChangePropertyCommand(
-                            target=self.step,
-                            property_name=var.key,
-                            new_value=var.default,
-                            setter_method_name=f"set_{var.key}",
-                        )
+            for key, value in selected_head.get_defaults(machine).items():
+                t.execute(
+                    ChangePropertyCommand(
+                        target=self.step,
+                        property_name=key,
+                        new_value=value,
+                        setter_method_name=f"set_{key}",
                     )
+                )
 
         new_varset = reduce(
             Capability.__or__,
-            self.step.get_effective_capabilities(machine),
+            _effective_capabilities(self.step, machine),
         ).varset
         self.varset_widget.populate(new_varset)
         self._sync_widgets_to_model()

@@ -20,7 +20,6 @@ from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.part import Part
 
 from ..machine.models.head import Head
-from ..machine.models.laser import LaserHead
 from ..pipeline.transformer.registry import transformer_registry
 from .capability import Capability, MachineCapability
 from .item import DocItem
@@ -94,14 +93,6 @@ class Step(DocItem, ABC):
     @property
     def capabilities(self) -> Tuple[Capability, ...]:
         return type(self).CAPABILITIES
-
-    def get_effective_capabilities(self, machine) -> Tuple[Capability, ...]:
-        """Class-level capabilities merged with driver-provided ones."""
-        caps = list(type(self).CAPABILITIES)
-        head = self.get_selected_head(machine)
-        if head is not None and isinstance(head, LaserHead):
-            caps.extend(machine.get_laser_capabilities(head))
-        return tuple(caps)
 
     @classmethod
     def create(

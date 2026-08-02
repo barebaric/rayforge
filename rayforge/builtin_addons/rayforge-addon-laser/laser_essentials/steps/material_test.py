@@ -13,6 +13,7 @@ from rayforge.core.capability import (
     Capability,
     MachineCapability,
 )
+from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.transformer.registry import transformer_registry
 
 from .laser_step import LaserStep
@@ -62,7 +63,9 @@ class MaterialTestStep(LaserStep):
         machine: "Machine",
         workpiece: "WorkPiece",
     ) -> dict:
-        _spot_x, spot_y = self.get_laser_spot(machine)
+        _spot_x, spot_y = LaserHead.get_spot_size(
+            self.get_selected_laser(machine)
+        )
         kwargs: dict = {}
         kwargs["size_mm"] = workpiece.size if workpiece else (0, 0)
         kwargs["cols"] = self.grid_dimensions[0]
@@ -240,7 +243,6 @@ class MaterialTestStep(LaserStep):
         step.selected_head_uid = default_head.uid
         step.max_cut_speed = machine.max_cut_speed
         step.max_travel_speed = machine.max_travel_speed
-        for cap in machine.get_laser_capabilities(default_head):
-            for var in cap.varset:
-                setattr(step, var.key, var.default)
+        for key, value in default_head.get_defaults(machine).items():
+            setattr(step, key, value)
         return step

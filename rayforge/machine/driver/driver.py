@@ -23,12 +23,12 @@ from ...context import RayforgeContext
 if TYPE_CHECKING:
     from raygeo.ops import Ops
 
-    from ...core.capability import Capability
     from ...core.doc import Doc
     from ...core.varset import VarSet
     from ...pipeline.encoder.base import EncodedOutput, OpsEncoder
     from ..device.profile import DeviceProfile
     from ..models.dialect import GcodeDialect
+    from ..models.head import Head
     from ..models.laser import Laser
     from ..models.machine import Machine
 
@@ -159,6 +159,28 @@ class DeviceState:
     spindle_speed: Optional[int] = None
     buffer_available: Optional[int] = None
     buffer_rx_available: Optional[int] = None
+
+
+@dataclass
+class PWMParams:
+    """PWM configuration reported by a driver for a laser head."""
+
+    frequency: int
+    max_frequency: int
+    pulse_width: int
+    min_pulse_width: int
+    max_pulse_width: int
+
+
+@dataclass
+class DriverFeatures:
+    """Hardware features reported by a driver for a specific head.
+
+    Plain data — addons interpret this into domain-specific
+    capabilities (e.g. a PWM capability in the laser addon).
+    """
+
+    pwm: Optional[PWMParams] = None
 
 
 class Driver(ABC):
@@ -339,17 +361,16 @@ class Driver(ABC):
         """
         return self.create_encoder(self._machine)
 
-    def get_laser_capabilities(
-        self, laser: "Laser"
-    ) -> "Tuple[Capability, ...]":
+    def get_driver_features(self, head: "Head") -> "DriverFeatures":
         """
-        Returns driver-specific capabilities for the given laser head.
+        Returns the hardware features reported by the driver for the
+        given head.
 
-        Subclasses may override this to provide capabilities that depend
-        on the driver type (e.g., PWM support on Ruida but not GRBL).
-        The base implementation returns an empty tuple.
+        Subclasses may override this to report driver-specific features
+        (e.g., PWM support on Ruida but not GRBL). The base
+        implementation reports no special features.
         """
-        return ()
+        return DriverFeatures()
 
     @abstractmethod
     def get_setting_vars(self) -> List["VarSet"]:

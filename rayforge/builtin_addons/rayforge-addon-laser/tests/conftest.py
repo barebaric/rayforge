@@ -8,7 +8,9 @@ with their respective registries before tests run.
 from unittest.mock import MagicMock
 
 import pytest
+from laser_essentials.capabilities import resolve_pwm_capability
 
+from rayforge.core.driver_capability_registry import driver_capability_registry
 from rayforge.core.step_registry import step_registry
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.transformer.registry import transformer_registry
@@ -47,6 +49,11 @@ def _register_steps():
     step_registry.register(ShrinkWrapStep, addon_name="laser_essentials")
 
 
+def _register_capabilities():
+    """Register the driver-feature capability resolvers."""
+    driver_capability_registry.register(resolve_pwm_capability)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def register_laser_essentials():
     """
@@ -74,4 +81,5 @@ def register_laser_essentials():
     mgr.load_addon_by_name("post_processors", worker_only=True)
 
     _register_steps()
+    _register_capabilities()
     yield

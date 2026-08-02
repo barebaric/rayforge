@@ -21,6 +21,7 @@ from raygeo.ops.part.image_source import WholeImageSource
 
 from rayforge.core.capability import ENGRAVE, Capability, MachineCapability
 from rayforge.image.dither import DitherAlgorithm
+from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.stage.assembler_helpers import (
     DepthMode,
     compute_raster_auto_levels,
@@ -102,7 +103,9 @@ class EngraveStep(LaserStep):
         machine: "Machine",
         workpiece: "WorkPiece",
     ) -> dict:
-        _spot_x, spot_y = self.get_laser_spot(machine)
+        _spot_x, spot_y = LaserHead.get_spot_size(
+            self.get_selected_laser(machine)
+        )
         line_interval = (
             self.line_interval_mm
             if self.line_interval_mm is not None
@@ -154,7 +157,9 @@ class EngraveStep(LaserStep):
         assembler on the rayon worker only reads slabs from the
         attached image source.
         """
-        spot_x, spot_y = self.get_laser_spot(machine)
+        spot_x, spot_y = LaserHead.get_spot_size(
+            self.get_selected_laser(machine)
+        )
         part, alpha = _build_raster_part(self, machine, workpiece)
         kwargs = self.get_assembler_kwargs(machine, workpiece)
         depth_mode = DepthMode[self.depth_mode]
@@ -347,9 +352,8 @@ class EngraveStep(LaserStep):
         # the operation's typical feed rate (engraving is faster than
         # cutting).
         step.cut_speed = min(machine.max_cut_speed, 4000)
-        for cap in machine.get_laser_capabilities(default_head):
-            for var in cap.varset:
-                setattr(step, var.key, var.default)
+        for key, value in default_head.get_defaults(machine).items():
+            setattr(step, key, value)
 
         OverscanTransformer = cast(
             "OverscanTransformerType",
@@ -385,7 +389,7 @@ def _build_raster_part(
     if size[0] <= 0 or size[1] <= 0:
         return Part(size_mm=size), None
 
-    spot_x, spot_y = step.get_laser_spot(machine)
+    spot_x, spot_y = LaserHead.get_spot_size(step.get_selected_laser(machine))
     px_per_mm_x = 1.0 / (step.sample_interval_mm or spot_x)
     px_per_mm_y = 1.0 / spot_y
 

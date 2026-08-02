@@ -24,13 +24,14 @@ from ...camera.models.camera import Camera
 from ...camera.v4l import migrate_camera_data
 from ...context import RayforgeContext, get_context
 from ...core.capability import MachineCapability
+from ...core.driver_capability_registry import driver_capability_registry
 from ...core.layer import Layer
 from ...core.model import Model
 from ...pipeline.coordspace import MachineSpace
 from ...shared.tasker import task_mgr
 from ..assembly import Assembly
 from ..driver import get_driver_cls
-from ..driver.driver import DeviceState, Pos
+from ..driver.driver import DeviceState, DriverFeatures, Pos
 from ..kinematics import HeadSpec, Kinematics, build_assembly
 from ..models.axis import AxisConfig, AxisDirection, AxisSet, AxisType
 from ..transport import TransportStatus
@@ -215,12 +216,31 @@ class Machine:
         """Property to access the driver through the controller."""
         return self.controller.driver
 
-    def get_laser_capabilities(self, laser: Laser) -> Tuple["Capability", ...]:
+    def get_driver_features(self, head: Head) -> DriverFeatures:
         """
-        Returns the capabilities contributed by the driver for the given
-        laser head. Delegates to the driver's get_laser_capabilities().
+        Returns the hardware features reported by the driver for the given
+        head. Delegates to the driver's get_driver_features().
         """
-        return self.driver.get_laser_capabilities(laser)
+        if self.driver:
+            return self.driver.get_driver_features(head)
+        return DriverFeatures()
+
+    def get_effective_head_capabilities(
+        self, head: Optional[Head] = None
+    ) -> Tuple["Capability", ...]:
+        """
+        Returns the capabilities that apply to the given head.
+
+        Resolves the head (defaulting to the machine's default head),
+        the driver-reported features for it, and the addon-registered
+        interpretations of those features into domain capabilities.
+        """
+        if head is None:
+            if not self.heads:
+                return ()
+            head = self.heads[0]
+        features = self.get_driver_features(head)
+        return driver_capability_registry.resolve(features)
 
     def get_capabilities(self) -> FrozenSet[MachineCapability]:
         """

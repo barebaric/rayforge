@@ -10,6 +10,7 @@ from raygeo.ops.assembly.wavefront import AdaptiveWavefrontSpec
 from raygeo.ops.part import Part
 
 from rayforge.core.capability import CUT, Capability, MachineCapability
+from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.transformer.registry import transformer_registry
 
 from .laser_step import LaserStep
@@ -41,7 +42,9 @@ class WavefrontStep(LaserStep):
         machine: "Machine",
         workpiece: "WorkPiece",
     ) -> dict:
-        spot_x, _spot_y = self.get_laser_spot(machine)
+        spot_x, _spot_y = LaserHead.get_spot_size(
+            self.get_selected_laser(machine)
+        )
         kwargs: dict = {}
         kwargs["offset_mm"] = self.offset_mm
         kwargs["area_tolerance"] = self.area_tolerance
@@ -135,9 +138,8 @@ class WavefrontStep(LaserStep):
         # exposes its ceiling, so the default is that ceiling, bounded by
         # the operation's typical feed rate.
         step.cut_speed = min(machine.max_cut_speed, 500)
-        for cap in machine.get_laser_capabilities(default_head):
-            for var in cap.varset:
-                setattr(step, var.key, var.default)
+        for key, value in default_head.get_defaults(machine).items():
+            setattr(step, key, value)
         return step
 
 
