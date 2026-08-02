@@ -60,7 +60,7 @@ def create_slider_row(
         entry.set_width_chars(8)
         entry.set_alignment(1.0)
         entry.set_has_frame(False)
-        entry.get_style_context().add_class("slider-value-entry")
+        entry.add_css_class("slider-value-entry")
         apply_css(_SLIDER_VALUE_ENTRY_CSS)
 
         def format_value(val):
