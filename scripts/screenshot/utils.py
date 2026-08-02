@@ -659,13 +659,13 @@ def open_recipe_editor(
         dialog.set_default_size(700, 800)
         dialog.present()
 
-        button_map = {
-            "general": dialog.btn_general,
-            "applicability": dialog.btn_applicability,
-            "settings": dialog.btn_settings,
-        }
-        if page in button_map:
-            button_map[page].set_active(True)
+        if page == "general":
+            dialog._tab_buttons["general"].set_active(True)
+        elif page == "applicability":
+            dialog._tab_buttons["applicability"].set_active(True)
+        elif page == "settings" and dialog._settings_pages:
+            first_name = next(iter(dialog._settings_pages))
+            dialog._tab_buttons[first_name].set_active(True)
         return dialog
 
     dialog = run_on_main_thread(_open)

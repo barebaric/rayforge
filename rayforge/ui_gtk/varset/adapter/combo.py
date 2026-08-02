@@ -44,8 +44,12 @@ class ComboAdapter(RowAdapter):
         if var.description:
             row.set_subtitle(var.description)
         initial_val = getattr(var, target_property)
-        if initial_val and initial_val in choices:
-            row.set_selected(choices.index(initial_val))
+        if initial_val:
+            display_str = var.get_display_for_value(str(initial_val))
+            if display_str in choices:
+                row.set_selected(choices.index(display_str))
+            else:
+                row.set_selected(0)
         else:
             row.set_selected(0)
         return row, cls(row, var)

@@ -10,6 +10,7 @@ from raygeo.ops.assembly.wavefront import AdaptiveWavefrontSpec
 from raygeo.ops.part import Part
 
 from rayforge.core.capability import MachineCapability, StepCapability
+from rayforge.core.varset import FloatVar, VarSet
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.transformer.registry import transformer_registry
 
@@ -28,6 +29,34 @@ class WavefrontStep(LaserStep):
     CAPABILITIES: Tuple[StepCapability, ...] = (CUT,)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "wavefront"
+
+    RECIPE_KEYS: Tuple[str, ...] = LaserStep.RECIPE_KEYS + (
+        "step_over_mm",
+        "offset_mm",
+    )
+
+    @classmethod
+    def recipe_varset(cls) -> VarSet:
+        return VarSet(
+            vars=[
+                *LaserStep.recipe_varset().vars,
+                FloatVar(
+                    key="step_over_mm",
+                    label=_("Step Over"),
+                    description=_(
+                        "Distance between wavefront passes; defaults to "
+                        "the laser spot width when unset"
+                    ),
+                    default=None,
+                    min_val=0.0,
+                ),
+                FloatVar(
+                    key="offset_mm",
+                    label=_("Offset"),
+                    default=0.0,
+                ),
+            ]
+        )
 
     def __init__(
         self, name: Optional[str] = None, typelabel: Optional[str] = None

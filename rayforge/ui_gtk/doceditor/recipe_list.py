@@ -141,6 +141,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
                         name=data["name"],
                         description=data["description"],
                         target_capability_name=data["target_capability_name"],
+                        target_step_type=data["target_step_type"],
                         target_machine_id=data["target_machine_id"],
                         material_uid=data["material_uid"],
                         min_thickness_mm=data["min_thickness_mm"],
@@ -171,6 +172,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
                     recipe.target_capability_name = data[
                         "target_capability_name"
                     ]
+                    recipe.target_step_type = data["target_step_type"]
                     recipe.target_machine_id = data["target_machine_id"]
                     recipe.material_uid = data["material_uid"]
                     recipe.min_thickness_mm = data["min_thickness_mm"]

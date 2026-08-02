@@ -55,20 +55,14 @@ class RecipeControlWidget(Adw.ActionRow):
         self._update_ui(self.step)
 
     def _get_step_settings(self) -> Dict[str, Any]:
-        """Extracts recipe-relevant settings from the step."""
+        """Extracts recipe-relevant settings from the step.
+
+        Uses the step class's :attr:`RECIPE_KEYS`, which is the
+        canonical list of recipe-eligible attributes declared by the
+        step hierarchy (replacing the older capability-key lookup).
+        """
         settings = {}
-        capability = self._get_primary_capability()
-        if not capability:
-            logger.warning(
-                "Could not determine primary capability for step. "
-                "Cannot save recipe settings."
-            )
-            return {}
-
-        # The capability defines which Step properties are part of a recipe.
-        recipe_keys = capability.get_setting_keys()
-
-        for key in recipe_keys:
+        for key in type(self.step).RECIPE_KEYS:
             if hasattr(self.step, key):
                 settings[key] = getattr(self.step, key)
         return settings
@@ -122,6 +116,7 @@ class RecipeControlWidget(Adw.ActionRow):
             editor=self.editor,
             capabilities=self.step.capabilities,
             on_select_callback=self._apply_recipe,
+            step_type=type(self.step).__name__,
         )
         dialog.present()
 

@@ -6,14 +6,22 @@ settlers, serialization of the laser keys).
 """
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
 
 from raygeo.ops import Ops
 from raygeo.ops.state import AirAssistMode
 
 from rayforge.core.step import Step
+from rayforge.core.varset import (
+    BoolVar,
+    FloatVar,
+    SliderFloatVar,
+    VarSet,
+)
 from rayforge.machine.models.laser import LaserHead
 from rayforge.shared.units.formatter import format_value
+
+from ..capabilities import LaserHeadVar
 
 if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine
@@ -21,6 +29,13 @@ if TYPE_CHECKING:
 
 class LaserStep(Step):
     """Base for all laser-domain steps. Owns laser attributes."""
+
+    RECIPE_KEYS: Tuple[str, ...] = Step.RECIPE_KEYS + (
+        "power",
+        "air_assist",
+        "kerf_mm",
+        "tab_power",
+    )
 
     def __init__(self, typelabel, name=None):
         self.power: float = 1.0
@@ -31,6 +46,66 @@ class LaserStep(Step):
         self.frequency: int = 0
         self.pulse_width: int = 0
         super().__init__(typelabel, name=name)
+
+    @classmethod
+    def recipe_varset(cls) -> VarSet:
+        return VarSet(
+            vars=[
+                LaserHeadVar(
+                    description=_("Optionally force a specific laser head")
+                ),
+                SliderFloatVar(
+                    key="power",
+                    label=_("Power"),
+                    default=0.8,
+                    min_val=0.0,
+                    max_val=1.0,
+                    show_value=True,
+                    format_suffix="%",
+                ),
+                *Step.recipe_varset().vars,
+                SliderFloatVar(
+                    key="tab_power",
+                    label=_("Tab Power"),
+                    description=_(
+                        "Laser power at tab positions (% of cut power)"
+                    ),
+                    default=0.0,
+                    min_val=0.0,
+                    max_val=1.0,
+                    show_value=True,
+                    format_suffix="%",
+                ),
+                BoolVar(
+                    key="air_assist",
+                    label=_("Air Assist"),
+                    default=False,
+                ),
+                FloatVar(
+                    key="kerf_mm",
+                    label=_("Kerf"),
+                    description=_("The effective width of the laser beam"),
+                    default=0.1,
+                    min_val=0.0,
+                    max_val=2.0,
+                ),
+            ]
+        )
+
+    @classmethod
+    def recipe_varset_groups(cls) -> List[Tuple[str, VarSet]]:
+        """Split into a "Laser" group (inherited process settings) and a
+        "Step Settings" group (attributes the concrete step adds)."""
+        full = cls.recipe_varset()
+        base_keys = {v.key for v in LaserStep.recipe_varset()}
+        laser_vars = [v for v in full if v.key in base_keys]
+        step_vars = [v for v in full if v.key not in base_keys]
+        groups: List[Tuple[str, VarSet]] = []
+        if laser_vars:
+            groups.append((_("Laser"), VarSet(vars=laser_vars)))
+        if step_vars:
+            groups.append((_("Step Settings"), VarSet(vars=step_vars)))
+        return groups or [(_("Laser"), VarSet(vars=laser_vars))]
 
     def create_initial_ops(self) -> Ops:
         """Build the initial Ops object with step-wide machine settings."""

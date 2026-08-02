@@ -20,6 +20,13 @@ from raygeo.ops.part import Part
 from raygeo.ops.part.image_source import WholeImageSource
 
 from rayforge.core.capability import MachineCapability, StepCapability
+from rayforge.core.varset import (
+    BoolVar,
+    FloatVar,
+    LabeledChoiceVar,
+    SliderFloatVar,
+    VarSet,
+)
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.stage.assembler_helpers import (
@@ -50,6 +57,58 @@ class EngraveStep(LaserStep):
     CAPABILITIES: Tuple[StepCapability, ...] = (ENGRAVE,)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "raster"
+
+    RECIPE_KEYS: Tuple[str, ...] = LaserStep.RECIPE_KEYS + (
+        "scan_angle",
+        "depth_mode",
+        "invert",
+        "min_power_level",
+        "max_power_level",
+    )
+
+    @classmethod
+    def recipe_varset(cls) -> VarSet:
+        return VarSet(
+            vars=[
+                *LaserStep.recipe_varset().vars,
+                FloatVar(
+                    key="scan_angle",
+                    label=_("Scan Angle"),
+                    default=0.0,
+                    min_val=0.0,
+                    max_val=360.0,
+                ),
+                LabeledChoiceVar(
+                    key="depth_mode",
+                    label=_("Depth Mode"),
+                    choices=[(m.display_name, m.name) for m in DepthMode],
+                    default="POWER_MODULATION",
+                ),
+                BoolVar(
+                    key="invert",
+                    label=_("Invert"),
+                    default=False,
+                ),
+                SliderFloatVar(
+                    key="min_power_level",
+                    label=_("Min Power Level"),
+                    default=0.0,
+                    min_val=0.0,
+                    max_val=1.0,
+                    show_value=True,
+                    format_suffix="%",
+                ),
+                SliderFloatVar(
+                    key="max_power_level",
+                    label=_("Max Power Level"),
+                    default=1.0,
+                    min_val=0.0,
+                    max_val=1.0,
+                    show_value=True,
+                    format_suffix="%",
+                ),
+            ]
+        )
 
     def __init__(
         self, name: Optional[str] = None, typelabel: Optional[str] = None

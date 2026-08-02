@@ -81,6 +81,7 @@ class StepCmd:
                 stock_items=stock_items,
                 capabilities=step.capabilities,
                 machine=machine,
+                step_type=type(step).__name__,
             )
 
         # If matching_recipes is not empty, apply the best one

@@ -99,6 +99,7 @@ class RecipeManager:
         stock_items: List["StockItem"],
         capabilities: Optional[Tuple[StepCapability, ...]] = None,
         machine: Optional["Machine"] = None,
+        step_type: Optional[str] = None,
     ) -> List[Recipe]:
         """
         Finds matching recipes, sorted from most specific to least specific.
@@ -109,6 +110,9 @@ class RecipeManager:
             capabilities: An optional filter to only return recipes for a
                          specific set of capabilities.
             machine: An optional machine context to match against. Can be None.
+            step_type: An optional step class name (as registered in
+                       ``step_registry``) to match
+                       :attr:`Recipe.target_step_type` against.
 
         Returns:
             A list of Recipe objects, sorted by relevance.
@@ -117,7 +121,9 @@ class RecipeManager:
         candidates = [
             r
             for r in self.get_all_recipes()
-            if r.matches(stock_items, capabilities, machine)
+            if r.matches(
+                stock_items, capabilities, machine, step_type=step_type
+            )
         ]
 
         # 2. Sort candidates based on their specificity score and name

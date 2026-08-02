@@ -10,6 +10,7 @@ from raygeo.ops.part import Part
 
 from rayforge.core.capability import MachineCapability, StepCapability
 from rayforge.core.cut_side import CutSide
+from rayforge.core.varset import FloatVar, LabeledChoiceVar, VarSet
 from rayforge.pipeline.stage.assembler_helpers import (
     build_part_vector_with_raster_fallback,
 )
@@ -30,6 +31,30 @@ class FrameStep(LaserStep):
     CAPABILITIES: Tuple[StepCapability, ...] = (CUT, SCORE, WITH_KERF)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "frame"
+
+    RECIPE_KEYS: Tuple[str, ...] = LaserStep.RECIPE_KEYS + (
+        "cut_side",
+        "path_offset_mm",
+    )
+
+    @classmethod
+    def recipe_varset(cls) -> VarSet:
+        return VarSet(
+            vars=[
+                *LaserStep.recipe_varset().vars,
+                LabeledChoiceVar(
+                    key="cut_side",
+                    label=_("Cut Side"),
+                    choices=[(cs.label(), cs.name) for cs in CutSide],
+                    default="CENTERLINE",
+                ),
+                FloatVar(
+                    key="path_offset_mm",
+                    label=_("Path Offset"),
+                    default=0.0,
+                ),
+            ]
+        )
 
     def __init__(
         self, name: Optional[str] = None, typelabel: Optional[str] = None
