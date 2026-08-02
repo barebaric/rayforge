@@ -1,23 +1,6 @@
-import pytest
 from laser_essentials.steps import WavefrontStep
 
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.stage.assembler_helpers import MachineDefaults
-
-
-@pytest.fixture
-def machine_defaults():
-    return MachineDefaults(
-        kerf_mm=0.1,
-        arc_tolerance=0.03,
-        allow_arcs=True,
-        supports_curves=False,
-        line_interval_mm=0.1,
-        step_power=1.0,
-        tool_radius=0.05,
-        step_over=0.1,
-        cut_speed=500,
-    )
 
 
 def _make_disjoint_loops():
@@ -71,9 +54,7 @@ def _make_workpiece():
 
 
 class TestWavefrontComputePayload:
-    def test_build_compute_payload_returns_wavefront_spec(
-        self, machine_defaults
-    ):
+    def test_build_compute_payload_returns_wavefront_spec(self, machine):
         from raygeo.cnc.execution.specs import ComputePayload
         from raygeo.ops.assembly import Assembler
         from raygeo.ops.assembly.wavefront import AdaptiveWavefrontSpec
@@ -84,7 +65,7 @@ class TestWavefrontComputePayload:
         wp = WorkPiece(name="wp")
         wp.set_size(10.0, 10.0)
 
-        part, payload = step.build_compute_payload(machine_defaults, wp)
+        part, payload = step.build_compute_payload(machine, wp)
         assert isinstance(part, Part)
         assert isinstance(payload, ComputePayload)
         assert isinstance(payload.assembler, Assembler)
@@ -92,38 +73,38 @@ class TestWavefrontComputePayload:
         assert isinstance(spec, AdaptiveWavefrontSpec)
         assert spec.step_over == 0.5
 
-    def test_assembler_token_params_mirrors_kwargs(self, machine_defaults):
+    def test_assembler_token_params_mirrors_kwargs(self, machine):
         step = WavefrontStep(name="wf")
         wp = WorkPiece(name="wp")
         wp.set_size(10.0, 10.0)
-        token = step.assembler_token_params(machine_defaults, wp)
-        kwargs = step.get_assembler_kwargs(machine_defaults, wp)
+        token = step.assembler_token_params(machine, wp)
+        kwargs = step.get_assembler_kwargs(machine, wp)
         assert token == kwargs
 
-    def test_disjoint_pockets_become_separate_faces(self, machine_defaults):
+    def test_disjoint_pockets_become_separate_faces(self, machine):
         """A workpiece with two pockets maps to two wavefront faces."""
         step = WavefrontStep(name="wf")
         step.step_over_mm = 2.0
         wp = _make_workpiece()
 
-        part, _ = step.build_compute_payload(machine_defaults, wp)
+        part, _ = step.build_compute_payload(machine, wp)
 
         assert part is not None
         assert len(part.face_ids) == 2
         assert "" in part.face_ids
 
-    def test_single_pocket_keeps_default_face(self, machine_defaults):
+    def test_single_pocket_keeps_default_face(self, machine):
         """A single-pocket workpiece keeps the default face ``""``."""
         step = WavefrontStep(name="wf")
         wp = WorkPiece(name="wp")
         wp.set_size(10.0, 10.0)
 
-        part, _ = step.build_compute_payload(machine_defaults, wp)
+        part, _ = step.build_compute_payload(machine, wp)
 
         assert part is not None
         assert part.face_ids == [""]
 
-    def test_wavefront_clears_all_faces(self, machine_defaults):
+    def test_wavefront_clears_all_faces(self, machine):
         """Running the payload through the pipeline clears every pocket,
         not just the largest one."""
         from raygeo.pipeline.execute import clear_cache, execute_stages
@@ -134,7 +115,7 @@ class TestWavefrontComputePayload:
         step.step_over_mm = 2.0
         wp = _make_workpiece()
 
-        part, payload = step.build_compute_payload(machine_defaults, wp)
+        part, payload = step.build_compute_payload(machine, wp)
         assert len(part.face_ids) == 2
 
         clear_cache()

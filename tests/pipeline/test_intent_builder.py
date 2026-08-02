@@ -85,28 +85,30 @@ def _make_doc(step: _TestStep, *workpieces: WorkPiece) -> Doc:
 # ----------------------------------------------------------------------
 
 
-def test_builds_one_node_per_workpiece_plus_step_and_job():
+def test_builds_one_node_per_workpiece_plus_step_and_job(isolated_machine):
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     wp2 = WorkPiece(name="wp2")
     doc = _make_doc(step, wp1, wp2)
 
-    nodes = IntentBuilder().build(doc)
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
     keys = [n.key for n in nodes]
     assert workpiece_key(wp1.uid, step.uid) in keys
     assert workpiece_key(wp2.uid, step.uid) in keys
     assert step_key(step.uid) in keys
     assert job_key() in keys
-    assert len(keys) == 4
+    assert job_machinexform_key() in keys
+    assert job_encode_key() in keys
+    assert len(keys) == 6
 
 
-def test_keys_are_stable_across_rebuilds():
+def test_keys_are_stable_across_rebuilds(isolated_machine):
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    n1 = IntentBuilder().build(doc)
-    n2 = IntentBuilder().build(doc)
+    n1 = IntentBuilder(machine=isolated_machine).build(doc)
+    n2 = IntentBuilder(machine=isolated_machine).build(doc)
     assert [n.key for n in n1] == [n.key for n in n2]
 
 
@@ -115,13 +117,13 @@ def test_keys_are_stable_across_rebuilds():
 # ----------------------------------------------------------------------
 
 
-def test_version_tokens_stable_across_rebuilds():
+def test_version_tokens_stable_across_rebuilds(isolated_machine):
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    n1 = IntentBuilder().build(doc)
-    n2 = IntentBuilder().build(doc)
+    n1 = IntentBuilder(machine=isolated_machine).build(doc)
+    n2 = IntentBuilder(machine=isolated_machine).build(doc)
     tokens_1 = {n.key: n.version_token for n in n1}
     tokens_2 = {n.key: n.version_token for n in n2}
     assert tokens_1 == tokens_2
@@ -130,14 +132,14 @@ def test_version_tokens_stable_across_rebuilds():
         assert t > 0
 
 
-def test_compute_token_changes_on_geometry_revision_bump():
+def test_compute_token_changes_on_geometry_revision_bump(isolated_machine):
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    before = IntentBuilder().build(doc)
+    before = IntentBuilder(machine=isolated_machine).build(doc)
     wp1.updated.send(wp1)  # bumps geometry_revision
-    after = IntentBuilder().build(doc)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
 
     wpk = workpiece_key(wp1.uid, step.uid)
     before_t = next(n.version_token for n in before if n.key == wpk)
@@ -145,14 +147,14 @@ def test_compute_token_changes_on_geometry_revision_bump():
     assert before_t != after_t
 
 
-def test_compute_token_changes_on_step_param_change():
+def test_compute_token_changes_on_step_param_change(isolated_machine):
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    before = IntentBuilder().build(doc)
+    before = IntentBuilder(machine=isolated_machine).build(doc)
     step.cut_speed = 999
-    after = IntentBuilder().build(doc)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
 
     wpk = workpiece_key(wp1.uid, step.uid)
     before_t = next(n.version_token for n in before if n.key == wpk)
@@ -160,16 +162,18 @@ def test_compute_token_changes_on_step_param_change():
     assert before_t != after_t
 
 
-def test_compute_token_changes_on_workpiece_transformer_change():
+def test_compute_token_changes_on_workpiece_transformer_change(
+    isolated_machine,
+):
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    before = IntentBuilder().build(doc)
+    before = IntentBuilder(machine=isolated_machine).build(doc)
     step.per_workpiece_transformers_dicts.append(
         {"name": "Optimize", "enabled": True}
     )
-    after = IntentBuilder().build(doc)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
 
     wpk = workpiece_key(wp1.uid, step.uid)
     before_t = next(n.version_token for n in before if n.key == wpk)
@@ -182,7 +186,9 @@ def test_compute_token_changes_on_workpiece_transformer_change():
 # ----------------------------------------------------------------------
 
 
-def test_transform_revision_omitted_when_not_position_sensitive():
+def test_transform_revision_omitted_when_not_position_sensitive(
+    isolated_machine,
+):
     """
     A pure move must NOT change the workpiece compute token when the
     step is not position-sensitive.
@@ -191,11 +197,11 @@ def test_transform_revision_omitted_when_not_position_sensitive():
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    before = IntentBuilder().build(doc)
+    before = IntentBuilder(machine=isolated_machine).build(doc)
     wp1.transform_changed.send(wp1, old_matrix=wp1.matrix)
     assert wp1.geometry_revision == 0
     assert wp1.transform_revision == 1
-    after = IntentBuilder().build(doc)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
 
     wpk = workpiece_key(wp1.uid, step.uid)
     before_t = next(n.version_token for n in before if n.key == wpk)
@@ -203,7 +209,7 @@ def test_transform_revision_omitted_when_not_position_sensitive():
     assert before_t == after_t
 
 
-def test_transform_revision_folded_when_position_sensitive():
+def test_transform_revision_folded_when_position_sensitive(isolated_machine):
     """
     When the step is position-sensitive a move must change the workpiece
     compute token.
@@ -212,10 +218,10 @@ def test_transform_revision_folded_when_position_sensitive():
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    before = IntentBuilder().build(doc)
+    before = IntentBuilder(machine=isolated_machine).build(doc)
     wp1.transform_changed.send(wp1, old_matrix=wp1.matrix)
     assert wp1.transform_revision == 1
-    after = IntentBuilder().build(doc)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
 
     wpk = workpiece_key(wp1.uid, step.uid)
     before_t = next(n.version_token for n in before if n.key == wpk)
@@ -228,14 +234,14 @@ def test_transform_revision_folded_when_position_sensitive():
 # ----------------------------------------------------------------------
 
 
-def test_step_aggregate_token_changes_on_step_param_change():
+def test_step_aggregate_token_changes_on_step_param_change(isolated_machine):
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    before = IntentBuilder().build(doc)
+    before = IntentBuilder(machine=isolated_machine).build(doc)
     step.cut_speed = 2222
-    after = IntentBuilder().build(doc)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
 
     sk = step_key(step.uid)
     before_t = next(n.version_token for n in before if n.key == sk)
@@ -243,14 +249,16 @@ def test_step_aggregate_token_changes_on_step_param_change():
     assert before_t != after_t
 
 
-def test_step_aggregate_token_changes_on_upstream_token_change():
+def test_step_aggregate_token_changes_on_upstream_token_change(
+    isolated_machine,
+):
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    before = IntentBuilder().build(doc)
+    before = IntentBuilder(machine=isolated_machine).build(doc)
     wp1.updated.send(wp1)  # bump upstream compute token
-    after = IntentBuilder().build(doc)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
 
     sk = step_key(step.uid)
     before_t = next(n.version_token for n in before if n.key == sk)
@@ -258,16 +266,18 @@ def test_step_aggregate_token_changes_on_upstream_token_change():
     assert before_t != after_t
 
 
-def test_step_aggregate_token_changes_on_per_step_transformer_change():
+def test_step_aggregate_token_changes_on_per_step_transformer_change(
+    isolated_machine,
+):
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    before = IntentBuilder().build(doc)
+    before = IntentBuilder(machine=isolated_machine).build(doc)
     step.per_step_transformers_dicts.append(
         {"name": "Smooth", "enabled": True}
     )
-    after = IntentBuilder().build(doc)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
 
     sk = step_key(step.uid)
     before_t = next(n.version_token for n in before if n.key == sk)
@@ -275,14 +285,14 @@ def test_step_aggregate_token_changes_on_per_step_transformer_change():
     assert before_t != after_t
 
 
-def test_job_token_changes_on_step_param_change():
+def test_job_token_changes_on_step_param_change(isolated_machine):
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    before = IntentBuilder().build(doc)
+    before = IntentBuilder(machine=isolated_machine).build(doc)
     step.cut_speed = 7777
-    after = IntentBuilder().build(doc)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
 
     jk = job_key()
     before_t = next(n.version_token for n in before if n.key == jk)
@@ -295,13 +305,13 @@ def test_job_token_changes_on_step_param_change():
 # ----------------------------------------------------------------------
 
 
-def test_hidden_steps_excluded():
+def test_hidden_steps_excluded(isolated_machine):
     step = _TestStep(name="s1")
     step.visible = False
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    nodes = IntentBuilder().build(doc)
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
     keys = [n.key for n in nodes]
 
     assert workpiece_key(wp1.uid, step.uid) not in keys
@@ -309,7 +319,7 @@ def test_hidden_steps_excluded():
     assert job_key() not in keys
 
 
-def test_layers_without_workpieces_skipped_for_compute():
+def test_layers_without_workpieces_skipped_for_compute(isolated_machine):
     step = _TestStep(name="s1")
     doc = Doc()
     layer = doc.active_layer
@@ -318,14 +328,14 @@ def test_layers_without_workpieces_skipped_for_compute():
     workflow.add_child(step)
     # No workpieces added.
 
-    nodes = IntentBuilder().build(doc)
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
     keys = [n.key for n in nodes]
     assert step_key(step.uid) not in keys
     assert workpiece_key("any", step.uid) not in keys
     assert job_key() not in keys
 
 
-def test_second_layer_without_skips_affect_existing():
+def test_second_layer_without_skips_affect_existing(isolated_machine):
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
@@ -334,7 +344,7 @@ def test_second_layer_without_skips_affect_existing():
     doc.add_child(layer2)
     layer2.add_child(WorkPiece(name="wp2"))
 
-    nodes = IntentBuilder().build(doc)
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
     keys = [n.key for n in nodes]
     # Only one step aggregate node and one job node.
     assert keys.count(step_key(step.uid)) == 1
@@ -346,62 +356,70 @@ def test_second_layer_without_skips_affect_existing():
 # ----------------------------------------------------------------------
 
 
-def test_generation_id_propagated_to_nodes():
+def test_generation_id_propagated_to_nodes(isolated_machine):
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    nodes = IntentBuilder(generation_id=42).build(doc)
+    nodes = IntentBuilder(machine=isolated_machine, generation_id=42).build(
+        doc
+    )
     assert all(n.generation_id == 42 for n in nodes)
 
 
-def test_stage_payload_is_valid_raygeo_stagespec():
+def test_stage_payload_is_valid_raygeo_stagespec(isolated_machine):
     """The IntentBuilder's stage payloads must be real raygeo StageSpec
     instances so ``create_intent_from_nodes`` accepts them."""
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    nodes = IntentBuilder().build(doc)
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
 
-    # All stages must be StageSpec.Compute or StageSpec.Aggregate.
+    # All stages must be valid raygeo stage payloads.
+    valid_stages = (
+        StageSpec.Compute,
+        StageSpec.Aggregate,
+        MachineTransformSpec,
+        EncodeSpec,
+    )
     for n in nodes:
-        assert isinstance(n.stage, (StageSpec.Compute, StageSpec.Aggregate))
+        assert isinstance(n.stage, valid_stages)
 
     # create_intent_from_nodes must succeed (validates the StageSpec).
     intent = create_intent_from_nodes(nodes)
     assert intent is not None
-    assert intent.step_count == 2  # one compute + one step aggregate
+    assert intent.step_count == 4  # machine-aware compute + aggregate stages
 
 
-def test_stage_wpspec_for_workpiece_node_is_compute():
+def test_stage_wpspec_for_workpiece_node_is_compute(isolated_machine):
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    nodes = IntentBuilder().build(doc)
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
     wp_node = next(
         n for n in nodes if n.key == workpiece_key(wp1.uid, step.uid)
     )
     assert isinstance(wp_node.stage, StageSpec.Compute)
 
 
-def test_stage_step_node_is_aggregate():
+def test_stage_step_node_is_aggregate(isolated_machine):
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    nodes = IntentBuilder().build(doc)
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
     st_node = next(n for n in nodes if n.key == step_key(step.uid))
     assert isinstance(st_node.stage, StageSpec.Aggregate)
 
 
-def test_stage_job_node_is_aggregate():
+def test_stage_job_node_is_aggregate(isolated_machine):
     step = _TestStep(name="s1")
     wp1 = WorkPiece(name="wp1")
     doc = _make_doc(step, wp1)
 
-    nodes = IntentBuilder().build(doc)
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
     job_node = next(n for n in nodes if n.key == job_key())
     assert isinstance(job_node.stage, StageSpec.Aggregate)
 
@@ -1191,14 +1209,14 @@ def _make_doc_with_stock(
     return doc
 
 
-def test_stock_items_resolved_into_geometries():
+def test_stock_items_resolved_into_geometries(isolated_machine):
     """Visible StockItems must produce world-rect geometries in the
     resolved stock list (not just the machine workarea fallback)."""
     step = _TestStep(name="s1")
     wp = WorkPiece(name="wp")
     doc = _make_doc_with_stock(step, wp)
 
-    builder = IntentBuilder()
+    builder = IntentBuilder(machine=isolated_machine)
     builder.build(doc)
     geos = builder._resolve_stock_geometries()
 
@@ -1207,18 +1225,21 @@ def test_stock_items_resolved_into_geometries():
     assert not geos[0].is_empty()
 
 
-def test_hidden_stock_skipped():
-    """Hidden StockItems must not appear in the stock geometries."""
+def test_hidden_stock_skipped(isolated_machine):
+    """Hidden StockItems must not appear in the stock geometries.
+
+    The hidden stock contributes no geometry, so only the machine
+    workarea fallback remains (1 geometry instead of 2)."""
     step = _TestStep(name="s1")
     wp = WorkPiece(name="wp")
     doc = _make_doc_with_stock(step, wp, stock_visible=False)
 
-    builder = IntentBuilder()
+    builder = IntentBuilder(machine=isolated_machine)
     builder.build(doc)
     geos = builder._resolve_stock_geometries()
 
     assert geos is not None
-    assert len(geos) == 0
+    assert len(geos) == 1
 
 
 def test_no_stock_falls_back_to_workarea(lite_context):
@@ -1240,20 +1261,20 @@ def test_no_stock_falls_back_to_workarea(lite_context):
     assert not geos[0].is_empty()
 
 
-def test_stock_move_invalidates_compute_token():
+def test_stock_move_invalidates_compute_token(isolated_machine):
     """Moving a StockItem must change the compute token for a
     position-sensitive step (e.g. one with CropTransformer)."""
     step = _TestStep(name="s1", position_sensitive=True)
     wp = WorkPiece(name="wp")
     doc = _make_doc_with_stock(step, wp)
 
-    before = IntentBuilder().build(doc)
+    before = IntentBuilder(machine=isolated_machine).build(doc)
 
     # Move the stock item by translating its matrix.
     stock_item = doc.stock_items[0]
     stock_item.matrix = stock_item.matrix @ Matrix.translation(50, 50)
 
-    after = IntentBuilder().build(doc)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
 
     wpk = workpiece_key(wp.uid, step.uid)
     before_t = next(n.version_token for n in before if n.key == wpk)

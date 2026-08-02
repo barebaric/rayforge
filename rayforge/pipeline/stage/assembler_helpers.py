@@ -10,13 +10,10 @@ directly without needing producer class instances.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from enum import Enum, auto
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
-    Any,
-    Dict,
     Optional,
     Tuple,
 )
@@ -39,7 +36,6 @@ if TYPE_CHECKING:
     import cairo
 
     from ...core.workpiece import WorkPiece
-    from ...machine.models.laser import Laser
 
 logger = logging.getLogger(__name__)
 
@@ -101,66 +97,6 @@ class DepthMode(Enum):
             DepthMode.MULTI_PASS: RasterMode.DEPTH_MAP,
         }
         return _raster_mode_map[self]
-
-
-@dataclass(frozen=True)
-class MachineDefaults:
-    """Resolved machine-level defaults for assembler parameters.
-
-    Every producer currently inlines its own resolution of these
-    values from the ``Laser`` model and the step ``settings`` dict.
-    This dataclass centralises that logic so callers can resolve
-    once and pass the result through.
-    """
-
-    kerf_mm: float
-    arc_tolerance: float
-    allow_arcs: bool
-    supports_curves: bool
-    line_interval_mm: float
-    step_power: float
-    tool_radius: float
-    step_over: float
-    cut_speed: int
-
-
-def resolve_machine_defaults(
-    laser: Laser,
-    settings: Optional[Dict[str, Any]] = None,
-) -> MachineDefaults:
-    """Resolve machine defaults from a Laser model and step settings.
-
-    Resolution order for each field mirrors the existing per-producer
-    logic:
-
-    * ``kerf_mm`` — ``settings["kerf_mm"]`` → ``laser.spot_size_mm[0]``
-    * ``arc_tolerance`` — ``settings["arc_tolerance"]`` → ``0.03``
-    * ``allow_arcs`` — ``settings["machine_supports_arcs"]`` →
-      ``settings["output_arcs"]`` → ``True``
-    * ``supports_curves`` — ``settings["machine_supports_curves"]`` →
-      ``False``
-    * ``line_interval_mm`` — ``laser.spot_size_mm[1]``
-    * ``step_power`` — ``settings["power"]`` → ``1.0``
-    * ``tool_radius`` — ``laser.spot_size_mm[0] / 2``
-    * ``step_over`` — ``laser.spot_size_mm[0]``
-    * ``cut_speed`` — ``settings["cut_speed"]`` → ``500``
-    """
-    s = settings or {}
-
-    spot_x = laser.spot_size_mm[0]
-    spot_y = laser.spot_size_mm[1]
-
-    return MachineDefaults(
-        kerf_mm=s.get("kerf_mm", spot_x),
-        arc_tolerance=s.get("arc_tolerance", 0.03),
-        allow_arcs=s.get("machine_supports_arcs", s.get("output_arcs", True)),
-        supports_curves=s.get("machine_supports_curves", False),
-        line_interval_mm=spot_y,
-        step_power=s.get("power", 1.0),
-        tool_radius=spot_x / 2.0,
-        step_over=spot_x,
-        cut_speed=s.get("cut_speed", 500),
-    )
 
 
 def _trace_surface_to_mm_geometry(

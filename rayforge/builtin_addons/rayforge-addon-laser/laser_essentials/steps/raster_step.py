@@ -21,7 +21,6 @@ from rayforge.core.capability import ENGRAVE, Capability, MachineCapability
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.pipeline.stage.assembler_helpers import (
     DepthMode,
-    MachineDefaults,
     compute_raster_auto_levels,
     preprocess_raster_image,
 )
@@ -32,6 +31,7 @@ from .laser_step import LaserStep
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
     from rayforge.core.workpiece import WorkPiece
+    from rayforge.machine.models.machine import Machine
 
     class OverscanTransformerType(Protocol):
         @staticmethod
@@ -96,15 +96,15 @@ class EngraveStep(LaserStep):
 
     def get_assembler_kwargs(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> dict:
+        _spot_x, spot_y = self.get_laser_spot(machine)
         line_interval = (
             self.line_interval_mm
             if self.line_interval_mm is not None
-            else machine_defaults.line_interval_mm
+            else spot_y
         )
-        step_power = machine_defaults.step_power
         return {
             "mode": DepthMode[self.depth_mode].raygeo_name,
             "line_interval_mm": line_interval,
@@ -112,7 +112,7 @@ class EngraveStep(LaserStep):
             "dot_width_correction_mm": self.dot_width_correction_mm,
             "min_power": self.min_power_level,
             "max_power": self.max_power_level,
-            "step_power": step_power,
+            "step_power": self.power,
             "num_power_levels": self.num_power_levels,
             "angle": self.scan_angle,
             "offset_x_mm": self.offset_x_mm,
@@ -126,7 +126,7 @@ class EngraveStep(LaserStep):
 
     def build_compute_payload(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> "Tuple[Part, ComputePayload]":
         """Build a :class:`Part` with the preprocessed raster image
@@ -138,13 +138,11 @@ class EngraveStep(LaserStep):
         assembler on the rayon worker only reads slabs from the
         attached image source.
         """
-        part, alpha = _build_raster_part(self, machine_defaults, workpiece)
-        kwargs = self.get_assembler_kwargs(machine_defaults, workpiece)
+        spot_x, spot_y = self.get_laser_spot(machine)
+        part, alpha = _build_raster_part(self, machine, workpiece)
+        kwargs = self.get_assembler_kwargs(machine, workpiece)
         depth_mode = DepthMode[self.depth_mode]
-        spot_x = machine_defaults.tool_radius * 2.0
-        line_interval = (
-            kwargs["line_interval_mm"] or machine_defaults.line_interval_mm
-        )
+        line_interval = kwargs["line_interval_mm"] or spot_y
         sample_interval = kwargs["sample_interval_mm"] or spot_x
         dot_width = (
             kwargs["dot_width_correction_mm"]
@@ -180,10 +178,10 @@ class EngraveStep(LaserStep):
 
     def assembler_token_params(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> Optional[dict]:
-        return self.get_assembler_kwargs(machine_defaults, workpiece)
+        return self.get_assembler_kwargs(machine, workpiece)
 
     def to_dict(self) -> dict:
         result = super().to_dict()
@@ -350,7 +348,7 @@ class EngraveStep(LaserStep):
 
 def _build_raster_part(
     step: "EngraveStep",
-    machine_defaults: MachineDefaults,
+    machine: "Machine",
     workpiece: "WorkPiece",
 ) -> Tuple[Part, Optional[np.ndarray]]:
     """Render and preprocess the workpiece into a :class:`Part`
@@ -367,8 +365,7 @@ def _build_raster_part(
     if size[0] <= 0 or size[1] <= 0:
         return Part(size_mm=size), None
 
-    spot_x = machine_defaults.tool_radius * 2.0
-    spot_y = machine_defaults.line_interval_mm
+    spot_x, spot_y = step.get_laser_spot(machine)
     px_per_mm_x = 1.0 / (step.sample_interval_mm or spot_x)
     px_per_mm_y = 1.0 / spot_y
 

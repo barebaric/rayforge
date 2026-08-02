@@ -5,7 +5,6 @@ from laser_essentials.steps import FrameStep
 
 from rayforge.core.capability import CUT, SCORE, WITH_KERF
 from rayforge.core.workpiece import WorkPiece
-from rayforge.pipeline.stage.assembler_helpers import MachineDefaults
 
 
 @pytest.fixture
@@ -23,21 +22,6 @@ def mock_context():
     return context
 
 
-@pytest.fixture
-def machine_defaults():
-    return MachineDefaults(
-        kerf_mm=0.1,
-        arc_tolerance=0.03,
-        allow_arcs=True,
-        supports_curves=False,
-        line_interval_mm=0.1,
-        step_power=1.0,
-        tool_radius=0.05,
-        step_over=0.1,
-        cut_speed=500,
-    )
-
-
 class TestFrameStep:
     def test_instantiation(self):
         step = FrameStep(name="Test")
@@ -53,11 +37,11 @@ class TestFrameStep:
         data = step.to_dict()
         assert data["step_type"] == "FrameStep"
 
-    def test_get_assembler_kwargs(self, machine_defaults):
+    def test_get_assembler_kwargs(self, machine):
         step = FrameStep(name="Test")
         workpiece = MagicMock(spec=["size"])
         workpiece.size = (100, 100)
-        kwargs = step.get_assembler_kwargs(machine_defaults, workpiece)
+        kwargs = step.get_assembler_kwargs(machine, workpiece)
         assert isinstance(kwargs, dict)
         expected_keys = {"cut_side", "path_offset_mm", "kerf_mm"}
         assert set(kwargs.keys()) == expected_keys
@@ -72,7 +56,7 @@ class TestFrameStep:
 
 
 class TestFrameComputePayload:
-    def test_build_compute_payload_returns_frame_spec(self, machine_defaults):
+    def test_build_compute_payload_returns_frame_spec(self, machine):
         from raygeo.cnc.execution.specs import ComputePayload
         from raygeo.ops.assembly import Assembler
         from raygeo.ops.assembly.frame import FrameSpec
@@ -84,7 +68,7 @@ class TestFrameComputePayload:
         wp = WorkPiece(name="wp")
         wp.set_size(10.0, 10.0)
 
-        part, payload = step.build_compute_payload(machine_defaults, wp)
+        part, payload = step.build_compute_payload(machine, wp)
         assert isinstance(part, Part)
         assert isinstance(payload, ComputePayload)
         assert isinstance(payload.assembler, Assembler)
@@ -92,12 +76,12 @@ class TestFrameComputePayload:
         assert isinstance(spec, FrameSpec)
         assert spec.cut_side == "outside"
         assert spec.path_offset_mm == 0.3
-        assert spec.kerf_mm == machine_defaults.kerf_mm
+        assert spec.kerf_mm == step.kerf_mm
 
-    def test_assembler_token_params_mirrors_kwargs(self, machine_defaults):
+    def test_assembler_token_params_mirrors_kwargs(self, machine):
         step = FrameStep(name="frame")
         wp = WorkPiece(name="wp")
         wp.set_size(10.0, 10.0)
-        token = step.assembler_token_params(machine_defaults, wp)
-        kwargs = step.get_assembler_kwargs(machine_defaults, wp)
+        token = step.assembler_token_params(machine, wp)
+        kwargs = step.get_assembler_kwargs(machine, wp)
         assert token == kwargs

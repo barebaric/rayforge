@@ -5,10 +5,8 @@ attributes and the laser-specific behaviour (initial ops, summary,
 settlers, serialization of the laser keys).
 """
 
-from __future__ import annotations
-
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
 
 from raygeo.ops import Ops
 from raygeo.ops.state import AirAssistMode
@@ -48,6 +46,36 @@ class LaserStep(Step):
         if self.pulse_width:
             ops.set_pulse_width(self.pulse_width)
         return ops
+
+    def populate_payload(self, payload, machine: "Machine"):
+        super().populate_payload(payload, machine)
+        payload.power = self.power
+
+    def get_laser_spot(self, machine: "Machine") -> Tuple[float, float]:
+        """Return the selected laser head's spot size ``(x, y)`` in mm.
+
+        Falls back to the step's kerf for the X axis and a default
+        line interval for Y when no laser head is selected.
+        """
+        head = self.get_selected_head(machine)
+        if isinstance(head, LaserHead):
+            return head.spot_size_mm[0], head.spot_size_mm[1]
+        return self.kerf_mm, 0.1
+
+    def get_cache_params(self) -> Dict[str, Any]:
+        params = super().get_cache_params()
+        params.update(
+            {
+                "power": self.power,
+                "max_power": self.max_power,
+                "air_assist": self.air_assist,
+                "kerf_mm": self.kerf_mm,
+                "tab_power": self.tab_power,
+                "frequency": self.frequency,
+                "pulse_width": self.pulse_width,
+            }
+        )
+        return params
 
     def get_selected_laser(self, machine: "Machine") -> Optional[LaserHead]:
         """Typed convenience — returns the selected LaserHead or None."""

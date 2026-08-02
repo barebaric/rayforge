@@ -32,7 +32,6 @@ from .step_registry import step_registry
 if TYPE_CHECKING:
     from ..context import RayforgeContext
     from ..machine.models.machine import Machine
-    from ..pipeline.stage.assembler_helpers import MachineDefaults
     from .layer import Layer
     from .workflow import Workflow
     from .workpiece import WorkPiece
@@ -163,7 +162,7 @@ class Step(DocItem, ABC):
 
     def get_assembler_kwargs(
         self,
-        machine_defaults: "MachineDefaults",
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> Dict[str, Any]:
         """Build the kwargs dict for :meth:`~.AssemblerRegistry.assemble`."""
@@ -171,7 +170,7 @@ class Step(DocItem, ABC):
 
     def build_compute_payload(
         self,
-        machine_defaults: "MachineDefaults",
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> "Tuple[Part, ComputePayload]":
         """
@@ -183,11 +182,11 @@ class Step(DocItem, ABC):
         built from the workpiece's vector geometry (or an empty
         :class:`Part` when the workpiece has no boundaries).  Step
         kinds with a real raygeo assembler override this to populate
-        the assembler spec from their :meth:`get_assembler_kwargs`
-        and to attach an image source for raster steps (see
+        the assembler spec from their own machine resolution (see
         :class:`ContourStep`, :class:`EngraveStep`).
 
-        :param machine_defaults: Resolved machine-level defaults.
+        :param machine: The machine context the step resolves its
+            process defaults from.
         :param workpiece: The workpiece this compute node runs against.
         :returns: ``(part, payload)`` for ``StageSpec.Compute``.
         """
@@ -198,12 +197,12 @@ class Step(DocItem, ABC):
 
     def assembler_token_params(
         self,
-        machine_defaults: "MachineDefaults",
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> Optional[Dict[str, Any]]:
         """
         Return a JSON-serialisable dict of the assembler spec
-        parameters that this step resolves for *machine_defaults*.
+        parameters that this step resolves for *machine*.
 
         The value is folded into the workpiece compute token so that
         changes to step-specific assembler inputs (e.g. ``cut_side``
@@ -215,6 +214,36 @@ class Step(DocItem, ABC):
         assembler spec override this (see :class:`ContourStep`).
         """
         return None
+
+    def populate_payload(self, payload, machine: "Machine"):
+        """Set domain-specific fields on the ComputePayload.
+
+        The base stamps the shared motion fields and the resolved head
+        uid, leaving the process power at its neutral default. Domain
+        bases override this to add their own process fields (e.g. laser
+        power) and never read attributes they do not own.
+        """
+        payload.cut_speed = self.cut_speed
+        head = self.get_selected_head(machine)
+        payload.head_uid = head.uid if head else None
+        payload.power = 0.0
+
+    def get_cache_params(self) -> Dict[str, Any]:
+        """JSON-serialisable step attributes that influence compute output.
+
+        UIDs and cosmetic fields are intentionally omitted so the token
+        only changes when the actual compute inputs change. Domain bases
+        extend this with their own process attributes.
+        """
+        return {
+            "type": type(self).__name__,
+            "visible": self.visible,
+            "cut_speed": self.cut_speed,
+            "max_cut_speed": self.max_cut_speed,
+            "travel_speed": self.travel_speed,
+            "max_travel_speed": self.max_travel_speed,
+            "pixels_per_mm": list(self.pixels_per_mm),
+        }
 
     def create_initial_ops(self) -> "Ops":
         """Build the initial Ops object with step-wide machine settings."""
@@ -471,7 +500,7 @@ class Step(DocItem, ABC):
         """
         return True
 
-    def get_selected_head(self, machine: "Machine") -> Optional["Head"]:
+    def get_selected_head(self, machine: "Machine") -> Optional[Head]:
         """
         Resolves and returns the selected head for this step, or None
         if the machine has no heads. Falls back to the first head on

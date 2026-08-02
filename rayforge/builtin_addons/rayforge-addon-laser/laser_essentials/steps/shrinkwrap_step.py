@@ -20,7 +20,6 @@ from rayforge.core.capability import (
 from rayforge.core.cut_side import CutSide
 from rayforge.image.tracing import prepare_surface
 from rayforge.pipeline.stage.assembler_helpers import (
-    MachineDefaults,
     build_part_vector,
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
@@ -30,6 +29,7 @@ from .laser_step import LaserStep
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
     from rayforge.core.workpiece import WorkPiece
+    from rayforge.machine.models.machine import Machine
 
 
 class ShrinkWrapStep(LaserStep):
@@ -57,29 +57,29 @@ class ShrinkWrapStep(LaserStep):
 
     def get_assembler_kwargs(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> dict:
         kwargs: dict = {}
         kwargs["cut_side"] = self.cut_side.lower()
         kwargs["gravity"] = self.gravity
         kwargs["path_offset_mm"] = self.path_offset_mm
-        kwargs["kerf_mm"] = machine_defaults.kerf_mm
-        kwargs["arc_tolerance"] = machine_defaults.arc_tolerance
-        kwargs["allow_arcs"] = machine_defaults.allow_arcs
-        kwargs["supports_curves"] = machine_defaults.supports_curves
+        kwargs["kerf_mm"] = self.kerf_mm
+        kwargs["arc_tolerance"] = machine.arc_tolerance
+        kwargs["allow_arcs"] = machine.supports_arcs
+        kwargs["supports_curves"] = machine.supports_curves
         return kwargs
 
     def build_compute_payload(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> "Tuple[Part, ComputePayload]":
         """Build a :class:`Part` with vector geometry and a boolean
         image, and a :class:`ComputePayload` carrying a
         :class:`ShrinkwrapSpec`."""
         part = _build_shrinkwrap_part(workpiece)
-        kwargs = self.get_assembler_kwargs(machine_defaults, workpiece)
+        kwargs = self.get_assembler_kwargs(machine, workpiece)
         spec = ShrinkwrapSpec(
             gravity=kwargs["gravity"],
             kerf_mm=kwargs["kerf_mm"],
@@ -93,10 +93,10 @@ class ShrinkWrapStep(LaserStep):
 
     def assembler_token_params(
         self,
-        machine_defaults: MachineDefaults,
+        machine: "Machine",
         workpiece: "WorkPiece",
     ) -> Optional[dict]:
-        return self.get_assembler_kwargs(machine_defaults, workpiece)
+        return self.get_assembler_kwargs(machine, workpiece)
 
     def to_dict(self) -> dict:
         result = super().to_dict()

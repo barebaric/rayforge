@@ -315,7 +315,7 @@ class IntentController:
         self.rebuild_started.send(self)
 
         def _worker() -> None:
-            if self._doc is None:
+            if self._doc is None or self._machine is None:
                 return
             builder = IntentBuilder(
                 machine=self._machine,

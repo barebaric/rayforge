@@ -10,7 +10,24 @@ from unittest.mock import MagicMock
 import pytest
 
 from rayforge.core.step_registry import step_registry
+from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.transformer.registry import transformer_registry
+
+
+@pytest.fixture
+def machine():
+    """A machine whose resolved laser defaults mirror the historical
+    ``machine_defaults`` fixture: laser head spot (0.1, 0.1), arc
+    tolerance 0.03, arcs supported, curves not supported."""
+    m = MagicMock()
+    m.arc_tolerance = 0.03
+    m.supports_arcs = True
+    m.supports_curves = False
+    head = MagicMock(spec=LaserHead)
+    head.uid = "laser-1"
+    head.spot_size_mm = (0.1, 0.1)
+    m.heads = [head]
+    return m
 
 
 def _register_steps():
