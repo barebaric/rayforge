@@ -46,10 +46,19 @@ Preencha as informações básicas:
 
 ![Editor de Receitas - Aba Aplicabilidade](/screenshots/recipe-editor-applicability.png)
 
-- **Tipo de Tarefa**: Selecione o tipo de operação (Corte, Gravação, etc.)
-- **Máquina**: Escolha uma máquina específica ou deixe como "Qualquer Máquina"
+Todos os critérios são opcionais - deixe qualquer campo em seu valor "Qualquer"
+para corresponder a tudo:
+
+- **Máquina**: Escolha uma máquina específica ou deixe como "Qualquer"
+- **Tipo de Tarefa**: Selecione a categoria de operação à qual esta receita se
+  aplica (Corte, Gravação, etc.), ou deixe como "Qualquer" para aplicar a todos
+  os tipos de tarefa
+- **Tipo de Etapa**: Restrinja a receita a um tipo de operação específico
+  (ex. "Contorno" ou "Raster"). A lista é filtrada pelos tipos de etapa que
+  suportam o tipo de tarefa selecionado. Deixe como "Qualquer Tipo" para
+  corresponder a cada tipo de etapa dentro da tarefa
 - **Material**: Selecione um tipo de material ou deixe aberto para qualquer material
-- **Intervalo de Espessura**: Defina valores mínimo e máximo de espessura
+- **Espessura Mín/Máx**: Defina valores mínimo e máximo de espessura do material base
 
 #### 4. Configure as Definições
 
@@ -57,24 +66,69 @@ Preencha as informações básicas:
 
 ![Editor de Receitas - Aba Configurações](/screenshots/recipe-editor-settings.png)
 
-- Ajuste potência, velocidade e outros parâmetros
-- As configurações se adaptam automaticamente com base no tipo de tarefa selecionado
+As abas de configurações se adaptam à seleção feita na aba Aplicabilidade:
+
+- Quando a receita tem como alvo um **tipo de etapa** específico, o editor
+  mostra duas páginas de configurações: uma página "Laser" com as
+  configurações de processo compartilhadas (potência, assistência de ar, etc.)
+  e uma página "Configurações de Etapa" com os atributos específicos daquele
+  tipo de etapa (ex. lado de corte, ordem de corte)
+
+![Editor de Receitas - Aba Configurações de Etapa](/screenshots/recipe-editor-step-settings.png)
+
+- Selecionar apenas um **tipo de tarefa** (com "Qualquer Tipo" como tipo de
+  etapa) mostra uma única página "Configurações" com as configurações de
+  processo para aquela tarefa
+- Deixar ambos como "Qualquer" mostra apenas as configurações básicas de
+  movimento (velocidade de corte e velocidade de deslocamento) que são
+  compartilhadas por todas as etapas
 
 ### Sistema de Correspondência de Receitas
 
-O Rayforge sugere automaticamente as receitas mais apropriadas com base em:
+O Rayforge sugere e aplica automaticamente as receitas mais apropriadas com
+base em:
 
 - **Compatibilidade de máquina**: Receitas podem ser específicas para máquina
+- **Compatibilidade de cabeça de laser**: Receitas podem forçar uma cabeça específica na
+  máquina
 - **Correspondência de material**: Receitas podem direcionar materiais específicos
 - **Intervalos de espessura**: Receitas se aplicam dentro dos limites de espessura definidos
-- **Correspondência de capacidade**: Receitas estão vinculadas a tipos de operação específicos
+- **Correspondência de tipo de tarefa**: Receitas estão vinculadas a categorias
+  de operação específicas
+- **Correspondência de tipo de etapa**: Receitas podem ter como alvo um tipo de
+  operação específico (ex. apenas etapas "Contorno")
 
-O sistema usa um algoritmo de pontuação de especificidade para priorizar as receitas mais relevantes:
+Uma receita só corresponde quando todos os seus critérios são satisfeitos. Quando
+uma nova etapa é criada, o Rayforge pesquisa a biblioteca de receitas em busca de
+receitas correspondentes e aplica automaticamente a melhor. O sistema usa um
+algoritmo de pontuação de especificidade para priorizar as receitas mais relevantes:
 
 1. Receitas específicas de máquina têm classificação mais alta que genéricas
 2. Receitas específicas de cabeça de laser têm classificação mais alta
 3. Receitas específicas de material têm classificação mais alta
 4. Receitas específicas de espessura têm classificação mais alta
+5. Receitas específicas de tipo de etapa têm classificação mais alta
+
+### Aplicando Receitas a Etapas
+
+As receitas são aplicadas por etapa. Abra as configurações de qualquer etapa e
+encontre a linha "Receita" na seção "Geral":
+
+- **Escolher...**: Abre uma lista filtrável de receitas. Use o campo de busca
+  ou o alternador "Mostrar apenas receitas compatíveis" para estreitar a lista;
+  receitas compatíveis correspondem ao tipo de tarefa, tipo de etapa, máquina e
+  aos materiais base da etapa no documento. Selecionar uma receita aplica todas
+  as suas configurações à etapa.
+- **Salvar Como...**: Abre o editor de receitas pré-preenchido com as
+  configurações, máquina, material e espessura atuais da etapa. Salvar a nova
+  receita a aplica à etapa imediatamente.
+- **Atualizar**: Aparece quando as configurações da etapa divergiram da receita
+  que foi aplicada a ela (ex. depois que você alterou um valor
+  manualmente). Clicar nele sobrescreve a receita salva com as configurações
+  atuais da etapa.
+
+O nome da receita atualmente aplicada é mostrado na linha. Etapas
+sem uma receita aplicada são rotuladas como "Configurações Manuais".
 
 ---
 

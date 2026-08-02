@@ -637,9 +637,24 @@ def find_step_by_type(
 
 
 def open_recipe_editor(
-    win: "MainWindow", page: str = "general"
+    win: "MainWindow",
+    page: str = "general",
+    *,
+    step_type: Optional[str] = None,
+    settings_page: int = 0,
 ) -> "AddEditRecipeDialog":
-    """Open recipe editor dialog from app settings."""
+    """Open recipe editor dialog from app settings.
+
+    Args:
+        page: Which tab to activate ("general", "applicability", or
+            "settings"). For "settings", ``settings_page`` selects which
+            of the dynamic settings pages to show.
+        step_type: Optional step class name to target. Selecting a step
+            type (e.g. a laser step) splits the settings into inherited
+            and step-specific pages.
+        settings_page: Index into the dynamic settings pages to activate
+            when ``page`` is "settings".
+    """
     from rayforge.core.recipe import Recipe
     from rayforge.ui_gtk.doceditor.edit_recipe_dialog import (
         AddEditRecipeDialog,
@@ -650,6 +665,8 @@ def open_recipe_editor(
 
     recipe = Recipe(name="3mm Plywood Cut")
     recipe.description = "A recipe for cutting 3mm plywood with a diode laser"
+    if step_type:
+        recipe.target_step_type = step_type
 
     def _open() -> "AddEditRecipeDialog":
         dialog = AddEditRecipeDialog(
@@ -664,8 +681,9 @@ def open_recipe_editor(
         elif page == "applicability":
             dialog._tab_buttons["applicability"].set_active(True)
         elif page == "settings" and dialog._settings_pages:
-            first_name = next(iter(dialog._settings_pages))
-            dialog._tab_buttons[first_name].set_active(True)
+            names = list(dialog._settings_pages)
+            index = min(settings_page, len(names) - 1)
+            dialog._tab_buttons[names[index]].set_active(True)
         return dialog
 
     dialog = run_on_main_thread(_open)
