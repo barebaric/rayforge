@@ -12,7 +12,7 @@ from .speedvar import SpeedVar
 from .textareavar import TextAreaVar
 from .urlvar import UrlVar, WebsocketUrlVar
 from .var import ValidationError, Var, get_editable_var_types
-from .varset import VarSet
+from .varset import VarSet, merge_varsets
 
 __all__ = [
     "AppKeyVar",
@@ -34,4 +34,5 @@ __all__ = [
     "VarSet",
     "WebsocketUrlVar",
     "get_editable_var_types",
+    "merge_varsets",
 ]
