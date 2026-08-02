@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, cast
+from gettext import gettext as _
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Tuple, cast
 
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly import Assembler
@@ -8,6 +9,7 @@ from raygeo.ops.part import Part
 
 from rayforge.core.capability import MachineCapability
 from rayforge.core.step import Step
+from rayforge.core.varset import FloatVar, IntVar, SpeedVar, VarSet
 
 from ..capabilities import MILL
 
@@ -27,6 +29,15 @@ class CncAssemblerStep(Step):
     CAPABILITIES = (MILL,)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.MILL})
     TYPELABEL = "CNC Step"
+
+    RECIPE_KEYS: Tuple[str, ...] = Step.RECIPE_KEYS + (
+        "tool_diameter",
+        "spindle_rpm",
+        "plunge_speed",
+        "target_depth",
+        "depth_per_pass",
+        "safe_z",
+    )
 
     @property
     def show_general_settings(self) -> bool:
@@ -131,6 +142,69 @@ class CncAssemblerStep(Step):
                 "safe_z",
             }
         )
+
+    @classmethod
+    def recipe_varset(cls) -> VarSet:
+        return VarSet(
+            vars=[
+                FloatVar(
+                    key="tool_diameter",
+                    label=_("Tool Diameter"),
+                    default=6.0,
+                    min_val=0.1,
+                    max_val=50.0,
+                ),
+                IntVar(
+                    key="spindle_rpm",
+                    label=_("Spindle RPM"),
+                    default=12000,
+                    min_val=100,
+                    max_val=60000,
+                ),
+                *Step.recipe_varset().vars,
+                SpeedVar(
+                    key="plunge_speed",
+                    label=_("Plunge Rate"),
+                    default=200,
+                    min_val=1,
+                    role="cut",
+                ),
+                FloatVar(
+                    key="target_depth",
+                    label=_("Target Depth"),
+                    default=-5.0,
+                    min_val=-50.0,
+                    max_val=0.0,
+                ),
+                FloatVar(
+                    key="depth_per_pass",
+                    label=_("Depth per Pass"),
+                    default=1.0,
+                    min_val=0.1,
+                    max_val=10.0,
+                ),
+                FloatVar(
+                    key="safe_z",
+                    label=_("Safe Z Height"),
+                    default=2.0,
+                    min_val=0.0,
+                    max_val=50.0,
+                ),
+            ]
+        )
+
+    @classmethod
+    def recipe_varset_groups(cls) -> List[Tuple[str, VarSet]]:
+        full = cls.recipe_varset()
+        base_keys = {v.key for v in CncAssemblerStep.recipe_varset()}
+        cnc_vars = [v for v in full if v.key in base_keys]
+        step_vars = [v for v in full if v.key not in base_keys]
+        groups: List[Tuple[str, VarSet]] = []
+        if cnc_vars:
+            groups.append((_("CNC"), VarSet(vars=cnc_vars)))
+        if step_vars:
+            groups.append((_("Step Settings"), VarSet(vars=step_vars)))
+        return groups or [(_("CNC"), VarSet(vars=cnc_vars))]
 
     def build_spec(self, workpiece: "WorkPiece") -> Any:
         """Return the raygeo assembler spec for this step.

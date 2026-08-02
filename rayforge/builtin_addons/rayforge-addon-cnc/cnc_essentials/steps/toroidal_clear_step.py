@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import Any, Dict, cast
+from typing import Any, Dict, Tuple, cast
 
 from raygeo.ops.assembly.toroid import ToroidalClearSpec
+
+from rayforge.core.varset import FloatVar, VarSet
 
 from .cnc_assembler_step import CncAssemblerStep
 
@@ -12,6 +14,24 @@ class ToroidalClearStep(CncAssemblerStep):
     ASSEMBLER_NAME = "toroidal_clear"
     TYPELABEL = _("Toroidal Clear")
     uses_global_state = True
+
+    RECIPE_KEYS: Tuple[str, ...] = CncAssemblerStep.RECIPE_KEYS + (
+        "step_over",
+    )
+
+    @classmethod
+    def recipe_varset(cls) -> VarSet:
+        return VarSet(
+            vars=[
+                *CncAssemblerStep.recipe_varset().vars,
+                FloatVar(
+                    key="step_over",
+                    label=_("Step Over"),
+                    default=2.0,
+                    min_val=0.1,
+                ),
+            ]
+        )
 
     def __init__(self, name=None, typelabel=None):
         super().__init__(name=name, typelabel=typelabel)

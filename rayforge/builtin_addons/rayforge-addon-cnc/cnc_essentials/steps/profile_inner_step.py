@@ -1,7 +1,9 @@
 from gettext import gettext as _
-from typing import Any, Dict, cast
+from typing import Any, Dict, Tuple, cast
 
 from raygeo.ops.assembly.profile import ProfileSpec
+
+from rayforge.core.varset import FloatVar, VarSet
 
 from .cnc_assembler_step import CncAssemblerStep
 
@@ -10,6 +12,38 @@ class ProfileInnerStep(CncAssemblerStep):
     ASSEMBLER_NAME = "profile_inner"
     TYPELABEL = _("Profile Inner")
     uses_global_state = True
+
+    RECIPE_KEYS: Tuple[str, ...] = CncAssemblerStep.RECIPE_KEYS + (
+        "step_over",
+        "step_length",
+        "wall_margin",
+    )
+
+    @classmethod
+    def recipe_varset(cls) -> VarSet:
+        return VarSet(
+            vars=[
+                *CncAssemblerStep.recipe_varset().vars,
+                FloatVar(
+                    key="step_over",
+                    label=_("Step Over"),
+                    default=2.0,
+                    min_val=0.1,
+                ),
+                FloatVar(
+                    key="step_length",
+                    label=_("Step Length"),
+                    default=0.6,
+                    min_val=0.1,
+                ),
+                FloatVar(
+                    key="wall_margin",
+                    label=_("Wall Margin"),
+                    default=0.0,
+                    min_val=0.0,
+                ),
+            ]
+        )
 
     def __init__(self, name=None, typelabel=None):
         super().__init__(name=name, typelabel=typelabel)
