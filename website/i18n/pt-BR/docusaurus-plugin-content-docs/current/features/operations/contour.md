@@ -12,7 +12,6 @@ Operações de contorno:
 - Podem usar caminhos de corte internos, externos ou na linha
 - Funcionam com qualquer forma vetorial fechada ou aberta
 
-
 ## Quando Usar Contorno
 
 Use corte de contorno para:
@@ -48,7 +47,106 @@ Use corte de contorno para:
 
 ## Configurações Principais
 
-### Potência e Velocidade
+O diálogo de configurações de etapa tem três abas: **Configurações de Etapa**, **Laser** e **Pós-Processamento**. As configurações são descritas em ordem de aba abaixo.
+
+### Configurações de Contorno
+
+![Configurações de etapa de contorno](/screenshots/step-settings-contour-general.png)
+
+O grupo **Configurações de Contorno** na aba _Configurações de Etapa_ controla como o contorno é traçado.
+
+#### Lado de Corte e Deslocamento de Caminho
+
+Controla onde o laser corta relativo ao caminho vetorial:
+
+| Deslocamento      | Descrição                    | Usar Para                              |
+| ----------------- | ---------------------------- | -------------------------------------- |
+| **Linha Central** | Corta diretamente no caminho | Cortes na linha central, marcação      |
+| **Interno**       | Corta dentro da forma        | Peças que devem caber no tamanho exato |
+| **Externo**       | Corta fora da forma          | Furos em que as peças se encaixam      |
+
+**Distância de Deslocamento:**
+
+- Quão longe dentro/fora deslocar (mm)
+- Tipicamente definido como metade da sua largura de kerf
+- Kerf = largura do material removido pelo laser
+- Exemplo: deslocamento de 0.15mm para kerf de 0.3mm
+
+#### Ordem de Corte
+
+Controla a ordem em que caminhos aninhados são processados:
+
+**Dentro-Fora:**
+
+- Corta recursos internos primeiro, depois trabalha para fora
+- Mantém as partes externas do material intactas por mais tempo
+
+**Fora-Dentro:**
+
+- Corta o perímetro externo primeiro, depois se move para dentro
+- Mantém a peça de trabalho fixada ao estoque por mais tempo
+
+**Recomendado:** Dentro-Fora (padrão)
+
+#### Remover Caminhos Internos
+
+Para designs com furos ou recortes internos, você pode optar por traçar apenas o limite mais externo:
+
+- **Remover Caminhos Internos**: Quando habilitado, apenas o contorno mais externo é traçado
+- Furos e recortes internos são ignorados
+
+Isso é útil quando você quer cortar uma forma mas preservar o interior, como criar uma moldura ou contorno sem cortar detalhes internos.
+
+#### Recorte Excessivo (Overcut)
+
+Estende caminhos de corte fechados além do ponto inicial para que o
+feixe de laser se sobreponha ao início do corte:
+
+**Recorte Excessivo:**
+
+- Distância em unidades de máquina para estender o corte além da junção início/fim
+- Defina como **0** para desativar (padrão)
+- Valores típicos: 1–5 para a maioria dos materiais
+- Máximo: 100
+
+**Por que usar recorte excessivo:**
+
+No início e no fim de um contorno fechado, o laser pode não penetrar
+completamente devido à aceleração e desaceleração. O recorte excessivo
+garante que o feixe se sobreponha na junção, criando um corte limpo e
+completamente separado. Isso é especialmente útil para:
+
+- Materiais espessos onde a penetração completa é marginal
+- Cortes em alta velocidade onde os efeitos de aceleração são mais pronunciados
+- Peças que devem cair livres sem pós-processamento
+
+O recorte excessivo se aplica tanto a contornos externos quanto a furos internos.
+
+:::tip Entrada/Saída vs Recorte Excessivo
+[Entrada/Saída](../lead-in-out.md) adiciona movimentos de aproximação e saída
+com potência zero antes e depois do trajeto de corte. O recorte
+excessivo estende o próprio trajeto de corte além da junção. Eles podem
+ser usados juntos para qualidade de corte ideal.
+:::
+
+#### Retraçamento com Limiar Personalizado
+
+Ao trabalhar com imagens bitmap que foram convertidas em vetores, você pode controlar quais partes são traçadas:
+
+- **Reverificar Conteúdo**: Habilita um limiar de brilho personalizado para o traçado
+- **Limiar de Traçado (0.0-1.0)**: Valor de corte de brilho quando a reverificação está habilitada
+  - Valores menores traçam apenas áreas mais escuras
+  - Valores maiores incluem áreas mais claras
+
+Isso é útil quando o traçado padrão não captura o nível de detalhe que você precisa.
+
+### Configurações do Laser
+
+![Configurações do laser](/screenshots/step-settings-contour-laser.png)
+
+Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do diálogo de configurações de etapa.
+
+#### Potência e Velocidade
 
 **Potência (%):**
 
@@ -62,9 +160,40 @@ Use corte de contorno para:
 - Mais lento = mais energia = corte mais profundo
 - Mais rápido = menos energia = corte mais leve
 
+#### Compensação de Kerf
+
+Kerf é a largura do material removido pelo feixe do laser:
+
+**Por que importa:**
+
+- Um círculo cortado "na linha" será ligeiramente menor que o projetado
+- O laser remove ~0.2-0.4mm de material (dependendo da largura do feixe)
+
+**Como compensar:**
+
+1. Meça seu kerf em cortes de teste
+2. Use deslocamento de caminho = kerf/2
+3. Para peças: desloque **dentro** por kerf/2
+4. Para furos: desloque **fora** por kerf/2
+
+Veja [Kerf](../kerf.md) para um guia detalhado.
+
+## Pós-Processamento
+
+![Configurações de pós-processamento de contorno](/screenshots/step-settings-contour-post.png)
+
+Operações de contorno suportam várias opções de pós-processamento:
+
+- **[Suavização de Caminho](../smooth.md)** - Reduz bordas irregulares em caminhos de corte
+- **[Abas de Fixação](../holding-tabs.md)** - Mantém peças cortadas anexadas ao material de estoque
+- **[Cortar para Estoque](../crop-to-stock.md)** - Limita cortes ao limite do material
+- **[Otimização de Caminho](../path-optimization.md)** - Reduz distância de deslocamento entre cortes
+- **[Multi-Passagem](../multi-pass.md)** - Repete cortes para materiais espessos
+- **[Entrada/Saída](../lead-in-out.md)** - Adiciona movimentos de aproximação e saída sem potência para extremidades de corte mais limpas
+
 ### Corte Multi-Passagem
 
-Para materiais mais espessos que uma única passagem pode cortar:
+Para materiais mais espessos do que uma única passagem pode cortar:
 
 **Passagens:**
 
@@ -81,114 +210,7 @@ Para materiais mais espessos que uma única passagem pode cortar:
 :::warning Eixo Z Necessário
 :::
 
-Profundidade de passagem só funciona se sua máquina tem controle de eixo Z. Para máquinas sem eixo Z, use múltiplas passagens na mesma profundidade.
-
-### Deslocamento de Caminho
-
-Controla onde o laser corta relativo ao caminho vetorial:
-
-| Deslocamento      | Descrição               | Usar Para                        |
-| ----------- | ------------------------- | ------------------------------ |
-| **Na Linha** | Corta diretamente no caminho | Cortes de linha central, marcação       |
-| **Interno**  | Corta dentro da forma     | Peças que devem caber no tamanho exato |
-| **Externo** | Corta fora da forma    | Furos que peças encaixam      |
-
-**Distância de Deslocamento:**
-
-- Quão longe dentro/fora deslocar (mm)
-- Tipicamente definido como metade da sua largura de kerf
-- Kerf = largura do material removido pelo laser
-- Exemplo: deslocamento de 0.15mm para kerf de 0.3mm
-
-### Direção de Corte
-
-**Horário vs Anti-Horário:**
-
-- Afeta qual lado do corte recebe mais calor
-- Geralmente horário para regra da mão direita
-- Mude se um lado queima mais que o outro
-
-**Otimizar Ordem:**
-
-- Classifica automaticamente caminhos para deslocamento mínimo
-- Reduz tempo de trabalho
-- Previne cortes perdidos
-
-### Recorte Excessivo (Overcut)
-
-Estende trajetórias de corte fechadas além do ponto inicial para que o
-feixe de laser se sobreponha ao início do corte:
-
-**Recorte Excessivo:**
-
-- Distância em unidades de máquina para estender o corte além da junção início/fim
-- Defina como **0** para desativar (padrão)
-- Valores típicos: 1–5 para a maioria dos materiais
-- Máximo: 100
-
-**Por que usar recorte excessivo:**
-
-No início e no fim de um contorno fechado, o laser pode não penetrar
-completamente devido à aceleração e desaceleração. O recorte excessivo
-garante que o feixe se sobreponha na junção, criando um corte limpo e
-completamente separado. Isto é especialmente útil para:
-
-- Materiais grossos onde a penetração completa é marginal
-- Cortes em alta velocidade onde os efeitos de aceleração são mais pronunciados
-- Peças que devem cair livres sem pós-processamento
-
-O recorte excessivo se aplica tanto a contornos externos quanto a furos internos.
-
-:::tip Lead-In/Out vs Recorte Excessivo
-[Lead-In/Out](../lead-in-out.md) adiciona movimentos de aproximação e saída
-com potência zero antes e depois do trajeto de corte. O recorte
-excessivo estende o próprio trajeto de corte além da junção. Eles podem
-ser usados juntos para qualidade de corte ideal.
-:::
-
-## Pós-Processamento
-
-![Configurações de pós-processamento de contorno](/screenshots/step-settings-contour-post.png)
-
-Operações de contorno suportam várias opções de pós-processamento:
-
-- **[Suavização de Caminho](../smooth.md)** - Reduz bordas irregulares em caminhos de corte
-- **[Abas de Fixação](../holding-tabs.md)** - Mantém peças cortadas anexadas ao material de estoque
-- **[Cortar para Estoque](../crop-to-stock.md)** - Limita cortes ao limite do material
-- **[Otimização de Caminho](../path-optimization.md)** - Reduz distância de deslocamento entre cortes
-- **[Multi-Passagem](../multi-pass.md)** - Repete cortes para materiais espessos
-- **[Entrada/Saída](../lead-in-out.md)** - Adicionar movimentos de aproximação e saída sem potência para extremidades de corte mais limpas
-
-### Compensação de Kerf
-
-![Configurações de pós-processamento de contorno](/screenshots/step-settings-contour-post.png)
-
-### Abas de Fixação
-
-Abas mantêm peças cortadas anexadas ao material de estoque durante o corte:
-
-- Adicione abas para prevenir peças de caírem
-- Abas são pequenas seções não cortadas
-- Quebre as abas após o trabalho completar
-- Veja [Abas de Fixação](../holding-tabs.md) para detalhes
-
-### Compensação de Kerf
-
-Kerf é a largura do material removido pelo feixe do laser:
-
-**Por que importa:**
-
-- Um círculo cortado "na linha" será ligeiramente menor que o projetado
-- O laser remove ~0.2-0.4mm de material (dependendo da largura do feixe)
-
-**Como compensar:**
-
-1. Meça seu kerf em cortes de teste
-2. Use deslocamento de caminho = kerf/2
-3. Para peças: desloque **dentro** por kerf/2
-4. Para furos: desloque **fora** por kerf/2
-
-Veja [Kerf](../kerf.md) para guia detalhado.
+A profundidade de passagem só funciona se sua máquina tem controle de eixo Z. Para máquinas sem eixo Z, use múltiplas passagens na mesma profundidade.
 
 ## Dicas e Melhores Práticas
 
@@ -286,5 +308,5 @@ M5                  ; Laser desligado
 
 - **[Gravação](engrave)** - Preenchendo áreas com padrões de gravação
 - **[Abas de Fixação](../holding-tabs.md)** - Mantendo peças fixadas durante o corte
-- **[Kerf](../kerf.md)** - Melhorando precisão do corte
+- **[Kerf](../kerf.md)** - Melhorando a precisão do corte
 - **[Grade de Teste de Material](material-test-grid)** - Encontrando configurações ideais de potência/velocidade

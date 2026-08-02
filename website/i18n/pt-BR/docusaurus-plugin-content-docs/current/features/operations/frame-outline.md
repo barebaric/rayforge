@@ -11,8 +11,6 @@ Operações de Contorno de Moldura:
 - Suportam compensação de kerf para dimensionamento preciso
 - Funcionam com qualquer combinação de objetos na tela
 
-![Configurações de etapa de Contorno de Moldura](/screenshots/step-settings-frame-outline-general.png)
-
 ## Quando Usar Contorno de Moldura
 
 Use contorno de moldura para:
@@ -47,11 +45,48 @@ Configure os parâmetros da moldura:
 
 - **Potência e Velocidade:** Corresponda aos requisitos de corte do seu material
 - **Deslocamento:** Distância da borda do conteúdo até a moldura
-- **Deslocamento de Caminho:** Corte interno, externo ou linha central
+- **Deslocamento de Caminho:** Corte interno, externo ou na linha central
 
 ## Configurações Principais
 
-### Potência e Velocidade
+O diálogo de configurações de etapa tem três abas: **Configurações de Etapa**, **Laser** e **Pós-Processamento**. As configurações são descritas em ordem de aba abaixo.
+
+### Geometria
+
+![Configurações de etapa de Contorno de Moldura](/screenshots/step-settings-frame-outline-general.png)
+
+O grupo **Geometria** na aba _Configurações de Etapa_ controla a forma da moldura.
+
+#### Lado de Corte
+
+Controla onde o laser corta relativo ao caminho da moldura:
+
+| Lado de Corte     | Descrição                          | Usar Para                             |
+| ----------------- | ---------------------------------- | ------------------------------------- |
+| **Linha Central** | Corta diretamente no caminho       | Corte padrão                          |
+| **Externo**       | Corta fora do caminho da moldura   | Tornando a moldura ligeiramente maior |
+| **Interno**       | Corta dentro do caminho da moldura | Tornando a moldura ligeiramente menor |
+
+#### Distância de Deslocamento
+
+**Deslocamento (mm):**
+
+- Distância da caixa delimitadora do design até a moldura
+- Cria uma margem/borda ao redor do seu trabalho
+
+**Valores típicos:**
+
+- **0mm:** A moldura toca a borda do design
+- **2-5mm:** Pequena margem para aparência limpa
+- **10mm+:** Borda grande para montagem ou manuseio
+
+### Configurações do Laser
+
+![Configurações do laser](/screenshots/step-settings-frame-outline-laser.png)
+
+Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do diálogo de configurações de etapa.
+
+#### Potência e Velocidade
 
 **Potência (%):**
 
@@ -63,36 +98,9 @@ Configure os parâmetros da moldura:
 - Quão rápido o laser se move
 - Mais lento para materiais mais espessos
 
-**Passagens:**
+Para cortar a moldura mais de uma vez, adicione um pós-processador de [Multi-Passagem](../multi-pass.md).
 
-- Número de vezes para cortar a moldura
-- Geralmente 1-2 passagens
-- Adicione passagens para materiais mais espessos
-
-### Distância de Deslocamento
-
-**Deslocamento (mm):**
-
-- Distância da caixa delimitadora do design até a moldura
-- Cria uma margem/borda ao redor do seu trabalho
-
-**Valores típicos:**
-
-- **0mm:** Moldura toca a borda do design
-- **2-5mm:** Pequena margem para aparência limpa
-- **10mm+::** Borda grande para montagem ou manuseio
-
-### Deslocamento de Caminho (Lado de Corte)
-
-Controla onde o laser corta relativo ao caminho da moldura:
-
-| Lado de Corte       | Descrição                 | Usar Para                           |
-| -------------- | --------------------------- | --------------------------------- |
-| **Linha Central** | Corta diretamente no caminho  | Corte padrão                  |
-| **Externo**    | Corta fora do caminho da moldura | Fazendo a moldura ligeiramente maior  |
-| **Interno**     | Corta dentro do caminho da moldura  | Fazendo a moldura ligeiramente menor |
-
-### Compensação de Kerf
+#### Compensação de Kerf
 
 O contorno de moldura suporta compensação de kerf:
 
@@ -132,9 +140,9 @@ Operações de Contorno de Moldura suportam várias opções de pós-processamen
 
 **Processo:**
 
-1. Complete todas as outras operações (grave, cortes de contorno)
+1. Complete todas as outras operações (gravação, cortes de contorno)
 2. Adicione Contorno de Moldura como última operação
-3. Defina deslocamento para incluir uma pequena margem
+3. Defina o deslocamento para incluir uma pequena margem
 
 **Benefícios:**
 
@@ -149,11 +157,11 @@ Operações de Contorno de Moldura suportam várias opções de pós-processamen
 **Processo:**
 
 1. Organize todas as peças na tela
-2. Adicione operações de contorno individuais para peças
+2. Adicione operações de contorno individuais para as peças
 3. Adicione Contorno de Moldura ao redor de tudo
-4. Moldura corta por último (em camada separada)
+4. A moldura corta por último (em camada separada)
 
-**Ordem:** Grave → Contornos de peças → Contorno de moldura
+**Ordem:** Gravação → Contornos das peças → Contorno de moldura
 
 ## Dicas e Melhores Práticas
 
@@ -162,27 +170,27 @@ Operações de Contorno de Moldura suportam várias opções de pós-processamen
 **Melhor prática:**
 
 - Coloque Contorno de Moldura em sua própria camada
-- Execute moldura como a **última** operação
-- Isso garante que todo outro trabalho completa primeiro
+- Execute a moldura como a **última** operação
+- Isso garante que todo outro trabalho é concluído primeiro
 
 **Por que por último?**
 
-- Material permanece fixado durante outras operações
-- Previne peças de deslocarem
+- O material permanece fixado durante outras operações
+- Previne que peças se desloquem
 - Resultado final mais limpo
 
 ### Seleção de Deslocamento
 
-**Escolhendo deslocamento:**
+**Escolhendo o deslocamento:**
 
 - **0-2mm:** Encaixe apertado, desperdício de material mínimo
-- **3-5mm:** Margem padrão, parece profissional
+- **3-5mm:** Margem padrão, aparência profissional
 - **10mm+:** Material extra para manuseio/montagem
 
 **Considere:**
 
-- Uso final da peça
-- Se bordas serão visíveis
+- O uso final da peça
+- Se as bordas serão visíveis
 - Custo e disponibilidade do material
 
 ### Configurações de Qualidade
@@ -190,9 +198,9 @@ Operações de Contorno de Moldura suportam várias opções de pós-processamen
 **Para cortes de moldura limpos:**
 
 - Use assistência de ar
-- Certifique-se de foco adequado
-- Múltiplas passagens mais rápidas frequentemente melhor que uma passagem lenta
-- Mantenha material plano e fixado
+- Garanta foco adequado
+- Múltiplas passagens mais rápidas geralmente são melhores que uma passagem lenta
+- Mantenha o material plano e fixado
 
 ## Combinando com Outras Operações
 
@@ -204,32 +212,32 @@ Fluxo de trabalho típico para uma peça finalizada:
 2. **Camada 2:** Contorno corta peças individuais
 3. **Camada 3:** Contorno de moldura (corta livre)
 
-**Ordem de execução garante:**
+**A ordem de execução garante:**
 
-- Gravação acontece enquanto material está plano e fixado
-- Detalhes das peças são cortados antes da separação final
-- Moldura corta tudo livre no final
+- A gravação acontece enquanto o material está plano e fixado
+- Os detalhes das peças são cortados antes da separação final
+- A moldura corta tudo livre no final
 
 ### Moldura vs Shrink Wrap
 
-| Recurso         | Contorno de Moldura                | Shrink Wrap             |
-| --------------- | ---------------------------- | ----------------------- |
-| **Forma**       | Sempre retangular           | Segue contornos do objeto |
-| **Velocidade**       | Muito rápido (4 linhas)          | Depende da complexidade   |
-| **Caso de uso**    | Bordas simples, cortar livre | Uso eficiente de material  |
-| **Flexibilidade** | Retângulo fixo              | Adapta ao design        |
+| Recurso           | Contorno de Moldura          | Shrink Wrap               |
+| ----------------- | ---------------------------- | ------------------------- |
+| **Forma**         | Sempre retangular            | Segue contornos do objeto |
+| **Velocidade**    | Muito rápido (4 linhas)      | Depende da complexidade   |
+| **Caso de uso**   | Bordas simples, cortar livre | Uso eficiente de material |
+| **Flexibilidade** | Retângulo fixo               | Adapta ao design          |
 
 **Escolha Contorno de Moldura quando:**
 
 - Você quer uma borda retangular
-- Simplicidade é preferida
+- A simplicidade é preferida
 - Cortar livre da chapa
 
 **Escolha Shrink Wrap quando:**
 
-- Você quer minimizar desperdício de material
-- Design tem forma irregular
-- Eficiência é importante
+- Você quer minimizar o desperdício de material
+- O design tem forma irregular
+- A eficiência é importante
 
 ## Solução de Problemas
 
@@ -243,13 +251,13 @@ Fluxo de trabalho típico para uma peça finalizada:
 
 - **Verifique:** Objetos estão na tela
 - **Verifique:** Operação está habilitada
-- **Olhe:** Moldura pode estar fora da área visível (diminua zoom)
+- **Olhe:** A moldura pode estar fora da área visível (diminua o zoom)
 
 ### Moldura corta no design
 
 - **Aumente:** Distância de deslocamento
-- **Verifique:** Objetos estão propriamente posicionados
-- **Verifique:** Cálculo da caixa delimitadora inclui todos os objetos
+- **Verifique:** Objetos estão posicionados corretamente
+- **Verifique:** O cálculo da caixa delimitadora inclui todos os objetos
 
 ### Profundidade de corte inconsistente
 
@@ -292,5 +300,5 @@ M5                 ; Laser desligado
 - **[Corte de Contorno](contour)** - Cortando contornos de objetos individuais
 - **[Shrink Wrap](shrink-wrap)** - Limites irregulares eficientes
 - **[Abas de Fixação](../holding-tabs.md)** - Mantendo peças seguras durante o corte
-- **[Fluxo de Trabalho Multi-Camadas](../multi-layer.md)** - Organizando operações efetivamente
-- **[Compensação de Kerf](../kerf.md)** - Melhorando precisão dimensional
+- **[Fluxo de Trabalho Multi-Camadas](../multi-layer.md)** - Organizando operações de forma eficaz
+- **[Compensação de Kerf](../kerf.md)** - Melhorando a precisão dimensional

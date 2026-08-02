@@ -134,93 +134,17 @@ Wähle den Gravurmodus, der am besten zu deinen Bedürfnissen passt:
 
 ![Gravur-Schritt-Einstellungen](/screenshots/step-settings-engrave-general-variable.png)
 
-## Gemeinsame Einstellungen
+## Gravur-Einstellungen
 
-### Leistung & Geschwindigkeit
+Die Gruppen **Gravur** und **Leistung** auf der Registerkarte *Schritt-Einstellungen* steuern das Scan-Muster, den Modus und die Leistungsmodulation in Zeilenreihenfolge. Laserleistung und -geschwindigkeit befinden sich auf der Seite **Laser** (siehe unten).
 
-**Leistung (%):**
+### Modus
 
-- Laserintensität zum Gravieren
-- Niedrigere Leistung für leichtere Markierung
-- Höhere Leistung für tiefere Gravur
+Die Zeile **Modus** wählt einen der vier Gravurmodi aus. Jeder Modus zeigt unterschiedliche Einstellungen, die unten beschrieben werden.
 
-**Geschwindigkeit (mm/min):**
+### Modus-spezifische Einstellungen
 
-- Wie schnell der Laser scannt
-- Schneller = heller, langsamer = dunkler
-
-### Linienabstand
-
-**Linienabstand (mm):**
-
-- Abstand zwischen Scan-Linien
-- Kleiner = höhere Qualität, längere Job-Zeit
-- Größer = schneller, sichtbare Linien
-
-| Abstand   | Qualität | Geschwindigkeit | Verwendung für              |
-| --------- | -------- | --------------- | --------------------------- |
-| 0.05mm    | Höchste  | Langsamste      | Fotos, feine Details        |
-| 0.1mm     | Hoch     | Mittel          | Text, Logos, Grafiken       |
-| 0.2mm     | Mittel   | Schnell         | Feste Füllungen, Texturen   |
-| 0.3mm+    | Niedrig  | Schnellste      | Entwurf, Testen             |
-
-**Empfohlen:** 0.1mm für allgemeine Verwendung
-
-:::tip Auflösungs-Anpassung
-:::
-
-Für Bilder sollte der Linienabstand der Bildauflösung entsprechen oder diese überschreiten. Wenn dein Bild 10 Pixel/mm (254 DPI) hat, verwende 0.1mm Linienabstand oder kleiner.
-
-### Scan-Richtung
-
-**Scan-Winkel (Grad):**
-
-- Richtung der Scan-Linien
-- 0 = horizontal (von links nach rechts)
-- 90 = vertikal (von oben nach unten)
-- 45 = diagonal
-
-**Warum Winkel ändern?**
-
-- Holzmaserung: Senkrecht zur Maserung für bessere Ergebnisse gravieren
-- Musterorientierung: An Design-Ästhetik anpassen
-- Bänderung reduzieren: Anderer Winkel kann Unvollkommenheiten verbergen
-
-**Bidirektionales Scannen:**
-
-- **Aktiviert:** Laser graviert in beide Richtungen (schneller)
-- **Deaktiviert:** Laser graviert nur von links nach rechts (langsamer, konsistenter)
-
-Für beste Qualität, bidirektional deaktivieren. Für Geschwindigkeit, aktivieren.
-
-### Overscan
-
-**Overscan-Distanz (mm):**
-
-- Wie weit über das Design hinaus der Laser reist, bevor er umkehrt
-- Ermöglicht dem Laser, volle Geschwindigkeit zu erreichen, bevor er in das Design eintritt
-- Verhindert Brandflecken an Zeilenanfängen/-enden
-
-**Typische Werte:**
-
-- 2-5mm für die meisten Jobs
-- Größer für hohe Geschwindigkeiten
-
-Siehe [Overscan](../overscan.md) für Details.
-
-## Nachbearbeitung
-
-![Gravur-Nachbearbeitungseinstellungen](/screenshots/step-settings-engrave-post.png)
-
-Gravur-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
-
-- **[Overscan](../overscan.md)** - Rasterzeilen für konsistente Gravurqualität erweitern
-- **[Pfad-Optimierung](../path-optimization.md)** - Verfahrdistanz reduzieren
-- **[Mehrfach-Durchgang](../multi-pass.md)** - Gravur für tiefere Ergebnisse wiederholen
-
-## Modus-spezifische Einstellungen
-
-### Variabler-Leistungs-Modus-Einstellungen
+#### Variabler-Leistungs-Modus-Einstellungen
 
 ![Einstellungen für Variabler-Leistungs-Modus](/screenshots/step-settings-engrave-general-variable.png)
 
@@ -259,11 +183,12 @@ Steuert, wie Bildhelligkeitswerte auf Laserleistung abgebildet werden. Das Histo
 - **Manueller Modus**: Auto-Levels deaktivieren, um Schwarz- und Weißpunkte manuell durch Ziehen der Markierungen auf dem Histogramm einzustellen.
 
 Dies ist besonders nützlich für:
+
 - Niedrigkontrast-Bilder, die Kontrastverbesserung benötigen
 - Bilder mit begrenztem Tonwertbereich
 - Sicherstellen konsistenter Ergebnisse über verschiedene Quellbilder hinweg
 
-### Konstante-Leistungs-Modus-Einstellungen
+#### Konstante-Leistungs-Modus-Einstellungen
 
 ![Einstellungen für Konstante-Leistungs-Modus](/screenshots/step-settings-engrave-general-constant_power.png)
 
@@ -278,7 +203,7 @@ Dies ist besonders nützlich für:
 - 128 (50% Grau-Schwellenwert)
 - Basierend auf Bildkontrast anpassen
 
-### Dither-Modus-Einstellungen
+#### Dither-Modus-Einstellungen
 
 ![Dither-Modus-Einstellungen](/screenshots/step-settings-engrave-general-dither.png)
 
@@ -297,7 +222,7 @@ Wähle den Algorithmus, der am besten zu deinem Bild und Material passt:
 
 **Bayer-Dithering** erzeugt regelmäßige Muster, die künstlerische Effekte erzeugen können, die traditionellem Halbton-Druck ähneln.
 
-### Mehrfach-Tiefen-Modus-Einstellungen
+#### Mehrfach-Tiefen-Modus-Einstellungen
 
 ![Einstellungen für Mehrfach-Tiefen-Modus](/screenshots/step-settings-engrave-general-multi_pass.png)
 
@@ -326,9 +251,110 @@ Wähle den Algorithmus, der am besten zu deinem Bild und Material passt:
 
 Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder Prägen (erhabene Bereiche).
 
-## Tipps & Best Practices
+### Scan-Muster
+
+#### Linienabstand
+
+**Linienabstand (mm):**
+
+- Abstand zwischen Scan-Linien
+- Kleiner = höhere Qualität, längere Job-Zeit
+- Größer = schneller, sichtbare Linien
+
+| Abstand   | Qualität | Geschwindigkeit | Verwendung für              |
+| --------- | -------- | --------------- | --------------------------- |
+| 0.05mm    | Höchste  | Langsamste      | Fotos, feine Details        |
+| 0.1mm     | Hoch     | Mittel          | Text, Logos, Grafiken       |
+| 0.2mm     | Mittel   | Schnell         | Feste Füllungen, Texturen   |
+| 0.3mm+    | Niedrig  | Schnellste      | Entwurf, Testen             |
+
+**Empfohlen:** 0.1mm für allgemeine Verwendung
+
+:::tip Auflösungs-Anpassung
+:::
+
+Für Bilder sollte der Linienabstand der Bildauflösung entsprechen oder diese überschreiten. Wenn dein Bild 10 Pixel/mm (254 DPI) hat, verwende 0.1mm Linienabstand oder kleiner.
+
+#### Scan-Richtung
+
+**Scan-Winkel (Grad):**
+
+- Richtung der Scan-Linien
+- 0 = horizontal (von links nach rechts)
+- 90 = vertikal (von oben nach unten)
+- 45 = diagonal
+
+**Warum Winkel ändern?**
+
+- Holzmaserung: Senkrecht zur Maserung für bessere Ergebnisse gravieren
+- Musterorientierung: An Design-Ästhetik anpassen
+- Bänderung reduzieren: Anderer Winkel kann Unvollkommenheiten verbergen
+
+**Bidirektionales Scannen:**
+
+Rayforge scannt immer bidirektional (von links nach rechts, dann von rechts nach links), da das Feuern bei jedem Durchgang die Gravurgeschwindigkeit im Vergleich zum Zurückfahren ohne Feuern zwischen den Linien ungefähr verdoppelt.
+
+Geringfügige Unterschiede bei Mechanik oder Schaltverzögerung zwischen den beiden Richtungen können auf einigen Maschinen sichtbare Bänderung verursachen. Falls du das siehst, kalibriere den unten beschriebenen **Bidirektionalen Scan-Offset**, um es direkt zu korrigieren, anstatt den Geschwindigkeitsvorteil zu verlieren.
+
+#### Bidirektionaler Scan-Offset
+
+Korrigiert eine feste mechanische oder schaltzeitbedingte Versetzung zwischen Links-nach-rechts- und Rechts-nach-links-Rasterdurchgängen, die ansonsten abwechselnde Scan-Zeilen verschiebt (als Bänderung sichtbar, besonders bei Fotogravuren).
+
+- In Millimetern angeben, positiv oder negativ, je nachdem welche Richtung verschoben werden muss
+- Wendet eine konstante Verschiebung unabhängig von der Geschwindigkeit an; wenn die Versetzung mit der Geschwindigkeit variiert, kalibriere für deine typische Gravurgeschwindigkeit
+- Standard ist 0 (keine Korrektur)
+
+**Offset kalibrieren:**
+
+1. Graviere ein Testmuster mit sichtbaren vertikalen Details (z. B. ein feines Gitter) mit bidirektionalem Scannen
+2. Vergleiche abwechselnde Zeilen, um Richtung und Ausmaß der Fehlausrichtung zu ermitteln
+3. Passe den Offset in kleinen Schritten an (0.01-0.05mm) und teste erneut, bis abwechselnde Zeilen ausgerichtet sind
+
+## Laser-Einstellungen
+
+![Laser-Einstellungen](/screenshots/step-settings-engrave-laser.png)
+
+Leistung, Geschwindigkeit und Laser-Kopf-Auswahl befinden sich auf der Seite **Laser** des Schritt-Einstellungen-Dialogs.
+
+### Leistung & Geschwindigkeit
+
+**Leistung (%):**
+
+- Laserintensität zum Gravieren
+- Niedrigere Leistung für leichtere Markierung
+- Höhere Leistung für tiefere Gravur
+
+**Geschwindigkeit (mm/min):**
+
+- Wie schnell der Laser scannt
+- Schneller = heller, langsamer = dunkler
+
+## Nachbearbeitung
 
 ![Gravur-Nachbearbeitungseinstellungen](/screenshots/step-settings-engrave-post.png)
+
+Gravur-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
+
+- **[Overscan](../overscan.md)** - Rasterzeilen für konsistente Gravurqualität erweitern
+- **[Pfad-Optimierung](../path-optimization.md)** - Verfahrdistanz reduzieren
+- **[Mehrfach-Durchgang](../multi-pass.md)** - Gravur für tiefere Ergebnisse wiederholen
+
+### Overscan
+
+**Overscan-Distanz (mm):**
+
+- Wie weit über das Design hinaus der Laser reist, bevor er umkehrt
+- Ermöglicht dem Laser, volle Geschwindigkeit zu erreichen, bevor er in das Design eintritt
+- Verhindert Brandflecken an Zeilenanfängen/-enden
+
+**Typische Werte:**
+
+- 2-5mm für die meisten Jobs
+- Größer für hohe Geschwindigkeiten
+
+Siehe [Overscan](../overscan.md) für Details.
+
+## Tipps & Best Practices
 
 ### Materialauswahl
 
@@ -351,7 +377,7 @@ Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder 
 **Für beste Qualität:**
 
 - Kleineren Linienabstand verwenden (0.05-0.1mm)
-- Bidirektionales Scannen deaktivieren
+- Bidirektionalen Scan-Offset kalibrieren, wenn du Bänderung siehst
 - Overscan erhöhen (3-5mm)
 - Niedrigere Leistung, mehrere Durchgänge verwenden
 - Sicherstellen, dass Material flach und befestigt ist
@@ -359,7 +385,6 @@ Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder 
 **Für schnellere Gravur:**
 
 - Größeren Linienabstand verwenden (0.15-0.2mm)
-- Bidirektionales Scannen aktivieren
 - Minimales Overscan (1-2mm)
 - Einzelner Durchgang bei höherer Leistung
 
@@ -386,7 +411,7 @@ Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder 
 
 **Bänderung (dunkle/helle Streifen):**
 
-- Bidirektionales Scannen deaktivieren
+- Den [Bidirektionalen Scan-Offset](#bidirektionaler-scan-offset) kalibrieren
 - Riemenzug überprüfen
 - Geschwindigkeit reduzieren
 - Anderen Scan-Winkel versuchen

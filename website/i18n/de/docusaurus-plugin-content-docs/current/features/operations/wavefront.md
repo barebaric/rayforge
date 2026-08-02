@@ -8,23 +8,23 @@ Werkzeugpfade ohne die scharfen Richtungswechsel des Raster-Scannings.
 
 ## Übersicht
 
-Anders als die traditionelle Rastergravur, die in parallelen Linien
-vor und zurück fegt, erzeugt Wellenfront konzentrische Durchgänge,
-die vom Zentrum jeder Tasche ausstrahlen. Dies ergibt eine gleichmäßige,
-wellenartige Oberflächenstruktur, die sich gut für Anwendungen eignet,
-bei denen das Füllmuster selbst zum visuellen Ergebnis beiträgt.
+Anders als die traditionelle Rastergravur, die in parallelen Linien vor
+und zurück fegt, erzeugt Wellenfront konzentrische Durchgänge, die vom
+Zentrum jeder Tasche ausstrahlen. Dies ergibt eine gleichmäßige,
+wellenartige Oberfläche, die sich gut für Anwendungen eignet, bei denen
+das Füllmuster selbst zum visuellen Ergebnis beiträgt.
 
 Wellenfront-Operationen:
 
 - Füllen geschlossene Vektorformen (Taschen) mit konzentrischen Durchgängen
-- Expandieren von der Taschenmitte nach außen
-- Routen automatisch um innere Inseln (Löcher innerhalb der Tasche)
-- Erzeugen sanfte Werkzeugpfade ohne Richtungsumkehrungen
+- Expandieren vom Taschenzentrum nach außen
+- Umgehen automatisch innere Inseln (Löcher innerhalb der Tasche)
+- Erzeugen sanfte Werkzeugpfade ohne Richtungswechsel
 
 ## Wann Wellenfront verwenden
 
 Wellenfront ist ein alternatives Füllmuster für Taschenbereiche. Seine
-konzentrischen Ringe können visuell ansprechender sein als parallele
+konzentrischen Ringe können optisch ansprechender sein als parallele
 Rasterlinien, und das expandierende Muster ergänzt natürlich kreisförmige
 oder organische Formen.
 
@@ -33,13 +33,13 @@ Verwende wellenfront-adaptives Ausräumen für:
 - Füllen von Taschen in Vektordesigns
 - Stempel- und Matrizenbau — die Wellenfront räumt die Hintergrundtasche
   aus, während erhabene Merkmale als innere Inseln erhalten bleiben
-- Anwendungen, bei denen die Fülltextur im fertigen Stück sichtbar ist
+- Anwendungen, bei denen die Füllstruktur im fertigen Stück sichtbar ist
 
 **Verwende Wellenfront nicht für:**
 
 - Schneiden entlang von Umrissen (verwende stattdessen [Kontur](contour))
 - Füllen von Bitmap-Bildern (verwende stattdessen [Gravur](engrave))
-- Dünne Wandabschnitte, bei denen keine Tasche vorhanden ist
+- Dünne Wandabschnitte ohne vorhandene Tasche
 
 ## Eine Wellenfront-Operation erstellen
 
@@ -47,7 +47,7 @@ Verwende wellenfront-adaptives Ausräumen für:
 
 1. Geschlossene Vektorformen auf der Arbeitsfläche importieren oder zeichnen
 2. Die Objekte auswählen, die die Taschenbegrenzung definieren
-3. Sicherstellen, dass Formen geschlossene Pfade sind
+3. Sicherstellen, dass die Formen geschlossene Pfade sind
 
 ### Schritt 2: Wellenfront-Operation hinzufügen
 
@@ -56,21 +56,29 @@ Verwende wellenfront-adaptives Ausräumen für:
 
 ### Schritt 3: Einstellungen konfigurieren
 
-Schrittweite und Offset an Material und gewünschte Oberfläche anpassen.
+Schrittweite und Offset an dein Material und das gewünschte Finish anpassen.
 
 ![Wellenfront-Operation Ergebnis](/screenshots/operations-wavefront.png)
 
 ## Haupt-Einstellungen
 
-### Schrittweite (Step Over)
+Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellungen**, **Laser** und **Nachbearbeitung**. Die Einstellungen werden unten in Registerkarten-Reihenfolge beschrieben.
+
+### Wellenfront-Einstellungen
+
+![Wellenfront-Schritt-Einstellungen](/screenshots/step-settings-wavefront-general.png)
+
+Die Gruppe **Wellenfront** auf der Registerkarte _Schritt-Einstellungen_ steuert das Füllmuster.
+
+#### Schrittweite
 
 Der Abstand zwischen aufeinanderfolgenden Wellenfront-Durchgängen (mm).
-Kleinere Werte ergeben dichtere Abdeckung mit mehr Durchgängen und
-längeren Jobzeiten. Größere Werte platzieren Durchgänge weiter
-auseinander für schnellere Fertigstellung.
+Kleinere Werte ergeben eine dichtere Abdeckung mit mehr Durchgängen und
+längeren Jobzeiten. Größere Werte platzieren die Durchgänge weiter
+auseinander für eine schnellere Fertigstellung.
 
-**Schrittweite standardmäßig auf Laserpunktgröße** mit einem Bereich von
-0,05–50,0 mm.
+**Die Schrittweite ist standardmäßig auf die Laserpunktgröße eingestellt**
+und hat einen Bereich von 0,05–50,0 mm.
 
 | Schrittweite | Liniendichte             | Jobzeit    |
 | ------------ | ------------------------ | ---------- |
@@ -80,30 +88,49 @@ auseinander für schnellere Fertigstellung.
 
 Typische Werte liegen bei 0,1–0,5 mm für die meisten Anwendungen.
 
-### Offset
+#### Offset
 
 Zusätzlicher Abstand zur Taschenwand (mm). Erzeugt einen Rand zwischen
 dem äußersten Wellenfront-Durchgang und der Begrenzungskontur. Dies ist
 nützlich, wenn ein separater [Kontur](contour)-Durchgang die Kante
-fertigstellt oder wenn ein bewusster Rand um die Tasche bleiben soll.
+fertigstellt oder wenn du einen bewussten Rand um die Tasche lassen
+möchtest.
 
-Bereich: 0,0–20,0 mm. Standard ist 0,0 (Wellenfront-Durchgänge reichen
-bis zur Begrenzung).
+Bereich: 0,0–20,0 mm. Standard ist 0,0 (die Wellenfront-Durchgänge
+reichen bis zur Begrenzung).
+
+### Laser-Einstellungen
+
+![Laser-Einstellungen](/screenshots/step-settings-wavefront-laser.png)
+
+Leistung, Geschwindigkeit und Laserkopf-Auswahl befinden sich auf der Seite **Laser** des Schritt-Einstellungen-Dialogs.
+
+**Leistung (%):**
+
+- Laserintensität zum Schneiden
+- An die Schneideanforderungen deines Materials anpassen
+
+**Geschwindigkeit (mm/min):**
+
+- Wie schnell sich der Laser bewegt
+- An die Schnittgeschwindigkeit deines Materials anpassen
 
 ## Wie Wellenfront funktioniert
 
 1. **Einstich-Durchgang** — Ein spiralförmiger Einstich taucht in die
-   Mitte der Tasche ein, um einen anfänglichen ausgeräumten Bereich zu
+   Mitte der Tasche ein, um einen anfänglich ausgeräumten Bereich zu
    schaffen
 2. **Wellenfront-Expansion** — Ausgehend vom freigeräumten Zentrum
    expandieren konzentrische Ringe nach außen. Jeder Ring dehnt sich um
    die konfigurierte Schrittweite über den vorherigen hinaus aus
 3. **Insel-Behandlung** — Während die Wellenfront wächst, trifft sie auf
-   innere Inseln und routet um diese herum, sodass sie stehen bleiben
+   innere Inseln und umgeht sie, sodass sie stehen bleiben
 4. **Fertigstellung** — Die Expansion wird fortgesetzt, bis der gesamte
    Taschenbereich abgedeckt ist
 
 ## Nachbearbeitung
+
+![Wellenfront-Nachbearbeitungseinstellungen](/screenshots/step-settings-wavefront-post.png)
 
 Wellenfront-Operationen unterstützen:
 
@@ -120,7 +147,7 @@ Wellenfront-Operationen unterstützen:
   längere Jobzeiten
 - Spärliche Abdeckung (große Schrittweite) ist schneller, lässt aber mehr
   Material zwischen den Durchgängen
-- Balance zwischen Dichte und Jobzeit für deine Anwendung finden
+- Balanciere Dichte gegen Jobzeit für deine Anwendung
 
 ### Stempel- und Matrizenbau
 
@@ -131,14 +158,14 @@ werden.
 
 ### Kombination mit Kontur
 
-Ein üblicher Arbeitsablauf ist, das Tascheninnere mit Wellenfront
+Ein üblicher Workflow ist es, das Tascheninnere mit Wellenfront
 auszuräumen und dann die Begrenzung mit einem [Kontur](contour)-Durchgang
-für eine saubere Kante fertigzustellen. Den Offset so einstellen, dass
+für eine saubere Kante fertigzustellen. Stelle den Offset so ein, dass
 genügend Rand für den Konturschnitt bleibt.
 
 ## Verwandte Themen
 
 - **[Kontur](contour)** — Schneiden entlang von Vektorumrissen
 - **[Gravur](engrave)** — Bereiche mit Rastergravurmustern füllen
-- **[Schrumpf-Wicklung](shrink-wrap)** — Begrenzungsschnitt um Objekte
+- **[Schrumpfumhüllung](shrink-wrap)** — Begrenzungsschnitt um Objekte
 - **[Pfad-Glättung](../smooth.md)** — Werkzeugpfadkanten verfeinern

@@ -64,31 +64,46 @@ The result is an efficient cutting path that follows the overall shape of your p
 
 ### Step 4: Configure Settings
 
-![Shrink Wrap step settings](/screenshots/step-settings-shrink-wrap-general.png)
-
 ## Key Settings
 
-### Power & Speed
+The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Post Processing**. Settings are described in tab order below.
 
-Like other cutting operations:
+### Shrink Wrap
 
-**Power (%):**
+![Shrink Wrap step settings](/screenshots/step-settings-shrink-wrap-general.png)
 
-- Laser intensity for cutting
-- Same as you'd use for [Contour](contour) cutting
+The **Shrink Wrap** group on the *Step Settings* tab controls how the hull fits around the content.
 
-**Speed (mm/min):**
+#### Smoothness
 
-- How fast the laser moves
-- Match your material's cutting speed
+Controls how closely the boundary follows object shapes:
 
-**Passes:**
+**High smoothness:**
 
-- Number of times to cut the boundary
-- Usually 1-2 passes
-- Same as contour cutting for your material
+- Follows objects more closely
+- More complex path
+- Longer cutting time
+- Less material waste
 
-### Offset Distance
+**Low smoothness:**
+
+- Simpler, more rounded path
+- Shorter cutting time
+- Slightly more material waste
+
+**Recommended:** Medium smoothness for most cases
+
+#### Cut Side
+
+Controls where the laser cuts relative to the shrink-wrap path:
+
+| Cut Side       | Description                 | Use For                           |
+| -------------- | --------------------------- | --------------------------------- |
+| **Centerline** | Cuts directly on the path   | Standard cutting                  |
+| **Outside**    | Cuts outside the boundary   | Making the cut slightly larger    |
+| **Inside**     | Cuts inside the boundary    | Making the cut slightly smaller   |
+
+#### Offset Distance
 
 **Offset (mm):**
 
@@ -108,24 +123,25 @@ Like other cutting operations:
 - Too large: Wastes material
 - Consider: Kerf width, cutting accuracy
 
-### Smoothness
+### Laser settings
 
-Controls how closely the boundary follows object shapes:
+![Laser settings](/screenshots/step-settings-shrink-wrap-laser.png)
 
-**High smoothness:**
+Power, speed, and laser head selection live on the **Laser** page of the step settings dialog.
 
-- Follows objects more closely
-- More complex path
-- Longer cutting time
-- Less material waste
+Like other cutting operations:
 
-**Low smoothness:**
+**Power (%):**
 
-- Simpler, more rounded path
-- Shorter cutting time
-- Slightly more material waste
+- Laser intensity for cutting
+- Same as you'd use for [Contour](contour) cutting
 
-**Recommended:** Medium smoothness for most cases
+**Speed (mm/min):**
+
+- How fast the laser moves
+- Match your material's cutting speed
+
+To cut the boundary more than once, add a [Multi-Pass](../multi-pass.md) post-processor.
 
 ## Use Cases
 

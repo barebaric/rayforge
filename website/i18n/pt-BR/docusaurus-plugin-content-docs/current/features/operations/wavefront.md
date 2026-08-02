@@ -62,13 +62,21 @@ acabamento desejado.
 
 ![Resultado da operação de frente de onda](/screenshots/operations-wavefront.png)
 
-## Ajustes Principais
+## Configurações Principais
 
-### Passo (Step Over)
+O diálogo de configurações de etapa tem três abas: **Configurações de Etapa**, **Laser** e **Pós-Processamento**. As configurações são descritas em ordem de aba abaixo.
+
+### Configurações de Frente de Onda
+
+![Configurações de etapa de Frente de Onda](/screenshots/step-settings-wavefront-general.png)
+
+O grupo **Frente de Onda** na aba _Configurações de Etapa_ controla o padrão de preenchimento.
+
+#### Passo
 
 A distância entre passagens consecutivas do frente de onda (mm). Valores
 menores fornecem cobertura mais densa com mais passagens e tempos de
-trabalho mais longos. Valores maiores espaçam mais as passagens para
+trabalho mais longos. Valores maiores espaçam as passagens mais para
 conclusão mais rápida.
 
 **O Passo padrão é o tamanho do ponto do laser** e tem uma faixa de
@@ -82,7 +90,7 @@ conclusão mais rápida.
 
 Valores típicos são de 0,1–0,5 mm para a maioria das aplicações.
 
-### Deslocamento (Offset)
+#### Deslocamento
 
 Folga adicional da parede do bolsão (mm). Cria uma margem entre a
 passagem de frente de onda mais externa e o contorno do limite. Isso é
@@ -92,6 +100,23 @@ bolsão.
 
 Faixa: 0,0–20,0 mm. O padrão é 0,0 (as passagens de frente de onda se
 estendem até o limite).
+
+### Configurações do Laser
+
+![Configurações do laser](/screenshots/step-settings-wavefront-laser.png)
+
+Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do
+diálogo de configurações de etapa.
+
+**Potência (%):**
+
+- Intensidade do laser para corte
+- Corresponda aos requisitos de corte do seu material
+
+**Velocidade (mm/min):**
+
+- Quão rápido o laser se move
+- Corresponda à velocidade de corte do seu material
 
 ## Como o Frente de Onda Funciona
 
@@ -106,6 +131,8 @@ estendem até o limite).
    esteja coberta
 
 ## Pós-Processamento
+
+![Configurações de pós-processamento de Frente de Onda](/screenshots/step-settings-wavefront-post.png)
 
 As operações de frente de onda suportam:
 
@@ -143,7 +170,6 @@ para o corte de contorno.
 - **[Contorno](contour)** — Corte ao longo de contornos vetoriais
 - **[Gravação](engrave)** — Preenchimento de áreas com padrões de gravação
   raster
-- **[Envelopamento Ajustado](shrink-wrap)** — Corte de limite ao redor de
-  objetos
+- **[Shrink Wrap](shrink-wrap)** — Corte de limite ao redor de objetos
 - **[Suavização de Caminho](../smooth.md)** — Refinamento de bordas de
   trajetória de ferramenta

@@ -9,7 +9,7 @@ from ...core.undo.list_cmd import ListItemCommand, ReorderListCommand
 from ..icons import get_icon
 from ..shared.gtk import apply_css
 from ..shared.popover_menu import PopoverMenu
-from .step_settings_dialog import StepSettingsDialog
+from .step_settings.dialog import StepSettingsDialog
 
 if TYPE_CHECKING:
     from ...core.layer import Layer

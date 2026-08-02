@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from rayforge.ui_gtk.doceditor.edit_recipe_dialog import (
         AddEditRecipeDialog,
     )
-    from rayforge.ui_gtk.doceditor.step_settings_dialog import (
+    from rayforge.ui_gtk.doceditor.step_settings.dialog import (
         StepSettingsDialog,
     )
     from rayforge.ui_gtk.machine.settings_dialog import MachineSettingsDialog
@@ -553,7 +553,7 @@ def open_step_settings(
     win: "MainWindow", step_index: int = 0, page: str = "step-settings"
 ) -> "StepSettingsDialog":
     """Open step settings dialog for the step at the given index."""
-    from rayforge.ui_gtk.doceditor.step_settings_dialog import (
+    from rayforge.ui_gtk.doceditor.step_settings.dialog import (
         StepSettingsDialog,
     )
 
@@ -676,7 +676,7 @@ def open_recipe_editor(
 def open_material_test(win: "MainWindow") -> "StepSettingsDialog":
     """Open material test grid dialog."""
     from rayforge.core.step_registry import step_registry
-    from rayforge.ui_gtk.doceditor.step_settings_dialog import (
+    from rayforge.ui_gtk.doceditor.step_settings.dialog import (
         StepSettingsDialog,
     )
 

@@ -62,16 +62,23 @@ TARGETS = {
     "recipe-editor:settings": "recipe_editor_settings",
     "sanity-check": "sanity_check",
     "step-settings:contour:general": "step_settings",
+    "step-settings:contour:laser": "step_settings",
     "step-settings:contour:post": "step_settings",
     "step-settings:engrave:general:constant_power": "step_settings",
     "step-settings:engrave:general:dither": "step_settings",
     "step-settings:engrave:general:multi_pass": "step_settings",
     "step-settings:engrave:general:variable": "step_settings",
+    "step-settings:engrave:laser": "step_settings",
     "step-settings:engrave:post": "step_settings",
     "step-settings:frame-outline:general": "step_settings",
+    "step-settings:frame-outline:laser": "step_settings",
     "step-settings:frame-outline:post": "step_settings",
     "step-settings:shrink-wrap:general": "step_settings",
+    "step-settings:shrink-wrap:laser": "step_settings",
     "step-settings:shrink-wrap:post": "step_settings",
+    "step-settings:wavefront:general": "step_settings",
+    "step-settings:wavefront:laser": "step_settings",
+    "step-settings:wavefront:post": "step_settings",
 }
 
 

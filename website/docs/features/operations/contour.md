@@ -52,50 +52,23 @@ Use contour cutting for:
 
 ## Key Settings
 
-### Power & Speed
+The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Post Processing**. Settings are described in tab order below.
 
-**Power (%):**
+### Contour Settings
 
-- Laser intensity from 0-100%
-- Higher power for thicker materials
-- Lower power for scoring or marking
+![Contour step settings](/screenshots/step-settings-contour-general.png)
 
-**Speed (mm/min):**
+The **Contour Settings** group on the *Step Settings* tab controls how the outline is traced.
 
-- How fast the laser moves
-- Slower = more energy = deeper cut
-- Faster = less energy = lighter cut
-
-### Multi-Pass Cutting
-
-For materials thicker than a single pass can cut:
-
-**Passes:**
-
-- Number of times to repeat the cut
-- Each pass cuts deeper
-
-**Pass Depth (Z-step):**
-
-- How much to lower Z-axis per pass (if supported)
-- Requires Z-axis control on your machine
-- Creates true 2.5D cutting
-- Set to 0 for same-depth multiple passes
-
-:::warning Z-Axis Required
-:::
-
-Pass depth only works if your machine has Z-axis control. For machines without Z-axis, use multiple passes at the same depth.
-
-### Path Offset
+#### Cut Side & Path Offset
 
 Controls where the laser cuts relative to the vector path:
 
-| Offset      | Description               | Use For                        |
-| ----------- | ------------------------- | ------------------------------ |
-| **On Line** | Cuts directly on the path | Centerline cuts, scoring       |
-| **Inside**  | Cuts inside the shape     | Parts that must fit exact size |
-| **Outside** | Cuts outside the shape    | Holes that parts fit into      |
+| Offset        | Description               | Use For                        |
+| ------------- | ------------------------- | ------------------------------ |
+| **Centerline**| Cuts directly on the path | Centerline cuts, scoring       |
+| **Inside**    | Cuts inside the shape     | Parts that must fit exact size |
+| **Outside**   | Cuts outside the shape    | Holes that parts fit into      |
 
 **Offset Distance:**
 
@@ -104,21 +77,32 @@ Controls where the laser cuts relative to the vector path:
 - Kerf = width of material removed by laser
 - Example: 0.15mm offset for 0.3mm kerf
 
-### Cut Direction
+#### Cut Order
 
-**Clockwise vs Counter-Clockwise:**
+Controls the order in which nested paths are processed:
 
-- Affects which side of the cut gets more heat
-- Usually clockwise for right-hand rule
-- Change if one side burns more than the other
+**Inside-Outside:**
 
-**Optimize Order:**
+- Cuts inside features first, then works outward
+- Keeps outer parts of the material intact longest
 
-- Automatically sorts paths for minimum travel
-- Reduces job time
-- Prevents missed cuts
+**Outside-Inside:**
 
-### Overcut
+- Cuts the outer perimeter first, then moves inward
+- Keeps the workpiece secured to the stock longest
+
+**Recommended:** Inside-Outside (default)
+
+#### Remove Inner Paths
+
+For designs with holes or internal cutouts, you can choose to trace only the outermost boundary:
+
+- **Remove Inner Paths**: When enabled, only the outermost contour is traced
+- Internal holes and cutouts are ignored
+
+This is useful when you want to cut out a shape but preserve the interior, such as creating a frame or outline without cutting internal details.
+
+#### Overcut
 
 Extends closed cutting paths past their start point so the laser beam
 overlaps with the beginning of the cut:
@@ -149,40 +133,38 @@ and after the cut path. Overcut extends the cut path itself past the
 junction. They can be used together for optimal cut quality.
 :::
 
-## Post-Processing
-
-![Contour post-processing settings](/screenshots/step-settings-contour-post.png)
-
-Contour operations support several post-processing options:
-
-- **[Smooth Path](../smooth.md)** - Reduce jagged edges in cutting paths
-- **[Holding Tabs](../holding-tabs.md)** - Keep cut pieces attached to stock material
-- **[Crop to Stock](../crop-to-stock.md)** - Limit cuts to material boundary
-- **[Path Optimization](../path-optimization.md)** - Reduce travel distance between cuts
-- **[Multi-Pass](../multi-pass.md)** - Repeat cuts for thick materials
-- **[Lead-In/Out](../lead-in-out.md)** - Add zero-power approach and exit moves for cleaner cut ends
-
-### Retracing with Custom Threshold
+#### Retracing with Custom Threshold
 
 When working with bitmap images that have been converted to vectors, you can control which parts get traced:
 
-- **Override Threshold**: Enable custom brightness threshold for tracing
-- **Threshold (0-255)**: Brightness cutoff value when override is enabled
+- **Rescan Content**: Enable custom brightness threshold for tracing
+- **Tracing Threshold (0.0-1.0)**: Brightness cutoff value when rescanning is enabled
   - Lower values trace darker areas only
   - Higher values include lighter areas
 
 This is useful when the default tracing doesn't capture the detail level you need.
 
-### Remove Inner Paths
+### Laser settings
 
-For designs with holes or internal cutouts, you can choose to trace only the outermost boundary:
+![Laser settings](/screenshots/step-settings-contour-laser.png)
 
-- **Remove Inner Paths**: When enabled, only the outermost contour is traced
-- Internal holes and cutouts are ignored
+Power, speed, and laser head selection live on the **Laser** page of the step settings dialog.
 
-This is useful when you want to cut out a shape but preserve the interior, such as creating a frame or outline without cutting internal details.
+#### Power & Speed
 
-### Kerf Compensation
+**Power (%):**
+
+- Laser intensity from 0-100%
+- Higher power for thicker materials
+- Lower power for scoring or marking
+
+**Speed (mm/min):**
+
+- How fast the laser moves
+- Slower = more energy = deeper cut
+- Faster = less energy = lighter cut
+
+#### Kerf Compensation
 
 Kerf is the width of material removed by the laser beam:
 
@@ -199,6 +181,40 @@ Kerf is the width of material removed by the laser beam:
 4. For holes: offset **outside** by kerf/2
 
 See [Kerf](../kerf.md) for detailed guide.
+
+## Post-Processing
+
+![Contour post-processing settings](/screenshots/step-settings-contour-post.png)
+
+Contour operations support several post-processing options:
+
+- **[Smooth Path](../smooth.md)** - Reduce jagged edges in cutting paths
+- **[Holding Tabs](../holding-tabs.md)** - Keep cut pieces attached to stock material
+- **[Crop to Stock](../crop-to-stock.md)** - Limit cuts to material boundary
+- **[Path Optimization](../path-optimization.md)** - Reduce travel distance between cuts
+- **[Multi-Pass](../multi-pass.md)** - Repeat cuts for thick materials
+- **[Lead-In/Out](../lead-in-out.md)** - Add zero-power approach and exit moves for cleaner cut ends
+
+### Multi-Pass Cutting
+
+For materials thicker than a single pass can cut:
+
+**Passes:**
+
+- Number of times to repeat the cut
+- Each pass cuts deeper
+
+**Pass Depth (Z-step):**
+
+- How much to lower Z-axis per pass (if supported)
+- Requires Z-axis control on your machine
+- Creates true 2.5D cutting
+- Set to 0 for same-depth multiple passes
+
+:::warning Z-Axis Required
+:::
+
+Pass depth only works if your machine has Z-axis control. For machines without Z-axis, use multiple passes at the same depth.
 
 ## Tips & Best Practices
 

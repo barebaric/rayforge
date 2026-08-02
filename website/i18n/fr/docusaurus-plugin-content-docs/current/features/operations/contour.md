@@ -7,11 +7,10 @@ La coupe de contour trace le contour des formes vectorielles pour les couper lib
 Les opérations de contour :
 
 - Suivent les parcours vectoriels (lignes, courbes, formes)
-- Coupe le long du périmètre des objets
+- Coupent le long du périmètre des objets
 - Supportent des passes uniques ou multiples pour les matériaux épais
 - Peuvent utiliser des parcours de coupe intérieur, extérieur ou sur la ligne
 - Fonctionnent avec toute forme vectorielle fermée ou ouverte
-
 
 ## Quand Utiliser le Contour
 
@@ -26,7 +25,7 @@ Utilisez la coupe de contour pour :
 **N'utilisez pas le contour pour :**
 
 - Remplir des zones (utilisez [Gravure](engrave) à la place)
-- Les images bitmap (convertissez d'abord en vecteurs)
+- Les images bitmap (convertissez-les d'abord en vecteurs)
 
 ## Créer une Opération de Contour
 
@@ -38,9 +37,9 @@ Utilisez la coupe de contour pour :
 
 ### Étape 2 : Ajouter une Opération de Contour
 
-- **Menu :** Opérations Ajouter Contour
+- **Menu :** Opérations → Ajouter Contour
 - **Raccourci :** <kbd>ctrl+shift+c</kbd>
-- **Clic droit :** Menu contextuel Ajouter Opération Contour
+- **Clic droit :** Menu contextuel → Ajouter Opération → Contour
 
 ### Étape 3 : Configurer les Paramètres
 
@@ -48,50 +47,23 @@ Utilisez la coupe de contour pour :
 
 ## Paramètres Clés
 
-### Puissance & Vitesse
+La boîte de dialogue des paramètres d'étape comporte trois onglets : **Paramètres d'étape**, **Laser** et **Post-Traitement**. Les paramètres sont décrits ci-dessous dans l'ordre des onglets.
 
-**Puissance (%) :**
+### Paramètres de Contour
 
-- Intensité laser de 0-100%
-- Puissance plus élevée pour les matériaux plus épais
-- Puissance plus basse pour le marquage ou le scorring
+![Paramètres d'étape de contour](/screenshots/step-settings-contour-general.png)
 
-**Vitesse (mm/min) :**
+Le groupe **Paramètres de Contour** de l'onglet _Paramètres d'étape_ contrôle la façon dont le contour est tracé.
 
-- À quelle vitesse le laser se déplace
-- Plus lent = plus d'énergie = coupe plus profonde
-- Plus rapide = moins d'énergie = coupe plus légère
-
-### Coupe Multi-Passes
-
-Pour les matériaux plus épais qu'une seule passe peut couper :
-
-**Passes :**
-
-- Nombre de fois pour répéter la coupe
-- Chaque passe coupe plus profond
-
-**Profondeur de Passe (Z-step) :**
-
-- De combien abaisser l'axe Z par passe (si supporté)
-- Nécessite le contrôle de l'axe Z sur votre machine
-- Crée une vraie coupe 2.5D
-- Définissez à 0 pour des passes multiples à la même profondeur
-
-:::warning Axe Z Requis
-:::
-
-La profondeur de passe fonctionne uniquement si votre machine a le contrôle de l'axe Z. Pour les machines sans axe Z, utilisez des passes multiples à la même profondeur.
-
-### Décalage de Parcours
+#### Côté de Coupe et Décalage de Parcours
 
 Contrôle où le laser coupe par rapport au parcours vectoriel :
 
-| Décalage | Description | Utilisation |
-| -------- | ----------- | ----------- |
-| **Sur la Ligne** | Coupe directement sur le parcours | Coupes sur la ligne centrale, marquage |
-| **Intérieur** | Coupe à l'intérieur de la forme | Pièces qui doivent correspondre à la taille exacte |
-| **Extérieur** | Coupe à l'extérieur de la forme | Trous dans lesquels les pièces s'insèrent |
+| Décalage         | Description                       | Utilisation                                         |
+| ---------------- | --------------------------------- | --------------------------------------------------- |
+| **Sur la Ligne** | Coupe directement sur le parcours | Coupes sur la ligne centrale, marquage              |
+| **Intérieur**    | Coupe à l'intérieur de la forme   | Pièces qui doivent correspondre à une taille exacte |
+| **Extérieur**    | Coupe à l'extérieur de la forme   | Trous dans lesquels les pièces s'insèrent           |
 
 **Distance de Décalage :**
 
@@ -100,51 +72,104 @@ Contrôle où le laser coupe par rapport au parcours vectoriel :
 - Kerf = largeur du matériau retiré par le laser
 - Exemple : décalage de 0.15mm pour un kerf de 0.3mm
 
-### Direction de Coupe
+#### Ordre de Coupe
 
-**Horaire vs Anti-Horaire :**
+Contrôle l'ordre dans lequel les parcours imbriqués sont traités :
 
-- Affecte quel côté de la coupe reçoit plus de chaleur
-- Généralement horaire pour la règle de la main droite
-- Changez si un côté brûle plus que l'autre
+**Intérieur-Extérieur :**
 
-**Optimiser l'Ordre :**
+- Coupe d'abord les caractéristiques intérieures, puis travaille vers l'extérieur
+- Maintient les parties extérieures du matériau intactes le plus longtemps
 
-- Trie automatiquement les parcours pour un déplacement minimum
-- Réduit le temps de travail
-- Empêche les coupes manquées
+**Extérieur-Intérieur :**
 
-### Surcoupe (Overcut)
+- Coupe d'abord le périmètre extérieur, puis se déplace vers l'intérieur
+- Maintient la pièce fixée au stock le plus longtemps
 
-Prolonge les trajectoires de coupe fermées au-delà de leur point de
-départ pour que le faisceau laser chevauche le début de la coupe :
+**Recommandé :** Intérieur-Extérieur (défaut)
+
+#### Supprimer les Parcours Intérieurs
+
+Pour les designs comportant des trous ou des découpes internes, vous pouvez choisir de tracer uniquement la limite la plus extérieure :
+
+- **Supprimer les Parcours Intérieurs :** lorsqu'il est activé, seul le contour le plus extérieur est tracé
+- Les trous internes et les découpes sont ignorés
+
+Ceci est utile lorsque vous voulez découper une forme tout en préservant l'intérieur, comme pour créer un cadre ou un contour sans couper les détails internes.
+
+#### Surcoupe
+
+Prolonge les parcours de coupe fermés au-delà de leur point de départ pour que le faisceau laser chevauche le début de la coupe :
 
 **Surcoupe :**
 
 - Distance en unités machine pour prolonger la coupe au-delà de la jonction début/fin
-- Mettre à **0** pour désactiver (par défaut)
+- Définissez à **0** pour désactiver (défaut)
 - Valeurs typiques : 1–5 pour la plupart des matériaux
 - Maximum : 100
 
 **Pourquoi utiliser la surcoupe :**
 
-Au début et à la fin d'un contour fermé, le laser peut ne pas pénétrer
-complètement en raison de l'accélération et de la décélération. La
-surcoupe garantit que le faisceau chevauche la jonction, créant une
-coupe nette et complète. Ceci est particulièrement utile pour :
+Au début et à la fin d'un contour fermé, le laser peut ne pas pénétrer complètement en raison de l'accélération et de la décélération. La surcoupe garantit que le faisceau se chevauche à la jonction, créant une coupe nette et complètement sectionnée. Ceci est particulièrement utile pour :
 
-- Les matériaux épais où la pénétration complète est limite
+- Les matériaux épais où la pénétration complète est marginale
 - Les coupes à grande vitesse où les effets d'accélération sont plus prononcés
 - Les pièces qui doivent tomber sans post-traitement
 
-La surcoupe s'applique à la fois aux contours extérieurs et aux trous intérieurs.
+La surcoupe s'applique à la fois aux contours extérieurs et aux trous internes.
 
 :::tip Entrée/Sortie vs Surcoupe
-[L'entrée/sortie](../lead-in-out.md) ajoute des mouvements d'approche et de
-sortie à puissance nulle avant et après le trajet de coupe. La surcoupe
-prolonge le trajet de coupe lui-même au-delà de la jonction. Ils peuvent
-être utilisés ensemble pour une qualité de coupe optimale.
+[L'entrée/sortie](../lead-in-out.md) ajoute des mouvements d'approche et de sortie à puissance nulle avant et après le parcours de coupe. La surcoupe prolonge le parcours de coupe lui-même au-delà de la jonction. Ils peuvent être utilisés ensemble pour une qualité de coupe optimale.
 :::
+
+#### Retraçage avec Seuil Personnalisé
+
+Lorsque vous travaillez avec des images bitmap converties en vecteurs, vous pouvez contrôler quelles parties sont tracées :
+
+- **Rescan du contenu :** Active un seuil de luminosité personnalisé pour le traçage
+- **Seuil de traçage (0.0-1.0) :** Valeur de coupure de luminosité lorsque le rescan est activé
+  - Les valeurs plus basses ne tracent que les zones plus sombres
+  - Les valeurs plus élevées incluent les zones plus claires
+
+Ceci est utile lorsque le traçage par défaut ne capture pas le niveau de détail dont vous avez besoin.
+
+### Paramètres Laser
+
+![Paramètres laser](/screenshots/step-settings-contour-laser.png)
+
+La puissance, la vitesse et la sélection de la tête laser se trouvent sur la page **Laser** de la boîte de dialogue des paramètres d'étape.
+
+#### Puissance & Vitesse
+
+**Puissance (%) :**
+
+- Intensité laser de 0-100%
+- Puissance plus élevée pour les matériaux plus épais
+- Puissance plus basse pour le marquage
+
+**Vitesse (mm/min) :**
+
+- À quelle vitesse le laser se déplace
+- Plus lent = plus d'énergie = coupe plus profonde
+- Plus rapide = moins d'énergie = coupe plus légère
+
+#### Compensation de Kerf
+
+Le kerf est la largeur du matériau retiré par le faisceau laser :
+
+**Pourquoi c'est important :**
+
+- Un cercle coupé « sur la ligne » sera légèrement plus petit que prévu
+- Le laser retire ~0.2-0.4mm de matériau (selon la largeur du faisceau)
+
+**Comment compenser :**
+
+1. Mesurez votre kerf sur des coupes de test
+2. Utilisez un décalage de parcours = kerf/2
+3. Pour les pièces : décalez **vers l'intérieur** de kerf/2
+4. Pour les trous : décalez **vers l'extérieur** de kerf/2
+
+Voir [Kerf](../kerf.md) pour un guide détaillé.
 
 ## Post-Traitement
 
@@ -159,23 +184,26 @@ Les opérations de contour supportent plusieurs options de post-traitement :
 - **[Passe Multiple](../multi-pass.md)** - Répéter les coupes pour les matériaux épais
 - **[Entrée/Sortie](../lead-in-out.md)** - Ajouter des mouvements d'approche et de sortie à puissance nulle pour des extrémités de coupe plus propres
 
-### Compensation de Kerf
+### Coupe Multi-Passes
 
-Le kerf est la largeur du matériau retiré par le faisceau laser :
+Pour les matériaux plus épais qu'une seule passe ne peut couper :
 
-**Pourquoi c'est important :**
+**Passes :**
 
-- Un cercle coupé "sur la ligne" sera légèrement plus petit que conçu
-- Le laser retire ~0.2-0.4mm de matériau (selon la largeur du faisceau)
+- Nombre de fois pour répéter la coupe
+- Chaque passe coupe plus profond
 
-**Comment compenser :**
+**Profondeur de Passe (Z-step) :**
 
-1. Mesurez votre kerf sur des tests de coupe
-2. Utilisez le décalage de parcours = kerf/2
-3. Pour les pièces : décalez **vers l'intérieur** de kerf/2
-4. Pour les trous : décalez **vers l'extérieur** de kerf/2
+- De combien abaisser l'axe Z par passe (si supporté)
+- Nécessite le contrôle de l'axe Z sur votre machine
+- Crée une véritable coupe 2.5D
+- Définissez à 0 pour des passes multiples à la même profondeur
 
-Voir [Kerf](../kerf.md) pour un guide détaillé.
+:::warning Axe Z Requis
+:::
+
+La profondeur de passe ne fonctionne que si votre machine dispose d'un contrôle de l'axe Z. Pour les machines sans axe Z, utilisez des passes multiples à la même profondeur.
 
 ## Conseils & Meilleures Pratiques
 
@@ -212,7 +240,7 @@ Voir [Kerf](../kerf.md) pour un guide détaillé.
 - **Diminuez :** Le paramètre de puissance
 - **Augmentez :** Le paramètre de vitesse
 - **Utilisez :** L'assistance air
-- **Essayez :** Passes multiples plus rapides au lieu d'une lente
+- **Essayez :** Des passes multiples plus rapides au lieu d'une seule lente
 - **Vérifiez :** Le matériau est approprié pour la découpe laser
 
 ### Les pièces tombent pendant la coupe
@@ -232,7 +260,7 @@ Voir [Kerf](../kerf.md) pour un guide détaillé.
 ### Coins ou courbes manqués
 
 - **Diminuez :** La vitesse (surtout sur les coins)
-- **Vérifiez :** Les paramètres d'accélération machine
+- **Vérifiez :** Les paramètres d'accélération de la machine
 - **Vérifiez :** Les courroies sont tendues
 - **Réduisez :** La complexité du parcours (simplifiez les courbes)
 

@@ -68,7 +68,15 @@ finition souhaitée.
 
 ## Paramètres Clés
 
-### Pas (Step Over)
+La boîte de dialogue des paramètres d'étape comporte trois onglets : **Paramètres d'étape**, **Laser** et **Post-Traitement**. Les paramètres sont décrits ci-dessous dans l'ordre des onglets.
+
+### Paramètres de Front d'Onde
+
+![Paramètres d'étape front d'onde](/screenshots/step-settings-wavefront-general.png)
+
+Le groupe **Front d'Onde** de l'onglet _Paramètres d'étape_ contrôle le motif de remplissage.
+
+#### Pas (Step Over)
 
 La distance entre les passes consécutives du front d'onde (mm). Des
 valeurs plus petites donnent une couverture plus dense avec plus de
@@ -86,7 +94,7 @@ plage de 0,05–50,0 mm.
 
 Les valeurs typiques sont de 0,1–0,5 mm pour la plupart des applications.
 
-### Décalage (Offset)
+#### Décalage (Offset)
 
 Dégagement supplémentaire par rapport à la paroi de la poche (mm). Crée
 une marge entre la passe de front d'onde la plus externe et le contour
@@ -96,6 +104,22 @@ délibérée autour de la poche.
 
 Plage : 0,0–20,0 mm. La valeur par défaut est 0,0 (les passes de front
 d'onde s'étendent jusqu'à la limite).
+
+### Paramètres Laser
+
+![Paramètres laser](/screenshots/step-settings-wavefront-laser.png)
+
+La puissance, la vitesse et la sélection de la tête laser se trouvent sur la page **Laser** de la boîte de dialogue des paramètres d'étape.
+
+**Puissance (%) :**
+
+- Intensité laser pour la coupe
+- Correspondez aux exigences de coupe de votre matériau
+
+**Vitesse (mm/min) :**
+
+- À quelle vitesse le laser se déplace
+- Correspondez à la vitesse de coupe de votre matériau
 
 ## Comment Fonctionne le Front d'Onde
 
@@ -111,6 +135,8 @@ d'onde s'étendent jusqu'à la limite).
    zone de la poche soit couverte
 
 ## Post-Traitement
+
+![Paramètres de post-traitement du front d'onde](/screenshots/step-settings-wavefront-post.png)
 
 Les opérations de front d'onde supportent :
 
@@ -148,7 +174,6 @@ suffisamment de marge pour la coupe de contour.
 - **[Contour](contour)** — Coupe le long des contours vectoriels
 - **[Gravure](engrave)** — Remplissage de zones avec des motifs de
   gravure raster
-- **[Enveloppe Rétractable](shrink-wrap)** — Coupe de limite autour des
-  objets
+- **[Shrink Wrap](shrink-wrap)** — Coupe de limite autour des objets
 - **[Lissage de Parcours](../smooth.md)** — Affinage des bords de
   trajectoire d'outil

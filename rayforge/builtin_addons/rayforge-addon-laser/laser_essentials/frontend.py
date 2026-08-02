@@ -24,17 +24,17 @@ register_icon_path(_ICONS_DIR)
 
 @hookimpl
 def step_settings_loaded(dialog, step, producer):
-    """Add step settings widgets based on assembler name."""
+    """Provide the step settings pages based on assembler name."""
     widget_cls = ASSEMBLER_WIDGETS.get(step.ASSEMBLER_NAME)
-    if widget_cls:
-        dialog.add(
-            widget_cls(
-                dialog.editor,
-                step.typelabel,
-                dialog,
-                step,
-            )
-        )
+    if not widget_cls:
+        return
+    page = widget_cls(dialog.editor, step)
+    dialog.set_step_settings_page(page)
+    dialog.add_settings_page(
+        _("Laser"),
+        page.laser_page(),
+        icon_name="laser-on-symbolic",
+    )
 
 
 @hookimpl

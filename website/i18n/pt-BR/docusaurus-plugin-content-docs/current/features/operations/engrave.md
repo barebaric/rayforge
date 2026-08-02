@@ -1,6 +1,6 @@
 # Gravação
 
-As operações de gravação preenchem áreas com linhas de varredura raster, suportando múltiplos modos para diferentes efeitos de gravação. De fotos em escala de cinza suaves a efeitos de relevo 3D, escolha o modo que melhor se adapta ao seu design e material.
+As operações de gravação preenchem áreas com linhas de varredura raster, suportando múltiplos modos para diferentes efeitos de gravação. De fotos suaves em escala de cinza a efeitos de relevo 3D, escolha o modo que melhor se adapta ao seu design e material.
 
 ## Visão Geral
 
@@ -59,7 +59,7 @@ O modo Pontilhado converte imagens em escala de cinza para padrões binários us
 - Gravando fotografias em madeira ou couro
 - Criando obras de arte estilo meio-tom
 - Imagens com gradientes suaves
-- Quando gravação raster padrão não captura detalhe suficiente
+- Quando a gravação raster padrão não captura detalhe suficiente
 
 **Recursos Principais:**
 
@@ -134,93 +134,17 @@ Selecione o modo de gravação que melhor se adapta às suas necessidades:
 
 ![Configurações de etapa de gravação](/screenshots/step-settings-engrave-general-variable.png)
 
-## Configurações Comuns
+## Configurações de Gravação
 
-### Potência e Velocidade
+Os grupos **Gravação** e **Potência** na aba _Configurações de Etapa_ controlam o padrão de varredura, o modo e a modulação de potência, em ordem de linha. A potência e a velocidade do laser ficam na página **Laser** (veja abaixo).
 
-**Potência (%):**
+### Modo
 
-- Intensidade do laser para gravação
-- Menor potência para marcação mais leve
-- Maior potência para gravação mais profunda
+A linha **Modo** seleciona um dos quatro modos de gravação. Cada modo expõe configurações diferentes, descritas abaixo.
 
-**Velocidade (mm/min):**
+### Configurações Específicas do Modo
 
-- Quão rápido o laser varre
-- Mais rápido = mais claro, mais lento = mais escuro
-
-### Intervalo de Linha
-
-**Intervalo de Linha (mm):**
-
-- Espaçamento entre linhas de varredura
-- Menor = maior qualidade, tempo de trabalho mais longo
-- Maior = mais rápido, linhas visíveis
-
-| Intervalo | Qualidade | Velocidade   | Usar Para               |
-| -------- | ------- | ------- | --------------------- |
-| 0.05mm   | Mais Alta | Mais Lento | Fotos, detalhes finos   |
-| 0.1mm    | Alta    | Médio  | Texto, logos, gráficos |
-| 0.2mm    | Média  | Rápido    | Preenchimentos sólidos, texturas |
-| 0.3mm+   | Baixa    | Mais Rápido | Rascunho, teste        |
-
-**Recomendado:** 0.1mm para uso geral
-
-:::tip Correspondência de Resolução
-:::
-
-Para imagens, o intervalo de linha deve corresponder ou exceder a resolução da imagem. Se sua imagem tem 10 pixels/mm (254 DPI), use intervalo de linha de 0.1mm ou menor.
-
-### Direção de Varredura
-
-**Ângulo de Varredura (graus):**
-
-- Direção das linhas de varredura
-- 0 = horizontal (esquerda para direita)
-- 90 = vertical (cima para baixo)
-- 45 = diagonal
-
-**Por que mudar o ângulo?**
-
-- Grão da madeira: Grave perpendicular ao grão para melhores resultados
-- Orientação do padrão: Combine a estética do design
-- Reduzir faixas: Ângulo diferente pode esconder imperfeições
-
-**Varredura Bidirecional:**
-
-- **Habilitado:** Laser grava em ambas direções (mais rápido)
-- **Desabilitado:** Laser só grava da esquerda para direita (mais lento, mais consistente)
-
-Para melhor qualidade, desabilite bidirecional. Para velocidade, habilite.
-
-### Overscan
-
-**Distância de Overscan (mm):**
-
-- Quão longe além do design o laser viaja antes de virar
-- Permite o laser atingir velocidade total antes de entrar no design
-- Previne marcas de queimadura nos inícios/fins das linhas
-
-**Valores típicos:**
-
-- 2-5mm para a maioria dos trabalhos
-- Maior para altas velocidades
-
-Veja [Overscan](../overscan.md) para detalhes.
-
-## Pós-Processamento
-
-![Configurações de pós-processamento de gravação](/screenshots/step-settings-engrave-post.png)
-
-Operações de gravação suportam várias opções de pós-processamento:
-
-- **[Overscan](../overscan.md)** - Estende linhas raster para qualidade de gravação consistente
-- **[Otimização de Caminho](../path-optimization.md)** - Reduz distância de deslocamento
-- **[Multi-Passagem](../multi-pass.md)** - Repete gravação para resultados mais profundos
-
-## Configurações Específicas do Modo
-
-### Configurações do Modo Potência Variável
+#### Configurações do Modo Potência Variável
 
 ![Configurações do modo Potência Variável](/screenshots/step-settings-engrave-general-variable.png)
 
@@ -238,10 +162,10 @@ Operações de gravação suportam várias opções de pós-processamento:
 
 **Exemplos de Faixa de Potência:**
 
-| Mín | Máx | Efeito                |
-| --- | --- | --------------------- |
-| 0%  | 40% | Relevo sutil, claro  |
-| 10% | 60% | Profundidade média, seguro    |
+| Mín | Máx | Efeito                     |
+| --- | --- | -------------------------- |
+| 0%  | 40% | Relevo sutil, claro        |
+| 10% | 60% | Profundidade média, seguro |
 | 20% | 80% | Relevo profundo, dramático |
 
 **Inverter:**
@@ -259,11 +183,12 @@ Controla como os valores de brilho da imagem são mapeados para potência do las
 - **Modo Manual**: Desabilite Níveis Automáticos para definir manualmente os pontos preto e branco arrastando os marcadores no histograma.
 
 Isso é particularmente útil para:
+
 - Imagens de baixo contraste que precisam de aumento de contraste
 - Imagens com faixa tonal limitada
 - Garantir resultados consistentes entre diferentes imagens de origem
 
-### Configurações do Modo Potência Constante
+#### Configurações do Modo Potência Constante
 
 ![Configurações do modo Potência Constante](/screenshots/step-settings-engrave-general-constant_power.png)
 
@@ -278,7 +203,7 @@ Isso é particularmente útil para:
 - 128 (limiar de cinza 50%)
 - Ajuste com base no contraste da imagem
 
-### Configurações do Modo Pontilhado
+#### Configurações do Modo Pontilhado
 
 ![Configurações do modo Pontilhado](/screenshots/step-settings-engrave-general-dither.png)
 
@@ -286,18 +211,18 @@ Isso é particularmente útil para:
 
 Escolha o algoritmo que melhor se adapta à sua imagem e material:
 
-| Algoritmo       | Qualidade | Velocidade   | Melhor Para                            |
-| --------------- | ------- | ------- | ----------------------------------- |
-| Floyd-Steinberg | Mais Alta | Mais Lento | Fotos, retratos, gradientes suaves |
-| Bayer 2x2       | Baixa     | Mais Rápido | Efeito meio-tom grosseiro              |
-| Bayer 4x4       | Média  | Rápido    | Meio-tom balanceado                   |
-| Bayer 8x8       | Alta    | Médio  | Detalhe fino, padrões sutis        |
+| Algoritmo       | Qualidade | Velocidade  | Melhor Para                        |
+| --------------- | --------- | ----------- | ---------------------------------- |
+| Floyd-Steinberg | Mais Alta | Mais Lento  | Fotos, retratos, gradientes suaves |
+| Bayer 2x2       | Baixa     | Mais Rápido | Efeito meio-tom grosseiro          |
+| Bayer 4x4       | Média     | Rápido      | Meio-tom balanceado                |
+| Bayer 8x8       | Alta      | Médio       | Detalhe fino, padrões sutis        |
 
 **Floyd-Steinberg** é padrão e recomendado para a maioria das gravações de fotos. Usa difusão de erro para distribuir erros de quantização para pixels vizinhos, criando resultados de aparência natural.
 
 **Pontilhamento Bayer** cria padrões regulares que podem produzir efeitos artísticos lembrando impressão tradicional de meio-tom.
 
-### Configurações do Modo Múltiplas Profundidades
+#### Configurações do Modo Múltiplas Profundidades
 
 ![Configurações do modo Múltiplas Profundidades](/screenshots/step-settings-engrave-general-multi_pass.png)
 
@@ -326,9 +251,110 @@ Escolha o algoritmo que melhor se adapta à sua imagem e material:
 
 Use inverter para litofanias (áreas claras devem ser finas) ou embossing (áreas elevadas).
 
-## Dicas e Melhores Práticas
+### Padrão de Varredura
+
+#### Intervalo de Linha
+
+**Intervalo de Linha (mm):**
+
+- Espaçamento entre linhas de varredura
+- Menor = maior qualidade, tempo de trabalho mais longo
+- Maior = mais rápido, linhas visíveis
+
+| Intervalo | Qualidade | Velocidade  | Usar Para                        |
+| --------- | --------- | ----------- | -------------------------------- |
+| 0.05mm    | Mais Alta | Mais Lento  | Fotos, detalhes finos            |
+| 0.1mm     | Alta      | Médio       | Texto, logos, gráficos           |
+| 0.2mm     | Média     | Rápido      | Preenchimentos sólidos, texturas |
+| 0.3mm+    | Baixa     | Mais Rápido | Rascunho, teste                  |
+
+**Recomendado:** 0.1mm para uso geral
+
+:::tip Correspondência de Resolução
+:::
+
+Para imagens, o intervalo de linha deve corresponder ou exceder a resolução da imagem. Se sua imagem tem 10 pixels/mm (254 DPI), use intervalo de linha de 0.1mm ou menor.
+
+#### Direção de Varredura
+
+**Ângulo de Varredura (graus):**
+
+- Direção das linhas de varredura
+- 0 = horizontal (esquerda para direita)
+- 90 = vertical (cima para baixo)
+- 45 = diagonal
+
+**Por que mudar o ângulo?**
+
+- Grão da madeira: Grave perpendicular ao grão para melhores resultados
+- Orientação do padrão: Combine a estética do design
+- Reduzir faixas: Ângulo diferente pode esconder imperfeições
+
+**Varredura Bidirecional:**
+
+O Rayforge sempre varre bidirecionalmente (da esquerda para a direita, depois da direita para a esquerda), já que disparar em cada passagem aproximadamente dobra a velocidade de gravação comparado a retornar sem disparar entre as linhas.
+
+Pequenas diferenças mecânicas ou de atraso de disparo entre as duas direções podem causar faixas visíveis em algumas máquinas. Se você vir isso, calibre o **Deslocamento de Varredura Bidirecional** abaixo para corrigir diretamente, em vez de perder o benefício de velocidade.
+
+#### Deslocamento de Varredura Bidirecional
+
+Corrige um desalinhamento fixo mecânico ou de atraso de disparo entre passagens raster da esquerda para a direita e da direita para a esquerda, que de outra forma desalinha linhas de varredura alternadas (visível como faixas, especialmente em gravações de fotos).
+
+- Defina em milímetros, positivo ou negativo dependendo de qual direção precisa ser deslocada
+- Aplica um deslocamento constante independentemente da velocidade; se o desalinhamento varia com a velocidade, calibre para sua velocidade de gravação típica
+- Padrão é 0 (sem correção)
+
+**Calibrando o deslocamento:**
+
+1. Grave um padrão de teste com detalhe vertical visível (ex.: uma grade fina) usando varredura bidirecional
+2. Compare linhas alternadas para encontrar a direção e a quantidade do desalinhamento
+3. Ajuste o deslocamento em pequenos incrementos (0.01-0.05mm) e teste novamente até que as linhas alternadas se alinhem
+
+## Configurações do Laser
+
+![Configurações do laser](/screenshots/step-settings-engrave-laser.png)
+
+Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do diálogo de configurações de etapa.
+
+### Potência e Velocidade
+
+**Potência (%):**
+
+- Intensidade do laser para gravação
+- Menor potência para marcação mais leve
+- Maior potência para gravação mais profunda
+
+**Velocidade (mm/min):**
+
+- Quão rápido o laser varre
+- Mais rápido = mais claro, mais lento = mais escuro
+
+## Pós-Processamento
 
 ![Configurações de pós-processamento de gravação](/screenshots/step-settings-engrave-post.png)
+
+Operações de gravação suportam várias opções de pós-processamento:
+
+- **[Overscan](../overscan.md)** - Estende linhas raster para qualidade de gravação consistente
+- **[Otimização de Caminho](../path-optimization.md)** - Reduz distância de deslocamento
+- **[Multi-Passagem](../multi-pass.md)** - Repete gravação para resultados mais profundos
+
+### Overscan
+
+**Distância de Overscan (mm):**
+
+- Quão longe além do design o laser viaja antes de virar
+- Permite o laser atingir velocidade total antes de entrar no design
+- Previne marcas de queimadura nos inícios/fins das linhas
+
+**Valores típicos:**
+
+- 2-5mm para a maioria dos trabalhos
+- Maior para altas velocidades
+
+Veja [Overscan](../overscan.md) para detalhes.
+
+## Dicas e Melhores Práticas
 
 ### Seleção de Material
 
@@ -351,7 +377,7 @@ Use inverter para litofanias (áreas claras devem ser finas) ou embossing (área
 **Para melhor qualidade:**
 
 - Use intervalo de linha menor (0.05-0.1mm)
-- Desabilite varredura bidirecional
+- Calibre o Deslocamento de Varredura Bidirecional se você vir faixas
 - Aumente overscan (3-5mm)
 - Use potência menor, múltiplas passagens
 - Certifique-se de que o material está plano e fixado
@@ -359,7 +385,6 @@ Use inverter para litofanias (áreas claras devem ser finas) ou embossing (área
 **Para gravação mais rápida:**
 
 - Use intervalo de linha maior (0.15-0.2mm)
-- Habilite varredura bidirecional
 - Overscan mínimo (1-2mm)
 - Passagem única em potência maior
 
@@ -386,7 +411,7 @@ Use inverter para litofanias (áreas claras devem ser finas) ou embossing (área
 
 **Faixas (listras escuras/claras):**
 
-- Desabilite varredura bidirecional
+- Calibre o [Deslocamento de Varredura Bidirecional](#deslocamento-de-varredura-bidirecional)
 - Verifique tensão das correias
 - Reduza velocidade
 - Tente ângulo de varredura diferente

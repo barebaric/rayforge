@@ -7,6 +7,7 @@ with their respective registries before tests run.
 
 from unittest.mock import MagicMock
 
+import pluggy
 import pytest
 from laser_essentials.capabilities import (
     CUT,
@@ -15,8 +16,18 @@ from laser_essentials.capabilities import (
     SCORE,
     WITH_KERF,
 )
+from laser_essentials.steps import (
+    ContourStep,
+    EngraveStep,
+    FrameStep,
+    MaterialTestStep,
+    ShrinkWrapStep,
+)
 
+from rayforge.addon_mgr.addon_manager import AddonManager
+from rayforge.config import BUILTIN_ADDONS_DIR
 from rayforge.core.capability_registry import step_capability_registry
+from rayforge.core.hooks import RayforgeSpecs
 from rayforge.core.step_registry import step_registry
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.transformer.registry import transformer_registry
@@ -40,14 +51,6 @@ def machine():
 
 def _register_steps():
     """Register all steps from laser_essentials addon."""
-    from laser_essentials.steps import (
-        ContourStep,
-        EngraveStep,
-        FrameStep,
-        MaterialTestStep,
-        ShrinkWrapStep,
-    )
-
     step_registry.register(ContourStep, addon_name="laser_essentials")
     step_registry.register(EngraveStep, addon_name="laser_essentials")
     step_registry.register(FrameStep, addon_name="laser_essentials")
@@ -72,12 +75,6 @@ def register_laser_essentials():
     module path (rayforge_addons.*) causing isinstance() checks
     to fail in tests.
     """
-    import pluggy
-
-    from rayforge.addon_mgr.addon_manager import AddonManager
-    from rayforge.config import BUILTIN_ADDONS_DIR
-    from rayforge.core.hooks import RayforgeSpecs
-
     plugin_mgr = pluggy.PluginManager("rayforge")
     plugin_mgr.add_hookspecs(RayforgeSpecs)
 
