@@ -19,12 +19,12 @@ from blinker import Signal
 from raygeo.ops.axis import Axis
 
 from ...context import RayforgeContext
+from ...core.varset import IntVar, VarSet
 
 if TYPE_CHECKING:
     from raygeo.ops import Ops
 
     from ...core.doc import Doc
-    from ...core.varset import VarSet
     from ...pipeline.encoder.base import EncodedOutput, OpsEncoder
     from ..device.profile import DeviceProfile
     from ..models.dialect import GcodeDialect
@@ -172,15 +172,28 @@ class PWMParams:
     max_pulse_width: int
 
 
-@dataclass
-class DriverFeatures:
-    """Hardware features reported by a driver for a specific head.
-
-    Plain data — addons interpret this into domain-specific
-    capabilities (e.g. a PWM capability in the laser addon).
-    """
-
-    pwm: Optional[PWMParams] = None
+def pwm_varset(params: PWMParams) -> VarSet:
+    """Build the PWM frequency / pulse-width settings VarSet."""
+    return VarSet(
+        vars=[
+            IntVar(
+                key="frequency",
+                label=_("Frequency"),
+                description=_("PWM frequency in Hz"),
+                default=params.frequency,
+                min_val=1,
+                max_val=params.max_frequency,
+            ),
+            IntVar(
+                key="pulse_width",
+                label=_("Pulse Width"),
+                description=_("Pulse width in microseconds"),
+                default=params.pulse_width,
+                min_val=params.min_pulse_width,
+                max_val=params.max_pulse_width,
+            ),
+        ]
+    )
 
 
 class Driver(ABC):
@@ -361,16 +374,22 @@ class Driver(ABC):
         """
         return self.create_encoder(self._machine)
 
-    def get_driver_features(self, head: "Head") -> "DriverFeatures":
+    def supports_pwm(self, head: "Head") -> bool:
         """
-        Returns the hardware features reported by the driver for the
-        given head.
+        Returns whether the driver supports PWM for the given head.
 
-        Subclasses may override this to report driver-specific features
-        (e.g., PWM support on Ruida but not GRBL). The base
-        implementation reports no special features.
+        Subclasses may override this to report driver-specific support
+        (e.g., PWM on Ruida CO2/fiber lasers but not diode lasers). The
+        base implementation reports no PWM support.
         """
-        return DriverFeatures()
+        return False
+
+    def get_pwm_params(self, head: "Head") -> Optional[PWMParams]:
+        """
+        Returns the PWM parameters reported by the driver for the given
+        head, or None when the driver reports no PWM support.
+        """
+        return None
 
     @abstractmethod
     def get_setting_vars(self) -> List["VarSet"]:

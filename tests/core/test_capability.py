@@ -1,141 +1,176 @@
+import pytest
+
 from rayforge.core.capability import (
-    ALL_CAPABILITIES,
-    CAPABILITIES_BY_NAME,
-    CUT,
-    ENGRAVE,
-    MATERIAL_TEST,
-    MILL,
-    SCORE,
-    WITH_KERF,
-    Capability,
-    CutCapability,
-    EngraveCapability,
-    KerfCapability,
-    LaserHeadVar,
-    MaterialTestCapability,
-    ScoreCapability,
+    MachineCapability,
+    StepCapability,
     _CombinedCapability,
 )
-from rayforge.core.varset import BoolVar, IntVar, SliderFloatVar, VarSet
+from rayforge.core.capability_registry import step_capability_registry
+from rayforge.core.varset import BoolVar, VarSet
 
 
-def test_cut_capability(mocker):
-    """Tests the properties of the CutCapability singleton."""
-    mocker.patch("rayforge.core.capability.get_context")
-    assert CUT.name == "CUT"
-    assert CUT.label == "Cut"
-    assert isinstance(CUT, CutCapability)
-    assert isinstance(CUT, Capability)
+class _TestCapability(StepCapability):
+    """A concrete capability used to exercise the core Capability ABC."""
 
-    varset = CUT.varset
-    assert isinstance(varset, VarSet)
-    var_keys = [v.key for v in varset]
-    assert "power" in var_keys
-    assert "cut_speed" in var_keys
-    assert "air_assist" in var_keys
-    assert "selected_head_uid" in var_keys
+    def __init__(self, name: str, label: str, varset: VarSet):
+        self._name = name
+        self._label = label
+        self._varset = varset
 
-    power_var = varset["power"]
-    assert isinstance(power_var, SliderFloatVar)
-    assert power_var.label == "Power"
-    assert power_var.default == 0.8
+    @property
+    def name(self) -> str:
+        return self._name
 
-    air_var = varset["air_assist"]
-    assert isinstance(air_var, BoolVar)
-    assert air_var.default is False
+    @property
+    def label(self) -> str:
+        return self._label
 
-    laser_var = varset["selected_head_uid"]
-    assert isinstance(laser_var, LaserHeadVar)
+    @property
+    def varset(self) -> VarSet:
+        return self._varset
 
 
-def test_engrave_capability(mocker):
-    """Tests the properties of the EngraveCapability singleton."""
-    mocker.patch("rayforge.core.capability.get_context")
-    assert ENGRAVE.name == "ENGRAVE"
-    assert ENGRAVE.label == "Engrave"
-    assert isinstance(ENGRAVE, EngraveCapability)
-
-    varset = ENGRAVE.varset
-    var_keys = [v.key for v in varset]
-    assert "power" in var_keys
-    assert "cut_speed" in var_keys
-    assert "air_assist" in var_keys
-    assert "selected_head_uid" in var_keys
-
-    speed_var = varset["cut_speed"]
-    assert isinstance(speed_var, IntVar)
-    assert speed_var.label == "Engrave Speed"
-    assert speed_var.default == 4000
+def _make_cap(name: str, label: str, defaults: dict) -> _TestCapability:
+    varset = VarSet(
+        vars=[
+            BoolVar(key=key, label=label, default=default)
+            for key, default in defaults.items()
+        ]
+    )
+    return _TestCapability(name, label, varset)
 
 
-def test_score_capability(mocker):
-    """Tests the properties of the ScoreCapability singleton."""
-    mocker.patch("rayforge.core.capability.get_context")
-    assert SCORE.name == "SCORE"
-    assert SCORE.label == "Score"
-    assert isinstance(SCORE, ScoreCapability)
-
-    varset = SCORE.varset
-    speed_var = varset["cut_speed"]
-    assert speed_var.label == "Score Speed"
-    assert speed_var.default == 5000
+CUT = _make_cap("CUT", "Cut", {"power": True, "cut_speed": True})
+SCORE = _make_cap("SCORE", "Score", {"power": True, "kerf": False})
 
 
-def test_collections():
-    """Tests the global collections of capabilities."""
-    assert len(ALL_CAPABILITIES) == 6
-    assert CUT in ALL_CAPABILITIES
-    assert ENGRAVE in ALL_CAPABILITIES
-    assert SCORE in ALL_CAPABILITIES
-    assert WITH_KERF in ALL_CAPABILITIES
-    assert MATERIAL_TEST in ALL_CAPABILITIES
-    assert MILL in ALL_CAPABILITIES
+class TestMachineCapability:
+    def test_labels(self):
+        assert MachineCapability.LASER.label == "Laser"
+        assert MachineCapability.MILL.label == "Mill"
 
-    assert len(CAPABILITIES_BY_NAME) == 6
-    assert CAPABILITIES_BY_NAME["CUT"] is CUT
-    assert CAPABILITIES_BY_NAME["ENGRAVE"] is ENGRAVE
-    assert CAPABILITIES_BY_NAME["SCORE"] is SCORE
-    assert CAPABILITIES_BY_NAME["WITH_KERF"] is WITH_KERF
-    assert CAPABILITIES_BY_NAME["MATERIAL_TEST"] is MATERIAL_TEST
-    assert CAPABILITIES_BY_NAME["MILL"] is MILL
+    def test_descriptions(self):
+        assert "laser" in MachineCapability.LASER.description
+        assert "spindle" in MachineCapability.MILL.description
 
 
-def test_kerf_capability():
-    varset = WITH_KERF.varset
-    assert isinstance(WITH_KERF, KerfCapability)
-    var_keys = [v.key for v in varset]
-    assert "kerf_mm" in var_keys
-    assert "power" not in var_keys
-    assert "cut_speed" not in var_keys
+class TestCapability:
+    def test_abstract(self):
+        with pytest.raises(TypeError):
+            StepCapability()  # type: ignore[abstract]
+
+    def test_properties(self):
+        assert CUT.name == "CUT"
+        assert CUT.label == "Cut"
+        assert str(CUT) == "Cut"
+
+    def test_icon_name_defaults_to_name(self):
+        assert CUT.icon_name == "cut-symbolic"
+        assert SCORE.icon_name == "score-symbolic"
+
+    def test_icon_name_is_overridable(self):
+        class CustomIcon(_TestCapability):
+            @property
+            def icon_name(self) -> str:
+                return "custom-icon"
+
+        cap = CustomIcon("CUSTOM", "Custom", VarSet(vars=[]))
+        assert cap.icon_name == "custom-icon"
+
+    def test_get_setting_keys(self):
+        assert CUT.get_setting_keys() == ["power", "cut_speed"]
+
+    def test_or_operator(self):
+        combined = CUT | SCORE
+        assert isinstance(combined, _CombinedCapability)
+        assert combined.name == "CUT|SCORE"
+        var_keys = [v.key for v in combined.varset]
+        assert "power" in var_keys
+        assert "cut_speed" in var_keys
+        assert "kerf" in var_keys
+
+    def test_or_operator_flattens(self):
+        triple = CUT | SCORE | SCORE
+        assert triple.name == "CUT|SCORE|SCORE"
+        var_keys = [v.key for v in triple.varset]
+        assert "power" in var_keys
+
+    def test_or_operator_non_capability(self):
+        with pytest.raises(TypeError):
+            _ = CUT | "not-a-capability"  # type: ignore[operator]
 
 
-def test_material_test_capability():
-    assert isinstance(MATERIAL_TEST, MaterialTestCapability)
-    assert MATERIAL_TEST.name == "MATERIAL_TEST"
-    var_keys = [v.key for v in MATERIAL_TEST.varset]
-    assert "air_assist" in var_keys
-    air_var = MATERIAL_TEST.varset["air_assist"]
-    assert isinstance(air_var, BoolVar)
-    assert air_var.default is False
+class TestCapabilityRegistry:
+    def test_register_and_get(self):
+        cap = _make_cap("TEST", "Test", {"value": True})
+        step_capability_registry.register(cap, addon_name="test_addon")
+        try:
+            assert step_capability_registry.get("TEST") is cap
+        finally:
+            step_capability_registry.unregister("TEST")
+
+    def test_get_unknown_returns_none(self):
+        assert step_capability_registry.get("UNREGISTERED_CAP") is None
+
+    def test_all_capabilities_returns_registration_order(self):
+        cap_a = _make_cap("CAP_A", "A", {})
+        cap_b = _make_cap("CAP_B", "B", {})
+        step_capability_registry.register(cap_a, addon_name="test_addon")
+        step_capability_registry.register(cap_b, addon_name="test_addon")
+        try:
+            all_caps = step_capability_registry.all_capabilities()
+            assert all_caps[-2:] == [cap_a, cap_b]
+        finally:
+            step_capability_registry.unregister("CAP_A")
+            step_capability_registry.unregister("CAP_B")
+
+    def test_register_overwrites_same_name(self):
+        cap_a = _make_cap("SAME", "A", {})
+        cap_b = _make_cap("SAME", "B", {})
+        step_capability_registry.register(cap_a, addon_name="test_addon")
+        step_capability_registry.register(cap_b, addon_name="test_addon")
+        try:
+            assert step_capability_registry.get("SAME") is cap_b
+        finally:
+            step_capability_registry.unregister("SAME")
+
+    def test_unregister_unknown_returns_false(self):
+        assert step_capability_registry.unregister("NEVER_REGISTERED") is False
+
+    def test_unregister_all_from_addon(self):
+        cap_a = _make_cap("ADDON_A", "A", {})
+        cap_b = _make_cap("ADDON_B", "B", {})
+        step_capability_registry.register(cap_a, addon_name="addon_1")
+        step_capability_registry.register(cap_b, addon_name="addon_2")
+        try:
+            count = step_capability_registry.unregister_all_from_addon(
+                "addon_1"
+            )
+            assert count == 1
+            assert step_capability_registry.get("ADDON_A") is None
+            assert step_capability_registry.get("ADDON_B") is cap_b
+        finally:
+            step_capability_registry.unregister("ADDON_B")
+
+    def test_unregister_all_from_unknown_addon_returns_zero(self):
+        assert (
+            step_capability_registry.unregister_all_from_addon("no_such") == 0
+        )
 
 
-def test_capability_or_operator():
-    combined = CUT | WITH_KERF
-    assert isinstance(combined, _CombinedCapability)
-    var_keys = [v.key for v in combined.varset]
-    assert "power" in var_keys
-    assert "kerf_mm" in var_keys
-    assert "selected_head_uid" in var_keys
-
-    triple = CUT | SCORE | WITH_KERF
-    triple_keys = [v.key for v in triple.varset]
-    assert "power" in triple_keys
-    assert "kerf_mm" in triple_keys
-    assert "tab_power" in triple_keys
-
-
-def test_capability_or_right_overrides():
-    """Right operand's vars override left for shared keys."""
-    combined = CUT | ENGRAVE
-    power_var = combined.varset["power"]
-    assert power_var.default == 0.2  # ENGRAVE default, not CUT's 0.8
+@pytest.mark.asyncio
+async def test_registry_populated_via_addon_hook(context_initializer):
+    """After addons load, the registry holds all domain capabilities."""
+    names = {c.name for c in step_capability_registry.all_capabilities()}
+    assert {
+        "CUT",
+        "ENGRAVE",
+        "SCORE",
+        "WITH_KERF",
+        "MATERIAL_TEST",
+        "MILL",
+    } <= names
+    cut_cap = step_capability_registry.get("CUT")
+    assert cut_cap is not None
+    assert cut_cap.label == "Cut"
+    assert step_capability_registry.get("UNREGISTERED") is None

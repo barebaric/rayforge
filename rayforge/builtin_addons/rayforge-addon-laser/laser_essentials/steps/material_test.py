@@ -8,14 +8,11 @@ from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.material_test_grid import MaterialTestGridSpec
 from raygeo.ops.part import Part
 
-from rayforge.core.capability import (
-    MATERIAL_TEST,
-    Capability,
-    MachineCapability,
-)
+from rayforge.core.capability import MachineCapability, StepCapability
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.transformer.registry import transformer_registry
 
+from ..capabilities import MATERIAL_TEST
 from .laser_step import LaserStep
 
 if TYPE_CHECKING:
@@ -33,7 +30,7 @@ if TYPE_CHECKING:
 class MaterialTestStep(LaserStep):
     TYPELABEL = _("Material Test Grid")
     ICON = "test-symbolic"
-    CAPABILITIES: Tuple[Capability, ...] = (MATERIAL_TEST,)
+    CAPABILITIES: Tuple[StepCapability, ...] = (MATERIAL_TEST,)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "material_test_grid"
     HIDDEN = True
@@ -243,6 +240,8 @@ class MaterialTestStep(LaserStep):
         step.selected_head_uid = default_head.uid
         step.max_cut_speed = machine.max_cut_speed
         step.max_travel_speed = machine.max_travel_speed
-        for key, value in default_head.get_defaults(machine).items():
-            setattr(step, key, value)
+        params = machine.get_pwm_params(default_head)
+        if params is not None:
+            step.frequency = params.frequency
+            step.pulse_width = params.pulse_width
         return step

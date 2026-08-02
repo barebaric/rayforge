@@ -4,10 +4,8 @@ from typing import TYPE_CHECKING, Optional
 from gi.repository import Gdk, GObject, Gtk
 
 from ...context import get_context
-from ...core.capability import ENGRAVE
 from ...core.step_registry import step_registry
 from ...core.undo.list_cmd import ListItemCommand, ReorderListCommand
-from ...machine.models.laser import LaserHead
 from ..icons import get_icon
 from ..shared.gtk import apply_css
 from ..shared.popover_menu import PopoverMenu
@@ -160,11 +158,9 @@ class WorkflowRow(Gtk.Box):
         if not machine or not machine.heads:
             return None
         head = step.get_selected_head(machine)
-        if head is None or not isinstance(head, LaserHead):
+        if head is None:
             return None
-        if ENGRAVE in step.capabilities:
-            return head.raster_color
-        return head.cut_color
+        return step.get_operation_color(head)
 
     def _apply_step_color(self, button: Gtk.Button, step):
         color = self._get_step_color(step)

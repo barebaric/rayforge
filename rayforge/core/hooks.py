@@ -186,14 +186,18 @@ class RayforgeSpecs:
         """
 
     @hookspec
-    def register_driver_capabilities(self, driver_capability_registry):
+    def register_step_capabilities(self, step_capability_registry):
         """
-        Called to allow addons to register resolvers that interpret
-        driver-reported features into domain capabilities.
+        Called to allow addons to register step capabilities for recipe
+        matching.
+
+        Addons call
+        ``step_capability_registry.register(capability)`` for each
+        capability they provide.
 
         Args:
-            driver_capability_registry: The global
-              DriverCapabilityRegistry instance.
+            step_capability_registry: The global StepCapabilityRegistry
+              instance.
         """
 
     @hookspec

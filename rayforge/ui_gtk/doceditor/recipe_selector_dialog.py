@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Callable, List, Tuple
 from gi.repository import Adw, Gtk
 
 from ...context import get_context
-from ...core.capability import Capability
+from ...core.capability import StepCapability
 from ...core.recipe import Recipe
 from ..icons import get_icon
 from ..shared.gtk import apply_css
@@ -38,15 +38,14 @@ class RecipeSelectorDialog(Adw.MessageDialog):
             self.recipe: Recipe = recipe
 
             # Add icon as a prefix
-            icon_name = f"{recipe.capability.name.lower()}-symbolic"
-            icon = get_icon(icon_name)
+            icon = get_icon(recipe.capability.icon_name)
             self.add_prefix(icon)
 
     def __init__(
         self,
         parent: Gtk.Window,
         editor: "DocEditor",
-        capabilities: Tuple[Capability, ...],
+        capabilities: Tuple[StepCapability, ...],
         on_select_callback: Callable[[Recipe], None],
     ):
         super().__init__(transient_for=parent)

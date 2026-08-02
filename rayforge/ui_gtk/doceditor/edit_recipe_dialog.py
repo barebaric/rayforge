@@ -6,7 +6,7 @@ from blinker import Signal
 from gi.repository import Adw, Gtk
 
 from ...context import get_context
-from ...core.capability import ALL_CAPABILITIES
+from ...core.capability_registry import step_capability_registry
 from ...core.recipe import Recipe
 from ..icons import get_icon
 from ..shared.optional_spin_row import OptionalSpinRowController
@@ -33,7 +33,9 @@ class AddEditRecipeDialog(PatchedDialogWindow):
             recipe.material_uid if recipe else None
         )
         self._machine_ids: List[Optional[str]] = []
-        self._ui_capabilities = [cap for cap in ALL_CAPABILITIES]
+        self._ui_capabilities = list(
+            step_capability_registry.all_capabilities()
+        )
 
         is_editing = recipe is not None
         title = _("Edit Recipe") if is_editing else _("Add New Recipe")

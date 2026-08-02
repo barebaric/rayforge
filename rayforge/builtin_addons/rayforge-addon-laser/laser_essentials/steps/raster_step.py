@@ -19,7 +19,7 @@ from raygeo.ops.assembly.raster import RasterSpec
 from raygeo.ops.part import Part
 from raygeo.ops.part.image_source import WholeImageSource
 
-from rayforge.core.capability import ENGRAVE, Capability, MachineCapability
+from rayforge.core.capability import MachineCapability, StepCapability
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.stage.assembler_helpers import (
@@ -29,6 +29,7 @@ from rayforge.pipeline.stage.assembler_helpers import (
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 
+from ..capabilities import ENGRAVE
 from .laser_step import LaserStep
 
 if TYPE_CHECKING:
@@ -46,7 +47,7 @@ if TYPE_CHECKING:
 class EngraveStep(LaserStep):
     TYPELABEL = _("Engrave")
     ICON = "step-raster-symbolic"
-    CAPABILITIES: Tuple[Capability, ...] = (ENGRAVE,)
+    CAPABILITIES: Tuple[StepCapability, ...] = (ENGRAVE,)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "raster"
 
@@ -85,6 +86,12 @@ class EngraveStep(LaserStep):
             return DepthMode[self.depth_mode].short_name
         except KeyError:
             return None
+
+    def get_operation_color(self, head) -> Optional[str]:
+        """The head's raster color, used to represent engraving."""
+        if isinstance(head, LaserHead):
+            return head.raster_color
+        return None
 
     def is_position_sensitive(self) -> bool:
         """The raster assembler bakes ``workpiece.bbox`` into its
@@ -352,8 +359,10 @@ class EngraveStep(LaserStep):
         # the operation's typical feed rate (engraving is faster than
         # cutting).
         step.cut_speed = min(machine.max_cut_speed, 4000)
-        for key, value in default_head.get_defaults(machine).items():
-            setattr(step, key, value)
+        params = machine.get_pwm_params(default_head)
+        if params is not None:
+            step.frequency = params.frequency
+            step.pulse_width = params.pulse_width
 
         OverscanTransformer = cast(
             "OverscanTransformerType",

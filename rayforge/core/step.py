@@ -21,7 +21,7 @@ from raygeo.ops.part import Part
 
 from ..machine.models.head import Head
 from ..pipeline.transformer.registry import transformer_registry
-from .capability import Capability, MachineCapability
+from .capability import MachineCapability, StepCapability
 from .item import DocItem
 from .step_registry import step_registry
 
@@ -47,7 +47,7 @@ class Step(DocItem, ABC):
 
     HIDDEN: bool = False
     ICON: str = ""
-    CAPABILITIES: Tuple[Capability, ...] = ()
+    CAPABILITIES: Tuple[StepCapability, ...] = ()
     REQUIRED_MACHINE_CAPS: ClassVar[frozenset[MachineCapability]] = frozenset()
     PRODUCER_CLASS: ClassVar[Any] = None
     ASSEMBLER_NAME: ClassVar[str] = ""
@@ -91,7 +91,7 @@ class Step(DocItem, ABC):
         self.extra: Dict[str, Any] = {}
 
     @property
-    def capabilities(self) -> Tuple[Capability, ...]:
+    def capabilities(self) -> Tuple[StepCapability, ...]:
         return type(self).CAPABILITIES
 
     @classmethod
@@ -461,6 +461,15 @@ class Step(DocItem, ABC):
             self.updated.send(self)
 
     def get_operation_mode_short(self) -> Optional[str]:
+        return None
+
+    def get_operation_color(self, head) -> Optional[str]:
+        """Return the color used to represent this step's operation for
+        the given head, or None when the step has no color.
+
+        Domain bases override this (e.g. laser steps return the head's
+        raster or cut color).
+        """
         return None
 
     def get_summary(self) -> str:
