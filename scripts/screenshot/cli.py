@@ -60,6 +60,7 @@ TARGETS = {
     "recipe-editor:general": "recipe_editor_general",
     "recipe-editor:applicability": "recipe_editor_applicability",
     "recipe-editor:settings": "recipe_editor_settings",
+    "recipe-editor:step-settings": "recipe_editor_step_settings",
     "sanity-check": "sanity_check",
     "step-settings:contour:general": "step_settings",
     "step-settings:contour:laser": "step_settings",
