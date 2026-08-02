@@ -1,6 +1,6 @@
 # Rahmen-Umriss
 
-Rahmen-Umriss erzeugt einen einfachen rechteckigen Schneidepfad um dein gesamtes Design. Es ist der schnellste Weg, einen sauberen Rahmen hinzuzufügen oder deine Arbeit vom Materialblatt zu schneiden.
+Rahmen-Umriss erzeugt einen einfachen rechteckigen Schneidepfad um dein gesamtes Design. Es ist der schnellste Weg, einen sauberen Rahmen hinzuzufügen oder deine Arbeit frei vom Materialblatt zu schneiden.
 
 ## Übersicht
 
@@ -8,10 +8,8 @@ Rahmen-Umriss-Operationen:
 
 - Erstellen eine rechteckige Grenze um alle Inhalte
 - Fügen konfigurierbaren Offset/Rand vom Design hinzu
-- Unterstützen Schnittbreiten-Kompensation für genaue Größen
+- Unterstützen Schnittbreiten-Kompensation für präzise Größen
 - Arbeiten mit jeder Kombination von Objekten auf der Arbeitsfläche
-
-![Rahmen-Umriss Schritt-Einstellungen](/screenshots/step-settings-frame-outline-general.png)
 
 ## Wann Rahmen-Umriss verwenden
 
@@ -25,15 +23,15 @@ Verwende Rahmen-Umriss für:
 **Verwende Rahmen-Umriss nicht für:**
 
 - Unregelmäßige Formen um mehrere Objekte (verwende stattdessen [Schrumpfumhüllung](shrink-wrap))
-- Schneiden individueller Teile (verwende stattdessen [Kontur](contour))
-- Folgen der genauen Form deines Designs
+- Schneiden einzelner Teile (verwende stattdessen [Kontur](contour))
+- Dem genauen Umriss deines Designs folgen
 
 ## Eine Rahmen-Umriss-Operation erstellen
 
-### Schritt 1: dein Design anordnen
+### Schritt 1: Design anordnen
 
 1. Alle Objekte auf der Arbeitsfläche platzieren
-2. Positioniere sie relativ zum Rahmen
+2. Positioniere sie dort, wo du sie relativ zum Rahmen haben möchtest
 3. Der Rahmen wird um den Begrenzungsrahmen aller Inhalte berechnet
 
 ### Schritt 2: Rahmen-Umriss-Operation hinzufügen
@@ -46,12 +44,49 @@ Verwende Rahmen-Umriss für:
 Konfiguriere die Rahmen-Parameter:
 
 - **Leistung & Geschwindigkeit:** An die Schneideanforderungen deines Materials anpassen
-- **Offset:** Distanz von Inhalt-Kante zu Rahmen
+- **Offset:** Abstand von der Inhaltkante zum Rahmen
 - **Pfad-Offset:** Innen-, Außen- oder Mittellinien-Schneiden
 
 ## Haupt-Einstellungen
 
-### Leistung & Geschwindigkeit
+Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellungen**, **Laser** und **Nachbearbeitung**. Die Einstellungen werden unten in Registerkarten-Reihenfolge beschrieben.
+
+### Geometrie
+
+![Rahmen-Umriss Schritt-Einstellungen](/screenshots/step-settings-frame-outline-general.png)
+
+Die Gruppe **Geometrie** auf der Registerkarte _Schritt-Einstellungen_ steuert die Form des Rahmens.
+
+#### Schnitt-Seite
+
+Steuert, wo der Laser relativ zum Rahmenpfad schneidet:
+
+| Schnitt-Seite   | Beschreibung                        | Verwendung für              |
+| --------------- | ----------------------------------- | --------------------------- |
+| **Mittellinie** | Schneidet direkt auf dem Pfad       | Standardschneiden           |
+| **Außen**       | Schneidet außerhalb des Rahmenpfads | Rahmen etwas größer machen  |
+| **Innen**       | Schneidet innerhalb des Rahmenpfads | Rahmen etwas kleiner machen |
+
+#### Offset-Distanz
+
+**Offset (mm):**
+
+- Abstand vom Begrenzungsrahmen des Designs zum Rahmen
+- Erzeugt einen Rand um deine Arbeit
+
+**Typische Werte:**
+
+- **0mm:** Rahmen berührt die Design-Kante
+- **2-5mm:** Kleiner Rand für ein sauberes Aussehen
+- **10mm+:** Großer Rand für Montage oder Handhabung
+
+### Laser-Einstellungen
+
+![Laser-Einstellungen](/screenshots/step-settings-frame-outline-laser.png)
+
+Leistung, Geschwindigkeit und Laserkopf-Auswahl befinden sich auf der Seite **Laser** des Schritt-Einstellungen-Dialogs.
+
+#### Leistung & Geschwindigkeit
 
 **Leistung (%):**
 
@@ -63,41 +98,14 @@ Konfiguriere die Rahmen-Parameter:
 - Wie schnell sich der Laser bewegt
 - Langsamer für dickere Materialien
 
-**Durchgänge:**
+Um den Rahmen mehr als einmal zu schneiden, füge einen [Mehrfach-Durchgang](../multi-pass.md)-Nachbearbeitungsprozessor hinzu.
 
-- Anzahl der Male, den Rahmen zu schneiden
-- Normalerweise 1-2 Durchgänge
-- Durchgänge für dickere Materialien hinzufügen
-
-### Offset-Distanz
-
-**Offset (mm):**
-
-- Distanz vom Begrenzungsrahmen des Designs zum Rahmen
-- Erzeugt einen Rand/Bord um deine Arbeit
-
-**Typische Werte:**
-
-- **0mm:** Rahmen berührt Design-Kante
-- **2-5mm:** Kleiner Rand für sauberes Aussehen
-- **10mm+:** Großer Rahmen für Montage oder Handhabung
-
-### Pfad-Offset (Schnitt-Seite)
-
-Steuert, wo der Laser relativ zum Rahmenpfad schneidet:
-
-| Schnitt-Seite   | Beschreibung                | Verwendung für                       |
-| --------------- | --------------------------- | ------------------------------------ |
-| **Mittellinie** | Schneidet direkt auf dem Pfad | Standardschneiden                    |
-| **Außen**       | Schneidet außerhalb des Rahmenpfads | Rahmen etwas größer machen          |
-| **Innen**       | Schneidet innerhalb des Rahmenpfads | Rahmen etwas kleiner machen         |
-
-### Schnittbreiten-Kompensation
+#### Schnittbreiten-Kompensation
 
 Rahmen-Umriss unterstützt Schnittbreiten-Kompensation:
 
-- Passt automatisch für Laserstrahl-Breite an
-- Stellt genaue Endabmessungen sicher
+- Passt automatisch für die Laserstrahl-Breite an
+- Stellt genaue Endmaße sicher
 - Verwendet den Schnittbreiten-Wert aus deinen Laserkopf-Einstellungen
 
 ## Nachbearbeitung
@@ -107,10 +115,10 @@ Rahmen-Umriss unterstützt Schnittbreiten-Kompensation:
 Rahmen-Umriss-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 
 - **[Halte-Laschen](../holding-tabs.md)** - Das eingerahmte Teil am Rohmaterial befestigt halten
-- **[Auf Rohmaterial zuschneiden](../crop-to-stock.md)** - Schnitte auf Materialgrenze beschränken
+- **[Auf Rohmaterial zuschneiden](../crop-to-stock.md)** - Schnitte auf die Materialgrenze beschränken
 - **[Pfad-Optimierung](../path-optimization.md)** - Verfahrdistanz reduzieren
 - **[Mehrfach-Durchgang](../multi-pass.md)** - Schnitte für dicke Materialien wiederholen
-- **[Einlauf/Auslauf](../lead-in-out.md)** - Nullleistung-An- und Abfahrtsbewegungen hinzufügen für sauberere Schnittenden
+- **[Ein-/Auslauf](../lead-in-out.md)** - Nullleistungs-An- und Abfahrtsbewegungen für sauberere Schnittenden hinzufügen
 
 ## Anwendungsfälle
 
@@ -126,7 +134,7 @@ Rahmen-Umriss-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 
 **Ergebnis:** Professionell aussehendes gerahmtes Teil
 
-### Frei aus Blatt schneiden
+### Frei aus dem Blatt schneiden
 
 **Szenario:** Deine fertige Arbeit vom Materialblatt entfernen
 
@@ -144,13 +152,13 @@ Rahmen-Umriss-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 
 ### Chargen-Verarbeitungs-Grenze
 
-**Szenario:** Eine Schneide-Grenze für mehrere verschachtelte Teile erstellen
+**Szenario:** Eine Schneidegrenze für mehrere verschachtelte Teile erstellen
 
 **Prozess:**
 
 1. Alle Teile auf der Arbeitsfläche anordnen
 2. Individuelle Kontur-Operationen für Teile hinzufügen
-3. Rahmen-Umriss um alles herum hinzufügen
+3. Rahmen-Umriss um alles hinzufügen
 4. Rahmen schneidet zuletzt (in separater Ebene)
 
 **Reihenfolge:** Gravieren → Teil-Konturen → Rahmen-Umriss
@@ -161,14 +169,14 @@ Rahmen-Umriss-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 
 **Beste Praxis:**
 
-- Rahmen-Umriss in eigene Ebene platzieren
+- Rahmen-Umriss in eine eigene Ebene platzieren
 - Rahmen als **letzte** Operation ausführen
-- Dies stellt sicher, dass alle anderen Arbeiten zuerst abgeschlossen sind
+- Dies stellt sicher, dass alle anderen Arbeiten zuerst abgeschlossen werden
 
 **Warum zuletzt?**
 
 - Material bleibt während anderer Operationen befestigt
-- Verhindert, dass Teile sich verschieben
+- Verhindert, dass Teile verrutschen
 - Saubereres Endergebnis
 
 ### Offset-Auswahl
@@ -181,17 +189,17 @@ Rahmen-Umriss-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 
 **Berücksichtigen:**
 
-- Endverwendung des Stücks
+- Endverwendung des Teils
 - Ob Kanten sichtbar sein werden
-- Materialkosten und Verfügbarkeit
+- Materialkosten und -verfügbarkeit
 
 ### Qualitätseinstellungen
 
-**Für saubere Rahmen-Schnitte:**
+**Für saubere Rahmenschnitte:**
 
 - Luftunterstützung verwenden
 - Richtigen Fokus sicherstellen
-- Mehr schnellere Durchgänge oft besser als ein langsamer
+- Mehrere schnellere Durchgänge sind oft besser als ein langsamer Durchgang
 - Material flach und befestigt halten
 
 ## Mit anderen Operationen kombinieren
@@ -201,34 +209,34 @@ Rahmen-Umriss-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 Typischer Workflow für ein fertiges Teil:
 
 1. **Ebene 1:** Details gravieren (Text, Bilder)
-2. **Ebene 2:** Individuelle Teile mit Kontur schneiden
+2. **Ebene 2:** Einzelne Teile mit Kontur schneiden
 3. **Ebene 3:** Rahmen-Umriss (frei schneiden)
 
-**Ausführungsreihenfolge stellt sicher:**
+**Die Ausführungsreihenfolge stellt sicher:**
 
-- Gravur geschieht während Material flach und befestigt ist
-- Teil-Details werden vor endgültiger Trennung geschnitten
+- Gravur erfolgt, während das Material flach und befestigt ist
+- Teildetails werden vor der endgültigen Trennung geschnitten
 - Rahmen schneidet am Ende alles frei
 
-### Rahmen vs Schrumpfumhüllung
+### Rahmen vs. Schrumpfumhüllung
 
-| Funktion          | Rahmen-Umriss               | Schrumpfumhüllung      |
-| ----------------- | --------------------------- | ---------------------- |
-| **Form**          | Immer rechteckig            | Folgt Objekt-Konturen  |
-| **Geschwindigkeit**| Sehr schnell (4 Linien)    | Hängt von Komplexität ab |
-| **Anwendungsfall** | Einfache Rahmen, frei schneiden | Effiziente Materialnutzung |
-| **Flexibilität**  | Festes Rechteck             | Passt sich Design an   |
+| Funktion            | Rahmen-Umriss                   | Schrumpfumhüllung          |
+| ------------------- | ------------------------------- | -------------------------- |
+| **Form**            | Immer rechteckig                | Folgt den Objektkonturen   |
+| **Geschwindigkeit** | Sehr schnell (4 Linien)         | Hängt von Komplexität ab   |
+| **Anwendungsfall**  | Einfache Rahmen, frei schneiden | Effiziente Materialnutzung |
+| **Flexibilität**    | Festes Rechteck                 | Passt sich dem Design an   |
 
 **Rahmen-Umriss wählen, wenn:**
 
-- Du einen rechteckigen Rahmen wünschst
+- Du einen rechteckigen Rahmen möchtest
 - Einfachheit bevorzugt wird
-- Frei aus Blatt schneiden
+- Du frei vom Blatt schneiden möchtest
 
 **Schrumpfumhüllung wählen, wenn:**
 
 - Du Materialabfall minimieren möchtest
-- Design unregelmäßige Form hat
+- Das Design eine unregelmäßige Form hat
 - Effizienz wichtig ist
 
 ## Fehlerbehebung
@@ -243,9 +251,9 @@ Typischer Workflow für ein fertiges Teil:
 
 - **Überprüfen:** Objekte sind auf der Arbeitsfläche
 - **Verifizieren:** Operation ist aktiviert
-- **Schauen:** Rahmen kann außerhalb des sichtbaren Bereichs sein (herauszoomen)
+- **Schauen:** Rahmen kann außerhalb des sichtbaren Bereichs liegen (herauszoomen)
 
-### Rahmen schneidet in Design
+### Rahmen schneidet ins Design
 
 - **Erhöhen:** Offset-Distanz
 - **Überprüfen:** Objekte sind richtig positioniert
@@ -263,8 +271,8 @@ Typischer Workflow für ein fertiges Teil:
 
 Rahmen-Umriss verwendet den kombinierten Begrenzungsrahmen von:
 
-- Alle Werkstücke auf der Arbeitsfläche
-- ihre endgültigen transformierten Positionen
+- Allen Werkstücken auf der Arbeitsfläche
+- Deren endgültigen transformierten Positionen
 - Einschließlich aller angewendeten Rotationen/Skalierungen
 
 ### Pfad-Generierung
@@ -278,7 +286,7 @@ Rahmen-Umriss verwendet den kombinierten Begrenzungsrahmen von:
 ### G-Code-Beispiel
 
 ```gcode
-G0 X5 Y5           ; Zum Rahmen-Start bewegen (mit Offset)
+G0 X5 Y5           ; Zum Rahmenstart bewegen (mit Offset)
 M3 S200            ; Laser an bei 80% Leistung
 G1 X95 Y5 F500     ; Untere Kante schneiden
 G1 X95 Y95         ; Rechte Kante schneiden
@@ -289,7 +297,7 @@ M5                 ; Laser aus
 
 ## Verwandte Themen
 
-- **[Kontur-Schneiden](contour)** - Individuelle Objektumrisse schneiden
+- **[Kontur-Schneiden](contour)** - Einzelne Objektumrisse schneiden
 - **[Schrumpfumhüllung](shrink-wrap)** - Effiziente unregelmäßige Grenzen
 - **[Halte-Laschen](../holding-tabs.md)** - Teile während des Schneidens sichern
 - **[Mehrschicht-Workflow](../multi-layer.md)** - Operationen effektiv organisieren

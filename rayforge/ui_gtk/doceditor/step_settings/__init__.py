@@ -1,7 +1,8 @@
-from .base import StepComponentSettingsWidget
-from .placeholder import PlaceholderSettingsWidget
+"""Step settings UI: pages, rows, and settings groups."""
+
+from .groups import PlaceholderSettingsGroup, TransformerSettingsGroup
 
 __all__ = [
-    "PlaceholderSettingsWidget",
-    "StepComponentSettingsWidget",
+    "TransformerSettingsGroup",
+    "PlaceholderSettingsGroup",
 ]

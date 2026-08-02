@@ -1,6 +1,6 @@
 # Gravure
 
-Les opérations de gravure remplissent des zones avec des lignes de balayage raster, supportant plusieurs modes pour différents effets de gravure. Des photos en niveaux de gris lisses aux effets de relief 3D, choisissez le mode qui convient le mieux à votre design et matériau.
+Les opérations de gravure remplissent des zones avec des lignes de balayage raster, prenant en charge plusieurs modes pour différents effets de gravure. Des photos en niveaux de gris lisses aux effets de relief 3D, choisissez le mode qui convient le mieux à votre design et à votre matériau.
 
 ## Aperçu
 
@@ -134,83 +134,17 @@ Sélectionnez le mode de gravure qui convient le mieux à vos besoins :
 
 ![Paramètres d'étape de gravure](/screenshots/step-settings-engrave-general-variable.png)
 
-## Paramètres Courants
+## Paramètres de Gravure
 
-### Puissance & Vitesse
+Les groupes **Gravure** et **Puissance** de l'onglet _Paramètres d'étape_ contrôlent le motif de balayage, le mode et la modulation de puissance, dans l'ordre des lignes. La puissance et la vitesse du laser se trouvent sur la page **Laser** (voir ci-dessous).
 
-**Puissance (%) :**
+### Mode
 
-- Intensité laser pour la gravure
-- Puissance plus basse pour un marquage plus léger
-- Puissance plus élevée pour une gravure plus profonde
+La ligne **Mode** sélectionne l'un des quatre modes de gravure. Chaque mode expose différents paramètres, décrits ci-dessous.
 
-**Vitesse (mm/min) :**
+### Paramètres Spécifiques au Mode
 
-- À quelle vitesse le laser balaie
-- Plus rapide = plus clair, plus lent = plus foncé
-
-### Intervalle de Ligne
-
-**Intervalle de Ligne (mm) :**
-
-- Espacement entre les lignes de balayage
-- Plus petit = qualité plus élevée, temps de travail plus long
-- Plus grand = plus rapide, lignes visibles
-
-| Intervalle | Qualité | Vitesse | Utilisation |
-| ---------- | ------- | ------- | ----------- |
-| 0.05mm | La plus élevée | La plus lente | Photos, détails fins |
-| 0.1mm | Élevée | Moyenne | Texte, logos, graphiques |
-| 0.2mm | Moyenne | Rapide | Remplissages solides, textures |
-| 0.3mm+ | Basse | La plus rapide | Brouillon, test |
-
-**Recommandé :** 0.1mm pour un usage général
-
-:::tip Correspondance de Résolution
-:::
-
-Pour les images, l'intervalle de ligne devrait correspondre ou dépasser la résolution de l'image. Si votre image est de 10 pixels/mm (254 DPI), utilisez un intervalle de ligne de 0.1mm ou moins.
-
-### Direction de Balayage
-
-**Angle de Balayage (degrés) :**
-
-- Direction des lignes de balayage
-- 0 = horizontal (de gauche à droite)
-- 90 = vertical (de haut en bas)
-- 45 = diagonal
-
-**Pourquoi changer l'angle ?**
-
-- Grain du bois : Gravez perpendiculairement au grain pour de meilleurs résultats
-- Orientation du motif : Correspondre à l'esthétique du design
-- Réduire le banding : Un angle différent peut masquer les imperfections
-
-**Balayage Bidirectionnel :**
-
-- **Activé :** Le laser grave dans les deux directions (plus rapide)
-- **Désactivé :** Le laser ne grave que de gauche à droite (plus lent, plus cohérent)
-
-Pour une meilleure qualité, désactivez le bidirectionnel. Pour la vitesse, activez-le.
-
-### Overscan
-
-**Distance d'Overscan (mm) :**
-
-- Jusqu'où au-delà du design le laser voyage avant de faire demi-tour
-- Permet au laser d'atteindre sa pleine vitesse avant d'entrer dans le design
-- Empêche les marques de brûlure aux débuts/fins de ligne
-
-**Valeurs typiques :**
-
-- 2-5mm pour la plupart des travaux
-- Plus grand pour les vitesses élevées
-
-Voir [Overscan](../overscan.md) pour plus de détails.
-
-## Paramètres Spécifiques au Mode
-
-### Paramètres du Mode Puissance Variable
+#### Paramètres du Mode Puissance Variable
 
 ![Paramètres du mode Puissance Variable](/screenshots/step-settings-engrave-general-variable.png)
 
@@ -228,10 +162,10 @@ Voir [Overscan](../overscan.md) pour plus de détails.
 
 **Exemples de Plage de Puissance :**
 
-| Min | Max | Effet |
-| --- | --- | ----- |
-| 0% | 40% | Relief subtil, léger |
-| 10% | 60% | Profondeur moyenne, sûr |
+| Min | Max | Effet                      |
+| --- | --- | -------------------------- |
+| 0%  | 40% | Relief subtil, léger       |
+| 10% | 60% | Profondeur moyenne, sûr    |
 | 20% | 80% | Profond, relief dramatique |
 
 **Inverser :**
@@ -249,17 +183,18 @@ Contrôle comment les valeurs de luminosité de l'image sont mappées à la puis
 - **Mode Manuel** : Désactivez Niveaux Auto pour définir manuellement les points noir et blanc en glissant les marqueurs sur l'histogramme.
 
 C'est particulièrement utile pour :
+
 - Images à faible contraste nécessitant une amélioration du contraste
 - Images avec une plage tonale limitée
 - Assurer des résultats cohérents entre différentes images sources
 
-### Paramètres du Mode Puissance Constante
+#### Paramètres du Mode Puissance Constante
 
 ![Paramètres du mode Puissance Constante](/screenshots/step-settings-engrave-general-constant_power.png)
 
 **Seuil (0-255) :**
 
-- Cutoff de luminosité pour la séparation noir/blanc
+- Coupure de luminosité pour la séparation noir/blanc
 - Plus bas = plus de noir gravé
 - Plus haut = plus de blanc gravé
 
@@ -268,26 +203,26 @@ C'est particulièrement utile pour :
 - 128 (seuil 50% gris)
 - Ajustez selon le contraste de l'image
 
-### Paramètres du Mode Tramage
+#### Paramètres du Mode Tramage
 
 ![Paramètres du mode Tramage](/screenshots/step-settings-engrave-general-dither.png)
 
 **Algorithme de Tramage :**
 
-Choisissez l'algorithme qui convient le mieux à votre image et matériau :
+Choisissez l'algorithme qui convient le mieux à votre image et à votre matériau :
 
-| Algorithme | Qualité | Vitesse | Idéal Pour |
-| ---------- | ------- | ------- | ---------- |
-| Floyd-Steinberg | La plus élevée | La plus lente | Photos, portraits, dégradés lisses |
-| Bayer 2x2 | Basse | La plus rapide | Effet demi-teinte grossier |
-| Bayer 4x4 | Moyenne | Rapide | Demi-teinte équilibrée |
-| Bayer 8x8 | Élevée | Moyenne | Détails fins, motifs subtils |
+| Algorithme      | Qualité        | Vitesse        | Idéal Pour                         |
+| --------------- | -------------- | -------------- | ---------------------------------- |
+| Floyd-Steinberg | La plus élevée | La plus lente  | Photos, portraits, dégradés lisses |
+| Bayer 2x2       | Basse          | La plus rapide | Effet demi-teinte grossier         |
+| Bayer 4x4       | Moyenne        | Rapide         | Demi-teinte équilibrée             |
+| Bayer 8x8       | Élevée         | Moyenne        | Détails fins, motifs subtils       |
 
 **Floyd-Steinberg** est le défaut et recommandé pour la plupart des gravures photo. Il utilise la diffusion d'erreur pour distribuer les erreurs de quantification aux pixels voisins, créant des résultats d'apparence naturelle.
 
 **Le tramage Bayer** crée des motifs réguliers qui peuvent produire des effets artistiques ressemblant à l'impression demi-teinte traditionnelle.
 
-### Paramètres du Mode Profondeurs Multiples
+#### Paramètres du Mode Profondeurs Multiples
 
 ![Paramètres du mode Profondeurs Multiples](/screenshots/step-settings-engrave-general-multi_pass.png)
 
@@ -300,7 +235,7 @@ Choisissez l'algorithme qui convient le mieux à votre image et matériau :
 **Avance en Z par Niveau (mm) :**
 
 - De combien avancer en Z entre les passes de profondeur
-- Crée une profondeur totale plus profonde avec des passes multiples
+- Crée une profondeur totale plus importante avec des passes multiples
 - Typique : 0.1-0.5mm
 
 **Angle de Rotation par Passe :**
@@ -316,6 +251,84 @@ Choisissez l'algorithme qui convient le mieux à votre image et matériau :
 
 Utilisez inverser pour les lithophanes (les zones claires doivent être fines) ou le gaufrage (zones en relief).
 
+### Motif de Balayage
+
+#### Intervalle de Ligne
+
+**Intervalle de Ligne (mm) :**
+
+- Espacement entre les lignes de balayage
+- Plus petit = qualité plus élevée, temps de travail plus long
+- Plus grand = plus rapide, lignes visibles
+
+| Intervalle | Qualité        | Vitesse        | Utilisation                    |
+| ---------- | -------------- | -------------- | ------------------------------ |
+| 0.05mm     | La plus élevée | La plus lente  | Photos, détails fins           |
+| 0.1mm      | Élevée         | Moyenne        | Texte, logos, graphiques       |
+| 0.2mm      | Moyenne        | Rapide         | Remplissages solides, textures |
+| 0.3mm+     | Basse          | La plus rapide | Brouillon, test                |
+
+**Recommandé :** 0.1mm pour un usage général
+
+:::tip Correspondance de Résolution
+:::
+
+Pour les images, l'intervalle de ligne devrait correspondre ou dépasser la résolution de l'image. Si votre image est de 10 pixels/mm (254 DPI), utilisez un intervalle de ligne de 0.1mm ou moins.
+
+#### Direction de Balayage
+
+**Angle de Balayage (degrés) :**
+
+- Direction des lignes de balayage
+- 0 = horizontal (de gauche à droite)
+- 90 = vertical (de haut en bas)
+- 45 = diagonal
+
+**Pourquoi changer l'angle ?**
+
+- Grain du bois : Gravez perpendiculairement au grain pour de meilleurs résultats
+- Orientation du motif : Correspondre à l'esthétique du design
+- Réduire le banding : Un angle différent peut masquer les imperfections
+
+**Balayage Bidirectionnel :**
+
+Rayforge balaie toujours en bidirectionnel (de gauche à droite, puis de droite à gauche), car tirer à chaque passe double environ la vitesse de gravure par rapport à un retour sans tir entre les lignes.
+
+De légères différences mécaniques ou de délai de tir entre les deux directions peuvent provoquer un banding visible sur certaines machines. Si vous constatez ce phénomène, calibrez le **Décalage de Balayage Bidirectionnel** ci-dessous pour le corriger directement, plutôt que de perdre l'avantage de vitesse.
+
+#### Décalage de Balayage Bidirectionnel
+
+Corrige un décalage fixe mécanique ou de délai de tir entre les passes raster de gauche à droite et de droite à gauche, qui autrement désalignerait les rangées de balayage alternées (visible sous forme de banding, en particulier dans les gravures photo).
+
+- Défini en millimètres, positif ou négatif selon la direction qui doit être décalée
+- Applique un décalage constant quelle que soit la vitesse ; si le décalage varie avec la vitesse, calibrez pour votre vitesse de gravure typique
+- Par défaut à 0 (aucune correction)
+
+**Calibrage du décalage :**
+
+1. Gravez un motif de test avec des détails verticaux visibles (par exemple une grille fine) en utilisant le balayage bidirectionnel
+2. Comparez les rangées alternées pour trouver la direction et l'ampleur du désalignement
+3. Ajustez le décalage par petits incréments (0.01-0.05mm) et retestez jusqu'à ce que les rangées alternées s'alignent
+
+## Paramètres Laser
+
+![Paramètres laser](/screenshots/step-settings-engrave-laser.png)
+
+La puissance, la vitesse et la sélection de la tête laser se trouvent sur la page **Laser** de la boîte de dialogue des paramètres d'étape.
+
+### Puissance & Vitesse
+
+**Puissance (%) :**
+
+- Intensité laser pour la gravure
+- Puissance plus basse pour un marquage plus léger
+- Puissance plus élevée pour une gravure plus profonde
+
+**Vitesse (mm/min) :**
+
+- À quelle vitesse le laser balaie
+- Plus rapide = plus clair, plus lent = plus foncé
+
 ## Post-Traitement
 
 ![Paramètres de post-traitement de gravure](/screenshots/step-settings-engrave-post.png)
@@ -325,6 +338,21 @@ Les opérations de gravure supportent plusieurs options de post-traitement :
 - **[Overscan](../overscan.md)** - Étendre les lignes raster pour une qualité de gravure cohérente
 - **[Optimisation de Parcours](../path-optimization.md)** - Réduire la distance de déplacement
 - **[Passe Multiple](../multi-pass.md)** - Répéter la gravure pour des résultats plus profonds
+
+### Overscan
+
+**Distance d'Overscan (mm) :**
+
+- Jusqu'où au-delà du design le laser voyage avant de faire demi-tour
+- Permet au laser d'atteindre sa pleine vitesse avant d'entrer dans le design
+- Empêche les marques de brûlure aux débuts/fins de ligne
+
+**Valeurs typiques :**
+
+- 2-5mm pour la plupart des travaux
+- Plus grand pour les vitesses élevées
+
+Voir [Overscan](../overscan.md) pour plus de détails.
 
 ## Conseils & Meilleures Pratiques
 
@@ -349,7 +377,7 @@ Les opérations de gravure supportent plusieurs options de post-traitement :
 **Pour une meilleure qualité :**
 
 - Utilisez un intervalle de ligne plus petit (0.05-0.1mm)
-- Désactivez le balayage bidirectionnel
+- Calibrez le décalage de balayage bidirectionnel si vous voyez du banding
 - Augmentez l'overscan (3-5mm)
 - Utilisez une puissance plus basse, passes multiples
 - Assurez-vous que le matériau est plat et sécurisé
@@ -357,7 +385,6 @@ Les opérations de gravure supportent plusieurs options de post-traitement :
 **Pour une gravure plus rapide :**
 
 - Utilisez un intervalle de ligne plus grand (0.15-0.2mm)
-- Activez le balayage bidirectionnel
 - Overscan minimum (1-2mm)
 - Passe unique à puissance plus élevée
 
@@ -384,7 +411,7 @@ Les opérations de gravure supportent plusieurs options de post-traitement :
 
 **Banding (rayures claires/foncées) :**
 
-- Désactivez le balayage bidirectionnel
+- Calibrez le [Décalage de Balayage Bidirectionnel](#décalage-de-balayage-bidirectionnel)
 - Vérifiez la tension des courroies
 - Réduisez la vitesse
 - Essayez un angle de balayage différent

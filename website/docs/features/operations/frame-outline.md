@@ -15,8 +15,6 @@ Frame Outline operations:
 - Support kerf compensation for accurate sizing
 - Work with any combination of objects on the canvas
 
-![Frame Outline step settings](/screenshots/step-settings-frame-outline-general.png)
-
 ## When to Use Frame Outline
 
 Use frame outline for:
@@ -55,25 +53,25 @@ Configure the frame parameters:
 
 ## Key Settings
 
-### Power & Speed
+The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Post Processing**. Settings are described in tab order below.
 
-**Power (%):**
+### Geometry
 
-- Laser intensity for cutting the frame
-- Match your material's cutting requirements
+![Frame Outline step settings](/screenshots/step-settings-frame-outline-general.png)
 
-**Speed (mm/min):**
+The **Geometry** group on the *Step Settings* tab controls the frame's shape.
 
-- How fast the laser moves
-- Slower for thicker materials
+#### Cut Side
 
-**Passes:**
+Controls where the laser cuts relative to the frame path:
 
-- Number of times to cut the frame
-- Usually 1-2 passes
-- Add passes for thicker materials
+| Cut Side       | Description                 | Use For                           |
+| -------------- | --------------------------- | --------------------------------- |
+| **Centerline** | Cuts directly on the path   | Standard cutting                  |
+| **Outside**    | Cuts outside the frame path | Making the frame slightly larger  |
+| **Inside**     | Cuts inside the frame path  | Making the frame slightly smaller |
 
-### Offset Distance
+#### Offset Distance
 
 **Offset (mm):**
 
@@ -86,17 +84,27 @@ Configure the frame parameters:
 - **2-5mm:** Small margin for clean appearance
 - **10mm+:** Large border for mounting or handling
 
-### Path Offset (Cut Side)
+### Laser settings
 
-Controls where the laser cuts relative to the frame path:
+![Laser settings](/screenshots/step-settings-frame-outline-laser.png)
 
-| Cut Side       | Description                 | Use For                           |
-| -------------- | --------------------------- | --------------------------------- |
-| **Centerline** | Cuts directly on the path   | Standard cutting                  |
-| **Outside**    | Cuts outside the frame path | Making the frame slightly larger  |
-| **Inside**     | Cuts inside the frame path  | Making the frame slightly smaller |
+Power, speed, and laser head selection live on the **Laser** page of the step settings dialog.
 
-### Kerf Compensation
+#### Power & Speed
+
+**Power (%):**
+
+- Laser intensity for cutting the frame
+- Match your material's cutting requirements
+
+**Speed (mm/min):**
+
+- How fast the laser moves
+- Slower for thicker materials
+
+To cut the frame more than once, add a [Multi-Pass](../multi-pass.md) post-processor.
+
+#### Kerf Compensation
 
 Frame outline supports kerf compensation:
 

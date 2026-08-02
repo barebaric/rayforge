@@ -2,28 +2,28 @@
 Laser Essentials UI Widgets.
 """
 
-from .contour_widget import ContourProducerSettingsWidget
-from .frame_widget import FrameProducerSettingsWidget
-from .material_test_grid_widget import MaterialTestGridSettingsWidget
-from .raster_widget import RasterSettingsWidget
-from .shrinkwrap_widget import ShrinkWrapProducerSettingsWidget
-from .wavefront_widget import WavefrontSettingsWidget
+from .contour_page import ContourStepSettingsPage
+from .frame_page import FrameStepSettingsPage
+from .material_test_grid_page import MaterialTestGridSettingsPage
+from .raster_page import RasterSettingsPage
+from .shrinkwrap_page import ShrinkWrapStepSettingsPage
+from .wavefront_page import WavefrontStepSettingsPage
 
 ASSEMBLER_WIDGETS = {
-    "contour": ContourProducerSettingsWidget,
-    "frame": FrameProducerSettingsWidget,
-    "raster": RasterSettingsWidget,
-    "shrinkwrap": ShrinkWrapProducerSettingsWidget,
-    "wavefront": WavefrontSettingsWidget,
-    "material_test_grid": MaterialTestGridSettingsWidget,
+    "contour": ContourStepSettingsPage,
+    "frame": FrameStepSettingsPage,
+    "raster": RasterSettingsPage,
+    "shrinkwrap": ShrinkWrapStepSettingsPage,
+    "wavefront": WavefrontStepSettingsPage,
+    "material_test_grid": MaterialTestGridSettingsPage,
 }
 
 __all__ = [
-    "WavefrontSettingsWidget",
-    "ContourProducerSettingsWidget",
-    "RasterSettingsWidget",
-    "FrameProducerSettingsWidget",
-    "MaterialTestGridSettingsWidget",
-    "ShrinkWrapProducerSettingsWidget",
+    "WavefrontStepSettingsPage",
+    "ContourStepSettingsPage",
+    "RasterSettingsPage",
+    "FrameStepSettingsPage",
+    "MaterialTestGridSettingsPage",
+    "ShrinkWrapStepSettingsPage",
     "ASSEMBLER_WIDGETS",
 ]

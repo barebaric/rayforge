@@ -1,6 +1,6 @@
 # Shrink Wrap
 
-Shrink Wrap crée un parcours de coupe efficace autour de plusieurs objets en générant une limite qui se "rétracte" autour d'eux. C'est utile pour couper plusieurs pièces d'une feuille avec un minimum de gaspillage.
+Shrink Wrap crée un parcours de coupe efficace autour de plusieurs objets en générant une limite qui se « rétracte » autour d'eux. C'est utile pour couper plusieurs pièces d'une feuille avec un minimum de gaspillage.
 
 ## Aperçu
 
@@ -50,61 +50,27 @@ Le résultat est un parcours de coupe efficace qui suit la forme globale de vos 
 ### Étape 2 : Sélectionner les Objets
 
 1. Sélectionnez tous les objets à inclure dans le shrink wrap
-2. Peuvent être différentes formes, tailles et types
+2. Ils peuvent être de formes, tailles et types différents
 3. Tous les objets sélectionnés seront enveloppés ensemble
 
 ### Étape 3 : Ajouter une Opération Shrink Wrap
 
-- **Menu :** Opérations Ajouter Shrink Wrap
-- **Clic droit :** Menu contextuel Ajouter Opération Shrink Wrap
+- **Menu :** Opérations → Ajouter Shrink Wrap
+- **Clic droit :** Menu contextuel → Ajouter Opération → Shrink Wrap
 
 ### Étape 4 : Configurer les Paramètres
 
-![Paramètres d'étape shrink wrap](/screenshots/step-settings-shrink-wrap-general.png)
-
 ## Paramètres Clés
 
-### Puissance & Vitesse
+La boîte de dialogue des paramètres d'étape comporte trois onglets : **Paramètres d'étape**, **Laser** et **Post-Traitement**. Les paramètres sont décrits ci-dessous dans l'ordre des onglets.
 
-Comme les autres opérations de coupe :
+### Shrink Wrap
 
-**Puissance (%) :**
+![Paramètres d'étape shrink wrap](/screenshots/step-settings-shrink-wrap-general.png)
 
-- Intensité laser pour la coupe
-- Identique à ce que vous utiliseriez pour la coupe [Contour](contour)
+Le groupe **Shrink Wrap** de l'onglet _Paramètres d'étape_ contrôle la façon dont l'enveloppe s'adapte au contenu.
 
-**Vitesse (mm/min) :**
-
-- À quelle vitesse le laser se déplace
-- Correspondez à la vitesse de coupe de votre matériau
-
-**Passes :**
-
-- Nombre de fois pour couper la limite
-- Généralement 1-2 passes
-- Identique à la coupe de contour pour votre matériau
-
-### Distance de Décalage
-
-**Décalage (mm) :**
-
-- Combien de dégagement autour des pièces
-- Distance des objets à la limite shrink-wrap
-- Décalage plus grand = plus de matériau laissé autour des pièces
-
-**Valeurs typiques :**
-
-- **2-3mm :** Enveloppe serrée, gaspillage minimal
-- **5mm :** Dégagement confortable
-- **10mm+ :** Matériau supplémentaire pour la manipulation
-
-**Pourquoi le décalage est important :**
-
-- Trop petit : Risque de couper dans les pièces
-- Trop grand : Gaspatillage de matériau
-- Considérez : Largeur de kerf, précision de coupe
-
-### Douceur
+#### Douceur
 
 Contrôle à quel point la limite suit les formes des objets :
 
@@ -122,6 +88,56 @@ Contrôle à quel point la limite suit les formes des objets :
 - Légèrement plus de gaspillage de matériau
 
 **Recommandé :** Douceur moyenne pour la plupart des cas
+
+#### Côté de Coupe
+
+Contrôle où le laser coupe par rapport au parcours shrink-wrap :
+
+| Côté de Coupe      | Description                       | Utilisation                          |
+| ------------------ | --------------------------------- | ------------------------------------ |
+| **Ligne Centrale** | Coupe directement sur le parcours | Coupe standard                       |
+| **Extérieur**      | Coupe à l'extérieur de la limite  | Rend la coupe légèrement plus grande |
+| **Intérieur**      | Coupe à l'intérieur de la limite  | Rend la coupe légèrement plus petite |
+
+#### Distance de Décalage
+
+**Décalage (mm) :**
+
+- Combien de dégagement autour des pièces
+- Distance des objets à la limite shrink-wrap
+- Décalage plus grand = plus de matériau laissé autour des pièces
+
+**Valeurs typiques :**
+
+- **2-3mm :** Enveloppe serrée, gaspillage minimal
+- **5mm :** Dégagement confortable
+- **10mm+ :** Matériau supplémentaire pour la manipulation
+
+**Pourquoi le décalage est important :**
+
+- Trop petit : Risque de couper dans les pièces
+- Trop grand : Gaspillage de matériau
+- Considérez : Largeur de kerf, précision de coupe
+
+### Paramètres Laser
+
+![Paramètres laser](/screenshots/step-settings-shrink-wrap-laser.png)
+
+La puissance, la vitesse et la sélection de la tête laser se trouvent sur la page **Laser** de la boîte de dialogue des paramètres d'étape.
+
+Comme les autres opérations de coupe :
+
+**Puissance (%) :**
+
+- Intensité laser pour la coupe
+- Identique à ce que vous utiliseriez pour la coupe [Contour](contour)
+
+**Vitesse (mm/min) :**
+
+- À quelle vitesse le laser se déplace
+- Correspondez à la vitesse de coupe de votre matériau
+
+Pour couper la limite plus d'une fois, ajoutez un post-processeur [Passe Multiple](../multi-pass.md).
 
 ## Cas d'Utilisation
 
@@ -163,11 +179,11 @@ Contrôle à quel point la limite suit les formes des objets :
 **Processus :**
 
 1. Organisez les pièces de manière serrée
-2. Shrink wrap avec décalage de 3mm
+2. Shrink wrap avec un décalage de 3mm
 3. Coupez libre de la feuille
 4. Sauvegardez le matériau restant
 
-**Résultat :** Efficacité matériau maximum
+**Résultat :** Efficacité matériau maximale
 
 ## Combiner avec d'Autres Opérations
 
@@ -189,8 +205,8 @@ Voir [Flux de Travail Multi-Couches](../multi-layer.md) pour plus de détails.
 
 **Exemple :** Pièces gravées et coupées
 
-1. **Raster** gravure des logos sur les pièces
-2. **Contour** coupe des contours des pièces
+1. Gravure **Raster** des logos sur les pièces
+2. Coupe de **Contour** des contours des pièces
 3. **Shrink wrap** autour du groupe entier
 
 **Avantages :**
@@ -209,7 +225,7 @@ Les opérations Shrink Wrap supportent plusieurs options de post-traitement :
 - **[Rognage au Stock](../crop-to-stock.md)** - Limiter les coupes à la limite du matériau
 - **[Optimisation de Parcours](../path-optimization.md)** - Réduire la distance de déplacement
 - **[Passe Multiple](../multi-pass.md)** - Répéter les coupes pour les matériaux épais
-- **[Entrée/Sortie](../lead-in-out.md)** - Ajouter des mouvements d'approche et de sortie sans puissance pour des extrémités de coupe plus propres
+- **[Entrée/Sortie](../lead-in-out.md)** - Ajouter des mouvements d'approche et de sortie à puissance nulle pour des extrémités de coupe plus propres
 
 ### Espacement des Pièces
 
@@ -227,7 +243,7 @@ Les opérations Shrink Wrap supportent plusieurs options de post-traitement :
 
 **Trop loin :**
 
-- Gaspatillage de matériau
+- Gaspillage de matériau
 - Temps de coupe plus long
 - Utilisation inefficace de la feuille
 
@@ -252,7 +268,7 @@ Les opérations Shrink Wrap supportent plusieurs options de post-traitement :
 
 - Vérifiez que la limite ne chevauche pas les pièces
 - Vérifiez que le décalage est suffisant
-- Prévisualisez en [Aperçu 3D](../ui/3d-preview)
+- Prévisualisez dans [Aperçu 3D](../../ui/3d-preview.md)
 - Testez sur du rebut d'abord
 
 **Surveillez :**
@@ -297,10 +313,10 @@ Shrink wrap à l'intérieur d'une limite plus grande :
 Avant la production :
 
 1. Créez un shrink wrap
-2. Prévisualisez avec [Aperçu 3D](../ui/3d-preview)
+2. Prévisualisez avec [Aperçu 3D](../../ui/3d-preview.md)
 3. Vérifiez que le dégagement est adéquat
 4. Vérifiez qu'aucune pièce n'est intersectée
-5. Exécutez le test sur matériau de rebut
+5. Exécutez le test sur du matériau de rebut
 
 ## Dépannage
 
@@ -351,7 +367,7 @@ Shrink wrap utilise la géométrie computationnelle :
 
 Le parcours de limite est optimisé pour :
 
-- Longueur totale minimum
+- Longueur totale minimale
 - Courbes lisses (selon la douceur)
 - Points de début/fin efficaces
 
@@ -366,5 +382,5 @@ Le parcours de limite est optimisé pour :
 - **[Coupe de Contour](contour)** - Couper les contours d'objets individuels
 - **[Flux de Travail Multi-Couches](../multi-layer.md)** - Combiner efficacement les opérations
 - **[Ponts de Maintien](../holding-tabs.md)** - Maintenir les pièces sécurisées pendant la coupe
-- **[Aperçu 3D](../ui/3d-preview)** - Prévisualiser les parcours de coupe
+- **[Aperçu 3D](../../ui/3d-preview.md)** - Prévisualiser les parcours de coupe
 - **[Grille de Test de Matériau](material-test-grid)** - Trouver les paramètres de coupe optimaux

@@ -11,11 +11,9 @@ Las operaciones de Perfilado de Marco:
 - Soportan compensación de kerf para un dimensionado preciso
 - Funcionan con cualquier combinación de objetos en el lienzo
 
-![Configuración de Perfilado de Marco](/screenshots/step-settings-frame-outline-general.png)
-
 ## Cuándo Usar Perfilado de Marco
 
-Usa perfilado de marco para:
+Usa el perfilado de marco para:
 
 - Añadir un borde decorativo alrededor de tu diseño
 - Liberar tu trabajo de la lámina de material
@@ -51,7 +49,44 @@ Configura los parámetros del marco:
 
 ## Ajustes Principales
 
-### Potencia y Velocidad
+El diálogo de ajustes de paso tiene tres pestañas: **Ajustes de Paso**, **Láser** y **Post-Procesamiento**. Los ajustes se describen en orden de pestañas a continuación.
+
+### Geometría
+
+![Ajustes de paso de Perfilado de Marco](/screenshots/step-settings-frame-outline-general.png)
+
+El grupo **Geometría** en la pestaña _Ajustes de Paso_ controla la forma del marco.
+
+#### Lado de Corte
+
+Controla dónde corta el láser en relación a la trayectoria del marco:
+
+| Lado de Corte     | Descripción                              | Usar Para                             |
+| ----------------- | ---------------------------------------- | ------------------------------------- |
+| **Línea central** | Corta directamente en la trayectoria     | Corte estándar                        |
+| **Exterior**      | Corta fuera de la trayectoria del marco  | Hace el marco ligeramente más grande  |
+| **Interior**      | Corta dentro de la trayectoria del marco | Hace el marco ligeramente más pequeño |
+
+#### Distancia de Desplazamiento
+
+**Desplazamiento (mm):**
+
+- Distancia desde el cuadro delimitador del diseño hasta el marco
+- Crea un margen/borde alrededor de tu trabajo
+
+**Valores típicos:**
+
+- **0mm:** El marco toca el borde del diseño
+- **2-5mm:** Pequeño margen para una apariencia limpia
+- **10mm+:** Borde grande para montaje o manipulación
+
+### Ajustes del Láser
+
+![Ajustes del láser](/screenshots/step-settings-frame-outline-laser.png)
+
+La potencia, la velocidad y la selección del cabezal láser se encuentran en la página **Láser** del diálogo de ajustes de paso.
+
+#### Potencia y Velocidad
 
 **Potencia (%):**
 
@@ -63,36 +98,9 @@ Configura los parámetros del marco:
 - Qué tan rápido se mueve el láser
 - Más lento para materiales más gruesos
 
-**Pasadas:**
+Para cortar el marco más de una vez, añade un post-procesador [Multi-Pasada](../multi-pass.md).
 
-- Número de veces que se corta el marco
-- Generalmente 1-2 pasadas
-- Añade pasadas para materiales más gruesos
-
-### Distancia de Desplazamiento
-
-**Desplazamiento (mm):**
-
-- Distancia desde el cuadro delimitador del diseño hasta el marco
-- Crea un margen/borde alrededor de tu trabajo
-
-**Valores típicos:**
-
-- **0mm:** El marco toca el borde del diseño
-- **2-5mm:** Pequeño margen para apariencia limpia
-- **10mm+::** Borde grande para montaje o manipulación
-
-### Desplazamiento de Trayectoria (Lado de Corte)
-
-Controla dónde corta el láser en relación a la trayectoria del marco:
-
-| Lado de Corte   | Descripción                   | Usar Para                         |
-| --------------- | ----------------------------- | --------------------------------- |
-| **Línea central** | Corta directamente en la trayectoria | Corte estándar                    |
-| **Exterior**    | Corta fuera de la trayectoria del marco | Hace el marco ligeramente más grande |
-| **Interior**    | Corta dentro de la trayectoria del marco | Hace el marco ligeramente más pequeño |
-
-### Compensación de Kerf
+#### Compensación de Kerf
 
 El perfilado de marco soporta compensación de kerf:
 
@@ -102,7 +110,7 @@ El perfilado de marco soporta compensación de kerf:
 
 ## Post-Procesamiento
 
-![Configuración de post-procesamiento de Perfilado de Marco](/screenshots/step-settings-frame-outline-post.png)
+![Ajustes de post-procesamiento de Perfilado de Marco](/screenshots/step-settings-frame-outline-post.png)
 
 Las operaciones de Perfilado de Marco soportan varias opciones de post-procesamiento:
 
@@ -110,7 +118,7 @@ Las operaciones de Perfilado de Marco soportan varias opciones de post-procesami
 - **[Recortar al Material](../crop-to-stock.md)** - Limita los cortes al límite del material
 - **[Optimización de Trayectoria](../path-optimization.md)** - Reduce la distancia de viaje
 - **[Multi-Pasada](../multi-pass.md)** - Repite cortes para materiales gruesos
-- **[Entrada/Salida](../lead-in-out.md)** - Añade movimientos de acercamiento y salida sin potencia para extremos de corte más limpios
+- **[Entrada/Salida](../lead-in-out.md)** - Añade movimientos de aproximación y salida sin potencia para extremos de corte más limpios
 
 ## Casos de Uso
 
@@ -151,7 +159,7 @@ Las operaciones de Perfilado de Marco soportan varias opciones de post-procesami
 1. Organiza todas las piezas en el lienzo
 2. Añade operaciones de contorno individuales para las piezas
 3. Añade Perfilado de Marco alrededor de todo
-4. El marco corta al último (en capa separada)
+4. El marco corta al final (en una capa separada)
 
 **Orden:** Grabado → Contornos de piezas → Perfilado de marco
 
@@ -167,13 +175,13 @@ Las operaciones de Perfilado de Marco soportan varias opciones de post-procesami
 
 **¿Por qué al final?**
 
-- El material permanece asegurado durante otras operaciones
+- El material permanece asegurado durante las otras operaciones
 - Previene que las piezas se muevan
 - Resultado final más limpio
 
 ### Selección de Desplazamiento
 
-**Elegir desplazamiento:**
+**Elegir el desplazamiento:**
 
 - **0-2mm:** Ajuste apretado, mínimo desperdicio de material
 - **3-5mm:** Margen estándar, aspecto profesional
@@ -191,7 +199,7 @@ Las operaciones de Perfilado de Marco soportan varias opciones de post-procesami
 
 - Usa asistencia de aire
 - Asegura el enfoque correcto
-- Múltiples pasadas más rápidas a menudo mejor que una pasada lenta
+- Múltiples pasadas más rápidas a menudo son mejores que una pasada lenta
 - Mantén el material plano y asegurado
 
 ## Combinando con Otras Operaciones
@@ -201,7 +209,7 @@ Las operaciones de Perfilado de Marco soportan varias opciones de post-procesami
 Flujo de trabajo típico para una pieza terminada:
 
 1. **Capa 1:** Grabar detalles (texto, imágenes)
-2. **Capa 2:** Cortar contorno de piezas individuales
+2. **Capa 2:** Cortar el contorno de piezas individuales
 3. **Capa 3:** Perfilado de marco (liberar)
 
 **El orden de ejecución asegura:**
@@ -212,22 +220,22 @@ Flujo de trabajo típico para una pieza terminada:
 
 ### Marco vs Envoltura Ajustada
 
-| Característica   | Perfilado de Marco           | Envoltura Ajustada      |
-| ---------------- | ---------------------------- | ----------------------- |
-| **Forma**        | Siempre rectangular          | Sigue contornos de objetos |
-| **Velocidad**    | Muy rápida (4 líneas)        | Depende de la complejidad |
-| **Caso de uso**  | Bordes simples, liberar      | Uso eficiente de material |
-| **Flexibilidad** | Rectángulo fijo              | Se adapta al diseño     |
+| Característica   | Perfilado de Marco      | Envoltura Ajustada                 |
+| ---------------- | ----------------------- | ---------------------------------- |
+| **Forma**        | Siempre rectangular     | Sigue los contornos de los objetos |
+| **Velocidad**    | Muy rápida (4 líneas)   | Depende de la complejidad          |
+| **Caso de uso**  | Bordes simples, liberar | Uso eficiente del material         |
+| **Flexibilidad** | Rectángulo fijo         | Se adapta al diseño                |
 
 **Elige Perfilado de Marco cuando:**
 
 - Quieres un borde rectangular
-- Se prefiere simplicidad
-- Liberando de la lámina
+- Prefieres la simplicidad
+- Quieres liberar de la lámina
 
 **Elige Envoltura Ajustada cuando:**
 
-- Quieres minimizar desperdicio de material
+- Quieres minimizar el desperdicio de material
 - El diseño tiene forma irregular
 - La eficiencia es importante
 
@@ -269,11 +277,11 @@ El perfilado de marco usa el cuadro delimitador combinado de:
 
 ### Generación de Trayectoria
 
-1. Calcular cuadro delimitador combinado
-2. Aplicar distancia de desplazamiento
-3. Aplicar desplazamiento de trayectoria (interior/exterior/línea central)
-4. Aplicar compensación de kerf
-5. Generar trayectoria G-code rectangular
+1. Calcular el cuadro delimitador combinado
+2. Aplicar la distancia de desplazamiento
+3. Aplicar el desplazamiento de trayectoria (interior/exterior/línea central)
+4. Aplicar la compensación de kerf
+5. Generar la trayectoria G-code rectangular
 
 ### Ejemplo de G-code
 
@@ -293,4 +301,4 @@ M5                 ; Láser apagado
 - **[Envoltura Ajustada](shrink-wrap)** - Límites irregulares eficientes
 - **[Pestañas de Sujeción](../holding-tabs.md)** - Mantener piezas seguras durante el corte
 - **[Flujo de Trabajo Multi-Capa](../multi-layer.md)** - Organizar operaciones efectivamente
-- **[Compensación de Kerf](../kerf.md)** - Mejorar precisión dimensional
+- **[Compensación de Kerf](../kerf.md)** - Mejorar la precisión dimensional

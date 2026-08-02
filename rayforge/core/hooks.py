@@ -225,14 +225,17 @@ class RayforgeSpecs:
     @hookspec
     def step_settings_loaded(self, dialog, step, producer):
         """
-        Called when a step settings dialog is being populated.
-        Addons can add custom widgets to the dialog based on the
-        step's producer type.
+        Build the settings page for a step.
+
+        Called when a step settings dialog is being built. Addons
+        provide the step's settings page (a ``StepSettingsPage``)
+        based on the step's assembler name by calling
+        ``dialog.set_step_settings_page(page)``.
 
         .. versionadded:: 5
 
         Args:
-            dialog: The GeneralStepSettingsView instance to add widgets to.
+            dialog: The StepSettingsDialog being built.
             step: The Step instance being configured.
             producer: The OpsProducer instance, or None if not available.
         """

@@ -11,7 +11,7 @@ from ..shared.draglist import DragListBox
 from ..shared.expander import ExpanderWithButton
 from ..shared.popover_menu import PopoverMenu
 from .step_box import StepBox
-from .step_settings_dialog import StepSettingsDialog
+from .step_settings.dialog import StepSettingsDialog
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor

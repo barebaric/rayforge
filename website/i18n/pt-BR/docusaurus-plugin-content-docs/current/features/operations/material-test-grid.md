@@ -247,7 +247,7 @@ ambos extremos
 
 - O Rayforge usa ordem otimizada por risco (velocidades mais rápidas primeiro)
 - Isso é intencional e não pode ser alterado
-- Veja [Ordem de Execução](#ordem-de-execucao-otimizacao-de-risco) acima
+- Veja [Ordem de Execução](#ordem-de-execução-otimização-de-risco) acima
 
 ### Resultados são inconsistentes
 
@@ -258,6 +258,6 @@ ambos extremos
 
 ## Tópicos Relacionados
 
-- **[Visualização 3D](../ui/3d-preview)** - Pré-visualize execução do teste antes de rodar
+- **[Visualização 3D](../../ui/3d-preview.md)** - Pré-visualize execução do teste antes de rodar
 - **[Gravação](engrave)** - Entendendo operações de gravação
 - **[Corte de Contorno](contour)** - Entendendo operações de corte

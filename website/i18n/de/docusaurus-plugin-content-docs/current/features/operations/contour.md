@@ -17,7 +17,7 @@ Kontur-Operationen:
 Verwende Kontur-Schneiden für:
 
 - Teile aus Rohmaterial schneiden
-- Umrisse und Rahmen erstellen
+- Umrisse und Ränder erstellen
 - Formen aus Holz, Acryl, Karton schneiden
 - Perforieren oder Ritzen (mit reduzierter Leistung)
 - Schablonen und Vorlagen erstellen
@@ -47,42 +47,15 @@ Verwende Kontur-Schneiden für:
 
 ## Haupt-Einstellungen
 
-### Leistung & Geschwindigkeit
+Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellungen**, **Laser** und **Nachbearbeitung**. Die Einstellungen werden unten in Registerkarten-Reihenfolge beschrieben.
 
-**Leistung (%):**
+### Kontur-Einstellungen
 
-- Laserintensität von 0-100%
-- Höhere Leistung für dickere Materialien
-- Niedrigere Leistung zum Ritzen oder Markieren
+![Kontur-Schritt-Einstellungen](/screenshots/step-settings-contour-general.png)
 
-**Geschwindigkeit (mm/min):**
+Die Gruppe **Kontur-Einstellungen** auf der Registerkarte *Schritt-Einstellungen* steuert, wie der Umriss nachgezeichnet wird.
 
-- Wie schnell sich der Laser bewegt
-- Langsamer = mehr Energie = tieferer Schnitt
-- Schneller = weniger Energie = leichterer Schnitt
-
-### Mehrfach-Durchgang-Schneiden
-
-Für Materialien dicker als ein einzelner Durchgang schneiden kann:
-
-**Durchgänge:**
-
-- Anzahl der Male, den Schnitt zu wiederholen
-- Jeder Durchgang schneidet tiefer
-
-**Durchgang-Tiefe (Z-Schritt):**
-
-- Wie viel pro Durchgang die Z-Achse abzusenken ist (falls unterstützt)
-- Erfordert Z-Achsen-Steuerung auf deiner Maschine
-- Erzeugt echtes 2.5D-Schneiden
-- Auf 0 setzen für gleich tiefe Mehrfach-Durchgänge
-
-:::warning Z-Achse erforderlich
-:::
-
-Durchgang-Tiefe funktioniert nur, wenn deine Maschine über Z-Achsen-Steuerung verfügt. Für Maschinen ohne Z-Achse verwende mehrere Durchgänge auf gleicher Tiefe.
-
-### Pfad-Offset
+#### Schnittseite & Pfad-Offset
 
 Steuert, wo der Laser relativ zum Vektorpfad schneidet:
 
@@ -99,21 +72,32 @@ Steuert, wo der Laser relativ zum Vektorpfad schneidet:
 - Schnittbreite = Breite des vom Laser entfernten Materials
 - Beispiel: 0.15mm Offset für 0.3mm Schnittbreite
 
-### Schnittrichtung
+#### Schnittreihenfolge
 
-**Uhrzeigersinn vs. Gegen-Uhrzeigersinn:**
+Steuert die Reihenfolge, in der verschachtelte Pfade verarbeitet werden:
 
-- Beeinflusst, welche Seite des Schnitts mehr Hitze bekommt
-- Normalerweise Uhrzeigersinn für Recht-Hand-Regel
-- Ändern, wenn eine Seite mehr verbrennt als die andere
+**Innen-Außen:**
 
-**Reihenfolge optimieren:**
+- Schneidet zuerst Innen-Features und arbeitet sich dann nach außen
+- Hält äußere Materialteile am längsten intakt
 
-- Sortiert automatisch Pfade für minimales Verfahren
-- Reduziert Job-Zeit
-- Verhindert verpasste Schnitte
+**Außen-Innen:**
 
-### Überlappungsschnitt (Overcut)
+- Schneidet zuerst den äußeren Umfang und bewegt sich dann nach innen
+- Hält das Werkstück am längsten am Rohmaterial befestigt
+
+**Empfohlen:** Innen-Außen (Standard)
+
+#### Innere Pfade entfernen
+
+Für Designs mit Löchern oder inneren Ausschnitten kannst du wählen, nur die äußerste Begrenzung nachzuzeichnen:
+
+- **Innere Pfade entfernen**: Wenn aktiviert, wird nur die äußerste Kontur nachgezeichnet
+- Innere Löcher und Ausschnitte werden ignoriert
+
+Dies ist nützlich, wenn du eine Form ausschneiden, aber das Innere erhalten möchtest, zum Beispiel um einen Rahmen oder Umriss zu erstellen, ohne innere Details zu schneiden.
+
+#### Überlappungsschnitt
 
 Erweitert geschlossene Schnittpfade über ihren Startpunkt hinaus, sodass
 der Laserstrahl den Anfang des Schnitts überlappt:
@@ -147,20 +131,38 @@ Verbindungsstelle hinaus. Beide können zusammen für optimale
 Schnittqualität verwendet werden.
 :::
 
-## Nachbearbeitung
+#### Nachzeichnen mit benutzerdefiniertem Schwellenwert
 
-![Kontur-Nachbearbeitungseinstellungen](/screenshots/step-settings-contour-post.png)
+Wenn du mit Bitmap-Bildern arbeitest, die in Vektoren konvertiert wurden, kannst du steuern, welche Teile nachgezeichnet werden:
 
-Kontur-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
+- **Inhalt erneut scannen**: Benutzerdefinierten Helligkeitsschwellenwert für das Nachzeichnen aktivieren
+- **Nachzeichnungs-Schwellenwert (0.0-1.0)**: Helligkeits-Grenzwert, wenn das erneute Scannen aktiviert ist
+  - Niedrigere Werte zeichnen nur dunklere Bereiche nach
+  - Höhere Werte schließen hellere Bereiche ein
 
-- **[Pfad-Glättung](../smooth.md)** - Gezackte Kanten in Schneidepfaden reduzieren
-- **[Halte-Laschen](../holding-tabs.md)** - Geschnittene Teile am Rohmaterial befestigt halten
-- **[Auf Rohmaterial zuschneiden](../crop-to-stock.md)** - Schnitte auf Materialgrenze beschränken
-- **[Pfad-Optimierung](../path-optimization.md)** - Verfahrdistanz zwischen Schnitten reduzieren
-- **[Mehrfach-Durchgang](../multi-pass.md)** - Schnitte für dicke Materialien wiederholen
-- **[Ein-/Auslauf](../lead-in-out.md)** - Nullleistung-An- und Abfahrtsbewegungen für sauberere Schnittenden hinzufügen
+Dies ist nützlich, wenn das standardmäßige Nachzeichnen nicht das gewünschte Detailniveau erfasst.
 
-### Schnittbreiten-Kompensation
+### Laser-Einstellungen
+
+![Laser-Einstellungen](/screenshots/step-settings-contour-laser.png)
+
+Leistung, Geschwindigkeit und Laser-Kopf-Auswahl befinden sich auf der Seite **Laser** des Schritt-Einstellungen-Dialogs.
+
+#### Leistung & Geschwindigkeit
+
+**Leistung (%):**
+
+- Laserintensität von 0-100%
+- Höhere Leistung für dickere Materialien
+- Niedrigere Leistung zum Ritzen oder Markieren
+
+**Geschwindigkeit (mm/min):**
+
+- Wie schnell sich der Laser bewegt
+- Langsamer = mehr Energie = tieferer Schnitt
+- Schneller = weniger Energie = leichterer Schnitt
+
+#### Schnittbreiten-Kompensation
 
 Schnittbreite ist die Breite des vom Laserstrahl entfernten Materials:
 
@@ -177,6 +179,40 @@ Schnittbreite ist die Breite des vom Laserstrahl entfernten Materials:
 4. Für Löcher: um Schnittbreite/2 **nach außen** offseten
 
 Siehe [Schnittbreite](../kerf.md) für detaillierte Anleitung.
+
+## Nachbearbeitung
+
+![Kontur-Nachbearbeitungseinstellungen](/screenshots/step-settings-contour-post.png)
+
+Kontur-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
+
+- **[Pfad-Glättung](../smooth.md)** - Gezackte Kanten in Schneidepfaden reduzieren
+- **[Halte-Laschen](../holding-tabs.md)** - Geschnittene Teile am Rohmaterial befestigt halten
+- **[Auf Rohmaterial zuschneiden](../crop-to-stock.md)** - Schnitte auf Materialgrenze beschränken
+- **[Pfad-Optimierung](../path-optimization.md)** - Verfahrdistanz zwischen Schnitten reduzieren
+- **[Mehrfach-Durchgang](../multi-pass.md)** - Schnitte für dicke Materialien wiederholen
+- **[Ein-/Auslauf](../lead-in-out.md)** - Nullleistungs-An- und Abfahrtsbewegungen für sauberere Schnittenden hinzufügen
+
+### Mehrfach-Durchgang-Schneiden
+
+Für Materialien dicker als ein einzelner Durchgang schneiden kann:
+
+**Durchgänge:**
+
+- Anzahl der Male, den Schnitt zu wiederholen
+- Jeder Durchgang schneidet tiefer
+
+**Durchgang-Tiefe (Z-Schritt):**
+
+- Wie viel pro Durchgang die Z-Achse abzusenken ist (falls unterstützt)
+- Erfordert Z-Achsen-Steuerung auf deiner Maschine
+- Erzeugt echtes 2.5D-Schneiden
+- Auf 0 setzen für gleich tiefe Mehrfach-Durchgänge
+
+:::warning Z-Achse erforderlich
+:::
+
+Durchgang-Tiefe funktioniert nur, wenn deine Maschine über Z-Achsen-Steuerung verfügt. Für Maschinen ohne Z-Achse verwende mehrere Durchgänge auf gleicher Tiefe.
 
 ## Tipps & Best Practices
 

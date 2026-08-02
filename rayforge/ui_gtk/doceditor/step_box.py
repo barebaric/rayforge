@@ -10,7 +10,7 @@ from ...core.undo.property_cmd import ChangePropertyCommand
 from ..icons import get_icon
 from ..shared.number_badge import NumberBadge
 from ..shared.tag import TagWidget
-from .step_settings_dialog import StepSettingsDialog
+from .step_settings.dialog import StepSettingsDialog
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor

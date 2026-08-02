@@ -65,7 +65,15 @@ Adjust step-over and offset to match your material and desired finish.
 
 ## Key Settings
 
-### Step Over
+The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Post Processing**. Settings are described in tab order below.
+
+### Wavefront Settings
+
+![Wavefront step settings](/screenshots/step-settings-wavefront-general.png)
+
+The **Wavefront** group on the _Step Settings_ tab controls the fill pattern.
+
+#### Step Over
 
 The distance between consecutive wavefront passes (mm). Smaller values
 give denser coverage with more passes and longer job times. Larger values
@@ -74,15 +82,15 @@ space passes further apart for faster completion.
 **Step Over defaults to the laser spot size** and has a range of
 0.05–50.0 mm.
 
-| Step Over | Line Density       | Job Time |
-|-----------|--------------------|----------|
-| 0.1 mm    | Dense, many lines  | Slowest  |
-| 0.3 mm    | Moderate           | Medium   |
+| Step Over | Line Density        | Job Time |
+| --------- | ------------------- | -------- |
+| 0.1 mm    | Dense, many lines   | Slowest  |
+| 0.3 mm    | Moderate            | Medium   |
 | 1.0 mm+   | Sparse, fewer lines | Fast     |
 
 Typical values are 0.1–0.5 mm for most applications.
 
-### Offset
+#### Offset
 
 Extra clearance from the pocket wall (mm). Creates a margin between the
 outermost wavefront pass and the boundary contour. This is useful when a
@@ -91,6 +99,23 @@ leave a deliberate border around the pocket.
 
 Range: 0.0–20.0 mm. Default is 0.0 (wavefront passes extend to the
 boundary).
+
+### Laser settings
+
+![Laser settings](/screenshots/step-settings-wavefront-laser.png)
+
+Power, speed, and laser head selection live on the **Laser** page of the
+step settings dialog.
+
+**Power (%):**
+
+- Laser intensity for cutting
+- Match your material's cutting requirements
+
+**Speed (mm/min):**
+
+- How fast the laser moves
+- Match your material's cutting speed
 
 ## How Wavefront Works
 
@@ -105,6 +130,8 @@ boundary).
    covered
 
 ## Post-Processing
+
+![Wavefront post-processing settings](/screenshots/step-settings-wavefront-post.png)
 
 Wavefront operations support:
 

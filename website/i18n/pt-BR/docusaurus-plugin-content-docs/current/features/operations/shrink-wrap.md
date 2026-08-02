@@ -60,31 +60,46 @@ O resultado é um caminho de corte eficiente que segue a forma geral das suas pe
 
 ### Passo 4: Configurar Definições
 
-![Configurações de etapa Shrink Wrap](/screenshots/step-settings-shrink-wrap-general.png)
-
 ## Configurações Principais
 
-### Potência e Velocidade
+O diálogo de configurações de etapa tem três abas: **Configurações de Etapa**, **Laser** e **Pós-Processamento**. As configurações são descritas em ordem de aba abaixo.
 
-Como outras operações de corte:
+### Shrink Wrap
 
-**Potência (%):**
+![Configurações de etapa Shrink Wrap](/screenshots/step-settings-shrink-wrap-general.png)
 
-- Intensidade do laser para corte
-- Mesma que você usaria para corte de [Contorno](contour)
+O grupo **Shrink Wrap** na aba _Configurações de Etapa_ controla como o invólucro se ajusta ao redor do conteúdo.
 
-**Velocidade (mm/min):**
+#### Suavidade
 
-- Quão rápido o laser se move
-- Corresponda à velocidade de corte do seu material
+Controla o quão de perto o limite segue as formas dos objetos:
 
-**Passagens:**
+**Alta suavidade:**
 
-- Número de vezes para cortar o limite
-- Geralmente 1-2 passagens
-- Mesmo que corte de contorno para seu material
+- Segue objetos mais de perto
+- Caminho mais complexo
+- Tempo de corte mais longo
+- Menos desperdício de material
 
-### Distância de Deslocamento
+**Baixa suavidade:**
+
+- Caminho mais simples e arredondado
+- Tempo de corte mais curto
+- Ligeiramente mais desperdício de material
+
+**Recomendado:** Suavidade média para a maioria dos casos
+
+#### Lado de Corte
+
+Controla onde o laser corta relativo ao caminho shrink-wrap:
+
+| Lado de Corte     | Descrição                    | Usar Para                           |
+| ----------------- | ---------------------------- | ----------------------------------- |
+| **Linha Central** | Corta diretamente no caminho | Corte padrão                        |
+| **Externo**       | Corta fora do limite         | Tornando o corte ligeiramente maior |
+| **Interno**       | Corta dentro do limite       | Tornando o corte ligeiramente menor |
+
+#### Distância de Deslocamento
 
 **Deslocamento (mm):**
 
@@ -104,24 +119,25 @@ Como outras operações de corte:
 - Muito grande: Desperdiça material
 - Considere: Largura do kerf, precisão de corte
 
-### Suavidade
+### Configurações do Laser
 
-Controla quão de perto o limite segue as formas dos objetos:
+![Configurações do laser](/screenshots/step-settings-shrink-wrap-laser.png)
 
-**Alta suavidade:**
+Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do diálogo de configurações de etapa.
 
-- Segue objetos mais de perto
-- Caminho mais complexo
-- Tempo de corte mais longo
-- Menos desperdício de material
+Como outras operações de corte:
 
-**Baixa suavidade:**
+**Potência (%):**
 
-- Caminho mais simples e arredondado
-- Tempo de corte mais curto
-- Ligeiramente mais desperdício de material
+- Intensidade do laser para corte
+- A mesma que você usaria para corte de [Contorno](contour)
 
-**Recomendado:** Suavidade média para a maioria dos casos
+**Velocidade (mm/min):**
+
+- Quão rápido o laser se move
+- Corresponda à velocidade de corte do seu material
+
+Para cortar o limite mais de uma vez, adicione um pós-processador de [Multi-Passagem](../multi-pass.md).
 
 ## Casos de Uso
 
@@ -209,11 +225,7 @@ Operações Shrink Wrap suportam várias opções de pós-processamento:
 - **[Cortar para Estoque](../crop-to-stock.md)** - Limita cortes ao limite do material
 - **[Otimização de Caminho](../path-optimization.md)** - Reduz distância de deslocamento
 - **[Multi-Passagem](../multi-pass.md)** - Repete cortes para materiais espessos
-- **[Entrada/Saída](../lead-in-out.md)** - Adicionar movimentos de aproximação e saída sem potência para extremidades de corte mais limpas
-
-## Dicas e Melhores Práticas
-
-![Configurações de pós-processamento Shrink Wrap](/screenshots/step-settings-shrink-wrap-post.png)
+- **[Entrada/Saída](../lead-in-out.md)** - Adiciona movimentos de aproximação e saída sem potência para extremidades de corte mais limpas
 
 ### Espaçamento de Peças
 
@@ -256,7 +268,7 @@ Operações Shrink Wrap suportam várias opções de pós-processamento:
 
 - Verifique se o limite não sobrepõe peças
 - Verifique se o deslocamento é suficiente
-- Pré-visualize na [Visualização 3D](../ui/3d-preview)
+- Pré-visualize na [Visualização 3D](../../ui/3d-preview.md)
 - Teste em sucata primeiro
 
 **Fique atento a:**
@@ -301,7 +313,7 @@ Shrink wrap dentro de um limite maior:
 Antes da execução de produção:
 
 1. Crie shrink wrap
-2. Pré-visualize com [Visualização 3D](../ui/3d-preview)
+2. Pré-visualize com [Visualização 3D](../../ui/3d-preview.md)
 3. Verifique se a folga é adequada
 4. Verifique se nenhuma peça é intersectada
 5. Execute teste em material de sucata
@@ -368,7 +380,7 @@ O caminho do limite é otimizado para:
 ## Tópicos Relacionados
 
 - **[Corte de Contorno](contour)** - Cortando contornos de objetos individuais
-- **[Fluxo de Trabalho Multi-Camadas](../multi-layer.md)** - Combinando operações efetivamente
+- **[Fluxo de Trabalho Multi-Camadas](../multi-layer.md)** - Combinando operações de forma eficaz
 - **[Abas de Fixação](../holding-tabs.md)** - Mantendo peças seguras durante o corte
-- **[Visualização 3D](../ui/3d-preview)** - Pré-visualizando caminhos de corte
+- **[Visualização 3D](../../ui/3d-preview.md)** - Pré-visualizando caminhos de corte
 - **[Grade de Teste de Material](material-test-grid)** - Encontrando configurações de corte ideais

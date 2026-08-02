@@ -1,6 +1,6 @@
 # Contour de Cadrage
 
-Le Contour de Cadrage crée un parcours de coupe rectangulaire simple autour de votre design complet. C'est la façon la plus rapide d'ajouter une bordure propre ou de couper votre travail libre de la feuille de matériau.
+Le Contour de Cadrage crée un parcours de coupe rectangulaire simple autour de votre design complet. C'est le moyen le plus rapide d'ajouter une bordure propre ou de couper votre travail libre de la feuille de matériau.
 
 ## Aperçu
 
@@ -10,8 +10,6 @@ Les opérations de Contour de Cadrage :
 - Ajoutent un décalage/marge configurable depuis le design
 - Supportent la compensation de kerf pour un dimensionnement précis
 - Fonctionnent avec toute combinaison d'objets sur le canevas
-
-![Paramètres d'étape contour de cadrage](/screenshots/step-settings-frame-outline-general.png)
 
 ## Quand Utiliser le Contour de Cadrage
 
@@ -45,31 +43,31 @@ Utilisez le contour de cadrage pour :
 
 Configurez les paramètres du cadre :
 
-- **Puissance & Vitesse :** Correspondez aux exigences de coupe de votre matériau
+- **Puissance & Vitesse :** Correspondent aux exigences de coupe de votre matériau
 - **Décalage :** Distance du bord du contenu au cadre
 - **Décalage de Parcours :** Coupe intérieur, extérieur ou sur la ligne centrale
 
 ## Paramètres Clés
 
-### Puissance & Vitesse
+La boîte de dialogue des paramètres d'étape comporte trois onglets : **Paramètres d'étape**, **Laser** et **Post-Traitement**. Les paramètres sont décrits ci-dessous dans l'ordre des onglets.
 
-**Puissance (%) :**
+### Géométrie
 
-- Intensité laser pour couper le cadre
-- Correspondez aux exigences de coupe de votre matériau
+![Paramètres d'étape contour de cadrage](/screenshots/step-settings-frame-outline-general.png)
 
-**Vitesse (mm/min) :**
+Le groupe **Géométrie** de l'onglet *Paramètres d'étape* contrôle la forme du cadre.
 
-- À quelle vitesse le laser se déplace
-- Plus lent pour les matériaux plus épais
+#### Côté de Coupe
 
-**Passes :**
+Contrôle où le laser coupe par rapport au parcours du cadre :
 
-- Nombre de fois pour couper le cadre
-- Généralement 1-2 passes
-- Ajoutez des passes pour les matériaux plus épais
+| Côté de Coupe | Description | Utilisation |
+| ------------- | ----------- | ----------- |
+| **Ligne Centrale** | Coupe directement sur le parcours | Coupe standard |
+| **Extérieur** | Coupe à l'extérieur du parcours du cadre | Rend le cadre légèrement plus grand |
+| **Intérieur** | Coupe à l'intérieur du parcours du cadre | Rend le cadre légèrement plus petit |
 
-### Distance de Décalage
+#### Distance de Décalage
 
 **Décalage (mm) :**
 
@@ -82,17 +80,27 @@ Configurez les paramètres du cadre :
 - **2-5mm :** Petite marge pour une apparence propre
 - **10mm+ :** Grande bordure pour le montage ou la manipulation
 
-### Décalage de Parcours (Côté de Coupe)
+### Paramètres Laser
 
-Contrôle où le laser coupe par rapport au parcours du cadre :
+![Paramètres laser](/screenshots/step-settings-frame-outline-laser.png)
 
-| Côté de Coupe | Description | Utilisation |
-| ------------- | ----------- | ----------- |
-| **Ligne Centrale** | Coupe directement sur le parcours | Coupe standard |
-| **Extérieur** | Coupe à l'extérieur du parcours du cadre | Rend le cadre légèrement plus grand |
-| **Intérieur** | Coupe à l'intérieur du parcours du cadre | Rend le cadre légèrement plus petit |
+La puissance, la vitesse et la sélection de la tête laser se trouvent sur la page **Laser** de la boîte de dialogue des paramètres d'étape.
 
-### Compensation de Kerf
+#### Puissance & Vitesse
+
+**Puissance (%) :**
+
+- Intensité laser pour couper le cadre
+- Correspond aux exigences de coupe de votre matériau
+
+**Vitesse (mm/min) :**
+
+- À quelle vitesse le laser se déplace
+- Plus lent pour les matériaux plus épais
+
+Pour couper le cadre plus d'une fois, ajoutez un post-processeur [Passe Multiple](../multi-pass.md).
+
+#### Compensation de Kerf
 
 Le contour de cadrage supporte la compensation de kerf :
 
@@ -110,19 +118,19 @@ Les opérations de Contour de Cadrage supportent plusieurs options de post-trait
 - **[Rognage au Stock](../crop-to-stock.md)** - Limiter les coupes à la limite du matériau
 - **[Optimisation de Parcours](../path-optimization.md)** - Réduire la distance de déplacement
 - **[Passe Multiple](../multi-pass.md)** - Répéter les coupes pour les matériaux épais
-- **[Entrée/Sortie](../lead-in-out.md)** - Ajouter des mouvements d'approche et de sortie sans puissance pour des extrémités de coupe plus propres
+- **[Entrée/Sortie](../lead-in-out.md)** - Ajouter des mouvements d'approche et de sortie à puissance nulle pour des extrémités de coupe plus propres
 
 ## Cas d'Utilisation
 
 ### Bordure Décorative
 
-**Scénario :** Ajouter une bordure rectangulaire propre autour d'une plaque ou enseigne
+**Scénario :** Ajouter une bordure rectangulaire propre autour d'une plaque ou d'une enseigne
 
 **Processus :**
 
 1. Concevez votre contenu (texte, logos, etc.)
 2. Ajoutez un Contour de Cadrage avec un décalage de 3-5mm
-3. Coupez avec des paramètres de scorring décoratif (faible puissance)
+3. Coupez avec des paramètres de marquage décoratif (faible puissance)
 
 **Résultat :** Pièce encadrée d'apparence professionnelle
 
@@ -177,7 +185,7 @@ Les opérations de Contour de Cadrage supportent plusieurs options de post-trait
 
 - **0-2mm :** Ajustement serré, gaspillage de matériau minimal
 - **3-5mm :** Marge standard, apparence professionnelle
-- **10mm+ :** Matériau supplémentaire pour manipulation/montage
+- **10mm+ :** Matériau supplémentaire pour la manipulation/le montage
 
 **Considérez :**
 
@@ -191,7 +199,7 @@ Les opérations de Contour de Cadrage supportent plusieurs options de post-trait
 
 - Utilisez l'assistance air
 - Assurez une mise au point appropriée
-- Passes multiples plus rapides souvent meilleures qu'une passe lente
+- Des passes multiples plus rapides sont souvent meilleures qu'une passe lente
 - Gardez le matériau plat et sécurisé
 
 ## Combiner avec d'Autres Opérations
@@ -213,7 +221,7 @@ Flux de travail typique pour une pièce finie :
 ### Cadre vs Shrink Wrap
 
 | Fonctionnalité | Contour de Cadrage | Shrink Wrap |
-| ------------- | ------------------ | ----------- |
+| -------------- | ------------------ | ----------- |
 | **Forme** | Toujours rectangulaire | Suit les contours des objets |
 | **Vitesse** | Très rapide (4 lignes) | Dépend de la complexité |
 | **Cas d'utilisation** | Bordures simples, coupe libre | Utilisation efficace du matériau |
@@ -223,7 +231,7 @@ Flux de travail typique pour une pièce finie :
 
 - Vous voulez une bordure rectangulaire
 - La simplicité est préférée
-- Couper libre de la feuille
+- Vous coupez libre de la feuille
 
 **Choisissez Shrink Wrap quand :**
 
@@ -255,7 +263,7 @@ Flux de travail typique pour une pièce finie :
 
 - **Vérifiez :** Le matériau est plat
 - **Vérifiez :** La distance de mise au point est correcte
-- **Essayez :** Passes multiples à puissance plus basse
+- **Essayez :** Des passes multiples à puissance plus basse
 
 ## Détails Techniques
 

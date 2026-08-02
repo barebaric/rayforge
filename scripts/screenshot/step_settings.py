@@ -35,7 +35,12 @@ def parse_target(target: str) -> tuple[str, str, str | None]:
     tab = parts[2] if len(parts) > 2 else "general"
     mode = parts[3] if len(parts) > 3 else None
 
-    page = "post-processing" if tab == "post" else "step-settings"
+    if tab == "post":
+        page = "post-processing"
+    elif tab == "laser":
+        page = "laser"
+    else:
+        page = "step-settings"
     return step_type, page, mode
 
 

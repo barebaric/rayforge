@@ -138,106 +138,17 @@ Select the engraving mode that best suits your needs:
 
 ![Engrave step settings](/screenshots/step-settings-engrave-general-variable.png)
 
-## Common Settings
+## Engrave Settings
 
-### Power & Speed
+The **Engrave** and **Power** groups on the *Step Settings* tab control the scan pattern, mode, and power modulation, in row order. Laser power and speed live on the **Laser** page (see below).
 
-**Power (%):**
+### Mode
 
-- Laser intensity for engraving
-- Lower power for lighter marking
-- Higher power for deeper engraving
+The **Mode** row selects one of the four engraving modes. Each mode exposes different settings, described below.
 
-**Speed (mm/min):**
+### Mode-Specific Settings
 
-- How fast the laser scans
-- Faster = lighter, slower = darker
-
-### Line Interval
-
-**Line Interval (mm):**
-
-- Spacing between scan lines
-- Smaller = higher quality, longer job time
-- Larger = faster, visible lines
-
-| Interval | Quality | Speed   | Use For               |
-| -------- | ------- | ------- | --------------------- |
-| 0.05mm   | Highest | Slowest | Photos, fine detail   |
-| 0.1mm    | High    | Medium  | Text, logos, graphics |
-| 0.2mm    | Medium  | Fast    | Solid fills, textures |
-| 0.3mm+   | Low     | Fastest | Draft, testing        |
-
-**Recommended:** 0.1mm for general use
-
-:::tip Resolution Match
-:::
-
-For images, line interval should match or exceed image resolution. If your image is 10 pixels/mm (254 DPI), use 0.1mm line interval or smaller.
-
-### Scan Direction
-
-**Scan Angle (degrees):**
-
-- Direction of scan lines
-- 0 = horizontal (left to right)
-- 90 = vertical (top to bottom)
-- 45 = diagonal
-
-**Why change angle?**
-
-- Wood grain: Engrave perpendicular to grain for better results
-- Pattern orientation: Match design aesthetics
-- Reduce banding: Different angle can hide imperfections
-
-**Bidirectional Scanning:**
-
-Rayforge always scans bidirectionally (left-to-right, then right-to-left), since firing on every pass roughly doubles engraving speed compared to returning without firing between lines.
-
-Slight mechanical or firing delay differences between the two directions can cause visible banding on some machines. If you see this, calibrate the **Bidirectional Scan Offset** below to correct it directly, rather than losing the speed benefit.
-
-### Bidirectional Scan Offset
-
-Corrects a fixed mechanical or firing delay skew between left-to-right and right-to-left raster passes, which otherwise misaligns alternate scan rows (visible as banding, especially in photo engraves).
-
-- Set in millimeters, positive or negative depending on which direction needs to shift
-- Applies a constant shift regardless of speed; if the skew varies with speed, calibrate for your typical engraving speed
-- Defaults to 0 (no correction)
-
-**Calibrating the offset:**
-
-1. Engrave a test pattern with visible vertical detail (e.g. a fine grid) using bidirectional scanning
-2. Compare alternate rows to find the direction and amount of misalignment
-3. Adjust the offset in small increments (0.01-0.05mm) and re-test until alternating rows line up
-
-### Overscan
-
-**Overscan Distance (mm):**
-
-- How far beyond the design the laser travels before turning around
-- Allows laser to reach full speed before entering the design
-- Prevents burn marks at line starts/ends
-
-**Typical values:**
-
-- 2-5mm for most jobs
-- Larger for high speeds
-
-See [Overscan](../overscan.md) for details.
-
-## Post-Processing
-
-![Engrave post-processing settings](/screenshots/step-settings-engrave-post.png)
-
-Engrave operations support several post-processing options:
-
-- **[Overscan](../overscan.md)** - Extend raster lines for consistent engraving quality
-- **[Path Optimization](../path-optimization.md)** - Reduce travel distance
-- **[Multi-Pass](../multi-pass.md)** - Repeat engraving for deeper results
-
-## Mode-Specific Settings
-
-### Variable Power Mode Settings
+#### Variable Power Mode Settings
 
 ![Variable Power mode settings](/screenshots/step-settings-engrave-general-variable.png)
 
@@ -280,7 +191,7 @@ This is particularly useful for:
 - Images with limited tonal range
 - Ensuring consistent results across different source images
 
-### Constant Power Mode Settings
+#### Constant Power Mode Settings
 
 ![Constant Power mode settings](/screenshots/step-settings-engrave-general-constant_power.png)
 
@@ -295,7 +206,7 @@ This is particularly useful for:
 - 128 (50% gray threshold)
 - Adjust based on image contrast
 
-### Dither Mode Settings
+#### Dither Mode Settings
 
 ![Dither mode settings](/screenshots/step-settings-engrave-general-dither.png)
 
@@ -314,7 +225,7 @@ Choose the algorithm that best suits your image and material:
 
 **Bayer dithering** creates regular patterns that can produce artistic effects resembling traditional halftone printing.
 
-### Multiple Depths Mode Settings
+#### Multiple Depths Mode Settings
 
 ![Multiple Depths mode settings](/screenshots/step-settings-engrave-general-multi_pass.png)
 
@@ -342,6 +253,109 @@ Choose the algorithm that best suits your image and material:
 - **Disabled:** Black = deep, White = shallow
 
 Use invert for lithophanes (light areas should be thin) or embossing (raised areas).
+
+### Scan Pattern
+
+#### Line Interval
+
+**Line Interval (mm):**
+
+- Spacing between scan lines
+- Smaller = higher quality, longer job time
+- Larger = faster, visible lines
+
+| Interval | Quality | Speed   | Use For               |
+| -------- | ------- | ------- | --------------------- |
+| 0.05mm   | Highest | Slowest | Photos, fine detail   |
+| 0.1mm    | High    | Medium  | Text, logos, graphics |
+| 0.2mm    | Medium  | Fast    | Solid fills, textures |
+| 0.3mm+   | Low     | Fastest | Draft, testing        |
+
+**Recommended:** 0.1mm for general use
+
+:::tip Resolution Match
+:::
+
+For images, line interval should match or exceed image resolution. If your image is 10 pixels/mm (254 DPI), use 0.1mm line interval or smaller.
+
+#### Scan Direction
+
+**Scan Angle (degrees):**
+
+- Direction of scan lines
+- 0 = horizontal (left to right)
+- 90 = vertical (top to bottom)
+- 45 = diagonal
+
+**Why change angle?**
+
+- Wood grain: Engrave perpendicular to grain for better results
+- Pattern orientation: Match design aesthetics
+- Reduce banding: Different angle can hide imperfections
+
+**Bidirectional Scanning:**
+
+Rayforge always scans bidirectionally (left-to-right, then right-to-left), since firing on every pass roughly doubles engraving speed compared to returning without firing between lines.
+
+Slight mechanical or firing delay differences between the two directions can cause visible banding on some machines. If you see this, calibrate the **Bidirectional Scan Offset** below to correct it directly, rather than losing the speed benefit.
+
+#### Bidirectional Scan Offset
+
+Corrects a fixed mechanical or firing delay skew between left-to-right and right-to-left raster passes, which otherwise misaligns alternate scan rows (visible as banding, especially in photo engraves).
+
+- Set in millimeters, positive or negative depending on which direction needs to shift
+- Applies a constant shift regardless of speed; if the skew varies with speed, calibrate for your typical engraving speed
+- Defaults to 0 (no correction)
+
+**Calibrating the offset:**
+
+1. Engrave a test pattern with visible vertical detail (e.g. a fine grid) using bidirectional scanning
+2. Compare alternate rows to find the direction and amount of misalignment
+3. Adjust the offset in small increments (0.01-0.05mm) and re-test until alternating rows line up
+
+## Laser settings
+
+![Laser settings](/screenshots/step-settings-engrave-laser.png)
+
+Power, speed, and laser head selection live on the **Laser** page of the step settings dialog.
+
+### Power & Speed
+
+**Power (%):**
+
+- Laser intensity for engraving
+- Lower power for lighter marking
+- Higher power for deeper engraving
+
+**Speed (mm/min):**
+
+- How fast the laser scans
+- Faster = lighter, slower = darker
+
+## Post-Processing
+
+![Engrave post-processing settings](/screenshots/step-settings-engrave-post.png)
+
+Engrave operations support several post-processing options:
+
+- **[Overscan](../overscan.md)** - Extend raster lines for consistent engraving quality
+- **[Path Optimization](../path-optimization.md)** - Reduce travel distance
+- **[Multi-Pass](../multi-pass.md)** - Repeat engraving for deeper results
+
+### Overscan
+
+**Overscan Distance (mm):**
+
+- How far beyond the design the laser travels before turning around
+- Allows laser to reach full speed before entering the design
+- Prevents burn marks at line starts/ends
+
+**Typical values:**
+
+- 2-5mm for most jobs
+- Larger for high speeds
+
+See [Overscan](../overscan.md) for details.
 
 ## Tips & Best Practices
 

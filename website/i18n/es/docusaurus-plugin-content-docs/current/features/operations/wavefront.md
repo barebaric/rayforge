@@ -9,11 +9,11 @@ del escaneo por raster.
 
 ## Resumen
 
-A diferencia del grabado raster tradicional, que barre de un lado a
-otro en líneas paralelas, el frente de onda genera pasadas concéntricas
-que irradian desde el centro de cada hueco. Esto produce un acabado
-uniforme similar a ondas, adecuado para aplicaciones donde el patrón
-de relleno contribuye al resultado visual.
+A diferencia del grabado raster tradicional, que barre de un lado a otro
+en líneas paralelas, el frente de onda genera pasadas concéntricas que
+irradian desde el centro de cada hueco. Esto produce un acabado uniforme
+similar a ondas, adecuado para aplicaciones donde el patrón de relleno
+contribuye al resultado visual.
 
 Las operaciones de frente de onda:
 
@@ -28,9 +28,9 @@ Las operaciones de frente de onda:
 El frente de onda es un patrón de relleno alternativo para áreas de
 huecos. Sus anillos concéntricos pueden ser visualmente más atractivos
 que las líneas raster paralelas, y el patrón en expansión complementa
-naturalmente formas circulares u orgánicas.
+naturalmente las formas circulares u orgánicas.
 
-Usa despeje adaptativo por frente de onda para:
+Usa el despeje adaptativo por frente de onda para:
 
 - Rellenar huecos en diseños vectoriales
 - Fabricación de sellos y troqueles — el frente de onda despeja el hueco
@@ -64,7 +64,15 @@ Ajusta el paso y el desplazamiento según tu material y el acabado deseado.
 
 ## Ajustes Clave
 
-### Paso (Step Over)
+El diálogo de ajustes de paso tiene tres pestañas: **Ajustes de Paso**, **Láser** y **Post-Procesamiento**. Los ajustes se describen en orden de pestañas a continuación.
+
+### Ajustes de Frente de Onda
+
+![Ajustes de paso de frente de onda](/screenshots/step-settings-wavefront-general.png)
+
+El grupo **Frente de Onda** en la pestaña _Ajustes de Paso_ controla el patrón de relleno.
+
+#### Paso
 
 La distancia entre pasadas consecutivas de frente de onda (mm). Valores
 más pequeños dan una cobertura más densa con más pasadas y tiempos de
@@ -72,25 +80,42 @@ trabajo más largos. Valores más grandes espacian más las pasadas para
 una finalización más rápida.
 
 **El Paso predeterminado es el tamaño del punto láser** y tiene un rango
-de 0,05–50,0 mm.
+de 0.05–50.0 mm.
 
 | Paso    | Densidad de línea      | Tiempo de trabajo |
 | ------- | ---------------------- | ----------------- |
-| 0,1 mm  | Densa, muchas líneas   | Más lento         |
-| 0,3 mm  | Moderada               | Medio             |
-| 1,0 mm+ | Dispersa, menos líneas | Rápido            |
+| 0.1 mm  | Densa, muchas líneas   | Más lento         |
+| 0.3 mm  | Moderada               | Medio             |
+| 1.0 mm+ | Dispersa, menos líneas | Rápido            |
 
-Los valores típicos son de 0,1–0,5 mm para la mayoría de las aplicaciones.
+Los valores típicos son de 0.1–0.5 mm para la mayoría de las aplicaciones.
 
-### Desplazamiento (Offset)
+#### Desplazamiento
 
 Espacio adicional desde la pared del hueco (mm). Crea un margen entre la
 pasada de frente de onda más externa y el contorno del límite. Esto es
 útil cuando una pasada de [Contorno](contour) separada terminará el borde,
 o cuando se quiere dejar un borde deliberado alrededor del hueco.
 
-Rango: 0,0–20,0 mm. El valor predeterminado es 0,0 (las pasadas de frente
+Rango: 0.0–20.0 mm. El valor predeterminado es 0.0 (las pasadas de frente
 de onda se extienden hasta el límite).
+
+### Ajustes del Láser
+
+![Ajustes del láser](/screenshots/step-settings-wavefront-laser.png)
+
+La potencia, la velocidad y la selección del cabezal láser se encuentran
+en la página **Láser** del diálogo de ajustes de paso.
+
+**Potencia (%):**
+
+- Intensidad del láser para cortar
+- Coincide con los requisitos de corte de tu material
+
+**Velocidad (mm/min):**
+
+- Qué tan rápido se mueve el láser
+- Coincide con la velocidad de corte de tu material
 
 ## Cómo Funciona el Frente de Onda
 
@@ -106,6 +131,8 @@ de onda se extienden hasta el límite).
    hueco está cubierta
 
 ## Post-Procesamiento
+
+![Ajustes de post-procesamiento de frente de onda](/screenshots/step-settings-wavefront-post.png)
 
 Las operaciones de frente de onda soportan:
 
@@ -128,8 +155,8 @@ Las operaciones de frente de onda soportan:
 
 El frente de onda es muy adecuado para la fabricación de sellos. Los
 anillos concéntricos en expansión despejan naturalmente el hueco de
-fondo mientras navegan alrededor de características en relieve tratadas
-como islas interiores.
+fondo mientras navegan alrededor de las características en relieve
+tratadas como islas interiores.
 
 ### Combinación con Contorno
 
