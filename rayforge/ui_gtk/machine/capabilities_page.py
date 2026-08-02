@@ -28,9 +28,10 @@ class CapabilitiesPage(TrackedPreferencesPage):
         self.capability_group = Adw.PreferencesGroup(
             title=_("Machine Capabilities"),
             description=_(
-                "Capabilities are inferred from the machine's heads and "
-                "any explicit configuration. They control which steps are "
-                "offered when adding to a workflow."
+                "Capabilities are inferred from the machine's heads, "
+                "rotary modules, and any explicit configuration. They "
+                "control which steps are offered when adding to a "
+                "workflow."
             ),
         )
         self.add(self.capability_group)
@@ -51,6 +52,9 @@ class CapabilitiesPage(TrackedPreferencesPage):
                     sources.append(_("Spindle Head"))
                 else:
                     sources.append(head.name)
+        if capability == MachineCapability.ROTARY:
+            for module in self.machine.rotary_modules.values():
+                sources.append(module.name)
         if self.machine._explicit_capabilities and (
             capability in self.machine._explicit_capabilities
         ):

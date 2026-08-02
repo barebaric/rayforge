@@ -21,7 +21,8 @@ class MachineCapability(enum.Enum):
     LASER = "LASER"
     MILL = "MILL"
     PWM = "PWM"
-    # Future: PROBE, DWELL, ROTARY, ...
+    ROTARY = "ROTARY"
+    # Future: PROBE, DWELL, ...
 
     @property
     def label(self) -> str:
@@ -38,12 +39,16 @@ _MACHINE_CAPABILITY_LABELS = {
     MachineCapability.LASER: _("Laser"),
     MachineCapability.MILL: _("Mill"),
     MachineCapability.PWM: _("PWM"),
+    MachineCapability.ROTARY: _("Rotary"),
 }
 
 _MACHINE_CAPABILITY_DESCRIPTIONS = {
     MachineCapability.LASER: _("Cutting and engraving with a laser"),
     MachineCapability.MILL: _("Milling and routing with a spindle"),
     MachineCapability.PWM: _("Pulse-width-modulated laser power control"),
+    MachineCapability.ROTARY: _(
+        "Rotary axis attachment for cylindrical objects"
+    ),
 }
 
 

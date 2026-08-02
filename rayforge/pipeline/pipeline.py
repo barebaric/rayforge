@@ -17,6 +17,7 @@ from blinker import Signal
 from raygeo.pipeline.completed import ErrorKind
 from raygeo.pipeline.execute import Pipeline as RaygeoPipeline
 
+from ..core.capability import MachineCapability
 from ..core.doc import Doc
 from ..core.workpiece import WorkPiece
 from ..machine.kinematic_mapping import KinematicMapping
@@ -389,7 +390,7 @@ class Pipeline:
             ops
             and self._doc
             and self._machine
-            and self._machine.rotary_modules
+            and MachineCapability.ROTARY in self._machine.get_capabilities()
         ):
             mapped_ops = ops.copy()
             KinematicMapping.apply_to_job_ops(
