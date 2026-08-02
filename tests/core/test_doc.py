@@ -3,11 +3,13 @@ from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
+from raygeo.geo import Matrix
 
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.step import Step
+from rayforge.core.step_registry import step_registry
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 from rayforge.image.registry import renderer_registry
@@ -147,6 +149,73 @@ def test_remove_layer_fires_descendant_removed(doc):
     handler.assert_called_once_with(
         doc, origin=layer_to_remove, parent_of_origin=doc
     )
+
+
+def test_missing_step_types_reports_original_type(doc):
+    """
+    A step whose class is not registered is reported by its stored
+    step type name instead of the generic base Step name.
+    """
+    step_dict = {
+        "uid": "missing-uid",
+        "type": "step",
+        "step_type": "NonExistentStepClass",
+        "name": "Missing Step",
+        "matrix": Matrix.identity().to_list(),
+        "typelabel": "Unknown Type",
+        "visible": True,
+        "per_workpiece_transformers_dicts": [],
+        "per_step_transformers_dicts": [],
+        "children": [],
+    }
+
+    workflow = doc.active_layer.workflow
+    workflow.add_step(Step.from_dict(step_dict))
+
+    assert doc.missing_step_types == {"NonExistentStepClass"}
+
+
+def test_missing_step_types_falls_back_to_typelabel(doc):
+    """
+    Old documents without a step_type field fall back to the stored
+    typelabel instead of the generic base Step name.
+    """
+    step_dict = {
+        "uid": "legacy-uid",
+        "type": "step",
+        "name": "Old Step",
+        "matrix": Matrix.identity().to_list(),
+        "typelabel": "SomeCustomStep",
+        "visible": True,
+        "per_workpiece_transformers_dicts": [],
+        "per_step_transformers_dicts": [],
+        "children": [],
+    }
+
+    workflow = doc.active_layer.workflow
+    workflow.add_step(Step.from_dict(step_dict))
+
+    assert doc.missing_step_types == {"SomeCustomStep"}
+
+
+def test_missing_step_types_empty_for_registered_steps(doc):
+    """
+    Steps whose classes are registered are not reported as missing.
+    """
+
+    class RegisteredStep(Step):
+        @classmethod
+        def create(cls, context=None, name=None, **kwargs):
+            return cls(typelabel="Registered")
+
+    step_registry.register(RegisteredStep)
+    try:
+        workflow = doc.active_layer.workflow
+        workflow.add_step(RegisteredStep(typelabel="Registered"))
+
+        assert doc.missing_step_types == set()
+    finally:
+        step_registry.unregister("RegisteredStep")
 
 
 def test_descendant_updated_bubbles_up_to_doc(doc):

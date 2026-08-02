@@ -499,5 +499,5 @@ class Doc(DocItem):
                 for step in layer.workflow.steps:
                     name = type(step).__name__
                     if step_registry.get(name) is None:
-                        missing.add(name)
+                        missing.add(step.original_step_type or step.typelabel)
         return missing

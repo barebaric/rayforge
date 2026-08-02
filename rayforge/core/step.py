@@ -101,6 +101,10 @@ class Step(DocItem, ABC):
         # Forward compatibility: store unknown attributes
         self.extra: Dict[str, Any] = {}
 
+        # Set when a step of an unknown type is deserialized, so the
+        # original type name can be reported and round-tripped.
+        self._original_step_type: Optional[str] = None
+
     @property
     def capabilities(self) -> Tuple[StepCapability, ...]:
         return type(self).CAPABILITIES
@@ -269,10 +273,15 @@ class Step(DocItem, ABC):
 
     def to_dict(self) -> Dict:
         """Serializes the step and its configuration to a dictionary."""
+        step_type = (
+            self._original_step_type
+            if self._original_step_type is not None
+            else self.__class__.__name__
+        )
         result = {
             "uid": self.uid,
             "type": "step",
-            "step_type": self.__class__.__name__,
+            "step_type": step_type,
             "name": self.name,
             "matrix": self.matrix.to_list(),
             "typelabel": self.typelabel,
@@ -363,8 +372,16 @@ class Step(DocItem, ABC):
 
         if step_class is None:
             step_class = cls
+            # Preserve the original step type name so a missing step
+            # can be reported and round-tripped when the addon
+            # providing it is not installed.
+            original_step_type = step_type_name
+        else:
+            original_step_type = None
 
         step = step_class(typelabel=data["typelabel"], name=data.get("name"))
+        if original_step_type:
+            step._original_step_type = original_step_type
         step.uid = data["uid"]
         step.matrix = Matrix.from_list(data["matrix"])
         step.visible = data["visible"]
@@ -434,6 +451,18 @@ class Step(DocItem, ABC):
             name = t.get("name")
             if name and name in per_wp_names:
                 self.per_step_transformers_dicts[i] = per_wp_names[name]
+
+    @property
+    def original_step_type(self) -> Optional[str]:
+        """
+        The step type name stored in the source document.
+
+        When a step's class is not registered (e.g. because the addon
+        providing it is not installed), ``from_dict`` preserves the
+        original ``step_type`` so the missing feature can be reported
+        and round-tripped. Registered steps return ``None``.
+        """
+        return self._original_step_type
 
     @property
     def layer(self) -> Optional["Layer"]:

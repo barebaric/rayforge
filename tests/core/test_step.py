@@ -376,7 +376,8 @@ def test_capability_defaults_applied_in_constructor():
 def test_deserialization_with_missing_step_class():
     """
     Tests that from_dict() handles a missing step class gracefully
-    by falling back to the base Step class.
+    by falling back to the base Step class and preserving the
+    original step type name for reporting.
     """
     step_dict = {
         "uid": "step-missing-class-123",
@@ -397,7 +398,11 @@ def test_deserialization_with_missing_step_class():
     assert step.uid == "step-missing-class-123"
     assert step.name == "Missing Step"
     assert step.typelabel == "UnknownType"
+    assert step.original_step_type == "NonExistentStepClass"
     assert step.extra == {}
+
+    data = step.to_dict()
+    assert data["step_type"] == "NonExistentStepClass"
 
 
 def test_capabilities_property_returns_class_caps():
