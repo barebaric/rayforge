@@ -13,6 +13,7 @@ from raygeo.ops.axis import Axis
 
 from ...context import RayforgeContext
 from ...core.color import OPS_COLOR_SPEC, ColorSet, hex_to_rgba
+from ...image.util.srgb import create_lut_from_color
 from ...machine.assembly import LinkRole
 from ...machine.kinematic_mapping import KinematicMapping
 from ...machine.models.colors import OpsColorSet
@@ -647,16 +648,6 @@ class Canvas3D(Gtk.GLArea):
             laser_color_set = OpsColorSet.from_laser(laser, self._color_set)
             self._laser_color_sets[laser.uid] = laser_color_set.to_color_set()
 
-    @staticmethod
-    def _make_flat_color_lut(color: tuple) -> np.ndarray:
-        lut = np.zeros((256, 4), dtype=np.float32)
-        r, g, b, a = color
-        lut[1:, 0] = r
-        lut[1:, 1] = g
-        lut[1:, 2] = b
-        lut[1:, 3] = a
-        return lut
-
     def _get_laser_engrave_rgba(self):
         if self._laser_color_sets:
             first_cs = next(iter(self._laser_color_sets.values()))
@@ -681,7 +672,9 @@ class Canvas3D(Gtk.GLArea):
                 cut_lut_2d[row_idx] = cs.get_lut("cut")
                 engrave_lut_2d[row_idx] = cs.get_lut("engrave")
                 engrave_rgba = tuple(cs.get_lut("engrave")[255])
-                flat_lut_2d[row_idx] = self._make_flat_color_lut(engrave_rgba)
+                # The scanline overlay dims by power too, so give it a
+                # brightness ramp rather than a flat colour.
+                flat_lut_2d[row_idx] = create_lut_from_color(engrave_rgba)
 
             for group in self._layer_groups:
                 group.ops_renderer.update_color_lut(cut_lut_2d, num_lasers)
@@ -696,12 +689,17 @@ class Canvas3D(Gtk.GLArea):
                     engrave_lut_2d, num_lasers
                 )
         else:
-            cut_lut = self._color_set.get_lut("cut")
+            # No per-laser colour sets resolved yet (e.g. the very first
+            # render before the machine's lasers are available). Derive the
+            # cut LUT as a brightness ramp from the resolved cut colour so
+            # lines still dim by power instead of falling back to a flat /
+            # hue-only gradient that ignores power entirely.
+            cut_lut = create_lut_from_color(self._color_set.get_rgba("cut"))
             engrave_lut = self._color_set.get_lut("engrave")
 
             for group in self._layer_groups:
                 group.ops_renderer.update_color_lut(cut_lut)
-                ring_lut = self._make_flat_color_lut(
+                ring_lut = create_lut_from_color(
                     self._get_laser_engrave_rgba()
                 )
                 group.ring_renderer.update_color_lut(ring_lut)
@@ -740,6 +738,12 @@ class Canvas3D(Gtk.GLArea):
 
         artifact = self._compiled_artifact
         upload_items = []
+
+        # Upload the power colour LUTs before any vertex data. The chunked
+        # upload runs on idle callbacks, which can be pre-empted by a
+        # redraw between items; a redraw that renders powered lines against
+        # an uninitialised LUT would draw them at full brightness.
+        upload_items.append(("color_luts",))
 
         for vl in artifact.vertex_layers:
             group = _LayerRendererGroup(is_rotary=vl.is_rotary)
@@ -782,7 +786,6 @@ class Canvas3D(Gtk.GLArea):
                     break
 
         upload_items.append(("textures", artifact))
-        upload_items.append(("color_luts",))
         upload_items.append(("op_player",))
 
         self._upload_state = {
@@ -847,8 +850,8 @@ class Canvas3D(Gtk.GLArea):
                 self._update_renderer_color_luts()
 
             elif kind == "op_player":
-                self._extract_playback_offsets_from_artifact()
                 self._build_op_player_async()
+                self._extract_playback_offsets_from_artifact()
 
         except Exception:
             logger.exception("[CANVAS3D] Error during chunked upload")
