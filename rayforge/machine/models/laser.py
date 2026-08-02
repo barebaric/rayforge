@@ -68,20 +68,6 @@ class LaserHead(Head):
             spot_y = MIN_SPOT_SIZE_MM
         return spot_x, spot_y
 
-    def get_defaults(self, machine) -> Dict[str, Any]:
-        """Default step attributes for this laser head.
-
-        Reports the driver's PWM defaults (frequency and pulse width)
-        when the driver reports PWM support.
-        """
-        features = machine.get_driver_features(self)
-        if features.pwm:
-            return {
-                "frequency": features.pwm.frequency,
-                "pulse_width": features.pwm.pulse_width,
-            }
-        return {}
-
     def set_max_power(self, power):
         self.max_power = power
         self.changed.send(self)

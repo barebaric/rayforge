@@ -6,7 +6,7 @@ from blinker import Signal
 from gi.repository import Adw, Gtk
 
 from ...context import get_context
-from ...core.capability import Capability
+from ...core.capability import StepCapability
 from ...core.recipe import Recipe
 from ...core.step import Step
 from ...core.undo.property_cmd import ChangePropertyCommand
@@ -73,7 +73,7 @@ class RecipeControlWidget(Adw.ActionRow):
                 settings[key] = getattr(self.step, key)
         return settings
 
-    def _get_primary_capability(self) -> Optional[Capability]:
+    def _get_primary_capability(self) -> Optional[StepCapability]:
         """
         Determines the most likely capability for the current step config.
         """

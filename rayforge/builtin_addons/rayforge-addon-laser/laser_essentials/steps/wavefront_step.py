@@ -9,10 +9,11 @@ from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.wavefront import AdaptiveWavefrontSpec
 from raygeo.ops.part import Part
 
-from rayforge.core.capability import CUT, Capability, MachineCapability
+from rayforge.core.capability import MachineCapability, StepCapability
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.transformer.registry import transformer_registry
 
+from ..capabilities import CUT
 from .laser_step import LaserStep
 
 if TYPE_CHECKING:
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
 class WavefrontStep(LaserStep):
     TYPELABEL = _("Wavefront")
     ICON = "step-wavefront-symbolic"
-    CAPABILITIES: Tuple[Capability, ...] = (CUT,)
+    CAPABILITIES: Tuple[StepCapability, ...] = (CUT,)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "wavefront"
 
@@ -138,8 +139,10 @@ class WavefrontStep(LaserStep):
         # exposes its ceiling, so the default is that ceiling, bounded by
         # the operation's typical feed rate.
         step.cut_speed = min(machine.max_cut_speed, 500)
-        for key, value in default_head.get_defaults(machine).items():
-            setattr(step, key, value)
+        params = machine.get_pwm_params(default_head)
+        if params is not None:
+            step.frequency = params.frequency
+            step.pulse_width = params.pulse_width
         return step
 
 

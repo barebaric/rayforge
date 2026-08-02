@@ -881,17 +881,16 @@ async def test_multiple_keepalive_cycles(driver, ruida_simulator):
     await driver.cleanup()
 
 
-def test_get_driver_features_returns_empty_for_diode():
+def test_supports_pwm_false_for_diode():
     driver = RuidaDriver.__new__(RuidaDriver)
     laser = Laser()
     laser.laser_type = LaserType.DIODE
 
-    result = driver.get_driver_features(laser)
+    assert driver.supports_pwm(laser) is False
+    assert driver.get_pwm_params(laser) is None
 
-    assert result.pwm is None
 
-
-def test_get_driver_features_returns_pwm_for_co2():
+def test_supports_pwm_true_for_co2():
     driver = RuidaDriver.__new__(RuidaDriver)
     laser = Laser()
     laser.laser_type = LaserType.CO2
@@ -901,27 +900,26 @@ def test_get_driver_features_returns_pwm_for_co2():
     laser.min_pulse_width = 5
     laser.max_pulse_width = 500
 
-    result = driver.get_driver_features(laser)
+    assert driver.supports_pwm(laser) is True
+    params = driver.get_pwm_params(laser)
+    assert params is not None
+    assert params.frequency == 1000
+    assert params.max_frequency == 5000
+    assert params.pulse_width == 50
+    assert params.min_pulse_width == 5
+    assert params.max_pulse_width == 500
 
-    assert result.pwm is not None
-    assert result.pwm.frequency == 1000
-    assert result.pwm.max_frequency == 5000
-    assert result.pwm.pulse_width == 50
-    assert result.pwm.min_pulse_width == 5
-    assert result.pwm.max_pulse_width == 500
 
-
-def test_get_driver_features_returns_pwm_for_fiber():
+def test_supports_pwm_true_for_fiber():
     driver = RuidaDriver.__new__(RuidaDriver)
     laser = Laser()
     laser.laser_type = LaserType.FIBER
 
-    result = driver.get_driver_features(laser)
+    assert driver.supports_pwm(laser) is True
+    assert driver.get_pwm_params(laser) is not None
 
-    assert result.pwm is not None
 
-
-def test_get_driver_features_co2_with_zero_frequency():
+def test_supports_pwm_co2_with_zero_frequency():
     driver = RuidaDriver.__new__(RuidaDriver)
     laser = Laser()
     laser.laser_type = LaserType.CO2
@@ -929,8 +927,6 @@ def test_get_driver_features_co2_with_zero_frequency():
     laser.max_pwm_frequency = 0
     laser.pulse_width = 0
     laser.min_pulse_width = 0
-    laser.max_pwm_frequency = 0
 
-    result = driver.get_driver_features(laser)
-
-    assert result.pwm is not None
+    assert driver.supports_pwm(laser) is True
+    assert driver.get_pwm_params(laser) is not None

@@ -1,13 +1,13 @@
 from unittest.mock import MagicMock
 
 import pytest
+from laser_essentials.capabilities import CUT, SCORE, WITH_KERF
 from laser_essentials.steps import ContourStep
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.geo import Matrix
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
 
-from rayforge.core.capability import CUT, SCORE, WITH_KERF
 from rayforge.core.step import Step
 from rayforge.core.step_registry import step_registry
 from rayforge.core.workpiece import WorkPiece

@@ -3,10 +3,30 @@ from unittest.mock import MagicMock
 import pytest
 from raygeo.geo import Matrix
 
-from rayforge.core.capability import CUT
+from rayforge.core.capability import StepCapability
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
+from rayforge.core.varset import VarSet
 from rayforge.machine.models.laser import LaserHead
+
+
+class _StubCapability(StepCapability):
+    """A minimal capability for testing the step capabilities property."""
+
+    @property
+    def name(self) -> str:
+        return "CUT"
+
+    @property
+    def label(self) -> str:
+        return "Cut"
+
+    @property
+    def varset(self) -> VarSet:
+        return VarSet(vars=[])
+
+
+CUT = _StubCapability()
 
 
 @pytest.fixture
@@ -388,3 +408,8 @@ def test_capabilities_property_returns_class_caps():
 
     cs = CutStep(typelabel="Test")
     assert cs.capabilities == (CUT,)
+
+
+def test_base_step_has_no_operation_color(step):
+    """The generic step reports no operation color."""
+    assert step.get_operation_color(None) is None

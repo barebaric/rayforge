@@ -3,18 +3,9 @@ from __future__ import annotations
 import enum
 from abc import ABC, abstractmethod
 from gettext import gettext as _
-from typing import Dict, List, Optional
+from typing import ClassVar, FrozenSet, List, Optional
 
-from ..context import get_context
-from .varset import (
-    BoolVar,
-    ChoiceVar,
-    FloatVar,
-    IntVar,
-    SliderFloatVar,
-    SpeedVar,
-    VarSet,
-)
+from .varset import VarSet, merge_varsets
 
 
 class MachineCapability(enum.Enum):
@@ -23,12 +14,13 @@ class MachineCapability(enum.Enum):
 
     These describe what the machine's hardware can do and are used to
     filter which steps are offered to the user. They are distinct from
-    the step `Capability` class (CUT, ENGRAVE, ...), which describes
+    the step `StepCapability` class (CUT, ENGRAVE, ...), which describes
     operation categories for recipe matching.
     """
 
     LASER = "LASER"
     MILL = "MILL"
+    PWM = "PWM"
     # Future: PROBE, DWELL, ROTARY, ...
 
     @property
@@ -45,85 +37,17 @@ class MachineCapability(enum.Enum):
 _MACHINE_CAPABILITY_LABELS = {
     MachineCapability.LASER: _("Laser"),
     MachineCapability.MILL: _("Mill"),
+    MachineCapability.PWM: _("PWM"),
 }
 
 _MACHINE_CAPABILITY_DESCRIPTIONS = {
     MachineCapability.LASER: _("Cutting and engraving with a laser"),
     MachineCapability.MILL: _("Milling and routing with a spindle"),
+    MachineCapability.PWM: _("Pulse-width-modulated laser power control"),
 }
 
 
-class LaserHeadVar(ChoiceVar):
-    """
-    A special ChoiceVar that dynamically populates its choices with the
-    names of the laser heads from the currently active machine.
-
-    It also handles the mapping between human-readable names (for the UI)
-    and the UIDs (for data storage).
-    """
-
-    def __init__(
-        self,
-        key: str = "selected_head_uid",
-        label: str = _("Laser Head"),
-        description: Optional[str] = None,
-        default: Optional[str] = None,
-        value: Optional[str] = None,
-    ):
-        """
-        Initializes a new LaserHeadVar instance.
-
-        Args:
-            key: The unique machine-readable identifier.
-            label: The human-readable name for the UI.
-            description: A longer, human-readable description.
-            default: The default value (a laser head UID).
-            value: The initial value. If provided, it overrides the default.
-        """
-        self.name_to_uid_map: Dict[str, str] = {}
-        self.uid_to_name_map: Dict[str, str] = {}
-        head_names: list[str] = []
-
-        active_machine = get_context().machine
-        if active_machine and active_machine.heads:
-            laser_heads = [
-                h
-                for h in active_machine.heads
-                if h.machine_capability is MachineCapability.LASER
-            ]
-            self.name_to_uid_map = {h.name: h.uid for h in laser_heads}
-            self.uid_to_name_map = {h.uid: h.name for h in laser_heads}
-            head_names = sorted(list(self.name_to_uid_map.keys()))
-
-        # The value stored in the Var itself is the UID.
-        # We need to translate the initial name-based value to a UID.
-        initial_value_uid = value
-        if value and value in self.name_to_uid_map:
-            initial_value_uid = self.name_to_uid_map[value]
-
-        super().__init__(
-            key=key,
-            label=label,
-            choices=head_names,
-            description=description,
-            default=default,
-            value=initial_value_uid,
-        )
-
-    def get_display_for_value(self, value: Optional[str]) -> Optional[str]:
-        """Given a UID (value), return the display name."""
-        if value is None:
-            return None
-        return self.uid_to_name_map.get(value, value)
-
-    def get_value_for_display(self, display: Optional[str]) -> Optional[str]:
-        """Given a display name, return the UID (value)."""
-        if display is None:
-            return None
-        return self.name_to_uid_map.get(display, display)
-
-
-class Capability(ABC):
+class StepCapability(ABC):
     """
     Abstract base class for a Step capability (e.g., Cut, Engrave).
 
@@ -134,7 +58,15 @@ class Capability(ABC):
 
     Capabilities can be combined with the | operator to produce a
     merged VarSet containing all settings from both operands.
+
+    Concrete capabilities are registered by their domain addons via the
+    ``register_step_capabilities`` hook and resolved by name through the
+    global :data:`~.capability_registry.step_capability_registry`.
     """
+
+    #: Machine capabilities a machine must have for this capability to
+    #: be usable (e.g. a laser capability requires LASER).
+    REQUIRED_MACHINE_CAPS: ClassVar[FrozenSet[MachineCapability]] = frozenset()
 
     @property
     @abstractmethod
@@ -156,6 +88,11 @@ class Capability(ABC):
         """
         raise NotImplementedError
 
+    @property
+    def icon_name(self) -> str:
+        """The name of the icon that represents this capability."""
+        return f"{self.name.lower()}-symbolic"
+
     def get_setting_keys(self) -> List[str]:
         """
         Returns a list of keys for the settings defined by this capability.
@@ -165,295 +102,19 @@ class Capability(ABC):
     def __str__(self) -> str:
         return self.label
 
-    def __or__(self, other: "Capability") -> "Capability":
-        if not isinstance(other, Capability):
+    def __or__(self, other: "StepCapability") -> "StepCapability":
+        if not isinstance(other, StepCapability):
             return NotImplemented
         return _CombinedCapability(self, other)
 
 
-class CutCapability(Capability):
-    @property
-    def name(self) -> str:
-        return "CUT"
-
-    @property
-    def label(self) -> str:
-        return _("Cut")
-
-    @property
-    def varset(self) -> VarSet:
-        return VarSet(
-            vars=[
-                LaserHeadVar(
-                    description=_("Optionally force a specific laser head")
-                ),
-                SliderFloatVar(
-                    key="power",
-                    label=_("Power"),
-                    default=0.8,
-                    min_val=0.0,
-                    max_val=1.0,
-                    show_value=True,
-                    format_suffix="%",
-                ),
-                SliderFloatVar(
-                    key="tab_power",
-                    label=_("Tab Power"),
-                    description=_(
-                        "Laser power at tab positions (% of cut power)"
-                    ),
-                    default=0.0,
-                    min_val=0.0,
-                    max_val=1.0,
-                    show_value=True,
-                    format_suffix="%",
-                ),
-                SpeedVar(
-                    key="cut_speed",
-                    label=_("Cut Speed"),
-                    default=500,
-                    min_val=1,
-                    role="cut",
-                ),
-                SpeedVar(
-                    key="travel_speed",
-                    label=_("Travel Speed"),
-                    default=5000,
-                    min_val=1,
-                    role="travel",
-                ),
-                BoolVar(
-                    key="air_assist",
-                    label=_("Air Assist"),
-                    default=False,
-                ),
-            ]
-        )
-
-
-class EngraveCapability(Capability):
-    @property
-    def name(self) -> str:
-        return "ENGRAVE"
-
-    @property
-    def label(self) -> str:
-        return _("Engrave")
-
-    @property
-    def varset(self) -> VarSet:
-        return VarSet(
-            vars=[
-                LaserHeadVar(
-                    description=_("Optionally force a specific laser head")
-                ),
-                SliderFloatVar(
-                    key="power",
-                    label=_("Power"),
-                    default=0.2,
-                    min_val=0.0,
-                    max_val=1.0,
-                    show_value=True,
-                    format_suffix="%",
-                ),
-                SpeedVar(
-                    key="cut_speed",
-                    label=_("Engrave Speed"),
-                    default=4000,
-                    min_val=1,
-                    role="cut",
-                ),
-                SpeedVar(
-                    key="travel_speed",
-                    label=_("Travel Speed"),
-                    default=5000,
-                    min_val=1,
-                    role="travel",
-                ),
-                BoolVar(
-                    key="air_assist",
-                    label=_("Air Assist"),
-                    default=False,
-                ),
-            ]
-        )
-
-
-class ScoreCapability(Capability):
-    @property
-    def name(self) -> str:
-        return "SCORE"
-
-    @property
-    def label(self) -> str:
-        return _("Score")
-
-    @property
-    def varset(self) -> VarSet:
-        return VarSet(
-            vars=[
-                LaserHeadVar(
-                    description=_("Optionally force a specific laser head")
-                ),
-                SliderFloatVar(
-                    key="power",
-                    label=_("Power"),
-                    default=0.1,
-                    min_val=0.0,
-                    max_val=1.0,
-                    show_value=True,
-                    format_suffix="%",
-                ),
-                SpeedVar(
-                    key="cut_speed",
-                    label=_("Score Speed"),
-                    default=5000,
-                    min_val=1,
-                    role="cut",
-                ),
-                SpeedVar(
-                    key="travel_speed",
-                    label=_("Travel Speed"),
-                    default=5000,
-                    min_val=1,
-                    role="travel",
-                ),
-                BoolVar(
-                    key="air_assist",
-                    label=_("Air Assist"),
-                    default=False,
-                ),
-            ]
-        )
-
-
-class KerfCapability(Capability):
-    @property
-    def name(self) -> str:
-        return "WITH_KERF"
-
-    @property
-    def label(self) -> str:
-        return _("Kerf")
-
-    @property
-    def varset(self) -> VarSet:
-        return VarSet(
-            vars=[
-                FloatVar(
-                    key="kerf_mm",
-                    label=_("Kerf"),
-                    description=_("The effective width of the laser beam"),
-                    default=0.1,
-                    min_val=0.0,
-                    max_val=2.0,
-                ),
-            ]
-        )
-
-
-class MaterialTestCapability(Capability):
-    @property
-    def name(self) -> str:
-        return "MATERIAL_TEST"
-
-    @property
-    def label(self) -> str:
-        return _("Material Test")
-
-    @property
-    def varset(self) -> VarSet:
-        return VarSet(
-            vars=[
-                BoolVar(
-                    key="air_assist",
-                    label=_("Air Assist"),
-                    default=False,
-                ),
-            ]
-        )
-
-
-class MillCapability(Capability):
-    @property
-    def name(self) -> str:
-        return "MILL"
-
-    @property
-    def label(self) -> str:
-        return _("Mill")
-
-    @property
-    def varset(self) -> VarSet:
-        return VarSet(
-            vars=[
-                FloatVar(
-                    "tool_diameter",
-                    _("Tool Diameter"),
-                    default=6.0,
-                    min_val=0.1,
-                    max_val=50.0,
-                ),
-                IntVar(
-                    "spindle_rpm",
-                    _("Spindle RPM"),
-                    default=12000,
-                    min_val=100,
-                    max_val=60000,
-                ),
-                SpeedVar(
-                    "cut_speed",
-                    _("Feed Rate"),
-                    default=500,
-                    min_val=1,
-                    role="cut",
-                ),
-                SpeedVar(
-                    "plunge_speed",
-                    _("Plunge Rate"),
-                    default=200,
-                    min_val=1,
-                    role="cut",
-                ),
-                SpeedVar(
-                    "travel_speed",
-                    _("Travel Speed"),
-                    default=5000,
-                    min_val=1,
-                    role="travel",
-                ),
-                FloatVar(
-                    "target_depth",
-                    _("Target Depth"),
-                    default=-5.0,
-                    min_val=-50.0,
-                    max_val=0.0,
-                ),
-                FloatVar(
-                    "depth_per_pass",
-                    _("Depth per Pass"),
-                    default=1.0,
-                    min_val=0.1,
-                    max_val=10.0,
-                ),
-                FloatVar(
-                    "safe_z",
-                    _("Safe Z Height"),
-                    default=2.0,
-                    min_val=0.0,
-                    max_val=50.0,
-                ),
-            ]
-        )
-
-
-class _CombinedCapability(Capability):
+class _CombinedCapability(StepCapability):
     """
     A capability produced by combining two others with the | operator.
     Merges VarSets, with the right operand overriding shared keys.
     """
 
-    def __init__(self, left: Capability, right: Capability):
+    def __init__(self, left: StepCapability, right: StepCapability):
         self._left = left
         self._right = right
         self._merged_varset: Optional[VarSet] = None
@@ -469,44 +130,16 @@ class _CombinedCapability(Capability):
     @property
     def varset(self) -> VarSet:
         if self._merged_varset is None:
-            from .varset import Var as VarType
-
-            merged: Dict[str, VarType] = {}
-            for cap in self._flatten():
-                for var in cap.varset:
-                    merged[var.key] = var
-            self._merged_varset = VarSet(vars=list(merged.values()))
+            self._merged_varset = merge_varsets(
+                *(cap.varset for cap in self._flatten())
+            )
         return self._merged_varset
 
-    def _flatten(self) -> List[Capability]:
-        caps: List[Capability] = []
+    def _flatten(self) -> List[StepCapability]:
+        caps: List[StepCapability] = []
         for part in (self._left, self._right):
             if isinstance(part, _CombinedCapability):
                 caps.extend(part._flatten())
             else:
                 caps.append(part)
         return caps
-
-
-# Instantiate singletons of each capability
-CUT = CutCapability()
-ENGRAVE = EngraveCapability()
-SCORE = ScoreCapability()
-WITH_KERF = KerfCapability()
-MATERIAL_TEST = MaterialTestCapability()
-MILL = MillCapability()
-
-# A list of all available capability instances, for populating UI dropdowns
-ALL_CAPABILITIES: List[Capability] = [
-    CUT,
-    ENGRAVE,
-    SCORE,
-    WITH_KERF,
-    MATERIAL_TEST,
-    MILL,
-]
-
-# A map for deserializing from a name string back to a capability instance
-CAPABILITIES_BY_NAME: Dict[str, Capability] = {
-    cap.name: cap for cap in ALL_CAPABILITIES
-}

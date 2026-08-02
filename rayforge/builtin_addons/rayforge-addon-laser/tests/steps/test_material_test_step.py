@@ -2,9 +2,9 @@ from typing import TYPE_CHECKING, Protocol, cast
 from unittest.mock import MagicMock
 
 import pytest
+from laser_essentials.capabilities import MATERIAL_TEST
 from laser_essentials.steps import MaterialTestStep
 
-from rayforge.core.capability import MATERIAL_TEST
 from rayforge.core.workpiece import WorkPiece
 
 if TYPE_CHECKING:

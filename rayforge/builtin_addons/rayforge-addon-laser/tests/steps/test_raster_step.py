@@ -1,13 +1,13 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from laser_essentials.capabilities import ENGRAVE
 from laser_essentials.steps import EngraveStep
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.raster import RasterSpec
 from raygeo.ops.part import Part
 
-from rayforge.core.capability import ENGRAVE
 from rayforge.core.step_registry import step_registry
 from rayforge.core.workpiece import WorkPiece
 

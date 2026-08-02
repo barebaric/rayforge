@@ -10,13 +10,7 @@ from raygeo.ops.assembly.shrinkwrap import ShrinkwrapSpec
 from raygeo.ops.part import Part
 from raygeo.ops.part.image_source import WholeImageSource
 
-from rayforge.core.capability import (
-    CUT,
-    SCORE,
-    WITH_KERF,
-    Capability,
-    MachineCapability,
-)
+from rayforge.core.capability import MachineCapability, StepCapability
 from rayforge.core.cut_side import CutSide
 from rayforge.image.tracing import prepare_surface
 from rayforge.pipeline.stage.assembler_helpers import (
@@ -24,6 +18,7 @@ from rayforge.pipeline.stage.assembler_helpers import (
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 
+from ..capabilities import CUT, SCORE, WITH_KERF
 from .laser_step import LaserStep
 
 if TYPE_CHECKING:
@@ -35,7 +30,7 @@ if TYPE_CHECKING:
 class ShrinkWrapStep(LaserStep):
     TYPELABEL = _("Shrink Wrap")
     ICON = "step-shrinkwrap-symbolic"
-    CAPABILITIES: Tuple[Capability, ...] = (CUT, SCORE, WITH_KERF)
+    CAPABILITIES: Tuple[StepCapability, ...] = (CUT, SCORE, WITH_KERF)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "shrinkwrap"
 
@@ -174,8 +169,10 @@ class ShrinkWrapStep(LaserStep):
         # exposes its ceiling, so the default is that ceiling, bounded by
         # the operation's typical feed rate.
         step.cut_speed = min(machine.max_cut_speed, 500)
-        for key, value in default_head.get_defaults(machine).items():
-            setattr(step, key, value)
+        params = machine.get_pwm_params(default_head)
+        if params is not None:
+            step.frequency = params.frequency
+            step.pulse_width = params.pulse_width
 
         LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")
         if LeadInOutTransformer:

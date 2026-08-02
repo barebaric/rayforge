@@ -1,4 +1,3 @@
-from functools import reduce
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Dict, Optional, Tuple
 
@@ -6,10 +5,9 @@ from blinker import Signal
 from gi.repository import Adw, Gtk
 
 from ...context import get_context
-from ...core.capability import Capability, LaserHeadVar
 from ...core.step import Step
 from ...core.undo import ChangePropertyCommand, HistoryManager
-from ...core.varset import VarSet
+from ...core.varset import VarSet, merge_varsets
 from ...machine.models.laser import LaserHead
 from ...pipeline.transformer import OpsTransformer
 from ...pipeline.transformer.placeholder import PlaceholderTransformer
@@ -25,16 +23,20 @@ if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
 
 
-def _effective_capabilities(step: Step, machine) -> Tuple[Capability, ...]:
-    """Class-level step capabilities plus the selected head's
-    driver-derived capabilities."""
-    caps = list(type(step).CAPABILITIES)
-    caps.extend(
-        machine.get_effective_head_capabilities(
-            step.get_selected_head(machine)
-        )
+def _settings_varsets(step: Step, machine) -> Tuple[VarSet, VarSet]:
+    """The (step-operation, machine) settings VarSets for a step.
+
+    The step-operation VarSet comes from the step's usable capabilities
+    (its theoretical capabilities filtered by machine support); the
+    machine VarSet comes from the driver capabilities the machine
+    reports for the selected head (e.g. PWM).
+    """
+    usable = machine.get_usable_capabilities(
+        type(step).CAPABILITIES, step.get_selected_head(machine)
     )
-    return tuple(caps)
+    step_vars = merge_varsets(*(cap.varset for cap in usable))
+    machine_vars = machine.get_pwm_settings(step.get_selected_head(machine))
+    return step_vars, machine_vars or VarSet(vars=[])
 
 
 class GeneralStepSettingsView(TrackedPreferencesPage):
@@ -62,14 +64,11 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
                 dialog=self, step=self.step, producer=None
             )
 
-        # Build settings UI from capability VarSet.
-        # VarSetWidget IS the general group — no visual split.
+        # Build settings UI from capability VarSets.
+        # Step-operation settings and machine (driver) settings are shown
+        # in separate groups.
         machine = get_context().machine
-        caps = _effective_capabilities(step, machine)
-        if caps:
-            varset = reduce(Capability.__or__, caps).varset
-        else:
-            varset = VarSet(vars=[])
+        step_vars, machine_vars = _settings_varsets(step, machine)
         self.varset_widget = VarSetWidget(
             title=_("General Settings"),
             description=_(
@@ -91,15 +90,21 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
             producer.show_recipe_settings if producer else False
         )
 
-        self.varset_widget.populate(varset)
+        self.varset_widget.populate(step_vars)
         self.varset_widget.data_changed.connect(self._on_data_changed)
         self.add(self.varset_widget)
 
-        # Post-process: connect laser head selector for kerf transaction
-        if "selected_head_uid" in self.varset_widget.widget_map:
-            row, var = self.varset_widget.widget_map["selected_head_uid"]
-            if isinstance(row, Adw.ComboRow):
-                row.connect("notify::selected", self._on_laser_selected)
+        self.machine_varset_widget = VarSetWidget(
+            title=_("Machine Settings"),
+            description=_(
+                "Settings provided by the machine's hardware for this head."
+            ),
+            debounce_ms=300,
+        )
+        self.machine_varset_widget.data_changed.connect(self._on_data_changed)
+        self.add(self.machine_varset_widget)
+        self._varset_widgets = [self.varset_widget, self.machine_varset_widget]
+        self._populate_machine_settings(machine_vars)
 
         self._sync_widgets_to_model()
 
@@ -108,36 +113,40 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
 
     def _sync_widgets_to_model(self, sender=None, **kwargs):
         """Updates all widgets to reflect the current state of the Step."""
-        values = {}
-        for key in self.varset_widget.widget_map:
-            if key == "selected_head_uid":
-                continue
-            values[key] = getattr(self.step, key, None)
-        self.varset_widget.set_values(values)
+        for widget in self._varset_widgets:
+            values = {}
+            for key in widget.get_values():
+                if key == "selected_head_uid":
+                    continue
+                values[key] = getattr(self.step, key, None)
+            widget.set_values(values)
         self._updating_name = True
         self.name_row.set_text(self.step.name)
         self._updating_name = False
 
         # Sync laser head selector using UID-to-name mapping
-        if "selected_head_uid" in self.varset_widget.widget_map:
-            __, var = self.varset_widget.widget_map["selected_head_uid"]
-            if isinstance(var, LaserHeadVar):
-                self.varset_widget.set_values(
-                    {"selected_head_uid": self.step.selected_head_uid}
-                )
+        if "selected_head_uid" in self.varset_widget.get_values():
+            self.varset_widget.set_values(
+                {"selected_head_uid": self.step.selected_head_uid}
+            )
 
-    def _on_laser_selected(self, combo_row, pspec):
+    def _populate_machine_settings(self, machine_vars: VarSet):
+        """Populates the machine settings group from driver capabilities,
+        hiding it when the machine reports none for the selected head."""
+        if list(machine_vars):
+            self.machine_varset_widget.populate(machine_vars)
+            self.machine_varset_widget.set_visible(True)
+        else:
+            self.machine_varset_widget.clear_dynamic_rows()
+            self.machine_varset_widget.set_visible(False)
+
+    def _on_head_selected(self):
         """Handles laser head changes with kerf transaction."""
         machine = get_context().machine
         if not machine or not machine.heads:
             return
 
-        selected_index = combo_row.get_selected()
-        if selected_index >= len(machine.heads):
-            return
-        selected_head = machine.heads[selected_index]
-        new_uid = selected_head.uid
-
+        new_uid = self.varset_widget.get_values().get("selected_head_uid")
         if self.step.selected_head_uid == new_uid:
             return
 
@@ -150,9 +159,16 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
                     setter_method_name="set_selected_head_uid",
                 )
             )
+            if new_uid is None:
+                self._sync_widgets_to_model()
+                self.changed.send(self)
+                return
+
+            selected_head = next(
+                (h for h in machine.heads if h.uid == new_uid), None
+            )
             # Kerf sync and laser-capability defaults only apply when
-            # the selected head is a laser. The head selector only
-            # lists laser heads, but guard defensively for safety.
+            # the selected head is a laser.
             if not isinstance(selected_head, LaserHead):
                 self._sync_widgets_to_model()
                 self.changed.send(self)
@@ -166,38 +182,42 @@ class GeneralStepSettingsView(TrackedPreferencesPage):
                     setter_method_name="set_kerf_mm",
                 )
             )
-            if "kerf_mm" in self.varset_widget.widget_map:
-                kerf_row, __ = self.varset_widget.widget_map["kerf_mm"]
-                if isinstance(kerf_row, Adw.SpinRow):
-                    kerf_row.set_value(new_kerf)
+            self.varset_widget.set_values({"kerf_mm": new_kerf})
 
-            for key, value in selected_head.get_defaults(machine).items():
-                t.execute(
-                    ChangePropertyCommand(
-                        target=self.step,
-                        property_name=key,
-                        new_value=value,
-                        setter_method_name=f"set_{key}",
+            params = machine.get_pwm_params(selected_head)
+            if params is not None:
+                for key, value in (
+                    ("frequency", params.frequency),
+                    ("pulse_width", params.pulse_width),
+                ):
+                    t.execute(
+                        ChangePropertyCommand(
+                            target=self.step,
+                            property_name=key,
+                            new_value=value,
+                            setter_method_name=f"set_{key}",
+                        )
                     )
-                )
 
-        new_varset = reduce(
-            Capability.__or__,
-            _effective_capabilities(self.step, machine),
-        ).varset
-        self.varset_widget.populate(new_varset)
+        step_vars, machine_vars = _settings_varsets(self.step, machine)
+        self.varset_widget.populate(step_vars)
+        self._populate_machine_settings(machine_vars)
         self._sync_widgets_to_model()
 
         self.changed.send(self)
 
     def _on_data_changed(self, sender, **kwargs):
         key = kwargs.get("key")
-        if not key or key == "selected_head_uid":
+        if not key:
             return
-        self._commit_change(key)
+        if key == "selected_head_uid":
+            self._on_head_selected()
+            return
+        self._commit_change(key, sender)
 
-    def _commit_change(self, key: str):
-        values = self.varset_widget.get_values()
+    def _commit_change(self, key: str, widget=None):
+        widget = widget or self.varset_widget
+        values = widget.get_values()
         new_value = values.get(key)
         if new_value is None:
             return

@@ -26,7 +26,6 @@ from ..driver import (
     Axis,
     DeviceStatus,
     Driver,
-    DriverFeatures,
     DriverMaturity,
     DriverPrecheckError,
     DriverSetupError,
@@ -143,18 +142,21 @@ class RuidaDriver(Driver):
             ]
         )
 
-    def get_driver_features(self, head: "Head") -> DriverFeatures:
-        if isinstance(head, LaserHead) and head.laser_type != LaserType.DIODE:
-            return DriverFeatures(
-                pwm=PWMParams(
-                    frequency=head.pwm_frequency,
-                    max_frequency=head.max_pwm_frequency,
-                    pulse_width=head.pulse_width,
-                    min_pulse_width=head.min_pulse_width,
-                    max_pulse_width=head.max_pulse_width,
-                )
-            )
-        return DriverFeatures()
+    def supports_pwm(self, head: "Head") -> bool:
+        return (
+            isinstance(head, LaserHead) and head.laser_type != LaserType.DIODE
+        )
+
+    def get_pwm_params(self, head: "Head") -> Optional[PWMParams]:
+        if not isinstance(head, LaserHead) or not self.supports_pwm(head):
+            return None
+        return PWMParams(
+            frequency=head.pwm_frequency,
+            max_frequency=head.max_pwm_frequency,
+            pulse_width=head.pulse_width,
+            min_pulse_width=head.min_pulse_width,
+            max_pulse_width=head.max_pulse_width,
+        )
 
     @classmethod
     def create_encoder(cls, machine: "Machine") -> "OpsEncoder":

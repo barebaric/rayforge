@@ -1,14 +1,38 @@
 import math
 import uuid
 from dataclasses import asdict, dataclass, field
+from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-from .capability import CAPABILITIES_BY_NAME, CUT, Capability
+from .capability import StepCapability
+from .capability_registry import step_capability_registry
+from .varset import VarSet
+
+DEFAULT_CAPABILITY_NAME = "CUT"
 
 if TYPE_CHECKING:
     from ..machine.models.machine import Machine
     from .step import Step
     from .stock import StockItem
+
+
+class _UnknownCapability(StepCapability):
+    """Fallback for a recipe whose target capability is not registered."""
+
+    @property
+    def name(self) -> str:
+        return "UNKNOWN"
+
+    @property
+    def label(self) -> str:
+        return _("Unknown")
+
+    @property
+    def varset(self) -> VarSet:
+        return VarSet(vars=[])
+
+
+_UNKNOWN_CAPABILITY = _UnknownCapability()
 
 
 @dataclass
@@ -23,7 +47,7 @@ class Recipe:
     description: str = ""
 
     # --- Applicability Criteria ---
-    target_capability_name: str = CUT.name
+    target_capability_name: str = DEFAULT_CAPABILITY_NAME
     target_machine_id: Optional[str] = None
     material_uid: Optional[str] = None
     min_thickness_mm: Optional[float] = None
@@ -37,9 +61,18 @@ class Recipe:
     extra: Dict[str, Any] = field(default_factory=dict)
 
     @property
-    def capability(self) -> Capability:
-        """Returns the capability instance for this recipe."""
-        return CAPABILITIES_BY_NAME.get(self.target_capability_name, CUT)
+    def capability(self) -> StepCapability:
+        """
+        Returns the capability instance for this recipe, falling back to
+        the default capability (and finally an unknown placeholder) when
+        the target capability is not registered.
+        """
+        cap = step_capability_registry.get(self.target_capability_name)
+        if cap is None:
+            cap = step_capability_registry.get(DEFAULT_CAPABILITY_NAME)
+        if cap is None:
+            cap = _UNKNOWN_CAPABILITY
+        return cap
 
     def matches_step_settings(
         self,
@@ -68,7 +101,7 @@ class Recipe:
     def matches(
         self,
         stock_items: List["StockItem"],
-        capabilities: Optional[Tuple[Capability, ...]] = None,
+        capabilities: Optional[Tuple[StepCapability, ...]] = None,
         machine: Optional["Machine"] = None,
     ) -> bool:
         """
@@ -219,7 +252,7 @@ class Recipe:
             name=data.get("name", "Unnamed Recipe"),
             description=data.get("description", ""),
             target_capability_name=data.get(
-                "target_capability_name", CUT.name
+                "target_capability_name", DEFAULT_CAPABILITY_NAME
             ),
             target_machine_id=data.get("target_machine_id"),
             material_uid=data.get("material_uid"),

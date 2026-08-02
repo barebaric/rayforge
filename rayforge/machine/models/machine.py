@@ -12,6 +12,7 @@ from typing import (
     FrozenSet,
     List,
     Optional,
+    Sequence,
     Tuple,
     Type,
 )
@@ -24,14 +25,13 @@ from ...camera.models.camera import Camera
 from ...camera.v4l import migrate_camera_data
 from ...context import RayforgeContext, get_context
 from ...core.capability import MachineCapability
-from ...core.driver_capability_registry import driver_capability_registry
 from ...core.layer import Layer
 from ...core.model import Model
 from ...pipeline.coordspace import MachineSpace
 from ...shared.tasker import task_mgr
 from ..assembly import Assembly
 from ..driver import get_driver_cls
-from ..driver.driver import DeviceState, DriverFeatures, Pos
+from ..driver.driver import DeviceState, Pos, PWMParams, pwm_varset
 from ..kinematics import HeadSpec, Kinematics, build_assembly
 from ..models.axis import AxisConfig, AxisDirection, AxisSet, AxisType
 from ..transport import TransportStatus
@@ -44,7 +44,7 @@ from .rotary_module import RotaryMode, RotaryModule
 from .zone import Zone
 
 if TYPE_CHECKING:
-    from ...core.capability import Capability
+    from ...core.capability import StepCapability
     from ...core.varset import VarSet
     from ..driver.driver import Driver
     from .controller import MachineController
@@ -216,42 +216,73 @@ class Machine:
         """Property to access the driver through the controller."""
         return self.controller.driver
 
-    def get_driver_features(self, head: Head) -> DriverFeatures:
-        """
-        Returns the hardware features reported by the driver for the given
-        head. Delegates to the driver's get_driver_features().
-        """
-        if self.driver:
-            return self.driver.get_driver_features(head)
-        return DriverFeatures()
+    def supports_pwm(self, head: Optional[Head] = None) -> bool:
+        """Whether the machine's driver supports PWM for the given head."""
+        if head is None:
+            if not self.heads:
+                return False
+            head = self.heads[0]
+        return bool(self.driver.supports_pwm(head))
 
-    def get_effective_head_capabilities(
+    def get_pwm_params(
         self, head: Optional[Head] = None
-    ) -> Tuple["Capability", ...]:
+    ) -> Optional[PWMParams]:
         """
-        Returns the capabilities that apply to the given head.
-
-        Resolves the head (defaulting to the machine's default head),
-        the driver-reported features for it, and the addon-registered
-        interpretations of those features into domain capabilities.
+        Returns the driver-reported PWM parameters for the given head, or
+        None when the driver reports no PWM support.
         """
         if head is None:
             if not self.heads:
-                return ()
+                return None
             head = self.heads[0]
-        features = self.get_driver_features(head)
-        return driver_capability_registry.resolve(features)
+        return self.driver.get_pwm_params(head)
+
+    def get_pwm_settings(
+        self, head: Optional[Head] = None
+    ) -> Optional["VarSet"]:
+        """
+        Returns the PWM settings VarSet for the given head, or None when
+        the driver reports no PWM support.
+        """
+        params = self.get_pwm_params(head)
+        if params is None:
+            return None
+        return pwm_varset(params)
+
+    def get_usable_capabilities(
+        self,
+        step_capabilities: Sequence["StepCapability"],
+        head: Optional[Head] = None,
+    ) -> Tuple["StepCapability", ...]:
+        """
+        Filter a step's theoretical capabilities to those this machine
+        actually supports.
+
+        A capability is usable when the machine has the machine
+        capabilities it requires (e.g. a laser capability requires the
+        LASER machine capability).
+        """
+        machine_caps = self.get_capabilities()
+        return tuple(
+            cap
+            for cap in step_capabilities
+            if cap.REQUIRED_MACHINE_CAPS <= machine_caps
+        )
 
     def get_capabilities(self) -> FrozenSet[MachineCapability]:
         """
         Returns the machine capabilities as the union of the explicitly
-        declared capabilities and the capabilities inferred from the
-        configured heads (e.g. a LaserHead implies LASER).
+        declared capabilities, the capabilities inferred from the
+        configured heads (e.g. a LaserHead implies LASER), and the
+        capabilities inferred from the driver (e.g. PWM on Ruida CO2
+        lasers).
         """
         caps: set = set(self._explicit_capabilities or ())
         for head in self.heads:
             if head.machine_capability:
                 caps.add(head.machine_capability)
+        if self.supports_pwm():
+            caps.add(MachineCapability.PWM)
         return frozenset(caps)
 
     def set_explicit_capabilities(

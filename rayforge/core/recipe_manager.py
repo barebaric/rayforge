@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import yaml
 
-from .capability import Capability
+from .capability import StepCapability
 from .recipe import Recipe
 
 if TYPE_CHECKING:
@@ -97,7 +97,7 @@ class RecipeManager:
     def find_recipes(
         self,
         stock_items: List["StockItem"],
-        capabilities: Optional[Tuple[Capability, ...]] = None,
+        capabilities: Optional[Tuple[StepCapability, ...]] = None,
         machine: Optional["Machine"] = None,
     ) -> List[Recipe]:
         """

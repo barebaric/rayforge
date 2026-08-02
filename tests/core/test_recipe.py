@@ -1,15 +1,51 @@
 """Tests for the Recipe class."""
 
-from typing import Optional
+from typing import List, Optional
 from unittest.mock import Mock
 
 import pytest
 
-from rayforge.core.capability import CUT, ENGRAVE
+from rayforge.core.capability import StepCapability
+from rayforge.core.capability_registry import step_capability_registry
 from rayforge.core.doc import Doc
 from rayforge.core.recipe import Recipe
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
+from rayforge.core.varset import BoolVar, VarSet
+
+
+class _StubCapability(StepCapability):
+    """A minimal capability for exercising recipe matching logic."""
+
+    def __init__(self, name: str, label: str, keys: List[str]):
+        self._name = name
+        self._label = label
+        self._varset = VarSet(
+            vars=[BoolVar(key=key, label=key) for key in keys]
+        )
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def label(self) -> str:
+        return self._label
+
+    @property
+    def varset(self) -> VarSet:
+        return self._varset
+
+
+CUT = _StubCapability("CUT", "Cut", ["power"])
+ENGRAVE = _StubCapability("ENGRAVE", "Engrave", ["power"])
+
+
+@pytest.fixture(autouse=True)
+def _register_stub_capabilities():
+    """Register the stub capabilities for recipe matching."""
+    step_capability_registry.register(CUT, addon_name="test")
+    step_capability_registry.register(ENGRAVE, addon_name="test")
 
 
 class TestRecipe:

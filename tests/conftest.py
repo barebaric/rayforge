@@ -379,11 +379,15 @@ def isolated_context():
     """
     from unittest.mock import MagicMock
 
+    driver = MagicMock()
+    driver.supports_pwm.return_value = False
+    driver.get_pwm_params.return_value = None
+
     context = MagicMock()
     context.dialect_mgr = MockDialectManager()
     context.machine_mgr = MagicMock()
     context.machine_mgr.get_controller = MagicMock(
-        return_value=MagicMock(driver=MagicMock())
+        return_value=MagicMock(driver=driver)
     )
     yield context
 

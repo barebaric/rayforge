@@ -144,6 +144,12 @@ class LaserStep(Step):
             power_percent=power_percent, speed_str=speed_str
         )
 
+    def get_operation_color(self, head) -> Optional[str]:
+        """The head's cut color, used to represent cutting operations."""
+        if isinstance(head, LaserHead):
+            return head.cut_color
+        return None
+
     def to_dict(self) -> Dict[str, Any]:
         result = super().to_dict()
         result.update(

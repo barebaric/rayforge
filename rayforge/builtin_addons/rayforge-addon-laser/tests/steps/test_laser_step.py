@@ -5,11 +5,8 @@ from unittest.mock import MagicMock
 import pytest
 from laser_essentials.steps import ContourStep, EngraveStep, LaserStep
 
-from rayforge.core.driver_capability_registry import (
-    driver_capability_registry,
-)
 from rayforge.core.step import Step
-from rayforge.machine.driver.driver import DriverFeatures, PWMParams
+from rayforge.machine.driver.driver import PWMParams, pwm_varset
 from rayforge.machine.models.laser import (
     MIN_SPOT_SIZE_MM,
     LaserHead,
@@ -254,44 +251,21 @@ def test_get_settings_includes_frequency_and_pulse_width():
     assert settings["pulse_width"] == 50
 
 
-def test_registry_resolves_pwm_capability():
-    """Driver PWM features resolve into a PWMCapability."""
-    features = DriverFeatures(pwm=PWMParams(1000, 5000, 50, 5, 500))
+def test_machine_reports_pwm_settings():
+    """A machine's PWM settings expose the driver's PWM defaults."""
+    params = PWMParams(1000, 5000, 50, 5, 500)
+    machine = MagicMock()
+    machine.get_pwm_settings.return_value = pwm_varset(params)
 
-    caps = driver_capability_registry.resolve(features)
-
-    pwm_caps = [c for c in caps if c.name == "PWM"]
-    assert pwm_caps
-    vs = pwm_caps[0].varset
+    vs = machine.get_pwm_settings(None)
     assert vs["frequency"].default == 1000
     assert vs["pulse_width"].default == 50
 
 
-def test_registry_resolves_nothing_without_pwm():
-    caps = driver_capability_registry.resolve(DriverFeatures())
-    assert caps == ()
-
-
-def test_laser_head_get_defaults_returns_pwm_defaults():
-    """A laser head reports the driver-reported PWM defaults."""
-    head = LaserHead()
+def test_machine_reports_no_pwm_without_support():
     machine = MagicMock()
-    machine.get_driver_features.return_value = DriverFeatures(
-        pwm=PWMParams(1000, 5000, 50, 5, 500)
-    )
-
-    assert head.get_defaults(machine) == {
-        "frequency": 1000,
-        "pulse_width": 50,
-    }
-
-
-def test_laser_head_get_defaults_empty_without_pwm():
-    head = LaserHead()
-    machine = MagicMock()
-    machine.get_driver_features.return_value = DriverFeatures()
-
-    assert head.get_defaults(machine) == {}
+    machine.get_pwm_settings.return_value = None
+    assert machine.get_pwm_settings(None) is None
 
 
 def test_create_applies_head_pwm_defaults():
@@ -304,10 +278,37 @@ def test_create_applies_head_pwm_defaults():
     head = MagicMock(spec=LaserHead)
     head.uid = "laser-1"
     head.spot_size_mm = (0.1, 0.1)
-    head.get_defaults.return_value = {"frequency": 1000, "pulse_width": 50}
     machine.get_default_laser_head.return_value = head
+    machine.get_pwm_params.return_value = PWMParams(1000, 5000, 50, 5, 500)
     context.machine = machine
 
     s = ContourStep.create(context, name="t")
     assert s.frequency == 1000
     assert s.pulse_width == 50
+
+
+def test_laser_step_uses_cut_color():
+    """A cutting laser step reports the head's cut color."""
+    head = MagicMock(spec=LaserHead)
+    head.cut_color = "#112233"
+    head.raster_color = "#445566"
+
+    s = ContourStep(name="t")
+    assert s.get_operation_color(head) == "#112233"
+
+
+def test_engrave_step_uses_raster_color():
+    """An engraving step reports the head's raster color."""
+    head = MagicMock(spec=LaserHead)
+    head.cut_color = "#112233"
+    head.raster_color = "#445566"
+
+    s = EngraveStep(name="t")
+    assert s.get_operation_color(head) == "#445566"
+
+
+def test_laser_step_color_none_for_non_laser_head():
+    """A laser step reports no color for a non-laser head."""
+    head = SpindleHead()
+    s = ContourStep(name="t")
+    assert s.get_operation_color(head) is None

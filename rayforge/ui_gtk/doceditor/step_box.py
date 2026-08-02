@@ -5,10 +5,8 @@ from blinker import Signal
 from gi.repository import Gtk
 
 from ...context import get_context
-from ...core.capability import ENGRAVE
 from ...core.step import Step
 from ...core.undo.property_cmd import ChangePropertyCommand
-from ...machine.models.laser import LaserHead
 from ..icons import get_icon
 from ..shared.number_badge import NumberBadge
 from ..shared.tag import TagWidget
@@ -120,15 +118,7 @@ class StepBox(Gtk.Box):
             self.badge.set_color(None)
             return
         head = self.step.get_selected_head(machine)
-        if head is None or not isinstance(head, LaserHead):
-            self.badge.set_color(None)
-            return
-
-        if ENGRAVE in self.step.capabilities:
-            color = head.raster_color
-        else:
-            color = head.cut_color
-
+        color = self.step.get_operation_color(head) if head else None
         self.badge.set_color(color)
 
     def on_switch_state_set(self, switch, state):

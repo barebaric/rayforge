@@ -11,12 +11,6 @@ from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.spindle import SpindleHead
 
 
-def _new_machine() -> Machine:
-    m = Machine.__new__(Machine)
-    m._explicit_capabilities = None
-    return m
-
-
 def _configure(machine: Machine):
     """Give a real Machine its default heads."""
     machine.heads = [LaserHead()]
@@ -24,43 +18,49 @@ def _configure(machine: Machine):
 
 
 class TestCapabilitiesFromHeads:
-    def test_only_laser_head_infers_laser(self):
-        m = _configure(_new_machine())
-        assert m.get_capabilities() == {MachineCapability.LASER}
+    def test_only_laser_head_infers_laser(self, isolated_machine):
+        _configure(isolated_machine)
+        assert isolated_machine.get_capabilities() == {MachineCapability.LASER}
 
-    def test_only_spindle_head_infers_mill(self):
-        m = _configure(_new_machine())
-        m.heads = [SpindleHead()]
-        assert m.get_capabilities() == {MachineCapability.MILL}
+    def test_only_spindle_head_infers_mill(self, isolated_machine):
+        _configure(isolated_machine)
+        isolated_machine.heads = [SpindleHead()]
+        assert isolated_machine.get_capabilities() == {MachineCapability.MILL}
 
-    def test_laser_and_spindle_infers_both(self):
-        m = _configure(_new_machine())
-        m.heads = [LaserHead(), SpindleHead()]
-        assert m.get_capabilities() == {
+    def test_laser_and_spindle_infers_both(self, isolated_machine):
+        _configure(isolated_machine)
+        isolated_machine.heads = [LaserHead(), SpindleHead()]
+        assert isolated_machine.get_capabilities() == {
             MachineCapability.LASER,
             MachineCapability.MILL,
         }
 
-    def test_no_heads_infers_nothing(self):
-        m = _configure(_new_machine())
-        m.heads = []
-        assert m.get_capabilities() == frozenset()
+    def test_no_heads_infers_nothing(self, isolated_machine):
+        _configure(isolated_machine)
+        isolated_machine.heads = []
+        assert isolated_machine.get_capabilities() == frozenset()
 
-    def test_explicit_capabilities_merge_with_inference(self):
-        m = _configure(_new_machine())
-        m.heads = [SpindleHead()]
-        m._explicit_capabilities = frozenset({MachineCapability.LASER})
+    def test_explicit_capabilities_merge_with_inference(
+        self, isolated_machine
+    ):
+        _configure(isolated_machine)
+        isolated_machine.heads = [SpindleHead()]
+        isolated_machine.set_explicit_capabilities(
+            frozenset({MachineCapability.LASER})
+        )
         # Explicit caps are merged with caps inferred from the heads.
-        assert m.get_capabilities() == {
+        assert isolated_machine.get_capabilities() == {
             MachineCapability.LASER,
             MachineCapability.MILL,
         }
 
-    def test_explicit_capabilities_only(self):
-        m = _configure(_new_machine())
-        m.heads = []
-        m._explicit_capabilities = frozenset({MachineCapability.MILL})
-        assert m.get_capabilities() == {MachineCapability.MILL}
+    def test_explicit_capabilities_only(self, isolated_machine):
+        _configure(isolated_machine)
+        isolated_machine.heads = []
+        isolated_machine.set_explicit_capabilities(
+            frozenset({MachineCapability.MILL})
+        )
+        assert isolated_machine.get_capabilities() == {MachineCapability.MILL}
 
 
 class TestHeadDispatch:
