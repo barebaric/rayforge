@@ -1,6 +1,6 @@
 from gi.repository import Gdk, Gtk
 
-_SPINROW_MIN_WIDTH_CSS = b"row spinbutton { min-width: 130px; }"
+_SPINROW_MIN_WIDTH_CSS = "row spinbutton { min-width: 130px; }"
 
 _css_loaded = False
 
@@ -18,7 +18,7 @@ def ensure_spinrow_min_width(row: Gtk.Widget) -> None:
     global _css_loaded
     if not _css_loaded:
         provider = Gtk.CssProvider()
-        provider.load_from_data(_SPINROW_MIN_WIDTH_CSS)
+        provider.load_from_string(_SPINROW_MIN_WIDTH_CSS)
         display = Gdk.Display.get_default()
         if display is not None:
             Gtk.StyleContext.add_provider_for_display(
