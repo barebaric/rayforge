@@ -7,7 +7,7 @@ from rayforge.core.varset.floatvar import FloatVar
 from rayforge.core.varset.intvar import IntVar
 from rayforge.core.varset.urlvar import UrlVar, WebsocketUrlVar
 from rayforge.core.varset.var import ValidationError, Var
-from rayforge.core.varset.varset import VarSet
+from rayforge.core.varset.varset import VarSet, merge_varsets
 
 
 class TestVarSet:
@@ -555,3 +555,24 @@ class TestWebsocketUrlVar:
         assert serialized["description"] == "A WebSocket endpoint"
         assert serialized["default"] == "ws://localhost/ws"
         assert serialized["value"] == "wss://example.com/ws"
+
+
+class TestMergeVarsets:
+    def test_merges_vars(self):
+        first = VarSet(vars=[Var(key="a", label="A", var_type=int)])
+        second = VarSet(vars=[Var(key="b", label="B", var_type=int)])
+        merged = merge_varsets(first, second)
+        assert set(merged.keys()) == {"a", "b"}
+        assert list(merged)[0].key == "a"
+        assert list(merged)[1].key == "b"
+
+    def test_later_overrides_shared_key(self):
+        first = VarSet(vars=[IntVar(key="n", label="N", default=1)])
+        second = VarSet(vars=[IntVar(key="n", label="N", default=2)])
+        merged = merge_varsets(first, second)
+        assert len(merged) == 1
+        assert merged["n"].default == 2
+
+    def test_empty(self):
+        assert len(merge_varsets()) == 0
+        assert len(merge_varsets(VarSet())) == 0

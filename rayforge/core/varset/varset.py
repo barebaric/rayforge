@@ -278,3 +278,17 @@ class VarSet:
 
     def __repr__(self) -> str:
         return f"VarSet(title='{self.title}', count={len(self)})"
+
+
+def merge_varsets(*varsets: VarSet) -> VarSet:
+    """
+    Merge multiple VarSets into a single VarSet.
+
+    Vars are collected by key, with later VarSets overriding earlier
+    ones for shared keys. The merged VarSet carries no title.
+    """
+    merged: Dict[str, Var] = {}
+    for vs in varsets:
+        for var in vs:
+            merged[var.key] = var
+    return VarSet(vars=list(merged.values()))
