@@ -48,10 +48,13 @@ class TestMachineCapability:
     def test_labels(self):
         assert MachineCapability.LASER.label == "Laser"
         assert MachineCapability.MILL.label == "Mill"
+        assert MachineCapability.PWM.label == "PWM"
+        assert MachineCapability.ROTARY.label == "Rotary"
 
     def test_descriptions(self):
         assert "laser" in MachineCapability.LASER.description
         assert "spindle" in MachineCapability.MILL.description
+        assert "rotary axis" in MachineCapability.ROTARY.description.lower()
 
 
 class TestCapability:

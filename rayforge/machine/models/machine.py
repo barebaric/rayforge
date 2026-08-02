@@ -283,6 +283,8 @@ class Machine:
                 caps.add(head.machine_capability)
         if self.supports_pwm():
             caps.add(MachineCapability.PWM)
+        if self.rotary_modules:
+            caps.add(MachineCapability.ROTARY)
         return frozenset(caps)
 
     def set_explicit_capabilities(

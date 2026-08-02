@@ -8,6 +8,7 @@ from rayforge.core.capability import MachineCapability
 from rayforge.machine.models.head import head_from_dict
 from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.machine import Machine
+from rayforge.machine.models.rotary_module import RotaryModule
 from rayforge.machine.models.spindle import SpindleHead
 
 
@@ -61,6 +62,29 @@ class TestCapabilitiesFromHeads:
             frozenset({MachineCapability.MILL})
         )
         assert isolated_machine.get_capabilities() == {MachineCapability.MILL}
+
+
+class TestCapabilitiesFromRotaryModules:
+    def test_no_modules_infers_nothing(self, isolated_machine):
+        _configure(isolated_machine)
+        caps = isolated_machine.get_capabilities()
+        assert MachineCapability.ROTARY not in caps
+
+    def test_module_added_infers_rotary(self, isolated_machine):
+        _configure(isolated_machine)
+        isolated_machine.add_rotary_module(RotaryModule())
+        caps = isolated_machine.get_capabilities()
+        assert MachineCapability.ROTARY in caps
+
+    def test_last_module_removed_drops_rotary(self, isolated_machine):
+        _configure(isolated_machine)
+        module = RotaryModule()
+        isolated_machine.add_rotary_module(module)
+        caps = isolated_machine.get_capabilities()
+        assert MachineCapability.ROTARY in caps
+        isolated_machine.remove_rotary_module(module)
+        caps = isolated_machine.get_capabilities()
+        assert MachineCapability.ROTARY not in caps
 
 
 class TestHeadDispatch:
