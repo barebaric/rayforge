@@ -32,7 +32,32 @@ class _UnknownCapability(StepCapability):
         return VarSet(vars=[])
 
 
+class _AnyCapability(StepCapability):
+    """Sentinel for a recipe with no capability constraint.
+
+    Such a recipe is either step-type-scoped or fully generic, so it
+    matches any capability context.
+    """
+
+    @property
+    def name(self) -> str:
+        return ""
+
+    @property
+    def label(self) -> str:
+        return _("Any")
+
+    @property
+    def varset(self) -> VarSet:
+        return VarSet(vars=[])
+
+    @property
+    def icon_name(self) -> str:
+        return "recipe-symbolic"
+
+
 _UNKNOWN_CAPABILITY = _UnknownCapability()
+_ANY_CAPABILITY = _AnyCapability()
 
 
 @dataclass
@@ -48,6 +73,10 @@ class Recipe:
 
     # --- Applicability Criteria ---
     target_capability_name: str = DEFAULT_CAPABILITY_NAME
+    # When set, the recipe only matches steps of this class (by class
+    # name, as registered in step_registry). When None, it matches by
+    # capability as before.
+    target_step_type: Optional[str] = None
     target_machine_id: Optional[str] = None
     material_uid: Optional[str] = None
     min_thickness_mm: Optional[float] = None
@@ -66,7 +95,13 @@ class Recipe:
         Returns the capability instance for this recipe, falling back to
         the default capability (and finally an unknown placeholder) when
         the target capability is not registered.
+
+        A recipe without a capability constraint
+        (``target_capability_name`` empty) resolves to the "Any"
+        capability sentinel.
         """
+        if not self.target_capability_name:
+            return _ANY_CAPABILITY
         cap = step_capability_registry.get(self.target_capability_name)
         if cap is None:
             cap = step_capability_registry.get(DEFAULT_CAPABILITY_NAME)
@@ -103,6 +138,7 @@ class Recipe:
         stock_items: List["StockItem"],
         capabilities: Optional[Tuple[StepCapability, ...]] = None,
         machine: Optional["Machine"] = None,
+        step_type: Optional[str] = None,
     ) -> bool:
         """
         Checks if this recipe is a valid candidate for the given context.
@@ -113,11 +149,21 @@ class Recipe:
                          Returns True if recipe matches ANY item in the list.
             capabilities: An optional set of capabilities to filter by.
             machine: An optional machine to filter by.
+            step_type: An optional step class name (as registered in
+                       ``step_registry``) to filter by. Only meaningful
+                       when :attr:`target_step_type` is set.
 
         Returns:
             True if the recipe is a valid match, False otherwise.
         """
-        # 1. Check machine compatibility
+        # 1. Check step type compatibility
+        if self.target_step_type:
+            # This recipe targets a specific step class. It can only
+            # match when a step type context is provided and matches.
+            if not step_type or step_type != self.target_step_type:
+                return False
+
+        # 2. Check machine compatibility
         if self.target_machine_id:
             # This recipe requires a specific machine.
             if not machine or machine.id != self.target_machine_id:
@@ -126,7 +172,7 @@ class Recipe:
         # A recipe is considered compatible up to this point, so now check
         # secondary constraints like laser head.
 
-        # 2. Check head compatibility (if specified in settings)
+        # 3. Check head compatibility (if specified in settings)
         target_head_uid = self.settings.get("selected_head_uid")
         if target_head_uid:
             # This recipe requires a specific head. It can only match if
@@ -136,11 +182,12 @@ class Recipe:
             ):
                 return False
 
-        # 3. Check capability
-        if capabilities and self.capability not in capabilities:
-            return False
+        # 4. Check capability (only when the recipe constrains it)
+        if self.target_capability_name and capabilities:
+            if self.capability not in capabilities:
+                return False
 
-        # 4. If no stock items to check against, only match generic recipes
+        # 5. If no stock items to check against, only match generic recipes
         # (recipes without material/thickness constraints)
         if not stock_items:
             # If recipe has material constraint, it can't match without stock
@@ -154,7 +201,7 @@ class Recipe:
                 return False
             return True
 
-        # 5. Check if recipe matches ANY of the stock items
+        # 6. Check if recipe matches ANY of the stock items
         for stock_item in stock_items:
             if self._matches_stock(stock_item):
                 return True
@@ -194,11 +241,12 @@ class Recipe:
         # If all checks passed, it's a match.
         return True
 
-    def get_specificity_score(self) -> Tuple[int, int, int, int]:
+    def get_specificity_score(self) -> Tuple[int, int, int, int, int]:
         """
         Calculates a score based on how specific the recipe's criteria are.
         A lower score indicates a more specific (and therefore better) match.
-        The score is a tuple (machine, head, material, thickness).
+        The score is a tuple
+        (machine, head, material, thickness, step_type).
 
         Returns:
             A tuple representing the specificity score.
@@ -213,7 +261,14 @@ class Recipe:
             or self.max_thickness_mm is not None
             else 1
         )
-        return (machine_score, head_score, material_score, thickness_score)
+        step_type_score = 0 if self.target_step_type is not None else 1
+        return (
+            machine_score,
+            head_score,
+            material_score,
+            thickness_score,
+            step_type_score,
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializes the Recipe to a dictionary suitable for YAML."""
@@ -229,6 +284,7 @@ class Recipe:
             "name",
             "description",
             "target_capability_name",
+            "target_step_type",
             "target_machine_id",
             "material_uid",
             "min_thickness_mm",
@@ -254,6 +310,7 @@ class Recipe:
             target_capability_name=data.get(
                 "target_capability_name", DEFAULT_CAPABILITY_NAME
             ),
+            target_step_type=data.get("target_step_type"),
             target_machine_id=data.get("target_machine_id"),
             material_uid=data.get("material_uid"),
             min_thickness_mm=data.get("min_thickness_mm"),

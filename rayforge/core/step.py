@@ -1,5 +1,6 @@
 import logging
 from abc import ABC
+from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -24,6 +25,7 @@ from ..pipeline.transformer.registry import transformer_registry
 from .capability import MachineCapability, StepCapability
 from .item import DocItem
 from .step_registry import step_registry
+from .varset import SpeedVar, VarSet
 
 if TYPE_CHECKING:
     from ..context import RayforgeContext
@@ -52,6 +54,15 @@ class Step(DocItem, ABC):
     PRODUCER_CLASS: ClassVar[Any] = None
     ASSEMBLER_NAME: ClassVar[str] = ""
     uses_global_state: ClassVar[bool] = False
+
+    #: Step attribute keys that are eligible for recipe extraction and
+    #: round-tripping. The base lists the shared motion and head keys;
+    #: domain bases and concrete steps extend this with their own.
+    RECIPE_KEYS: Tuple[str, ...] = (
+        "selected_head_uid",
+        "cut_speed",
+        "travel_speed",
+    )
 
     def __init__(
         self,
@@ -93,6 +104,45 @@ class Step(DocItem, ABC):
     @property
     def capabilities(self) -> Tuple[StepCapability, ...]:
         return type(self).CAPABILITIES
+
+    @classmethod
+    def recipe_varset(cls) -> VarSet:
+        """The VarSet used to render this step type's recipe editor.
+
+        The base returns the shared motion vars. Domain bases and
+        concrete steps extend this (via ``super()`` composition) with
+        their own attributes. Keys rendered here should be a subset of
+        :attr:`RECIPE_KEYS` so the editor and the extractor agree.
+        """
+        return VarSet(
+            vars=[
+                SpeedVar(
+                    key="cut_speed",
+                    label=_("Cut Speed"),
+                    default=500,
+                    min_val=1,
+                    role="cut",
+                ),
+                SpeedVar(
+                    key="travel_speed",
+                    label=_("Travel Speed"),
+                    default=5000,
+                    min_val=1,
+                    role="travel",
+                ),
+            ]
+        )
+
+    @classmethod
+    def recipe_varset_groups(cls) -> List[Tuple[str, VarSet]]:
+        """Split :meth:`recipe_varset` into named groups for the editor.
+
+        Returns a list of ``(title, varset)`` pairs. The base returns a
+        single group. Domain bases override this to separate inherited
+        process settings from step-specific settings (e.g. "Laser" vs
+        "Step Settings").
+        """
+        return [(_("Settings"), cls.recipe_varset())]
 
     @classmethod
     def create(

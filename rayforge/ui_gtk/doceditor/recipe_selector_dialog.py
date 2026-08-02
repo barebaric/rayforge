@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Callable, List, Tuple
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
 
 from gi.repository import Adw, Gtk
 
@@ -47,10 +47,12 @@ class RecipeSelectorDialog(Adw.MessageDialog):
         editor: "DocEditor",
         capabilities: Tuple[StepCapability, ...],
         on_select_callback: Callable[[Recipe], None],
+        step_type: Optional[str] = None,
     ):
         super().__init__(transient_for=parent)
         self.editor = editor
         self.capabilities = capabilities
+        self.step_type = step_type
         self.on_select_callback = on_select_callback
         self._all_recipes: List[Recipe] = []
 
@@ -133,6 +135,7 @@ class RecipeSelectorDialog(Adw.MessageDialog):
                 stock_items,
                 self.capabilities,
                 machine,
+                step_type=self.step_type,
             ):
                 continue
 

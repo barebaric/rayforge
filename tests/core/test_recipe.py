@@ -129,6 +129,7 @@ class TestRecipe:
         assert sample_recipe.material_uid == "plywood-6mm"
         assert sample_recipe.target_capability_name == "CUT"
         assert sample_recipe.target_machine_id == "machine-a"
+        assert sample_recipe.target_step_type is None
         assert sample_recipe.capability is CUT
         assert sample_recipe.settings["power"] == 0.9
         assert sample_recipe.settings["selected_head_uid"] == "laser-1"
@@ -187,19 +188,23 @@ class TestRecipe:
         self, sample_recipe: Recipe, generic_recipe: Recipe
     ):
         """Test the specificity scoring."""
-        # Machine, head, material, thickness -> (0, 0, 0, 0)
-        assert sample_recipe.get_specificity_score() == (0, 0, 0, 0)
+        # Machine, head, material, thickness, step_type -> (0, 0, 0, 0, 1)
+        assert sample_recipe.get_specificity_score() == (0, 0, 0, 0, 1)
 
-        # Generic all -> (1, 1, 1, 1)
-        assert generic_recipe.get_specificity_score() == (1, 1, 1, 1)
+        # Generic all -> (1, 1, 1, 1, 1)
+        assert generic_recipe.get_specificity_score() == (1, 1, 1, 1, 1)
 
         # Specific machine only
         machine_only = Recipe(target_machine_id="test")
-        assert machine_only.get_specificity_score() == (0, 1, 1, 1)
+        assert machine_only.get_specificity_score() == (0, 1, 1, 1, 1)
 
         # Specific head only
         head_only = Recipe(settings={"selected_head_uid": "laser-x"})
-        assert head_only.get_specificity_score() == (1, 0, 1, 1)
+        assert head_only.get_specificity_score() == (1, 0, 1, 1, 1)
+
+        # Specific step type only
+        step_type_only = Recipe(target_step_type="ContourStep")
+        assert step_type_only.get_specificity_score() == (1, 1, 1, 1, 0)
 
     # --- MATCHING LOGIC TESTS ---
 
@@ -362,6 +367,117 @@ class TestRecipe:
         mock_step_bad_type.kerf_mm = 0.15
         mock_step_bad_type.air_assist = True
         assert recipe.matches_step_settings(mock_step_bad_type) is False
+
+    # --- STEP TYPE TARGETING TESTS ---
+
+    def test_target_step_type_round_trip(self):
+        """target_step_type survives to_dict/from_dict."""
+        recipe = Recipe(
+            name="Contour-only",
+            target_capability_name=CUT.name,
+            target_step_type="ContourStep",
+            settings={"power": 0.8},
+        )
+        data = recipe.to_dict()
+        assert data["target_step_type"] == "ContourStep"
+
+        restored = Recipe.from_dict(data)
+        assert restored.target_step_type == "ContourStep"
+
+    def test_target_step_type_defaults_none(self):
+        """target_step_type defaults to None (backward compatible)."""
+        recipe = Recipe.from_dict({"name": "Plain"})
+        assert recipe.target_step_type is None
+
+    def test_matches_step_type_when_set(
+        self, mock_machine_a: Mock, stock_item_factory
+    ):
+        """A step-type-scoped recipe only matches that step type."""
+        stock = stock_item_factory("plywood-6mm", 6.0)
+        recipe = Recipe(
+            target_capability_name=CUT.name,
+            target_step_type="ContourStep",
+            settings={"power": 0.9},
+        )
+        # No step_type context -> cannot match a step-type-scoped recipe
+        assert recipe.matches([stock], (CUT,), mock_machine_a) is False
+        # Matching step type -> matches
+        assert (
+            recipe.matches(
+                [stock], (CUT,), mock_machine_a, step_type="ContourStep"
+            )
+            is True
+        )
+        # Different step type -> no match
+        assert (
+            recipe.matches(
+                [stock], (CUT,), mock_machine_a, step_type="EngraveStep"
+            )
+            is False
+        )
+
+    def test_matches_without_step_type_is_backward_compatible(
+        self, mock_machine_a: Mock, stock_item_factory
+    ):
+        """A recipe without target_step_type ignores the step_type arg."""
+        stock = stock_item_factory("plywood-6mm", 6.0)
+        recipe = Recipe(
+            target_capability_name=CUT.name,
+            settings={"power": 0.9},
+        )
+        assert (
+            recipe.matches(
+                [stock], (CUT,), mock_machine_a, step_type="ContourStep"
+            )
+            is True
+        )
+        assert (
+            recipe.matches(
+                [stock], (CUT,), mock_machine_a, step_type="EngraveStep"
+            )
+            is True
+        )
+
+    def test_step_type_more_specific_than_generic(
+        self, mock_machine_a: Mock, stock_item_factory
+    ):
+        """A step-type-scoped recipe outranks a generic one for sorting."""
+        stock = stock_item_factory("plywood-6mm", 6.0)
+        scoped = Recipe(
+            target_capability_name=CUT.name,
+            target_step_type="ContourStep",
+            settings={"power": 0.9},
+        )
+        generic = Recipe(
+            target_capability_name=CUT.name,
+            settings={"power": 0.9},
+        )
+        # Both match the same context when the step type is given.
+        ctx = ([stock], (CUT,), mock_machine_a, "ContourStep")
+        assert scoped.matches(*ctx) is True
+        assert generic.matches(*ctx) is True
+        # The scoped recipe has a lower (more specific) score.
+        assert scoped.get_specificity_score() < generic.get_specificity_score()
+
+    def test_any_capability_matches_any_capability_context(self):
+        """A recipe with no capability constraint matches any context."""
+        recipe = Recipe(target_capability_name="")
+        assert recipe.capability.name == ""
+        assert recipe.matches([], (CUT,)) is True
+        assert recipe.matches([], (ENGRAVE,)) is True
+
+    def test_any_capability_recipe_round_trip(self):
+        """An 'Any' (empty) capability survives serialization."""
+        recipe = Recipe(
+            name="Universal",
+            target_capability_name="",
+            settings={"power": 0.9},
+        )
+        data = recipe.to_dict()
+        assert data["target_capability_name"] == ""
+        restored = Recipe.from_dict(data)
+        assert restored.target_capability_name == ""
+        assert restored.capability.name == ""
 
     def test_recipe_forward_compatibility_with_extra_fields(self):
         """

@@ -9,7 +9,13 @@ from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.part import Part
 
 from rayforge.core.capability import MachineCapability, StepCapability
-from rayforge.core.cut_side import CutSide
+from rayforge.core.cut_side import CutOrder, CutSide
+from rayforge.core.varset import (
+    BoolVar,
+    FloatVar,
+    LabeledChoiceVar,
+    VarSet,
+)
 from rayforge.pipeline.stage.assembler_helpers import (
     build_part_vector_with_raster_fallback,
 )
@@ -30,6 +36,50 @@ class ContourStep(LaserStep):
     CAPABILITIES: Tuple[StepCapability, ...] = (CUT, SCORE, WITH_KERF)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "contour"
+
+    RECIPE_KEYS: Tuple[str, ...] = LaserStep.RECIPE_KEYS + (
+        "cut_side",
+        "cut_order",
+        "remove_inner_paths",
+        "path_offset_mm",
+        "overcut",
+    )
+
+    @classmethod
+    def recipe_varset(cls) -> VarSet:
+        return VarSet(
+            vars=[
+                *LaserStep.recipe_varset().vars,
+                LabeledChoiceVar(
+                    key="cut_side",
+                    label=_("Cut Side"),
+                    choices=[(cs.label(), cs.name) for cs in CutSide],
+                    default="CENTERLINE",
+                ),
+                LabeledChoiceVar(
+                    key="cut_order",
+                    label=_("Cut Order"),
+                    choices=[(co.label(), co.name) for co in CutOrder],
+                    default="INSIDE_OUTSIDE",
+                ),
+                BoolVar(
+                    key="remove_inner_paths",
+                    label=_("Remove Inner Paths"),
+                    default=False,
+                ),
+                FloatVar(
+                    key="path_offset_mm",
+                    label=_("Path Offset"),
+                    default=0.0,
+                ),
+                FloatVar(
+                    key="overcut",
+                    label=_("Overcut"),
+                    default=0.0,
+                    min_val=0.0,
+                ),
+            ]
+        )
 
     def __init__(
         self, name: Optional[str] = None, typelabel: Optional[str] = None

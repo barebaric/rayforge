@@ -5,6 +5,7 @@ from .choicevar import ChoiceVar
 from .floatvar import FloatVar, SliderFloatVar
 from .hostnamevar import HostnameVar
 from .intvar import IntVar
+from .labeledchoicevar import LabeledChoiceVar
 from .oauthvar import OAuthFlowVar
 from .portvar import PortVar
 from .serialportvar import SerialPortVar
@@ -22,6 +23,7 @@ __all__ = [
     "FloatVar",
     "HostnameVar",
     "IntVar",
+    "LabeledChoiceVar",
     "OAuthFlowVar",
     "PortVar",
     "SerialPortVar",
