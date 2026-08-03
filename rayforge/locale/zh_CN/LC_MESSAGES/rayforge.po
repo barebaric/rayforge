@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-30 11:12+0200\n"
+"POT-Creation-Date: 2026-08-04 00:33+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -56,7 +56,7 @@ msgstr "平面"
 msgid "Rotary · {name}"
 msgstr "旋转 · {name}"
 
-#: rayforge/core/layer.py
+#: rayforge/core/layer.py rayforge/core/capability.py
 msgid "Rotary"
 msgstr "旋转轴"
 
@@ -107,10 +107,32 @@ msgstr "连接失败 - 请检查您的网络"
 msgid "Model '{model}' not found. Available: {available}"
 msgstr "未找到模型'{model}'。可用模型：{available}"
 
+#: rayforge/core/recipe.py rayforge/machine/driver/driver.py
+#: rayforge/machine/transport/transport.py
+#: rayforge/ui_gtk/machine/machine_dropdown.py
+#: rayforge/ui_gtk/machine/status_widget.py
+msgid "Unknown"
+msgstr "未知"
+
+#: rayforge/core/recipe.py rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid "Any"
+msgstr "任何"
+
 #: rayforge/core/step.py
-#, python-brace-format
-msgid "{power_percent}% power, {speed_str}"
-msgstr "{power_percent}% 功率，{speed_str}"
+#: rayforge/ui_gtk/doceditor/step_settings/rows/cut_speed_row.py
+msgid "Cut Speed"
+msgstr "切割速度"
+
+#: rayforge/core/step.py
+#: rayforge/ui_gtk/doceditor/step_settings/rows/travel_speed_row.py
+msgid "Travel Speed"
+msgstr "移动速度"
+
+#: rayforge/core/step.py rayforge/machine/models/dialect/base.py
+#: rayforge/ui_gtk/settings/settings_dialog.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+msgid "Settings"
+msgstr "设置"
 
 #: rayforge/core/varset/choicevar.py
 msgid "Choice"
@@ -183,6 +205,10 @@ msgstr "滑块 (0-100%)"
 msgid "Text (Multi-Line)"
 msgstr "文本 (多行)"
 
+#: rayforge/core/varset/labeledchoicevar.py
+msgid "Choice (Labeled)"
+msgstr "选择（带标签）"
+
 #: rayforge/core/varset/boolvar.py
 msgid "Boolean (Switch)"
 msgstr "布尔值 (开关)"
@@ -237,95 +263,35 @@ msgstr "内-外"
 msgid "Outside-Inside"
 msgstr "外-内"
 
-#: rayforge/core/capability.py rayforge/machine/models/laser.py
-#: rayforge/ui_gtk/machine/laser_control_widget.py
-msgid "Laser Head"
-msgstr "激光头"
-
-#: rayforge/core/capability.py rayforge/ui_gtk/main_menu.py
-#: rayforge/ui_gtk/doceditor/asset_browser.py
-#: rayforge/ui_gtk/doceditor/layer_column.py
-msgid "Cut"
-msgstr "切割"
+#: rayforge/core/capability.py rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid "Laser"
+msgstr "激光"
 
 #: rayforge/core/capability.py
-msgid "Optionally force a specific laser head"
-msgstr "可选地强制使用特定的激光头"
+msgid "Mill"
+msgstr "铣削"
 
-#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
-msgid "Power"
-msgstr "功率"
-
-#: rayforge/core/capability.py
-msgid "Tab Power"
-msgstr "标签功率"
-
-#: rayforge/core/capability.py
-#, python-format
-msgid "Laser power at tab positions (% of cut power)"
-msgstr "标签位置的激光功率（切割功率的百分比）"
-
-#: rayforge/core/capability.py
-msgid "Cut Speed"
-msgstr "切割速度"
-
-#: rayforge/core/capability.py
-msgid "Travel Speed"
-msgstr "移动速度"
-
-#: rayforge/core/capability.py
-msgid "Air Assist"
-msgstr "辅助吹气"
-
-#: rayforge/core/capability.py
-msgid "Engrave"
-msgstr "雕刻"
-
-#: rayforge/core/capability.py
-msgid "Engrave Speed"
-msgstr "雕刻速度"
-
-#: rayforge/core/capability.py
-msgid "Score"
-msgstr "划线"
-
-#: rayforge/core/capability.py
-msgid "Score Speed"
-msgstr "划线速度"
-
-#: rayforge/core/capability.py
-msgid "Kerf"
-msgstr "切口宽度"
-
-#: rayforge/core/capability.py
-msgid "The effective width of the laser beam"
-msgstr "激光光束的有效宽度"
-
-#: rayforge/core/capability.py
-msgid "Material Test"
-msgstr "材料测试"
-
-#: rayforge/core/capability.py
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
+#: rayforge/core/capability.py rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "PWM"
 msgstr "PWM"
 
-#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
-msgid "Frequency"
-msgstr "频率"
-
-#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
-msgid "PWM frequency in Hz"
-msgstr "PWM频率（Hz）"
-
-#: rayforge/core/capability.py rayforge/ui_gtk/machine/laser_control_widget.py
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Pulse Width"
-msgstr "脉冲宽度"
+#: rayforge/core/capability.py
+msgid "Cutting and engraving with a laser"
+msgstr "使用激光进行切割和雕刻"
 
 #: rayforge/core/capability.py
-msgid "Pulse width in microseconds"
-msgstr "脉冲宽度（微秒）"
+msgid "Milling and routing with a spindle"
+msgstr "使用主轴进行铣削和雕刻"
+
+#: rayforge/core/capability.py
+msgid "Pulse-width-modulated laser power control"
+msgstr "脉宽调制激光功率控制"
+
+#: rayforge/core/capability.py
+msgid "Rotary axis attachment for cylindrical objects"
+msgstr "用于圆柱形物体的旋转轴附件"
 
 #: rayforge/core/model_manager.py
 msgid "Core"
@@ -399,13 +365,7 @@ msgstr ""
 "此驱动程序为实验性质，几乎可以确定存在错误。可能无法可靠运行。使用风险自负。"
 
 #: rayforge/machine/driver/driver.py rayforge/machine/transport/transport.py
-#: rayforge/ui_gtk/machine/config_wizard.py
-#: rayforge/ui_gtk/machine/machine_dropdown.py
-#: rayforge/ui_gtk/machine/status_widget.py
-msgid "Unknown"
-msgstr "未知"
-
-#: rayforge/machine/driver/driver.py rayforge/machine/transport/transport.py
+#: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
 msgid "Idle"
 msgstr "空闲"
 
@@ -467,6 +427,26 @@ msgstr "循环"
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 msgid "Test"
 msgstr "测试"
+
+#: rayforge/machine/driver/driver.py
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Frequency"
+msgstr "频率"
+
+#: rayforge/machine/driver/driver.py
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "PWM frequency in Hz"
+msgstr "PWM频率（Hz）"
+
+#: rayforge/machine/driver/driver.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Pulse Width"
+msgstr "脉冲宽度"
+
+#: rayforge/machine/driver/driver.py
+msgid "Pulse width in microseconds"
+msgstr "脉冲宽度（微秒）"
 
 #: rayforge/machine/driver/driver.py
 msgid "Error during setup. You may need to edit device settings."
@@ -582,6 +562,7 @@ msgstr "OctoPrint服务器的HTTP端口"
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/provider_page.py
 #: rayforge/ui_gtk/varset/adapter/appkey.py
 msgid "API Key"
 msgstr "API密钥"
@@ -1385,8 +1366,12 @@ msgid "Protocol variant"
 msgstr "协议变体"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
-msgid "ESP3D or Longer GRBL variant"
-msgstr "ESP3D或Longer GRBL变体"
+msgid "Standard, ESP3D, or Longer GRBL variant"
+msgstr "标准、ESP3D 或 Longer GRBL 变体"
+
+#: rayforge/machine/driver/grbl/grbl_network.py
+msgid "Standard"
+msgstr "标准"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Host is not configured. Please set a valid IP address or hostname."
@@ -1433,6 +1418,8 @@ msgid "Work area"
 msgstr "工作区域"
 
 #: rayforge/machine/device/lightburn_importer.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/connection_page.py
 msgid "Driver"
 msgstr "驱动"
 
@@ -1441,14 +1428,17 @@ msgid "Baud rate"
 msgstr "波特率"
 
 #: rayforge/machine/device/lightburn_importer.py
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
 msgid "Home on start"
 msgstr "启动时回原点"
 
 #: rayforge/machine/device/lightburn_importer.py
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
 msgid "Max travel speed"
 msgstr "最大移动速度"
 
 #: rayforge/machine/device/lightburn_importer.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "Origin"
 msgstr "原点"
 
@@ -1468,22 +1458,42 @@ msgstr "相机标定"
 msgid "matrix + distortion imported"
 msgstr "矩阵+畸变已导入"
 
+#: rayforge/machine/models/spindle.py
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+#: rayforge/ui_gtk/machine/capabilities_page.py
+msgid "Spindle Head"
+msgstr "主轴头"
+
 #: rayforge/machine/models/dialect_manager.py
 #: rayforge/machine/models/machine.py
 #, python-brace-format
 msgid "{label} (for {machine_name})"
 msgstr "{label}（用于{machine_name}）"
 
+#: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/laser_control_widget.py
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+#: rayforge/ui_gtk/machine/capabilities_page.py
+#: rayforge/ui_gtk/doceditor/step_settings/rows/head_row.py
+msgid "Laser Head"
+msgstr "激光头"
+
 #: rayforge/machine/models/machine.py
 msgid "Default Machine"
 msgstr "默认机器"
 
 #: rayforge/machine/models/rotary_module.py
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Rotary Module"
 msgstr "旋转模块"
+
+#: rayforge/machine/models/head.py
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Head"
+msgstr "机头"
 
 #: rayforge/machine/models/controller.py
 msgid "No driver selected for this machine."
@@ -1566,21 +1576,14 @@ msgid "User-facing name"
 msgstr "面向用户的名称"
 
 #: rayforge/machine/models/dialect/base.py
-#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/varset/varset_editor.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
 msgid "Description"
 msgstr "描述"
 
 #: rayforge/machine/models/dialect/base.py
 msgid "Short description"
 msgstr "简短描述"
-
-#: rayforge/machine/models/dialect/base.py
-#: rayforge/ui_gtk/settings/settings_dialog.py rayforge/ui_gtk/main_menu.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "Settings"
-msgstr "设置"
 
 #: rayforge/machine/models/dialect/base.py
 msgid "Omit unchanged coordinates"
@@ -1846,6 +1849,7 @@ msgid "Connected"
 msgstr "已连接"
 
 #: rayforge/machine/transport/transport.py
+#: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/material_list.py
@@ -1900,16 +1904,14 @@ msgstr "此机器配置文件及其所有设置将被永久删除。此操作无
 #: rayforge/ui_gtk/settings/license_settings_page.py
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/camera/selection_dialog.py
-#: rayforge/ui_gtk/camera/calibration_wizard.py
-#: rayforge/ui_gtk/camera/alignment_dialog.py
-#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+#: rayforge/ui_gtk/machine/unified_wizard.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/hook_list.py rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/wcs_dialog.py
 #: rayforge/ui_gtk/machine/maintenance_page.py
 #: rayforge/ui_gtk/machine/lbdev_import_dialog.py
 #: rayforge/ui_gtk/machine/dialect_list.py
-#: rayforge/ui_gtk/machine/profile_selector.py
 #: rayforge/ui_gtk/machine/template_selector.py
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
@@ -2079,14 +2081,16 @@ msgstr "此AI提供商将被永久删除。此操作无法撤销。"
 
 #: rayforge/ui_gtk/settings/ai_settings_page.py
 #: rayforge/ui_gtk/camera/properties_widget.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 #: rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/maintenance_page.py
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/provider_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 #: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
@@ -2102,6 +2106,7 @@ msgid "OpenAI Compatible"
 msgstr "OpenAI兼容"
 
 #: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/provider_page.py
 msgid "Base URL"
 msgstr "基础URL"
 
@@ -2254,6 +2259,7 @@ msgstr "系统默认"
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
+#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "General"
@@ -2300,19 +2306,20 @@ msgid "Length"
 msgstr "长度"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-#: rayforge/ui_gtk/machine/config_wizard.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Speed"
 msgstr "速度"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Acceleration"
 msgstr "加速度"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-#: rayforge/ui_gtk/machine/config_wizard.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Behavior"
 msgstr "行为"
 
@@ -2587,64 +2594,99 @@ msgstr "自动布局（简单）"
 msgid "{camera_name} - Lens Calibration"
 msgstr "{camera_name} - 镜头校准"
 
-#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
-#: rayforge/ui_gtk/camera/properties_widget.py
-msgid "Lens Calibration"
-msgstr "镜头校准"
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Camera Image Settings"
+msgstr "摄像头图像设置"
 
-#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Adjust image quality and appearance parameters."
+msgstr "调整图像质量和外观参数。"
+
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Default"
+msgstr "默认"
+
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Custom..."
+msgstr "自定义..."
+
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Resolution"
+msgstr "分辨率"
+
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Camera capture resolution. Default uses the camera's native setting."
+msgstr "相机捕获分辨率。默认使用相机的原生设置。"
+
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Custom Width"
+msgstr "自定义宽度"
+
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Custom Height"
+msgstr "自定义高度"
+
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Prefer YUYV Format"
+msgstr "优先使用 YUYV 格式"
+
+#: rayforge/ui_gtk/camera/image_settings_widget.py
 msgid ""
-"Correct lens distortion for straighter lines. Use the wizard for automatic "
-"calibration or adjust manually."
-msgstr "校正镜头畸变以获得更直的线条。使用向导进行自动校准或手动调整。"
+"Use uncompressed YUYV instead of MJPEG. Fixes green artifacts on some USB "
+"cameras but may reduce resolution or frame rate on USB 2.0."
+msgstr ""
+"使用未压缩的 YUYV 而非 MJPEG。修复某些 USB 摄像头上的绿色伪影，但在 USB 2.0 "
+"上可能会降低分辨率或帧率。"
 
-#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
-msgid "Wizard"
-msgstr "向导"
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Auto White Balance"
+msgstr "自动白平衡"
 
-#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Automatically adjust white balance"
+msgstr "自动调整白平衡"
+
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "White Balance (Kelvin)"
+msgstr "白平衡（开尔文）"
+
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Color temperature for accurate color representation"
+msgstr "用于准确色彩表现的色温"
+
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Contrast"
+msgstr "对比度"
+
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Difference between light and dark areas"
+msgstr "明暗区域之间的差异"
+
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Brightness"
+msgstr "亮度"
+
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Overall lightness or darkness of the image"
+msgstr "图像的整体明暗度"
+
+#: rayforge/ui_gtk/camera/image_settings_widget.py
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
-msgid "Radial 1 (k1)"
-msgstr "径向 1 (k1)"
+msgid "Noise Reduction"
+msgstr "降噪"
 
-#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
-msgid "First order radial distortion"
-msgstr "一阶径向畸变"
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Temporal averaging, higher values cause trailing"
+msgstr "时间平均，较高的值会导致拖尾"
 
-#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
-#: rayforge/ui_gtk/camera/camera_preferences_page.py
-msgid "Radial 2 (k2)"
-msgstr "径向 2 (k2)"
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Transparency"
+msgstr "透明度"
 
-#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
-msgid "Second order radial distortion"
-msgstr "二阶径向畸变"
-
-#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
-msgid "Radial 3 (k3)"
-msgstr "径向 3 (k3)"
-
-#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
-msgid "Third order radial distortion"
-msgstr "三阶径向畸变"
-
-#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
-#: rayforge/ui_gtk/camera/camera_preferences_page.py
-msgid "Tangential 1 (p1)"
-msgstr "切向 1 (p1)"
-
-#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
-msgid "First order tangential distortion"
-msgstr "一阶切向畸变"
-
-#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
-#: rayforge/ui_gtk/camera/camera_preferences_page.py
-msgid "Tangential 2 (p2)"
-msgstr "切向 2 (p2)"
-
-#: rayforge/ui_gtk/camera/lens_calibration_dialog.py
-msgid "Second order tangential distortion"
-msgstr "二阶切向畸变"
+#: rayforge/ui_gtk/camera/image_settings_widget.py
+msgid "Transparency on the worksurface"
+msgstr "工作台上的透明度"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "Please select an available camera device"
@@ -2718,10 +2760,24 @@ msgid "Turn the camera stream on or off"
 msgstr "开启或关闭摄像头流"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Start"
+msgstr "开始"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+msgid "Camera Wizard"
+msgstr "相机向导"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+msgid "Guided setup: image settings, lens calibration, and alignment."
+msgstr "引导式设置：图像设置、镜头校准和对齐。"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Configure"
 msgstr "配置"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
+#: rayforge/ui_gtk/camera/wizard/image_settings_page.py
 msgid "Image Settings"
 msgstr "图像设置"
 
@@ -2730,10 +2786,18 @@ msgid "Adjust brightness, contrast, white balance, and noise"
 msgstr "调整亮度、对比度、白平衡和噪点"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
+#: rayforge/ui_gtk/camera/wizard/lens_calibration_settings_page.py
+#: rayforge/ui_gtk/camera/wizard/lens_calibration_choice_page.py
+#: rayforge/ui_gtk/camera/lens_calibration_widget.py
+msgid "Lens Calibration"
+msgstr "镜头校准"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Correct lens distortion for straighter lines"
 msgstr "校正镜头畸变以获得更直的线条"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
+#: rayforge/ui_gtk/camera/wizard/alignment_page.py
 msgid "Image Alignment"
 msgstr "图像对齐"
 
@@ -2761,104 +2825,121 @@ msgstr "镜头校准更新后必须重新进行图像对齐"
 msgid "Image alignment not yet performed"
 msgstr "图像对齐尚未执行"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/capture_surface.py
 msgid "Waiting for camera..."
 msgstr "等待相机..."
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
-msgid "Lens Calibration Wizard"
-msgstr "镜头校准向导"
+#: rayforge/ui_gtk/camera/wizard/lens_calibration_choice_page.py
+msgid ""
+"Correct lens distortion for straighter lines. Choose how to calibrate, or "
+"skip if your lens has negligible distortion."
+msgstr ""
+"校正镜头畸变以获得更直的线条。选择校准方式，如果镜头畸变可忽略不计，也可以跳"
+"过。"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Back"
-msgstr "返回"
+#: rayforge/ui_gtk/camera/wizard/lens_calibration_choice_page.py
+msgid "Automatic"
+msgstr "自动"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Next"
-msgstr "下一步"
+#: rayforge/ui_gtk/camera/wizard/lens_calibration_choice_page.py
+msgid "Automatic Calibration"
+msgstr "自动校准"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
-msgid "Capture Frame"
-msgstr "捕获画面"
+#: rayforge/ui_gtk/camera/wizard/lens_calibration_choice_page.py
+msgid ""
+"Print a calibration card and capture it at several positions. The wizard "
+"solves the distortion coefficients for you."
+msgstr "打印一张校准卡并在多个位置采集。向导会为您求解畸变系数。"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
-#: rayforge/ui_gtk/varset/adapter/appkey.py
-msgid "Clear"
-msgstr "清除"
+#: rayforge/ui_gtk/camera/wizard/lens_calibration_choice_page.py
+msgid "Manual"
+msgstr "手动"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
-msgid "Calibrate"
-msgstr "校准"
+#: rayforge/ui_gtk/camera/wizard/lens_calibration_choice_page.py
+msgid "Manual Calibration"
+msgstr "手动校准"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/lens_calibration_choice_page.py
+msgid "Enter the radial and tangential distortion coefficients by hand."
+msgstr "手动输入径向和切向畸变系数。"
+
+#: rayforge/ui_gtk/camera/wizard/lens_calibration_choice_page.py
+#: rayforge/ui_gtk/machine/unified_wizard.py
+msgid "Skip"
+msgstr "跳过"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Calibration Card"
+msgstr "校准卡"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Instructions"
 msgstr "说明"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid ""
 "Print a calibration card to correct lens distortion. The card size should "
 "fit within your camera view."
 msgstr "打印校准卡以校正镜头畸变。卡片大小应适合您的相机视野。"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Card Size"
 msgstr "卡片大小"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Adjust to fit your work surface."
 msgstr "调整以适合您的工作台面。"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Width"
 msgstr "宽度"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Card width"
 msgstr "卡片宽度"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Height"
 msgstr "高度"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Card height"
 msgstr "卡片高度"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Generated Pattern"
 msgstr "生成的图案"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Details about the calibration pattern."
 msgstr "校准图案的详细信息。"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Grid Size"
 msgstr "网格大小"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Square Size"
 msgstr "方格大小"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Physical Size"
 msgstr "物理尺寸"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Save to PDF"
 msgstr "保存为 PDF"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Export the calibration card for printing"
 msgstr "导出校准卡以供打印"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/wcs_dialog.py
@@ -2870,76 +2951,92 @@ msgstr "导出校准卡以供打印"
 msgid "Save"
 msgstr "保存"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Save Calibration Card"
+msgstr "保存校准卡"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Calibration card saved"
+msgstr "校准卡已保存"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Capture Frames"
+msgstr "采集画面"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid ""
 "Capture the card at different positions. Important: include the image "
 "corners and edges for accurate distortion correction."
 msgstr ""
 "在不同位置捕获校准卡。重要提示：请包含图像的角落和边缘以获得准确的畸变校正。"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
 msgid "Status"
 msgstr "状态"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Progress of the calibration capture process."
 msgstr "校准捕获过程的进度。"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Captured Frames"
 msgstr "已捕获的画面"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Corners Detected"
 msgstr "检测到的角点"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Coverage"
 msgstr "覆盖率"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Not started"
 msgstr "未开始"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Move card to capture more positions"
 msgstr "移动卡片以捕获更多位置"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Capture Progress"
 msgstr "捕获进度"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Capture Frame"
+msgstr "捕获画面"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+#: rayforge/ui_gtk/varset/adapter/appkey.py
+msgid "Clear"
+msgstr "清除"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Calibrate"
+msgstr "校准"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Good"
 msgstr "良好"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Limited — reach edges"
 msgstr "有限 — 请到达边缘"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Poor — reach all corners"
 msgstr "不足 — 请到达所有角落"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Calibration Failed"
 msgstr "校准失败"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
-#: rayforge/ui_gtk/machine/dialect_list.py
-#: rayforge/ui_gtk/machine/profile_selector.py
-#: rayforge/ui_gtk/addon_manager/license_dialog.py
-#: rayforge/ui_gtk/addon_manager/addon_list.py
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/material_list.py
-msgid "OK"
-msgstr "确定"
-
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Calibration Complete"
 msgstr "校准完成"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 #, python-brace-format
 msgid ""
 "RMS Error: {rms:.4f} pixels\n"
@@ -2950,21 +3047,91 @@ msgstr ""
 "质量：{quality}\n"
 "使用帧数：{frames}"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Discard"
 msgstr "放弃"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Save Calibration"
 msgstr "保存校准"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
-msgid "Save Calibration Card"
-msgstr "保存校准卡"
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+#, python-brace-format
+msgid "{camera} - Camera Wizard"
+msgstr "{camera} - 相机向导"
 
-#: rayforge/ui_gtk/camera/calibration_wizard.py
-msgid "Calibration card saved"
-msgstr "校准卡已保存"
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+#: rayforge/ui_gtk/machine/unified_wizard.py
+msgid "Back"
+msgstr "返回"
+
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+#: rayforge/ui_gtk/machine/unified_wizard.py
+msgid "Next"
+msgstr "下一步"
+
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+msgid "Finish"
+msgstr "完成"
+
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+#: rayforge/ui_gtk/machine/dialect_list.py
+#: rayforge/ui_gtk/addon_manager/license_dialog.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/material_list.py
+msgid "OK"
+msgstr "确定"
+
+#: rayforge/ui_gtk/camera/lens_calibration_widget.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Radial 1 (k1)"
+msgstr "径向 1 (k1)"
+
+#: rayforge/ui_gtk/camera/lens_calibration_widget.py
+msgid "First order radial distortion"
+msgstr "一阶径向畸变"
+
+#: rayforge/ui_gtk/camera/lens_calibration_widget.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Radial 2 (k2)"
+msgstr "径向 2 (k2)"
+
+#: rayforge/ui_gtk/camera/lens_calibration_widget.py
+msgid "Second order radial distortion"
+msgstr "二阶径向畸变"
+
+#: rayforge/ui_gtk/camera/lens_calibration_widget.py
+msgid "Radial 3 (k3)"
+msgstr "径向 3 (k3)"
+
+#: rayforge/ui_gtk/camera/lens_calibration_widget.py
+msgid "Third order radial distortion"
+msgstr "三阶径向畸变"
+
+#: rayforge/ui_gtk/camera/lens_calibration_widget.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Tangential 1 (p1)"
+msgstr "切向 1 (p1)"
+
+#: rayforge/ui_gtk/camera/lens_calibration_widget.py
+msgid "First order tangential distortion"
+msgstr "一阶切向畸变"
+
+#: rayforge/ui_gtk/camera/lens_calibration_widget.py
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
+msgid "Tangential 2 (p2)"
+msgstr "切向 2 (p2)"
+
+#: rayforge/ui_gtk/camera/lens_calibration_widget.py
+msgid "Second order tangential distortion"
+msgstr "二阶切向畸变"
+
+#: rayforge/ui_gtk/camera/lens_calibration_widget.py
+msgid ""
+"Correct lens distortion for straighter lines. Adjust the coefficients "
+"manually."
+msgstr "校正镜头畸变以获得更直的线条。手动调整系数。"
 
 #: rayforge/ui_gtk/camera/alignment_dialog.py
 #, python-brace-format
@@ -2983,126 +3150,10 @@ msgstr "适应窗口"
 msgid "Zoom In (Scroll Up)"
 msgstr "放大（向上滚动）"
 
-#: rayforge/ui_gtk/camera/alignment_dialog.py
-msgid ""
-"Click the image to add reference points. Drag to move them.\n"
-"Scroll to Zoom. Middle-click and drag to Pan.\n"
-"Use the Arrow Keys to nudge the active point precisely."
-msgstr ""
-"点击图像添加参考点。拖动以移动它们。\n"
-"滚动以缩放。中键点击并拖动以平移。\n"
-"使用方向键精确微调活动点。"
-
-#: rayforge/ui_gtk/camera/alignment_dialog.py
-msgid "Reset Points"
-msgstr "重置点"
-
-#: rayforge/ui_gtk/camera/alignment_dialog.py
-msgid "Clear All Points"
-msgstr "清除所有点"
-
-#: rayforge/ui_gtk/camera/alignment_dialog.py
-msgid "Apply"
-msgstr "应用"
-
 #: rayforge/ui_gtk/camera/image_settings_dialog.py
 #, python-brace-format
 msgid "{camera_name} - Camera Image Settings"
 msgstr "{camera_name} - 摄像头图像设置"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Camera Image Settings"
-msgstr "摄像头图像设置"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Adjust image quality and appearance parameters."
-msgstr "调整图像质量和外观参数。"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
-msgid "Default"
-msgstr "默认"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Custom..."
-msgstr "自定义..."
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Resolution"
-msgstr "分辨率"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Camera capture resolution. Default uses the camera's native setting."
-msgstr "相机捕获分辨率。默认使用相机的原生设置。"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Custom Width"
-msgstr "自定义宽度"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Custom Height"
-msgstr "自定义高度"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Prefer YUYV Format"
-msgstr "优先使用 YUYV 格式"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid ""
-"Use uncompressed YUYV instead of MJPEG. Fixes green artifacts on some USB "
-"cameras but may reduce resolution or frame rate on USB 2.0."
-msgstr ""
-"使用未压缩的 YUYV 而非 MJPEG。修复某些 USB 摄像头上的绿色伪影，但在 USB 2.0 "
-"上可能会降低分辨率或帧率。"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Auto White Balance"
-msgstr "自动白平衡"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Automatically adjust white balance"
-msgstr "自动调整白平衡"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "White Balance (Kelvin)"
-msgstr "白平衡（开尔文）"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Color temperature for accurate color representation"
-msgstr "用于准确色彩表现的色温"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Contrast"
-msgstr "对比度"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Difference between light and dark areas"
-msgstr "明暗区域之间的差异"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Brightness"
-msgstr "亮度"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Overall lightness or darkness of the image"
-msgstr "图像的整体明暗度"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-#: rayforge/ui_gtk/camera/camera_preferences_page.py
-msgid "Noise Reduction"
-msgstr "降噪"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Temporal averaging, higher values cause trailing"
-msgstr "时间平均，较高的值会导致拖尾"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Transparency"
-msgstr "透明度"
-
-#: rayforge/ui_gtk/camera/image_settings_dialog.py
-msgid "Transparency on the worksurface"
-msgstr "工作台上的透明度"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 #, python-brace-format
@@ -3146,6 +3197,8 @@ msgid "Camera"
 msgstr "摄像头"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/camera_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "Cameras"
 msgstr "摄像头"
 
@@ -3153,135 +3206,27 @@ msgstr "摄像头"
 msgid "Stream a camera image directly onto the work surface."
 msgstr "将摄像头图像直接流式传输到工作台。"
 
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Configure Device"
-msgstr "配置设备"
+#: rayforge/ui_gtk/camera/alignment_widget.py
+msgid ""
+"Click the image to add reference points. Drag to move them.\n"
+"Scroll to Zoom. Middle-click and drag to Pan.\n"
+"Use the Arrow Keys to nudge the active point precisely."
+msgstr ""
+"点击图像添加参考点。拖动以移动它们。\n"
+"滚动以缩放。中键点击并拖动以平移。\n"
+"使用方向键精确微调活动点。"
 
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Create Machine"
-msgstr "创建机器"
+#: rayforge/ui_gtk/camera/alignment_widget.py
+msgid "Reset Points"
+msgstr "重置点"
 
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Retry"
-msgstr "重试"
+#: rayforge/ui_gtk/camera/alignment_widget.py
+msgid "Clear All Points"
+msgstr "清除所有点"
 
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Connection"
-msgstr "连接"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Select a driver and enter the connection parameters for your device."
-msgstr "选择驱动程序并输入设备的连接参数。"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Select driver"
-msgstr "选择驱动程序"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Discovering Device"
-msgstr "正在发现设备"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Connecting to the device and reading its configuration."
-msgstr "正在连接设备并读取其配置。"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Device Info"
-msgstr "设备信息"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Device Name"
-msgstr "设备名称"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Firmware Version"
-msgstr "固件版本"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "RX Buffer Size"
-msgstr "RX 缓冲区大小"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Arc Tolerance"
-msgstr "圆弧公差"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Working Area"
-msgstr "工作区域"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Axis travel in machine units."
-msgstr "以机器单位表示的轴行程。"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "X Travel"
-msgstr "X 行程"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Y Travel"
-msgstr "Y 行程"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Speed limits in machine units per minute."
-msgstr "以每分钟机器单位表示的速度限制。"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Max Travel Speed"
-msgstr "最大移动速度"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Max Cut Speed"
-msgstr "最大切割速度"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Machine units per second squared."
-msgstr "每秒平方的机器单位。"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Laser"
-msgstr "激光"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Max Power (S-value)"
-msgstr "最大功率（S值）"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Maximum spindle speed / S-value range"
-msgstr "最大主轴转速 / S值范围"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Home on Start"
-msgstr "启动时归零"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Run homing cycle when machine connects"
-msgstr "机器连接时执行归零循环"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Single-Axis Homing"
-msgstr "单轴归零"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Allow homing individual axes"
-msgstr "允许单轴归零"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-#: rayforge/ui_gtk/shared/sanity_check_dialog.py
-msgid "Warnings"
-msgstr "警告"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Probe failed"
-msgstr "探测失败"
-
-#: rayforge/ui_gtk/machine/config_wizard.py
-msgid "Error: {}"
-msgstr "错误：{}"
+#: rayforge/ui_gtk/camera/alignment_widget.py
+msgid "Apply"
+msgstr "应用"
 
 #: rayforge/ui_gtk/machine/macro_list.py
 msgid "Add New Macro"
@@ -3294,6 +3239,358 @@ msgstr "未配置宏"
 #: rayforge/ui_gtk/machine/macro_list.py
 msgid "New Macro"
 msgstr "新宏"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#, python-brace-format
+msgid "Tool {tool_number}, {min_rpm}-{max_rpm} rpm"
+msgstr "刀具 {tool_number}，{min_rpm}-{max_rpm} rpm"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#, python-brace-format
+msgid "Tool {tool_number}, max power {max_power}, spot size {spot_x}x{spot_y}"
+msgstr "工具 {tool_number}，最大功率 {max_power}，光斑大小 {spot_x}x{spot_y}"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#, python-brace-format
+msgid "Tool {tool_number}"
+msgstr "刀具 {tool_number}"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Add New Head"
+msgstr "添加新机头"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "No heads configured"
+msgstr "未配置机头"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "At least one head is required"
+msgstr "至少需要一个机头"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Spindle"
+msgstr "主轴"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "New Laser"
+msgstr "新激光"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "New Spindle"
+msgstr "新主轴"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "3D Model"
+msgstr "3D 模型"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Select and configure a 3D model for this head."
+msgstr "为此机头选择并配置 3D 模型。"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Model"
+msgstr "模型"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Scale"
+msgstr "缩放"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Uniform scale factor for the model"
+msgstr "模型的统一缩放因子"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "X Rotation"
+msgstr "X 旋转"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Degrees around the X axis"
+msgstr "绕 X 轴的度数"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Y Rotation"
+msgstr "Y 旋转"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Degrees around the Y axis"
+msgstr "绕 Y 轴的度数"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Z Rotation"
+msgstr "Z 旋转"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Degrees around the Z axis"
+msgstr "绕 Z 轴的度数"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+#: rayforge/ui_gtk/shared/model_selection_dialog.py
+#: rayforge/ui_gtk/doceditor/step_settings/rows/head_row.py
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "None"
+msgstr "无"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Laser Properties"
+msgstr "激光属性"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Configure the selected laser head."
+msgstr "配置所选激光头。"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pulse Width Modulation settings for frequency and pulse width control."
+msgstr "脉冲宽度调制设置，用于控制频率和脉冲宽度。"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Framing"
+msgstr "边框"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Settings for the frame outline operation that traces the job boundary."
+msgstr "追踪作业边界的边框轮廓操作设置。"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Tool Number"
+msgstr "工具编号"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "G-code tool number (e.g., T0, T1)"
+msgstr "G代码工具编号（例如：T0、T1）"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Diode"
+msgstr "二极管"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "CO₂"
+msgstr "CO₂"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Fiber"
+msgstr "光纤"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Laser Type"
+msgstr "激光类型"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Type of laser tube or diode"
+msgstr "激光管或二极管的类型"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Max Power"
+msgstr "最大功率"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Maximum power value in GCode"
+msgstr "G代码中的最大功率值"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Focus Power"
+msgstr "聚焦功率"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Power value in percent to use when focusing. 0 to disable"
+msgstr "聚焦时使用的功率百分比。0表示禁用"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Spot Size X"
+msgstr "光斑大小 X"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Size of the laser spot in the X direction"
+msgstr "X方向上的激光光斑大小"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Spot Size Y"
+msgstr "光斑大小 Y"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Size of the laser spot in the Y direction"
+msgstr "Y方向上的激光光斑大小"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Cut Color"
+msgstr "切割颜色"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Color for cutting operations"
+msgstr "切割操作的颜色"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Raster Color"
+msgstr "光栅颜色"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Color for engraving/raster operations"
+msgstr "雕刻/光栅操作的颜色"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Focal Distance"
+msgstr "焦距"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Distance from the laser head to the work surface (Z offset)"
+msgstr "激光头到工作表面的距离（Z 偏移）"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "PWM Frequency"
+msgstr "PWM频率"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Default PWM frequency in Hz"
+msgstr "默认PWM频率（Hz）"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Max PWM Frequency"
+msgstr "最大PWM频率"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Maximum supported PWM frequency in Hz"
+msgstr "最大支持的PWM频率（Hz）"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Default pulse width in µs"
+msgstr "默认脉冲宽度（µs）"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Min Pulse Width"
+msgstr "最小脉冲宽度"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Minimum pulse width in µs"
+msgstr "最小脉冲宽度（µs）"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Max Pulse Width"
+msgstr "最大脉冲宽度"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Maximum pulse width in µs"
+msgstr "最大脉冲宽度（µs）"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Frame Power"
+msgstr "边框功率"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Power value in percent to use when framing. 0 to disable"
+msgstr "边框时使用的功率百分比。0表示禁用"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Frame Speed"
+msgstr "边框速度"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid ""
+"Speed for frame outline. Leave at 0 to use the machine's max travel speed"
+msgstr "边框轮廓速度。保持为 0 以使用机器的最大移动速度"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Repeat Count"
+msgstr "重复次数"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Number of times to trace the frame outline"
+msgstr "描边框轮廓的次数"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pause at Corners"
+msgstr "角落暂停"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid ""
+"Pause duration in seconds at each corner of the frame outline. 0 to disable"
+msgstr "边框轮廓每个角落的暂停时间（秒）。0 表示禁用"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Spindle Properties"
+msgstr "主轴属性"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Configure the selected spindle head."
+msgstr "配置所选主轴头。"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Min RPM"
+msgstr "最小 RPM"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Minimum spindle speed"
+msgstr "主轴最小转速"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Max RPM"
+msgstr "最大 RPM"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Maximum spindle speed"
+msgstr "主轴最大转速"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Supports Flood Coolant"
+msgstr "支持浇注冷却液"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Coolant delivered to the workpiece as a flood"
+msgstr "冷却液以浇注方式输送到工件"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Supports Mist Coolant"
+msgstr "支持喷雾冷却液"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Coolant delivered to the workpiece as a mist"
+msgstr "冷却液以喷雾方式输送到工件"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Heads"
+msgstr "机头"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid ""
+"You can configure multiple lasers or spindles if your machine supports it."
+msgstr "如果您的机器支持，您可以配置多个激光器或主轴。"
+
+#: rayforge/ui_gtk/machine/unified_wizard.py
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid "Add a Machine"
+msgstr "添加机器"
+
+#: rayforge/ui_gtk/machine/unified_wizard.py
+msgid "Create Machine"
+msgstr "创建机器"
+
+#: rayforge/ui_gtk/machine/unified_wizard.py
+msgid "Could not create machine"
+msgstr "无法创建机器"
+
+#: rayforge/ui_gtk/machine/unified_wizard.py
+msgid "Camera setup unavailable"
+msgstr "相机设置不可用"
+
+#: rayforge/ui_gtk/machine/unified_wizard.py
+msgid "Calibrate this camera later from the machine settings page."
+msgstr "稍后可从机器设置页面校准此相机。"
 
 #: rayforge/ui_gtk/machine/console.py
 msgid "Show verbose output (status polls)"
@@ -3891,6 +4188,10 @@ msgid "Toggle laser on/off"
 msgstr "开启/关闭激光"
 
 #: rayforge/ui_gtk/machine/laser_control_widget.py
+msgid "Power"
+msgstr "功率"
+
+#: rayforge/ui_gtk/machine/laser_control_widget.py
 msgid "Laser power in percent"
 msgstr "激光功率（百分比）"
 
@@ -4006,30 +4307,6 @@ msgstr "减少Z距离"
 msgid "Cancel running job"
 msgstr "取消运行中的作业"
 
-#: rayforge/ui_gtk/machine/profile_selector.py
-msgid "Add a New Machine"
-msgstr "添加新机器"
-
-#: rayforge/ui_gtk/machine/profile_selector.py
-msgid "Select a machine profile to use as a template."
-msgstr "选择一个机器配置文件作为模板。"
-
-#: rayforge/ui_gtk/machine/profile_selector.py
-msgid "Search devices…"
-msgstr "搜索设备…"
-
-#: rayforge/ui_gtk/machine/profile_selector.py
-msgid "Other Device…"
-msgstr "其他设备…"
-
-#: rayforge/ui_gtk/machine/profile_selector.py
-msgid "Import from File…"
-msgstr "从文件导入…"
-
-#: rayforge/ui_gtk/machine/profile_selector.py
-msgid "Import Failed"
-msgstr "导入失败"
-
 #: rayforge/ui_gtk/machine/template_selector.py
 msgid "Select a Template"
 msgstr "选择模板"
@@ -4039,51 +4316,67 @@ msgid "Choose a built-in dialect as a starting point."
 msgstr "选择一个内置方言作为起点。"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 #: rayforge/ui_gtk/machine/settings_dialog.py
 msgid "Hardware"
 msgstr "硬件"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Axes"
 msgstr "轴"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Configure the axis extents and coordinate system."
 msgstr "配置轴范围和坐标系。"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "X Extent"
 msgstr "X轴范围"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Full X-axis travel range"
 msgstr "X轴完整行程范围"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Y Extent"
 msgstr "Y轴范围"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Full Y-axis travel range"
 msgstr "Y轴完整行程范围"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Bottom Left"
 msgstr "左下"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Top Left"
 msgstr "左上"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Top Right"
 msgstr "右上"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Bottom Right"
 msgstr "右下"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Coordinate Origin (0,0)"
 msgstr "坐标原点 (0,0)"
 
@@ -4092,18 +4385,22 @@ msgid "The physical corner where coordinates are zero after homing"
 msgstr "回原点后坐标为零的物理角落"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Reverse X-Axis Direction"
 msgstr "反转X轴方向"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Makes coordinate values negative"
 msgstr "使坐标值为负"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Reverse Y-Axis Direction"
 msgstr "反转Y轴方向"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Reverse Z-Axis Direction"
 msgstr "反转Z轴方向"
 
@@ -4112,42 +4409,52 @@ msgid "Enable if a positive Z command (e.g., G0 Z10) moves the head down"
 msgstr "如果正Z命令（例如 G0 Z10）使激光头向下移动，请启用此项"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Work Area"
 msgstr "工作区域"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Margins define the unusable space around the axis extents."
 msgstr "边距定义轴范围周围不可使用的空间。"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Left Margin"
 msgstr "左边距"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Unusable space from left edge"
 msgstr "左边缘不可用空间"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Top Margin"
 msgstr "上边距"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Unusable space from top edge"
 msgstr "上边缘不可用空间"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Right Margin"
 msgstr "右边距"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Unusable space from right edge"
 msgstr "右边缘不可用空间"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Bottom Margin"
 msgstr "下边距"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Unusable space from bottom edge"
 msgstr "下边缘不可用空间"
 
@@ -4162,16 +4469,19 @@ msgid ""
 msgstr "将工作区原点视为坐标零点。隐藏WCS控制并使用工作区边距作为偏移量。"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Soft Limits"
 msgstr "软限位"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid ""
 "Configurable safety bounds for jogging. Leave disabled to use work surface "
 "bounds."
 msgstr "手动移动的可配置安全边界。保持禁用以使用工作面边界。"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Enable Custom Soft Limits"
 msgstr "启用自定义软限位"
 
@@ -4180,299 +4490,619 @@ msgid "Override work surface bounds with custom limits"
 msgstr "使用自定义限位覆盖工作面边界"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "X Min"
 msgstr "X最小值"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Minimum X coordinate"
 msgstr "X坐标最小值"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Y Min"
 msgstr "Y最小值"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Minimum Y coordinate"
 msgstr "Y坐标最小值"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "X Max"
 msgstr "X最大值"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Maximum X coordinate"
 msgstr "X坐标最大值"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Y Max"
 msgstr "Y最大值"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Maximum Y coordinate"
 msgstr "Y坐标最大值"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/camera_page.py
+msgid ""
+"Optional. Configure any cameras you want to use for preview and alignment."
+msgstr "可选。配置您想用于预览和对齐的任何相机。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/camera_page.py
+msgid ""
+"Set up cameras now or do it later from machine settings. The wizard records "
+"which V4L devices you mark as 'enabled'; detailed lens calibration is "
+"performed on the camera settings page."
+msgstr ""
+"现在设置相机，或稍后从机器设置中进行。向导会记录您标记为“启用”的 V4L 设备；详"
+"细的镜头校准在相机设置页面中执行。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/camera_page.py
+msgid "No cameras detected"
+msgstr "未检测到相机"
+
+#: rayforge/ui_gtk/machine/wizard_pages/camera_page.py
+msgid "You can add cameras later from machine settings."
+msgstr "您可以稍后从机器设置中添加相机。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/controller_page.py
+msgid "Choose Controller"
+msgstr "选择控制器"
+
+#: rayforge/ui_gtk/machine/wizard_pages/controller_page.py
+msgid "What kind of controller board does this machine use?"
+msgstr "这台机器使用哪种控制器板？"
+
+#: rayforge/ui_gtk/machine/wizard_pages/controller_page.py
+msgid "Controller"
+msgstr "控制器"
+
+#: rayforge/ui_gtk/machine/wizard_pages/controller_page.py
+msgid ""
+"Pick the firmware / protocol family for this machine. If you aren't sure, "
+"choose the closest match — you can refine individual settings later."
+msgstr ""
+"为此机器选择固件/协议系列。如果不确定，请选择最接近的匹配项 — 之后您可以微调"
+"各个设置。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/controller_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/connection_page.py
+msgid "None — G-code export only"
+msgstr "无 — 仅导出 G-code"
+
+#: rayforge/ui_gtk/machine/wizard_pages/controller_page.py
+msgid "No physical controller; export G-code to a file"
+msgstr "无实体控制器；将 G-code 导出到文件"
+
+#: rayforge/ui_gtk/machine/wizard_pages/__init__.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "New Machine"
+msgstr "新机器"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid ""
+"Optional. Set up a rotary attachment now or skip this step to add one later "
+"from machine settings."
+msgstr "可选。立即设置旋转附件，或跳过此步骤以稍后从机器设置中添加。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "Module"
+msgstr "模块"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "Pick rotary type, axis, mode, and geometry."
+msgstr "选择旋转类型、轴、模式和几何。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "Jaws / chuck"
+msgstr "卡爪 / 卡盘"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Rollers"
+msgstr "滚轮"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "Rotary Type"
+msgstr "旋转类型"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "How the workpiece is held"
+msgstr "工件的固定方式"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "Rotary Axis"
+msgstr "旋转轴"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "Which axis the rotary uses"
+msgstr "旋转使用的轴"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "True 4th Axis (keeps X/Y/Z)"
+msgstr "真正的第四轴（保留 X/Y/Z）"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "Axis Replacement (swaps e.g. Y for A)"
+msgstr "轴替换（例如将 Y 换成 A）"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "Mode"
+msgstr "模式"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "Length per Rotation"
+msgstr "每圈长度"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "Auto-fetched from GRBL $101/$103 if probing"
+msgstr "探测时自动从 GRBL $101/$103 获取"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "Default Workpiece Ø"
+msgstr "默认工件直径 Ø"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+#: rayforge/ui_gtk/machine/rotary_module_page.py
+msgid "Max Workpiece Length"
+msgstr "最大工件长度"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "Roller Ø"
+msgstr "滚轮直径 Ø"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "Required when using roller-type rotary"
+msgstr "使用滚轮式旋转时必须填写"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "Reverse Axis Direction"
+msgstr "反转轴方向"
+
+#: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
+msgid "Invert the rotary's rotation direction"
+msgstr "反转旋转装置的旋转方向"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "—"
+msgstr "—"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Yes"
+msgstr "是"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "No"
+msgstr "否"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "Review & Name"
+msgstr "检查并命名"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "Final name and sanity check before creating the machine."
+msgstr "创建机器前的最终命名和合理性检查。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "A friendly name for this machine."
+msgstr "此机器的友好名称。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "Machine Name"
+msgstr "机器名称"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "Summary"
+msgstr "摘要"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/shared/sanity_check_dialog.py
+msgid "Warnings"
+msgstr "警告"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "None (G-code export only)"
+msgstr "无（仅导出 G-code）"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "Unknown driver: {}"
+msgstr "未知驱动程序：{}"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/connection_page.py
+msgid "Connection"
+msgstr "连接"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "Work Area X×Y"
+msgstr "工作区域 X×Y"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Max Travel Speed"
+msgstr "最大移动速度"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Max Cut Speed"
+msgstr "最大切割速度"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Home on Start"
+msgstr "启动时归零"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "Rotary Modules"
+msgstr "旋转模块"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid ""
+"No driver selected — this machine will only export G-code to files; it "
+"cannot run jobs."
+msgstr "未选择驱动程序 — 此机器只能将 G-code 导出到文件；无法运行作业。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "Work area dimensions are unset or non-positive."
+msgstr "工作区域尺寸未设置或非正数。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "No head is configured for this machine."
+msgstr "未为此机器配置机头。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 #, python-brace-format
-msgid "Tool {tool_number}, max power {max_power}, spot size {spot_x}x{spot_y}"
-msgstr "工具 {tool_number}，最大功率 {max_power}，光斑大小 {spot_x}x{spot_y}"
+msgid "Head #{n} looks like a laser but has no max_power setting."
+msgstr "机头 #{n} 看起来像激光器，但没有 max_power 设置。"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Add New Laser Head"
-msgstr "添加新激光头"
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#, python-brace-format
+msgid "Head #{n} looks like a spindle but has no max_rpm setting."
+msgstr "机头 #{n} 看起来像主轴，但没有 max_rpm 设置。"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "No laser heads configured"
-msgstr "未配置激光头"
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "Machine name is blank."
+msgstr "机器名称为空。"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "At least one laser head is required"
-msgstr "至少需要一个激光头"
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "Missing name"
+msgstr "缺少名称"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "New Laser"
-msgstr "新激光"
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "Please enter a name."
+msgstr "请输入名称。"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Laser Heads"
-msgstr "激光头"
+#: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
+msgid "Discover Device"
+msgstr "发现设备"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "You can configure multiple laser heads if your machine supports it."
-msgstr "如果您的机器支持，可以配置多个激光头。"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Laser Properties"
-msgstr "激光属性"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Configure the selected laser."
-msgstr "配置选定的激光。"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Tool Number"
-msgstr "工具编号"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "G-code tool number (e.g., T0, T1)"
-msgstr "G代码工具编号（例如：T0、T1）"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Diode"
-msgstr "二极管"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "CO₂"
-msgstr "CO₂"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Fiber"
-msgstr "光纤"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Laser Type"
-msgstr "激光类型"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Type of laser tube or diode"
-msgstr "激光管或二极管的类型"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Max Power"
-msgstr "最大功率"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Maximum power value in GCode"
-msgstr "G代码中的最大功率值"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Focus Power"
-msgstr "聚焦功率"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Power value in percent to use when focusing. 0 to disable"
-msgstr "聚焦时使用的功率百分比。0表示禁用"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Spot Size X"
-msgstr "光斑大小 X"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Size of the laser spot in the X direction"
-msgstr "X方向上的激光光斑大小"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Spot Size Y"
-msgstr "光斑大小 Y"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Size of the laser spot in the Y direction"
-msgstr "Y方向上的激光光斑大小"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Cut Color"
-msgstr "切割颜色"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Color for cutting operations"
-msgstr "切割操作的颜色"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Raster Color"
-msgstr "光栅颜色"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Color for engraving/raster operations"
-msgstr "雕刻/光栅操作的颜色"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Pulse Width Modulation settings for frequency and pulse width control."
-msgstr "脉冲宽度调制设置，用于控制频率和脉冲宽度。"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "PWM Frequency"
-msgstr "PWM频率"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Default PWM frequency in Hz"
-msgstr "默认PWM频率（Hz）"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Max PWM Frequency"
-msgstr "最大PWM频率"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Maximum supported PWM frequency in Hz"
-msgstr "最大支持的PWM频率（Hz）"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Default pulse width in µs"
-msgstr "默认脉冲宽度（µs）"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Min Pulse Width"
-msgstr "最小脉冲宽度"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Minimum pulse width in µs"
-msgstr "最小脉冲宽度（µs）"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Max Pulse Width"
-msgstr "最大脉冲宽度"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Maximum pulse width in µs"
-msgstr "最大脉冲宽度（µs）"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Framing"
-msgstr "边框"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Settings for the frame outline operation that traces the job boundary."
-msgstr "追踪作业边界的边框轮廓操作设置。"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Frame Power"
-msgstr "边框功率"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Power value in percent to use when framing. 0 to disable"
-msgstr "边框时使用的功率百分比。0表示禁用"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Frame Speed"
-msgstr "边框速度"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
 msgid ""
-"Speed for frame outline. Leave at 0 to use the machine's max travel speed"
-msgstr "边框轮廓速度。保持为 0 以使用机器的最大移动速度"
+"Connect to the device and read its configuration, or skip to enter the "
+"values manually."
+msgstr "连接到设备并读取其配置，或跳过以手动输入数值。"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Repeat Count"
-msgstr "重复次数"
+#: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
+msgid "Probing"
+msgstr "正在探测"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Number of times to trace the frame outline"
-msgstr "描边框轮廓的次数"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Pause at Corners"
-msgstr "角落暂停"
-
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
 msgid ""
-"Pause duration in seconds at each corner of the frame outline. 0 to disable"
-msgstr "边框轮廓每个角落的暂停时间（秒）。0 表示禁用"
+"Auto-discover the machine's working area, speeds, and firmware capabilities "
+"by reading its settings over the connection."
+msgstr "通过连接读取其设置，自动发现机器的工作区域、速度和固件功能。"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "3D Model"
-msgstr "3D 模型"
+#: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
+msgid "Probe Now"
+msgstr "立即探测"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Select and configure a 3D model for this laser head."
-msgstr "为此激光头选择和配置 3D 模型。"
+#: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
+msgid "Probing…"
+msgstr "正在探测…"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/machine/rotary_module_page.py
-msgid "Model"
-msgstr "模型"
+#: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
+msgid "Connecting to device and reading settings"
+msgstr "正在连接设备并读取设置"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/machine/rotary_module_page.py
-msgid "Scale"
-msgstr "缩放"
+#: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
+msgid "Probe failed"
+msgstr "探测失败"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/machine/rotary_module_page.py
-msgid "Uniform scale factor for the model"
-msgstr "模型的统一缩放因子"
+#: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
+msgid "Probe succeeded"
+msgstr "探测成功"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/machine/rotary_module_page.py
-msgid "X Rotation"
-msgstr "X 旋转"
+#: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
+msgid "Working area and speeds auto-detected."
+msgstr "已自动检测工作区域和速度。"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/machine/rotary_module_page.py
-msgid "Degrees around the X axis"
-msgstr "绕 X 轴的度数"
+#: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
+msgid "Retry"
+msgstr "重试"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/machine/rotary_module_page.py
-msgid "Y Rotation"
-msgstr "Y 旋转"
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid "Pick a starting point for the new machine."
+msgstr "为新机器选择起点。"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/machine/rotary_module_page.py
-msgid "Degrees around the Y axis"
-msgstr "绕 Y 轴的度数"
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid "Machine Templates"
+msgstr "机器模板"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/machine/rotary_module_page.py
-msgid "Z Rotation"
-msgstr "Z 旋转"
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid ""
+"Pick a built-in profile to pre-fill common settings. You will still be asked "
+"for connection-specific values."
+msgstr "选择内置配置文件以预填常用设置。您仍需填写连接相关的数值。"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/machine/rotary_module_page.py
-msgid "Degrees around the Z axis"
-msgstr "绕 Z 轴的度数"
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid "Search devices…"
+msgstr "搜索设备…"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Focal Distance"
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid "Import from File…"
+msgstr "从文件导入…"
+
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid "Device Not Listed"
+msgstr "设备未列出"
+
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid "Import Failed"
+msgstr "导入失败"
+
+#: rayforge/ui_gtk/machine/wizard_pages/provider_page.py
+msgid "AI Provider"
+msgstr "AI 提供商"
+
+#: rayforge/ui_gtk/machine/wizard_pages/provider_page.py
+msgid ""
+"Configure an AI provider so the wizard can pre-fill known machine "
+"specifications."
+msgstr "配置 AI 提供商，以便向导预填已知的机器规格。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/provider_page.py
+msgid ""
+"Enter an OpenAI-compatible endpoint. This is only used for the automatic "
+"spec lookup; you can also skip and enter the values by hand."
+msgstr ""
+"输入兼容 OpenAI 的端点。这仅用于自动规格查询；您也可以跳过并手动输入数值。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/provider_page.py
+msgid "Default Provider"
+msgstr "默认提供商"
+
+#: rayforge/ui_gtk/machine/wizard_pages/provider_page.py
+msgid "Default Model (optional)"
+msgstr "默认模型（可选）"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Work area (X, Y)"
+msgstr "工作区域 (X, Y)"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Max cut speed"
+msgstr "最大切割速度"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Coordinate origin"
+msgstr "坐标原点"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Head type"
+msgstr "机头类型"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Head max power (S-value)"
+msgstr "机头最大功率（S 值）"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Head max RPM"
+msgstr "机头最大 RPM"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Head min RPM"
+msgstr "机头最小 RPM"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Spot size (X, Y)"
+msgstr "光斑尺寸 (X, Y)"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "PWM frequency (Hz)"
+msgstr "PWM 频率 (Hz)"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Focal distance"
 msgstr "焦距"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-msgid "Distance from the laser head to the work surface (Z offset)"
-msgstr "激光头到工作表面的距离（Z 偏移）"
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "AI Spec Lookup"
+msgstr "AI 规格查询"
 
-#: rayforge/ui_gtk/machine/laser_preferences_page.py
-#: rayforge/ui_gtk/machine/rotary_module_page.py
-#: rayforge/ui_gtk/shared/model_selection_dialog.py
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-msgid "None"
-msgstr "无"
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid ""
+"If your machine is a known commercial model, the AI can pre-fill "
+"specification values from the manufacturer's documentation."
+msgstr "如果您的机器是已知的商业型号，AI 可以从制造商的文档中预填规格值。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Vendor &amp; Model"
+msgstr "厂商 &amp; 型号"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid ""
+"Enter the machine's vendor (manufacturer) and model name. The more specific, "
+"the better — e.g. \"Sculpfun\" / \"S30 Pro\"."
+msgstr ""
+"输入机器的厂商（制造商）和型号名称。越具体越好 — 例如 \"Sculpfun\" / \"S30 "
+"Pro\"。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Vendor (e.g. Sculpfun)"
+msgstr "厂商（例如 Sculpfun）"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Model (e.g. S30 Pro)"
+msgstr "型号（例如 S30 Pro）"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Look Up Specs"
+msgstr "查询规格"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Suggestions"
+msgstr "建议"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Suggested values are switched on; turn off any you don't want applied."
+msgstr "建议值已开启；关闭您不想应用的值。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid ""
+"No AI provider is configured in Settings. Configure one to enable automatic "
+"spec lookup, or skip this step and enter the values by hand."
+msgstr ""
+"设置中未配置 AI 提供商。配置一个以启用自动规格查询，或跳过此步骤并手动输入数"
+"值。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Looking up…"
+msgstr "正在查询…"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Lookup failed"
+msgstr "查询失败"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid ""
+"The AI couldn't return specifications for this machine. You can enter the "
+"values manually in the next steps."
+msgstr "AI 无法返回此机器的规格。您可以在后续步骤中手动输入数值。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+#, python-brace-format
+msgid "AI suggests: {value}"
+msgstr "AI 建议：{value}"
+
+#: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
+msgid "Main Head"
+msgstr "主机头"
+
+#: rayforge/ui_gtk/machine/wizard_pages/connection_page.py
+msgid "Enter the connection parameters for your device."
+msgstr "输入设备的连接参数。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/connection_page.py
+msgid ""
+"Enter the connection parameters your machine requires. The exact fields "
+"depend on the controller you chose in the previous step."
+msgstr "输入您的机器所需的连接参数。具体字段取决于您在上一步中选择的控制器。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/connection_page.py
+msgid "Fixed by the chosen profile"
+msgstr "由所选配置文件固定"
+
+#: rayforge/ui_gtk/machine/wizard_pages/connection_page.py
+msgid "Invalid input"
+msgstr "无效输入"
+
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Work area, origin, speeds and acceleration."
+msgstr "工作区域、原点、速度和加速度。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Physical corner where coordinates are zero after homing"
+msgstr "归位后坐标为零的物理角"
+
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Enable if +Z moves head down"
+msgstr "如果 +Z 使机头下移则启用"
+
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Override work-surface bounds with custom limits"
+msgstr "使用自定义限制覆盖工作台边界"
+
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Speeds"
+msgstr "速度"
+
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Limits in machine units per minute."
+msgstr "以每分钟机器单位为单位。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Run homing cycle when machine connects"
+msgstr "机器连接时执行归零循环"
+
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Single-Axis Homing"
+msgstr "单轴归零"
+
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Allow homing individual axes"
+msgstr "允许单轴归零"
+
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "What's attached to the gantry: a laser, a spindle, or both?"
+msgstr "龙门架上安装了什么：激光器、主轴还是两者？"
+
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Head Type"
+msgstr "机头类型"
+
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Pick the primary head for this machine."
+msgstr "为此机器选择主机头。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Type of tool attached to this machine"
+msgstr "此机器安装的工具类型"
+
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Head Name"
+msgstr "机头名称"
+
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Laser Settings"
+msgstr "激光设置"
+
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Max Power (S-value)"
+msgstr "最大功率（S值）"
+
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Max laser power value in GCode"
+msgstr "GCode 中的最大激光功率值"
+
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Laser beam width on X axis"
+msgstr "X 轴上的激光束宽度"
+
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Laser beam width on Y axis"
+msgstr "Y 轴上的激光束宽度"
+
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "PWM Frequency (Hz)"
+msgstr "PWM 频率 (Hz)"
+
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Laser modulation frequency"
+msgstr "激光调制频率"
+
+#: rayforge/ui_gtk/machine/wizard_pages/head_page.py
+msgid "Lens-to-workpiece distance"
+msgstr "镜头到工件的距离"
 
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 msgid "Axis Replacement"
@@ -4578,10 +5208,6 @@ msgid "Jaws / Chuck"
 msgstr "卡爪 / 卡盘"
 
 #: rayforge/ui_gtk/machine/rotary_module_page.py
-msgid "Rollers"
-msgstr "滚轮"
-
-#: rayforge/ui_gtk/machine/rotary_module_page.py
 msgid "Drive Type"
 msgstr "驱动类型"
 
@@ -4615,10 +5241,6 @@ msgid "Default diameter for new layers using this module"
 msgstr "使用此模块的新图层的默认直径"
 
 #: rayforge/ui_gtk/machine/rotary_module_page.py
-msgid "Max Workpiece Length"
-msgstr "最大工件长度"
-
-#: rayforge/ui_gtk/machine/rotary_module_page.py
 msgid "Maximum workpiece length this module can accommodate"
 msgstr "此模块可容纳的最大工件长度"
 
@@ -4648,6 +5270,32 @@ msgstr "Z 位置"
 msgid "Z coordinate in machine space"
 msgstr "机器空间中的 Z 坐标"
 
+#: rayforge/ui_gtk/machine/capabilities_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Capabilities"
+msgstr "功能"
+
+#: rayforge/ui_gtk/machine/capabilities_page.py
+msgid "Machine Capabilities"
+msgstr "机器功能"
+
+#: rayforge/ui_gtk/machine/capabilities_page.py
+msgid ""
+"Capabilities are inferred from the machine's heads, rotary modules, and any "
+"explicit configuration. They control which steps are offered when adding to "
+"a workflow."
+msgstr ""
+"功能根据机器的机头、旋转模块以及任何显式配置推断。它们控制添加到工作流时可用"
+"的步骤。"
+
+#: rayforge/ui_gtk/machine/capabilities_page.py
+msgid "explicit configuration"
+msgstr "显式配置"
+
+#: rayforge/ui_gtk/machine/capabilities_page.py
+msgid "unknown source"
+msgstr "未知来源"
+
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #, python-brace-format
 msgid "{machine_name} - Machine Settings"
@@ -4676,7 +5324,7 @@ msgid "Export failed: {error}"
 msgstr "导出失败：{error}"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
 msgid "Machine"
 msgstr "机器"
 
@@ -4691,6 +5339,10 @@ msgstr "驱动程序设置"
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Connection and communication settings for the machine driver."
 msgstr "机器驱动程序的连接和通信设置。"
+
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Select driver"
+msgstr "选择驱动程序"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Speeds &amp; Acceleration"
@@ -5307,6 +5959,11 @@ msgstr "重做"
 
 #: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/doceditor/asset_browser.py
 #: rayforge/ui_gtk/doceditor/layer_column.py
+msgid "Cut"
+msgstr "切割"
+
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/ui_gtk/doceditor/layer_column.py
 msgid "Copy"
 msgstr "复制"
 
@@ -5751,6 +6408,81 @@ msgstr "复制素材"
 msgid "Duplicate asset"
 msgstr "复制素材"
 
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+#: rayforge/ui_gtk/doceditor/recipe_control_widget.py
+msgid "Recipe"
+msgstr "配方"
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid "A named preset of settings that can be automatically applied later."
+msgstr "一组命名的设置预设，稍后可自动应用。"
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+msgid "Applicability"
+msgstr "适用性"
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid ""
+"Define when this recipe should be suggested. Leave fields blank to match any "
+"value."
+msgstr "定义何时建议此配方。留空字段以匹配任何值。"
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid "Task Type"
+msgstr "任务类型"
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid ""
+"The operation category this recipe applies to. Use 'Any' to apply it to all "
+"task types"
+msgstr "此配方适用的操作类别。使用“Any”将其应用于所有任务类型"
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid "Step Type"
+msgstr "步骤类型"
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid "Restrict this recipe to a specific operation type"
+msgstr "将此配方限制为特定的操作类型"
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "Material"
+msgstr "材料"
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid "Select..."
+msgstr "选择..."
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid "Clear Material Selection"
+msgstr "清除材料选择"
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid "Min Thickness"
+msgstr "最小厚度"
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid "Minimum stock thickness for this recipe to apply"
+msgstr "应用此配方的最小毛坯厚度"
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid "Max Thickness"
+msgstr "最大厚度"
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid "Maximum stock thickness for this recipe to apply"
+msgstr "应用此配方的最大毛坯厚度"
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid "Not Found"
+msgstr "未找到"
+
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid "The settings that will be applied by this recipe."
+msgstr "此配方将应用的设置。"
+
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Map to Existing"
 msgstr "映射到现有"
@@ -5878,29 +6610,58 @@ msgstr "包含 {n} 个矢量的图层"
 msgid "Generating preview..."
 msgstr "正在生成预览..."
 
-#: rayforge/ui_gtk/doceditor/step_settings/placeholder.py
+#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
+msgid "Step name and recipe settings."
+msgstr "步骤名称和配方设置。"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
+#: rayforge/ui_gtk/doceditor/step_settings/rows/step_row.py
+#, python-brace-format
+msgid "Change {key}"
+msgstr "更改{key}"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/post_processing.py
+msgid "No post-processing options available for this step."
+msgstr "此步骤无可用的后处理选项。"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/travel_speed_row.py
+msgid "Speed of rapid positioning moves"
+msgstr "快速定位移动的速度"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/cut_speed_row.py
+msgid "Speed of the cutting operation"
+msgstr "切割操作的速度"
+
+#: rayforge/ui_gtk/doceditor/step_settings/dialog.py
+#, python-brace-format
+msgid "{name} Settings"
+msgstr "{name} 设置"
+
+#: rayforge/ui_gtk/doceditor/step_settings/dialog.py
+msgid "Step Settings"
+msgstr "步骤设置"
+
+#: rayforge/ui_gtk/doceditor/step_settings/dialog.py
+msgid "Post Processing"
+msgstr "后处理"
+
+#: rayforge/ui_gtk/doceditor/step_settings/groups/transformer_settings_group.py
+msgid "Enable {}"
+msgstr "启用 {}"
+
+#: rayforge/ui_gtk/doceditor/step_settings/groups/transformer_settings_group.py
+msgid "Toggle {}"
+msgstr "切换 {}"
+
+#: rayforge/ui_gtk/doceditor/step_settings/groups/placeholder_group.py
 msgid "This feature is not available."
 msgstr "此功能不可用。"
 
-#: rayforge/ui_gtk/doceditor/step_settings/placeholder.py
+#: rayforge/ui_gtk/doceditor/step_settings/groups/placeholder_group.py
 msgid ""
 "The required component '{}' could not be found. The document can still be "
 "saved."
 msgstr "找不到所需的组件 '{}'。该文档仍可保存。"
-
-#: rayforge/ui_gtk/doceditor/step_settings/base.py
-msgid "Enable {}"
-msgstr "启用 {}"
-
-#: rayforge/ui_gtk/doceditor/step_settings/base.py
-msgid "Toggle {}"
-msgstr "切换 {}"
-
-#: rayforge/ui_gtk/doceditor/step_settings/base.py
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-#, python-brace-format
-msgid "Change {key}"
-msgstr "更改{key}"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "1 material"
@@ -5960,35 +6721,6 @@ msgstr "添加"
 msgid "Failed to create library. A folder with that name may already exist."
 msgstr "创建库失败。具有该名称的文件夹可能已存在。"
 
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "General Settings"
-msgstr "常规设置"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Power, speed, and laser head selection for this operation."
-msgstr "此操作的功率、速度和激光头选择。"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Change Laser"
-msgstr "更改激光"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "No post-processing options available for this step."
-msgstr "此步骤无可用的后处理选项。"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-#, python-brace-format
-msgid "{name} Settings"
-msgstr "{name} 设置"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Step Settings"
-msgstr "步骤设置"
-
-#: rayforge/ui_gtk/doceditor/step_settings_dialog.py
-msgid "Post Processing"
-msgstr "后处理"
-
 #: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
 msgid "Edit Recipe"
 msgstr "编辑配方"
@@ -5997,74 +6729,6 @@ msgstr "编辑配方"
 #: rayforge/ui_gtk/doceditor/recipe_list.py
 msgid "Add New Recipe"
 msgstr "添加新配方"
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "Applicability"
-msgstr "适用性"
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-#: rayforge/ui_gtk/doceditor/recipe_control_widget.py
-msgid "Recipe"
-msgstr "配方"
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "A named preset of settings that can be automatically applied later."
-msgstr "一组命名的设置预设，稍后可自动应用。"
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid ""
-"Define when this recipe should be suggested. Leave fields blank to match any "
-"value."
-msgstr "定义何时建议此配方。留空字段以匹配任何值。"
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "Any Machine"
-msgstr "任何机器"
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "Task Type"
-msgstr "任务类型"
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-msgid "Material"
-msgstr "材料"
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "Select..."
-msgstr "选择..."
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "Clear Material Selection"
-msgstr "清除材料选择"
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "Min Thickness"
-msgstr "最小厚度"
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "Minimum stock thickness for this recipe to apply"
-msgstr "应用此配方的最小毛坯厚度"
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "Max Thickness"
-msgstr "最大厚度"
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "Maximum stock thickness for this recipe to apply"
-msgstr "应用此配方的最大毛坯厚度"
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "The process settings that will be applied by this recipe."
-msgstr "此配方将应用的工艺设置。"
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "Not Found"
-msgstr "未找到"
-
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-msgid "Any"
-msgstr "任何"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 msgid "Open File"
@@ -6979,6 +7643,25 @@ msgid ""
 "Path to a custom configuration directory. Useful for testing with isolated "
 "configs."
 msgstr "自定义配置目录的路径。适用于使用独立配置进行测试。"
+
+#: rayforge/pipeline/assembly_warnings.py
+msgid "default face"
+msgstr "默认面"
+
+#: rayforge/pipeline/assembly_warnings.py
+#, python-brace-format
+msgid "Face '{face}' could not be machined: {detail}"
+msgstr "无法加工面“{face}”：{detail}"
+
+#: rayforge/pipeline/assembly_warnings.py
+#, python-brace-format
+msgid "Region {region} of face '{face}' could not be machined: {detail}"
+msgstr "无法加工面“{face}”的区域 {region}：{detail}"
+
+#: rayforge/pipeline/assembly_warnings.py
+#, python-brace-format
+msgid "Machining warning: {detail}"
+msgstr "加工警告：{detail}"
 
 #: rayforge/pipeline/stage/assembler_helpers.py
 msgid "Variable Power"
