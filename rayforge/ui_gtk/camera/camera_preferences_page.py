@@ -326,7 +326,8 @@ class CameraPreferencesPage(TrackedPreferencesPage):
         )
         self.add(self.camera_list_editor)
 
-        # Configuration panel for the selected Camera
+        # Configuration panel for the selected Camera (includes the
+        # Camera Wizard launcher row).
         self.camera_properties_widget = CameraProperties(None)
         self.add(self.camera_properties_widget)
 

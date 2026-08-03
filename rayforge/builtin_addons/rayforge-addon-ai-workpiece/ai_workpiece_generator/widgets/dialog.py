@@ -119,8 +119,8 @@ class AIWorkpieceGeneratorDialog(PatchedDialogWindow):
 
     def _apply_progress_bar_style(self) -> None:
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_data(
-            b"""
+        css_provider.load_from_string(
+            """
             progressbar.thin-progress-bar {
                 min-height: 5px;
             }

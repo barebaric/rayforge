@@ -144,9 +144,10 @@ class GrblNetworkDriver(Driver):
                 ChoiceVar(
                     key="protocol",
                     label=_("Protocol variant"),
-                    description=_("ESP3D or Longer GRBL variant"),
-                    default="EPS3D",
+                    description=_("Standard, ESP3D, or Longer GRBL variant"),
+                    default="ESP3D",
                     choices=["ESP3D", "Longer"],
+                    null_label=_("Standard"),
                 ),
             ]
         )
