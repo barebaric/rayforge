@@ -23,6 +23,21 @@ class TestChoiceVar:
         v.value = None
         v.validate()  # None should be allowed by default
 
+    def test_null_label(self):
+        """A custom "no selection" label can be set per var."""
+        v = ChoiceVar(
+            key="protocol",
+            label="Protocol variant",
+            choices=["ESP3D", "Longer"],
+            allow_none=True,
+            null_label="Standard",
+        )
+        assert v.allow_none is True
+        assert v.null_label == "Standard"
+
+        plain = ChoiceVar(key="mode", label="Mode", choices=["A", "B"])
+        assert plain.null_label is None
+
     def test_serialization_and_rehydration(self):
         """Test serializing (with and without value) and deserializing."""
         original_var = ChoiceVar(

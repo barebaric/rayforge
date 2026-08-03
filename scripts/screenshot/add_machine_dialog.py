@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Screenshot: Add Machine dialog.
+Screenshot: Add Machine dialog (Unified Wizard, Step 1).
 
 Usage: pixi run screenshot app-settings:machines:add
 """
@@ -29,12 +29,10 @@ def main():
         app.quit_idle()
         return
 
-    from rayforge.ui_gtk.machine.profile_selector import (
-        MachineProfileSelectorDialog,
-    )
+    from rayforge.ui_gtk.machine.unified_wizard import UnifiedWizard
 
     def open_dialog():
-        dialog = MachineProfileSelectorDialog(transient_for=win)
+        dialog = UnifiedWizard(transient_for=win)
         dialog.present()
         return dialog
 

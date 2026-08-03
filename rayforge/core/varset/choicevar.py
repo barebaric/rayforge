@@ -20,6 +20,7 @@ class ChoiceVar(Var[str]):
         default: Optional[str] = None,
         value: Optional[str] = None,
         allow_none: bool = True,
+        null_label: Optional[str] = None,
     ):
         """
         Initializes a new ChoiceVar instance.
@@ -32,6 +33,9 @@ class ChoiceVar(Var[str]):
             default: The default value. Must be one of the choices.
             value: The initial value. If provided, it overrides the default.
             allow_none: Whether to include a "None Selected" option in UI.
+            null_label: Overrides the default "None Selected" option label
+                (e.g. "Standard" for a protocol variant whose unset value
+                means "use the standard/default option").
         """
         super().__init__(
             key=key,
@@ -43,6 +47,7 @@ class ChoiceVar(Var[str]):
         )
         self.choices = choices
         self.allow_none = allow_none
+        self.null_label = null_label
 
         # Validator to ensure the value is always one of the allowed choices.
         def _choice_validator(val: Optional[str]):

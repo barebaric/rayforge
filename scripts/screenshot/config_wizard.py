@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
-"""Screenshot: Configuration wizard pages."""
+"""Screenshot: Unified wizard Step 3 (Connection) and Step 10 (Review).
+
+The wizard's adaptive routing means many of the intermediate steps
+either auto-skip or are only reachable via the live probe flow.
+For screenshots we open the wizard, jump to a representative step,
+and snapshot the rendered UI.
+
+Targets:
+    app-settings:machines:wizard:connect    — Step 3 (connection)
+    app-settings:machines:wizard:review      — Step 10 (review)
+"""
 
 import logging
 import os
@@ -16,33 +26,30 @@ from rayforge.machine.device.profile import (
     DeviceProfile,
     MachineConfig,
 )
+from rayforge.machine.models.machine import Origin
 from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 
-FAKE_WARNINGS = [
-    "Laser mode is not enabled ($32=0). Enable it for best results"
-    " with laser cutters.",
-]
 
 FAKE_PROFILE = DeviceProfile(
     meta=DeviceMeta(
         name="Ortur Laser Master 2",
-        description="Auto-configured via probe wizard",
+        vendor="Ortur",
+        model="Aufero Laser Master 2",
+        description="Auto-configured via unified wizard",
     ),
     machine_config=MachineConfig(
-        driver_config={
-            "firmware_version": "1.1h",
-            "rx_buffer_size": 128,
-            "arc_tolerance": 0.002,
-        },
+        driver="GrblSerialDriver",
+        driver_args={"port": "/dev/ttyUSB0", "baud_rate": 115200},
         axis_extents=(400.0, 430.0),
+        origin=Origin.BOTTOM_LEFT,
         max_travel_speed=3000,
         max_cut_speed=1000,
         acceleration=500,
         home_on_start=True,
         single_axis_homing_enabled=True,
-        heads=[{"max_power": 1000}],
+        heads=[{"head_class": "LaserHead", "max_power": 1000}],
     ),
     dialect_config={},
 )
@@ -54,25 +61,24 @@ def main():
     set_window_size(win, 1400, 1000)
     time.sleep(0.25)
 
-    from rayforge.ui_gtk.machine.config_wizard import ConfigWizard
+    from rayforge.ui_gtk.machine.unified_wizard import UnifiedWizard
 
     def open_wizard():
-        wizard = ConfigWizard(transient_for=win)
+        wizard = UnifiedWizard(transient_for=win)
         wizard.present()
+
+        # Pre-load a known-profile state and route to the requested step.
+        wizard.profile = FAKE_PROFILE
         return wizard
 
     wizard = run_on_main_thread(open_wizard)
     time.sleep(0.5)
 
     if target == "app-settings:machines:wizard:connect":
+        run_on_main_thread(lambda: wizard._navigate_to("connection"))
         take_screenshot("app-settings-machines-wizard-connect.png")
     elif target == "app-settings:machines:wizard:review":
-        run_on_main_thread(
-            lambda: wizard._populate_review_page(FAKE_PROFILE, FAKE_WARNINGS)
-        )
-        run_on_main_thread(
-            lambda: wizard._stack.set_visible_child_name("review")
-        )
+        run_on_main_thread(lambda: wizard._navigate_to("review"))
         time.sleep(0.5)
         take_screenshot("app-settings-machines-wizard-review.png")
 

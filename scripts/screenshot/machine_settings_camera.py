@@ -14,13 +14,13 @@ from utils import open_machine_settings, run_on_main_thread, take_screenshot
 from rayforge.camera.models.camera import Camera
 from rayforge.context import get_context
 from rayforge.ui_gtk.camera.alignment_dialog import CameraAlignmentDialog
-from rayforge.ui_gtk.camera.calibration_wizard import CalibrationWizard
 from rayforge.ui_gtk.camera.image_settings_dialog import (
     CameraImageSettingsDialog,
 )
 from rayforge.ui_gtk.camera.lens_calibration_dialog import (
     LensCalibrationDialog,
 )
+from rayforge.ui_gtk.camera.wizard.wizard import CameraWizard
 from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
@@ -164,7 +164,7 @@ def take_wizard_screenshot(parent_dialog, wizard_page: str, output: str):
 
     def _open_wizard():
         nonlocal wizard
-        wizard = CalibrationWizard(parent_dialog, controller)
+        wizard = CameraWizard(parent_dialog, controller)
         wizard.present()
         return wizard
 
@@ -174,6 +174,9 @@ def take_wizard_screenshot(parent_dialog, wizard_page: str, output: str):
     if wizard_page == "capture":
 
         def _go_to_capture():
+            # image -> lens_manual -> card -> capture
+            wizard._next_btn.activate()
+            wizard._next_btn.activate()
             wizard._next_btn.activate()
 
         run_on_main_thread(_go_to_capture)
@@ -186,7 +189,7 @@ def take_wizard_screenshot(parent_dialog, wizard_page: str, output: str):
                 "xdotool",
                 "search",
                 "--name",
-                "Lens Calibration Wizard",
+                "Camera Wizard",
                 "windowactivate",
             ],
             capture_output=True,

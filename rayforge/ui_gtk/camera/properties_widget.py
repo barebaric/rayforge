@@ -54,6 +54,24 @@ class CameraProperties(Adw.PreferencesGroup):
         self.enabled_row.set_activatable_widget(self.enabled_switch)
         self.add(self.enabled_row)
 
+        # Camera Wizard — runs the full guided setup (image settings,
+        # lens calibration, alignment) in one flow.
+        self.wizard_button = Gtk.Button(
+            label=_("Start"), valign=Gtk.Align.CENTER
+        )
+        self.wizard_button.add_css_class("suggested-action")
+        self.wizard_button.connect("clicked", self.on_wizard_button_clicked)
+        wizard_row = Adw.ActionRow(
+            title=_("Camera Wizard"),
+            subtitle=_(
+                "Guided setup: image settings, lens calibration, "
+                "and alignment."
+            ),
+        )
+        wizard_row.add_suffix(self.wizard_button)
+        wizard_row.set_activatable_widget(self.wizard_button)
+        self.add(wizard_row)
+
         # Image Settings button
         self.image_settings_button = Gtk.Button(
             label=_("Configure"), valign=Gtk.Align.CENTER
@@ -150,6 +168,7 @@ class CameraProperties(Adw.PreferencesGroup):
             self.image_settings_button.set_sensitive(self._camera.enabled)
             self.lens_calibration_button.set_sensitive(self._camera.enabled)
             self.image_alignment_button.set_sensitive(self._camera.enabled)
+            self.wizard_button.set_sensitive(self._camera.enabled)
             self._update_status_icons()
         finally:
             self._updating_ui = False
@@ -195,6 +214,7 @@ class CameraProperties(Adw.PreferencesGroup):
         self.image_settings_button.set_sensitive(False)
         self.lens_calibration_button.set_sensitive(False)
         self.image_alignment_button.set_sensitive(False)
+        self.wizard_button.set_sensitive(False)
 
     def _on_camera_changed(self, camera, *args):
         logger.debug("Camera model changed, updating UI for %s", camera.name)
@@ -222,6 +242,18 @@ class CameraProperties(Adw.PreferencesGroup):
         if isinstance(window, Gtk.Window):
             dialog = CameraImageSettingsDialog(window, self._controller)
             dialog.present()
+
+    def on_wizard_button_clicked(self, button):
+        """Launch the guided camera wizard."""
+        if not self._controller:
+            return
+        window = self.get_ancestor(Gtk.Window)
+        if not isinstance(window, Gtk.Window):
+            return
+        from .wizard.wizard import CameraWizard
+
+        wizard = CameraWizard(window, self._controller)
+        wizard.present()
 
     def on_lens_calibration_button_clicked(self, button):
         if not self._controller:

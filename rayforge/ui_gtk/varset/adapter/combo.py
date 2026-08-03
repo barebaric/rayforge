@@ -34,10 +34,9 @@ class ComboAdapter(RowAdapter):
         cls, var: Var, target_property: str
     ) -> Tuple[Adw.PreferencesRow, "ComboAdapter"]:
         assert isinstance(var, ChoiceVar)
+        null_label = var.null_label or NULL_CHOICE_LABEL
         choices: List[str] = (
-            [NULL_CHOICE_LABEL] + var.choices
-            if var.allow_none
-            else list(var.choices)
+            [null_label] + var.choices if var.allow_none else list(var.choices)
         )
         store = Gtk.StringList.new(choices)
         row = Adw.ComboRow(model=store, title=escape_title(var.label))
@@ -60,7 +59,10 @@ class ComboAdapter(RowAdapter):
         if selected:
             display_str = selected.get_string()  # type: ignore
 
-        if display_str == NULL_CHOICE_LABEL:
+        null_label = (
+            getattr(self._var, "null_label", None) or NULL_CHOICE_LABEL
+        )
+        if display_str == null_label:
             return None
         if isinstance(self._var, ChoiceVar):
             return self._var.get_value_for_display(display_str)
@@ -70,7 +72,10 @@ class ComboAdapter(RowAdapter):
         model = self._row.get_model()
         if not isinstance(model, Gtk.StringList):
             return
-        display_str = NULL_CHOICE_LABEL
+        null_label = (
+            getattr(self._var, "null_label", None) or NULL_CHOICE_LABEL
+        )
+        display_str = null_label
         if value is not None:
             if isinstance(self._var, ChoiceVar):
                 display_str = self._var.get_display_for_value(
