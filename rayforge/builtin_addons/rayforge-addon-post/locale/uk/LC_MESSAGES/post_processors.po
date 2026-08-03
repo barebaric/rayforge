@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-18 21:08+0200\n"
+"POT-Creation-Date: 2026-08-02 21:11+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -18,178 +18,178 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#: post_processors/widgets/lead_in_out_widget.py
-#: post_processors/widgets/overscan_widget.py
+#: post_processors/widgets/optimize_group.py
+msgid "Allow Flipping"
+msgstr "Дозволити перевертання"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Allow reversing path direction for shorter travel"
+msgstr "Дозволити зміну напрямку контуру для скорочення переміщення"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Preserve First Workpiece"
+msgstr "Зберегти першу деталь"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Keep the first workpiece at its original position"
+msgstr "Залишити першу деталь на її початковій позиції"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Flipping"
+msgstr "Перемкнути перевертання"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Preserve First Workpiece"
+msgstr "Перемкнути збереження першої деталі"
+
+#: post_processors/widgets/overscan_group.py
+msgid "This machine adds overscan automatically; the setting has no effect."
+msgstr "Ця машина додає перебіг автоматично; налаштування не має ефекту."
+
+#: post_processors/widgets/overscan_group.py
+#: post_processors/widgets/lead_in_out_group.py
 msgid "Automatic Distance"
 msgstr "Автоматична відстань"
 
-#: post_processors/widgets/lead_in_out_widget.py
-#: post_processors/widgets/overscan_widget.py
+#: post_processors/widgets/overscan_group.py
+#: post_processors/widgets/lead_in_out_group.py
 msgid "Calculate distance based on speed and acceleration with safety factor"
 msgstr ""
 "Обчислити відстань на основі швидкості та прискорення з коефіцієнтом безпеки"
 
-#: post_processors/widgets/lead_in_out_widget.py
-msgid "Lead-In Distance"
-msgstr "Відстань в'їзду"
-
-#: post_processors/widgets/lead_in_out_widget.py
-msgid "Distance of zero-power move before cut starts"
-msgstr "Відстань руху без потужності до початку різання"
-
-#: post_processors/widgets/lead_in_out_widget.py
-msgid "Lead-Out Distance"
-msgstr "Відстань виїзду"
-
-#: post_processors/widgets/lead_in_out_widget.py
-msgid "Distance of zero-power move after cut ends"
-msgstr "Відстань руху без потужності після завершення різання"
-
-#: post_processors/widgets/lead_in_out_widget.py
-msgid "Toggle Auto Lead-In/Out"
-msgstr "Перемкнути автоматичний в'їзд/виїзд"
-
-#: post_processors/widgets/lead_in_out_widget.py
-msgid "Auto Calculate Lead-In/Out Distance"
-msgstr "Автоматичний розрахунок відстані в'їзду/виїзду"
-
-#: post_processors/widgets/lead_in_out_widget.py
-msgid "Disable Auto Lead-In/Out"
-msgstr "Вимкнути автоматичний в'їзд/виїзд"
-
-#: post_processors/widgets/lead_in_out_widget.py
-msgid "Change Lead-In Distance"
-msgstr "Змінити відстань в'їзду"
-
-#: post_processors/widgets/lead_in_out_widget.py
-msgid "Change Lead-Out Distance"
-msgstr "Змінити відстань виїзду"
-
-#: post_processors/widgets/overscan_widget.py
-msgid "This machine adds overscan automatically; the setting has no effect."
-msgstr "Ця машина додає перебіг автоматично; налаштування не має ефекту."
-
-#: post_processors/widgets/overscan_widget.py
+#: post_processors/widgets/overscan_group.py
 msgid "Overscan Distance"
 msgstr "Відстань перебігу"
 
-#: post_processors/widgets/overscan_widget.py
+#: post_processors/widgets/overscan_group.py
 msgid "Manual distance setting"
 msgstr "Ручне налаштування відстані"
 
-#: post_processors/widgets/overscan_widget.py
+#: post_processors/widgets/overscan_group.py
 msgid "Toggle Auto Overscan"
 msgstr "Перемкнути автоматичний перебіг"
 
-#: post_processors/widgets/overscan_widget.py
+#: post_processors/widgets/overscan_group.py
 msgid "Auto Calculate Overscan Distance"
 msgstr "Автоматично обчислити відстань перебігу"
 
-#: post_processors/widgets/overscan_widget.py
+#: post_processors/widgets/overscan_group.py
 msgid "Disable Auto Overscan"
 msgstr "Вимкнути автоматичний перебіг"
 
-#: post_processors/widgets/overscan_widget.py
+#: post_processors/widgets/overscan_group.py
 msgid "Change Overscan Distance"
 msgstr "Змінити відстань перебігу"
 
-#: post_processors/widgets/optimize_widget.py
-msgid "Allow Flipping"
-msgstr "Дозволити перевертання"
-
-#: post_processors/widgets/optimize_widget.py
-msgid "Allow reversing path direction for shorter travel"
-msgstr "Дозволити зміну напрямку контуру для скорочення переміщення"
-
-#: post_processors/widgets/optimize_widget.py
-msgid "Preserve First Workpiece"
-msgstr "Зберегти першу деталь"
-
-#: post_processors/widgets/optimize_widget.py
-msgid "Keep the first workpiece at its original position"
-msgstr "Залишити першу деталь на її початковій позиції"
-
-#: post_processors/widgets/optimize_widget.py
-msgid "Toggle Flipping"
-msgstr "Перемкнути перевертання"
-
-#: post_processors/widgets/optimize_widget.py
-msgid "Toggle Preserve First Workpiece"
-msgstr "Перемкнути збереження першої деталі"
-
-#: post_processors/widgets/crop_widget.py
-msgid "Offset"
-msgstr "Зміщення"
-
-#: post_processors/widgets/crop_widget.py
-msgid "Grow/shrink stock boundary before cropping"
-msgstr "Збільшити/зменшити межу заготовки перед обрізанням"
-
-#: post_processors/widgets/crop_widget.py
-msgid "Change Crop Offset"
-msgstr "Змінити зміщення обрізання"
-
-#: post_processors/widgets/smooth_widget.py
+#: post_processors/widgets/smooth_group.py
 msgid "Smoothness"
 msgstr "Згладжування"
 
-#: post_processors/widgets/smooth_widget.py
+#: post_processors/widgets/smooth_group.py
 msgid "Higher values produce smoother curves"
 msgstr "Більші значення створюють більш плавні криві"
 
-#: post_processors/widgets/smooth_widget.py
+#: post_processors/widgets/smooth_group.py
 msgid "Corner Angle Threshold"
 msgstr "Поріг кута кута"
 
-#: post_processors/widgets/smooth_widget.py
+#: post_processors/widgets/smooth_group.py
 msgid "Angles sharper than this are kept as corners (degrees)"
 msgstr "Кути, гостріші за це, зберігаються як кути (градуси)"
 
-#: post_processors/widgets/smooth_widget.py
+#: post_processors/widgets/smooth_group.py
 msgid "Change smoothness"
 msgstr "Змінити згладжування"
 
-#: post_processors/widgets/smooth_widget.py
+#: post_processors/widgets/smooth_group.py
 msgid "Change corner angle"
 msgstr "Змінити кут кута"
 
-#: post_processors/widgets/merge_lines_widget.py
-msgid "Tolerance"
-msgstr "Допуск"
+#: post_processors/widgets/crop_group.py
+msgid "Offset"
+msgstr "Зміщення"
 
-#: post_processors/widgets/merge_lines_widget.py
-msgid "Maximum distance for lines to be considered overlapping"
-msgstr ""
-"Максимальна відстань, за якої лінії вважаються такими, що перекриваються"
+#: post_processors/widgets/crop_group.py
+msgid "Grow/shrink stock boundary before cropping"
+msgstr "Збільшити/зменшити межу заготовки перед обрізанням"
 
-#: post_processors/widgets/merge_lines_widget.py
-msgid "Change merge tolerance"
-msgstr "Змінити допуск об'єднання"
+#: post_processors/widgets/crop_group.py
+msgid "Change Crop Offset"
+msgstr "Змінити зміщення обрізання"
 
-#: post_processors/widgets/multipass_widget.py
+#: post_processors/widgets/multipass_group.py
 msgid "Number of Passes"
 msgstr "Кількість проходів"
 
-#: post_processors/widgets/multipass_widget.py
+#: post_processors/widgets/multipass_group.py
 msgid "How often to repeat the entire step"
 msgstr "Як часто повторювати весь крок"
 
-#: post_processors/widgets/multipass_widget.py
+#: post_processors/widgets/multipass_group.py
 msgid "Z Step-Down per Pass"
 msgstr "Зниження Z за прохід"
 
-#: post_processors/widgets/multipass_widget.py
+#: post_processors/widgets/multipass_group.py
 msgid "Distance to lower Z-axis for each subsequent pass in machine units"
 msgstr ""
 "Відстань зниження осі Z для кожного наступного проходу в одиницях машини"
 
-#: post_processors/widgets/multipass_widget.py
+#: post_processors/widgets/multipass_group.py
 msgid "Change number of passes"
 msgstr "Змінити кількість проходів"
 
-#: post_processors/widgets/multipass_widget.py
+#: post_processors/widgets/multipass_group.py
 msgid "Change Z Step-Down"
 msgstr "Змінити зниження Z"
+
+#: post_processors/widgets/lead_in_out_group.py
+msgid "Lead-In Distance"
+msgstr "Відстань в'їзду"
+
+#: post_processors/widgets/lead_in_out_group.py
+msgid "Distance of zero-power move before cut starts"
+msgstr "Відстань руху без потужності до початку різання"
+
+#: post_processors/widgets/lead_in_out_group.py
+msgid "Lead-Out Distance"
+msgstr "Відстань виїзду"
+
+#: post_processors/widgets/lead_in_out_group.py
+msgid "Distance of zero-power move after cut ends"
+msgstr "Відстань руху без потужності після завершення різання"
+
+#: post_processors/widgets/lead_in_out_group.py
+msgid "Toggle Auto Lead-In/Out"
+msgstr "Перемкнути автоматичний в'їзд/виїзд"
+
+#: post_processors/widgets/lead_in_out_group.py
+msgid "Auto Calculate Lead-In/Out Distance"
+msgstr "Автоматичний розрахунок відстані в'їзду/виїзду"
+
+#: post_processors/widgets/lead_in_out_group.py
+msgid "Disable Auto Lead-In/Out"
+msgstr "Вимкнути автоматичний в'їзд/виїзд"
+
+#: post_processors/widgets/lead_in_out_group.py
+msgid "Change Lead-In Distance"
+msgstr "Змінити відстань в'їзду"
+
+#: post_processors/widgets/lead_in_out_group.py
+msgid "Change Lead-Out Distance"
+msgstr "Змінити відстань виїзду"
+
+#: post_processors/widgets/merge_lines_group.py
+msgid "Tolerance"
+msgstr "Допуск"
+
+#: post_processors/widgets/merge_lines_group.py
+msgid "Maximum distance for lines to be considered overlapping"
+msgstr ""
+"Максимальна відстань, за якої лінії вважаються такими, що перекриваються"
+
+#: post_processors/widgets/merge_lines_group.py
+msgid "Change merge tolerance"
+msgstr "Змінити допуск об'єднання"
 
 #: post_processors/transformers/lead_in_out_transformer.py
 msgid "Lead-In/Out"

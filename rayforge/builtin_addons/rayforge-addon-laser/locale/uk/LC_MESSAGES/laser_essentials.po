@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-25 00:03+0200\n"
+"POT-Creation-Date: 2026-08-03 01:13+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -18,12 +18,13 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ?0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ?1 :2);\n"
 
-#: laser_essentials/material_test_helpers.py
+#: laser_essentials/material_test_helpers.py laser_essentials/capabilities.py
 msgid "Cut"
 msgstr "Різання"
 
 #: laser_essentials/material_test_helpers.py
-#: laser_essentials/steps/raster_step.py
+#: laser_essentials/widgets/raster_page.py
+#: laser_essentials/steps/raster_step.py laser_essentials/capabilities.py
 msgid "Engrave"
 msgstr "Гравіювання"
 
@@ -43,479 +44,404 @@ msgstr "Швидкість vs Проходи"
 msgid "Speed vs Offset"
 msgstr "Швидкість vs Зсув"
 
-#: laser_essentials/widgets/wavefront_widget.py
-msgid "Step Over"
-msgstr "Крок переміщення"
-
-#: laser_essentials/widgets/wavefront_widget.py
-msgid "Lateral step-over between wavefront passes (mm)"
-msgstr "Бічне зміщення між проходами хвильового фронту (мм)"
-
-#: laser_essentials/widgets/wavefront_widget.py
-msgid "Offset"
-msgstr "Зміщення"
-
-#: laser_essentials/widgets/wavefront_widget.py
-msgid "Extra offset from walls (mm)"
-msgstr "Додаткове зміщення від стінок (мм)"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Configure how the laser engraves your image."
-msgstr "Налаштуйте, як лазер гравіює ваше зображення."
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Mode"
-msgstr "Режим"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Threshold"
-msgstr "Поріг"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Brightness cutoff for black/white (0-255)"
-msgstr "Поріг яскравості для чорно-білого (0-255)"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Engraving Method"
-msgstr "Метод гравіювання"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Algorithm for converting grayscale to binary"
-msgstr "Алгоритм перетворення відтінків сірого у двійковий формат"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Auto Levels"
-msgstr "Авто рівні"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Automatically adjust black/white points"
-msgstr "Автоматично налаштувати чорні/білі точки"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Brightness Range"
-msgstr "Діапазон яскравості"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Auto-adjusted based on image content"
-msgstr "Автоналаштування на основі вмісту зображення"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Drag markers to set black/white points"
-msgstr "Перетягніть маркери, щоб встановити чорні/білі точки"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Min Power"
-msgstr "Мін. потужність"
-
-#: laser_essentials/widgets/raster_widget.py
-#, python-format
-msgid "Power for lightest areas, as a % of the step's main power"
-msgstr "Потужність для найсвітліших ділянок, у % від основної потужності кроку"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Max Power"
-msgstr "Макс. потужність"
-
-#: laser_essentials/widgets/raster_widget.py
-#, python-format
-msgid "Power for darkest areas, as a % of the step's main power"
-msgstr "Потужність для найтемніших ділянок, у % від основної потужності кроку"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Power Levels"
-msgstr "Рівні потужності"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Number of discrete power steps (lower = fewer moves)"
-msgstr "Кількість дискретних кроків потужності (менше = менше рухів)"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Number of Depth Levels"
-msgstr "Кількість рівнів глибини"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Z Step-Down per Level (mm)"
-msgstr "Зниження Z на рівень (мм)"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Rotate Angle Per Pass"
-msgstr "Кут повороту за прохід"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Degrees to rotate each successive pass"
-msgstr "Градуси повороту кожного наступного проходу"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Engraving Pattern"
-msgstr "Візерунок гравіювання"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Settings that control the scan line pattern and orientation."
-msgstr "Налаштування, що керують візерунком та орієнтацією ліній сканування."
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Angle"
-msgstr "Кут"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Angle of scan lines in degrees"
-msgstr "Кут ліній сканування в градусах"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Cross-Hatch"
-msgstr "Перехресна штриховка"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Add a second pass at 90 degrees"
-msgstr "Додати другий прохід під 90 градусів"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Segmented"
-msgstr "Сегментований"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Full Sweep"
-msgstr "Повне проходження"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Scan Mode"
-msgstr "Режим сканування"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid ""
-"Segmented: moves between content regions. Full Sweep: scans full width with "
-"laser toggling."
-msgstr ""
-"Сегментований: рухається між областями вмісту. Повне проходження: сканує всю "
-"ширину з вмиканням/вимиканням лазера."
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Line Spacing"
-msgstr "Інтервал між лініями"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Distance between scan lines"
-msgstr "Відстань між лініями сканування"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Sample Interval"
-msgstr "Інтервал вибірки"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid ""
-"Distance between power samples along scan line. Lower values improve "
-"accuracy, but increase output size."
-msgstr ""
-"Відстань між вибірками потужності вздовж лінії сканування. Менші значення "
-"покращують точність, але збільшують розмір виводу."
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Dot Width Correction"
-msgstr "Корекція ширини точки"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid ""
-"Reduces engrave length at both ends to compensate for physical dot width"
-msgstr ""
-"Зменшує довжину гравіювання на обох кінцях для компенсації фізичної ширини "
-"точки"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Bidirectional Scan Offset"
-msgstr "Двоспрямований зсув сканування"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid ""
-"Corrects X misalignment between left-to-right and right-to-left raster "
-"passes (in mm)"
-msgstr ""
-"Виправляє X-зміщення між растровими проходами зліва-направо та справа-наліво "
-"(в мм)"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Invert"
-msgstr "Інвертувати"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Engrave white areas instead of black areas"
-msgstr "Гравіювати білі ділянки замість чорних"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Change Power Range"
-msgstr "Змінити діапазон потужності"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Min Power (Black)"
-msgstr "Мін. потужність (чорне)"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Max Power (White)"
-msgstr "Макс. потужність (біле)"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Min Power (White)"
-msgstr "Мін. потужність (біле)"
-
-#: laser_essentials/widgets/raster_widget.py
-msgid "Max Power (Black)"
-msgstr "Макс. потужність (чорне)"
-
-#: laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/shrinkwrap_page.py
+#: laser_essentials/steps/shrinkwrap_step.py
 msgid "Gravity"
 msgstr "Гравітація"
 
-#: laser_essentials/widgets/shrinkwrap_widget.py
+#: laser_essentials/widgets/shrinkwrap_page.py
 msgid "Pulls the hull inward. 0.0 is a standard convex hull"
 msgstr "Тягне оболонку всередину. 0.0 — стандартна опукла оболонка"
 
-#: laser_essentials/widgets/shrinkwrap_widget.py
-#: laser_essentials/widgets/frame_widget.py
-#: laser_essentials/widgets/contour_widget.py
-msgid "Cut Side"
-msgstr "Сторона різу"
+#: laser_essentials/widgets/shrinkwrap_page.py
+#: laser_essentials/steps/shrinkwrap_step.py
+msgid "Shrink Wrap"
+msgstr "Обтискання"
 
-#: laser_essentials/widgets/shrinkwrap_widget.py
-#: laser_essentials/widgets/frame_widget.py
-#: laser_essentials/widgets/contour_widget.py
-msgid "Path Offset"
-msgstr "Зміщення контуру"
+#: laser_essentials/widgets/shrinkwrap_page.py
+msgid "Fit a hull around the content and trace it."
+msgstr "Побудуйте оболонку навколо вмісту та виконайте її трасування."
 
-#: laser_essentials/widgets/shrinkwrap_widget.py
-#: laser_essentials/widgets/contour_widget.py
-msgid ""
-"Absolute distance from original path in machine units, direction is "
-"controlled by Cut Side"
-msgstr ""
-"Абсолютна відстань від оригінального контуру в одиницях машини, напрямок "
-"контролюється стороною різу"
+#: laser_essentials/widgets/wavefront_page.py
+#: laser_essentials/steps/wavefront_step.py
+msgid "Step Over"
+msgstr "Крок переміщення"
 
-#: laser_essentials/widgets/frame_widget.py
-msgid "Absolute distance from content boundary in machine units"
-msgstr "Абсолютна відстань від межі вмісту в одиницях машини"
+#: laser_essentials/widgets/wavefront_page.py
+msgid "Lateral step-over between wavefront passes (mm)"
+msgstr "Бічне зміщення між проходами хвильового фронту (мм)"
 
-#: laser_essentials/widgets/contour_widget.py
-msgid "Remove Inner Paths"
-msgstr "Видалити внутрішні контури"
+#: laser_essentials/widgets/wavefront_page.py
+#: laser_essentials/widgets/rows/offset_row.py
+#: laser_essentials/steps/shrinkwrap_step.py
+#: laser_essentials/steps/wavefront_step.py
+#: laser_essentials/steps/frame_step.py laser_essentials/steps/contour_step.py
+msgid "Offset"
+msgstr "Зміщення"
 
-#: laser_essentials/widgets/contour_widget.py
-msgid "If enabled, only trace the outer outline of shapes"
-msgstr "Якщо увімкнено, трасувати лише зовнішній контур фігур"
+#: laser_essentials/widgets/wavefront_page.py
+msgid "Extra offset from walls (mm)"
+msgstr "Додаткове зміщення від стінок (мм)"
 
-#: laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/wavefront_page.py
+#: laser_essentials/steps/wavefront_step.py
+msgid "Wavefront"
+msgstr "Хвильовий фронт"
+
+#: laser_essentials/widgets/wavefront_page.py
+msgid "Clear pockets with a wavefront toolpath."
+msgstr "Очистіть кишені траєкторією хвильового фронту."
+
+#: laser_essentials/widgets/contour_page.py
+#: laser_essentials/steps/contour_step.py
 msgid "Cut Order"
 msgstr "Порядок різання"
 
-#: laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_page.py
 msgid "Processing order for nested paths"
 msgstr "Порядок обробки вкладених контурів"
 
-#: laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_page.py
+#: laser_essentials/steps/contour_step.py
+msgid "Remove Inner Paths"
+msgstr "Видалити внутрішні контури"
+
+#: laser_essentials/widgets/contour_page.py
+msgid "If enabled, only trace the outer outline of shapes"
+msgstr "Якщо увімкнено, трасувати лише зовнішній контур фігур"
+
+#: laser_essentials/widgets/contour_page.py
+#: laser_essentials/steps/contour_step.py
 msgid "Overcut"
 msgstr "Надріз"
 
-#: laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_page.py
 msgid ""
 "Extend closed contours past their start point so the cut overlaps itself"
 msgstr ""
 "Продовжувати замкнуті контури за початкову точку, щоб різання перетиналося"
 
-#: laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_page.py
 msgid "Rescan Content"
 msgstr "Пересканувати вміст"
 
-#: laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_page.py
 msgid "Ignore source geometry and re-trace within the workpiece"
 msgstr "Ігнорувати вихідну геометрію і повторно трасувати в робочій деталі"
 
-#: laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_page.py
 msgid "Tracing Threshold"
 msgstr "Поріг трасування"
 
-#: laser_essentials/widgets/contour_widget.py
+#: laser_essentials/widgets/contour_page.py
 msgid "Brightness level (0.0-1.0) to define edges"
 msgstr "Рівень яскравості (0.0-1.0) для визначення країв"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Diode Engrave"
-msgstr "Діодне гравіювання"
+#: laser_essentials/widgets/contour_page.py
+msgid "Contour Settings"
+msgstr "Налаштування контуру"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Diode Cut"
-msgstr "Діодне різання"
+#: laser_essentials/widgets/contour_page.py
+msgid "Trace the outline of the selected shapes."
+msgstr "Виконайте трасування контуру вибраних фігур."
 
-#: laser_essentials/widgets/material_test_grid_widget.py
-msgid "CO2 Engrave"
-msgstr "CO2 гравіювання"
+#: laser_essentials/widgets/frame_page.py
+msgid "Geometry"
+msgstr "Геометрія"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
-msgid "CO2 Cut"
-msgstr "CO2 різання"
+#: laser_essentials/widgets/frame_page.py
+msgid "Cut a frame around the selected content."
+msgstr "Виріжте рамку навколо вибраного вмісту."
 
-#: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Select"
-msgstr "Вибрати"
+#: laser_essentials/widgets/rows/laser_step_page.py
+#: laser_essentials/capabilities.py
+msgid "Cut Speed"
+msgstr "Швидкість різання"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Presets"
-msgstr "Пресети"
+#: laser_essentials/widgets/rows/laser_step_page.py
+#: laser_essentials/steps/laser_step.py laser_essentials/frontend.py
+msgid "Laser"
+msgstr "Лазер"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Load common test configurations"
-msgstr "Завантажити типові конфігурації тестування"
+#: laser_essentials/widgets/rows/laser_step_page.py
+msgid "Laser power, speed, and head selection for this operation."
+msgstr "Потужність лазера, швидкість та вибір голівки для цієї операції."
 
-#: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Test Type"
-msgstr "Тип тесту"
+#: laser_essentials/widgets/rows/laser_step_page.py
+msgid "Machine"
+msgstr "Машина"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Cut: outlines; Engrave: fills with raster lines"
-msgstr "Різання: контури; Гравіювання: заповнення растровими лініями"
+#: laser_essentials/widgets/rows/laser_step_page.py
+msgid "Settings provided by the machine's hardware for this head."
+msgstr "Налаштування, що надаються обладнанням машини для цієї голівки."
 
-#: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Grid Mode"
-msgstr "Режим сітки"
+#: laser_essentials/widgets/rows/laser_step_page.py
+msgid "Change Head"
+msgstr "Змінити голівку"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Choose which parameters to vary on axes"
-msgstr "Виберіть, які параметри змінювати на осях"
+#: laser_essentials/widgets/rows/offset_row.py
+msgid ""
+"Shifts the path inward/outward per Cut Side (none on Centerline). Defaults "
+"to kerf compensation for the head"
+msgstr ""
+"Зсуває шлях усередину/назовні залежно від сторони різу (жодного на "
+"центральній лінії). За замовчуванням — компенсація kerf для голівки"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/rows/tab_power_row.py
+#: laser_essentials/steps/laser_step.py laser_essentials/capabilities.py
+msgid "Tab Power"
+msgstr "Потужність перемичок"
+
+#: laser_essentials/widgets/rows/tab_power_row.py
+msgid "Laser power at tab positions as a percentage"
+msgstr "Потужність лазера в позиціях перемичок у відсотках"
+
+#: laser_essentials/widgets/rows/air_assist_row.py
+#: laser_essentials/steps/laser_step.py laser_essentials/capabilities.py
+msgid "Air Assist"
+msgstr "Повітряний обдув"
+
+#: laser_essentials/widgets/rows/air_assist_row.py
+msgid "Blow air over the cut to clear debris"
+msgstr "Подавати повітря на місце різу, щоб прибирати відходи"
+
+#: laser_essentials/widgets/rows/cut_side_row.py
+#: laser_essentials/steps/shrinkwrap_step.py
+#: laser_essentials/steps/frame_step.py laser_essentials/steps/contour_step.py
+msgid "Cut Side"
+msgstr "Сторона різу"
+
+#: laser_essentials/widgets/rows/pwm_row.py
+msgid "Frequency"
+msgstr "Частота"
+
+#: laser_essentials/widgets/rows/pwm_row.py
+msgid "Laser PWM frequency in Hz"
+msgstr "Частота ШІМ лазера в Гц"
+
+#: laser_essentials/widgets/rows/pwm_row.py
+msgid "Pulse Width"
+msgstr "Ширина імпульсу"
+
+#: laser_essentials/widgets/rows/pwm_row.py
+msgid "Laser PWM pulse width in ns"
+msgstr "Ширина імпульсу ШІМ лазера в нс"
+
+#: laser_essentials/widgets/rows/power_row.py
+#: laser_essentials/widgets/raster_page.py laser_essentials/steps/laser_step.py
+#: laser_essentials/capabilities.py
+msgid "Power"
+msgstr "Потужність"
+
+#: laser_essentials/widgets/rows/power_row.py
+msgid "Laser power as a percentage"
+msgstr "Потужність лазера у відсотках"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Preset"
+msgstr "Пресет"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Load common test configurations."
+msgstr "Завантажити типові конфігурації тестування."
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Grid"
+msgstr "Сітка"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Test cell dimensions, shape, and spacing."
+msgstr "Розміри тестових комірок, форма та інтервали."
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Labels"
+msgstr "Мітки"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Speed/power annotations on the grid."
+msgstr "Анотації швидкості/потужності на сітці."
+
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Parameters"
 msgstr "Параметри"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
-msgid "Define the parameter ranges for the test grid"
-msgstr "Визначте діапазони параметрів для тестової сітки"
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Define the parameter ranges for the test grid."
+msgstr "Визначте діапазони параметрів для тестової сітки."
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Diode Engrave"
+msgstr "Діодне гравіювання"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Diode Cut"
+msgstr "Діодне різання"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "CO2 Engrave"
+msgstr "CO2 гравіювання"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "CO2 Cut"
+msgstr "CO2 різання"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Select"
+msgstr "Вибрати"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Presets"
+msgstr "Пресети"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Load common test configurations"
+msgstr "Завантажити типові конфігурації тестування"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Test Type"
+msgstr "Тип тесту"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Cut: outlines; Engrave: fills with raster lines"
+msgstr "Різання: контури; Гравіювання: заповнення растровими лініями"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Grid Mode"
+msgstr "Режим сітки"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Choose which parameters to vary on axes"
+msgstr "Виберіть, які параметри змінювати на осях"
+
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Fixed Speed"
 msgstr "Фіксована швидкість"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Constant speed for all cells (mm/min)"
 msgstr "Постійна швидкість для всіх клітинок (мм/хв)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Fixed Power (%)"
 msgstr "Фіксована потужність (%)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Constant power for all cells"
 msgstr "Постійна потужність для всіх клітинок"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Minimum Power (%)"
 msgstr "Мінімальна потужність (%)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "For first column"
 msgstr "Для першого стовпця"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Maximum Power (%)"
 msgstr "Максимальна потужність (%)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "For last column"
 msgstr "Для останнього стовпця"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Minimum Speed"
 msgstr "Мінімальна швидкість"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Starting speed (mm/min)"
 msgstr "Початкова швидкість (мм/хв)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Maximum Speed"
 msgstr "Максимальна швидкість"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Ending speed (mm/min)"
 msgstr "Кінцева швидкість (мм/хв)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Minimum Passes"
 msgstr "Мінімум проходів"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Starting number of passes"
 msgstr "Початкова кількість проходів"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Maximum Passes"
 msgstr "Максимум проходів"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Ending number of passes"
 msgstr "Кінцева кількість проходів"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Minimum Offset"
 msgstr "Мінімальний зсув"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Bidir scan X-offset for first row (mm)"
 msgstr "Двоспрямований X-зсув сканування для першого рядка (мм)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Maximum Offset"
 msgstr "Максимальний зсув"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Bidir scan X-offset for last row (mm)"
 msgstr "Двоспрямований X-зсув сканування для останнього рядка (мм)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Label Engrave Power (%)"
 msgstr "Потужність гравіювання міток (%)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Label Engrave Speed"
 msgstr "Швидкість гравіювання міток"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Speed for engraving labels (mm/min)"
 msgstr "Швидкість гравіювання міток (мм/хв)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Columns (Power Steps)"
 msgstr "Стовпці (кроки потужності)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Number of power variations"
 msgstr "Кількість варіацій потужності"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Rows (Speed Steps)"
 msgstr "Рядки (кроки швидкості)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Number of speed variations"
 msgstr "Кількість варіацій швидкості"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Shape Size"
 msgstr "Розмір фігури"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Size of each test square (mm)"
 msgstr "Розмір кожного тестового квадрата (мм)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Spacing"
 msgstr "Інтервал"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Gap between test squares (mm)"
 msgstr "Проміжок між тестовими квадратами (мм)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Line Interval"
 msgstr "Інтервал ліній"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid ""
 "Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
 "to use laser spot size."
@@ -523,54 +449,334 @@ msgstr ""
 "Відстань між лініями сканування в одиницях верстата (для режиму "
 "гравіювання). Залиште 0, щоб використовувати розмір плями лазера."
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Include Labels"
 msgstr "Включити мітки"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Add speed/power annotations to the grid"
 msgstr "Додати анотації швидкості/потужності до сітки"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Rows (Passes Steps)"
 msgstr "Рядки (Кроки проходів)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Number of passes variations"
 msgstr "Кількість варіацій проходів"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Columns (Speed Steps)"
 msgstr "Стовпці (Кроки швидкості)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Rows (Offset Steps)"
 msgstr "Рядки (кроки зсуву)"
 
-#: laser_essentials/widgets/material_test_grid_widget.py
+#: laser_essentials/widgets/material_test_grid_page.py
 msgid "Number of offset variations"
 msgstr "Кількість варіацій зсуву"
 
+#: laser_essentials/widgets/raster_page.py laser_essentials/capabilities.py
+msgid "Engrave Speed"
+msgstr "Швидкість гравіювання"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Raster the image onto the material."
+msgstr "Виконайте растрування зображення на матеріалі."
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Power modulation and brightness range."
+msgstr "Модуляція потужності та діапазон яскравості."
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Mode"
+msgstr "Режим"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Threshold"
+msgstr "Поріг"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Brightness cutoff for black/white (0-255)"
+msgstr "Поріг яскравості для чорно-білого (0-255)"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Engraving Method"
+msgstr "Метод гравіювання"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Algorithm for converting grayscale to binary"
+msgstr "Алгоритм перетворення відтінків сірого у двійковий формат"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Auto Levels"
+msgstr "Авто рівні"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Automatically adjust black/white points"
+msgstr "Автоматично налаштувати чорні/білі точки"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Brightness Range"
+msgstr "Діапазон яскравості"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Auto-adjusted based on image content"
+msgstr "Автоналаштування на основі вмісту зображення"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Drag markers to set black/white points"
+msgstr "Перетягніть маркери, щоб встановити чорні/білі точки"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Min Power"
+msgstr "Мін. потужність"
+
+#: laser_essentials/widgets/raster_page.py
+#, python-format
+msgid "Power for lightest areas, as a % of the step's main power"
+msgstr "Потужність для найсвітліших ділянок, у % від основної потужності кроку"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Max Power"
+msgstr "Макс. потужність"
+
+#: laser_essentials/widgets/raster_page.py
+#, python-format
+msgid "Power for darkest areas, as a % of the step's main power"
+msgstr "Потужність для найтемніших ділянок, у % від основної потужності кроку"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Power Levels"
+msgstr "Рівні потужності"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Number of discrete power steps (lower = fewer moves)"
+msgstr "Кількість дискретних кроків потужності (менше = менше рухів)"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Number of Depth Levels"
+msgstr "Кількість рівнів глибини"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Z Step-Down per Level (mm)"
+msgstr "Зниження Z на рівень (мм)"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Rotate Angle Per Pass"
+msgstr "Кут повороту за прохід"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Degrees to rotate each successive pass"
+msgstr "Градуси повороту кожного наступного проходу"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Angle"
+msgstr "Кут"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Angle of scan lines in degrees"
+msgstr "Кут ліній сканування в градусах"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Cross-Hatch"
+msgstr "Перехресна штриховка"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Add a second pass at 90 degrees"
+msgstr "Додати другий прохід під 90 градусів"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Segmented"
+msgstr "Сегментований"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Full Sweep"
+msgstr "Повне проходження"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Scan Mode"
+msgstr "Режим сканування"
+
+#: laser_essentials/widgets/raster_page.py
+msgid ""
+"Segmented: moves between content regions. Full Sweep: scans full width with "
+"laser toggling."
+msgstr ""
+"Сегментований: рухається між областями вмісту. Повне проходження: сканує всю "
+"ширину з вмиканням/вимиканням лазера."
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Line Spacing"
+msgstr "Інтервал між лініями"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Distance between scan lines"
+msgstr "Відстань між лініями сканування"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Sample Interval"
+msgstr "Інтервал вибірки"
+
+#: laser_essentials/widgets/raster_page.py
+msgid ""
+"Distance between power samples along scan line. Lower values improve "
+"accuracy, but increase output size."
+msgstr ""
+"Відстань між вибірками потужності вздовж лінії сканування. Менші значення "
+"покращують точність, але збільшують розмір виводу."
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Dot Width Correction"
+msgstr "Корекція ширини точки"
+
+#: laser_essentials/widgets/raster_page.py
+msgid ""
+"Reduces engrave length at both ends to compensate for physical dot width"
+msgstr ""
+"Зменшує довжину гравіювання на обох кінцях для компенсації фізичної ширини "
+"точки"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Bidirectional Scan Offset"
+msgstr "Двоспрямований зсув сканування"
+
+#: laser_essentials/widgets/raster_page.py
+msgid ""
+"Corrects X misalignment between left-to-right and right-to-left raster "
+"passes (in mm)"
+msgstr ""
+"Виправляє X-зміщення між растровими проходами зліва-направо та справа-наліво "
+"(в мм)"
+
+#: laser_essentials/widgets/raster_page.py
+#: laser_essentials/steps/raster_step.py
+msgid "Invert"
+msgstr "Інвертувати"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Engrave white areas instead of black areas"
+msgstr "Гравіювати білі ділянки замість чорних"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Change Power Range"
+msgstr "Змінити діапазон потужності"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Min Power (Black)"
+msgstr "Мін. потужність (чорне)"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Max Power (White)"
+msgstr "Макс. потужність (біле)"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Min Power (White)"
+msgstr "Мін. потужність (біле)"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Max Power (Black)"
+msgstr "Макс. потужність (чорне)"
+
+#: laser_essentials/steps/laser_step.py laser_essentials/capabilities.py
+msgid "Optionally force a specific laser head"
+msgstr "За бажанням примусово вибрати конкретну лазерну голівку"
+
+#: laser_essentials/steps/laser_step.py laser_essentials/capabilities.py
+#, python-format
+msgid "Laser power at tab positions (% of cut power)"
+msgstr "Потужність лазера в позиціях перемичок (% від потужності різання)"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Step Settings"
+msgstr "Налаштування кроку"
+
+#: laser_essentials/steps/laser_step.py
+#, python-brace-format
+msgid "{power_percent}% power, {speed_str}"
+msgstr "{power_percent}% потужності, {speed_str}"
+
 #: laser_essentials/steps/shrinkwrap_step.py
-msgid "Shrink Wrap"
-msgstr "Обтискання"
+msgid ""
+"Shifts the contour inward/outward per Cut Side (none on Centerline). "
+"Defaults to kerf compensation for the head"
+msgstr ""
+"Зсуває контур усередину/назовні залежно від сторони різу (жодного на "
+"центральній лінії). За замовчуванням — компенсація kerf для голівки"
 
 #: laser_essentials/steps/wavefront_step.py
-msgid "Wavefront"
-msgstr "Хвильовий фронт"
+msgid ""
+"Distance between wavefront passes; defaults to the laser spot width when "
+"unset"
+msgstr ""
+"Відстань між проходами хвильового фронту; за замовчуванням — ширина плями "
+"лазера, якщо не встановлено"
 
 #: laser_essentials/steps/frame_step.py
 msgid "Frame"
 msgstr "Рамка"
 
+#: laser_essentials/steps/frame_step.py
+msgid ""
+"Shifts the frame inward/outward per Cut Side (none on Centerline). Defaults "
+"to kerf compensation for the head"
+msgstr ""
+"Зсуває рамку усередину/назовні залежно від сторони різу (жодного на "
+"центральній лінії). За замовчуванням — компенсація kerf для голівки"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Scan Angle"
+msgstr "Кут сканування"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Depth Mode"
+msgstr "Режим глибини"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Min Power Level"
+msgstr "Мінімальний рівень потужності"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Max Power Level"
+msgstr "Максимальний рівень потужності"
+
 #: laser_essentials/steps/contour_step.py
 msgid "Contour"
 msgstr "Контур"
+
+#: laser_essentials/steps/contour_step.py
+msgid ""
+"Shifts the cut path inward/outward per Cut Side (none on Centerline). "
+"Defaults to kerf compensation for the head"
+msgstr ""
+"Зсуває шлях різання усередину/назовні залежно від сторони різу (жодного на "
+"центральній лінії). За замовчуванням — компенсація kerf для голівки"
 
 #: laser_essentials/steps/material_test.py
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Material Test Grid"
 msgstr "Сітка тестування матеріалу"
+
+#: laser_essentials/capabilities.py
+msgid "Laser Head"
+msgstr "Лазерна голівка"
+
+#: laser_essentials/capabilities.py
+msgid "Travel Speed"
+msgstr "Швидкість переміщення"
+
+#: laser_essentials/capabilities.py
+msgid "Score"
+msgstr "Біговка"
+
+#: laser_essentials/capabilities.py
+msgid "Score Speed"
+msgstr "Швидкість біговки"
+
+#: laser_essentials/capabilities.py
+msgid "Material Test"
+msgstr "Тест матеріалу"
 
 #: laser_essentials/frontend.py
 msgid "Create Material Test Grid"
