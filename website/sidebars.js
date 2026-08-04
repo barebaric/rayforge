@@ -26,7 +26,6 @@ module.exports = {
       type: 'category',
       label: 'Machine Setup',
       items: [
-        'machine/config-wizard',
         'machine/general',
         'machine/hardware',
         'machine/advanced',

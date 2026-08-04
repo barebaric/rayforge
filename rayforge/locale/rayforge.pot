@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-04 00:33+0200\n"
+"POT-Creation-Date: 2026-08-04 19:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -6435,6 +6435,22 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "How imported layers are mapped to document layers"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "SVG Layers"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Colors"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Layer Source"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Group imported geometry by SVG layer or by color"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py

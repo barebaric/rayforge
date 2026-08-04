@@ -5,6 +5,44 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.0-beta2
+
+### Added
+
+- Unified machine configuration wizard with AI-powered device spec
+  lookup
+- Import SVG colors as layers
+- Recipes can now target specific step types
+- Assembly warnings (e.g. failed faces or regions) surfaced as toast
+  notifications
+
+### Changed
+
+- Kerf and path offset merged into a single offset setting, defaulting
+  to half the laser head spot size
+- Raster power range on engrave steps renamed to min/max power level so
+  it no longer clashes with the hardware max power setting
+- Upgrade raygeo to 1.31.2 (SVG color layer import, multi-face parts,
+  and fixed SVG `<defs>`/`<use>` traversal)
+- Updated translations
+
+### Fixed
+
+- 3D toolpaths drawn at full brightness on first open instead of
+  power-dimmed
+- Raster full-sweep mode no longer engraves empty masked regions at
+  full power (raygeo 1.31.2)
+- Raster multi-pass mode no longer mixes Z levels when optimizing, and
+  cross-hatch now interleaves both angles per pass instead of running
+  all passes of one angle before the other
+- CNC step attributes no longer dropped from project files on save
+- ChArUco detection failing on some array shapes (camera calibration,
+  by trixdaddy)
+- Intent-rebuild hot loop on documents without workflow content
+- Missing features dialog now reports the original step type
+- Restored macOS Monterey-compatible bundles (by pgilfernandez)
+- Replaced deprecated GTK CSS APIs
+
 ## 1.9.0-beta1
 
 ### Added

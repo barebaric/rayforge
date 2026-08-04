@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-04 00:33+0200\n"
+"POT-Creation-Date: 2026-08-04 19:24+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -6764,6 +6764,22 @@ msgstr "Режим імпорту шару"
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "How imported layers are mapped to document layers"
 msgstr "Як імпортовані шари відображаються на шари документа"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "SVG Layers"
+msgstr "SVG-шари"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Colors"
+msgstr "Кольори"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Layer Source"
+msgstr "Джерело шару"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Group imported geometry by SVG layer or by color"
+msgstr "Групувати імпортовану геометрію за SVG-шаром або кольором"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import Image"

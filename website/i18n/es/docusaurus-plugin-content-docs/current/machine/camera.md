@@ -13,19 +13,23 @@ eliminando las conjeturas y reduciendo el desperdicio de material.
 
 ## Flujo de trabajo de configuración
 
-La configuración de una cámara sigue cuatro pasos:
+La configuración de una cámara se puede realizar mediante el [Asistente de
+cámara](#paso-2-asistente-de-cámara) guiado — un flujo único que cubre la
+configuración de imagen, la calibración de lente y la alineación — o
+configurando cada área manualmente desde el panel de propiedades de la cámara.
+En cualquier caso, la configuración cubre cuatro áreas:
 
 1. **Añadir una cámara** — Conecta tu cámara y agrégala a la configuración de
    la máquina
 2. **Ajustar la configuración de imagen** — Ajusta brillo, contraste, balance
    de blancos y reducción de ruido
-3. **Calibrar la lente** — Corrige la distorsión con el asistente de
-   calibración o coeficientes manuales
+3. **Calibrar la lente** — Corrige la distorsión con la calibración automática
+   del asistente de cámara o con coeficientes manuales
 4. **Alinear la cámara** — Mapa los píxeles de la cámara a las coordenadas de
    la máquina para un posicionamiento preciso
 
-Los pasos 2–4 se acceden desde el panel de propiedades de la cámara, donde los
-íconos de estado muestran el progreso de un vistazo:
+El panel de propiedades de la cámara muestra los íconos de estado de
+calibración y alineación de un vistazo:
 
 - ✓ **Calibración de lente** — La calibración se ha realizado
 - ⚠ **Alineación de imagen** — Advertencia cuando la alineación debe rehacerse
@@ -75,13 +79,29 @@ Los pasos 2–4 se acceden desde el panel de propiedades de la cámara, donde lo
 
 ---
 
-## Paso 2: Ajustar la configuración de imagen
+## Paso 2: Asistente de cámara
+
+El **Asistente de cámara** ejecuta la configuración completa de la cámara en un
+único flujo guiado, cubriendo las tres áreas en orden — configuración de
+imagen, calibración de lente y alineación de imagen. Se inicia desde:
+
+- La fila **Asistente de cámara** en el panel de propiedades de la cámara —
+  haz clic en **Start**
+- Automáticamente desde el [asistente de
+  configuración](../getting-started/first-time-setup.md) cuando activas una
+  cámara en su paso de cámara y continúas
+
+### Paso 2.1: Ajustar la configuración de imagen
 
 ![Diálogo de Configuración de Imagen](/screenshots/camera-image-settings.png)
 
-Haz clic en **Configurar** junto a **Ajustes de Imagen** en las propiedades de
-la cámara para abrir el diálogo de configuración de imagen. Ajusta estos
-parámetros para obtener una vista de cámara clara:
+La configuración de imagen es la primera etapa del asistente de cámara — se
+abre ahí y te permite establecer la resolución, el balance de blancos, el
+brillo, el contraste y la reducción de ruido. Si no ejecutaste el asistente, o
+quieres ajustar los valores que estableció, haz clic en **Configure** junto a
+**Image Settings** en las propiedades de la cámara para abrir el diálogo de
+configuración de imagen. Ajusta estos parámetros para obtener una vista de
+cámara clara:
 
 | Ajuste                 | Descripción                                                                               |
 | ---------------------- | ----------------------------------------------------------------------------------------- |
@@ -97,9 +117,7 @@ formato MJPEG predeterminado. Ten en cuenta que YUYV no está comprimido y
 puede reducir la resolución disponible o la tasa de fotogramas en conexiones
 USB 2.0.
 
----
-
-## Paso 3: Calibración de lente
+### Paso 2.2: Calibración de lente
 
 Si tu cámara tiene una lente gran angular o está montada en ángulo, la
 imagen puede mostrar curvatura visible — las líneas rectas aparecen
@@ -107,77 +125,61 @@ dobladas, especialmente cerca de los bordes del encuadre. Esto se llama
 distorsión de lente, y puede afectar la alineación incluso si tus puntos
 de alineación están medidos con cuidado.
 
-Rayforge incluye un asistente de calibración guiado que corrige esta
-distorsión automáticamente. También puedes ajustar los coeficientes de
-distorsión manualmente.
+La calibración de lente es la segunda etapa del asistente de cámara. Te permite
+elegir cómo corregir la distorsión:
 
-### Diálogo de Calibración de Lente
+- **Automatic** — captura fotogramas de una tarjeta de calibración impresa; el
+  asistente calcula el modelo de distorsión por ti
+- **Manual** — ingresa los coeficientes radiales (k1–k3) y tangenciales
+  (p1–p2) manualmente
+- **Skip** — deja la distorsión sin corregir; puedes calibrar más tarde
 
-![Diálogo de Calibración de Lente](/screenshots/camera-lens-calibration.png)
+#### Calibración automática
 
-Abre el diálogo de calibración de lente haciendo clic en **Configurar**
-junto a **Calibración de Lente** en las propiedades de la cámara. Desde
-aquí puedes:
+Para la calibración **Automatic**, el asistente te guía para capturar varias
+imágenes de una tarjeta de calibración impresa desde diferentes posiciones en
+la cama, y luego calcula un modelo de distorsión automáticamente.
 
-- **Ajustar coeficientes de distorsión manualmente** — Ajusta finamente
-  los parámetros de distorsión radial (k1–k3) y tangencial (p1–p2)
-- **Iniciar el asistente de calibración** — Haz clic en el botón
-  **Asistente** para una calibración automática guiada
+![Asistente — Configuración de Tarjeta](/screenshots/camera-lens-calibration-wizard-card.png)
 
-Los ajustes manuales son útiles para el ajuste fino después de que el
-asistente haya calculado una solución inicial, o cuando conoces los
-valores de distorsión aproximados para tu lente.
-
-### Asistente de Calibración
-
-El asistente de calibración te guía para capturar varias imágenes de una
-tarjeta de calibración impresa desde diferentes posiciones en la cama.
-Luego calcula un modelo de distorsión automáticamente.
-
-**Paso 1: Configurar la tarjeta de calibración**
-
-![Asistente — Configuración de
-Tarjeta](/screenshots/camera-lens-calibration-wizard-card.png)
-
-1. Haz clic en **Asistente** en el diálogo de calibración de lente para
-   comenzar
-2. Establece el **Ancho** y **Alto** de tu tarjeta impresa
-3. La vista previa se actualiza en tiempo real — la tarjeta debe cubrir
-   aproximadamente el 70% de la vista de la cámara
-4. Haz clic en **Guardar como PDF** para exportar la tarjeta para imprimir
-5. Imprime la tarjeta y colócala en la cama láser
-
-**Paso 2: Capturar fotogramas**
+1. Establece el **Ancho** y **Alto** de tu tarjeta impresa. La vista previa se
+   actualiza en tiempo real — la tarjeta debe cubrir aproximadamente el 70% de
+   la vista de la cámara.
+2. Haz clic en **Save to PDF** para exportar la tarjeta para imprimir, luego
+   imprímela y colócala en la cama láser.
 
 ![Asistente — Captura](/screenshots/camera-lens-calibration-wizard-capture.png)
 
-1. Haz clic en **Siguiente** para entrar al modo de captura
-2. Posiciona la tarjeta de calibración en diferentes ubicaciones y
-   ángulos dentro de la vista de la cámara
-3. Haz clic en **Capturar Fotograma** para cada posición
-4. Apunta a al menos 8 capturas que cubran todo el encuadre, incluyendo
-   esquinas y bordes
-5. La barra de progreso y los indicadores de estado muestran la calidad
-   de captura
+3. Mueve la tarjeta a diferentes posiciones y ángulos dentro de la vista de la
+   cámara y haz clic en **Capture Frame** para cada posición. Apunta a al
+   menos 8 capturas que cubran todo el encuadre, incluyendo esquinas y bordes.
+   La barra de progreso y los indicadores de estado muestran la calidad de
+   captura.
+4. Cuando se hayan capturado suficientes fotogramas, el asistente calcula el
+   modelo de distorsión y lo aplica — la superposición de la cámara ahora
+   muestra una imagen corregida y recta.
 
-**Paso 3: Aplicar calibración**
+#### Calibración manual
 
-1. Una vez que se hayan capturado suficientes fotogramas, haz clic en
-   **Calibrar**
-2. Los coeficientes de distorsión calculados se aplican automáticamente
-   a la cámara
-3. La superposición de la cámara ahora muestra una imagen corregida y recta
+![Diálogo de Calibración de Lente](/screenshots/camera-lens-calibration.png)
 
----
+Para coeficientes manuales o para ajustar finamente el resultado después de una
+calibración automática, abre el diálogo de calibración de lente haciendo clic
+en **Configure** junto a **Lens Calibration** en las propiedades de la cámara.
+Desde aquí puedes ajustar los coeficientes de distorsión manualmente — ajusta
+finamente los parámetros radiales (k1–k3) y tangenciales (p1–p2).
 
-## Paso 4: Alineación de imagen
+### Paso 2.3: Alineación de imagen
 
 ![Diálogo de Alineación de Imagen](/screenshots/camera-image-alignment.png)
 
-La alineación de cámara calibra la relación entre los píxeles de la cámara y
-las coordenadas del mundo real, permitiendo el posicionamiento preciso.
+La alineación de imagen es la etapa final del asistente de cámara. La
+alineación de cámara calibra la relación entre los píxeles de la cámara y las
+coordenadas del mundo real, permitiendo el posicionamiento preciso. El
+asistente usa el mismo procedimiento descrito aquí, y aplicar la alineación
+finaliza el asistente.
 
-### Por Qué es Necesaria la Alineación
+#### Por Qué es Necesaria la Alineación
 
 La cámara ve el área de trabajo desde arriba, pero la imagen puede estar:
 
@@ -188,7 +190,7 @@ La cámara ve el área de trabajo desde arriba, pero la imagen puede estar:
 La alineación crea una matriz de transformación que mapea los píxeles de la
 cámara a las coordenadas de la máquina.
 
-### Procedimiento de Alineación
+#### Procedimiento de Alineación
 
 1. **Abre el Diálogo de Alineación:**
    - Haz clic en el botón **Configurar** junto a **Alineación de Imagen** en
@@ -229,7 +231,7 @@ cámara a las coordenadas de la máquina.
      vista de la cámara
    - Ajusta volviendo a alinear si es necesario
 
-### Estado de Alineación
+#### Estado de Alineación
 
 El panel de propiedades de la cámara muestra el estado de alineación con un
 ícono:
@@ -241,14 +243,14 @@ El panel de propiedades de la cámara muestra el estado de alineación con un
   alineación se conservan — simplemente abre el diálogo y haz clic en
   **Aplicar** nuevamente.
 
-### Flujo de trabajo de ejemplo
+#### Flujo de trabajo de ejemplo
 
 1. Mueve el láser a la posición de origen (0, 0) y marca en la cámara
 2. Mueve el láser a (100, 0) y marca en la cámara
 3. Mueve el láser a (100, 100) y marca en la cámara
 4. Mueve el láser a (0, 100) y marca en la cámara
 5. Ingresa las coordenadas exactas para cada punto
-6. Aplica y verifica
+6. Haz clic en **Aplicar** y verifica
 
 :::tip Mejores Prácticas
 

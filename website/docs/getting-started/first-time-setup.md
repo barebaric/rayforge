@@ -1,144 +1,161 @@
 ---
-description: "Configure your laser cutter or engraver for the first time. Set up your machine, connect via USB, and get ready to cut with Rayforge."
+description: "Configure your laser cutter or engraver for the first time. Use the configuration wizard to create your machine, then connect and get ready to cut with Rayforge."
 ---
 
 # First Time Setup
 
-After installing Rayforge, you'll need to configure your laser cutter or engraver. This guide will walk you through creating your first machine and establishing a connection.
+After installing Rayforge, you'll need to configure your laser cutter or
+engraver. This guide walks you through creating your first machine with the
+configuration wizard and establishing a connection.
 
 ## Step 1: Launch Rayforge
 
-Start Rayforge from your application menu or by running `rayforge` in a terminal. You should see the main interface with an empty canvas.
+Start Rayforge from your application menu or by running `rayforge` in a
+terminal. You should see the main interface with an empty canvas.
 
-## Step 2: Create a Machine
+## Step 2: Create a Machine with the Wizard
 
-Navigate to **Settings → Machines** or press <kbd>ctrl+comma</kbd> to open the settings dialog, then select the **Machines** page.
+Navigate to **Settings → Machines** or press <kbd>ctrl+comma</kbd> to open
+the settings dialog, then select the **Machines** page.
 
 ![Machine Settings](/screenshots/application-machines.png)
 
-Click **Add Machine** to create a new machine. Select a device profile from
-the list to use as a template — each profile pre-configures the machine
-settings and G-code dialect.
+Click **Add Machine** to open the machine picker.
 
 ![Add Machine Dialog](/screenshots/app-settings-machines-add.png)
 
-If your device is connected and powered on, you can click **Other Device…**
-to use the [Configuration Wizard](../machine/config-wizard.md), which
-automatically detects and configures your machine.
+The configuration wizard opens and adapts which steps it shows to your
+choices:
 
-If you have a LightBurn device profile (.lbdev) with camera calibration
-and device settings, you can click **Import from File…** and select the
-.lbdev file. The camera calibration and laser settings from your LightBurn
-setup will be applied to the new machine.
+- Picking a **built-in profile** pre-fills the controller, work area, and
+  head — the wizard skips straight to the rotary, camera, and review steps
+- **Importing a profile** keeps the hardware and head steps so you can
+  correct anything the import got wrong
+- **Device Not Listed** walks you through every step, including the
+  controller and AI-spec-lookup steps
 
-After selecting, the Machine Settings dialog opens for your new machine.
+### Pick a Starting Point
 
-## Step 3: Configure General Settings
+Choose a built-in device profile to pre-fill the controller, work area, and
+head settings, or click **Device Not Listed** to configure everything
+manually. You can also **Import from File…** a previously exported profile
+or a LightBurn device profile (.lbdev) with camera calibration and laser
+settings.
 
-The **General** page contains basic machine information, driver selection, and connection settings.
+![Wizard — Pick a Starting Point](/screenshots/app-settings-machines-wizard-profile.png)
 
-![General Settings](/screenshots/machine-general.png)
+### Choose a Controller
 
-### Machine Information
+Pick the firmware or protocol family that matches your machine's controller
+board (GRBL, Marlin, Smoothie, Ruida, OctoPrint, …). Choose
+**None — G-code export only** if you only want to export G-code to files and
+never drive a physical machine. This step is skipped when you start from a
+built-in profile or an import.
 
-1. **Machine Name**: Give your machine a descriptive name (e.g., "K40 Laser", "Ortur LM2")
+![Wizard — Choose a Controller](/screenshots/app-settings-machines-wizard-controller.png)
 
-### Driver Selection
+### Connection
 
-Select the appropriate driver for your device from the dropdown:
+Enter the connection parameters your machine requires. The exact fields
+depend on the controller you chose:
 
-- **GRBL (Serial)** - For GRBL devices connected via USB/serial port.
-  Uses buffer-counting for flow control. Recommended for most GRBL devices
-- **GRBL (Serial Simple)** - An alternative GRBL serial driver using a
-  ping-pong protocol. Send one line, wait for "ok", send the next. Useful
-  when the standard driver causes false alarms or communication errors on
-  your device
-- **GRBL (Network)** - For GRBL devices with WiFi/Ethernet connectivity
-- **Smoothie** - For Smoothieware-based devices
+- **Serial drivers** — USB device path (e.g. `/dev/ttyUSB0` on Linux,
+  `COM3` on Windows) and baud rate
+- **Network drivers** — host address and port (e.g. `192.168.1.100`)
+- **OctoPrint** — server URL and API key
 
-### Driver Settings
+![Wizard — Connection](/screenshots/app-settings-machines-wizard-connect.png)
 
-Depending on your selected driver, configure the connection parameters:
+### Discover the Device
 
-#### GRBL (Serial) - USB
+When your controller supports it, the wizard offers to connect to the device
+and read its configuration automatically — work area, speeds, acceleration,
+and firmware capabilities. Click **Probe Now** to auto-detect these values,
+or use **Next** to enter them by hand in the following steps.
 
-1. **Port**: Choose your device from the dropdown (e.g., `/dev/ttyUSB0` on Linux, `COM3` on Windows)
-2. **Baud Rate**: Select `115200` (standard for most GRBL devices)
+![Wizard — Discover the Device](/screenshots/app-settings-machines-wizard-probe.png)
 
-:::info
-If your device doesn't appear in the list, check that it's connected and that you have the necessary permissions. On Linux, you may need to add your user to the `dialout` group.
-:::
+### AI Provider
 
-#### GRBL (Network) / Smoothie - WiFi/Ethernet
+Shown only when no AI provider is configured yet. Enter an OpenAI-compatible
+endpoint (base URL and API key) so the next step can look up specifications
+for known commercial machines. Skip this step to enter the values by hand.
 
-1. **Host**: Enter the IP address of your device (e.g., `192.168.1.100`)
-2. **Port**: Enter the port number (typically `23` or `8080`)
+![Wizard — AI Provider](/screenshots/app-settings-machines-wizard-ai-provider.png)
 
-### Speeds & Acceleration
+### AI Spec Lookup
 
-These settings are used for job time estimation and path optimization:
+If your machine is a known commercial model, the AI can pre-fill its
+specifications from the manufacturer's documentation. Enter the vendor and
+model, then click **Look Up Specs**. Suggested values appear as switch rows
+and start accepted — turn off anything you don't want applied.
 
-- **Max Travel Speed**: Maximum rapid movement speed
-- **Max Cut Speed**: Maximum cutting speed
-- **Acceleration**: Used for time estimations and overscan calculations
+![Wizard — AI Spec Lookup](/screenshots/app-settings-machines-wizard-ai-lookup.png)
 
-## Step 4: Configure Hardware Settings
+### Hardware
 
-Switch to the **Hardware** tab to set up your machine's physical dimensions.
+Configure the machine's physical setup:
 
-![Hardware Settings](/screenshots/machine-hardware.png)
+- **Axes** — X/Y work-area extents and the coordinate origin (0,0) corner
+- **Axis direction** — reverse an axis if coordinates come out negative
+- **Work Area** — margins around the unusable space of the work surface
+- **Soft Limits** — optional safety bounds for jogging
+- **Speeds** — max travel speed, max cut speed, and acceleration
+- **Behavior** — home on start and single-axis homing
 
-### Dimensions
+![Wizard — Hardware](/screenshots/app-settings-machines-wizard-hardware.png)
 
-- **Width**: Enter the maximum width of your working area in millimeters
-- **Height**: Enter the maximum height of your working area in millimeters
+### Head
 
-### Axes
+Declare what's attached to the gantry — a laser or a spindle head — and set
+its parameters. For a laser: max power (S-value), spot size, PWM frequency,
+and focal distance. For a spindle: max and min RPM.
 
-- **Coordinate Origin (0,0)**: Select where your machine's origin is located:
-  - Bottom Left (most common for GRBL)
-  - Top Left
-  - Top Right
-  - Bottom Right
+![Wizard — Head](/screenshots/app-settings-machines-wizard-head.png)
 
-### Axis Offsets (Optional)
+### Rotary Module
 
-Configure X and Y offsets if your machine requires them for precise positioning.
+Optionally set up a rotary attachment: type (jaws or rollers), axis (A/B/C),
+mode (true 4th axis vs. axis replacement), geometry, and reverse-direction
+flag. Skip this step to add a rotary module later from machine settings.
 
-## Step 5: Automatic Connection
+![Wizard — Rotary Module](/screenshots/app-settings-machines-wizard-rotary.png)
 
-Rayforge automatically connects to your machine when the application starts (if the machine is powered on and connected). You don't need to manually click a connect button.
+### Cameras
 
-The connection status is displayed in the bottom-left corner of the main window with a status icon and label showing the current state (Connected, Connecting, Disconnected, Error, etc.).
+Optionally enable any cameras you want to use for preview and alignment.
+When you enable a camera and continue, the [camera
+wizard](../machine/camera.md#step-2-camera-wizard) opens to guide you
+through image settings, lens calibration, and image alignment. You can skip
+this and set up cameras later from the machine's camera settings.
+
+![Wizard — Cameras](/screenshots/app-settings-machines-wizard-camera.png)
+
+### Review & Name
+
+Give the machine a name and review a summary of everything you've configured
+— driver, connection, work area, speeds, heads, rotary modules, and cameras.
+The wizard also surfaces any warnings, such as a missing driver or an unset
+work area.
+
+![Wizard — Review & Name](/screenshots/app-settings-machines-wizard-review.png)
+
+Click **Create Machine** to finalize. The Machine Settings dialog opens for
+your new machine, where you can adjust any of the settings the wizard
+pre-filled. See the [Machine Setup](../machine/general.md) pages for details.
+
+## Step 3: Automatic Connection
+
+Rayforge automatically connects to your machine when the application starts
+(if the machine is powered on and connected). You don't need to manually
+click a connect button.
+
+The connection status is displayed in the bottom-left corner of the main
+window with a status icon and label showing the current state (Connected,
+Connecting, Disconnected, Error, etc.).
 
 :::success Connected!
 If your machine shows "Connected" status, you're ready to start using Rayforge!
-:::
-
-## Optional: Advanced Configuration
-
-### Multiple Lasers
-
-If your machine has multiple laser modules (e.g., diode and CO2), you can configure them in the **Laser** page.
-
-![Laser Settings](/screenshots/machine-laser.png)
-
-See [Laser Configuration](../machine/laser.md) for details.
-
-### Camera Setup
-
-If you have a USB camera for alignment and positioning, configure it in the **Camera** page.
-
-![Camera Settings](/screenshots/machine-camera.png)
-
-See [Camera Integration](../machine/camera.md) for details.
-
-### Device Settings
-
-The **Device** page allows you to read and modify firmware settings directly on your connected device (such as GRBL parameters). This is an advanced feature and should be used with caution.
-
-:::warning
-Editing device settings can be dangerous and may render your machine inoperable if incorrect values are applied!
 :::
 
 ---

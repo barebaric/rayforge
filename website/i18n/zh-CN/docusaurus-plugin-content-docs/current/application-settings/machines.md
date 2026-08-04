@@ -21,8 +21,8 @@ description: "在 Rayforge 中管理机器——为您的项目添加、配置�
 
 或者：
 
-- 点击 **Other Device…** 启动
-  [配置向导](../machine/config-wizard.md)，自动检测已连接设备的设置
+- 点击 **Device Not Listed** 启动
+  [配置向导](../getting-started/first-time-setup.md)，引导您逐步配置机器
 - 点击 **Import from File…** 从之前导出的配置文件或 LightBurn
   设备配置文件 (.lbdev) 中添加机器。LightBurn 配置文件包含相机
   校准和激光设置，这些设置将应用到新机器上。

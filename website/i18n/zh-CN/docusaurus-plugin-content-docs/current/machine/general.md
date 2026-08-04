@@ -70,6 +70,6 @@ GRBL 设备有两种串行驱动程序选项：
 
 ## 另请参阅
 
-- [配置向导](config-wizard) - 自动检测和配置已连接的设备
+- [首次设置](../getting-started/first-time-setup.md) - 使用配置向导逐步创建机器
 - [硬件设置](hardware) - 工作区域尺寸和轴配置
 - [设备设置](device) - 读取和写入控制器上的固件设置

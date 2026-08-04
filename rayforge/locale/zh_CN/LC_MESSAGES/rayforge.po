@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-04 00:33+0200\n"
+"POT-Creation-Date: 2026-08-04 19:24+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -6502,6 +6502,22 @@ msgstr "图层导入模式"
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "How imported layers are mapped to document layers"
 msgstr "导入的图层如何映射到文档图层"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "SVG Layers"
+msgstr "SVG 图层"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Colors"
+msgstr "颜色"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Layer Source"
+msgstr "图层来源"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Group imported geometry by SVG layer or by color"
+msgstr "按 SVG 图层或颜色对导入的几何图形分组"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import Image"

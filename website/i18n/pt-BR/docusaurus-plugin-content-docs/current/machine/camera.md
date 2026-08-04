@@ -13,7 +13,11 @@ suposições e reduzindo o desperdício de material.
 
 ## Fluxo de trabalho de configuração
 
-A configuração de uma câmera segue quatro etapas:
+A configuração de uma câmera pode ser feita por meio do
+[Assistente de Câmera](#etapa-2-assistente-de-câmera) guiado — um fluxo único
+que cobre configurações de imagem, calibração de lente e alinhamento — ou
+configurando cada área manualmente no painel de propriedades da câmera. De
+qualquer forma, a configuração cobre quatro áreas:
 
 1. **Adicionar uma câmera** — Conecte sua câmera e adicione-a à configuração
    da máquina
@@ -24,8 +28,8 @@ A configuração de uma câmera segue quatro etapas:
 4. **Alinhar a câmera** — Mapeie pixels da câmera para coordenadas da máquina
    para posicionamento preciso
 
-As etapas 2–4 são acessadas no painel de propriedades da câmera, onde ícones
-de status mostram o progresso rapidamente:
+O painel de propriedades da câmera mostra ícones de status para calibração e
+alinhamento rapidamente:
 
 - ✓ **Calibração de Lente** — A calibração foi realizada
 - ⚠ **Alinhamento de Imagem** — Aviso quando o alinhamento precisa ser refeito
@@ -34,7 +38,7 @@ de status mostram o progresso rapidamente:
 
 ---
 
-## Passo 1: Adicionar uma câmera
+## Etapa 1: Adicionar uma Câmera
 
 ### Requisitos de Hardware
 
@@ -75,13 +79,29 @@ de status mostram o progresso rapidamente:
 
 ---
 
-## Passo 2: Ajustar configurações de imagem
+## Etapa 2: Assistente de Câmera
+
+O **Assistente de Câmera** executa a configuração completa da câmera em um
+único fluxo guiado, cobrindo as três áreas em ordem — configurações de imagem,
+calibração de lente e alinhamento de imagem. Ele é iniciado a partir de:
+
+- A linha **Assistente de Câmera** no painel de propriedades da câmera —
+  clique em **Start**
+- Automaticamente a partir do [assistente de
+  configuração](../getting-started/first-time-setup.md) quando você habilita
+  uma câmera em sua etapa de câmera e continua
+
+### Etapa 2.1: Ajustar Configurações de Imagem
 
 ![Diálogo de Configurações de Imagem](/screenshots/camera-image-settings.png)
 
-Clique em **Configurar** ao lado de **Configurações de Imagem** nas
-propriedades da câmera para abrir o diálogo de configurações de imagem. Ajuste
-estes parâmetros para obter uma visão clara da câmera:
+As configurações de imagem são o primeiro estágio do assistente de câmera —
+ele abre nessa etapa e permite definir a resolução, o balanço de branco, o
+brilho, o contraste e a redução de ruído. Se você não executou o assistente,
+ou quer ajustar os valores que ele definiu, clique em **Configure** ao lado
+de **Configurações de Imagem** nas propriedades da câmera para abrir o
+diálogo de configurações de imagem. Ajuste estes parâmetros para obter uma
+visão clara da câmera:
 
 | Configuração          | Descrição                                                                              |
 | --------------------- | -------------------------------------------------------------------------------------- |
@@ -96,9 +116,7 @@ A opção YUYV é útil se sua câmera produz imagens esverdeadas com o formato
 MJPEG padrão. Note que YUYV é não comprimido e pode reduzir a resolução
 disponível ou a taxa de quadros em conexões USB 2.0.
 
----
-
-## Passo 3: Calibração de lente
+### Etapa 2.2: Calibração de Lente
 
 Se sua câmera tem uma lente grande-angular ou está montada em um ângulo,
 a imagem pode mostrar curvatura visível — linhas retas aparecem curvadas,
@@ -106,75 +124,60 @@ especialmente perto das bordas do quadro. Isso é chamado de distorção de
 lente, e pode comprometer o alinhamento mesmo que seus pontos de
 alinhamento sejam cuidadosamente medidos.
 
-O Rayforge inclui um assistente de calibração guiado que corrige essa
-distorção automaticamente. Você também pode ajustar os coeficientes de
-distorção manualmente.
+A calibração de lente é o segundo estágio do assistente de câmera. Ela
+permite escolher como corrigir a distorção:
 
-### Diálogo de Calibração de Lente
+- **Automatic** — capture quadros de um cartão de calibração impresso; o
+  assistente calcula o modelo de distorção para você
+- **Manual** — insira os coeficientes radial (k1–k3) e tangencial (p1–p2)
+  manualmente
+- **Skip** — deixe a distorção sem correção; você pode calibrar mais tarde
+
+#### Calibração Automática
+
+Para a calibração **Automatic**, o assistente orienta você a capturar várias
+imagens de um cartão de calibração impresso de diferentes posições na mesa e,
+em seguida, calcula um modelo de distorção automaticamente.
+
+![Assistente — Configurações do Cartão](/screenshots/camera-lens-calibration-wizard-card.png)
+
+1. Defina a **Largura** e **Altura** do seu cartão impresso. A visualização
+   é atualizada em tempo real — o cartão deve cobrir cerca de 70% da vista da
+   câmera.
+2. Clique em **Save to PDF** para exportar o cartão para impressão, depois
+   imprima-o e coloque-o na mesa do laser.
+
+![Assistente — Captura](/screenshots/camera-lens-calibration-wizard-capture.png)
+
+3. Mova o cartão para diferentes posições e ângulos dentro da vista da
+   câmera e clique em **Capture Frame** para cada posição. Procure fazer pelo
+   menos 8 capturas cobrindo todo o quadro, incluindo cantos e bordas. A
+   barra de progresso e os indicadores de status mostram a qualidade da
+   captura.
+4. Quando quadros suficientes forem capturados, o assistente calcula o modelo
+   de distorção e o aplica — a sobreposição da câmera agora mostra uma imagem
+   corrigida e reta.
+
+#### Calibração Manual
 
 ![Diálogo de Calibração de Lente](/screenshots/camera-lens-calibration.png)
 
-Abra o diálogo de calibração de lente clicando em **Configurar** ao lado
-de **Calibração de Lente** nas propriedades da câmera. A partir daqui
-você pode:
+Para coeficientes manuais ou para ajuste fino do resultado após uma
+calibração automática, abra o diálogo de calibração de lente clicando em
+**Configure** ao lado de **Calibração de Lente** nas propriedades da câmera.
+A partir daqui você pode ajustar os coeficientes de distorção manualmente —
+ajuste fino dos parâmetros radial (k1–k3) e tangencial (p1–p2).
 
-- **Ajustar coeficientes de distorção manualmente** — Ajuste fino dos
-  parâmetros de distorção radial (k1–k3) e tangencial (p1–p2)
-- **Iniciar o assistente de calibração** — Clique no botão **Assistente**
-  para calibração automática guiada
-
-Ajustes manuais são úteis para ajuste fino após o assistente ter
-calculado uma solução inicial, ou quando você conhece os valores
-aproximados de distorção para sua lente.
-
-### Assistente de Calibração
-
-O assistente de calibração orienta você a capturar várias imagens de um
-cartão de calibração impresso de diferentes posições na mesa. Ele então
-calcula um modelo de distorção automaticamente.
-
-**Passo 1: Configurar o cartão de calibração**
-
-![Assistente — Configurações do
-Cartão](/screenshots/camera-lens-calibration-wizard-card.png)
-
-1. Clique em **Assistente** no diálogo de calibração de lente para iniciar
-2. Defina a **Largura** e **Altura** do seu cartão impresso
-3. A visualização é atualizada em tempo real — o cartão deve cobrir
-   cerca de 70% da vista da câmera
-4. Clique em **Salvar como PDF** para exportar o cartão para impressão
-5. Imprima o cartão e coloque-o na mesa do laser
-
-**Passo 2: Capturar quadros**
-
-![Assistente —
-Captura](/screenshots/camera-lens-calibration-wizard-capture.png)
-
-1. Clique em **Avançar** para entrar no modo de captura
-2. Posicione o cartão de calibração em diferentes locais e ângulos
-   dentro da vista da câmera
-3. Clique em **Capturar Quadro** para cada posição
-4. Visel pelo menos 8 capturas cobrindo todo o quadro, incluindo cantos
-   e bordas
-5. A barra de progresso e indicadores de status mostram a qualidade da captura
-
-**Passo 3: Aplicar calibração**
-
-1. Quando quadros suficientes forem capturados, clique em **Calibrar**
-2. Os coeficientes de distorção calculados são automaticamente aplicados
-   à câmera
-3. A sobreposição da câmera agora mostra uma imagem corrigida e reta
-
----
-
-## Passo 4: Alinhamento de imagem
+### Etapa 2.3: Alinhamento de Imagem
 
 ![Diálogo de Alinhamento de Imagem](/screenshots/camera-image-alignment.png)
 
-O alinhamento da câmera calibra a relação entre pixels da câmera e coordenadas
-do mundo real, permitindo posicionamento preciso.
+O alinhamento de imagem é o estágio final do assistente de câmera. O
+alinhamento da câmera calibra a relação entre pixels da câmera e coordenadas
+do mundo real, permitindo posicionamento preciso. O assistente usa o mesmo
+procedimento descrito aqui, e aplicar o alinhamento conclui o assistente.
 
-### Por Que o Alinhamento é Necessário
+#### Por Que o Alinhamento é Necessário
 
 A câmera vê a área de trabalho de cima, mas a imagem pode estar:
 
@@ -185,10 +188,10 @@ A câmera vê a área de trabalho de cima, mas a imagem pode estar:
 O alinhamento cria uma matriz de transformação que mapeia pixels da câmera
 para coordenadas da máquina.
 
-### Procedimento de Alinhamento
+#### Procedimento de Alinhamento
 
 1. **Abra o Diálogo de Alinhamento:**
-   - Clique no botão **Configurar** ao lado de **Alinhamento de Imagem** nas
+   - Clique no botão **Configure** ao lado de **Alinhamento de Imagem** nas
      propriedades da câmera
    - O diálogo mostra o feed da câmera com a sobreposição de alinhamento atual
 
@@ -222,7 +225,7 @@ para coordenadas da máquina.
      da câmera
    - Ajuste fino realinhando se necessário
 
-### Status de Alinhamento
+#### Status de Alinhamento
 
 O painel de propriedades da câmera mostra o status de alinhamento com um
 ícone:
@@ -234,7 +237,7 @@ O painel de propriedades da câmera mostra o status de alinhamento com um
   alinhamento são preservados — basta abrir o diálogo e clicar em
   **Aplicar** novamente.
 
-### Exemplo de fluxo de trabalho
+#### Exemplo de fluxo de trabalho
 
 1. Mova o laser para a posição de origem (0, 0) e marque na câmera
 2. Mova o laser para (100, 0) e marque na câmera

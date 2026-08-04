@@ -23,9 +23,9 @@ delete it. The currently active machine is marked with a check icon.
 
 Alternatively:
 
-- Click **Other Device…** to launch the
-  [Configuration Wizard](../machine/config-wizard.md), which auto-detects
-  settings from a connected device
+- Click **Device Not Listed** to launch the
+  [Configuration Wizard](../getting-started/first-time-setup.md), which walks
+  you through configuring a machine step by step
 - Click **Import from File…** to add a machine from a previously
   exported profile or from a LightBurn device profile (.lbdev).
   LightBurn profiles include camera calibration and laser settings
