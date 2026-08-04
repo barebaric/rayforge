@@ -17,6 +17,7 @@ from gi.repository import Gtk
 from ....machine.device.profile import DeviceProfile
 from ....machine.driver import drivers
 from ....machine.driver.driver import Driver
+from ...icons import get_icon
 from . import WizardPage, _makePreferencesGroup
 
 # Symbolic icon shown on each driver's tile. New drivers without an
@@ -133,7 +134,8 @@ class ControllerPage(WizardPage):
             margin_start=12,
             margin_end=12,
         )
-        image = Gtk.Image(icon_name=icon_name, pixel_size=40)
+        image = get_icon(icon_name)
+        image.set_pixel_size(40)
         title_label = Gtk.Label(
             label=title, wrap=True, justify=Gtk.Justification.CENTER
         )
