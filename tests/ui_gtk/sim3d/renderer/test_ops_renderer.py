@@ -189,6 +189,7 @@ def test_render_draws_powered_and_travel(renderer, colors):
         patch("OpenGL.GL.glBlendFunc"),
         patch("OpenGL.GL.glActiveTexture"),
         patch("OpenGL.GL.glBindTexture"),
+        patch("OpenGL.GL.glDepthMask"),
         patch("OpenGL.GL.glDrawArrays") as mock_draw,
         patch("rayforge.ui_gtk.sim3d.renderer.ops_renderer.set_line_width"),
     ):
@@ -225,6 +226,7 @@ def test_render_hides_travel_when_disabled(renderer, colors):
         patch("OpenGL.GL.glBlendFunc"),
         patch("OpenGL.GL.glActiveTexture"),
         patch("OpenGL.GL.glBindTexture"),
+        patch("OpenGL.GL.glDepthMask"),
         patch("OpenGL.GL.glDrawArrays") as mock_draw,
         patch("rayforge.ui_gtk.sim3d.renderer.ops_renderer.set_line_width"),
     ):
@@ -245,6 +247,7 @@ def test_render_noop_when_empty(renderer, colors):
         patch("OpenGL.GL.glBindVertexArray"),
         patch("OpenGL.GL.glEnable"),
         patch("OpenGL.GL.glBlendFunc"),
+        patch("OpenGL.GL.glDepthMask"),
         patch("OpenGL.GL.glDrawArrays") as mock_draw,
         patch("rayforge.ui_gtk.sim3d.renderer.ops_renderer.set_line_width"),
     ):
