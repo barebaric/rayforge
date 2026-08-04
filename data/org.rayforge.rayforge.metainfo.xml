@@ -80,6 +80,8 @@
           <li>Recipes can now target specific step types</li>
           <li>Assembly warnings (e.g. failed faces or regions) surfaced
           as toast notifications</li>
+          <li>Right-click context menu on steps in the layer workflow
+          strip with a delete option</li>
         </ul>
         <p>Improvements:</p>
         <ul>
