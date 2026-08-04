@@ -8,7 +8,10 @@ with warnings.catch_warnings():
     import pyvips
 
 from raygeo.geo.types import Rect
-from raygeo.svg import extract_svg_metadata, parse_svg_length, svg_length_to_mm
+from raygeo.svg import svg_string_to_geometries_by_color
+from raygeo.svg.color import ColorAttr
+from raygeo.svg.length import parse_svg_length, svg_length_to_mm
+from raygeo.svg.metadata import extract_svg_metadata
 
 from .svg_fallback import (
     SVG_LOAD_AVAILABLE,
@@ -24,6 +27,10 @@ PPI: float = 96.0
 
 MM_PER_PX: float = 25.4 / PPI
 """Conversion factor for pixels to millimeters, based on 96 PPI."""
+
+# Raygeo bucket key for shapes whose chosen color attribute is `none` or
+# unset. These shapes have no color but still contain real geometry.
+NO_COLOR_KEY: str = "_no_color"
 
 INKSCAPE_NS = "http://www.inkscape.org/namespaces/inkscape"
 SVG_NS = "http://www.w3.org/2000/svg"
@@ -270,6 +277,61 @@ def get_natural_size(
 def _get_local_tag_name(element: ET.Element) -> str:
     """Robustly gets the local tag name, ignoring any namespace."""
     return element.tag.rsplit("}", 1)[-1]
+
+
+def hex_color_to_rgb(color: str) -> Tuple[float, float, float]:
+    """
+    Converts a "#rrggbb" hex color string to an RGB tuple in the 0-1 range.
+    """
+    value = color.lstrip("#")
+    r = int(value[0:2], 16) / 255.0
+    g = int(value[2:4], 16) / 255.0
+    b = int(value[4:6], 16) / 255.0
+    return r, g, b
+
+
+def extract_color_manifest(
+    data: bytes, color_attr: ColorAttr = ColorAttr.ANY
+) -> List[Dict[str, Any]]:
+    """
+    Parses the SVG to find distinct colors, treating each as a layer.
+
+    Buckets shapes by their resolved color attribute (`fill`, `stroke`,
+    `fill_else_stroke`, or `any`) using raygeo, and counts the number of
+    geometric elements per color. In `any` mode a shape whose fill differs
+    from its stroke lands in two buckets, one per color.
+
+    Args:
+        data: Raw SVG data in bytes.
+        color_attr: The color attribute to bucket by.
+
+    Returns:
+        A list of layer dicts with keys "id", "name", "count" and "color".
+    """
+    if not data:
+        return []
+
+    try:
+        buckets = svg_string_to_geometries_by_color(
+            data.decode("utf-8"), 1.0, 1.0, color_attr
+        )
+    except (ValueError, ET.ParseError):
+        return []
+
+    layers = []
+    for color_key, geos in buckets:
+        count = len(geos)
+        color = None if color_key == NO_COLOR_KEY else color_key
+        layers.append(
+            {
+                "id": color_key,
+                "name": f"Color {color_key}",
+                "count": count,
+                "color": color,
+            }
+        )
+        logger.debug(f"Found color layer: ID='{color_key}', Count={count}")
+    return layers
 
 
 def extract_layer_manifest(data: bytes) -> List[Dict[str, Any]]:

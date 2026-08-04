@@ -84,6 +84,7 @@ class ImportManifest:
     """
 
     layers: List[LayerInfo] = field(default_factory=list)
+    color_layers: List[LayerInfo] = field(default_factory=list)
     natural_size_mm: Optional[Tuple[float, float]] = None
     title: Optional[str] = None
     warnings: List[str] = field(default_factory=list)
@@ -118,11 +119,14 @@ class LayerGeometry:
                         Coordinates. For raster images, this is the non-
                         transparent pixel area. For vector files, this is
                         the geometric bounding box.
+        color: Optional hex color string (e.g. "#ff0000") associated with
+               this layer. Used by color-based layer sources.
     """
 
     layer_id: str
     name: str
     content_bounds: Rect
+    color: Optional[str] = None
 
 
 @dataclass
@@ -275,6 +279,8 @@ class LayoutItem:
     Attributes:
         layer_id: Optional ID of the layer(s) this item represents.
         layer_name: Optional human-readable name for the layer(s).
+        color: Optional hex color string (e.g. "#ff0000") for the resulting
+               document layer.
         world_matrix: Matrix transforming normalized (0-1) geometry to final
                       World position/scale (mm, Y-Up).
         normalization_matrix: Matrix transforming Native Coordinates to Unit
@@ -289,6 +295,7 @@ class LayoutItem:
     normalization_matrix: Matrix
     crop_window: Rect
     settings: Optional[Dict[str, Any]] = None
+    color: Optional[str] = None
 
 
 @dataclass

@@ -185,6 +185,8 @@ class ItemAssembler:
                 and spec.layer_import_mode != LayerImportMode.FLATTEN
             ):
                 layer = Layer(name=name)
+                if item.color:
+                    layer.set_color(item.color)
                 layer.add_child(wp)
                 # If the importer provided settings, pre-populate a step
                 # on the layer's workflow so that add_default_steps_for_layers
