@@ -222,7 +222,7 @@ class WorkflowRow(Gtk.Box):
         spacer.set_hexpand(True)
         self.append(spacer)
 
-        add_icon = get_icon("list-add-symbolic")
+        add_icon = get_icon("add-symbolic")
         add_btn = Gtk.Button(child=add_icon)
         add_btn.add_css_class("flat")
         add_btn.set_tooltip_text(_("Add Step"))
