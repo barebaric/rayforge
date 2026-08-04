@@ -124,6 +124,14 @@ nécessaire.
 SVG (Scalable Vector Graphics) est le **format recommandé** pour les dessins
 vectoriels.
 
+:::tip Automatiser l'affectation des étapes
+Tu peux configurer [Règles de couleur](../application-settings/color-rules.md)
+pour affecter automatiquement les types d'étape (Contour, Gravure, etc.) en
+fonction des couleurs de ton SVG. Lorsque des règles existent, la boîte de
+dialogue d'importation regroupe par défaut les formes par couleur afin que les
+règles prennent effet.
+:::
+
 ### Options d'importation dans la boîte de dialogue
 
 Lors de l'importation SVG, la boîte de dialogue propose un commutateur pour
@@ -463,3 +471,5 @@ l'importation.
 - [Formats pris en charge](formats) - Spécifications détaillées des formats
 - [Exporter du G-code](exporting) - Options de sortie
 - [Démarrage rapide](../getting-started/quick-start.md) - Tutoriel de première importation
+- [Règles de couleur](../application-settings/color-rules.md) - Faire
+  correspondre les couleurs SVG aux types d'étape à l'importation

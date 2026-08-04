@@ -62,6 +62,7 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 # Material directories
 USER_MATERIALS_DIR = CONFIG_DIR / "materials"
 USER_RECIPES_DIR = CONFIG_DIR / "recipes"
+USER_COLOR_PRESETS_DIR = CONFIG_DIR / "color_presets"
 
 ADDON_REGISTRY_URL = (
     "https://raw.githubusercontent.com/barebaric/rayforge-registry/"

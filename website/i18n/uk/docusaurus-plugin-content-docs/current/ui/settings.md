@@ -58,6 +58,8 @@ Rayforge може надсилати анонімні дані про викор
   бібліотеками матеріалів
 - [Рецепти](../application-settings/recipes.md) — керувати збереженими
   рецептами операцій
+- [Правила кольорів](../application-settings/color-rules.md) — зіставляти
+  кольори SVG з типами кроків
 - [AI-провайдери](../application-settings/ai-provider.md) — налаштувати
   AI-провайдерів для використання аддонами
 - [Аддони](../application-settings/addons.md) — встановлювати, оновлювати та

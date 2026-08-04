@@ -47,5 +47,6 @@ Rayforge 可以发送匿名使用数据以帮助改进应用程序。不会收�
 - [机器](../application-settings/machines.md) — 添加、移除和配置您的激光切割机
 - [材料](../application-settings/materials.md) — 管理您的材料库
 - [配方](../application-settings/recipes.md) — 管理保存的操作配方
+- [颜色规则](../application-settings/color-rules.md) — 将 SVG 颜色映射到步骤类型
 - [AI 提供者](../application-settings/ai-provider.md) — 配置供扩展使用的 AI 提供者
 - [扩展](../application-settings/addons.md) — 安装、更新和移除扩展

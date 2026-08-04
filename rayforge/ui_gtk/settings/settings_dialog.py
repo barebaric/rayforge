@@ -6,6 +6,7 @@ from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from .addon_manager_page import AddonManagerPage
 from .ai_settings_page import AISettingsPage
+from .color_presets_page import ColorPresetPage
 from .general_preferences_page import GeneralPreferencesPage
 from .license_settings_page import LicenseSettingsPage
 from .machine_settings_page import MachineSettingsPage
@@ -24,9 +25,10 @@ class SettingsWindow(PatchedDialogWindow):
         "machines": 1,
         "materials": 2,
         "recipes": 3,
-        "ai": 4,
-        "addons": 5,
-        "licenses": 6,
+        "color_presets": 4,
+        "ai": 5,
+        "addons": 6,
+        "licenses": 7,
     }
 
     def __init__(self, initial_page: str = "general", **kwargs):
@@ -67,6 +69,7 @@ class SettingsWindow(PatchedDialogWindow):
         self._add_page(MachineSettingsPage)
         self._add_page(MaterialManagerPage)
         self._add_page(RecipeManagerPage)
+        self._add_page(ColorPresetPage)
         self._add_page(AISettingsPage)
         self._add_page(AddonManagerPage)
         self._add_page(LicenseSettingsPage)

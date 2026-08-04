@@ -98,6 +98,7 @@ Rayforge 根据以下内容自动建议并应用最合适的配方：
 **相关主题**：
 
 - [材料](materials) - 管理材料属性
+- [颜色规则](color-rules) - 在导入时将 SVG 颜色映射到步骤类型
 - [材料处理](../features/stock-handling.md) - 处理材料
 - [机器设置](../machine/general.md) - 配置机器和激光头
 - [操作概述](../features/operations/contour.md) - 理解不同的操作类型

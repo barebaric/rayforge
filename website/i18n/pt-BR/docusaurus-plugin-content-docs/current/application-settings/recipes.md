@@ -138,3 +138,4 @@ sem uma receita aplicada são rotuladas como "Configurações Manuais".
 - [Manuseio de Material](../features/stock-handling.md) - Trabalhando com materiais base
 - [Configuração de Máquina](../machine/general.md) - Configurando máquinas e cabeças de laser
 - [Visão Geral de Operações](../features/operations/contour.md) - Entendendo diferentes tipos de operação
+- [Regras de Cor](color-rules) - Mapeia cores SVG para tipos de etapa na importação

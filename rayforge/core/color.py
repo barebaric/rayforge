@@ -1,8 +1,9 @@
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
+from PIL import ImageColor
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,32 @@ def hex_to_rgba(hex_color: str) -> ColorRGBA:
         return (r, g, b, a)
     else:
         raise ValueError(f"Invalid hex color: {hex_color}")
+
+
+def normalize_color(color: Optional[str]) -> Optional[str]:
+    """
+    Normalize a color string to a canonical lowercase 6-digit hex value.
+
+    Accepts ``#rrggbb``, ``#RGB``, ``#rrggbbaa`` (alpha dropped), CSS
+    color names and ``rgb(...)`` strings.
+
+    Args:
+        color: The color string to normalize.
+
+    Returns:
+        The normalized ``#rrggbb`` value, or ``None`` for empty or
+        unresolvable input.
+    """
+    if not color:
+        return None
+    value = color.strip()
+    if not value:
+        return None
+    try:
+        r, g, b = ImageColor.getrgb(value)[:3]
+    except (ValueError, TypeError):
+        return None
+    return f"#{r:02x}{g:02x}{b:02x}"
 
 
 @dataclass(frozen=True)

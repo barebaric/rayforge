@@ -131,6 +131,7 @@ without an applied recipe are labelled "Manual Settings".
 **Related Topics**:
 
 - [Materials](materials) - Managing material properties
+- [Color Rules](color-rules) - Map SVG colors to step types at import
 - [Stock Handling](../features/stock-handling.md) - Working with stock materials
 - [Machine Setup](../machine/general.md) - Configuring machines and laser heads
 - [Operations Overview](../features/operations/contour.md) - Understanding different operation types

@@ -18,6 +18,7 @@ module.exports = {
         'application-settings/machines',
         'application-settings/materials',
         'application-settings/recipes',
+        'application-settings/color-rules',
         'application-settings/ai-provider',
         'application-settings/addons',
       ],

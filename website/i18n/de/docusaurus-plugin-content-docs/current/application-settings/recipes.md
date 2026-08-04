@@ -122,6 +122,7 @@ ohne angewendetes Rezept sind mit "Manuelle Einstellungen" gekennzeichnet.
 **Verwandte Themen**:
 
 - [Materialien](materials) - Materialeigenschaften verwalten
+- [Farbregeln](color-rules) - SVG-Farben Schritttypen beim Import zuordnen
 - [Material-Handhabung](../features/stock-handling.md) - Mit Rohmaterialien arbeiten
 - [Maschinen-Setup](../machine/general.md) - Maschinen und Laserköpfe konfigurieren
 - [Operationsübersicht](../features/operations/contour.md) - Verschiedene Operationstypen verstehen

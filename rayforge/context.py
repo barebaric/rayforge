@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from .core.addon_config import AddonConfig
     from .core.ai.ai_service import AIService
     from .core.ai.config import AIConfigManager
+    from .core.color_preset import ColorPresetManager
     from .core.config import Config, ConfigManager
     from .core.library_manager import LibraryManager
     from .core.model_manager import ModelManager
@@ -66,6 +67,7 @@ class RayforgeContext:
         self._model_mgr: Optional["ModelManager"] = None
         self._recipe_mgr: Optional["RecipeManager"] = None
         self._device_profile_mgr: Optional["DeviceProfileManager"] = None
+        self._color_preset_mgr: Optional["ColorPresetManager"] = None
 
     @property
     def machine(self) -> Optional["Machine"]:
@@ -298,6 +300,16 @@ class RayforgeContext:
             logger.info("Lazy loading recipe manager")
             self._recipe_mgr = RecipeManager(USER_RECIPES_DIR)
         return self._recipe_mgr
+
+    @property
+    def color_preset_mgr(self) -> "ColorPresetManager":
+        """Returns the color preset manager."""
+        if self._color_preset_mgr is None:
+            from .core.color_preset import get_color_preset_mgr
+
+            logger.info("Lazy loading color preset manager")
+            self._color_preset_mgr = get_color_preset_mgr()
+        return self._color_preset_mgr
 
     @property
     def device_profile_mgr(self) -> "DeviceProfileManager":

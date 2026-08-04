@@ -100,6 +100,10 @@ rayforge file1.svg file2.dxf
 
 SVG（可缩放矢量图形）是矢量设计的**推荐格式**。
 
+:::tip 自动分配步骤
+您可以配置[颜色规则](../application-settings/color-rules.md)，根据 SVG 中的颜色自动分配步骤类型（轮廓、雕刻等）。当存在规则时，导入对话框默认按颜色对形状进行分组，以便规则生效。
+:::
+
 ### 对话框中的导入选项
 
 导入 SVG 时，导入对话框提供一个切换开关，可在两种方法之间选择：
@@ -407,4 +411,5 @@ LightBurn（.lbrn / .lbrn2）文件是 LightBurn 激光切割软件使用的专�
 
 - [支持的格式](formats) - 详细的格式规格
 - [导出 G-code](exporting) - 输出选项
+- [颜色规则](../application-settings/color-rules.md) - 根据颜色自动分配步骤类型
 - [快速入门](../getting-started/quick-start.md) - 首次导入教程
