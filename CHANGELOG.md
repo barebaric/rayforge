@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unified machine configuration wizard with AI-powered device spec
   lookup
 - Import SVG colors as layers
+- Color rules that map SVG colors to step types, with a settings
+  page to manage the rules
 - Recipes can now target specific step types
 - Assembly warnings (e.g. failed faces or regions) surfaced as toast
   notifications
@@ -24,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it no longer clashes with the hardware max power setting
 - Upgrade raygeo to 1.31.2 (SVG color layer import, multi-face parts,
   and fixed SVG `<defs>`/`<use>` traversal)
+- Bump pypdf to 6.14.2, GitPython to 3.1.58, and aiohttp to 3.14.3 to
+  fix security vulnerabilities
 - Updated translations
 
 ### Fixed
@@ -42,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Missing features dialog now reports the original step type
 - Restored macOS Monterey-compatible bundles (by pgilfernandez)
 - Replaced deprecated GTK CSS APIs
+- Icons that fell back to the system theme (which breaks on some
+  platforms) now ship with the app
 
 ## 1.9.0-beta1
 
