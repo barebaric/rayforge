@@ -146,6 +146,7 @@ class OpsRenderer(BaseRenderer):
         shader.use()
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
+        GL.glDepthMask(GL.GL_FALSE)
         shader.set_mat4("uMVP", mvp_matrix)
         shader.set_float("uHasNormals", 0.0)
 
@@ -187,6 +188,7 @@ class OpsRenderer(BaseRenderer):
         shader.set_float("uUseVertexColor", 0.0)
         shader.set_int("uExecutedVertexCount", -1)
         shader.set_float("uEmissive", 0.0)
+        GL.glDepthMask(GL.GL_TRUE)
         GL.glBindVertexArray(0)
 
     def _load_buffer_data(self, vbo: int, data: np.ndarray):

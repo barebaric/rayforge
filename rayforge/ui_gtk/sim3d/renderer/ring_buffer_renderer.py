@@ -140,8 +140,6 @@ class RingBufferRenderer(BaseRenderer):
             return
 
         draw_count = self.vertex_count
-        if executed_vertex_count >= 0:
-            draw_count = min(executed_vertex_count, self.vertex_count)
 
         if draw_count == 0:
             return
@@ -155,7 +153,7 @@ class RingBufferRenderer(BaseRenderer):
         shader.set_vec4(
             "uZeroPowerColor", ctx.color_set.get_rgba("zero_power")
         )
-        shader.set_int("uExecutedVertexCount", -1)
+        shader.set_int("uExecutedVertexCount", executed_vertex_count)
         shader.set_float("uAlphaPending", alpha_pending)
 
         GL.glActiveTexture(GL.GL_TEXTURE1)
@@ -163,11 +161,13 @@ class RingBufferRenderer(BaseRenderer):
         shader.set_int("uColorLUT", 1)
 
         GL.glDepthFunc(GL.GL_LEQUAL)
+        GL.glDepthMask(GL.GL_FALSE)
         set_line_width(line_width)
         GL.glBindVertexArray(self.vao)
         GL.glDrawArrays(GL.GL_LINES, 0, draw_count)
         GL.glBindVertexArray(0)
         set_line_width(1.0)
+        GL.glDepthMask(GL.GL_TRUE)
 
         GL.glActiveTexture(GL.GL_TEXTURE1)
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
