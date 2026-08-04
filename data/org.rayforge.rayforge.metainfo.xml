@@ -75,6 +75,8 @@
           <li>Unified machine configuration wizard with AI-powered
           device spec lookup</li>
           <li>Import SVG colors as layers</li>
+          <li>Color rules that map SVG colors to step types, with a
+          settings page to manage the rules</li>
           <li>Recipes can now target specific step types</li>
           <li>Assembly warnings (e.g. failed faces or regions) surfaced
           as toast notifications</li>
@@ -88,6 +90,8 @@
           power setting</li>
           <li>Upgrade raygeo to 1.31.2 (SVG color layer import,
           multi-face parts, and fixed SVG defs/use traversal)</li>
+          <li>Bump pypdf to 6.14.2, GitPython to 3.1.58, and aiohttp to
+          3.14.3 to fix security vulnerabilities</li>
           <li>Updated translations</li>
         </ul>
         <p>Bug Fixes:</p>
@@ -111,6 +115,8 @@
           <li>Restored macOS Monterey-compatible bundles (by
           pgilfernandez)</li>
           <li>Replaced deprecated GTK CSS APIs</li>
+          <li>Icons that fell back to the system theme (which breaks on
+          some platforms) now ship with the app</li>
         </ul>
       </description>
     </release>
