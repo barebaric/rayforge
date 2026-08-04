@@ -30,6 +30,7 @@ class ImporterFeature(enum.Flag):
     BITMAP_TRACING = enum.auto()
     DIRECT_VECTOR = enum.auto()
     LAYER_SELECTION = enum.auto()
+    COLOR_LAYERS = enum.auto()
     PROCEDURAL_GENERATION = enum.auto()
 
 

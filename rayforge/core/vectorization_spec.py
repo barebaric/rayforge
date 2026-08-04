@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+from raygeo.svg.color import ColorAttr
+
 
 class LayerImportMode(Enum):
     """Determines how imported layers are mapped into the document."""
@@ -12,6 +14,13 @@ class LayerImportMode(Enum):
     MAP_TO_EXISTING = "map_to_existing"
     NEW_LAYERS = "new_layers"
     FLATTEN = "flatten"
+
+
+class LayerSource(Enum):
+    """Determines how layers are identified in a vector source file."""
+
+    SVG_LAYERS = "svg_layers"
+    COLORS = "colors"
 
 
 @dataclass
@@ -77,6 +86,8 @@ class PassthroughSpec(VectorizationSpec):
 
     active_layer_ids: Optional[List[str]] = None
     layer_import_mode: LayerImportMode = LayerImportMode.MAP_TO_EXISTING
+    layer_source: LayerSource = LayerSource.SVG_LAYERS
+    color_attr: ColorAttr = ColorAttr.ANY
     trim_padding: float = 0.01
 
     def to_dict(self) -> Dict[str, Any]:
@@ -84,6 +95,8 @@ class PassthroughSpec(VectorizationSpec):
             "type": "PassthroughSpec",
             "active_layer_ids": self.active_layer_ids,
             "layer_import_mode": self.layer_import_mode.value,
+            "layer_source": self.layer_source.value,
+            "color_attr": self.color_attr.value,
             "trim_padding": self.trim_padding,
             "ppi": self.ppi,
         }
@@ -101,12 +114,32 @@ class PassthroughSpec(VectorizationSpec):
             )
         else:
             mode = LayerImportMode.MAP_TO_EXISTING
+        source_str = data.get("layer_source")
+        layer_source = (
+            LayerSource(source_str) if source_str else LayerSource.SVG_LAYERS
+        )
         return cls(
             active_layer_ids=data.get("active_layer_ids"),
             layer_import_mode=mode,
+            layer_source=layer_source,
+            color_attr=color_attr_from_value(data.get("color_attr")),
             trim_padding=data.get("trim_padding", 0.01),
             ppi=data.get("ppi", 96.0),
         )
+
+
+def color_attr_from_value(value: Any) -> ColorAttr:
+    """Maps a serialized color-attribute string back to a ColorAttr."""
+    mapping = {
+        "fill": ColorAttr.FILL,
+        "stroke": ColorAttr.STROKE,
+        "fill_else_stroke": ColorAttr.FILL_ELSE_STROKE,
+        "any": ColorAttr.ANY,
+    }
+    try:
+        return mapping[value]
+    except (KeyError, TypeError):
+        return ColorAttr.ANY
 
 
 @dataclass

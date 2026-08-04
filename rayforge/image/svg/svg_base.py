@@ -8,7 +8,8 @@ from xml.etree import ElementTree as ET
 
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
-from raygeo.svg import extract_svg_metadata, svg_string_to_geometry
+from raygeo.svg import svg_string_to_geometry
+from raygeo.svg.metadata import extract_svg_metadata
 
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import PassthroughSpec
@@ -23,8 +24,10 @@ from ..structures import (
 from .renderer import SVG_RENDERER
 from .svgutil import (
     PPI,
+    extract_color_manifest,
     extract_layer_manifest,
     get_natural_size,
+    hex_color_to_rgb,
     is_unitless_svg,
 )
 
@@ -54,6 +57,7 @@ class SvgImporterBase(Importer):
     def scan(self) -> ImportManifest:
         """Shared scan logic."""
         layers = []
+        color_layers = []
         size_mm = None
         try:
             # Check for basic XML validity first to ensure we can catch
@@ -73,6 +77,20 @@ class SvgImporterBase(Importer):
                 )
                 for layer in layer_data
             ]
+            color_data = extract_color_manifest(self.raw_data)
+            color_layers = [
+                LayerInfo(
+                    id=layer["id"],
+                    name=layer["name"],
+                    color=(
+                        hex_color_to_rgb(layer["color"])
+                        if layer["color"] is not None
+                        else None
+                    ),
+                    feature_count=layer.get("count"),
+                )
+                for layer in color_data
+            ]
         except ET.ParseError as e:
             logger.warning(f"SVG scan failed for {self.source_file.name}: {e}")
             self.add_error(f"Could not parse SVG. File may be corrupt: {e}")
@@ -87,6 +105,7 @@ class SvgImporterBase(Importer):
         return ImportManifest(
             title=self.source_file.name,
             layers=layers,
+            color_layers=color_layers,
             natural_size_mm=size_mm,
             warnings=self._warnings,
             errors=self._errors,

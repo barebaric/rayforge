@@ -1,8 +1,13 @@
 from unittest.mock import MagicMock
 
 import pytest
+from raygeo.svg.color import ColorAttr
 
-from rayforge.core.vectorization_spec import PassthroughSpec, TraceSpec
+from rayforge.core.vectorization_spec import (
+    LayerSource,
+    PassthroughSpec,
+    TraceSpec,
+)
 from rayforge.image.svg.renderer import SvgRenderer
 
 
@@ -62,6 +67,31 @@ class TestSvgRenderer:
         assert spec.kwargs == {"visible_layer_ids": ["layer_123"]}
         assert spec.apply_mask is False
 
+    def test_compute_spec_color_layer_skips_filter(
+        self, svg_renderer, mock_render_context
+    ):
+        """
+        Color-layer segments carry a color key (e.g. '#ff0000') as their
+        layer id. Instead of filtering by group, the render filters by
+        color so the base image shows only that color's content.
+        """
+        mock_segment = MagicMock()
+        mock_segment.layer_id = "#ff0000"
+        mock_segment.crop_window_px = None
+        mock_segment.vectorization_spec = PassthroughSpec(
+            layer_source=LayerSource.COLORS
+        )
+
+        spec = svg_renderer.compute_render_spec(
+            mock_segment, (200, 150), mock_render_context
+        )
+
+        assert spec.kwargs == {
+            "color_key": "#ff0000",
+            "color_attr": ColorAttr.ANY,
+        }
+        assert spec.apply_mask is False
+
     def test_compute_spec_with_vector_crop_window(
         self, svg_renderer, mock_render_context
     ):
@@ -106,3 +136,41 @@ class TestSvgRenderer:
         # This is an acceptable inconsistency for now, as the final switchover
         # might use a different renderer for the trace path.
         assert spec.apply_mask is False
+
+    def test_render_base_image_filters_by_color(
+        self, svg_renderer, mock_render_context
+    ):
+        """
+        Color-layer renders exclude shapes of other colors from the base
+        image.
+        """
+        svg = b"""
+        <svg width="100mm" height="100mm" viewBox="0 0 100 100"
+             xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="10" height="10" fill="#ff0000"/>
+            <rect x="50" y="50" width="10" height="10" fill="#00ff00"/>
+        </svg>
+        """
+        red = svg_renderer.render_base_image(
+            svg, 100, 100, color_key="#ff0000", color_attr=ColorAttr.ANY
+        )
+        assert red is not None
+        green = svg_renderer.render_base_image(
+            svg, 100, 100, color_key="#00ff00", color_attr=ColorAttr.ANY
+        )
+        assert green is not None
+
+        # Each render contains only its own color.
+        def has_color(image, expected_rgb):
+            arr = image.numpy()[..., :3].astype(int)
+            r, g, b = arr[..., 0], arr[..., 1], arr[..., 2]
+            er, eg, eb = expected_rgb
+            match = (
+                (abs(r - er) < 40) & (abs(g - eg) < 40) & (abs(b - eb) < 40)
+            )
+            return int(match.sum())
+
+        assert has_color(red, (255, 0, 0)) > 0
+        assert has_color(red, (0, 255, 0)) == 0
+        assert has_color(green, (0, 255, 0)) > 0
+        assert has_color(green, (255, 0, 0)) == 0

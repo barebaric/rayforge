@@ -1,7 +1,7 @@
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 import cairo
 from blinker import Signal
@@ -14,6 +14,7 @@ from ...core.layer import Layer
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
     LayerImportMode,
+    LayerSource,
     PassthroughSpec,
     TraceSpec,
     VectorizationSpec,
@@ -66,6 +67,7 @@ class ImportDialog(PatchedDialogWindow):
         self._background_pixbuf: Optional[GdkPixbuf.Pixbuf] = None
         self._in_update = False  # Prevent signal recursion
         self._layer_widgets: Dict[Gtk.Switch, str] = {}
+        self._layers_expander: Optional[Adw.ExpanderRow] = None
 
         self._layer_import_model = Gtk.StringList.new(
             [
@@ -82,6 +84,22 @@ class ImportDialog(PatchedDialogWindow):
         )
         self.layer_import_mode_row.connect(
             "notify::selected", self._schedule_preview_update
+        )
+
+        self._layer_source_model = Gtk.StringList.new(
+            [
+                _("SVG Layers"),
+                _("Colors"),
+            ]
+        )
+        self.layer_source_row = Adw.ComboRow(
+            title=_("Layer Source"),
+            subtitle=_("Group imported geometry by SVG layer or by color"),
+            model=self._layer_source_model,
+            selected=0,
+        )
+        self.layer_source_row.connect(
+            "notify::selected", self._on_layer_source_changed
         )
 
         self.set_title(_("Import Image"))
@@ -197,6 +215,7 @@ class ImportDialog(PatchedDialogWindow):
         self.layers_group = Adw.PreferencesGroup(title=_("Layers"))
         self.layers_group.set_visible(False)
         preferences_page.add(self.layers_group)
+        self.layers_group.add(self.layer_source_row)
 
         # Trace Settings Group
         self.trace_group = Adw.PreferencesGroup(title=_("Trace Settings"))
@@ -341,6 +360,21 @@ class ImportDialog(PatchedDialogWindow):
                         f"Scan error for {self.file_path.name}: {error}"
                     )
             self._populate_layers_ui()
+            # Default to color grouping when the file has distinct colors
+            # but no useful layer structure (no layers, or a single generic
+            # layer wrapping everything).
+            if (
+                self._manifest
+                and self._manifest.color_layers
+                and len(self._manifest.layers) <= 1
+                and self.layer_source_row.get_selected() == 0
+            ):
+                self._in_update = True
+                try:
+                    self.layer_source_row.set_selected(1)
+                finally:
+                    self._in_update = False
+                self._populate_layers_ui()
             if self._manifest and self._manifest.is_unitless:
                 self.dpi_row.set_visible(True)
                 if not self._mode_visible:
@@ -352,16 +386,68 @@ class ImportDialog(PatchedDialogWindow):
             )
             self.close()
 
+    def _on_layer_source_changed(self, combo, *args):
+        self._populate_layers_ui()
+        self._schedule_preview_update()
+
+    def _get_layer_source(self) -> LayerSource:
+        idx = self.layer_source_row.get_selected()
+        return LayerSource.COLORS if idx == 1 else LayerSource.SVG_LAYERS
+
+    @staticmethod
+    def _draw_color_swatch(
+        area: Gtk.DrawingArea,
+        ctx: cairo.Context,
+        width: int,
+        height: int,
+        rgb: Optional[Tuple[float, float, float]],
+    ):
+        if rgb is None:
+            return
+        ctx.set_source_rgb(*rgb)
+        ctx.rectangle(0, 0, width, height)
+        ctx.fill()
+
+    def _make_color_swatch(
+        self, rgb: Optional[Tuple[float, float, float]]
+    ) -> Gtk.DrawingArea:
+        area = Gtk.DrawingArea()
+        area.set_content_width(18)
+        area.set_content_height(18)
+        area.set_draw_func(self._draw_color_swatch, rgb)
+        return area
+
     def _populate_layers_ui(self):
-        if not self._manifest or not self._manifest.layers:
+        if not self._manifest:
+            return
+
+        if self._layers_expander is not None:
+            self.layers_group.remove(self._layers_expander)
+            self._layers_expander = None
+
+        self._layer_widgets.clear()
+        if not (self._manifest.layers or self._manifest.color_layers):
+            self.layers_group.set_visible(False)
             return
 
         self.layers_group.set_visible(True)
+        # Color layer grouping is an importer capability, not a file type.
+        show_color_controls = ImporterFeature.COLOR_LAYERS in self.features
+        self.layer_source_row.set_visible(show_color_controls)
+        is_color_source = self._get_layer_source() == LayerSource.COLORS
+        layer_infos = (
+            self._manifest.color_layers
+            if is_color_source
+            else self._manifest.layers
+        )
+        if not layer_infos:
+            return
+
         expander = Adw.ExpanderRow(title=_("Select Layers"), expanded=True)
         self.layers_group.add(expander)
-        self._layer_widgets.clear()
+        self._layers_expander = expander
 
-        for layer_info in self._manifest.layers:
+        for layer_info in layer_infos:
             row = Adw.ActionRow(title=layer_info.name)
 
             count = layer_info.feature_count
@@ -373,6 +459,9 @@ class ImportDialog(PatchedDialogWindow):
                 row.set_sensitive(False)
             elif count is not None:
                 row.set_subtitle(_("Layer with {n} vectors").format(n=count))
+
+            if is_color_source:
+                row.add_prefix(self._make_color_swatch(layer_info.color))
 
             switch = Gtk.Switch(
                 active=not is_empty,
@@ -419,6 +508,7 @@ class ImportDialog(PatchedDialogWindow):
             return PassthroughSpec(
                 active_layer_ids=self._get_active_layer_ids(),
                 layer_import_mode=self._get_layer_import_mode(),
+                layer_source=self._get_layer_source(),
                 ppi=ppi,
             )
         else:
@@ -444,6 +534,10 @@ class ImportDialog(PatchedDialogWindow):
             if isinstance(spec, PassthroughSpec):
                 if can_vector:
                     self.use_vectors_switch.set_active(True)
+                if spec.layer_source == LayerSource.COLORS:
+                    self.layer_source_row.set_selected(1)
+                else:
+                    self.layer_source_row.set_selected(0)
                 if spec.active_layer_ids:
                     for w, lid in self._layer_widgets.items():
                         w.set_active(lid in spec.active_layer_ids)
@@ -664,7 +758,9 @@ class ImportDialog(PatchedDialogWindow):
         px, _ = ctx.device_to_user_distance(1.5, 0)
         constant_line_width = abs(px)
 
-        def draw_item(item: DocItem):
+        def draw_item(
+            item: DocItem, color: Optional[Tuple[float, float, float]] = None
+        ):
             if isinstance(item, WorkPiece) and item.boundaries:
                 ctx.save()
                 # Transform boundaries into world space manually so
@@ -674,18 +770,39 @@ class ImportDialog(PatchedDialogWindow):
                 world_geo = item.boundaries.copy()
                 world_geo.transform(item.get_world_transform())
                 ctx.set_line_width(constant_line_width)
-                ctx.set_source_rgb(0.1, 0.5, 1.0)  # Blue for vectors
+                if color is not None:
+                    ctx.set_source_rgb(*color)
+                else:
+                    # Blue for layers without a color (or merged items)
+                    ctx.set_source_rgb(0.1, 0.5, 1.0)
                 ctx.new_path()
                 geometry_to_cairo(world_geo, ctx)
                 ctx.stroke()
                 ctx.restore()
             elif isinstance(item, Layer):
+                layer_color = self._hex_to_rgb(item.color)
                 for child in item.children:
-                    draw_item(child)
+                    draw_item(child, layer_color or color)
 
         for item in payload.items:
             draw_item(item)
         ctx.restore()
+
+    @staticmethod
+    def _hex_to_rgb(
+        color: Optional[str],
+    ) -> Optional[Tuple[float, float, float]]:
+        """Converts a '#rrggbb' hex string to an RGB 0-1 tuple."""
+        if not color:
+            return None
+        try:
+            value = color.lstrip("#")
+            r = int(value[0:2], 16) / 255.0
+            g = int(value[2:4], 16) / 255.0
+            b = int(value[4:6], 16) / 255.0
+            return r, g, b
+        except (ValueError, IndexError):
+            return None
 
     def _on_import_clicked(self, button):
         final_spec = self._get_current_spec()

@@ -71,6 +71,7 @@ class NormalizationEngine:
         layer_id: Optional[str] = None,
         layer_name: Optional[str] = None,
         settings: Optional[Dict[str, Any]] = None,
+        color: Optional[str] = None,
     ) -> LayoutItem:
         """
         Generates the transformation matrices for a specific bounding box.
@@ -166,6 +167,7 @@ class NormalizationEngine:
             normalization_matrix=norm_matrix,
             crop_window=bounds,
             settings=settings,
+            color=color,
         )
 
     def calculate_layout(
@@ -286,6 +288,7 @@ class NormalizationEngine:
                         layer_id=layer.layer_id,
                         layer_name=layer.name,
                         settings=settings,
+                        color=layer.color,
                     )
                 )
             return plan

@@ -4,8 +4,10 @@ from typing import TYPE_CHECKING, List, Optional, Tuple
 from xml.etree import ElementTree as ET
 
 from raygeo.geo.types import Rect
+from raygeo.svg import filter_svg_by_color
+from raygeo.svg.color import ColorAttr
 
-from ...core.vectorization_spec import TraceSpec
+from ...core.vectorization_spec import LayerSource, PassthroughSpec, TraceSpec
 from ..base_renderer import Renderer, RenderSpecification
 from .svg_fallback import (
     SVG_LOAD_AVAILABLE,
@@ -44,9 +46,20 @@ class SvgRenderer(Renderer):
 
         # A segment is required for any special SVG handling.
         if segment:
-            # Handle layer visibility
+            # Handle layer visibility. Color-layer segments use a color key
+            # (e.g. "#ff0000") as their layer id, which does not correspond
+            # to any top-level group, so the render is filtered by color
+            # instead of by group membership.
             if segment.layer_id:
-                kwargs["visible_layer_ids"] = [segment.layer_id]
+                spec = segment.vectorization_spec
+                if (
+                    isinstance(spec, PassthroughSpec)
+                    and spec.layer_source == LayerSource.COLORS
+                ):
+                    kwargs["color_key"] = segment.layer_id
+                    kwargs["color_attr"] = spec.color_attr
+                else:
+                    kwargs["visible_layer_ids"] = [segment.layer_id]
 
             # Handle viewbox cropping for direct vector imports
             if segment.crop_window_px:
@@ -116,6 +129,12 @@ class SvgRenderer(Renderer):
         render_data = data
         if visible_layer_ids:
             render_data = filter_svg_layers(data, visible_layer_ids)
+        elif kwargs.get("color_key"):
+            render_data = filter_svg_by_color(
+                data.decode("utf-8", errors="replace"),
+                kwargs["color_key"],
+                kwargs.get("color_attr") or ColorAttr.ANY,
+            ).encode("utf-8")
 
         if not render_data:
             return None
