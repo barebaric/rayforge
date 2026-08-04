@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recipes can now target specific step types
 - Assembly warnings (e.g. failed faces or regions) surfaced as toast
   notifications
+- Right-click context menu on steps in the layer workflow strip with a
+  delete option
 
 ### Changed
 
