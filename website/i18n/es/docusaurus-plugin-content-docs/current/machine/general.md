@@ -86,8 +86,8 @@ sistema.
 
 ## Ver también
 
-- [Asistente de Configuración](config-wizard) - Detectar y configurar
-  automáticamente un dispositivo conectado
+- [Configuración Inicial](../getting-started/first-time-setup.md) - Crea una
+  máquina paso a paso con el asistente de configuración
 - [Ajustes de hardware](hardware) - Dimensiones del área de trabajo y
   configuración de ejes
 - [Ajustes de dispositivo](device) - Leer y escribir ajustes del firmware en

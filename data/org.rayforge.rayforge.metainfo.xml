@@ -66,6 +66,54 @@
   </screenshots>
 
   <releases>
+    <release version="1.9.0-beta2" date="2026-08-04">
+      <description>
+        <p>Unified machine wizard, SVG color layers, and raster
+        fixes</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Unified machine configuration wizard with AI-powered
+          device spec lookup</li>
+          <li>Import SVG colors as layers</li>
+          <li>Recipes can now target specific step types</li>
+          <li>Assembly warnings (e.g. failed faces or regions) surfaced
+          as toast notifications</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Kerf and path offset merged into a single offset setting,
+          defaulting to half the laser head spot size</li>
+          <li>Raster power range on engrave steps renamed to min/max
+          power level so it no longer clashes with the hardware max
+          power setting</li>
+          <li>Upgrade raygeo to 1.31.2 (SVG color layer import,
+          multi-face parts, and fixed SVG defs/use traversal)</li>
+          <li>Updated translations</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>3D toolpaths drawn at full brightness on first open
+          instead of power-dimmed</li>
+          <li>Raster full-sweep mode no longer engraves empty masked
+          regions at full power (raygeo 1.31.2)</li>
+          <li>Raster multi-pass mode no longer mixes Z levels when
+          optimizing, and cross-hatch now interleaves both angles per
+          pass instead of running all passes of one angle before the
+          other</li>
+          <li>CNC step attributes no longer dropped from project files
+          on save</li>
+          <li>ChArUco detection failing on some array shapes (camera
+          calibration, by trixdaddy)</li>
+          <li>Intent-rebuild hot loop on documents without workflow
+          content</li>
+          <li>Missing features dialog now reports the original step
+          type</li>
+          <li>Restored macOS Monterey-compatible bundles (by
+          pgilfernandez)</li>
+          <li>Replaced deprecated GTK CSS APIs</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.9.0-beta1" date="2026-07-30">
       <description>
         <p>Array/Pattern tool, raygeo compute pipeline, 3D canvas

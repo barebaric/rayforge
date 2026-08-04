@@ -13,19 +13,23 @@ gravieren wird, was Rätselraten eliminiert und Materialabfall reduziert.
 
 ## Setup-Workflow
 
-Die Einrichtung einer Kamera erfolgt in vier Schritten:
+Die Einrichtung einer Kamera kann entweder über den geführten
+[Kamera-Assistenten](#schritt-2-kamera-assistent) erfolgen — ein einziger
+Ablauf, der Bildeinstellungen, Linsenkalibrierung und Ausrichtung abdeckt —
+oder indem du jeden Bereich manuell über das Kameraeigenschaften-Panel
+konfigurierst. In jedem Fall umfasst die Einrichtung vier Bereiche:
 
 1. **Kamera hinzufügen** — Schließe deine Kamera an und füge sie der
    Maschinenkonfiguration hinzu
 2. **Bildeinstellungen anpassen** — Optimiere Helligkeit, Kontrast,
    Weißabgleich und Rauschunterdrückung
-3. **Linse kalibrieren** — Korrigiere Verzerrungen mit dem
-   Kalibrierungsassistenten oder manuellen Koeffizienten
+3. **Linse kalibrieren** — Korrigiere Verzerrungen mit der automatischen
+   Kalibrierung des Kamera-Assistenten oder manuellen Koeffizienten
 4. **Kamera ausrichten** — Bilde Kamerapixel auf Maschinenkoordinaten ab für
    präzise Positionierung
 
-Die Schritte 2–4 werden über das Kameraeigenschaften-Panel aufgerufen, wo
-Status-Symbole den Fortschritt auf einen Blick zeigen:
+Das Kameraeigenschaften-Panel zeigt Status-Symbole für Kalibrierung und
+Ausrichtung auf einen Blick:
 
 - ✓ **Linsenkalibrierung** — Kalibrierung wurde durchgeführt
 - ⚠ **Bildausrichtung** — Warnung wenn Ausrichtung wiederholt werden muss (z.
@@ -75,13 +79,30 @@ Status-Symbole den Fortschritt auf einen Blick zeigen:
 
 ---
 
-## Schritt 2: Bildeinstellungen anpassen
+## Schritt 2: Kamera-Assistent
+
+Der **Kamera-Assistent** führt die gesamte Kamera-Einrichtung in einem
+einzigen geführten Ablauf durch und deckt dabei alle drei Bereiche der Reihe
+nach ab — Bildeinstellungen, Linsenkalibrierung und Bildausrichtung. Er wird
+gestartet über:
+
+- Die Zeile **Kamera-Assistent** im Kameraeigenschaften-Panel — klicke auf
+  **Start**
+- Automatisch aus dem
+  [Konfigurations-Assistenten](../getting-started/first-time-setup.md), wenn
+  du eine Kamera in dessen Kamera-Schritt aktivierst und fortfährst
+
+### Schritt 2.1: Bildeinstellungen anpassen
 
 ![Bildeinstellungen Dialog](/screenshots/camera-image-settings.png)
 
-Klicke auf **Konfigurieren** neben **Bildeinstellungen** in den
-Kameraeigenschaften, um den Bildeinstellungen-Dialog zu öffnen. Optimiere
-diese Parameter für eine klare Kameraansicht:
+Die Bildeinstellungen sind die erste Stufe des Kamera-Assistenten — er öffnet
+sich dort und ermöglicht dir, Auflösung, Weißabgleich, Helligkeit, Kontrast
+und Rauschunterdrückung einzustellen. Wenn du den Assistenten nicht ausgeführt
+hast oder die von ihm gesetzten Werte anpassen möchtest, klicke in den
+Kameraeigenschaften neben **Bildeinstellungen** auf **Configure**, um den
+Bildeinstellungen-Dialog zu öffnen. Optimiere diese Parameter für eine klare
+Kameraansicht:
 
 | Einstellung             | Beschreibung                                                                           |
 | ----------------------- | -------------------------------------------------------------------------------------- |
@@ -96,85 +117,70 @@ Die YUYV-Option ist nützlich, wenn deine Kamera grünstichige Bilder im
 Standard-MJPEG-Format erzeugt. Beachte, dass YUYV unkomprimiert ist und die
 verfügbare Auflösung oder Bildrate an USB-2.0-Verbindungen reduzieren kann.
 
----
+### Schritt 2.2: Linsenkalibrierung
 
-## Schritt 3: Linsenkalibrierung
+Wenn deine Kamera ein Weitwinkelobjektiv hat oder schräg montiert ist, zeigt
+das Bild möglicherweise sichtbare Krümmung — gerade Linien erscheinen
+gebogen, insbesondere in Richtung der Bildränder. Dies nennt man
+Linsenverzerrung, und sie kann die Ausrichtung beeinträchtigen, selbst wenn
+deine Ausrichtungspunkte sorgfältig gemessen wurden.
 
-Wenn deine Kamera ein Weitwinkelobjektiv hat oder schräg montiert ist,
-zeigt das Bild möglicherweise sichtbare Krümmung — gerade Linien
-erscheinen gebogen, insbesondere in Richtung der Bildränder. Dies nennt
-man Linsenverzerrung, und sie kann die Ausrichtung beeinträchtigen,
-selbst wenn deine Ausrichtungspunkte sorgfältig gemessen wurden.
+Die Linsenkalibrierung ist die zweite Stufe des Kamera-Assistenten. Du kannst
+wählen, wie die Verzerrung korrigiert werden soll:
 
-Rayforge enthält einen geführten Kalibrierungsassistenten, der diese
-Verzerrung automatisch korrigiert. Du kannst auch die
-Verzerrungskoeffizienten manuell anpassen.
+- **Automatic** — nimm Bilder einer gedruckten Kalibrierungskarte auf; der
+  Assistent berechnet das Verzerrungsmodell für dich
+- **Manual** — gib die radialen (k1–k3) und tangentialen (p1–p2)
+  Koeffizienten von Hand ein
+- **Skip** — lasse die Verzerrung unkorrigiert; du kannst später kalibrieren
 
-### Linsenkalibrierungsdialog
+#### Automatische Kalibrierung
+
+Bei der **Automatic**-Kalibrierung führt dich der Assistent durch das
+Aufnehmen mehrerer Bilder einer gedruckten Kalibrierungskarte von
+verschiedenen Positionen auf dem Bett und berechnet anschließend automatisch
+ein Verzerrungsmodell.
+
+![Assistent — Karteneinstellungen](/screenshots/camera-lens-calibration-wizard-card.png)
+
+1. Gib **Breite** und **Höhe** deiner gedruckten Karte ein. Die Vorschau
+   aktualisiert sich in Echtzeit — die Karte sollte etwa 70% der
+   Kameraansicht abdecken.
+2. Klicke auf **Save to PDF**, um die Karte zum Drucken zu exportieren,
+   drucke sie dann aus und lege sie auf das Laserbett.
+
+![Assistent — Aufnahme](/screenshots/camera-lens-calibration-wizard-capture.png)
+
+3. Positioniere die Karte in der Kameraansicht an verschiedenen Stellen und
+   Winkeln und klicke für jede Position auf **Capture Frame**. Strebe
+   mindestens 8 Aufnahmen an, die das gesamte Bild abdecken, einschließlich
+   Ecken und Kanten. Die Fortschrittsanzeige und Statusanzeigen zeigen die
+   Aufnahmequalität.
+4. Sobald genügend Aufnahmen gemacht wurden, berechnet der Assistent das
+   Verzerrungsmodell und wendet es an — das Kamera-Overlay zeigt nun ein
+   korrigiertes, gerades Bild.
+
+#### Manuelle Kalibrierung
 
 ![Linsenkalibrierungsdialog](/screenshots/camera-lens-calibration.png)
 
-Öffne den Linsenkalibrierung-Dialog, indem du auf **Konfigurieren**
-neben **Linsenkalibrierung** in den Kameraeigenschaften klickst. Hier
-kannst du:
+Für manuelle Koeffizienten oder zur Feinabstimmung des Ergebnisses nach einer
+automatischen Kalibrierung öffne den Linsenkalibrierung-Dialog, indem du in
+den Kameraeigenschaften neben **Linsenkalibrierung** auf **Configure** klickst.
+Hier kannst du die Verzerrungskoeffizienten manuell anpassen — die radialen
+(k1–k3) und tangentialen (p1–p2) Parameter feinabstimmen.
 
-- **Verzerrungskoeffizienten manuell anpassen** — Radiale (k1–k3) und
-  tangentiale (p1–p2) Verzerrungsparameter feinabstimmen
-- **Kalibrierungsassistenten starten** — Klicke auf **Assistent** für
-  eine geführte automatische Kalibrierung
-
-Manuelle Anpassungen sind nützlich für die Feinabstimmung, nachdem der
-Assistent eine erste Lösung berechnet hat, oder wenn du die ungefähren
-Verzerrungswerte für dein Objektiv kennst.
-
-### Kalibrierungsassistent
-
-Der Kalibrierungsassistent führt dich durch das Aufnehmen mehrerer Bilder
-einer gedruckten Kalibrierungskarte von verschiedenen Positionen auf dem
-Bett. Er berechnet dann automatisch ein Verzerrungsmodell.
-
-**Schritt 1: Kalibrierungskarte konfigurieren**
-
-![Assistent —
-Karteneinstellungen](/screenshots/camera-lens-calibration-wizard-card.png)
-
-1. Klicke auf **Assistent** im Linsenkalibrierung-Dialog, um zu starten
-2. Gib **Breite** und **Höhe** deiner gedruckten Karte ein
-3. Die Vorschau aktualisiert sich in Echtzeit — die Karte sollte etwa
-   70% der Kameraansicht abdecken
-4. Klicke auf **Als PDF speichern**, um die Karte zum Drucken zu exportieren
-5. Drucke die Karte aus und lege sie auf das Laserbett
-
-**Schritt 2: Bilder aufnehmen**
-
-![Assistent —
-Aufnahme](/screenshots/camera-lens-calibration-wizard-capture.png)
-
-1. Klicke auf **Weiter**, um in den Aufnahmemodus zu wechseln
-2. Positioniere die Kalibrierungskarte an verschiedenen Stellen und
-   Winkeln in der Kameraansicht
-3. Klicke für jede Position auf **Bild aufnehmen**
-4. Strebe mindestens 8 Aufnahmen an, die das gesamte Bild abdecken,
-   einschließlich Ecken und Kanten
-5. Die Fortschrittsanzeige und Statusanzeigen zeigen die Aufnahmequalität
-
-**Schritt 3: Kalibrierung anwenden**
-
-1. Sobald genügend Aufnahmen gemacht wurden, klicke auf **Kalibrieren**
-2. Die berechneten Verzerrungskoeffizienten werden automatisch auf die
-   Kamera angewendet
-3. Das Kamera-Overlay zeigt nun ein korrigiertes, gerades Bild
-
----
-
-## Schritt 4: Bildausrichtung
+### Schritt 2.3: Bildausrichtung
 
 ![Bildausrichtung Dialog](/screenshots/camera-image-alignment.png)
 
-Die Kameraausrichtung kalibriert die Beziehung zwischen Kamerapixeln und
-realen Koordinaten und ermöglicht so präzises Positionieren.
+Die Bildausrichtung ist die letzte Stufe des Kamera-Assistenten. Die
+Kameraausrichtung kalibriert die Beziehung zwischen Kamerapixeln und realen
+Koordinaten und ermöglicht so präzises Positionieren. Der Assistent verwendet
+dasselbe hier beschriebene Verfahren, und das Anwenden der Ausrichtung
+schließt den Assistenten ab.
 
-### Warum Ausrichtung notwendig ist
+#### Warum Ausrichtung notwendig ist
 
 Die Kamera sieht den Arbeitsbereich von oben, aber das Bild kann:
 
@@ -185,11 +191,11 @@ Die Kamera sieht den Arbeitsbereich von oben, aber das Bild kann:
 Die Ausrichtung erstellt eine Transformationsmatrix, die Kamerapixel
 Maschinenkoordinaten zuordnet.
 
-### Ausrichtungsprozedur
+#### Ausrichtungsprozedur
 
 1. **Ausrichtungsdialog öffnen:**
-   - Klicke auf die **Konfigurieren** Taste neben **Bildausrichtung** in den
-     Kameraeigenschaften
+   - Klicke in den Kameraeigenschaften auf die **Configure**-Schaltfläche
+     neben **Bildausrichtung**
    - Der Dialog zeigt das Kamerabild mit der aktuellen
      Ausrichtungsüberlagerung
 
@@ -225,7 +231,7 @@ Maschinenkoordinaten zuordnet.
      Kameraansicht übereinstimmt
    - Bei Bedarf durch Neuausrichtung feinabstimmen
 
-### Ausrichtungsstatus
+#### Ausrichtungsstatus
 
 Das Kameraeigenschaften-Panel zeigt den Ausrichtungsstatus mit einem Symbol:
 
@@ -236,7 +242,7 @@ Das Kameraeigenschaften-Panel zeigt den Ausrichtungsstatus mit einem Symbol:
   Ausrichtungspunkte bleiben erhalten — öffne einfach den Dialog und klicke
   erneut auf **Anwenden**.
 
-### Beispiel-Workflow
+#### Beispiel-Workflow
 
 1. Laser zur Home-Position (0, 0) bewegen und in der Kamera markieren
 2. Laser zu (100, 0) bewegen und in der Kamera markieren

@@ -1,134 +1,179 @@
+---
+description: "Configurez votre découpeuse ou graveuse laser pour la première fois. Utilisez l'assistant de configuration pour créer votre machine, puis connectez-vous et préparez-vous à découper avec Rayforge."
+---
+
 # Configuration Initiale
 
-Après avoir installé Rayforge, vous devrez configurer votre découpeuse ou graveuse laser. Ce guide vous accompagnera dans la création de votre première machine et l'établissement d'une connexion.
+Après avoir installé Rayforge, vous devrez configurer votre découpeuse ou
+graveuse laser. Ce guide vous accompagne dans la création de votre première
+machine avec l'assistant de configuration et l'établissement d'une connexion.
 
 ## Étape 1 : Lancer Rayforge
 
-Démarrez Rayforge depuis votre menu d'applications ou en exécutant `rayforge` dans un terminal. Vous devriez voir l'interface principale avec un canevas vide.
+Démarrez Rayforge depuis votre menu d'applications ou en exécutant `rayforge`
+dans un terminal. Vous devriez voir l'interface principale avec un canevas
+vide.
 
-## Étape 2 : Créer une Machine
+## Étape 2 : Créer une Machine avec l'Assistant
 
-Naviguez vers **Paramètres → Machines** ou appuyez sur <kbd>ctrl+comma</kbd> pour ouvrir la boîte de dialogue des paramètres, puis sélectionnez la page **Machines**.
+Naviguez vers **Paramètres → Machines** ou appuyez sur <kbd>ctrl+comma</kbd>
+pour ouvrir la boîte de dialogue des paramètres, puis sélectionnez la page
+**Machines**.
 
 ![Paramètres Machine](/screenshots/application-machines.png)
 
-Cliquez sur **Ajouter une Machine** pour créer une nouvelle machine. Sélectionnez un profil d'appareil dans la liste comme modèle — chaque profil préconfigure les paramètres de la machine et le dialecte G-code.
+Cliquez sur **Add Machine** pour ouvrir le sélecteur de machine.
 
-![Ajouter une Machine](/screenshots/app-settings-machines-add.png)
+![Boîte de dialogue Add Machine](/screenshots/app-settings-machines-add.png)
 
-Si votre appareil est connecté et allumé, vous pouvez cliquer sur **Other Device…**
-pour utiliser l'[Assistant de Configuration](../machine/config-wizard.md), qui
-détecte et configure automatiquement votre machine.
+L'assistant de configuration s'ouvre et adapte les étapes qu'il affiche à vos
+choix :
 
-Si vous avez un profil d'appareil LightBurn (.lbdev) avec calibrage
-de caméra et paramètres d'appareil, vous pouvez cliquer sur **Import
-from File…** et sélectionner le fichier .lbdev. Le calibrage de caméra
-et les paramètres laser de votre configuration LightBurn seront
-appliqués à la nouvelle machine.
+- Choisir un **profil intégré** préremplit le contrôleur, la zone de travail
+  et la tête — l'assistant passe directement aux étapes rotatif, caméra et
+  récapitulatif
+- **Importer un profil** conserve les étapes matériel et tête afin de corriger
+  ce que l'importation a mal configuré
+- **Device Not Listed** vous guide à travers toutes les étapes, y compris les
+  étapes contrôleur et recherche de spécifications IA
 
-Après la sélection, la boîte de dialogue Paramètres Machine s'ouvre pour votre nouvelle machine.
+### Choisir un Point de Départ
 
-## Étape 3 : Configurer les Paramètres Généraux
+Choisissez un profil d'appareil intégré pour préremplir les paramètres du
+contrôleur, de la zone de travail et de la tête, ou cliquez sur **Device Not
+Listed** pour tout configurer manuellement. Vous pouvez aussi **Import from
+File…** un profil précédemment exporté ou un profil d'appareil LightBurn
+(.lbdev) avec le calibrage de caméra et les paramètres laser.
 
-La page **Général** contient les informations de base de la machine, la sélection du pilote et les paramètres de connexion.
+![Assistant — Choisir un Point de Départ](/screenshots/app-settings-machines-wizard-profile.png)
 
-![Paramètres Généraux](/screenshots/machine-general.png)
+### Choisir un Contrôleur
 
-### Informations Machine
+Choisissez la famille de firmware ou de protocole qui correspond à la carte
+contrôleur de votre machine (GRBL, Marlin, Smoothie, Ruida, OctoPrint, …).
+Choisissez **None — G-code export only** si vous souhaitez uniquement exporter
+le G-code vers des fichiers et ne jamais piloter de machine physique. Cette
+étape est ignorée lorsque vous partez d'un profil intégré ou d'une
+importation.
 
-1. **Nom de la Machine** : Donnez un nom descriptif à votre machine (ex : "K40 Laser", "Ortur LM2")
+![Assistant — Choisir un Contrôleur](/screenshots/app-settings-machines-wizard-controller.png)
 
-### Sélection du Pilote
+### Connexion
 
-Sélectionnez le pilote approprié pour votre appareil dans le menu déroulant :
+Saisissez les paramètres de connexion requis par votre machine. Les champs
+exacts dépendent du contrôleur que vous avez choisi :
 
-- **GRBL (Série)** - Pour les appareils GRBL connectés via port USB/série
-- **GRBL (Réseau)** - Pour les appareils GRBL avec connectivité WiFi/Ethernet
-- **Smoothie** - Pour les appareils basés sur Smoothieware
+- **Pilotes série** — chemin du périphérique USB (ex. `/dev/ttyUSB0` sur
+  Linux, `COM3` sur Windows) et débit en bauds
+- **Pilotes réseau** — adresse hôte et port (ex. `192.168.1.100`)
+- **OctoPrint** — URL du serveur et clé API
 
-### Paramètres du Pilote
+![Assistant — Connexion](/screenshots/app-settings-machines-wizard-connect.png)
 
-Selon le pilote sélectionné, configurez les paramètres de connexion :
+### Découvrir l'Appareil
 
-#### GRBL (Série) - USB
+Lorsque votre contrôleur le prend en charge, l'assistant propose de se
+connecter à l'appareil et de lire automatiquement sa configuration — zone de
+travail, vitesses, accélération et capacités du firmware. Cliquez sur **Probe
+Now** pour détecter automatiquement ces valeurs, ou utilisez **Next** pour les
+saisir manuellement dans les étapes suivantes.
 
-1. **Port** : Choisissez votre appareil dans le menu déroulant (ex : `/dev/ttyUSB0` sur Linux, `COM3` sur Windows)
-2. **Débit** : Sélectionnez `115200` (standard pour la plupart des appareils GRBL)
+![Assistant — Découvrir l'Appareil](/screenshots/app-settings-machines-wizard-probe.png)
 
-:::info
-Si votre appareil n'apparaît pas dans la liste, vérifiez qu'il est connecté et que vous avez les permissions nécessaires. Sur Linux, vous devrez peut-être ajouter votre utilisateur au groupe `dialout`.
-:::
+### Fournisseur IA
 
-#### GRBL (Réseau) / Smoothie - WiFi/Ethernet
+Affiché uniquement lorsqu'aucun fournisseur IA n'est encore configuré.
+Saisissez un endpoint compatible OpenAI (URL de base et clé API) afin que
+l'étape suivante puisse rechercher les spécifications des machines
+commerciales connues. Ignorez cette étape pour saisir les valeurs
+manuellement.
 
-1. **Hôte** : Entrez l'adresse IP de votre appareil (ex : `192.168.1.100`)
-2. **Port** : Entrez le numéro de port (généralement `23` ou `8080`)
+![Assistant — Fournisseur IA](/screenshots/app-settings-machines-wizard-ai-provider.png)
 
-### Vitesses & Accélération
+### Recherche de Spécifications IA
 
-Ces paramètres sont utilisés pour l'estimation du temps de travail et l'optimisation du parcours :
+Si votre machine est un modèle commercial connu, l'IA peut préremplir ses
+spécifications à partir de la documentation du fabricant. Saisissez le
+fabricant et le modèle, puis cliquez sur **Look Up Specs**. Les valeurs
+suggérées apparaissent sous forme de lignes à bascule et démarrent acceptées
+— désactivez ce que vous ne souhaitez pas appliquer.
 
-- **Vitesse de Déplacement Max** : Vitesse de mouvement rapide maximale
-- **Vitesse de Coupe Max** : Vitesse de coupe maximale
-- **Accélération** : Utilisée pour les estimations de temps et les calculs d'overscan
+![Assistant — Recherche de Spécifications IA](/screenshots/app-settings-machines-wizard-ai-lookup.png)
 
-## Étape 4 : Configurer les Paramètres Matériels
+### Matériel
 
-Passez à l'onglet **Matériel** pour configurer les dimensions physiques de votre machine.
+Configurez la configuration physique de la machine :
 
-![Paramètres Matériels](/screenshots/machine-hardware.png)
+- **Axes** — étendues X/Y de la zone de travail et coin d'origine des
+  coordonnées (0,0)
+- **Direction des axes** — inversez un axe si les coordonnées deviennent
+  négatives
+- **Zone de Travail** — marges autour de l'espace inutilisable de la surface
+  de travail
+- **Limites Logicielles** — limites de sécurité facultatives pour le
+  déplacement
+- **Vitesses** — vitesse de déplacement max, vitesse de coupe max et
+  accélération
+- **Comportement** — retour à l'origine au démarrage et homing mono-axe
 
-### Dimensions
+![Assistant — Matériel](/screenshots/app-settings-machines-wizard-hardware.png)
 
-- **Largeur** : Entrez la largeur maximale de votre zone de travail en millimètres
-- **Hauteur** : Entrez la hauteur maximale de votre zone de travail en millimètres
+### Tête
 
-### Axes
+Déclarez ce qui est fixé au portique — une tête laser ou une tête de broche —
+et définissez ses paramètres. Pour un laser : puissance max (valeur S), taille
+du spot, fréquence PWM et distance focale. Pour une broche : RPM max et min.
 
-- **Origine des Coordonnées (0,0)** : Sélectionnez où l'origine de votre machine est située :
-  - Bas Gauche (le plus courant pour GRBL)
-  - Haut Gauche
-  - Haut Droit
-  - Bas Droit
+![Assistant — Tête](/screenshots/app-settings-machines-wizard-head.png)
 
-### Décalages d'Axe (Optionnel)
+### Module Rotatif
 
-Configurez les décalages X et Y si votre machine les nécessite pour un positionnement précis.
+Configurez facultativement un accessoire rotatif : type (mandrins ou rouleaux),
+axe (A/B/C), mode (vrai 4e axe vs. remplacement d'axe), géométrie et indicateur
+d'inversion de direction. Ignorez cette étape pour ajouter un module rotatif
+plus tard depuis les paramètres de la machine.
 
-## Étape 5 : Connexion Automatique
+![Assistant — Module Rotatif](/screenshots/app-settings-machines-wizard-rotary.png)
 
-Rayforge se connecte automatiquement à votre machine au démarrage de l'application (si la machine est allumée et connectée). Vous n'avez pas besoin de cliquer manuellement sur un bouton de connexion.
+### Caméras
 
-Le statut de connexion est affiché dans le coin inférieur gauche de la fenêtre principale avec une icône de statut et une étiquette montrant l'état actuel (Connecté, Connexion, Déconnecté, Erreur, etc.).
+Activez facultativement les caméras que vous souhaitez utiliser pour la
+prévisualisation et l'alignement. Lorsque vous activez une caméra et
+continuez, l'[assistant de
+caméra](../machine/camera.md#étape-2--assistant-de-caméra) s'ouvre pour vous
+guider à travers les paramètres d'image, la calibration d'objectif et
+l'alignement d'image. Vous pouvez ignorer cette étape et configurer les
+caméras plus tard depuis les paramètres caméra de la machine.
+
+![Assistant — Caméras](/screenshots/app-settings-machines-wizard-camera.png)
+
+### Récapitulatif et Nom
+
+Donnez un nom à la machine et consultez un récapitulatif de tout ce que vous
+avez configuré — pilote, connexion, zone de travail, vitesses, têtes, modules
+rotatifs et caméras. L'assistant fait également remonter tout avertissement,
+comme un pilote manquant ou une zone de travail non définie.
+
+![Assistant — Récapitulatif et Nom](/screenshots/app-settings-machines-wizard-review.png)
+
+Cliquez sur **Create Machine** pour finaliser. La boîte de dialogue Paramètres
+Machine s'ouvre pour votre nouvelle machine, où vous pouvez ajuster tous les
+paramètres préremplis par l'assistant. Consultez les pages [Configuration
+Machine](../machine/general.md) pour plus de détails.
+
+## Étape 3 : Connexion Automatique
+
+Rayforge se connecte automatiquement à votre machine au démarrage de
+l'application (si la machine est allumée et connectée). Vous n'avez pas besoin
+de cliquer manuellement sur un bouton de connexion.
+
+Le statut de connexion est affiché dans le coin inférieur gauche de la fenêtre
+principale avec une icône de statut et une étiquette montrant l'état actuel
+(Connecté, Connexion, Déconnecté, Erreur, etc.).
 
 :::success Connecté !
-Si votre machine affiche le statut "Connecté", vous êtes prêt à utiliser Rayforge !
-:::
-
-## Optionnel : Configuration Avancée
-
-### Lasers Multiples
-
-Si votre machine a plusieurs modules laser (ex : diode et CO2), vous pouvez les configurer dans la page **Laser**.
-
-![Paramètres Laser](/screenshots/machine-laser.png)
-
-Voir [Configuration Laser](../machine/laser.md) pour plus de détails.
-
-### Configuration Caméra
-
-Si vous avez une caméra USB pour l'alignement et le positionnement, configurez-la dans la page **Caméra**.
-
-![Paramètres Caméra](/screenshots/machine-camera.png)
-
-Voir [Intégration Caméra](../machine/camera.md) pour plus de détails.
-
-### Paramètres de l'Appareil
-
-La page **Appareil** vous permet de lire et modifier les paramètres du firmware directement sur votre appareil connecté (tels que les paramètres GRBL). C'est une fonctionnalité avancée qui doit être utilisée avec précaution.
-
-:::warning
-Modifier les paramètres de l'appareil peut être dangereux et peut rendre votre machine inopérable si des valeurs incorrectes sont appliquées !
+Si votre machine affiche le statut "Connecté", vous êtes prêt à utiliser
+Rayforge !
 :::
 
 ---

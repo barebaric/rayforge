@@ -81,8 +81,8 @@ can be shared with other users or imported on another system.
 
 ## See Also
 
-- [Configuration Wizard](config-wizard) - Automatically detect and
-  configure a connected device
+- [First Time Setup](../getting-started/first-time-setup.md) - Create a
+  machine step by step with the configuration wizard
 - [Hardware Settings](hardware) - Work area dimensions and axis
   configuration
 - [Device Settings](device) - Read and write firmware settings on the

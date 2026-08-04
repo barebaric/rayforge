@@ -13,19 +13,23 @@ material waste.
 
 ## Setup Workflow
 
-Setting up a camera follows four steps:
+Setting up a camera can be done either through the guided
+[Camera Wizard](#step-2-camera-wizard) — a single flow covering image
+settings, lens calibration, and alignment — or by configuring each area
+manually from the camera properties panel. Either way, the setup covers four
+areas:
 
 1. **Add a camera** — Connect your camera and add it to the machine
    configuration
 2. **Adjust image settings** — Tune brightness, contrast, white balance, and
    noise reduction
-3. **Calibrate the lens** — Correct distortion with the calibration wizard or
-   manual coefficients
+3. **Calibrate the lens** — Correct distortion with the camera wizard's
+   automatic calibration or manual coefficients
 4. **Align the camera** — Map camera pixels to machine coordinates for
    accurate positioning
 
-Steps 2–4 are accessed from the camera properties panel, where status icons
-show completion at a glance:
+The camera properties panel shows status icons for calibration and alignment
+at a glance:
 
 - ✓ **Lens Calibration** — Calibration has been performed
 - ⚠ **Image Alignment** — Warning when alignment must be redone (e.g., after
@@ -72,13 +76,27 @@ show completion at a glance:
 
 ---
 
-## Step 2: Adjust Image Settings
+## Step 2: Camera Wizard
+
+The **Camera Wizard** runs the full camera setup in a single guided flow,
+covering all three areas in order — image settings, lens calibration, and
+image alignment. It is started from:
+
+- The **Camera Wizard** row in the camera properties panel — click **Start**
+- Automatically from the [configuration
+  wizard](../getting-started/first-time-setup.md) when you enable a camera on
+  its camera step and continue
+
+### Step 2.1: Adjust Image Settings
 
 ![Image Settings Dialog](/screenshots/camera-image-settings.png)
 
-Click **Configure** next to **Image Settings** in the camera properties to
-open the image settings dialog. Adjust these parameters to get a clear camera
-view:
+Image settings is the camera wizard's first stage — it opens there and lets
+you set the resolution, white balance, brightness, contrast, and noise
+reduction. If you didn't run the wizard, or want to tweak the values it set,
+click **Configure** next to **Image Settings** in the camera properties to
+open the image settings dialog. Adjust these parameters to get a clear
+camera view:
 
 | Setting           | Description                                                              |
 | ----------------- | ------------------------------------------------------------------------ |
@@ -93,79 +111,65 @@ The YUYV option is useful if your camera produces green-tinted images with the
 default MJPEG format. Note that YUYV is uncompressed and may reduce the
 available resolution or frame rate on USB 2.0 connections.
 
----
-
-## Step 3: Lens Calibration
+### Step 2.2: Lens Calibration
 
 If your camera has a wide-angle lens or is mounted at an angle, the image
 may show visible curvature — straight lines appear bent, especially near
 the edges of the frame. This is called lens distortion, and it can throw
 off alignment even if your alignment points are carefully measured.
 
-Rayforge includes a guided calibration wizard that corrects this distortion
-automatically. You can also adjust distortion coefficients manually.
+Lens calibration is the camera wizard's second stage. It lets you choose how
+to correct the distortion:
 
-### Lens Calibration Dialog
+- **Automatic** — capture frames of a printed calibration card; the wizard
+  computes the distortion model for you
+- **Manual** — enter the radial (k1–k3) and tangential (p1–p2) coefficients
+  by hand
+- **Skip** — leave the distortion uncorrected; you can calibrate later
 
-![Lens Calibration Dialog](/screenshots/camera-lens-calibration.png)
+#### Automatic Calibration
 
-Open the lens calibration dialog by clicking **Configure** next to **Lens
-Calibration** in the camera properties. From here you can:
-
-- **Adjust distortion coefficients manually** — Fine-tune radial (k1–k3)
-  and tangential (p1–p2) distortion parameters
-- **Launch the calibration wizard** — Click the **Wizard** button for
-  guided automatic calibration
-
-Manual adjustments are useful for fine-tuning after the wizard has
-computed an initial solution, or when you know the approximate distortion
-values for your lens.
-
-### Calibration Wizard
-
-The calibration wizard walks you through capturing several images of a
-printed calibration card from different positions on the bed. It then
-computes a distortion model automatically.
-
-**Step 1: Configure the calibration card**
+For **Automatic** calibration, the wizard walks you through capturing
+several images of a printed calibration card from different positions on the
+bed, then computes a distortion model automatically.
 
 ![Wizard — Card Settings](/screenshots/camera-lens-calibration-wizard-card.png)
 
-1. Click **Wizard** in the lens calibration dialog to start
-2. Set the **Width** and **Height** of your printed card
-3. The preview updates in real-time — the card should cover about 70% of
-   the camera view
-4. Click **Save to PDF** to export the card for printing
-5. Print the card and place it on the laser bed
-
-**Step 2: Capture frames**
+1. Set the **Width** and **Height** of your printed card. The preview updates
+   in real-time — the card should cover about 70% of the camera view.
+2. Click **Save to PDF** to export the card for printing, then print it and
+   place it on the laser bed.
 
 ![Wizard — Capture](/screenshots/camera-lens-calibration-wizard-capture.png)
 
-1. Click **Next** to enter capture mode
-2. Position the calibration card at different locations and angles within
-   the camera view
-3. Click **Capture Frame** for each position
-4. Aim for at least 8 captures covering the entire frame, including
-   corners and edges
-5. The progress bar and status indicators show capture quality
+3. Move the card to different positions and angles within the camera view and
+   click **Capture Frame** for each position. Aim for at least 8 captures
+   covering the entire frame, including corners and edges. The progress bar
+   and status indicators show capture quality.
+4. When enough frames are captured, the wizard computes the distortion model
+   and applies it — the camera overlay now shows a corrected, straight
+   image.
 
-**Step 3: Apply calibration**
+#### Manual Calibration
 
-1. Once enough frames are captured, click **Calibrate**
-2. The computed distortion coefficients are automatically applied to the camera
-3. The camera overlay now shows a corrected, straight image
+![Lens Calibration Dialog](/screenshots/camera-lens-calibration.png)
 
----
+For manual coefficients or to fine-tune the result after an automatic
+calibration, open the lens calibration dialog by clicking **Configure** next
+to **Lens Calibration** in the camera properties. From here you can adjust
+the distortion coefficients manually — fine-tune the radial (k1–k3) and
+tangential (p1–p2) parameters.
 
-## Step 4: Image Alignment
+### Step 2.3: Image Alignment
 
 ![Image Alignment Dialog](/screenshots/camera-image-alignment.png)
 
-Camera alignment calibrates the relationship between camera pixels and real-
-world coordinates, enabling accurate positioning.
+Image alignment is the camera wizard's final stage. Camera alignment
+calibrates the relationship between camera pixels and real-world
+coordinates, enabling accurate positioning. The wizard uses the same
+procedure described here, and applying the alignment finishes the wizard.
 
-### Why Alignment is Necessary
+#### Why Alignment is Necessary
 
 The camera sees the work area from above, but the image may be:
 
@@ -176,7 +180,7 @@ The camera sees the work area from above, but the image may be:
 Alignment creates a transformation matrix that maps camera pixels to machine
 coordinates.
 
-### Alignment Procedure
+#### Alignment Procedure
 
 1. **Open the Alignment Dialog:**
    - Click the **Configure** button next to **Image Alignment** in the camera
@@ -212,7 +216,7 @@ coordinates.
      view
    - Fine-tune by re-aligning if needed
 
-### Alignment Status
+#### Alignment Status
 
 The camera properties panel shows the alignment status with an icon:
 
@@ -223,7 +227,7 @@ The camera properties panel shows the alignment status with an icon:
   simply open the dialog and click
   **Apply** again.
 
-### Example Workflow
+#### Example Workflow
 
 1. Move laser to home position (0, 0) and mark in camera
 2. Move laser to (100, 0) and mark in camera

@@ -24,9 +24,9 @@ um ícone de verificação.
 
 Alternativamente:
 
-- Clique em **Other Device…** para iniciar o
-  [Assistente de Configuração](../machine/config-wizard.md), que detecta
-  automaticamente as configurações de um dispositivo conectado
+- Clique em **Device Not Listed** para iniciar o
+  [Assistente de Configuração](../getting-started/first-time-setup.md), que
+  orienta você na configuração de uma máquina passo a passo
 - Clique em **Import from File…** para adicionar uma máquina de um
   perfil exportado anteriormente ou de um perfil de dispositivo LightBurn
   (.lbdev). Perfis LightBurn incluem calibração de câmera e configurações

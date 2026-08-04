@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-04 00:33+0200\n"
+"POT-Creation-Date: 2026-08-04 19:24+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -6790,6 +6790,22 @@ msgstr "Modo de importação de camadas"
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "How imported layers are mapped to document layers"
 msgstr "Como as camadas importadas são mapeadas para camadas do documento"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "SVG Layers"
+msgstr "Camadas SVG"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Colors"
+msgstr "Cores"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Layer Source"
+msgstr "Origem das camadas"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Group imported geometry by SVG layer or by color"
+msgstr "Agrupar a geometria importada por camada SVG ou por cor"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 msgid "Import Image"

@@ -91,8 +91,8 @@ partagé avec d'autres utilisateurs ou importé sur un autre système.
 
 ## Voir aussi
 
-- [Assistant de Configuration](config-wizard) - Détecter et configurer
-  automatiquement un appareil connecté
+- [Configuration Initiale](../getting-started/first-time-setup.md) - Créer une
+  machine pas à pas avec l'assistant de configuration
 - [Paramètres matériel](hardware) - Dimensions de la zone de travail et
   configuration des axes
 - [Paramètres du périphérique](device) - Lire et écrire les paramètres du

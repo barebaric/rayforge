@@ -84,8 +84,8 @@ importado em outro sistema.
 
 ## Veja também
 
-- [Assistente de Configuração](config-wizard) - Detectar e configurar
-  automaticamente um dispositivo conectado
+- [Configuração Inicial](../getting-started/first-time-setup.md) - Criar uma
+  máquina passo a passo com o assistente de configuração
 - [Definições de hardware](hardware) - Dimensões da área de trabalho e
   configuração dos eixos
 - [Definições do dispositivo](device) - Ler e escrever definições do

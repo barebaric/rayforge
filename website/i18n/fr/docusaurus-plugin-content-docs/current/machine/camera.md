@@ -13,19 +13,23 @@ te permet de voir exactement où ton laser va couper ou graver sur le matériau,
 
 ## Flux de travail de configuration
 
-La configuration d'une caméra suit quatre étapes :
+La configuration d'une caméra peut se faire soit via l'
+[Assistant de caméra](#étape-2--assistant-de-caméra) guidé — un flux unique
+couvrant les paramètres d'image, la calibration d'objectif et l'alignement —
+soit en configurant chaque zone manuellement depuis le panneau des propriétés
+de la caméra. Dans tous les cas, la configuration couvre quatre zones :
 
 1. **Ajouter une caméra** — Connecte ta caméra et ajoute-la à la configuration
    de la machine
 2. **Ajuster les paramètres d'image** — Règle la luminosité, le contraste, la
    balance des blancs et la réduction de bruit
-3. **Calibrer l'objectif** — Corrige la distorsion avec l'assistant de
-   calibration ou des coefficients manuels
+3. **Calibrer l'objectif** — Corrige la distorsion avec la calibration
+   automatique de l'assistant de caméra ou des coefficients manuels
 4. **Aligner la caméra** — Mappe les pixels de la caméra aux coordonnées
    machine pour un positionnement précis
 
-Les étapes 2 à 4 sont accessibles depuis le panneau des propriétés de la
-caméra, où des icônes d'état montrent l'avancement en un coup d'œil :
+Le panneau des propriétés de la caméra affiche des icônes d'état pour la
+calibration et l'alignement en un coup d'œil :
 
 - ✓ **Calibration d'objectif** — La calibration a été effectuée
 - ⚠ **Alignement d'image** — Avertissement lorsque l'alignement doit être
@@ -75,13 +79,29 @@ caméra, où des icônes d'état montrent l'avancement en un coup d'œil :
 
 ---
 
-## Étape 2 : Ajuster les paramètres d'image
+## Étape 2 : Assistant de caméra
+
+L'**Assistant de caméra** exécute toute la configuration de la caméra dans un
+flux unique et guidé, couvrant les trois zones dans l'ordre — paramètres
+d'image, calibration d'objectif et alignement d'image. Il est lancé depuis :
+
+- La ligne **Assistant de caméra** du panneau des propriétés de la caméra —
+  clique sur **Start**
+- Automatiquement depuis l'[assistant de
+  configuration](../getting-started/first-time-setup.md) lorsque tu actives
+  une caméra à son étape caméra et que tu continues
+
+### Étape 2.1 : Ajuster les paramètres d'image
 
 ![Boîte de dialogue Paramètres d'image](/screenshots/camera-image-settings.png)
 
-Clique sur **Configurer** à côté de **Paramètres d'image** dans les propriétés
-de la caméra pour ouvrir la boîte de dialogue des paramètres d'image. Ajuste
-ces paramètres pour obtenir une vue caméra claire :
+Les paramètres d'image constituent la première étape de l'assistant de caméra
+— il s'y ouvre et te permet de définir la résolution, la balance des blancs,
+la luminosité, le contraste et la réduction de bruit. Si tu n'as pas lancé
+l'assistant, ou si tu souhaites ajuster les valeurs qu'il a définies, clique
+sur **Configure** à côté de **Paramètres d'image** dans les propriétés de la
+caméra pour ouvrir la boîte de dialogue des paramètres d'image. Ajuste ces
+paramètres pour obtenir une vue caméra claire :
 
 | Paramètre              | Description                                                                                     |
 | ---------------------- | ----------------------------------------------------------------------------------------------- |
@@ -96,9 +116,7 @@ L'option YUYV est utile si ta caméra produit des images teintées de vert avec
 le format MJPEG par défaut. Note que le YUYV est non compressé et peut réduire
 la résolution disponible ou le taux d'images sur les connexions USB 2.0.
 
----
-
-## Étape 3 : Calibration d'objectif
+### Étape 2.2 : Calibration d'objectif
 
 Si ta caméra a un objectif grand angle ou est montée en angle, l'image
 peut montrer une courbure visible — les lignes droites apparaissent
@@ -106,79 +124,62 @@ courbées, surtout près des bords de l'image. C'est ce qu'on appelle la
 distorsion d'objectif, et elle peut fausser l'alignement même si tes
 points d'alignement sont mesurés avec soin.
 
-Rayforge inclut un assistant de calibration guidé qui corrige cette
-distorsion automatiquement. Tu peux aussi ajuster les coefficients de
-distorsion manuellement.
+La calibration d'objectif est la deuxième étape de l'assistant de caméra.
+Elle te permet de choisir comment corriger la distorsion :
 
-### Boîte de dialogue Calibration d'objectif
+- **Automatic** — capture des images d'une carte de calibration imprimée ;
+  l'assistant calcule le modèle de distorsion pour toi
+- **Manual** — saisir à la main les coefficients radiaux (k1–k3) et
+  tangentiels (p1–p2)
+- **Skip** — laisser la distorsion non corrigée ; tu pourras calibrer plus
+  tard
 
-![Boîte de dialogue Calibration
-d'objectif](/screenshots/camera-lens-calibration.png)
+#### Calibration automatique
 
-Ouvre la boîte de dialogue de calibration d'objectif en cliquant sur
-**Configurer** à côté de **Calibration d'objectif** dans les propriétés
-de la caméra. À partir de là, tu peux :
+Pour la calibration **Automatic**, l'assistant te guide pour capturer
+plusieurs images d'une carte de calibration imprimée depuis différentes
+positions sur le lit, puis calcule un modèle de distorsion automatiquement.
 
-- **Ajuster les coefficients de distorsion manuellement** — Ajuste
-  finement les paramètres de distorsion radiale (k1–k3) et tangentielle
-  (p1–p2)
-- **Lancer l'assistant de calibration** — Clique sur le bouton
-  **Assistant** pour une calibration automatique guidée
+![Assistant — Paramètres de la carte](/screenshots/camera-lens-calibration-wizard-card.png)
 
-Les ajustements manuels sont utiles pour le réglage fin après que
-l'assistant a calculé une solution initiale, ou lorsque tu connais les
-valeurs de distorsion approximatives de ton objectif.
-
-### Assistant de Calibration
-
-L'assistant de calibration te guide pour capturer plusieurs images d'une
-carte de calibration imprimée depuis différentes positions sur le lit.
-Il calcule ensuite un modèle de distorsion automatiquement.
-
-**Étape 1 : Configurer la carte de calibration**
-
-![Assistant — Paramètres de la
-carte](/screenshots/camera-lens-calibration-wizard-card.png)
-
-1. Clique sur **Assistant** dans la boîte de dialogue de calibration
-   d'objectif pour commencer
-2. Définis la **Largeur** et la **Hauteur** de ta carte imprimée
-3. L'aperçu se met à jour en temps réel — la carte doit couvrir environ
-   70% de la vue caméra
-4. Clique sur **Enregistrer en PDF** pour exporter la carte à imprimer
-5. Imprime la carte et place-la sur le lit laser
-
-**Étape 2 : Capturer des images**
+1. Définis la **Largeur** et la **Hauteur** de ta carte imprimée. L'aperçu
+   se met à jour en temps réel — la carte doit couvrir environ 70% de la vue
+   caméra.
+2. Clique sur **Save to PDF** pour exporter la carte à imprimer, puis
+   imprime-la et place-la sur le lit laser.
 
 ![Assistant — Capture](/screenshots/camera-lens-calibration-wizard-capture.png)
 
-1. Clique sur **Suivant** pour entrer en mode capture
-2. Positionne la carte de calibration à différents endroits et angles
-   dans la vue caméra
-3. Clique sur **Capturer l'image** pour chaque position
-4. Vise au moins 8 captures couvrant tout le cadre, y compris les coins
-   et les bords
-5. La barre de progression et les indicateurs d'état montrent la qualité
-   de la capture
+3. Déplace la carte à différentes positions et angles dans la vue caméra et
+   clique sur **Capture Frame** pour chaque position. Vise au moins 8 captures
+   couvrant tout le cadre, y compris les coins et les bords. La barre de
+   progression et les indicateurs d'état montrent la qualité de la capture.
+4. Une fois suffisamment d'images capturées, l'assistant calcule le modèle de
+   distorsion et l'applique — la superposition caméra affiche maintenant une
+   image corrigée et droite.
 
-**Étape 3 : Appliquer la calibration**
+#### Calibration manuelle
 
-1. Une fois suffisamment d'images capturées, clique sur **Calibrer**
-2. Les coefficients de distorsion calculés sont automatiquement
-   appliqués à la caméra
-3. La superposition caméra affiche maintenant une image corrigée et droite
+![Boîte de dialogue Calibration d'objectif](/screenshots/camera-lens-calibration.png)
 
----
+Pour les coefficients manuels ou pour ajuster finement le résultat après une
+calibration automatique, ouvre la boîte de dialogue de calibration d'objectif
+en cliquant sur **Configure** à côté de **Calibration d'objectif** dans les
+propriétés de la caméra. À partir de là, tu peux ajuster manuellement les
+coefficients de distorsion — ajuste finement les paramètres de distorsion
+radiale (k1–k3) et tangentielle (p1–p2).
 
-## Étape 4 : Alignement d'image
+### Étape 2.3 : Alignement d'image
 
-![Boîte de dialogue Alignement
-d'image](/screenshots/camera-image-alignment.png)
+![Boîte de dialogue Alignement d'image](/screenshots/camera-image-alignment.png)
 
-L'alignement de la caméra calibre la relation entre les pixels de la caméra et
-les coordonnées du monde réel, permettant un positionnement précis.
+L'alignement d'image est l'étape finale de l'assistant de caméra. L'alignement
+de la caméra calibre la relation entre les pixels de la caméra et les
+coordonnées du monde réel, permettant un positionnement précis. L'assistant
+utilise la même procédure décrite ici, et appliquer l'alignement termine
+l'assistant.
 
-### Pourquoi l'Alignement est Nécessaire
+#### Pourquoi l'Alignement est Nécessaire
 
 La caméra voit la zone de travail d'en haut, mais l'image peut être :
 
@@ -189,10 +190,10 @@ La caméra voit la zone de travail d'en haut, mais l'image peut être :
 L'alignement crée une matrice de transformation qui mappe les pixels de la
 caméra aux coordonnées machine.
 
-### Procédure d'Alignement
+#### Procédure d'Alignement
 
 1. **Ouvre la Boîte de Dialogue d'Alignement :**
-   - Clique sur le bouton **Configurer** à côté de **Alignement d'image** dans
+   - Clique sur le bouton **Configure** à côté de **Alignement d'image** dans
      les propriétés de la caméra
    - La boîte de dialogue affiche le flux caméra avec la superposition
      d'alignement actuelle
@@ -229,7 +230,7 @@ caméra aux coordonnées machine.
      caméra
    - Ajuste finement en ré-alignant si nécessaire
 
-### Statut d'Alignement
+#### Statut d'Alignement
 
 Le panneau des propriétés de la caméra affiche le statut d'alignement avec une
 icône :
@@ -241,26 +242,25 @@ icône :
   d'alignement sont conservés — il suffit d'ouvrir la boîte de dialogue et de
   cliquer à nouveau sur **Appliquer**.
 
-### Exemple de flux de travail
+#### Exemple de flux de travail
 
 1. Déplace le laser à la position d'origine (0, 0) et marque dans la caméra
 2. Déplace le laser à (100, 0) et marque dans la caméra
 3. Déplace le laser à (100, 100) et marque dans la caméra
 4. Déplace le laser à (0, 100) et marque dans la caméra
 5. Entre les coordonnées exactes pour chaque point
-6. Applique et vérifie
+6. Clique sur **Appliquer** et vérifie
 
 :::tip Meilleures Pratiques
 
 - Utilise des points aux coins de ta zone de travail pour une couverture
   maximale
 - Évite de regrouper les points dans une zone
-- Mesure les coordonnées monde avec soin - la précision ici détermine la
-  qualité globale de
-  l'alignement
+- Mesure les coordonnées monde avec soin — la précision ici détermine la
+  qualité globale de l'alignement
 - Ré-aligne si tu déplaces la caméra ou changes la distance de mise au point
 - Ré-aligne après la mise à jour de la calibration d'objectif
-- Sauvegarde ton alignement - il persiste entre les sessions
+- Sauvegarde ton alignement — il persiste entre les sessions
   :::
 
 ---

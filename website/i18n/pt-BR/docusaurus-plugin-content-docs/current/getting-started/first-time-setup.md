@@ -1,133 +1,168 @@
+---
+description: "Configure sua cortadora ou gravadora a laser pela primeira vez. Use o assistente de configuração para criar sua máquina, depois conecte-se e prepare-se para cortar com o Rayforge."
+---
+
 # Configuração Inicial
 
-Após instalar o Rayforge, você precisará configurar sua cortadora ou gravadora a laser. Este guia irá orientá-lo na criação de sua primeira máquina e no estabelecimento de uma conexão.
+Após instalar o Rayforge, você precisará configurar sua cortadora ou gravadora a laser. Este guia irá orientá-lo na criação de sua primeira máquina com o assistente de configuração e no estabelecimento de uma conexão.
 
-## Passo 1: Iniciar o Rayforge
+## Etapa 1: Iniciar o Rayforge
 
 Inicie o Rayforge a partir do menu de aplicativos ou executando `rayforge` em um terminal. Você verá a interface principal com uma tela vazia.
 
-## Passo 2: Criar uma Máquina
+## Etapa 2: Criar uma Máquina com o Assistente
 
 Navegue até **Configurações → Máquinas** ou pressione <kbd>ctrl+comma</kbd> para abrir o diálogo de configurações, depois selecione a página **Máquinas**.
 
 ![Configurações da Máquina](/screenshots/application-machines.png)
 
-Clique em **Adicionar Máquina** para criar uma nova máquina. Selecione um perfil de dispositivo da lista para usar como modelo — cada perfil pré-configura as definições da máquina e o dialeto de G-code.
+Clique em **Add Machine** para abrir o seletor de máquinas.
 
 ![Adicionar Máquina](/screenshots/app-settings-machines-add.png)
 
-Se o seu dispositivo estiver conectado e ligado, você pode clicar em **Other Device…**
-para usar o [Assistente de Configuração](../machine/config-wizard.md), que detecta
-e configura automaticamente sua máquina.
+O assistente de configuração abre e adapta quais etapas ele mostra de acordo com suas escolhas:
 
-Se você tem um perfil de dispositivo LightBurn (.lbdev) com calibração
-de câmera e configurações do dispositivo, clique em **Import from File…**
-e selecione o arquivo .lbdev. A calibração de câmera e as configurações
-do laser da sua configuração LightBurn serão aplicadas à nova máquina.
+- Escolher um **perfil integrado** pré-preenche o controlador, a área de
+  trabalho e a cabeça — o assistente pula direto para as etapas de rotativo,
+  câmera e revisão
+- **Importar um perfil** mantém as etapas de hardware e cabeça para que você
+  possa corrigir o que a importação errou
+- **Device Not Listed** orienta você em todas as etapas, incluindo o
+  controlador e a consulta de especificações por IA
 
-Após selecionar, o diálogo de Configurações da Máquina abre para sua nova máquina.
+### Escolher um Ponto de Partida
 
-## Passo 3: Configurar Definições Gerais
+Escolha um perfil de dispositivo integrado para pré-preencher o controlador,
+a área de trabalho e as configurações de cabeça, ou clique em
+**Device Not Listed** para configurar tudo manualmente. Você também pode
+**Import from File…** um perfil exportado anteriormente ou um perfil de
+dispositivo LightBurn (.lbdev) com calibração de câmera e configurações de
+laser.
 
-A página **Geral** contém informações básicas da máquina, seleção de driver e configurações de conexão.
+![Assistente — Escolher um Ponto de Partida](/screenshots/app-settings-machines-wizard-profile.png)
 
-![Configurações Gerais](/screenshots/machine-general.png)
+### Escolher um Controlador
 
-### Informações da Máquina
+Escolha a família de firmware ou protocolo que corresponde à placa
+controladora da sua máquina (GRBL, Marlin, Smoothie, Ruida, OctoPrint, …).
+Escolha **None — G-code export only** se você quiser apenas exportar G-code
+para arquivos e nunca operar uma máquina física. Esta etapa é pulada quando
+você começa a partir de um perfil integrado ou de uma importação.
 
-1. **Nome da Máquina**: Dê à sua máquina um nome descritivo (ex: "K40 Laser", "Ortur LM2")
+![Assistente — Escolher um Controlador](/screenshots/app-settings-machines-wizard-controller.png)
 
-### Seleção de Driver
+### Conexão
 
-Selecione o driver apropriado para seu dispositivo no menu suspenso:
+Insira os parâmetros de conexão que sua máquina exige. Os campos exatos
+dependem do controlador que você escolheu:
 
-- **GRBL (Serial)** - Para dispositivos GRBL conectados via porta USB/serial
-- **GRBL (Network)** - Para dispositivos GRBL com conectividade WiFi/Ethernet
-- **Smoothie** - Para dispositivos baseados em Smoothieware
+- **Drivers seriais** — caminho do dispositivo USB (ex.: `/dev/ttyUSB0` no
+  Linux, `COM3` no Windows) e taxa de transmissão
+- **Drivers de rede** — endereço do host e porta (ex.: `192.168.1.100`)
+- **OctoPrint** — URL do servidor e chave de API
 
-### Configurações do Driver
+![Assistente — Conexão](/screenshots/app-settings-machines-wizard-connect.png)
 
-Dependendo do driver selecionado, configure os parâmetros de conexão:
+### Descobrir o Dispositivo
 
-#### GRBL (Serial) - USB
+Quando seu controlador suporta, o assistente oferece conectar-se ao
+dispositivo e ler sua configuração automaticamente — área de trabalho,
+velocidades, aceleração e recursos do firmware. Clique em **Probe Now** para
+detectar automaticamente esses valores, ou use **Next** para inseri-los
+manualmente nas etapas seguintes.
 
-1. **Porta**: Escolha seu dispositivo no menu suspenso (ex: `/dev/ttyUSB0` no Linux, `COM3` no Windows)
-2. **Taxa de Transmissão**: Selecione `115200` (padrão para a maioria dos dispositivos GRBL)
+![Assistente — Descobrir o Dispositivo](/screenshots/app-settings-machines-wizard-probe.png)
 
-:::info
-Se seu dispositivo não aparecer na lista, verifique se está conectado e se você tem as permissões necessárias. No Linux, você pode precisar adicionar seu usuário ao grupo `dialout`.
-:::
+### Provedor de IA
 
-#### GRBL (Network) / Smoothie - WiFi/Ethernet
+Mostrado somente quando nenhum provedor de IA está configurado ainda. Insira
+um endpoint compatível com OpenAI (URL base e chave de API) para que a próxima
+etapa possa consultar as especificações de máquinas comerciais conhecidas.
+Pule esta etapa para inserir os valores manualmente.
 
-1. **Host**: Digite o endereço IP do seu dispositivo (ex: `192.168.1.100`)
-2. **Porta**: Digite o número da porta (tipicamente `23` ou `8080`)
+![Assistente — Provedor de IA](/screenshots/app-settings-machines-wizard-ai-provider.png)
 
-### Velocidades e Aceleração
+### Consulta de Especificações por IA
 
-Estas configurações são usadas para estimativa de tempo de trabalho e otimização de caminho:
+Se sua máquina é um modelo comercial conhecido, a IA pode pré-preencher suas
+especificações a partir da documentação do fabricante. Insira o fabricante e
+o modelo e clique em **Look Up Specs**. Os valores sugeridos aparecem como
+linhas de alternância e começam aceitos — desative qualquer coisa que você
+não queira aplicar.
 
-- **Velocidade Máxima de Deslocamento**: Velocidade máxima de movimento rápido
-- **Velocidade Máxima de Corte**: Velocidade máxima de corte
-- **Aceleração**: Usada para estimativas de tempo e cálculos de overscan
+![Assistente — Consulta de Especificações por IA](/screenshots/app-settings-machines-wizard-ai-lookup.png)
 
-## Passo 4: Configurar Definições de Hardware
+### Hardware
 
-Mude para a aba **Hardware** para configurar as dimensões físicas da sua máquina.
+Configure a configuração física da máquina:
 
-![Configurações de Hardware](/screenshots/machine-hardware.png)
+- **Eixos** — extensões X/Y da área de trabalho e o canto da origem das
+  coordenadas (0,0)
+- **Direção do eixo** — inverta um eixo se as coordenadas saírem negativas
+- **Área de Trabalho** — margens ao redor do espaço inutilizável da
+  superfície de trabalho
+- **Limites de Software** — limites de segurança opcionais para jog
+- **Velocidades** — velocidade máxima de deslocamento, velocidade máxima de
+  corte e aceleração
+- **Comportamento** — origem (home) na inicialização e homing de eixo único
 
-### Dimensões
+![Assistente — Hardware](/screenshots/app-settings-machines-wizard-hardware.png)
 
-- **Largura**: Digite a largura máxima da sua área de trabalho em milímetros
-- **Altura**: Digite a altura máxima da sua área de trabalho em milímetros
+### Cabeça
 
-### Eixos
+Declare o que está acoplado ao pórtico — uma cabeça de laser ou de spindle —
+e defina seus parâmetros. Para um laser: potência máxima (valor S), tamanho
+do ponto, frequência PWM e distância focal. Para um spindle: RPM máximo e
+mínimo.
 
-- **Origem das Coordenadas (0,0)**: Selecione onde a origem da sua máquina está localizada:
-  - Inferior Esquerdo (mais comum para GRBL)
-  - Superior Esquerdo
-  - Superior Direito
-  - Inferior Direito
+![Assistente — Cabeça](/screenshots/app-settings-machines-wizard-head.png)
 
-### Deslocamentos dos Eixos (Opcional)
+### Módulo Rotativo
 
-Configure deslocamentos X e Y se sua máquina precisar deles para posicionamento preciso.
+Opcionalmente, configure um acessório rotativo: tipo (mandril ou rolos),
+eixo (A/B/C), modo (4º eixo verdadeiro vs. substituição de eixo), geometria
+e sinalizador de direção reversa. Pule esta etapa para adicionar um módulo
+rotativo mais tarde nas configurações da máquina.
 
-## Passo 5: Conexão Automática
+![Assistente — Módulo Rotativo](/screenshots/app-settings-machines-wizard-rotary.png)
 
-O Rayforge conecta-se automaticamente à sua máquina quando o aplicativo inicia (se a máquina estiver ligada e conectada). Você não precisa clicar manualmente em um botão de conectar.
+### Câmeras
 
-O status da conexão é exibido no canto inferior esquerdo da janela principal com um ícone de status e rótulo mostrando o estado atual (Conectado, Conectando, Desconectado, Erro, etc.).
+Opcionalmente, habilite qualquer câmera que você queira usar para
+visualização e alinhamento. Quando você habilita uma câmera e continua, o
+[Assistente de Câmera](../machine/camera.md#etapa-2-assistente-de-câmera)
+abre para orientá-lo nas configurações de imagem, calibração de lente e
+alinhamento de imagem. Você pode pular isso e configurar câmeras mais tarde
+nas configurações de câmera da máquina.
+
+![Assistente — Câmeras](/screenshots/app-settings-machines-wizard-camera.png)
+
+### Revisar e Nomear
+
+Dê um nome à máquina e revise um resumo de tudo o que você configurou —
+driver, conexão, área de trabalho, velocidades, cabeças, módulos rotativos e
+câmeras. O assistente também exibe quaisquer avisos, como um driver ausente
+ou uma área de trabalho não definida.
+
+![Assistente — Revisar e Nomear](/screenshots/app-settings-machines-wizard-review.png)
+
+Clique em **Create Machine** para finalizar. O diálogo de Configurações da
+Máquina abre para sua nova máquina, onde você pode ajustar qualquer uma das
+definições pré-preenchidas pelo assistente. Veja as páginas de
+[Configuração da Máquina](../machine/general.md) para detalhes.
+
+## Etapa 3: Conexão Automática
+
+O Rayforge conecta-se automaticamente à sua máquina quando o aplicativo
+inicia (se a máquina estiver ligada e conectada). Você não precisa clicar
+manualmente em um botão de conectar.
+
+O status da conexão é exibido no canto inferior esquerdo da janela principal
+com um ícone de status e rótulo mostrando o estado atual (Conectado,
+Conectando, Desconectado, Erro, etc.).
 
 :::success Conectado!
 Se sua máquina mostrar status "Conectado", você está pronto para começar a usar o Rayforge!
-:::
-
-## Opcional: Configuração Avançada
-
-### Múltiplos Lasers
-
-Se sua máquina tem múltiplos módulos de laser (ex: diodo e CO2), você pode configurá-los na página **Laser**.
-
-![Configurações do Laser](/screenshots/machine-laser.png)
-
-Veja [Configuração do Laser](../machine/laser.md) para detalhes.
-
-### Configuração de Câmera
-
-Se você tem uma câmera USB para alinhamento e posicionamento, configure-a na página **Câmera**.
-
-![Configurações da Câmera](/screenshots/machine-camera.png)
-
-Veja [Integração com Câmera](../machine/camera.md) para detalhes.
-
-### Configurações do Dispositivo
-
-A página **Dispositivo** permite ler e modificar configurações de firmware diretamente no seu dispositivo conectado (como parâmetros GRBL). Este é um recurso avançado e deve ser usado com cautela.
-
-:::warning
-Editar configurações do dispositivo pode ser perigoso e pode tornar sua máquina inoperante se valores incorretos forem aplicados!
 :::
 
 ---
