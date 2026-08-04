@@ -116,6 +116,13 @@ giving you the flexibility to restore the original size if needed.
 
 SVG (Scalable Vector Graphics) is the **recommended format** for vector designs.
 
+:::tip Automate Step Assignment
+You can configure [color rules](../application-settings/color-rules.md)
+to automatically assign step types (Contour, Engrave, etc.) based on the
+colors in your SVG. When rules exist, the import dialog defaults to
+grouping shapes by color so the rules take effect.
+:::
+
 ### Import Options in the Dialog
 
 When importing SVG, the import dialog provides a toggle switch to choose between
@@ -433,5 +440,6 @@ before importing.
 ## Related Pages
 
 - [Supported Formats](formats) - Detailed format specifications
+- [Color Rules](../application-settings/color-rules.md) - Automate step types from SVG colors
 - [Exporting G-code](exporting) - Output options
 - [Quick Start](../getting-started/quick-start.md) - First import tutorial

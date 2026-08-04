@@ -102,3 +102,4 @@ Le nom de la recette actuellement appliquée est affiché dans la ligne. Les ét
 - [Gestion du Matériau](../features/stock-handling.md) - Travailler avec les matériaux de stock
 - [Configuration Machine](../machine/general.md) - Configurer les machines et têtes laser
 - [Aperçu des Opérations](../features/operations/contour.md) - Comprendre les différents types d'opérations
+- [Règles de couleur](color-rules) - Faire correspondre les couleurs SVG aux types d'étape à l'importation

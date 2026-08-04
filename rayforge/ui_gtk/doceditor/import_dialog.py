@@ -362,12 +362,17 @@ class ImportDialog(PatchedDialogWindow):
             self._populate_layers_ui()
             # Default to color grouping when the file has distinct colors
             # but no useful layer structure (no layers, or a single generic
-            # layer wrapping everything).
+            # layer wrapping everything). Also default to it when the user
+            # has defined color rules, since those only take effect with a
+            # color source.
             if (
                 self._manifest
                 and self._manifest.color_layers
-                and len(self._manifest.layers) <= 1
                 and self.layer_source_row.get_selected() == 0
+                and (
+                    len(self._manifest.layers) <= 1
+                    or self._color_rules_exist()
+                )
             ):
                 self._in_update = True
                 try:
@@ -389,6 +394,14 @@ class ImportDialog(PatchedDialogWindow):
     def _on_layer_source_changed(self, combo, *args):
         self._populate_layers_ui()
         self._schedule_preview_update()
+
+    @staticmethod
+    def _color_rules_exist() -> bool:
+        """Returns True if the user has defined any color rules."""
+        try:
+            return bool(get_context().color_preset_mgr.all_presets())
+        except Exception:
+            return False
 
     def _get_layer_source(self) -> LayerSource:
         idx = self.layer_source_row.get_selected()

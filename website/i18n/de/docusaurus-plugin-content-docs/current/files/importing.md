@@ -116,6 +116,13 @@ während du die Flexibilität hast, die Originalgröße bei Bedarf wiederherzust
 
 SVG (Scalable Vector Graphics) ist das **empfohlene Format** für Vektor-Designs.
 
+:::tip Schrittzuweisung automatisieren
+Du kannst [Farbregeln](../application-settings/color-rules.md) konfigurieren,
+um Schritttypen (Kontur, Gravur usw.) automatisch basierend auf den Farben in
+deinem SVG zuzuweisen. Wenn Regeln existieren, standardmäßig der Import-Dialog
+Formen nach Farbe gruppiert, damit die Regeln greifen.
+:::
+
 ### Importoptionen im Dialog
 
 Beim Importieren von SVG bietet der Import-Dialog einen Umschalter, um zwischen zwei
@@ -439,3 +446,5 @@ du das Tracing vor dem Importieren feinabstimmen kannst.
 - [Unterstützte Formate](formats) - Detaillierte Formatspezifikationen
 - [G-Code exportieren](exporting) - Ausgabeoptionen
 - [Schnellstart](../getting-started/quick-start.md) - Erstes Import-Tutorial
+- [Farbregeln](../application-settings/color-rules.md) - SVG-Farben
+  Schritttypen beim Import zuordnen

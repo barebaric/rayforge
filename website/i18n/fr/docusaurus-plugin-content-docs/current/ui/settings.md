@@ -60,6 +60,8 @@ d'autres parties de l'application. Chacune possède sa propre documentation :
   de matériaux
 - [Recettes](../application-settings/recipes.md) — gérer les recettes
   d'opérations enregistrées
+- [Règles de couleur](../application-settings/color-rules.md) — faire
+  correspondre les couleurs SVG aux types d'étape
 - [Fournisseurs IA](../application-settings/ai-provider.md) — configurer les
   fournisseurs IA pour les addons
 - [Addons](../application-settings/addons.md) — installer, mettre à jour et

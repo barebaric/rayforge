@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from rayforge.core.color import ColorSet
+from rayforge.core.color import ColorSet, normalize_color
 
 
 class TestColorSetGetLut:
@@ -157,3 +157,32 @@ class TestColorSetImmutability:
 
         with pytest.raises(Exception):
             setattr(colorset, "_data", {})
+
+
+class TestNormalizeColor:
+    def test_lowercase_hex(self):
+        assert normalize_color("#e34c4c") == "#e34c4c"
+
+    def test_uppercase_hex(self):
+        assert normalize_color("#E34C4C") == "#e34c4c"
+
+    def test_short_hex(self):
+        assert normalize_color("#f00") == "#ff0000"
+
+    def test_css_color_name(self):
+        assert normalize_color("red") == "#ff0000"
+
+    def test_rgb_string(self):
+        assert normalize_color("rgb(227, 76, 76)") == "#e34c4c"
+
+    def test_eight_digit_hex_drops_alpha(self):
+        assert normalize_color("#e34c4cff") == "#e34c4c"
+
+    def test_whitespace(self):
+        assert normalize_color("  #E34C4C  ") == "#e34c4c"
+
+    def test_invalid_returns_none(self):
+        assert normalize_color("") is None
+        assert normalize_color(None) is None
+        assert normalize_color("not-a-color") is None
+        assert normalize_color("   ") is None

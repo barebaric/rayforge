@@ -136,6 +136,7 @@ pasos sin una receta aplicada están etiquetados como "Ajustes Manuales".
 **Temas Relacionados**:
 
 - [Materiales](materials) - Gestionando propiedades de materiales
+- [Reglas de color](color-rules) - Asigna los colores SVG a tipos de paso al importar
 - [Manejo de Stock](../features/stock-handling.md) - Trabajando con materiales en stock
 - [Configuración de Máquina](../machine/general.md) - Configurando máquinas y cabezales láser
 - [Resumen de Operaciones](../features/operations/contour.md) - Entendiendo diferentes tipos de operaciones

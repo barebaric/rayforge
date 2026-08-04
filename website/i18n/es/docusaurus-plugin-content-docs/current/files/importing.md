@@ -119,6 +119,13 @@ máquina, dándote la flexibilidad de restaurar el tamaño original si es necesa
 SVG (Scalable Vector Graphics) es el **formato recomendado** para diseños
 vectoriales.
 
+:::tip Automatizar la asignación de pasos
+Puedes configurar [Reglas de color](../application-settings/color-rules.md)
+para asignar automáticamente tipos de paso (Contorno, Grabado, etc.) según los
+colores de tu SVG. Cuando existen reglas, el diálogo de importación agrupa las
+formas por color por defecto para que las reglas surtan efecto.
+:::
+
 ### Opciones de importación en el diálogo
 
 Al importar SVG, el diálogo de importación proporciona un interruptor para
@@ -451,3 +458,5 @@ estos parámetros, permitiéndote afinar el trazado antes de importar.
 - [Formatos admitidos](formats) - Especificaciones detalladas de formatos
 - [Exportar G-code](exporting) - Opciones de salida
 - [Inicio rápido](../getting-started/quick-start.md) - Tutorial de primera importación
+- [Reglas de color](../application-settings/color-rules.md) - Asigna los
+  colores SVG a tipos de paso al importar

@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
+from ..core.color_preset import get_color_preset_mgr
 from ..core.step_registry import step_registry
 from ..core.undo import ChangePropertyCommand, DictItemCommand
+from ..core.vectorization_spec import LayerSource, PassthroughSpec
 
 if TYPE_CHECKING:
     from ..core.step import Step
@@ -143,6 +145,11 @@ class StepCmd:
         Adds default steps to newly imported layers.
 
         For each layer:
+        - If it was imported from a color source whose color matches a
+          color rule, a step of the rule's step type is created. If that
+          step type is not registered (e.g. its addon was uninstalled),
+          it falls back to the default behavior below and logs a
+          warning.
         - If workpieces have fills: add Contour + Engrave steps
         - If workpieces have only unfilled vectors: add Contour only
         """
@@ -152,6 +159,17 @@ class StepCmd:
         for layer in layers:
             workflow = layer.workflow
             if not workflow or workflow.has_steps():
+                continue
+
+            rule_cls = self._step_class_from_color_rule(layer)
+            if rule_cls is not None:
+                step = rule_cls.create(self._context)
+                self.apply_best_recipe_to_step(step)
+                workflow.add_step(step)
+                logger.info(
+                    f"Added default '{step.typelabel}' step to "
+                    f"layer '{layer.name}' (color rule)."
+                )
                 continue
 
             if contour_cls:
@@ -171,3 +189,47 @@ class StepCmd:
                     f"Added default '{step.typelabel}' step to "
                     f"layer '{layer.name}' (has fills)."
                 )
+
+    def _step_class_from_color_rule(self, layer) -> Optional[Type["Step"]]:
+        """
+        Resolve the step class a color rule maps to for a layer.
+
+        Inspects each workpiece's source segment: for color-source
+        imports the segment's ``layer_id`` is the resolved SVG color, so
+        the rule applies regardless of whether the workpiece was placed
+        on a fresh layer (which carries the color) or an existing one
+        (which does not). Returns the step class of the first matching
+        rule, or ``None`` when no rule applies. If a rule matches but
+        its step type is no longer registered, a warning is logged and
+        ``None`` is returned so the caller falls back to the default
+        behavior.
+        """
+        for workpiece in layer.all_workpieces:
+            segment = workpiece.source_segment
+            if segment is None:
+                continue
+            spec = segment.vectorization_spec
+            if not (
+                isinstance(spec, PassthroughSpec)
+                and spec.layer_source == LayerSource.COLORS
+            ):
+                continue
+            color = segment.layer_id
+            if not color:
+                continue
+            preset = get_color_preset_mgr().get_preset(color)
+            if preset is None:
+                logger.debug(
+                    f"No color rule for layer '{layer.name}' (color {color})."
+                )
+                continue
+            cls = step_registry.get(preset.step_type)
+            if cls is None:
+                logger.warning(
+                    f"Step type '{preset.step_type}' from a color rule "
+                    f"is not registered; falling back to default steps "
+                    f"for layer '{layer.name}'."
+                )
+                return None
+            return cls
+        return None
