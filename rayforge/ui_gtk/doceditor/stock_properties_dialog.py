@@ -7,7 +7,7 @@ from gi.repository import Adw, GLib, Gtk
 from ...context import get_context
 from ...core.stock import StockItem
 from ..shared.patched_dialog_window import PatchedDialogWindow
-from ..shared.unit_spin_row import UnitSelectorSpinRow
+from ..shared.unit_spin_row import LengthSpinRow
 from .material_selector import MaterialSelectorDialog
 
 if TYPE_CHECKING:
@@ -72,19 +72,19 @@ class StockPropertiesDialog(PatchedDialogWindow):
         self.name_row.connect("changed", self.on_name_changed)
         properties_group.add(self.name_row)
 
-        # Thickness field using UnitSelectorSpinRow
-        self.thickness_selector = UnitSelectorSpinRow(
-            quantity="length",
-            title=_("Thickness"),
-            subtitle_format=_("Material thickness ({unit})"),
+        # Thickness field
+        self.thickness_row = LengthSpinRow(
+            _("Thickness"),
+            _("Material thickness"),
+            upper=999,
             max_value_in_base=999,
         )
         if self.stock_item.thickness is not None:
-            self.thickness_selector.set_value_in_base_units(
+            self.thickness_row.set_value_in_base_units(
                 self.stock_item.thickness
             )
-        self.thickness_selector.changed.connect(self.on_thickness_changed)
-        properties_group.add(self.thickness_selector.row)
+        self.thickness_row.value_changed.connect(self.on_thickness_changed)
+        properties_group.add(self.thickness_row)
 
         # Material display row
         self.material_row = Adw.ActionRow()
@@ -141,9 +141,9 @@ class StockPropertiesDialog(PatchedDialogWindow):
         if new_name and new_name != self.stock_item.name:
             self._debounce(self._apply_name_change, new_name)
 
-    def on_thickness_changed(self, selector: UnitSelectorSpinRow):
-        """Handle thickness selector changes with instant apply."""
-        new_thickness = selector.get_value_in_base_units()
+    def on_thickness_changed(self, row: LengthSpinRow):
+        """Handle thickness changes with instant apply."""
+        new_thickness = row.get_value_in_base_units()
         if new_thickness != self.stock_item.thickness:
             self._debounce(self._apply_thickness_change, new_thickness)
 
@@ -173,7 +173,7 @@ class StockPropertiesDialog(PatchedDialogWindow):
 
         # Update the thickness field if it has changed
         if self.stock_item.thickness is not None:
-            self.thickness_selector.set_value_in_base_units(
+            self.thickness_row.set_value_in_base_units(
                 self.stock_item.thickness
             )
 

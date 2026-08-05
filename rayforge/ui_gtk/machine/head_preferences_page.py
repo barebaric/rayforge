@@ -13,11 +13,15 @@ from ...machine.models.machine import Machine
 from ...machine.models.spindle import SpindleHead
 from ...shared.util.glib import DebounceMixin
 from ..icons import get_icon
-from ..shared.adwfix import get_spinrow_float, get_spinrow_int
 from ..shared.model_selection_dialog import ModelSelectionDialog
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
-from ..shared.unit_spin_row import UnitSpinRowHelper
+from ..shared.unit_spin_row import (
+    AngleSpinRow,
+    LengthSpinRow,
+    SpeedSpinRow,
+    SpinRow,
+)
 from ..sim3d.renderer.model_renderer import get_model_extent
 
 
@@ -264,7 +268,6 @@ class HeadModelGroup(Adw.PreferencesGroup):
             description=_("Select and configure a 3D model for this head."),
         )
         self._head: Optional[Head] = None
-        self._handler_ids = {}
         self._setup_ui()
 
     def _setup_ui(self):
@@ -277,56 +280,35 @@ class HeadModelGroup(Adw.PreferencesGroup):
         self.model_row.add_suffix(get_icon("go-next-symbolic"))
         self.add(self.model_row)
 
-        self.scale_row = Adw.SpinRow(
-            title=_("Scale"),
-            subtitle=_("Uniform scale factor for the model"),
-            adjustment=Gtk.Adjustment(
-                lower=0.01, upper=1000, step_increment=1, page_increment=10
-            ),
+        self.scale_row = SpinRow(
+            _("Scale"),
+            _("Uniform scale factor for the model"),
+            lower=0.01,
+            upper=1000,
             digits=2,
         )
-        self._handler_ids["scale"] = self.scale_row.connect(
-            "notify::value", self._on_scale_changed
-        )
+        self.scale_row.value_changed.connect(self._on_scale_changed)
         self.add(self.scale_row)
 
-        self.rx_row = Adw.SpinRow(
-            title=_("X Rotation"),
-            subtitle=_("Degrees around the X axis"),
-            adjustment=Gtk.Adjustment(
-                lower=-360, upper=360, step_increment=1, page_increment=15
-            ),
-            digits=1,
+        self.rx_row = AngleSpinRow(
+            _("X Rotation"),
+            _("Degrees around the X axis"),
         )
-        self._handler_ids["rx"] = self.rx_row.connect(
-            "notify::value", self._on_rotation_changed
-        )
+        self.rx_row.value_changed.connect(self._on_rotation_changed)
         self.add(self.rx_row)
 
-        self.ry_row = Adw.SpinRow(
-            title=_("Y Rotation"),
-            subtitle=_("Degrees around the Y axis"),
-            adjustment=Gtk.Adjustment(
-                lower=-360, upper=360, step_increment=1, page_increment=15
-            ),
-            digits=1,
+        self.ry_row = AngleSpinRow(
+            _("Y Rotation"),
+            _("Degrees around the Y axis"),
         )
-        self._handler_ids["ry"] = self.ry_row.connect(
-            "notify::value", self._on_rotation_changed
-        )
+        self.ry_row.value_changed.connect(self._on_rotation_changed)
         self.add(self.ry_row)
 
-        self.rz_row = Adw.SpinRow(
-            title=_("Z Rotation"),
-            subtitle=_("Degrees around the Z axis"),
-            adjustment=Gtk.Adjustment(
-                lower=-360, upper=360, step_increment=1, page_increment=15
-            ),
-            digits=1,
+        self.rz_row = AngleSpinRow(
+            _("Z Rotation"),
+            _("Degrees around the Z axis"),
         )
-        self._handler_ids["rz"] = self.rz_row.connect(
-            "notify::value", self._on_rotation_changed
-        )
+        self.rz_row.value_changed.connect(self._on_rotation_changed)
         self.add(self.rz_row)
 
     def set_head(self, head: Optional[Head]):
@@ -334,20 +316,12 @@ class HeadModelGroup(Adw.PreferencesGroup):
         self._head = head
         if head is None:
             return
-        self.scale_row.handler_block(self._handler_ids["scale"])
-        self.rx_row.handler_block(self._handler_ids["rx"])
-        self.ry_row.handler_block(self._handler_ids["ry"])
-        self.rz_row.handler_block(self._handler_ids["rz"])
         self.scale_row.set_value(head.get_scale())
         rx, ry, rz = head.get_rotation()
         self.rx_row.set_value(rx)
         self.ry_row.set_value(ry)
         self.rz_row.set_value(rz)
         self._update_model_subtitle(head)
-        self.scale_row.handler_unblock(self._handler_ids["scale"])
-        self.rx_row.handler_unblock(self._handler_ids["rx"])
-        self.ry_row.handler_unblock(self._handler_ids["ry"])
-        self.rz_row.handler_unblock(self._handler_ids["rz"])
 
     def _update_model_subtitle(self, head: Head):
         if head.model_path:
@@ -396,16 +370,16 @@ class HeadModelGroup(Adw.PreferencesGroup):
             head.set_scale(40.0 / extent)
             self.scale_row.set_value(head.get_scale())
 
-    def _on_scale_changed(self, _spinrow, _param):
+    def _on_scale_changed(self, _spinrow):
         if self._head:
-            self._head.set_scale(get_spinrow_float(self.scale_row))
+            self._head.set_scale(self.scale_row.get_value())
 
-    def _on_rotation_changed(self, _spinrow, _param):
+    def _on_rotation_changed(self, _spinrow):
         if not self._head:
             return
-        rx = get_spinrow_float(self.rx_row)
-        ry = get_spinrow_float(self.ry_row)
-        rz = get_spinrow_float(self.rz_row)
+        rx = self.rx_row.get_value()
+        ry = self.ry_row.get_value()
+        rz = self.rz_row.get_value()
         self._head.set_rotation(rx, ry, rz)
 
 
@@ -457,17 +431,16 @@ class LaserHeadDetailWidget(DebounceMixin):
         )
         self.properties_group.add(self.name_row)
 
-        tool_number_adjustment = Gtk.Adjustment(
-            lower=-32768, upper=65535, step_increment=1, page_increment=1
+        self.tool_number_row = SpinRow(
+            _("Tool Number"),
+            _("G-code tool number (e.g., T0, T1)"),
+            lower=-32768,
+            upper=65535,
+            page_increment=1,
+            value=0,
         )
-        self.tool_number_row = Adw.SpinRow(
-            title=_("Tool Number"),
-            subtitle=_("G-code tool number (e.g., T0, T1)"),
-            adjustment=tool_number_adjustment,
-        )
-        tool_number_adjustment.set_value(0)
-        self._handler_ids["tool_number"] = self.tool_number_row.connect(
-            "changed", self._on_tool_number_changed
+        self.tool_number_row.value_changed.connect(
+            self._on_tool_number_changed
         )
         self.properties_group.add(self.tool_number_row)
 
@@ -485,71 +458,52 @@ class LaserHeadDetailWidget(DebounceMixin):
         )
         self.properties_group.add(self.laser_type_row)
 
-        max_power_adjustment = Gtk.Adjustment(
-            lower=0, upper=100000, step_increment=1, page_increment=10
+        self.max_power_row = SpinRow(
+            _("Max Power"),
+            _("Maximum power value in GCode"),
+            upper=100000,
+            value=0,
         )
-        self.max_power_row = Adw.SpinRow(
-            title=_("Max Power"),
-            subtitle=_("Maximum power value in GCode"),
-            adjustment=max_power_adjustment,
-        )
-        max_power_adjustment.set_value(0)
-        self._handler_ids["max_power"] = self.max_power_row.connect(
-            "changed", self._on_max_power_changed
-        )
+        self.max_power_row.value_changed.connect(self._on_max_power_changed)
         self.properties_group.add(self.max_power_row)
 
-        focus_power_adjustment = Gtk.Adjustment(
-            lower=0, upper=100, step_increment=0.1, page_increment=1
-        )
-        self.focus_power_row = Adw.SpinRow(
-            title=_("Focus Power"),
-            subtitle=_(
-                "Power value in percent to use when focusing. 0 to disable"
-            ),
-            adjustment=focus_power_adjustment,
+        self.focus_power_row = SpinRow(
+            _("Focus Power"),
+            _("Power value in percent to use when focusing. 0 to disable"),
+            upper=100,
+            step_increment=0.1,
             digits=2,
+            value=0,
         )
-        focus_power_adjustment.set_value(0)
-        self._handler_ids["focus_power"] = self.focus_power_row.connect(
-            "changed", self._on_focus_power_changed
+        self.focus_power_row.value_changed.connect(
+            self._on_focus_power_changed
         )
         self.properties_group.add(self.focus_power_row)
 
-        spot_size_x_adjustment = Gtk.Adjustment(
+        self.spot_size_x_row = LengthSpinRow(
+            _("Spot Size X"),
+            _("Size of the laser spot in the X direction"),
             lower=0.01,
             upper=10.0,
             step_increment=0.01,
             page_increment=0.05,
+            max_value_in_base=10.0,
+            value_in_base=0.1,
         )
-        self.spot_size_x_row = Adw.SpinRow(
-            title=_("Spot Size X"),
-            subtitle=_("Size of the laser spot in the X direction"),
-            digits=3,
-            adjustment=spot_size_x_adjustment,
-        )
-        spot_size_x_adjustment.set_value(0.1)
-        self._handler_ids["spot_x"] = self.spot_size_x_row.connect(
-            "changed", self._on_spot_size_changed
-        )
+        self.spot_size_x_row.value_changed.connect(self._on_spot_size_changed)
         self.properties_group.add(self.spot_size_x_row)
 
-        spot_size_y_adjustment = Gtk.Adjustment(
+        self.spot_size_y_row = LengthSpinRow(
+            _("Spot Size Y"),
+            _("Size of the laser spot in the Y direction"),
             lower=0.01,
             upper=10.0,
             step_increment=0.01,
             page_increment=0.05,
+            max_value_in_base=10.0,
+            value_in_base=0.1,
         )
-        self.spot_size_y_row = Adw.SpinRow(
-            title=_("Spot Size Y"),
-            subtitle=_("Size of the laser spot in the Y direction"),
-            digits=3,
-            adjustment=spot_size_y_adjustment,
-        )
-        spot_size_y_adjustment.set_value(0.1)
-        self._handler_ids["spot_y"] = self.spot_size_y_row.connect(
-            "changed", self._on_spot_size_changed
-        )
+        self.spot_size_y_row.value_changed.connect(self._on_spot_size_changed)
         self.properties_group.add(self.spot_size_y_row)
 
         self.cut_color_button = Gtk.ColorButton()
@@ -578,166 +532,128 @@ class LaserHeadDetailWidget(DebounceMixin):
         )
         self.properties_group.add(self.raster_color_row)
 
-        focal_distance_adj = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=1, page_increment=10
+        self.focal_distance_row = LengthSpinRow(
+            _("Focal Distance"),
+            _("Distance from the laser head to the work surface (Z offset)"),
+            upper=10000,
+            max_value_in_base=10000.0,
+            value_in_base=0,
         )
-        self.focal_distance_row = Adw.SpinRow(
-            title=_("Focal Distance"),
-            subtitle=_(
-                "Distance from the laser head to the work surface (Z offset)"
-            ),
-            adjustment=focal_distance_adj,
-            digits=2,
-        )
-        focal_distance_adj.set_value(0)
-        self._handler_ids["focal_distance"] = self.focal_distance_row.connect(
-            "notify::value", self._on_focal_distance_changed
+        self.focal_distance_row.value_changed.connect(
+            self._on_focal_distance_changed
         )
         self.properties_group.add(self.focal_distance_row)
 
-        self.pwm_freq_adj = Gtk.Adjustment(
-            lower=1, upper=100000, step_increment=100, page_increment=1000
+        self.pwm_frequency_row = SpinRow(
+            _("PWM Frequency"),
+            _("Default PWM frequency in Hz"),
+            lower=1,
+            upper=100000,
+            step_increment=100,
         )
-        self.pwm_frequency_row = Adw.SpinRow(
-            title=_("PWM Frequency"),
-            subtitle=_("Default PWM frequency in Hz"),
-            adjustment=self.pwm_freq_adj,
-        )
-        self._handler_ids["pwm_frequency"] = self.pwm_frequency_row.connect(
-            "changed", self._on_pwm_frequency_changed
+        self.pwm_frequency_row.value_changed.connect(
+            self._on_pwm_frequency_changed
         )
         self.pwm_group.add(self.pwm_frequency_row)
 
-        self.max_pwm_freq_adj = Gtk.Adjustment(
-            lower=1, upper=100000, step_increment=100, page_increment=1000
+        self.max_pwm_frequency_row = SpinRow(
+            _("Max PWM Frequency"),
+            _("Maximum supported PWM frequency in Hz"),
+            lower=1,
+            upper=100000,
+            step_increment=100,
         )
-        self.max_pwm_frequency_row = Adw.SpinRow(
-            title=_("Max PWM Frequency"),
-            subtitle=_("Maximum supported PWM frequency in Hz"),
-            adjustment=self.max_pwm_freq_adj,
-        )
-        self._handler_ids["max_pwm_frequency"] = (
-            self.max_pwm_frequency_row.connect(
-                "changed", self._on_max_pwm_frequency_changed
-            )
+        self.max_pwm_frequency_row.value_changed.connect(
+            self._on_max_pwm_frequency_changed
         )
         self.pwm_group.add(self.max_pwm_frequency_row)
 
-        self.pulse_width_adj = Gtk.Adjustment(
-            lower=1, upper=100000, step_increment=1, page_increment=10
+        self.pulse_width_row = SpinRow(
+            _("Pulse Width"),
+            _("Default pulse width in µs"),
+            lower=1,
+            upper=100000,
         )
-        self.pulse_width_row = Adw.SpinRow(
-            title=_("Pulse Width"),
-            subtitle=_("Default pulse width in µs"),
-            adjustment=self.pulse_width_adj,
-        )
-        self._handler_ids["pulse_width"] = self.pulse_width_row.connect(
-            "changed", self._on_pulse_width_changed
+        self.pulse_width_row.value_changed.connect(
+            self._on_pulse_width_changed
         )
         self.pwm_group.add(self.pulse_width_row)
 
-        self.min_pulse_width_adj = Gtk.Adjustment(
-            lower=1, upper=100000, step_increment=1, page_increment=10
+        self.min_pulse_width_row = SpinRow(
+            _("Min Pulse Width"),
+            _("Minimum pulse width in µs"),
+            lower=1,
+            upper=100000,
         )
-        self.min_pulse_width_row = Adw.SpinRow(
-            title=_("Min Pulse Width"),
-            subtitle=_("Minimum pulse width in µs"),
-            adjustment=self.min_pulse_width_adj,
-        )
-        self._handler_ids["min_pulse_width"] = (
-            self.min_pulse_width_row.connect(
-                "changed", self._on_min_pulse_width_changed
-            )
+        self.min_pulse_width_row.value_changed.connect(
+            self._on_min_pulse_width_changed
         )
         self.pwm_group.add(self.min_pulse_width_row)
 
-        self.max_pulse_width_adj = Gtk.Adjustment(
-            lower=1, upper=100000, step_increment=1, page_increment=10
+        self.max_pulse_width_row = SpinRow(
+            _("Max Pulse Width"),
+            _("Maximum pulse width in µs"),
+            lower=1,
+            upper=100000,
         )
-        self.max_pulse_width_row = Adw.SpinRow(
-            title=_("Max Pulse Width"),
-            subtitle=_("Maximum pulse width in µs"),
-            adjustment=self.max_pulse_width_adj,
-        )
-        self._handler_ids["max_pulse_width"] = (
-            self.max_pulse_width_row.connect(
-                "changed", self._on_max_pulse_width_changed
-            )
+        self.max_pulse_width_row.value_changed.connect(
+            self._on_max_pulse_width_changed
         )
         self.pwm_group.add(self.max_pulse_width_row)
 
-        frame_power_adjustment = Gtk.Adjustment(
-            lower=0, upper=100, step_increment=0.1, page_increment=1
-        )
-        self.frame_power_row = Adw.SpinRow(
-            title=_("Frame Power"),
-            subtitle=_(
-                "Power value in percent to use when framing. 0 to disable"
-            ),
-            adjustment=frame_power_adjustment,
+        self.frame_power_row = SpinRow(
+            _("Frame Power"),
+            _("Power value in percent to use when framing. 0 to disable"),
+            upper=100,
+            step_increment=0.1,
             digits=2,
+            value=0,
         )
-        frame_power_adjustment.set_value(0)
-        self._handler_ids["frame_power"] = self.frame_power_row.connect(
-            "changed", self._on_frame_power_changed
+        self.frame_power_row.value_changed.connect(
+            self._on_frame_power_changed
         )
         self.frame_group.add(self.frame_power_row)
 
-        frame_speed_adjustment = Gtk.Adjustment(
-            lower=0,
-            upper=60000,
-            step_increment=10,
-            page_increment=100,
-        )
-        frame_speed_row = Adw.SpinRow(
-            title=_("Frame Speed"),
-            adjustment=frame_speed_adjustment,
-        )
-        self.frame_speed_helper = UnitSpinRowHelper(
-            spin_row=frame_speed_row,
-            quantity="speed",
-            subtitle_format=_(
+        self.frame_speed_row = SpeedSpinRow(
+            _("Frame Speed"),
+            _(
                 "Speed for frame outline. Leave at 0 to use "
-                "the machine's max travel speed ({unit})"
+                "the machine's max travel speed"
             ),
+            upper=60000,
+            digits=0,
         )
-        self.frame_speed_row = frame_speed_row
-        self._handler_ids["frame_speed"] = frame_speed_row.connect(
-            "changed", self._on_frame_speed_changed
+        self.frame_speed_row.value_changed.connect(
+            self._on_frame_speed_changed
         )
-        self.frame_group.add(frame_speed_row)
+        self.frame_group.add(self.frame_speed_row)
 
-        frame_repeat_adjustment = Gtk.Adjustment(
-            lower=1, upper=100, step_increment=1, page_increment=5
+        self.frame_repeat_row = SpinRow(
+            _("Repeat Count"),
+            _("Number of times to trace the frame outline"),
+            lower=1,
+            upper=100,
+            page_increment=5,
+            value=1,
         )
-        self.frame_repeat_row = Adw.SpinRow(
-            title=_("Repeat Count"),
-            subtitle=_("Number of times to trace the frame outline"),
-            adjustment=frame_repeat_adjustment,
-        )
-        frame_repeat_adjustment.set_value(1)
-        self._handler_ids["frame_repeat"] = self.frame_repeat_row.connect(
-            "changed", self._on_frame_repeat_changed
+        self.frame_repeat_row.value_changed.connect(
+            self._on_frame_repeat_changed
         )
         self.frame_group.add(self.frame_repeat_row)
 
-        frame_corner_pause_adjustment = Gtk.Adjustment(
-            lower=0, upper=10, step_increment=0.1, page_increment=1
-        )
-        self.frame_corner_pause_row = Adw.SpinRow(
-            title=_("Pause at Corners"),
-            subtitle=_(
+        self.frame_corner_pause_row = SpinRow(
+            _("Pause at Corners"),
+            _(
                 "Pause duration in seconds at each corner "
                 "of the frame outline. 0 to disable"
             ),
-            adjustment=frame_corner_pause_adjustment,
+            upper=10,
+            step_increment=0.1,
             digits=1,
+            value=0,
         )
-        frame_corner_pause_adjustment.set_value(0)
-        self._handler_ids["frame_corner_pause"] = (
-            self.frame_corner_pause_row.connect(
-                "changed", self._on_frame_corner_pause_changed
-            )
+        self.frame_corner_pause_row.value_changed.connect(
+            self._on_frame_corner_pause_changed
         )
         self.frame_group.add(self.frame_corner_pause_row)
 
@@ -754,37 +670,10 @@ class LaserHeadDetailWidget(DebounceMixin):
 
         # Block handlers to prevent feedback loop
         self.name_row.handler_block(self._handler_ids["name"])
-        self.tool_number_row.handler_block(self._handler_ids["tool_number"])
         self.laser_type_row.handler_block(self._handler_ids["laser_type"])
-        self.max_power_row.handler_block(self._handler_ids["max_power"])
-        self.focus_power_row.handler_block(self._handler_ids["focus_power"])
-        self.spot_size_x_row.handler_block(self._handler_ids["spot_x"])
-        self.spot_size_y_row.handler_block(self._handler_ids["spot_y"])
         self.cut_color_button.handler_block(self._handler_ids["cut_color"])
         self.raster_color_button.handler_block(
             self._handler_ids["raster_color"]
-        )
-        self.focal_distance_row.handler_block(
-            self._handler_ids["focal_distance"]
-        )
-        self.frame_power_row.handler_block(self._handler_ids["frame_power"])
-        self.frame_speed_row.handler_block(self._handler_ids["frame_speed"])
-        self.frame_repeat_row.handler_block(self._handler_ids["frame_repeat"])
-        self.frame_corner_pause_row.handler_block(
-            self._handler_ids["frame_corner_pause"]
-        )
-        self.pwm_frequency_row.handler_block(
-            self._handler_ids["pwm_frequency"]
-        )
-        self.max_pwm_frequency_row.handler_block(
-            self._handler_ids["max_pwm_frequency"]
-        )
-        self.pulse_width_row.handler_block(self._handler_ids["pulse_width"])
-        self.min_pulse_width_row.handler_block(
-            self._handler_ids["min_pulse_width"]
-        )
-        self.max_pulse_width_row.handler_block(
-            self._handler_ids["max_pulse_width"]
         )
 
         self.name_row.set_text(head.name)
@@ -792,13 +681,13 @@ class LaserHeadDetailWidget(DebounceMixin):
         self.max_power_row.set_value(head.max_power)
         self.focus_power_row.set_value(head.focus_power_percent * 100)
         spot_x, spot_y = head.spot_size_mm
-        self.spot_size_x_row.set_value(spot_x)
-        self.spot_size_y_row.set_value(spot_y)
+        self.spot_size_x_row.set_value_in_base_units(spot_x)
+        self.spot_size_y_row.set_value_in_base_units(spot_y)
         self._set_color_button(self.cut_color_button, head.cut_color)
         self._set_color_button(self.raster_color_button, head.raster_color)
-        self.focal_distance_row.set_value(head.focal_distance)
+        self.focal_distance_row.set_value_in_base_units(head.focal_distance)
         self.frame_power_row.set_value(head.frame_power_percent * 100)
-        self.frame_speed_helper.set_value_in_base_units(head.frame_speed)
+        self.frame_speed_row.set_value_in_base_units(head.frame_speed)
         self.frame_repeat_row.set_value(head.frame_repeat_count)
         self.frame_corner_pause_row.set_value(head.frame_corner_pause)
 
@@ -817,39 +706,10 @@ class LaserHeadDetailWidget(DebounceMixin):
 
         # Unblock handlers
         self.name_row.handler_unblock(self._handler_ids["name"])
-        self.tool_number_row.handler_unblock(self._handler_ids["tool_number"])
         self.laser_type_row.handler_unblock(self._handler_ids["laser_type"])
-        self.max_power_row.handler_unblock(self._handler_ids["max_power"])
-        self.focus_power_row.handler_unblock(self._handler_ids["focus_power"])
-        self.spot_size_x_row.handler_unblock(self._handler_ids["spot_x"])
-        self.spot_size_y_row.handler_unblock(self._handler_ids["spot_y"])
         self.cut_color_button.handler_unblock(self._handler_ids["cut_color"])
         self.raster_color_button.handler_unblock(
             self._handler_ids["raster_color"]
-        )
-        self.focal_distance_row.handler_unblock(
-            self._handler_ids["focal_distance"]
-        )
-        self.frame_power_row.handler_unblock(self._handler_ids["frame_power"])
-        self.frame_speed_row.handler_unblock(self._handler_ids["frame_speed"])
-        self.frame_repeat_row.handler_unblock(
-            self._handler_ids["frame_repeat"]
-        )
-        self.frame_corner_pause_row.handler_unblock(
-            self._handler_ids["frame_corner_pause"]
-        )
-        self.pwm_frequency_row.handler_unblock(
-            self._handler_ids["pwm_frequency"]
-        )
-        self.max_pwm_frequency_row.handler_unblock(
-            self._handler_ids["max_pwm_frequency"]
-        )
-        self.pulse_width_row.handler_unblock(self._handler_ids["pulse_width"])
-        self.min_pulse_width_row.handler_unblock(
-            self._handler_ids["min_pulse_width"]
-        )
-        self.max_pulse_width_row.handler_unblock(
-            self._handler_ids["max_pulse_width"]
         )
 
     def _on_name_changed(self, entry_row):
@@ -860,29 +720,29 @@ class LaserHeadDetailWidget(DebounceMixin):
     def _on_tool_number_changed(self, spinrow):
         """Update the tool number of the selected laser."""
         if self._head:
-            self._head.set_tool_number(get_spinrow_int(spinrow))
+            self._head.set_tool_number(spinrow.get_int_value())
 
     def _on_max_power_changed(self, spinrow):
         """Update the max power of the selected laser."""
         if self._head:
-            self._head.set_max_power(get_spinrow_int(spinrow))
+            self._head.set_max_power(spinrow.get_int_value())
 
     def _on_frame_power_changed(self, spinrow):
         """Update the frame power of the selected laser."""
         if self._head:
-            self._head.set_frame_power(get_spinrow_float(spinrow) / 100)
+            self._head.set_frame_power(spinrow.get_value() / 100)
 
     def _on_focus_power_changed(self, spinrow):
         """Update the focus power of the selected laser."""
         if self._head:
-            self._head.set_focus_power(get_spinrow_float(spinrow) / 100)
+            self._head.set_focus_power(spinrow.get_value() / 100)
 
     def _on_spot_size_changed(self, spinrow):
         """Update the spot size of the selected laser."""
         if not self._head:
             return
-        x = get_spinrow_float(self.spot_size_x_row)
-        y = get_spinrow_float(self.spot_size_y_row)
+        x = self.spot_size_x_row.get_value_in_base_units()
+        y = self.spot_size_y_row.get_value_in_base_units()
         self._head.set_spot_size(x, y)
 
     def _set_color_button(self, button: Gtk.ColorButton, hex_color: str):
@@ -914,23 +774,23 @@ class LaserHeadDetailWidget(DebounceMixin):
         """Update the frame speed of the selected laser."""
         if not self._head:
             return
-        value = self.frame_speed_helper.get_value_in_base_units()
+        value = self.frame_speed_row.get_value_in_base_units()
         self._head.set_frame_speed(int(value))
 
     def _on_frame_repeat_changed(self, spinrow):
         """Update the frame repeat count of the selected laser."""
         if self._head:
-            self._head.set_frame_repeat_count(get_spinrow_int(spinrow))
+            self._head.set_frame_repeat_count(spinrow.get_int_value())
 
     def _on_frame_corner_pause_changed(self, spinrow):
         """Update the frame corner pause of the selected laser."""
         if self._head:
-            self._head.set_frame_corner_pause(get_spinrow_float(spinrow))
+            self._head.set_frame_corner_pause(spinrow.get_value())
 
-    def _on_focal_distance_changed(self, _spinrow, _param):
+    def _on_focal_distance_changed(self, spinrow):
         if self._head:
             self._head.set_focal_distance(
-                get_spinrow_float(self.focal_distance_row)
+                self.focal_distance_row.get_value_in_base_units()
             )
 
     def _on_laser_type_changed(self, row, _param):
@@ -949,114 +809,64 @@ class LaserHeadDetailWidget(DebounceMixin):
         self.pwm_group.set_visible(show_pwm)
 
     def _apply_pwm_fields(self, laser):
-        laser.set_max_pwm_frequency(
-            get_spinrow_int(self.max_pwm_frequency_row)
-        )
-        laser.set_pwm_frequency(get_spinrow_int(self.pwm_frequency_row))
-        laser.set_max_pulse_width(get_spinrow_int(self.max_pulse_width_row))
-        laser.set_min_pulse_width(get_spinrow_int(self.min_pulse_width_row))
-        laser.set_pulse_width(get_spinrow_int(self.pulse_width_row))
+        laser.set_max_pwm_frequency(self.max_pwm_frequency_row.get_int_value())
+        laser.set_pwm_frequency(self.pwm_frequency_row.get_int_value())
+        laser.set_max_pulse_width(self.max_pulse_width_row.get_int_value())
+        laser.set_min_pulse_width(self.min_pulse_width_row.get_int_value())
+        laser.set_pulse_width(self.pulse_width_row.get_int_value())
 
     def _on_pwm_frequency_changed(self, spinrow):
         if not self._head:
             return
-        value = get_spinrow_int(spinrow)
-        max_val = get_spinrow_int(self.max_pwm_frequency_row)
+        value = spinrow.get_int_value()
+        max_val = self.max_pwm_frequency_row.get_int_value()
         if value > max_val:
-            self.max_pwm_frequency_row.handler_block(
-                self._handler_ids["max_pwm_frequency"]
-            )
             self.max_pwm_frequency_row.set_value(value)
-            self.max_pwm_frequency_row.handler_unblock(
-                self._handler_ids["max_pwm_frequency"]
-            )
         self._debounce(self._apply_pwm_fields, self._head)
 
     def _on_max_pwm_frequency_changed(self, spinrow):
         if not self._head:
             return
-        max_val = get_spinrow_int(spinrow)
-        freq_val = get_spinrow_int(self.pwm_frequency_row)
+        max_val = spinrow.get_int_value()
+        freq_val = self.pwm_frequency_row.get_int_value()
         if freq_val > max_val:
-            self.pwm_frequency_row.handler_block(
-                self._handler_ids["pwm_frequency"]
-            )
             self.pwm_frequency_row.set_value(max_val)
-            self.pwm_frequency_row.handler_unblock(
-                self._handler_ids["pwm_frequency"]
-            )
         self._debounce(self._apply_pwm_fields, self._head)
 
     def _on_pulse_width_changed(self, spinrow):
         if not self._head:
             return
-        value = get_spinrow_int(spinrow)
-        min_val = get_spinrow_int(self.min_pulse_width_row)
-        max_val = get_spinrow_int(self.max_pulse_width_row)
+        value = spinrow.get_int_value()
+        min_val = self.min_pulse_width_row.get_int_value()
+        max_val = self.max_pulse_width_row.get_int_value()
         if value < min_val:
-            self.min_pulse_width_row.handler_block(
-                self._handler_ids["min_pulse_width"]
-            )
             self.min_pulse_width_row.set_value(value)
-            self.min_pulse_width_row.handler_unblock(
-                self._handler_ids["min_pulse_width"]
-            )
         if value > max_val:
-            self.max_pulse_width_row.handler_block(
-                self._handler_ids["max_pulse_width"]
-            )
             self.max_pulse_width_row.set_value(value)
-            self.max_pulse_width_row.handler_unblock(
-                self._handler_ids["max_pulse_width"]
-            )
         self._debounce(self._apply_pwm_fields, self._head)
 
     def _on_min_pulse_width_changed(self, spinrow):
         if not self._head:
             return
-        min_val = get_spinrow_int(spinrow)
-        max_val = get_spinrow_int(self.max_pulse_width_row)
+        min_val = spinrow.get_int_value()
+        max_val = self.max_pulse_width_row.get_int_value()
         if min_val > max_val:
-            self.max_pulse_width_row.handler_block(
-                self._handler_ids["max_pulse_width"]
-            )
             self.max_pulse_width_row.set_value(min_val)
-            self.max_pulse_width_row.handler_unblock(
-                self._handler_ids["max_pulse_width"]
-            )
-        pw_val = get_spinrow_int(self.pulse_width_row)
+        pw_val = self.pulse_width_row.get_int_value()
         if pw_val < min_val:
-            self.pulse_width_row.handler_block(
-                self._handler_ids["pulse_width"]
-            )
             self.pulse_width_row.set_value(min_val)
-            self.pulse_width_row.handler_unblock(
-                self._handler_ids["pulse_width"]
-            )
         self._debounce(self._apply_pwm_fields, self._head)
 
     def _on_max_pulse_width_changed(self, spinrow):
         if not self._head:
             return
-        max_val = get_spinrow_int(spinrow)
-        min_val = get_spinrow_int(self.min_pulse_width_row)
+        max_val = spinrow.get_int_value()
+        min_val = self.min_pulse_width_row.get_int_value()
         if max_val < min_val:
-            self.min_pulse_width_row.handler_block(
-                self._handler_ids["min_pulse_width"]
-            )
             self.min_pulse_width_row.set_value(max_val)
-            self.min_pulse_width_row.handler_unblock(
-                self._handler_ids["min_pulse_width"]
-            )
-        pw_val = get_spinrow_int(self.pulse_width_row)
+        pw_val = self.pulse_width_row.get_int_value()
         if pw_val > max_val:
-            self.pulse_width_row.handler_block(
-                self._handler_ids["pulse_width"]
-            )
             self.pulse_width_row.set_value(max_val)
-            self.pulse_width_row.handler_unblock(
-                self._handler_ids["pulse_width"]
-            )
         self._debounce(self._apply_pwm_fields, self._head)
 
 
@@ -1086,46 +896,37 @@ class SpindleHeadDetailWidget:
         )
         self.properties_group.add(self.name_row)
 
-        tool_number_adjustment = Gtk.Adjustment(
-            lower=-32768, upper=65535, step_increment=1, page_increment=1
+        self.tool_number_row = SpinRow(
+            _("Tool Number"),
+            _("G-code tool number (e.g., T0, T1)"),
+            lower=-32768,
+            upper=65535,
+            page_increment=1,
+            value=0,
         )
-        self.tool_number_row = Adw.SpinRow(
-            title=_("Tool Number"),
-            subtitle=_("G-code tool number (e.g., T0, T1)"),
-            adjustment=tool_number_adjustment,
-        )
-        tool_number_adjustment.set_value(0)
-        self._handler_ids["tool_number"] = self.tool_number_row.connect(
-            "changed", self._on_tool_number_changed
+        self.tool_number_row.value_changed.connect(
+            self._on_tool_number_changed
         )
         self.properties_group.add(self.tool_number_row)
 
-        min_rpm_adjustment = Gtk.Adjustment(
-            lower=0, upper=100000, step_increment=100, page_increment=1000
+        self.min_rpm_row = SpinRow(
+            _("Min RPM"),
+            _("Minimum spindle speed"),
+            upper=100000,
+            step_increment=100,
+            value=1000,
         )
-        self.min_rpm_row = Adw.SpinRow(
-            title=_("Min RPM"),
-            subtitle=_("Minimum spindle speed"),
-            adjustment=min_rpm_adjustment,
-        )
-        min_rpm_adjustment.set_value(1000)
-        self._handler_ids["min_rpm"] = self.min_rpm_row.connect(
-            "changed", self._on_min_rpm_changed
-        )
+        self.min_rpm_row.value_changed.connect(self._on_min_rpm_changed)
         self.properties_group.add(self.min_rpm_row)
 
-        max_rpm_adjustment = Gtk.Adjustment(
-            lower=0, upper=100000, step_increment=100, page_increment=1000
+        self.max_rpm_row = SpinRow(
+            _("Max RPM"),
+            _("Maximum spindle speed"),
+            upper=100000,
+            step_increment=100,
+            value=20000,
         )
-        self.max_rpm_row = Adw.SpinRow(
-            title=_("Max RPM"),
-            subtitle=_("Maximum spindle speed"),
-            adjustment=max_rpm_adjustment,
-        )
-        max_rpm_adjustment.set_value(20000)
-        self._handler_ids["max_rpm"] = self.max_rpm_row.connect(
-            "changed", self._on_max_rpm_changed
-        )
+        self.max_rpm_row.value_changed.connect(self._on_max_rpm_changed)
         self.properties_group.add(self.max_rpm_row)
 
         self.flood_cooling_row = Adw.SwitchRow(
@@ -1158,9 +959,6 @@ class SpindleHeadDetailWidget:
             group.set_visible(True)
 
         self.name_row.handler_block(self._handler_ids["name"])
-        self.tool_number_row.handler_block(self._handler_ids["tool_number"])
-        self.min_rpm_row.handler_block(self._handler_ids["min_rpm"])
-        self.max_rpm_row.handler_block(self._handler_ids["max_rpm"])
         self.flood_cooling_row.handler_block(
             self._handler_ids["flood_cooling"]
         )
@@ -1178,9 +976,6 @@ class SpindleHeadDetailWidget:
         )
 
         self.name_row.handler_unblock(self._handler_ids["name"])
-        self.tool_number_row.handler_unblock(self._handler_ids["tool_number"])
-        self.min_rpm_row.handler_unblock(self._handler_ids["min_rpm"])
-        self.max_rpm_row.handler_unblock(self._handler_ids["max_rpm"])
         self.flood_cooling_row.handler_unblock(
             self._handler_ids["flood_cooling"]
         )
@@ -1196,17 +991,17 @@ class SpindleHeadDetailWidget:
     def _on_tool_number_changed(self, spinrow):
         """Update the tool number of the selected spindle."""
         if self._head:
-            self._head.set_tool_number(get_spinrow_int(spinrow))
+            self._head.set_tool_number(spinrow.get_int_value())
 
     def _on_max_rpm_changed(self, spinrow):
         """Update the max RPM of the selected spindle."""
         if self._head:
-            self._head.set_max_rpm(get_spinrow_int(spinrow))
+            self._head.set_max_rpm(spinrow.get_int_value())
 
     def _on_min_rpm_changed(self, spinrow):
         """Update the min RPM of the selected spindle."""
         if self._head:
-            self._head.set_min_rpm(get_spinrow_int(spinrow))
+            self._head.set_min_rpm(spinrow.get_int_value())
 
     def _on_cooling_method_toggled(self, row, _param):
         """Updates the supported coolant methods of the selected spindle."""

@@ -346,15 +346,15 @@ class TestLayerRotary:
         layer.set_rotary_diameter(25.0)
         handler.assert_not_called()
 
-    def test_mu_to_degrees(self, layer):
+    def test_mm_to_degrees(self, layer):
         layer.set_rotary_diameter(25.0)
         circumference = 25.0 * math.pi
         expected = (10.0 / circumference) * 360.0
-        assert abs(layer.mu_to_degrees(10.0) - expected) < 1e-6
+        assert abs(layer.mm_to_degrees(10.0) - expected) < 1e-6
 
-    def test_mu_to_degrees_zero_diameter(self, layer):
+    def test_mm_to_degrees_zero_diameter(self, layer):
         layer.rotary_diameter = 0.0
-        assert layer.mu_to_degrees(10.0) == 0.0
+        assert layer.mm_to_degrees(10.0) == 0.0
 
     def test_rotary_serialization_roundtrip(self):
         layer = Layer("Rotary Layer")

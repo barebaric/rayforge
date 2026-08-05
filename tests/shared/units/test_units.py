@@ -5,6 +5,7 @@ from rayforge.shared.units.definitions import (
     get_units_for_quantity,
 )
 from rayforge.shared.units.engine import engine
+from rayforge.shared.units.system import UnitSystem
 
 
 def test_length_units():
@@ -232,5 +233,13 @@ def test_all():
     print("\nAll tests passed! ✅")
 
 
+def test_unit_system_scale_from_mm():
+    assert UnitSystem.METRIC.scale_from_mm == 1.0
+    assert abs(UnitSystem.IMPERIAL.scale_from_mm - 1.0 / 25.4) < 1e-12
+    # 10 mm -> inches
+    assert abs(10.0 * UnitSystem.IMPERIAL.scale_from_mm - 0.3937) < 1e-4
+
+
 if __name__ == "__main__":
     test_all()
+    test_unit_system_scale_from_mm()

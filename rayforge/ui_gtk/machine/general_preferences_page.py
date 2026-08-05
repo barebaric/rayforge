@@ -8,7 +8,7 @@ from ...machine.models.machine import Machine
 from ...shared.units.system import UnitSystem
 from ..icons import get_icon
 from ..shared.preferences_page import TrackedPreferencesPage
-from ..shared.unit_spin_row import UnitSpinRowHelper
+from ..shared.unit_spin_row import AccelerationSpinRow, SpeedSpinRow
 from ..varset.varsetwidget import VarSetWidget
 
 logger = logging.getLogger(__name__)
@@ -139,83 +139,57 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         self.add(speeds_group)
 
         # Max Travel Speed
-        travel_speed_adjustment = Gtk.Adjustment(
-            lower=0,
+        self.travel_speed_row = SpeedSpinRow(
+            _("Max Travel Speed"),
+            _("Maximum rapid movement speed"),
             upper=60000,  # Increased upper limit for mm/min
-            step_increment=10,
-            page_increment=100,
+            digits=0,
         )
-        travel_speed_row = Adw.SpinRow(
-            title=_("Max Travel Speed"),
-            adjustment=travel_speed_adjustment,
-        )
-        self.travel_speed_helper = UnitSpinRowHelper(
-            spin_row=travel_speed_row,
-            quantity="speed",
-            subtitle_format=_("Maximum rapid movement speed ({unit})"),
-        )
-        self.travel_speed_helper.set_value_in_base_units(
+        self.travel_speed_row.set_value_in_base_units(
             self.machine.max_travel_speed
         )
-        self.travel_speed_helper.changed.connect(self.on_travel_speed_changed)
-        self.travel_speed_row = travel_speed_row
-        speeds_group.add(travel_speed_row)
+        self.travel_speed_row.value_changed.connect(
+            self.on_travel_speed_changed
+        )
+        speeds_group.add(self.travel_speed_row)
 
         # Max Cut Speed
-        cut_speed_adjustment = Gtk.Adjustment(
-            lower=0,
+        self.cut_speed_row = SpeedSpinRow(
+            _("Max Cut Speed"),
+            _("Maximum cutting speed"),
             upper=60000,  # Increased upper limit for mm/min
-            step_increment=10,
-            page_increment=100,
+            digits=0,
         )
-        cut_speed_row = Adw.SpinRow(
-            title=_("Max Cut Speed"),
-            adjustment=cut_speed_adjustment,
-        )
-        self.cut_speed_helper = UnitSpinRowHelper(
-            spin_row=cut_speed_row,
-            quantity="speed",
-            subtitle_format=_("Maximum cutting speed ({unit})"),
-        )
-        self.cut_speed_helper.set_value_in_base_units(
-            self.machine.max_cut_speed
-        )
-        self.cut_speed_helper.changed.connect(self.on_cut_speed_changed)
-        speeds_group.add(cut_speed_row)
+        self.cut_speed_row.set_value_in_base_units(self.machine.max_cut_speed)
+        self.cut_speed_row.value_changed.connect(self.on_cut_speed_changed)
+        speeds_group.add(self.cut_speed_row)
 
         # Acceleration
-        acceleration_adjustment = Gtk.Adjustment(
+        self.acceleration_row = AccelerationSpinRow(
+            _("Acceleration"),
+            _(
+                "Used for time estimations and calculating the "
+                "default overscan distance"
+            ),
             lower=1,
             upper=100000,
-            step_increment=10,
-            page_increment=100,
+            digits=0,
         )
-        acceleration_row = Adw.SpinRow(
-            title=_("Acceleration"),
-            adjustment=acceleration_adjustment,
-        )
-        self.acceleration_helper = UnitSpinRowHelper(
-            spin_row=acceleration_row,
-            quantity="acceleration",
-            subtitle_format=_(
-                "Used for time estimations and calculating the "
-                "default overscan distance ({unit})"
-            ),
-        )
-        self.acceleration_helper.set_value_in_base_units(
+        self.acceleration_row.set_value_in_base_units(
             self.machine.acceleration
         )
-        self.acceleration_helper.changed.connect(self.on_acceleration_changed)
-        speeds_group.add(acceleration_row)
+        self.acceleration_row.value_changed.connect(
+            self.on_acceleration_changed
+        )
+        speeds_group.add(self.acceleration_row)
 
         # Machine Unit System group
         units_group = Adw.PreferencesGroup(title=_("Unit System"))
         units_group.set_description(
             _(
                 "The unit system used when emitting G-code and "
-                "communicating with the device. Internal values are "
-                "always stored in millimeters and converted at the "
-                "driver boundary."
+                "communicating with the device. This setting is independent "
+                "of the units used in the user interface."
             )
         )
         self.add(units_group)
@@ -359,25 +333,25 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         """Update the machine name when the text changes."""
         self.machine.set_name(entry_row.get_text())
 
-    def on_travel_speed_changed(self, helper: UnitSpinRowHelper):
+    def on_travel_speed_changed(self, row: SpeedSpinRow):
         """Update the max travel speed when the value changes."""
         if self._is_initializing:
             return
-        value = helper.get_value_in_base_units()
+        value = row.get_value_in_base_units()
         self.machine.set_max_travel_speed(int(value))
 
-    def on_cut_speed_changed(self, helper: UnitSpinRowHelper):
+    def on_cut_speed_changed(self, row: SpeedSpinRow):
         """Update the max cut speed when the value changes."""
         if self._is_initializing:
             return
-        value = helper.get_value_in_base_units()
+        value = row.get_value_in_base_units()
         self.machine.set_max_cut_speed(int(value))
 
-    def on_acceleration_changed(self, helper: UnitSpinRowHelper):
+    def on_acceleration_changed(self, row: AccelerationSpinRow):
         """Update the acceleration when the value changes."""
         if self._is_initializing:
             return
-        value = helper.get_value_in_base_units()
+        value = row.get_value_in_base_units()
         self.machine.set_acceleration(int(value))
 
     def _update_travel_speed_state(self):
@@ -387,12 +361,12 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
 
         if self.machine.dialect and self.machine.dialect.can_g0_with_speed:
             self.travel_speed_row.set_sensitive(True)
-            self.travel_speed_helper.set_subtitle_format(
-                _("Maximum rapid movement speed ({unit})")
+            self.travel_speed_row.set_subtitle(
+                _("Maximum rapid movement speed")
             )
         else:
             self.travel_speed_row.set_sensitive(False)
-            self.travel_speed_helper.set_subtitle_format(
+            self.travel_speed_row.set_subtitle(
                 _("Not supported by the driver")
             )
 

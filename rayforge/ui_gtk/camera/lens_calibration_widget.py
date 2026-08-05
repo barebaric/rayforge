@@ -9,6 +9,8 @@ from gettext import gettext as _
 
 from gi.repository import Adw, Gtk
 
+from ..shared.unit_spin_row import SpinRow
+
 logger = logging.getLogger(__name__)
 
 _DISTORTION_FIELDS = [
@@ -57,24 +59,19 @@ class LensCalibrationWidget(Gtk.Box):
 
     def _create_spin_row(
         self, title: str, subtitle: str, value: float, config_key: str
-    ) -> Adw.SpinRow:
-        row = Adw.SpinRow(
-            title=title,
-            subtitle=subtitle,
-            adjustment=Gtk.Adjustment(
-                value=value,
-                lower=-10.0,
-                upper=10.0,
-                step_increment=0.001,
-                page_increment=0.01,
-            ),
+    ) -> SpinRow:
+        row = SpinRow(
+            title,
+            subtitle,
+            lower=-10.0,
+            upper=10.0,
+            step_increment=0.001,
             digits=4,
             numeric=True,
+            value=value,
         )
-        row.connect(
-            "notify::value",
-            self._on_distortion_value_changed,
-            config_key,
+        row.value_changed.connect(
+            lambda r, k=config_key: self._on_distortion_value_changed(r, k)
         )
         return row
 
@@ -89,7 +86,7 @@ class LensCalibrationWidget(Gtk.Box):
             self._updating_ui = False
 
     def _on_distortion_value_changed(
-        self, spin_row: Adw.SpinRow, pspec, config_key: str
+        self, spin_row: SpinRow, config_key: str
     ) -> None:
         if self._updating_ui:
             return

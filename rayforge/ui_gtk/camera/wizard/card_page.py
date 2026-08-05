@@ -16,7 +16,7 @@ from gi.repository import Adw, GdkPixbuf, GLib, Gtk
 from ....camera.calibration.charuco import CharucoBoard
 from ....context import get_context
 from ....shared.units.formatter import format_value
-from ...shared.unit_spin_row import UnitSpinRowHelper
+from ...shared.unit_spin_row import LengthSpinRow
 from ..capture_surface import numpy_to_pixbuf
 from .base_page import CameraWizardPage
 
@@ -102,43 +102,27 @@ class CardPage(CameraWizardPage):
         )
         settings_box.append(size_group)
 
-        width_spin = Adw.SpinRow(
-            title=_("Width"),
-            adjustment=Gtk.Adjustment(
-                lower=20.0,
-                upper=300.0,
-                step_increment=5.0,
-                page_increment=20.0,
-            ),
-        )
-        self._width_helper = UnitSpinRowHelper(
-            spin_row=width_spin,
-            quantity="length",
+        self._width_row = LengthSpinRow(
+            _("Width"),
+            _("Card width"),
+            lower=20.0,
+            upper=300.0,
             max_value_in_base=300.0,
-            subtitle_format=_("Card width ({unit})"),
+            value_in_base=self._card_width,
         )
-        self._width_helper.set_value_in_base_units(self._card_width)
-        self._width_helper.changed.connect(self._on_size_changed)
-        size_group.add(width_spin)
+        self._width_row.value_changed.connect(self._on_size_changed)
+        size_group.add(self._width_row)
 
-        height_spin = Adw.SpinRow(
-            title=_("Height"),
-            adjustment=Gtk.Adjustment(
-                lower=20.0,
-                upper=300.0,
-                step_increment=5.0,
-                page_increment=20.0,
-            ),
-        )
-        self._height_helper = UnitSpinRowHelper(
-            spin_row=height_spin,
-            quantity="length",
+        self._height_row = LengthSpinRow(
+            _("Height"),
+            _("Card height"),
+            lower=20.0,
+            upper=300.0,
             max_value_in_base=300.0,
-            subtitle_format=_("Card height ({unit})"),
+            value_in_base=self._card_height,
         )
-        self._height_helper.set_value_in_base_units(self._card_height)
-        self._height_helper.changed.connect(self._on_size_changed)
-        size_group.add(height_spin)
+        self._height_row.value_changed.connect(self._on_size_changed)
+        size_group.add(self._height_row)
 
         info_group = Adw.PreferencesGroup(
             title=_("Generated Pattern"),
@@ -169,9 +153,9 @@ class CardPage(CameraWizardPage):
         self._update_card_preview()
         return self.root
 
-    def _on_size_changed(self, helper) -> None:
-        self._card_width = self._width_helper.get_value_in_base_units()
-        self._card_height = self._height_helper.get_value_in_base_units()
+    def _on_size_changed(self, row) -> None:
+        self._card_width = self._width_row.get_value_in_base_units()
+        self._card_height = self._height_row.get_value_in_base_units()
         self._update_card_preview()
 
     def _update_card_preview(self) -> None:

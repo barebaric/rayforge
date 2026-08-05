@@ -1,9 +1,10 @@
 import logging
 from gettext import gettext as _
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw
 
 from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.unit_spin_row import LengthSpinRow
 
 logger = logging.getLogger(__name__)
 
@@ -48,24 +49,25 @@ class AdvancedPreferencesPage(TrackedPreferencesPage):
         self.curves_row.connect("notify::active", self.on_curves_changed)
         path_group.add(self.curves_row)
 
-        tolerance_adjustment = Gtk.Adjustment(
-            lower=0.001, upper=10.0, step_increment=0.001, page_increment=0.01
-        )
-        self.arc_tolerance_row = Adw.SpinRow(
-            title=_("Arc and Curve Tolerance"),
-            subtitle=_(
+        self.arc_tolerance_row = LengthSpinRow(
+            _("Arc and Curve Tolerance"),
+            _(
                 "Maximum deviation from original path when "
-                "fitting arcs and curves (in machine units). Lower values "
+                "fitting arcs and curves. Lower values "
                 "drastically increase processing time and job size"
             ),
-            adjustment=tolerance_adjustment,
+            lower=0.001,
+            upper=10.0,
+            step_increment=0.001,
+            digits=3,
+            min_value_in_base=0.001,
+            max_value_in_base=10.0,
+            value_in_base=self.machine.arc_tolerance,
         )
-        self.arc_tolerance_row.set_digits(3)
         self.arc_tolerance_row.set_width_chars(5)
-        tolerance_adjustment.set_value(self.machine.arc_tolerance)
         self.arc_tolerance_row.set_sensitive(self.machine.supports_arcs)
-        self.arc_tolerance_row.connect(
-            "changed", self.on_arc_tolerance_changed
+        self.arc_tolerance_row.value_changed.connect(
+            self.on_arc_tolerance_changed
         )
         path_group.add(self.arc_tolerance_row)
 
@@ -121,7 +123,7 @@ class AdvancedPreferencesPage(TrackedPreferencesPage):
 
     def on_arc_tolerance_changed(self, spinrow):
         """Update to machine's arc tolerance when value changes."""
-        self.machine.set_arc_tolerance(spinrow.get_value())
+        self.machine.set_arc_tolerance(spinrow.get_value_in_base_units())
 
     def on_curves_changed(self, switch_row, _param):
         """Update the machine's curve support when the value changes."""

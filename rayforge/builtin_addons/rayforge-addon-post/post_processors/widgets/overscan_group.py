@@ -1,14 +1,14 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw
 
 from rayforge.context import get_context
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.groups import (
     TransformerSettingsGroup,
 )
-from rayforge.ui_gtk.shared.unit_spin_row import UnitSpinRowHelper
+from rayforge.ui_gtk.shared.unit_spin_row import LengthSpinRow
 
 from ..transformers import OverscanTransformer
 
@@ -68,30 +68,19 @@ class OverscanSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         self.add(self.auto_row)
 
         # Distance setting with unit support
-        distance_adj = Gtk.Adjustment(
-            lower=0.0, upper=50.0, step_increment=0.1, page_increment=1.0
-        )
-        distance_row = Adw.SpinRow(
-            title=_("Overscan Distance"),
-            adjustment=distance_adj,
-            digits=2,
+        distance_row = LengthSpinRow(
+            _("Overscan Distance"),
+            _("Manual distance setting"),
+            upper=50.0,
+            max_value_in_base=50.0,
+            value_in_base=transformer.distance_mm,
         )
         self.add(distance_row)
         self.distance_row = distance_row  # Store reference for later access
 
-        # Add unit conversion helper for length
-        self.distance_helper = UnitSpinRowHelper(
-            spin_row=distance_row,
-            quantity="length",
-            max_value_in_base=50.0,
-            subtitle_format=_("Manual distance setting ({unit})"),
-        )
-        self.distance_helper.set_value_in_base_units(transformer.distance_mm)
-
         # Connect signals
         self.auto_row.connect("notify::active", self._on_auto_toggled)
-        distance_row.connect(
-            "changed",
+        distance_row.value_changed.connect(
             lambda r: self._debounce(self._on_distance_changed, r),
         )
 
@@ -164,7 +153,7 @@ class OverscanSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         )
 
         # Update the UI
-        self.distance_helper.set_value_in_base_units(new_distance)
+        self.distance_row.set_value_in_base_units(new_distance)
 
     def _on_step_updated(self, step: "Step"):
         """Handle step updates to recalculate overscan distance if needed."""
@@ -185,8 +174,8 @@ class OverscanSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             self._recalculate_distance()
 
     def _on_distance_changed(self, spin_row):
-        # Get the value in base units directly from the helper
-        new_value = self.distance_helper.get_value_in_base_units()
+        # Get the value in base units directly from the row
+        new_value = self.distance_row.get_value_in_base_units()
 
         # If auto is currently enabled, disable it when user manually changes
         # the distance (via +/- buttons or typing)

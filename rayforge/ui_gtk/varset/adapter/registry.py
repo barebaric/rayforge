@@ -12,6 +12,7 @@ from .appkey import AppKeyAdapter
 from .base import _ADAPTER_REGISTRY, RowAdapter, escape_title
 from .combo import BaudRateAdapter, ComboAdapter, SerialPortAdapter
 from .entry import EntryAdapter, HostnameAdapter
+from .length import LengthRowAdapter
 from .oauth import OAuthFlowAdapter
 from .slider import SliderAdapter
 from .speed import SpeedRowAdapter
@@ -25,6 +26,7 @@ _ALL_ADAPTERS = (
     ComboAdapter,
     SerialPortAdapter,
     HostnameAdapter,
+    LengthRowAdapter,
     OAuthFlowAdapter,
     SliderAdapter,
     SpeedRowAdapter,

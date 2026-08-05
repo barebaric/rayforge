@@ -308,12 +308,12 @@ class Layer(DocItem):
         """Return this layer's WCS or the machine's active WCS."""
         return self.wcs if self.wcs else machine.active_wcs
 
-    def mu_to_degrees(self, mu: float) -> float:
-        """Convert machine units to degrees for rotary axis."""
+    def mm_to_degrees(self, mm: float) -> float:
+        """Convert surface mm to degrees for rotary axis."""
         if self.rotary_diameter <= 0:
             return 0.0
         circumference = self.rotary_diameter * math.pi
-        return (mu / circumference) * 360.0
+        return (mm / circumference) * 360.0
 
     def add_workpiece(self, workpiece: "WorkPiece"):
         """Adds a single workpiece to the layer."""

@@ -8,8 +8,8 @@ from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.groups import (
     TransformerSettingsGroup,
 )
-from rayforge.ui_gtk.shared.adwfix import get_spinrow_int
 from rayforge.ui_gtk.shared.slider import create_slider_row
+from rayforge.ui_gtk.shared.unit_spin_row import AngleSpinRow
 
 from ..transformers import Smooth
 
@@ -56,24 +56,19 @@ class SmoothSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         self.add(amount_row)
 
         # Corner Angle Threshold Setting
-        corner_adj = Gtk.Adjustment(
-            lower=0, upper=179, step_increment=1, page_increment=10
+        corner_row = AngleSpinRow(
+            _("Corner Angle Threshold"),
+            _("Angles sharper than this are kept as corners (degrees)"),
+            lower=0,
+            upper=179,
+            value=transformer.corner_angle_threshold,
         )
-        corner_row = Adw.SpinRow(
-            title=_("Corner Angle Threshold"),
-            subtitle=_(
-                "Angles sharper than this are kept as corners (degrees)"
-            ),
-            adjustment=corner_adj,
-        )
-        corner_adj.set_value(transformer.corner_angle_threshold)
         self.add(corner_row)
 
-        corner_row.connect(
-            "changed",
+        corner_row.value_changed.connect(
             lambda spin_row: self._debounce(
                 self._on_corner_angle_changed, spin_row
-            ),
+            )
         )
 
     def _on_amount_changed(self, scale):
@@ -88,7 +83,7 @@ class SmoothSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         self.history_manager.execute(command)
 
     def _on_corner_angle_changed(self, spin_row):
-        new_value = get_spinrow_int(spin_row)
+        new_value = spin_row.get_int_value()
         command = DictItemCommand(
             target_dict=self.target_dict,
             key="corner_angle_threshold",

@@ -6,6 +6,7 @@ from raygeo.ops.state import AirAssistMode
 
 from rayforge.machine.models.dialect.grbl import GRBL_DIALECT
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
+from rayforge.shared.units.system import UnitSystem
 
 
 def _make_machine_mock(dialect=GRBL_DIALECT):
@@ -15,6 +16,7 @@ def _make_machine_mock(dialect=GRBL_DIALECT):
     machine.name = "TestMachine"
     machine.gcode_precision = 3
     machine.max_travel_speed = 5000.0
+    machine.unit_system = UnitSystem.METRIC
     machine.active_wcs = "G54"
     machine.axis_extents = (200.0, 200.0)
     machine.get_active_wcs_offset.return_value = (0.0, 0.0, 0.0)
@@ -91,6 +93,7 @@ def _make_context(**overrides) -> dict:
     defaults = dict(
         gcode_precision=3,
         max_travel_speed=6000.0,
+        unit_scale=1.0,
         default_head_uid="default",
         heads=[{"uid": "default", "tool_number": 0, "max_power": 1000.0}],
         active_wcs="",
@@ -125,6 +128,78 @@ def test_rust_encode_basic_move_and_line():
     assert "G1 F1000" in text
     assert "M5" in text
     assert "M30" in text
+
+
+def test_rust_encode_imperial_scales_coords_and_feed():
+    ops = Ops()
+    ops.job_start()
+    ops.set_power(1.0)
+    ops.set_feed_rate(1000)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 20.0, 0.0)
+    ops.job_end()
+
+    dialect = GcodeDialectSpec()
+    context = _make_context(unit_scale=1.0 / 25.4)
+    result = ops.to_gcode(dialect, context)
+    text = result["text"]
+
+    assert "G0 X0" in text
+    assert "G1 F39\n" in text
+    assert "G1 X0.394 Y0.787" in text
+    assert "M30" in text
+
+
+def test_rust_encode_imperial_zero_stays_zero():
+    ops = Ops()
+    ops.job_start()
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.job_end()
+
+    dialect = GcodeDialectSpec()
+    context = _make_context(unit_scale=1.0 / 25.4)
+    result = ops.to_gcode(dialect, context)
+    text = result["text"]
+
+    assert "G0 X0" in text
+    assert "G0 Y0" not in text  # unchanged coord omitted
+
+
+def test_rust_encode_metric_unit_scale_is_noop():
+    ops = Ops()
+    ops.job_start()
+    ops.set_feed_rate(1000)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 20.0, 0.0)
+    ops.job_end()
+
+    dialect = GcodeDialectSpec()
+    context = _make_context(unit_scale=1.0)
+    result = ops.to_gcode(dialect, context)
+    text = result["text"]
+
+    assert "G1 X10 Y20" in text
+    assert "G1 F1000" in text
+
+
+def test_rust_encode_imperial_does_not_scale_rotary_axis():
+    ops = Ops()
+    ops.job_start()
+    ops.set_power(1.0)
+    ops.set_feed_rate(1000)
+    ops.move_to(0.0, 0.0, 0.0, {"A": 90.0})
+    ops.line_to(10.0, 20.0, 0.0, {"A": 180.0})
+    ops.job_end()
+
+    dialect = GcodeDialectSpec()
+    context = _make_context(unit_scale=1.0 / 25.4)
+    result = ops.to_gcode(dialect, context)
+    text = result["text"]
+
+    assert "G0 X0 A90" in text
+    assert "G1 X0.394 Y0.787 A180" in text
+    assert "A0.394" not in text
+    assert "A180" in text
 
 
 def test_rust_encode_air_assist():

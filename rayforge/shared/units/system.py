@@ -14,3 +14,9 @@ class UnitSystem(Enum):
 
     METRIC = "metric"
     IMPERIAL = "imperial"
+
+    @property
+    def scale_from_mm(self) -> float:
+        """Multiplier to convert a millimeter value into this unit
+        system. Metric is ``1.0``; imperial is ``1/25.4``."""
+        return 1.0 if self is UnitSystem.METRIC else 1.0 / 25.4

@@ -13,10 +13,10 @@ from rayforge.machine.cmd import MachineCmd
 from rayforge.machine.models.machine import Machine
 from rayforge.ui_gtk.icons import get_icon
 from rayforge.ui_gtk.machine.jog_widget import JogWidget
-from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
 from rayforge.ui_gtk.shared.patched_dialog_window import (
     PatchedDialogWindow,
 )
+from rayforge.ui_gtk.shared.unit_spin_row import LengthSpinRow
 
 from .pick_surface import PickSurface
 
@@ -272,16 +272,16 @@ class PrintAndCutWizard(PatchedDialogWindow):
         controls_group = Adw.PreferencesGroup()
         box.append(controls_group)
 
-        distance_adjustment = Gtk.Adjustment(
-            value=10.0, lower=0.1, upper=1000, step_increment=1
+        self._distance_row = LengthSpinRow(
+            _("Jog Distance"),
+            _("Distance"),
+            lower=0.1,
+            upper=1000.0,
+            min_value_in_base=0.1,
+            max_value_in_base=1000.0,
+            value_in_base=10.0,
         )
-        self._distance_row = Adw.SpinRow(
-            title=_("Jog Distance"),
-            subtitle=_("Distance in machine units"),
-            adjustment=distance_adjustment,
-            digits=1,
-        )
-        self._distance_row.connect("changed", self._on_distance_changed)
+        self._distance_row.value_changed.connect(self._on_distance_changed)
         controls_group.add(self._distance_row)
 
         presets_row = Adw.ActionRow(title=_("Distance Presets"))
@@ -610,12 +610,12 @@ class PrintAndCutWizard(PatchedDialogWindow):
             if x_val is not None and y_val is not None:
                 self._laser_row.set_subtitle(f"X: {x_val:.2f}  Y: {y_val:.2f}")
 
-    def _on_distance_changed(self, spin_row):
-        self._jog_widget.jog_distance = get_spinrow_float(spin_row)
+    def _on_distance_changed(self, row):
+        self._jog_widget.jog_distance = row.get_value_in_base_units()
 
     def _on_preset_clicked(self, button, value):
-        self._distance_row.get_adjustment().set_value(value)
-        self._on_distance_changed(self._distance_row)
+        self._distance_row.set_value_in_base_units(value)
+        self._jog_widget.jog_distance = value
 
     def _on_focus_toggled(self, button):
         if not self._machine or not self._machine_cmd:

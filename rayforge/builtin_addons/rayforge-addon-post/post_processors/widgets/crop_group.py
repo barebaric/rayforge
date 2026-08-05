@@ -1,13 +1,13 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw
 
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.groups import (
     TransformerSettingsGroup,
 )
-from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
+from rayforge.ui_gtk.shared.unit_spin_row import LengthSpinRow
 
 from ..transformers import CropTransformer
 
@@ -38,25 +38,19 @@ class CropSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             **kwargs,
         )
 
-        offset_adj = Gtk.Adjustment(
-            lower=-100.0, upper=100.0, step_increment=0.1, page_increment=1.0
+        self.offset_row = LengthSpinRow(
+            _("Offset"),
+            _("Grow/shrink stock boundary before cropping"),
+            lower=-100.0,
+            upper=100.0,
+            min_value_in_base=-100.0,
+            max_value_in_base=100.0,
+            value_in_base=transformer.offset,
         )
-        offset_row = Adw.SpinRow(
-            title=_("Offset"),
-            adjustment=offset_adj,
-            digits=3,
+        self.offset_row.value_changed.connect(
+            lambda r: self._debounce(self._on_offset_changed, r)
         )
-        offset_row.set_subtitle(
-            _("Grow/shrink stock boundary before cropping")
-        )
-        offset_adj.set_value(transformer.offset)
-        self.add(offset_row)
-        self.offset_row = offset_row
-
-        offset_row.connect(
-            "changed",
-            lambda r: self._debounce(self._on_offset_changed, r),
-        )
+        self.add(self.offset_row)
 
     def _set_step_param(self, key, new_value, name):
         """Helper method to set a step parameter with standard callback."""
@@ -68,6 +62,6 @@ class CropSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             on_change_callback=lambda: self.step.updated.send(self.step),
         )
 
-    def _on_offset_changed(self, spin_row):
-        new_value = get_spinrow_float(spin_row)
+    def _on_offset_changed(self, row):
+        new_value = row.get_value_in_base_units()
         self._set_step_param("offset", new_value, _("Change Crop Offset"))

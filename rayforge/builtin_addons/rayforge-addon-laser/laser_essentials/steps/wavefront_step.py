@@ -10,7 +10,7 @@ from raygeo.ops.assembly.wavefront import AdaptiveWavefrontSpec
 from raygeo.ops.part import Part
 
 from rayforge.core.capability import MachineCapability, StepCapability
-from rayforge.core.varset import FloatVar, VarSet
+from rayforge.core.varset import LengthVar, VarSet
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.transformer.registry import transformer_registry
 
@@ -40,7 +40,7 @@ class WavefrontStep(LaserStep):
         return VarSet(
             vars=[
                 *LaserStep.recipe_varset().vars,
-                FloatVar(
+                LengthVar(
                     key="step_over_mm",
                     label=_("Step Over"),
                     description=_(
@@ -50,7 +50,7 @@ class WavefrontStep(LaserStep):
                     default=None,
                     min_val=0.0,
                 ),
-                FloatVar(
+                LengthVar(
                     key="offset_mm",
                     label=_("Offset"),
                     default=0.0,

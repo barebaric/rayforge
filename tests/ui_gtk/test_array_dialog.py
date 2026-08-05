@@ -21,7 +21,6 @@ from rayforge.ui_gtk.array_dialog import (
 )
 from rayforge.ui_gtk.canvas2d.elements.outline import OutlineElement
 from rayforge.ui_gtk.canvas2d.surface import WorkSurface
-from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
 
 
 def _process_events():
@@ -140,17 +139,13 @@ def test_spacing_mode_translates_distance(array_dialog_env):
 
     # Defaults: Gap mode, 1 mm on both axes.
     assert dialog._spacing_mode_row.get_selected() == 1  # Gap
-    assert get_spinrow_float(dialog._col_spacing_row) == 1.0
+    assert dialog._col_spacing_row.get_value() == 1.0
 
     # Switch Gap -> Displacement: displacement = gap + unit size.
     dialog._spacing_mode_row.set_selected(0)
     _process_events()
-    assert get_spinrow_float(dialog._col_spacing_row) == pytest.approx(
-        31.0
-    )  # 1 + 30
-    assert get_spinrow_float(dialog._row_spacing_row) == pytest.approx(
-        11.0
-    )  # 1 + 10
+    assert dialog._col_spacing_row.get_value() == pytest.approx(31.0)  # 1 + 30
+    assert dialog._row_spacing_row.get_value() == pytest.approx(11.0)  # 1 + 10
 
     # The preview must have refreshed with the new spacing: pitch is now
     # 31/11, so the (0,1) cell sits at (31, 0).
@@ -161,7 +156,7 @@ def test_spacing_mode_translates_distance(array_dialog_env):
     # Switch back Displacement -> Gap: gap = displacement - unit size.
     dialog._spacing_mode_row.set_selected(1)
     _process_events()
-    assert get_spinrow_float(dialog._col_spacing_row) == pytest.approx(1.0)
-    assert get_spinrow_float(dialog._row_spacing_row) == pytest.approx(1.0)
+    assert dialog._col_spacing_row.get_value() == pytest.approx(1.0)
+    assert dialog._row_spacing_row.get_value() == pytest.approx(1.0)
 
     dialog.close()

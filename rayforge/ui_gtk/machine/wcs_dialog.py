@@ -4,6 +4,7 @@ from gi.repository import Adw
 
 from ...machine.models.machine import Machine
 from ...shared.tasker import task_mgr
+from ..shared.unit_spin_row import LengthSpinRow
 
 
 class WcsDialog(Adw.MessageDialog):
@@ -31,19 +32,34 @@ class WcsDialog(Adw.MessageDialog):
         self._label_row = Adw.EntryRow(title=_("Label"), text=wcs_label)
         group.add(self._label_row)
 
-        self._row_x = Adw.SpinRow.new_with_range(-10000, 10000, 0.1)
-        self._row_x.set_title("X Offset")
-        self._row_x.set_value(off_x)
+        self._row_x = LengthSpinRow(
+            _("X Offset"),
+            lower=-10000,
+            upper=10000,
+            min_value_in_base=-10000.0,
+            max_value_in_base=10000.0,
+            value_in_base=off_x,
+        )
         group.add(self._row_x)
 
-        self._row_y = Adw.SpinRow.new_with_range(-10000, 10000, 0.1)
-        self._row_y.set_title("Y Offset")
-        self._row_y.set_value(off_y)
+        self._row_y = LengthSpinRow(
+            _("Y Offset"),
+            lower=-10000,
+            upper=10000,
+            min_value_in_base=-10000.0,
+            max_value_in_base=10000.0,
+            value_in_base=off_y,
+        )
         group.add(self._row_y)
 
-        self._row_z = Adw.SpinRow.new_with_range(-10000, 10000, 0.1)
-        self._row_z.set_title("Z Offset")
-        self._row_z.set_value(off_z)
+        self._row_z = LengthSpinRow(
+            _("Z Offset"),
+            lower=-10000,
+            upper=10000,
+            min_value_in_base=-10000.0,
+            max_value_in_base=10000.0,
+            value_in_base=off_z,
+        )
         group.add(self._row_z)
 
         self.set_extra_child(group)
@@ -53,9 +69,9 @@ class WcsDialog(Adw.MessageDialog):
     def _on_response(self, dlg, response):
         if response == "save":
             label = self._label_row.get_text()
-            nx = self._row_x.get_value()
-            ny = self._row_y.get_value()
-            nz = self._row_z.get_value()
+            nx = self._row_x.get_value_in_base_units()
+            ny = self._row_y.get_value_in_base_units()
+            nz = self._row_z.get_value_in_base_units()
             self.machine.set_wcs_label(self.machine.active_wcs, label)
             task_mgr.add_coroutine(
                 lambda ctx: self.machine.set_work_origin(nx, ny, nz)

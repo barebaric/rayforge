@@ -27,7 +27,7 @@ class RotaryModule:
         self.name: str = _("Rotary Module")
         self.axis: Axis = Axis.A
         self.mode: RotaryMode = RotaryMode.TRUE_4TH_AXIS
-        self.mu_per_rotation: float = 0.0
+        self.mm_per_rotation: float = 0.0
         self.default_diameter: float = 25.0
         self.max_workpiece_length: float = 300.0
         self.rotary_type: RotaryType = RotaryType.JAWS
@@ -59,9 +59,9 @@ class RotaryModule:
         self.changed.send(self)
 
     def set_mm_per_rotation(self, value: float):
-        if self.mu_per_rotation == value:
+        if self.mm_per_rotation == value:
             return
-        self.mu_per_rotation = value
+        self.mm_per_rotation = value
         self.changed.send(self)
 
     def set_position(self, x: float, y: float, z: float):
@@ -176,8 +176,8 @@ class RotaryModule:
             "model_path": self.model_path,
             "transform": self.transform.flatten().tolist(),
         }
-        if self.mu_per_rotation > 0:
-            result["mm_per_rotation"] = self.mu_per_rotation
+        if self.mm_per_rotation > 0:
+            result["mm_per_rotation"] = self.mm_per_rotation
         if self.roller_diameter > 0:
             result["roller_diameter"] = self.roller_diameter
         if self.reverse_axis:
@@ -223,7 +223,7 @@ class RotaryModule:
         rm.name = data.get("name", _("Rotary Module"))
         rm.axis = Axis.from_name(data.get("axis", "A"))
         rm.mode = RotaryMode(data.get("mode", "true_4th_axis"))
-        rm.mu_per_rotation = data.get("mm_per_rotation", 0.0)
+        rm.mm_per_rotation = data.get("mm_per_rotation", 0.0)
         rm.default_diameter = data.get("default_diameter", 25.0)
         rm.max_workpiece_length = data.get("max_workpiece_length", 300.0)
         rm.rotary_type = RotaryType(data.get("rotary_type", "jaws"))

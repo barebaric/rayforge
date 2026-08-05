@@ -14,10 +14,10 @@ from ...machine.models.rotary_module import (
     RotaryType,
 )
 from ..icons import get_icon
-from ..shared.adwfix import get_spinrow_float
 from ..shared.model_selection_dialog import ModelSelectionDialog
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.unit_spin_row import AngleSpinRow, LengthSpinRow, SpinRow
 from ..sim3d.renderer.model_renderer import get_model_extent
 
 
@@ -319,42 +319,42 @@ class RotaryModulePage(TrackedPreferencesPage):
         )
         self.general_group.add(self.reverse_axis_row)
 
-        self.axis_position_x_row = Adw.SpinRow(
-            title=_("Axis Offset X"),
-            subtitle=_("Offset from module position to rotation axis (X)"),
-            adjustment=Gtk.Adjustment(
-                lower=-10000, upper=10000, step_increment=1, page_increment=10
-            ),
-            digits=2,
+        self.axis_position_x_row = LengthSpinRow(
+            _("Axis Offset X"),
+            _("Offset from module position to rotation axis (X)"),
+            lower=-10000,
+            upper=10000,
+            min_value_in_base=-10000.0,
+            max_value_in_base=10000.0,
         )
-        self.axis_position_x_row.connect(
-            "notify::value", self._on_axis_position_changed
+        self.axis_position_x_row.value_changed.connect(
+            self._on_axis_position_changed
         )
         self.general_group.add(self.axis_position_x_row)
 
-        self.axis_position_y_row = Adw.SpinRow(
-            title=_("Axis Offset Y"),
-            subtitle=_("Offset from module position to rotation axis (Y)"),
-            adjustment=Gtk.Adjustment(
-                lower=-10000, upper=10000, step_increment=1, page_increment=10
-            ),
-            digits=2,
+        self.axis_position_y_row = LengthSpinRow(
+            _("Axis Offset Y"),
+            _("Offset from module position to rotation axis (Y)"),
+            lower=-10000,
+            upper=10000,
+            min_value_in_base=-10000.0,
+            max_value_in_base=10000.0,
         )
-        self.axis_position_y_row.connect(
-            "notify::value", self._on_axis_position_changed
+        self.axis_position_y_row.value_changed.connect(
+            self._on_axis_position_changed
         )
         self.general_group.add(self.axis_position_y_row)
 
-        self.axis_position_z_row = Adw.SpinRow(
-            title=_("Axis Offset Z"),
-            subtitle=_("Offset from module position to rotation axis (Z)"),
-            adjustment=Gtk.Adjustment(
-                lower=-10000, upper=10000, step_increment=1, page_increment=10
-            ),
-            digits=2,
+        self.axis_position_z_row = LengthSpinRow(
+            _("Axis Offset Z"),
+            _("Offset from module position to rotation axis (Z)"),
+            lower=-10000,
+            upper=10000,
+            min_value_in_base=-10000.0,
+            max_value_in_base=10000.0,
         )
-        self.axis_position_z_row.connect(
-            "notify::value", self._on_axis_position_changed
+        self.axis_position_z_row.value_changed.connect(
+            self._on_axis_position_changed
         )
         self.general_group.add(self.axis_position_z_row)
 
@@ -375,62 +375,54 @@ class RotaryModulePage(TrackedPreferencesPage):
         )
         self.general_group.add(self.rotary_type_row)
 
-        roller_diam_adj = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=1, page_increment=10
+        self.roller_diameter_row = LengthSpinRow(
+            _("Roller Diameter"),
+            _("Diameter of the drive roller"),
+            upper=10000,
+            max_value_in_base=10000.0,
         )
-        self.roller_diameter_row = Adw.SpinRow(
-            title=_("Roller Diameter"),
-            subtitle=_("Diameter of the drive roller"),
-            adjustment=roller_diam_adj,
-            digits=1,
-        )
-        self.roller_diameter_row.connect(
-            "notify::value", self._on_roller_diameter_changed
+        self.roller_diameter_row.value_changed.connect(
+            self._on_roller_diameter_changed
         )
         self.general_group.add(self.roller_diameter_row)
 
-        mm_per_rot_adj = Gtk.Adjustment(
-            lower=0, upper=100000, step_increment=1, page_increment=10
-        )
-        self.mu_per_rotation_row = Adw.SpinRow(
-            title=_("Travel per Rotation"),
-            subtitle=_(
+        self.mm_per_rotation_row = SpinRow(
+            _("Travel per Rotation"),
+            _(
                 "Firmware distance for one full 360° rotation. "
                 "0 = raw circumferential output."
             ),
-            adjustment=mm_per_rot_adj,
+            upper=100000,
             digits=2,
         )
-        self.mu_per_rotation_row.connect(
-            "notify::value", self._on_mm_per_rotation_changed
+        self.mm_per_rotation_row.value_changed.connect(
+            self._on_mm_per_rotation_changed
         )
-        self.general_group.add(self.mu_per_rotation_row)
+        self.general_group.add(self.mm_per_rotation_row)
 
-        default_diam_adj = Gtk.Adjustment(
-            lower=1, upper=10000, step_increment=1, page_increment=10
+        self.default_diameter_row = LengthSpinRow(
+            _("Default Workpiece Diameter"),
+            _("Default diameter for new layers using this module"),
+            lower=1,
+            upper=10000,
+            min_value_in_base=1.0,
+            max_value_in_base=10000.0,
         )
-        self.default_diameter_row = Adw.SpinRow(
-            title=_("Default Workpiece Diameter"),
-            subtitle=_("Default diameter for new layers using this module"),
-            adjustment=default_diam_adj,
-            digits=1,
-        )
-        self.default_diameter_row.connect(
-            "notify::value", self._on_default_diameter_changed
+        self.default_diameter_row.value_changed.connect(
+            self._on_default_diameter_changed
         )
         self.general_group.add(self.default_diameter_row)
 
-        max_len_adj = Gtk.Adjustment(
-            lower=1, upper=10000, step_increment=10, page_increment=50
+        self.max_workpiece_length_row = LengthSpinRow(
+            _("Max Workpiece Length"),
+            _("Maximum workpiece length this module can accommodate"),
+            lower=1,
+            upper=10000,
+            min_value_in_base=1.0,
+            max_value_in_base=10000.0,
         )
-        self.max_workpiece_length_row = Adw.SpinRow(
-            title=_("Max Workpiece Length"),
-            subtitle=_("Maximum workpiece length this module can accommodate"),
-            adjustment=max_len_adj,
-            digits=1,
-        )
-        self.max_workpiece_length_row.connect(
-            "notify::value", self._on_max_workpiece_length_changed
+        self.max_workpiece_length_row.value_changed.connect(
+            self._on_max_workpiece_length_changed
         )
         self.general_group.add(self.max_workpiece_length_row)
 
@@ -442,84 +434,68 @@ class RotaryModulePage(TrackedPreferencesPage):
         self.model_row.add_suffix(get_icon("go-next-symbolic"))
         self.model_group.add(self.model_row)
 
-        self.scale_row = Adw.SpinRow(
-            title=_("Scale"),
-            subtitle=_("Uniform scale factor for the model"),
-            adjustment=Gtk.Adjustment(
-                lower=0.01, upper=1000, step_increment=1, page_increment=10
-            ),
+        self.scale_row = SpinRow(
+            _("Scale"),
+            _("Uniform scale factor for the model"),
+            lower=0.01,
+            upper=1000,
             digits=2,
         )
-        self.scale_row.connect("notify::value", self._on_scale_changed)
+        self.scale_row.value_changed.connect(self._on_scale_changed)
         self.model_group.add(self.scale_row)
 
-        x_adj = Gtk.Adjustment(
-            lower=-10000, upper=10000, step_increment=1, page_increment=10
+        self.x_row = LengthSpinRow(
+            _("X Position"),
+            _("X coordinate in machine space"),
+            lower=-10000,
+            upper=10000,
+            min_value_in_base=-10000.0,
+            max_value_in_base=10000.0,
         )
-        self.x_row = Adw.SpinRow(
-            title=_("X Position"),
-            subtitle=_("X coordinate in machine space"),
-            adjustment=x_adj,
-            digits=2,
-        )
-        self.x_row.connect("notify::value", self._on_position_changed)
+        self.x_row.value_changed.connect(self._on_position_changed)
         self.model_group.add(self.x_row)
 
-        y_adj = Gtk.Adjustment(
-            lower=-10000, upper=10000, step_increment=1, page_increment=10
+        self.y_row = LengthSpinRow(
+            _("Y Position"),
+            _("Y coordinate in machine space"),
+            lower=-10000,
+            upper=10000,
+            min_value_in_base=-10000.0,
+            max_value_in_base=10000.0,
         )
-        self.y_row = Adw.SpinRow(
-            title=_("Y Position"),
-            subtitle=_("Y coordinate in machine space"),
-            adjustment=y_adj,
-            digits=2,
-        )
-        self.y_row.connect("notify::value", self._on_position_changed)
+        self.y_row.value_changed.connect(self._on_position_changed)
         self.model_group.add(self.y_row)
 
-        z_adj = Gtk.Adjustment(
-            lower=-10000, upper=10000, step_increment=1, page_increment=10
+        self.z_row = LengthSpinRow(
+            _("Z Position"),
+            _("Z coordinate in machine space"),
+            lower=-10000,
+            upper=10000,
+            min_value_in_base=-10000.0,
+            max_value_in_base=10000.0,
         )
-        self.z_row = Adw.SpinRow(
-            title=_("Z Position"),
-            subtitle=_("Z coordinate in machine space"),
-            adjustment=z_adj,
-            digits=2,
-        )
-        self.z_row.connect("notify::value", self._on_position_changed)
+        self.z_row.value_changed.connect(self._on_position_changed)
         self.model_group.add(self.z_row)
 
-        self.rx_row = Adw.SpinRow(
-            title=_("X Rotation"),
-            subtitle=_("Degrees around the X axis"),
-            adjustment=Gtk.Adjustment(
-                lower=-360, upper=360, step_increment=1, page_increment=15
-            ),
-            digits=1,
+        self.rx_row = AngleSpinRow(
+            _("X Rotation"),
+            _("Degrees around the X axis"),
         )
-        self.rx_row.connect("notify::value", self._on_rotation_changed)
+        self.rx_row.value_changed.connect(self._on_rotation_changed)
         self.model_group.add(self.rx_row)
 
-        self.ry_row = Adw.SpinRow(
-            title=_("Y Rotation"),
-            subtitle=_("Degrees around the Y axis"),
-            adjustment=Gtk.Adjustment(
-                lower=-360, upper=360, step_increment=1, page_increment=15
-            ),
-            digits=1,
+        self.ry_row = AngleSpinRow(
+            _("Y Rotation"),
+            _("Degrees around the Y axis"),
         )
-        self.ry_row.connect("notify::value", self._on_rotation_changed)
+        self.ry_row.value_changed.connect(self._on_rotation_changed)
         self.model_group.add(self.ry_row)
 
-        self.rz_row = Adw.SpinRow(
-            title=_("Z Rotation"),
-            subtitle=_("Degrees around the Z axis"),
-            adjustment=Gtk.Adjustment(
-                lower=-360, upper=360, step_increment=1, page_increment=15
-            ),
-            digits=1,
+        self.rz_row = AngleSpinRow(
+            _("Z Rotation"),
+            _("Degrees around the Z axis"),
         )
-        self.rz_row.connect("notify::value", self._on_rotation_changed)
+        self.rz_row.value_changed.connect(self._on_rotation_changed)
         self.model_group.add(self.rz_row)
 
         self.module_list_editor.list_box.connect(
@@ -562,11 +538,16 @@ class RotaryModulePage(TrackedPreferencesPage):
             mode_idx = 0
         self.mode_row.set_selected(mode_idx)
 
-        self.mu_per_rotation_row.set_value(module.mu_per_rotation)
+        scale = self.machine.unit_system.scale_from_mm
+        self.mm_per_rotation_row.set_value(module.mm_per_rotation * scale)
         self._update_mode_dependent_rows(module)
 
-        self.default_diameter_row.set_value(module.default_diameter)
-        self.max_workpiece_length_row.set_value(module.max_workpiece_length)
+        self.default_diameter_row.set_value_in_base_units(
+            module.default_diameter
+        )
+        self.max_workpiece_length_row.set_value_in_base_units(
+            module.max_workpiece_length
+        )
 
         try:
             type_idx = self._rotary_type_values.index(module.rotary_type)
@@ -575,16 +556,24 @@ class RotaryModulePage(TrackedPreferencesPage):
         self.rotary_type_row.set_selected(type_idx)
         self._update_type_dependent_rows(module)
 
-        self.roller_diameter_row.set_value(module.roller_diameter)
+        self.roller_diameter_row.set_value_in_base_units(
+            module.roller_diameter
+        )
         self.reverse_axis_row.set_active(module.reverse_axis)
-        self.axis_position_x_row.set_value(float(module.axis_position[0]))
-        self.axis_position_y_row.set_value(float(module.axis_position[1]))
-        self.axis_position_z_row.set_value(float(module.axis_position[2]))
+        self.axis_position_x_row.set_value_in_base_units(
+            float(module.axis_position[0])
+        )
+        self.axis_position_y_row.set_value_in_base_units(
+            float(module.axis_position[1])
+        )
+        self.axis_position_z_row.set_value_in_base_units(
+            float(module.axis_position[2])
+        )
         self._update_model_subtitle(module)
         t = module.transform
-        self.x_row.set_value(float(t[0, 3]))
-        self.y_row.set_value(float(t[1, 3]))
-        self.z_row.set_value(float(t[2, 3]))
+        self.x_row.set_value_in_base_units(float(t[0, 3]))
+        self.y_row.set_value_in_base_units(float(t[1, 3]))
+        self.z_row.set_value_in_base_units(float(t[2, 3]))
         rx, ry, rz = module.get_rotation()
         self.rx_row.set_value(rx)
         self.ry_row.set_value(ry)
@@ -654,7 +643,7 @@ class RotaryModulePage(TrackedPreferencesPage):
 
     def _update_mode_dependent_rows(self, module: RotaryModule):
         is_replacement = module.mode == RotaryMode.AXIS_REPLACEMENT
-        self.mu_per_rotation_row.set_visible(is_replacement)
+        self.mm_per_rotation_row.set_visible(is_replacement)
         self._update_axis_dropdown(module)
 
     def _update_type_dependent_rows(self, module: RotaryModule):
@@ -683,33 +672,40 @@ class RotaryModulePage(TrackedPreferencesPage):
             module.set_rotary_type(self._rotary_type_values[selected])
             self._update_type_dependent_rows(module)
 
-    def _on_mm_per_rotation_changed(self, spinrow, _param):
+    def _on_mm_per_rotation_changed(self, spinrow):
         if self._is_updating:
             return
         module = self._get_selected_module()
         if module:
-            module.set_mm_per_rotation(get_spinrow_float(spinrow))
+            scale = self.machine.unit_system.scale_from_mm
+            module.set_mm_per_rotation(spinrow.get_value() / scale)
 
-    def _on_default_diameter_changed(self, spinrow, _param):
+    def _on_default_diameter_changed(self, helper):
         if self._is_updating:
             return
         module = self._get_selected_module()
         if module:
-            module.set_default_diameter(get_spinrow_float(spinrow))
+            module.set_default_diameter(
+                self.default_diameter_row.get_value_in_base_units()
+            )
 
-    def _on_max_workpiece_length_changed(self, spinrow, _param):
+    def _on_max_workpiece_length_changed(self, helper):
         if self._is_updating:
             return
         module = self._get_selected_module()
         if module:
-            module.set_max_workpiece_length(get_spinrow_float(spinrow))
+            module.set_max_workpiece_length(
+                self.max_workpiece_length_row.get_value_in_base_units()
+            )
 
-    def _on_roller_diameter_changed(self, spinrow, _param):
+    def _on_roller_diameter_changed(self, helper):
         if self._is_updating:
             return
         module = self._get_selected_module()
         if module:
-            module.set_roller_diameter(get_spinrow_float(spinrow))
+            module.set_roller_diameter(
+                self.roller_diameter_row.get_value_in_base_units()
+            )
 
     def _on_reverse_axis_changed(self, switchrow, _param):
         if self._is_updating:
@@ -718,15 +714,15 @@ class RotaryModulePage(TrackedPreferencesPage):
         if module:
             module.set_reverse_axis(switchrow.get_active())
 
-    def _on_axis_position_changed(self, spinrow, _param):
+    def _on_axis_position_changed(self, helper):
         if self._is_updating:
             return
         module = self._get_selected_module()
         if module:
             module.set_axis_position(
-                self.axis_position_x_row.get_value(),
-                self.axis_position_y_row.get_value(),
-                self.axis_position_z_row.get_value(),
+                self.axis_position_x_row.get_value_in_base_units(),
+                self.axis_position_y_row.get_value_in_base_units(),
+                self.axis_position_z_row.get_value_in_base_units(),
             )
 
     def _on_model_activated(self, row):
@@ -766,34 +762,34 @@ class RotaryModulePage(TrackedPreferencesPage):
         if extent and extent > 1e-6:
             module.set_scale(module.default_diameter / extent)
 
-    def _on_position_changed(self, _spinrow, _param):
+    def _on_position_changed(self, helper):
         if self._is_updating:
             return
         module = self._get_selected_module()
         if not module:
             return
-        x = get_spinrow_float(self.x_row)
-        y = get_spinrow_float(self.y_row)
-        z = get_spinrow_float(self.z_row)
+        x = self.x_row.get_value_in_base_units()
+        y = self.y_row.get_value_in_base_units()
+        z = self.z_row.get_value_in_base_units()
         module.set_position(x, y, z)
 
-    def _on_rotation_changed(self, _spinrow, _param):
+    def _on_rotation_changed(self, _spinrow):
         if self._is_updating:
             return
         module = self._get_selected_module()
         if not module:
             return
-        rx = get_spinrow_float(self.rx_row)
-        ry = get_spinrow_float(self.ry_row)
-        rz = get_spinrow_float(self.rz_row)
+        rx = self.rx_row.get_value()
+        ry = self.ry_row.get_value()
+        rz = self.rz_row.get_value()
         module.set_rotation(rx, ry, rz)
 
-    def _on_scale_changed(self, _spinrow, _param):
+    def _on_scale_changed(self, _spinrow):
         if self._is_updating:
             return
         module = self._get_selected_module()
         if module:
-            module.set_scale(get_spinrow_float(self.scale_row))
+            module.set_scale(self.scale_row.get_value())
 
     def _on_machine_changed(self, sender, **kwargs):
         if self._is_updating:

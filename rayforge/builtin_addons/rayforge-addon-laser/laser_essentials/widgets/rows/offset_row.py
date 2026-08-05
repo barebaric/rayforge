@@ -28,6 +28,7 @@ class OffsetRow(SpinRow):
             100.0,
             0.1,
             2,
+            quantity="length",
         )
 
     def _sync_dependencies(self):

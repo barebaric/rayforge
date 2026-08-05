@@ -1,21 +1,15 @@
-"""UI fixtures for laser_essentials page tests."""
+"""UI fixtures for post_processors addon UI tests."""
 
 import asyncio
-import logging
 
 import pytest
 
 from rayforge import config as config_module
 from rayforge import context as context_module
 from rayforge.context import get_context
-from rayforge.doceditor.editor import DocEditor
-from rayforge.machine.models.laser import Laser
-from rayforge.machine.models.machine import Machine
 from rayforge.shared import tasker
 from rayforge.shared.tasker.manager import TaskManager
 from rayforge.shared.util.glib import idle_add
-
-logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -24,15 +18,12 @@ def ui_task_mgr():
     tm = TaskManager(main_thread_scheduler=idle_add)
     yield tm
     if tm.has_tasks():
-        logger.warning(
-            "Task manager still has tasks at end of test. Shutting down."
-        )
-    tm.shutdown()
+        tm.shutdown()
 
 
 @pytest.fixture
 def ui_context(ui_task_mgr, monkeypatch, tmp_path):
-    """A UI context for laser addon tests."""
+    """A UI context for post_processors addon tests."""
     temp_config_dir = tmp_path / "config"
     temp_dialect_dir = temp_config_dir / "dialects"
     temp_machine_dir = temp_config_dir / "machines"
@@ -54,34 +45,3 @@ def ui_context(ui_task_mgr, monkeypatch, tmp_path):
 
     asyncio.run(context.shutdown())
     context_module._context_instance = None
-
-
-@pytest.fixture
-def editor(ui_context, ui_task_mgr):
-    editor = DocEditor(task_manager=ui_task_mgr, context=ui_context)
-    yield editor
-    editor.cleanup()
-
-
-@pytest.fixture
-def laser_machine(ui_context):
-    """A machine with two laser heads, set as the active machine."""
-    machine = Machine(ui_context)
-    machine.set_axis_extents(200, 150)
-    machine.max_cut_speed = 5000
-    machine.max_travel_speed = 10000
-
-    laser1 = Laser()
-    laser1.name = "Laser 1"
-    laser1.spot_size_mm = (0.1, 0.2)
-    laser2 = Laser()
-    laser2.name = "Laser 2"
-    laser2.spot_size_mm = (0.3, 0.4)
-    machine.heads.clear()
-    machine.add_head(laser1)
-    machine.add_head(laser2)
-
-    ui_context.machine_mgr.machines.clear()
-    ui_context.machine_mgr.add_machine(machine)
-    ui_context.config.set_machine(machine)
-    return machine
