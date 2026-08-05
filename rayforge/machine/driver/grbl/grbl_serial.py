@@ -27,6 +27,7 @@ from ....core.varset import (
 )
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
+from ....shared.units.system import UnitSystem
 from ...transport import SerialTransport, TransportStatus
 from ...transport.grbl import (
     DEFAULT_GRBL_RX_BUFFER_SIZE,
@@ -49,6 +50,7 @@ from .grbl_probe import probe_grbl_device
 from .grbl_util import (
     CommandRequest,
     alarm_code_to_device_error,
+    detect_unit_system_from_settings,
     error_code_to_device_error,
     gcode_to_p_number,
     get_grbl_setting_varsets,
@@ -84,6 +86,7 @@ class GrblSerialDriver(Driver):
     supports_settings = True
     reports_granular_progress = True
     supports_probing = True
+    supports_unit_detection = True
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
@@ -1209,6 +1212,18 @@ class GrblSerialDriver(Driver):
 
     def get_setting_vars(self) -> List["VarSet"]:
         return get_grbl_setting_varsets()
+
+    async def detect_unit_system(self) -> Optional[UnitSystem]:
+        """
+        Queries the device's ``$$`` settings and infers the unit
+        system from the ``$13`` (Report in inches) flag.
+        """
+        try:
+            response_lines = await self.execute_interactive_command("$$")
+        except (ConnectionError, asyncio.TimeoutError) as e:
+            logger.warning(f"Unit system detection failed: {e}")
+            return None
+        return detect_unit_system_from_settings(response_lines)
 
     async def read_settings(self) -> None:
         response_lines = await self.execute_interactive_command("$$")

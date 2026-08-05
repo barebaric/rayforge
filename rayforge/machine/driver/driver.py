@@ -20,6 +20,7 @@ from raygeo.ops.axis import Axis
 
 from ...context import RayforgeContext
 from ...core.varset import IntVar, VarSet
+from ...shared.units.system import UnitSystem
 
 if TYPE_CHECKING:
     from raygeo.ops import Ops
@@ -227,6 +228,9 @@ class Driver(ABC):
     # When True, the firmware applies its own overscan, so Rayforge's
     # OverscanTransformer would double it up and should be skipped.
     native_overscan: bool = False
+    # When True, the driver can query the device to detect its
+    # native unit system (metric vs imperial).
+    supports_unit_detection: bool = False
 
     @property
     @abstractmethod
@@ -388,6 +392,22 @@ class Driver(ABC):
         """
         Returns the PWM parameters reported by the driver for the given
         head, or None when the driver reports no PWM support.
+        """
+        return None
+
+    async def detect_unit_system(self) -> Optional[UnitSystem]:
+        """
+        Queries the device to detect its native unit system.
+
+        Returns the detected ``UnitSystem``, or ``None`` when the
+        driver cannot determine it (e.g. the device did not respond,
+        or the firmware does not expose a unit-system setting).
+
+        The base implementation always returns ``None``. Drivers that
+        set ``supports_unit_detection = True`` should override this.
+
+        This is called by the controller after a successful connection
+        when ``machine.auto_detect_units`` is enabled.
         """
         return None
 

@@ -5,11 +5,19 @@ from gi.repository import Adw, Gtk
 
 from ...machine.driver import drivers, get_driver_cls
 from ...machine.models.machine import Machine
+from ...shared.units.system import UnitSystem
+from ..icons import get_icon
 from ..shared.preferences_page import TrackedPreferencesPage
 from ..shared.unit_spin_row import UnitSpinRowHelper
 from ..varset.varsetwidget import VarSetWidget
 
 logger = logging.getLogger(__name__)
+
+UNIT_SYSTEM_LABELS = {
+    UnitSystem.METRIC: _("Metric (mm)"),
+    UnitSystem.IMPERIAL: _("Imperial (inches)"),
+}
+UNIT_SYSTEM_ORDER = [UnitSystem.METRIC, UnitSystem.IMPERIAL]
 
 
 class GeneralPreferencesPage(TrackedPreferencesPage):
@@ -200,6 +208,40 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         self.acceleration_helper.changed.connect(self.on_acceleration_changed)
         speeds_group.add(acceleration_row)
 
+        # Machine Unit System group
+        units_group = Adw.PreferencesGroup(title=_("Unit System"))
+        units_group.set_description(
+            _(
+                "The unit system used when emitting G-code and "
+                "communicating with the device. Internal values are "
+                "always stored in millimeters and converted at the "
+                "driver boundary."
+            )
+        )
+        self.add(units_group)
+
+        # Unit system selector
+        unit_labels = [UNIT_SYSTEM_LABELS[u] for u in UNIT_SYSTEM_ORDER]
+        self.unit_system_row = Adw.ComboRow(
+            title=_("Machine Unit System"),
+            model=Gtk.StringList.new(unit_labels),
+        )
+        current_idx = UNIT_SYSTEM_ORDER.index(self.machine.unit_system)
+        self.unit_system_row.set_selected(current_idx)
+        self.unit_system_row.connect(
+            "notify::selected", self.on_unit_system_changed
+        )
+        units_group.add(self.unit_system_row)
+
+        # Preamble mismatch warning row
+        self.unit_warning_row = Adw.ActionRow(
+            activatable=False,
+        )
+        self.unit_warning_row.add_prefix(get_icon("warning-symbolic"))
+        self.unit_warning_row.add_css_class("warning")
+        self.unit_warning_row.set_visible(False)
+        units_group.add(self.unit_warning_row)
+
         # Initial check for errors
         self._update_error_state()
 
@@ -208,6 +250,7 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
 
         # Update controls based on driver features
         self._update_travel_speed_state()
+        self._update_unit_warning()
 
     def _on_machine_changed(self, sender, **kwargs):
         """
@@ -228,6 +271,23 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
 
         # Update controls based on new driver features
         self._update_travel_speed_state()
+        self._sync_unit_system_widgets()
+        self._update_unit_warning()
+
+    def _sync_unit_system_widgets(self):
+        """
+        Synchronizes the unit system selector with the machine model
+        without triggering change handlers.
+        """
+        was_initializing = self._is_initializing
+        self._is_initializing = True
+        try:
+            idx = UNIT_SYSTEM_ORDER.index(self.machine.unit_system)
+            self.unit_system_row.set_selected(idx)
+        except ValueError:
+            pass
+        finally:
+            self._is_initializing = was_initializing
 
     def _on_destroy(self, *args):
         """Disconnects signals to prevent memory leaks."""
@@ -335,3 +395,52 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
             self.travel_speed_helper.set_subtitle_format(
                 _("Not supported by the driver")
             )
+
+    def on_unit_system_changed(self, combo_row, _):
+        if self._is_initializing:
+            return
+        idx = combo_row.get_selected()
+        if 0 <= idx < len(UNIT_SYSTEM_ORDER):
+            self.machine.set_unit_system(UNIT_SYSTEM_ORDER[idx])
+            self._update_unit_warning()
+
+    def _update_unit_warning(self):
+        """
+        Show a warning when the dialect preamble's G20/G21 unit
+        command does not match the configured machine unit system.
+        """
+        dialect = self.machine.dialect
+        if dialect is None:
+            self.unit_warning_row.set_visible(False)
+            return
+
+        preamble = " ".join(dialect.preamble)
+        has_g20 = "G20" in preamble
+        has_g21 = "G21" in preamble
+        is_imperial = self.machine.unit_system == UnitSystem.IMPERIAL
+
+        mismatch = (is_imperial and has_g21 and not has_g20) or (
+            not is_imperial and has_g20 and not has_g21
+        )
+        if mismatch:
+            if is_imperial:
+                self.unit_warning_row.set_title(
+                    _(
+                        "The preamble contains G21 (millimeters) but "
+                        "the machine unit system is set to imperial. "
+                        "G-code values will be emitted in inches — "
+                        "ensure your preamble matches."
+                    )
+                )
+            else:
+                self.unit_warning_row.set_title(
+                    _(
+                        "The preamble contains G20 (inches) but the "
+                        "machine unit system is set to metric. G-code "
+                        "values will be emitted in millimeters — "
+                        "ensure your preamble matches."
+                    )
+                )
+            self.unit_warning_row.set_visible(True)
+        else:
+            self.unit_warning_row.set_visible(False)

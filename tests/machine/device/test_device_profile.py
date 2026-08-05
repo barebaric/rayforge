@@ -16,6 +16,7 @@ from rayforge.machine.device.profile import (
 from rayforge.machine.models.laser import LaserHead, LaserType
 from rayforge.machine.models.machine import Origin
 from rayforge.shared.tasker.manager import TaskManager
+from rayforge.shared.units.system import UnitSystem
 
 
 async def _wait_for_tasks(task_mgr: TaskManager):
@@ -623,6 +624,7 @@ class TestExportMachine:
         machine.acceleration = None
         machine.single_axis_homing_enabled = None
         machine.rotary_enabled_default = False
+        machine.unit_system = UnitSystem.METRIC
         machine.work_margins = (0, 0, 0, 0)
         machine.soft_limits = None
         machine.heads = []
