@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-03 01:13+0200\n"
+"POT-Creation-Date: 2026-08-06 01:04+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -67,8 +67,8 @@ msgid "Step Over"
 msgstr "Schrittweite"
 
 #: laser_essentials/widgets/wavefront_page.py
-msgid "Lateral step-over between wavefront passes (mm)"
-msgstr "Seitliche Schrittweite zwischen Wavefront-Durchgängen (mm)"
+msgid "Lateral step-over between wavefront passes"
+msgstr "Seitliche Zustellung zwischen den Wellenfrontdurchgängen"
 
 #: laser_essentials/widgets/wavefront_page.py
 #: laser_essentials/widgets/rows/offset_row.py
@@ -79,8 +79,8 @@ msgid "Offset"
 msgstr "Versatz"
 
 #: laser_essentials/widgets/wavefront_page.py
-msgid "Extra offset from walls (mm)"
-msgstr "Zusätzlicher Versatz von Wänden (mm)"
+msgid "Extra offset from walls"
+msgstr "Zusätzlicher Versatz von Wänden"
 
 #: laser_essentials/widgets/wavefront_page.py
 #: laser_essentials/steps/wavefront_step.py
@@ -565,8 +565,8 @@ msgid "Number of Depth Levels"
 msgstr "Anzahl der Tiefenstufen"
 
 #: laser_essentials/widgets/raster_page.py
-msgid "Z Step-Down per Level (mm)"
-msgstr "Z-Absenkung pro Stufe (mm)"
+msgid "Z Step-Down per Level"
+msgstr "Z-Absenkung pro Ebene"
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Rotate Angle Per Pass"
@@ -627,9 +627,9 @@ msgstr "Abtastintervall"
 #: laser_essentials/widgets/raster_page.py
 msgid ""
 "Distance between power samples along scan line. Lower values improve "
-"accuracy, but increase output size."
+"accuracy, but increase output size. "
 msgstr ""
-"Abstand zwischen Leistungsabtastungen entlang der Scanzeile. Niedrigere "
+"Abstand zwischen den Leistungsabtastpunkten entlang der Scanlinie. Kleinere"
 "Werte verbessern die Genauigkeit, erhöhen aber die Ausgabegröße."
 
 #: laser_essentials/widgets/raster_page.py
@@ -649,11 +649,10 @@ msgstr "Bidirektionaler Scan-Versatz"
 
 #: laser_essentials/widgets/raster_page.py
 msgid ""
-"Corrects X misalignment between left-to-right and right-to-left raster "
-"passes (in mm)"
+"Corrects X misalignment between left-to-right and right-to-left raster passes"
 msgstr ""
-"Korrigiert X-Fehlausrichtung zwischen links-nach-rechts und rechts-nach-"
-"links Rasterdurchläufen (in mm)"
+"Korrigiert die X-Ausrichtung zwischen Rasterdurchgängen von links nach"
+"rechts und von rechts nach links"
 
 #: laser_essentials/widgets/raster_page.py
 #: laser_essentials/steps/raster_step.py

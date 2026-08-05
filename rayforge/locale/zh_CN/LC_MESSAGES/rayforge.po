@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-04 19:24+0200\n"
+"POT-Creation-Date: 2026-08-06 00:18+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -1903,6 +1903,7 @@ msgstr "此机器配置文件及其所有设置将被永久删除。此操作无
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 #: rayforge/ui_gtk/settings/license_settings_page.py
 #: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/settings/color_presets_page.py
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 #: rayforge/ui_gtk/machine/unified_wizard.py
@@ -1933,10 +1934,12 @@ msgstr "取消"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 #: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/settings/color_presets_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/doceditor/asset_browser.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
+#: rayforge/ui_gtk/doceditor/workflow_row.py
 #: rayforge/ui_gtk/doceditor/layer_column.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Delete"
@@ -2167,6 +2170,102 @@ msgstr "配方"
 #: rayforge/ui_gtk/settings/recipe_manager_page.py
 msgid "Manage your saved recipes for different materials and processes."
 msgstr "管理您为不同材料和工艺保存的配方。"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "Edit Color Rule"
+msgstr "编辑颜色规则"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "Update the color rule details:"
+msgstr "更新颜色规则详细信息："
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+#: rayforge/ui_gtk/machine/dialect_editor.py
+#: rayforge/ui_gtk/machine/gcode_editor.py
+#: rayforge/ui_gtk/machine/wcs_dialog.py
+#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/toolbar.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Save"
+msgstr "保存"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "Add Color Rule"
+msgstr "添加颜色规则"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "Map a color to a step type for SVG imports."
+msgstr "为 SVG 导入将颜色映射到步骤类型。"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Add"
+msgstr "添加"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Color"
+msgstr "颜色"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "SVG color that triggers this rule"
+msgstr "触发此规则的 SVG 颜色"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "Label (optional)"
+msgstr "标签（可选）"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid "Step Type"
+msgstr "步骤类型"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "Step type created when this color is imported"
+msgstr "导入此颜色时创建的步骤类型"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+#, python-brace-format
+msgid "Color {color}"
+msgstr "颜色 {color}"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "This step type is not currently available."
+msgstr "此步骤类型当前不可用。"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+#, python-brace-format
+msgid "{step_type} (unavailable)"
+msgstr "{step_type}（不可用）"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "No color rules found."
+msgstr "未找到颜色规则。"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+#, python-brace-format
+msgid "Delete color rule '{color}'?"
+msgstr "删除颜色规则“{color}”？"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid ""
+"The color rule will be permanently removed. This action cannot be undone."
+msgstr "颜色规则将被永久删除。此操作无法撤消。"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "Color Rules"
+msgstr "颜色规则"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid ""
+"Map SVG colors to step types so they are applied automatically when "
+"importing."
+msgstr "将 SVG 颜色映射到步骤类型，以便在导入时自动应用。"
 
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Materials"
@@ -2940,18 +3039,6 @@ msgid "Export the calibration card for printing"
 msgstr "导出校准卡以供打印"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-#: rayforge/ui_gtk/machine/dialect_editor.py
-#: rayforge/ui_gtk/machine/gcode_editor.py
-#: rayforge/ui_gtk/machine/wcs_dialog.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
-#: rayforge/ui_gtk/toolbar.py
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Save"
-msgstr "保存"
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Save Calibration Card"
 msgstr "保存校准卡"
 
@@ -3680,32 +3767,24 @@ msgid "Z position in {wcs}"
 msgstr "Z 位置 ({wcs})"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
-msgid "Width in mm"
-msgstr "宽度 (mm)"
-
-#: rayforge/ui_gtk/machine/nogo_zones_page.py
-msgid "Height in mm"
-msgstr "高度 (mm)"
-
-#: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Depth"
 msgstr "深度"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
-msgid "Depth (Z extent) in mm"
-msgstr "深度 (Z范围) (mm)"
+msgid "Depth (Z extent)"
+msgstr "深度（Z 范围）"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
-msgid "Cylinder radius in mm"
-msgstr "圆柱体半径 (mm)"
+msgid "Cylinder radius"
+msgstr "圆柱体半径"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Cylinder Height"
 msgstr "圆柱体高度"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
-msgid "Cylinder height in mm"
-msgstr "圆柱体高度 (mm)"
+msgid "Cylinder height"
+msgstr "圆柱体高度"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 msgid "Escaped braces {{ or }} are not supported."
@@ -3849,6 +3928,18 @@ msgstr "编辑工件偏移"
 #: rayforge/ui_gtk/machine/wcs_dialog.py
 msgid "Enter the offset from Machine Zero to Work Zero for the active WCS."
 msgstr "输入从机器零点到工件零点的偏移，用于活动WCS。"
+
+#: rayforge/ui_gtk/machine/wcs_dialog.py
+msgid "X Offset"
+msgstr "X 偏移"
+
+#: rayforge/ui_gtk/machine/wcs_dialog.py
+msgid "Y Offset"
+msgstr "Y 偏移"
+
+#: rayforge/ui_gtk/machine/wcs_dialog.py
+msgid "Z Offset"
+msgstr "Z 偏移"
 
 #: rayforge/ui_gtk/machine/maintenance_page.py
 msgid "Reset Counter"
@@ -4097,12 +4188,9 @@ msgstr "弧线和曲线公差"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid ""
-"Maximum deviation from original path when fitting arcs and curves (in "
-"machine units). Lower values drastically increase processing time and job "
-"size"
-msgstr ""
-"拟合弧线和曲线时与原始路径的最大偏差（以机器单位计）。较低的值会大幅增加处理"
-"时间和作业大小"
+"Maximum deviation from original path when fitting arcs and curves. Lower "
+"values drastically increase processing time and job size"
+msgstr "拟合圆弧和曲线时相对于原始路径的最大偏差。较低的值会大幅增加处理时间和作业大小。"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Homing and Startup"
@@ -4684,6 +4772,16 @@ msgid "No"
 msgstr "否"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Metric (mm)"
+msgstr "公制（毫米）"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Imperial (inches)"
+msgstr "英制（英寸）"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "Review & Name"
 msgstr "检查并命名"
 
@@ -4724,6 +4822,11 @@ msgstr "连接"
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "Work Area X×Y"
 msgstr "工作区域 X×Y"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Unit System"
+msgstr "单位制"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -5041,6 +5144,21 @@ msgid "Limits in machine units per minute."
 msgstr "以每分钟机器单位为单位。"
 
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Maximum rapid movement speed"
+msgstr "最大快速移动速度"
+
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Maximum cutting speed"
+msgstr "最大切割速度"
+
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Used for time estimations and calculating the default overscan distance"
+msgstr "用于时间估算和计算默认过冲距离"
+
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Run homing cycle when machine connects"
 msgstr "机器连接时执行归零循环"
 
@@ -5353,16 +5471,14 @@ msgid "Movement parameters used for job time estimation and path optimization."
 msgstr "用于作业时间估算和路径优化的运动参数。"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Maximum rapid movement speed"
-msgstr "最大快速移动速度"
+msgid ""
+"The unit system used when emitting G-code and communicating with the device. "
+"This setting is independent of the units used in the user interface."
+msgstr "生成 G 代码和与设备通信时使用的单位制。此设置与用户界面中使用的单位无关。"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Maximum cutting speed"
-msgstr "最大切割速度"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Used for time estimations and calculating the default overscan distance"
-msgstr "用于时间估算和计算默认过冲距离"
+msgid "Machine Unit System"
+msgstr "机器单位制"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #, python-brace-format
@@ -5377,6 +5493,20 @@ msgstr "<b>错误：</b> {error}"
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Not supported by the driver"
 msgstr "驱动程序不支持"
+
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid ""
+"The preamble contains G21 (millimeters) but the machine unit system is set "
+"to imperial. G-code values will be emitted in inches — ensure your preamble "
+"matches."
+msgstr "程序头包含 G21（毫米），但机器单位制设置为英制。G 代码值将以英寸输出——请确保程序头匹配。"
+
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid ""
+"The preamble contains G20 (inches) but the machine unit system is set to "
+"metric. G-code values will be emitted in millimeters — ensure your preamble "
+"matches."
+msgstr "程序头包含 G20（英寸），但机器单位制设置为公制。G 代码值将以毫米输出——请确保程序头匹配。"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Drag to reorder"
@@ -5425,11 +5555,6 @@ msgstr "添加参数"
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "New Parameter"
 msgstr "新参数"
-
-#: rayforge/ui_gtk/varset/adapter/speed.py
-#, python-brace-format
-msgid "Max: {max_speed}"
-msgstr "最大：{max_speed}"
 
 #: rayforge/ui_gtk/varset/adapter/appkey.py
 msgid "Request Access"
@@ -5852,6 +5977,11 @@ msgstr "无参数"
 #: rayforge/ui_gtk/shared/splitbutton.py
 msgid "Show all options"
 msgstr "显示所有选项"
+
+#: rayforge/ui_gtk/shared/unit_spin_row.py
+#, python-brace-format
+msgid "Value in {unit}"
+msgstr "{unit} 中的值"
 
 #: rayforge/ui_gtk/shared/playback_overlay.py
 msgid "Play simulation"
@@ -6439,10 +6569,6 @@ msgid ""
 msgstr "此配方适用的操作类别。使用“Any”将其应用于所有任务类型"
 
 #: rayforge/ui_gtk/doceditor/recipe_pages.py
-msgid "Step Type"
-msgstr "步骤类型"
-
-#: rayforge/ui_gtk/doceditor/recipe_pages.py
 msgid "Restrict this recipe to a specific operation type"
 msgstr "将此配方限制为特定的操作类型"
 
@@ -6728,12 +6854,6 @@ msgid "Enter a name for the new library folder:"
 msgstr "输入新库文件夹的名称："
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Add"
-msgstr "添加"
-
-#: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "Failed to create library. A folder with that name may already exist."
 msgstr "创建库失败。具有该名称的文件夹可能已存在。"
 
@@ -6813,10 +6933,6 @@ msgstr "输入新材料的详细信息："
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Category"
 msgstr "类别"
-
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Color"
-msgstr "颜色"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Custom"
@@ -7020,6 +7136,12 @@ msgstr "重新排序步骤"
 msgid "Add step '{name}'"
 msgstr "添加步骤 '{name}'"
 
+#: rayforge/ui_gtk/doceditor/workflow_row.py
+#: rayforge/ui_gtk/doceditor/workflow_view.py
+#, python-brace-format
+msgid "Remove step '{name}'"
+msgstr "移除步骤 '{name}'"
+
 #: rayforge/ui_gtk/doceditor/layer_column.py
 msgid "Layer Settings"
 msgstr "图层设置"
@@ -7091,8 +7213,8 @@ msgstr "重置剪切为0°"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 #, python-brace-format
-msgid "Natural: {val:.2f}"
-msgstr "自然：{val:.2f}"
+msgid "Natural: {val}"
+msgstr "自然：{val}"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "Source File"
@@ -7133,6 +7255,7 @@ msgid "Remove all tabs"
 msgstr "移除所有标签"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
+#: rayforge/ui_gtk/doceditor/add_tabs_popover.py
 msgid "Tab Width"
 msgstr "标签宽度"
 
@@ -7156,10 +7279,6 @@ msgstr "混合值"
 #: rayforge/ui_gtk/doceditor/add_tabs_popover.py
 msgid "Number of Tabs"
 msgstr "标签数量"
-
-#: rayforge/ui_gtk/doceditor/add_tabs_popover.py
-msgid "Tab Width (mm)"
-msgstr "标签宽度 (mm)"
 
 #: rayforge/ui_gtk/doceditor/add_tabs_popover.py
 msgid "Adjust Equidistant Tabs"
@@ -7314,8 +7433,8 @@ msgid "Object Diameter"
 msgstr "物体直径"
 
 #: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
-msgid "Diameter of the cylindrical object in machine units"
-msgstr "圆柱形物体的直径（机器单位）"
+msgid "Diameter of the cylindrical object"
+msgstr "圆柱体对象的直径"
 
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "No materials in selected library."
@@ -7381,11 +7500,6 @@ msgstr "{count} 个步骤"
 #, python-brace-format
 msgid "{count} steps"
 msgstr "{count} 个步骤"
-
-#: rayforge/ui_gtk/doceditor/workflow_view.py
-#, python-brace-format
-msgid "Remove step '{name}'"
-msgstr "移除步骤 '{name}'"
 
 #: rayforge/ui_gtk/about.py
 msgid "Not found"

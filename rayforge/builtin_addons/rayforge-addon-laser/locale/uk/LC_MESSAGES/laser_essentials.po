@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-03 01:13+0200\n"
+"POT-Creation-Date: 2026-08-06 01:04+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -68,8 +68,8 @@ msgid "Step Over"
 msgstr "Крок переміщення"
 
 #: laser_essentials/widgets/wavefront_page.py
-msgid "Lateral step-over between wavefront passes (mm)"
-msgstr "Бічне зміщення між проходами хвильового фронту (мм)"
+msgid "Lateral step-over between wavefront passes"
+msgstr "Бічний крок між проходами хвильового фронту"
 
 #: laser_essentials/widgets/wavefront_page.py
 #: laser_essentials/widgets/rows/offset_row.py
@@ -80,8 +80,8 @@ msgid "Offset"
 msgstr "Зміщення"
 
 #: laser_essentials/widgets/wavefront_page.py
-msgid "Extra offset from walls (mm)"
-msgstr "Додаткове зміщення від стінок (мм)"
+msgid "Extra offset from walls"
+msgstr "Додатковий зсув від стінок"
 
 #: laser_essentials/widgets/wavefront_page.py
 #: laser_essentials/steps/wavefront_step.py
@@ -560,8 +560,8 @@ msgid "Number of Depth Levels"
 msgstr "Кількість рівнів глибини"
 
 #: laser_essentials/widgets/raster_page.py
-msgid "Z Step-Down per Level (mm)"
-msgstr "Зниження Z на рівень (мм)"
+msgid "Z Step-Down per Level"
+msgstr "Зниження по Z за рівень"
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Rotate Angle Per Pass"
@@ -622,10 +622,10 @@ msgstr "Інтервал вибірки"
 #: laser_essentials/widgets/raster_page.py
 msgid ""
 "Distance between power samples along scan line. Lower values improve "
-"accuracy, but increase output size."
+"accuracy, but increase output size. "
 msgstr ""
-"Відстань між вибірками потужності вздовж лінії сканування. Менші значення "
-"покращують точність, але збільшують розмір виводу."
+"Відстань між зразками потужності вздовж лінії сканування. Нижчі значення"
+"підвищують точність, але збільшують розмір результату."
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Dot Width Correction"
@@ -644,11 +644,10 @@ msgstr "Двоспрямований зсув сканування"
 
 #: laser_essentials/widgets/raster_page.py
 msgid ""
-"Corrects X misalignment between left-to-right and right-to-left raster "
-"passes (in mm)"
+"Corrects X misalignment between left-to-right and right-to-left raster passes"
 msgstr ""
-"Виправляє X-зміщення між растровими проходами зліва-направо та справа-наліво "
-"(в мм)"
+"Виправляє зміщення по X між растрними проходами зліва направо та справа"
+"наліво"
 
 #: laser_essentials/widgets/raster_page.py
 #: laser_essentials/steps/raster_step.py

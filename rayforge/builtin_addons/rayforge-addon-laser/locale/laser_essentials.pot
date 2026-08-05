@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-03 01:13+0200\n"
+"POT-Creation-Date: 2026-08-06 01:04+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -69,7 +69,7 @@ msgid "Step Over"
 msgstr ""
 
 #: laser_essentials/widgets/wavefront_page.py
-msgid "Lateral step-over between wavefront passes (mm)"
+msgid "Lateral step-over between wavefront passes"
 msgstr ""
 
 #: laser_essentials/widgets/wavefront_page.py
@@ -82,7 +82,7 @@ msgid "Offset"
 msgstr ""
 
 #: laser_essentials/widgets/wavefront_page.py
-msgid "Extra offset from walls (mm)"
+msgid "Extra offset from walls"
 msgstr ""
 
 #: laser_essentials/widgets/wavefront_page.py
@@ -563,7 +563,7 @@ msgid "Number of Depth Levels"
 msgstr ""
 
 #: laser_essentials/widgets/raster_page.py
-msgid "Z Step-Down per Level (mm)"
+msgid "Z Step-Down per Level"
 msgstr ""
 
 #: laser_essentials/widgets/raster_page.py
@@ -623,7 +623,7 @@ msgstr ""
 #: laser_essentials/widgets/raster_page.py
 msgid ""
 "Distance between power samples along scan line. Lower values improve "
-"accuracy, but increase output size."
+"accuracy, but increase output size. "
 msgstr ""
 
 #: laser_essentials/widgets/raster_page.py
@@ -641,8 +641,7 @@ msgstr ""
 
 #: laser_essentials/widgets/raster_page.py
 msgid ""
-"Corrects X misalignment between left-to-right and right-to-left raster "
-"passes (in mm)"
+"Corrects X misalignment between left-to-right and right-to-left raster passes"
 msgstr ""
 
 #: laser_essentials/widgets/raster_page.py
