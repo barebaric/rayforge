@@ -1,14 +1,14 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw
 
 from rayforge.context import get_context
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.groups import (
     TransformerSettingsGroup,
 )
-from rayforge.ui_gtk.shared.unit_spin_row import UnitSpinRowHelper
+from rayforge.ui_gtk.shared.unit_spin_row import LengthSpinRow
 
 from ..transformers import LeadInOutTransformer
 
@@ -56,59 +56,33 @@ class LeadInOutSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         self.auto_row.set_active(transformer.auto)
         self.add(self.auto_row)
 
-        lead_in_adj = Gtk.Adjustment(
-            lower=0.0, upper=50.0, step_increment=0.1, page_increment=1.0
-        )
-        lead_in_row = Adw.SpinRow(
-            title=_("Lead-In Distance"),
-            adjustment=lead_in_adj,
-            digits=2,
-        )
-        self.add(lead_in_row)
-        self.lead_in_row = lead_in_row
-
-        self.lead_in_helper = UnitSpinRowHelper(
-            spin_row=lead_in_row,
-            quantity="length",
+        self.lead_in_row = LengthSpinRow(
+            _("Lead-In Distance"),
+            _("Distance of zero-power move before cut starts"),
+            upper=50.0,
             max_value_in_base=50.0,
-            subtitle_format=_(
-                "Distance of zero-power move before cut starts ({unit})"
-            ),
+            value_in_base=transformer.lead_in_mm,
         )
-        self.lead_in_helper.set_value_in_base_units(transformer.lead_in_mm)
+        self.add(self.lead_in_row)
 
-        lead_out_adj = Gtk.Adjustment(
-            lower=0.0, upper=50.0, step_increment=0.1, page_increment=1.0
-        )
-        lead_out_row = Adw.SpinRow(
-            title=_("Lead-Out Distance"),
-            adjustment=lead_out_adj,
-            digits=2,
-        )
-        self.add(lead_out_row)
-        self.lead_out_row = lead_out_row
-
-        self.lead_out_helper = UnitSpinRowHelper(
-            spin_row=lead_out_row,
-            quantity="length",
+        self.lead_out_row = LengthSpinRow(
+            _("Lead-Out Distance"),
+            _("Distance of zero-power move after cut ends"),
+            upper=50.0,
             max_value_in_base=50.0,
-            subtitle_format=_(
-                "Distance of zero-power move after cut ends ({unit})"
-            ),
+            value_in_base=transformer.lead_out_mm,
         )
-        self.lead_out_helper.set_value_in_base_units(transformer.lead_out_mm)
+        self.add(self.lead_out_row)
 
         self.auto_row.connect("notify::active", self._on_auto_toggled)
         self.auto_row.connect(
             "notify::active",
             lambda w, _: self._update_sensitivity(),
         )
-        lead_in_row.connect(
-            "changed",
+        self.lead_in_row.value_changed.connect(
             lambda r: self._debounce(self._on_lead_in_changed, r),
         )
-        lead_out_row.connect(
-            "changed",
+        self.lead_out_row.value_changed.connect(
             lambda r: self._debounce(self._on_lead_out_changed, r),
         )
 
@@ -159,8 +133,8 @@ class LeadInOutSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             _("Auto Calculate Lead-In/Out Distance"),
         )
 
-        self.lead_in_helper.set_value_in_base_units(new_distance)
-        self.lead_out_helper.set_value_in_base_units(new_distance)
+        self.lead_in_row.set_value_in_base_units(new_distance)
+        self.lead_out_row.set_value_in_base_units(new_distance)
 
     def _on_step_updated(self, step: "Step"):
         if self.target_dict.get("auto", True):
@@ -173,7 +147,7 @@ class LeadInOutSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             self._recalculate_distance()
 
     def _on_lead_in_changed(self, spin_row):
-        new_value = self.lead_in_helper.get_value_in_base_units()
+        new_value = spin_row.get_value_in_base_units()
         if self.target_dict.get("auto", True):
             self._set_step_param("auto", False, _("Disable Auto Lead-In/Out"))
         self._set_step_param(
@@ -181,7 +155,7 @@ class LeadInOutSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         )
 
     def _on_lead_out_changed(self, spin_row):
-        new_value = self.lead_out_helper.get_value_in_base_units()
+        new_value = spin_row.get_value_in_base_units()
         if self.target_dict.get("auto", True):
             self._set_step_param("auto", False, _("Disable Auto Lead-In/Out"))
         self._set_step_param(

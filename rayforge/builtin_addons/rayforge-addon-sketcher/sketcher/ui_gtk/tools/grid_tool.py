@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional, Union, cast
 
 from gi.repository import Adw, Gtk
 
-from rayforge.ui_gtk.shared.adwfix import get_spinrow_int
+from rayforge.ui_gtk.shared.unit_spin_row import SpinRow
 
 from ...core.commands import GridCommand
 from ...core.entities import Entity, Point
@@ -52,18 +52,18 @@ class GridTool(SketchTool):
             heading=_("Create Grid"),
         )
 
-        rows_adj = Gtk.Adjustment(lower=2, upper=100, step_increment=1)
-        rows_row = Adw.SpinRow(
-            title=_("Rows"),
-            adjustment=rows_adj,
+        rows_row = SpinRow(
+            _("Rows"),
+            lower=2,
+            upper=100,
             digits=0,
             value=3,
         )
 
-        cols_adj = Gtk.Adjustment(lower=2, upper=100, step_increment=1)
-        cols_row = Adw.SpinRow(
-            title=_("Columns"),
-            adjustment=cols_adj,
+        cols_row = SpinRow(
+            _("Columns"),
+            lower=2,
+            upper=100,
             digits=0,
             value=3,
         )
@@ -86,8 +86,8 @@ class GridTool(SketchTool):
 
         def on_response(source, response_id):
             if response_id == "create":
-                rows = get_spinrow_int(rows_row)
-                cols = get_spinrow_int(cols_row)
+                rows = rows_row.get_int_value()
+                cols = cols_row.get_int_value()
 
                 cmd = GridCommand(
                     self.element.sketch,

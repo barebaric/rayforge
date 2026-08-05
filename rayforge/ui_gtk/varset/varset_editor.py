@@ -27,6 +27,7 @@ from ...core.varset import (
 )
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
+from ..shared.unit_spin_row import SpinRow
 from .adapter import NULL_CHOICE_LABEL, create_row_for_var
 
 if TYPE_CHECKING:
@@ -204,7 +205,7 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
             self.min_val_row, __ = create_row_for_var(
                 bound_var_instance, "min_val"
             )
-            if isinstance(self.min_val_row, Adw.SpinRow):
+            if isinstance(self.min_val_row, SpinRow):
                 self.min_val_row.set_title(
                     _("Start Value") if is_slider else _("Minimum Value")
                 )
@@ -236,7 +237,7 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
             self.max_val_row, __ = create_row_for_var(
                 bound_var_instance, "max_val"
             )
-            if isinstance(self.max_val_row, Adw.SpinRow):
+            if isinstance(self.max_val_row, SpinRow):
                 self.max_val_row.set_title(
                     _("End Value") if is_slider else _("Maximum Value")
                 )
@@ -257,7 +258,7 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
                         min_val_from_ui = (
                             self.min_val_row.get_value()
                             if hasattr(self, "min_val_row")
-                            and isinstance(self.min_val_row, Adw.SpinRow)
+                            and isinstance(self.min_val_row, SpinRow)
                             and self.min_val_row.get_editable()
                             else default_val
                         )
@@ -278,9 +279,9 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
         )()
         widget = widget or self.default_row
 
-        if isinstance(self.default_row, Adw.SpinRow):
-            self.default_row.connect(
-                "notify::value", self._on_default_changed_spinrow
+        if isinstance(self.default_row, SpinRow):
+            self.default_row.value_changed.connect(
+                self._on_default_changed_spinrow
             )
         elif isinstance(self.default_row, Adw.EntryRow):
             self.default_row.connect("changed", self._on_default_changed_entry)
@@ -294,9 +295,11 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
             widget.connect("value-changed", self._on_default_changed_scale)
 
     def _wire_up_bound_row(self, row: Adw.PreferencesRow, property_name: str):
-        if isinstance(row, Adw.SpinRow):
-            row.connect(
-                "notify::value", self._on_bound_changed_spinrow, property_name
+        if isinstance(row, SpinRow):
+            row.value_changed.connect(
+                lambda r, pn=property_name: self._on_bound_changed_spinrow(
+                    r, pn
+                )
             )
 
     def _sync_prop(self, row, prop_name, sync_header=False):
@@ -308,7 +311,7 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
 
     def _sync_bound(self, row, toggle: Optional[Gtk.Switch], prop_name):
         if not isinstance(self.var, (IntVar, FloatVar)) or not isinstance(
-            row, Adw.SpinRow
+            row, SpinRow
         ):
             return
         self._in_update = True
@@ -336,7 +339,7 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
         # Prevent signal recursion during sync
         self._in_update = True
         try:
-            if isinstance(row, Adw.SpinRow):
+            if isinstance(row, SpinRow):
                 if row.get_value() != val:
                     row.set_value(val if val is not None else 0)
             elif isinstance(row, Adw.EntryRow):
@@ -454,7 +457,7 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
         self,
         switch: Gtk.Switch,
         state: bool,
-        spin_row: Adw.SpinRow,
+        spin_row: SpinRow,
         prop_name: str,
     ):
         if self._in_update:
@@ -463,7 +466,7 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
         new_val = spin_row.get_value() if state else None
         self._commit_property_change(prop_name, new_val)
         if state:
-            self._on_bound_changed_spinrow(spin_row, None, prop_name)
+            self._on_bound_changed_spinrow(spin_row, prop_name)
         return False
 
     def _commit_numeric_changes(
@@ -490,7 +493,7 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
             if self.var.max_val != final_max:
                 self._commit_property_change("max_val", final_max)
 
-    def _on_bound_changed_spinrow(self, spin_row, _pspec, prop_name):
+    def _on_bound_changed_spinrow(self, spin_row, prop_name):
         if self._in_update:
             return
         self._in_update = True
@@ -504,20 +507,20 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
             else:
                 default_val = (
                     self.default_row.get_value()
-                    if isinstance(self.default_row, Adw.SpinRow)
+                    if isinstance(self.default_row, SpinRow)
                     else 0.0
                 )
                 min_val = (
                     self.min_val_row.get_value()
                     if hasattr(self, "min_val_row")
-                    and isinstance(self.min_val_row, Adw.SpinRow)
+                    and isinstance(self.min_val_row, SpinRow)
                     and self.min_val_row.get_editable()
                     else None
                 )
                 max_val = (
                     self.max_val_row.get_value()
                     if hasattr(self, "max_val_row")
-                    and isinstance(self.max_val_row, Adw.SpinRow)
+                    and isinstance(self.max_val_row, SpinRow)
                     and self.max_val_row.get_editable()
                     else None
                 )
@@ -575,7 +578,7 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
         else:
             apply()
 
-    def _on_default_changed_spinrow(self, spin_row: Adw.SpinRow, _pspec):
+    def _on_default_changed_spinrow(self, spin_row: SpinRow):
         if self._in_update:
             return
         self._in_update = True
@@ -584,14 +587,14 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
             min_val = (
                 self.min_val_row.get_value()
                 if hasattr(self, "min_val_row")
-                and isinstance(self.min_val_row, Adw.SpinRow)
+                and isinstance(self.min_val_row, SpinRow)
                 and self.min_val_row.get_editable()
                 else None
             )
             max_val = (
                 self.max_val_row.get_value()
                 if hasattr(self, "max_val_row")
-                and isinstance(self.max_val_row, Adw.SpinRow)
+                and isinstance(self.max_val_row, SpinRow)
                 and self.max_val_row.get_editable()
                 else None
             )

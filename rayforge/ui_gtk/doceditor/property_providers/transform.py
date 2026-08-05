@@ -10,8 +10,9 @@ from ....core.item import DocItem
 from ....core.stock import StockItem
 from ....core.workpiece import WorkPiece
 from ....doceditor.transform_cmd import TransformCmd
+from ....shared.units.formatter import format_value
 from ...icons import get_icon
-from ...shared.adwfix import get_spinrow_float
+from ...shared.unit_spin_row import AngleSpinRow, LengthSpinRow, SpinRow
 from .base import PropertyProvider
 
 if TYPE_CHECKING:
@@ -79,14 +80,12 @@ class TransformPropertyProvider(PropertyProvider):
                 pos_ref_x = pos_machine_x - offset_machine[0]
                 pos_ref_y = pos_machine_y - offset_machine[1]
 
-                # Update subtitles to indicate coordinate system
+                # Update subtitles to indicate the coordinate system. The
+                # unit is shown in its own label, not in the subtitle.
                 wcs_name = machine.active_wcs
-                self.x_row.set_subtitle(
-                    _("Relative to {wcs} origin").format(wcs=wcs_name)
-                )
-                self.y_row.set_subtitle(
-                    _("Relative to {wcs} origin").format(wcs=wcs_name)
-                )
+                fmt = _("Relative to {wcs} origin").format(wcs=wcs_name)
+                self.x_row.set_subtitle(fmt)
+                self.y_row.set_subtitle(fmt)
             else:
                 pos_ref_x, pos_ref_y = 0.0, 0.0
         else:
@@ -117,37 +116,39 @@ class TransformPropertyProvider(PropertyProvider):
         was_in_update = getattr(self, "_in_update", False)
         self._in_update = True
         try:
-            # Get digits for rounding to prevent float precision issues
-            width_digits = self.width_row.get_digits()
-            height_digits = self.height_row.get_digits()
-            x_digits = self.x_row.get_digits()
-            y_digits = self.y_row.get_digits()
-            angle_digits = self.angle_row.get_digits()
-            shear_digits = self.shear_row.get_digits()
+            # Use a fixed rounding precision in base units (mm) to
+            # prevent float noise. The helpers handle display-side
+            # rounding via the unit's precision.
+            rnd = 4
 
-            # Round values before comparing and setting
-            width_rounded = round(size_world[0], width_digits)
-            height_rounded = round(size_world[1], height_digits)
-            x_rounded = round(pos_ref_x, x_digits)
-            y_rounded = round(pos_ref_y, y_digits)
-            angle_rounded = round(-angle_local, angle_digits)
-            shear_rounded = round(shear_local, shear_digits)
+            width_rounded = round(size_world[0], rnd)
+            height_rounded = round(size_world[1], rnd)
+            x_rounded = round(pos_ref_x, rnd)
+            y_rounded = round(pos_ref_y, rnd)
+            angle_rounded = round(-angle_local, self.angle_row.get_digits())
+            shear_rounded = round(shear_local, self.shear_row.get_digits())
 
             # Check before setting to avoid signal emission loop
-            if abs(self.width_row.get_value() - width_rounded) > 1e-9:
+            if (
+                abs(self.width_row.get_value_in_base_units() - width_rounded)
+                > 1e-9
+            ):
                 logger.debug(f"Setting width UI to {width_rounded}")
-                self.width_row.set_value(width_rounded)
-            if abs(self.height_row.get_value() - height_rounded) > 1e-9:
+                self.width_row.set_value_in_base_units(width_rounded)
+            if (
+                abs(self.height_row.get_value_in_base_units() - height_rounded)
+                > 1e-9
+            ):
                 logger.debug(f"Setting height UI to {height_rounded}")
-                self.height_row.set_value(height_rounded)
+                self.height_row.set_value_in_base_units(height_rounded)
 
-            if abs(self.x_row.get_value() - x_rounded) > 1e-9:
+            if abs(self.x_row.get_value_in_base_units() - x_rounded) > 1e-9:
                 logger.debug(f"Setting X UI to {x_rounded}")
-                self.x_row.set_value(x_rounded)
+                self.x_row.set_value_in_base_units(x_rounded)
 
-            if abs(self.y_row.get_value() - y_rounded) > 1e-9:
+            if abs(self.y_row.get_value_in_base_units() - y_rounded) > 1e-9:
                 logger.debug(f"Setting Y UI to {y_rounded}")
-                self.y_row.set_value(y_rounded)
+                self.y_row.set_value_in_base_units(y_rounded)
 
             if abs(self.angle_row.get_value() - angle_rounded) > 1e-9:
                 logger.debug(f"Setting angle UI to {angle_rounded}")
@@ -162,13 +163,15 @@ class TransformPropertyProvider(PropertyProvider):
 
     def _create_position_rows(self):
         # X Position Entry
-        self.x_row = Adw.SpinRow(
-            title=_("X Position"),
-            subtitle=_("Zero is on the left side"),
-            adjustment=Gtk.Adjustment.new(0, -10000, 10000, 1.0, 1, 0),
+        self.x_row = LengthSpinRow(
+            _("X Position"),
+            _("Zero is on the left side"),
+            lower=-10000,
+            upper=10000,
+            min_value_in_base=-10000.0,
+            max_value_in_base=10000.0,
         )
-        self.x_row.set_digits(2)
-        self.x_row.connect("notify::value", self._on_x_changed)
+        self.x_row.value_changed.connect(self._on_x_changed)
 
         # X Reset Button
         self.reset_x_button = self._create_reset_button(
@@ -177,12 +180,14 @@ class TransformPropertyProvider(PropertyProvider):
         self.x_row.add_suffix(self.reset_x_button)
 
         # Y Position Entry
-        self.y_row = Adw.SpinRow(
-            title=_("Y Position"),
-            adjustment=Gtk.Adjustment.new(0, -10000, 10000, 1.0, 1, 0),
+        self.y_row = LengthSpinRow(
+            _("Y Position"),
+            lower=-10000,
+            upper=10000,
+            min_value_in_base=-10000.0,
+            max_value_in_base=10000.0,
         )
-        self.y_row.set_digits(2)
-        self.y_row.connect("notify::value", self._on_y_changed)
+        self.y_row.value_changed.connect(self._on_y_changed)
 
         self.reset_y_button = self._create_reset_button(
             _("Reset Y position to 0"), self._on_reset_y_clicked
@@ -201,20 +206,22 @@ class TransformPropertyProvider(PropertyProvider):
         )
 
         # Width Entry
-        self.width_row = Adw.SpinRow(
-            title=_("Width"),
-            adjustment=Gtk.Adjustment.new(10, 1, 10000, 1.0, 1, 0),
+        self.width_row = LengthSpinRow(
+            _("Width"),
+            lower=1,
+            upper=10000,
+            min_value_in_base=1.0,
         )
-        self.width_row.set_digits(2)
-        self.width_row.connect("notify::value", self._on_width_changed)
+        self.width_row.value_changed.connect(self._on_width_changed)
 
         # Height Entry
-        self.height_row = Adw.SpinRow(
-            title=_("Height"),
-            adjustment=Gtk.Adjustment.new(10, 1, 10000, 1.0, 1, 0),
+        self.height_row = LengthSpinRow(
+            _("Height"),
+            lower=1,
+            upper=10000,
+            min_value_in_base=1.0,
         )
-        self.height_row.set_digits(2)
-        self.height_row.connect("notify::value", self._on_height_changed)
+        self.height_row.value_changed.connect(self._on_height_changed)
 
         # Reset Buttons
         self.reset_width_button = self._create_reset_button(
@@ -240,22 +247,22 @@ class TransformPropertyProvider(PropertyProvider):
 
     def _create_angle_shear_rows(self):
         # Angle Entry
-        self.angle_row = Adw.SpinRow(
-            title=_("Angle"),
-            subtitle=_("Clockwise is positive"),
-            adjustment=Gtk.Adjustment.new(0, -360, 360, 1, 10, 0),
+        self.angle_row = AngleSpinRow(
+            _("Angle"),
+            _("Clockwise is positive"),
             digits=2,
         )
-        self.angle_row.connect("notify::value", self._on_angle_changed)
+        self.angle_row.value_changed.connect(self._on_angle_changed)
 
         # Shear Entry
-        self.shear_row = Adw.SpinRow(
-            title=_("Shear"),
-            subtitle=_("Horizontal shear angle"),
-            adjustment=Gtk.Adjustment.new(0, -85, 85, 1, 10, 0),
+        self.shear_row = SpinRow(
+            _("Shear"),
+            _("Horizontal shear angle"),
+            lower=-85,
+            upper=85,
             digits=2,
         )
-        self.shear_row.connect("notify::value", self._on_shear_changed)
+        self.shear_row.value_changed.connect(self._on_shear_changed)
 
         # Reset Buttons
         self.reset_angle_button = self._create_reset_button(
@@ -298,12 +305,16 @@ class TransformPropertyProvider(PropertyProvider):
             elif item.natural_size:
                 natural_width, natural_height = item.natural_size
 
-            if natural_width is not None:
+            if natural_width is not None and natural_height is not None:
                 self.width_row.set_subtitle(
-                    _("Natural: {val:.2f}").format(val=natural_width)
+                    _("Natural: {val}").format(
+                        val=format_value(natural_width, "length")
+                    )
                 )
                 self.height_row.set_subtitle(
-                    _("Natural: {val:.2f}").format(val=natural_height)
+                    _("Natural: {val}").format(
+                        val=format_value(natural_height, "length")
+                    )
                 )
             else:
                 self.width_row.set_subtitle("")
@@ -321,13 +332,13 @@ class TransformPropertyProvider(PropertyProvider):
         button.connect("clicked", on_clicked)
         return button
 
-    def _on_width_changed(self, spin_row, GParamSpec):
+    def _on_width_changed(self, _row):
         logger.debug(f"_on_width_changed called. _in_update={self._in_update}")
         if self._in_update or not self.items:
             return
         self._in_update = True
         try:
-            new_width_from_ui = get_spinrow_float(self.width_row)
+            new_width_from_ui = self.width_row.get_value_in_base_units()
             if new_width_from_ui is None:
                 logger.debug("Width change ignored, no value from UI.")
                 return
@@ -352,7 +363,7 @@ class TransformPropertyProvider(PropertyProvider):
             self._in_update = False
             logger.debug("_on_width_changed finished.")
 
-    def _on_height_changed(self, spin_row, GParamSpec):
+    def _on_height_changed(self, _row):
         logger.debug(
             f"_on_height_changed called. _in_update={self._in_update}"
         )
@@ -360,7 +371,7 @@ class TransformPropertyProvider(PropertyProvider):
             return
         self._in_update = True
         try:
-            new_height_from_ui = get_spinrow_float(self.height_row)
+            new_height_from_ui = self.height_row.get_value_in_base_units()
             if new_height_from_ui is None:
                 logger.debug("Height change ignored, no value from UI.")
                 return
@@ -383,13 +394,13 @@ class TransformPropertyProvider(PropertyProvider):
             self._in_update = False
             logger.debug("_on_height_changed finished.")
 
-    def _on_x_changed(self, spin_row, GParamSpec):
+    def _on_x_changed(self, _row):
         logger.debug(f"_on_x_changed called. _in_update={self._in_update}")
         if self._in_update or not self.items:
             return
         self._in_update = True
         try:
-            new_x_wcs = get_spinrow_float(self.x_row)
+            new_x_wcs = self.x_row.get_value_in_base_units()
             if new_x_wcs is None:
                 logger.debug("X change ignored, no value from UI.")
                 return
@@ -410,7 +421,7 @@ class TransformPropertyProvider(PropertyProvider):
             else:
                 offset_machine = (0.0, 0.0)
             new_x_machine = new_x_wcs + offset_machine[0]
-            current_y_wcs = self.y_row.get_value()
+            current_y_wcs = self.y_row.get_value_in_base_units()
             current_y_machine = current_y_wcs + offset_machine[1]
 
             logger.debug(f"Handling X change to {new_x_machine} (machine)")
@@ -426,13 +437,13 @@ class TransformPropertyProvider(PropertyProvider):
             self._in_update = False
             logger.debug("_on_x_changed finished.")
 
-    def _on_y_changed(self, spin_row, GParamSpec):
+    def _on_y_changed(self, _row):
         logger.debug(f"_on_y_changed called. _in_update={self._in_update}")
         if self._in_update or not self.items:
             return
         self._in_update = True
         try:
-            new_y_wcs = get_spinrow_float(self.y_row)
+            new_y_wcs = self.y_row.get_value_in_base_units()
             if new_y_wcs is None:
                 logger.debug("Y change ignored, no value from UI.")
                 return
@@ -453,7 +464,7 @@ class TransformPropertyProvider(PropertyProvider):
             else:
                 offset_machine = (0.0, 0.0)
             new_y_machine = new_y_wcs + offset_machine[1]
-            current_x_wcs = self.x_row.get_value()
+            current_x_wcs = self.x_row.get_value_in_base_units()
             current_x_machine = current_x_wcs + offset_machine[0]
 
             logger.debug(f"Handling Y change to {new_y_machine} (machine)")
@@ -469,7 +480,7 @@ class TransformPropertyProvider(PropertyProvider):
             self._in_update = False
             logger.debug("_on_y_changed finished.")
 
-    def _on_angle_changed(self, spin_row, GParamSpec):
+    def _on_angle_changed(self, spin_row):
         logger.debug(f"_on_angle_changed called. _in_update={self._in_update}")
         if self._in_update or not self.items:
             return
@@ -487,7 +498,7 @@ class TransformPropertyProvider(PropertyProvider):
             self._in_update = False
             logger.debug("_on_angle_changed finished.")
 
-    def _on_shear_changed(self, spin_row, GParamSpec):
+    def _on_shear_changed(self, spin_row):
         logger.debug(f"_on_shear_changed called. _in_update={self._in_update}")
         if self._in_update or not self.items:
             return
@@ -630,7 +641,7 @@ class TransformPropertyProvider(PropertyProvider):
 
         if len(self.items) > 1:
             # Keep current Y, reset X to the reference origin
-            cur_y_wcs = self.y_row.get_value()
+            cur_y_wcs = self.y_row.get_value_in_base_units()
             cur_y_machine = cur_y_wcs + offset_machine[1]
             self.editor.transform.set_position_group(
                 self.items, offset_machine[0], cur_y_machine
@@ -639,7 +650,7 @@ class TransformPropertyProvider(PropertyProvider):
             target_x_machine = offset_machine[0]
 
             # Get current Y in reference coordinates and convert to machine
-            current_y_wcs = self.y_row.get_value()
+            current_y_wcs = self.y_row.get_value_in_base_units()
             current_y_machine = current_y_wcs + offset_machine[1]
 
             self.editor.transform.set_position(
@@ -668,7 +679,7 @@ class TransformPropertyProvider(PropertyProvider):
 
         if len(self.items) > 1:
             # Keep current X, reset Y to the reference origin
-            cur_x_wcs = self.x_row.get_value()
+            cur_x_wcs = self.x_row.get_value_in_base_units()
             cur_x_machine = cur_x_wcs + offset_machine[0]
             self.editor.transform.set_position_group(
                 self.items, cur_x_machine, offset_machine[1]
@@ -677,7 +688,7 @@ class TransformPropertyProvider(PropertyProvider):
             target_y_machine = offset_machine[1]
 
             # Get current X in reference coordinates and convert to machine
-            current_x_wcs = self.x_row.get_value()
+            current_x_wcs = self.x_row.get_value_in_base_units()
             current_x_machine = current_x_wcs + offset_machine[0]
 
             self.editor.transform.set_position(

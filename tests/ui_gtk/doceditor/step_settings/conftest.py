@@ -59,6 +59,12 @@ def ui_context(ui_task_mgr, monkeypatch, tmp_path):
     monkeypatch.setattr(config_module, "DIALECT_DIR", temp_dialect_dir)
     monkeypatch.setattr(config_module, "MACHINE_DIR", temp_machine_dir)
     monkeypatch.setattr(config_module, "ADDONS_DIR", temp_addons_dir)
+    monkeypatch.setattr(
+        config_module, "CONFIG_FILE", temp_config_dir / "config.yaml"
+    )
+    monkeypatch.setattr(
+        config_module, "AI_CONFIG_FILE", temp_config_dir / "ai.yaml"
+    )
     monkeypatch.setattr(tasker.task_mgr, "_instance", ui_task_mgr)
 
     context = get_context()

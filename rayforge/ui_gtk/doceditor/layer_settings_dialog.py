@@ -7,8 +7,8 @@ from ...context import get_context
 from ...core.layer import Layer
 from ..icons import get_icon
 from ..machine.wcs_dialog import WcsDialog
-from ..shared.adwfix import get_spinrow_float
 from ..shared.patched_dialog_window import PatchedDialogWindow
+from ..shared.unit_spin_row import LengthSpinRow
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -130,18 +130,17 @@ class LayerSettingsDialog(PatchedDialogWindow):
         self.module_row.set_sensitive(layer.rotary_enabled)
         rotary_group.add(self.module_row)
 
-        rotary_diameter_adjustment = Gtk.Adjustment(
-            lower=1, upper=1000, step_increment=1, page_increment=10
+        self.rotary_diameter_row = LengthSpinRow(
+            _("Object Diameter"),
+            _("Diameter of the cylindrical object"),
+            lower=1,
+            upper=1000,
+            min_value_in_base=1.0,
+            max_value_in_base=1000.0,
+            value_in_base=layer.rotary_diameter,
         )
-        self.rotary_diameter_row = Adw.SpinRow(
-            title=_("Object Diameter"),
-            subtitle=_("Diameter of the cylindrical object in machine units"),
-            adjustment=rotary_diameter_adjustment,
-            digits=2,
-        )
-        rotary_diameter_adjustment.set_value(layer.rotary_diameter)
-        self.rotary_diameter_row.connect(
-            "notify::value", self._on_rotary_diameter_changed
+        self.rotary_diameter_row.value_changed.connect(
+            self._on_rotary_diameter_changed
         )
         self.rotary_diameter_row.set_sensitive(layer.rotary_enabled)
         rotary_group.add(self.rotary_diameter_row)
@@ -238,7 +237,7 @@ class LayerSettingsDialog(PatchedDialogWindow):
                 if default_rm:
                     self.layer.set_rotary_module_uid(default_rm.uid)
                     self.layer.set_rotary_diameter(default_rm.default_diameter)
-                    self.rotary_diameter_row.set_value(
+                    self.rotary_diameter_row.set_value_in_base_units(
                         default_rm.default_diameter
                     )
 
@@ -254,12 +253,14 @@ class LayerSettingsDialog(PatchedDialogWindow):
                 rm = machine.get_rotary_module_by_uid(uid)
                 if rm:
                     self.layer.set_rotary_diameter(rm.default_diameter)
-                    self.rotary_diameter_row.set_value(rm.default_diameter)
+                    self.rotary_diameter_row.set_value_in_base_units(
+                        rm.default_diameter
+                    )
 
-    def _on_rotary_diameter_changed(self, spinrow, _param):
+    def _on_rotary_diameter_changed(self, row):
         if self._is_initializing:
             return
-        diameter = get_spinrow_float(spinrow)
+        diameter = self.rotary_diameter_row.get_value_in_base_units()
         self.layer.set_rotary_diameter(diameter)
 
     def _on_color_changed(self, button, _param):

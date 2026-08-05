@@ -16,8 +16,11 @@ from gi.repository import Adw, Gtk
 
 from ....machine.device.profile import DeviceProfile
 from ....machine.models.machine import Origin
-from ...shared.adwfix import get_spinrow_float
-from ...shared.unit_spin_row import UnitSpinRowHelper
+from ...shared.unit_spin_row import (
+    AccelerationSpinRow,
+    LengthSpinRow,
+    SpeedSpinRow,
+)
 from . import WizardPage, _makePreferencesGroup
 
 _ORIGIN_INDEX_TO_ENUM = {
@@ -53,39 +56,23 @@ class HardwarePage(WizardPage):
         )
         self.content.append(axes_group)
 
-        x_adj = Gtk.Adjustment(
-            lower=10, upper=10000, step_increment=1, page_increment=10
-        )
-        self.x_row = Adw.SpinRow(
-            title=_("X Extent"),
-            adjustment=x_adj,
-            digits=2,
+        self.x_row = LengthSpinRow(
+            _("X Extent"),
+            _("Full X-axis travel range"),
+            lower=10,
+            upper=10000,
+            max_value_in_base=10000.0,
         )
         axes_group.add(self.x_row)
-        self.x_helper = UnitSpinRowHelper(
-            spin_row=self.x_row,
-            quantity="length",
-            max_value_in_base=10000.0,
-            min_digits=2,
-            subtitle_format=_("Full X-axis travel range ({unit})"),
-        )
 
-        y_adj = Gtk.Adjustment(
-            lower=10, upper=10000, step_increment=1, page_increment=10
-        )
-        self.y_row = Adw.SpinRow(
-            title=_("Y Extent"),
-            adjustment=y_adj,
-            digits=2,
+        self.y_row = LengthSpinRow(
+            _("Y Extent"),
+            _("Full Y-axis travel range"),
+            lower=10,
+            upper=10000,
+            max_value_in_base=10000.0,
         )
         axes_group.add(self.y_row)
-        self.y_helper = UnitSpinRowHelper(
-            spin_row=self.y_row,
-            quantity="length",
-            max_value_in_base=10000.0,
-            min_digits=2,
-            subtitle_format=_("Full Y-axis travel range ({unit})"),
-        )
 
         origin_store = Gtk.StringList()
         for label in (
@@ -134,10 +121,14 @@ class HardwarePage(WizardPage):
         # attribute bindings (we read these back from apply_to_profile
         # and enter()).
         self.margin_left_row = self._build_margin_row(
-            margins_group, _("Left Margin"), _("Unusable space from left edge")
+            margins_group,
+            _("Left Margin"),
+            _("Unusable space from left edge"),
         )
         self.margin_top_row = self._build_margin_row(
-            margins_group, _("Top Margin"), _("Unusable space from top edge")
+            margins_group,
+            _("Top Margin"),
+            _("Unusable space from top edge"),
         )
         self.margin_right_row = self._build_margin_row(
             margins_group,
@@ -189,50 +180,37 @@ class HardwarePage(WizardPage):
         )
         self.content.append(speed_group)
 
-        travel_adj = Gtk.Adjustment(
-            lower=0, upper=60000, step_increment=100, page_increment=1000
-        )
-        self.travel_speed_row = Adw.SpinRow(
-            title=_("Max Travel Speed"), adjustment=travel_adj
+        self.travel_speed_row = SpeedSpinRow(
+            _("Max Travel Speed"),
+            _("Maximum rapid movement speed"),
+            upper=60000,
+            step_increment=100,
+            digits=0,
+            max_value_in_base=60000.0,
         )
         speed_group.add(self.travel_speed_row)
-        self.travel_speed_helper = UnitSpinRowHelper(
-            spin_row=self.travel_speed_row,
-            quantity="speed",
-            max_value_in_base=60000.0,
-            subtitle_format=_("Maximum rapid movement speed ({unit})"),
-        )
 
-        cut_adj = Gtk.Adjustment(
-            lower=0, upper=60000, step_increment=100, page_increment=1000
-        )
-        self.cut_speed_row = Adw.SpinRow(
-            title=_("Max Cut Speed"), adjustment=cut_adj
+        self.cut_speed_row = SpeedSpinRow(
+            _("Max Cut Speed"),
+            _("Maximum cutting speed"),
+            upper=60000,
+            step_increment=100,
+            digits=0,
+            max_value_in_base=60000.0,
         )
         speed_group.add(self.cut_speed_row)
-        self.cut_speed_helper = UnitSpinRowHelper(
-            spin_row=self.cut_speed_row,
-            quantity="speed",
-            max_value_in_base=60000.0,
-            subtitle_format=_("Maximum cutting speed ({unit})"),
-        )
 
-        accel_adj = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=10, page_increment=100
-        )
-        self.accel_row = Adw.SpinRow(
-            title=_("Acceleration"), adjustment=accel_adj
+        self.accel_row = AccelerationSpinRow(
+            _("Acceleration"),
+            _(
+                "Used for time estimations and calculating the "
+                "default overscan distance"
+            ),
+            upper=10000,
+            digits=0,
+            max_value_in_base=10000.0,
         )
         speed_group.add(self.accel_row)
-        self.accel_helper = UnitSpinRowHelper(
-            spin_row=self.accel_row,
-            quantity="acceleration",
-            max_value_in_base=10000.0,
-            subtitle_format=_(
-                "Used for time estimations and calculating the "
-                "default overscan distance ({unit})"
-            ),
-        )
 
         # Behavior.
         behavior_group = _makePreferencesGroup(title=_("Behavior"))
@@ -252,8 +230,8 @@ class HardwarePage(WizardPage):
 
         # Whenever the user touches the soft-limits toggle or any of
         # the extents, we may need to clamp soft-limit adjustments.
-        self.x_row.connect("notify::value", self._on_extents_changed)
-        self.y_row.connect("notify::value", self._on_extents_changed)
+        self.x_row.value_changed.connect(self._on_extents_changed)
+        self.y_row.value_changed.connect(self._on_extents_changed)
 
         # The page is always consider-ready because the user can skip
         # fields they don't know yet (defaults are sensible). The
@@ -264,37 +242,35 @@ class HardwarePage(WizardPage):
 
     def _build_margin_row(
         self, group: Adw.PreferencesGroup, title: str, subtitle: str
-    ) -> Adw.SpinRow:
-        adj = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=1, page_increment=10
-        )
-        row = Adw.SpinRow(
-            title=title, subtitle=subtitle, adjustment=adj, digits=2
+    ) -> LengthSpinRow:
+        row = LengthSpinRow(
+            title=title,
+            subtitle=subtitle,
+            upper=10000,
+            max_value_in_base=10000.0,
         )
         group.add(row)
         return row
 
-    def _build_soft_limit_row(self, title: str, subtitle: str) -> Adw.SpinRow:
-        adj = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=1, page_increment=10
-        )
-        row = Adw.SpinRow(
+    def _build_soft_limit_row(
+        self, title: str, subtitle: str
+    ) -> LengthSpinRow:
+        row = LengthSpinRow(
             title=title,
             subtitle=subtitle,
-            adjustment=adj,
-            digits=2,
-            sensitive=False,
+            upper=10000,
         )
+        row.set_sensitive(False)
         self.soft_limits_group.add(row)
         return row
 
-    def _on_extents_changed(self, _row, _param) -> None:
-        x = get_spinrow_float(self.x_row)
-        y = get_spinrow_float(self.y_row)
-        self.soft_x_min_row.get_adjustment().set_upper(x)
-        self.soft_x_max_row.get_adjustment().set_upper(x)
-        self.soft_y_min_row.get_adjustment().set_upper(y)
-        self.soft_y_max_row.get_adjustment().set_upper(y)
+    def _on_extents_changed(self, row) -> None:
+        x = self.x_row.get_value_in_base_units()
+        y = self.y_row.get_value_in_base_units()
+        self.soft_x_min_row.set_bounds_in_base(0.0, x)
+        self.soft_x_max_row.set_bounds_in_base(0.0, x)
+        self.soft_y_min_row.set_bounds_in_base(0.0, y)
+        self.soft_y_max_row.set_bounds_in_base(0.0, y)
 
     def _on_soft_limits_toggle(self, row, _param) -> None:
         enabled = row.get_active()
@@ -309,11 +285,11 @@ class HardwarePage(WizardPage):
         mc = profile.machine_config
 
         if mc.axis_extents:
-            self.x_helper.set_value_in_base_units(mc.axis_extents[0])
-            self.y_helper.set_value_in_base_units(mc.axis_extents[1])
+            self.x_row.set_value_in_base_units(mc.axis_extents[0])
+            self.y_row.set_value_in_base_units(mc.axis_extents[1])
         else:
-            self.x_helper.set_value_in_base_units(100.0)
-            self.y_helper.set_value_in_base_units(100.0)
+            self.x_row.set_value_in_base_units(100.0)
+            self.y_row.set_value_in_base_units(100.0)
 
         origin = mc.origin or Origin.BOTTOM_LEFT
         self.origin_row.set_selected(_ORIGIN_ENUM_TO_INDEX.get(origin, 0))
@@ -327,42 +303,44 @@ class HardwarePage(WizardPage):
         self.reverse_z_row.set_active(reverse.get("z", False))
 
         margins = mc.work_margins or (0.0, 0.0, 0.0, 0.0)
-        self.margin_left_row.set_value(margins[0])
-        self.margin_top_row.set_value(margins[1])
-        self.margin_right_row.set_value(margins[2])
-        self.margin_bottom_row.set_value(margins[3])
+        self.margin_left_row.set_value_in_base_units(margins[0])
+        self.margin_top_row.set_value_in_base_units(margins[1])
+        self.margin_right_row.set_value_in_base_units(margins[2])
+        self.margin_bottom_row.set_value_in_base_units(margins[3])
 
         soft = mc.soft_limits
         if soft:
             self.soft_limits_enabled_row.set_active(True)
-            self.soft_x_min_row.set_value(soft[0])
-            self.soft_y_min_row.set_value(soft[1])
-            self.soft_x_max_row.set_value(soft[2])
-            self.soft_y_max_row.set_value(soft[3])
+            self.soft_x_min_row.set_value_in_base_units(soft[0])
+            self.soft_y_min_row.set_value_in_base_units(soft[1])
+            self.soft_x_max_row.set_value_in_base_units(soft[2])
+            self.soft_y_max_row.set_value_in_base_units(soft[3])
         else:
             self.soft_limits_enabled_row.set_active(False)
-            self.soft_x_min_row.set_value(0.0)
-            self.soft_y_min_row.set_value(0.0)
-            self.soft_x_max_row.set_value(get_spinrow_float(self.x_row))
-            self.soft_y_max_row.set_value(get_spinrow_float(self.y_row))
+            self.soft_x_min_row.set_value_in_base_units(0.0)
+            self.soft_y_min_row.set_value_in_base_units(0.0)
+            self.soft_x_max_row.set_value_in_base_units(
+                self.x_row.get_value_in_base_units()
+            )
+            self.soft_y_max_row.set_value_in_base_units(
+                self.y_row.get_value_in_base_units()
+            )
         self._on_soft_limits_toggle(self.soft_limits_enabled_row, None)
 
         if mc.max_travel_speed is not None:
-            self.travel_speed_helper.set_value_in_base_units(
-                mc.max_travel_speed
-            )
+            self.travel_speed_row.set_value_in_base_units(mc.max_travel_speed)
         else:
-            self.travel_speed_helper.set_value_in_base_units(
+            self.travel_speed_row.set_value_in_base_units(
                 _DEFAULT_TRAVEL_SPEED
             )
         if mc.max_cut_speed is not None:
-            self.cut_speed_helper.set_value_in_base_units(mc.max_cut_speed)
+            self.cut_speed_row.set_value_in_base_units(mc.max_cut_speed)
         else:
-            self.cut_speed_helper.set_value_in_base_units(_DEFAULT_CUT_SPEED)
+            self.cut_speed_row.set_value_in_base_units(_DEFAULT_CUT_SPEED)
         if mc.acceleration is not None:
-            self.accel_helper.set_value_in_base_units(mc.acceleration)
+            self.accel_row.set_value_in_base_units(mc.acceleration)
         else:
-            self.accel_helper.set_value_in_base_units(_DEFAULT_ACCELERATION)
+            self.accel_row.set_value_in_base_units(_DEFAULT_ACCELERATION)
 
         self.home_on_start_row.set_active(bool(mc.home_on_start))
         self.single_axis_homing_row.set_active(
@@ -372,8 +350,8 @@ class HardwarePage(WizardPage):
     def apply_to_profile(self, profile: DeviceProfile) -> bool:
         mc = profile.machine_config
 
-        x = self.x_helper.get_value_in_base_units()
-        y = self.y_helper.get_value_in_base_units()
+        x = self.x_row.get_value_in_base_units()
+        y = self.y_row.get_value_in_base_units()
         if x > 0 and y > 0:
             mc.axis_extents = (float(x), float(y))
 
@@ -389,10 +367,10 @@ class HardwarePage(WizardPage):
         reverse["z"] = self.reverse_z_row.get_active()
 
         margins = (
-            get_spinrow_float(self.margin_left_row),
-            get_spinrow_float(self.margin_top_row),
-            get_spinrow_float(self.margin_right_row),
-            get_spinrow_float(self.margin_bottom_row),
+            self.margin_left_row.get_value_in_base_units(),
+            self.margin_top_row.get_value_in_base_units(),
+            self.margin_right_row.get_value_in_base_units(),
+            self.margin_bottom_row.get_value_in_base_units(),
         )
         if any(m > 0 for m in margins):
             mc.work_margins = margins
@@ -401,17 +379,17 @@ class HardwarePage(WizardPage):
 
         if self.soft_limits_enabled_row.get_active():
             mc.soft_limits = (
-                get_spinrow_float(self.soft_x_min_row),
-                get_spinrow_float(self.soft_y_min_row),
-                get_spinrow_float(self.soft_x_max_row),
-                get_spinrow_float(self.soft_y_max_row),
+                self.soft_x_min_row.get_value_in_base_units(),
+                self.soft_y_min_row.get_value_in_base_units(),
+                self.soft_x_max_row.get_value_in_base_units(),
+                self.soft_y_max_row.get_value_in_base_units(),
             )
         else:
             mc.soft_limits = None
 
-        travel = self.travel_speed_helper.get_value_in_base_units()
-        cut = self.cut_speed_helper.get_value_in_base_units()
-        accel = self.accel_helper.get_value_in_base_units()
+        travel = self.travel_speed_row.get_value_in_base_units()
+        cut = self.cut_speed_row.get_value_in_base_units()
+        accel = self.accel_row.get_value_in_base_units()
         mc.max_travel_speed = int(travel) if travel > 0 else None
         mc.max_cut_speed = int(cut) if cut > 0 else None
         mc.acceleration = int(accel) if accel > 0 else None

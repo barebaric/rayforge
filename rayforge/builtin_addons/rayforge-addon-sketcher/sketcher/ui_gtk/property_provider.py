@@ -10,6 +10,7 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.ui_gtk.doceditor.property_providers.base import (
     PropertyProvider,
 )
+from rayforge.ui_gtk.shared.unit_spin_row import SpinRow
 from rayforge.ui_gtk.varset.varsetwidget import VarSetRowList
 
 from .sketch_cmd import SketchCmd
@@ -142,7 +143,7 @@ class SketchPropertyProvider(PropertyProvider):
                 logger.debug(f"Parameter '{key}' has mixed values.")
                 if isinstance(row, Adw.EntryRow):
                     row.set_text("")
-                elif isinstance(row, Adw.SpinRow):
+                elif isinstance(row, SpinRow):
                     row.set_subtitle(_("Mixed Values"))
                 elif isinstance(row, Adw.ComboRow):
                     row.set_selected(0)

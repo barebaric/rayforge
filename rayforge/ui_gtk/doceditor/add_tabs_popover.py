@@ -4,7 +4,9 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, List
 
-from gi.repository import Adw, Gtk
+from gi.repository import Gtk
+
+from ..shared.unit_spin_row import LengthSpinRow, SpinRow
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece
@@ -36,17 +38,22 @@ class AddTabsPopover(Gtk.Popover):
         rows_container.add_css_class("boxed-list")
         content_box.append(rows_container)
 
-        self.tab_count_row = Adw.SpinRow(
-            title=_("Number of Tabs"),
-            adjustment=Gtk.Adjustment.new(4, 1, 1000, 1, 10, 0),
+        self.tab_count_row = SpinRow(
+            _("Number of Tabs"),
+            lower=1,
+            upper=1000,
             digits=0,
+            value=4,
         )
         rows_container.append(self.tab_count_row)
 
-        self.tab_width_row = Adw.SpinRow(
-            title=_("Tab Width (mm)"),
-            adjustment=Gtk.Adjustment.new(2.0, 0.1, 100, 0.1, 1, 0),
-            digits=2,
+        self.tab_width_row = LengthSpinRow(
+            _("Tab Width"),
+            lower=0.1,
+            upper=100,
+            min_value_in_base=0.1,
+            max_value_in_base=100.0,
+            value_in_base=2.0,
         )
         rows_container.append(self.tab_width_row)
 
@@ -57,25 +64,27 @@ class AddTabsPopover(Gtk.Popover):
         initial_count = len(first_workpiece.tabs)
         if initial_count > 0:
             self.tab_count_row.set_value(initial_count)
-            self.tab_width_row.set_value(first_workpiece.tabs[0].width)
+            self.tab_width_row.set_value_in_base_units(
+                first_workpiece.tabs[0].width
+            )
         else:
             self.tab_count_row.set_value(4)
-            self.tab_width_row.set_value(2.0)
+            self.tab_width_row.set_value_in_base_units(2.0)
         self._in_update = False
 
         # Connect signals for live updates
-        self.tab_count_row.connect("notify::value", self._on_value_changed)
-        self.tab_width_row.connect("notify::value", self._on_value_changed)
+        self.tab_count_row.value_changed.connect(self._on_value_changed)
+        self.tab_width_row.value_changed.connect(self._on_value_changed)
 
         # Trigger the initial command to set the default tabs
-        self._on_value_changed(None, None)
+        self._on_value_changed()
 
-    def _on_value_changed(self, spin_row, GParamSpec):
+    def _on_value_changed(self, *args):
         if self._in_update:
             return
 
-        count = int(self.tab_count_row.get_value())
-        width = self.tab_width_row.get_value()
+        count = self.tab_count_row.get_int_value()
+        width = self.tab_width_row.get_value_in_base_units()
 
         # Group all changes into a single undoable transaction.
         # This is the correct way to batch changes that should be undone

@@ -120,6 +120,21 @@ def test_head_change_does_not_touch_offset(editor, laser_machine, ui_context):
 
 
 @pytest.mark.ui
+def test_offset_row_uses_user_units(editor, laser_machine, ui_context):
+    ui_context.config.unit_preferences["length"] = "in"
+    step = _contour_step(ui_context)
+    page = ContourStepSettingsPage(editor, step)
+    offset = _find(page, OffsetRow)
+
+    step.offset_mm = 25.4
+    step.updated.send(step)
+
+    assert offset.widget is not None
+    assert offset.widget.get_value_in_base_units() == pytest.approx(25.4)
+    assert offset.widget.get_value() == pytest.approx(1.0, abs=1e-2)
+
+
+@pytest.mark.ui
 def test_material_test_page_builds(editor, laser_machine, ui_context):
     step_cls = step_registry.get("MaterialTestStep")
     assert step_cls is not None

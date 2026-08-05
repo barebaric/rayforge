@@ -7,7 +7,7 @@ class SpeedVar(IntVar):
     """
     An IntVar representing a speed value (e.g. cut speed, travel speed).
 
-    Hints the UI to apply unit conversion via UnitSpinRowHelper.
+    Hints the UI to apply unit conversion via SpeedSpinRow.
     """
 
     def __init__(

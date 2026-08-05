@@ -12,7 +12,12 @@ from raygeo.ops.part.image_source import WholeImageSource
 
 from rayforge.core.capability import MachineCapability, StepCapability
 from rayforge.core.cut_side import CutSide
-from rayforge.core.varset import FloatVar, LabeledChoiceVar, VarSet
+from rayforge.core.varset import (
+    FloatVar,
+    LabeledChoiceVar,
+    LengthVar,
+    VarSet,
+)
 from rayforge.image.tracing import prepare_surface
 from rayforge.pipeline.stage.assembler_helpers import (
     build_part_vector,
@@ -52,7 +57,7 @@ class ShrinkWrapStep(LaserStep):
                     choices=[(cs.label(), cs.name) for cs in CutSide],
                     default="CENTERLINE",
                 ),
-                FloatVar(
+                LengthVar(
                     key="offset_mm",
                     label=_("Offset"),
                     description=_(

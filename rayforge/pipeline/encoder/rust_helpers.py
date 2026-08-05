@@ -212,6 +212,7 @@ def build_encode_context(ops: Ops, machine: "Machine", doc: "Doc") -> Dict:
     return {
         "gcode_precision": machine.gcode_precision,
         "max_travel_speed": float(machine.max_travel_speed),
+        "unit_scale": machine.unit_system.scale_from_mm,
         "default_head_uid": machine.get_default_head().uid,
         "heads": _build_heads(machine),
         "active_wcs": machine.active_wcs,

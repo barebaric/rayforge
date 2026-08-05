@@ -18,12 +18,11 @@ from ..machine.console import Console
 from ..machine.jog_widget import JogWidget
 from ..machine.laser_control_widget import LaserControlWidget
 from ..machine.wcs_dialog import WcsDialog
-from ..shared.adwfix import get_spinrow_float
 from ..shared.dock_item import DockItem
 from ..shared.dock_layout import DockLayout
 from ..shared.gtk import apply_css
 from ..shared.responsive_box import ResponsiveBox
-from ..shared.unit_spin_row import UnitSpinRowHelper
+from ..shared.unit_spin_row import LengthSpinRow, SpeedSpinRow
 from .asset_browser import AssetBrowser
 
 if TYPE_CHECKING:
@@ -424,43 +423,39 @@ class BottomPanel(Gtk.Box):
             _("Click on canvas to set work zero")
         )
 
-        speed_adjustment = Gtk.Adjustment(
-            value=1000, lower=1, upper=60000, step_increment=10
-        )
-        self.speed_row = Adw.SpinRow(
-            title=_("Jog Speed"),
-            adjustment=speed_adjustment,
-        )
-        self.speed_helper = UnitSpinRowHelper(
-            self.speed_row,
-            quantity="speed",
+        self.speed_row = SpeedSpinRow(
+            _("Jog Speed"),
+            _("Speed"),
+            lower=1,
+            upper=60000,
             max_value_in_base=60000,
-            subtitle_format=_("Speed ({unit})"),
+            value_in_base=1000,
         )
-        self.speed_helper.set_value_in_base_units(1000)
-        self.speed_helper.changed.connect(self._on_speed_changed)
+        self.speed_row.value_changed.connect(self._on_speed_changed)
         self.wcs_group.add(self.speed_row)
 
-        distance_adjustment = Gtk.Adjustment(
-            value=10.0, lower=0.1, upper=1000, step_increment=1
+        self.distance_row = LengthSpinRow(
+            _("Jog Distance"),
+            _("Distance in machine units"),
+            lower=0.1,
+            upper=1000,
+            min_value_in_base=0.1,
+            max_value_in_base=1000.0,
+            value_in_base=10.0,
         )
-        self.distance_row = Adw.SpinRow(
-            title=_("Jog Distance"),
-            subtitle=_("Distance in machine units"),
-            adjustment=distance_adjustment,
-            digits=1,
-        )
-        self.distance_row.connect("changed", self._on_distance_changed)
+        self.distance_row.value_changed.connect(self._on_distance_changed)
         self.wcs_group.add(self.distance_row)
 
         self._update_wcs_ui()
 
-    def _on_speed_changed(self, helper):
-        speed_mm_min = int(helper.get_value_in_base_units())
+    def _on_speed_changed(self, row):
+        speed_mm_min = int(self.speed_row.get_value_in_base_units())
         self.jog_widget.jog_speed = speed_mm_min
 
-    def _on_distance_changed(self, spin_row):
-        self.jog_widget.jog_distance = get_spinrow_float(spin_row)
+    def _on_distance_changed(self, row):
+        self.jog_widget.jog_distance = (
+            self.distance_row.get_value_in_base_units()
+        )
 
     def _connect_machine_signals(self):
         if self.machine:

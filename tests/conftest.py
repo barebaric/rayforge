@@ -248,6 +248,8 @@ async def context_initializer(tmp_path, task_mgr, monkeypatch):
     monkeypatch.setattr(config, "DIALECT_DIR", temp_dialect_dir)
     monkeypatch.setattr(config, "MACHINE_DIR", temp_machine_dir)
     monkeypatch.setattr(config, "ADDONS_DIR", temp_addons_dir)
+    monkeypatch.setattr(config, "CONFIG_FILE", temp_config_dir / "config.yaml")
+    monkeypatch.setattr(config, "AI_CONFIG_FILE", temp_config_dir / "ai.yaml")
 
     # 2. Patch the global task_mgr proxy to use our test-isolated instance.
     monkeypatch.setattr(tasker.task_mgr, "_instance", task_mgr)
@@ -468,6 +470,8 @@ def ui_context_initializer(tmp_path, monkeypatch, ui_task_mgr):
     monkeypatch.setattr(config, "DIALECT_DIR", temp_dialect_dir)
     monkeypatch.setattr(config, "MACHINE_DIR", temp_machine_dir)
     monkeypatch.setattr(config, "ADDONS_DIR", temp_addons_dir)
+    monkeypatch.setattr(config, "CONFIG_FILE", temp_config_dir / "config.yaml")
+    monkeypatch.setattr(config, "AI_CONFIG_FILE", temp_config_dir / "ai.yaml")
     monkeypatch.setattr(tasker.task_mgr, "_instance", ui_task_mgr)
 
     context = get_context()

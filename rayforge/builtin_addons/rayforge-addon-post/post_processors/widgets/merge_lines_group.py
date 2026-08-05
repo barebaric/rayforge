@@ -1,14 +1,14 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw
 
 from rayforge.core.undo import DictItemCommand
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.groups import (
     TransformerSettingsGroup,
 )
-from rayforge.ui_gtk.shared.adwfix import get_spinrow_float
+from rayforge.ui_gtk.shared.unit_spin_row import LengthSpinRow
 
 from ..transformers import MergeLinesTransformer
 
@@ -39,29 +39,22 @@ class MergeLinesSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             **kwargs,
         )
 
-        tolerance_adj = Gtk.Adjustment(
-            lower=0.01, upper=10.0, step_increment=0.1, page_increment=1.0
+        self.tolerance_row = LengthSpinRow(
+            _("Tolerance"),
+            _("Maximum distance for lines to be considered overlapping"),
+            lower=0.01,
+            upper=10.0,
+            min_value_in_base=0.01,
+            max_value_in_base=10.0,
+            value_in_base=transformer.tolerance,
         )
-        tolerance_adj.set_value(transformer.tolerance)
-        tolerance_row = Adw.SpinRow(
-            title=_("Tolerance"),
-            subtitle=_(
-                "Maximum distance for lines to be considered overlapping"
-            ),
-            adjustment=tolerance_adj,
+        self.tolerance_row.value_changed.connect(
+            lambda r: self._debounce(self._on_tolerance_changed, r)
         )
-        tolerance_row.set_digits(2)
-        self.add(tolerance_row)
+        self.add(self.tolerance_row)
 
-        tolerance_row.connect(
-            "changed",
-            lambda spin_row: self._debounce(
-                self._on_tolerance_changed, spin_row
-            ),
-        )
-
-    def _on_tolerance_changed(self, spin_row):
-        new_value = get_spinrow_float(spin_row)
+    def _on_tolerance_changed(self, row):
+        new_value = row.get_value_in_base_units()
         command = DictItemCommand(
             target_dict=self.target_dict,
             key="tolerance",

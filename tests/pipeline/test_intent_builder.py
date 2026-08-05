@@ -828,7 +828,7 @@ def test_machine_transform_rotary_extra_axes(
 
 
 def _build_rotary_pipeline(
-    part, diameter, axis="A", mode="true_4th_axis", mu_per_rotation=0.0
+    part, diameter, axis="A", mode="true_4th_axis", mm_per_rotation=0.0
 ):
     """Helper: create a 4-node pipeline (compute → aggregate → mxform
     → encode) that feeds known geometry through the machine-transform
@@ -888,7 +888,7 @@ def _build_rotary_pipeline(
         cylinder_dir=[1, 0, 0],
         rotary_axis=axis,
         replaced_axis=None if mode == "true_4th_axis" else axis,
-        mu_per_rotation=mu_per_rotation,
+        mm_per_rotation=mm_per_rotation,
     )
 
     mt_spec = MachineTransformSpec(
@@ -999,7 +999,7 @@ def test_machine_transform_axis_replacement():
         25.0,
         axis="Y",
         mode="axis_replacement",
-        mu_per_rotation=100.0,
+        mm_per_rotation=100.0,
     )
 
     enc = completed.get("enc")

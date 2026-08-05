@@ -12,10 +12,14 @@ from rayforge.image.util import (
 )
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.stage.assembler_helpers import DepthMode
-from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
 from rayforge.ui_gtk.shared.direction_preview import DirectionPreview
 from rayforge.ui_gtk.shared.histogram_preview import HistogramPreview
 from rayforge.ui_gtk.shared.slider import create_slider, create_slider_row
+from rayforge.ui_gtk.shared.unit_spin_row import (
+    AngleSpinRow,
+    LengthSpinRow,
+    SpinRow,
+)
 
 from .rows import LaserStepSettingsPage
 
@@ -155,24 +159,19 @@ class RasterSettingsPage(LaserStepSettingsPage):
         )
         self._add(histogram_group, self.max_power_row)
 
-        power_levels_adj = Gtk.Adjustment(
+        self.power_levels_row = SpinRow(
+            _("Power Levels"),
+            _("Number of discrete power steps (lower = fewer moves)"),
             lower=2,
             upper=256,
-            step_increment=1,
+            digits=0,
             value=step.num_power_levels,
         )
-        self.power_levels_row = Adw.SpinRow(
-            title=_("Power Levels"),
-            subtitle=_("Number of discrete power steps (lower = fewer moves)"),
-            adjustment=power_levels_adj,
-            digits=0,
-        )
-        self.power_levels_row.connect(
-            "changed",
+        self.power_levels_row.value_changed.connect(
             lambda r: self._debounce(
                 self._on_param_changed,
                 "num_power_levels",
-                get_spinrow_int(r),
+                r.get_int_value(),
             ),
         )
         self._add(histogram_group, self.power_levels_row)
@@ -180,38 +179,36 @@ class RasterSettingsPage(LaserStepSettingsPage):
         self._update_power_labels(step.invert)
 
         # --- Multi-Pass Settings ---
-        levels_adj = Gtk.Adjustment(
+        self.levels_row = SpinRow(
+            _("Number of Depth Levels"),
             lower=1,
             upper=255,
-            step_increment=1,
             value=step.num_depth_levels,
-        )
-        self.levels_row = Adw.SpinRow(
-            title=_("Number of Depth Levels"), adjustment=levels_adj
         )
         self._add(engrave_group, self.levels_row)
 
-        z_step_adj = Gtk.Adjustment(
-            lower=0, upper=50, step_increment=0.1, value=step.z_step_down
-        )
-        self.z_step_row = Adw.SpinRow(
-            title=_("Z Step-Down per Level (mm)"),
-            adjustment=z_step_adj,
-            digits=2,
+        self.z_step_row = LengthSpinRow(
+            _("Z Step-Down per Level"),
+            upper=50,
+            max_value_in_base=50,
+            value_in_base=step.z_step_down,
         )
         self._add(engrave_group, self.z_step_row)
+        self.z_step_row.value_changed.connect(
+            lambda r: self._debounce(
+                self._on_param_changed,
+                "z_step_down",
+                r.get_value_in_base_units(),
+            )
+        )
 
-        angle_incr_adj = Gtk.Adjustment(
+        self.angle_incr_row = AngleSpinRow(
+            _("Rotate Angle Per Pass"),
+            _("Degrees to rotate each successive pass"),
             lower=0,
             upper=180,
-            step_increment=1,
-            value=step.angle_increment,
-        )
-        self.angle_incr_row = Adw.SpinRow(
-            title=_("Rotate Angle Per Pass"),
-            subtitle=_("Degrees to rotate each successive pass"),
-            adjustment=angle_incr_adj,
             digits=0,
+            value=step.angle_increment,
         )
         self._add(engrave_group, self.angle_incr_row)
 
@@ -225,26 +222,18 @@ class RasterSettingsPage(LaserStepSettingsPage):
             "value-changed", self._on_max_power_scale_changed
         )
 
-        self.levels_row.connect(
-            "changed",
+        self.levels_row.value_changed.connect(
             lambda r: self._debounce(
                 self._on_param_changed,
                 "num_depth_levels",
-                get_spinrow_int(r),
+                r.get_int_value(),
             ),
         )
-        self.z_step_row.connect(
-            "changed",
-            lambda r: self._debounce(
-                self._on_param_changed, "z_step_down", get_spinrow_float(r)
-            ),
-        )
-        self.angle_incr_row.connect(
-            "changed",
+        self.angle_incr_row.value_changed.connect(
             lambda r: self._debounce(
                 self._on_param_changed,
                 "angle_increment",
-                get_spinrow_float(r),
+                r.get_value(),
             ),
         )
 
@@ -323,109 +312,101 @@ class RasterSettingsPage(LaserStepSettingsPage):
         default_line_interval_mm = laser.spot_size_mm[1] if laser else 0.1
         default_sample_interval_mm = laser.spot_size_mm[0] if laser else 0.1
 
-        line_interval_adj = Gtk.Adjustment(
+        self.line_interval_row = LengthSpinRow(
+            _("Line Spacing"),
+            _("Distance between scan lines"),
             lower=0.001,
             upper=10.0,
             step_increment=0.01,
-            value=(
+            digits=3,
+            min_value_in_base=0.001,
+            max_value_in_base=10.0,
+            value_in_base=(
                 self.step.line_interval_mm
                 if self.step.line_interval_mm is not None
                 else default_line_interval_mm
             ),
         )
-        self.line_interval_row = Adw.SpinRow(
-            title=_("Line Spacing"),
-            subtitle=_("Distance between scan lines"),
-            adjustment=line_interval_adj,
-            digits=3,
-        )
-        self.line_interval_row.connect(
-            "changed",
-            lambda r: self._debounce(
-                self._on_line_interval_changed, get_spinrow_float(r)
-            ),
-        )
         self._add(group, self.line_interval_row)
+        self.line_interval_row.value_changed.connect(
+            lambda r: self._debounce(
+                self._on_line_interval_changed,
+                r.get_value_in_base_units(),
+            )
+        )
 
-        sample_interval_adj = Gtk.Adjustment(
+        self.sample_interval_row = LengthSpinRow(
+            _("Sample Interval"),
+            _(
+                "Distance between power samples along scan line. "
+                "Lower values improve accuracy, but increase output size. "
+            ),
             lower=0.01,
             upper=10.0,
-            step_increment=0.01,
-            value=(
+            min_value_in_base=0.01,
+            max_value_in_base=10.0,
+            value_in_base=(
                 self.step.sample_interval_mm
                 if self.step.sample_interval_mm is not None
                 else default_sample_interval_mm
             ),
         )
-        self.sample_interval_row = Adw.SpinRow(
-            title=_("Sample Interval"),
-            subtitle=_(
-                "Distance between power samples along scan line. "
-                "Lower values improve accuracy, but increase output size."
-            ),
-            adjustment=sample_interval_adj,
-            digits=2,
-        )
-        self.sample_interval_row.connect(
-            "changed",
-            lambda r: self._debounce(
-                self._on_sample_interval_changed, get_spinrow_float(r)
-            ),
-        )
         self._add(group, self.sample_interval_row)
+        self.sample_interval_row.value_changed.connect(
+            lambda r: self._debounce(
+                self._on_sample_interval_changed,
+                r.get_value_in_base_units(),
+            )
+        )
 
         default_dot_width_correction_mm = (
             laser.spot_size_mm[0] / 2.0 if laser else 0.05
         )
-        dot_width_correction_adj = Gtk.Adjustment(
-            lower=0.0,
+        self.dot_width_correction_row = LengthSpinRow(
+            _("Dot Width Correction"),
+            _(
+                "Reduces engrave length at both ends to compensate "
+                "for physical dot width"
+            ),
             upper=5.0,
             step_increment=0.01,
-            value=(
+            digits=3,
+            max_value_in_base=5.0,
+            value_in_base=(
                 self.step.dot_width_correction_mm
                 if self.step.dot_width_correction_mm is not None
                 else default_dot_width_correction_mm
             ),
         )
-        self.dot_width_correction_row = Adw.SpinRow(
-            title=_("Dot Width Correction"),
-            subtitle=_(
-                "Reduces engrave length at both ends to compensate "
-                "for physical dot width"
-            ),
-            adjustment=dot_width_correction_adj,
-            digits=3,
-        )
-        self.dot_width_correction_row.connect(
-            "changed",
-            lambda r: self._debounce(
-                self._on_dot_width_correction_changed, get_spinrow_float(r)
-            ),
-        )
         self._add(group, self.dot_width_correction_row)
+        self.dot_width_correction_row.value_changed.connect(
+            lambda r: self._debounce(
+                self._on_dot_width_correction_changed,
+                r.get_value_in_base_units(),
+            )
+        )
 
-        bidir_x_offset_adj = Gtk.Adjustment(
+        self.bidir_x_offset_row = LengthSpinRow(
+            _("Bidirectional Scan Offset"),
+            _(
+                "Corrects X misalignment between left-to-right and "
+                "right-to-left raster passes"
+            ),
             lower=-5.0,
             upper=5.0,
             step_increment=0.01,
-            value=self.step.bidir_x_offset_mm,
-        )
-        self.bidir_x_offset_row = Adw.SpinRow(
-            title=_("Bidirectional Scan Offset"),
-            subtitle=_(
-                "Corrects X misalignment between left-to-right and "
-                "right-to-left raster passes (in mm)"
-            ),
-            adjustment=bidir_x_offset_adj,
             digits=3,
-        )
-        self.bidir_x_offset_row.connect(
-            "changed",
-            lambda r: self._debounce(
-                self._on_bidir_x_offset_changed, get_spinrow_float(r)
-            ),
+            min_value_in_base=-5.0,
+            max_value_in_base=5.0,
+            value_in_base=self.step.bidir_x_offset_mm,
         )
         self._add(group, self.bidir_x_offset_row)
+        self.bidir_x_offset_row.value_changed.connect(
+            lambda r: self._debounce(
+                self._on_bidir_x_offset_changed,
+                r.get_value_in_base_units(),
+            )
+        )
 
         self.invert_row = Adw.SwitchRow(
             title=_("Invert"),

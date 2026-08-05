@@ -5,9 +5,9 @@ from gi.repository import Adw, Gtk
 
 from ...machine.models.machine import Machine
 from ...machine.models.zone import Zone, ZoneShape
-from ..shared.adwfix import get_spinrow_float
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.unit_spin_row import LengthSpinRow
 
 
 class ZoneRow(Gtk.Box):
@@ -227,106 +227,88 @@ class NogoZonesPage(TrackedPreferencesPage):
         self.shape_row.connect("notify::selected", self._on_shape_changed)
         self.config_group.add(self.shape_row)
 
-        x_adj = Gtk.Adjustment(
-            lower=-10000, upper=10000, step_increment=1, page_increment=10
-        )
-        self.x_row = Adw.SpinRow(
-            title=_("X"),
-            subtitle=_("X position in {wcs}").format(
-                wcs=self.machine.machine_space_wcs_display_name
+        self.x_row = LengthSpinRow(
+            _("X"),
+            _("X position in {wcs}").replace(
+                "{wcs}", self.machine.machine_space_wcs_display_name
             ),
-            adjustment=x_adj,
-            digits=2,
+            lower=-10000,
+            upper=10000,
+            min_value_in_base=-10000.0,
+            max_value_in_base=10000.0,
         )
-        self.x_row.connect("notify::value", self._on_param_changed)
+        self.x_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.x_row)
 
-        y_adj = Gtk.Adjustment(
-            lower=-10000, upper=10000, step_increment=1, page_increment=10
-        )
-        self.y_row = Adw.SpinRow(
-            title=_("Y"),
-            subtitle=_("Y position in {wcs}").format(
-                wcs=self.machine.machine_space_wcs_display_name
+        self.y_row = LengthSpinRow(
+            _("Y"),
+            _("Y position in {wcs}").replace(
+                "{wcs}", self.machine.machine_space_wcs_display_name
             ),
-            adjustment=y_adj,
-            digits=2,
+            lower=-10000,
+            upper=10000,
+            min_value_in_base=-10000.0,
+            max_value_in_base=10000.0,
         )
-        self.y_row.connect("notify::value", self._on_param_changed)
+        self.y_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.y_row)
 
-        z_adj = Gtk.Adjustment(
-            lower=-10000, upper=10000, step_increment=1, page_increment=10
-        )
-        self.z_row = Adw.SpinRow(
-            title=_("Z"),
-            subtitle=_("Z position in {wcs}").format(
-                wcs=self.machine.machine_space_wcs_display_name
+        self.z_row = LengthSpinRow(
+            _("Z"),
+            _("Z position in {wcs}").replace(
+                "{wcs}", self.machine.machine_space_wcs_display_name
             ),
-            adjustment=z_adj,
-            digits=2,
+            lower=-10000,
+            upper=10000,
+            min_value_in_base=-10000.0,
+            max_value_in_base=10000.0,
         )
-        self.z_row.connect("notify::value", self._on_param_changed)
+        self.z_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.z_row)
 
-        w_adj = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=1, page_increment=10
+        self.w_row = LengthSpinRow(
+            _("Width"),
+            _("Width"),
+            upper=10000,
+            max_value_in_base=10000.0,
         )
-        self.w_row = Adw.SpinRow(
-            title=_("Width"),
-            subtitle=_("Width in mm"),
-            adjustment=w_adj,
-            digits=2,
-        )
-        self.w_row.connect("notify::value", self._on_param_changed)
+        self.w_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.w_row)
 
-        h_adj = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=1, page_increment=10
+        self.h_row = LengthSpinRow(
+            _("Height"),
+            _("Height"),
+            upper=10000,
+            max_value_in_base=10000.0,
         )
-        self.h_row = Adw.SpinRow(
-            title=_("Height"),
-            subtitle=_("Height in mm"),
-            adjustment=h_adj,
-            digits=2,
-        )
-        self.h_row.connect("notify::value", self._on_param_changed)
+        self.h_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.h_row)
 
-        d_adj = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=1, page_increment=10
+        self.d_row = LengthSpinRow(
+            _("Depth"),
+            _("Depth (Z extent)"),
+            upper=10000,
+            max_value_in_base=10000.0,
         )
-        self.d_row = Adw.SpinRow(
-            title=_("Depth"),
-            subtitle=_("Depth (Z extent) in mm"),
-            adjustment=d_adj,
-            digits=2,
-        )
-        self.d_row.connect("notify::value", self._on_param_changed)
+        self.d_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.d_row)
 
-        r_adj = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=1, page_increment=10
+        self.radius_row = LengthSpinRow(
+            _("Radius"),
+            _("Cylinder radius"),
+            upper=10000,
+            max_value_in_base=10000.0,
         )
-        self.radius_row = Adw.SpinRow(
-            title=_("Radius"),
-            subtitle=_("Cylinder radius in mm"),
-            adjustment=r_adj,
-            digits=2,
-        )
-        self.radius_row.connect("notify::value", self._on_param_changed)
+        self.radius_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.radius_row)
 
-        cyl_h_adj = Gtk.Adjustment(
-            lower=0, upper=10000, step_increment=1, page_increment=10
+        self.cyl_height_row = LengthSpinRow(
+            _("Cylinder Height"),
+            _("Cylinder height"),
+            upper=10000,
+            max_value_in_base=10000.0,
         )
-        self.cyl_height_row = Adw.SpinRow(
-            title=_("Cylinder Height"),
-            subtitle=_("Cylinder height in mm"),
-            adjustment=cyl_h_adj,
-            digits=2,
-        )
-        self.cyl_height_row.connect("notify::value", self._on_param_changed)
+        self.cyl_height_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.cyl_height_row)
 
         self.zone_list_editor.list_box.connect(
@@ -366,14 +348,16 @@ class NogoZonesPage(TrackedPreferencesPage):
             ZoneShape.CYLINDER: 2,
         }
         self.shape_row.set_selected(shape_map.get(zone.shape, 0))
-        self.x_row.set_value(zone.params.get("x", 0.0))
-        self.y_row.set_value(zone.params.get("y", 0.0))
-        self.z_row.set_value(zone.params.get("z", 0.0))
-        self.w_row.set_value(zone.params.get("w", 10.0))
-        self.h_row.set_value(zone.params.get("h", 10.0))
-        self.d_row.set_value(zone.params.get("d", 10.0))
-        self.radius_row.set_value(zone.params.get("radius", 5.0))
-        self.cyl_height_row.set_value(zone.params.get("height", 10.0))
+        self.x_row.set_value_in_base_units(zone.params.get("x", 0.0))
+        self.y_row.set_value_in_base_units(zone.params.get("y", 0.0))
+        self.z_row.set_value_in_base_units(zone.params.get("z", 0.0))
+        self.w_row.set_value_in_base_units(zone.params.get("w", 10.0))
+        self.h_row.set_value_in_base_units(zone.params.get("h", 10.0))
+        self.d_row.set_value_in_base_units(zone.params.get("d", 10.0))
+        self.radius_row.set_value_in_base_units(zone.params.get("radius", 5.0))
+        self.cyl_height_row.set_value_in_base_units(
+            zone.params.get("height", 10.0)
+        )
         self._update_field_visibility(zone)
 
         self._is_updating = False
@@ -415,16 +399,18 @@ class NogoZonesPage(TrackedPreferencesPage):
             return
         self._is_updating = True
         zone.set_shape(new_shape)
-        self.z_row.set_value(zone.params.get("z", 0.0))
-        self.w_row.set_value(zone.params.get("w", 10.0))
-        self.h_row.set_value(zone.params.get("h", 10.0))
-        self.d_row.set_value(zone.params.get("d", 10.0))
-        self.radius_row.set_value(zone.params.get("radius", 5.0))
-        self.cyl_height_row.set_value(zone.params.get("height", 10.0))
+        self.z_row.set_value_in_base_units(zone.params.get("z", 0.0))
+        self.w_row.set_value_in_base_units(zone.params.get("w", 10.0))
+        self.h_row.set_value_in_base_units(zone.params.get("h", 10.0))
+        self.d_row.set_value_in_base_units(zone.params.get("d", 10.0))
+        self.radius_row.set_value_in_base_units(zone.params.get("radius", 5.0))
+        self.cyl_height_row.set_value_in_base_units(
+            zone.params.get("height", 10.0)
+        )
         self._update_field_visibility(zone)
         self._is_updating = False
 
-    def _on_param_changed(self, _spinrow, _param):
+    def _on_param_changed(self, _helper):
         if self._is_updating:
             return
         zone = self._get_selected_zone()
@@ -432,17 +418,19 @@ class NogoZonesPage(TrackedPreferencesPage):
             return
 
         self._is_updating = True
-        zone.set_param("x", get_spinrow_float(self.x_row))
-        zone.set_param("y", get_spinrow_float(self.y_row))
+        zone.set_param("x", self.x_row.get_value_in_base_units())
+        zone.set_param("y", self.y_row.get_value_in_base_units())
         if zone.shape in (ZoneShape.BOX, ZoneShape.CYLINDER):
-            zone.set_param("z", get_spinrow_float(self.z_row))
-        zone.set_param("w", get_spinrow_float(self.w_row))
-        zone.set_param("h", get_spinrow_float(self.h_row))
+            zone.set_param("z", self.z_row.get_value_in_base_units())
+        zone.set_param("w", self.w_row.get_value_in_base_units())
+        zone.set_param("h", self.h_row.get_value_in_base_units())
         if zone.shape == ZoneShape.BOX:
-            zone.set_param("d", get_spinrow_float(self.d_row))
+            zone.set_param("d", self.d_row.get_value_in_base_units())
         elif zone.shape == ZoneShape.CYLINDER:
-            zone.set_param("radius", get_spinrow_float(self.radius_row))
-            zone.set_param("height", get_spinrow_float(self.cyl_height_row))
+            zone.set_param("radius", self.radius_row.get_value_in_base_units())
+            zone.set_param(
+                "height", self.cyl_height_row.get_value_in_base_units()
+            )
         self._is_updating = False
 
     def _on_machine_changed(self, sender, **kwargs):

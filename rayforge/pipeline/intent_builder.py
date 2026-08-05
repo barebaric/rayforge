@@ -917,7 +917,6 @@ class IntentBuilder:
             else:
                 rotary_axis = "Y"
                 replaced_axis = module.axis.name
-
             mappings.append(
                 RotaryMappingSpec(
                     layer_uid=layer.uid,
@@ -928,7 +927,7 @@ class IntentBuilder:
                     cylinder_dir=cylinder_dir.tolist(),
                     rotary_axis=rotary_axis,
                     replaced_axis=replaced_axis,
-                    mu_per_rotation=module.mu_per_rotation,
+                    mm_per_rotation=module.mm_per_rotation,
                 )
             )
         return mappings
@@ -1117,7 +1116,7 @@ def _machine_transform_config_payload(
                     "module_uid": module.uid,
                     "mode": module.mode.value,
                     "axis": module.axis.name,
-                    "mu_per_rotation": module.mu_per_rotation,
+                    "mm_per_rotation": module.mm_per_rotation,
                     "diameter": layer.rotary_diameter,
                     "roller_diameter": module.roller_diameter,
                     "rotary_type": module.rotary_type.value,

@@ -23,6 +23,7 @@ from gi.repository import Adw, GLib, Gtk
 
 from rayforge.core.undo import HistoryManager
 from rayforge.core.varset import FloatVar, IntVar, VarSet
+from rayforge.ui_gtk.shared.unit_spin_row import SpinRow
 from rayforge.ui_gtk.varset.varset_editor import (
     VarDefinitionRowWidget,
     VarSetEditorWidget,
@@ -92,12 +93,12 @@ def test_editor_int_var_spin_button_triggers_signal(editor_widget_in_window):
     # The editor modifies the *definition* (the default), not the live value.
     var_set.var_definition_changed.connect(listener)
 
-    # Find the specific Adw.SpinRow for the default value
+    # Find the specific SpinRow for the default value
     list_box_row = editor.list_box.get_row_at_index(0)
     var_def_widget = list_box_row.get_child()
     assert isinstance(var_def_widget, VarDefinitionRowWidget)
     spin_row = var_def_widget.default_row
-    assert isinstance(spin_row, Adw.SpinRow)
+    assert isinstance(spin_row, SpinRow)
     assert spin_row.get_value() == 10
 
     # --- Act ---
@@ -131,12 +132,12 @@ def test_editor_float_var_spin_button_triggers_signal(editor_widget_in_window):
     listener = Mock()
     var_set.var_definition_changed.connect(listener)
 
-    # Find the specific Adw.SpinRow for the default value
+    # Find the specific SpinRow for the default value
     list_box_row = editor.list_box.get_row_at_index(1)
     var_def_widget = list_box_row.get_child()
     assert isinstance(var_def_widget, VarDefinitionRowWidget)
     spin_row = var_def_widget.default_row
-    assert isinstance(spin_row, Adw.SpinRow)
+    assert isinstance(spin_row, SpinRow)
     assert spin_row.get_value() == 42.5
 
     # --- Act ---

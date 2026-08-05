@@ -62,6 +62,7 @@ class OvercutRow(SpinRow):
             100.0,
             0.1,
             2,
+            quantity="length",
         )
 
 

@@ -20,11 +20,12 @@ class StepOverRow(SpinRow):
             step,
             "step_over_mm",
             _("Step Over"),
-            _("Lateral step-over between wavefront passes (mm)"),
+            _("Lateral step-over between wavefront passes"),
             0.05,
             50.0,
             0.1,
             2,
+            quantity="length",
         )
 
 
@@ -37,11 +38,12 @@ class OffsetRow(SpinRow):
             step,
             "offset_mm",
             _("Offset"),
-            _("Extra offset from walls (mm)"),
+            _("Extra offset from walls"),
             0.0,
             20.0,
             0.1,
             2,
+            quantity="length",
         )
 
 

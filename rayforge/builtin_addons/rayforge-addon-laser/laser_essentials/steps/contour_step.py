@@ -12,8 +12,8 @@ from rayforge.core.capability import MachineCapability, StepCapability
 from rayforge.core.cut_side import CutOrder, CutSide
 from rayforge.core.varset import (
     BoolVar,
-    FloatVar,
     LabeledChoiceVar,
+    LengthVar,
     VarSet,
 )
 from rayforge.pipeline.stage.assembler_helpers import (
@@ -67,7 +67,7 @@ class ContourStep(LaserStep):
                     label=_("Remove Inner Paths"),
                     default=False,
                 ),
-                FloatVar(
+                LengthVar(
                     key="offset_mm",
                     label=_("Offset"),
                     description=_(
@@ -77,7 +77,7 @@ class ContourStep(LaserStep):
                     ),
                     default=0.0,
                 ),
-                FloatVar(
+                LengthVar(
                     key="overcut",
                     label=_("Overcut"),
                     default=0.0,

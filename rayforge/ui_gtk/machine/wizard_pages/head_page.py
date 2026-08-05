@@ -20,7 +20,7 @@ from ....machine.device.profile import DeviceProfile
 from ....machine.driver import get_driver_cls
 from ....machine.driver.dummy import NoDeviceDriver
 from ....machine.models.laser import LaserHead
-from ...shared.adwfix import get_spinrow_float
+from ...shared.unit_spin_row import LengthSpinRow, SpinRow
 from . import WizardPage, _makePreferencesGroup
 
 # Index 0 == laser, 1 == spindle.
@@ -70,84 +70,75 @@ class HeadPage(WizardPage):
         self.laser_group = _makePreferencesGroup(title=_("Laser Settings"))
         self.content.append(self.laser_group)
 
-        power_adj = Gtk.Adjustment(
-            lower=1, upper=100000, step_increment=100, page_increment=1000
+        self.max_power_row = SpinRow(
+            _("Max Power (S-value)"),
+            _("Max laser power value in GCode"),
+            lower=1,
+            upper=100000,
+            step_increment=100,
+            value=1000,
         )
-        self.max_power_row = Adw.SpinRow(
-            title=_("Max Power (S-value)"),
-            subtitle=_("Max laser power value in GCode"),
-            adjustment=power_adj,
-        )
-        self.max_power_row.set_value(1000)
         self.laser_group.add(self.max_power_row)
 
-        spot_x_adj = Gtk.Adjustment(
-            lower=0, upper=10, step_increment=0.05, page_increment=0.5
-        )
-        self.spot_x_row = Adw.SpinRow(
-            title=_("Spot Size X"),
-            subtitle=_("Laser beam width on X axis"),
-            adjustment=spot_x_adj,
+        self.spot_x_row = LengthSpinRow(
+            _("Spot Size X"),
+            _("Laser beam width on X axis"),
+            upper=10,
             digits=3,
+            max_value_in_base=10.0,
+            value_in_base=0.1,
         )
-        self.spot_x_row.set_value(0.1)
         self.laser_group.add(self.spot_x_row)
 
-        spot_y_adj = Gtk.Adjustment(
-            lower=0, upper=10, step_increment=0.05, page_increment=0.5
-        )
-        self.spot_y_row = Adw.SpinRow(
-            title=_("Spot Size Y"),
-            subtitle=_("Laser beam width on Y axis"),
-            adjustment=spot_y_adj,
+        self.spot_y_row = LengthSpinRow(
+            _("Spot Size Y"),
+            _("Laser beam width on Y axis"),
+            upper=10,
             digits=3,
+            max_value_in_base=10.0,
+            value_in_base=0.1,
         )
-        self.spot_y_row.set_value(0.1)
         self.laser_group.add(self.spot_y_row)
 
-        pwm_adj = Gtk.Adjustment(
-            lower=1, upper=100000, step_increment=100, page_increment=1000
+        self.pwm_freq_row = SpinRow(
+            _("PWM Frequency (Hz)"),
+            _("Laser modulation frequency"),
+            lower=1,
+            upper=100000,
+            step_increment=100,
+            value=500,
         )
-        self.pwm_freq_row = Adw.SpinRow(
-            title=_("PWM Frequency (Hz)"),
-            subtitle=_("Laser modulation frequency"),
-            adjustment=pwm_adj,
-        )
-        self.pwm_freq_row.set_value(500)
         self.laser_group.add(self.pwm_freq_row)
 
-        focal_adj = Gtk.Adjustment(
-            lower=0, upper=1000, step_increment=1, page_increment=10
+        self.focal_distance_row = LengthSpinRow(
+            _("Focal Distance"),
+            _("Lens-to-workpiece distance"),
+            upper=1000,
+            max_value_in_base=1000.0,
+            value_in_base=0,
         )
-        self.focal_distance_row = Adw.SpinRow(
-            title=_("Focal Distance"),
-            subtitle=_("Lens-to-workpiece distance"),
-            adjustment=focal_adj,
-            digits=2,
-        )
-        self.focal_distance_row.set_value(0)
         self.laser_group.add(self.focal_distance_row)
 
         # ----- spindle fields ----------------------------------
         self.spindle_group = _makePreferencesGroup(title=_("Spindle"))
         self.content.append(self.spindle_group)
 
-        max_rpm_adj = Gtk.Adjustment(
-            lower=1, upper=100000, step_increment=100, page_increment=1000
+        self.max_rpm_row = SpinRow(
+            _("Max RPM"),
+            lower=1,
+            upper=100000,
+            step_increment=100,
+            value=20000,
         )
-        self.max_rpm_row = Adw.SpinRow(
-            title=_("Max RPM"), adjustment=max_rpm_adj
-        )
-        self.max_rpm_row.set_value(20000)
         self.spindle_group.add(self.max_rpm_row)
 
-        min_rpm_adj = Gtk.Adjustment(
-            lower=1, upper=100000, step_increment=100, page_increment=1000
+        self.min_rpm_row = SpinRow(
+            _("Min RPM"),
+            lower=1,
+            upper=100000,
+            step_increment=100,
+            value=1000,
         )
-        self.min_rpm_row = Adw.SpinRow(
-            title=_("Min RPM"), adjustment=min_rpm_adj
-        )
-        self.min_rpm_row.set_value(1000)
         self.spindle_group.add(self.min_rpm_row)
 
         self._on_head_type_changed(self.head_type_row, None)
@@ -190,10 +181,12 @@ class HeadPage(WizardPage):
             self.head_type_row.set_selected(_HEAD_LASER)
             self.max_power_row.set_value(head.get("max_power", 1000))
             spot = head.get("spot_size_mm") or (0.1, 0.1)
-            self.spot_x_row.set_value(spot[0])
-            self.spot_y_row.set_value(spot[1])
+            self.spot_x_row.set_value_in_base_units(spot[0])
+            self.spot_y_row.set_value_in_base_units(spot[1])
             self.pwm_freq_row.set_value(head.get("pwm_frequency", 500))
-            self.focal_distance_row.set_value(head.get("focal_distance", 0))
+            self.focal_distance_row.set_value_in_base_units(
+                head.get("focal_distance", 0)
+            )
             self._update_pwm_visibility()
         self.head_name_row.set_text(head.get("name", ""))
 
@@ -207,12 +200,14 @@ class HeadPage(WizardPage):
             head["head_class"] = "LaserHead"
             head["max_power"] = int(self.max_power_row.get_value())
             head["spot_size_mm"] = [
-                get_spinrow_float(self.spot_x_row),
-                get_spinrow_float(self.spot_y_row),
+                self.spot_x_row.get_value_in_base_units(),
+                self.spot_y_row.get_value_in_base_units(),
             ]
             if self.pwm_freq_row.get_visible():
                 head["pwm_frequency"] = int(self.pwm_freq_row.get_value())
-            head["focal_distance"] = get_spinrow_float(self.focal_distance_row)
+            head["focal_distance"] = (
+                self.focal_distance_row.get_value_in_base_units()
+            )
         profile.machine_config.heads = [head]
         return True
 

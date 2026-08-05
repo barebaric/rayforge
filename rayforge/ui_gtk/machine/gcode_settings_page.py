@@ -1,10 +1,10 @@
 import logging
 from gettext import gettext as _
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw
 
-from ..shared.adwfix import get_spinrow_int
 from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.unit_spin_row import SpinRow
 from .dialect_list import DialectListEditor
 
 logger = logging.getLogger(__name__)
@@ -28,16 +28,15 @@ class GcodeSettingsPage(TrackedPreferencesPage):
         )
         self.add(precision_group)
 
-        precision_adjustment = Gtk.Adjustment(
-            lower=1, upper=8, step_increment=1, page_increment=1
+        self.precision_row = SpinRow(
+            _("G-code Precision"),
+            _("Number of decimal places for coordinates"),
+            lower=1,
+            upper=8,
+            page_increment=1,
+            value=self.machine.gcode_precision,
         )
-        self.precision_row = Adw.SpinRow(
-            title=_("G-code Precision"),
-            subtitle=_("Number of decimal places for coordinates"),
-            adjustment=precision_adjustment,
-        )
-        precision_adjustment.set_value(self.machine.gcode_precision)
-        self.precision_row.connect("changed", self.on_precision_changed)
+        self.precision_row.value_changed.connect(self.on_precision_changed)
         precision_group.add(self.precision_row)
 
         dialect_editor_group = DialectListEditor(
@@ -51,5 +50,5 @@ class GcodeSettingsPage(TrackedPreferencesPage):
 
     def on_precision_changed(self, spinrow):
         """Update the machine's G-code precision when the value changes."""
-        value = get_spinrow_int(spinrow)
+        value = spinrow.get_int_value()
         self.machine.set_gcode_precision(value)

@@ -29,6 +29,7 @@ from ....machine.models.rotary_module import (
     RotaryModule,
     RotaryType,
 )
+from ...shared.unit_spin_row import LengthSpinRow
 from . import WizardPage, _makePreferencesGroup
 
 _AXIS_NAMES = ("A", "B", "C")
@@ -85,46 +86,39 @@ class RotaryPage(WizardPage):
         self.details_group.add(self.mode_row)
 
         # Geometry fields
-        self.mu_per_rotation_row = Adw.SpinRow(
-            title=_("Length per Rotation"),
-            subtitle=_("Auto-fetched from GRBL $101/$103 if probing"),
-            adjustment=Gtk.Adjustment(
-                lower=0, upper=100000, step_increment=0.1, page_increment=10
-            ),
+        self.mm_per_rotation_row = LengthSpinRow(
+            _("Length per Rotation"),
+            _("Auto-fetched from GRBL $101/$103 if probing"),
+            upper=100000,
             digits=3,
+            max_value_in_base=100000.0,
+            value_in_base=0,
         )
-        self.mu_per_rotation_row.set_value(0)
-        self.details_group.add(self.mu_per_rotation_row)
+        self.details_group.add(self.mm_per_rotation_row)
 
-        self.default_diameter_row = Adw.SpinRow(
-            title=_("Default Workpiece Ø"),
-            adjustment=Gtk.Adjustment(
-                lower=0, upper=1000, step_increment=1, page_increment=10
-            ),
-            digits=2,
+        self.default_diameter_row = LengthSpinRow(
+            _("Default Workpiece Ø"),
+            upper=1000,
+            max_value_in_base=1000.0,
+            value_in_base=25.0,
         )
-        self.default_diameter_row.set_value(25.0)
         self.details_group.add(self.default_diameter_row)
 
-        self.max_length_row = Adw.SpinRow(
-            title=_("Max Workpiece Length"),
-            adjustment=Gtk.Adjustment(
-                lower=0, upper=10000, step_increment=1, page_increment=10
-            ),
-            digits=2,
+        self.max_length_row = LengthSpinRow(
+            _("Max Workpiece Length"),
+            upper=10000,
+            max_value_in_base=10000.0,
+            value_in_base=300.0,
         )
-        self.max_length_row.set_value(300.0)
         self.details_group.add(self.max_length_row)
 
-        self.roller_diameter_row = Adw.SpinRow(
-            title=_("Roller Ø"),
-            subtitle=_("Required when using roller-type rotary"),
-            adjustment=Gtk.Adjustment(
-                lower=0, upper=1000, step_increment=1, page_increment=10
-            ),
-            digits=2,
+        self.roller_diameter_row = LengthSpinRow(
+            _("Roller Ø"),
+            _("Required when using roller-type rotary"),
+            upper=1000,
+            max_value_in_base=1000.0,
+            value_in_base=0.0,
         )
-        self.roller_diameter_row.set_value(0.0)
         self.details_group.add(self.roller_diameter_row)
 
         self.reverse_row = Adw.SwitchRow(
@@ -148,7 +142,7 @@ class RotaryPage(WizardPage):
         # In axis-replacement mode, mm-per-rotation is unused — the
         # axis inherits the replaced linear axis's settings.
         is_axis_replacement = row.get_selected() != _MODE_TRUE_4TH
-        self.mu_per_rotation_row.set_visible(not is_axis_replacement)
+        self.mm_per_rotation_row.set_visible(not is_axis_replacement)
 
     # ----- profile binding -----------------------------------------------
 
@@ -172,12 +166,18 @@ class RotaryPage(WizardPage):
         self.mode_row.set_selected(
             0 if mode_val == RotaryMode.TRUE_4TH_AXIS.value else 1
         )
-        self.mu_per_rotation_row.set_value(first.get("mm_per_rotation", 0))
-        self.default_diameter_row.set_value(
+        self.mm_per_rotation_row.set_value_in_base_units(
+            first.get("mm_per_rotation", 0)
+        )
+        self.default_diameter_row.set_value_in_base_units(
             first.get("default_diameter", 25.0)
         )
-        self.max_length_row.set_value(first.get("max_workpiece_length", 300.0))
-        self.roller_diameter_row.set_value(first.get("roller_diameter", 0.0))
+        self.max_length_row.set_value_in_base_units(
+            first.get("max_workpiece_length", 300.0)
+        )
+        self.roller_diameter_row.set_value_in_base_units(
+            first.get("roller_diameter", 0.0)
+        )
         self.reverse_row.set_active(bool(first.get("reverse_axis", False)))
 
     def apply_to_profile(self, profile: DeviceProfile) -> bool:
@@ -203,10 +203,18 @@ class RotaryPage(WizardPage):
         module.axis = _AXIS_NAMED.get(axis_name, Axis.A)
         module.mode = RotaryMode(mode_val)
         module.rotary_type = RotaryType(type_val)
-        module.mu_per_rotation = self.mu_per_rotation_row.get_value()
-        module.default_diameter = self.default_diameter_row.get_value()
-        module.max_workpiece_length = self.max_length_row.get_value()
-        module.roller_diameter = self.roller_diameter_row.get_value()
+        module.mm_per_rotation = (
+            self.mm_per_rotation_row.get_value_in_base_units()
+        )
+        module.default_diameter = (
+            self.default_diameter_row.get_value_in_base_units()
+        )
+        module.max_workpiece_length = (
+            self.max_length_row.get_value_in_base_units()
+        )
+        module.roller_diameter = (
+            self.roller_diameter_row.get_value_in_base_units()
+        )
         module.reverse_axis = self.reverse_row.get_active()
 
         # Stash uid so when the orchestrator materializes the machine

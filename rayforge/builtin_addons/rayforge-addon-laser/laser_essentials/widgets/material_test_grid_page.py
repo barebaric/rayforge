@@ -11,8 +11,8 @@ from typing import TYPE_CHECKING, Any
 from gi.repository import Adw, GLib, GObject, Gtk
 
 from rayforge.machine.models.laser import LaserHead
-from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
 from rayforge.ui_gtk.shared.slider import create_slider_row
+from rayforge.ui_gtk.shared.unit_spin_row import SpinRow
 
 from ..material_test_helpers import GridMode
 from .rows import LaserStepSettingsPage
@@ -164,21 +164,17 @@ class MaterialTestGridSettingsPage(LaserStepSettingsPage):
         machine_max_speed = self.step.max_cut_speed
 
         # Fixed Speed (used in Power vs Passes mode)
-        fixed_speed_adj = Gtk.Adjustment(
+        self.fixed_speed_row = SpinRow(
+            _("Fixed Speed"),
+            _("Constant speed for all cells (mm/min)"),
             lower=1.0,
             upper=machine_max_speed,
             step_increment=10.0,
+            digits=0,
             value=min(self.step.fixed_speed, machine_max_speed),
         )
-        self.fixed_speed_row = Adw.SpinRow(
-            title=_("Fixed Speed"),
-            subtitle=_("Constant speed for all cells (mm/min)"),
-            adjustment=fixed_speed_adj,
-            digits=0,
-        )
         self._add(group, self.fixed_speed_row)
-        self.fixed_speed_row.connect(
-            "changed",
+        self.fixed_speed_row.value_changed.connect(
             lambda r: self._debounce(self._on_fixed_speed_changed, r),
         )
 
@@ -238,100 +234,92 @@ class MaterialTestGridSettingsPage(LaserStepSettingsPage):
         machine_max_speed = self.step.max_cut_speed
         min_speed = min(min_speed, machine_max_speed)
         max_speed = min(max_speed, machine_max_speed)
-        min_adj = Gtk.Adjustment(
-            lower=1.0, upper=machine_max_speed, step_increment=10.0
-        )
-        self.speed_min_row = Adw.SpinRow(
-            title=_("Minimum Speed"),
-            subtitle=_("Starting speed (mm/min)"),
-            adjustment=min_adj,
+        self.speed_min_row = SpinRow(
+            _("Minimum Speed"),
+            _("Starting speed (mm/min)"),
+            lower=1.0,
+            upper=machine_max_speed,
+            step_increment=10.0,
             digits=0,
             value=min_speed,
         )
         self._add(group, self.speed_min_row)
 
-        max_adj = Gtk.Adjustment(
-            lower=1.0, upper=machine_max_speed, step_increment=10.0
-        )
-        self.speed_max_row = Adw.SpinRow(
-            title=_("Maximum Speed"),
-            subtitle=_("Ending speed (mm/min)"),
-            adjustment=max_adj,
+        self.speed_max_row = SpinRow(
+            _("Maximum Speed"),
+            _("Ending speed (mm/min)"),
+            lower=1.0,
+            upper=machine_max_speed,
+            step_increment=10.0,
             digits=0,
             value=max_speed,
         )
         self._add(group, self.speed_max_row)
 
-        self.speed_min_row.connect(
-            "changed", lambda r: self._debounce(self._on_speed_min_changed, r)
+        self.speed_min_row.value_changed.connect(
+            lambda r: self._debounce(self._on_speed_min_changed, r)
         )
-        self.speed_max_row.connect(
-            "changed", lambda r: self._debounce(self._on_speed_max_changed, r)
+        self.speed_max_row.value_changed.connect(
+            lambda r: self._debounce(self._on_speed_max_changed, r)
         )
 
         # Passes Range (used in Power vs Passes and Speed vs Passes modes)
         min_passes, max_passes = self.step.passes_range
-        min_passes_adj = Gtk.Adjustment(
-            lower=1, upper=50, step_increment=1, value=min_passes
-        )
-        self.passes_min_row = Adw.SpinRow(
-            title=_("Minimum Passes"),
-            subtitle=_("Starting number of passes"),
-            adjustment=min_passes_adj,
+        self.passes_min_row = SpinRow(
+            _("Minimum Passes"),
+            _("Starting number of passes"),
+            lower=1,
+            upper=50,
             digits=0,
+            value=min_passes,
         )
         self._add(group, self.passes_min_row)
 
-        max_passes_adj = Gtk.Adjustment(
-            lower=1, upper=50, step_increment=1, value=max_passes
-        )
-        self.passes_max_row = Adw.SpinRow(
-            title=_("Maximum Passes"),
-            subtitle=_("Ending number of passes"),
-            adjustment=max_passes_adj,
+        self.passes_max_row = SpinRow(
+            _("Maximum Passes"),
+            _("Ending number of passes"),
+            lower=1,
+            upper=50,
             digits=0,
+            value=max_passes,
         )
         self._add(group, self.passes_max_row)
 
-        self.passes_min_row.connect(
-            "changed",
+        self.passes_min_row.value_changed.connect(
             lambda r: self._debounce(self._on_passes_min_changed, r),
         )
-        self.passes_max_row.connect(
-            "changed",
+        self.passes_max_row.value_changed.connect(
             lambda r: self._debounce(self._on_passes_max_changed, r),
         )
 
         # Offset Range (used in Speed vs Offset mode)
         min_offset, max_offset = self.step.offset_range
-        min_offset_adj = Gtk.Adjustment(
-            lower=-10.0, upper=10.0, step_increment=0.05, value=min_offset
-        )
-        self.offset_min_row = Adw.SpinRow(
-            title=_("Minimum Offset"),
-            subtitle=_("Bidir scan X-offset for first row (mm)"),
-            adjustment=min_offset_adj,
+        self.offset_min_row = SpinRow(
+            _("Minimum Offset"),
+            _("Bidir scan X-offset for first row (mm)"),
+            lower=-10.0,
+            upper=10.0,
+            step_increment=0.05,
             digits=2,
+            value=min_offset,
         )
         self._add(group, self.offset_min_row)
 
-        max_offset_adj = Gtk.Adjustment(
-            lower=-10.0, upper=10.0, step_increment=0.05, value=max_offset
-        )
-        self.offset_max_row = Adw.SpinRow(
-            title=_("Maximum Offset"),
-            subtitle=_("Bidir scan X-offset for last row (mm)"),
-            adjustment=max_offset_adj,
+        self.offset_max_row = SpinRow(
+            _("Maximum Offset"),
+            _("Bidir scan X-offset for last row (mm)"),
+            lower=-10.0,
+            upper=10.0,
+            step_increment=0.05,
             digits=2,
+            value=max_offset,
         )
         self._add(group, self.offset_max_row)
 
-        self.offset_min_row.connect(
-            "changed",
+        self.offset_min_row.value_changed.connect(
             lambda r: self._debounce(self._on_offset_min_changed, r),
         )
-        self.offset_max_row.connect(
-            "changed",
+        self.offset_max_row.value_changed.connect(
             lambda r: self._debounce(self._on_offset_max_changed, r),
         )
 
@@ -352,21 +340,17 @@ class MaterialTestGridSettingsPage(LaserStepSettingsPage):
         )
         self._add(group, self.label_power_row)
 
-        speed_adj = Gtk.Adjustment(
+        self.label_speed_row = SpinRow(
+            _("Label Engrave Speed"),
+            _("Speed for engraving labels (mm/min)"),
             lower=1.0,
             upper=machine_max_speed,
             step_increment=10.0,
+            digits=0,
             value=min(self.step.label_speed, machine_max_speed),
         )
-        self.label_speed_row = Adw.SpinRow(
-            title=_("Label Engrave Speed"),
-            subtitle=_("Speed for engraving labels (mm/min)"),
-            adjustment=speed_adj,
-            digits=0,
-        )
         self._add(group, self.label_speed_row)
-        self.label_speed_row.connect(
-            "changed",
+        self.label_speed_row.value_changed.connect(
             lambda r: self._debounce(self._on_label_speed_changed, r),
         )
 
@@ -381,88 +365,84 @@ class MaterialTestGridSettingsPage(LaserStepSettingsPage):
         """Builds grid dimension controls."""
         cols, rows = self.step.grid_dimensions
 
-        cols_adj = Gtk.Adjustment(lower=2, upper=20, step_increment=1)
-        self.cols_row = Adw.SpinRow(
-            title=_("Columns (Power Steps)"),
-            subtitle=_("Number of power variations"),
-            adjustment=cols_adj,
+        self.cols_row = SpinRow(
+            _("Columns (Power Steps)"),
+            _("Number of power variations"),
+            lower=2,
+            upper=20,
             digits=0,
             value=cols,
         )
         self._add(group, self.cols_row)
 
-        rows_adj = Gtk.Adjustment(lower=2, upper=20, step_increment=1)
-        self.rows_row = Adw.SpinRow(
-            title=_("Rows (Speed Steps)"),
-            subtitle=_("Number of speed variations"),
-            adjustment=rows_adj,
+        self.rows_row = SpinRow(
+            _("Rows (Speed Steps)"),
+            _("Number of speed variations"),
+            lower=2,
+            upper=20,
             digits=0,
             value=rows,
         )
         self._add(group, self.rows_row)
 
-        self.cols_row.connect(
-            "changed", lambda r: self._debounce(self._on_grid_cols_changed, r)
+        self.cols_row.value_changed.connect(
+            lambda r: self._debounce(self._on_grid_cols_changed, r)
         )
-        self.rows_row.connect(
-            "changed", lambda r: self._debounce(self._on_grid_rows_changed, r)
+        self.rows_row.value_changed.connect(
+            lambda r: self._debounce(self._on_grid_rows_changed, r)
         )
 
     def _build_shape_size(self, group):
         """Builds shape size control."""
-        adj = Gtk.Adjustment(lower=1, upper=100, step_increment=1)
-        self.shape_size_row = Adw.SpinRow(
-            title=_("Shape Size"),
-            subtitle=_("Size of each test square (mm)"),
-            adjustment=adj,
+        self.shape_size_row = SpinRow(
+            _("Shape Size"),
+            _("Size of each test square (mm)"),
+            lower=1,
+            upper=100,
             digits=1,
             value=self.step.shape_size,
         )
         self._add(group, self.shape_size_row)
-        self.shape_size_row.connect(
-            "changed", lambda r: self._debounce(self._on_shape_size_changed, r)
+        self.shape_size_row.value_changed.connect(
+            lambda r: self._debounce(self._on_shape_size_changed, r)
         )
 
     def _build_spacing(self, group):
         """Builds spacing control."""
-        adj = Gtk.Adjustment(lower=0, upper=50, step_increment=0.5)
-        self.spacing_row = Adw.SpinRow(
-            title=_("Spacing"),
-            subtitle=_("Gap between test squares (mm)"),
-            adjustment=adj,
+        self.spacing_row = SpinRow(
+            _("Spacing"),
+            _("Gap between test squares (mm)"),
+            upper=50,
+            step_increment=0.5,
             digits=1,
             value=self.step.spacing,
         )
         self._add(group, self.spacing_row)
-        self.spacing_row.connect(
-            "changed", lambda r: self._debounce(self._on_spacing_changed, r)
+        self.spacing_row.value_changed.connect(
+            lambda r: self._debounce(self._on_spacing_changed, r)
         )
 
         head = self.get_selected_head()
         laser = head if isinstance(head, LaserHead) else None
         default_line_interval_mm = laser.spot_size_mm[1] if laser else 0.1
-        line_interval_adj = Gtk.Adjustment(
+        self.line_interval_row = SpinRow(
+            _("Line Interval"),
+            _(
+                "Distance between scan lines in machine units "
+                "(for Engrave mode). Leave at 0 to use laser spot size."
+            ),
             lower=0.01,
             upper=10.0,
             step_increment=0.01,
+            digits=2,
             value=(
                 self.step.line_interval_mm
                 if self.step.line_interval_mm is not None
                 else default_line_interval_mm
             ),
         )
-        self.line_interval_row = Adw.SpinRow(
-            title=_("Line Interval"),
-            subtitle=_(
-                "Distance between scan lines in machine units "
-                "(for Engrave mode). Leave at 0 to use laser spot size."
-            ),
-            adjustment=line_interval_adj,
-            digits=2,
-        )
         self._add(group, self.line_interval_row)
-        self.line_interval_row.connect(
-            "changed",
+        self.line_interval_row.value_changed.connect(
             lambda r: self._debounce(self._on_line_interval_changed, r),
         )
 
@@ -528,13 +508,13 @@ class MaterialTestGridSettingsPage(LaserStepSettingsPage):
             self._update_param("test_type", test_type_text)
 
     def _on_speed_min_changed(self, spin_row):
-        min_speed = get_spinrow_float(spin_row)
-        max_speed = get_spinrow_float(self.speed_max_row)
+        min_speed = spin_row.get_value()
+        max_speed = self.speed_max_row.get_value()
         self._update_range_param("speed_range", (min_speed, max_speed))
 
     def _on_speed_max_changed(self, spin_row):
-        min_speed = get_spinrow_float(self.speed_min_row)
-        max_speed = get_spinrow_float(spin_row)
+        min_speed = self.speed_min_row.get_value()
+        max_speed = spin_row.get_value()
         self._update_range_param("speed_range", (min_speed, max_speed))
 
     def _commit_power_range_change(self):
@@ -574,23 +554,23 @@ class MaterialTestGridSettingsPage(LaserStepSettingsPage):
         self._debounce(self._commit_power_range_change)
 
     def _on_grid_cols_changed(self, spin_row):
-        cols = get_spinrow_int(spin_row)
+        cols = spin_row.get_int_value()
         _, rows = self.step.grid_dimensions
         self._update_grid_param((cols, rows))
 
     def _on_grid_rows_changed(self, spin_row):
         cols, _ = self.step.grid_dimensions
-        rows = get_spinrow_int(spin_row)
+        rows = spin_row.get_int_value()
         self._update_grid_param((cols, rows))
 
     def _on_shape_size_changed(self, spin_row):
-        self._update_param("shape_size", get_spinrow_float(spin_row))
+        self._update_param("shape_size", spin_row.get_value())
 
     def _on_spacing_changed(self, spin_row):
-        self._update_param("spacing", get_spinrow_float(spin_row))
+        self._update_param("spacing", spin_row.get_value())
 
     def _on_line_interval_changed(self, spin_row):
-        value = get_spinrow_float(spin_row)
+        value = spin_row.get_value()
         if value <= 0:
             value = None
         self._update_param("line_interval_mm", value)
@@ -607,7 +587,7 @@ class MaterialTestGridSettingsPage(LaserStepSettingsPage):
         self._update_param("label_power_percent", val)
 
     def _on_label_speed_changed(self, spin_row):
-        self._update_param("label_speed", get_spinrow_float(spin_row))
+        self._update_param("label_speed", spin_row.get_value())
 
     def _on_grid_mode_changed(self, row: Adw.ComboRow, _pspec):
         selected_idx = row.get_selected()
@@ -640,29 +620,29 @@ class MaterialTestGridSettingsPage(LaserStepSettingsPage):
         self._update_param("line_interval_mm", 0.5)
 
     def _on_fixed_speed_changed(self, spin_row):
-        self._update_param("fixed_speed", get_spinrow_float(spin_row))
+        self._update_param("fixed_speed", spin_row.get_value())
 
     def _on_fixed_power_changed(self, scale: Gtk.Scale):
         self._update_param("fixed_power", scale.get_value())
 
     def _on_passes_min_changed(self, spin_row):
-        min_passes = get_spinrow_int(spin_row)
+        min_passes = spin_row.get_int_value()
         _, max_passes = self.step.passes_range
         self._update_range_param("passes_range", (min_passes, max_passes))
 
     def _on_passes_max_changed(self, spin_row):
         min_passes, _ = self.step.passes_range
-        max_passes = get_spinrow_int(spin_row)
+        max_passes = spin_row.get_int_value()
         self._update_range_param("passes_range", (min_passes, max_passes))
 
     def _on_offset_min_changed(self, spin_row):
-        min_offset = get_spinrow_float(spin_row)
+        min_offset = spin_row.get_value()
         _, max_offset = self.step.offset_range
         self._update_range_param("offset_range", (min_offset, max_offset))
 
     def _on_offset_max_changed(self, spin_row):
         min_offset, _ = self.step.offset_range
-        max_offset = get_spinrow_float(spin_row)
+        max_offset = spin_row.get_value()
         self._update_range_param("offset_range", (min_offset, max_offset))
 
     def _get_current_grid_mode(self) -> str:

@@ -11,8 +11,8 @@ from typing import List, Optional, Tuple
 from gi.repository import Adw, Gtk
 
 from ...camera.controller import CameraController
-from ..shared.adwfix import get_spinrow_int
 from ..shared.slider import create_slider_row
+from ..shared.unit_spin_row import SpinRow
 from .display_widget import CameraDisplay
 
 logger = logging.getLogger(__name__)
@@ -89,30 +89,30 @@ class CameraImageSettings(Gtk.Box):
         )
         image_group.add(self.resolution_row)
 
-        self.custom_width_row = Adw.SpinRow(
-            title=_("Custom Width"),
-            adjustment=Gtk.Adjustment(
-                value=1920, lower=16, upper=16384, step_increment=1
-            ),
+        self.custom_width_row = SpinRow(
+            _("Custom Width"),
+            lower=16,
+            upper=16384,
             numeric=True,
-            visible=False,
+            value=1920,
         )
-        self.custom_width_row.connect(
-            "notify::value", self._on_custom_res_changed
+        self.custom_width_row.value_changed.connect(
+            self._on_custom_res_changed
         )
+        self.custom_width_row.set_visible(False)
         image_group.add(self.custom_width_row)
 
-        self.custom_height_row = Adw.SpinRow(
-            title=_("Custom Height"),
-            adjustment=Gtk.Adjustment(
-                value=1080, lower=16, upper=16384, step_increment=1
-            ),
+        self.custom_height_row = SpinRow(
+            _("Custom Height"),
+            lower=16,
+            upper=16384,
             numeric=True,
-            visible=False,
+            value=1080,
         )
-        self.custom_height_row.connect(
-            "notify::value", self._on_custom_res_changed
+        self.custom_height_row.value_changed.connect(
+            self._on_custom_res_changed
         )
+        self.custom_height_row.set_visible(False)
         image_group.add(self.custom_height_row)
 
         self._sync_resolution_selection()
@@ -244,22 +244,22 @@ class CameraImageSettings(Gtk.Box):
             if val == (-1, -1):
                 self.custom_width_row.set_visible(True)
                 self.custom_height_row.set_visible(True)
-                w = get_spinrow_int(self.custom_width_row)
-                h = get_spinrow_int(self.custom_height_row)
+                w = self.custom_width_row.get_int_value()
+                h = self.custom_height_row.get_int_value()
                 self.camera.resolution = (w, h)
             else:
                 self.custom_width_row.set_visible(False)
                 self.custom_height_row.set_visible(False)
                 self.camera.resolution = val
 
-    def _on_custom_res_changed(self, spin_row, pspec) -> None:
+    def _on_custom_res_changed(self, spin_row) -> None:
         if self._updating_ui:
             return
         idx = self.resolution_row.get_selected()
         if 0 <= idx < len(self._resolution_values):
             if self._resolution_values[idx] == (-1, -1):
-                w = get_spinrow_int(self.custom_width_row)
-                h = get_spinrow_int(self.custom_height_row)
+                w = self.custom_width_row.get_int_value()
+                h = self.custom_height_row.get_int_value()
                 self.camera.resolution = (w, h)
 
     def _on_resolutions_probed(self, controller) -> None:

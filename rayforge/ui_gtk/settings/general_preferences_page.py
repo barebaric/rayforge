@@ -14,6 +14,7 @@ from ...shared.util.localized import SUPPORTED_LANGUAGES
 from ...ui_gtk.doceditor import file_dialogs
 from ...usage import get_usage_tracker
 from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.unit_spin_row import SpinRow
 
 logger = logging.getLogger(__name__)
 
@@ -257,22 +258,17 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         )
         startup_group.add(self.auto_pipeline_row)
 
-        self.cache_budget_row = Adw.SpinRow(
-            title=_("Cache budget (MB)"),
-            subtitle=_(
-                "Maximum memory for cache. High complexity scenes require more"
-            ),
-            adjustment=Gtk.Adjustment(
-                value=config.cache_budget_bytes / (1024 * 1024),
-                lower=128,
-                upper=65536,
-                step_increment=128,
-            ),
-            climb_rate=2,
+        self.cache_budget_row = SpinRow(
+            _("Cache budget (MB)"),
+            _("Maximum memory for cache. High complexity scenes require more"),
+            lower=128,
+            upper=65536,
+            step_increment=128,
             digits=0,
+            value=config.cache_budget_bytes / (1024 * 1024),
         )
-        self.cache_budget_row.connect(
-            "notify::value", self.on_cache_budget_changed
+        self.cache_budget_row.value_changed.connect(
+            self.on_cache_budget_changed
         )
         startup_group.add(self.cache_budget_row)
 
@@ -521,7 +517,7 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         enabled = switch_row.get_active()
         get_context().config.set_auto_pipeline(enabled)
 
-    def on_cache_budget_changed(self, row, _):
+    def on_cache_budget_changed(self, row):
         """Called when the user adjusts the cache budget."""
         mb = int(row.get_value())
         get_context().config.set_cache_budget_bytes(mb * 1024 * 1024)

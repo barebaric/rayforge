@@ -24,9 +24,9 @@ from ...doceditor.file_cmd import PreviewResult
 from ...image.base_importer import ImporterFeature
 from ...image.geo_renderer import geometry_to_cairo
 from ...image.structures import ImportManifest
-from ..shared.adwfix import get_spinrow_float
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.slider import create_slider
+from ..shared.unit_spin_row import SpinRow
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -186,20 +186,19 @@ class ImportDialog(PatchedDialogWindow):
         mode_group.add(self.use_vectors_switch)
 
         config = get_context().config
-        self.dpi_adjustment = Gtk.Adjustment.new(
-            config.import_dpi, 1.0, 10000.0, 1.0, 10.0, 0
-        )
-        self.dpi_row = Adw.SpinRow(
-            title=_("DPI"),
-            subtitle=_(
+        self.dpi_row = SpinRow(
+            _("DPI"),
+            _(
                 "Pixels per inch for unitless SVG dimensions. "
                 "Inkscape ≥0.92 uses 96, older Inkscape uses 90, "
                 "Illustrator uses 72"
             ),
-            adjustment=self.dpi_adjustment,
+            lower=1.0,
+            upper=10000.0,
             numeric=True,
+            value=config.import_dpi,
         )
-        self.dpi_row.connect("changed", self._on_dpi_changed)
+        self.dpi_row.value_changed.connect(self._on_dpi_changed)
         self.dpi_row.set_visible(False)
         mode_group.add(self.dpi_row)
 
@@ -331,7 +330,7 @@ class ImportDialog(PatchedDialogWindow):
     def _on_dpi_changed(self, spin_row):
         if self._in_update:
             return
-        get_context().config.set_import_dpi(get_spinrow_float(spin_row))
+        get_context().config.set_import_dpi(spin_row.get_value())
         self._schedule_preview_update()
 
     def _load_initial_data(self):
@@ -513,7 +512,7 @@ class ImportDialog(PatchedDialogWindow):
         """
         Constructs a VectorizationSpec from the current UI control values.
         """
-        ppi = self.dpi_adjustment.get_value()
+        ppi = self.dpi_row.get_value()
         if (
             ImporterFeature.DIRECT_VECTOR in self.features
             and self.use_vectors_switch.get_active()
@@ -572,7 +571,7 @@ class ImportDialog(PatchedDialogWindow):
                     self.threshold_adjustment.set_value(spec.threshold)
                 self.invert_switch.set_active(spec.invert)
 
-            self.dpi_adjustment.set_value(spec.ppi)
+            self.dpi_row.set_value(spec.ppi)
         finally:
             self._in_update = False
 

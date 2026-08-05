@@ -7,7 +7,7 @@ from gi.repository import Adw, Gio, Gtk
 from ....core.item import DocItem
 from ....core.workpiece import WorkPiece
 from ...icons import get_icon
-from ...shared.adwfix import get_spinrow_float
+from ...shared.unit_spin_row import LengthSpinRow
 from ..image_metadata_dialog import ImageMetadataDialog
 from .base import PropertyProvider
 
@@ -158,13 +158,16 @@ class TabsPropertyProvider(PropertyProvider):
         self._rows.append(self.tabs_row)
 
         # Tab Width Entry
-        self.tab_width_row = Adw.SpinRow(
-            title=_("Tab Width"),
-            subtitle=_("Length along the path"),
-            adjustment=Gtk.Adjustment.new(1.0, 0.1, 100.0, 0.1, 1.0, 0),
-            digits=2,
+        self.tab_width_row = LengthSpinRow(
+            _("Tab Width"),
+            _("Length along the path"),
+            lower=0.1,
+            upper=100.0,
+            min_value_in_base=0.1,
+            max_value_in_base=100.0,
+            value_in_base=1.0,
         )
-        self.tab_width_row.connect("notify::value", self._on_tab_width_changed)
+        self.tab_width_row.value_changed.connect(self._on_tab_width_changed)
         self.reset_tab_width_button = Gtk.Button(
             child=get_icon("undo-symbolic")
         )
@@ -204,7 +207,7 @@ class TabsPropertyProvider(PropertyProvider):
         if workpiece.tabs_enabled:
             if workpiece.tabs:
                 first_tab_width = workpiece.tabs[0].width
-                self.tab_width_row.set_value(first_tab_width)
+                self.tab_width_row.set_value_in_base_units(first_tab_width)
                 if not all(t.width == first_tab_width for t in workpiece.tabs):
                     self.tab_width_row.set_subtitle(_("Mixed values"))
                 else:
@@ -212,12 +215,12 @@ class TabsPropertyProvider(PropertyProvider):
                 self.tab_width_row.set_sensitive(True)
                 self.reset_tab_width_button.set_sensitive(True)
             else:
-                self.tab_width_row.set_value(1.0)
+                self.tab_width_row.set_value_in_base_units(1.0)
                 self.tab_width_row.set_subtitle(_("Length along the path"))
                 self.tab_width_row.set_sensitive(False)
                 self.reset_tab_width_button.set_sensitive(False)
         else:
-            self.tab_width_row.set_value(1.0)
+            self.tab_width_row.set_value_in_base_units(1.0)
             self.tab_width_row.set_subtitle(_("Length along the path"))
             self.tab_width_row.set_sensitive(False)
             self.reset_tab_width_button.set_sensitive(False)
@@ -236,14 +239,14 @@ class TabsPropertyProvider(PropertyProvider):
         new_value = switch.get_active()
         self.editor.tab.set_workpiece_tabs_enabled(workpiece, new_value)
 
-    def _on_tab_width_changed(self, spin_row, GParamSpec):
+    def _on_tab_width_changed(self, row):
         logger.debug(
             f"_on_tab_width_changed called. _in_update={self._in_update}"
         )
         if self._in_update:
             return
         workpiece = cast(WorkPiece, self.items[0])
-        new_width = get_spinrow_float(self.tab_width_row)
+        new_width = self.tab_width_row.get_value_in_base_units()
         if new_width is None or new_width <= 0:
             return
         self.editor.tab.set_workpiece_tab_width(workpiece, new_width)

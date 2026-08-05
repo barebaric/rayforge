@@ -2,14 +2,25 @@
 
 from typing import TYPE_CHECKING, Any, Optional
 
-from gi.repository import Adw, Gtk
-
-from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
+from rayforge.ui_gtk.shared.unit_spin_row import (
+    AccelerationSpinRow,
+    LengthSpinRow,
+    SpeedSpinRow,
+)
+from rayforge.ui_gtk.shared.unit_spin_row import (
+    SpinRow as UnitSpinRowWidget,
+)
 
 from .step_row import DebouncedMixin, StepRow
 
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
+
+_UNIT_ROW_CLASSES = {
+    "length": LengthSpinRow,
+    "speed": SpeedSpinRow,
+    "acceleration": AccelerationSpinRow,
+}
 
 
 class SpinRow(DebouncedMixin, StepRow):
@@ -27,60 +38,75 @@ class SpinRow(DebouncedMixin, StepRow):
         step_inc: float,
         digits: int,
         is_int: bool = False,
+        quantity: Optional[str] = None,
     ):
-        self._adj = Gtk.Adjustment(
-            lower=lower,
-            upper=upper,
-            step_increment=step_inc,
-            page_increment=step_inc * 10,
-        )
         self.is_int = is_int
         self._digits = digits
         self._title = title
         self._subtitle = subtitle
+        self.quantity = quantity
+        self._lower = lower
+        self._upper = upper
+        self._step_inc = step_inc
         DebouncedMixin.__init__(self)
         StepRow.__init__(self, editor, step)
         self.attr = attr
-        self.widget.connect("changed", self._on_changed)
+        self.widget.value_changed.connect(self._on_changed)
         self._sync_from_step()
         self._sync_dependencies()
 
-    def build_widget(self) -> Adw.SpinRow:
-        if self._subtitle:
-            return Adw.SpinRow(
-                title=self._title,
-                subtitle=self._subtitle,
-                adjustment=self._adj,
+    def build_widget(self):
+        if self.quantity in _UNIT_ROW_CLASSES:
+            cls = _UNIT_ROW_CLASSES[self.quantity]
+            return cls(
+                self._title,
+                self._subtitle,
+                lower=self._lower,
+                upper=self._upper,
+                step_increment=self._step_inc,
                 digits=self._digits,
             )
-        return Adw.SpinRow(
-            title=self._title,
-            adjustment=self._adj,
+        return UnitSpinRowWidget(
+            self._title,
+            self._subtitle,
+            lower=self._lower,
+            upper=self._upper,
+            step_increment=self._step_inc,
             digits=self._digits,
         )
 
-    def _on_changed(self, row):
+    def _on_changed(self, *args):
         if self._syncing:
             return
-        value = (
-            get_spinrow_int(self.widget)
-            if self.is_int
-            else get_spinrow_float(self.widget)
-        )
+        if self.quantity:
+            value = self.widget.get_value_in_base_units()
+            if self.is_int:
+                value = int(round(value))
+        else:
+            value = (
+                self.widget.get_int_value()
+                if self.is_int
+                else self.widget.get_value()
+            )
         self._debounced(self.commit, value)
 
     def set_widget_value(self, value):
         if value is None:
             return
-        adj = self._adj
+        if self.quantity:
+            self.widget.set_value_in_base_units(float(value))
+            return
         target = float(value)
-        if abs(adj.get_value() - target) > 1e-9:
-            adj.set_value(target)
+        if abs(self.widget.get_value() - target) > 1e-9:
+            self.widget.set_value(target)
 
     def set_range(self, lower: float, upper: float):
+        if self.quantity:
+            self.widget.set_bounds_in_base(lower, upper)
+            return
+        adj = self.widget.get_adjustment()
         if (
-            abs(self._adj.get_lower() - lower) > 1e-9
-            or abs(self._adj.get_upper() - upper) > 1e-9
+            abs(adj.get_lower() - lower) > 1e-9
+            or abs(adj.get_upper() - upper) > 1e-9
         ):
-            self._adj.set_lower(lower)
-            self._adj.set_upper(upper)
+            self.widget.set_range(lower, upper)

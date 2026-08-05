@@ -30,12 +30,12 @@ def _is_valid_replacement_module(module):
     """Check whether an AXIS_REPLACEMENT module is valid for mapping.
 
     Modules in AXIS_REPLACEMENT mode are only valid when they have a
-    positive ``mu_per_rotation`` *or* their target axis is one of the
+    positive ``mm_per_rotation`` *or* their target axis is one of the
     standard XYZ axes (which can accept degree values directly).
     """
     if module.mode != RotaryMode.AXIS_REPLACEMENT:
         return True
-    if module.mu_per_rotation > 0:
+    if module.mm_per_rotation > 0:
         return True
     return module.axis in KinematicMapping._AXIS_TO_INDEX
 
@@ -126,9 +126,9 @@ class KinematicMapping:
             replaced_axis=replaced_axis,
         )
 
-    def _mu_to_degrees(self, mu: float) -> float:
-        return KinematicMath.mu_to_degrees(
-            mu,
+    def _mm_to_degrees(self, mm: float) -> float:
+        return KinematicMath.mm_to_degrees(
+            mm,
             self.diameter,
             gear_ratio=self.gear_ratio,
             reverse=self.reverse,
@@ -151,7 +151,7 @@ class KinematicMapping:
             end: List[float],
             extra_axes: Dict[Axis, float],
         ) -> None:
-            degrees = self._mu_to_degrees(end[1])
+            degrees = self._mm_to_degrees(end[1])
             extra_axes[self.rotary_axis] = degrees
             end[1] = float(
                 self.axis_position_3d[1] + end[0] * self.cylinder_dir[1]
@@ -160,7 +160,7 @@ class KinematicMapping:
                 end[replaced_idx] = 0.0
 
         def on_aux_point(point: List[float]) -> None:
-            point[1] = self._mu_to_degrees(point[1])
+            point[1] = self._mm_to_degrees(point[1])
 
         ops.transform_moving(on_endpoint, on_aux_point)
 
@@ -220,18 +220,18 @@ class KinematicMapping:
                 return
             mapping.apply(layer_ops)
             if apply_scaled_mu and module.mode == RotaryMode.AXIS_REPLACEMENT:
-                KinematicMapping.degrees_to_scaled_mu_pass(
+                KinematicMapping.degrees_to_mm_pass(
                     layer_ops,
-                    module.mu_per_rotation,
+                    module.mm_per_rotation,
                     target_axis=module.axis,
                 )
 
         ops.transform_layers(_on_layer)
 
     @staticmethod
-    def degrees_to_scaled_mu_pass(
+    def degrees_to_mm_pass(
         ops: Ops,
-        mu_per_rotation: float,
+        mm_per_rotation: float,
         target_axis: Axis = Axis.Y,
     ) -> None:
         idx = KinematicMapping._AXIS_TO_INDEX.get(target_axis, 1)
@@ -247,16 +247,14 @@ class KinematicMapping:
             degrees = extra_axes.pop(Axis.Y, None)
             if degrees is None:
                 return
-            end[idx] = KinematicMath.degrees_to_scaled_mu(
-                degrees, mu_per_rotation
-            )
+            end[idx] = KinematicMath.degrees_to_mm(degrees, mm_per_rotation)
             if null_source:
                 end[1] = 0.0
 
         def on_aux_point(point: List[float]) -> None:
             if idx < len(point):
-                point[idx] = KinematicMath.degrees_to_scaled_mu(
-                    point[idx], mu_per_rotation
+                point[idx] = KinematicMath.degrees_to_mm(
+                    point[idx], mm_per_rotation
                 )
             if null_source:
                 point[1] = 0.0

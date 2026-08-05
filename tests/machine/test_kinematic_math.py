@@ -49,7 +49,7 @@ class TestMuToDegrees:
         diameter = 25.0
         mu = 50.0
         expected = (mu / (diameter * math.pi)) * 360.0
-        assert KinematicMath.mu_to_degrees(mu, diameter) == pytest.approx(
+        assert KinematicMath.mm_to_degrees(mu, diameter) == pytest.approx(
             expected
         )
 
@@ -59,21 +59,21 @@ class TestMuToDegrees:
         eff_d = diameter + 2.0 * z
         mu = 50.0
         expected = (mu / (eff_d * math.pi)) * 360.0
-        assert KinematicMath.mu_to_degrees(mu, eff_d) == pytest.approx(
+        assert KinematicMath.mm_to_degrees(mu, eff_d) == pytest.approx(
             expected
         )
 
     def test_zero_diameter(self):
-        assert KinematicMath.mu_to_degrees(50.0, 0.0) == 0.0
+        assert KinematicMath.mm_to_degrees(50.0, 0.0) == 0.0
 
     def test_negative_diameter(self):
-        assert KinematicMath.mu_to_degrees(50.0, -1.0) == 0.0
+        assert KinematicMath.mm_to_degrees(50.0, -1.0) == 0.0
 
     def test_reverse(self):
         diameter = 25.0
         mu = 50.0
-        forward = KinematicMath.mu_to_degrees(mu, diameter)
-        backward = KinematicMath.mu_to_degrees(mu, diameter, reverse=True)
+        forward = KinematicMath.mm_to_degrees(mu, diameter)
+        backward = KinematicMath.mm_to_degrees(mu, diameter, reverse=True)
         assert backward == pytest.approx(-forward)
 
     def test_with_gear_ratio(self):
@@ -81,7 +81,7 @@ class TestMuToDegrees:
         gear_ratio = 3.5
         mu = math.pi * diameter
         expected = 360.0 * gear_ratio
-        assert KinematicMath.mu_to_degrees(
+        assert KinematicMath.mm_to_degrees(
             mu, diameter, gear_ratio=gear_ratio
         ) == pytest.approx(expected)
 
@@ -90,7 +90,7 @@ class TestMuToDegrees:
         angle = 100.0
         circumference = diameter * math.pi
         expected_rad = (angle / circumference) * 2.0 * math.pi
-        degrees = KinematicMath.mu_to_degrees(angle, diameter)
+        degrees = KinematicMath.mm_to_degrees(angle, diameter)
         actual_rad = math.radians(degrees)
         assert actual_rad == pytest.approx(expected_rad)
 
@@ -99,7 +99,7 @@ class TestMuToDegrees:
         src = 5.0
         circumference = diameter * math.pi
         expected_theta = (src / circumference) * 2.0 * math.pi
-        degrees = KinematicMath.mu_to_degrees(src, diameter)
+        degrees = KinematicMath.mm_to_degrees(src, diameter)
         actual_theta = math.radians(degrees)
         assert actual_theta == pytest.approx(expected_theta)
 
@@ -108,69 +108,67 @@ class TestMuToDegrees:
         src = np.array([0.0, 50.0, 100.0])
         circumference = diameter * math.pi
         expected = (src / circumference) * 360.0
-        actual = KinematicMath.mu_to_degrees(src, diameter)
+        actual = KinematicMath.mm_to_degrees(src, diameter)
         np.testing.assert_array_almost_equal(actual, expected)
 
 
 class TestDegreesToScaledMu:
     def test_basic(self):
         degrees = 360.0
-        mu_per_rotation = 100.0
-        expected = degrees * mu_per_rotation / 360.0
-        assert KinematicMath.degrees_to_scaled_mu(
-            degrees, mu_per_rotation
+        mm_per_rotation = 100.0
+        expected = degrees * mm_per_rotation / 360.0
+        assert KinematicMath.degrees_to_mm(
+            degrees, mm_per_rotation
         ) == pytest.approx(expected)
 
-    def test_zero_mu_per_rotation(self):
-        assert KinematicMath.degrees_to_scaled_mu(180.0, 0.0) == 180.0
+    def test_zero_mm_per_rotation(self):
+        assert KinematicMath.degrees_to_mm(180.0, 0.0) == 180.0
 
     def test_reverse(self):
-        forward = KinematicMath.degrees_to_scaled_mu(180.0, 100.0)
-        backward = KinematicMath.degrees_to_scaled_mu(
-            180.0, 100.0, reverse=True
-        )
+        forward = KinematicMath.degrees_to_mm(180.0, 100.0)
+        backward = KinematicMath.degrees_to_mm(180.0, 100.0, reverse=True)
         assert backward == pytest.approx(-forward)
 
     def test_with_gear_ratio(self):
         degrees = 360.0
-        mu_per_rot = 100.0
+        mm_per_rot = 100.0
         ratio = 3.5
-        expected = degrees * mu_per_rot / 360.0 / ratio
-        assert KinematicMath.degrees_to_scaled_mu(
-            degrees, mu_per_rot, gear_ratio=ratio
+        expected = degrees * mm_per_rot / 360.0 / ratio
+        assert KinematicMath.degrees_to_mm(
+            degrees, mm_per_rot, gear_ratio=ratio
         ) == pytest.approx(expected)
 
-    def test_roundtrip_with_mu_to_degrees(self):
+    def test_roundtrip_with_mm_to_degrees(self):
         mu = 50.0
         eff_d = 25.0
-        mu_per_rot = 100.0
+        mm_per_rot = 100.0
         ratio = 2.0
-        degrees = KinematicMath.mu_to_degrees(mu, eff_d, gear_ratio=ratio)
-        back = KinematicMath.degrees_to_scaled_mu(
-            degrees, mu_per_rot, gear_ratio=ratio
+        degrees = KinematicMath.mm_to_degrees(mu, eff_d, gear_ratio=ratio)
+        back = KinematicMath.degrees_to_mm(
+            degrees, mm_per_rot, gear_ratio=ratio
         )
-        assert back == pytest.approx(mu * mu_per_rot / (math.pi * eff_d))
+        assert back == pytest.approx(mu * mm_per_rot / (math.pi * eff_d))
 
 
 class TestMuToScaledMu:
     def test_basic(self):
         diameter = 25.0
-        mu_per_rot = 100.0
+        mm_per_rot = 100.0
         mu = 50.0
-        expected = mu * mu_per_rot / (math.pi * diameter)
-        assert KinematicMath.mu_to_scaled_mu(
-            mu, diameter, mu_per_rot
+        expected = mu * mm_per_rot / (math.pi * diameter)
+        assert KinematicMath.surface_mm_to_rotation_mm(
+            mu, diameter, mm_per_rot
         ) == pytest.approx(expected)
 
-    def test_zero_mu_per_rotation(self):
-        assert KinematicMath.mu_to_scaled_mu(50.0, 25.0, 0.0) == 50.0
+    def test_zero_mm_per_rotation(self):
+        assert KinematicMath.surface_mm_to_rotation_mm(50.0, 25.0, 0.0) == 50.0
 
     def test_zero_diameter(self):
-        assert KinematicMath.mu_to_scaled_mu(50.0, 0.0, 100.0) == 0.0
+        assert KinematicMath.surface_mm_to_rotation_mm(50.0, 0.0, 100.0) == 0.0
 
     def test_reverse(self):
-        forward = KinematicMath.mu_to_scaled_mu(50.0, 25.0, 100.0)
-        backward = KinematicMath.mu_to_scaled_mu(
+        forward = KinematicMath.surface_mm_to_rotation_mm(50.0, 25.0, 100.0)
+        backward = KinematicMath.surface_mm_to_rotation_mm(
             50.0, 25.0, 100.0, reverse=True
         )
         assert backward == pytest.approx(-forward)
@@ -178,73 +176,73 @@ class TestMuToScaledMu:
     def test_with_gear_ratio(self):
         obj_d = 70.0
         roller_d = 20.0
-        mu_per_rot = 100.0
+        mm_per_rot = 100.0
         mu = math.pi * obj_d
         ratio = obj_d / roller_d
-        expected = mu * mu_per_rot / (math.pi * obj_d) * ratio
-        assert KinematicMath.mu_to_scaled_mu(
-            mu, obj_d, mu_per_rot, gear_ratio=ratio
+        expected = mu * mm_per_rot / (math.pi * obj_d) * ratio
+        assert KinematicMath.surface_mm_to_rotation_mm(
+            mu, obj_d, mm_per_rot, gear_ratio=ratio
         ) == pytest.approx(expected)
 
     def test_matches_axis_mapper_scale_replacement(self):
         diameter = 25.0
         mu = 50.0
         z = -2.0
-        mu_per_rot = 100.0
+        mm_per_rot = 100.0
         eff_d = diameter + 2.0 * z
-        expected = mu * mu_per_rot / (math.pi * eff_d)
-        assert KinematicMath.mu_to_scaled_mu(
-            mu, eff_d, mu_per_rot
+        expected = mu * mm_per_rot / (math.pi * eff_d)
+        assert KinematicMath.surface_mm_to_rotation_mm(
+            mu, eff_d, mm_per_rot
         ) == pytest.approx(expected)
 
 
 class TestScaledMuToMu:
     def test_basic(self):
         diameter = 25.0
-        mu_per_rot = 100.0
-        scaled = 50.0 * mu_per_rot / (math.pi * diameter)
+        mm_per_rot = 100.0
+        scaled = 50.0 * mm_per_rot / (math.pi * diameter)
         expected = 50.0
-        assert KinematicMath.scaled_mu_to_mu(
-            scaled, diameter, mu_per_rot
+        assert KinematicMath.rotation_mm_to_surface_mm(
+            scaled, diameter, mm_per_rot
         ) == pytest.approx(expected)
 
-    def test_inverse_of_mu_to_scaled_mu(self):
+    def test_inverse_of_surface_mm_to_rotation_mm(self):
         mu = 50.0
         eff_d = 25.0
-        mu_per_rot = 100.0
+        mm_per_rot = 100.0
         ratio = 2.0
-        scaled = KinematicMath.mu_to_scaled_mu(
-            mu, eff_d, mu_per_rot, gear_ratio=ratio
+        scaled = KinematicMath.surface_mm_to_rotation_mm(
+            mu, eff_d, mm_per_rot, gear_ratio=ratio
         )
-        back = KinematicMath.scaled_mu_to_mu(
-            scaled, eff_d, mu_per_rot, gear_ratio=ratio
+        back = KinematicMath.rotation_mm_to_surface_mm(
+            scaled, eff_d, mm_per_rot, gear_ratio=ratio
         )
         assert back == pytest.approx(mu)
 
     def test_inverse_with_reverse(self):
         mu = 50.0
         eff_d = 25.0
-        mu_per_rot = 100.0
-        scaled = KinematicMath.mu_to_scaled_mu(
-            mu, eff_d, mu_per_rot, reverse=True
+        mm_per_rot = 100.0
+        scaled = KinematicMath.surface_mm_to_rotation_mm(
+            mu, eff_d, mm_per_rot, reverse=True
         )
-        back = KinematicMath.scaled_mu_to_mu(
-            scaled, eff_d, mu_per_rot, reverse=True
+        back = KinematicMath.rotation_mm_to_surface_mm(
+            scaled, eff_d, mm_per_rot, reverse=True
         )
         assert back == pytest.approx(mu)
 
-    def test_zero_mu_per_rotation(self):
-        assert KinematicMath.scaled_mu_to_mu(50.0, 25.0, 0.0) == 50.0
+    def test_zero_mm_per_rotation(self):
+        assert KinematicMath.rotation_mm_to_surface_mm(50.0, 25.0, 0.0) == 50.0
 
     def test_zero_diameter(self):
-        assert KinematicMath.scaled_mu_to_mu(50.0, 0.0, 100.0) == 0.0
+        assert KinematicMath.rotation_mm_to_surface_mm(50.0, 0.0, 100.0) == 0.0
 
     def test_matches_opplayer_formula(self):
         diameter = 25.0
-        mu_per_rot = 100.0
+        mm_per_rot = 100.0
         ratio = 1.0
         fw_val = 50.0
-        expected = fw_val * math.pi * diameter / mu_per_rot / ratio
-        assert KinematicMath.scaled_mu_to_mu(
-            fw_val, diameter, mu_per_rot, gear_ratio=ratio
+        expected = fw_val * math.pi * diameter / mm_per_rot / ratio
+        assert KinematicMath.rotation_mm_to_surface_mm(
+            fw_val, diameter, mm_per_rot, gear_ratio=ratio
         ) == pytest.approx(expected)

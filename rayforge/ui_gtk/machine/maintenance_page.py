@@ -11,6 +11,7 @@ from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
+from ..shared.unit_spin_row import SpinRow
 
 logger = logging.getLogger(__name__)
 
@@ -269,24 +270,18 @@ class CounterEditDialog(PatchedDialogWindow):
         self._name_row = name_row
 
         # Notification interval
-        notify_adjustment = Gtk.Adjustment(
-            value=0,
-            lower=0,
-            upper=100000,
-            step_increment=0.1,
-            page_increment=1,
-        )
-        notify_row = Adw.SpinRow(
-            title=_("Notification Interval"),
-            subtitle=_(
+        notify_row = SpinRow(
+            _("Notification Interval"),
+            _(
                 "Show notification when counter reaches this value (hours). "
                 "Set to 0 to disable."
             ),
-            adjustment=notify_adjustment,
+            upper=100000,
+            step_increment=0.1,
             digits=1,
         )
         if self.counter.notify_at is not None:
-            notify_adjustment.set_value(self.counter.notify_at)
+            notify_row.set_value(self.counter.notify_at)
         group.add(notify_row)
         self._notify_row = notify_row
 

@@ -17,59 +17,67 @@ class KinematicMath:
         return 1.0
 
     @staticmethod
-    def mu_to_degrees(mu, effective_diameter, gear_ratio=1.0, reverse=False):
+    def mm_to_degrees(mm, effective_diameter, gear_ratio=1.0, reverse=False):
+        """Convert a surface distance (mm) on the cylinder to degrees."""
         if effective_diameter <= 0:
             return 0.0
         circumference = effective_diameter * math.pi
-        degrees = (mu / circumference) * 360.0 * gear_ratio
+        degrees = (mm / circumference) * 360.0 * gear_ratio
         if reverse:
             degrees = -degrees
         return degrees
 
     @staticmethod
-    def degrees_to_scaled_mu(
-        degrees, mu_per_rotation, gear_ratio=1.0, reverse=False
-    ):
-        if mu_per_rotation <= 0:
+    def degrees_to_mm(degrees, mm_per_rotation, gear_ratio=1.0, reverse=False):
+        """Convert degrees to linear mm via the firmware travel per
+        rotation (mm)."""
+        if mm_per_rotation <= 0:
             return degrees
-        scaled = degrees * mu_per_rotation / 360.0 / gear_ratio
+        mm = degrees * mm_per_rotation / 360.0 / gear_ratio
         if reverse:
-            scaled = -scaled
-        return scaled
+            mm = -mm
+        return mm
 
     @staticmethod
-    def mu_to_scaled_mu(
-        mu, effective_diameter, mu_per_rotation, gear_ratio=1.0, reverse=False
-    ):
-        if mu_per_rotation <= 0:
-            return mu
-        if effective_diameter <= 0:
-            return 0.0
-        scaled = (
-            mu * mu_per_rotation / (math.pi * effective_diameter) * gear_ratio
-        )
-        if reverse:
-            scaled = -scaled
-        return scaled
-
-    @staticmethod
-    def scaled_mu_to_mu(
-        scaled_mu,
+    def surface_mm_to_rotation_mm(
+        mm,
         effective_diameter,
-        mu_per_rotation,
+        mm_per_rotation,
         gear_ratio=1.0,
         reverse=False,
     ):
-        if mu_per_rotation <= 0:
-            return scaled_mu
+        """Convert cylinder-surface mm to rotation-axis mm via the
+        firmware travel per rotation."""
+        if mm_per_rotation <= 0:
+            return mm
         if effective_diameter <= 0:
             return 0.0
-        mu = (
-            scaled_mu
+        scaled = (
+            mm * mm_per_rotation / (math.pi * effective_diameter) * gear_ratio
+        )
+        if reverse:
+            scaled = -scaled
+        return scaled
+
+    @staticmethod
+    def rotation_mm_to_surface_mm(
+        rotation_mm,
+        effective_diameter,
+        mm_per_rotation,
+        gear_ratio=1.0,
+        reverse=False,
+    ):
+        """Convert rotation-axis mm back to cylinder-surface mm."""
+        if mm_per_rotation <= 0:
+            return rotation_mm
+        if effective_diameter <= 0:
+            return 0.0
+        mm = (
+            rotation_mm
             * (math.pi * effective_diameter)
-            / mu_per_rotation
+            / mm_per_rotation
             / gear_ratio
         )
         if reverse:
-            mu = -mu
-        return mu
+            mm = -mm
+        return mm

@@ -9,6 +9,7 @@ from ...machine.models.machine import Machine
 from ..icons import get_icon
 from ..shared.gtk import apply_css
 from ..shared.slider import create_slider
+from ..shared.unit_spin_row import SpinRow
 
 _POWER_CSS = """
 entry.power-value {
@@ -96,33 +97,28 @@ class LaserControlWidget(Gtk.Box):
         self._power_row.add_suffix(suffix_box)
         self._group.add(self._power_row)
 
-        self._frequency_adj = Gtk.Adjustment(
-            lower=1, upper=100000, step_increment=100, page_increment=1000
-        )
-        self._frequency_row = Adw.SpinRow(
-            title=_("Frequency"),
-            subtitle=_("PWM frequency in Hz"),
-            adjustment=self._frequency_adj,
+        self._frequency_row = SpinRow(
+            _("Frequency"),
+            _("PWM frequency in Hz"),
+            lower=1,
+            upper=100000,
+            step_increment=100,
         )
         self._group.add(self._frequency_row)
 
-        self._pulse_width_adj = Gtk.Adjustment(
-            lower=1, upper=100000, step_increment=1, page_increment=10
-        )
-        self._pulse_width_row = Adw.SpinRow(
-            title=_("Pulse Width"),
-            subtitle=_("Pulse width in µs"),
-            adjustment=self._pulse_width_adj,
+        self._pulse_width_row = SpinRow(
+            _("Pulse Width"),
+            _("Pulse width in µs"),
+            lower=1,
+            upper=100000,
         )
         self._group.add(self._pulse_width_row)
 
-        duration_adjustment = Gtk.Adjustment(
-            value=0, lower=0, upper=3600, step_increment=0.5
-        )
-        self._duration_row = Adw.SpinRow(
-            title=_("Duration"),
-            subtitle=_("Seconds (0 = continuous)"),
-            adjustment=duration_adjustment,
+        self._duration_row = SpinRow(
+            _("Duration"),
+            _("Seconds (0 = continuous)"),
+            upper=3600,
+            step_increment=0.5,
             digits=1,
         )
         self._group.add(self._duration_row)
@@ -192,10 +188,11 @@ class LaserControlWidget(Gtk.Box):
             )
         )
         self._power_adj.set_value(head.focus_power_percent * 100)
-        self._frequency_adj.set_upper(head.max_pwm_frequency)
+        self._frequency_row.set_range(1, head.max_pwm_frequency)
         self._frequency_row.set_value(head.pwm_frequency)
-        self._pulse_width_adj.set_lower(head.min_pulse_width)
-        self._pulse_width_adj.set_upper(head.max_pulse_width)
+        self._pulse_width_row.set_range(
+            head.min_pulse_width, head.max_pulse_width
+        )
         self._pulse_width_row.set_value(head.pulse_width)
         self._update_pwm_visibility()
 

@@ -1,14 +1,14 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw
 
 from rayforge.core.undo import DictItemCommand
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.groups import (
     TransformerSettingsGroup,
 )
-from rayforge.ui_gtk.shared.adwfix import get_spinrow_float, get_spinrow_int
+from rayforge.ui_gtk.shared.unit_spin_row import LengthSpinRow, SpinRow
 
 from ..transformers import MultiPassTransformer
 
@@ -40,41 +40,31 @@ class MultiPassSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         )
 
         # Passes setting
-        passes_adj = Gtk.Adjustment(
-            lower=1, upper=100, step_increment=1, page_increment=10
+        passes_row = SpinRow(
+            _("Number of Passes"),
+            _("How often to repeat the entire step"),
+            lower=1,
+            upper=100,
+            value=transformer.passes,
         )
-        passes_row = Adw.SpinRow(
-            title=_("Number of Passes"),
-            subtitle=_("How often to repeat the entire step"),
-            adjustment=passes_adj,
-        )
-        passes_adj.set_value(transformer.passes)
         self.add(passes_row)
 
         # Z Step-down setting
-        z_step_adj = Gtk.Adjustment(
-            lower=0.0, upper=50.0, step_increment=0.1, page_increment=1.0
+        z_step_row = LengthSpinRow(
+            _("Z Step-Down per Pass"),
+            _("Distance to lower Z-axis for each subsequent pass"),
+            upper=50.0,
+            max_value_in_base=50.0,
+            value_in_base=transformer.z_step_down,
         )
-        z_step_row = Adw.SpinRow(
-            title=_("Z Step-Down per Pass"),
-            subtitle=_(
-                "Distance to lower Z-axis for each subsequent pass "
-                "in machine units"
-            ),
-            adjustment=z_step_adj,
-            digits=2,
-        )
-        z_step_adj.set_value(transformer.z_step_down)
         self.add(z_step_row)
+        z_step_row.value_changed.connect(
+            lambda r: self._debounce(self._on_z_step_down_changed, r)
+        )
 
         # Connect signals with debouncing
-        passes_row.connect(
-            "changed",
+        passes_row.value_changed.connect(
             lambda r: self._debounce(self._on_passes_changed, r, z_step_row),
-        )
-        z_step_row.connect(
-            "changed",
-            lambda r: self._debounce(self._on_z_step_down_changed, r),
         )
 
         # Z Step-down is only available with multiple passes
@@ -89,8 +79,8 @@ class MultiPassSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         passes_row.set_sensitive(enabled)
         z_step_row.set_sensitive(enabled and passes_row.get_value() > 1)
 
-    def _on_passes_changed(self, spin_row, z_step_row: Adw.SpinRow):
-        new_value = get_spinrow_int(spin_row)
+    def _on_passes_changed(self, spin_row, z_step_row: LengthSpinRow):
+        new_value = spin_row.get_int_value()
         z_step_row.set_sensitive(new_value > 1)
         if new_value == self.target_dict.get("passes"):
             return
@@ -104,8 +94,8 @@ class MultiPassSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         )
         self.history_manager.execute(command)
 
-    def _on_z_step_down_changed(self, spin_row):
-        new_value = get_spinrow_float(spin_row)
+    def _on_z_step_down_changed(self, row):
+        new_value = row.get_value_in_base_units()
         if new_value == self.target_dict.get("z_step_down"):
             return
 
