@@ -429,11 +429,13 @@ class BottomPanel(Gtk.Box):
         )
         self.speed_row = Adw.SpinRow(
             title=_("Jog Speed"),
-            subtitle=_("Speed"),
             adjustment=speed_adjustment,
         )
         self.speed_helper = UnitSpinRowHelper(
-            self.speed_row, quantity="speed", max_value_in_base=60000
+            self.speed_row,
+            quantity="speed",
+            max_value_in_base=60000,
+            subtitle_format=_("Speed ({unit})"),
         )
         self.speed_helper.set_value_in_base_units(1000)
         self.speed_helper.changed.connect(self._on_speed_changed)

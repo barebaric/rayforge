@@ -58,7 +58,6 @@ class HardwarePage(WizardPage):
         )
         self.x_row = Adw.SpinRow(
             title=_("X Extent"),
-            subtitle=_("Full X-axis travel range"),
             adjustment=x_adj,
             digits=2,
         )
@@ -68,6 +67,7 @@ class HardwarePage(WizardPage):
             quantity="length",
             max_value_in_base=10000.0,
             min_digits=2,
+            subtitle_format=_("Full X-axis travel range ({unit})"),
         )
 
         y_adj = Gtk.Adjustment(
@@ -75,7 +75,6 @@ class HardwarePage(WizardPage):
         )
         self.y_row = Adw.SpinRow(
             title=_("Y Extent"),
-            subtitle=_("Full Y-axis travel range"),
             adjustment=y_adj,
             digits=2,
         )
@@ -85,6 +84,7 @@ class HardwarePage(WizardPage):
             quantity="length",
             max_value_in_base=10000.0,
             min_digits=2,
+            subtitle_format=_("Full Y-axis travel range ({unit})"),
         )
 
         origin_store = Gtk.StringList()
@@ -200,6 +200,7 @@ class HardwarePage(WizardPage):
             spin_row=self.travel_speed_row,
             quantity="speed",
             max_value_in_base=60000.0,
+            subtitle_format=_("Maximum rapid movement speed ({unit})"),
         )
 
         cut_adj = Gtk.Adjustment(
@@ -213,6 +214,7 @@ class HardwarePage(WizardPage):
             spin_row=self.cut_speed_row,
             quantity="speed",
             max_value_in_base=60000.0,
+            subtitle_format=_("Maximum cutting speed ({unit})"),
         )
 
         accel_adj = Gtk.Adjustment(
@@ -226,6 +228,10 @@ class HardwarePage(WizardPage):
             spin_row=self.accel_row,
             quantity="acceleration",
             max_value_in_base=10000.0,
+            subtitle_format=_(
+                "Used for time estimations and calculating the "
+                "default overscan distance ({unit})"
+            ),
         )
 
         # Behavior.

@@ -27,14 +27,19 @@ class UnitSpinRowHelper:
         quantity: str,
         max_value_in_base: Optional[float] = None,
         min_digits: Optional[int] = None,
+        subtitle_format: str = "",
     ):
         self.spin_row = spin_row
         self.quantity = quantity
         self._unit: Optional[Unit] = None
         self._is_updating = False
-        self._original_subtitle_format = self.spin_row.get_subtitle() or ""
         self._max_value_in_base = max_value_in_base
         self._min_digits = min_digits
+
+        # A format string with ``{unit}`` (and optionally ``{max}``)
+        # placeholders that fully controls the subtitle. The unit label
+        # is substituted into ``{unit}``; it is not appended separately.
+        self._subtitle_format = subtitle_format
 
         # Application-level signal for value changes (in base units)
         self.changed = Signal()
@@ -61,9 +66,10 @@ class UnitSpinRowHelper:
         """
         Update the subtitle format string and re-render.
 
-        The format string may contain ``{max_speed}`` as a placeholder.
+        The format string may contain ``{unit}`` (the unit label) and
+        ``{max}`` (the formatted max value) as placeholders.
         """
-        self._original_subtitle_format = subtitle_format
+        self._subtitle_format = subtitle_format
         self.update_format_and_bounds()
 
     def _on_destroy(self, _widget):
@@ -121,14 +127,14 @@ class UnitSpinRowHelper:
         if self._max_value_in_base is not None:
             display_max = self._unit.from_base(self._max_value_in_base)
             formatted_max = f"{display_max:.{self._unit.precision}f}"
-            self.spin_row.set_subtitle(
-                self._original_subtitle_format.format(max_speed=formatted_max)
-                + f" ({self._unit.label})"
-            )
         else:
-            self.spin_row.set_subtitle(
-                f"{self._original_subtitle_format} ({self._unit.label})"
+            formatted_max = ""
+
+        self.spin_row.set_subtitle(
+            self._subtitle_format.format(
+                unit=self._unit.label, max=formatted_max
             )
+        )
 
         adj = self.spin_row.get_adjustment()
         if self._max_value_in_base is not None:
@@ -182,12 +188,15 @@ class UnitSelectorSpinRow:
         self,
         quantity: str,
         title: str,
-        subtitle: str = "",
+        subtitle_format: str = "",
         max_value_in_base: Optional[float] = None,
     ):
         self.quantity = quantity
         self.title = title
-        self.subtitle = subtitle
+        # A format string with a ``{unit}`` placeholder that fully
+        # controls the subtitle; the unit label is substituted into
+        # ``{unit}`` and not appended separately.
+        self._subtitle_format = subtitle_format
         self._max_value_in_base = max_value_in_base
         self._is_updating = False
 
@@ -197,8 +206,6 @@ class UnitSelectorSpinRow:
         # Create the main action row
         self.row = Adw.ActionRow()
         self.row.set_title(title)
-        if subtitle:
-            self.row.set_subtitle(subtitle)
 
         # Create the spin button for value
         self.spin_button = Gtk.SpinButton()
@@ -303,7 +310,7 @@ class UnitSelectorSpinRow:
         # Update subtitle with unit information
         if self.helper._unit:
             self.row.set_subtitle(
-                f"{self.subtitle} ({self.helper._unit.label})"
+                self._subtitle_format.format(unit=self.helper._unit.label)
             )
 
     def set_value_in_base_units(self, base_value: float):

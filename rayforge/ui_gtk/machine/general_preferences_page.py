@@ -139,12 +139,12 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         )
         travel_speed_row = Adw.SpinRow(
             title=_("Max Travel Speed"),
-            subtitle=_("Maximum rapid movement speed"),
             adjustment=travel_speed_adjustment,
         )
         self.travel_speed_helper = UnitSpinRowHelper(
             spin_row=travel_speed_row,
             quantity="speed",
+            subtitle_format=_("Maximum rapid movement speed ({unit})"),
         )
         self.travel_speed_helper.set_value_in_base_units(
             self.machine.max_travel_speed
@@ -162,12 +162,12 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         )
         cut_speed_row = Adw.SpinRow(
             title=_("Max Cut Speed"),
-            subtitle=_("Maximum cutting speed"),
             adjustment=cut_speed_adjustment,
         )
         self.cut_speed_helper = UnitSpinRowHelper(
             spin_row=cut_speed_row,
             quantity="speed",
+            subtitle_format=_("Maximum cutting speed ({unit})"),
         )
         self.cut_speed_helper.set_value_in_base_units(
             self.machine.max_cut_speed
@@ -184,15 +184,15 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         )
         acceleration_row = Adw.SpinRow(
             title=_("Acceleration"),
-            subtitle=_(
-                "Used for time estimations and calculating the "
-                "default overscan distance"
-            ),
             adjustment=acceleration_adjustment,
         )
         self.acceleration_helper = UnitSpinRowHelper(
             spin_row=acceleration_row,
             quantity="acceleration",
+            subtitle_format=_(
+                "Used for time estimations and calculating the "
+                "default overscan distance ({unit})"
+            ),
         )
         self.acceleration_helper.set_value_in_base_units(
             self.machine.acceleration
@@ -328,7 +328,7 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         if self.machine.dialect and self.machine.dialect.can_g0_with_speed:
             self.travel_speed_row.set_sensitive(True)
             self.travel_speed_helper.set_subtitle_format(
-                _("Maximum rapid movement speed")
+                _("Maximum rapid movement speed ({unit})")
             )
         else:
             self.travel_speed_row.set_sensitive(False)

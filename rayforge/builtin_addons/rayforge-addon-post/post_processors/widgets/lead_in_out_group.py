@@ -64,14 +64,16 @@ class LeadInOutSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             adjustment=lead_in_adj,
             digits=2,
         )
-        lead_in_row.set_subtitle(
-            _("Distance of zero-power move before cut starts")
-        )
         self.add(lead_in_row)
         self.lead_in_row = lead_in_row
 
         self.lead_in_helper = UnitSpinRowHelper(
-            spin_row=lead_in_row, quantity="length", max_value_in_base=50.0
+            spin_row=lead_in_row,
+            quantity="length",
+            max_value_in_base=50.0,
+            subtitle_format=_(
+                "Distance of zero-power move before cut starts ({unit})"
+            ),
         )
         self.lead_in_helper.set_value_in_base_units(transformer.lead_in_mm)
 
@@ -83,14 +85,16 @@ class LeadInOutSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             adjustment=lead_out_adj,
             digits=2,
         )
-        lead_out_row.set_subtitle(
-            _("Distance of zero-power move after cut ends")
-        )
         self.add(lead_out_row)
         self.lead_out_row = lead_out_row
 
         self.lead_out_helper = UnitSpinRowHelper(
-            spin_row=lead_out_row, quantity="length", max_value_in_base=50.0
+            spin_row=lead_out_row,
+            quantity="length",
+            max_value_in_base=50.0,
+            subtitle_format=_(
+                "Distance of zero-power move after cut ends ({unit})"
+            ),
         )
         self.lead_out_helper.set_value_in_base_units(transformer.lead_out_mm)
 

@@ -691,15 +691,15 @@ class LaserHeadDetailWidget(DebounceMixin):
         )
         frame_speed_row = Adw.SpinRow(
             title=_("Frame Speed"),
-            subtitle=_(
-                "Speed for frame outline. Leave at 0 to use "
-                "the machine's max travel speed"
-            ),
             adjustment=frame_speed_adjustment,
         )
         self.frame_speed_helper = UnitSpinRowHelper(
             spin_row=frame_speed_row,
             quantity="speed",
+            subtitle_format=_(
+                "Speed for frame outline. Leave at 0 to use "
+                "the machine's max travel speed ({unit})"
+            ),
         )
         self.frame_speed_row = frame_speed_row
         self._handler_ids["frame_speed"] = frame_speed_row.connect(
