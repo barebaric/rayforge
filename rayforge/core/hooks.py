@@ -4,12 +4,22 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 16
-PLUGIN_API_VERSION = 17
+PLUGIN_API_VERSION = 18
 
 
 """
 API Changelog
 ============
+
+Version 18
+----------
+Added ``register_services`` hook: addons publish services under a
+string key via the global ``service_registry``, and other addons
+resolve them by key (no cross-package import). Added
+``register_settings_pages`` hook so addons can contribute pages to the
+main Settings dialog. Addon ``requires`` is now enforced at load time:
+dependencies are loaded before dependents, and an addon whose
+``requires`` is unsatisfied is skipped.
 
 Version 17
 ----------
@@ -367,6 +377,41 @@ class RayforgeSpecs:
 
         Args:
             renderer_registry: The global RendererRegistry instance.
+        """
+
+    @hookspec
+    def register_settings_pages(self, settings_page_registry):
+        """
+        Called to allow addons to contribute pages to the Settings dialog.
+
+        Addons call
+        ``settings_page_registry.register(PageClass, addon_name=...)`` for
+        each page. A page class is a no-arg widget constructor exposing
+        ``get_title()`` and ``get_icon_name()`` (e.g. a
+        ``TrackedPreferencesPage`` subclass).
+
+        .. versionadded:: 18
+
+        Args:
+            settings_page_registry: The global SettingsPageRegistry
+              instance.
+        """
+
+    @hookspec
+    def register_services(self, service_registry):
+        """
+        Called to allow addons to publish services for cross-addon use.
+
+        Addons call
+        ``service_registry.register(key, service, addon_name=...)``.
+        Consumers resolve them via the global ``service_registry``
+        (``service_registry.get(key)``), avoiding a direct cross-package
+        import.
+
+        .. versionadded:: 18
+
+        Args:
+            service_registry: The global ServiceRegistry instance.
         """
 
     @hookspec

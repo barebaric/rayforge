@@ -26,6 +26,14 @@ REGISTRY_TABLE = [
         needs_window=False,
     ),
     RegistryEntry(
+        "register_services",
+        "service_registry",
+        "rayforge.core.service_registry",
+        "service_registry",
+        worker_ok=True,
+        needs_window=False,
+    ),
+    RegistryEntry(
         "register_step_capabilities",
         "step_capability_registry",
         "rayforge.core.capability_registry",
@@ -96,6 +104,14 @@ REGISTRY_TABLE = [
         "action_registry",
         worker_ok=False,
         needs_window=True,
+    ),
+    RegistryEntry(
+        "register_settings_pages",
+        "settings_page_registry",
+        "rayforge.ui_gtk.settings.registry",
+        "settings_page_registry",
+        worker_ok=False,
+        needs_window=False,
     ),
 ]
 

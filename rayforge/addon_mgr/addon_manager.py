@@ -444,10 +444,33 @@ class AddonManager:
         """
         Scans the addon directories and loads valid addons.
 
+        Addons are loaded in dependency order: each addon's manifest
+        ``requires`` are loaded before it. An addon whose ``requires``
+        references a name that is not installed is skipped (its
+        dependency is unsatisfied).
+
         Args:
             worker_only: If True, only load worker entry points
                 (skip frontend to avoid pulling in GTK dependencies).
         """
+        discovered = self._discover_addons()
+        for _name, addon_path, _req in self._order_by_requires(discovered):
+            self.load_addon(addon_path, worker_only=worker_only)
+
+    def _discover_addons(
+        self,
+    ) -> List[Tuple[Optional[str], Path, List[str]]]:
+        """
+        Scan addon directories, returning ``(name, path, requires)``
+        tuples in discovery order.
+
+        The first directory to provide a given canonical name wins;
+        later duplicates are skipped. Addons whose metadata cannot be
+        parsed are included with ``name=None`` so that
+        :meth:`load_addon` can still emit the detailed validation error.
+        """
+        discovered: List[Tuple[Optional[str], Path, List[str]]] = []
+        seen_names: Set[str] = set()
         for addon_dir in self.addon_dirs:
             if not addon_dir.exists():
                 if addon_dir == self.install_dir:
@@ -455,9 +478,82 @@ class AddonManager:
                 continue
 
             logger.info(f"Scanning for addons in {addon_dir}...")
-            for child in addon_dir.iterdir():
-                if child.is_dir():
-                    self.load_addon(child.resolve(), worker_only=worker_only)
+            for child in sorted(addon_dir.iterdir()):
+                if not child.is_dir():
+                    continue
+                try:
+                    addon = Addon.load_from_directory(
+                        child.resolve(), version=UnknownVersion
+                    )
+                    name = addon.metadata.name
+                    requires = list(addon.metadata.requires)
+                except Exception as e:
+                    logger.debug(
+                        f"Could not pre-parse metadata for {child}: {e}"
+                    )
+                    discovered.append((None, child.resolve(), []))
+                    continue
+                if name in seen_names:
+                    logger.debug(f"Skipping duplicate addon '{name}'")
+                    continue
+                seen_names.add(name)
+                discovered.append((name, child.resolve(), requires))
+        return discovered
+
+    def _order_by_requires(
+        self,
+        discovered: List[Tuple[Optional[str], Path, List[str]]],
+    ) -> List[Tuple[Optional[str], Path, List[str]]]:
+        """
+        Topologically sort discovered addons by ``requires``.
+
+        Dependencies are emitted before dependents. Addons with an
+        unsatisfied ``requires`` (a name not present among discovered
+        addons) are dropped. Cycles are broken by falling back to
+        discovery order (with a warning). Entries with ``name=None``
+        (unparseable metadata) are appended at the end in discovery
+        order so :meth:`load_addon` logs their error.
+        """
+        by_name = {
+            name: (name, path, requires)
+            for (name, path, requires) in discovered
+            if name is not None
+        }
+        ordered: List[Tuple[Optional[str], Path, List[str]]] = []
+        state: Dict[str, str] = {}
+
+        def visit(name: str) -> bool:
+            if name not in by_name:
+                return False
+            st = state.get(name)
+            if st == "done":
+                return True
+            if st == "visiting":
+                logger.warning(
+                    f"Circular 'requires' dependency involving "
+                    f"'{name}'; breaking the cycle."
+                )
+                return True
+            state[name] = "visiting"
+            _, path, requires = by_name[name]
+            for dep in requires:
+                if not visit(dep):
+                    state.pop(name, None)
+                    logger.warning(
+                        f"Addon '{name}' requires '{dep}', which is not "
+                        "installed; skipping."
+                    )
+                    return False
+            state[name] = "done"
+            ordered.append((name, path, requires))
+            return True
+
+        for name, _p, _r in discovered:
+            if name is not None:
+                visit(name)
+
+        unnamed = [e for e in discovered if e[0] is None]
+        return ordered + unnamed
 
     def load_addon(
         self,

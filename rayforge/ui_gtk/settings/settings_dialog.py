@@ -12,6 +12,7 @@ from .license_settings_page import LicenseSettingsPage
 from .machine_settings_page import MachineSettingsPage
 from .material_manager_page import MaterialManagerPage
 from .recipe_manager_page import RecipeManagerPage
+from .registry import settings_page_registry
 
 
 class SettingsWindow(PatchedDialogWindow):
@@ -73,6 +74,11 @@ class SettingsWindow(PatchedDialogWindow):
         self._add_page(AISettingsPage)
         self._add_page(AddonManagerPage)
         self._add_page(LicenseSettingsPage)
+
+        # Addon-contributed pages (registered via the
+        # register_settings_pages hook).
+        for page_class in settings_page_registry.get_pages():
+            self._add_page(page_class)
 
         # Create the content's NavigationPage wrapper
         pages = self.content_stack.get_pages()
