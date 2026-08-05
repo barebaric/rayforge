@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-04 19:24+0200\n"
+"POT-Creation-Date: 2026-08-06 00:18+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -2061,6 +2061,7 @@ msgstr ""
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 #: rayforge/ui_gtk/settings/license_settings_page.py
 #: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/settings/color_presets_page.py
 #: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 #: rayforge/ui_gtk/machine/unified_wizard.py
@@ -2091,10 +2092,12 @@ msgstr "Cancelar"
 
 #: rayforge/ui_gtk/settings/machine_settings_page.py
 #: rayforge/ui_gtk/settings/ai_settings_page.py
+#: rayforge/ui_gtk/settings/color_presets_page.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/doceditor/asset_browser.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/recipe_list.py
+#: rayforge/ui_gtk/doceditor/workflow_row.py
 #: rayforge/ui_gtk/doceditor/layer_column.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Delete"
@@ -2334,6 +2337,106 @@ msgstr "Recetas"
 #: rayforge/ui_gtk/settings/recipe_manager_page.py
 msgid "Manage your saved recipes for different materials and processes."
 msgstr "Gestiona tus recetas guardadas para diferentes materiales y procesos."
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "Edit Color Rule"
+msgstr "Editar regla de color"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "Update the color rule details:"
+msgstr "Actualice los detalles de la regla de color:"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+#: rayforge/ui_gtk/machine/dialect_editor.py
+#: rayforge/ui_gtk/machine/gcode_editor.py
+#: rayforge/ui_gtk/machine/wcs_dialog.py
+#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/toolbar.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Save"
+msgstr "Guardar"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "Add Color Rule"
+msgstr "Añadir regla de color"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "Map a color to a step type for SVG imports."
+msgstr "Asigne un color a un tipo de paso para importaciones SVG."
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Add"
+msgstr "Añadir"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Color"
+msgstr "Color"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "SVG color that triggers this rule"
+msgstr "Color SVG que activa esta regla"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "Label (optional)"
+msgstr "Etiqueta (opcional)"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/doceditor/recipe_pages.py
+msgid "Step Type"
+msgstr "Tipo de paso"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "Step type created when this color is imported"
+msgstr "Tipo de paso creado al importar este color"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+#, python-brace-format
+msgid "Color {color}"
+msgstr "Color {color}"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "This step type is not currently available."
+msgstr "Este tipo de paso no está disponible actualmente."
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+#, python-brace-format
+msgid "{step_type} (unavailable)"
+msgstr "{step_type} (no disponible)"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "No color rules found."
+msgstr "No se encontraron reglas de color."
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+#, python-brace-format
+msgid "Delete color rule '{color}'?"
+msgstr "¿Eliminar la regla de color '{color}'?"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid ""
+"The color rule will be permanently removed. This action cannot be undone."
+msgstr ""
+"La regla de color se eliminará permanentemente. Esta acción no se puede"
+"deshacer."
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid "Color Rules"
+msgstr "Reglas de color"
+
+#: rayforge/ui_gtk/settings/color_presets_page.py
+msgid ""
+"Map SVG colors to step types so they are applied automatically when "
+"importing."
+msgstr ""
+"Asigne colores SVG a tipos de paso para que se apliquen automáticamente al"
+"importar."
 
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Materials"
@@ -3131,18 +3234,6 @@ msgid "Export the calibration card for printing"
 msgstr "Exportar la tarjeta de calibración para imprimir"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-#: rayforge/ui_gtk/machine/dialect_editor.py
-#: rayforge/ui_gtk/machine/gcode_editor.py
-#: rayforge/ui_gtk/machine/wcs_dialog.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
-#: rayforge/ui_gtk/toolbar.py
-#: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Save"
-msgstr "Guardar"
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Save Calibration Card"
 msgstr "Guardar tarjeta de calibración"
 
@@ -3892,32 +3983,24 @@ msgid "Z position in {wcs}"
 msgstr "Posición Z en {wcs}"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
-msgid "Width in mm"
-msgstr "Ancho en mm"
-
-#: rayforge/ui_gtk/machine/nogo_zones_page.py
-msgid "Height in mm"
-msgstr "Alto en mm"
-
-#: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Depth"
 msgstr "Profundidad"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
-msgid "Depth (Z extent) in mm"
-msgstr "Profundidad (extensión Z) en mm"
+msgid "Depth (Z extent)"
+msgstr "Profundidad (extensión Z)"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
-msgid "Cylinder radius in mm"
-msgstr "Radio del cilindro en mm"
+msgid "Cylinder radius"
+msgstr "Radio del cilindro"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Cylinder Height"
 msgstr "Altura del cilindro"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
-msgid "Cylinder height in mm"
-msgstr "Altura del cilindro en mm"
+msgid "Cylinder height"
+msgstr "Altura del cilindro"
 
 #: rayforge/ui_gtk/machine/dialect_editor.py
 msgid "Escaped braces {{ or }} are not supported."
@@ -4068,6 +4151,18 @@ msgid "Enter the offset from Machine Zero to Work Zero for the active WCS."
 msgstr ""
 "Introduzca el desplazamiento del cero máquina al cero trabajo para el WCS "
 "activo."
+
+#: rayforge/ui_gtk/machine/wcs_dialog.py
+msgid "X Offset"
+msgstr "Desplazamiento X"
+
+#: rayforge/ui_gtk/machine/wcs_dialog.py
+msgid "Y Offset"
+msgstr "Desplazamiento Y"
+
+#: rayforge/ui_gtk/machine/wcs_dialog.py
+msgid "Z Offset"
+msgstr "Desplazamiento Z"
 
 #: rayforge/ui_gtk/machine/maintenance_page.py
 msgid "Reset Counter"
@@ -4337,13 +4432,12 @@ msgstr "Tolerancia de arcos y curvas"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid ""
-"Maximum deviation from original path when fitting arcs and curves (in "
-"machine units). Lower values drastically increase processing time and job "
-"size"
+"Maximum deviation from original path when fitting arcs and curves. Lower "
+"values drastically increase processing time and job size"
 msgstr ""
-"Desviación máxima de la ruta original al ajustar arcos y curvas (en unidades "
-"de máquina). Valores más bajos aumentan drásticamente el tiempo de "
-"procesamiento y el tamaño del trabajo"
+"Desviación máxima respecto a la ruta original al ajustar arcos y curvas."
+"Los valores más bajos aumentan drásticamente el tiempo de procesamiento y"
+"el tamaño del trabajo."
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Homing and Startup"
@@ -4953,6 +5047,16 @@ msgid "No"
 msgstr "No"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Metric (mm)"
+msgstr "Métrico (mm)"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Imperial (inches)"
+msgstr "Imperial (pulgadas)"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "Review & Name"
 msgstr "Revisar y nombrar"
 
@@ -4993,6 +5097,11 @@ msgstr "Conexión"
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "Work Area X×Y"
 msgstr "Área de trabajo X×Y"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Unit System"
+msgstr "Sistema de unidades"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -5334,6 +5443,23 @@ msgid "Limits in machine units per minute."
 msgstr "Límites en unidades de máquina por minuto."
 
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Maximum rapid movement speed"
+msgstr "Velocidad máxima de movimiento rápido"
+
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Maximum cutting speed"
+msgstr "Velocidad máxima de corte"
+
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Used for time estimations and calculating the default overscan distance"
+msgstr ""
+"Utilizado para estimaciones de tiempo y cálculo de la distancia de sobrescan "
+"predeterminada"
+
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Run homing cycle when machine connects"
 msgstr "Ejecutar ciclo de referenciación al conectar la máquina"
 
@@ -5653,18 +5779,17 @@ msgstr ""
 "y la optimización de trayectorias."
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Maximum rapid movement speed"
-msgstr "Velocidad máxima de movimiento rápido"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Maximum cutting speed"
-msgstr "Velocidad máxima de corte"
-
-#: rayforge/ui_gtk/machine/general_preferences_page.py
-msgid "Used for time estimations and calculating the default overscan distance"
+msgid ""
+"The unit system used when emitting G-code and communicating with the device. "
+"This setting is independent of the units used in the user interface."
 msgstr ""
-"Utilizado para estimaciones de tiempo y cálculo de la distancia de sobrescan "
-"predeterminada"
+"El sistema de unidades utilizado al generar código G y comunicarse con el"
+"dispositivo. Esta configuración es independiente de las unidades usadas en"
+"la interfaz de usuario."
+
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid "Machine Unit System"
+msgstr "Sistema de unidades de la máquina"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #, python-brace-format
@@ -5679,6 +5804,26 @@ msgstr "<b>Error:</b> {error}"
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Not supported by the driver"
 msgstr "No compatible con el controlador"
+
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid ""
+"The preamble contains G21 (millimeters) but the machine unit system is set "
+"to imperial. G-code values will be emitted in inches — ensure your preamble "
+"matches."
+msgstr ""
+"El preámbulo contiene G21 (milímetros), pero el sistema de unidades de la"
+"máquina está configurado como imperial. Los valores del código G se"
+"emitirán en pulgadas; asegúrese de que su preámbulo coincida."
+
+#: rayforge/ui_gtk/machine/general_preferences_page.py
+msgid ""
+"The preamble contains G20 (inches) but the machine unit system is set to "
+"metric. G-code values will be emitted in millimeters — ensure your preamble "
+"matches."
+msgstr ""
+"El preámbulo contiene G20 (pulgadas), pero el sistema de unidades de la"
+"máquina está configurado como métrico. Los valores del código G se emitirán"
+"en milímetros; asegúrese de que su preámbulo coincida."
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Drag to reorder"
@@ -5727,11 +5872,6 @@ msgstr "Añadir parámetro"
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "New Parameter"
 msgstr "Nuevo parámetro"
-
-#: rayforge/ui_gtk/varset/adapter/speed.py
-#, python-brace-format
-msgid "Max: {max_speed}"
-msgstr "Máx.: {max_speed}"
 
 #: rayforge/ui_gtk/varset/adapter/appkey.py
 msgid "Request Access"
@@ -6160,6 +6300,11 @@ msgstr "Sin parámetros"
 #: rayforge/ui_gtk/shared/splitbutton.py
 msgid "Show all options"
 msgstr "Mostrar todas las opciones"
+
+#: rayforge/ui_gtk/shared/unit_spin_row.py
+#, python-brace-format
+msgid "Value in {unit}"
+msgstr "Valor en {unit}"
 
 #: rayforge/ui_gtk/shared/playback_overlay.py
 msgid "Play simulation"
@@ -6764,10 +6909,6 @@ msgstr ""
 "para aplicarla a todos los tipos de tarea"
 
 #: rayforge/ui_gtk/doceditor/recipe_pages.py
-msgid "Step Type"
-msgstr "Tipo de paso"
-
-#: rayforge/ui_gtk/doceditor/recipe_pages.py
 msgid "Restrict this recipe to a specific operation type"
 msgstr "Restringe esta receta a un tipo de operación específico"
 
@@ -7058,12 +7199,6 @@ msgid "Enter a name for the new library folder:"
 msgstr "Introduce un nombre para la nueva carpeta de la biblioteca:"
 
 #: rayforge/ui_gtk/doceditor/material_library_list.py
-#: rayforge/ui_gtk/doceditor/edit_recipe_dialog.py
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Add"
-msgstr "Añadir"
-
-#: rayforge/ui_gtk/doceditor/material_library_list.py
 msgid "Failed to create library. A folder with that name may already exist."
 msgstr ""
 "Error al crear la biblioteca. Puede que ya exista una carpeta con ese nombre."
@@ -7144,10 +7279,6 @@ msgstr "Introduce los detalles del nuevo material:"
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Category"
 msgstr "Categoría"
-
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Color"
-msgstr "Color"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Custom"
@@ -7356,6 +7487,12 @@ msgstr "Reordenar pasos"
 msgid "Add step '{name}'"
 msgstr "Añadir paso '{name}'"
 
+#: rayforge/ui_gtk/doceditor/workflow_row.py
+#: rayforge/ui_gtk/doceditor/workflow_view.py
+#, python-brace-format
+msgid "Remove step '{name}'"
+msgstr "Eliminar paso '{name}'"
+
 #: rayforge/ui_gtk/doceditor/layer_column.py
 msgid "Layer Settings"
 msgstr "Configuración de capa"
@@ -7427,8 +7564,8 @@ msgstr "Restablecer inclinación a 0°"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 #, python-brace-format
-msgid "Natural: {val:.2f}"
-msgstr "Natural: {val:.2f}"
+msgid "Natural: {val}"
+msgstr "Natural: {val}"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "Source File"
@@ -7469,6 +7606,7 @@ msgid "Remove all tabs"
 msgstr "Eliminar todas las pestañas de sujeción"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
+#: rayforge/ui_gtk/doceditor/add_tabs_popover.py
 msgid "Tab Width"
 msgstr "Ancho de pestaña"
 
@@ -7492,10 +7630,6 @@ msgstr "Valores mixtos"
 #: rayforge/ui_gtk/doceditor/add_tabs_popover.py
 msgid "Number of Tabs"
 msgstr "Número de pestañas"
-
-#: rayforge/ui_gtk/doceditor/add_tabs_popover.py
-msgid "Tab Width (mm)"
-msgstr "Ancho de pestaña (mm)"
 
 #: rayforge/ui_gtk/doceditor/add_tabs_popover.py
 msgid "Adjust Equidistant Tabs"
@@ -7656,8 +7790,8 @@ msgid "Object Diameter"
 msgstr "Diámetro del objeto"
 
 #: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
-msgid "Diameter of the cylindrical object in machine units"
-msgstr "Diámetro del objeto cilíndrico en unidades de máquina"
+msgid "Diameter of the cylindrical object"
+msgstr "Diámetro del objeto cilíndrico"
 
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "No materials in selected library."
@@ -7728,11 +7862,6 @@ msgstr "{count} paso"
 #, python-brace-format
 msgid "{count} steps"
 msgstr "{count} pasos"
-
-#: rayforge/ui_gtk/doceditor/workflow_view.py
-#, python-brace-format
-msgid "Remove step '{name}'"
-msgstr "Eliminar paso '{name}'"
 
 #: rayforge/ui_gtk/about.py
 msgid "Not found"

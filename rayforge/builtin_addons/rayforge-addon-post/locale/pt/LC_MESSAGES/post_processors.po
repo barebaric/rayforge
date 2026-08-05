@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-02 21:11+0200\n"
+"POT-Creation-Date: 2026-08-06 00:18+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -131,10 +131,8 @@ msgid "Z Step-Down per Pass"
 msgstr "Descida em Z por Passagem"
 
 #: post_processors/widgets/multipass_group.py
-msgid "Distance to lower Z-axis for each subsequent pass in machine units"
-msgstr ""
-"Distância para baixar o eixo Z para cada passagem subsequente em unidades da "
-"máquina"
+msgid "Distance to lower Z-axis for each subsequent pass"
+msgstr "Distância para baixar o eixo Z em cada passada subsequente"
 
 #: post_processors/widgets/multipass_group.py
 msgid "Change number of passes"

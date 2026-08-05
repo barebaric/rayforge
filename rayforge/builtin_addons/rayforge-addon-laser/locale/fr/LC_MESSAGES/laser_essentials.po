@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-03 01:13+0200\n"
+"POT-Creation-Date: 2026-08-06 01:04+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -70,8 +70,8 @@ msgid "Step Over"
 msgstr "Pas latéral"
 
 #: laser_essentials/widgets/wavefront_page.py
-msgid "Lateral step-over between wavefront passes (mm)"
-msgstr "Pas latéral entre les passes de front d'onde (mm)"
+msgid "Lateral step-over between wavefront passes"
+msgstr "Pas latéral entre les passages de front d'onde"
 
 #: laser_essentials/widgets/wavefront_page.py
 #: laser_essentials/widgets/rows/offset_row.py
@@ -82,8 +82,8 @@ msgid "Offset"
 msgstr "Décalage"
 
 #: laser_essentials/widgets/wavefront_page.py
-msgid "Extra offset from walls (mm)"
-msgstr "Décalage supplémentaire depuis les parois (mm)"
+msgid "Extra offset from walls"
+msgstr "Décalage supplémentaire par rapport aux parois"
 
 #: laser_essentials/widgets/wavefront_page.py
 #: laser_essentials/steps/wavefront_step.py
@@ -567,8 +567,8 @@ msgid "Number of Depth Levels"
 msgstr "Nombre de niveaux de profondeur"
 
 #: laser_essentials/widgets/raster_page.py
-msgid "Z Step-Down per Level (mm)"
-msgstr "Descente en Z par niveau (mm)"
+msgid "Z Step-Down per Level"
+msgstr "Descente en Z par niveau"
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Rotate Angle Per Pass"
@@ -629,10 +629,10 @@ msgstr "Intervalle d'échantillonnage"
 #: laser_essentials/widgets/raster_page.py
 msgid ""
 "Distance between power samples along scan line. Lower values improve "
-"accuracy, but increase output size."
+"accuracy, but increase output size. "
 msgstr ""
-"Distance entre les échantillons de puissance le long de la ligne de "
-"balayage. Des valeurs plus faibles améliorent la précision, mais augmentent "
+"Distance entre les échantillons de puissance le long de la ligne de"
+"balayage. Des valeurs plus faibles améliorent la précision, mais augmentent"
 "la taille de sortie."
 
 #: laser_essentials/widgets/raster_page.py
@@ -652,11 +652,10 @@ msgstr "Décalage de balayage bidirectionnel"
 
 #: laser_essentials/widgets/raster_page.py
 msgid ""
-"Corrects X misalignment between left-to-right and right-to-left raster "
-"passes (in mm)"
+"Corrects X misalignment between left-to-right and right-to-left raster passes"
 msgstr ""
-"Corrige le désalignement X entre les passages raster de gauche à droite et "
-"de droite à gauche (en mm)"
+"Corrige le désalignement en X entre les passages de rasterisation de gauche"
+"à droite et de droite à gauche"
 
 #: laser_essentials/widgets/raster_page.py
 #: laser_essentials/steps/raster_step.py
