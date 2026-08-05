@@ -33,7 +33,7 @@ from ....core.varset import (
 )
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
-from ....shared.units.system import UnitSystem
+from ....shared.units.system import UnitSystem, inches_to_mm
 from ...transport import SerialTransport, TransportStatus
 from ...transport.serial import SerialPortPermissionError
 from ..driver import (
@@ -53,6 +53,7 @@ from .grbl_util import (
     gcode_to_p_number,
     get_grbl_setting_varsets,
     grbl_setting_re,
+    is_report_in_inches,
     parse_grbl_parser_state,
     parse_state,
     prb_re,
@@ -135,6 +136,7 @@ class GrblSerialSimpleDriver(Driver):
         self._pending: Optional[_PingPongPending] = None
         self._line_buffer: bytearray = bytearray()
         self._current_op_index: int = -1
+        self._report_in_inches: bool = False
 
     @property
     def machine_space_wcs(self) -> str:
@@ -412,7 +414,10 @@ class GrblSerialSimpleDriver(Driver):
         """Process a GRBL status report like <Idle|MPos:0,0,0>."""
         self._handshake_received.set()
         state = parse_state(
-            report, self.state, lambda message: logger.info(message)
+            report,
+            self.state,
+            lambda message: logger.info(message),
+            report_in_inches=self._report_in_inches,
         )
 
         self._raw_grbl_status = state.status
@@ -589,7 +594,9 @@ class GrblSerialSimpleDriver(Driver):
     async def move_to(self, pos_x, pos_y) -> None:
         dialect = self.dialect
         cmd = dialect.move_to.format(
-            speed=1500, x=float(pos_x), y=float(pos_y)
+            speed=self._to_machine_speed(1500),
+            x=self._to_machine_length(float(pos_x)),
+            y=self._to_machine_length(float(pos_y)),
         )
         await self._execute_command(cmd)
 
@@ -629,9 +636,11 @@ class GrblSerialSimpleDriver(Driver):
 
     async def jog(self, speed: int, **deltas: float) -> None:
         dialect = self.dialect
-        cmd_parts = [dialect.jog.format(speed=speed)]
+        cmd_parts = [dialect.jog.format(speed=self._to_machine_speed(speed))]
         for axis_name, distance in deltas.items():
-            cmd_parts.append(f"{axis_name.upper()}{distance}")
+            cmd_parts.append(
+                f"{axis_name.upper()}{self._to_machine_length(distance)}"
+            )
         if len(cmd_parts) == 1:
             return
         cmd = " ".join(cmd_parts)
@@ -650,10 +659,12 @@ class GrblSerialSimpleDriver(Driver):
         except (ConnectionError, asyncio.TimeoutError) as e:
             logger.warning(f"Unit system detection failed: {e}")
             return None
+        self._report_in_inches = is_report_in_inches(response_lines)
         return detect_unit_system_from_settings(response_lines)
 
     async def read_settings(self) -> None:
         response_lines = await self.execute_interactive_command("$$")
+        self._report_in_inches = is_report_in_inches(response_lines)
         known_varsets = self.get_setting_vars()
         key_to_varset_map = {
             var_key: varset
@@ -706,7 +717,12 @@ class GrblSerialSimpleDriver(Driver):
         if p_num is None:
             raise ValueError(f"Invalid WCS slot: {wcs_slot}")
         dialect = self.dialect
-        cmd = dialect.set_wcs_offset.format(p_num=p_num, x=x, y=y, z=z)
+        cmd = dialect.set_wcs_offset.format(
+            p_num=p_num,
+            x=self._to_machine_length(x),
+            y=self._to_machine_length(y),
+            z=self._to_machine_length(z),
+        )
         await self._execute_command(cmd)
 
     async def read_wcs_offsets(self) -> Dict[str, Pos]:
@@ -717,10 +733,11 @@ class GrblSerialSimpleDriver(Driver):
             if match:
                 slot, x_str, y_str, z_str = match.groups()
                 z_str = z_str or "0.000"
+                parsed: Pos = (float(x_str), float(y_str), float(z_str))
                 offsets[slot] = (
-                    float(x_str),
-                    float(y_str),
-                    float(z_str),
+                    tuple(inches_to_mm(v) for v in parsed)
+                    if self._report_in_inches
+                    else parsed
                 )
         self.wcs_updated.send(self, offsets=offsets)
         return offsets
@@ -741,8 +758,8 @@ class GrblSerialSimpleDriver(Driver):
         dialect = self.dialect
         cmd = dialect.probe_cycle.format(
             axis_letter=axis_letter,
-            max_travel=max_travel,
-            feed_rate=feed_rate,
+            max_travel=self._to_machine_length(max_travel),
+            feed_rate=self._to_machine_speed(feed_rate),
         )
         self.probe_status_changed.send(
             self, message=f"Probing {axis_letter}..."
@@ -764,6 +781,8 @@ class GrblSerialSimpleDriver(Driver):
                         float(y_str),
                         float(z_str),
                     )
+                    if self._report_in_inches:
+                        pos = tuple(inches_to_mm(v) for v in pos)
                     self.probe_status_changed.send(
                         self,
                         message=f"Probe triggered at {pos}",

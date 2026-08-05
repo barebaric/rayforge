@@ -6,13 +6,23 @@ from gettext import gettext as _
 from typing import Callable, Dict, List, Optional, Tuple, cast
 
 from ....core.varset import Var, VarSet
-from ....shared.units.system import UnitSystem
+from ....shared.units.system import UnitSystem, inches_to_mm
 from ..driver import DeviceError, DeviceState, DeviceStatus, Pos
 
 # GRBL $13 setting key: "Report in inches" (boolean).
 GRBL_REPORT_INCHES_KEY = "13"
 
 _gcode_comment_re = re.compile(r"\([^)]*\)")
+
+
+def _pos_from_inches(pos: Pos) -> Pos:
+    """
+    Convert a position tuple reported in inches to millimeters.
+
+    ``None`` entries are preserved so partially-known positions
+    remain valid.
+    """
+    return tuple(None if v is None else inches_to_mm(v) for v in pos)
 
 
 def strip_gcode_comments(line: str) -> str:
@@ -580,6 +590,19 @@ def detect_unit_system_from_settings(
     return UnitSystem.METRIC
 
 
+def is_report_in_inches(settings_lines: List[str]) -> bool:
+    """
+    Return True when GRBL's ``$13`` (Report in inches) flag is set.
+
+    When True, status reports, probe results and ``$#`` WCS offsets are
+    reported in inches and must be converted back to mm.
+    """
+    report_inches = parse_grbl_settings(settings_lines).get(
+        GRBL_REPORT_INCHES_KEY
+    )
+    return bool(report_inches)
+
+
 def parse_msg(line: str) -> Optional[Tuple[str, str]]:
     """
     Parse a ``[MSG:key:value]`` line into ``(key, value)``.
@@ -899,6 +922,7 @@ def parse_state(
     state_str: str,
     default: DeviceState,
     logger: Optional[Callable] = None,
+    report_in_inches: bool = False,
 ) -> DeviceState:
     """
     Parse GRBL status string into DeviceState.
@@ -907,6 +931,8 @@ def parse_state(
         state_str: Status string like '<Idle|MPos:10.0,20.0,30.0|WPos:0,0,0>'
         default: Default DeviceState to use as base
         logger: Optional logger function for debugging
+        report_in_inches: When True (GRBL $13 set), positions in the
+            status report are in inches and are converted back to mm.
 
     Returns:
         Parsed DeviceState
@@ -958,6 +984,14 @@ def parse_state(
                         state.buffer_available,
                         state.buffer_rx_available,
                     ) = buffer_state
+
+        if report_in_inches:
+            if mpos_found:
+                state.machine_pos = _pos_from_inches(state.machine_pos)
+            if wpos_found:
+                state.work_pos = _pos_from_inches(state.work_pos)
+            if wco_found:
+                state.wco = _pos_from_inches(state.wco)
 
         state.machine_pos, state.work_pos, state.wco = _recalculate_positions(
             state.machine_pos,

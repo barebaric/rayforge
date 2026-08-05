@@ -23,7 +23,7 @@ from ....core.varset import ChoiceVar, HostnameVar, PortVar, Var, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
-from ....shared.units.system import UnitSystem
+from ....shared.units.system import UnitSystem, inches_to_mm
 from ...transport import HttpTransport, TransportStatus, WebSocketTransport
 from ..driver import (
     Axis,
@@ -46,6 +46,7 @@ from .grbl_util import (
     get_grbl_setting_varsets,
     grbl_setting_re,
     hw_info_url,
+    is_report_in_inches,
     parse_grbl_parser_state,
     parse_state,
     prb_re,
@@ -92,6 +93,7 @@ class GrblNetworkDriver(Driver):
         self._connection_task: Optional[asyncio.Task] = None
         self._current_request: Optional[CommandRequest] = None
         self._cmd_lock = asyncio.Lock()
+        self._report_in_inches: bool = False
 
     @classmethod
     async def probe(
@@ -525,7 +527,9 @@ class GrblNetworkDriver(Driver):
     async def move_to(self, pos_x, pos_y) -> None:
         dialect = self.dialect
         cmd = dialect.move_to.format(
-            speed=1500, x=float(pos_x), y=float(pos_y)
+            speed=self._to_machine_speed(1500),
+            x=self._to_machine_length(float(pos_x)),
+            y=self._to_machine_length(float(pos_y)),
         )
         await self.execute_interactive_command(cmd)
 
@@ -607,10 +611,12 @@ class GrblNetworkDriver(Driver):
             **deltas: Axis names and distances (e.g. x=10.0, y=5.0)
         """
         dialect = self.dialect
-        cmd_parts = [dialect.jog.format(speed=speed)]
+        cmd_parts = [dialect.jog.format(speed=self._to_machine_speed(speed))]
 
         for axis_name, distance in deltas.items():
-            cmd_parts.append(f"{axis_name.upper()}{distance}")
+            cmd_parts.append(
+                f"{axis_name.upper()}{self._to_machine_length(distance)}"
+            )
 
         # If no axes specified, do nothing
         if len(cmd_parts) == 1:
@@ -657,7 +663,10 @@ class GrblNetworkDriver(Driver):
             # Process line for state updates, regardless of active request.
             if is_status_report:
                 state = parse_state(
-                    line, self.state, lambda message: logger.info(message)
+                    line,
+                    self.state,
+                    lambda message: logger.info(message),
+                    report_in_inches=self._report_in_inches,
                 )
                 old_status = self.state.status
                 if state != self.state:
@@ -697,10 +706,12 @@ class GrblNetworkDriver(Driver):
         except (ConnectionError, asyncio.TimeoutError) as e:
             logger.warning(f"Unit system detection failed: {e}")
             return None
+        self._report_in_inches = is_report_in_inches(response_lines)
         return detect_unit_system_from_settings(response_lines)
 
     async def read_settings(self) -> None:
         response_lines = await self.execute_interactive_command("$$")
+        self._report_in_inches = is_report_in_inches(response_lines)
         # Get the list of VarSets, which serve as our template
         known_varsets = self.get_setting_vars()
 
@@ -767,7 +778,12 @@ class GrblNetworkDriver(Driver):
         if p_num is None:
             raise ValueError(f"Invalid WCS slot: {wcs_slot}")
         dialect = self.dialect
-        cmd = dialect.set_wcs_offset.format(p_num=p_num, x=x, y=y, z=z)
+        cmd = dialect.set_wcs_offset.format(
+            p_num=p_num,
+            x=self._to_machine_length(x),
+            y=self._to_machine_length(y),
+            z=self._to_machine_length(z),
+        )
         await self.execute_interactive_command(cmd)
 
     async def read_wcs_offsets(self) -> Dict[str, Pos]:
@@ -778,7 +794,12 @@ class GrblNetworkDriver(Driver):
             if match:
                 slot, x_str, y_str, z_str = match.groups()
                 z_str = z_str or "0.000"
-                offsets[slot] = (float(x_str), float(y_str), float(z_str))
+                parsed: Pos = (float(x_str), float(y_str), float(z_str))
+                offsets[slot] = (
+                    tuple(inches_to_mm(v) for v in parsed)
+                    if self._report_in_inches
+                    else parsed
+                )
         self.wcs_updated.send(self, offsets=offsets)
         return offsets
 
@@ -799,8 +820,8 @@ class GrblNetworkDriver(Driver):
         dialect = self.dialect
         cmd = dialect.probe_cycle.format(
             axis_letter=axis_letter,
-            max_travel=max_travel,
-            feed_rate=feed_rate,
+            max_travel=self._to_machine_length(max_travel),
+            feed_rate=self._to_machine_speed(feed_rate),
         )
 
         self.probe_status_changed.send(
@@ -814,6 +835,8 @@ class GrblNetworkDriver(Driver):
                 x_str, y_str, z_str, success = match.groups()
                 if int(success) == 1:
                     pos: Pos = (float(x_str), float(y_str), float(z_str))
+                    if self._report_in_inches:
+                        pos = tuple(inches_to_mm(v) for v in pos)
                     self.probe_status_changed.send(
                         self, message=f"Probe triggered at {pos}"
                     )

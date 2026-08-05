@@ -520,16 +520,20 @@ class MarlinSerialDriver(Driver):
     async def move_to(self, pos_x, pos_y) -> None:
         dialect = self.dialect
         cmd = dialect.move_to.format(
-            speed=1500, x=float(pos_x), y=float(pos_y)
+            speed=self._to_machine_speed(1500),
+            x=self._to_machine_length(float(pos_x)),
+            y=self._to_machine_length(float(pos_y)),
         )
         await self._send_and_wait(cmd)
 
     async def jog(self, speed: int, **deltas: float) -> None:
         dialect = self.dialect
-        parts = [dialect.jog.format(speed=speed)]
+        parts = [dialect.jog.format(speed=self._to_machine_speed(speed))]
 
         for axis_name, distance in deltas.items():
-            parts.append(f"{axis_name.upper()}{distance}")
+            parts.append(
+                f"{axis_name.upper()}{self._to_machine_length(distance)}"
+            )
 
         if len(parts) == 1:
             return
@@ -602,7 +606,12 @@ class MarlinSerialDriver(Driver):
         if p_num is None:
             raise ValueError(f"Invalid WCS slot: {wcs_slot}")
         dialect = self.dialect
-        cmd = dialect.set_wcs_offset.format(p_num=p_num, x=x, y=y, z=z)
+        cmd = dialect.set_wcs_offset.format(
+            p_num=p_num,
+            x=self._to_machine_length(x),
+            y=self._to_machine_length(y),
+            z=self._to_machine_length(z),
+        )
         await self._send_and_wait(cmd)
 
     async def read_wcs_offsets(self) -> Dict[str, Pos]:
@@ -665,9 +674,9 @@ class MarlinSerialDriver(Driver):
 
         match = m114_pos_re.search(line)
         if match:
-            x = float(match.group(1))
-            y = float(match.group(2))
-            z = float(match.group(3))
+            x = self._from_machine_length(float(match.group(1)))
+            y = self._from_machine_length(float(match.group(2)))
+            z = self._from_machine_length(float(match.group(3)))
             old_pos = self.state.machine_pos
             new_pos = (x, y, z)
             if new_pos != old_pos:

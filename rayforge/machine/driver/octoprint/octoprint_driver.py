@@ -730,8 +730,8 @@ class OctoPrintDriver(Driver):
             "/api/printer/printhead",
             json={
                 "command": "jog",
-                "x": pos_x,
-                "y": pos_y,
+                "x": self._to_machine_length(pos_x),
+                "y": self._to_machine_length(pos_y),
                 "absolute": True,
             },
         )
@@ -742,9 +742,11 @@ class OctoPrintDriver(Driver):
     async def jog(self, speed: int, **deltas: float) -> None:
         params: Dict[str, Any] = {
             "command": "jog",
-            "speed": speed,
+            "speed": self._to_machine_speed(speed),
         }
-        params.update(deltas)
+        params.update(
+            {k: self._to_machine_length(v) for k, v in deltas.items()}
+        )
         await self._api_request(
             "POST",
             "/api/printer/printhead",
@@ -811,7 +813,12 @@ class OctoPrintDriver(Driver):
         p_num = p_map.get(wcs_slot)
         if p_num is None:
             raise ValueError(f"Invalid WCS slot: {wcs_slot}")
-        cmd = f"G10 L2 P{p_num} X{x:.3f} Y{y:.3f} Z{z:.3f}"
+        cmd = (
+            f"G10 L2 P{p_num} "
+            f"X{self._to_machine_length(x):.3f} "
+            f"Y{self._to_machine_length(y):.3f} "
+            f"Z{self._to_machine_length(z):.3f}"
+        )
         await self._api_request(
             "POST",
             "/api/printer/command",
@@ -829,7 +836,11 @@ class OctoPrintDriver(Driver):
     ) -> Optional[Pos]:
         assert axis.name, "Probing requires a named axis."
         axis_letter = axis.name.upper()
-        cmd = f"G38.2 {axis_letter}{max_travel:.3f} F{feed_rate}"
+        cmd = (
+            f"G38.2 {axis_letter}"
+            f"{self._to_machine_length(max_travel):.3f} "
+            f"F{self._to_machine_speed(feed_rate)}"
+        )
         self.probe_status_changed.send(
             self, message=f"Probing {axis_letter}..."
         )
