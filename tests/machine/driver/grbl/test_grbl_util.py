@@ -11,6 +11,7 @@ from rayforge.machine.driver.grbl.grbl_util import (
     _split_status_line,
     error_code_to_device_error,
     gcode_to_p_number,
+    is_report_in_inches,
     parse_grbl_parser_state,
     parse_opt_info,
     parse_state,
@@ -690,3 +691,68 @@ class TestParseOptInfo:
     )
     def test_opt_parsing(self, line, expected):
         assert parse_opt_info(line) == expected
+
+
+class TestIsReportInInches:
+    """Tests for is_report_in_inches function."""
+
+    def test_report_inches_true(self):
+        settings = ["$0=10", "$1=25", "$13=1", "$20=0"]
+        assert is_report_in_inches(settings) is True
+
+    def test_report_inches_false(self):
+        settings = ["$0=10", "$13=0", "$20=0"]
+        assert is_report_in_inches(settings) is False
+
+    def test_setting_absent(self):
+        settings = ["$0=10", "$20=0"]
+        assert is_report_in_inches(settings) is False
+
+    def test_empty(self):
+        assert is_report_in_inches([]) is False
+
+
+class TestParseStateInches:
+    """Tests for parse_state with report_in_inches=True."""
+
+    def test_mpos_converted_to_mm(self):
+        default = DeviceState()
+        result = parse_state(
+            "<Idle|MPos:1.0,2.0,0.5>", default, report_in_inches=True
+        )
+        assert result.status == DeviceStatus.IDLE
+        assert result.machine_pos == pytest.approx((25.4, 50.8, 12.7))
+
+    def test_mpos_wpos_wco_all_converted(self):
+        default = DeviceState()
+        result = parse_state(
+            "<Idle|MPos:2.0,4.0,1.0|WPos:1.0,2.0,0.5|WCO:1.0,2.0,0.5>",
+            default,
+            report_in_inches=True,
+        )
+        assert result.machine_pos == pytest.approx((50.8, 101.6, 25.4))
+        assert result.work_pos == pytest.approx((25.4, 50.8, 12.7))
+        assert result.wco == pytest.approx((25.4, 50.8, 12.7))
+
+    def test_recalculated_positions_in_mm(self):
+        """WPos inferred from converted MPos/WCO must be in mm."""
+        default = DeviceState()
+        result = parse_state(
+            "<Idle|MPos:2.0,4.0,1.0|WCO:1.0,2.0,0.5>",
+            default,
+            report_in_inches=True,
+        )
+        assert result.machine_pos == pytest.approx((50.8, 101.6, 25.4))
+        assert result.work_pos == pytest.approx((25.4, 50.8, 12.7))
+
+    def test_no_conversion_when_flag_off(self):
+        default = DeviceState()
+        result = parse_state("<Idle|MPos:1.0,2.0,0.5>", default)
+        assert result.machine_pos == (1.0, 2.0, 0.5)
+
+    def test_default_positions_not_converted(self):
+        default = DeviceState(machine_pos=(None, None, None))
+        result = parse_state(
+            "<Idle|FS:1000,0>", default, report_in_inches=True
+        )
+        assert result.machine_pos == (None, None, None)

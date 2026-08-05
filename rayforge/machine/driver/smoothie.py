@@ -315,7 +315,10 @@ class SmoothieDriver(Driver):
 
     async def move_to(self, pos_x, pos_y) -> None:
         dialect = self.dialect
-        cmd = dialect.move_to.format(x=float(pos_x), y=float(pos_y))
+        cmd = dialect.move_to.format(
+            x=self._to_machine_length(float(pos_x)),
+            y=self._to_machine_length(float(pos_y)),
+        )
         await self._send_and_wait(cmd.encode())
 
     def can_jog(self, axis: Optional[Axis] = None) -> bool:
@@ -331,10 +334,12 @@ class SmoothieDriver(Driver):
             **deltas: Axis names and distances (e.g. x=10.0, y=5.0)
         """
         dialect = self.dialect
-        parts = [dialect.jog.format(speed=speed)]
+        parts = [dialect.jog.format(speed=self._to_machine_speed(speed))]
 
         for axis_name, distance in deltas.items():
-            parts.append(f"{axis_name.upper()}{distance}")
+            parts.append(
+                f"{axis_name.upper()}{self._to_machine_length(distance)}"
+            )
 
         if len(parts) == 1:
             return
@@ -460,7 +465,12 @@ class SmoothieDriver(Driver):
 
         p_num = _wcs_to_p_map[wcs_slot]
         dialect = self.dialect
-        cmd = dialect.set_wcs_offset.format(p_num=p_num, x=x, y=y, z=z)
+        cmd = dialect.set_wcs_offset.format(
+            p_num=p_num,
+            x=self._to_machine_length(x),
+            y=self._to_machine_length(y),
+            z=self._to_machine_length(z),
+        )
         await self._send_and_wait(cmd.encode("utf-8"))
 
     async def read_wcs_offsets(self) -> Dict[str, Pos]:

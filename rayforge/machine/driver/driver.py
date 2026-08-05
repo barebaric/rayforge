@@ -287,6 +287,41 @@ class Driver(ABC):
             "machine_id": self._machine.id if self._machine else None,
         }
 
+    def _to_machine_length(self, mm: float) -> float:
+        """
+        Convert a length in millimeters to the machine's native units.
+
+        Returns the value unchanged for metric machines, and inches
+        rounded to four decimal places for imperial machines. Used when
+        sending dimensional values to the device (e.g. jog distances,
+        WCS offsets).
+        """
+        scale = self._machine.unit_system.scale_from_mm
+        if scale == 1.0:
+            return mm
+        return round(mm * scale, 4)
+
+    def _to_machine_speed(self, mm_per_min: float) -> float:
+        """
+        Convert a speed in mm/min to the machine's native units per minute.
+
+        Returns the value unchanged for metric machines, and inches per
+        minute for imperial machines.
+        """
+        scale = self._machine.unit_system.scale_from_mm
+        if scale == 1.0:
+            return mm_per_min
+        return round(mm_per_min * scale, 4)
+
+    def _from_machine_length(self, value: float) -> float:
+        """
+        Convert a length in the machine's native units back to millimeters.
+
+        Used when interpreting positions reported by the device (e.g.
+        status reports, probe results) which arrive in machine units.
+        """
+        return value / self._machine.unit_system.scale_from_mm
+
     @property
     def resource_uri(self) -> Optional[str]:
         """

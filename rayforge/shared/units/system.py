@@ -1,5 +1,7 @@
 from enum import Enum
 
+from .engine import MM_PER_INCH
+
 
 class UnitSystem(Enum):
     """
@@ -20,3 +22,8 @@ class UnitSystem(Enum):
         """Multiplier to convert a millimeter value into this unit
         system. Metric is ``1.0``; imperial is ``1/25.4``."""
         return 1.0 if self is UnitSystem.METRIC else 1.0 / 25.4
+
+
+def inches_to_mm(value: float) -> float:
+    """Convert a value in inches to millimeters."""
+    return value * MM_PER_INCH

@@ -1,3 +1,3 @@
-from .system import UnitSystem
+from .system import MM_PER_INCH, UnitSystem, inches_to_mm
 
-__all__ = ["UnitSystem"]
+__all__ = ["MM_PER_INCH", "UnitSystem", "inches_to_mm"]

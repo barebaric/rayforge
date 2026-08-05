@@ -1,3 +1,5 @@
+import pytest
+
 from rayforge.core.config import Config
 from rayforge.shared.units.definitions import (
     get_base_unit_for_quantity,
@@ -5,7 +7,7 @@ from rayforge.shared.units.definitions import (
     get_units_for_quantity,
 )
 from rayforge.shared.units.engine import engine
-from rayforge.shared.units.system import UnitSystem
+from rayforge.shared.units.system import UnitSystem, inches_to_mm
 
 
 def test_length_units():
@@ -238,6 +240,13 @@ def test_unit_system_scale_from_mm():
     assert abs(UnitSystem.IMPERIAL.scale_from_mm - 1.0 / 25.4) < 1e-12
     # 10 mm -> inches
     assert abs(10.0 * UnitSystem.IMPERIAL.scale_from_mm - 0.3937) < 1e-4
+
+
+def test_inches_to_mm():
+    """Test that inch values convert to mm."""
+    assert inches_to_mm(1.0) == 25.4
+    assert inches_to_mm(2.0) == pytest.approx(50.8)
+    assert inches_to_mm(0.5) == pytest.approx(12.7)
 
 
 if __name__ == "__main__":

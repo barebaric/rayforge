@@ -1,9 +1,10 @@
 import re
 from typing import Dict, Optional, Tuple
 
-meters_to_inch = 39.37007874
-meters_to_feet = 3.280839895
-kw_to_hp = 1.34102
+METERS_TO_INCH = 39.37007874
+METERS_TO_FEET = 3.280839895
+KW_TO_HP = 1.34102
+MM_PER_INCH = 25.4
 
 
 class ConversionEngine:
@@ -44,9 +45,9 @@ class ConversionEngine:
     }
 
     _base_conversions = {
-        ("m", "in"): meters_to_inch,
-        ("m", "ft"): meters_to_feet,
-        ("kW", "HP"): kw_to_hp,
+        ("m", "in"): METERS_TO_INCH,
+        ("m", "ft"): METERS_TO_FEET,
+        ("kW", "HP"): KW_TO_HP,
         ("min", "s"): 60,
         ("hr", "s"): 3600,
         ("hr", "min"): 60,

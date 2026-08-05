@@ -16,6 +16,7 @@ from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
 from rayforge.machine.transport import SerialTransport, TransportStatus
 from rayforge.machine.transport.grbl import GrblSerialTransport
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
+from rayforge.shared.units.system import UnitSystem
 
 
 @pytest.fixture
@@ -814,3 +815,195 @@ class TestGrblSerialDriver:
 
         job_finished_mock.assert_called_once_with(driver)
         mock_serial_transport.send.assert_any_call(b"\x18")
+
+    @pytest.mark.asyncio
+    async def test_move_to_metric_unchanged(
+        self, connected_driver: GrblSerialDriver, mock_serial_transport
+    ):
+        """Metric machine: move_to sends mm values unchanged."""
+        driver = connected_driver
+        assert driver._machine.unit_system == UnitSystem.METRIC
+
+        cmd_task = asyncio.create_task(driver.move_to(10.5, 20.0))
+        await asyncio.sleep(0.01)
+        mock_serial_transport.send.assert_called_once_with(
+            b"$J=G90 G21 F1500 X10.5 Y20.0\n"
+        )
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
+        await cmd_task
+
+    @pytest.mark.asyncio
+    async def test_move_to_imperial_converts(
+        self, connected_driver: GrblSerialDriver, mock_serial_transport
+    ):
+        """Imperial machine: move_to converts mm values to inches."""
+        driver = connected_driver
+        driver._machine.unit_system = UnitSystem.IMPERIAL
+
+        cmd_task = asyncio.create_task(driver.move_to(25.4, 50.8))
+        await asyncio.sleep(0.01)
+        mock_serial_transport.send.assert_called_once_with(
+            b"$J=G90 G21 F59.0551 X1.0 Y2.0\n"
+        )
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
+        await cmd_task
+
+    @pytest.mark.asyncio
+    async def test_jog_imperial_converts(
+        self, connected_driver: GrblSerialDriver, mock_serial_transport
+    ):
+        """Imperial machine: jog converts speed and deltas to inches."""
+        driver = connected_driver
+        driver._machine.unit_system = UnitSystem.IMPERIAL
+
+        cmd_task = asyncio.create_task(driver.jog(1500, x=25.4, y=50.8))
+        await asyncio.sleep(0.01)
+        mock_serial_transport.send.assert_called_once_with(
+            b"$J=G91 G21 F59.0551 X1.0 Y2.0\n"
+        )
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
+        await cmd_task
+
+    @pytest.mark.asyncio
+    async def test_set_wcs_offset_imperial_converts(
+        self, connected_driver: GrblSerialDriver, mock_serial_transport, mocker
+    ):
+        """Imperial machine: set_wcs_offset converts offsets to inches."""
+        driver = connected_driver
+        driver._machine.unit_system = UnitSystem.IMPERIAL
+
+        mocker.patch(
+            "rayforge.machine.driver.grbl.grbl_serial.gcode_to_p_number",
+            return_value=2,
+        )
+
+        cmd_task = asyncio.create_task(
+            driver.set_wcs_offset("G55", 25.4, 50.8, 12.7)
+        )
+        await asyncio.sleep(0.01)
+        mock_serial_transport.send.assert_called_once_with(
+            b"G10 L2 P2 X1.0 Y2.0 Z0.5\n"
+        )
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
+        await cmd_task
+
+    @pytest.mark.asyncio
+    async def test_probe_cycle_imperial_converts(
+        self, connected_driver: GrblSerialDriver, mock_serial_transport
+    ):
+        """Imperial machine: probe travel and feed rate are in inches."""
+        driver = connected_driver
+        driver._machine.unit_system = UnitSystem.IMPERIAL
+
+        cmd_task = asyncio.create_task(
+            driver.run_probe_cycle(Axis.Z, -25.4, 2540)
+        )
+        await asyncio.sleep(0.01)
+        mock_serial_transport.send.assert_called_once_with(
+            b"G38.2 Z-1.0 F100.0\n"
+        )
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
+        await cmd_task
+
+    @pytest.mark.asyncio
+    async def test_probe_cycle_result_converted_to_mm(
+        self, connected_driver: GrblSerialDriver, mock_serial_transport
+    ):
+        """Probe results reported in inches are converted back to mm."""
+        driver = connected_driver
+        driver._machine.unit_system = UnitSystem.IMPERIAL
+        driver._report_in_inches = True
+
+        response_data = b"[PRB:1.000,2.000,-0.500:1]\r\nok\r\n"
+        cmd_task = asyncio.create_task(driver.run_probe_cycle(Axis.Z, -1, 100))
+        await asyncio.sleep(0.01)
+        driver.on_serial_data_received(mock_serial_transport, response_data)
+
+        result = await cmd_task
+        assert result == pytest.approx((25.4, 50.8, -12.7))
+
+    @pytest.mark.asyncio
+    async def test_detect_unit_system_sets_report_in_inches(
+        self, driver: GrblSerialDriver, mocker
+    ):
+        """detect_unit_system caches the $13 reporting flag."""
+        mocker.patch.object(
+            driver,
+            "execute_interactive_command",
+            new=AsyncMock(return_value=["$0=10", "$13=1", "$20=0"]),
+        )
+
+        detected = await driver.detect_unit_system()
+        assert detected == UnitSystem.IMPERIAL
+        assert driver._report_in_inches is True
+
+    @pytest.mark.asyncio
+    async def test_detect_unit_system_metric_flag(
+        self, driver: GrblSerialDriver, mocker
+    ):
+        """detect_unit_system clears the flag when $13 is zero."""
+        mocker.patch.object(
+            driver,
+            "execute_interactive_command",
+            new=AsyncMock(return_value=["$13=0"]),
+        )
+
+        detected = await driver.detect_unit_system()
+        assert detected == UnitSystem.METRIC
+        assert driver._report_in_inches is False
+
+    @pytest.mark.asyncio
+    async def test_read_settings_sets_report_in_inches(
+        self, driver: GrblSerialDriver, mocker
+    ):
+        """read_settings caches the $13 reporting flag."""
+        mocker.patch.object(
+            driver,
+            "execute_interactive_command",
+            new=AsyncMock(return_value=["$13=1"]),
+        )
+
+        await driver.read_settings()
+        assert driver._report_in_inches is True
+
+    @pytest.mark.asyncio
+    async def test_read_wcs_offsets_converts_when_report_inches(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+    ):
+        """WCS offsets reported in inches are converted back to mm."""
+        driver = connected_driver
+        driver._report_in_inches = True
+
+        response_data = b"[G54:1.000,2.000,3.000]\r\nok\r\n"
+        cmd_task = asyncio.create_task(driver.read_wcs_offsets())
+        await asyncio.sleep(0.01)
+        mock_serial_transport.send.assert_called_once_with(b"$#\n")
+        driver.on_serial_data_received(mock_serial_transport, response_data)
+
+        offsets = await cmd_task
+        assert offsets["G54"] == pytest.approx((25.4, 50.8, 76.2))
+
+    @pytest.mark.asyncio
+    async def test_status_report_converted_when_report_inches(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+    ):
+        """Status positions reported in inches are converted back to mm."""
+        driver = connected_driver
+        driver._report_in_inches = True
+
+        report = b"<Idle|MPos:1.0,2.0,0.5|WCO:0.5,1.0,0.25>\r\n"
+        driver.on_serial_data_received(mock_serial_transport, report)
+        await asyncio.sleep(0)
+
+        assert driver.state.machine_pos == pytest.approx((25.4, 50.8, 12.7))
+        assert driver.state.work_pos == pytest.approx((12.7, 25.4, 6.35))
+
+    @pytest.mark.asyncio
+    async def test_report_in_inches_defaults_to_false(
+        self, driver: GrblSerialDriver
+    ):
+        assert driver._report_in_inches is False
