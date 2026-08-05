@@ -58,13 +58,13 @@ class SpeedRowAdapter(RowAdapter):
         row = Adw.SpinRow(
             adjustment=adj,
             title=escape_title(var.label),
-            subtitle=_("Max: {max_speed}"),
         )
         ensure_spinrow_min_width(row)
         helper = UnitSpinRowHelper(
             spin_row=row,
             quantity="speed",
             max_value_in_base=max_speed,
+            subtitle_format=_("Max: {max} ({unit})"),
         )
         return row, cls(row, helper)
 

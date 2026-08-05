@@ -76,13 +76,15 @@ class OverscanSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             adjustment=distance_adj,
             digits=2,
         )
-        distance_row.set_subtitle(_("Manual distance setting"))
         self.add(distance_row)
         self.distance_row = distance_row  # Store reference for later access
 
         # Add unit conversion helper for length
         self.distance_helper = UnitSpinRowHelper(
-            spin_row=distance_row, quantity="length", max_value_in_base=50.0
+            spin_row=distance_row,
+            quantity="length",
+            max_value_in_base=50.0,
+            subtitle_format=_("Manual distance setting ({unit})"),
         )
         self.distance_helper.set_value_in_base_units(transformer.distance_mm)
 

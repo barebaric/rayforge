@@ -76,7 +76,7 @@ class StockPropertiesDialog(PatchedDialogWindow):
         self.thickness_selector = UnitSelectorSpinRow(
             quantity="length",
             title=_("Thickness"),
-            subtitle=_("Material thickness"),
+            subtitle_format=_("Material thickness ({unit})"),
             max_value_in_base=999,
         )
         if self.stock_item.thickness is not None:

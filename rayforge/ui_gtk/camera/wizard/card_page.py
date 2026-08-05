@@ -104,7 +104,6 @@ class CardPage(CameraWizardPage):
 
         width_spin = Adw.SpinRow(
             title=_("Width"),
-            subtitle=_("Card width"),
             adjustment=Gtk.Adjustment(
                 lower=20.0,
                 upper=300.0,
@@ -116,6 +115,7 @@ class CardPage(CameraWizardPage):
             spin_row=width_spin,
             quantity="length",
             max_value_in_base=300.0,
+            subtitle_format=_("Card width ({unit})"),
         )
         self._width_helper.set_value_in_base_units(self._card_width)
         self._width_helper.changed.connect(self._on_size_changed)
@@ -123,7 +123,6 @@ class CardPage(CameraWizardPage):
 
         height_spin = Adw.SpinRow(
             title=_("Height"),
-            subtitle=_("Card height"),
             adjustment=Gtk.Adjustment(
                 lower=20.0,
                 upper=300.0,
@@ -135,6 +134,7 @@ class CardPage(CameraWizardPage):
             spin_row=height_spin,
             quantity="length",
             max_value_in_base=300.0,
+            subtitle_format=_("Card height ({unit})"),
         )
         self._height_helper.set_value_in_base_units(self._card_height)
         self._height_helper.changed.connect(self._on_size_changed)
