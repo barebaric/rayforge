@@ -133,14 +133,6 @@ class ImageMetadataDialog(PatchedDialogWindow):
         row.add_suffix(value_label)
         group.add(row)
 
-        # Add Vector Config row if applicable
-        if import_source.vector_config:
-            row = Adw.ActionRow()
-            row.set_title("Vector Config")
-            value_label = Gtk.Label(label="Configured")
-            row.add_suffix(value_label)
-            group.add(row)
-
         self.page.add(group)
 
     def _create_metadata_section(self, items: List[Tuple[str, Any]]):
@@ -232,8 +224,6 @@ class ImageMetadataDialog(PatchedDialogWindow):
         text_parts.append(
             f"Renderer: {self.import_source.renderer.__class__.__name__}"
         )
-        if self.import_source.vector_config:
-            text_parts.append("Vector Config: Configured")
         text_parts.append("")
 
         if metadata_info:
