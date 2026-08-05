@@ -25,6 +25,7 @@ from ....core.varset import (
 )
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
+from ....shared.units.system import UnitSystem
 from ...transport import SerialTransport, TransportStatus
 from ...transport.serial import SerialPortPermissionError
 from ..driver import (
@@ -40,6 +41,7 @@ from ..driver import (
 )
 from .marlin_probe import probe_marlin_device
 from .marlin_util import (
+    detect_unit_system_from_m149,
     gcode_to_p_number,
     is_boot_message,
     is_error_response,
@@ -65,6 +67,7 @@ class MarlinSerialDriver(Driver):
     reports_granular_progress = True
     maturity = DriverMaturity.EXPERIMENTAL
     supports_probing = True
+    supports_unit_detection = True
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
@@ -574,6 +577,18 @@ class MarlinSerialDriver(Driver):
         raise NotImplementedError(
             "Device settings not implemented for this driver"
         )
+
+    async def detect_unit_system(self) -> Optional[UnitSystem]:
+        """
+        Queries the device's active linear unit via ``M149`` and
+        maps the response to a ``UnitSystem``.
+        """
+        try:
+            response_lines = await self.execute_interactive_command("M149")
+        except (ConnectionError, asyncio.TimeoutError) as e:
+            logger.warning(f"Unit system detection failed: {e}")
+            return None
+        return detect_unit_system_from_m149(response_lines)
 
     async def write_setting(self, key: str, value: Any) -> None:
         raise NotImplementedError(

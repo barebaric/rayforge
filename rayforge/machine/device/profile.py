@@ -18,6 +18,7 @@ from ...machine.models.machine import Machine, Origin
 from ...machine.models.macro import Macro, MacroTrigger
 from ...machine.models.rotary_module import RotaryModule
 from ...machine.models.zone import Zone
+from ...shared.units.system import UnitSystem
 
 if TYPE_CHECKING:
     from ...context import RayforgeContext
@@ -90,6 +91,15 @@ def parse_machine_config(data: Dict, manifest_path: Path) -> "MachineConfig":
                     f"Invalid origin '{raw['origin']}' in "
                     f"{manifest_path}. Must be one of: "
                     f"{_VALID_ORIGINS}"
+                )
+        elif key == "unit_system":
+            try:
+                value = UnitSystem(value)
+            except ValueError:
+                raise ValueError(
+                    f"Invalid unit_system '{raw['unit_system']}' in "
+                    f"{manifest_path}. Must be one of: "
+                    f"{sorted(u.value for u in UnitSystem)}"
                 )
         elif key in _TUPLE_FIELDS:
             value = tuple(value)
@@ -218,6 +228,7 @@ class MachineConfig:
     acceleration: Optional[int] = None
     single_axis_homing_enabled: Optional[bool] = None
     rotary_enabled_default: Optional[bool] = None
+    unit_system: Optional[UnitSystem] = None
     heads: Optional[List[Dict[str, Any]]] = None
     capabilities: Optional[List[str]] = None
     hookmacros: Optional[List[Dict[str, Any]]] = None
@@ -233,6 +244,8 @@ class MachineConfig:
             if isinstance(value, tuple):
                 result[key] = list(value)
             elif isinstance(value, Origin):
+                result[key] = value.value
+            elif isinstance(value, UnitSystem):
                 result[key] = value.value
             else:
                 result[key] = value
@@ -297,6 +310,7 @@ class MachineConfig:
             acceleration=machine.acceleration,
             single_axis_homing_enabled=(machine.single_axis_homing_enabled),
             rotary_enabled_default=machine.rotary_enabled_default,
+            unit_system=machine.unit_system,
             heads=heads,
             capabilities=(
                 [
@@ -449,6 +463,8 @@ class DeviceProfile:
             m.single_axis_homing_enabled = cfg.single_axis_homing_enabled
         if cfg.rotary_enabled_default is not None:
             m.rotary_enabled_default = cfg.rotary_enabled_default
+        if cfg.unit_system is not None:
+            m.unit_system = cfg.unit_system
 
         if cfg.hookmacros is not None:
             for s_data in cfg.hookmacros:

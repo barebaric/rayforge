@@ -15,8 +15,10 @@ from typing import (
 
 from blinker import Signal
 
+from ....shared.units.system import UnitSystem
 from ...transport import TransportStatus
 from .marlin_util import (
+    detect_unit_system_from_m149,
     extract_marlin_device_name,
     parse_m115_firmware_info,
     parse_m211_endstops,
@@ -90,6 +92,7 @@ async def probe_marlin_device(
         m115_lines = await driver.execute_interactive_command("M115")
         m211_lines = await driver.execute_interactive_command("M211")
         m503_lines = await driver.execute_interactive_command("M503")
+        m149_lines = await driver.execute_interactive_command("M149")
     finally:
         driver.connection_status_changed.disconnect(_on_status)
         await driver.cleanup()
@@ -98,7 +101,7 @@ async def probe_marlin_device(
         )
 
     profile, warnings = build_marlin_profile(
-        m115_lines, m211_lines, m503_lines, driver.boot_lines
+        m115_lines, m211_lines, m503_lines, m149_lines, driver.boot_lines
     )
     profile.machine_config.driver = driver_cls.__name__
     profile.machine_config.driver_args = kwargs
@@ -109,11 +112,12 @@ def build_marlin_profile(
     m115_lines: List[str],
     m211_lines: List[str],
     m503_lines: List[str],
+    m149_lines: List[str],
     boot_lines: Optional[List[str]] = None,
 ) -> Tuple["DeviceProfile", List[str]]:
     """
-    Build a ``DeviceProfile`` from raw Marlin M115, M211, and M503
-    response lines.
+    Build a ``DeviceProfile`` from raw Marlin M115, M211, M503, and
+    M149 response lines.
 
     This is a pure data-transformation function with no I/O.
     The caller is responsible for communicating with the device
@@ -166,6 +170,11 @@ def build_marlin_profile(
     if accel_val is not None:
         accel = int(accel_val)
 
+    detected = detect_unit_system_from_m149(m149_lines)
+    detected_unit_system = (
+        detected if detected is not None else UnitSystem.METRIC
+    )
+
     return (
         DeviceProfile(
             meta=DeviceMeta(
@@ -181,6 +190,7 @@ def build_marlin_profile(
                 home_on_start=None,
                 single_axis_homing_enabled=True,
                 supports_arcs=True,
+                unit_system=detected_unit_system,
                 heads=None,
             ),
             dialect_config={},

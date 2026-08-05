@@ -14,6 +14,7 @@ from rayforge.machine.driver.grbl.grbl_util import (
     parse_ver,
 )
 from rayforge.machine.transport import TransportStatus
+from rayforge.shared.units.system import UnitSystem
 
 
 class TestParseGrblSettings:
@@ -196,6 +197,15 @@ class TestBuildGrblProfile:
         profile, warnings = build_grbl_profile([], ["$32=1.0", "$13=1.0"])
         assert len(warnings) == 1
         assert "inches" in warnings[0].lower()
+        assert profile.machine_config.unit_system == UnitSystem.IMPERIAL
+
+    def test_unit_system_defaults_to_metric(self):
+        profile, _ = build_grbl_profile([], [])
+        assert profile.machine_config.unit_system == UnitSystem.METRIC
+
+    def test_unit_system_metric_when_report_inches_zero(self):
+        profile, _ = build_grbl_profile([], ["$13=0.0"])
+        assert profile.machine_config.unit_system == UnitSystem.METRIC
 
     def test_different_speeds_per_axis(self):
         profile, warnings = build_grbl_profile(

@@ -6,7 +6,11 @@ from gettext import gettext as _
 from typing import Callable, Dict, List, Optional, Tuple, cast
 
 from ....core.varset import Var, VarSet
+from ....shared.units.system import UnitSystem
 from ..driver import DeviceError, DeviceState, DeviceStatus, Pos
+
+# GRBL $13 setting key: "Report in inches" (boolean).
+GRBL_REPORT_INCHES_KEY = "13"
 
 _gcode_comment_re = re.compile(r"\([^)]*\)")
 
@@ -554,6 +558,26 @@ def parse_grbl_settings(lines: List[str]) -> Dict[str, float]:
         if match:
             settings[match.group(1)] = float(match.group(2))
     return settings
+
+
+def detect_unit_system_from_settings(
+    settings_lines: List[str],
+) -> Optional[UnitSystem]:
+    """
+    Inspect GRBL ``$$`` response lines and infer the device's unit
+    system from the ``$13`` (Report in inches) setting.
+
+    Returns ``UnitSystem.IMPERIAL`` when ``$13`` is non-zero,
+    ``UnitSystem.METRIC`` when ``$13`` is zero, or ``None`` when the
+    ``$13`` setting is absent from the response.
+    """
+    settings = parse_grbl_settings(settings_lines)
+    report_inches = settings.get(GRBL_REPORT_INCHES_KEY)
+    if report_inches is None:
+        return None
+    if int(report_inches):
+        return UnitSystem.IMPERIAL
+    return UnitSystem.METRIC
 
 
 def parse_msg(line: str) -> Optional[Tuple[str, str]]:

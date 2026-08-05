@@ -3,6 +3,8 @@
 import re
 from typing import Dict, List, Optional, Tuple
 
+from ....shared.units.system import UnitSystem
+
 MARLIN_HANDSHAKE_TIMEOUT = 5.0
 MARLIN_COMMAND_TIMEOUT = 30.0
 MARLIN_RECONNECT_DELAY = 5.0
@@ -20,6 +22,10 @@ m203_feedrate_re = re.compile(
     r"echo:\s*M203\s+"
     r"X([+-]?\d+\.?\d*)\s+"
     r"Y([+-]?\d+\.?\d*)"
+)
+m149_units_re = re.compile(
+    r"M149\s+Units\s+in\s+(inches|inch|in|mm|millimeters|millimetres)",
+    re.IGNORECASE,
 )
 m204_accel_re = re.compile(r"echo:\s*M204\s+S([+-]?\d+\.?\d*)")
 m211_max_re = re.compile(
@@ -178,6 +184,30 @@ def parse_m503_settings(
         if match:
             settings["acceleration"] = float(match.group(1))
     return settings
+
+
+def detect_unit_system_from_m149(
+    response_lines: List[str],
+) -> Optional[UnitSystem]:
+    """
+    Inspect Marlin ``M149`` response lines and infer the device's
+    unit system.
+
+    Marlin reports the active linear unit with lines such as
+    ``echo: M149 Units in inches`` or ``echo: M149 Units in mm``.
+
+    Returns ``UnitSystem.IMPERIAL`` when the unit is inches,
+    ``UnitSystem.METRIC`` when it is millimeters, or ``None`` when
+    no recognizable ``M149`` line is present.
+    """
+    for line in response_lines:
+        match = m149_units_re.search(line)
+        if match:
+            unit = match.group(1).lower()
+            if unit in ("inches", "inch", "in"):
+                return UnitSystem.IMPERIAL
+            return UnitSystem.METRIC
+    return None
 
 
 def extract_marlin_device_name(

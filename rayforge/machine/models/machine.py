@@ -29,6 +29,7 @@ from ...core.layer import Layer
 from ...core.model import Model
 from ...pipeline.coordspace import MachineSpace
 from ...shared.tasker import task_mgr
+from ...shared.units.system import UnitSystem
 from ..assembly import Assembly
 from ..driver import get_driver_cls
 from ..driver.driver import DeviceState, Pos, PWMParams, pwm_varset
@@ -122,6 +123,7 @@ class Machine:
         self.supports_arcs: bool = True
         self.supports_curves: bool = False
         self.arc_tolerance: float = 0.03
+        self.unit_system: UnitSystem = UnitSystem.METRIC
         self.hookmacros: Dict[MacroTrigger, Macro] = {}
         self.macros: Dict[str, Macro] = {}
         self.heads: List[Head] = []
@@ -322,6 +324,16 @@ class Machine:
 
     def set_precheck_error(self, error: Optional[str]):
         self.precheck_error = error
+
+    def set_unit_system(self, unit_system: UnitSystem) -> None:
+        """
+        Updates the machine's unit system and emits ``changed`` when
+        it actually changed. Set by the probe wizard during device
+        setup or by the user from the machine settings.
+        """
+        if self.unit_system != unit_system:
+            self.unit_system = unit_system
+            self.changed.send(self)
 
     def update_wcs_offset(self, slot: str, offset: Point3D):
         cs = self.coordinate_systems.get(slot)
@@ -1502,6 +1514,9 @@ class Machine:
                 "gcode": {
                     "gcode_precision": self.gcode_precision,
                 },
+                "units": {
+                    "unit_system": self.unit_system.value,
+                },
                 "machine_hours": self.machine_hours.to_dict(),
             }
         }
@@ -1748,6 +1763,17 @@ class Machine:
         ma.supports_arcs = ma_data.get("supports_arcs", ma.supports_arcs)
         ma.supports_curves = ma_data.get("supports_curves", ma.supports_curves)
         ma.arc_tolerance = ma_data.get("arc_tolerance", ma.arc_tolerance)
+
+        units = ma_data.get("units", {})
+        unit_system_value = units.get("unit_system", "metric")
+        try:
+            ma.unit_system = UnitSystem(unit_system_value)
+        except ValueError:
+            logger.warning(
+                f"Unknown unit_system '{unit_system_value}' in "
+                f"machine config. Defaulting to metric."
+            )
+            ma.unit_system = UnitSystem.METRIC
 
         hours_data = ma_data.get("machine_hours", {})
         ma.machine_hours = MachineHours.from_dict(hours_data)

@@ -552,6 +552,7 @@ class UnifiedWizard(PatchedDialogWindow):
             "single_axis_homing_enabled",
             "home_on_start",
             "heads",
+            "unit_system",
         ):
             value = getattr(src, field_name, None)
             if value is not None:
@@ -645,6 +646,7 @@ def _clone_machine_config(src) -> Any:
         "acceleration",
         "single_axis_homing_enabled",
         "rotary_enabled_default",
+        "unit_system",
         "heads",
         "capabilities",
         "hookmacros",

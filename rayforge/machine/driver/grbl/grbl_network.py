@@ -23,6 +23,7 @@ from ....core.varset import ChoiceVar, HostnameVar, PortVar, Var, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
+from ....shared.units.system import UnitSystem
 from ...transport import HttpTransport, TransportStatus, WebSocketTransport
 from ..driver import (
     Axis,
@@ -37,6 +38,7 @@ from .grbl_probe import probe_grbl_device
 from .grbl_util import (
     CommandRequest,
     command_url,
+    detect_unit_system_from_settings,
     eeprom_info_url,
     execute_url,
     fw_info_url,
@@ -74,6 +76,7 @@ class GrblNetworkDriver(Driver):
     subtitle = _("Connect to a GRBL-compatible device over the network")
     supports_settings = True
     supports_probing = True
+    supports_unit_detection = True
     reports_granular_progress = False
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
@@ -683,6 +686,18 @@ class GrblNetworkDriver(Driver):
 
     def get_setting_vars(self) -> List["VarSet"]:
         return get_grbl_setting_varsets()
+
+    async def detect_unit_system(self) -> Optional[UnitSystem]:
+        """
+        Queries the device's ``$$`` settings and infers the unit
+        system from the ``$13`` (Report in inches) flag.
+        """
+        try:
+            response_lines = await self.execute_interactive_command("$$")
+        except (ConnectionError, asyncio.TimeoutError) as e:
+            logger.warning(f"Unit system detection failed: {e}")
+            return None
+        return detect_unit_system_from_settings(response_lines)
 
     async def read_settings(self) -> None:
         response_lines = await self.execute_interactive_command("$$")

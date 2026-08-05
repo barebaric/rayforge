@@ -15,6 +15,7 @@ from typing import (
 
 from blinker import Signal
 
+from ....shared.units.system import UnitSystem
 from ...transport import TransportStatus
 from .grbl_util import (
     extract_device_name,
@@ -189,6 +190,10 @@ def build_grbl_profile(
             )
         )
 
+    detected_unit_system = UnitSystem.METRIC
+    if report_inches is not None and int(report_inches):
+        detected_unit_system = UnitSystem.IMPERIAL
+
     if laser_mode is not None and not int(laser_mode):
         warnings.append(
             _(
@@ -212,6 +217,7 @@ def build_grbl_profile(
                 acceleration=accel,
                 home_on_start=home_on_start,
                 single_axis_homing_enabled=(single_axis_homing or None),
+                unit_system=detected_unit_system,
                 heads=heads,
             ),
             dialect_config={},
