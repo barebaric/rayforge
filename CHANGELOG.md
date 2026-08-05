@@ -5,6 +5,33 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.0-beta3
+
+### Added
+
+- Unit system support: metric/imperial selection in the machine
+  settings, with automatic unit-system detection for GRBL (from `$13`)
+  and Marlin (via `M149`) drivers and in the configuration wizard
+- Length, speed, and acceleration inputs are now unit-aware: they
+  convert between the configured display unit and base units, update
+  live when the display unit changes, and show the unit as a tooltip
+- Generic service registry and settings-page hooks so addons can
+  publish key-resolved services and contribute their own pages to the
+  Settings dialog
+
+### Changed
+
+- Addon manifest `requires` are now enforced at load time with a
+  topological pass so dependencies load before dependents
+- Bump addon API version to 18
+- Upgrade raygeo to 1.32.1
+
+### Fixed
+
+- Raster engraving could be rendered up to one pixel smaller than the
+  workpiece size due to pixel-count truncation (raygeo 1.32.1), which
+  could be larger if the workpiece is scaled.
+
 ## 1.9.0-beta2
 
 ### Added

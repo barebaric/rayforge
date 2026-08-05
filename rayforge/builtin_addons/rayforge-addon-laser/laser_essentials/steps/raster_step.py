@@ -461,15 +461,20 @@ def _build_raster_part(
     px_per_mm_x = 1.0 / (step.sample_interval_mm or spot_x)
     px_per_mm_y = 1.0 / spot_y
 
-    target_w = int(size[0] * px_per_mm_x)
-    target_h = int(size[1] * px_per_mm_y)
+    target_w = max(1, int(size[0] * px_per_mm_x))
+    target_h = max(1, int(size[1] * px_per_mm_y))
     num_pixels = target_w * target_h
     if num_pixels > MAX_RASTER_RENDER_PIXELS:
         scale = (MAX_RASTER_RENDER_PIXELS / num_pixels) ** 0.5
         target_w = max(1, int(target_w * scale))
         target_h = max(1, int(target_h * scale))
-        px_per_mm_x = target_w / size[0]
-        px_per_mm_y = target_h / size[1]
+
+    # Recompute pixels-per-mm from the actual integer target dimensions so
+    # that the rendered image pixels exactly cover the workpiece size.
+    # Without this, the int() truncation above leaves the image slightly
+    # smaller than size_mm, shrinking the raster by up to one pixel.
+    px_per_mm_x = target_w / size[0]
+    px_per_mm_y = target_h / size[1]
 
     surface = workpiece.render_to_pixels(target_w, target_h)
     if surface is None:
