@@ -160,7 +160,7 @@ def build_part_vector(
 
     1. **Vector source** — if the workpiece has boundaries and
        ``override_threshold`` is False, use ``workpiece.to_part()``.
-       When ``normalize_windings`` is True (e.g. WavefrontProducer),
+       When ``normalize_windings`` is True (e.g. WavefrontStep),
        the geometry is re-scaled manually so that
        ``normalize_winding_orders()`` can be applied before
        constructing the Part.
@@ -210,6 +210,9 @@ def build_part_vector(
         if geo is not None and not geo.is_empty():
             if normalize_windings:
                 geo.normalize_winding_orders()
+                return Part.from_geometry_multi_face(
+                    geometry=geo, size_mm=workpiece.size
+                )
             return Part(geometry=geo, size_mm=workpiece.size)
 
     return None

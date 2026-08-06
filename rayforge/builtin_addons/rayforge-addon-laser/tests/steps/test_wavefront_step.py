@@ -1,3 +1,6 @@
+from unittest.mock import patch
+
+import cairo
 from laser_essentials.steps import WavefrontStep
 
 from rayforge.core.workpiece import WorkPiece
@@ -131,3 +134,74 @@ class TestWavefrontComputePayload:
         assert getattr(out, "warnings", None) == []
         assert out.ops.len() > 0
         assert any(out.ops.is_cutting(i) for i in range(out.ops.len()))
+
+    def test_vectorless_workpiece_uses_raster_fallback(self, machine):
+        """A workpiece without vector boundaries falls back to tracing
+        its rendered surface into geometry for the wavefront assembler."""
+
+        def _render(width, height):
+            surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+            ctx = cairo.Context(surface)
+            ctx.set_source_rgb(1, 1, 1)
+            ctx.paint()
+            ctx.set_source_rgb(0, 0, 0)
+            ctx.rectangle(
+                int(width * 0.1),
+                int(height * 0.1),
+                int(width * 0.8),
+                int(height * 0.8),
+            )
+            ctx.fill()
+            return surface
+
+        step = WavefrontStep(name="wf")
+        step.step_over_mm = 0.5
+        wp = WorkPiece(name="wp")
+        wp.set_size(10.0, 10.0)
+        assert wp.boundaries is None
+
+        with patch.object(WorkPiece, "render_to_pixels", side_effect=_render):
+            part, payload = step.build_compute_payload(machine, wp)
+
+        assert part is not None
+        assert part.has_geometry()
+        assert part.face_ids == [""]
+
+    def test_from_dict_migrates_legacy_producer_params(self):
+        """Projects saved before the raygeo-pipeline refactor stored the
+        step-over inside ``opsproducer_dict.params``.  Loading must
+        restore it so the fill density does not fall back to the laser
+        spot size."""
+        data = WavefrontStep(name="wf").to_dict()
+        # The legacy format has no top-level step-over keys.
+        del data["step_over_mm"]
+        del data["offset_mm"]
+        del data["area_tolerance"]
+        data["opsproducer_dict"] = {
+            "type": "WavefrontProducer",
+            "params": {
+                "step_over_mm": 0.3,
+                "offset_mm": 0.25,
+                "area_tolerance": 0.02,
+            },
+        }
+
+        step = WavefrontStep.from_dict(data)
+
+        assert step.step_over_mm == 0.3
+        assert step.offset_mm == 0.25
+        assert step.area_tolerance == 0.02
+
+    def test_from_dict_prefers_current_format(self):
+        """When the step-over is present at the top level (current
+        format), it wins over any legacy producer params."""
+        data = WavefrontStep(name="wf").to_dict()
+        data["step_over_mm"] = 0.7
+        data["opsproducer_dict"] = {
+            "type": "WavefrontProducer",
+            "params": {"step_over_mm": 0.3},
+        }
+
+        step = WavefrontStep.from_dict(data)
+
+        assert step.step_over_mm == 0.7

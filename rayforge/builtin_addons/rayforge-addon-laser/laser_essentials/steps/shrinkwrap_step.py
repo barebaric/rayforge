@@ -12,6 +12,7 @@ from raygeo.ops.part.image_source import WholeImageSource
 
 from rayforge.core.capability import MachineCapability, StepCapability
 from rayforge.core.cut_side import CutSide
+from rayforge.core.step import legacy_producer_params
 from rayforge.core.varset import (
     FloatVar,
     LabeledChoiceVar,
@@ -144,14 +145,20 @@ class ShrinkWrapStep(LaserStep):
     @classmethod
     def from_dict(cls, data: dict) -> "ShrinkWrapStep":
         step = cast("ShrinkWrapStep", super().from_dict(data))
-        step.gravity = data.get("gravity", 0.0)
+        legacy = legacy_producer_params(data)
+        step.gravity = data.get("gravity", legacy.get("gravity", 0.0))
         if "offset_mm" in data:
             step.offset_mm = data["offset_mm"]
         else:
-            step.offset_mm = data.get("path_offset_mm", 0.0) + (
-                data.get("kerf_mm", 0.0) / 2.0
+            path_offset = data.get(
+                "path_offset_mm",
+                legacy.get("path_offset_mm", legacy.get("offset_mm", 0.0)),
             )
-        step.cut_side = data.get("cut_side", "CENTERLINE")
+            step.offset_mm = path_offset + (data.get("kerf_mm", 0.0) / 2.0)
+        step.cut_side = data.get(
+            "cut_side",
+            legacy.get("cut_side", legacy.get("kerf_mode", "CENTERLINE")),
+        )
         return step
 
     @classmethod

@@ -20,6 +20,7 @@ from raygeo.ops.part import Part
 from raygeo.ops.part.image_source import WholeImageSource
 
 from rayforge.core.capability import MachineCapability, StepCapability
+from rayforge.core.step import legacy_producer_params
 from rayforge.core.varset import (
     BoolVar,
     FloatVar,
@@ -293,39 +294,90 @@ class EngraveStep(LaserStep):
     @classmethod
     def from_dict(cls, data: dict) -> "EngraveStep":
         step = cast("EngraveStep", super().from_dict(data))
-        step.scan_angle = data.get("scan_angle", 0.0)
-        step.depth_mode = data.get("depth_mode", "POWER_MODULATION")
-        step.invert = data.get("invert", False)
-        step.auto_levels = data.get("auto_levels", True)
-        step.black_point = data.get("black_point", 0)
-        step.white_point = data.get("white_point", 255)
-        step.threshold = data.get("threshold", 128)
-        step.line_interval_mm = data.get("line_interval_mm", None)
-        step.sample_interval_mm = data.get("sample_interval_mm", None)
+        legacy = legacy_producer_params(data)
+        # Legacy type names implied a depth mode when none was saved.
+        old_type = data.get("opsproducer_dict", {}).get("type")
+        if old_type == "Rasterizer" and "depth_mode" not in legacy:
+            legacy["depth_mode"] = "CONSTANT_POWER"
+            if "direction_degrees" in legacy:
+                legacy["scan_angle"] = legacy.pop("direction_degrees")
+        elif old_type == "DitherRasterizer":
+            legacy["depth_mode"] = "DITHER"
+        step.scan_angle = data.get("scan_angle", legacy.get("scan_angle", 0.0))
+        step.depth_mode = data.get(
+            "depth_mode", legacy.get("depth_mode", "POWER_MODULATION")
+        )
+        step.invert = data.get("invert", legacy.get("invert", False))
+        step.auto_levels = data.get(
+            "auto_levels", legacy.get("auto_levels", True)
+        )
+        step.black_point = data.get(
+            "black_point", legacy.get("black_point", 0)
+        )
+        step.white_point = data.get(
+            "white_point", legacy.get("white_point", 255)
+        )
+        step.threshold = data.get("threshold", legacy.get("threshold", 128))
+        step.line_interval_mm = data.get(
+            "line_interval_mm", legacy.get("line_interval_mm", None)
+        )
+        step.sample_interval_mm = data.get(
+            "sample_interval_mm", legacy.get("sample_interval_mm", None)
+        )
         step.dot_width_correction_mm = data.get(
             "dot_width_correction_mm", None
         )
         step.min_power_level = data.get(
-            "min_power_level", data.get("min_power", 0.0)
+            "min_power_level",
+            legacy.get("min_power", data.get("min_power", 0.0)),
         )
         step.max_power_level = data.get(
-            "max_power_level", data.get("max_power", 1.0)
+            "max_power_level",
+            legacy.get("max_power", data.get("max_power", 1.0)),
         )
         if "max_power_level" not in data:
             # Legacy engrave files stored the raster ceiling under the
             # max_power key; don't let it leak into the hardware max slot.
             step.max_power = 1000
-        step.num_power_levels = data.get("num_power_levels", 25)
-        step.offset_x_mm = data.get("offset_x_mm", 0.0)
-        step.offset_y_mm = data.get("offset_y_mm", 0.0)
-        step.scan_mode = data.get("scan_mode", "SEGMENTED")
-        step.cross_hatch = data.get("cross_hatch", False)
-        step.num_depth_levels = data.get("num_depth_levels", 5)
-        step.z_step_down = data.get("z_step_down", 0.0)
-        step.angle_increment = data.get("angle_increment", 0.0)
-        dither_val = data.get("dither_algorithm")
+        step.num_power_levels = int(
+            data.get("num_power_levels", legacy.get("num_power_levels", 25))
+        )
+        step.offset_x_mm = data.get(
+            "offset_x_mm", legacy.get("offset_x_mm", 0.0)
+        )
+        step.offset_y_mm = data.get(
+            "offset_y_mm", legacy.get("offset_y_mm", 0.0)
+        )
+        scan_mode_str = data.get(
+            "scan_mode", legacy.get("scan_mode", "SEGMENTED")
+        )
+        scan_mode_map = {
+            "SEGMENTED": "SEGMENTED",
+            "FULL_SWEEP": "FULL_SWEEP",
+            "Segmented": "SEGMENTED",
+            "FullSweep": "FULL_SWEEP",
+        }
+        step.scan_mode = scan_mode_map.get(scan_mode_str, "SEGMENTED")
+        step.cross_hatch = data.get(
+            "cross_hatch", legacy.get("cross_hatch", False)
+        )
+        step.num_depth_levels = int(
+            data.get("num_depth_levels", legacy.get("num_depth_levels", 5))
+        )
+        step.z_step_down = data.get(
+            "z_step_down", legacy.get("z_step_down", 0.0)
+        )
+        step.angle_increment = data.get(
+            "angle_increment", legacy.get("angle_increment", 0.0)
+        )
+        dither_val = data.get(
+            "dither_algorithm", legacy.get("dither_algorithm")
+        )
         if dither_val is not None:
-            step.dither_algorithm = DitherAlgorithm(dither_val)
+            try:
+                step.dither_algorithm = DitherAlgorithm(dither_val)
+            except ValueError:
+                step.dither_algorithm = DitherAlgorithm.FLOYD_STEINBERG
         step.bidir_x_offset_mm = data.get("bidir_x_offset_mm", 0.0)
         return step
 

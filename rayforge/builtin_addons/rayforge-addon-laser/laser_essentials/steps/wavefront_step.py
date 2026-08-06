@@ -4,14 +4,17 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, List, Optional, Tuple, cast
 
 from raygeo.cnc.execution.specs import ComputePayload
-from raygeo.geo import Matrix
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.wavefront import AdaptiveWavefrontSpec
 from raygeo.ops.part import Part
 
 from rayforge.core.capability import MachineCapability, StepCapability
+from rayforge.core.step import legacy_producer_params
 from rayforge.core.varset import LengthVar, VarSet
 from rayforge.machine.models.laser import LaserHead
+from rayforge.pipeline.stage.assembler_helpers import (
+    build_part_vector_with_raster_fallback,
+)
 from rayforge.pipeline.transformer.registry import transformer_registry
 
 from ..capabilities import CUT
@@ -88,8 +91,17 @@ class WavefrontStep(LaserStep):
     ) -> "Tuple[Part, ComputePayload]":
         """Build a :class:`Part` with normalised-winding vector
         geometry and a :class:`ComputePayload` carrying an
-        :class:`AdaptiveWavefrontSpec`."""
-        part = _build_wavefront_part(workpiece)
+        :class:`AdaptiveWavefrontSpec`.
+
+        When the workpiece has no vector boundaries (e.g. an SVG with
+        empty ``pristine_geometry``), the source is rendered to pixels
+        and traced into geometry before assembling.
+        """
+        part = build_part_vector_with_raster_fallback(
+            workpiece,
+            self.pixels_per_mm,
+            normalize_windings=True,
+        )
         kwargs = self.get_assembler_kwargs(machine, workpiece)
         spec = AdaptiveWavefrontSpec(
             kwargs["step_over"],
@@ -116,9 +128,18 @@ class WavefrontStep(LaserStep):
     @classmethod
     def from_dict(cls, data: dict) -> "WavefrontStep":
         step = cast("WavefrontStep", super().from_dict(data))
-        step.step_over_mm = data.get("step_over_mm", None)
-        step.offset_mm = data.get("offset_mm", 0.0)
-        step.area_tolerance = data.get("area_tolerance", 0.01)
+        # Projects saved before the raygeo-pipeline refactor stored the
+        # producer parameters inside ``opsproducer_dict.params``.  Migrate
+        # them so the saved step-over survives loading instead of falling
+        # back to the laser spot size.
+        legacy = legacy_producer_params(data)
+        step.step_over_mm = data.get(
+            "step_over_mm", legacy.get("step_over_mm", None)
+        )
+        step.offset_mm = data.get("offset_mm", legacy.get("offset_mm", 0.0))
+        step.area_tolerance = data.get(
+            "area_tolerance", legacy.get("area_tolerance", 0.01)
+        )
         return step
 
     @classmethod
@@ -167,27 +188,3 @@ class WavefrontStep(LaserStep):
             step.frequency = params.frequency
             step.pulse_width = params.pulse_width
         return step
-
-
-def _build_wavefront_part(workpiece: "WorkPiece") -> Part:
-    """Build a :class:`Part` with normalised-winding vector geometry
-    for the wavefront assembler.
-
-    Disjoint pockets are exposed as separate faces via
-    ``Part.from_geometry_multi_face`` so the per-face compute path
-    clears each pocket independently (the wavefront assembler is a
-    single-face operation since raygeo 1.28).
-
-    Mirrors :func:`build_part_vector` with ``normalize_windings=True``
-    but lives here so the compute-payload construction is
-    self-contained for the raygeo intent pipeline.
-    """
-    boundaries = workpiece.boundaries
-    if boundaries is None or boundaries.is_empty():
-        return Part(size_mm=workpiece.size)
-    scaled = boundaries.copy()
-    w, h = workpiece.size
-    if w > 0 and h > 0:
-        scaled.transform(Matrix.scale(w, h))
-    scaled.normalize_winding_orders()
-    return Part.from_geometry_multi_face(geometry=scaled, size_mm=(w, h))

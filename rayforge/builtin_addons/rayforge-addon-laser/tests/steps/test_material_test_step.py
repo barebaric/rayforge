@@ -86,6 +86,65 @@ class TestMaterialTestStep:
         restored = MaterialTestStep.from_dict(data)
         assert data == restored.to_dict()
 
+    def test_from_dict_migrates_legacy_opsproducer_params(self):
+        """True legacy files store material-test params in
+        ``opsproducer_dict.params``; loading must restore them."""
+        data = MaterialTestStep(name="Test").to_dict()
+        for key in (
+            "test_type",
+            "grid_mode",
+            "speed_range",
+            "power_range",
+            "passes_range",
+            "offset_range",
+            "fixed_speed",
+            "fixed_power",
+            "grid_dimensions",
+            "shape_size",
+            "spacing",
+            "include_labels",
+            "label_power_percent",
+            "label_speed",
+            "line_interval_mm",
+        ):
+            data.pop(key, None)
+        data["opsproducer_dict"] = {
+            "type": "MaterialTestGridProducer",
+            "params": {
+                "test_type": "Engrave",
+                "grid_mode": "Power vs Passes",
+                "speed_range": [200.0, 800.0],
+                "power_range": [20.0, 90.0],
+                "passes_range": [2, 4],
+                "fixed_speed": 1500.0,
+                "fixed_power": 60.0,
+                "grid_dimensions": [3, 4],
+                "shape_size": 5.0,
+                "spacing": 1.5,
+                "include_labels": False,
+                "label_power_percent": 15.0,
+                "label_speed": 1200.0,
+                "line_interval_mm": 0.3,
+            },
+        }
+
+        restored = MaterialTestStep.from_dict(data)
+
+        assert restored.test_type == "Engrave"
+        assert restored.grid_mode == "Power vs Passes"
+        assert restored.speed_range == (200.0, 800.0)
+        assert restored.power_range == (20.0, 90.0)
+        assert restored.passes_range == (2, 4)
+        assert restored.fixed_speed == 1500.0
+        assert restored.fixed_power == 60.0
+        assert restored.grid_dimensions == (3, 4)
+        assert restored.shape_size == 5.0
+        assert restored.spacing == 1.5
+        assert restored.include_labels is False
+        assert restored.label_power_percent == 15.0
+        assert restored.label_speed == 1200.0
+        assert restored.line_interval_mm == 0.3
+
     def test_optimize_present_but_disabled_by_default(self, mock_context):
         """Optimize must be off by default: its nearest-neighbor travel
         reordering has no concept of cell boundaries and can interleave

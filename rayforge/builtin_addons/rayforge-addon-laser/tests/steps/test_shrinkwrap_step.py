@@ -62,6 +62,27 @@ class TestShrinkWrapStep:
         restored = ShrinkWrapStep.from_dict(data)
         assert data == restored.to_dict()
 
+    def test_from_dict_migrates_legacy_opsproducer_params(self):
+        """True legacy files store shrink-wrap params in
+        ``opsproducer_dict.params``; loading must restore them."""
+        data = ShrinkWrapStep(name="Test").to_dict()
+        for key in ("cut_side", "offset_mm", "gravity"):
+            data.pop(key, None)
+        data["opsproducer_dict"] = {
+            "type": "ShrinkWrapProducer",
+            "params": {
+                "gravity": 0.75,
+                "path_offset_mm": 0.2,
+                "cut_side": "INSIDE",
+            },
+        }
+
+        restored = ShrinkWrapStep.from_dict(data)
+
+        assert restored.cut_side == "INSIDE"
+        assert restored.gravity == 0.75
+        assert restored.offset_mm == pytest.approx(0.2)
+
 
 class TestShrinkWrapComputePayload:
     def test_build_compute_payload_returns_shrinkwrap_spec(self, machine):
