@@ -40,12 +40,6 @@ class ShrinkWrapStep(LaserStep):
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "shrinkwrap"
 
-    RECIPE_KEYS: Tuple[str, ...] = LaserStep.RECIPE_KEYS + (
-        "cut_side",
-        "offset_mm",
-        "gravity",
-    )
-
     @classmethod
     def recipe_varset(cls) -> VarSet:
         return VarSet(

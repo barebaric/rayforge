@@ -37,14 +37,6 @@ class ContourStep(LaserStep):
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "contour"
 
-    RECIPE_KEYS: Tuple[str, ...] = LaserStep.RECIPE_KEYS + (
-        "cut_side",
-        "cut_order",
-        "remove_inner_paths",
-        "offset_mm",
-        "overcut",
-    )
-
     @classmethod
     def recipe_varset(cls) -> VarSet:
         return VarSet(

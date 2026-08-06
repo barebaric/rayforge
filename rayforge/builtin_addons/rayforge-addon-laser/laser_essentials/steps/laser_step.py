@@ -29,12 +29,6 @@ if TYPE_CHECKING:
 class LaserStep(Step):
     """Base for all laser-domain steps. Owns laser attributes."""
 
-    RECIPE_KEYS: Tuple[str, ...] = Step.RECIPE_KEYS + (
-        "power",
-        "air_assist",
-        "tab_power",
-    )
-
     def __init__(self, typelabel, name=None):
         self.power: float = 1.0
         self.max_power: int = 1000

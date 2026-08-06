@@ -58,14 +58,6 @@ class EngraveStep(LaserStep):
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "raster"
 
-    RECIPE_KEYS: Tuple[str, ...] = LaserStep.RECIPE_KEYS + (
-        "scan_angle",
-        "depth_mode",
-        "invert",
-        "min_power_level",
-        "max_power_level",
-    )
-
     @classmethod
     def recipe_varset(cls) -> VarSet:
         return VarSet(
