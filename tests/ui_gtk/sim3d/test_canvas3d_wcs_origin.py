@@ -5,7 +5,7 @@ import pytest
 
 from rayforge.core.color import ColorSet
 from rayforge.machine.models.machine import Origin
-from rayforge.ui_gtk.sim3d.gl_utils import RenderContext
+from rayforge.ui_gtk.sim3d.gl_utils import RenderContext, ShaderSet
 from rayforge.ui_gtk.sim3d.renderer.axis_renderer_3d import AxisRenderer3D
 
 
@@ -131,19 +131,14 @@ def test_wcs_marker_position(
             camera_position=np.zeros(3),
             color_set=ColorSet(),
         )
+        ctx.wcs_offset_mm = (wcs_x, wcs_y, 0.0)
+        ctx.x_right = x_right
+        ctx.y_down = y_down
+        ctx.x_negative = x_neg
+        ctx.y_negative = y_neg
 
-        renderer.render(
-            ctx=ctx,
-            line_shader=mock_line_shader,
-            text_shader=mock_text_shader,
-            scene_mvp=scene_mvp,
-            text_mvp=text_mvp,
-            origin_offset_mm=(wcs_x, wcs_y, 0.0),
-            x_right=x_right,
-            y_down=y_down,
-            x_negative=x_neg,
-            y_negative=y_neg,
-        )
+        shaders = ShaderSet(main=mock_line_shader, text=mock_text_shader)
+        renderer.render(ctx=ctx, shaders=shaders)
 
     mvp_calls = [
         args[1]

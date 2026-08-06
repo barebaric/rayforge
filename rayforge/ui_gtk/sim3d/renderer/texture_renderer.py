@@ -12,8 +12,7 @@ from OpenGL import GL
 from ....pipeline.artifact.base import TextureData
 from ....simulator.scene3d import CompiledSceneArtifact, TextureLayer
 from ..color_lut_provider import ColorLutProvider
-from ..gl_utils import RenderContext
-from ..shader import Shader
+from ..gl_utils import RenderContext, ShaderSet
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -45,10 +44,13 @@ class TextureArtifactRenderer(BaseRenderer):
         self._flat_mvp: Optional[np.ndarray] = None
         self._cyl_mvp: Optional[np.ndarray] = None
 
-    def update_from_state(self, flat_mvp, cyl_mvp):
+    def prepare(self, ctx: RenderContext) -> None:
         """Caches the per-frame MVP matrices for the texture quads."""
-        self._flat_mvp = flat_mvp
-        self._cyl_mvp = cyl_mvp
+        self._flat_mvp = ctx.mvp_ui
+        if ctx.cyl_mesh_mvp_gl is not None:
+            self._cyl_mvp = ctx.cyl_mesh_mvp_gl.T
+        else:
+            self._cyl_mvp = None
 
     def init_gl(self):
         """
@@ -326,28 +328,35 @@ class TextureArtifactRenderer(BaseRenderer):
         """Updates the colour LUT from a shared ColorLutProvider."""
         self.update_color_lut(provider.engrave_lut_2d(), provider.num_lasers)
 
-    def render(
+    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
+        """
+        Renders all texture instances: flat quads first, then the
+        cylinder-mapped (rotary) ones.
+
+        Args:
+            ctx: The current render context; carries the reached count.
+            shaders: The shader set; the ``texture`` program is used.
+        """
+        if not self.is_initialized or not self.instances:
+            return
+
+        shader = shaders.texture
+        if shader is None:
+            return
+
+        reached_count = ctx.reached_count
+        pending_alpha = 0.3
+        self._draw_flat(shader, reached_count, pending_alpha)
+        self._draw_cylinder(shader, reached_count, pending_alpha)
+
+    def _draw_flat(
         self,
-        ctx: RenderContext,
-        shader: Shader,
+        shader,
         reached_count: Optional[int] = None,
         pending_alpha: float = 0.3,
     ):
-        """
-        Renders all flat (non-rotary) texture instances.
-
-        Args:
-            shader: The shader to use for rendering.
-            reached_count: If set, the first N texture instances are drawn
-              at full alpha; the rest are drawn dimmed. None means all at
-              full alpha.
-            pending_alpha: Alpha multiplier for unreached texture instances.
-        """
-        if (
-            not self.is_initialized
-            or not self.instances
-            or self._flat_mvp is None
-        ):
+        """Draws all flat (non-rotary) texture instances."""
+        if self._flat_mvp is None:
             return
 
         GL.glEnable(GL.GL_BLEND)
@@ -382,28 +391,14 @@ class TextureArtifactRenderer(BaseRenderer):
 
             GL.glDrawArrays(GL.GL_TRIANGLE_FAN, 0, 4)
 
-    def render_cylinder(
+    def _draw_cylinder(
         self,
-        ctx: RenderContext,
-        shader: Shader,
+        shader,
         reached_count: Optional[int] = None,
         pending_alpha: float = 0.3,
     ):
-        """
-        Renders all texture instances mapped onto a cylinder.
-
-        Args:
-            shader: The shader to use for rendering.
-            reached_count: If set, the first N texture instances are drawn
-              at full alpha; the rest are drawn dimmed. None means all at
-              full alpha.
-            pending_alpha: Alpha multiplier for unreached texture instances.
-        """
-        if (
-            not self.is_initialized
-            or not self.instances
-            or self._cyl_mvp is None
-        ):
+        """Draws all texture instances mapped onto a cylinder."""
+        if self._cyl_mvp is None:
             return
 
         t_cyl_start = time.perf_counter()

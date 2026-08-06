@@ -12,8 +12,10 @@ import trimesh
 from OpenGL import GL
 from trimesh.visual.color import ColorVisuals
 
-from ..gl_utils import RenderContext
-from ..shader import Shader
+from ....machine.assembly import LinkRole
+from ....machine.models.laser import LaserHead
+from ....simulator.machine_state import MachineState
+from ..gl_utils import RenderContext, ShaderSet
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -136,9 +138,10 @@ def get_model_extent(path: Path) -> Optional[float]:
 class ModelRenderer(BaseRenderer):
     """Loads and renders a .glb model as GL_TRIANGLES."""
 
-    def __init__(self, resolved_path: Path):
+    def __init__(self, resolved_path: Path, link_name: str = ""):
         super().__init__()
         self._path = resolved_path
+        self.link_name = link_name
         self._vao: int = 0
         self._vbo_pos: int = 0
         self._vbo_norm: int = 0
@@ -152,16 +155,62 @@ class ModelRenderer(BaseRenderer):
         self._model_matrix: Optional[np.ndarray] = None
         self._point_light_pos: Optional[np.ndarray] = None
 
-    def update_from_state(
-        self,
-        mvp_matrix: np.ndarray,
-        model_matrix: Optional[np.ndarray] = None,
-        point_light_pos: Optional[np.ndarray] = None,
-    ):
-        """Caches the per-frame matrices for the model mesh."""
-        self._mvp_matrix = mvp_matrix
-        self._model_matrix = model_matrix
-        self._point_light_pos = point_light_pos
+    def prepare(self, ctx: RenderContext) -> None:
+        """Computes and caches the per-frame matrices for the model mesh."""
+        machine = ctx.machine
+        if machine is None or ctx.viewport is None:
+            return
+
+        asm = machine.assembly
+        if asm is None:
+            return
+
+        model_state = ctx.op_player.state if ctx.op_player else MachineState()
+        wcs = ctx.viewport.wcs_offset_mm
+        model_transforms = asm.model_world_transforms(
+            model_state, wcs_offset=wcs
+        )
+        t = model_transforms.get(self.link_name)
+        if t is None:
+            return
+
+        module_transform = t.astype(np.float32)
+        is_rotary = ctx.rotary_axis is not None and asm.has_rotary
+        if is_rotary:
+            link = asm.get_link(self.link_name)
+            if link and link.role != LinkRole.CHUCK:
+                focal = 50.0
+                if link.name.startswith("head_"):
+                    try:
+                        idx = int(link.name.split("_")[1])
+                        laser = machine.heads[idx]
+                        if isinstance(laser, LaserHead):
+                            if laser.focal_distance > 0:
+                                focal = laser.focal_distance
+                    except (ValueError, IndexError):
+                        pass
+                layer_rotary_diameter = 0.0
+                if ctx.op_player:
+                    current_layer = (
+                        ctx.op_player.get_current_layer(ctx.doc)
+                        if ctx.doc is not None
+                        else None
+                    )
+                    if current_layer:
+                        layer_rotary_diameter = current_layer.rotary_diameter
+                rotary_heads = asm.head_rotary_positions(
+                    model_state,
+                    layer_rotary_diameter,
+                    focal_distance=focal,
+                )
+                if link.name in rotary_heads:
+                    pos = rotary_heads[link.name]
+                    module_transform[:3, 3] = pos.astype(np.float32)
+
+        combined = ctx.mvp_ui @ ctx.margin_shift @ module_transform
+        self._mvp_matrix = combined.T
+        self._model_matrix = ctx.margin_shift @ module_transform
+        self._point_light_pos = ctx.laser_light_pos
 
     def _load_mesh(self) -> bool:
         self._mesh_data = _load_mesh_data(self._path)
@@ -226,8 +275,12 @@ class ModelRenderer(BaseRenderer):
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-    def render(self, ctx: RenderContext, shader: Shader) -> None:
+    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
         if not self._vao or self._mvp_matrix is None:
+            return
+
+        shader = shaders.main
+        if shader is None:
             return
 
         light_dir = np.array([0.5, 0.8, 1.0], dtype=np.float32)

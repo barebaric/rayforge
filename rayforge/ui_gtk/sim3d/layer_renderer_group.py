@@ -15,8 +15,8 @@ class LayerRendererGroup:
 
     def __init__(self, is_rotary: bool):
         self.is_rotary = is_rotary
-        self.ops_renderer = OpsRenderer()
-        self.ring_renderer = RingBufferRenderer()
+        self.ops_renderer = OpsRenderer(is_rotary=is_rotary)
+        self.ring_renderer = RingBufferRenderer(is_rotary=is_rotary)
         self.powered_offsets: Any = []
         self.travel_offsets: Any = []
         self.ring_offsets: Any = []
@@ -50,19 +50,17 @@ class LayerRendererGroup:
     def render(
         self,
         ctx,
-        shader,
+        shaders,
         op_player,
-        mvp_flat_gl,
-        mvp_rot_gl,
     ) -> Optional[tuple]:
         """
         Renders the group's ops and returns a deferred ring draw or None.
 
-        The ring buffer is drawn after the textures during playback, so it
-        is returned for the scene renderer to render later.
+        The per-frame MVP and executed-vertex counts are read from ``ctx``
+        (populated by the scene renderer and this method).  The ring buffer
+        is drawn after the textures during playback, so it is returned for
+        the scene renderer to render later.
         """
-        mvp = mvp_rot_gl if self.is_rotary else mvp_flat_gl
-
         exec_powered = -1
         exec_travel = -1
         exec_ring = -1
@@ -91,23 +89,19 @@ class LayerRendererGroup:
                     f"{self.powered_offsets[-3:]}"
                 )
 
-        if shader:
-            self.ops_renderer.render(
-                ctx,
-                shader,
-                mvp,
-                executed_vertex_count=exec_powered,
-                executed_travel_vertex_count=exec_travel,
-            )
+        if shaders:
+            ctx.executed_vertex_count = exec_powered
+            ctx.executed_travel_vertex_count = exec_travel
+            self.ops_renderer.render(ctx, shaders)
 
-        if self.ring_renderer.vertex_count > 0 and shader:
+        if self.ring_renderer.vertex_count > 0 and shaders:
             tag = "rot" if self.is_rotary else "flat"
             logger.debug(
                 f"[RING-PLAYBACK] {tag} "
                 f"exec={exec_ring} "
                 f"total={self.ring_renderer.vertex_count}"
             )
-            return (self.ring_renderer, mvp, exec_ring)
+            return (self.ring_renderer, exec_ring)
         return None
 
     def clear(self):

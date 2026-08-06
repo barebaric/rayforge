@@ -9,8 +9,7 @@ from typing import Optional, Tuple
 import numpy as np
 from OpenGL import GL
 
-from ..gl_utils import RenderContext
-from ..shader import Shader
+from ..gl_utils import RenderContext, ShaderSet
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -47,9 +46,9 @@ class CylinderRenderer(BaseRenderer):
         """Sets the wireframe color."""
         self._color = color
 
-    def update_from_state(self, mvp_gl: np.ndarray):
+    def prepare(self, ctx: RenderContext) -> None:
         """Caches the per-frame MVP matrix for the cylinder mesh."""
-        self._mvp = mvp_gl
+        self._mvp = ctx.cyl_mesh_mvp_gl
 
     def init_gl(self) -> None:
         """Generates cylinder wireframe vertices and initializes OpenGL."""
@@ -106,14 +105,17 @@ class CylinderRenderer(BaseRenderer):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         GL.glBindVertexArray(0)
 
-    def render(self, ctx: RenderContext, shader: Shader) -> None:
+    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
         """
         Renders the cylinder wireframe.
 
         Args:
-            shader: The shader program to use.
+            shaders: The shader set; the ``main`` program is used.
         """
-        if not self.vao or self.vertex_count == 0 or self._mvp is None:
+        shader = shaders.main
+        if not shader or not self.vao or self.vertex_count == 0:
+            return
+        if self._mvp is None:
             return
 
         shader.use()

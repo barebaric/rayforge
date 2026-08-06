@@ -7,8 +7,7 @@ import logging
 import numpy as np
 from OpenGL import GL
 
-from ..gl_utils import RenderContext
-from ..shader import Shader
+from ..gl_utils import RenderContext, ShaderSet
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -61,7 +60,12 @@ class BackgroundRenderer(BaseRenderer):
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-    def render(self, ctx: RenderContext, shader: Shader):
+    def prepare(self, ctx: RenderContext) -> None:
+        """No per-frame state to prepare."""
+        pass
+
+    def render(self, ctx: RenderContext, shaders: ShaderSet):
+        shader = shaders.background
         if not shader or not self.vao:
             return
 

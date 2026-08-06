@@ -15,8 +15,7 @@ import numpy as np
 from gi.repository import Pango, PangoCairo
 from OpenGL import GL
 
-from ..gl_utils import RenderContext
-from ..shader import Shader
+from ..gl_utils import RenderContext, ShaderSet
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -227,12 +226,11 @@ class TextRenderer(BaseRenderer):
     def render_text(
         self,
         ctx: RenderContext,
-        shader: Shader,
+        shaders: ShaderSet,
         text: str,
         position: np.ndarray,
         height_in_world_units: float,
         color: Tuple[float, float, float, float],
-        mvp_matrix: np.ndarray,
         align: str = "center",
     ) -> None:
         """
@@ -241,16 +239,21 @@ class TextRenderer(BaseRenderer):
 
         Args:
             ctx: The current render context.
-            shader: The shader program to use for rendering text.
+            shaders: The shader set; the ``text`` program is used.
             text: The string to render (must contain characters of the atlas).
             position: A numpy array (vec3) for the text's anchor point.
             height_in_world_units: Desired height of the text in world units.
             color: A tuple (r, g, b, a) for the text color.
-            mvp_matrix: The column-major Model-View-Projection matrix.
             align: Horizontal alignment ('left', 'center', 'right').
         """
         if not self.vao or not text or self.atlas_height < 1:
             return
+
+        shader = shaders.text
+        if shader is None:
+            return
+
+        mvp_matrix = ctx.mvp_ui.T
 
         shader.use()
         GL.glActiveTexture(GL.GL_TEXTURE0)

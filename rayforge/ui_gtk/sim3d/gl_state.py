@@ -14,7 +14,7 @@ restores that shader's uniforms) for a single renderer draw call.
 Usage::
 
     with render_pass(self.main_shader):
-        self.zone_renderer.render(ctx, self.main_shader, zone_mvp_gl)
+        self.zone_renderer.render(ctx, self.shader_set)
 """
 
 from contextlib import ExitStack, contextmanager
@@ -137,7 +137,7 @@ def gl_state(
 
 
 @contextmanager
-def render_pass(*shaders: Shader) -> Generator[None, None, None]:
+def render_pass(*shaders: Optional[Shader]) -> Generator[None, None, None]:
     """
     Bracket a single renderer draw call with state isolation.
 
@@ -149,7 +149,7 @@ def render_pass(*shaders: Shader) -> Generator[None, None, None]:
     Example::
 
         with render_pass(self.main_shader, self.text_shader):
-            self.axis_renderer.render(ctx, self.main_shader, ...)
+            self.axis_renderer.render(ctx, self.shader_set)
     """
     with gl_state():
         if not shaders:
