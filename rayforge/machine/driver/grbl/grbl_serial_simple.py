@@ -547,7 +547,9 @@ class GrblSerialSimpleDriver(Driver):
             logger.info("Sending Soft Reset (Ctrl-X) to device.")
             await self._transport.send(b"\x18")
             self._line_buffer.clear()
-            self._pending = None
+            if self._pending:
+                self._pending.set_result()
+                self._pending = None
             if job_was_running:
                 self.job_finished.send(self)
         else:
