@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from rayforge.core.config import Config
@@ -7,6 +9,10 @@ from rayforge.shared.units.definitions import (
     get_units_for_quantity,
 )
 from rayforge.shared.units.engine import engine
+from rayforge.shared.units.formatter import (
+    get_default_grid_step_mm,
+    get_preferred_unit_factor,
+)
 from rayforge.shared.units.system import UnitSystem, inches_to_mm
 
 
@@ -247,6 +253,55 @@ def test_inches_to_mm():
     assert inches_to_mm(1.0) == 25.4
     assert inches_to_mm(2.0) == pytest.approx(50.8)
     assert inches_to_mm(0.5) == pytest.approx(12.7)
+
+
+def _mock_length_preference(unit_name: str):
+    """Builds a mocked context whose config prefers the given length unit."""
+    config = Config()
+    config.unit_preferences["length"] = unit_name
+    ctx = MagicMock()
+    ctx.config = config
+    return ctx
+
+
+def test_get_preferred_unit_factor():
+    """Each preferred length unit maps to the correct number of mm."""
+    cases = {
+        "mm": 1.0,
+        "cm": 10.0,
+        "m": 1000.0,
+        "in": 25.4,
+        "ft": 304.8,
+    }
+    for unit_name, expected in cases.items():
+        with patch(
+            "rayforge.shared.units.formatter.get_context",
+            return_value=_mock_length_preference(unit_name),
+        ):
+            factor = get_preferred_unit_factor("length")
+            assert factor == pytest.approx(expected), (
+                f"Factor for {unit_name} should be {expected}, got {factor}"
+            )
+
+
+def test_get_default_grid_step_mm():
+    """Grid step is one preferred unit, except mm which keeps 10mm."""
+    cases = {
+        "mm": 10.0,
+        "cm": 10.0,
+        "m": 1000.0,
+        "in": 25.4,
+        "ft": 304.8,
+    }
+    for unit_name, expected in cases.items():
+        with patch(
+            "rayforge.shared.units.formatter.get_context",
+            return_value=_mock_length_preference(unit_name),
+        ):
+            step = get_default_grid_step_mm()
+            assert step == pytest.approx(expected), (
+                f"Grid step for {unit_name} should be {expected}, got {step}"
+            )
 
 
 if __name__ == "__main__":

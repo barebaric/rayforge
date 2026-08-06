@@ -179,3 +179,47 @@ def test_axis_label_rendering(
         f"Failed for origin={origin.name}, negative={negative}, "
         f"wcs_offset={wcs_offset}"
     )
+
+
+@pytest.mark.ui
+def test_axis_labels_in_preferred_unit():
+    """Axis labels are displayed in the user's preferred length unit."""
+    width_mm, height_mm = 120.0, 120.0
+    axis_renderer = AxisRenderer3D(
+        width_mm=width_mm,
+        height_mm=height_mm,
+        grid_size_mm=25.4,  # 1 inch
+        grid_unit_factor=25.4,
+    )
+    mock_text_renderer = MagicMock()
+    axis_renderer.text_renderer = mock_text_renderer
+
+    dummy_mvp = np.identity(4, dtype=np.float32)
+    dummy_view = np.identity(4, dtype=np.float32)
+    ctx = RenderContext(
+        proj_matrix=np.eye(4, dtype=np.float32),
+        view_matrix=dummy_view,
+        mvp_ui=dummy_mvp,
+        mvp_scene=dummy_mvp,
+        margin_shift=np.eye(4, dtype=np.float32),
+        model_matrix=np.eye(4, dtype=np.float32),
+        viewport_height=800,
+        camera_position=np.zeros(3),
+        color_set=ColorSet(),
+    )
+    axis_renderer._render_axis_labels(
+        ctx=ctx,
+        text_shader=MagicMock(),
+        text_mvp_matrix=dummy_mvp,
+        origin_offset_mm=(0.0, 0.0, 0.0),
+    )
+
+    rendered_labels = set()
+    if mock_text_renderer.render_text.called:
+        for call_args in mock_text_renderer.render_text.call_args_list:
+            label_text = call_args.args[2]
+            if label_text:
+                rendered_labels.add(int(label_text))
+
+    # A 120mm bed is ~4.7 inches; labels are whole inches 0..4.
+    assert rendered_labels == {0, 1, 2, 3, 4}

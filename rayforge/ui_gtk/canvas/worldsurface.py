@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING, Tuple
 from gi.repository import Gdk, Graphene, Gtk
 from raygeo.geo import Matrix
 
+from ...context import get_context
+from ...shared.units.formatter import get_preferred_unit_factor
 from .axis import AxisRenderer
 from .canvas import Canvas
 
@@ -67,6 +69,10 @@ class WorldSurface(Canvas):
             show_grid=show_grid,
             show_axis=show_axis,
         )
+        self._axis_renderer.set_grid_unit_factor(
+            get_preferred_unit_factor("length")
+        )
+        get_context().config.changed.connect(self._on_config_changed)
         if coordinate_space is not None:
             self._axis_renderer.set_coordinate_space(coordinate_space)
         self.root.background = 0.8, 0.8, 0.8, 0.1
@@ -146,6 +152,13 @@ class WorldSurface(Canvas):
                 fg_rgba.alpha * 0.3,
             )
         )
+
+    def _on_config_changed(self, sender, **kwargs):
+        """Updates the grid unit when the user's unit preference changes."""
+        self._axis_renderer.set_grid_unit_factor(
+            get_preferred_unit_factor("length")
+        )
+        self.queue_draw()
 
     def set_pan(self, pan_x_mm: float, pan_y_mm: float) -> None:
         """Sets the pan position in mm and updates the axis importer."""
