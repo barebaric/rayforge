@@ -384,7 +384,9 @@ class UnitSpinRow(SpinRow):
         try:
             self.update_unit_and_bounds()
             if self._unit:
-                self._spin_button.set_value(self._unit.from_base(base_value))
+                display_value = self._unit.from_base(base_value)
+                if abs(display_value - self._get_display_value()) >= 1e-12:
+                    self._spin_button.set_value(display_value)
         finally:
             self._is_updating = False
 
