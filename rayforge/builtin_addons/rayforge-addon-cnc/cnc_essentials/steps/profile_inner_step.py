@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import Any, Dict, Tuple, cast
+from typing import Any, Dict, cast
 
 from raygeo.ops.assembly.profile import ProfileSpec
 
@@ -12,12 +12,6 @@ class ProfileInnerStep(CncAssemblerStep):
     ASSEMBLER_NAME = "profile_inner"
     TYPELABEL = _("Profile Inner")
     uses_global_state = True
-
-    RECIPE_KEYS: Tuple[str, ...] = CncAssemblerStep.RECIPE_KEYS + (
-        "step_over",
-        "step_length",
-        "wall_margin",
-    )
 
     @classmethod
     def recipe_varset(cls) -> VarSet:

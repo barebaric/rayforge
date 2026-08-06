@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import Any, Dict, Tuple, cast
+from typing import Any, Dict, cast
 
 from raygeo.ops.assembly.toroid import ToroidalClearSpec
 
@@ -14,10 +14,6 @@ class ToroidalClearStep(CncAssemblerStep):
     ASSEMBLER_NAME = "toroidal_clear"
     TYPELABEL = _("Toroidal Clear")
     uses_global_state = True
-
-    RECIPE_KEYS: Tuple[str, ...] = CncAssemblerStep.RECIPE_KEYS + (
-        "step_over",
-    )
 
     @classmethod
     def recipe_varset(cls) -> VarSet:

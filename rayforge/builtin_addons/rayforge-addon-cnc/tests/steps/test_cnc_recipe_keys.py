@@ -1,8 +1,8 @@
 """Tests for step-declared recipe keys and recipe varsets.
 
-Verifies that each step's RECIPE_KEYS is composed correctly through the
-inheritance hierarchy and that recipe_varset() exposes the keys needed
-by the recipe editor.
+Verifies that each step's recipe_keys() is composed correctly through
+the inheritance hierarchy and that recipe_varset() exposes the keys
+needed by the recipe editor.
 """
 
 from cnc_essentials.steps import (
@@ -21,16 +21,15 @@ from rayforge.core.step import Step
 
 
 class TestRecipeKeys:
-    """RECIPE_KEYS composition through the step hierarchy."""
+    """recipe_keys() composition through the step hierarchy."""
 
     def test_base_step_keys(self):
-        assert "selected_head_uid" in Step.RECIPE_KEYS
-        assert "cut_speed" in Step.RECIPE_KEYS
-        assert "travel_speed" in Step.RECIPE_KEYS
+        assert "cut_speed" in Step.recipe_keys()
+        assert "travel_speed" in Step.recipe_keys()
 
     def test_cnc_step_extends_base(self):
-        assert set(Step.RECIPE_KEYS).issubset(
-            set(CncAssemblerStep.RECIPE_KEYS)
+        assert set(Step.recipe_keys()).issubset(
+            set(CncAssemblerStep.recipe_keys())
         )
         for key in (
             "tool_diameter",
@@ -40,11 +39,11 @@ class TestRecipeKeys:
             "depth_per_pass",
             "safe_z",
         ):
-            assert key in CncAssemblerStep.RECIPE_KEYS
+            assert key in CncAssemblerStep.recipe_keys()
 
     def test_adaptive_clear_extends_cnc(self):
-        assert set(CncAssemblerStep.RECIPE_KEYS).issubset(
-            set(AdaptiveClearStep.RECIPE_KEYS)
+        assert set(CncAssemblerStep.recipe_keys()).issubset(
+            set(AdaptiveClearStep.recipe_keys())
         )
         for key in (
             "step_over",
@@ -53,27 +52,27 @@ class TestRecipeKeys:
             "wall_margin",
             "area_tolerance",
         ):
-            assert key in AdaptiveClearStep.RECIPE_KEYS
+            assert key in AdaptiveClearStep.recipe_keys()
 
     def test_profile_inner_extends_cnc(self):
-        assert set(CncAssemblerStep.RECIPE_KEYS).issubset(
-            set(ProfileInnerStep.RECIPE_KEYS)
+        assert set(CncAssemblerStep.recipe_keys()).issubset(
+            set(ProfileInnerStep.recipe_keys())
         )
         for key in ("step_over", "step_length", "wall_margin"):
-            assert key in ProfileInnerStep.RECIPE_KEYS
+            assert key in ProfileInnerStep.recipe_keys()
 
     def test_profile_outer_extends_cnc(self):
-        assert set(CncAssemblerStep.RECIPE_KEYS).issubset(
-            set(ProfileOuterStep.RECIPE_KEYS)
+        assert set(CncAssemblerStep.recipe_keys()).issubset(
+            set(ProfileOuterStep.recipe_keys())
         )
         for key in ("step_over", "step_length", "wall_margin"):
-            assert key in ProfileOuterStep.RECIPE_KEYS
+            assert key in ProfileOuterStep.recipe_keys()
 
     def test_toroidal_clear_extends_cnc(self):
-        assert set(CncAssemblerStep.RECIPE_KEYS).issubset(
-            set(ToroidalClearStep.RECIPE_KEYS)
+        assert set(CncAssemblerStep.recipe_keys()).issubset(
+            set(ToroidalClearStep.recipe_keys())
         )
-        assert "step_over" in ToroidalClearStep.RECIPE_KEYS
+        assert "step_over" in ToroidalClearStep.recipe_keys()
 
     def test_simple_steps_inherit_cnc_keys(self):
         """Steps without extra attrs inherit CncAssemblerStep keys."""
@@ -83,11 +82,11 @@ class TestRecipeKeys:
             RampEntryStep,
             SlotStep,
         ):
-            assert cls.RECIPE_KEYS == CncAssemblerStep.RECIPE_KEYS
+            assert cls.recipe_keys() == CncAssemblerStep.recipe_keys()
 
 
 class TestRecipeVarsetKeys:
-    """recipe_varset() keys are consistent with RECIPE_KEYS.
+    """recipe_varset() keys are consistent with recipe_keys().
 
     The CNC domain varset covers all process keys but not
     ``selected_head_uid`` (same as the base Step pattern).
@@ -95,37 +94,27 @@ class TestRecipeVarsetKeys:
 
     def test_cnc_step_varset(self):
         keys = [var.key for var in CncAssemblerStep.recipe_varset()]
-        for key in CncAssemblerStep.RECIPE_KEYS:
-            if key == "selected_head_uid":
-                continue
+        for key in CncAssemblerStep.recipe_keys():
             assert key in keys, f"Missing var for recipe key '{key}'"
 
     def test_adaptive_clear_varset_covers_keys(self):
         keys = [var.key for var in AdaptiveClearStep.recipe_varset()]
-        for key in AdaptiveClearStep.RECIPE_KEYS:
-            if key == "selected_head_uid":
-                continue
+        for key in AdaptiveClearStep.recipe_keys():
             assert key in keys, f"Missing var for recipe key '{key}'"
 
     def test_profile_inner_varset_covers_keys(self):
         keys = [var.key for var in ProfileInnerStep.recipe_varset()]
-        for key in ProfileInnerStep.RECIPE_KEYS:
-            if key == "selected_head_uid":
-                continue
+        for key in ProfileInnerStep.recipe_keys():
             assert key in keys, f"Missing var for recipe key '{key}'"
 
     def test_profile_outer_varset_covers_keys(self):
         keys = [var.key for var in ProfileOuterStep.recipe_varset()]
-        for key in ProfileOuterStep.RECIPE_KEYS:
-            if key == "selected_head_uid":
-                continue
+        for key in ProfileOuterStep.recipe_keys():
             assert key in keys, f"Missing var for recipe key '{key}'"
 
     def test_toroidal_clear_varset_covers_keys(self):
         keys = [var.key for var in ToroidalClearStep.recipe_varset()]
-        for key in ToroidalClearStep.RECIPE_KEYS:
-            if key == "selected_head_uid":
-                continue
+        for key in ToroidalClearStep.recipe_keys():
             assert key in keys, f"Missing var for recipe key '{key}'"
 
 

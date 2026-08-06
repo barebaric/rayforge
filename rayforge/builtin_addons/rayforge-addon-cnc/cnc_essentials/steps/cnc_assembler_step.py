@@ -30,15 +30,6 @@ class CncAssemblerStep(Step):
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.MILL})
     TYPELABEL = "CNC Step"
 
-    RECIPE_KEYS: Tuple[str, ...] = Step.RECIPE_KEYS + (
-        "tool_diameter",
-        "spindle_rpm",
-        "plunge_speed",
-        "target_depth",
-        "depth_per_pass",
-        "safe_z",
-    )
-
     @property
     def show_general_settings(self) -> bool:
         return False

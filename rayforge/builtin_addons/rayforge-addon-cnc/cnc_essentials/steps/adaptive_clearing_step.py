@@ -20,14 +20,6 @@ class AdaptiveClearStep(CncAssemblerStep):
     TYPELABEL = _("Adaptive Clear")
     uses_global_state = True  # consumes predecessor cleared-area
 
-    RECIPE_KEYS: Tuple[str, ...] = CncAssemblerStep.RECIPE_KEYS + (
-        "step_over",
-        "step_length",
-        "max_deflection_deg",
-        "wall_margin",
-        "area_tolerance",
-    )
-
     @classmethod
     def recipe_varset(cls) -> VarSet:
         return VarSet(
