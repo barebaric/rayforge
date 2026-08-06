@@ -62,15 +62,6 @@ class Step(DocItem, ABC):
     ASSEMBLER_NAME: ClassVar[str] = ""
     uses_global_state: ClassVar[bool] = False
 
-    #: Step attribute keys that are eligible for recipe extraction and
-    #: round-tripping. The base lists the shared motion and head keys;
-    #: domain bases and concrete steps extend this with their own.
-    RECIPE_KEYS: Tuple[str, ...] = (
-        "selected_head_uid",
-        "cut_speed",
-        "travel_speed",
-    )
-
     def __init__(
         self,
         typelabel: str,
@@ -125,8 +116,9 @@ class Step(DocItem, ABC):
 
         The base returns the shared motion vars. Domain bases and
         concrete steps extend this (via ``super()`` composition) with
-        their own attributes. Keys rendered here should be a subset of
-        :attr:`RECIPE_KEYS` so the editor and the extractor agree.
+        their own attributes. Recipe extraction keys are derived from
+        this varset via :meth:`recipe_keys`, so the editor and the
+        extractor agree.
         """
         return VarSet(
             vars=[
@@ -146,6 +138,17 @@ class Step(DocItem, ABC):
                 ),
             ]
         )
+
+    @classmethod
+    def recipe_keys(cls) -> Tuple[str, ...]:
+        """The step attribute keys eligible for recipe extraction.
+
+        Derived from :meth:`recipe_varset` so the editor and the
+        extractor always agree on which attributes a step's recipe
+        carries. Domain bases and concrete steps inherit this through
+        the same ``super()`` composition as :meth:`recipe_varset`.
+        """
+        return tuple(var.key for var in cls.recipe_varset())
 
     @classmethod
     def recipe_varset_groups(cls) -> List[Tuple[str, VarSet]]:

@@ -30,11 +30,6 @@ class WavefrontStep(LaserStep):
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "wavefront"
 
-    RECIPE_KEYS: Tuple[str, ...] = LaserStep.RECIPE_KEYS + (
-        "step_over_mm",
-        "offset_mm",
-    )
-
     @classmethod
     def recipe_varset(cls) -> VarSet:
         return VarSet(

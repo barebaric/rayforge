@@ -57,12 +57,13 @@ class RecipeControlWidget(Adw.ActionRow):
     def _get_step_settings(self) -> Dict[str, Any]:
         """Extracts recipe-relevant settings from the step.
 
-        Uses the step class's :attr:`RECIPE_KEYS`, which is the
-        canonical list of recipe-eligible attributes declared by the
-        step hierarchy (replacing the older capability-key lookup).
+        Uses the step class's :meth:`~rayforge.core.step.Step.recipe_keys`,
+        which derives the canonical list of recipe-eligible attributes
+        from the step's recipe varset (replacing the older
+        capability-key lookup).
         """
         settings = {}
-        for key in type(self.step).RECIPE_KEYS:
+        for key in type(self.step).recipe_keys():
             if hasattr(self.step, key):
                 settings[key] = getattr(self.step, key)
         return settings
