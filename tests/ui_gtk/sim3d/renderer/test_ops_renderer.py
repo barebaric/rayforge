@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from rayforge.core.color import ColorSet
-from rayforge.ui_gtk.sim3d.gl_utils import RenderContext
+from rayforge.ui_gtk.sim3d.gl_utils import RenderContext, ShaderSet
 from rayforge.ui_gtk.sim3d.renderer.ops_renderer import OpsRenderer
 
 
@@ -42,6 +42,10 @@ def _make_ctx(colors, show_travel_moves=False):
         color_set=colors,
         show_travel_moves=show_travel_moves,
     )
+
+
+def _make_shaders(shader):
+    return ShaderSet(main=shader)
 
 
 def _init_renderer(renderer):
@@ -146,6 +150,8 @@ def test_render_raises_on_invalid_executed_count(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
     ctx = _make_ctx(colors, show_travel_moves=True)
+    ctx.mvp_flat_gl = mvp
+    ctx.executed_vertex_count = 999
 
     with (
         patch("OpenGL.GL.glBindVertexArray"),
@@ -155,12 +161,7 @@ def test_render_raises_on_invalid_executed_count(renderer, colors):
         patch("rayforge.ui_gtk.sim3d.renderer.ops_renderer.set_line_width"),
     ):
         with pytest.raises(ValueError, match="executed_vertex_count"):
-            renderer.render(
-                ctx,
-                shader,
-                mvp,
-                executed_vertex_count=999,
-            )
+            renderer.render(ctx, _make_shaders(shader))
 
 
 @pytest.mark.ui
@@ -182,6 +183,7 @@ def test_render_draws_powered_and_travel(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
     ctx = _make_ctx(colors, show_travel_moves=True)
+    ctx.mvp_flat_gl = mvp
 
     with (
         patch("OpenGL.GL.glBindVertexArray"),
@@ -193,7 +195,7 @@ def test_render_draws_powered_and_travel(renderer, colors):
         patch("OpenGL.GL.glDrawArrays") as mock_draw,
         patch("rayforge.ui_gtk.sim3d.renderer.ops_renderer.set_line_width"),
     ):
-        renderer.render(ctx, shader, mvp)
+        renderer.render(ctx, _make_shaders(shader))
 
     assert mock_draw.call_count == 2
     shader.use.assert_called_once()
@@ -219,6 +221,7 @@ def test_render_hides_travel_when_disabled(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
     ctx = _make_ctx(colors, show_travel_moves=False)
+    ctx.mvp_flat_gl = mvp
 
     with (
         patch("OpenGL.GL.glBindVertexArray"),
@@ -230,7 +233,7 @@ def test_render_hides_travel_when_disabled(renderer, colors):
         patch("OpenGL.GL.glDrawArrays") as mock_draw,
         patch("rayforge.ui_gtk.sim3d.renderer.ops_renderer.set_line_width"),
     ):
-        renderer.render(ctx, shader, mvp)
+        renderer.render(ctx, _make_shaders(shader))
 
     assert mock_draw.call_count == 1
 
@@ -242,6 +245,7 @@ def test_render_noop_when_empty(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
     ctx = _make_ctx(colors, show_travel_moves=True)
+    ctx.mvp_flat_gl = mvp
 
     with (
         patch("OpenGL.GL.glBindVertexArray"),
@@ -251,6 +255,6 @@ def test_render_noop_when_empty(renderer, colors):
         patch("OpenGL.GL.glDrawArrays") as mock_draw,
         patch("rayforge.ui_gtk.sim3d.renderer.ops_renderer.set_line_width"),
     ):
-        renderer.render(ctx, shader, mvp)
+        renderer.render(ctx, _make_shaders(shader))
 
     mock_draw.assert_not_called()

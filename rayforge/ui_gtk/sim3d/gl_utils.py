@@ -96,6 +96,11 @@ class RenderContext:
     compiled_artifact: "Optional[CompiledSceneArtifact]" = None
     viewport: "Optional[ViewportConfig]" = None
     rotary_axis: Optional[str] = None
+    wcs_offset_mm: Optional[tuple] = None
+    x_right: bool = False
+    y_down: bool = False
+    x_negative: bool = False
+    y_negative: bool = False
     executed_vertex_count: int = -1
     executed_travel_vertex_count: int = -1
     alpha_pending: float = 0.2
@@ -125,6 +130,7 @@ class ShaderSet:
     main: Optional["Shader"] = None
     text: Optional["Shader"] = None
     texture: Optional["Shader"] = None
+    background: Optional["Shader"] = None
 
 
 class LayerRenderer(Protocol):

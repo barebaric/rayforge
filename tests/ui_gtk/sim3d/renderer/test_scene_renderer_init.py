@@ -27,6 +27,7 @@ def test_scene_renderer_constructs_children():
     assert scene.text_shader is None
     assert scene.texture_shader is None
     assert scene.background_shader is None
+    assert scene.shader_set is None
 
 
 def test_scene_renderer_init_gl_creates_children():
@@ -68,6 +69,11 @@ def test_scene_renderer_init_gl_creates_children():
     assert scene.texture_renderer is mock_tex.return_value
     assert scene.zone_renderer is mock_zone.return_value
     assert scene.background_shader is mock_background.return_value
+    assert scene.shader_set is not None
+    assert scene.shader_set.main is mock_simple.return_value
+    assert scene.shader_set.text is mock_text.return_value
+    assert scene.shader_set.texture is mock_texture.return_value
+    assert scene.shader_set.background is mock_background.return_value
     mock_axis.return_value.init_gl.assert_called_once()
     mock_tex.return_value.init_gl.assert_called_once()
     mock_zone.return_value.init_gl.assert_called_once()

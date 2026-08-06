@@ -14,8 +14,7 @@ from OpenGL import GL
 
 from ....simulator.scene3d import ScanlineOverlayLayer
 from ..color_lut_provider import ColorLutProvider
-from ..gl_utils import RenderContext, set_line_width
-from ..shader import Shader
+from ..gl_utils import RenderContext, ShaderSet, set_line_width
 from .base import BaseRenderer
 
 
@@ -28,9 +27,12 @@ class RingBufferRenderer(BaseRenderer):
     first *n* vertices, where *n* corresponds to the playhead position.
     """
 
-    def __init__(self, capacity_vertices: int = 4_000_000):
+    def __init__(
+        self, capacity_vertices: int = 4_000_000, is_rotary: bool = False
+    ):
         super().__init__()
         self._capacity = capacity_vertices
+        self.is_rotary = is_rotary
         self.vao: int = 0
         self.pos_vbo: int = 0
         self.pow_vbo: int = 0
@@ -140,25 +142,28 @@ class RingBufferRenderer(BaseRenderer):
     def clear(self):
         self.vertex_count = 0
 
-    def render(
-        self,
-        ctx: RenderContext,
-        shader: Shader,
-        mvp_matrix: np.ndarray,
-        executed_vertex_count: int = -1,
-        alpha_pending: float = 0.2,
-    ):
+    def prepare(self, ctx: RenderContext) -> None:
+        """No per-frame state to prepare."""
+        pass
+
+    def render(self, ctx: RenderContext, shaders: ShaderSet):
         if self.vertex_count == 0:
             return
 
-        draw_count = self.vertex_count
-
-        if draw_count == 0:
+        shader = shaders.main
+        if shader is None:
             return
+
+        mvp = ctx.mvp_rot_gl if self.is_rotary else ctx.mvp_flat_gl
+        if mvp is None:
+            return
+
+        draw_count = self.vertex_count
+        executed_vertex_count = ctx.executed_vertex_count
 
         line_width = ctx.line_width
         shader.use()
-        shader.set_mat4("uMVP", mvp_matrix)
+        shader.set_mat4("uMVP", mvp)
         shader.set_float("uHasNormals", 0.0)
         shader.set_float("uUsePowerLUT", 1.0)
         shader.set_int("uNumLaserLUTs", self._num_laser_luts)
@@ -166,7 +171,7 @@ class RingBufferRenderer(BaseRenderer):
             "uZeroPowerColor", ctx.color_set.get_rgba("zero_power")
         )
         shader.set_int("uExecutedVertexCount", executed_vertex_count)
-        shader.set_float("uAlphaPending", alpha_pending)
+        shader.set_float("uAlphaPending", ctx.alpha_pending)
 
         GL.glActiveTexture(GL.GL_TEXTURE1)
         GL.glBindTexture(GL.GL_TEXTURE_2D, self._color_lut_texture)

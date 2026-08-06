@@ -14,10 +14,8 @@ from typing import Optional, Tuple
 
 import numpy as np
 from OpenGL import GL
-from raygeo.geo.types import Point3D
 
-from ..gl_utils import RenderContext, set_line_width
-from ..shader import Shader
+from ..gl_utils import RenderContext, ShaderSet, set_line_width
 from .base import BaseRenderer
 from .plane_renderer import PlaneRenderer
 from .text_renderer import TextRenderer
@@ -181,6 +179,10 @@ class AxisRenderer3D(BaseRenderer):
         # Initialize self-managed components using base class helpers
         self._init_grid_and_axes()
 
+    def prepare(self, ctx: RenderContext) -> None:
+        """No per-frame state to prepare."""
+        pass
+
     def _init_grid_and_axes(self):
         """Creates VAOs/VBOs for the grid and axis lines."""
         grid_z_pos = -0.001
@@ -318,32 +320,16 @@ class AxisRenderer3D(BaseRenderer):
     def render(
         self,
         ctx: RenderContext,
-        line_shader: Shader,
-        text_shader: Shader,
-        scene_mvp: np.ndarray,
-        text_mvp: np.ndarray,
-        origin_offset_mm: Point3D = (0.0, 0.0, 0.0),
-        x_right: bool = False,
-        y_down: bool = False,
-        x_negative: bool = False,
-        y_negative: bool = False,
+        shaders: ShaderSet,
     ) -> None:
         """
         Orchestrates the rendering of all components in the correct order.
 
         Args:
-            line_shader: The shader program for drawing lines/solids.
-            text_shader: The shader program for drawing text.
-            scene_mvp: The final MVP matrix for the grid and background.
-            text_mvp: The MVP matrix for the text labels (no model transform).
-            view_matrix: The view matrix, used for billboarding text.
-            model_matrix: The model matrix for coordinate system transforms.
-            origin_offset_mm: The (x, y, z) offset for the work coordinate
-              system.
-            x_right: True if the machine origin is on the right side.
-            y_down: True if the machine origin is at the top.
-            x_negative: True if the X-axis counts down from the origin.
-            y_negative: True if the Y-axis counts down from the origin.
+            ctx: The current render context; carries the shaders, scene and
+              text MVPs, and the viewport origin/axis flags.
+            shaders: The shader set; ``main`` for lines and ``text`` for
+              labels.
         """
         if not all(
             (
@@ -354,6 +340,18 @@ class AxisRenderer3D(BaseRenderer):
             )
         ):
             return
+
+        line_shader = shaders.main
+        text_shader = shaders.text
+        if line_shader is None or text_shader is None:
+            return
+
+        text_mvp = ctx.mvp_ui.T
+        origin_offset_mm = (
+            ctx.wcs_offset_mm
+            if ctx.wcs_offset_mm is not None
+            else (0.0, 0.0, 0.0)
+        )
 
         # 1. Calculate the world-space position of the WCS origin.
         # origin_offset_mm is in grid coordinates (workarea-relative).
@@ -376,7 +374,7 @@ class AxisRenderer3D(BaseRenderer):
 
         # Draw background plane
         GL.glDepthMask(GL.GL_FALSE)
-        self.background_renderer.render(ctx, line_shader, grid_mvp)
+        self.background_renderer.render(ctx, shaders)
 
         # Draw grid
         line_shader.set_mat4("uMVP", grid_mvp)
@@ -411,27 +409,12 @@ class AxisRenderer3D(BaseRenderer):
             GL.glDrawArrays(GL.GL_LINES, 0, self.extent_frame_vertex_count)
 
         # 5. Pass the correct world-space offset vector to the label renderer.
-        self._render_axis_labels(
-            ctx,
-            text_shader,
-            text_mvp,
-            origin_offset_mm=origin_offset_mm,
-            x_right=x_right,
-            y_down=y_down,
-            x_negative=x_negative,
-            y_negative=y_negative,
-        )
+        self._render_axis_labels(ctx, shaders)
 
     def _render_axis_labels(
         self,
         ctx: RenderContext,
-        text_shader: Shader,
-        text_mvp_matrix: np.ndarray,
-        origin_offset_mm: Point3D,
-        x_right: bool = False,
-        y_down: bool = False,
-        x_negative: bool = False,
-        y_negative: bool = False,
+        shaders: ShaderSet,
     ) -> None:
         """Helper method to render text labels along the axes."""
         if not self.text_renderer:
@@ -442,6 +425,14 @@ class AxisRenderer3D(BaseRenderer):
         y_axis_label_x_offset = label_height_mm * 0.6
 
         # origin_offset_mm is in grid coordinates (workarea-relative)
+        origin_offset_mm = (
+            ctx.wcs_offset_mm
+            if ctx.wcs_offset_mm is not None
+            else (0.0, 0.0, 0.0)
+        )
+        x_right = ctx.x_right
+        x_negative = ctx.x_negative
+        y_negative = ctx.y_negative
         wcs_local_x, wcs_local_y, _ = origin_offset_mm
 
         # X-axis labels
@@ -481,12 +472,11 @@ class AxisRenderer3D(BaseRenderer):
 
             self.text_renderer.render_text(
                 ctx,
-                text_shader,
+                shaders,
                 label_text,
                 pos_final,
                 label_height_mm,
                 self.label_color,
-                text_mvp_matrix,
             )
 
         # Y-axis labels
@@ -518,11 +508,10 @@ class AxisRenderer3D(BaseRenderer):
 
             self.text_renderer.render_text(
                 ctx,
-                text_shader,
+                shaders,
                 label_text,
                 pos_final,
                 label_height_mm,
                 self.label_color,
-                text_mvp_matrix,
                 align=y_label_align,
             )

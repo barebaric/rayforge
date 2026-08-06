@@ -6,8 +6,7 @@ import numpy as np
 from OpenGL import GL
 
 from ....machine.models.zone import Zone, ZoneShape
-from ..gl_utils import RenderContext
-from ..shader import Shader
+from ..gl_utils import RenderContext, ShaderSet
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -346,11 +345,19 @@ class ZoneRenderer(BaseRenderer):
     def init_gl(self) -> None:
         pass
 
-    def render(
-        self, ctx: RenderContext, shader: Shader, mvp: np.ndarray
-    ) -> None:
+    def prepare(self, ctx: RenderContext) -> None:
+        """No per-frame state to prepare."""
+        pass
+
+    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
         if not self._fill_vao and not self._edge_vao:
             return
+
+        shader = shaders.main
+        if shader is None:
+            return
+
+        mvp = (ctx.mvp_ui @ ctx.margin_shift).T
 
         shader.use()
         GL.glEnable(GL.GL_BLEND)

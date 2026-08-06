@@ -5,7 +5,7 @@ import pytest
 
 from rayforge.core.color import ColorSet
 from rayforge.machine.models.machine import Origin
-from rayforge.ui_gtk.sim3d.gl_utils import RenderContext
+from rayforge.ui_gtk.sim3d.gl_utils import RenderContext, ShaderSet
 from rayforge.ui_gtk.sim3d.renderer.axis_renderer_3d import AxisRenderer3D
 
 # Test scenarios for axis label expectations, mirrored from the 2D canvas tests
@@ -144,15 +144,13 @@ def test_axis_label_rendering(
         camera_position=np.zeros(3),
         color_set=ColorSet(),
     )
+    ctx.wcs_offset_mm = wcs_offset
+    ctx.x_right = x_right
+    ctx.x_negative = x_negative
+    ctx.y_negative = y_negative
     axis_renderer._render_axis_labels(
         ctx=ctx,
-        text_shader=MagicMock(),
-        text_mvp_matrix=dummy_mvp,
-        origin_offset_mm=wcs_offset,
-        x_right=x_right,
-        y_down=y_down,
-        x_negative=x_negative,
-        y_negative=y_negative,
+        shaders=ShaderSet(text=MagicMock()),
     )
 
     # 5. Collect and verify the results against expectations
@@ -207,11 +205,10 @@ def test_axis_labels_in_preferred_unit():
         camera_position=np.zeros(3),
         color_set=ColorSet(),
     )
+    ctx.wcs_offset_mm = (0.0, 0.0, 0.0)
     axis_renderer._render_axis_labels(
         ctx=ctx,
-        text_shader=MagicMock(),
-        text_mvp_matrix=dummy_mvp,
-        origin_offset_mm=(0.0, 0.0, 0.0),
+        shaders=ShaderSet(text=MagicMock()),
     )
 
     rendered_labels = set()

@@ -9,8 +9,7 @@ import logging
 import numpy as np
 from OpenGL import GL
 
-from ..gl_utils import RenderContext
-from ..shader import Shader
+from ..gl_utils import RenderContext, ShaderSet
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -76,12 +75,20 @@ class PlaneRenderer(BaseRenderer):
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-    def render(
-        self, ctx: RenderContext, shader: Shader, mvp: np.ndarray
-    ) -> None:
+    def prepare(self, ctx: RenderContext) -> None:
+        """No per-frame state to prepare."""
+        pass
+
+    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
         """Draws the plane."""
         if not self.vao:
             return
+
+        shader = shaders.main
+        if shader is None:
+            return
+
+        mvp = ctx.model_matrix.T @ ctx.mvp_ui.T
 
         shader.set_mat4("uMVP", mvp)
         shader.set_vec4("uColor", self.color)

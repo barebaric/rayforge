@@ -12,8 +12,7 @@ from OpenGL import GL
 
 from ....core.color import hex_to_rgba
 from ....machine.models.laser import LaserHead
-from ..gl_utils import RenderContext
-from ..shader import Shader
+from ..gl_utils import RenderContext, ShaderSet
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -80,19 +79,24 @@ class LaserBeamRenderer(BaseRenderer):
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-    def update_from_state(
-        self,
-        state,
-        machine,
-        viewport,
-        margin_shift,
-        ra,
-        doc,
-        op_player,
-    ):
+    def prepare(self, ctx: RenderContext) -> None:
         """Computes and caches the laser beams from the current state."""
         self._beams = []
         self.laser_light_pos = None
+
+        op_player = ctx.op_player
+        machine = ctx.machine
+        if op_player is None or machine is None:
+            return
+
+        state = op_player.state
+        viewport = ctx.viewport
+        if viewport is None:
+            return
+
+        ra = ctx.rotary_axis
+        doc = ctx.doc
+        margin_shift = ctx.margin_shift
 
         asm = machine.assembly
         wcs = viewport.wcs_offset_mm
@@ -116,7 +120,11 @@ class LaserBeamRenderer(BaseRenderer):
             if not state.laser_on:
                 continue
             if ra is not None and asm.has_rotary:
-                current_layer = op_player.get_current_layer(doc)
+                current_layer = (
+                    op_player.get_current_layer(doc)
+                    if doc is not None
+                    else None
+                )
                 diameter = (
                     current_layer.rotary_diameter if current_layer else 0.0
                 )
@@ -132,8 +140,12 @@ class LaserBeamRenderer(BaseRenderer):
             self._beams.append((beam_pos[:3], beam_height, beam_color))
             self.laser_light_pos = beam_pos[:3].astype(np.float32)
 
-    def render(self, ctx: RenderContext, shader: Shader):
+    def render(self, ctx: RenderContext, shaders: ShaderSet):
         if not self.vao:
+            return
+
+        shader = shaders.main
+        if shader is None:
             return
 
         proj_matrix = ctx.proj_matrix

@@ -9,21 +9,18 @@ rebuilds and theme/colour application to this class.
 
 import logging
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from ....machine.assembly import LinkRole
-from ....machine.models.laser import LaserHead
 from ....shared.units.formatter import (
     get_default_grid_step_mm,
     get_preferred_unit_factor,
 )
-from ....simulator.machine_state import MachineState
 from ....simulator.scene3d import CompiledSceneArtifact
 from ..color_lut_provider import ColorLutProvider
 from ..gl_state import render_pass
-from ..gl_utils import rotation_4x4
+from ..gl_utils import ShaderSet, rotation_4x4
 from ..layer_renderer_group import (
     LayerRendererGroup,
     match_overlay_layer,
@@ -58,6 +55,7 @@ class SceneRenderer(BaseRenderer):
         self.text_shader: Optional[Shader] = None
         self.texture_shader: Optional[Shader] = None
         self.background_shader: Optional[Shader] = None
+        self.shader_set: Optional[ShaderSet] = None
 
         self.axis_renderer: Optional[AxisRenderer3D] = None
         self.background_renderer: Optional[BackgroundRenderer] = (
@@ -71,7 +69,7 @@ class SceneRenderer(BaseRenderer):
 
         self.layer_groups: List[LayerRendererGroup] = []
         self.cylinder_renderers: Dict[float, CylinderRenderer] = {}
-        self.model_renderers: List[Tuple[ModelRenderer, str]] = []
+        self.model_renderers: List[ModelRenderer] = []
         self.had_rotary_layers = False
         self.cylinder_transform = np.eye(4, dtype=np.float64)
 
@@ -85,6 +83,12 @@ class SceneRenderer(BaseRenderer):
         self.text_shader = TextShader()
         self.texture_shader = TextureShader()
         self.background_shader = BackgroundShader()
+        self.shader_set = ShaderSet(
+            main=self.main_shader,
+            text=self.text_shader,
+            texture=self.texture_shader,
+            background=self.background_shader,
+        )
 
         self.axis_renderer = AxisRenderer3D(
             viewport.width_mm,
@@ -128,7 +132,7 @@ class SceneRenderer(BaseRenderer):
             self.zone_renderer.cleanup()
         for renderer in self.cylinder_renderers.values():
             renderer.cleanup()
-        for renderer, _ in self.model_renderers:
+        for renderer in self.model_renderers:
             renderer.cleanup()
         if self.main_shader:
             self.main_shader.cleanup()
@@ -228,8 +232,8 @@ class SceneRenderer(BaseRenderer):
 
     def clear_models(self):
         """Removes all model renderers without rebuilding."""
-        for r, _ in self.model_renderers:
-            r.cleanup()
+        for renderer in self.model_renderers:
+            renderer.cleanup()
         self.model_renderers.clear()
 
     def update_models_from_context(self, context, machine):
@@ -260,7 +264,7 @@ class SceneRenderer(BaseRenderer):
                 )
                 continue
 
-            renderer = ModelRenderer(resolved)
+            renderer = ModelRenderer(resolved, link_name=link.name)
             renderer.init_gl()
             logger.debug(
                 "Model renderer created: vao=%d, vertex_count=%d, bounds=%s",
@@ -268,7 +272,7 @@ class SceneRenderer(BaseRenderer):
                 renderer._vertex_count,
                 renderer.bounds,
             )
-            self.model_renderers.append((renderer, link.name))
+            self.model_renderers.append(renderer)
 
     def apply_background_colors(self, bg_color, bg_light):
         """Applies the resolved background colors to the background."""
@@ -382,9 +386,14 @@ class SceneRenderer(BaseRenderer):
             if shader:
                 shader.reset_uniforms()
 
-        if self.background_renderer and self.background_shader:
-            with render_pass(self.background_shader):
-                self.background_renderer.render(ctx, self.background_shader)
+        shaders = self.shader_set
+        if shaders is None:
+            return
+
+        if self.background_renderer and shaders.background:
+            self.background_renderer.prepare(ctx)
+            with render_pass(shaders.background):
+                self.background_renderer.render(ctx, shaders)
 
         mvp_ui = ctx.mvp_ui
         margin_shift = ctx.margin_shift
@@ -396,24 +405,19 @@ class SceneRenderer(BaseRenderer):
             and self.text_shader is not None
             and show_grid
         ):
+            ctx.wcs_offset_mm = viewport.wcs_offset_mm
+            ctx.x_right = viewport.x_right
+            ctx.y_down = viewport.y_down
+            ctx.x_negative = viewport.x_negative
+            ctx.y_negative = viewport.y_negative
+            self.axis_renderer.prepare(ctx)
             with render_pass(self.main_shader, self.text_shader):
-                self.axis_renderer.render(
-                    ctx,
-                    self.main_shader,
-                    self.text_shader,
-                    ctx.mvp_scene.T,
-                    mvp_ui_gl,
-                    origin_offset_mm=viewport.wcs_offset_mm,
-                    x_right=viewport.x_right,
-                    y_down=viewport.y_down,
-                    x_negative=viewport.x_negative,
-                    y_negative=viewport.y_negative,
-                )
+                self.axis_renderer.render(ctx, shaders)
 
         if self.zone_renderer and self.main_shader and show_nogo_zones:
-            zone_mvp_gl = (mvp_ui @ margin_shift).T
+            self.zone_renderer.prepare(ctx)
             with render_pass(self.main_shader):
-                self.zone_renderer.render(ctx, self.main_shader, zone_mvp_gl)
+                self.zone_renderer.render(ctx, shaders)
 
         # Compute cylinder rotation from mapped ops.
         #
@@ -424,6 +428,16 @@ class SceneRenderer(BaseRenderer):
         ra = None
         if op_player:
             ra = op_player.rotary_axis
+        ctx.machine = machine
+        ctx.doc = doc
+        ctx.op_player = op_player
+        ctx.viewport = viewport
+        ctx.compiled_artifact = compiled_artifact
+        ctx.rotary_axis = ra
+        ctx.had_rotary_layers = self.had_rotary_layers
+        ctx.show_grid = show_grid
+        ctx.show_nogo_zones = show_nogo_zones
+        ctx.show_models = show_models
         vis_rot_axis = np.array([1.0, 0.0, 0.0], dtype=np.float64)
         if op_player and self.had_rotary_layers and machine and ra is not None:
             asm = machine.assembly
@@ -444,6 +458,10 @@ class SceneRenderer(BaseRenderer):
 
         rot_4x4 = rotation_4x4(vis_rot_axis, cyl_angle)
         rot_cyl_gl = (cyl_base_mvp @ rot_4x4).T.astype(np.float32)
+        cyl_mesh_mvp = (
+            mvp_ui @ margin_shift @ self.cylinder_transform @ rot_4x4
+        ).astype(np.float64)
+        ctx.cyl_mesh_mvp_gl = cyl_mesh_mvp.T.astype(np.float32)
 
         tex_reached = None
         if op_player and compiled_artifact:
@@ -462,116 +480,51 @@ class SceneRenderer(BaseRenderer):
             and machine
             and self.laser_beam_renderer
         ):
-            self.laser_beam_renderer.update_from_state(
-                op_player.state,
-                machine,
-                viewport,
-                margin_shift,
-                ra,
-                doc,
-                op_player,
-            )
-            laser_light_pos = self.laser_beam_renderer.laser_light_pos
+            self.laser_beam_renderer.prepare(ctx)
+            ctx.laser_light_pos = self.laser_beam_renderer.laser_light_pos
         else:
-            laser_light_pos = None
+            ctx.laser_light_pos = None
 
+        ctx.mvp_flat_gl = mvp_ui_gl
+        ctx.mvp_rot_gl = rot_cyl_gl
         deferred_ring_renders = []
         for group in self.layer_groups:
             if self.main_shader:
                 with render_pass(self.main_shader):
                     ring = group.render(
                         ctx,
-                        self.main_shader,
+                        shaders,
                         op_player,
-                        mvp_ui_gl,
-                        rot_cyl_gl,
                     )
                 if ring is not None:
                     deferred_ring_renders.append(ring)
 
         if self.cylinder_renderers and self.main_shader:
-            cyl_mesh_mvp = (
-                mvp_ui @ margin_shift @ self.cylinder_transform @ rot_4x4
-            ).astype(np.float64)
-            cyl_mvp_gl = cyl_mesh_mvp.T.astype(np.float32)
             for renderer in self.cylinder_renderers.values():
-                renderer.update_from_state(cyl_mvp_gl)
+                renderer.prepare(ctx)
                 with render_pass(self.main_shader):
-                    renderer.render(ctx, self.main_shader)
+                    renderer.render(ctx, shaders)
 
         if self.texture_renderer and self.texture_shader:
-            rot_cyl_mvp = cyl_base_mvp @ rot_4x4
-            self.texture_renderer.update_from_state(mvp_ui, rot_cyl_mvp)
+            ctx.reached_count = tex_reached
+            self.texture_renderer.prepare(ctx)
             with render_pass(self.texture_shader):
-                self.texture_renderer.render(
-                    ctx, self.texture_shader, reached_count=tex_reached
-                )
-            with render_pass(self.texture_shader):
-                self.texture_renderer.render_cylinder(
-                    ctx, self.texture_shader, reached_count=tex_reached
-                )
+                self.texture_renderer.render(ctx, shaders)
 
-        for ring_renderer, mvp, exec_ring in deferred_ring_renders:
+        for ring_renderer, exec_ring in deferred_ring_renders:
             if self.main_shader:
+                ctx.executed_vertex_count = exec_ring
+                ring_renderer.prepare(ctx)
                 with render_pass(self.main_shader):
-                    ring_renderer.render(
-                        ctx,
-                        self.main_shader,
-                        mvp,
-                        executed_vertex_count=exec_ring,
-                    )
+                    ring_renderer.render(ctx, shaders)
 
         if self.laser_beam_renderer and self.main_shader:
             with render_pass(self.main_shader):
-                self.laser_beam_renderer.render(ctx, self.main_shader)
+                self.laser_beam_renderer.render(ctx, shaders)
 
         if show_models and self.model_renderers and machine:
-            asm = machine.assembly
-            wcs = viewport.wcs_offset_mm
-            model_state = op_player.state if op_player else MachineState()
-            model_transforms = asm.model_world_transforms(
-                model_state, wcs_offset=wcs
-            )
-            is_rotary = ra is not None and asm.has_rotary
-            layer_rotary_diameter = 0.0
-            if is_rotary and op_player:
-                current_layer = op_player.get_current_layer(doc)
-                if current_layer:
-                    layer_rotary_diameter = current_layer.rotary_diameter
-            for renderer, link_name in self.model_renderers:
+            for renderer in self.model_renderers:
                 if self.main_shader:
-                    t = model_transforms.get(link_name)
-                    if t is None:
-                        continue
-                    module_transform = t.astype(np.float32)
-                    if is_rotary:
-                        link = asm.get_link(link_name)
-                        if link and link.role != LinkRole.CHUCK:
-                            focal = 50.0
-                            if link.name.startswith("head_"):
-                                try:
-                                    idx = int(link.name.split("_")[1])
-                                    laser = machine.heads[idx]
-                                    if isinstance(laser, LaserHead):
-                                        if laser.focal_distance > 0:
-                                            focal = laser.focal_distance
-                                except (ValueError, IndexError):
-                                    pass
-                            rotary_heads = asm.head_rotary_positions(
-                                model_state,
-                                layer_rotary_diameter,
-                                focal_distance=focal,
-                            )
-                            if link.name in rotary_heads:
-                                pos = rotary_heads[link.name]
-                                module_transform[:3, 3] = pos.astype(
-                                    np.float32
-                                )
-                    combined = mvp_ui @ margin_shift @ module_transform
-                    renderer.update_from_state(
-                        combined.T,
-                        model_matrix=margin_shift @ module_transform,
-                        point_light_pos=laser_light_pos,
-                    )
+                    renderer.prepare(ctx)
                     with render_pass(self.main_shader):
-                        renderer.render(ctx, self.main_shader)
+                        renderer.render(ctx, shaders)

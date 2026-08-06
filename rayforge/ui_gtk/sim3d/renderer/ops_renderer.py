@@ -9,8 +9,7 @@ from OpenGL import GL
 
 from ....simulator.scene3d import VertexLayer
 from ..color_lut_provider import ColorLutProvider
-from ..gl_utils import RenderContext, set_line_width
-from ..shader import Shader
+from ..gl_utils import RenderContext, ShaderSet, set_line_width
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -19,9 +18,10 @@ logger = logging.getLogger(__name__)
 class OpsRenderer(BaseRenderer):
     """Renders toolpath operations (cuts and travels) as colored lines."""
 
-    def __init__(self):
+    def __init__(self, is_rotary: bool = False):
         """Initializes the OpsRenderer."""
         super().__init__()
+        self.is_rotary = is_rotary
         self.powered_vao: int = 0
         self.travel_vao: int = 0
 
@@ -150,33 +150,36 @@ class OpsRenderer(BaseRenderer):
         """Updates the colour LUT from a shared ColorLutProvider."""
         self.update_color_lut(provider.cut_lut(), provider.num_lasers)
 
-    def render(
-        self,
-        ctx: RenderContext,
-        shader: Shader,
-        mvp_matrix: np.ndarray,
-        executed_vertex_count: int = -1,
-        alpha_pending: float = 0.2,
-        executed_travel_vertex_count: int = -1,
-    ) -> None:
+    def prepare(self, ctx: RenderContext) -> None:
+        """No per-frame state to prepare."""
+        pass
+
+    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
         """
         Renders the toolpaths. The vertices are assumed to be in world space.
 
+        Pulls the MVP, executed-vertex counts, and pending alpha from
+        ``ctx`` (populated by the calling layer group / scene renderer).
+
         Args:
             ctx: The current render context (carries color set, line width,
-              and travel-move visibility).
-            shader: The shader program to use for rendering lines.
-            mvp_matrix: The combined Model-View-Projection matrix.
-            executed_vertex_count: Powered vertices drawn at full alpha.
-                -1 means all vertices at full alpha (IDLE mode).
-            alpha_pending: Alpha multiplier for pending vertices (0..1).
-            executed_travel_vertex_count: Travel vertices drawn at full
-                alpha during simulation. -1 means use ctx.show_travel_moves
-                instead.
+              travel-move visibility, and per-frame execution state).
+            shaders: The shader set; the ``main`` program is used.
         """
+        shader = shaders.main
+        if shader is None:
+            return
+
+        mvp = ctx.mvp_rot_gl if self.is_rotary else ctx.mvp_flat_gl
+        if mvp is None:
+            return
+
         colors = ctx.color_set
         show_travel_moves = ctx.show_travel_moves
         line_width = ctx.line_width
+        executed_vertex_count = ctx.executed_vertex_count
+        executed_travel_vertex_count = ctx.executed_travel_vertex_count
+        alpha_pending = ctx.alpha_pending
 
         if executed_vertex_count > self.powered_vertex_count:
             raise ValueError(
@@ -188,7 +191,7 @@ class OpsRenderer(BaseRenderer):
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         GL.glDepthMask(GL.GL_FALSE)
-        shader.set_mat4("uMVP", mvp_matrix)
+        shader.set_mat4("uMVP", mvp)
         shader.set_float("uHasNormals", 0.0)
 
         shader.set_int("uExecutedVertexCount", executed_vertex_count)

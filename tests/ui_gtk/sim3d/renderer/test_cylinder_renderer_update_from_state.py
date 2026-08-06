@@ -1,4 +1,4 @@
-"""Tests for CylinderRenderer.update_from_state."""
+"""Tests for CylinderRenderer.prepare and render."""
 
 from unittest.mock import MagicMock, patch
 
@@ -24,22 +24,35 @@ def renderer():
     return r
 
 
+def _make_ctx(mvp=None):
+    ctx = MagicMock()
+    ctx.cyl_mesh_mvp_gl = mvp
+    return ctx
+
+
+def _make_shaders(shader):
+    shaders = MagicMock()
+    shaders.main = shader
+    return shaders
+
+
 @pytest.mark.ui
-def test_render_noop_without_update_from_state(renderer):
+def test_render_noop_without_prepare(renderer):
     shader = MagicMock()
+    renderer.prepare(_make_ctx(mvp=None))
     with (
         patch("OpenGL.GL.glEnable"),
         patch("OpenGL.GL.glBlendFunc"),
         patch("OpenGL.GL.glDrawArrays"),
     ):
-        renderer.render(MagicMock(), shader)
+        renderer.render(_make_ctx(mvp=None), _make_shaders(shader))
     shader.use.assert_not_called()
 
 
 @pytest.mark.ui
 def test_render_uses_cached_mvp(renderer):
     mvp = np.eye(4, dtype=np.float32)
-    renderer.update_from_state(mvp)
+    renderer.prepare(_make_ctx(mvp=mvp))
 
     shader = MagicMock()
     with (
@@ -47,9 +60,8 @@ def test_render_uses_cached_mvp(renderer):
         patch("OpenGL.GL.glBlendFunc"),
         patch("OpenGL.GL.glBindVertexArray"),
         patch("OpenGL.GL.glDrawArrays"),
-        patch("OpenGL.GL.glDisable"),
     ):
-        renderer.render(MagicMock(), shader)
+        renderer.render(_make_ctx(mvp=mvp), _make_shaders(shader))
 
     shader.use.assert_called_once()
     shader.set_mat4.assert_called_once_with("uMVP", mvp)
