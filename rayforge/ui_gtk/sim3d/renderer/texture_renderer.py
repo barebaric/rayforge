@@ -10,6 +10,7 @@ import numpy as np
 from OpenGL import GL
 
 from ....pipeline.artifact.base import TextureData
+from ....simulator.scene3d import CompiledSceneArtifact, TextureLayer
 from ..color_lut_provider import ColorLutProvider
 from ..gl_utils import BaseRenderer, RenderContext, Shader
 
@@ -249,6 +250,39 @@ class TextureArtifactRenderer(BaseRenderer):
             instance_data["cylinder_vertices"] = cylinder_vertices
 
         self.instances.append(instance_data)
+
+    def add_instance_from_texture_layer(
+        self,
+        tl: TextureLayer,
+        laser_uid_order: Optional[List[str]] = None,
+    ):
+        """Adds a texture instance from a compiled texture layer."""
+        laser_index = 0
+        if (
+            tl.laser_uid
+            and laser_uid_order
+            and tl.laser_uid in laser_uid_order
+        ):
+            laser_index = laser_uid_order.index(tl.laser_uid)
+        tex_data = TextureData(
+            power_texture_data=tl.power_texture,
+            dimensions_mm=(0.0, 0.0),
+            position_mm=(0.0, 0.0),
+        )
+        self.add_instance(
+            tex_data,
+            tl.model_matrix,
+            rotary_enabled=tl.rotary_enabled,
+            rotary_diameter=tl.rotary_diameter,
+            cylinder_vertices=tl.cylinder_vertices,
+            laser_index=laser_index,
+        )
+
+    def update_from_artifact(self, artifact: CompiledSceneArtifact):
+        """Clears existing instances and uploads the artifact's layers."""
+        self.clear()
+        for tl in artifact.texture_layers:
+            self.add_instance_from_texture_layer(tl, artifact.laser_uid_order)
 
     def update_color_lut(self, lut_data: np.ndarray, num_lasers: int = 1):
         """

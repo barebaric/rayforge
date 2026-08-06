@@ -16,7 +16,6 @@ from ...core.color import OPS_COLOR_SPEC, ColorSet, hex_to_rgba
 from ...machine.assembly import LinkRole
 from ...machine.kinematic_mapping import KinematicMapping
 from ...machine.models.laser import LaserHead
-from ...pipeline.artifact.base import TextureData
 from ...pipeline.artifact.handle import BaseArtifactHandle
 from ...pipeline.artifact.job import JobArtifact
 from ...pipeline.pipeline import Pipeline
@@ -800,25 +799,7 @@ class Canvas3D(Gtk.GLArea):
             elif kind == "textures":
                 _, artifact = item
                 if self._texture_renderer:
-                    self._texture_renderer.clear()
-                    luo = artifact.laser_uid_order
-                    for tl in artifact.texture_layers:
-                        tex_data = TextureData(
-                            power_texture_data=tl.power_texture,
-                            dimensions_mm=(0.0, 0.0),
-                            position_mm=(0.0, 0.0),
-                        )
-                        laser_index = 0
-                        if tl.laser_uid and tl.laser_uid in luo:
-                            laser_index = luo.index(tl.laser_uid)
-                        self._texture_renderer.add_instance(
-                            tex_data,
-                            tl.model_matrix,
-                            rotary_enabled=tl.rotary_enabled,
-                            rotary_diameter=tl.rotary_diameter,
-                            cylinder_vertices=tl.cylinder_vertices,
-                            laser_index=laser_index,
-                        )
+                    self._texture_renderer.update_from_artifact(artifact)
 
             elif kind == "color_luts":
                 self._update_renderer_color_luts()
@@ -1631,26 +1612,7 @@ class Canvas3D(Gtk.GLArea):
             self._layer_groups.append(group)
 
         if self._texture_renderer:
-            self._texture_renderer.clear()
-            luo = artifact.laser_uid_order if artifact else []
-            for tl in artifact.texture_layers:
-                tex_data = TextureData(
-                    power_texture_data=tl.power_texture,
-                    dimensions_mm=(0.0, 0.0),
-                    position_mm=(0.0, 0.0),
-                )
-                rotary_enabled = tl.rotary_enabled
-                laser_index = 0
-                if tl.laser_uid and tl.laser_uid in luo:
-                    laser_index = luo.index(tl.laser_uid)
-                self._texture_renderer.add_instance(
-                    tex_data,
-                    tl.model_matrix,
-                    rotary_enabled=rotary_enabled,
-                    rotary_diameter=tl.rotary_diameter,
-                    cylinder_vertices=tl.cylinder_vertices,
-                    laser_index=laser_index,
-                )
+            self._texture_renderer.update_from_artifact(artifact)
 
         self._update_renderer_color_luts()
 
