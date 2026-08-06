@@ -1,11 +1,11 @@
-"""Tests for _LayerRendererGroup.update_from_artifact."""
+"""Tests for LayerRendererGroup.update_from_artifact."""
 
 from unittest.mock import MagicMock
 
 import numpy as np
 
 from rayforge.simulator.scene3d import ScanlineOverlayLayer, VertexLayer
-from rayforge.ui_gtk.sim3d.canvas3d import _LayerRendererGroup
+from rayforge.ui_gtk.sim3d.layer_renderer_group import LayerRendererGroup
 
 
 def _make_vl():
@@ -30,7 +30,7 @@ def _make_ol():
 
 
 def test_update_from_artifact_uploads_ops_and_overlay():
-    group = _LayerRendererGroup(is_rotary=False)
+    group = LayerRendererGroup(is_rotary=False)
     group.ops_renderer = MagicMock()
     group.ring_renderer = MagicMock()
 
@@ -48,7 +48,7 @@ def test_update_from_artifact_uploads_ops_and_overlay():
 
 
 def test_update_from_artifact_without_overlay_clears_ring():
-    group = _LayerRendererGroup(is_rotary=False)
+    group = LayerRendererGroup(is_rotary=False)
     group.ops_renderer = MagicMock()
     group.ring_renderer = MagicMock()
 

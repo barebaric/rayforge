@@ -84,7 +84,7 @@ machine:
     frame_repeat_count: 20
     frame_speed: 0
     max_power: 1000
-    model_path: head.glb
+    model_path: head-co2.glb
     name: Laser Head
     raster_color: '#000000'
     spot_size_mm:
@@ -97,12 +97,12 @@ machine:
     - 0.0
     - 0.0
     - 0.0
-    - 1.8369701987210297e-14
-    - -300.0
-    - 0.0
-    - -0.0
     - 300.0
-    - 1.8369701987210297e-14
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 300.0
     - 0.0
     - 0.0
     - 0.0

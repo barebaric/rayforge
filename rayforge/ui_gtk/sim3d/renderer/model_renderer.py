@@ -146,6 +146,20 @@ class ModelRenderer(BaseRenderer):
         self._bounds: Optional[Tuple[np.ndarray, np.ndarray]] = None
         self._loaded: bool = False
         self._mesh_data: Optional[_CachedModelData] = None
+        self._mvp_matrix: Optional[np.ndarray] = None
+        self._model_matrix: Optional[np.ndarray] = None
+        self._point_light_pos: Optional[np.ndarray] = None
+
+    def update_from_state(
+        self,
+        mvp_matrix: np.ndarray,
+        model_matrix: Optional[np.ndarray] = None,
+        point_light_pos: Optional[np.ndarray] = None,
+    ):
+        """Caches the per-frame matrices for the model mesh."""
+        self._mvp_matrix = mvp_matrix
+        self._model_matrix = model_matrix
+        self._point_light_pos = point_light_pos
 
     def _load_mesh(self) -> bool:
         self._mesh_data = _load_mesh_data(self._path)
@@ -210,20 +224,15 @@ class ModelRenderer(BaseRenderer):
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-    def render(
-        self,
-        ctx: RenderContext,
-        shader: Shader,
-        mvp_matrix: np.ndarray,
-        model_matrix: Optional[np.ndarray] = None,
-        point_light_pos: Optional[np.ndarray] = None,
-    ) -> None:
-        if not self._vao:
+    def render(self, ctx: RenderContext, shader: Shader) -> None:
+        if not self._vao or self._mvp_matrix is None:
             return
 
         light_dir = np.array([0.5, 0.8, 1.0], dtype=np.float32)
         fill_dir = np.array([-0.6, -0.4, 0.3], dtype=np.float32)
         camera_position = ctx.camera_position
+        model_matrix = self._model_matrix
+        point_light_pos = self._point_light_pos
 
         if model_matrix is not None and camera_position is not None:
             model_inv = np.linalg.inv(model_matrix)
@@ -238,7 +247,7 @@ class ModelRenderer(BaseRenderer):
             cam_pos = np.zeros(3, dtype=np.float32)
 
         shader.use()
-        shader.set_mat4("uMVP", mvp_matrix)
+        shader.set_mat4("uMVP", self._mvp_matrix)
         shader.set_float("uUseVertexColor", 1.0 if self._has_colors else 0.0)
         shader.set_vec4("uColor", (0.5, 0.6, 0.7, 1.0))
         shader.set_float("uHasNormals", 1.0)

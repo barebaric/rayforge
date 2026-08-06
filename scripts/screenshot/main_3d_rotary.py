@@ -79,7 +79,7 @@ def main():
         run_on_main_thread(_set_perspective)
         time.sleep(0.5)
 
-        seek_3d_playback(win, 0.6)
+        seek_3d_playback(win, 0.3)
 
         clear_window_subtitle(win)
         logger.info("Taking screenshot: main-3d-rotary.png")

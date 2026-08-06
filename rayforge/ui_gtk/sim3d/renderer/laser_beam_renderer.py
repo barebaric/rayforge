@@ -5,10 +5,13 @@ above the workpiece down to the current cutting position.
 
 import logging
 import math
+from typing import List, Optional, Tuple
 
 import numpy as np
 from OpenGL import GL
 
+from ....core.color import hex_to_rgba
+from ....machine.models.laser import LaserHead
 from ..gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)
@@ -51,6 +54,8 @@ class LaserBeamRenderer(BaseRenderer):
         self.vao: int = 0
         self.vbo: int = 0
         self.vertex_count: int = 0
+        self._beams: List[Tuple[np.ndarray, float, tuple]] = []
+        self.laser_light_pos: Optional[np.ndarray] = None
 
     def init_gl(self):
         self.vao = self._create_vao()
@@ -73,14 +78,59 @@ class LaserBeamRenderer(BaseRenderer):
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-    def render(
+    def update_from_state(
         self,
-        ctx: RenderContext,
-        shader: Shader,
-        position: np.ndarray,
-        beam_height: float = 50.0,
-        color: tuple = (1.0, 0.3, 0.1, 1.0),
+        state,
+        machine,
+        viewport,
+        margin_shift,
+        ra,
+        doc,
+        op_player,
     ):
+        """Computes and caches the laser beams from the current state."""
+        self._beams = []
+        self.laser_light_pos = None
+
+        asm = machine.assembly
+        wcs = viewport.wcs_offset_mm
+        heads = asm.head_positions(state, wcs_offset=wcs)
+        vis_mat = margin_shift.astype(np.float32)
+        for name, (hx, hy, hz) in heads.items():
+            head_pos = vis_mat @ np.array([hx, hy, hz, 1.0], dtype=np.float32)
+            beam_height = 50.0
+            beam_color = (1.0, 0.3, 0.1, 1.0)
+            if name.startswith("head_"):
+                try:
+                    idx = int(name.split("_")[1])
+                    laser = machine.heads[idx]
+                    if not isinstance(laser, LaserHead):
+                        continue
+                    if laser.focal_distance > 0:
+                        beam_height = laser.focal_distance
+                    beam_color = hex_to_rgba(laser.cut_color)
+                except (ValueError, IndexError):
+                    pass
+            if not state.laser_on:
+                continue
+            if ra is not None and asm.has_rotary:
+                current_layer = op_player.get_current_layer(doc)
+                diameter = (
+                    current_layer.rotary_diameter if current_layer else 0.0
+                )
+                rotary_heads = asm.head_rotary_positions(state, diameter)
+                if name in rotary_heads:
+                    beam_pos = vis_mat @ np.array(
+                        [*rotary_heads[name], 1.0], dtype=np.float32
+                    )
+                else:
+                    beam_pos = head_pos.copy()
+            else:
+                beam_pos = head_pos.copy()
+            self._beams.append((beam_pos[:3], beam_height, beam_color))
+            self.laser_light_pos = beam_pos[:3].astype(np.float32)
+
+    def render(self, ctx: RenderContext, shader: Shader):
         if not self.vao:
             return
 
@@ -92,20 +142,6 @@ class LaserBeamRenderer(BaseRenderer):
         if abs(p11) < 1e-6:
             return
         is_persp = abs(float(proj_matrix[3, 2])) > 0.1
-        if is_persp:
-            view_pos = view_matrix.astype(np.float64) @ np.array(
-                [
-                    float(position[0]),
-                    float(position[1]),
-                    float(position[2]),
-                    1.0,
-                ],
-                dtype=np.float64,
-            )
-            depth = max(-view_pos[2], 0.1)
-            wpp = 2.0 * depth / (p11 * max(viewport_height, 1))
-        else:
-            wpp = 2.0 / (p11 * max(viewport_height, 1))
 
         GL.glDisable(GL.GL_DEPTH_TEST)
         GL.glEnable(GL.GL_BLEND)
@@ -115,38 +151,54 @@ class LaserBeamRenderer(BaseRenderer):
         shader.set_int("uExecutedVertexCount", -1)
         GL.glBindVertexArray(self.vao)
 
-        cr, cg, cb = color[:3]
-        wr = min(cr * 0.5 + 0.5, 1.0)
-        wg = min(cg * 0.5 + 0.5, 1.0)
-        wb = min(cb * 0.5 + 0.5, 1.0)
+        for position, beam_height, color in self._beams:
+            if is_persp:
+                view_pos = view_matrix.astype(np.float64) @ np.array(
+                    [
+                        float(position[0]),
+                        float(position[1]),
+                        float(position[2]),
+                        1.0,
+                    ],
+                    dtype=np.float64,
+                )
+                depth = max(-view_pos[2], 0.1)
+                wpp = 2.0 * depth / (p11 * max(viewport_height, 1))
+            else:
+                wpp = 2.0 / (p11 * max(viewport_height, 1))
 
-        num_passes = 16
-        for i in range(num_passes, 0, -1):
-            t = i / num_passes
-            radius_px = 0.5 + t * 10.0
-            alpha = 0.08 * (1.0 - t) ** 2
-            pass_color = (
-                wr + (1.0 - wr) * (1.0 - t),
-                wg + (1.0 - wg) * (1.0 - t),
-                wb + (1.0 - wb) * (1.0 - t),
-                alpha,
-            )
+            cr, cg, cb = color[:3]
+            wr = min(cr * 0.5 + 0.5, 1.0)
+            wg = min(cg * 0.5 + 0.5, 1.0)
+            wb = min(cb * 0.5 + 0.5, 1.0)
 
-            r = radius_px * wpp
-            model = np.eye(4, dtype=np.float32)
-            model[0, 0] = np.float32(r)
-            model[1, 1] = np.float32(r)
-            model[2, 2] = np.float32(beam_height)
-            model[0, 3] = np.float32(position[0])
-            model[1, 3] = np.float32(position[1])
-            model[2, 3] = np.float32(position[2])
+            num_passes = 16
+            for i in range(num_passes, 0, -1):
+                t = i / num_passes
+                radius_px = 0.5 + t * 10.0
+                alpha = 0.08 * (1.0 - t) ** 2
+                pass_color = (
+                    wr + (1.0 - wr) * (1.0 - t),
+                    wg + (1.0 - wg) * (1.0 - t),
+                    wb + (1.0 - wb) * (1.0 - t),
+                    alpha,
+                )
 
-            mvp = (proj_matrix @ view_matrix @ model).T
-            shader.set_mat4("uMVP", mvp)
-            shader.set_float("uEmissive", 1.0)
-            shader.set_vec4("uColor", pass_color)
-            GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE)
-            GL.glDrawArrays(GL.GL_TRIANGLES, 0, self.vertex_count)
+                r = radius_px * wpp
+                model = np.eye(4, dtype=np.float32)
+                model[0, 0] = np.float32(r)
+                model[1, 1] = np.float32(r)
+                model[2, 2] = np.float32(beam_height)
+                model[0, 3] = np.float32(position[0])
+                model[1, 3] = np.float32(position[1])
+                model[2, 3] = np.float32(position[2])
+
+                mvp = (proj_matrix @ view_matrix @ model).T
+                shader.set_mat4("uMVP", mvp)
+                shader.set_float("uEmissive", 1.0)
+                shader.set_vec4("uColor", pass_color)
+                GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE)
+                GL.glDrawArrays(GL.GL_TRIANGLES, 0, self.vertex_count)
 
         shader.set_float("uEmissive", 0.0)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
