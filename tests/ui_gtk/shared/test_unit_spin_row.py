@@ -222,3 +222,42 @@ def test_quantity_subclasses(ui_context_initializer):
     assert isinstance(accel, UnitSpinRow)
     assert speed.quantity == "speed"
     assert accel.quantity == "acceleration"
+
+
+@pytest.mark.ui
+def test_edit_text_survives_config_round_trip(ui_context_initializer):
+    """A config change triggered by an edit must not reformat the text.
+
+    Editing a row fires value_changed, which a consumer (e.g. a machine
+    preference page) may answer by mutating the machine. Machine changes
+    propagate through config.changed, which re-enters the row. The row
+    must not rewrite its text then, or the cursor yanks mid-edit.
+    """
+    config = ui_context_initializer.config
+    row = LengthSpinRow(
+        "Len",
+        lower=0.01,
+        upper=10.0,
+        max_value_in_base=10.0,
+        value_in_base=0.1,
+    )
+    row.value_changed.connect(
+        lambda r: config.changed.send(config), weak=False
+    )
+    spin = row.get_spin_button()
+    spin.select_region(0, -1)
+    spin.delete_selection()
+    assert spin.get_text() == ""
+    for text in ("0", "0.", "0.1"):
+        spin.set_text(text)
+        assert spin.get_text() == text
+
+
+@pytest.mark.ui
+def test_display_unit_switch_still_reformats(ui_context_initializer):
+    """A genuine display-unit switch still rewrites the text."""
+    config = ui_context_initializer.config
+    row = LengthSpinRow("Len", lower=0, upper=1000, value_in_base=25.4)
+    config.set_unit_preference("length", "in")
+    assert row.get_value_in_base_units() == pytest.approx(25.4)
+    assert row.get_spin_button().get_text() == "1.000"
