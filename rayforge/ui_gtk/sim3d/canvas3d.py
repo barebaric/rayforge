@@ -1167,6 +1167,7 @@ class Canvas3D(Gtk.GLArea):
                     )
 
             laser_light_pos = None
+            deferred_beam_renders = []
 
             # Laser head markers
             if self._op_player and self._main_shader and machine:
@@ -1222,12 +1223,8 @@ class Canvas3D(Gtk.GLArea):
                                 beam_pos = head_pos.copy()
                         else:
                             beam_pos = head_pos.copy()
-                        self._laser_beam_renderer.render(
-                            ctx,
-                            self._main_shader,
-                            beam_pos[:3],
-                            beam_height=beam_height,
-                            color=beam_color,
+                        deferred_beam_renders.append(
+                            (beam_pos[:3], beam_height, beam_color)
                         )
                         laser_light_pos = beam_pos[:3].astype(np.float32)
 
@@ -1326,6 +1323,16 @@ class Canvas3D(Gtk.GLArea):
                     mvp,
                     executed_vertex_count=exec_ring,
                 )
+
+            if self._laser_beam_renderer and self._main_shader:
+                for beam_pos, beam_height, beam_color in deferred_beam_renders:
+                    self._laser_beam_renderer.render(
+                        ctx,
+                        self._main_shader,
+                        beam_pos,
+                        beam_height=beam_height,
+                        color=beam_color,
+                    )
 
         except Exception as e:
             logger.error("OpenGL Render Error: %s", e, exc_info=True)
