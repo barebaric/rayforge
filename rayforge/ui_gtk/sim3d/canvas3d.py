@@ -1,15 +1,13 @@
 import logging
 import math
 import time
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 import numpy as np
-from blinker import Signal
 from gi.repository import Gdk, GLib, Gtk, Pango
 from OpenGL import GL
 from raygeo.geo.types import Point
 from raygeo.ops import Ops
-from raygeo.ops.axis import Axis
 
 from ...context import RayforgeContext
 from ...core.color import OPS_COLOR_SPEC, ColorSet
@@ -543,10 +541,18 @@ class Canvas3D(Gtk.GLArea):
     def _process_pending_gl_updates(self):
         if self._scene_gl_dirty:
             self._scene_gl_dirty = False
-            self._update_axis_renderer()
-            self._update_cylinder_renderers()
-            self._update_model_renderers()
-            self._update_zone_renderer()
+            if self._scene.update_axis_from_viewport(self._viewport):
+                self._theme_is_dirty = True
+            self.make_current()
+            self._scene.update_cylinders_from_doc(
+                self.doc, self._viewport, self._context.machine
+            )
+            self._scene.update_models_from_context(
+                self._context, self._context.machine
+            )
+            machine = self._context.machine
+            if self._scene.zone_renderer and machine:
+                self._scene.update_zones_from_machine(machine)
         if self._artifact_gl_dirty:
             self._artifact_gl_dirty = False
             self._start_chunked_artifact_upload()
@@ -617,7 +623,10 @@ class Canvas3D(Gtk.GLArea):
 
             elif kind == "op_player":
                 self._build_op_player_async()
-                self._extract_playback_offsets_from_artifact()
+                if self._compiled_artifact and self._op_player:
+                    self._scene.extract_playback_offsets(
+                        self._compiled_artifact
+                    )
 
         except Exception:
             logger.exception("[CANVAS3D] Error during chunked upload")
@@ -645,22 +654,13 @@ class Canvas3D(Gtk.GLArea):
         # Preserve the playhead and seek snapshots when the underlying
         # ops object has not changed (e.g. only the viewport moved).
         saved_index = None
-        reused_snapshots: Any = []
+        reused_snapshots = []
         if self._op_player is not None and self._op_player.ops is ops:
             saved_index = self._op_player.current_index
-            reused_snapshots = self._op_player._snapshots
+            reused_snapshots = self._op_player.snapshots
 
-        player = OpPlayer.__new__(OpPlayer)
-        player.ops = ops
-        player._machine = machine
-        player._doc = self.doc
-        player._current_index = -1
-        player._source_axis = Axis.Y
-        player._rotary_axis = None
-        player._prev_layer_uid = None
-        player.state = player._create_home_state()
-        player.layer_changed = Signal()
-        player._snapshots = reused_snapshots
+        player = OpPlayer(ops, machine, self.doc, build_snapshots=False)
+        player.set_snapshots(reused_snapshots)
         player.layer_changed.connect(self._on_playback_layer_changed)
 
         # Make the player available right away so that the next render
@@ -688,7 +688,7 @@ class Canvas3D(Gtk.GLArea):
             if task.get_status() != "completed":
                 return
             if self._op_player is player:
-                player._snapshots = task.result()
+                player.set_snapshots(task.result())
 
         def _build_snapshots_thread(ops, machine, doc):
             n = ops.len()
@@ -1188,43 +1188,6 @@ class Canvas3D(Gtk.GLArea):
                 if artifact.ops is not None:
                     return artifact.ops
         return None
-
-    def _extract_playback_offsets_from_artifact(self):
-        if not self._compiled_artifact or not self._op_player:
-            return
-        self._scene.extract_playback_offsets(self._compiled_artifact)
-
-    def _update_cylinder_renderers(self):
-        """
-        Reads chuck diameters from the assembly and creates one
-        CylinderRenderer per unique diameter. Removes renderers for
-        diameters no longer in use.
-        """
-        self.make_current()
-        self._scene.update_cylinders_from_doc(
-            self.doc, self._viewport, self._context.machine
-        )
-
-    def _clear_model_renderers(self):
-        """Remove all model renderers without rebuilding."""
-        self._scene.clear_models()
-
-    def _update_axis_renderer(self):
-        if self._scene.update_axis_from_viewport(self._viewport):
-            self._theme_is_dirty = True
-
-    def _update_zone_renderer(self):
-        machine = self._context.machine
-        if self._scene.zone_renderer and machine:
-            self.make_current()
-            self._scene.update_zones_from_machine(machine)
-
-    def _update_model_renderers(self):
-        """Rebuild renderers for all assembly links with 3D models."""
-        self.make_current()
-        self._scene.update_models_from_context(
-            self._context, self._context.machine
-        )
 
     def update_scene_from_doc(self):
         """

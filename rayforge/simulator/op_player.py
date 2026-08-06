@@ -16,7 +16,13 @@ _SNAPSHOT_INTERVAL = 1000
 
 
 class OpPlayer:
-    def __init__(self, ops: Ops, machine: Machine, doc: Doc):
+    def __init__(
+        self,
+        ops: Ops,
+        machine: Machine,
+        doc: Doc,
+        build_snapshots: bool = True,
+    ):
         if not ops or ops.is_empty():
             raise ValueError("OpPlayer requires a non-empty Ops")
         self.ops = ops
@@ -31,7 +37,17 @@ class OpPlayer:
         self._snapshots: List[
             Tuple[int, MachineState, Axis, Optional[Axis]]
         ] = []
-        self._build_snapshots()
+        if build_snapshots:
+            self._build_snapshots()
+
+    @property
+    def snapshots(self):
+        """The seek-acceleration snapshots (may be replaced asynchronously)."""
+        return self._snapshots
+
+    def set_snapshots(self, snapshots):
+        """Replaces the seek-acceleration snapshots from an async build."""
+        self._snapshots = snapshots
 
     def _build_snapshots(self):
         n = self.ops.len()

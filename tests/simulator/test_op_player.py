@@ -108,6 +108,39 @@ def test_seek_last_movement():
     assert player.state.axes[Axis.Y] == 0.0
 
 
+def test_skip_snapshot_build_then_set_snapshots():
+    machine = _make_machine()
+    doc = Doc()
+    ops = Ops()
+    ops.set_power(0.3)
+    ops.move_to(5.0, 5.0, 0.0)
+    ops.line_to(15.0, 25.0, 3.0)
+
+    player = OpPlayer(ops, machine, doc, build_snapshots=False)
+    assert player.snapshots == []
+
+    reference = OpPlayer(ops, machine, doc)
+    reference.seek(ops.len() - 1)
+    player.set_snapshots(reference.snapshots)
+    assert player.snapshots is reference.snapshots
+
+    player.seek(ops.len() - 1)
+    assert player.state.axes == reference.state.axes
+
+
+def test_snapshots_replaced_after_build():
+    machine = _make_machine()
+    doc = Doc()
+    ops = Ops()
+    ops.set_power(0.3)
+    ops.move_to(5.0, 5.0, 0.0)
+    ops.line_to(15.0, 25.0, 3.0)
+
+    player = OpPlayer(ops, machine, doc, build_snapshots=False)
+    player.set_snapshots([])
+    assert player.snapshots == []
+
+
 def test_random_access_matches_sequential():
     machine = _make_machine()
     doc = Doc()
