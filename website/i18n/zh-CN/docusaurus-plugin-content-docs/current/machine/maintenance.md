@@ -2,7 +2,7 @@
 
 机器设置中的维护页面帮助您跟踪机器使用情况并安排维护任务。
 
-![维护设置](/screenshots/machine-maintenance.png)
+![维护设置](/screenshots/machine-settings-maintenance.png)
 
 ## 使用跟踪
 

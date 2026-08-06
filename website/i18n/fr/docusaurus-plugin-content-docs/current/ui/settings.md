@@ -1,6 +1,6 @@
 # Paramètres
 
-![Paramètres généraux](/screenshots/application-general.png)
+![Paramètres généraux](/screenshots/app-settings-general.png)
 
 Personnalise Rayforge pour correspondre à ton flux de travail et tes
 préférences. Ouvre les paramètres via **Édition → Paramètres** ou appuie sur

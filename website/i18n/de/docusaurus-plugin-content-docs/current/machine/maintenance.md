@@ -2,7 +2,7 @@
 
 Die Wartungsseite in den Maschineneinstellungen hilft Ihnen, die Maschinennutzung zu verfolgen und Wartungsaufgaben zu planen.
 
-![Wartungseinstellungen](/screenshots/machine-maintenance.png)
+![Wartungseinstellungen](/screenshots/machine-settings-maintenance.png)
 
 ## Nutzungsverfolgung
 

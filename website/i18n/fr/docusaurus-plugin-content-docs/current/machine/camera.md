@@ -9,7 +9,7 @@ positionnement précis des matériaux. La fonctionnalité de superposition camé
 te permet de voir exactement où ton laser va couper ou graver sur le matériau,
 éliminant les suppositions et réduisant le gaspillage de matériau.
 
-![Paramètres Caméra](/screenshots/machine-camera.png)
+![Paramètres Caméra](/screenshots/machine-settings-camera.png)
 
 ## Flux de travail de configuration
 
@@ -93,7 +93,7 @@ d'image, calibration d'objectif et alignement d'image. Il est lancé depuis :
 
 ### Étape 2.1 : Ajuster les paramètres d'image
 
-![Boîte de dialogue Paramètres d'image](/screenshots/camera-image-settings.png)
+![Boîte de dialogue Paramètres d'image](/screenshots/machine-settings-camera-image-settings.png)
 
 Les paramètres d'image constituent la première étape de l'assistant de caméra
 — il s'y ouvre et te permet de définir la résolution, la balance des blancs,
@@ -140,7 +140,7 @@ Pour la calibration **Automatic**, l'assistant te guide pour capturer
 plusieurs images d'une carte de calibration imprimée depuis différentes
 positions sur le lit, puis calcule un modèle de distorsion automatiquement.
 
-![Assistant — Paramètres de la carte](/screenshots/camera-lens-calibration-wizard-card.png)
+![Assistant — Paramètres de la carte](/screenshots/machine-settings-camera-lens-calibration-wizard-card.png)
 
 1. Définis la **Largeur** et la **Hauteur** de ta carte imprimée. L'aperçu
    se met à jour en temps réel — la carte doit couvrir environ 70% de la vue
@@ -148,7 +148,7 @@ positions sur le lit, puis calcule un modèle de distorsion automatiquement.
 2. Clique sur **Save to PDF** pour exporter la carte à imprimer, puis
    imprime-la et place-la sur le lit laser.
 
-![Assistant — Capture](/screenshots/camera-lens-calibration-wizard-capture.png)
+![Assistant — Capture](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.png)
 
 3. Déplace la carte à différentes positions et angles dans la vue caméra et
    clique sur **Capture Frame** pour chaque position. Vise au moins 8 captures
@@ -160,7 +160,7 @@ positions sur le lit, puis calcule un modèle de distorsion automatiquement.
 
 #### Calibration manuelle
 
-![Boîte de dialogue Calibration d'objectif](/screenshots/camera-lens-calibration.png)
+![Boîte de dialogue Calibration d'objectif](/screenshots/machine-settings-camera-lens-calibration.png)
 
 Pour les coefficients manuels ou pour ajuster finement le résultat après une
 calibration automatique, ouvre la boîte de dialogue de calibration d'objectif
@@ -171,7 +171,7 @@ radiale (k1–k3) et tangentielle (p1–p2).
 
 ### Étape 2.3 : Alignement d'image
 
-![Boîte de dialogue Alignement d'image](/screenshots/camera-image-alignment.png)
+![Boîte de dialogue Alignement d'image](/screenshots/machine-settings-camera-image-alignment.png)
 
 L'alignement d'image est l'étape finale de l'assistant de caméra. L'alignement
 de la caméra calibre la relation entre les pixels de la caméra et les

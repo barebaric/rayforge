@@ -1,6 +1,6 @@
 # Materialien
 
-![Material-Einstellungen](/screenshots/application-materials.png)
+![Material-Einstellungen](/screenshots/app-settings-materials.png)
 
 Material-Bibliotheken in Rayforge ermöglichen es dir, Material-Sammlungen für deine Laserschneide- und Gravurprojekte zu organisieren und zu verwalten. Diese Anleitung erklärt den Unterschied zwischen Kern- und Benutzer-Bibliotheken und wie du deine eigenen Bibliotheken erstellen und Materialien hinzufügen kannst.
 

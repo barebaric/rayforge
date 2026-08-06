@@ -101,7 +101,7 @@ def test_wizard_step_order_declared():
     assert _STEP_ORDER == [
         "profile",
         "controller",
-        "connection",
+        "connect",
         "probe",
         "ai_provider",
         "ai_lookup",
@@ -119,7 +119,7 @@ def test_route_controller_with_driver_goes_to_connection(
 ):
     wizard = _make_wizard(ui_context_initializer)
     wizard.profile = _profile(driver="GrblSerialDriver")
-    assert wizard._next_step_after("controller") == "connection"
+    assert wizard._next_step_after("controller") == "connect"
 
 
 @pytest.mark.ui
@@ -133,7 +133,7 @@ def test_route_controller_without_driver_skips_connection(
         return_value=True,
     ):
         assert wizard._next_step_after("controller") == "ai_lookup"
-    assert {"connection", "probe"} <= wizard._skipped_steps_set
+    assert {"connect", "probe"} <= wizard._skipped_steps_set
 
 
 @pytest.mark.ui
@@ -147,14 +147,14 @@ def test_route_controller_without_driver_no_ai_goes_to_provider(
         return_value=False,
     ):
         assert wizard._next_step_after("controller") == "ai_provider"
-    assert {"connection", "probe"} <= wizard._skipped_steps_set
+    assert {"connect", "probe"} <= wizard._skipped_steps_set
 
 
 @pytest.mark.ui
 def test_route_connection_probing_driver_goes_to_probe(ui_context_initializer):
     wizard = _make_wizard(ui_context_initializer)
     wizard.profile = _profile(driver="GrblSerialDriver")
-    assert wizard._next_step_after("connection") == "probe"
+    assert wizard._next_step_after("connect") == "probe"
 
 
 @pytest.mark.ui
@@ -167,7 +167,7 @@ def test_route_connection_non_probing_driver_skips_probe(
         "rayforge.ui_gtk.machine.unified_wizard.is_ai_configured",
         return_value=True,
     ):
-        assert wizard._next_step_after("connection") == "ai_lookup"
+        assert wizard._next_step_after("connect") == "ai_lookup"
     assert "probe" in wizard._skipped_steps_set
 
 
@@ -224,7 +224,7 @@ def test_source_selected_known_profile_goes_to_connection(
     wizard._on_profile_source_selected(
         None, kind="profile", profile=_profile()
     )
-    assert wizard.stack.get_visible_child_name() == "connection"
+    assert wizard.stack.get_visible_child_name() == "connect"
     assert "controller" in wizard._skipped_steps_set
 
 
@@ -245,7 +245,7 @@ def test_known_profile_skips_ai_hw_head_pages(ui_context_initializer):
     wizard._on_profile_source_selected(
         None, kind="profile", profile=_profile(driver="RuidaDriver")
     )
-    assert wizard._next_step_after("connection") == "rotary"
+    assert wizard._next_step_after("connect") == "rotary"
     assert {
         "controller",
         "probe",
@@ -264,7 +264,7 @@ def test_import_skips_ai_but_keeps_probe_hw_head(ui_context_initializer):
     )
     # Import with a probing driver still offers the probe step so the
     # user can verify the imported values.
-    assert wizard._next_step_after("connection") == "probe"
+    assert wizard._next_step_after("connect") == "probe"
     with patch(
         "rayforge.ui_gtk.machine.unified_wizard.is_ai_configured",
         return_value=False,
@@ -334,7 +334,7 @@ def test_back_visible_and_returns_to_profile_after_source(
     wizard._on_profile_source_selected(
         None, kind="profile", profile=_profile()
     )
-    assert wizard.stack.get_visible_child_name() == "connection"
+    assert wizard.stack.get_visible_child_name() == "connect"
     assert wizard.back_btn.get_visible()
     wizard._on_back_clicked(None)
     assert wizard.stack.get_visible_child_name() == "profile"
@@ -362,7 +362,7 @@ def test_controller_page_requires_explicit_selection(ui_context_initializer):
     # Selecting a controller tile advances instantly (no separate
     # "Next" step).
     page._select_child(page._tiles[0])
-    assert wizard.stack.get_visible_child_name() == "connection"
+    assert wizard.stack.get_visible_child_name() == "connect"
     assert wizard.profile.machine_config.driver is not None
 
 
@@ -397,8 +397,8 @@ def test_controller_page_enter_preselects_matching_driver(
 def test_connection_page_next_requires_details(ui_context_initializer):
     wizard = _make_wizard(ui_context_initializer)
     wizard.profile = _profile(driver="OctoPrintDriver")
-    wizard._navigate_to("connection")
-    page = wizard._get_page("connection")
+    wizard._navigate_to("connect")
+    page = wizard._get_page("connect")
     assert isinstance(page, ConnectionPage)
     assert page.ready is False
     assert not wizard.next_btn.get_sensitive()
@@ -420,7 +420,7 @@ def test_skip_button_only_on_optional_pages(ui_context_initializer):
     for name in (
         "profile",
         "controller",
-        "connection",
+        "connect",
         "probe",
         "ai_lookup",
         "hardware",

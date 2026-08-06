@@ -1,6 +1,6 @@
 # Recipes and Settings
 
-![Recipes Settings](/screenshots/application-recipes.png)
+![Recipes Settings](/screenshots/app-settings-recipes.png)
 
 Rayforge provides a powerful recipe system that allows you to create,
 manage, and apply consistent settings across your laser cutting projects.

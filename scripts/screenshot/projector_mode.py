@@ -6,9 +6,11 @@ import time
 from pathlib import Path
 
 from utils import (
+    get_target,
     run_on_main_thread,
     set_window_size,
     take_screenshot,
+    target_to_filename,
     wait_for_settled,
 )
 
@@ -42,6 +44,7 @@ def show_projector():
 
 
 def main():
+    target = get_target("addon:projector-mode")
     set_window_size(win, 1400, 1000)
 
     run_on_main_thread(
@@ -59,7 +62,7 @@ def main():
     projector_win = run_on_main_thread(show_projector)
     time.sleep(1.0)
 
-    take_screenshot("addon-projector-mode.png")
+    take_screenshot(target_to_filename(target))
 
     time.sleep(0.25)
     run_on_main_thread(projector_win.close)

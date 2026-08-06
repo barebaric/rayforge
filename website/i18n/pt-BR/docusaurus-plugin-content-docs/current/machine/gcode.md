@@ -2,7 +2,7 @@
 
 A página de G-code nas Configurações da Máquina configura como o Rayforge gera G-code para sua máquina.
 
-![Configurações de G-code](/screenshots/machine-gcode.png)
+![Configurações de G-code](/screenshots/machine-settings-gcode.png)
 
 :::info
 Esta página é exibida apenas para máquinas que usam drivers baseados em

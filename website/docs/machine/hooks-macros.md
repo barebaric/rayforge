@@ -6,7 +6,7 @@ description: "Custom hooks and macros in Rayforge — automate repetitive tasks 
 
 Rayforge provides two powerful automation features for customizing your workflow: **Macros** and **Hooks**. Both allow you to inject custom G-code into your jobs, but they serve different purposes.
 
-![Hooks & Macros Settings](/screenshots/machine-hooks-macros.png)
+![Hooks & Macros Settings](/screenshots/machine-settings-hooks-macros.png)
 
 ---
 

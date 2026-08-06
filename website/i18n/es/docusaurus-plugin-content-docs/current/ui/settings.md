@@ -1,6 +1,6 @@
 # Ajustes
 
-![Ajustes Generales](/screenshots/application-general.png)
+![Ajustes Generales](/screenshots/app-settings-general.png)
 
 Personaliza Rayforge para que coincida con tu flujo de trabajo y preferencias.
 Abre los ajustes vía **Editar → Ajustes** o presiona <kbd>ctrl+coma</kbd>.

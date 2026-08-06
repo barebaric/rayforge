@@ -2,7 +2,7 @@
 
 A página de Manutenção nas Configurações da Máquina ajuda você a rastrear o uso da máquina e agendar tarefas de manutenção.
 
-![Configurações de Manutenção](/screenshots/machine-maintenance.png)
+![Configurações de Manutenção](/screenshots/machine-settings-maintenance.png)
 
 ## Rastreamento de Uso
 

@@ -6,7 +6,7 @@ description: "Set up your laser controller device in Rayforge. Configure serial 
 
 The Device page in Machine Settings allows you to read and apply settings directly to your connected device (controller). These are also known as "dollar settings" or `$$` settings in GRBL.
 
-![Device Settings](/screenshots/machine-device.png)
+![Device Settings](/screenshots/machine-settings-device.png)
 
 :::warning Caution When Changing Settings
 Incorrect firmware settings can cause your machine to behave unpredictably, lose position, or even damage hardware. Always record original values before making changes, and modify one setting at a time.

@@ -5,7 +5,7 @@ d'objets cylindriques comme les gobelets, verres, stylos et matériaux ronds.
 Lorsqu'un module rotatif est connecté, Rayforge enroule le travail autour du
 cylindre et affiche un aperçu 3D du résultat.
 
-![Paramètres du module rotatif](/screenshots/machine-rotary-module.png)
+![Paramètres du module rotatif](/screenshots/machine-settings-rotary-module.png)
 
 ## Quand utiliser le mode rotatif
 

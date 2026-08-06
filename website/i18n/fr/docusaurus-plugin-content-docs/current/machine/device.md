@@ -2,7 +2,7 @@
 
 La page Appareil dans les Paramètres Machine vous permet de lire et d'appliquer des paramètres directement à votre appareil connecté (contrôleur). Ce sont aussi appelés paramètres "dollar" ou paramètres `$$` dans GRBL.
 
-![Paramètres de l'Appareil](/screenshots/machine-device.png)
+![Paramètres de l'Appareil](/screenshots/machine-settings-device.png)
 
 :::warning Attention Lors du Changement de Paramètres
 Des paramètres de firmware incorrects peuvent faire se comporter votre machine de manière imprévisible, perdre sa position ou même endommager le matériel. Enregistrez toujours les valeurs originales avant d'effectuer des changements, et modifiez un paramètre à la fois.

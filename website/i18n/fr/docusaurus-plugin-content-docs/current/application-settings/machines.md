@@ -4,7 +4,7 @@ description: "Gérez les machines dans Rayforge — ajoutez, configurez, exporte
 
 # Machines
 
-![Paramètres des Machines](/screenshots/application-machines.png)
+![Paramètres des Machines](/screenshots/app-settings-machines.png)
 
 La page Machines dans les Paramètres de l'Application affiche une liste de
 toutes les machines configurées. Chaque entrée affiche le nom de la machine

@@ -2,7 +2,7 @@
 
 La page Matériel dans les Paramètres Machine configure les dimensions physiques, le système de coordonnées et les limites de mouvement de votre machine.
 
-![Paramètres Matériels](/screenshots/machine-hardware.png)
+![Paramètres Matériels](/screenshots/machine-settings-hardware.png)
 
 ## Axes
 

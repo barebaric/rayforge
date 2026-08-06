@@ -4,7 +4,7 @@ description: "在 Rayforge 中管理机器——为您的项目添加、配置�
 
 # 机器
 
-![机器设置](/screenshots/application-machines.png)
+![机器设置](/screenshots/app-settings-machines.png)
 
 应用设置中的机器页面显示所有已配置机器的列表。每个条目显示机器名称，
 并带有编辑或删除按钮。当前活动的机器用勾选图标标记。

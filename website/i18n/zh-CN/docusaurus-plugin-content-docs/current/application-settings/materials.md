@@ -1,6 +1,6 @@
 # 材料
 
-![材料设置](/screenshots/application-materials.png)
+![材料设置](/screenshots/app-settings-materials.png)
 
 Rayforge 中的材料库允许您组织和管理激光切割和雕刻项目的材料集合。本指南解释核心库和用户库之间的区别，以及如何创建自己的库和向其添加材料。
 

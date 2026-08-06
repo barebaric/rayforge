@@ -4,7 +4,7 @@ Rayforge 支持旋转附件，用于雕刻和切割圆柱形物体，如杯子�
 形材料。连接旋转模块后，Rayforge 会将作业包裹在圆柱体上，并显示结果的 3D
 预览。
 
-![旋转模块设置](/screenshots/machine-rotary-module.png)
+![旋转模块设置](/screenshots/machine-settings-rotary-module.png)
 
 ## 何时需要旋转模式
 

@@ -8,6 +8,7 @@ GLib.idle_add for thread safety.
 """
 
 import logging
+import os
 import subprocess
 import time
 from contextlib import contextmanager
@@ -52,6 +53,20 @@ SCREENSHOT_TOOLS = [
 ]
 
 T = TypeVar("T")
+
+
+def get_target(default: str) -> str:
+    """Return the screenshot target from the TARGET environment variable."""
+    return os.environ.get("TARGET", default)
+
+
+def target_to_filename(target: str) -> str:
+    """Map a target to its output filename (1:1).
+
+    Targets use ``:`` as a separator (e.g. ``machine-settings:camera``);
+    filenames use ``-`` (e.g. ``machine-settings-camera.png``).
+    """
+    return target.replace(":", "-") + ".png"
 
 
 def _save_png_deterministic(img: Image.Image, output_path: Path) -> bool:

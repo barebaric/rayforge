@@ -3,14 +3,15 @@
 
 import importlib
 import logging
-import os
 import time
 from pathlib import Path
 
 from utils import (
+    get_target,
     run_on_main_thread,
     set_window_size,
     take_screenshot,
+    target_to_filename,
     wait_for_settled,
 )
 
@@ -18,7 +19,7 @@ from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 
-TARGET = os.environ.get("TARGET", "print-and-cut:pick")
+TARGET = get_target("addon:print-and-cut:pick")
 
 MOUSE_SVG = (
     Path(__file__).parent.parent.parent
@@ -126,19 +127,20 @@ def main():
     wizard = run_on_main_thread(setup_wizard)
 
     page = TARGET.split(":")[-1] if ":" in TARGET else "pick"
+    output = target_to_filename(TARGET)
 
     if page == "pick":
         run_on_main_thread(lambda: show_pick_page(wizard))
         time.sleep(1.0)
-        take_screenshot("addon-print-and-cut-pick.png")
+        take_screenshot(output)
     elif page == "jog":
         run_on_main_thread(lambda: show_jog_page(wizard))
         time.sleep(0.5)
-        take_screenshot("addon-print-and-cut-jog.png")
+        take_screenshot(output)
     elif page == "apply":
         run_on_main_thread(lambda: show_apply_page(wizard))
         time.sleep(0.5)
-        take_screenshot("addon-print-and-cut-apply.png")
+        take_screenshot(output)
     else:
         logger.error(f"Unknown page: {page}")
         app.quit_idle()

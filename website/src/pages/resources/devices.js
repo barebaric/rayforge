@@ -363,7 +363,7 @@ export default function Devices() {
                 </span>
               </Link>
               <Link
-                to="/docs/machine/config-wizard"
+                to="/docs/getting-started/first-time-setup"
                 className={`rfButton rfButtonPurple ${styles.heroCtaButton}`}
               >
                 <span>
@@ -485,7 +485,7 @@ export default function Devices() {
                         marlinLink,
                         marlinSerial: <strong>Marlin (Serial)</strong>,
                         configWizard: (
-                          <Link to="/docs/machine/config-wizard">
+                          <Link to="/docs/getting-started/first-time-setup">
                             configuration wizard
                           </Link>
                         ),
@@ -550,7 +550,7 @@ export default function Devices() {
                     </Link>
                   ),
                   configWizard: (
-                    <Link to="/docs/machine/config-wizard">
+                    <Link to="/docs/getting-started/first-time-setup">
                       configuration wizard
                     </Link>
                   ),

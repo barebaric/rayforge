@@ -18,7 +18,7 @@ terminal. You should see the main interface with an empty canvas.
 Navigate to **Settings → Machines** or press <kbd>ctrl+comma</kbd> to open
 the settings dialog, then select the **Machines** page.
 
-![Machine Settings](/screenshots/application-machines.png)
+![Machine Settings](/screenshots/app-settings-machines.png)
 
 Click **Add Machine** to open the machine picker.
 
@@ -42,7 +42,7 @@ manually. You can also **Import from File…** a previously exported profile
 or a LightBurn device profile (.lbdev) with camera calibration and laser
 settings.
 
-![Wizard — Pick a Starting Point](/screenshots/app-settings-machines-wizard-profile.png)
+![Wizard — Pick a Starting Point](/screenshots/config-wizard-profile.png)
 
 ### Choose a Controller
 
@@ -52,7 +52,7 @@ board (GRBL, Marlin, Smoothie, Ruida, OctoPrint, …). Choose
 never drive a physical machine. This step is skipped when you start from a
 built-in profile or an import.
 
-![Wizard — Choose a Controller](/screenshots/app-settings-machines-wizard-controller.png)
+![Wizard — Choose a Controller](/screenshots/config-wizard-controller.png)
 
 ### Connection
 
@@ -64,7 +64,7 @@ depend on the controller you chose:
 - **Network drivers** — host address and port (e.g. `192.168.1.100`)
 - **OctoPrint** — server URL and API key
 
-![Wizard — Connection](/screenshots/app-settings-machines-wizard-connect.png)
+![Wizard — Connection](/screenshots/config-wizard-connect.png)
 
 ### Discover the Device
 
@@ -73,7 +73,7 @@ and read its configuration automatically — work area, speeds, acceleration,
 and firmware capabilities. Click **Probe Now** to auto-detect these values,
 or use **Next** to enter them by hand in the following steps.
 
-![Wizard — Discover the Device](/screenshots/app-settings-machines-wizard-probe.png)
+![Wizard — Discover the Device](/screenshots/config-wizard-probe.png)
 
 ### AI Provider
 
@@ -81,7 +81,7 @@ Shown only when no AI provider is configured yet. Enter an OpenAI-compatible
 endpoint (base URL and API key) so the next step can look up specifications
 for known commercial machines. Skip this step to enter the values by hand.
 
-![Wizard — AI Provider](/screenshots/app-settings-machines-wizard-ai-provider.png)
+![Wizard — AI Provider](/screenshots/config-wizard-ai-provider.png)
 
 ### AI Spec Lookup
 
@@ -90,7 +90,7 @@ specifications from the manufacturer's documentation. Enter the vendor and
 model, then click **Look Up Specs**. Suggested values appear as switch rows
 and start accepted — turn off anything you don't want applied.
 
-![Wizard — AI Spec Lookup](/screenshots/app-settings-machines-wizard-ai-lookup.png)
+![Wizard — AI Spec Lookup](/screenshots/config-wizard-ai-lookup.png)
 
 ### Hardware
 
@@ -103,7 +103,7 @@ Configure the machine's physical setup:
 - **Speeds** — max travel speed, max cut speed, and acceleration
 - **Behavior** — home on start and single-axis homing
 
-![Wizard — Hardware](/screenshots/app-settings-machines-wizard-hardware.png)
+![Wizard — Hardware](/screenshots/config-wizard-hardware.png)
 
 ### Head
 
@@ -111,7 +111,7 @@ Declare what's attached to the gantry — a laser or a spindle head — and set
 its parameters. For a laser: max power (S-value), spot size, PWM frequency,
 and focal distance. For a spindle: max and min RPM.
 
-![Wizard — Head](/screenshots/app-settings-machines-wizard-head.png)
+![Wizard — Head](/screenshots/config-wizard-head.png)
 
 ### Rotary Module
 
@@ -119,7 +119,7 @@ Optionally set up a rotary attachment: type (jaws or rollers), axis (A/B/C),
 mode (true 4th axis vs. axis replacement), geometry, and reverse-direction
 flag. Skip this step to add a rotary module later from machine settings.
 
-![Wizard — Rotary Module](/screenshots/app-settings-machines-wizard-rotary.png)
+![Wizard — Rotary Module](/screenshots/config-wizard-rotary.png)
 
 ### Cameras
 
@@ -129,7 +129,7 @@ wizard](../machine/camera.md#step-2-camera-wizard) opens to guide you
 through image settings, lens calibration, and image alignment. You can skip
 this and set up cameras later from the machine's camera settings.
 
-![Wizard — Cameras](/screenshots/app-settings-machines-wizard-camera.png)
+![Wizard — Cameras](/screenshots/config-wizard-camera.png)
 
 ### Review & Name
 
@@ -138,7 +138,7 @@ Give the machine a name and review a summary of everything you've configured
 The wizard also surfaces any warnings, such as a missing driver or an unset
 work area.
 
-![Wizard — Review & Name](/screenshots/app-settings-machines-wizard-review.png)
+![Wizard — Review & Name](/screenshots/config-wizard-review.png)
 
 Click **Create Machine** to finalize. The Machine Settings dialog opens for
 your new machine, where you can adjust any of the settings the wizard

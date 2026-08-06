@@ -8,10 +8,10 @@ Usage: pixi run screenshot bottom-panel
 """
 
 import logging
-import os
 import time
 
 from utils import (
+    get_target,
     load_project,
     restore_panel_states,
     run_on_main_thread,
@@ -20,6 +20,7 @@ from utils import (
     show_bottom_tab,
     show_panel,
     take_cropped_screenshot,
+    target_to_filename,
     wait_for_settled,
 )
 
@@ -33,19 +34,12 @@ STATUS_BAR_HEIGHT = 60
 PANELS = ["toggle_bottom_panel"]
 
 TAB_CONFIG = {
-    "console": {
-        "project": "contour.ryp",
-        "output": "bottom-panel-console.png",
-    },
-    "layers": {
-        "project": "twolayer.ryp",
-        "output": "bottom-panel-layers.png",
-    },
+    "console": {"project": "contour.ryp"},
+    "layers": {"project": "twolayer.ryp"},
 }
 
 
-def get_tab_name():
-    target = os.environ.get("TARGET", "bottom-panel")
+def get_tab_name(target: str) -> str:
     parts = target.split(":")
     if len(parts) > 1:
         return parts[1]
@@ -53,7 +47,8 @@ def get_tab_name():
 
 
 def main():
-    tab_name = get_tab_name()
+    target = get_target("bottom-panel:console")
+    tab_name = get_tab_name(target)
     config = TAB_CONFIG.get(tab_name, TAB_CONFIG["console"])
 
     set_window_size(win, 1400, 900)
@@ -81,7 +76,7 @@ def main():
         f"(window height={window_height}, crop_top={crop_from_top})"
     )
     take_cropped_screenshot(
-        config["output"],
+        target_to_filename(target),
         from_top=crop_from_top,
     )
 

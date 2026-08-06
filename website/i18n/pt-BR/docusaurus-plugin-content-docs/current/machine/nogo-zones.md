@@ -5,7 +5,7 @@ não deve entrar. Quando habilitadas, elas são verificadas como parte das
 [verificações de sanidade do trabalho](../features/sanity-checks.md) antes de
 executar ou exportar.
 
-![Zonas de Restrição](/screenshots/machine-nogo-zones.png)
+![Zonas de Restrição](/screenshots/machine-settings-nogo-zones.png)
 
 ## Adicionando uma Zona de Restrição
 

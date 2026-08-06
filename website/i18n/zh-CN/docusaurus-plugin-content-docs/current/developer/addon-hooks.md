@@ -27,7 +27,7 @@ def rayforge_init(context):
 
 这是您的主要入口点。Rayforge 在应用程序上下文完全初始化后调用此钩子，这意味着所有管理器、配置和硬件都已准备就绪。将其用于常规设置、日志记录或注入 UI 元素。
 
-`context` 参数是一个 `RayforgeContext` 实例，让您可以访问 Rayforge 中的所有内容。有关详细信息，请参阅[访问 Rayforge 数据](./addon-overview.md#accessing-rayforges-data)。
+`context` 参数是一个 `RayforgeContext` 实例，让您可以访问 Rayforge 中的所有内容。有关详细信息，请参阅[访问 Rayforge 数据](./addon-overview.md#访问-rayforge-的数据)。
 
 ```python
 @hookimpl

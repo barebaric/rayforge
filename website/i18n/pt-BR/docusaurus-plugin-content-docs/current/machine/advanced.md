@@ -2,7 +2,7 @@
 
 A página Avançado nas Configurações da Máquina contém opções de configuração adicionais para casos de uso especializados.
 
-![Configurações Avançadas](/screenshots/machine-advanced.png)
+![Configurações Avançadas](/screenshots/machine-settings-advanced.png)
 
 ## Comportamento de Conexão
 

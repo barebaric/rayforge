@@ -3,7 +3,7 @@
 A página Laser nas Configurações da Máquina configura sua(s) cabeça(s) de
 laser e suas propriedades.
 
-![Configurações do Laser](/screenshots/machine-laser.png)
+![Configurações do Laser](/screenshots/machine-settings-laser.png)
 
 ## Cabeças de Laser
 

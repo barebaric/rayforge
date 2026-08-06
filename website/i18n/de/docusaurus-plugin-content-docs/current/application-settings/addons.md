@@ -1,6 +1,6 @@
 # Addons
 
-![Addon-Einstellungen](/screenshots/application-addons.png)
+![Addon-Einstellungen](/screenshots/app-settings-addons.png)
 
 Die Addons-Seite zeigt installierte Erweiterungsaddons und ermöglicht es dir, diese zu verwalten.
 

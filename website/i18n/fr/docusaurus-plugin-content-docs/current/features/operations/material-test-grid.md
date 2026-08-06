@@ -37,7 +37,7 @@ Les préréglages sont des points de départ - tu peux ajuster tous les paramèt
 
 Ajuste les paramètres de la grille de test dans la boîte de dialogue des paramètres :
 
-![Paramètres Grille de Test de Matériau](/screenshots/material-test-grid.png)
+![Paramètres Grille de Test de Matériau](/screenshots/material-test.png)
 
 #### Type de Test
 

@@ -54,7 +54,7 @@ logger = logging.getLogger(__name__)
 _STEP_ORDER: List[str] = [
     "profile",
     "controller",
-    "connection",
+    "connect",
     "probe",
     "ai_provider",
     "ai_lookup",
@@ -210,7 +210,7 @@ class UnifiedWizard(PatchedDialogWindow):
             cls = ProfilePage
         elif name == "controller":
             cls = ControllerPage
-        elif name == "connection":
+        elif name == "connect":
             cls = ConnectionPage
         elif name == "probe":
             cls = ProbePage
@@ -436,11 +436,11 @@ class UnifiedWizard(PatchedDialogWindow):
         if name == "controller":
             # `None` controller skips Steps 3 & 4 entirely.
             if not mc.driver:
-                self._skipped_steps_set.update({"connection", "probe"})
+                self._skipped_steps_set.update({"connect", "probe"})
                 return self._ai_entry_step()
-            return "connection"
+            return "connect"
 
-        if name == "connection":
+        if name == "connect":
             # A known profile already carries trusted specs, so skip
             # the auto-discovery probe entirely. Imports are not fully
             # reliable, so the user may still probe (when the driver
@@ -529,7 +529,7 @@ class UnifiedWizard(PatchedDialogWindow):
             # Jump straight to connection (the picked profile fixes the
             # controller); Back returns to the profile picker.
             self._skipped_steps_set.add("controller")
-            target = "connection"
+            target = "connect"
         self._navigate_to(target)
 
     def _on_probe_succeeded(

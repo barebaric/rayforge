@@ -2,7 +2,7 @@
 
 Die Hardware-Seite in den Maschineneinstellungen konfiguriert die physischen Abmessungen, das Koordinatensystem und die Bewegungsgrenzen deiner Maschine.
 
-![Hardware-Einstellungen](/screenshots/machine-hardware.png)
+![Hardware-Einstellungen](/screenshots/machine-settings-hardware.png)
 
 ## Achsen
 

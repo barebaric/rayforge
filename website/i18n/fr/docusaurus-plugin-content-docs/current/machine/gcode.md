@@ -2,7 +2,7 @@
 
 La page G-code dans les Paramètres Machine configure comment Rayforge génère le G-code pour votre machine.
 
-![Paramètres G-code](/screenshots/machine-gcode.png)
+![Paramètres G-code](/screenshots/machine-settings-gcode.png)
 
 :::info
 Cette page n'est affichée que pour les machines utilisant des pilotes basés

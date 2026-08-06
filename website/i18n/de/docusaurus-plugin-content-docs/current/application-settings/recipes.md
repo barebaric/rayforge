@@ -1,6 +1,6 @@
 # Rezepte und Einstellungen
 
-![Rezept-Einstellungen](/screenshots/application-recipes.png)
+![Rezept-Einstellungen](/screenshots/app-settings-recipes.png)
 
 Rayforge bietet ein leistungsstarkes Rezept-System, mit dem du konsistente Einstellungen über deine Laserschneideprojekte hinweg erstellen, verwalten und anwenden kannst. Diese Anleitung behandelt die komplette User Journey von der Erstellung von Rezepten in den allgemeinen Einstellungen bis zum Anwenden auf Operationen und Verwalten von Einstellungen auf Schritt-Ebene.
 

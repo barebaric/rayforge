@@ -10,9 +10,11 @@ import time
 from pathlib import Path
 
 from utils import (
+    get_target,
     run_on_main_thread,
     set_window_size,
     take_screenshot,
+    target_to_filename,
     wait_for_settled,
 )
 
@@ -30,6 +32,7 @@ TEST_IMAGE = (
 
 
 def main():
+    target = get_target("import-dialog")
     set_window_size(win, 1400, 1000)
 
     logger.info("Waiting for document to settle...")
@@ -60,7 +63,7 @@ def main():
     time.sleep(1.0)
 
     logger.info("Taking screenshot: import-dialog.png")
-    take_screenshot("import-dialog.png")
+    take_screenshot(target_to_filename(target))
 
     time.sleep(0.25)
 

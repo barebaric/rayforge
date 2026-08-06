@@ -4,7 +4,7 @@
 не повинен заходити. Коли вони увімкнені, вони перевіряються як частина
 [перевірок завдання](../features/sanity-checks.md) перед запуском або експортом.
 
-![Зони обмеження](/screenshots/machine-nogo-zones.png)
+![Зони обмеження](/screenshots/machine-settings-nogo-zones.png)
 
 ## Додавання зони обмеження
 

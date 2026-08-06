@@ -7,7 +7,7 @@ description: "Configure general machine settings in Rayforge — set the machine
 The General page in Machine Settings contains the machine name, driver
 selection and connection settings, and speed parameters.
 
-![General Settings](/screenshots/machine-general.png)
+![General Settings](/screenshots/machine-settings-general.png)
 
 ## Machine Name
 

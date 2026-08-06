@@ -4,7 +4,7 @@ description: "Gestiona máquinas en Rayforge: agrega, configura, exporta, import
 
 # Máquinas
 
-![Ajustes de Máquinas](/screenshots/application-machines.png)
+![Ajustes de Máquinas](/screenshots/app-settings-machines.png)
 
 La página de Máquinas en Configuración de la Aplicación muestra una lista de
 todas las máquinas configuradas. Cada entrada muestra el nombre de la máquina

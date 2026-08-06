@@ -7,7 +7,7 @@ description: "Configure as definições gerais da máquina no Rayforge — defin
 A página Geral nas Definições da máquina contém o nome da máquina, a seleção
 do driver e as definições de conexão, além dos parâmetros de velocidade.
 
-![Definições gerais](/screenshots/machine-general.png)
+![Definições gerais](/screenshots/machine-settings-general.png)
 
 ## Nome da máquina
 

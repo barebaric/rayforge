@@ -6,7 +6,7 @@ description: "Configure hardware settings in Rayforge — stepper motors, accele
 
 The Hardware page in Machine Settings configures the physical dimensions, coordinate system, and movement limits of your machine.
 
-![Hardware Settings](/screenshots/machine-hardware.png)
+![Hardware Settings](/screenshots/machine-settings-hardware.png)
 
 ## Axes
 

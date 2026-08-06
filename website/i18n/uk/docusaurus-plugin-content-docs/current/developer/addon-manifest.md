@@ -68,7 +68,7 @@ description: "Adds support for the XYZ laser cutter."
 api_version: 9
 ```
 
-Дивіться документацію [Хуки](./addon-hooks.md#api-version-history) для інформації про те, що змінилося в кожній версії.
+Дивіться документацію [Хуки](./addon-hooks.md#історія-версій-api) для інформації про те, що змінилося в кожній версії.
 
 ### `author`
 

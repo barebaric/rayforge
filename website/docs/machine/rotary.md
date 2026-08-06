@@ -8,7 +8,7 @@ Rayforge supports rotary attachments for engraving and cutting cylindrical objec
 tumblers, glasses, pens, and round stock. When a rotary module is connected, Rayforge
 wraps the job around the cylinder and shows a 3D preview of the result.
 
-![Rotary Module Settings](/screenshots/machine-rotary-module.png)
+![Rotary Module Settings](/screenshots/machine-settings-rotary-module.png)
 
 ## When You Need Rotary Mode
 

@@ -1,6 +1,6 @@
 # AI 提供商
 
-![AI 提供商设置](/screenshots/application-ai.png)
+![AI 提供商设置](/screenshots/app-settings-ai.png)
 
 配置插件可用于为 Rayforge 添加智能功能的 AI 提供商。
 

@@ -10,9 +10,11 @@ import time
 
 from utils import (
     clear_window_subtitle,
+    get_target,
     load_project,
     set_window_size,
     take_cropped_screenshot,
+    target_to_filename,
     wait_for_settled,
 )
 
@@ -22,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def main():
+    target = get_target("operations:wavefront")
     set_window_size(win, 2400, 1650)
 
     load_project(win, "wavefront.ryp")
@@ -38,7 +41,7 @@ def main():
 
     logger.info("Taking cropped screenshot: operations-wavefront.png")
     take_cropped_screenshot(
-        "operations-wavefront.png",
+        target_to_filename(target),
         from_left=880,
         from_right=880,
         from_top=590,
