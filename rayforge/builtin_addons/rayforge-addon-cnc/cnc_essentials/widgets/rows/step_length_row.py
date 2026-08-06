@@ -15,9 +15,10 @@ class StepLengthRow(SpinRow):
             step,
             "step_length",
             _("Step Length"),
-            _("Forward step length in mm"),
+            _("Forward step length"),
             0.1,
             5.0,
             0.1,
             1,
+            quantity="length",
         )

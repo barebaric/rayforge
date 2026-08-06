@@ -4,8 +4,8 @@ from gettext import gettext as _
 
 from rayforge.core.capability import MachineCapability, StepCapability
 from rayforge.core.varset import (
-    FloatVar,
     IntVar,
+    LengthVar,
     SpeedVar,
     VarSet,
 )
@@ -26,7 +26,7 @@ class MillCapability(StepCapability):
     def varset(self) -> VarSet:
         return VarSet(
             vars=[
-                FloatVar(
+                LengthVar(
                     "tool_diameter",
                     _("Tool Diameter"),
                     default=6.0,
@@ -61,21 +61,21 @@ class MillCapability(StepCapability):
                     min_val=1,
                     role="travel",
                 ),
-                FloatVar(
+                LengthVar(
                     "target_depth",
                     _("Target Depth"),
                     default=-5.0,
                     min_val=-50.0,
                     max_val=0.0,
                 ),
-                FloatVar(
+                LengthVar(
                     "depth_per_pass",
                     _("Depth per Pass"),
                     default=1.0,
                     min_val=0.1,
                     max_val=10.0,
                 ),
-                FloatVar(
+                LengthVar(
                     "safe_z",
                     _("Safe Z Height"),
                     default=2.0,

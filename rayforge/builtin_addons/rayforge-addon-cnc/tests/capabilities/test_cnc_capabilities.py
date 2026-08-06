@@ -1,7 +1,7 @@
 from cnc_essentials.capabilities import MILL, MillCapability
 
 from rayforge.core.capability import StepCapability
-from rayforge.core.varset import FloatVar, IntVar, SpeedVar, VarSet
+from rayforge.core.varset import IntVar, LengthVar, SpeedVar, VarSet
 
 
 def test_mill_capability():
@@ -23,6 +23,9 @@ def test_mill_capability():
     assert "depth_per_pass" in var_keys
     assert "safe_z" in var_keys
 
-    assert isinstance(varset["tool_diameter"], FloatVar)
+    assert isinstance(varset["tool_diameter"], LengthVar)
+    assert isinstance(varset["target_depth"], LengthVar)
+    assert isinstance(varset["depth_per_pass"], LengthVar)
+    assert isinstance(varset["safe_z"], LengthVar)
     assert isinstance(varset["spindle_rpm"], IntVar)
     assert isinstance(varset["cut_speed"], SpeedVar)

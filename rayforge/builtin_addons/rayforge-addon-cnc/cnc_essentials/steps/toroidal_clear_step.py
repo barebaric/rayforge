@@ -5,7 +5,7 @@ from typing import Any, Dict, cast
 
 from raygeo.ops.assembly.toroid import ToroidalClearSpec
 
-from rayforge.core.varset import FloatVar, VarSet
+from rayforge.core.varset import LengthVar, VarSet
 
 from .cnc_assembler_step import CncAssemblerStep
 
@@ -20,7 +20,7 @@ class ToroidalClearStep(CncAssemblerStep):
         return VarSet(
             vars=[
                 *CncAssemblerStep.recipe_varset().vars,
-                FloatVar(
+                LengthVar(
                     key="step_over",
                     label=_("Step Over"),
                     default=2.0,

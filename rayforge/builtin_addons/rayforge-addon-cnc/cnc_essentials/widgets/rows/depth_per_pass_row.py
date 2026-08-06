@@ -15,9 +15,10 @@ class DepthPerPassRow(SpinRow):
             step,
             "depth_per_pass",
             _("Depth per Pass"),
-            _("Depth removed by each pass in mm"),
+            _("Depth removed by each pass"),
             0.1,
             10.0,
             0.1,
             2,
+            quantity="length",
         )

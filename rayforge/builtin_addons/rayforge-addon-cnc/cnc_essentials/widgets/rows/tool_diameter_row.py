@@ -15,9 +15,10 @@ class ToolDiameterRow(SpinRow):
             step,
             "tool_diameter",
             _("Tool Diameter"),
-            _("Diameter of the cutting tool in mm"),
+            _("Diameter of the cutting tool"),
             0.1,
             50.0,
             0.1,
             2,
+            quantity="length",
         )

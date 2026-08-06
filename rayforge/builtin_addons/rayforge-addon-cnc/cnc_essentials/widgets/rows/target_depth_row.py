@@ -15,9 +15,10 @@ class TargetDepthRow(SpinRow):
             step,
             "target_depth",
             _("Target Depth"),
-            _("Final depth of the cut in mm (negative is downward)"),
+            _("Final depth of the cut (negative is downward)"),
             -50.0,
             0.0,
             0.1,
             2,
+            quantity="length",
         )

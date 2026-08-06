@@ -3,7 +3,7 @@ from typing import Any, Dict, cast
 
 from raygeo.ops.assembly.profile import ProfileSpec
 
-from rayforge.core.varset import FloatVar, VarSet
+from rayforge.core.varset import LengthVar, VarSet
 
 from .cnc_assembler_step import CncAssemblerStep
 
@@ -18,19 +18,19 @@ class ProfileInnerStep(CncAssemblerStep):
         return VarSet(
             vars=[
                 *CncAssemblerStep.recipe_varset().vars,
-                FloatVar(
+                LengthVar(
                     key="step_over",
                     label=_("Step Over"),
                     default=2.0,
                     min_val=0.1,
                 ),
-                FloatVar(
+                LengthVar(
                     key="step_length",
                     label=_("Step Length"),
                     default=0.6,
                     min_val=0.1,
                 ),
-                FloatVar(
+                LengthVar(
                     key="wall_margin",
                     label=_("Wall Margin"),
                     default=0.0,

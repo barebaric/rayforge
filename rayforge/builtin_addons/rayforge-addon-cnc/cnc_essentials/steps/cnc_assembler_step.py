@@ -9,7 +9,7 @@ from raygeo.ops.part import Part
 
 from rayforge.core.capability import MachineCapability
 from rayforge.core.step import Step
-from rayforge.core.varset import FloatVar, IntVar, SpeedVar, VarSet
+from rayforge.core.varset import IntVar, LengthVar, SpeedVar, VarSet
 
 from ..capabilities import MILL
 
@@ -138,7 +138,7 @@ class CncAssemblerStep(Step):
     def recipe_varset(cls) -> VarSet:
         return VarSet(
             vars=[
-                FloatVar(
+                LengthVar(
                     key="tool_diameter",
                     label=_("Tool Diameter"),
                     default=6.0,
@@ -160,21 +160,21 @@ class CncAssemblerStep(Step):
                     min_val=1,
                     role="cut",
                 ),
-                FloatVar(
+                LengthVar(
                     key="target_depth",
                     label=_("Target Depth"),
                     default=-5.0,
                     min_val=-50.0,
                     max_val=0.0,
                 ),
-                FloatVar(
+                LengthVar(
                     key="depth_per_pass",
                     label=_("Depth per Pass"),
                     default=1.0,
                     min_val=0.1,
                     max_val=10.0,
                 ),
-                FloatVar(
+                LengthVar(
                     key="safe_z",
                     label=_("Safe Z Height"),
                     default=2.0,

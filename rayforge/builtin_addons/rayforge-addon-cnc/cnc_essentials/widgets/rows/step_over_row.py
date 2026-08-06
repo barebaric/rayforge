@@ -15,9 +15,10 @@ class StepOverRow(SpinRow):
             step,
             "step_over",
             _("Step Over"),
-            _("Lateral step-over between passes in mm"),
+            _("Lateral step-over between passes"),
             0.1,
             25.0,
             0.1,
             1,
+            quantity="length",
         )

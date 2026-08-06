@@ -15,9 +15,10 @@ class WallMarginRow(SpinRow):
             step,
             "wall_margin",
             _("Wall Margin"),
-            _("Extra clearance from the pocket wall in mm"),
+            _("Extra clearance from the pocket wall"),
             0.0,
             10.0,
             0.1,
             1,
+            quantity="length",
         )

@@ -15,9 +15,10 @@ class SafeZRow(SpinRow):
             step,
             "safe_z",
             _("Safe Z Height"),
-            _("Height to retract between moves in mm"),
+            _("Height to retract between moves"),
             0.0,
             50.0,
             0.1,
             2,
+            quantity="length",
         )

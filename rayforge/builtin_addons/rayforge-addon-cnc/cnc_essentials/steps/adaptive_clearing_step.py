@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict, Tuple, cast
 from raygeo.ops.assembly.adaptive import AdaptiveClearingSpec
 from raygeo.ops.part import Part
 
-from rayforge.core.varset import FloatVar, VarSet
+from rayforge.core.varset import FloatVar, LengthVar, VarSet
 
 from .cnc_assembler_step import CncAssemblerStep
 
@@ -25,13 +25,13 @@ class AdaptiveClearStep(CncAssemblerStep):
         return VarSet(
             vars=[
                 *CncAssemblerStep.recipe_varset().vars,
-                FloatVar(
+                LengthVar(
                     key="step_over",
                     label=_("Step Over"),
                     default=2.0,
                     min_val=0.1,
                 ),
-                FloatVar(
+                LengthVar(
                     key="step_length",
                     label=_("Step Length"),
                     default=0.6,
@@ -44,7 +44,7 @@ class AdaptiveClearStep(CncAssemblerStep):
                     min_val=0.0,
                     max_val=90.0,
                 ),
-                FloatVar(
+                LengthVar(
                     key="wall_margin",
                     label=_("Wall Margin"),
                     default=0.0,

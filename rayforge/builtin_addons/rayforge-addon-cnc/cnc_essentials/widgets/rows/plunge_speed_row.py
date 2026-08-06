@@ -15,12 +15,13 @@ class PlungeSpeedRow(SpinRow):
             step,
             "plunge_speed",
             _("Plunge Rate"),
-            _("Vertical feed rate in mm/min"),
+            _("Vertical feed rate"),
             1.0,
             float(getattr(step, "max_cut_speed", 10000.0)),
             10.0,
             0,
             is_int=True,
+            quantity="speed",
         )
 
     def _sync_dependencies(self):
