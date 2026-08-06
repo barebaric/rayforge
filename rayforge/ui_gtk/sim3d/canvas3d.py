@@ -661,7 +661,6 @@ class Canvas3D(Gtk.GLArea):
 
         player = OpPlayer(ops, machine, self.doc, build_snapshots=False)
         player.set_snapshots(reused_snapshots)
-        player.layer_changed.connect(self._on_playback_layer_changed)
 
         # Make the player available right away so that the next render
         # can dim textures that have not been reached yet.  Seeking to
@@ -1136,13 +1135,6 @@ class Canvas3D(Gtk.GLArea):
 
         self.queue_render()
 
-    def _on_playback_layer_changed(self, sender, **kwargs):
-        machine = self._context.machine
-        if not machine or not self._op_player:
-            return
-        layer = self._op_player.get_current_layer(self.doc)
-        machine.configure_for_layer(layer)
-
     def _notify_playback_overlay(
         self, command_count: int, initial_index: int = 0
     ):
@@ -1221,13 +1213,6 @@ class Canvas3D(Gtk.GLArea):
 
         machine = self._context.machine
         if machine:
-            rotary_layer = None
-            for layer in self.doc.layers:
-                if layer.rotary_enabled:
-                    rotary_layer = layer
-                    break
-            machine.configure_for_layer(rotary_layer)
-
             ms = self._viewport.margin_shift
             wcs = self._viewport.wcs_offset_mm
             world_to_visual[0, 3] = ms[0, 3]

@@ -130,9 +130,17 @@ class DocEditor:
 
         if context.machine:
             context.machine.changed.connect(self._on_machine_changed)
+            self.configure_machine()
 
         context.config.changed.connect(self._on_config_changed)
         self.pipeline.auto_pipeline = context.config.auto_pipeline
+
+        # Keep the baseline machine config in sync with the document state.
+        doc = self.doc
+        doc.descendant_updated.connect(self._on_doc_changed)
+        doc.descendant_added.connect(self._on_doc_changed)
+        doc.descendant_removed.connect(self._on_doc_changed)
+        doc.active_layer_changed.connect(self._on_doc_changed)
 
         # Instantiate and link command handlers, passing dependencies.
         self.asset = AssetCmd(self)
@@ -193,6 +201,25 @@ class DocEditor:
                 layer.set_rotary_diameter(default_rm.default_diameter)
             else:
                 layer.set_rotary_module_uid(None)
+        self.configure_machine()
+
+    def configure_machine(self):
+        """
+        Configures the machine for the resting document state.
+
+        Uses the first layer of the document as the baseline so that the
+        scene renders a sensible view before a job is compiled.  The
+        OpPlayer overrides this per playback position when a job exists.
+        """
+        machine = self.context.machine
+        if not machine:
+            return
+        first_layer = self.doc.layers[0] if self.doc.layers else None
+        machine.configure_for_layer(first_layer)
+
+    def _on_doc_changed(self, sender, **kwargs):
+        """Re-assert the baseline machine config on document changes."""
+        self.configure_machine()
 
     def _on_config_changed(self, sender, **kwargs):
         config = self.context.config
@@ -416,6 +443,12 @@ class DocEditor:
         )
 
         logger.debug("DocEditor is setting a new document.")
+        old_doc = self.doc
+        if old_doc is not new_doc:
+            old_doc.descendant_updated.disconnect(self._on_doc_changed)
+            old_doc.descendant_added.disconnect(self._on_doc_changed)
+            old_doc.descendant_removed.disconnect(self._on_doc_changed)
+            old_doc.active_layer_changed.disconnect(self._on_doc_changed)
         self.doc = new_doc
         self._reconcile_step_heads()
         self._reconcile_rotary_modules()
@@ -426,6 +459,13 @@ class DocEditor:
         self.pipeline.processing_state_changed.connect(
             self._on_processing_state_changed
         )
+
+        # Keep the baseline machine config in sync with the new document.
+        new_doc.descendant_updated.connect(self._on_doc_changed)
+        new_doc.descendant_added.connect(self._on_doc_changed)
+        new_doc.descendant_removed.connect(self._on_doc_changed)
+        new_doc.active_layer_changed.connect(self._on_doc_changed)
+        self.configure_machine()
 
         # Reconnect to new history manager
         if old_history_manager is not self.history_manager:

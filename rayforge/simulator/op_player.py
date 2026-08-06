@@ -140,6 +140,7 @@ class OpPlayer:
         self._prev_layer_uid = None
         self.advance_to(index)
         self._emit_layer_change()
+        self._sync_machine_config()
 
     def _find_snapshot(self, index: int) -> Optional[int]:
         if not self._snapshots:
@@ -203,6 +204,18 @@ class OpPlayer:
         if uid != self._prev_layer_uid:
             self._prev_layer_uid = uid
             self.layer_changed.send(self, layer_uid=uid)
+            self._sync_machine_config()
+
+    def _sync_machine_config(self):
+        """Configure the machine for the layer at the current position.
+
+        Falls back to the first layer of the document while the player is
+        in the preamble (before the first LAYER_START command).
+        """
+        layer = self.get_current_layer(self._doc)
+        if layer is None and self._doc.layers:
+            layer = self._doc.layers[0]
+        self._machine.configure_for_layer(layer)
 
 
 class SnapshotBuilder:
