@@ -9,7 +9,7 @@ positioning. The camera overlay feature allows you to see exactly where your
 laser will cut or engrave on the material, eliminating guesswork and reducing
 material waste.
 
-![Camera Settings](/screenshots/machine-camera.png)
+![Camera Settings](/screenshots/machine-settings-camera.png)
 
 ## Setup Workflow
 
@@ -89,7 +89,7 @@ image alignment. It is started from:
 
 ### Step 2.1: Adjust Image Settings
 
-![Image Settings Dialog](/screenshots/camera-image-settings.png)
+![Image Settings Dialog](/screenshots/machine-settings-camera-image-settings.png)
 
 Image settings is the camera wizard's first stage — it opens there and lets
 you set the resolution, white balance, brightness, contrast, and noise
@@ -133,14 +133,14 @@ For **Automatic** calibration, the wizard walks you through capturing
 several images of a printed calibration card from different positions on the
 bed, then computes a distortion model automatically.
 
-![Wizard — Card Settings](/screenshots/camera-lens-calibration-wizard-card.png)
+![Wizard — Card Settings](/screenshots/machine-settings-camera-lens-calibration-wizard-card.png)
 
 1. Set the **Width** and **Height** of your printed card. The preview updates
    in real-time — the card should cover about 70% of the camera view.
 2. Click **Save to PDF** to export the card for printing, then print it and
    place it on the laser bed.
 
-![Wizard — Capture](/screenshots/camera-lens-calibration-wizard-capture.png)
+![Wizard — Capture](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.png)
 
 3. Move the card to different positions and angles within the camera view and
    click **Capture Frame** for each position. Aim for at least 8 captures
@@ -152,7 +152,7 @@ bed, then computes a distortion model automatically.
 
 #### Manual Calibration
 
-![Lens Calibration Dialog](/screenshots/camera-lens-calibration.png)
+![Lens Calibration Dialog](/screenshots/machine-settings-camera-lens-calibration.png)
 
 For manual coefficients or to fine-tune the result after an automatic
 calibration, open the lens calibration dialog by clicking **Configure** next
@@ -162,7 +162,7 @@ tangential (p1–p2) parameters.
 
 ### Step 2.3: Image Alignment
 
-![Image Alignment Dialog](/screenshots/camera-image-alignment.png)
+![Image Alignment Dialog](/screenshots/machine-settings-camera-image-alignment.png)
 
 Image alignment is the camera wizard's final stage. Camera alignment
 calibrates the relationship between camera pixels and real-world

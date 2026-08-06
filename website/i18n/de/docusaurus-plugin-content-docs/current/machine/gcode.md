@@ -2,7 +2,7 @@
 
 Die G-Code-Seite in den Maschineneinstellungen konfiguriert, wie Rayforge G-Code für deine Maschine generiert.
 
-![G-Code-Einstellungen](/screenshots/machine-gcode.png)
+![G-Code-Einstellungen](/screenshots/machine-settings-gcode.png)
 
 :::info
 Diese Seite wird nur für Maschinen angezeigt, die G-Code-basierte Treiber

@@ -41,7 +41,7 @@ Presets are starting points - you can adjust all parameters after selecting one.
 
 Adjust the test grid parameters in the settings dialog:
 
-![Material Test Grid Settings](/screenshots/material-test-grid.png)
+![Material Test Grid Settings](/screenshots/material-test.png)
 
 #### Test Type
 

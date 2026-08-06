@@ -68,7 +68,7 @@ La version de l'API ciblée par votre extension. Elle doit être au moins 1 (la 
 api_version: 9
 ```
 
-Consultez la documentation des [Hooks](./addon-hooks.md#api-version-history) pour savoir ce qui a changé dans chaque version.
+Consultez la documentation des [Hooks](./addon-hooks.md#historique-des-versions-de-lapi) pour savoir ce qui a changé dans chaque version.
 
 ### `author`
 

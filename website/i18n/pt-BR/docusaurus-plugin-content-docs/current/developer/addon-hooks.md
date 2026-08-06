@@ -27,7 +27,7 @@ Estes hooks gerenciam o ciclo de vida geral do seu addon.
 
 Este é seu ponto de entrada principal. O Rayforge chama este hook depois que o contexto da aplicação está totalmente inicializado, significando que todos os gerenciadores, configurações e hardware estão prontos. Use-o para configuração geral, logging ou injeção de elementos de interface.
 
-O parâmetro `context` é uma instância de `RayforgeContext` que dá acesso a tudo no Rayforge. Veja [Acessando Dados do Rayforge](./addon-overview.md#accessing-rayforges-data) para detalhes.
+O parâmetro `context` é uma instância de `RayforgeContext` que dá acesso a tudo no Rayforge. Veja [Acessando Dados do Rayforge](./addon-overview.md#acessando-os-dados-do-rayforge) para detalhes.
 
 ```python
 @hookimpl

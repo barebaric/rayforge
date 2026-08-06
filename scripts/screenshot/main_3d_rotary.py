@@ -10,6 +10,7 @@ import time
 
 from utils import (
     clear_window_subtitle,
+    get_target,
     hide_panel,
     load_project,
     restore_panel_states,
@@ -20,6 +21,7 @@ from utils import (
     show_bottom_tab,
     show_panel,
     take_screenshot,
+    target_to_filename,
     wait_for_3d_rendered,
     wait_for_settled,
     wcs,
@@ -34,6 +36,7 @@ PANELS = ["show_3d_view", "toggle_bottom_panel"]
 
 
 def main():
+    target = get_target("main:3d-rotary")
     set_window_size(win, 2400, 1650)
 
     load_project(win, "rotary.ryp")
@@ -83,7 +86,7 @@ def main():
 
         clear_window_subtitle(win)
         logger.info("Taking screenshot: main-3d-rotary.png")
-        take_screenshot("main-3d-rotary.png")
+        take_screenshot(target_to_filename(target))
 
     restore_panel_states(win, saved_states)
 

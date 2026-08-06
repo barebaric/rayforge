@@ -2,7 +2,7 @@
 
 La page Avancé dans les Paramètres Machine contient des options de configuration supplémentaires pour des cas d'utilisation spécialisés.
 
-![Paramètres Avancés](/screenshots/machine-advanced.png)
+![Paramètres Avancés](/screenshots/machine-settings-advanced.png)
 
 ## Comportement de Connexion
 

@@ -2,7 +2,7 @@
 
 Die Geräteseite in den Maschineneinstellungen ermöglicht es dir, Einstellungen direkt auf deinem verbundenen Gerät (Controller) zu lesen und anzuwenden. Diese sind auch als "Dollar-Einstellungen" oder `$$`-Einstellungen in GRBL bekannt.
 
-![Geräteeinstellungen](/screenshots/machine-device.png)
+![Geräteeinstellungen](/screenshots/machine-settings-device.png)
 
 :::warning Vorsicht beim Ändern von Einstellungen
 Falsche Firmware-Einstellungen können dazu führen, dass deine Maschine sich unvorhersehbar verhält, die Position verliert oder sogar Hardware beschädigt. Notiere dir immer die ursprünglichen Werte, bevor du Änderungen vornimmst, und ändere eine Einstellung nach der anderen.

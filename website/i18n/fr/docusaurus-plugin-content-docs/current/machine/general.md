@@ -8,7 +8,7 @@ La page Général des Paramètres de la machine contient le nom de la machine,
 la sélection du pilote et les paramètres de connexion, ainsi que les
 paramètres de vitesse.
 
-![Paramètres généraux](/screenshots/machine-general.png)
+![Paramètres généraux](/screenshots/machine-settings-general.png)
 
 ## Nom de la machine
 

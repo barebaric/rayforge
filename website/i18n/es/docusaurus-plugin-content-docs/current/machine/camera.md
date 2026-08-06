@@ -9,7 +9,7 @@ posicionamiento preciso del material. La función de superposición de cámara t
 permite ver exactamente dónde tu láser va a cortar o grabar en el material,
 eliminando las conjeturas y reduciendo el desperdicio de material.
 
-![Ajustes de Cámara](/screenshots/machine-camera.png)
+![Ajustes de Cámara](/screenshots/machine-settings-camera.png)
 
 ## Flujo de trabajo de configuración
 
@@ -93,7 +93,7 @@ imagen, calibración de lente y alineación de imagen. Se inicia desde:
 
 ### Paso 2.1: Ajustar la configuración de imagen
 
-![Diálogo de Configuración de Imagen](/screenshots/camera-image-settings.png)
+![Diálogo de Configuración de Imagen](/screenshots/machine-settings-camera-image-settings.png)
 
 La configuración de imagen es la primera etapa del asistente de cámara — se
 abre ahí y te permite establecer la resolución, el balance de blancos, el
@@ -140,7 +140,7 @@ Para la calibración **Automatic**, el asistente te guía para capturar varias
 imágenes de una tarjeta de calibración impresa desde diferentes posiciones en
 la cama, y luego calcula un modelo de distorsión automáticamente.
 
-![Asistente — Configuración de Tarjeta](/screenshots/camera-lens-calibration-wizard-card.png)
+![Asistente — Configuración de Tarjeta](/screenshots/machine-settings-camera-lens-calibration-wizard-card.png)
 
 1. Establece el **Ancho** y **Alto** de tu tarjeta impresa. La vista previa se
    actualiza en tiempo real — la tarjeta debe cubrir aproximadamente el 70% de
@@ -148,7 +148,7 @@ la cama, y luego calcula un modelo de distorsión automáticamente.
 2. Haz clic en **Save to PDF** para exportar la tarjeta para imprimir, luego
    imprímela y colócala en la cama láser.
 
-![Asistente — Captura](/screenshots/camera-lens-calibration-wizard-capture.png)
+![Asistente — Captura](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.png)
 
 3. Mueve la tarjeta a diferentes posiciones y ángulos dentro de la vista de la
    cámara y haz clic en **Capture Frame** para cada posición. Apunta a al
@@ -161,7 +161,7 @@ la cama, y luego calcula un modelo de distorsión automáticamente.
 
 #### Calibración manual
 
-![Diálogo de Calibración de Lente](/screenshots/camera-lens-calibration.png)
+![Diálogo de Calibración de Lente](/screenshots/machine-settings-camera-lens-calibration.png)
 
 Para coeficientes manuales o para ajustar finamente el resultado después de una
 calibración automática, abre el diálogo de calibración de lente haciendo clic
@@ -171,7 +171,7 @@ finamente los parámetros radiales (k1–k3) y tangenciales (p1–p2).
 
 ### Paso 2.3: Alineación de imagen
 
-![Diálogo de Alineación de Imagen](/screenshots/camera-image-alignment.png)
+![Diálogo de Alineación de Imagen](/screenshots/machine-settings-camera-image-alignment.png)
 
 La alineación de imagen es la etapa final del asistente de cámara. La
 alineación de cámara calibra la relación entre los píxeles de la cámara y las

@@ -6,7 +6,7 @@ either auto-skip or are only reachable via the live probe flow.
 For screenshots we open the wizard, jump to the requested step,
 and snapshot the rendered UI.
 
-Targets (``app-settings:machines:wizard:<step>``):
+Targets (``config-wizard:<step>``):
 
 * ``profile``      — Step 1 (pick source)
 * ``controller``   — Step 2 (choose controller)
@@ -22,13 +22,14 @@ Targets (``app-settings:machines:wizard:<step>``):
 """
 
 import logging
-import os
 import time
 
 from utils import (
+    get_target,
     run_on_main_thread,
     set_window_size,
     take_screenshot,
+    target_to_filename,
 )
 
 from rayforge.machine.device.profile import (
@@ -64,62 +65,19 @@ FAKE_PROFILE = DeviceProfile(
     dialect_config={},
 )
 
-# Target -> (wizard step name, output filename).
-PAGES = {
-    "app-settings:machines:wizard:profile": (
-        "profile",
-        "app-settings-machines-wizard-profile.png",
-    ),
-    "app-settings:machines:wizard:controller": (
-        "controller",
-        "app-settings-machines-wizard-controller.png",
-    ),
-    "app-settings:machines:wizard:connect": (
-        "connection",
-        "app-settings-machines-wizard-connect.png",
-    ),
-    "app-settings:machines:wizard:probe": (
-        "probe",
-        "app-settings-machines-wizard-probe.png",
-    ),
-    "app-settings:machines:wizard:ai-provider": (
-        "ai_provider",
-        "app-settings-machines-wizard-ai-provider.png",
-    ),
-    "app-settings:machines:wizard:ai-lookup": (
-        "ai_lookup",
-        "app-settings-machines-wizard-ai-lookup.png",
-    ),
-    "app-settings:machines:wizard:hardware": (
-        "hardware",
-        "app-settings-machines-wizard-hardware.png",
-    ),
-    "app-settings:machines:wizard:head": (
-        "head",
-        "app-settings-machines-wizard-head.png",
-    ),
-    "app-settings:machines:wizard:rotary": (
-        "rotary",
-        "app-settings-machines-wizard-rotary.png",
-    ),
-    "app-settings:machines:wizard:camera": (
-        "camera",
-        "app-settings-machines-wizard-camera.png",
-    ),
-    "app-settings:machines:wizard:review": (
-        "review",
-        "app-settings-machines-wizard-review.png",
-    ),
-}
+
+# Wizard step name is the target's leaf with ``-`` -> ``_``.
+def wizard_step_for(target: str) -> str:
+    return target.split(":")[-1].replace("-", "_")
 
 
 def main():
-    target = os.environ.get("TARGET", "app-settings:machines:wizard:connect")
-    if target not in PAGES:
+    target = get_target("config-wizard:connect")
+    if not target.startswith("config-wizard:"):
         logger.error("Unknown wizard screenshot target: %s", target)
         app.quit_idle()
         return
-    step, output = PAGES[target]
+    step = wizard_step_for(target)
 
     set_window_size(win, 1400, 1000)
     time.sleep(0.25)
@@ -150,7 +108,7 @@ def main():
 
     run_on_main_thread(lambda: wizard._navigate_to(step))
     time.sleep(0.5)
-    take_screenshot(output)
+    take_screenshot(target_to_filename(target))
 
     time.sleep(0.25)
 

@@ -1,6 +1,6 @@
 # Proveedor de IA
 
-![Configuración de Proveedor de IA](/screenshots/application-ai.png)
+![Configuración de Proveedor de IA](/screenshots/app-settings-ai.png)
 
 Configura proveedores de IA que los addons pueden usar para añadir
 funciones inteligentes a Rayforge.

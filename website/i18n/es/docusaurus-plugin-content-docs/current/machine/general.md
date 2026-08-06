@@ -8,7 +8,7 @@ La página General en los Ajustes de máquina contiene el nombre de la
 máquina, la selección del controlador y los ajustes de conexión, así como
 los parámetros de velocidad.
 
-![Ajustes generales](/screenshots/machine-general.png)
+![Ajustes generales](/screenshots/machine-settings-general.png)
 
 ## Nombre de la máquina
 

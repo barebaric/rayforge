@@ -5,7 +5,7 @@ como canecas, copos, canetas e material redondo. Quando um módulo rotativo é
 conectado, o Rayforge envolve o trabalho ao redor do cilindro e mostra uma pré-
 visualização 3D do resultado.
 
-![Configurações do Módulo Rotativo](/screenshots/machine-rotary-module.png)
+![Configurações do Módulo Rotativo](/screenshots/machine-settings-rotary-module.png)
 
 ## Quando Você Precisa do Modo Rotativo
 

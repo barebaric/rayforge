@@ -9,7 +9,7 @@ preciso de materiais. O recurso de sobreposição de câmera permite ver
 exatamente onde seu laser vai cortar ou gravar no material, eliminando
 suposições e reduzindo o desperdício de material.
 
-![Configurações da Câmera](/screenshots/machine-camera.png)
+![Configurações da Câmera](/screenshots/machine-settings-camera.png)
 
 ## Fluxo de trabalho de configuração
 
@@ -93,7 +93,7 @@ calibração de lente e alinhamento de imagem. Ele é iniciado a partir de:
 
 ### Etapa 2.1: Ajustar Configurações de Imagem
 
-![Diálogo de Configurações de Imagem](/screenshots/camera-image-settings.png)
+![Diálogo de Configurações de Imagem](/screenshots/machine-settings-camera-image-settings.png)
 
 As configurações de imagem são o primeiro estágio do assistente de câmera —
 ele abre nessa etapa e permite definir a resolução, o balanço de branco, o
@@ -139,7 +139,7 @@ Para a calibração **Automatic**, o assistente orienta você a capturar várias
 imagens de um cartão de calibração impresso de diferentes posições na mesa e,
 em seguida, calcula um modelo de distorção automaticamente.
 
-![Assistente — Configurações do Cartão](/screenshots/camera-lens-calibration-wizard-card.png)
+![Assistente — Configurações do Cartão](/screenshots/machine-settings-camera-lens-calibration-wizard-card.png)
 
 1. Defina a **Largura** e **Altura** do seu cartão impresso. A visualização
    é atualizada em tempo real — o cartão deve cobrir cerca de 70% da vista da
@@ -147,7 +147,7 @@ em seguida, calcula um modelo de distorção automaticamente.
 2. Clique em **Save to PDF** para exportar o cartão para impressão, depois
    imprima-o e coloque-o na mesa do laser.
 
-![Assistente — Captura](/screenshots/camera-lens-calibration-wizard-capture.png)
+![Assistente — Captura](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.png)
 
 3. Mova o cartão para diferentes posições e ângulos dentro da vista da
    câmera e clique em **Capture Frame** para cada posição. Procure fazer pelo
@@ -160,7 +160,7 @@ em seguida, calcula um modelo de distorção automaticamente.
 
 #### Calibração Manual
 
-![Diálogo de Calibração de Lente](/screenshots/camera-lens-calibration.png)
+![Diálogo de Calibração de Lente](/screenshots/machine-settings-camera-lens-calibration.png)
 
 Para coeficientes manuais ou para ajuste fino do resultado após uma
 calibração automática, abra o diálogo de calibração de lente clicando em
@@ -170,7 +170,7 @@ ajuste fino dos parâmetros radial (k1–k3) e tangencial (p1–p2).
 
 ### Etapa 2.3: Alinhamento de Imagem
 
-![Diálogo de Alinhamento de Imagem](/screenshots/camera-image-alignment.png)
+![Diálogo de Alinhamento de Imagem](/screenshots/machine-settings-camera-image-alignment.png)
 
 O alinhamento de imagem é o estágio final do assistente de câmera. O
 alinhamento da câmera calibra a relação entre pixels da câmera e coordenadas

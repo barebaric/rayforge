@@ -1,6 +1,6 @@
 # 配方和设置
 
-![配方设置](/screenshots/application-recipes.png)
+![配方设置](/screenshots/app-settings-recipes.png)
 
 Rayforge 提供了一个强大的配方系统，允许您创建、管理和应用一致的设置到您的激光切割项目中。本指南涵盖了从在常规设置中创建配方到将它们应用到操作以及在步骤级别管理设置的完整用户旅程。
 

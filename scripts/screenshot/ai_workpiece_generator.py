@@ -9,8 +9,10 @@ import logging
 import time
 
 from utils import (
+    get_target,
     run_on_main_thread,
     take_screenshot,
+    target_to_filename,
     wait_for_settled,
 )
 
@@ -22,6 +24,7 @@ EXAMPLE_PROMPT = "A gear with 12 teeth, outer diameter 50mm, center hole 10mm"
 
 
 def main():
+    target = get_target("addon:ai-workpiece-generator")
     logger.info("Waiting for document to settle...")
     if not wait_for_settled(win, timeout=10):
         logger.error("Document did not settle in time")
@@ -68,7 +71,7 @@ def main():
     time.sleep(0.5)
 
     logger.info("Taking screenshot: addon-ai-workpiece-generator.png")
-    take_screenshot("addon-ai-workpiece-generator.png")
+    take_screenshot(target_to_filename(target))
 
     app.quit_idle()
 

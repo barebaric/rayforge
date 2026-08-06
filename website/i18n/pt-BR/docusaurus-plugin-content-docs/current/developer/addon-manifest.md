@@ -68,7 +68,7 @@ A versão da API que seu addon destina. Deve ser pelo menos 1 (a versão mínima
 api_version: 9
 ```
 
-Consulte a documentação de [Hooks](./addon-hooks.md#api-version-history) para o que mudou em cada versão.
+Consulte a documentação de [Hooks](./addon-hooks.md#histórico-de-versões-da-api) para o que mudou em cada versão.
 
 ### `author`
 

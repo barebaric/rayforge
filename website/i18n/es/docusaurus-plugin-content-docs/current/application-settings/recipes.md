@@ -1,6 +1,6 @@
 # Recetas y Ajustes
 
-![Ajustes de Recetas](/screenshots/application-recipes.png)
+![Ajustes de Recetas](/screenshots/app-settings-recipes.png)
 
 Rayforge proporciona un potente sistema de recetas que te permite crear,
 gestionar y aplicar ajustes consistentes en tus proyectos de corte láser.

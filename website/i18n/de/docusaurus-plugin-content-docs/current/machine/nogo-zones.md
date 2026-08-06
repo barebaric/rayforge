@@ -5,7 +5,7 @@ Laser nicht betreten sollte. Wenn aktiviert, werden sie als Teil der
 [Auftrags-Plausibilitätsprüfungen](../features/sanity-checks.md) vor dem
 Ausführen oder Exportieren geprüft.
 
-![No-Go-Zonen](/screenshots/machine-nogo-zones.png)
+![No-Go-Zonen](/screenshots/machine-settings-nogo-zones.png)
 
 ## Eine No-Go-Zone hinzufügen
 

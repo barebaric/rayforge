@@ -4,7 +4,7 @@ description: "Verwalte Maschinen in Rayforge — füge sie hinzu, konfiguriere, 
 
 # Maschinen
 
-![Maschinen-Einstellungen](/screenshots/application-machines.png)
+![Maschinen-Einstellungen](/screenshots/app-settings-machines.png)
 
 Die Maschinen-Seite in den Anwendungseinstellungen zeigt eine Liste aller
 konfigurierten Maschinen. Jeder Eintrag zeigt den Maschinennamen und hat

@@ -6,7 +6,7 @@ description: "Laser cutter maintenance guide — keep your machine in top condit
 
 The Maintenance page in Machine Settings helps you track machine usage and schedule maintenance tasks.
 
-![Maintenance Settings](/screenshots/machine-maintenance.png)
+![Maintenance Settings](/screenshots/machine-settings-maintenance.png)
 
 ## Usage Tracking
 

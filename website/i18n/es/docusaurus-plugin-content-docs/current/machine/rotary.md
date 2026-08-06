@@ -5,7 +5,7 @@ como vasos, copas, bolígrafos y material redondo. Cuando se conecta un módulo
 rotativo, Rayforge envuelve el trabajo alrededor del cilindro y muestra una vista
 previa 3D del resultado.
 
-![Ajustes del Módulo Rotativo](/screenshots/machine-rotary-module.png)
+![Ajustes del Módulo Rotativo](/screenshots/machine-settings-rotary-module.png)
 
 ## Cuándo necesitas el modo rotativo
 

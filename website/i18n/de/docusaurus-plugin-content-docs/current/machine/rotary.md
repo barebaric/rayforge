@@ -5,7 +5,7 @@ Objekte wie Becher, Gläser, Stifte und Rundmaterial. Wenn ein Rotationsmodul
 verbunden ist, wickelt Rayforge den Auftrag um den Zylinder und zeigt eine 3D-Vorschau
 des Ergebnisses an.
 
-![Rotationsmodul-Einstellungen](/screenshots/machine-rotary-module.png)
+![Rotationsmodul-Einstellungen](/screenshots/machine-settings-rotary-module.png)
 
 ## Wann du den Rotationsmodus brauchst
 

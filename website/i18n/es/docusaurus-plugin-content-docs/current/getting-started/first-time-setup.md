@@ -18,7 +18,7 @@ terminal. Deberías ver la interfaz principal con un lienzo vacío.
 Ve a **Configuración → Máquinas** o presiona <kbd>ctrl+coma</kbd> para abrir
 el diálogo de configuración, luego selecciona la página **Máquinas**.
 
-![Configuración de Máquina](/screenshots/application-machines.png)
+![Configuración de Máquina](/screenshots/app-settings-machines.png)
 
 Haz clic en **Add Machine** para abrir el selector de máquinas.
 
@@ -43,7 +43,7 @@ controlador, el área de trabajo y los ajustes de cabezal, o haz clic en
 **Import from File…** un perfil exportado previamente o un perfil de
 dispositivo LightBurn (.lbdev) con calibración de cámara y ajustes de láser.
 
-![Asistente — Elegir un Punto de Partida](/screenshots/app-settings-machines-wizard-profile.png)
+![Asistente — Elegir un Punto de Partida](/screenshots/config-wizard-profile.png)
 
 ### Elegir un Controlador
 
@@ -53,7 +53,7 @@ Elige **None — G-code export only** si solo quieres exportar G-code a archivos
 y nunca manejar una máquina física. Este paso se omite cuando empiezas desde
 un perfil integrado o una importación.
 
-![Asistente — Elegir un Controlador](/screenshots/app-settings-machines-wizard-controller.png)
+![Asistente — Elegir un Controlador](/screenshots/config-wizard-controller.png)
 
 ### Conexión
 
@@ -66,7 +66,7 @@ dependen del controlador que elegiste:
   `192.168.1.100`)
 - **OctoPrint** — URL del servidor y clave API
 
-![Asistente — Conexión](/screenshots/app-settings-machines-wizard-connect.png)
+![Asistente — Conexión](/screenshots/config-wizard-connect.png)
 
 ### Descubrir el Dispositivo
 
@@ -76,7 +76,7 @@ aceleración y capacidades del firmware. Haz clic en **Probe Now** para
 detectar automáticamente estos valores, o usa **Next** para ingresarlos
 manualmente en los siguientes pasos.
 
-![Asistente — Descubrir el Dispositivo](/screenshots/app-settings-machines-wizard-probe.png)
+![Asistente — Descubrir el Dispositivo](/screenshots/config-wizard-probe.png)
 
 ### Proveedor de IA
 
@@ -85,7 +85,7 @@ un endpoint compatible con OpenAI (URL base y clave API) para que el siguiente
 paso pueda consultar las especificaciones de máquinas comerciales conocidas.
 Omite este paso para ingresar los valores manualmente.
 
-![Asistente — Proveedor de IA](/screenshots/app-settings-machines-wizard-ai-provider.png)
+![Asistente — Proveedor de IA](/screenshots/config-wizard-ai-provider.png)
 
 ### Consulta de Especificaciones con IA
 
@@ -95,7 +95,7 @@ Ingresa el fabricante y el modelo, luego haz clic en **Look Up Specs**. Los
 valores sugeridos aparecen como filas de interruptores y empiezan aceptados —
 desactiva cualquier cosa que no quieras aplicar.
 
-![Asistente — Consulta de Especificaciones con IA](/screenshots/app-settings-machines-wizard-ai-lookup.png)
+![Asistente — Consulta de Especificaciones con IA](/screenshots/config-wizard-ai-lookup.png)
 
 ### Hardware
 
@@ -111,7 +111,7 @@ Configura el montaje físico de la máquina:
   corte y aceleración
 - **Comportamiento** — ir al origen al inicio y homing de un solo eje
 
-![Asistente — Hardware](/screenshots/app-settings-machines-wizard-hardware.png)
+![Asistente — Hardware](/screenshots/config-wizard-hardware.png)
 
 ### Cabezal
 
@@ -120,7 +120,7 @@ husillo — y establece sus parámetros. Para un láser: potencia máxima (valor
 tamaño del punto, frecuencia PWM y distancia focal. Para un husillo: RPM
 máximas y mínimas.
 
-![Asistente — Cabezal](/screenshots/app-settings-machines-wizard-head.png)
+![Asistente — Cabezal](/screenshots/config-wizard-head.png)
 
 ### Módulo Rotativo
 
@@ -129,7 +129,7 @@ Configura opcionalmente un accesorio rotativo: tipo (mandril o rodillos), eje
 dirección invertida. Omite este paso para añadir un módulo rotativo más tarde
 desde la configuración de la máquina.
 
-![Asistente — Módulo Rotativo](/screenshots/app-settings-machines-wizard-rotary.png)
+![Asistente — Módulo Rotativo](/screenshots/config-wizard-rotary.png)
 
 ### Cámaras
 
@@ -140,7 +140,7 @@ de la configuración de imagen, la calibración de lente y la alineación de
 imagen. Puedes omitir esto y configurar cámaras más tarde desde los ajustes de
 cámara de la máquina.
 
-![Asistente — Cámaras](/screenshots/app-settings-machines-wizard-camera.png)
+![Asistente — Cámaras](/screenshots/config-wizard-camera.png)
 
 ### Revisión y Nombre
 
@@ -149,7 +149,7 @@ Dale un nombre a la máquina y revisa un resumen de todo lo que has configurado
 rotativos y cámaras. El asistente también muestra advertencias, como un
 controlador faltante o un área de trabajo sin establecer.
 
-![Asistente — Revisión y Nombre](/screenshots/app-settings-machines-wizard-review.png)
+![Asistente — Revisión y Nombre](/screenshots/config-wizard-review.png)
 
 Haz clic en **Create Machine** para finalizar. Se abre el diálogo de
 Configuración de Máquina para tu nueva máquina, donde puedes ajustar

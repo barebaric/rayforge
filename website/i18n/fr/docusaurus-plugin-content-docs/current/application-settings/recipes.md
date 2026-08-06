@@ -1,6 +1,6 @@
 # Recettes et Paramètres
 
-![Paramètres des Recettes](/screenshots/application-recipes.png)
+![Paramètres des Recettes](/screenshots/app-settings-recipes.png)
 
 Rayforge fournit un système de recettes puissant qui vous permet de créer, gérer et appliquer des paramètres cohérents à travers vos projets de découpe laser. Ce guide couvre le parcours utilisateur complet, de la création de recettes dans les paramètres généraux à leur application aux opérations et la gestion des paramètres au niveau de l'étape.
 

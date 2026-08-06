@@ -7,7 +7,7 @@ description: "Configure laser settings in Rayforge — set power, speed, and mod
 The Laser page in Machine Settings configures your laser head(s) and their
 properties.
 
-![Laser Settings](/screenshots/machine-laser.png)
+![Laser Settings](/screenshots/machine-settings-laser.png)
 
 ## Laser Heads
 

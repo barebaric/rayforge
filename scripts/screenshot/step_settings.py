@@ -2,23 +2,24 @@
 """Screenshot: Step settings dialog."""
 
 import logging
-import os
 import time
 
 from utils import (
     find_step_by_type,
+    get_target,
     load_project,
     open_step_settings,
     run_on_main_thread,
     set_window_size,
     take_screenshot,
+    target_to_filename,
 )
 
 from rayforge.uiscript import app, win
 
 logger = logging.getLogger(__name__)
 
-TARGET = os.environ.get("TARGET", "step-settings:contour:general")
+TARGET = get_target("step-settings:contour:general")
 
 ENGRAVE_MODES = {
     "constant_power": "CONSTANT_POWER",
@@ -111,7 +112,7 @@ def main():
             run_on_main_thread(lambda m=mode_name: set_engrave_mode(dialog, m))
             time.sleep(0.5)
 
-    output_name = f"{TARGET.replace(':', '-')}.png"
+    output_name = target_to_filename(TARGET)
 
     take_screenshot(output_name)
     time.sleep(0.25)

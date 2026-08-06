@@ -4,7 +4,7 @@ description: "Manage machines in Rayforge - add, configure, export, import, and 
 
 # Machines
 
-![Machines Settings](/screenshots/application-machines.png)
+![Machines Settings](/screenshots/app-settings-machines.png)
 
 The Machines page in Application Settings shows a list of all configured
 machines. Each entry shows the machine name and has buttons to edit or

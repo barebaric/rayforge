@@ -68,7 +68,7 @@ description: "Adds support for the XYZ laser cutter."
 api_version: 9
 ```
 
-请参阅[钩子](./addon-hooks.md#api-version-history)文档了解每个版本的变更内容。
+请参阅[钩子](./addon-hooks.md#api-版本历史)文档了解每个版本的变更内容。
 
 ### `author`
 

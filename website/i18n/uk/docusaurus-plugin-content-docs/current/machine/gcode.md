@@ -2,7 +2,7 @@
 
 Сторінка "G-code" у налаштуваннях машини налаштовує, як Rayforge генерує G-code для вашої машини.
 
-![Налаштування G-code](/screenshots/machine-gcode.png)
+![Налаштування G-code](/screenshots/machine-settings-gcode.png)
 
 :::інформація
 Ця сторінка відображається лише для машин, які використовують драйвери на

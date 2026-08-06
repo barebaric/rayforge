@@ -3,7 +3,7 @@
 Die Laser-Seite in den Maschineneinstellungen konfiguriert deine Laserköpfe und
 deren Eigenschaften.
 
-![Lasereinstellungen](/screenshots/machine-laser.png)
+![Lasereinstellungen](/screenshots/machine-settings-laser.png)
 
 ## Laserköpfe
 
