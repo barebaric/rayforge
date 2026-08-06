@@ -48,3 +48,9 @@ class BackgroundShader(Shader):
 
     def __init__(self):
         super().__init__(BACKGROUND_VERTEX_SHADER, BACKGROUND_FRAGMENT_SHADER)
+
+    def reset_uniforms(self) -> None:
+        """Sets every uniform this shader reads to its idle value."""
+        self.use()
+        self.set_vec3("uBgColor", (0.11, 0.12, 0.14))
+        self.set_vec3("uBgColorLight", (0.18, 0.20, 0.23))

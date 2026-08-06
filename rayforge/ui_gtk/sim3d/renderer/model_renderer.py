@@ -265,7 +265,6 @@ class ModelRenderer(BaseRenderer):
 
         GL.glBindVertexArray(self._vao)
         GL.glDrawArrays(GL.GL_TRIANGLES, 0, self._vertex_count)
-        GL.glBindVertexArray(0)
 
     @property
     def bounds(self):

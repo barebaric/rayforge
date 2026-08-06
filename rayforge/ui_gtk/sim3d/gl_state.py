@@ -1,45 +1,56 @@
 """
 OpenGL pipeline-state save/restore context managers.
 
-Used by renderers conforming to the ``LayerRenderer`` protocol to
-bracket their ``render`` body so that state mutations — depth test,
-blend, blend function, depth mask, depth function, line width, and
-pixel unpack alignment — are restored on exit, including the
-exceptional path.
+The :func:`gl_state` context manager brackets a renderer's ``render``
+body so that state mutations — depth test, blend, blend function,
+depth mask, depth function, line width, pixel unpack alignment, and
+texture bindings — are restored on exit, including the exceptional
+path.
+
+The :func:`render_pass` context manager combines ``gl_state`` with the
+``Shader`` context-manager protocol (``with shader:`` snapshots and
+restores that shader's uniforms) for a single renderer draw call.
 
 Usage::
 
-    with gl_state():
-        GL.glEnable(GL.GL_BLEND)
-        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE)
-        # ... draw ...
-
-The :func:`uniform_block` companion snapshots and restores the
-per-uniform values a ``Shader`` has tracked via ``set_*``.
+    with render_pass(self.main_shader):
+        self.zone_renderer.render(ctx, self.main_shader, zone_mvp_gl)
 """
 
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from typing import Generator, Optional
 
+import numpy as np
 from OpenGL import GL
+
+from .shader.base import Shader
 
 
 def _get_int(name: int) -> int:
-    val = GL.glGetIntegerv(name)
-    if val is None or len(val) == 0:
+    value = GL.glGetIntegerv(name)
+    if value is None:
         return 0
-    return int(val[0])
+    flat = np.asarray(value).reshape(-1)
+    if flat.size == 0:
+        return 0
+    return int(flat.item(0))
 
 
 def _get_float(name: int) -> float:
-    val = GL.glGetFloatv(name)
-    if val is None or len(val) == 0:
+    value = GL.glGetFloatv(name)
+    if value is None:
         return 0.0
-    return float(val[0])
+    flat = np.asarray(value).reshape(-1)
+    if flat.size == 0:
+        return 0.0
+    return float(flat.item(0))
 
 
 def _is_enabled(name: int) -> bool:
     return bool(GL.glIsEnabled(name))
+
+
+_TEXTURE_UNITS = (GL.GL_TEXTURE0, GL.GL_TEXTURE1)
 
 
 @contextmanager
@@ -51,6 +62,7 @@ def gl_state(
     save_depth_func: bool = True,
     save_line_width: bool = True,
     save_unpack_alignment: bool = True,
+    save_texture_bindings: bool = True,
 ) -> Generator[None, None, None]:
     """
     Snapshot a set of GL pipeline states on entry, restore on exit.
@@ -67,16 +79,16 @@ def gl_state(
     snap_depth_func: Optional[int] = None
     snap_line_width: Optional[float] = None
     snap_unpack_alignment: Optional[int] = None
+    snap_active_texture: Optional[int] = None
+    snap_texture_bindings: dict = {}
 
     try:
         if save_depth_test:
             snap_depth_test = _is_enabled(GL.GL_DEPTH_TEST)
         if save_blend:
             snap_blend = _is_enabled(GL.GL_BLEND)
-            blend_val = GL.glGetIntegerv(GL.GL_BLEND_SRC_ALPHA)
-            if blend_val is not None and len(blend_val) >= 2:
-                snap_blend_src = int(blend_val[0])
-                snap_blend_dst = int(blend_val[1])
+            snap_blend_src = _get_int(GL.GL_BLEND_SRC_RGB)
+            snap_blend_dst = _get_int(GL.GL_BLEND_DST_RGB)
         if save_depth_mask:
             snap_depth_mask = bool(_get_int(GL.GL_DEPTH_WRITEMASK))
         if save_depth_func:
@@ -85,6 +97,15 @@ def gl_state(
             snap_line_width = _get_float(GL.GL_LINE_WIDTH)
         if save_unpack_alignment:
             snap_unpack_alignment = _get_int(GL.GL_UNPACK_ALIGNMENT)
+        if save_texture_bindings:
+            snap_active_texture = _get_int(GL.GL_ACTIVE_TEXTURE)
+            for unit in _TEXTURE_UNITS:
+                GL.glActiveTexture(unit)
+                snap_texture_bindings[unit] = _get_int(
+                    GL.GL_TEXTURE_BINDING_2D
+                )
+            if snap_active_texture is not None:
+                GL.glActiveTexture(snap_active_texture)
         yield
     finally:
         if snap_depth_test is not None:
@@ -107,22 +128,35 @@ def gl_state(
             GL.glLineWidth(snap_line_width)
         if snap_unpack_alignment is not None:
             GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, snap_unpack_alignment)
+        if snap_texture_bindings:
+            for unit, binding in snap_texture_bindings.items():
+                GL.glActiveTexture(unit)
+                GL.glBindTexture(GL.GL_TEXTURE_2D, binding)
+            if snap_active_texture is not None:
+                GL.glActiveTexture(snap_active_texture)
 
 
 @contextmanager
-def uniform_block(shader) -> Generator[dict, None, None]:
+def render_pass(*shaders: Shader) -> Generator[None, None, None]:
     """
-    Snapshot ``shader`` uniform values on entry, restore on exit.
+    Bracket a single renderer draw call with state isolation.
 
-    Pairs with :meth:`Shader.save` / :meth:`Shader.restore` (see
-    ``gl_utils.py``).  Renderers enter this around their uniform-sets
-    so a partial draw that throws cannot leave stale values for the
-    next renderer.
+    Saves and restores GL pipeline state and, for each shader provided,
+    snapshots and restores that shader's uniforms via its context-manager
+    protocol.  A renderer wrapped by this context manager cannot leak GL
+    state or uniform changes to subsequent renderers, even on exception.
 
-    Yields the snapshot dict so the caller can inspect what was saved.
+    Example::
+
+        with render_pass(self.main_shader, self.text_shader):
+            self.axis_renderer.render(ctx, self.main_shader, ...)
     """
-    snapshot = shader.save()
-    try:
-        yield snapshot
-    finally:
-        shader.restore(snapshot)
+    with gl_state():
+        if not shaders:
+            yield
+            return
+        with ExitStack() as stack:
+            for shader in shaders:
+                if shader is not None:
+                    stack.enter_context(shader)
+            yield

@@ -66,3 +66,9 @@ class TextShader(Shader):
 
     def __init__(self):
         super().__init__(TEXT_VERTEX_SHADER, TEXT_FRAGMENT_SHADER)
+
+    def reset_uniforms(self) -> None:
+        """Sets every uniform this shader reads to its idle value."""
+        self.use()
+        self.set_int("uTextAtlas", 0)
+        self.set_vec4("uTextColor", (1.0, 1.0, 1.0, 1.0))

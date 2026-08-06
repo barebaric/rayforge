@@ -63,3 +63,12 @@ class TextureShader(Shader):
 
     def __init__(self):
         super().__init__(TEXTURE_VERTEX_SHADER, TEXTURE_FRAGMENT_SHADER)
+
+    def reset_uniforms(self) -> None:
+        """Sets every uniform this shader reads to its idle value."""
+        self.use()
+        self.set_int("uTexture", 0)
+        self.set_int("uColorLUT", 1)
+        self.set_int("uNumLaserLUTs", 1)
+        self.set_int("uLaserIndex", 0)
+        self.set_float("uAlpha", 1.0)

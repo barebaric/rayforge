@@ -126,5 +126,3 @@ class CylinderRenderer(BaseRenderer):
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         GL.glBindVertexArray(self.vao)
         GL.glDrawArrays(GL.GL_LINES, 0, self.vertex_count)
-        GL.glBindVertexArray(0)
-        GL.glDisable(GL.GL_BLEND)

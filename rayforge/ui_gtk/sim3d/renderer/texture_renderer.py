@@ -382,12 +382,6 @@ class TextureArtifactRenderer(BaseRenderer):
 
             GL.glDrawArrays(GL.GL_TRIANGLE_FAN, 0, 4)
 
-        GL.glBindVertexArray(0)
-        GL.glActiveTexture(GL.GL_TEXTURE1)
-        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
-        GL.glActiveTexture(GL.GL_TEXTURE0)
-        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
-
     def render_cylinder(
         self,
         ctx: RenderContext,
@@ -474,12 +468,6 @@ class TextureArtifactRenderer(BaseRenderer):
 
             GL.glBindVertexArray(self.cylinder_vao)
             GL.glDrawArrays(GL.GL_TRIANGLES, 0, vertex_count)
-            GL.glBindVertexArray(0)
-
-        GL.glActiveTexture(GL.GL_TEXTURE1)
-        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
-        GL.glActiveTexture(GL.GL_TEXTURE0)
-        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
         t_cyl_elapsed = (time.perf_counter() - t_cyl_start) * 1000
         if t_cyl_elapsed > 5:

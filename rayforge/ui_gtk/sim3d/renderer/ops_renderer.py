@@ -205,9 +205,6 @@ class OpsRenderer(BaseRenderer):
             shader.set_int("uColorLUT", 1)
             GL.glBindVertexArray(self.powered_vao)
             GL.glDrawArrays(GL.GL_LINES, 0, self.powered_vertex_count)
-            GL.glActiveTexture(GL.GL_TEXTURE1)
-            GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
-            GL.glActiveTexture(GL.GL_TEXTURE0)
 
         should_draw_travel = self.travel_vertex_count > 0 and (
             executed_travel_vertex_count >= 0 or show_travel_moves
@@ -223,14 +220,6 @@ class OpsRenderer(BaseRenderer):
             shader.set_vec4("uColor", colors.get_rgba("travel"))
             GL.glBindVertexArray(self.travel_vao)
             GL.glDrawArrays(GL.GL_LINES, 0, self.travel_vertex_count)
-
-        set_line_width(1.0)
-        shader.set_float("uUsePowerLUT", 0.0)
-        shader.set_float("uUseVertexColor", 0.0)
-        shader.set_int("uExecutedVertexCount", -1)
-        shader.set_float("uEmissive", 0.0)
-        GL.glDepthMask(GL.GL_TRUE)
-        GL.glBindVertexArray(0)
 
     def _load_buffer_data(self, vbo: int, data: np.ndarray):
         """Loads vertex data into a VBO."""

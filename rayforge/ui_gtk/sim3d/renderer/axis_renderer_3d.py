@@ -377,7 +377,6 @@ class AxisRenderer3D(BaseRenderer):
         # Draw background plane
         GL.glDepthMask(GL.GL_FALSE)
         self.background_renderer.render(ctx, line_shader, grid_mvp)
-        GL.glDepthMask(GL.GL_TRUE)
 
         # Draw grid
         line_shader.set_mat4("uMVP", grid_mvp)
@@ -411,8 +410,6 @@ class AxisRenderer3D(BaseRenderer):
             GL.glBindVertexArray(self.extent_frame_vao)
             GL.glDrawArrays(GL.GL_LINES, 0, self.extent_frame_vertex_count)
 
-        GL.glBindVertexArray(0)
-
         # 5. Pass the correct world-space offset vector to the label renderer.
         self._render_axis_labels(
             ctx,
@@ -424,7 +421,6 @@ class AxisRenderer3D(BaseRenderer):
             x_negative=x_negative,
             y_negative=y_negative,
         )
-        GL.glDisable(GL.GL_BLEND)
 
     def _render_axis_labels(
         self,
