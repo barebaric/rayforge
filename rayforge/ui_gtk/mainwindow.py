@@ -1412,13 +1412,19 @@ class MainWindow(Adw.ApplicationWindow):
         self._canvas3d_overlay.add_overlay(self._canvas3d_vis_overlay)
         self._canvas3d_playback = PlaybackOverlay()
         self.canvas3d.set_playback_overlay(self._canvas3d_playback)
-        self._canvas3d_overlay.add_overlay(self._canvas3d_playback)
         self._canvas3d_playback.step_changed.connect(
             self._on_3d_playback_step_changed
         )
         self._canvas3d_time_overlay = TimeEstimateOverlay()
         self._canvas3d_overlay.add_overlay(self._canvas3d_time_overlay)
-        self.view_stack.add_named(self._canvas3d_overlay, "3d")
+
+        # The playback bar lives below the canvas instead of overlapping it,
+        # so the canvas area stays unobstructed.
+        self._canvas3d_overlay.set_vexpand(True)
+        self._canvas3d_page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self._canvas3d_page.append(self._canvas3d_overlay)
+        self._canvas3d_page.append(self._canvas3d_playback)
+        self.view_stack.add_named(self._canvas3d_page, "3d")
 
     def _on_document_settled(self, sender):
         """
