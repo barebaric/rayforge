@@ -1,12 +1,13 @@
 import logging
 from gettext import gettext as _
-from typing import cast
+from typing import Optional, cast
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
 
 from ...context import get_context
 from ...core.recipe import Recipe
+from ...core.step_registry import step_registry
 from ...shared.units.formatter import format_value
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
@@ -60,6 +61,15 @@ class RecipeRow(Gtk.Box):
         delete_button.connect("clicked", lambda w: on_delete(recipe))
         suffix_box.append(delete_button)
 
+    def _get_step_type_label(self) -> Optional[str]:
+        step_type = self.recipe.target_step_type
+        if not step_type:
+            return None
+        step_class = step_registry.get(step_type)
+        if step_class is None:
+            return step_type
+        return getattr(step_class, "TYPELABEL", step_type)
+
     def _get_subtitle(self) -> str:
         parts = []
         context = get_context()
@@ -71,8 +81,12 @@ class RecipeRow(Gtk.Box):
             )
             parts.append(machine.name if machine else _("Unknown Machine"))
 
-        # 2. Capability
-        parts.append(self.recipe.capability.label)
+        # 2. Capability / Step type
+        step_type_label = self._get_step_type_label()
+        if step_type_label:
+            parts.append(step_type_label)
+        else:
+            parts.append(self.recipe.capability.label)
 
         # 3. Material
         if self.recipe.material_uid:
@@ -94,7 +108,7 @@ class RecipeRow(Gtk.Box):
                 )
                 parts.append(f"{min_formatted} - {max_formatted}")
 
-        return " | ".join(parts)
+        return " · ".join(parts)
 
 
 class RecipeListWidget(PreferencesGroupWithButton):
