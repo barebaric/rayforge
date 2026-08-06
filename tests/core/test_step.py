@@ -2,12 +2,14 @@ from unittest.mock import MagicMock
 
 import pytest
 from raygeo.geo import Matrix
+from raygeo.ops.state import CoolantMode
 
 from rayforge.core.capability import StepCapability
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
 from rayforge.core.varset import VarSet
 from rayforge.machine.models.laser import LaserHead
+from rayforge.machine.models.spindle import SpindleHead
 
 
 class _StubCapability(StepCapability):
@@ -418,3 +420,115 @@ def test_capabilities_property_returns_class_caps():
 def test_base_step_has_no_operation_color(step):
     """The generic step reports no operation color."""
     assert step.get_operation_color(None) is None
+
+
+def test_coolant_method_defaults_to_off(step):
+    """A new step uses no coolant by default."""
+    assert step.coolant_method is CoolantMode.OFF
+
+
+def test_set_coolant_method_fires_updated(step):
+    """set_coolant_method updates the value and fires the updated signal."""
+    handler = MagicMock()
+    step.updated.connect(handler)
+    step.set_coolant_method(CoolantMode.FLOOD)
+    assert step.coolant_method is CoolantMode.FLOOD
+    handler.assert_called_once_with(step)
+
+
+def test_coolant_method_serialization_round_trip(step):
+    """coolant_method survives a to_dict/from_dict round trip."""
+    step.set_coolant_method(CoolantMode.MIST)
+    restored = Step.from_dict(step.to_dict())
+    assert restored.coolant_method is CoolantMode.MIST
+
+
+def test_coolant_method_missing_key_loads_as_off():
+    """Old project files without a coolant_method key load as OFF."""
+    step_dict = {
+        "uid": "step-no-coolant",
+        "type": "step",
+        "typelabel": "OldType",
+        "visible": True,
+        "matrix": Matrix.identity().to_list(),
+        "per_workpiece_transformers_dicts": [],
+        "per_step_transformers_dicts": [],
+        "children": [],
+    }
+    restored = Step.from_dict(step_dict)
+    assert restored.coolant_method is CoolantMode.OFF
+    assert "coolant_method" not in restored.extra
+
+
+def test_coolant_method_unknown_value_loads_as_off():
+    """Unknown coolant method names from newer versions load as OFF."""
+    step_dict = {
+        "uid": "step-bad-coolant",
+        "type": "step",
+        "typelabel": "FutureType",
+        "visible": True,
+        "matrix": Matrix.identity().to_list(),
+        "per_workpiece_transformers_dicts": [],
+        "per_step_transformers_dicts": [],
+        "children": [],
+        "coolant_method": "VAPOR",
+    }
+    restored = Step.from_dict(step_dict)
+    assert restored.coolant_method is CoolantMode.OFF
+    assert "VAPOR" not in restored.extra
+
+
+def _spindle_machine(cooling_methods):
+    """A machine with a single spindle head supporting the given methods."""
+    machine = MagicMock()
+    head = SpindleHead()
+    head.cooling_methods = tuple(cooling_methods)
+    machine.heads = [head]
+    return machine
+
+
+def test_unsupported_coolant_off_never_reported(step):
+    """OFF is always supported and therefore never reported."""
+    machine = _spindle_machine([CoolantMode.FLOOD])
+    assert step.get_unsupported_coolant_methods(machine) == ()
+
+
+def test_unsupported_coolant_supported_method(step):
+    """A method supported by the head is not reported."""
+    machine = _spindle_machine([CoolantMode.FLOOD])
+    step.set_coolant_method(CoolantMode.FLOOD)
+    assert step.get_unsupported_coolant_methods(machine) == ()
+
+
+def test_unsupported_coolant_reports_missing_method(step):
+    """A method the head does not support is reported."""
+    machine = _spindle_machine([CoolantMode.FLOOD])
+    step.set_coolant_method(CoolantMode.MIST)
+    assert step.get_unsupported_coolant_methods(machine) == (CoolantMode.MIST,)
+
+
+def test_unsupported_coolant_with_laser_head(step):
+    """A laser head supports no coolant methods; nothing is reported."""
+    machine = MagicMock(heads=[LaserHead()])
+    step.set_coolant_method(CoolantMode.FLOOD)
+    assert step.get_unsupported_coolant_methods(machine) == ()
+
+
+def test_unsupported_coolant_with_no_heads(step):
+    """With no heads the step cannot run; nothing is reported."""
+    step.set_coolant_method(CoolantMode.FLOOD)
+    assert step.get_unsupported_coolant_methods(MagicMock(heads=[])) == ()
+
+
+def test_create_initial_ops_stamps_coolant(step):
+    """create_initial_ops sets the coolant state on the ops."""
+    step.set_coolant_method(CoolantMode.MIST)
+    ops = step.create_initial_ops()
+    assert len(ops) == 1
+    assert ops.coolant(0) == CoolantMode.MIST
+
+
+def test_create_initial_ops_omits_off_coolant(step):
+    """OFF coolant produces no coolant op."""
+    ops = step.create_initial_ops()
+    assert len(ops) == 0

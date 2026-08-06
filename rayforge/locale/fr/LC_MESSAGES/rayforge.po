@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 00:18+0200\n"
+"POT-Creation-Date: 2026-08-06 02:51+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -2429,8 +2429,8 @@ msgstr "Supprimer la règle de couleur '{color}' ?"
 msgid ""
 "The color rule will be permanently removed. This action cannot be undone."
 msgstr ""
-"La règle de couleur sera définitivement supprimée. Cette action ne peut pas"
-"être annulée."
+"La règle de couleur sera définitivement supprimée. Cette action ne peut "
+"pasêtre annulée."
 
 #: rayforge/ui_gtk/settings/color_presets_page.py
 msgid "Color Rules"
@@ -2441,8 +2441,8 @@ msgid ""
 "Map SVG colors to step types so they are applied automatically when "
 "importing."
 msgstr ""
-"Associez les couleurs SVG aux types d'étape afin qu'elles soient appliquées"
-"automatiquement lors de l'importation."
+"Associez les couleurs SVG aux types d'étape afin qu'elles soient "
+"appliquéesautomatiquement lors de l'importation."
 
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Materials"
@@ -4446,9 +4446,9 @@ msgid ""
 "Maximum deviation from original path when fitting arcs and curves. Lower "
 "values drastically increase processing time and job size"
 msgstr ""
-"Déviation maximale par rapport au tracé d'origine lors de l'ajustement des"
-"arcs et des courbes. Des valeurs plus faibles augmentent considérablement"
-"le temps de traitement et la taille du travail."
+"Déviation maximale par rapport au tracé d'origine lors de l'ajustement "
+"desarcs et des courbes. Des valeurs plus faibles augmentent "
+"considérablementle temps de traitement et la taille du travail."
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Homing and Startup"
@@ -5800,9 +5800,9 @@ msgid ""
 "The unit system used when emitting G-code and communicating with the device. "
 "This setting is independent of the units used in the user interface."
 msgstr ""
-"Le système d'unités utilisé lors de l'émission du G-code et de la"
-"communication avec l'appareil. Ce réglage est indépendant des unités"
-"utilisées dans l'interface utilisateur."
+"Le système d'unités utilisé lors de l'émission du G-code et de "
+"lacommunication avec l'appareil. Ce réglage est indépendant des "
+"unitésutilisées dans l'interface utilisateur."
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Machine Unit System"
@@ -5828,9 +5828,9 @@ msgid ""
 "to imperial. G-code values will be emitted in inches — ensure your preamble "
 "matches."
 msgstr ""
-"Le préambule contient G21 (millimètres) mais le système d'unités de la"
-"machine est réglé sur impérial. Les valeurs de G-code seront émises en"
-"pouces — assurez-vous que votre préambule correspond."
+"Le préambule contient G21 (millimètres) mais le système d'unités de "
+"lamachine est réglé sur impérial. Les valeurs de G-code seront émises "
+"enpouces — assurez-vous que votre préambule correspond."
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid ""
@@ -5838,9 +5838,9 @@ msgid ""
 "metric. G-code values will be emitted in millimeters — ensure your preamble "
 "matches."
 msgstr ""
-"Le préambule contient G20 (pouces) mais le système d'unités de la machine"
-"est réglé sur métrique. Les valeurs de G-code seront émises en millimètres"
-"— assurez-vous que votre préambule correspond."
+"Le préambule contient G20 (pouces) mais le système d'unités de la machineest "
+"réglé sur métrique. Les valeurs de G-code seront émises en millimètres— "
+"assurez-vous que votre préambule correspond."
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Drag to reorder"
@@ -7125,6 +7125,15 @@ msgid "Step name and recipe settings."
 msgstr "Nom de l'étape et paramètres de la recette."
 
 #: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "Cooling"
+msgstr "Refroidissement"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
+msgid "Coolant used while this operation runs."
+msgstr "Liquide de refroidissement utilisé pendant cette opération."
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
 #: rayforge/ui_gtk/doceditor/step_settings/rows/step_row.py
 #, python-brace-format
 msgid "Change {key}"
@@ -7137,6 +7146,30 @@ msgstr "Aucune option de post-traitement disponible pour cette étape."
 #: rayforge/ui_gtk/doceditor/step_settings/rows/travel_speed_row.py
 msgid "Speed of rapid positioning moves"
 msgstr "Vitesse des déplacements de positionnement rapide"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "Off"
+msgstr "Arrêt"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+#: rayforge/doceditor/file_cmd.py
+msgid "Flood"
+msgstr "Inondation"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+#: rayforge/doceditor/file_cmd.py
+msgid "Mist"
+msgstr "Brouillard"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "Coolant delivered to the workpiece while cutting"
+msgstr "Liquide de refroidissement appliqué sur la pièce pendant la coupe"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "This cooling method is not supported by the current machine"
+msgstr ""
+"Cette méthode de refroidissement n'est pas prise en charge par la machine "
+"actuelle"
 
 #: rayforge/ui_gtk/doceditor/step_settings/rows/cut_speed_row.py
 msgid "Speed of the cutting operation"
@@ -8441,6 +8474,15 @@ msgstr "Échec de l'enregistrement : {error}"
 #, python-brace-format
 msgid "File not found: {name}"
 msgstr "Fichier non trouvé : {name}"
+
+#: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid ""
+"This project uses cooling methods not supported by the current machine: "
+"{methods}"
+msgstr ""
+"Ce projet utilise des méthodes de refroidissement non prises en charge par "
+"la machine actuelle : {methods}"
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 00:18+0200\n"
+"POT-Creation-Date: 2026-08-06 02:51+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -6689,6 +6689,15 @@ msgid "Step name and recipe settings."
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "Cooling"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
+msgid "Coolant used while this operation runs."
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
 #: rayforge/ui_gtk/doceditor/step_settings/rows/step_row.py
 #, python-brace-format
 msgid "Change {key}"
@@ -6700,6 +6709,28 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/rows/travel_speed_row.py
 msgid "Speed of rapid positioning moves"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "Off"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+#: rayforge/doceditor/file_cmd.py
+msgid "Flood"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+#: rayforge/doceditor/file_cmd.py
+msgid "Mist"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "Coolant delivered to the workpiece while cutting"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "This cooling method is not supported by the current machine"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/rows/cut_speed_row.py
@@ -7951,6 +7982,13 @@ msgstr ""
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "File not found: {name}"
+msgstr ""
+
+#: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid ""
+"This project uses cooling methods not supported by the current machine: "
+"{methods}"
 msgstr ""
 
 #: rayforge/doceditor/file_cmd.py

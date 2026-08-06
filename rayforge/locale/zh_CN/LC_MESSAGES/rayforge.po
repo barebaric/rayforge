@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 00:18+0200\n"
+"POT-Creation-Date: 2026-08-06 02:51+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -4190,7 +4190,9 @@ msgstr "弧线和曲线公差"
 msgid ""
 "Maximum deviation from original path when fitting arcs and curves. Lower "
 "values drastically increase processing time and job size"
-msgstr "拟合圆弧和曲线时相对于原始路径的最大偏差。较低的值会大幅增加处理时间和作业大小。"
+msgstr ""
+"拟合圆弧和曲线时相对于原始路径的最大偏差。较低的值会大幅增加处理时间和作业大"
+"小。"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Homing and Startup"
@@ -5474,7 +5476,8 @@ msgstr "用于作业时间估算和路径优化的运动参数。"
 msgid ""
 "The unit system used when emitting G-code and communicating with the device. "
 "This setting is independent of the units used in the user interface."
-msgstr "生成 G 代码和与设备通信时使用的单位制。此设置与用户界面中使用的单位无关。"
+msgstr ""
+"生成 G 代码和与设备通信时使用的单位制。此设置与用户界面中使用的单位无关。"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Machine Unit System"
@@ -5499,14 +5502,18 @@ msgid ""
 "The preamble contains G21 (millimeters) but the machine unit system is set "
 "to imperial. G-code values will be emitted in inches — ensure your preamble "
 "matches."
-msgstr "程序头包含 G21（毫米），但机器单位制设置为英制。G 代码值将以英寸输出——请确保程序头匹配。"
+msgstr ""
+"程序头包含 G21（毫米），但机器单位制设置为英制。G 代码值将以英寸输出——请确保"
+"程序头匹配。"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid ""
 "The preamble contains G20 (inches) but the machine unit system is set to "
 "metric. G-code values will be emitted in millimeters — ensure your preamble "
 "matches."
-msgstr "程序头包含 G20（英寸），但机器单位制设置为公制。G 代码值将以毫米输出——请确保程序头匹配。"
+msgstr ""
+"程序头包含 G20（英寸），但机器单位制设置为公制。G 代码值将以毫米输出——请确保"
+"程序头匹配。"
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Drag to reorder"
@@ -6757,6 +6764,15 @@ msgid "Step name and recipe settings."
 msgstr "步骤名称和配方设置。"
 
 #: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "Cooling"
+msgstr "冷却"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
+msgid "Coolant used while this operation runs."
+msgstr "此操作运行期间使用的冷却液。"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
 #: rayforge/ui_gtk/doceditor/step_settings/rows/step_row.py
 #, python-brace-format
 msgid "Change {key}"
@@ -6769,6 +6785,28 @@ msgstr "此步骤无可用的后处理选项。"
 #: rayforge/ui_gtk/doceditor/step_settings/rows/travel_speed_row.py
 msgid "Speed of rapid positioning moves"
 msgstr "快速定位移动的速度"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "Off"
+msgstr "关闭"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+#: rayforge/doceditor/file_cmd.py
+msgid "Flood"
+msgstr "喷淋"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+#: rayforge/doceditor/file_cmd.py
+msgid "Mist"
+msgstr "雾化"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "Coolant delivered to the workpiece while cutting"
+msgstr "切割时输送到工件的冷却液"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "This cooling method is not supported by the current machine"
+msgstr "当前机器不支持此冷却方法"
 
 #: rayforge/ui_gtk/doceditor/step_settings/rows/cut_speed_row.py
 msgid "Speed of the cutting operation"
@@ -8023,6 +8061,13 @@ msgstr "保存失败：{error}"
 #, python-brace-format
 msgid "File not found: {name}"
 msgstr "文件未找到：{name}"
+
+#: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid ""
+"This project uses cooling methods not supported by the current machine: "
+"{methods}"
+msgstr "此项目使用的冷却方法不受当前机器支持：{methods}"
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format

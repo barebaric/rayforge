@@ -25,6 +25,7 @@ with warnings.catch_warnings():
 
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Point, Rect
+from raygeo.ops.state import CoolantMode
 
 from ..context import get_context
 from ..core.item import DocItem
@@ -55,11 +56,36 @@ from .layout.align import PositionAtStrategy
 
 if TYPE_CHECKING:
     from ..core.asset import IAsset
+    from ..core.doc import Doc
     from ..doceditor.editor import DocEditor
+    from ..machine.models.machine import Machine
     from ..shared.tasker.manager import TaskManager
 
 
 logger = logging.getLogger(__name__)
+
+
+_COOLANT_MODE_LABELS = {
+    CoolantMode.FLOOD: _("Flood"),
+    CoolantMode.MIST: _("Mist"),
+}
+
+
+def _unsupported_coolant_labels(
+    doc: "Doc", machine: Optional["Machine"]
+) -> List[str]:
+    """Human-readable labels of coolant methods used by the doc's steps
+    that the current machine does not support."""
+    if machine is None:
+        return []
+    unsupported: Set[CoolantMode] = set()
+    for layer in doc.layers:
+        if not layer.workflow:
+            continue
+        for step in layer.workflow.steps:
+            unsupported.update(step.get_unsupported_coolant_methods(machine))
+    ordered = sorted(unsupported, key=lambda m: m.value)
+    return [_COOLANT_MODE_LABELS[m] for m in ordered]
 
 
 @dataclass
@@ -1159,6 +1185,19 @@ class FileCmd:
             self._editor.set_file_path(file_path)
             self._editor.mark_as_saved()
             self._editor.doc.updated.send(self._editor.doc)
+
+            labels = _unsupported_coolant_labels(
+                new_doc, self._editor.context.machine
+            )
+            if labels:
+                self._editor.notification_requested.send(
+                    self,
+                    message=_(
+                        "This project uses cooling methods not supported by "
+                        "the current machine: {methods}"
+                    ).format(methods=", ".join(labels)),
+                    persistent=True,
+                )
 
             unknown_assets = [
                 asset

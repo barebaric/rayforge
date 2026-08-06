@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 00:18+0200\n"
+"POT-Creation-Date: 2026-08-06 02:51+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -2405,8 +2405,8 @@ msgid ""
 "Map SVG colors to step types so they are applied automatically when "
 "importing."
 msgstr ""
-"Зіставте кольори SVG із типами кроків, щоб вони застосовувалися автоматично"
-"під час імпорту."
+"Зіставте кольори SVG із типами кроків, щоб вони застосовувалися "
+"автоматичнопід час імпорту."
 
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Materials"
@@ -4390,8 +4390,8 @@ msgid ""
 "Maximum deviation from original path when fitting arcs and curves. Lower "
 "values drastically increase processing time and job size"
 msgstr ""
-"Максимальне відхилення від початкового шляху під час підгонки дуг і кривих."
-"Нижчі значення значно збільшують час обробки та розмір завдання."
+"Максимальне відхилення від початкового шляху під час підгонки дуг і "
+"кривих.Нижчі значення значно збільшують час обробки та розмір завдання."
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Homing and Startup"
@@ -5722,9 +5722,9 @@ msgid ""
 "The unit system used when emitting G-code and communicating with the device. "
 "This setting is independent of the units used in the user interface."
 msgstr ""
-"Система одиниць, що використовується під час генерації G-коду та зв'язку з"
-"пристроєм. Цей параметр не залежить від одиниць, які використовуються в"
-"інтерфейсі користувача."
+"Система одиниць, що використовується під час генерації G-коду та зв'язку "
+"зпристроєм. Цей параметр не залежить від одиниць, які використовуються "
+"вінтерфейсі користувача."
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid "Machine Unit System"
@@ -5750,9 +5750,9 @@ msgid ""
 "to imperial. G-code values will be emitted in inches — ensure your preamble "
 "matches."
 msgstr ""
-"Преамбула містить G21 (міліметри), але систему одиниць машини встановлено"
-"на імперську. Значення G-коду будуть виведені в дюймах — переконайтеся, що"
-"ваша преамбула відповідає."
+"Преамбула містить G21 (міліметри), але систему одиниць машини встановленона "
+"імперську. Значення G-коду будуть виведені в дюймах — переконайтеся, щоваша "
+"преамбула відповідає."
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 msgid ""
@@ -5760,9 +5760,9 @@ msgid ""
 "metric. G-code values will be emitted in millimeters — ensure your preamble "
 "matches."
 msgstr ""
-"Преамбула містить G20 (дюйми), але систему одиниць машини встановлено на"
-"метричну. Значення G-коду будуть виведені в міліметрах — переконайтеся, що"
-"ваша преамбула відповідає."
+"Преамбула містить G20 (дюйми), але систему одиниць машини встановлено "
+"наметричну. Значення G-коду будуть виведені в міліметрах — переконайтеся, "
+"щоваша преамбула відповідає."
 
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "Drag to reorder"
@@ -7032,6 +7032,15 @@ msgid "Step name and recipe settings."
 msgstr "Назва кроку та налаштування рецепта."
 
 #: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "Cooling"
+msgstr "Охолодження"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
+msgid "Coolant used while this operation runs."
+msgstr "Охолоджувач, який використовується під час виконання цієї операції."
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
 #: rayforge/ui_gtk/doceditor/step_settings/rows/step_row.py
 #, python-brace-format
 msgid "Change {key}"
@@ -7044,6 +7053,28 @@ msgstr "Для цього кроку немає доступних опцій п
 #: rayforge/ui_gtk/doceditor/step_settings/rows/travel_speed_row.py
 msgid "Speed of rapid positioning moves"
 msgstr "Швидкість швидких позиціонувальних рухів"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "Off"
+msgstr "Вимкнено"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+#: rayforge/doceditor/file_cmd.py
+msgid "Flood"
+msgstr "Заливний"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+#: rayforge/doceditor/file_cmd.py
+msgid "Mist"
+msgstr "Туманний"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "Coolant delivered to the workpiece while cutting"
+msgstr "Охолоджувач, що подається на заготовку під час різання"
+
+#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
+msgid "This cooling method is not supported by the current machine"
+msgstr "Цей метод охолодження не підтримується поточною машиною"
 
 #: rayforge/ui_gtk/doceditor/step_settings/rows/cut_speed_row.py
 msgid "Speed of the cutting operation"
@@ -8333,6 +8364,15 @@ msgstr "Помилка збереження: {error}"
 #, python-brace-format
 msgid "File not found: {name}"
 msgstr "Файл не знайдено: {name}"
+
+#: rayforge/doceditor/file_cmd.py
+#, python-brace-format
+msgid ""
+"This project uses cooling methods not supported by the current machine: "
+"{methods}"
+msgstr ""
+"Цей проєкт використовує методи охолодження, які не підтримуються поточною "
+"машиною: {methods}"
 
 #: rayforge/doceditor/file_cmd.py
 #, python-brace-format

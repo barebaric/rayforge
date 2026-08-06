@@ -631,8 +631,8 @@ msgid ""
 "Distance between power samples along scan line. Lower values improve "
 "accuracy, but increase output size. "
 msgstr ""
-"Distancia entre muestras de potencia a lo largo de la línea de escaneo. Los"
-"valores más bajos mejoran la precisión, pero aumentan el tamaño de salida."
+"Distancia entre muestras de potencia a lo largo de la línea de escaneo. "
+"Losvalores más bajos mejoran la precisión, pero aumentan el tamaño de salida."
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Dot Width Correction"
@@ -653,8 +653,8 @@ msgstr "Desplazamiento de escaneo bidireccional"
 msgid ""
 "Corrects X misalignment between left-to-right and right-to-left raster passes"
 msgstr ""
-"Corrige la desalineación en X entre pasadas de rasterizado de izquierda a"
-"derecha y de derecha a izquierda"
+"Corrige la desalineación en X entre pasadas de rasterizado de izquierda "
+"aderecha y de derecha a izquierda"
 
 #: laser_essentials/widgets/raster_page.py
 #: laser_essentials/steps/raster_step.py
