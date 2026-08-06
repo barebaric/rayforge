@@ -59,6 +59,19 @@ class StepRow:
         finally:
             self._syncing = False
 
+    def resync(self):
+        """Force the widget to reflect the current step value.
+
+        Unlike the ``updated``-driven sync, this ignores any pending
+        (debounced) user edit so a recipe application or model reset is
+        shown immediately.
+        """
+        cancel = getattr(self, "cancel_pending", None)
+        if callable(cancel):
+            cancel()
+        self._sync_from_step()
+        self._sync_dependencies()
+
     def set_widget_value(self, value: Any):
         pass
 
@@ -125,7 +138,11 @@ class DebouncedMixin:
     def _has_pending_edit(self) -> bool:
         return self._debounce_timer > 0
 
-    def cleanup(self):
+    def cancel_pending(self):
+        """Cancel a scheduled debounce without committing it."""
         if self._debounce_timer > 0:
             GLib.source_remove(self._debounce_timer)
             self._debounce_timer = 0
+
+    def cleanup(self):
+        self.cancel_pending()

@@ -73,7 +73,7 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         self.editor.step.rename_step(self.step, new_name)
 
     def _on_recipe_applied(self, *args):
-        pass
+        self._sync_widgets_to_model()
 
     def _add_cooling_section(self):
         """Add the coolant section, hidden unless a spindle head is used."""
@@ -156,7 +156,10 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         self._sections.append(group)
 
     def _sync_widgets_to_model(self, *args):
-        pass
+        for row in self._rows:
+            resync = getattr(row, "resync", None)
+            if callable(resync):
+                resync()
 
     def _cleanup(self):
         if self._debounce_timer > 0:
