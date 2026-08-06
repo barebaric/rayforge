@@ -36,7 +36,15 @@ def test_scene_renderer_init_gl_creates_children():
     viewport.extent_frame = None
 
     with (
-        patch("rayforge.ui_gtk.sim3d.renderer.scene_renderer.Shader"),
+        patch(
+            "rayforge.ui_gtk.sim3d.renderer.scene_renderer.SimpleShader"
+        ) as mock_simple,
+        patch(
+            "rayforge.ui_gtk.sim3d.renderer.scene_renderer.TextShader"
+        ) as mock_text,
+        patch(
+            "rayforge.ui_gtk.sim3d.renderer.scene_renderer.TextureShader"
+        ) as mock_texture,
         patch(
             "rayforge.ui_gtk.sim3d.renderer.scene_renderer.AxisRenderer3D"
         ) as mock_axis,
@@ -58,3 +66,6 @@ def test_scene_renderer_init_gl_creates_children():
     mock_axis.return_value.init_gl.assert_called_once()
     mock_tex.return_value.init_gl.assert_called_once()
     mock_zone.return_value.init_gl.assert_called_once()
+    mock_simple.assert_called_once()
+    mock_text.assert_called_once()
+    mock_texture.assert_called_once()

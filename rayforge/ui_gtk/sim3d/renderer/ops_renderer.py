@@ -9,7 +9,9 @@ from OpenGL import GL
 
 from ....simulator.scene3d import VertexLayer
 from ..color_lut_provider import ColorLutProvider
-from ..gl_utils import BaseRenderer, RenderContext, Shader, set_line_width
+from ..gl_utils import RenderContext, set_line_width
+from ..shader import Shader
+from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
 

@@ -9,12 +9,9 @@ from gi.repository import Gtk
 from OpenGL import GL
 
 from ..sim3d.camera import Camera
-from ..sim3d.gl_utils import BaseRenderer, Shader
+from ..sim3d.renderer.base import BaseRenderer
 from ..sim3d.renderer.model_renderer import _load_mesh_data
-from ..sim3d.shaders import (
-    SIMPLE_FRAGMENT_SHADER,
-    SIMPLE_VERTEX_SHADER,
-)
+from ..sim3d.shader import Shader, SimpleShader
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +56,7 @@ class ModelPreviewWidget(Gtk.GLArea):
         GL.glEnable(GL.GL_DEPTH_TEST)
         GL.glClearColor(0.12, 0.12, 0.14, 1.0)
         try:
-            self._shader = Shader(SIMPLE_VERTEX_SHADER, SIMPLE_FRAGMENT_SHADER)
+            self._shader = SimpleShader()
         except Exception as e:
             logger.error(f"Shader compilation failed: {e}")
             return

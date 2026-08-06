@@ -16,12 +16,9 @@ import numpy as np
 from OpenGL import GL
 from raygeo.geo.types import Point3D
 
-from ..gl_utils import (
-    BaseRenderer,
-    RenderContext,
-    Shader,
-    set_line_width,
-)
+from ..gl_utils import RenderContext, set_line_width
+from ..shader import Shader
+from .base import BaseRenderer
 from .plane_renderer import PlaneRenderer
 from .text_renderer import TextRenderer
 

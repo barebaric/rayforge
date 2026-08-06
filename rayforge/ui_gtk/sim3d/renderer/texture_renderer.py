@@ -12,7 +12,9 @@ from OpenGL import GL
 from ....pipeline.artifact.base import TextureData
 from ....simulator.scene3d import CompiledSceneArtifact, TextureLayer
 from ..color_lut_provider import ColorLutProvider
-from ..gl_utils import BaseRenderer, RenderContext, Shader
+from ..gl_utils import RenderContext
+from ..shader import Shader
+from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
 

@@ -22,23 +22,17 @@ from ....shared.units.formatter import (
 from ....simulator.machine_state import MachineState
 from ....simulator.scene3d import CompiledSceneArtifact
 from ..color_lut_provider import ColorLutProvider
-from ..gl_utils import BaseRenderer, Shader, rotation_4x4
+from ..gl_utils import rotation_4x4
 from ..layer_renderer_group import (
     LayerRendererGroup,
     match_overlay_layer,
     match_vertex_layer,
 )
-from ..shaders import (
-    SIMPLE_FRAGMENT_SHADER,
-    SIMPLE_VERTEX_SHADER,
-    TEXT_FRAGMENT_SHADER,
-    TEXT_VERTEX_SHADER,
-    TEXTURE_FRAGMENT_SHADER,
-    TEXTURE_VERTEX_SHADER,
-)
+from ..shader import Shader, SimpleShader, TextShader, TextureShader
 from ..viewport import ViewportConfig
 from .axis_renderer_3d import AxisRenderer3D
 from .background_renderer import BackgroundRenderer
+from .base import BaseRenderer
 from .cylinder_renderer import CylinderRenderer
 from .laser_beam_renderer import LaserBeamRenderer
 from .model_renderer import ModelRenderer
@@ -79,11 +73,9 @@ class SceneRenderer(BaseRenderer):
 
     def init_gl(self, viewport: ViewportConfig, font_family: str):
         """Creates and initializes all scene shaders and renderers."""
-        self.main_shader = Shader(SIMPLE_VERTEX_SHADER, SIMPLE_FRAGMENT_SHADER)
-        self.text_shader = Shader(TEXT_VERTEX_SHADER, TEXT_FRAGMENT_SHADER)
-        self.texture_shader = Shader(
-            TEXTURE_VERTEX_SHADER, TEXTURE_FRAGMENT_SHADER
-        )
+        self.main_shader = SimpleShader()
+        self.text_shader = TextShader()
+        self.texture_shader = TextureShader()
 
         self.axis_renderer = AxisRenderer3D(
             viewport.width_mm,
@@ -438,8 +430,9 @@ class SceneRenderer(BaseRenderer):
                 if playhead >= tl.activation_cmd_idx:
                     tex_reached += 1
 
-        # Laser beams: computed now so models can use the point light,
-        # but drawn last (over the scanline overlay).
+        # Laser beams: computed now so models can use the point light.
+        # The beam itself is drawn after the scanline overlay but before
+        # the models, so the laser head model stays in front.
         if (
             op_player
             and self.main_shader
@@ -480,6 +473,28 @@ class SceneRenderer(BaseRenderer):
             for renderer in self.cylinder_renderers.values():
                 renderer.update_from_state(cyl_mvp_gl)
                 renderer.render(ctx, self.main_shader)
+
+        if self.texture_renderer and self.texture_shader:
+            rot_cyl_mvp = cyl_base_mvp @ rot_4x4
+            self.texture_renderer.update_from_state(mvp_ui, rot_cyl_mvp)
+            self.texture_renderer.render(
+                ctx, self.texture_shader, reached_count=tex_reached
+            )
+            self.texture_renderer.render_cylinder(
+                ctx, self.texture_shader, reached_count=tex_reached
+            )
+
+        for ring_renderer, mvp, exec_ring in deferred_ring_renders:
+            if self.main_shader:
+                ring_renderer.render(
+                    ctx,
+                    self.main_shader,
+                    mvp,
+                    executed_vertex_count=exec_ring,
+                )
+
+        if self.laser_beam_renderer and self.main_shader:
+            self.laser_beam_renderer.render(ctx, self.main_shader)
 
         if show_models and self.model_renderers and machine:
             asm = machine.assembly
@@ -530,25 +545,3 @@ class SceneRenderer(BaseRenderer):
                         point_light_pos=laser_light_pos,
                     )
                     renderer.render(ctx, self.main_shader)
-
-        if self.texture_renderer and self.texture_shader:
-            rot_cyl_mvp = cyl_base_mvp @ rot_4x4
-            self.texture_renderer.update_from_state(mvp_ui, rot_cyl_mvp)
-            self.texture_renderer.render(
-                ctx, self.texture_shader, reached_count=tex_reached
-            )
-            self.texture_renderer.render_cylinder(
-                ctx, self.texture_shader, reached_count=tex_reached
-            )
-
-        for ring_renderer, mvp, exec_ring in deferred_ring_renders:
-            if self.main_shader:
-                ring_renderer.render(
-                    ctx,
-                    self.main_shader,
-                    mvp,
-                    executed_vertex_count=exec_ring,
-                )
-
-        if self.laser_beam_renderer and self.main_shader:
-            self.laser_beam_renderer.render(ctx, self.main_shader)
