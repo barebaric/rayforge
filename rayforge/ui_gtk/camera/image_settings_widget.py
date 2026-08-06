@@ -11,8 +11,8 @@ from typing import List, Optional, Tuple
 from gi.repository import Adw, Gtk
 
 from ...camera.controller import CameraController
+from ..shared.pref_rows.base import SpinRow
 from ..shared.slider import create_slider_row
-from ..shared.unit_spin_row import SpinRow
 from .display_widget import CameraDisplay
 
 logger = logging.getLogger(__name__)

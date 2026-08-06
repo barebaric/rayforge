@@ -8,7 +8,7 @@ from ...core.layer import Layer
 from ..icons import get_icon
 from ..machine.wcs_dialog import WcsDialog
 from ..shared.patched_dialog_window import PatchedDialogWindow
-from ..shared.unit_spin_row import LengthSpinRow
+from ..shared.pref_rows.length_spin_row import LengthSpinRow
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor

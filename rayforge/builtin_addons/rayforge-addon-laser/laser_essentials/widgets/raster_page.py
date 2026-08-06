@@ -14,12 +14,10 @@ from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.stage.assembler_helpers import DepthMode
 from rayforge.ui_gtk.shared.direction_preview import DirectionPreview
 from rayforge.ui_gtk.shared.histogram_preview import HistogramPreview
+from rayforge.ui_gtk.shared.pref_rows.angle_spin_row import AngleSpinRow
+from rayforge.ui_gtk.shared.pref_rows.base import SpinRow
+from rayforge.ui_gtk.shared.pref_rows.length_spin_row import LengthSpinRow
 from rayforge.ui_gtk.shared.slider import create_slider, create_slider_row
-from rayforge.ui_gtk.shared.unit_spin_row import (
-    AngleSpinRow,
-    LengthSpinRow,
-    SpinRow,
-)
 
 from .rows import LaserStepSettingsPage
 

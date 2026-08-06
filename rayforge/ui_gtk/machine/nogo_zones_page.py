@@ -5,9 +5,9 @@ from gi.repository import Adw, Gtk
 
 from ...machine.models.machine import Machine
 from ...machine.models.zone import Zone, ZoneShape
+from ..shared.pref_rows.length_spin_row import LengthSpinRow
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
-from ..shared.unit_spin_row import LengthSpinRow
 
 
 class ZoneRow(Gtk.Box):

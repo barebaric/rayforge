@@ -5,8 +5,8 @@ from gi.repository import Adw, Gtk
 from raygeo.ops.axis import Axis
 
 from ...machine.models.machine import Machine, Origin
+from ..shared.pref_rows.length_spin_row import LengthSpinRow
 from ..shared.preferences_page import TrackedPreferencesPage
-from ..shared.unit_spin_row import LengthSpinRow
 
 
 class HardwarePage(TrackedPreferencesPage):

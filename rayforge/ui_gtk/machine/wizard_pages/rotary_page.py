@@ -29,7 +29,7 @@ from ....machine.models.rotary_module import (
     RotaryModule,
     RotaryType,
 )
-from ...shared.unit_spin_row import LengthSpinRow
+from ...shared.pref_rows.length_spin_row import LengthSpinRow
 from . import WizardPage, _makePreferencesGroup
 
 _AXIS_NAMES = ("A", "B", "C")

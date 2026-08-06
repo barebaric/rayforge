@@ -15,9 +15,11 @@ from ...machine.models.rotary_module import (
 )
 from ..icons import get_icon
 from ..shared.model_selection_dialog import ModelSelectionDialog
+from ..shared.pref_rows.angle_spin_row import AngleSpinRow
+from ..shared.pref_rows.base import SpinRow
+from ..shared.pref_rows.length_spin_row import LengthSpinRow
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
-from ..shared.unit_spin_row import AngleSpinRow, LengthSpinRow, SpinRow
 from ..sim3d.renderer.model_renderer import get_model_extent
 
 

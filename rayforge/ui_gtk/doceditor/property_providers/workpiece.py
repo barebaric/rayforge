@@ -7,7 +7,7 @@ from gi.repository import Adw, Gio, Gtk
 from ....core.item import DocItem
 from ....core.workpiece import WorkPiece
 from ...icons import get_icon
-from ...shared.unit_spin_row import LengthSpinRow
+from ...shared.pref_rows.length_spin_row import LengthSpinRow
 from ..image_metadata_dialog import ImageMetadataDialog
 from .base import PropertyProvider
 

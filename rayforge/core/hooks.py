@@ -4,12 +4,22 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 16
-PLUGIN_API_VERSION = 18
+PLUGIN_API_VERSION = 19
 
 
 """
 API Changelog
-============
+=============
+
+Version 19
+----------
+The ``rayforge.ui_gtk.shared.unit_spin_row`` module was split into a
+package: ``rayforge.ui_gtk.shared.pref_rows``, with one module per
+widget (``base``, ``unit_spin_row``, ``length_spin_row``,
+``angle_spin_row``, ``speed_spin_row``, ``acceleration_spin_row``).
+Addons importing the old module path must update their imports. Added
+``LengthChoiceSpinRow``: a length row with a per-row unit dropdown
+(defaulting to the user's preferred unit).
 
 Version 18
 ----------

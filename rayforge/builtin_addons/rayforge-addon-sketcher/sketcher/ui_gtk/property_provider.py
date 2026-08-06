@@ -10,7 +10,7 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.ui_gtk.doceditor.property_providers.base import (
     PropertyProvider,
 )
-from rayforge.ui_gtk.shared.unit_spin_row import SpinRow
+from rayforge.ui_gtk.shared.pref_rows.base import SpinRow
 from rayforge.ui_gtk.varset.varsetwidget import VarSetRowList
 
 from .sketch_cmd import SketchCmd

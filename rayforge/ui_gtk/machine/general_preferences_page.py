@@ -7,8 +7,9 @@ from ...machine.driver import drivers, get_driver_cls
 from ...machine.models.machine import Machine
 from ...shared.units.system import UnitSystem
 from ..icons import get_icon
+from ..shared.pref_rows.acceleration_spin_row import AccelerationSpinRow
+from ..shared.pref_rows.speed_spin_row import SpeedSpinRow
 from ..shared.preferences_page import TrackedPreferencesPage
-from ..shared.unit_spin_row import AccelerationSpinRow, SpeedSpinRow
 from ..varset.varsetwidget import VarSetWidget
 
 logger = logging.getLogger(__name__)

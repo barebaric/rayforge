@@ -23,7 +23,7 @@ from gi.repository import Adw, GLib, Gtk
 
 from rayforge.core.undo import HistoryManager
 from rayforge.core.varset import FloatVar, IntVar, VarSet
-from rayforge.ui_gtk.shared.unit_spin_row import SpinRow
+from rayforge.ui_gtk.shared.pref_rows.base import SpinRow
 from rayforge.ui_gtk.varset.varset_editor import (
     VarDefinitionRowWidget,
     VarSetEditorWidget,

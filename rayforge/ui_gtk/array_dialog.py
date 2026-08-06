@@ -31,7 +31,9 @@ from ..doceditor.array_cmd import ArrayCmd
 from .canvas2d.elements.crosshair import CrosshairElement
 from .canvas2d.elements.outline import OutlineElement
 from .shared.patched_dialog_window import PatchedDialogWindow
-from .shared.unit_spin_row import AngleSpinRow, LengthSpinRow, SpinRow
+from .shared.pref_rows.angle_spin_row import AngleSpinRow
+from .shared.pref_rows.base import SpinRow
+from .shared.pref_rows.length_spin_row import LengthSpinRow
 
 if TYPE_CHECKING:
     from ..doceditor.editor import DocEditor

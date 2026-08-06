@@ -4,7 +4,7 @@ from gi.repository import Adw
 
 from ...machine.models.machine import Machine
 from ...shared.tasker import task_mgr
-from ..shared.unit_spin_row import LengthSpinRow
+from ..shared.pref_rows.length_spin_row import LengthSpinRow
 
 
 class WcsDialog(Adw.MessageDialog):

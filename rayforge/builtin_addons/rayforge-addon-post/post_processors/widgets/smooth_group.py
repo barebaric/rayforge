@@ -8,8 +8,8 @@ from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.groups import (
     TransformerSettingsGroup,
 )
+from rayforge.ui_gtk.shared.pref_rows.angle_spin_row import AngleSpinRow
 from rayforge.ui_gtk.shared.slider import create_slider_row
-from rayforge.ui_gtk.shared.unit_spin_row import AngleSpinRow
 
 from ..transformers import Smooth
 

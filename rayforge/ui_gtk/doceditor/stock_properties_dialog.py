@@ -7,7 +7,7 @@ from gi.repository import Adw, GLib, Gtk
 from ...context import get_context
 from ...core.stock import StockItem
 from ..shared.patched_dialog_window import PatchedDialogWindow
-from ..shared.unit_spin_row import LengthSpinRow
+from ..shared.pref_rows.length_spin_row import LengthSpinRow
 from .material_selector import MaterialSelectorDialog
 
 if TYPE_CHECKING:
