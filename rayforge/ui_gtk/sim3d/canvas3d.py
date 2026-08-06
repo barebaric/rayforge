@@ -1138,12 +1138,6 @@ class Canvas3D(Gtk.GLArea):
             else:
                 tex_reached = None
 
-            skip_ring = (
-                self._compiled_artifact is not None
-                and tex_reached is not None
-                and tex_reached >= len(self._compiled_artifact.texture_layers)
-            )
-
             # Render each layer group (ops + ring buffer)
             for group in self._layer_groups:
                 mvp = rot_cyl_gl if group.is_rotary else mvp_matrix_ui_gl
@@ -1187,11 +1181,7 @@ class Canvas3D(Gtk.GLArea):
                         executed_travel_vertex_count=exec_travel,
                     )
 
-                if (
-                    group.ring_renderer.vertex_count > 0
-                    and self._main_shader
-                    and not skip_ring
-                ):
+                if group.ring_renderer.vertex_count > 0 and self._main_shader:
                     tag = "rot" if group.is_rotary else "flat"
                     logger.debug(
                         f"[RING-PLAYBACK] {tag} "
