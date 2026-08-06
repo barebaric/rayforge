@@ -26,6 +26,7 @@ def test_scene_renderer_constructs_children():
     assert scene.main_shader is None
     assert scene.text_shader is None
     assert scene.texture_shader is None
+    assert scene.background_shader is None
 
 
 def test_scene_renderer_init_gl_creates_children():
@@ -46,6 +47,9 @@ def test_scene_renderer_init_gl_creates_children():
             "rayforge.ui_gtk.sim3d.renderer.scene_renderer.TextureShader"
         ) as mock_texture,
         patch(
+            "rayforge.ui_gtk.sim3d.renderer.scene_renderer.BackgroundShader"
+        ) as mock_background,
+        patch(
             "rayforge.ui_gtk.sim3d.renderer.scene_renderer.AxisRenderer3D"
         ) as mock_axis,
         patch(
@@ -63,9 +67,11 @@ def test_scene_renderer_init_gl_creates_children():
     assert scene.axis_renderer is mock_axis.return_value
     assert scene.texture_renderer is mock_tex.return_value
     assert scene.zone_renderer is mock_zone.return_value
+    assert scene.background_shader is mock_background.return_value
     mock_axis.return_value.init_gl.assert_called_once()
     mock_tex.return_value.init_gl.assert_called_once()
     mock_zone.return_value.init_gl.assert_called_once()
     mock_simple.assert_called_once()
     mock_text.assert_called_once()
     mock_texture.assert_called_once()
+    mock_background.assert_called_once()

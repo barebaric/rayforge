@@ -109,3 +109,17 @@ class SimpleShader(Shader):
 
     def __init__(self):
         super().__init__(SIMPLE_VERTEX_SHADER, SIMPLE_FRAGMENT_SHADER)
+
+    def reset_uniforms(self) -> None:
+        """Sets every uniform this shader reads to its idle value."""
+        self.use()
+        self.set_float("uUseVertexColor", 0.0)
+        self.set_float("uHasNormals", 0.0)
+        self.set_int("uExecutedVertexCount", -1)
+        self.set_float("uAlphaPending", 0.2)
+        self.set_float("uEmissive", 0.0)
+        self.set_float("uUsePowerLUT", 0.0)
+        self.set_int("uNumLaserLUTs", 1)
+        self.set_vec4("uZeroPowerColor", (0.0, 0.0, 0.0, 1.0))
+        self.set_float("uPointLightOn", 0.0)
+        self.set_vec3("uPointLightPos", (0.0, 0.0, 0.0))

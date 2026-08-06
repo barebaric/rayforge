@@ -90,4 +90,3 @@ class PlaneRenderer(BaseRenderer):
 
         GL.glBindVertexArray(self.vao)
         GL.glDrawArrays(GL.GL_TRIANGLES, 0, self.vertex_count)
-        GL.glBindVertexArray(0)

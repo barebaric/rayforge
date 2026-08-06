@@ -177,14 +177,3 @@ class RingBufferRenderer(BaseRenderer):
         set_line_width(line_width)
         GL.glBindVertexArray(self.vao)
         GL.glDrawArrays(GL.GL_LINES, 0, draw_count)
-        GL.glBindVertexArray(0)
-        set_line_width(1.0)
-        GL.glDepthMask(GL.GL_TRUE)
-
-        GL.glActiveTexture(GL.GL_TEXTURE1)
-        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
-        GL.glActiveTexture(GL.GL_TEXTURE0)
-
-        shader.set_float("uUsePowerLUT", 0.0)
-        shader.set_float("uUseVertexColor", 0.0)
-        shader.set_int("uExecutedVertexCount", -1)

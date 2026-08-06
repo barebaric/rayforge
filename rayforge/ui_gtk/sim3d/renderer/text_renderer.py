@@ -347,5 +347,3 @@ class TextRenderer(BaseRenderer):
             GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4)
 
             current_x_local += char_width_world
-
-        GL.glBindVertexArray(0)

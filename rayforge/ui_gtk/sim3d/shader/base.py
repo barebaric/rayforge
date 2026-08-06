@@ -2,7 +2,8 @@
 Base class for GLSL shader programs.
 
 Compilation, uniform setting, and the snapshot/restore pair used by
-the ``gl_state`` / ``uniform_block`` context managers.
+``with shader:`` (see the context-manager protocol) and the
+``gl_state`` context managers.
 """
 
 import logging
@@ -34,6 +35,7 @@ class Shader:
         # and replay uniforms across a renderer pass without re-issuing
         # GL queries.
         self._uniform_values: dict[str, Any] = {}
+        self._uniform_snapshots: list[dict[str, Any]] = []
         # Determine the correct GLSL header for the current context.
         version_str = GL.glGetString(GL.GL_VERSION)
         is_es = version_str is not None and b"OpenGL ES" in version_str
@@ -76,6 +78,33 @@ class Shader:
     def use(self) -> None:
         """Activates this shader program for rendering."""
         GL.glUseProgram(self.program)
+
+    def __enter__(self) -> "Shader":
+        """
+        Snapshots the current uniform values.
+
+        Pairs with :meth:`__exit__` so ``with shader:`` restores the
+        uniform state the shader had on entry — even if the body throws.
+        Nested ``with`` blocks on the same shader are supported.
+        """
+        self._uniform_snapshots.append(self.save())
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        """Restores the uniform snapshot taken by :meth:`__enter__`."""
+        if self._uniform_snapshots:
+            self.restore(self._uniform_snapshots.pop())
+        return None
+
+    def reset_uniforms(self) -> None:
+        """
+        Sets all uniforms to their neutral/idle values.
+
+        Called once at the start of a frame so that :meth:`save` /
+        :meth:`restore` have a stable baseline.  Subclasses override to
+        set the uniforms their draw path reads.
+        """
+        pass
 
     def set_mat4(self, name: str, mat: np.ndarray) -> None:
         """
@@ -160,9 +189,8 @@ class Shader:
         Snapshots all ``set_*``-tracked uniform values.
 
         Returns the snapshot so the caller can replay it later via
-        :meth:`restore`.  Used by the ``uniform_block`` companion of
-        ``gl_state`` to bracket renderers that mutate overlapping
-        uniforms.
+        :meth:`restore`.  Used by the ``with shader:`` context manager
+        to bracket renderers that mutate overlapping uniforms.
         """
         return {
             name: (kind, np.array(val, copy=True))
@@ -173,10 +201,13 @@ class Shader:
         """
         Replays a uniform snapshot produced by :meth:`save`.
 
-        Re-issues the same ``set_*`` call for each entry, so values are
-        restored even if a renderer clobbered them mid-frame.  Unknown
-        uniform locations are silently skipped (as ``set_*`` is).
+        Binds this program first (uniforms are stored per-program) and
+        re-issues the same ``set_*`` call for each entry, so values are
+        restored even if a renderer clobbered them mid-frame or left a
+        different program active.  Unknown uniform locations are
+        silently skipped (as ``set_*`` is).
         """
+        self.use()
         for name, (kind, val) in snapshot.items():
             if kind == "mat4":
                 self.set_mat4(name, val)

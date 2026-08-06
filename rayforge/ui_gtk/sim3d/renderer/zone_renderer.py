@@ -364,12 +364,9 @@ class ZoneRenderer(BaseRenderer):
             shader.set_vec4("uColor", self._fill_color)
             GL.glBindVertexArray(self._fill_vao)
             GL.glDrawArrays(GL.GL_TRIANGLES, 0, self._fill_vertex_count)
-            GL.glDepthMask(GL.GL_TRUE)
 
         if self._edge_vao:
             shader.set_mat4("uMVP", mvp)
             shader.set_vec4("uColor", self._edge_color)
             GL.glBindVertexArray(self._edge_vao)
             GL.glDrawArrays(GL.GL_LINES, 0, self._edge_vertex_count)
-
-        GL.glBindVertexArray(0)

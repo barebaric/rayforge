@@ -22,13 +22,20 @@ from ....shared.units.formatter import (
 from ....simulator.machine_state import MachineState
 from ....simulator.scene3d import CompiledSceneArtifact
 from ..color_lut_provider import ColorLutProvider
+from ..gl_state import render_pass
 from ..gl_utils import rotation_4x4
 from ..layer_renderer_group import (
     LayerRendererGroup,
     match_overlay_layer,
     match_vertex_layer,
 )
-from ..shader import Shader, SimpleShader, TextShader, TextureShader
+from ..shader import (
+    BackgroundShader,
+    Shader,
+    SimpleShader,
+    TextShader,
+    TextureShader,
+)
 from ..viewport import ViewportConfig
 from .axis_renderer_3d import AxisRenderer3D
 from .background_renderer import BackgroundRenderer
@@ -50,6 +57,7 @@ class SceneRenderer(BaseRenderer):
         self.main_shader: Optional[Shader] = None
         self.text_shader: Optional[Shader] = None
         self.texture_shader: Optional[Shader] = None
+        self.background_shader: Optional[Shader] = None
 
         self.axis_renderer: Optional[AxisRenderer3D] = None
         self.background_renderer: Optional[BackgroundRenderer] = (
@@ -76,6 +84,7 @@ class SceneRenderer(BaseRenderer):
         self.main_shader = SimpleShader()
         self.text_shader = TextShader()
         self.texture_shader = TextureShader()
+        self.background_shader = BackgroundShader()
 
         self.axis_renderer = AxisRenderer3D(
             viewport.width_mm,
@@ -127,6 +136,8 @@ class SceneRenderer(BaseRenderer):
             self.text_shader.cleanup()
         if self.texture_shader:
             self.texture_shader.cleanup()
+        if self.background_shader:
+            self.background_shader.cleanup()
 
     def apply_extent_frame(self, viewport: ViewportConfig):
         """Applies the extent frame to the axis renderer if present."""
@@ -362,8 +373,18 @@ class SceneRenderer(BaseRenderer):
         show_models: bool = True,
     ):
         """Renders the whole scene for one frame."""
-        if self.background_renderer:
-            self.background_renderer.render(ctx)
+        for shader in (
+            self.main_shader,
+            self.text_shader,
+            self.texture_shader,
+            self.background_shader,
+        ):
+            if shader:
+                shader.reset_uniforms()
+
+        if self.background_renderer and self.background_shader:
+            with render_pass(self.background_shader):
+                self.background_renderer.render(ctx, self.background_shader)
 
         mvp_ui = ctx.mvp_ui
         margin_shift = ctx.margin_shift
@@ -375,22 +396,24 @@ class SceneRenderer(BaseRenderer):
             and self.text_shader is not None
             and show_grid
         ):
-            self.axis_renderer.render(
-                ctx,
-                self.main_shader,
-                self.text_shader,
-                ctx.mvp_scene.T,
-                mvp_ui_gl,
-                origin_offset_mm=viewport.wcs_offset_mm,
-                x_right=viewport.x_right,
-                y_down=viewport.y_down,
-                x_negative=viewport.x_negative,
-                y_negative=viewport.y_negative,
-            )
+            with render_pass(self.main_shader, self.text_shader):
+                self.axis_renderer.render(
+                    ctx,
+                    self.main_shader,
+                    self.text_shader,
+                    ctx.mvp_scene.T,
+                    mvp_ui_gl,
+                    origin_offset_mm=viewport.wcs_offset_mm,
+                    x_right=viewport.x_right,
+                    y_down=viewport.y_down,
+                    x_negative=viewport.x_negative,
+                    y_negative=viewport.y_negative,
+                )
 
         if self.zone_renderer and self.main_shader and show_nogo_zones:
             zone_mvp_gl = (mvp_ui @ margin_shift).T
-            self.zone_renderer.render(ctx, self.main_shader, zone_mvp_gl)
+            with render_pass(self.main_shader):
+                self.zone_renderer.render(ctx, self.main_shader, zone_mvp_gl)
 
         # Compute cylinder rotation from mapped ops.
         #
@@ -455,13 +478,14 @@ class SceneRenderer(BaseRenderer):
         deferred_ring_renders = []
         for group in self.layer_groups:
             if self.main_shader:
-                ring = group.render(
-                    ctx,
-                    self.main_shader,
-                    op_player,
-                    mvp_ui_gl,
-                    rot_cyl_gl,
-                )
+                with render_pass(self.main_shader):
+                    ring = group.render(
+                        ctx,
+                        self.main_shader,
+                        op_player,
+                        mvp_ui_gl,
+                        rot_cyl_gl,
+                    )
                 if ring is not None:
                     deferred_ring_renders.append(ring)
 
@@ -472,29 +496,34 @@ class SceneRenderer(BaseRenderer):
             cyl_mvp_gl = cyl_mesh_mvp.T.astype(np.float32)
             for renderer in self.cylinder_renderers.values():
                 renderer.update_from_state(cyl_mvp_gl)
-                renderer.render(ctx, self.main_shader)
+                with render_pass(self.main_shader):
+                    renderer.render(ctx, self.main_shader)
 
         if self.texture_renderer and self.texture_shader:
             rot_cyl_mvp = cyl_base_mvp @ rot_4x4
             self.texture_renderer.update_from_state(mvp_ui, rot_cyl_mvp)
-            self.texture_renderer.render(
-                ctx, self.texture_shader, reached_count=tex_reached
-            )
-            self.texture_renderer.render_cylinder(
-                ctx, self.texture_shader, reached_count=tex_reached
-            )
+            with render_pass(self.texture_shader):
+                self.texture_renderer.render(
+                    ctx, self.texture_shader, reached_count=tex_reached
+                )
+            with render_pass(self.texture_shader):
+                self.texture_renderer.render_cylinder(
+                    ctx, self.texture_shader, reached_count=tex_reached
+                )
 
         for ring_renderer, mvp, exec_ring in deferred_ring_renders:
             if self.main_shader:
-                ring_renderer.render(
-                    ctx,
-                    self.main_shader,
-                    mvp,
-                    executed_vertex_count=exec_ring,
-                )
+                with render_pass(self.main_shader):
+                    ring_renderer.render(
+                        ctx,
+                        self.main_shader,
+                        mvp,
+                        executed_vertex_count=exec_ring,
+                    )
 
         if self.laser_beam_renderer and self.main_shader:
-            self.laser_beam_renderer.render(ctx, self.main_shader)
+            with render_pass(self.main_shader):
+                self.laser_beam_renderer.render(ctx, self.main_shader)
 
         if show_models and self.model_renderers and machine:
             asm = machine.assembly
@@ -544,4 +573,5 @@ class SceneRenderer(BaseRenderer):
                         model_matrix=margin_shift @ module_transform,
                         point_light_pos=laser_light_pos,
                     )
-                    renderer.render(ctx, self.main_shader)
+                    with render_pass(self.main_shader):
+                        renderer.render(ctx, self.main_shader)

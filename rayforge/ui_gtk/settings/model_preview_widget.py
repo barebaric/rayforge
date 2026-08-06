@@ -9,6 +9,7 @@ from gi.repository import Gtk
 from OpenGL import GL
 
 from ..sim3d.camera import Camera
+from ..sim3d.gl_state import render_pass
 from ..sim3d.renderer.base import BaseRenderer
 from ..sim3d.renderer.model_renderer import _load_mesh_data
 from ..sim3d.shader import Shader, SimpleShader
@@ -92,9 +93,11 @@ class ModelPreviewWidget(Gtk.GLArea):
         proj = self._camera.get_projection_matrix()
         view = self._camera.get_view_matrix()
         mvp = (proj @ view).T
-        self._renderer.render(
-            self._shader, mvp, camera_position=self._camera.position
-        )
+        self._shader.reset_uniforms()
+        with render_pass(self._shader):
+            self._renderer.render(
+                self._shader, mvp, camera_position=self._camera.position
+            )
         return True
 
     def _on_resize(self, area, w, h):

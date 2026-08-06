@@ -201,8 +201,3 @@ class LaserBeamRenderer(BaseRenderer):
                 shader.set_vec4("uColor", pass_color)
                 GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE)
                 GL.glDrawArrays(GL.GL_TRIANGLES, 0, self.vertex_count)
-
-        shader.set_float("uEmissive", 0.0)
-        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
-        GL.glBindVertexArray(0)
-        GL.glEnable(GL.GL_DEPTH_TEST)
