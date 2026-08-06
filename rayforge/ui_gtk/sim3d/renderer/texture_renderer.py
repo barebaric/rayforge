@@ -10,6 +10,7 @@ import numpy as np
 from OpenGL import GL
 
 from ....pipeline.artifact.base import TextureData
+from ..color_lut_provider import ColorLutProvider
 from ..gl_utils import BaseRenderer, RenderContext, Shader
 
 logger = logging.getLogger(__name__)
@@ -277,6 +278,10 @@ class TextureArtifactRenderer(BaseRenderer):
             lut_data,
         )
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+
+    def update_color_lut_from(self, provider: ColorLutProvider):
+        """Updates the colour LUT from a shared ColorLutProvider."""
+        self.update_color_lut(provider.engrave_lut_2d(), provider.num_lasers)
 
     def render(
         self,
