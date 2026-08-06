@@ -6,7 +6,9 @@ import numpy as np
 from OpenGL import GL
 
 from ....machine.models.zone import Zone, ZoneShape
-from ..gl_utils import BaseRenderer, RenderContext, Shader
+from ..gl_utils import RenderContext
+from ..shader import Shader
+from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
 

@@ -3,18 +3,22 @@ A collection of utility classes and functions for simplifying common
 PyOpenGL tasks, such as shader compilation and buffer management.
 """
 
-import logging
 import math
 from dataclasses import dataclass
-from typing import Optional, Union, final
+from typing import TYPE_CHECKING, Optional, Protocol
 
 import numpy as np
 from OpenGL import GL
-from OpenGL.GL import shaders
 
 from ...core.color import ColorSet
 
-logger = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from ...core.doc import Doc
+    from ...machine.models.machine import Machine
+    from ...simulator.op_player import OpPlayer
+    from ...simulator.scene3d.compiled_scene import CompiledSceneArtifact
+    from .shader.base import Shader
+    from .viewport import ViewportConfig
 
 
 def rotation_4x4(axis: np.ndarray, angle: float) -> np.ndarray:
@@ -58,147 +62,6 @@ def set_line_width(requested: float) -> None:
     GL.glLineWidth(clamped)
 
 
-class Shader:
-    """Manages a GLSL shader program, including compilation and uniforms."""
-
-    def __init__(self, vertex_source: str, fragment_source: str):
-        """
-        Compiles and links the vertex and fragment shader sources.
-
-        Args:
-            vertex_source: The source code for the vertex shader.
-            fragment_source: The source code for the fragment shader.
-
-        Raises:
-            Exception: If shader compilation or linking fails.
-        """
-        # Determine the correct GLSL header for the current context.
-        version_str = GL.glGetString(GL.GL_VERSION)
-        is_es = version_str is not None and b"OpenGL ES" in version_str
-        if is_es:
-            vert_header = "#version 300 es\n"
-            frag_header = (
-                "#version 300 es\n"
-                "precision highp float;\n"
-                "precision highp int;\n"
-            )
-            logger.debug("Using OpenGL ES shader headers.")
-        else:
-            vert_header = "#version 330 core\n"
-            frag_header = "#version 330 core\n"
-            logger.debug("Using OpenGL desktop shader headers.")
-
-        vertex_source = vert_header + vertex_source
-        fragment_source = frag_header + fragment_source
-
-        try:
-            self.program = shaders.compileProgram(
-                shaders.compileShader(vertex_source, GL.GL_VERTEX_SHADER),
-                shaders.compileShader(fragment_source, GL.GL_FRAGMENT_SHADER),
-            )
-        except shaders.ShaderValidationError as e:
-            logger.warning(
-                "Shader validation failed during program creation; "
-                "retrying without validation: %s",
-                e,
-            )
-            self.program = shaders.compileProgram(
-                shaders.compileShader(vertex_source, GL.GL_VERTEX_SHADER),
-                shaders.compileShader(fragment_source, GL.GL_FRAGMENT_SHADER),
-                validate=False,
-            )
-        except Exception as e:
-            logger.error(f"Shader Compilation Failed: {e}", exc_info=True)
-            raise
-
-    def use(self) -> None:
-        """Activates this shader program for rendering."""
-        GL.glUseProgram(self.program)
-
-    def set_mat4(self, name: str, mat: np.ndarray) -> None:
-        """
-        Sets a mat4 uniform in the shader.
-
-        The matrix is expected to be in column-major format (or a transposed
-        NumPy array).
-
-        Args:
-            name: The name of the uniform variable in the shader.
-            mat: A 4x4 NumPy array, column-major.
-        """
-        loc = GL.glGetUniformLocation(self.program, name)
-        if loc != -1:
-            GL.glUniformMatrix4fv(loc, 1, GL.GL_FALSE, mat)
-
-    def set_mat3(self, name: str, mat: np.ndarray) -> None:
-        """
-        Sets a mat3 uniform in the shader.
-
-        The matrix is expected to be in column-major format (or a transposed
-        NumPy array).
-
-        Args:
-            name: The name of the uniform variable in the shader.
-            mat: A 3x3 NumPy array, column-major.
-        """
-        loc = GL.glGetUniformLocation(self.program, name)
-        if loc != -1:
-            GL.glUniformMatrix3fv(loc, 1, GL.GL_FALSE, mat)
-
-    def set_vec2(self, name: str, vec: Union[tuple, list, np.ndarray]) -> None:
-        """
-        Sets a vec2 uniform in the shader.
-
-        Args:
-            name: The name of the uniform variable in the shader.
-            vec: A sequence (tuple, list, or array) of 2 floats.
-        """
-        loc = GL.glGetUniformLocation(self.program, name)
-        if loc != -1:
-            GL.glUniform2fv(loc, 1, np.asarray(vec, dtype=np.float32))
-
-    def set_vec3(self, name: str, vec: Union[tuple, list, np.ndarray]) -> None:
-        """Sets a vec3 uniform in the shader.
-
-        Args:
-            name: The name of the uniform variable in the shader.
-            vec: A sequence (tuple, list, or array) of 3 floats.
-        """
-        loc = GL.glGetUniformLocation(self.program, name)
-        if loc != -1:
-            GL.glUniform3fv(loc, 1, np.asarray(vec, dtype=np.float32))
-
-    def set_vec4(self, name: str, vec: Union[tuple, list, np.ndarray]) -> None:
-        """Sets a vec4 uniform in the shader.
-
-        Args:
-            name: The name of the uniform variable in the shader.
-            vec: A sequence (tuple, list, or array) of 4 floats.
-        """
-        loc = GL.glGetUniformLocation(self.program, name)
-        if loc != -1:
-            GL.glUniform4fv(loc, 1, np.asarray(vec, dtype=np.float32))
-
-    def cleanup(self) -> None:
-        """Deletes the shader program from GPU context to free resources."""
-        if getattr(self, "program", None):
-            GL.glDeleteProgram(self.program)
-            self.program = None
-
-    def get_uniform_location(self, name: str) -> int:
-        """Gets the location of a uniform variable."""
-        return GL.glGetUniformLocation(self.program, name)
-
-    # You could also add a set_float method for cleaner code:
-    def set_float(self, name: str, value: float) -> None:
-        """Sets a float uniform."""
-        GL.glUniform1f(self.get_uniform_location(name), value)
-
-    def set_int(self, name: str, value: int) -> None:
-        """Sets an integer uniform."""
-        GL.glUniform1i(self.get_uniform_location(name), value)
-
-
 @dataclass
 class RenderContext:
     """
@@ -206,6 +69,12 @@ class RenderContext:
 
     Matrices are row-major (NumPy convention).  Renderers that need
     column-major for OpenGL should transpose the matrix.
+
+    The frame-state fields below default to ``None``/sentinel so that
+    legacy callers that only populate the original geometry fields keep
+    working during the polymorphic-renderer migration.  Renderers
+    introduced or migrated under the new ``LayerRenderer`` protocol
+    read these instead of receiving extra positional arguments.
     """
 
     proj_matrix: np.ndarray
@@ -220,71 +89,57 @@ class RenderContext:
     show_travel_moves: bool = False
     line_width: float = 1.0
 
+    # --- Frame-state extension (all optional) -----------------------
+    machine: "Optional[Machine]" = None
+    doc: "Optional[Doc]" = None
+    op_player: "Optional[OpPlayer]" = None
+    compiled_artifact: "Optional[CompiledSceneArtifact]" = None
+    viewport: "Optional[ViewportConfig]" = None
+    rotary_axis: Optional[str] = None
+    executed_vertex_count: int = -1
+    executed_travel_vertex_count: int = -1
+    alpha_pending: float = 0.2
+    reached_count: Optional[int] = None
+    mvp_flat_gl: Optional[np.ndarray] = None
+    mvp_rot_gl: Optional[np.ndarray] = None
+    cyl_mesh_mvp_gl: Optional[np.ndarray] = None
+    laser_light_pos: Optional[np.ndarray] = None
+    rot_4x4: Optional[np.ndarray] = None
+    show_grid: bool = True
+    show_nogo_zones: bool = True
+    show_models: bool = True
+    had_rotary_layers: bool = False
 
-class BaseRenderer:
-    """A base class for an OpenGL renderer that manages its own resources."""
 
-    def __init__(self):
-        """Initializes the resource tracking lists."""
-        self.shader: Optional[Shader] = None
-        self._owned_vaos: list[int] = []
-        self._owned_vbos: list[int] = []
-        self._owned_textures: list[int] = []
-        self._owned_renderers: list[BaseRenderer] = []
+@dataclass
+class ShaderSet:
+    """
+    Bag of shaders passed to ``LayerRenderer.render``.
 
-    def _create_vao(self) -> int:
-        """Creates a VAO and registers it for automatic cleanup."""
-        vao = GL.glGenVertexArrays(1)
-        self._owned_vaos.append(vao)
-        return vao
+    Each renderer picks the program it needs (``main`` / ``text`` /
+    ``texture``) instead of receiving a bespoke positional ``shader``
+    argument.  Fields default to ``None`` so partial populations are
+    valid during migration.
+    """
 
-    def _create_vbo(self) -> int:
-        """Creates a VBO and registers it for automatic cleanup."""
-        vbo = GL.glGenBuffers(1)
-        self._owned_vbos.append(vbo)
-        return vbo
+    main: Optional["Shader"] = None
+    text: Optional["Shader"] = None
+    texture: Optional["Shader"] = None
 
-    def _create_texture(self) -> int:
-        """Creates a Texture and registers it for automatic cleanup."""
-        texture = GL.glGenTextures(1)
-        self._owned_textures.append(texture)
-        return texture
 
-    def _add_child_renderer(self, renderer: "BaseRenderer"):
-        """Adds a child renderer to be cleaned up automatically."""
-        self._owned_renderers.append(renderer)
+class LayerRenderer(Protocol):
+    """
+    Polymorphic renderer contract.
 
-    def _cleanup_self(self) -> None:
-        """
-        A method for subclasses to override for their specific cleanup logic.
-        """
-        pass
+    ``prepare`` performs per-frame state setup (the work formerly done
+    by each renderer's divergent ``update_from_state``); ``render``
+    performs the GL draw.  Both pull everything they need from the
+    shared :class:`RenderContext`.  This is a ``Protocol`` (duck-typed);
+    renderers are not required to inherit from it.
+    """
 
-    @final
-    def cleanup(self) -> None:
-        """Cleans up all tracked OpenGL resources."""
-        try:
-            self._cleanup_self()
+    def prepare(self, ctx: RenderContext) -> None: ...
 
-            for renderer in self._owned_renderers:
-                renderer.cleanup()
+    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None: ...
 
-            if self.shader:
-                self.shader.cleanup()
-
-            if self._owned_textures:
-                GL.glDeleteTextures(
-                    len(self._owned_textures), self._owned_textures
-                )
-                self._owned_textures.clear()
-
-            if self._owned_vaos:
-                GL.glDeleteVertexArrays(
-                    len(self._owned_vaos), self._owned_vaos
-                )
-                self._owned_vaos.clear()
-            if self._owned_vbos:
-                GL.glDeleteBuffers(len(self._owned_vbos), self._owned_vbos)
-                self._owned_vbos.clear()
-        except GL.GLError:
-            logger.exception("Error during renderer cleanup")
+    def init_gl(self) -> None: ...

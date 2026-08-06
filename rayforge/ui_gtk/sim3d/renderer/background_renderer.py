@@ -8,7 +8,9 @@ from typing import Optional
 import numpy as np
 from OpenGL import GL
 
-from ..gl_utils import BaseRenderer, RenderContext, Shader
+from ..gl_utils import RenderContext
+from ..shader import BackgroundShader, Shader
+from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
 
@@ -29,14 +31,7 @@ class BackgroundRenderer(BaseRenderer):
         self._bg_color_light = bg_color_light
 
     def init_gl(self):
-        from ..shaders import (
-            BACKGROUND_FRAGMENT_SHADER,
-            BACKGROUND_VERTEX_SHADER,
-        )
-
-        self._shader = Shader(
-            BACKGROUND_VERTEX_SHADER, BACKGROUND_FRAGMENT_SHADER
-        )
+        self._shader = BackgroundShader()
         logger.info("Background gradient shader compiled successfully")
 
         vertices = np.array(

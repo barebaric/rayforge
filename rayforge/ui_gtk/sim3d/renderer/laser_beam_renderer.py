@@ -12,7 +12,9 @@ from OpenGL import GL
 
 from ....core.color import hex_to_rgba
 from ....machine.models.laser import LaserHead
-from ..gl_utils import BaseRenderer, RenderContext, Shader
+from ..gl_utils import RenderContext
+from ..shader import Shader
+from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
 
