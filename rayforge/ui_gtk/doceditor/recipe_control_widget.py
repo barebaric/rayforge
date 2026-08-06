@@ -132,18 +132,28 @@ class RecipeControlWidget(Adw.ActionRow):
                     target=self.step,
                     property_name="applied_recipe_uid",
                     new_value=recipe.uid,
+                    on_change_callback=(
+                        lambda: (self.step.updated.send(self.step), None)[1]
+                    ),
                 )
             )
-            # Set individual settings from the recipe
+            # Set each setting the recipe carries; skip keys this step
+            # does not own.
             for key, value in recipe.settings.items():
-                if hasattr(self.step, key):
-                    t.execute(
-                        ChangePropertyCommand(
-                            target=self.step,
-                            property_name=key,
-                            new_value=value,
-                        )
+                if not hasattr(self.step, key):
+                    continue
+                t.execute(
+                    ChangePropertyCommand(
+                        target=self.step,
+                        property_name=key,
+                        new_value=value,
+                        on_change_callback=(
+                            lambda: (self.step.updated.send(self.step), None)[
+                                1
+                            ]
+                        ),
                     )
+                )
         # Signal to the parent dialog that its widgets need to be synced
         self.recipe_applied.send(self)
         self._update_ui(self.step)
