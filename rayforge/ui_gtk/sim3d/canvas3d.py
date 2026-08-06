@@ -31,6 +31,8 @@ from ...simulator.scene3d import (
     CompiledSceneArtifact,
     LayerRenderConfig,
     RenderConfig3D,
+    ScanlineOverlayLayer,
+    VertexLayer,
     compile_scene_in_thread,
 )
 from ..shared.gtk_color import GtkColorResolver
@@ -80,6 +82,24 @@ class _LayerRendererGroup:
         self.ops_renderer.init_gl()
         self.ring_renderer.init_gl()
 
+    def update_from_artifact(
+        self,
+        vl: VertexLayer,
+        ol: Optional[ScanlineOverlayLayer],
+        show_travel_moves: bool,
+    ):
+        """Ingests a compiled vertex layer and its overlay into the group."""
+        self.ops_renderer.update_from_vertex_layer(vl, show_travel_moves)
+        self.powered_offsets = vl.powered_cmd_offsets
+        self.travel_offsets = vl.travel_cmd_offsets
+
+        if ol is not None:
+            self.ring_renderer.update_from_overlay_layer(ol)
+            self.ring_offsets = ol.cmd_offsets
+        else:
+            self.ring_renderer.clear()
+            self.ring_offsets = []
+
     def cleanup(self):
         self.ops_renderer.cleanup()
         self.ring_renderer.cleanup()
@@ -90,6 +110,26 @@ class _LayerRendererGroup:
         self.powered_offsets = []
         self.travel_offsets = []
         self.ring_offsets = []
+
+
+def _match_vertex_layer(
+    vertex_layers: List[VertexLayer], is_rotary: bool
+) -> Optional[VertexLayer]:
+    """Returns the vertex layer matching the given rotary flag."""
+    for vl in vertex_layers:
+        if vl.is_rotary == is_rotary:
+            return vl
+    return None
+
+
+def _match_overlay_layer(
+    overlay_layers: List[ScanlineOverlayLayer], is_rotary: bool
+) -> Optional[ScanlineOverlayLayer]:
+    """Returns the overlay layer matching the given rotary flag."""
+    for ol in overlay_layers:
+        if ol.is_rotary == is_rotary:
+            return ol
+    return None
 
 
 class Canvas3D(Gtk.GLArea):
@@ -712,35 +752,7 @@ class Canvas3D(Gtk.GLArea):
             group = _LayerRendererGroup(is_rotary=vl.is_rotary)
             group.init_gl()
             self._layer_groups.append(group)
-
-            if self._show_travel_moves:
-                pv_final = np.concatenate(
-                    (vl.powered_verts, vl.zero_power_verts)
-                )
-                zero_count = vl.zero_power_verts.size // 3
-                zero_attrib = np.zeros(zero_count * 4, dtype=np.float32)
-                zero_attrib[3::4] = 1.0
-                attrib = np.concatenate(
-                    (vl.powered_attrib.ravel(), zero_attrib)
-                )
-                tv_final = vl.travel_verts
-            else:
-                pv_final = vl.powered_verts
-                attrib = vl.powered_attrib
-                tv_final = np.array([], dtype=np.float32)
-
-            powered_count = vl.powered_verts.size // 3
-            zero_count = vl.zero_power_verts.size // 3
-            logger.debug(
-                f"[UPLOAD] is_rotary={vl.is_rotary} "
-                f"powered={powered_count} "
-                f"zero_power={zero_count} "
-                f"total={pv_final.size // 3} "
-                f"travel={tv_final.size // 3} "
-                f"show_travel={self._show_travel_moves}"
-            )
-
-            upload_items.append(("ops", group, pv_final, attrib, tv_final))
+            upload_items.append(("ops", group, vl, self._show_travel_moves))
 
         for ol in artifact.overlay_layers:
             for group in self._layer_groups:
@@ -776,15 +788,14 @@ class Canvas3D(Gtk.GLArea):
             kind = item[0]
 
             if kind == "ops":
-                _, group, pv, attrib, tv = item
-                group.ops_renderer.update_from_vertex_data(pv, attrib, tv)
+                _, group, vl, show_travel_moves = item
+                group.ops_renderer.update_from_vertex_layer(
+                    vl, show_travel_moves
+                )
 
             elif kind == "overlay":
                 _, group, ol = item
-                group.ring_renderer.upload(
-                    ol.positions.ravel(),
-                    ol.overlay_attrib,
-                )
+                group.ring_renderer.update_from_overlay_layer(ol)
 
             elif kind == "textures":
                 _, artifact = item
@@ -1518,8 +1529,6 @@ class Canvas3D(Gtk.GLArea):
             return
         self._show_travel_moves = visible
         self._update_renderers_from_artifact()
-        self._extract_playback_offsets_from_artifact()
-        self._upload_scanline_overlay()
 
     def set_show_nogo_zones(self, visible: bool):
         if self._show_nogo_zones == visible:
@@ -1590,6 +1599,8 @@ class Canvas3D(Gtk.GLArea):
         if not self._compiled_artifact:
             for group in self._layer_groups:
                 group.ops_renderer.clear()
+                group.ring_renderer.clear()
+                group.ring_offsets = []
             if self._texture_renderer:
                 self._texture_renderer.clear()
             self.queue_render()
@@ -1606,42 +1617,11 @@ class Canvas3D(Gtk.GLArea):
 
         artifact = self._compiled_artifact
         for vl in artifact.vertex_layers:
+            ol = _match_overlay_layer(artifact.overlay_layers, vl.is_rotary)
             group = _LayerRendererGroup(is_rotary=vl.is_rotary)
             group.init_gl()
+            group.update_from_artifact(vl, ol, self._show_travel_moves)
             self._layer_groups.append(group)
-
-            if self._show_travel_moves:
-                pv_final = np.concatenate(
-                    (vl.powered_verts, vl.zero_power_verts)
-                )
-                zero_count = vl.zero_power_verts.size // 3
-                zero_attrib = np.zeros(zero_count * 4, dtype=np.float32)
-                zero_attrib[3::4] = 1.0
-                attrib = np.concatenate(
-                    (vl.powered_attrib.ravel(), zero_attrib)
-                )
-                tv_final = vl.travel_verts
-            else:
-                pv_final = vl.powered_verts
-                attrib = vl.powered_attrib
-                tv_final = np.array([], dtype=np.float32)
-
-            powered_count = vl.powered_verts.size // 3
-            zero_count = vl.zero_power_verts.size // 3
-            logger.debug(
-                f"[UPLOAD] is_rotary={vl.is_rotary} "
-                f"powered={powered_count} "
-                f"zero_power={zero_count} "
-                f"total={pv_final.size // 3} "
-                f"travel={tv_final.size // 3} "
-                f"show_travel={self._show_travel_moves}"
-            )
-
-            group.ops_renderer.update_from_vertex_data(
-                pv_final,
-                attrib,
-                tv_final,
-            )
 
         if self._texture_renderer:
             self._texture_renderer.clear()
@@ -1666,6 +1646,19 @@ class Canvas3D(Gtk.GLArea):
                 )
 
         self._update_renderer_color_luts()
+
+        logger.debug(
+            "[CANVAS3D] Scanline overlay uploaded. Groups: %s"
+            % ", ".join(
+                "%s:%d"
+                % (
+                    "rot" if g.is_rotary else "flat",
+                    g.ring_renderer.vertex_count,
+                )
+                for g in self._layer_groups
+            )
+        )
+
         self.queue_render()
 
     def _on_playback_layer_changed(self, sender, **kwargs):
@@ -1721,67 +1714,14 @@ class Canvas3D(Gtk.GLArea):
                     return artifact.ops
         return None
 
-    def _upload_scanline_overlay(self):
-        """
-        Upload pre-compiled scanline overlay data from the artifact's
-        overlay layers to per-group ring buffer renderers.
-        """
-        if not self._layer_groups:
-            return
-
-        if not self._compiled_artifact:
-            for group in self._layer_groups:
-                group.ring_renderer.clear()
-                group.ring_offsets = []
-            return
-
-        overlay_layers = self._compiled_artifact.overlay_layers
-        if not overlay_layers:
-            for group in self._layer_groups:
-                group.ring_renderer.clear()
-                group.ring_offsets = []
-            return
-
-        self.make_current()
-
-        for group in self._layer_groups:
-            ol = None
-            for overlay in overlay_layers:
-                if overlay.is_rotary == group.is_rotary:
-                    ol = overlay
-                    break
-
-            if ol is not None:
-                group.ring_renderer.upload(
-                    ol.positions.ravel(),
-                    ol.overlay_attrib,
-                )
-            else:
-                group.ring_renderer.clear()
-
-        logger.debug(
-            "[CANVAS3D] Scanline overlay uploaded. Groups: %s"
-            % ", ".join(
-                "%s:%d"
-                % (
-                    "rot" if g.is_rotary else "flat",
-                    g.ring_renderer.vertex_count,
-                )
-                for g in self._layer_groups
-            )
-        )
-
     def _extract_playback_offsets_from_artifact(self):
         if not self._compiled_artifact or not self._op_player:
             return
 
         for group in self._layer_groups:
-            vl = None
-            for vertex_layer in self._compiled_artifact.vertex_layers:
-                if vertex_layer.is_rotary == group.is_rotary:
-                    vl = vertex_layer
-                    break
-
+            vl = _match_vertex_layer(
+                self._compiled_artifact.vertex_layers, group.is_rotary
+            )
             if vl is not None:
                 group.powered_offsets = vl.powered_cmd_offsets
                 group.travel_offsets = vl.travel_cmd_offsets
@@ -1789,12 +1729,9 @@ class Canvas3D(Gtk.GLArea):
                 group.powered_offsets = []
                 group.travel_offsets = []
 
-            ol = None
-            for overlay in self._compiled_artifact.overlay_layers:
-                if overlay.is_rotary == group.is_rotary:
-                    ol = overlay
-                    break
-
+            ol = _match_overlay_layer(
+                self._compiled_artifact.overlay_layers, group.is_rotary
+            )
             if ol is not None:
                 group.ring_offsets = ol.cmd_offsets
             else:
