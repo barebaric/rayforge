@@ -13,10 +13,8 @@ from raygeo.ops.axis import Axis
 
 from ...context import RayforgeContext
 from ...core.color import OPS_COLOR_SPEC, ColorSet, hex_to_rgba
-from ...image.util.srgb import create_lut_from_color
 from ...machine.assembly import LinkRole
 from ...machine.kinematic_mapping import KinematicMapping
-from ...machine.models.colors import OpsColorSet
 from ...machine.models.laser import LaserHead
 from ...pipeline.artifact.base import TextureData
 from ...pipeline.artifact.handle import BaseArtifactHandle
@@ -37,6 +35,7 @@ from ...simulator.scene3d import (
 )
 from ..shared.gtk_color import GtkColorResolver
 from .camera import Camera, ViewDirection, rotation_matrix_from_axis_angle
+from .color_lut_provider import ColorLutProvider
 from .gl_utils import RenderContext, Shader, rotation_4x4
 from .renderer.axis_renderer_3d import AxisRenderer3D
 from .renderer.background_renderer import BackgroundRenderer
@@ -45,7 +44,6 @@ from .renderer.laser_beam_renderer import LaserBeamRenderer
 from .renderer.model_renderer import ModelRenderer
 from .renderer.ops_renderer import OpsRenderer
 from .renderer.ring_buffer_renderer import RingBufferRenderer
-from .renderer.sphere_renderer import SphereRenderer
 from .renderer.texture_renderer import TextureArtifactRenderer
 from .renderer.zone_renderer import ZoneRenderer
 from .shaders import (
@@ -114,7 +112,6 @@ class Canvas3D(Gtk.GLArea):
         self._text_shader: Optional[Shader] = None
         self._axis_renderer: Optional[AxisRenderer3D] = None
         self._layer_groups: List[_LayerRendererGroup] = []
-        self._sphere_renderer: Optional[SphereRenderer] = None
         self._laser_beam_renderer: Optional[LaserBeamRenderer] = None
         self._background_renderer: Optional[BackgroundRenderer] = None
         self._texture_renderer: Optional[TextureArtifactRenderer] = None
@@ -144,7 +141,7 @@ class Canvas3D(Gtk.GLArea):
 
         self._color_spec = OPS_COLOR_SPEC
         self._color_set: Optional[ColorSet] = None
-        self._laser_color_sets: Dict[str, ColorSet] = {}
+        self._lut_provider: Optional[ColorLutProvider] = None
         self._theme_is_dirty = True
 
         # State for interactions
@@ -223,8 +220,6 @@ class Canvas3D(Gtk.GLArea):
 
     def _build_viewport(self, machine: "Machine") -> "ViewportConfig":
         """Build a ViewportConfig using the active layer's WCS."""
-        from .viewport import ViewportConfig
-
         return ViewportConfig.from_machine_with_wcs(
             machine, self._get_active_layer_wcs_offset(machine)
         )
@@ -454,7 +449,6 @@ class Canvas3D(Gtk.GLArea):
             self.get_height(),
         )
 
-        self._sphere_renderer = SphereRenderer(1.0, 16, 32)
         self._laser_beam_renderer = LaserBeamRenderer()
         self._background_renderer = BackgroundRenderer()
 
@@ -487,8 +481,6 @@ class Canvas3D(Gtk.GLArea):
                 self._axis_renderer.cleanup()
             for group in self._layer_groups:
                 group.cleanup()
-            if self._sphere_renderer:
-                self._sphere_renderer.cleanup()
             if self._laser_beam_renderer:
                 self._laser_beam_renderer.cleanup()
             if self._background_renderer:
@@ -558,8 +550,6 @@ class Canvas3D(Gtk.GLArea):
             self._axis_renderer.init_gl()
             self._texture_renderer = TextureArtifactRenderer()
             self._texture_renderer.init_gl()
-            if self._sphere_renderer:
-                self._sphere_renderer.init_gl()
             if self._laser_beam_renderer:
                 self._laser_beam_renderer.init_gl()
             try:
@@ -646,81 +636,39 @@ class Canvas3D(Gtk.GLArea):
 
     def _update_laser_colors(self):
         """
-        Resolve ColorSet for each laser in the machine.
+        Build the shared colour LUT provider from the machine's lasers.
 
-        This builds per-laser color sets using the machine's laser list
+        This resolves per-laser color sets using the machine's laser list
         and the current theme colors for travel/zero_power.
         """
-        machine = self._context.machine
-        if not machine or not self._color_set:
-            self._laser_color_sets = {}
+        if self._color_set is None:
+            self._lut_provider = None
             return
-
-        self._laser_color_sets = {}
-        for laser in machine.heads:
-            if not isinstance(laser, LaserHead):
-                continue
-            laser_color_set = OpsColorSet.from_laser(laser, self._color_set)
-            self._laser_color_sets[laser.uid] = laser_color_set.to_color_set()
-
-    def _get_laser_engrave_rgba(self):
-        if self._laser_color_sets:
-            first_cs = next(iter(self._laser_color_sets.values()))
-            engrave_lut = first_cs.get_lut("engrave")
-            return tuple(engrave_lut[255])
-        return (1.0, 1.0, 1.0, 1.0)
+        self._lut_provider = ColorLutProvider.from_machine(
+            self._context.machine, self._color_set
+        )
 
     def _update_renderer_color_luts(self):
         if not self._color_set or not self._gl_initialized:
             return
 
-        if self._laser_color_sets:
-            uids = list(self._laser_color_sets.keys())
-            num_lasers = len(uids)
+        if self._lut_provider is None:
+            self._update_laser_colors()
+        provider = self._lut_provider
+        if provider is None:
+            return
 
-            cut_lut_2d = np.zeros((num_lasers, 256, 4), dtype=np.float32)
-            engrave_lut_2d = np.zeros((num_lasers, 256, 4), dtype=np.float32)
-            flat_lut_2d = np.zeros((num_lasers, 256, 4), dtype=np.float32)
+        for group in self._layer_groups:
+            group.ops_renderer.update_color_lut_from(provider)
+            group.ring_renderer.update_color_lut_from(provider)
 
-            for row_idx, uid in enumerate(uids):
-                cs = self._laser_color_sets[uid]
-                cut_lut_2d[row_idx] = cs.get_lut("cut")
-                engrave_lut_2d[row_idx] = cs.get_lut("engrave")
-                engrave_rgba = tuple(cs.get_lut("engrave")[255])
-                # The scanline overlay dims by power too, so give it a
-                # brightness ramp rather than a flat colour.
-                flat_lut_2d[row_idx] = create_lut_from_color(engrave_rgba)
-
-            for group in self._layer_groups:
-                group.ops_renderer.update_color_lut(cut_lut_2d, num_lasers)
-                group.ring_renderer.update_color_lut(flat_lut_2d, num_lasers)
-
-            if self._texture_renderer:
+        if self._texture_renderer:
+            if provider.has_lasers:
                 logger.debug(
                     f"[COLOR_LUT] Using multi-laser 2D LUT "
-                    f"({num_lasers} lasers)"
+                    f"({provider.num_lasers} lasers)"
                 )
-                self._texture_renderer.update_color_lut(
-                    engrave_lut_2d, num_lasers
-                )
-        else:
-            # No per-laser colour sets resolved yet (e.g. the very first
-            # render before the machine's lasers are available). Derive the
-            # cut LUT as a brightness ramp from the resolved cut colour so
-            # lines still dim by power instead of falling back to a flat /
-            # hue-only gradient that ignores power entirely.
-            cut_lut = create_lut_from_color(self._color_set.get_rgba("cut"))
-            engrave_lut = self._color_set.get_lut("engrave")
-
-            for group in self._layer_groups:
-                group.ops_renderer.update_color_lut(cut_lut)
-                ring_lut = create_lut_from_color(
-                    self._get_laser_engrave_rgba()
-                )
-                group.ring_renderer.update_color_lut(ring_lut)
-
-            if self._texture_renderer:
-                self._texture_renderer.update_color_lut(engrave_lut)
+            self._texture_renderer.update_color_lut_from(provider)
 
     def _process_pending_gl_updates(self):
         if self._scene_gl_dirty:
@@ -1210,12 +1158,7 @@ class Canvas3D(Gtk.GLArea):
             laser_light_pos = None
 
             # Laser head markers
-            if (
-                self._op_player
-                and self._sphere_renderer
-                and self._main_shader
-                and machine
-            ):
+            if self._op_player and self._main_shader and machine:
                 asm = machine.assembly
                 wcs = self._viewport.wcs_offset_mm
                 heads = asm.head_positions(

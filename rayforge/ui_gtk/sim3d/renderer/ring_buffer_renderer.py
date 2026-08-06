@@ -12,6 +12,7 @@ slots become available for recycling.
 import numpy as np
 from OpenGL import GL
 
+from ..color_lut_provider import ColorLutProvider
 from ..gl_utils import BaseRenderer, RenderContext, Shader, set_line_width
 
 
@@ -124,6 +125,10 @@ class RingBufferRenderer(BaseRenderer):
             lut,
         )
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+
+    def update_color_lut_from(self, provider: ColorLutProvider):
+        """Updates the colour LUT from a shared ColorLutProvider."""
+        self.update_color_lut(provider.ring_lut_2d(), provider.num_lasers)
 
     def clear(self):
         self.vertex_count = 0
