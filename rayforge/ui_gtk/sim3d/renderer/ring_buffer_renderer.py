@@ -12,6 +12,7 @@ slots become available for recycling.
 import numpy as np
 from OpenGL import GL
 
+from ....simulator.scene3d import ScanlineOverlayLayer
 from ..color_lut_provider import ColorLutProvider
 from ..gl_utils import BaseRenderer, RenderContext, Shader, set_line_width
 
@@ -90,6 +91,10 @@ class RingBufferRenderer(BaseRenderer):
 
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         self.vertex_count = n
+
+    def update_from_overlay_layer(self, ol: ScanlineOverlayLayer):
+        """Uploads a compiled scanline overlay layer into the ring buffer."""
+        self.upload(ol.positions.ravel(), ol.overlay_attrib)
 
     def update_color_lut(self, lut_data: np.ndarray, num_lasers: int = 1):
         if not self._color_lut_texture:

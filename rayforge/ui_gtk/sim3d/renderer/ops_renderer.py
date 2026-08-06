@@ -2,11 +2,16 @@
 A renderer for visualizing toolpath operations (Ops) in 3D.
 """
 
+import logging
+
 import numpy as np
 from OpenGL import GL
 
+from ....simulator.scene3d import VertexLayer
 from ..color_lut_provider import ColorLutProvider
 from ..gl_utils import BaseRenderer, RenderContext, Shader, set_line_width
+
+logger = logging.getLogger(__name__)
 
 
 class OpsRenderer(BaseRenderer):
@@ -59,6 +64,35 @@ class OpsRenderer(BaseRenderer):
             np.array([], dtype=np.float32),
             np.array([], dtype=np.float32),
         )
+
+    def update_from_vertex_layer(
+        self, vl: VertexLayer, show_travel_moves: bool
+    ):
+        """Uploads a compiled vertex layer into the renderer's buffers."""
+        if show_travel_moves:
+            pv_final = np.concatenate((vl.powered_verts, vl.zero_power_verts))
+            zero_count = vl.zero_power_verts.size // 3
+            zero_attrib = np.zeros(zero_count * 4, dtype=np.float32)
+            zero_attrib[3::4] = 1.0
+            attrib = np.concatenate((vl.powered_attrib.ravel(), zero_attrib))
+            tv_final = vl.travel_verts
+        else:
+            pv_final = vl.powered_verts
+            attrib = vl.powered_attrib
+            tv_final = np.array([], dtype=np.float32)
+
+        powered_count = vl.powered_verts.size // 3
+        zero_count = vl.zero_power_verts.size // 3
+        logger.debug(
+            f"[UPLOAD] is_rotary={vl.is_rotary} "
+            f"powered={powered_count} "
+            f"zero_power={zero_count} "
+            f"total={pv_final.size // 3} "
+            f"travel={tv_final.size // 3} "
+            f"show_travel={show_travel_moves}"
+        )
+
+        self.update_from_vertex_data(pv_final, attrib, tv_final)
 
     def update_from_vertex_data(
         self,
