@@ -419,7 +419,7 @@ html[data-theme='dark'] .featureContent li::before {
   z-index: 0;
   border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
   opacity: 0.15;
-  transition: border-radius 8s infinite ease-in-out;
+  transition: border-radius 8s ease-in-out;
 }
 
 @keyframes morph {
