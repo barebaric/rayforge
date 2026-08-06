@@ -4,7 +4,7 @@ Renders a cylinder wireframe for visualizing rotary mode workpieces.
 
 import logging
 import math
-from typing import Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 from OpenGL import GL
@@ -33,6 +33,7 @@ class CylinderRenderer(BaseRenderer):
         self.vao: int = 0
         self.vbo: int = 0
         self.vertex_count = 0
+        self._mvp: Optional[np.ndarray] = None
         self._color: Tuple[float, float, float, float] = (
             0.5,
             0.5,
@@ -43,6 +44,10 @@ class CylinderRenderer(BaseRenderer):
     def set_color(self, color: Tuple[float, float, float, float]):
         """Sets the wireframe color."""
         self._color = color
+
+    def update_from_state(self, mvp_gl: np.ndarray):
+        """Caches the per-frame MVP matrix for the cylinder mesh."""
+        self._mvp = mvp_gl
 
     def init_gl(self) -> None:
         """Generates cylinder wireframe vertices and initializes OpenGL."""
@@ -99,21 +104,18 @@ class CylinderRenderer(BaseRenderer):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         GL.glBindVertexArray(0)
 
-    def render(
-        self, ctx: RenderContext, shader: Shader, mvp_matrix: np.ndarray
-    ) -> None:
+    def render(self, ctx: RenderContext, shader: Shader) -> None:
         """
         Renders the cylinder wireframe.
 
         Args:
             shader: The shader program to use.
-            mvp_matrix: The Model-View-Projection matrix.
         """
-        if not self.vao or self.vertex_count == 0:
+        if not self.vao or self.vertex_count == 0 or self._mvp is None:
             return
 
         shader.use()
-        shader.set_mat4("uMVP", mvp_matrix)
+        shader.set_mat4("uMVP", self._mvp)
         shader.set_vec4("uColor", self._color)
         shader.set_float("uUseVertexColor", 0.0)
         shader.set_float("uHasNormals", 0.0)

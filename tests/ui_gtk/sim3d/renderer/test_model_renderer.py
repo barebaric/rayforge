@@ -117,7 +117,7 @@ class TestModelRenderer:
             camera_position=np.zeros(3),
             color_set=ColorSet(),
         )
-        renderer.render(ctx, mock_shader, mvp)
+        renderer.render(ctx, mock_shader)
         mock_shader.use.assert_not_called()
 
     def test_bounds_property(self, tmp_path):

@@ -40,6 +40,13 @@ class TextureArtifactRenderer(BaseRenderer):
         self.cylinder_vao: int = 0
         self.cylinder_vbo: int = 0
         self._num_laser_luts: int = 1
+        self._flat_mvp: Optional[np.ndarray] = None
+        self._cyl_mvp: Optional[np.ndarray] = None
+
+    def update_from_state(self, flat_mvp, cyl_mvp):
+        """Caches the per-frame MVP matrices for the texture quads."""
+        self._flat_mvp = flat_mvp
+        self._cyl_mvp = cyl_mvp
 
     def init_gl(self):
         """
@@ -320,7 +327,6 @@ class TextureArtifactRenderer(BaseRenderer):
     def render(
         self,
         ctx: RenderContext,
-        view_proj_scene_matrix: np.ndarray,
         shader: Shader,
         reached_count: Optional[int] = None,
         pending_alpha: float = 0.3,
@@ -329,17 +335,21 @@ class TextureArtifactRenderer(BaseRenderer):
         Renders all flat (non-rotary) texture instances.
 
         Args:
-            view_proj_scene_matrix: The combined Projection * View * SceneModel
-              matrix (P*V*M_scene), not transposed.
             shader: The shader to use for rendering.
             reached_count: If set, the first N texture instances are drawn
               at full alpha; the rest are drawn dimmed. None means all at
               full alpha.
             pending_alpha: Alpha multiplier for unreached texture instances.
         """
-        if not self.is_initialized or not self.instances:
+        if (
+            not self.is_initialized
+            or not self.instances
+            or self._flat_mvp is None
+        ):
             return
 
+        GL.glEnable(GL.GL_BLEND)
+        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         shader.use()
 
         GL.glActiveTexture(GL.GL_TEXTURE0)
@@ -360,7 +370,7 @@ class TextureArtifactRenderer(BaseRenderer):
 
             shader.set_int("uLaserIndex", instance.get("laser_index", 0))
 
-            final_mvp = view_proj_scene_matrix @ instance["model_matrix"]
+            final_mvp = self._flat_mvp @ instance["model_matrix"]
             shader.set_mat4("uMVP", final_mvp.T)
 
             GL.glActiveTexture(GL.GL_TEXTURE1)
@@ -379,7 +389,6 @@ class TextureArtifactRenderer(BaseRenderer):
     def render_cylinder(
         self,
         ctx: RenderContext,
-        view_proj_scene_matrix: np.ndarray,
         shader: Shader,
         reached_count: Optional[int] = None,
         pending_alpha: float = 0.3,
@@ -388,19 +397,23 @@ class TextureArtifactRenderer(BaseRenderer):
         Renders all texture instances mapped onto a cylinder.
 
         Args:
-            view_proj_scene_matrix: The combined Projection * View * SceneModel
-              matrix (P*V*M_scene), not transposed.
             shader: The shader to use for rendering.
             reached_count: If set, the first N texture instances are drawn
               at full alpha; the rest are drawn dimmed. None means all at
               full alpha.
             pending_alpha: Alpha multiplier for unreached texture instances.
         """
-        if not self.is_initialized or not self.instances:
+        if (
+            not self.is_initialized
+            or not self.instances
+            or self._cyl_mvp is None
+        ):
             return
 
         t_cyl_start = time.perf_counter()
 
+        GL.glEnable(GL.GL_BLEND)
+        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         shader.use()
 
         GL.glActiveTexture(GL.GL_TEXTURE0)
@@ -450,7 +463,7 @@ class TextureArtifactRenderer(BaseRenderer):
 
             # Draw using the full Scene Matrix, so it correctly
             # inherits WCS and _model_matrix.
-            shader.set_mat4("uMVP", view_proj_scene_matrix.T)
+            shader.set_mat4("uMVP", self._cyl_mvp.T)
 
             GL.glActiveTexture(GL.GL_TEXTURE1)
             GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)
