@@ -1,4 +1,5 @@
 import math
+from unittest.mock import patch
 
 import pytest
 from raygeo.ops import Ops
@@ -245,3 +246,62 @@ def test_true_4th_axis_copies_to_rotary():
     diameter = 25.0
     expected_deg = (20.0 / (diameter * math.pi)) * 360.0
     assert player.state.axes[Axis.A] == pytest.approx(expected_deg)
+
+
+def _make_rotary_doc(uid, machine):
+    rm = RotaryModule()
+    rm.default_diameter = 40.0
+    machine.add_rotary_module(rm)
+    doc = Doc()
+    doc.active_layer.uid = uid
+    doc.active_layer.set_rotary_enabled(True)
+    doc.active_layer.set_rotary_module_uid(rm.uid)
+    return doc
+
+
+def test_seek_into_layer_configures_machine_for_that_layer():
+    machine = _make_machine()
+    doc = _make_rotary_doc("test", machine)
+
+    ops = Ops()
+    ops.move_to(0, 0, 0)
+    ops.layer_start("test")
+    ops.line_to(10, 20, 0)
+
+    player = OpPlayer(ops, machine, doc)
+    with patch.object(machine, "configure_for_layer") as mock_cfg:
+        player.seek(ops.len() - 1)
+    mock_cfg.assert_called_with(doc.active_layer)
+
+
+def test_seek_preamble_configures_machine_for_first_layer():
+    machine = _make_machine()
+    doc = _make_rotary_doc("test", machine)
+
+    ops = Ops()
+    ops.move_to(5, 5, 0)
+    ops.set_power(0.5)
+    ops.layer_start("test")
+    ops.line_to(10, 20, 0)
+
+    player = OpPlayer(ops, machine, doc)
+    with patch.object(machine, "configure_for_layer") as mock_cfg:
+        player.seek(0)
+    mock_cfg.assert_called_with(doc.layers[0])
+
+
+def test_seek_flat_layer_configures_machine_flat():
+    machine = _make_machine()
+    rm = RotaryModule()
+    machine.add_rotary_module(rm)
+    doc = Doc()
+    doc.active_layer.uid = "test"
+
+    ops = Ops()
+    ops.move_to(0, 0, 0)
+    ops.layer_start("test")
+    ops.line_to(10, 20, 0)
+
+    player = OpPlayer(ops, machine, doc)
+    player.seek(ops.len() - 1)
+    assert not machine.assembly.has_rotary

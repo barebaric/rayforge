@@ -4,6 +4,7 @@ import re
 import threading
 import time
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -12,6 +13,7 @@ from rayforge.core.step_registry import step_registry
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.image.svg import svg_fallback
 from rayforge.machine.models.machine import Origin
+from rayforge.machine.models.rotary_module import RotaryModule
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -333,3 +335,32 @@ def test_handles_multiple_busy_tasks(doc_editor):
         if doc_editor.is_processing:
             doc_editor.notify_task_ended()
             doc_editor.notify_task_ended()
+
+
+def test_configure_machine_uses_first_layer(doc_editor):
+    editor = doc_editor
+    machine = editor.context.machine
+    rm = RotaryModule()
+    machine.add_rotary_module(rm)
+
+    first_layer = editor.doc.layers[0]
+    first_layer.set_rotary_enabled(True)
+    first_layer.set_rotary_module_uid(rm.uid)
+
+    with patch.object(machine, "configure_for_layer") as mock_cfg:
+        editor.configure_machine()
+    mock_cfg.assert_called_with(first_layer)
+
+
+def test_configure_machine_mounts_rotary_for_first_layer(doc_editor):
+    editor = doc_editor
+    machine = editor.context.machine
+    rm = RotaryModule()
+    machine.add_rotary_module(rm)
+
+    first_layer = editor.doc.layers[0]
+    first_layer.set_rotary_enabled(True)
+    first_layer.set_rotary_module_uid(rm.uid)
+
+    editor.configure_machine()
+    assert machine.assembly.has_rotary
