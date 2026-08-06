@@ -54,6 +54,25 @@ class TestFrameStep:
         restored = FrameStep.from_dict(data)
         assert data == restored.to_dict()
 
+    def test_from_dict_migrates_legacy_opsproducer_params(self):
+        """True legacy files store frame params in
+        ``opsproducer_dict.params``; loading must restore them."""
+        data = FrameStep(name="Test").to_dict()
+        for key in ("cut_side", "offset_mm"):
+            data.pop(key, None)
+        data["opsproducer_dict"] = {
+            "type": "FrameProducer",
+            "params": {
+                "path_offset_mm": 0.6,
+                "cut_side": "OUTSIDE",
+            },
+        }
+
+        restored = FrameStep.from_dict(data)
+
+        assert restored.cut_side == "OUTSIDE"
+        assert restored.offset_mm == pytest.approx(0.6)
+
 
 class TestFrameComputePayload:
     def test_build_compute_payload_returns_frame_spec(self, machine):

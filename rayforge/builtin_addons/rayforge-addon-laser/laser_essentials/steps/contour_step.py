@@ -10,6 +10,7 @@ from raygeo.ops.part import Part
 
 from rayforge.core.capability import MachineCapability, StepCapability
 from rayforge.core.cut_side import CutOrder, CutSide
+from rayforge.core.step import legacy_producer_params
 from rayforge.core.varset import (
     BoolVar,
     LabeledChoiceVar,
@@ -175,18 +176,31 @@ class ContourStep(LaserStep):
     @classmethod
     def from_dict(cls, data: dict) -> "ContourStep":
         step = cast("ContourStep", super().from_dict(data))
-        step.cut_side = data.get("cut_side", "CENTERLINE")
-        step.cut_order = data.get("cut_order", "INSIDE_OUTSIDE")
-        step.remove_inner_paths = data.get("remove_inner_paths", False)
+        legacy = legacy_producer_params(data)
+        step.cut_side = data.get(
+            "cut_side",
+            legacy.get("cut_side", legacy.get("kerf_mode", "CENTERLINE")),
+        )
+        step.cut_order = data.get(
+            "cut_order", legacy.get("cut_order", "INSIDE_OUTSIDE")
+        )
+        step.remove_inner_paths = data.get(
+            "remove_inner_paths", legacy.get("remove_inner_paths", False)
+        )
         if "offset_mm" in data:
             step.offset_mm = data["offset_mm"]
         else:
-            step.offset_mm = data.get("path_offset_mm", 0.0) + (
-                data.get("kerf_mm", 0.0) / 2.0
+            path_offset = data.get(
+                "path_offset_mm",
+                legacy.get("path_offset_mm", legacy.get("offset_mm", 0.0)),
             )
-        step.overcut = data.get("overcut", 0.0)
-        step.override_threshold = data.get("override_threshold", False)
-        step.threshold = data.get("threshold", 0.5)
+            step.offset_mm = path_offset + (data.get("kerf_mm", 0.0) / 2.0)
+        step.overcut = data.get("overcut", legacy.get("overcut", 0.0))
+        step.override_threshold = data.get(
+            "override_threshold",
+            legacy.get("override_threshold", False),
+        )
+        step.threshold = data.get("threshold", legacy.get("threshold", 0.5))
         return step
 
     @classmethod

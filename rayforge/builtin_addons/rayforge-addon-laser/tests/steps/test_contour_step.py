@@ -266,6 +266,44 @@ class TestContourStep:
         assert isinstance(restored, ContourStep)
         assert restored.offset_mm == pytest.approx(1.5)
 
+    def test_from_dict_migrates_legacy_opsproducer_params(self):
+        """True legacy files store contour params in
+        ``opsproducer_dict.params``; loading must restore them."""
+        step_registry.register(ContourStep)
+        data = ContourStep(name="Test").to_dict()
+        for key in (
+            "cut_side",
+            "cut_order",
+            "remove_inner_paths",
+            "offset_mm",
+            "overcut",
+            "override_threshold",
+            "threshold",
+        ):
+            data.pop(key, None)
+        data["opsproducer_dict"] = {
+            "type": "ContourProducer",
+            "params": {
+                "remove_inner_paths": True,
+                "path_offset_mm": 0.4,
+                "cut_side": "OUTSIDE",
+                "cut_order": "OUTSIDE_INSIDE",
+                "override_threshold": True,
+                "threshold": 0.7,
+                "overcut": 0.2,
+            },
+        }
+
+        restored = ContourStep.from_dict(data)
+
+        assert restored.cut_side == "OUTSIDE"
+        assert restored.cut_order == "OUTSIDE_INSIDE"
+        assert restored.remove_inner_paths is True
+        assert restored.override_threshold is True
+        assert restored.threshold == 0.7
+        assert restored.overcut == 0.2
+        assert restored.offset_mm == pytest.approx(0.4)
+
     def test_step_from_dict_preserves_subclass_attrs(self):
         """Step.from_dict (base call) must delegate to subclass from_dict."""
         step_registry.register(ContourStep)

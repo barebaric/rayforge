@@ -9,6 +9,7 @@ from raygeo.ops.assembly.material_test_grid import MaterialTestGridSpec
 from raygeo.ops.part import Part
 
 from rayforge.core.capability import MachineCapability, StepCapability
+from rayforge.core.step import legacy_producer_params
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.transformer.registry import transformer_registry
 
@@ -156,21 +157,49 @@ class MaterialTestStep(LaserStep):
     @classmethod
     def from_dict(cls, data: dict) -> "MaterialTestStep":
         step = cast("MaterialTestStep", super().from_dict(data))
-        step.test_type = data.get("test_type", "Cut")
-        step.grid_mode = data.get("grid_mode", "Power vs Speed")
-        step.speed_range = tuple(data.get("speed_range", (100.0, 500.0)))
-        step.power_range = tuple(data.get("power_range", (10.0, 100.0)))
-        step.passes_range = tuple(data.get("passes_range", (1, 5)))
-        step.offset_range = tuple(data.get("offset_range", (-0.5, 0.5)))
-        step.fixed_speed = data.get("fixed_speed", 1000.0)
-        step.fixed_power = data.get("fixed_power", 50.0)
-        step.grid_dimensions = tuple(data.get("grid_dimensions", (5, 5)))
-        step.shape_size = data.get("shape_size", 10.0)
-        step.spacing = data.get("spacing", 2.0)
-        step.include_labels = data.get("include_labels", True)
-        step.label_power_percent = data.get("label_power_percent", 10.0)
-        step.label_speed = data.get("label_speed", 1000.0)
-        step.line_interval_mm = data.get("line_interval_mm", None)
+        legacy = legacy_producer_params(data)
+        step.test_type = data.get("test_type", legacy.get("test_type", "Cut"))
+        step.grid_mode = data.get(
+            "grid_mode", legacy.get("grid_mode", "Power vs Speed")
+        )
+        step.speed_range = tuple(
+            data.get("speed_range", legacy.get("speed_range", (100.0, 500.0)))
+        )
+        step.power_range = tuple(
+            data.get("power_range", legacy.get("power_range", (10.0, 100.0)))
+        )
+        step.passes_range = tuple(
+            data.get("passes_range", legacy.get("passes_range", (1, 5)))
+        )
+        step.offset_range = tuple(
+            data.get("offset_range", legacy.get("offset_range", (-0.5, 0.5)))
+        )
+        step.fixed_speed = data.get(
+            "fixed_speed", legacy.get("fixed_speed", 1000.0)
+        )
+        step.fixed_power = data.get(
+            "fixed_power", legacy.get("fixed_power", 50.0)
+        )
+        step.grid_dimensions = tuple(
+            data.get("grid_dimensions", legacy.get("grid_dimensions", (5, 5)))
+        )
+        step.shape_size = data.get(
+            "shape_size", legacy.get("shape_size", 10.0)
+        )
+        step.spacing = data.get("spacing", legacy.get("spacing", 2.0))
+        step.include_labels = data.get(
+            "include_labels", legacy.get("include_labels", True)
+        )
+        step.label_power_percent = data.get(
+            "label_power_percent",
+            legacy.get("label_power_percent", 10.0),
+        )
+        step.label_speed = data.get(
+            "label_speed", legacy.get("label_speed", 1000.0)
+        )
+        step.line_interval_mm = data.get(
+            "line_interval_mm", legacy.get("line_interval_mm", None)
+        )
         return step
 
     @classmethod

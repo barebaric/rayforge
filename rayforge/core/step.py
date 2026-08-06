@@ -45,6 +45,23 @@ _COOLANT_MODE_BY_NAME = {
 }
 
 
+def legacy_producer_params(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Return the legacy ``opsproducer_dict.params`` payload, if any.
+
+    Projects saved before the raygeo-pipeline refactor stored each
+    step's producer configuration under ``opsproducer_dict``.  Step
+    ``from_dict`` implementations consult this payload so the saved
+    parameters survive loading; current-format top-level keys always
+    take precedence.
+    """
+    opsproducer = data.get("opsproducer_dict")
+    if isinstance(opsproducer, dict):
+        params = opsproducer.get("params")
+        if isinstance(params, dict):
+            return params
+    return {}
+
+
 class Step(DocItem, ABC):
     """
     An OpsProducer configuration that operates on WorkPieces.

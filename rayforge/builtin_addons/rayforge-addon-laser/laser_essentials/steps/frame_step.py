@@ -10,6 +10,7 @@ from raygeo.ops.part import Part
 
 from rayforge.core.capability import MachineCapability, StepCapability
 from rayforge.core.cut_side import CutSide
+from rayforge.core.step import legacy_producer_params
 from rayforge.core.varset import LabeledChoiceVar, LengthVar, VarSet
 from rayforge.pipeline.stage.assembler_helpers import (
     build_part_vector_with_raster_fallback,
@@ -125,13 +126,19 @@ class FrameStep(LaserStep):
     @classmethod
     def from_dict(cls, data: dict) -> "FrameStep":
         step = cast("FrameStep", super().from_dict(data))
-        step.cut_side = data.get("cut_side", "CENTERLINE")
+        legacy = legacy_producer_params(data)
+        step.cut_side = data.get(
+            "cut_side",
+            legacy.get("cut_side", legacy.get("kerf_mode", "CENTERLINE")),
+        )
         if "offset_mm" in data:
             step.offset_mm = data["offset_mm"]
         else:
-            step.offset_mm = data.get("path_offset_mm", 0.0) + (
-                data.get("kerf_mm", 0.0) / 2.0
+            path_offset = data.get(
+                "path_offset_mm",
+                legacy.get("path_offset_mm", legacy.get("offset_mm", 0.0)),
             )
+            step.offset_mm = path_offset + (data.get("kerf_mm", 0.0) / 2.0)
         return step
 
     @classmethod

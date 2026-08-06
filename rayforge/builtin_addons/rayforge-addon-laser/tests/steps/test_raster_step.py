@@ -113,6 +113,92 @@ class TestEngraveStep:
         assert "min_power" not in restored.extra
         assert "max_power" not in restored.extra
 
+    def test_from_dict_migrates_legacy_opsproducer_params(self):
+        """True legacy files store raster params in
+        ``opsproducer_dict.params``; loading must restore them."""
+        step = EngraveStep(name="Test")
+        data = step.to_dict()
+        for key in (
+            "scan_angle",
+            "depth_mode",
+            "invert",
+            "auto_levels",
+            "black_point",
+            "white_point",
+            "threshold",
+            "line_interval_mm",
+            "sample_interval_mm",
+            "min_power_level",
+            "max_power_level",
+            "num_power_levels",
+            "scan_mode",
+            "cross_hatch",
+            "num_depth_levels",
+            "z_step_down",
+            "angle_increment",
+            "dither_algorithm",
+        ):
+            data.pop(key, None)
+        data["opsproducer_dict"] = {
+            "type": "Rasterizer",
+            "params": {
+                "direction_degrees": 45.0,
+                "scan_mode": "FullSweep",
+                "threshold": 100,
+                "dither_algorithm": "bayer4",
+                "cross_hatch": True,
+                "min_power": 0.2,
+                "max_power": 0.9,
+                "num_depth_levels": 3,
+                "num_power_levels": 10,
+                "z_step_down": 0.5,
+                "invert": True,
+                "auto_levels": False,
+                "black_point": 20,
+                "white_point": 200,
+                "angle_increment": 30.0,
+                "line_interval_mm": 0.4,
+            },
+        }
+
+        restored = EngraveStep.from_dict(data)
+
+        assert restored.depth_mode == "CONSTANT_POWER"
+        assert restored.scan_angle == 45.0
+        assert restored.scan_mode == "FULL_SWEEP"
+        assert restored.threshold == 100
+        assert restored.dither_algorithm is not None
+        assert restored.dither_algorithm.name == "BAYER4"
+        assert restored.cross_hatch is True
+        assert restored.min_power_level == 0.2
+        assert restored.max_power_level == 0.9
+        assert restored.num_depth_levels == 3
+        assert restored.num_power_levels == 10
+        assert restored.z_step_down == 0.5
+        assert restored.invert is True
+        assert restored.auto_levels is False
+        assert restored.black_point == 20
+        assert restored.white_point == 200
+        assert restored.angle_increment == 30.0
+        assert restored.line_interval_mm == 0.4
+        assert restored.max_power == 1000
+
+    def test_from_dict_dither_rasterizer_uses_dither_mode(self):
+        """The legacy ``DitherRasterizer`` type implies DITHER mode."""
+        step = EngraveStep(name="Test")
+        data = step.to_dict()
+        for key in ("depth_mode", "scan_angle", "threshold"):
+            data.pop(key, None)
+        data["opsproducer_dict"] = {
+            "type": "DitherRasterizer",
+            "params": {"threshold": 150},
+        }
+
+        restored = EngraveStep.from_dict(data)
+
+        assert restored.depth_mode == "DITHER"
+        assert restored.threshold == 150
+
 
 class TestEngraveComputePayload:
     """Verifies EngraveStep's build_compute_payload (B3)."""
