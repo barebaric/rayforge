@@ -1,7 +1,7 @@
 from typing import Any, Optional, Tuple
 
 from ....core.varset import FloatVar, IntVar, Var
-from ...shared.unit_spin_row import SpinRow
+from ...shared.pref_rows.base import SpinRow
 from .base import RowAdapter, escape_title, register_adapter
 
 

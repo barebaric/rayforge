@@ -2,7 +2,7 @@ from typing import Any, Optional, Tuple
 
 from ....context import get_context
 from ....core.varset import SpeedVar, Var
-from ...shared.unit_spin_row import SpeedSpinRow
+from ...shared.pref_rows.speed_spin_row import SpeedSpinRow
 from .base import RowAdapter, escape_title, register_adapter
 
 _DEFAULT_MAX_SPEED = 3000

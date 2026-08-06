@@ -2,14 +2,12 @@
 
 from typing import TYPE_CHECKING, Any, Optional
 
-from rayforge.ui_gtk.shared.unit_spin_row import (
+from rayforge.ui_gtk.shared.pref_rows.acceleration_spin_row import (
     AccelerationSpinRow,
-    LengthSpinRow,
-    SpeedSpinRow,
 )
-from rayforge.ui_gtk.shared.unit_spin_row import (
-    SpinRow as UnitSpinRowWidget,
-)
+from rayforge.ui_gtk.shared.pref_rows.base import SpinRow as UnitSpinRowWidget
+from rayforge.ui_gtk.shared.pref_rows.length_spin_row import LengthSpinRow
+from rayforge.ui_gtk.shared.pref_rows.speed_spin_row import SpeedSpinRow
 
 from .step_row import DebouncedMixin, StepRow
 

@@ -13,8 +13,8 @@ from ...shared.units.definitions import (
 from ...shared.util.localized import SUPPORTED_LANGUAGES
 from ...ui_gtk.doceditor import file_dialogs
 from ...usage import get_usage_tracker
+from ..shared.pref_rows.base import SpinRow
 from ..shared.preferences_page import TrackedPreferencesPage
-from ..shared.unit_spin_row import SpinRow
 
 logger = logging.getLogger(__name__)
 

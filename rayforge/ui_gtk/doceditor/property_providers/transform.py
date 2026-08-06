@@ -12,7 +12,9 @@ from ....core.workpiece import WorkPiece
 from ....doceditor.transform_cmd import TransformCmd
 from ....shared.units.formatter import format_value
 from ...icons import get_icon
-from ...shared.unit_spin_row import AngleSpinRow, LengthSpinRow, SpinRow
+from ...shared.pref_rows.angle_spin_row import AngleSpinRow
+from ...shared.pref_rows.base import SpinRow
+from ...shared.pref_rows.length_spin_row import LengthSpinRow
 from .base import PropertyProvider
 
 if TYPE_CHECKING:

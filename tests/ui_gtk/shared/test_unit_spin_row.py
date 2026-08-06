@@ -9,14 +9,17 @@ gi.require_version("Adw", "1")
 import pytest
 from gi.repository import Adw
 
-from rayforge.ui_gtk.shared.unit_spin_row import (
+from rayforge.ui_gtk.shared.pref_rows.acceleration_spin_row import (
     AccelerationSpinRow,
-    AngleSpinRow,
-    LengthSpinRow,
-    SpeedSpinRow,
-    SpinRow,
-    UnitSpinRow,
 )
+from rayforge.ui_gtk.shared.pref_rows.angle_spin_row import AngleSpinRow
+from rayforge.ui_gtk.shared.pref_rows.base import SpinRow
+from rayforge.ui_gtk.shared.pref_rows.length_choice_spin_row import (
+    LengthChoiceSpinRow,
+)
+from rayforge.ui_gtk.shared.pref_rows.length_spin_row import LengthSpinRow
+from rayforge.ui_gtk.shared.pref_rows.speed_spin_row import SpeedSpinRow
+from rayforge.ui_gtk.shared.pref_rows.unit_spin_row import UnitSpinRow
 
 
 @pytest.mark.ui
@@ -261,3 +264,77 @@ def test_display_unit_switch_still_reformats(ui_context_initializer):
     config.set_unit_preference("length", "in")
     assert row.get_value_in_base_units() == pytest.approx(25.4)
     assert row.get_spin_button().get_text() == "1.000"
+
+
+@pytest.mark.ui
+def test_length_choice_defaults_to_preferred_unit(ui_context_initializer):
+    config = ui_context_initializer.config
+    config.unit_preferences["length"] = "mm"
+    row = LengthChoiceSpinRow("Len", value_in_base=25.4)
+    unit = row._units[row._unit_dropdown.get_selected()]
+    assert unit.name == "mm"
+    assert row.get_spin_button().get_value() == pytest.approx(25.4)
+    assert row.get_value_in_base_units() == pytest.approx(25.4)
+
+
+@pytest.mark.ui
+def test_length_choice_dropdown_follows_config_pref(ui_context_initializer):
+    config = ui_context_initializer.config
+    config.unit_preferences["length"] = "in"
+    row = LengthChoiceSpinRow("Len", value_in_base=25.4)
+    unit = row._units[row._unit_dropdown.get_selected()]
+    assert unit.name == "in"
+    assert row.get_spin_button().get_value() == pytest.approx(1.0)
+    assert row.get_value_in_base_units() == pytest.approx(25.4)
+
+
+@pytest.mark.ui
+def test_length_choice_unit_switch_preserves_base_value(
+    ui_context_initializer,
+):
+    row = LengthChoiceSpinRow("Len", value_in_base=25.4)
+    row._unit_dropdown.set_selected(row._unit_index("in"))
+    assert row._unit is not None
+    assert row._unit.name == "in"
+    assert row.get_spin_button().get_value() == pytest.approx(1.0)
+    assert row.get_value_in_base_units() == pytest.approx(25.4)
+
+
+@pytest.mark.ui
+def test_length_choice_unit_switch_keeps_global_pref(ui_context_initializer):
+    config = ui_context_initializer.config
+    config.unit_preferences["length"] = "mm"
+    row = LengthChoiceSpinRow("Len", value_in_base=25.4)
+    row._unit_dropdown.set_selected(row._unit_index("in"))
+    assert config.unit_preferences["length"] == "mm"
+    assert row._unit is not None
+    assert row._unit.name == "in"
+
+
+@pytest.mark.ui
+def test_length_choice_override_survives_pref_change(ui_context_initializer):
+    config = ui_context_initializer.config
+    row = LengthChoiceSpinRow("Len", value_in_base=25.4)
+    row._unit_dropdown.set_selected(row._unit_index("in"))
+    assert row._unit is not None
+    assert row._unit.name == "in"
+    config.set_unit_preference("length", "cm")
+    assert row._unit is not None
+    assert row._unit.name == "in"
+    assert row.get_spin_button().get_value() == pytest.approx(1.0)
+    assert row.get_value_in_base_units() == pytest.approx(25.4)
+
+
+@pytest.mark.ui
+def test_length_choice_dropdown_is_attached_suffix(ui_context_initializer):
+    row = LengthChoiceSpinRow("Len", value_in_base=25.4)
+    spin = row.get_spin_button()
+    dd = row._unit_dropdown
+    # both widgets live inside the row (suffixes are wrapped in a box)
+    assert spin.is_ancestor(row)
+    assert dd.is_ancestor(row)
+    model = dd.get_model()
+    assert model is not None
+    assert model.get_n_items() == len(row._units)
+    # the dropdown sits immediately to the right of the spin button
+    assert spin.get_next_sibling() is dd

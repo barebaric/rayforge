@@ -3,8 +3,8 @@ from gettext import gettext as _
 
 from gi.repository import Adw
 
+from ..shared.pref_rows.base import SpinRow
 from ..shared.preferences_page import TrackedPreferencesPage
-from ..shared.unit_spin_row import SpinRow
 from .dialect_list import DialectListEditor
 
 logger = logging.getLogger(__name__)

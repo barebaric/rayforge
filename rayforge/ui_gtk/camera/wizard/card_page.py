@@ -16,7 +16,7 @@ from gi.repository import Adw, GdkPixbuf, GLib, Gtk
 from ....camera.calibration.charuco import CharucoBoard
 from ....context import get_context
 from ....shared.units.formatter import format_value
-from ...shared.unit_spin_row import LengthSpinRow
+from ...shared.pref_rows.length_spin_row import LengthSpinRow
 from ..capture_surface import numpy_to_pixbuf
 from .base_page import CameraWizardPage
 

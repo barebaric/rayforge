@@ -16,11 +16,9 @@ from gi.repository import Adw, Gtk
 
 from ....machine.device.profile import DeviceProfile
 from ....machine.models.machine import Origin
-from ...shared.unit_spin_row import (
-    AccelerationSpinRow,
-    LengthSpinRow,
-    SpeedSpinRow,
-)
+from ...shared.pref_rows.acceleration_spin_row import AccelerationSpinRow
+from ...shared.pref_rows.length_spin_row import LengthSpinRow
+from ...shared.pref_rows.speed_spin_row import SpeedSpinRow
 from . import WizardPage, _makePreferencesGroup
 
 _ORIGIN_INDEX_TO_ENUM = {

@@ -26,8 +26,8 @@ from ...core.varset import (
     get_editable_var_types,
 )
 from ..icons import get_icon
+from ..shared.pref_rows.base import SpinRow
 from ..shared.preferences_group import PreferencesGroupWithButton
-from ..shared.unit_spin_row import SpinRow
 from .adapter import NULL_CHOICE_LABEL, create_row_for_var
 
 if TYPE_CHECKING:

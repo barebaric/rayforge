@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional, Union, cast
 
 from gi.repository import Adw, Gtk
 
-from rayforge.ui_gtk.shared.unit_spin_row import SpinRow
+from rayforge.ui_gtk.shared.pref_rows.base import SpinRow
 
 from ...core.commands import GridCommand
 from ...core.entities import Entity, Point

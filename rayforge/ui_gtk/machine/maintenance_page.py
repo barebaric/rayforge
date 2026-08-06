@@ -9,9 +9,9 @@ from ...machine.models.machine_hours import ResettableCounter
 from ...shared.util.time_format import format_hours_to_hm
 from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
+from ..shared.pref_rows.base import SpinRow
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
-from ..shared.unit_spin_row import SpinRow
 
 logger = logging.getLogger(__name__)
 

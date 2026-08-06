@@ -21,8 +21,9 @@ from ..machine.wcs_dialog import WcsDialog
 from ..shared.dock_item import DockItem
 from ..shared.dock_layout import DockLayout
 from ..shared.gtk import apply_css
+from ..shared.pref_rows.length_spin_row import LengthSpinRow
+from ..shared.pref_rows.speed_spin_row import SpeedSpinRow
 from ..shared.responsive_box import ResponsiveBox
-from ..shared.unit_spin_row import LengthSpinRow, SpeedSpinRow
 from .asset_browser import AssetBrowser
 
 if TYPE_CHECKING:

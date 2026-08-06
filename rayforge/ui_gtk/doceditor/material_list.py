@@ -12,6 +12,7 @@ from ...context import get_context
 from ...core.material import Material, MaterialAppearance
 from ...core.material_library import MaterialLibrary
 from ..icons import get_icon
+from ..shared.gtk import apply_css
 from ..shared.preferences_group import PreferencesGroupWithButton
 from .add_material_dialog import AddMaterialDialog
 
@@ -46,14 +47,10 @@ class MaterialRow(Gtk.Box):
         color_box.set_size_request(24, 24)
         color_box.set_valign(Gtk.Align.CENTER)
         color_box.add_css_class("material-color")
-        color_provider = Gtk.CssProvider()
         color_data = (".material-color {{ background-color: {}; }}").format(
             self.material.get_display_color()
         )
-        color_provider.load_from_string(color_data)
-        color_box.get_style_context().add_provider(
-            color_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
+        apply_css(color_data)
         self.prepend(color_box)
 
         labels_box = Gtk.Box(

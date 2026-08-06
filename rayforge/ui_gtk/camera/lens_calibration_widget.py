@@ -9,7 +9,7 @@ from gettext import gettext as _
 
 from gi.repository import Adw, Gtk
 
-from ..shared.unit_spin_row import SpinRow
+from ..shared.pref_rows.base import SpinRow
 
 logger = logging.getLogger(__name__)
 

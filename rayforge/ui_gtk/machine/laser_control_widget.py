@@ -8,8 +8,8 @@ from ...machine.models.laser import Laser, LaserHead
 from ...machine.models.machine import Machine
 from ..icons import get_icon
 from ..shared.gtk import apply_css
+from ..shared.pref_rows.base import SpinRow
 from ..shared.slider import create_slider
-from ..shared.unit_spin_row import SpinRow
 
 _POWER_CSS = """
 entry.power-value {

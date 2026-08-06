@@ -20,7 +20,8 @@ from ....machine.device.profile import DeviceProfile
 from ....machine.driver import get_driver_cls
 from ....machine.driver.dummy import NoDeviceDriver
 from ....machine.models.laser import LaserHead
-from ...shared.unit_spin_row import LengthSpinRow, SpinRow
+from ...shared.pref_rows.base import SpinRow
+from ...shared.pref_rows.length_spin_row import LengthSpinRow
 from . import WizardPage, _makePreferencesGroup
 
 # Index 0 == laser, 1 == spindle.

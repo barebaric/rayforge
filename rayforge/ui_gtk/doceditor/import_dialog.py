@@ -25,8 +25,8 @@ from ...image.base_importer import ImporterFeature
 from ...image.geo_renderer import geometry_to_cairo
 from ...image.structures import ImportManifest
 from ..shared.patched_dialog_window import PatchedDialogWindow
+from ..shared.pref_rows.base import SpinRow
 from ..shared.slider import create_slider
-from ..shared.unit_spin_row import SpinRow
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor

@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING, List
 
 from gi.repository import Gtk
 
-from ..shared.unit_spin_row import LengthSpinRow, SpinRow
+from ..shared.pref_rows.base import SpinRow
+from ..shared.pref_rows.length_spin_row import LengthSpinRow
 
 if TYPE_CHECKING:
     from ...core.workpiece import WorkPiece

@@ -111,7 +111,7 @@ class MachineSettingsPage(TrackedPreferencesPage):
 
             if not is_valid:
                 icon = get_icon("warning-symbolic")
-                icon.get_style_context().add_class("warning")
+                icon.add_css_class("warning")
                 tooltip = error_msg or _(
                     "This machine has an invalid configuration."
                 )
