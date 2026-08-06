@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Length, speed, and acceleration inputs are now unit-aware: they
   convert between the configured display unit and base units, update
   live when the display unit changes, and show the unit as a tooltip
+- The 2D and 3D canvas grids now follow the user's preferred length
+  unit: grid lines snap to multiples of that unit and axis labels are
+  displayed in it, updating live when the preference changes
 - Generic service registry and settings-page hooks so addons can
   publish key-resolved services and contribute their own pages to the
   Settings dialog

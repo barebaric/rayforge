@@ -205,8 +205,6 @@ class WorkSurface(WorldSurface):
         # can be rendered immediately when adopted
         self._update_pipeline_view_context()
 
-        get_context().config.changed.connect(self._on_config_changed)
-
     @property
     def doc(self):
         """Returns the current document from the editor."""
@@ -417,6 +415,7 @@ class WorkSurface(WorldSurface):
 
     def _on_config_changed(self, sender, **kwargs):
         """Re-renders ops when config settings change."""
+        super()._on_config_changed(sender, **kwargs)
         self._update_pipeline_view_context()
 
     def _on_doc_structure_changed(self, sender, **kwargs):

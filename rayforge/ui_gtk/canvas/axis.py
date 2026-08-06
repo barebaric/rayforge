@@ -43,8 +43,10 @@ class AxisRenderer:
         show_grid: bool = True,
         show_axis: bool = True,
         label_font_size: float = 12.0,
+        grid_unit_factor: float = 1.0,
     ):
         self.grid_size_mm: float = grid_size_mm
+        self.grid_unit_factor: float = grid_unit_factor
         self.width_mm: float = width_mm
         self.height_mm: float = height_mm
         self.margin_left_mm: float = margin_left_mm
@@ -156,6 +158,10 @@ class AxisRenderer:
         """
         Calculates an appropriate grid spacing in mm based on the current
         zoom level (pixels per mm).
+
+        The spacing is chosen as a "nice" number (1, 2, 5, 10, 20, 50,
+        100...) in the user's preferred length unit, then converted back to
+        mm so grid lines land on multiples of that unit.
         """
         if pixels_per_mm <= 1e-6:
             return self.grid_size_mm
@@ -164,20 +170,25 @@ class AxisRenderer:
         # minimum pixel spacing.
         target_grid_size_mm = self.min_grid_spacing_px / pixels_per_mm
 
-        # Find the next "nice" number (1, 2, 5, 10, 20, 50, 100...) that is
-        # greater than or equal to the target size.
-        power_of_10 = 10 ** math.floor(math.log10(target_grid_size_mm))
+        # Express the target spacing in the user's preferred length unit.
+        target_grid_size_unit = target_grid_size_mm / self.grid_unit_factor
+
+        # Find the next "nice" number (1, 2, 5, 10, 20, 50, 100...) in
+        # preferred-unit space that is greater than or equal to the target.
+        power_of_10 = 10 ** math.floor(math.log10(target_grid_size_unit))
 
         # Use corrected thresholds to round up to the nearest 1, 2, 5, or 10.
-        relative_size = target_grid_size_mm / power_of_10
+        relative_size = target_grid_size_unit / power_of_10
         if relative_size <= 1.0:
-            return power_of_10
+            nice_size_unit = power_of_10
         elif relative_size <= 2.0:
-            return 2 * power_of_10
+            nice_size_unit = 2 * power_of_10
         elif relative_size <= 5.0:
-            return 5 * power_of_10
+            nice_size_unit = 5 * power_of_10
         else:
-            return 10 * power_of_10
+            nice_size_unit = 10 * power_of_10
+
+        return nice_size_unit * self.grid_unit_factor
 
     def draw_grid_and_labels(
         self,
@@ -308,9 +319,11 @@ class AxisRenderer:
         origin_offset_mm: "Point3D",
     ):
         """Internal helper to draw the main XY axes and text labels."""
-        # Calculate precision needed to display fractional grid sizes
-        if grid_size_mm < 1:
-            precision = int(math.ceil(-math.log10(grid_size_mm)))
+        # Calculate precision needed to display fractional grid sizes,
+        # expressed in the user's preferred length unit.
+        grid_step_units = grid_size_mm / self.grid_unit_factor
+        if grid_step_units < 1.0 - 1e-9:
+            precision = int(math.ceil(-math.log10(grid_step_units)))
         else:
             precision = 0
 
@@ -409,6 +422,9 @@ class AxisRenderer:
             if self.x_axis_negative:
                 label_val = -label_val
 
+            # Display the label in the user's preferred length unit
+            label_val = label_val / self.grid_unit_factor
+
             # Check if this label is at the corner where the Y-axis is drawn
             if abs(world_x - world_x_for_y_labels) < 1e-3:
                 corner_x_label_value = label_val
@@ -442,6 +458,9 @@ class AxisRenderer:
 
             if self.y_axis_negative:
                 label_val = -label_val
+
+            # Display the label in the user's preferred length unit
+            label_val = label_val / self.grid_unit_factor
 
             # Check if this label is at the corner where X-axis is drawn
             is_at_corner = abs(world_y - x_axis_y) < 1e-3
@@ -527,6 +546,9 @@ class AxisRenderer:
 
     def set_grid_color(self, grid_color: Tuple[float, float, float, float]):
         self.grid_color = grid_color
+
+    def set_grid_unit_factor(self, grid_unit_factor: float):
+        self.grid_unit_factor = grid_unit_factor
 
     def set_label_font_size(self, label_font_size: float):
         self.label_font_size = label_font_size

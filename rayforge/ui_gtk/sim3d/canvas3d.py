@@ -23,6 +23,10 @@ from ...pipeline.artifact.handle import BaseArtifactHandle
 from ...pipeline.artifact.job import JobArtifact
 from ...pipeline.pipeline import Pipeline
 from ...shared.tasker import Task, task_mgr
+from ...shared.units.formatter import (
+    get_default_grid_step_mm,
+    get_preferred_unit_factor,
+)
 from ...simulator.machine_state import MachineState
 from ...simulator.op_player import OpPlayer, SnapshotBuilder
 from ...simulator.scene3d import (
@@ -317,9 +321,18 @@ class Canvas3D(Gtk.GLArea):
 
     def _on_config_changed(self, sender, **kwargs):
         """Updates renderer color LUTs when config settings change."""
-        if self._gl_initialized:
-            self._update_renderer_color_luts()
-            self.queue_render()
+        if not self._gl_initialized:
+            return
+        if self._axis_renderer:
+            new_step = get_default_grid_step_mm()
+            if not math.isclose(self._axis_renderer.grid_size_mm, new_step):
+                self.make_current()
+                self._axis_renderer.set_grid_size(new_step)
+            self._axis_renderer.set_grid_unit_factor(
+                get_preferred_unit_factor("length")
+            )
+        self._update_renderer_color_luts()
+        self.queue_render()
 
     def get_world_coords_on_plane(
         self, x: float, y: float, camera: Camera
@@ -537,6 +550,8 @@ class Canvas3D(Gtk.GLArea):
             self._axis_renderer = AxisRenderer3D(
                 self._viewport.width_mm,
                 self._viewport.depth_mm,
+                grid_size_mm=get_default_grid_step_mm(),
+                grid_unit_factor=get_preferred_unit_factor("length"),
                 font_family=font_family,
             )
             self._apply_extent_frame(self._viewport)
@@ -1924,7 +1939,11 @@ class Canvas3D(Gtk.GLArea):
         font_family = self._axis_renderer.font_family
         self._axis_renderer.cleanup()
         self._axis_renderer = AxisRenderer3D(
-            vp.width_mm, vp.depth_mm, font_family=font_family
+            vp.width_mm,
+            vp.depth_mm,
+            grid_size_mm=get_default_grid_step_mm(),
+            grid_unit_factor=get_preferred_unit_factor("length"),
+            font_family=font_family,
         )
         self._apply_extent_frame(vp)
         self._axis_renderer.init_gl()

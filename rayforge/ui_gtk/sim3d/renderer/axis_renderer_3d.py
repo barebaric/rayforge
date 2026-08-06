@@ -37,6 +37,7 @@ class AxisRenderer3D(BaseRenderer):
         height_mm: float,
         grid_size_mm: float = 10.0,
         font_family: Optional[str] = None,
+        grid_unit_factor: float = 1.0,
     ):
         """Initializes the AxisRenderer3D with scene dimensions.
 
@@ -46,11 +47,15 @@ class AxisRenderer3D(BaseRenderer):
             grid_size_mm: The spacing between grid lines in mm.
             font_family: The name of the font to use for labels
             (e.g. "Cantarell").
+            grid_unit_factor: The number of mm in one user-preferred length
+            unit. Grid spacing is expressed as a multiple of this factor and
+            labels are shown in the corresponding unit.
         """
         super().__init__()
         self.width_mm = float(width_mm)
         self.height_mm = float(height_mm)
         self.grid_size_mm = float(grid_size_mm)
+        self.grid_unit_factor = float(grid_unit_factor)
         self.font_family = font_family
 
         # Colors
@@ -101,6 +106,46 @@ class AxisRenderer3D(BaseRenderer):
     def set_grid_color(self, color: Tuple[float, float, float, float]):
         """Sets the color for the grid lines."""
         self.grid_color = color
+
+    def set_grid_size(self, grid_size_mm: float) -> None:
+        """Sets the grid spacing and rebuilds the grid geometry if needed."""
+        grid_size_mm = float(grid_size_mm)
+        if math.isclose(self.grid_size_mm, grid_size_mm):
+            return
+        self.grid_size_mm = grid_size_mm
+        if self.grid_vao:
+            self._clear_line_resources()
+            self._init_grid_and_axes()
+
+    def _clear_line_resources(self) -> None:
+        """Deletes the grid/axis/marker/frame buffers before rebuilding."""
+        self._delete_buffer_pair(self.grid_vao, self.grid_vbo)
+        self.grid_vao, self.grid_vbo = 0, 0
+        self._delete_buffer_pair(self.axes_vao, self.axes_vbo)
+        self.axes_vao, self.axes_vbo = 0, 0
+        self._delete_buffer_pair(self.wcs_marker_vao, self.wcs_marker_vbo)
+        self.wcs_marker_vao, self.wcs_marker_vbo = 0, 0
+        self._delete_buffer_pair(self.extent_frame_vao, self.extent_frame_vbo)
+        self.extent_frame_vao, self.extent_frame_vbo = 0, 0
+
+    def _delete_buffer_pair(self, vao: int, vbo: int) -> None:
+        """Deletes a VAO/VBO pair and untracks it from the owned lists."""
+        if vao:
+            try:
+                self._owned_vaos.remove(vao)
+            except ValueError:
+                pass
+            GL.glDeleteVertexArrays(1, [vao])
+        if vbo:
+            try:
+                self._owned_vbos.remove(vbo)
+            except ValueError:
+                pass
+            GL.glDeleteBuffers(1, [vbo])
+
+    def set_grid_unit_factor(self, grid_unit_factor: float) -> None:
+        """Sets the number of mm in one user-preferred length unit."""
+        self.grid_unit_factor = float(grid_unit_factor)
 
     def set_axis_color(self, color: Tuple[float, float, float, float]):
         """Sets the color for the main X and Y axis lines."""
@@ -438,6 +483,7 @@ class AxisRenderer3D(BaseRenderer):
             # This holds true regardless of origin corner (x_right) because
             # delta is defined in the flipped local space.
             label_val = -delta if x_negative else delta
+            label_val = label_val / self.grid_unit_factor
             label_text = str(int(round(label_val)))
 
             self.text_renderer.render_text(
@@ -474,6 +520,7 @@ class AxisRenderer3D(BaseRenderer):
 
             # Label value logic: same as X
             label_val = -delta if y_negative else delta
+            label_val = label_val / self.grid_unit_factor
             label_text = str(int(round(label_val)))
 
             self.text_renderer.render_text(
