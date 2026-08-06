@@ -1,6 +1,7 @@
 """Core row widgets for step settings."""
 
 from .combo_row import ComboRow
+from .coolant_row import CoolantRow
 from .cut_speed_row import CutSpeedRow
 from .head_row import HeadRow
 from .slider_row import SliderRow
@@ -13,6 +14,7 @@ __all__ = [
     "StepRow",
     "SpinRow",
     "ComboRow",
+    "CoolantRow",
     "SwitchRow",
     "SliderRow",
     "CutSpeedRow",

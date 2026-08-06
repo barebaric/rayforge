@@ -19,8 +19,10 @@ from raygeo.ops import Ops
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.part import Part
+from raygeo.ops.state import CoolantMode
 
 from ..machine.models.head import Head
+from ..machine.models.spindle import SpindleHead
 from ..pipeline.transformer.registry import transformer_registry
 from .capability import MachineCapability, StepCapability
 from .item import DocItem
@@ -36,6 +38,11 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+_COOLANT_MODE_BY_NAME = {
+    mode.name: mode
+    for mode in (CoolantMode.OFF, CoolantMode.FLOOD, CoolantMode.MIST)
+}
 
 
 class Step(DocItem, ABC):
@@ -97,6 +104,9 @@ class Step(DocItem, ABC):
         self.max_cut_speed = 10000
         self.travel_speed: int = 5000
         self.max_travel_speed = 10000
+
+        # Coolant method used while this step runs.
+        self.coolant_method: CoolantMode = CoolantMode.OFF
 
         # Forward compatibility: store unknown attributes
         self.extra: Dict[str, Any] = {}
@@ -247,6 +257,7 @@ class Step(DocItem, ABC):
             "max_cut_speed": self.max_cut_speed,
             "travel_speed": self.travel_speed,
             "max_travel_speed": self.max_travel_speed,
+            "coolant_method": self.coolant_method.name,
             "pixels_per_mm": list(self.pixels_per_mm),
         }
 
@@ -257,7 +268,10 @@ class Step(DocItem, ABC):
         bases (e.g. :class:`LaserStep`) override this to stamp their
         machine settings.
         """
-        return Ops()
+        ops = Ops()
+        if self.coolant_method is not CoolantMode.OFF:
+            ops.set_coolant(self.coolant_method)
+        return ops
 
     def apply_import_settings(self, settings: Dict[str, Any]) -> None:
         """Apply importer-provided settings that this step owns.
@@ -298,6 +312,7 @@ class Step(DocItem, ABC):
             "max_cut_speed": self.max_cut_speed,
             "travel_speed": self.travel_speed,
             "max_travel_speed": self.max_travel_speed,
+            "coolant_method": self.coolant_method.name,
             "children": [child.to_dict() for child in self.children],
         }
         result.update(self.extra)
@@ -333,6 +348,7 @@ class Step(DocItem, ABC):
                 "max_cut_speed",
                 "travel_speed",
                 "max_travel_speed",
+                "coolant_method",
                 "children",
             }
         )
@@ -413,6 +429,10 @@ class Step(DocItem, ABC):
         )
         step.cut_speed = data.get("cut_speed", step.cut_speed)
         step.travel_speed = data.get("travel_speed", step.travel_speed)
+        raw_coolant = data.get("coolant_method", CoolantMode.OFF.name)
+        step.coolant_method = _COOLANT_MODE_BY_NAME.get(
+            raw_coolant, CoolantMode.OFF
+        )
         step.extra = extra
         return step
 
@@ -538,6 +558,31 @@ class Step(DocItem, ABC):
         if self.travel_speed != speed:
             self.travel_speed = int(speed)
             self.updated.send(self)
+
+    def set_coolant_method(self, mode: CoolantMode):
+        """Sets the coolant method used while this step runs."""
+        if self.coolant_method is not mode:
+            self.coolant_method = mode
+            self.updated.send(self)
+
+    def get_unsupported_coolant_methods(
+        self, machine: "Machine"
+    ) -> Tuple[CoolantMode, ...]:
+        """Coolant methods this step uses that the machine's selected
+        head does not support.
+
+        ``CoolantMode.OFF`` is always supported, so it is never
+        reported. Non-spindle heads (e.g. laser heads) have no coolant
+        methods, so nothing is reported for them either.
+        """
+        if self.coolant_method is CoolantMode.OFF:
+            return ()
+        head = self.get_selected_head(machine)
+        if not isinstance(head, SpindleHead):
+            return ()
+        if self.coolant_method in head.cooling_methods:
+            return ()
+        return (self.coolant_method,)
 
     def get_operation_mode_short(self) -> Optional[str]:
         return None

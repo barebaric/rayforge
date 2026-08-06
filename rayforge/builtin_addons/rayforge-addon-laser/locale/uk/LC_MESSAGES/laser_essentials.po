@@ -624,8 +624,8 @@ msgid ""
 "Distance between power samples along scan line. Lower values improve "
 "accuracy, but increase output size. "
 msgstr ""
-"Відстань між зразками потужності вздовж лінії сканування. Нижчі значення"
-"підвищують точність, але збільшують розмір результату."
+"Відстань між зразками потужності вздовж лінії сканування. Нижчі "
+"значенняпідвищують точність, але збільшують розмір результату."
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Dot Width Correction"
@@ -646,8 +646,7 @@ msgstr "Двоспрямований зсув сканування"
 msgid ""
 "Corrects X misalignment between left-to-right and right-to-left raster passes"
 msgstr ""
-"Виправляє зміщення по X між растрними проходами зліва направо та справа"
-"наліво"
+"Виправляє зміщення по X між растрними проходами зліва направо та справаналіво"
 
 #: laser_essentials/widgets/raster_page.py
 #: laser_essentials/steps/raster_step.py

@@ -3,16 +3,23 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from raygeo.geo import Matrix
+from raygeo.ops.state import CoolantMode
 
 from rayforge.core.doc import Doc
 from rayforge.core.group import Group
 from rayforge.core.layer import Layer
 from rayforge.core.source_asset import SourceAsset
+from rayforge.core.step import Step
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
-from rayforge.doceditor.file_cmd import FileCmd, ImportAction, PreviewResult
+from rayforge.doceditor.file_cmd import (
+    FileCmd,
+    ImportAction,
+    PreviewResult,
+    _unsupported_coolant_labels,
+)
 from rayforge.image import (
     ImporterFeature,
     ImportManifest,
@@ -22,6 +29,8 @@ from rayforge.image import (
     ParsingResult,
 )
 from rayforge.image.svg.renderer import SVG_RENDERER
+from rayforge.machine.models.machine import Machine
+from rayforge.machine.models.spindle import SpindleHead
 from rayforge.pipeline.coordspace import (
     AxisDirection,
     MachineSpace,
@@ -44,6 +53,60 @@ def mock_editor(context_initializer):
 def file_cmd(mock_editor):
     """Provides a FileCmd instance."""
     return FileCmd(mock_editor, mock_editor.task_manager)
+
+
+def _doc_with_mill_step():
+    """A doc whose active layer workflow holds one mill step."""
+    doc = Doc()
+    workflow = doc.active_layer.workflow
+    step = Step(typelabel="Mill", name="Mill Step")
+    assert workflow is not None
+    workflow.add_child(step)
+    return doc, step
+
+
+def _spindle_machine(context, cooling_methods):
+    """A machine with a single spindle head supporting the given methods."""
+    machine = Machine(context)
+    machine.heads.clear()
+    head = SpindleHead()
+    head.cooling_methods = tuple(cooling_methods)
+    machine.add_head(head)
+    return machine
+
+
+def test_unsupported_coolant_labels_without_machine(context_initializer):
+    doc, step = _doc_with_mill_step()
+    step.set_coolant_method(CoolantMode.MIST)
+    assert _unsupported_coolant_labels(doc, None) == []
+
+
+def test_unsupported_coolant_labels_supported_method(context_initializer):
+    doc, step = _doc_with_mill_step()
+    machine = _spindle_machine(context_initializer, [CoolantMode.FLOOD])
+    step.set_coolant_method(CoolantMode.FLOOD)
+    assert _unsupported_coolant_labels(doc, machine) == []
+
+
+def test_unsupported_coolant_labels_reports_missing_method(
+    context_initializer,
+):
+    doc, step = _doc_with_mill_step()
+    machine = _spindle_machine(context_initializer, [CoolantMode.FLOOD])
+    step.set_coolant_method(CoolantMode.MIST)
+    assert _unsupported_coolant_labels(doc, machine) == ["Mist"]
+
+
+def test_unsupported_coolant_labels_dedupes(context_initializer):
+    doc, step = _doc_with_mill_step()
+    step2 = Step(typelabel="Mill", name="Second Mill")
+    workflow = doc.active_layer.workflow
+    assert workflow is not None
+    workflow.add_child(step2)
+    machine = _spindle_machine(context_initializer, [])
+    step.set_coolant_method(CoolantMode.FLOOD)
+    step2.set_coolant_method(CoolantMode.MIST)
+    assert _unsupported_coolant_labels(doc, machine) == ["Flood", "Mist"]
 
 
 @pytest.fixture

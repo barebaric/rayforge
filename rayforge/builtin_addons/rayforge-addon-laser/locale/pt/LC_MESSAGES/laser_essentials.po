@@ -627,8 +627,8 @@ msgid ""
 "Distance between power samples along scan line. Lower values improve "
 "accuracy, but increase output size. "
 msgstr ""
-"Distância entre amostras de potência ao longo da linha de varredura."
-"Valores menores melhoram a precisão, mas aumentam o tamanho da saída."
+"Distância entre amostras de potência ao longo da linha de varredura.Valores "
+"menores melhoram a precisão, mas aumentam o tamanho da saída."
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Dot Width Correction"
@@ -649,8 +649,8 @@ msgstr "Deslocamento de varredura bidirecional"
 msgid ""
 "Corrects X misalignment between left-to-right and right-to-left raster passes"
 msgstr ""
-"Corrige o desalinhamento em X entre passadas de rasterização da esquerda"
-"para a direita e da direita para a esquerda"
+"Corrige o desalinhamento em X entre passadas de rasterização da esquerdapara "
+"a direita e da direita para a esquerda"
 
 #: laser_essentials/widgets/raster_page.py
 #: laser_essentials/steps/raster_step.py
