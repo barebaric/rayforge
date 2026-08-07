@@ -117,3 +117,13 @@ def test_step_dispatch_kinds(ui_context_initializer):
 def test_step_no_state_returns_false(ui_context_initializer):
     controller, _, _, _, _, _ = _make_controller()
     assert controller._step() is False
+
+
+@pytest.mark.ui
+def test_is_dirty_tracks_pending_upload(ui_context_initializer):
+    controller, _, _, _, _, _ = _make_controller()
+    assert controller.is_dirty is False
+    controller.mark_artifact_dirty()
+    assert controller.is_dirty is True
+    controller.cancel()
+    assert controller.is_dirty is False

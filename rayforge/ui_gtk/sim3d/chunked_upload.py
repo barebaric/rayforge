@@ -58,6 +58,11 @@ class ChunkedUploadController:
         """Mark the compiled artifact as needing a (re)upload."""
         self._artifact_gl_dirty = True
 
+    @property
+    def is_dirty(self) -> bool:
+        """True while a compiled artifact upload is still pending."""
+        return self._artifact_gl_dirty
+
     def process_pending(self):
         """Start a chunked upload when the artifact is GL-dirty."""
         if self._artifact_gl_dirty:
