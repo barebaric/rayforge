@@ -4,7 +4,7 @@ import time
 from typing import TYPE_CHECKING, Dict, Optional
 
 import numpy as np
-from gi.repository import Gdk, GLib, Gtk, Pango
+from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
 from raygeo.ops import Ops
 
@@ -30,6 +30,7 @@ from ...simulator.scene3d import (
 )
 from .camera import ViewDirection
 from .camera_controller import CameraController
+from .chunked_upload import ChunkedUploadController
 from .gl_utils import RenderContext, rotation_4x4
 from .renderer.scene_renderer import SceneRenderer
 from .theme_resolver import ThemeResolver
@@ -71,8 +72,6 @@ class Canvas3D(Gtk.GLArea):
         self._show_grid = True
         self._gl_initialized = False
         self._scene_gl_dirty = False
-        self._artifact_gl_dirty = False
-        self._upload_state = None
 
         self._theme_resolver = ThemeResolver(
             self,
@@ -80,6 +79,17 @@ class Canvas3D(Gtk.GLArea):
             get_machine=lambda: self._context.machine,
             get_gl_initialized=lambda: self._gl_initialized,
             request_render=self.queue_render,
+        )
+
+        self._upload_ctrl = ChunkedUploadController(
+            self._scene,
+            get_artifact=lambda: self._compiled_artifact,
+            get_show_travel_moves=lambda: self._show_travel_moves,
+            get_gl_initialized=lambda: self._gl_initialized,
+            make_current=self.make_current,
+            request_render=self.queue_render,
+            on_luts_required=self._theme_resolver.update_renderer_color_luts,
+            on_op_player_required=self._on_op_player_required,
         )
 
         self._cam_ctrl = CameraController(
@@ -236,7 +246,7 @@ class Canvas3D(Gtk.GLArea):
                 )
                 self._current_job_handle = None
                 self._compiled_artifact = None
-                self._artifact_gl_dirty = True
+                self._upload_ctrl.mark_artifact_dirty()
                 self.queue_render()
             else:
                 logger.debug("Pipeline has settled. Updating 3D scene.")
@@ -260,7 +270,7 @@ class Canvas3D(Gtk.GLArea):
                 )
                 self._current_job_handle = None
                 self._compiled_artifact = None
-                self._artifact_gl_dirty = True
+                self._upload_ctrl.mark_artifact_dirty()
                 self.queue_render()
 
     def _on_style_changed(self, widget, gparam):
@@ -335,6 +345,7 @@ class Canvas3D(Gtk.GLArea):
             machine.wcs_updated.disconnect(self._on_wcs_updated)
             machine.changed.disconnect(self._on_wcs_updated)
         self._context.config.changed.disconnect(self._on_config_changed)
+        self._upload_ctrl.cancel()
         try:
             self.make_current()
             if self._scene_preparation_task:
@@ -392,87 +403,12 @@ class Canvas3D(Gtk.GLArea):
             machine = self._context.machine
             if self._scene.zone_renderer and machine:
                 self._scene.update_zones_from_machine(machine)
-        if self._artifact_gl_dirty:
-            self._artifact_gl_dirty = False
-            self._start_chunked_artifact_upload()
+        self._upload_ctrl.process_pending()
 
-    def _start_chunked_artifact_upload(self):
-        if not self._compiled_artifact:
-            for group in self._scene.layer_groups:
-                group.ops_renderer.clear()
-            if self._scene.texture_renderer:
-                self._scene.texture_renderer.clear()
-            self.queue_render()
-            return
-
-        if not self._gl_initialized:
-            return
-
-        self.make_current()
-
-        # Upload the power colour LUTs before any vertex data. The chunked
-        # upload runs on idle callbacks, which can be pre-empted by a
-        # redraw between items; a redraw that renders powered lines against
-        # an uninitialised LUT would draw them at full brightness.
-        upload_items = self._scene.prepare_chunked_upload(
-            self._compiled_artifact, self._show_travel_moves
-        )
-
-        self._upload_state = {
-            "items": upload_items,
-            "index": 0,
-        }
-        GLib.idle_add(self._step_chunked_upload)
-
-    def _step_chunked_upload(self) -> bool:
-        if self._upload_state is None:
-            return False
-
-        items = self._upload_state["items"]
-        idx = self._upload_state["index"]
-
-        if idx >= len(items):
-            self._upload_state = None
-            self.queue_render()
-            return False
-
-        item = items[idx]
-        self._upload_state["index"] = idx + 1
-
-        try:
-            kind = item[0]
-
-            if kind == "ops":
-                _, group, vl, show_travel_moves = item
-                group.ops_renderer.update_from_vertex_layer(
-                    vl, show_travel_moves
-                )
-
-            elif kind == "overlay":
-                _, group, ol = item
-                group.ring_renderer.update_from_overlay_layer(ol)
-
-            elif kind == "textures":
-                _, artifact = item
-                if self._scene.texture_renderer:
-                    self._scene.texture_renderer.update_from_artifact(artifact)
-
-            elif kind == "color_luts":
-                self._theme_resolver.update_renderer_color_luts()
-
-            elif kind == "op_player":
-                self._build_op_player_async()
-                if self._compiled_artifact and self._op_player:
-                    self._scene.extract_playback_offsets(
-                        self._compiled_artifact
-                    )
-
-        except Exception:
-            logger.exception("[CANVAS3D] Error during chunked upload")
-            self._upload_state = None
-            return False
-
-        return True
+    def _on_op_player_required(self):
+        self._build_op_player_async()
+        if self._compiled_artifact and self._op_player:
+            self._scene.extract_playback_offsets(self._compiled_artifact)
 
     def _build_op_player_async(self):
         ops = self._get_ops_for_playback()
@@ -769,7 +705,7 @@ class Canvas3D(Gtk.GLArea):
                 self._compiled_artifact = None
                 self._op_player = None
                 logger.error("[CANVAS3D] Scene preparation task failed.")
-                self._artifact_gl_dirty = True
+                self._upload_ctrl.mark_artifact_dirty()
                 self.queue_render()
             return
 
@@ -782,7 +718,7 @@ class Canvas3D(Gtk.GLArea):
                 "artifact (possibly empty scene)."
             )
             self._compiled_artifact = None
-            self._artifact_gl_dirty = True
+            self._upload_ctrl.mark_artifact_dirty()
             self.queue_render()
             return
 
@@ -792,13 +728,13 @@ class Canvas3D(Gtk.GLArea):
                 f"{type(artifact).__name__}"
             )
             self._compiled_artifact = None
-            self._artifact_gl_dirty = True
+            self._upload_ctrl.mark_artifact_dirty()
             self.queue_render()
             return
 
         logger.debug("[CANVAS3D] Scene compilation finished.")
         self._compiled_artifact = artifact
-        self._artifact_gl_dirty = True
+        self._upload_ctrl.mark_artifact_dirty()
         self.queue_render()
 
     def _update_renderers_from_artifact(self):
