@@ -88,7 +88,7 @@ class LaserBeamRenderer(BaseRenderer):
             ctx.kinematics.laser_light_pos = None
             return
 
-        state = op_player.state
+        state = op_player.render_state()
         kinematics = ctx.kinematics
         if ctx.viewport is None or not kinematics.head_positions:
             ctx.kinematics.laser_light_pos = None

@@ -1,5 +1,5 @@
 from bisect import bisect_right
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from blinker import Signal
 from raygeo.ops import Ops
@@ -77,10 +77,20 @@ class OpPlayer:
         self._rotary_axis: Optional[Axis] = None
         self._prev_layer_uid: Optional[str] = None
         self.state = self._create_home_state()
+        self._home_axes: Dict[Axis, float] = dict(self.state.axes)
         self.layer_changed = Signal()
         self._snapshots: List[
             Tuple[int, MachineState, Axis, Optional[Axis]]
         ] = []
+        # Playback time model: feed/rapid rates in mm/min, accel in
+        # mm/s^2. Defaults match the raygeo cumulative-time index.
+        self._play_params: Tuple[float, float, float] = (
+            1000.0,
+            3000.0,
+            1000.0,
+        )
+        self._sim_time: float = 0.0
+        self._playback: Tuple[int, float] = (0, 0.0)
         if build_snapshots:
             self._build_snapshots()
 
@@ -92,6 +102,112 @@ class OpPlayer:
     def set_snapshots(self, snapshots):
         """Replaces the seek-acceleration snapshots from an async build."""
         self._snapshots = snapshots
+
+    def set_playback_params(
+        self,
+        feed_mm_min: float,
+        rapid_mm_min: float,
+        accel_mm_s2: float,
+    ):
+        """Set the machine parameters for the playback time model.
+
+        Feed and rapid rates are in mm/min (the unit stored in the ops),
+        acceleration in mm/s^2. These mirror the arguments of the raygeo
+        cumulative-time index.
+        """
+        self._play_params = (
+            float(feed_mm_min),
+            float(rapid_mm_min),
+            float(accel_mm_s2),
+        )
+
+    def find_index_at_sim_time(self, t: float) -> int:
+        """Command index in effect at simulated time *t* (seconds)."""
+        return self.ops.find_index_at_time(t, *self._play_params)
+
+    def get_cumulative_time(self, idx: int) -> float:
+        """Cumulative simulated time (seconds) up to command *idx*."""
+        return self.ops.get_cumulative_time_at(idx, *self._play_params)
+
+    def set_sim_time(self, t: float) -> None:
+        """Set the simulated playback time and cache the playhead progress.
+
+        The playhead is described as the command currently being
+        executed plus the fraction of its duration that has elapsed.
+        """
+        self._sim_time = float(t)
+        self._playback = self._compute_playback_progress(self._sim_time)
+
+    def playback_progress(self) -> Tuple[int, float]:
+        """Return ``(in_progress_command_index, fraction)`` for the
+        current simulated time.
+
+        ``fraction`` is in ``[0, 1]``; it is 0 while the playhead sits
+        exactly on a command boundary and 1.0 once everything is done.
+        """
+        return self._playback
+
+    def _compute_playback_progress(self, t: float) -> Tuple[int, float]:
+        n = self.ops.len()
+        if n == 0:
+            return (0, 0.0)
+        idx = self.find_index_at_sim_time(t)
+        t_end = self.get_cumulative_time(idx)
+        if t < t_end:
+            # The clamped index has not completed yet (t < cum[0]).
+            span = self.get_cumulative_time(0)
+            if span <= 0.0:
+                return (0, 0.0)
+            return (0, max(0.0, min(1.0, t / span)))
+        if idx + 1 >= n:
+            return (idx, 1.0)
+        span = self.get_cumulative_time(idx + 1) - t_end
+        if span <= 0.0:
+            return (idx + 1, 0.0)
+        frac = max(0.0, min(1.0, (t - t_end) / span))
+        return (idx + 1, frac)
+
+    def render_state(self) -> MachineState:
+        """State for rendering, with axes interpolated within the
+        in-progress command during playback.
+
+        ``laser_on`` follows the in-progress command so the laser beam
+        fires for the whole duration of a cut (not just after the cut's
+        command completes). Returns the plain machine state when paused
+        or when the in-progress command does not move (state changes,
+        dwells), so stepped frames render exactly like the
+        non-interpolated path.
+        """
+        p, frac = self._playback
+        if frac <= 0.0 or p >= self.ops.len():
+            return self.state
+        if self.ops.category(p) != CommandCategory.MOVING:
+            return self.state
+        end = self.ops.endpoint(p)
+        if p == 0:
+            # Nothing has completed yet: the head starts at home.
+            start_axes = self._home_axes
+        else:
+            start_axes = self.state.axes
+        axes = dict(start_axes)
+        for axis, value in (
+            (Axis.X, end[0]),
+            (Axis.Y, end[1]),
+            (Axis.Z, end[2]),
+        ):
+            axes[axis] = axes.get(axis, 0.0) + frac * (
+                value - axes.get(axis, 0.0)
+            )
+        ea = self.ops.extra_axes(p)
+        if ea:
+            for axis, value in ea.items():
+                axes[axis] = axes.get(axis, 0.0) + frac * (
+                    value - axes.get(axis, 0.0)
+                )
+        st = MachineState(axis_letters=axes.keys())
+        st.axes = axes
+        st.laser_on = self.ops.command_type(p) != CommandType.MOVE_TO
+        return st
 
     def _build_snapshots(self):
         self._snapshots = build_snapshots(self.ops, self._machine, self._doc)

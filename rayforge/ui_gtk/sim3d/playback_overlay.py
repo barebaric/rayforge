@@ -23,8 +23,23 @@ class PlaybackPlayer(Protocol):
 
     def seek_to_fraction(self, fraction: float) -> None: ...
 
+    def find_index_at_sim_time(self, t: float) -> int: ...
+
+    def get_cumulative_time(self, idx: int) -> float: ...
+
+    def set_sim_time(self, t: float) -> None: ...
+
+    def playback_progress(self) -> tuple[int, float]: ...
+
 
 SPEED_OPTIONS = [1, 2, 4, 8, 16]
+
+# Wall-clock interval between playback ticks (~60 fps, matching the
+# display frame rate). The simulated clock advances by this amount per
+# tick, scaled by the speed multiplier. Every tick queues a render so
+# the interpolated playhead is redrawn continuously, not only when the
+# slider value (command index) changes.
+TICK_SECONDS = 1.0 / 60.0
 
 css = """
 .playback-overlay {
@@ -47,7 +62,8 @@ class PlaybackOverlay(Gtk.Box):
     """
     Playback controls (play/pause button + slider + speed button)
     shown as a bar below the 3D canvas. Slider drives OpPlayer.seek();
-    play button starts a 24 fps timer that advances the playhead.
+    play button starts a ~24 fps timer that advances the playhead by
+    simulated machine time (speed multiplier scales real machine speed).
     """
 
     step_changed = Signal()
@@ -112,6 +128,8 @@ class PlaybackOverlay(Gtk.Box):
         self._player: Optional[PlaybackPlayer] = None
         self._is_syncing = False
         self._suppress_seek = False
+        self._tick_driving_slider = False
+        self._sim_time: float = 0.0
 
         self.connect("destroy", self._on_destroy)
 
@@ -155,9 +173,16 @@ class PlaybackOverlay(Gtk.Box):
         return -1
 
     def seek(self, index: int):
-        """Seek the OpPlayer to the given command index."""
+        """Seek the OpPlayer to the given command index.
+
+        While paused, the simulated clock is resynced to the new
+        position so that resuming play continues from there.
+        """
         if self._player:
             self._player.seek(index)
+            if not self._playing:
+                self._sim_time = self._player.get_cumulative_time(index)
+                self._player.set_sim_time(self._sim_time)
             if self._canvas:
                 self._canvas.queue_render()
 
@@ -169,6 +194,11 @@ class PlaybackOverlay(Gtk.Box):
                 len(self._player.ops),
                 self._player.current_index,
             )
+            if not self._playing:
+                self._sim_time = self._player.get_cumulative_time(
+                    self._player.current_index
+                )
+                self._player.set_sim_time(self._sim_time)
             if self._canvas:
                 self._canvas.queue_render()
 
@@ -206,6 +236,16 @@ class PlaybackOverlay(Gtk.Box):
             index = int(slider.get_value())
             if self.current_index != index:
                 self.seek(index)
+        # A user-initiated scrub while playing resyncs the simulated
+        # clock to the new position so the next tick continues from
+        # there instead of snapping back to the pre-drag playhead.
+        # Tick-driven slider moves set ``_tick_driving_slider`` so they
+        # are not mistaken for user scrubs.
+        if self._playing and self._player and not self._tick_driving_slider:
+            self._sim_time = self._player.get_cumulative_time(
+                int(slider.get_value())
+            )
+            self._player.set_sim_time(self._sim_time)
         if not self._is_syncing:
             self.step_changed.send(self, ops_index=int(slider.get_value()))
 
@@ -239,12 +279,22 @@ class PlaybackOverlay(Gtk.Box):
         current = int(self._slider.get_value())
         if max_idx >= 0 and current >= max_idx:
             self._slider.set_value(0)
+            current = 0
+        # Resync the simulated clock to the current playhead so that
+        # playback continues from wherever the user left the slider.
+        if self._player:
+            self._sim_time = self._player.get_cumulative_time(current)
+            self._player.set_sim_time(self._sim_time)
+        else:
+            self._sim_time = 0.0
         self._playing = True
         self._play_button.set_child(self._pause_icon)
         self._play_button.set_tooltip_text(_("Pause simulation"))
         if self._timer_id is not None:
             GLib.source_remove(self._timer_id)
-        self._timer_id = GLib.timeout_add(42, self._on_tick)
+        self._timer_id = GLib.timeout_add(
+            int(TICK_SECONDS * 1000), self._on_tick
+        )
 
     def _stop_playback(self):
         self._playing = False
@@ -260,21 +310,31 @@ class PlaybackOverlay(Gtk.Box):
         if not self._canvas or not self._canvas.get_realized():
             self._stop_playback()
             return False
-        if self.command_count == 0:
+        if not self._player or self.command_count == 0:
             self._stop_playback()
             return False
 
+        # Advance the simulated clock by real time times the speed
+        # multiplier, then land on the command in effect at that time.
+        multiplier = SPEED_OPTIONS[self._speed_index]
+        self._sim_time += TICK_SECONDS * multiplier
+        self._player.set_sim_time(self._sim_time)
         max_idx = self.command_count - 1
-        current = int(self._slider.get_value())
-        speed = SPEED_OPTIONS[self._speed_index]
-        next_val = current + speed
+        target = self._player.find_index_at_sim_time(self._sim_time)
 
-        if next_val >= max_idx:
+        if target >= max_idx:
+            self._tick_driving_slider = True
             self._slider.set_value(max_idx)
+            self._tick_driving_slider = False
             self._stop_playback()
             return False
 
-        self._slider.set_value(next_val)
+        self._tick_driving_slider = True
+        self._slider.set_value(target)
+        self._tick_driving_slider = False
+        # The slider value only changes at command boundaries; within a
+        # command the playhead still moves, so always redraw.
+        self._canvas.queue_render()
         return True
 
     def _on_speed_clicked(self, button):

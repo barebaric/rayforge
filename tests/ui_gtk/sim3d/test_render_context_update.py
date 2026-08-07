@@ -107,6 +107,7 @@ def test_update_rotary_branch_applies_rotation():
     op_player = MagicMock()
     op_player.rotary_axis = Axis.A
     op_player.state.axes = {Axis.A: 90.0}
+    op_player.render_state.return_value = op_player.state
     op_player.get_current_layer.return_value = None
 
     scene = _make_scene(had_rotary_layers=True)
@@ -139,6 +140,7 @@ def test_update_populates_machine_kinematics():
     op_player = MagicMock()
     op_player.rotary_axis = Axis.A
     op_player.state.axes = {Axis.A: 90.0}
+    op_player.render_state.return_value = op_player.state
     current_layer = MagicMock()
     current_layer.rotary_diameter = 30.0
     op_player.get_current_layer.return_value = current_layer
@@ -194,6 +196,7 @@ def test_update_prefers_playback_assembly_over_machine():
     op_player = MagicMock()
     op_player.rotary_axis = Axis.A
     op_player.state.axes = {Axis.A: 30.0}
+    op_player.render_state.return_value = op_player.state
 
     ctx = _update(
         op_player=op_player,
