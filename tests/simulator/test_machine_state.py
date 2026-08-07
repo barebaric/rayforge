@@ -117,6 +117,8 @@ def test_copy_preserves_state_fields():
     state.cut_speed = 1200
     state.travel_speed = 4000
     state.active_laser_uid = "laser-1"
+    state.frequency = 20000
+    state.pulse_width = 0.5
 
     snapshot = state.copy()
 
@@ -125,6 +127,8 @@ def test_copy_preserves_state_fields():
     assert snapshot.cut_speed == 1200
     assert snapshot.travel_speed == 4000
     assert snapshot.active_laser_uid == "laser-1"
+    assert snapshot.frequency == 20000
+    assert snapshot.pulse_width == 0.5
 
 
 def test_mixed_ops_walk():
