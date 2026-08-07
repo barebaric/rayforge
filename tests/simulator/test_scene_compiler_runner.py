@@ -56,6 +56,24 @@ def test_compile_from_job_happy_path():
 
     assert result is not None
     assert len(result.vertex_layers) == 1
+    assert result.generation_id == 1
+
+
+def test_compile_from_job_propagates_generation_id():
+    store = ArtifactStore()
+    artifact = JobArtifact(
+        ops=_make_ops(),
+        distance=0.0,
+        generation_id=42,
+    )
+    handle = store.put(artifact, creator_tag="test")
+
+    result = compile_scene_from_job(
+        store, handle.to_dict(), _make_config_dict()
+    )
+
+    assert result is not None
+    assert result.generation_id == 42
 
 
 def test_compile_from_job_uses_mapped_ops():

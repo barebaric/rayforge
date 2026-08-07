@@ -165,6 +165,7 @@ def _wrap_compiled_scene(
     raw,
     ops: Ops,
     config: RenderConfig3D,
+    generation_id: int = 0,
 ) -> CompiledSceneArtifact:
     vertex_layers: List[VertexLayer] = []
     overlay_layers: List[ScanlineOverlayLayer] = []
@@ -194,7 +195,7 @@ def _wrap_compiled_scene(
     texture_layers = _generate_texture_layers(ops, layer_infos, config)
 
     return CompiledSceneArtifact(
-        generation_id=0,
+        generation_id=generation_id,
         vertex_layers=vertex_layers,
         texture_layers=texture_layers,
         overlay_layers=overlay_layers,
@@ -209,12 +210,15 @@ def compile_scene(
     ops: Ops,
     config: RenderConfig3D,
     cancel_check: Optional[Callable[[], bool]] = None,
+    generation_id: int = 0,
 ) -> CompiledSceneArtifact:
     if cancel_check is not None and cancel_check():
         raise RuntimeError("Cancelled")
 
     w2v, layer_configs = _build_scene_spec(config)
     raw = ops.compile_scene_3d(w2v, layer_configs)
-    artifact = _wrap_compiled_scene(raw, ops, config)
+    artifact = _wrap_compiled_scene(
+        raw, ops, config, generation_id=generation_id
+    )
 
     return artifact

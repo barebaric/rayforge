@@ -44,7 +44,7 @@ def compile_scene_from_job(
         return None
 
     t_start = time.perf_counter()
-    compiled = compile_scene(ops, config)
+    compiled = compile_scene(ops, config, generation_id=artifact.generation_id)
     elapsed = (time.perf_counter() - t_start) * 1000
     logger.debug(f"Compilation took {elapsed:.1f}ms (commands={len(ops)})")
     return compiled
