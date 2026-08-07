@@ -28,6 +28,7 @@ def test_scene_renderer_constructs_children():
     assert scene.texture_shader is None
     assert scene.background_shader is None
     assert scene.shader_set is None
+    assert scene.render_registry == []
 
 
 def test_scene_renderer_init_gl_creates_children():
@@ -81,3 +82,38 @@ def test_scene_renderer_init_gl_creates_children():
     mock_text.assert_called_once()
     mock_texture.assert_called_once()
     mock_background.assert_called_once()
+
+    renderers = [r for r, _ in scene.render_registry]
+    assert renderers == [
+        scene.background_renderer,
+        scene.axis_renderer,
+        scene.zone_renderer,
+        scene.texture_renderer,
+        scene.laser_beam_renderer,
+    ]
+
+
+def test_render_registry_orders_rings_after_texture():
+    scene = SceneRenderer()
+
+    group = MagicMock()
+    group.is_rotary = False
+    scene.layer_groups = [group]
+    scene.cylinder_renderers = {25.0: MagicMock()}
+    scene.model_renderers = [MagicMock()]
+    scene.texture_renderer = MagicMock()
+
+    scene._rebuild_registry()
+
+    types = [
+        r.__class__.__name__ if hasattr(r, "__class__") else type(r).__name__
+        for r, _ in scene.render_registry
+    ]
+    assert "RingPassAdapter" in types
+    ring_index = types.index("RingPassAdapter")
+    texture_index = next(
+        i
+        for i, (r, _) in enumerate(scene.render_registry)
+        if r is scene.texture_renderer
+    )
+    assert ring_index > texture_index

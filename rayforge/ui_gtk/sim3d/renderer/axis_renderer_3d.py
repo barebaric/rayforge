@@ -341,6 +341,9 @@ class AxisRenderer3D(BaseRenderer):
         ):
             return
 
+        if not ctx.show_grid:
+            return
+
         line_shader = shaders.main
         text_shader = shaders.text
         if line_shader is None or text_shader is None:

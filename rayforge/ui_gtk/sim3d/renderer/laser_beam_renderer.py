@@ -87,11 +87,13 @@ class LaserBeamRenderer(BaseRenderer):
         op_player = ctx.op_player
         machine = ctx.machine
         if op_player is None or machine is None:
+            ctx.laser_light_pos = None
             return
 
         state = op_player.state
         viewport = ctx.viewport
         if viewport is None:
+            ctx.laser_light_pos = None
             return
 
         ra = ctx.rotary_axis
@@ -139,6 +141,8 @@ class LaserBeamRenderer(BaseRenderer):
                 beam_pos = head_pos.copy()
             self._beams.append((beam_pos[:3], beam_height, beam_color))
             self.laser_light_pos = beam_pos[:3].astype(np.float32)
+
+        ctx.laser_light_pos = self.laser_light_pos
 
     def render(self, ctx: RenderContext, shaders: ShaderSet):
         if not self.vao:

@@ -4,6 +4,7 @@ import logging
 from typing import Any, List, Optional
 
 from ...simulator.scene3d import ScanlineOverlayLayer, VertexLayer
+from .gl_utils import RenderContext, ShaderSet
 from .renderer.ops_renderer import OpsRenderer
 from .renderer.ring_buffer_renderer import RingBufferRenderer
 
@@ -20,6 +21,9 @@ class LayerRendererGroup:
         self.powered_offsets: Any = []
         self.travel_offsets: Any = []
         self.ring_offsets: Any = []
+        self._exec_powered = -1
+        self._exec_travel = -1
+        self._exec_ring = -1
 
     def init_gl(self):
         self.ops_renderer.init_gl()
@@ -47,23 +51,18 @@ class LayerRendererGroup:
         self.ops_renderer.cleanup()
         self.ring_renderer.cleanup()
 
-    def render(
-        self,
-        ctx,
-        shaders,
-        op_player,
-    ) -> Optional[tuple]:
+    def prepare(self, ctx: RenderContext) -> None:
         """
-        Renders the group's ops and returns a deferred ring draw or None.
+        Computes the executed-vertex counts for this frame.
 
-        The per-frame MVP and executed-vertex counts are read from ``ctx``
-        (populated by the scene renderer and this method).  The ring buffer
-        is drawn after the textures during playback, so it is returned for
-        the scene renderer to render later.
+        Reads the playhead from ``ctx.op_player`` and maps it through the
+        group's command offsets, stashing the resulting counts so the ops
+        and ring draws can consume them.
         """
         exec_powered = -1
         exec_travel = -1
         exec_ring = -1
+        op_player = ctx.op_player
         if op_player:
             idx = op_player.current_index
             if len(self.powered_offsets) > 0 and idx + 1 < len(
@@ -89,20 +88,28 @@ class LayerRendererGroup:
                     f"{self.powered_offsets[-3:]}"
                 )
 
-        if shaders:
-            ctx.executed_vertex_count = exec_powered
-            ctx.executed_travel_vertex_count = exec_travel
-            self.ops_renderer.render(ctx, shaders)
+        self._exec_powered = exec_powered
+        self._exec_travel = exec_travel
+        self._exec_ring = exec_ring
 
-        if self.ring_renderer.vertex_count > 0 and shaders:
-            tag = "rot" if self.is_rotary else "flat"
-            logger.debug(
-                f"[RING-PLAYBACK] {tag} "
-                f"exec={exec_ring} "
-                f"total={self.ring_renderer.vertex_count}"
-            )
-            return (self.ring_renderer, exec_ring)
-        return None
+    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
+        """Renders the group's ops (toolpaths)."""
+        ctx.executed_vertex_count = self._exec_powered
+        ctx.executed_travel_vertex_count = self._exec_travel
+        self.ops_renderer.render(ctx, shaders)
+
+    def render_ring(self, ctx: RenderContext, shaders: ShaderSet) -> None:
+        """Renders the group's ring buffer (after the textures)."""
+        if self.ring_renderer.vertex_count <= 0:
+            return
+        tag = "rot" if self.is_rotary else "flat"
+        logger.debug(
+            f"[RING-PLAYBACK] {tag} "
+            f"exec={self._exec_ring} "
+            f"total={self.ring_renderer.vertex_count}"
+        )
+        ctx.executed_vertex_count = self._exec_ring
+        self.ring_renderer.render(ctx, shaders)
 
     def clear(self):
         self.ops_renderer.clear()

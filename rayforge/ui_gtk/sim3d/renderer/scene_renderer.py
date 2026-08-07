@@ -8,8 +8,7 @@ rebuilds and theme/colour application to this class.
 """
 
 import logging
-import math
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -20,7 +19,7 @@ from ....shared.units.formatter import (
 from ....simulator.scene3d import CompiledSceneArtifact
 from ..color_lut_provider import ColorLutProvider
 from ..gl_state import render_pass
-from ..gl_utils import ShaderSet, rotation_4x4
+from ..gl_utils import LayerRenderer, RenderContext, ShaderSet
 from ..layer_renderer_group import (
     LayerRendererGroup,
     match_overlay_layer,
@@ -44,6 +43,29 @@ from .texture_renderer import TextureArtifactRenderer
 from .zone_renderer import ZoneRenderer
 
 logger = logging.getLogger(__name__)
+
+
+class RingPassAdapter:
+    """
+    Draws a layer group's ring buffer as a separate registry pass.
+
+    The layer group renders its toolpaths in the main pass; the ring
+    buffer must draw *after* the texture renderer so scanlines appear on
+    top of the texture quads.  This adapter exposes just the ring draw so
+    the scene can place it late in the registry.
+    """
+
+    def __init__(self, group: LayerRendererGroup):
+        self._group = group
+
+    def prepare(self, ctx: RenderContext) -> None:
+        pass
+
+    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
+        self._group.render_ring(ctx, shaders)
+
+    def init_gl(self) -> None:
+        pass
 
 
 class SceneRenderer(BaseRenderer):
@@ -72,6 +94,34 @@ class SceneRenderer(BaseRenderer):
         self.model_renderers: List[ModelRenderer] = []
         self.had_rotary_layers = False
         self.cylinder_transform = np.eye(4, dtype=np.float64)
+
+        # Ordered list of (renderer, shader_keys) in draw order.  The
+        # deferred ring passes come after the texture renderer so rings
+        # draw on top of the textures during playback.
+        self.render_registry: List[Tuple[LayerRenderer, Tuple[str, ...]]] = []
+
+    def _rebuild_registry(self) -> None:
+        """Rebuilds the render registry from the current children."""
+        registry: List[Tuple[LayerRenderer, Tuple[str, ...]]] = []
+        if self.background_renderer is not None:
+            registry.append((self.background_renderer, ("background",)))
+        if self.axis_renderer is not None:
+            registry.append((self.axis_renderer, ("main", "text")))
+        if self.zone_renderer is not None:
+            registry.append((self.zone_renderer, ("main",)))
+        for group in self.layer_groups:
+            registry.append((group, ("main",)))
+        for renderer in self.cylinder_renderers.values():
+            registry.append((renderer, ("main",)))
+        if self.texture_renderer is not None:
+            registry.append((self.texture_renderer, ("texture",)))
+        for group in self.layer_groups:
+            registry.append((RingPassAdapter(group), ("main",)))
+        if self.laser_beam_renderer is not None:
+            registry.append((self.laser_beam_renderer, ("main",)))
+        for renderer in self.model_renderers:
+            registry.append((renderer, ("main",)))
+        self.render_registry = registry
 
     def set_cylinder_transform(self, transform: np.ndarray):
         """Stores the assembly's cylinder base transform."""
@@ -115,6 +165,7 @@ class SceneRenderer(BaseRenderer):
             self.background_renderer = None
         self.zone_renderer = ZoneRenderer()
         self.zone_renderer.init_gl()
+        self._rebuild_registry()
 
     def _cleanup_self(self):
         """Cleans up all scene-owned renderers and shaders."""
@@ -179,6 +230,7 @@ class SceneRenderer(BaseRenderer):
         )
         self.apply_extent_frame(viewport)
         self.axis_renderer.init_gl()
+        self._rebuild_registry()
         return True
 
     def update_cylinders_from_doc(self, doc, viewport, machine):
@@ -220,6 +272,7 @@ class SceneRenderer(BaseRenderer):
                     f"Initialized cylinder renderer: "
                     f"diameter={diameter}mm, length={max_length}mm"
                 )
+        self._rebuild_registry()
 
     def update_zones_from_machine(self, machine):
         """Pushes the machine's no-go zones into the zone renderer."""
@@ -235,6 +288,7 @@ class SceneRenderer(BaseRenderer):
         for renderer in self.model_renderers:
             renderer.cleanup()
         self.model_renderers.clear()
+        self._rebuild_registry()
 
     def update_models_from_context(self, context, machine):
         """Rebuilds renderers for all assembly links with 3D models."""
@@ -273,6 +327,7 @@ class SceneRenderer(BaseRenderer):
                 renderer.bounds,
             )
             self.model_renderers.append(renderer)
+        self._rebuild_registry()
 
     def apply_background_colors(self, bg_color, bg_light):
         """Applies the resolved background colors to the background."""
@@ -320,6 +375,7 @@ class SceneRenderer(BaseRenderer):
 
         if self.texture_renderer:
             self.texture_renderer.update_from_artifact(artifact)
+        self._rebuild_registry()
 
     def prepare_chunked_upload(
         self, artifact: CompiledSceneArtifact, show_travel_moves: bool
@@ -345,6 +401,7 @@ class SceneRenderer(BaseRenderer):
 
         upload_items.append(("textures", artifact))
         upload_items.append(("op_player",))
+        self._rebuild_registry()
         return upload_items
 
     def extract_playback_offsets(self, artifact: CompiledSceneArtifact):
@@ -364,19 +421,15 @@ class SceneRenderer(BaseRenderer):
             else:
                 group.ring_offsets = []
 
-    def render(
-        self,
-        ctx,
-        op_player,
-        viewport: ViewportConfig,
-        machine,
-        compiled_artifact,
-        doc,
-        show_grid: bool = True,
-        show_nogo_zones: bool = True,
-        show_models: bool = True,
-    ):
-        """Renders the whole scene for one frame."""
+    def render(self, ctx: RenderContext) -> None:
+        """
+        Renders the whole scene for one frame via the render registry.
+
+        All per-frame state is read from ``ctx`` (populated by the
+        caller).  Every renderer is prepared before any render so that
+        frame-level cross-dependencies (e.g. the laser point light
+        feeding the model renderers) resolve before any draw.
+        """
         for shader in (
             self.main_shader,
             self.text_shader,
@@ -390,141 +443,10 @@ class SceneRenderer(BaseRenderer):
         if shaders is None:
             return
 
-        if self.background_renderer and shaders.background:
-            self.background_renderer.prepare(ctx)
-            with render_pass(shaders.background):
-                self.background_renderer.render(ctx, shaders)
+        for renderer, _ in self.render_registry:
+            renderer.prepare(ctx)
 
-        mvp_ui = ctx.mvp_ui
-        margin_shift = ctx.margin_shift
-        mvp_ui_gl = ctx.mvp_ui.T
-
-        if (
-            self.axis_renderer is not None
-            and self.main_shader is not None
-            and self.text_shader is not None
-            and show_grid
-        ):
-            ctx.wcs_offset_mm = viewport.wcs_offset_mm
-            ctx.x_right = viewport.x_right
-            ctx.y_down = viewport.y_down
-            ctx.x_negative = viewport.x_negative
-            ctx.y_negative = viewport.y_negative
-            self.axis_renderer.prepare(ctx)
-            with render_pass(self.main_shader, self.text_shader):
-                self.axis_renderer.render(ctx, shaders)
-
-        if self.zone_renderer and self.main_shader and show_nogo_zones:
-            self.zone_renderer.prepare(ctx)
-            with render_pass(self.main_shader):
-                self.zone_renderer.render(ctx, shaders)
-
-        # Compute cylinder rotation from mapped ops.
-        #
-        # Degrees are stored in extra_axes by KinematicMapping and
-        # copied into state.axes by apply_command.  The rotary_axis
-        # property tells us which axis holds the angle.
-        cyl_angle = 0.0
-        ra = None
-        if op_player:
-            ra = op_player.rotary_axis
-        ctx.machine = machine
-        ctx.doc = doc
-        ctx.op_player = op_player
-        ctx.viewport = viewport
-        ctx.compiled_artifact = compiled_artifact
-        ctx.rotary_axis = ra
-        ctx.had_rotary_layers = self.had_rotary_layers
-        ctx.show_grid = show_grid
-        ctx.show_nogo_zones = show_nogo_zones
-        ctx.show_models = show_models
-        vis_rot_axis = np.array([1.0, 0.0, 0.0], dtype=np.float64)
-        if op_player and self.had_rotary_layers and machine and ra is not None:
-            asm = machine.assembly
-            if asm.has_rotary:
-                degrees = op_player.state.axes.get(ra, 0.0)
-                cyl_angle = math.radians(degrees)
-
-        if self.had_rotary_layers and machine:
-            cyl_base_mvp = (
-                mvp_ui.astype(np.float64)
-                @ margin_shift.astype(np.float64)
-                @ self.cylinder_transform
-            )
-        else:
-            cyl_base_mvp = mvp_ui.astype(np.float64) @ margin_shift.astype(
-                np.float64
-            )
-
-        rot_4x4 = rotation_4x4(vis_rot_axis, cyl_angle)
-        rot_cyl_gl = (cyl_base_mvp @ rot_4x4).T.astype(np.float32)
-        cyl_mesh_mvp = (
-            mvp_ui @ margin_shift @ self.cylinder_transform @ rot_4x4
-        ).astype(np.float64)
-        ctx.cyl_mesh_mvp_gl = cyl_mesh_mvp.T.astype(np.float32)
-
-        tex_reached = None
-        if op_player and compiled_artifact:
-            tex_reached = 0
-            playhead = op_player.current_index
-            for tl in compiled_artifact.texture_layers:
-                if playhead >= tl.activation_cmd_idx:
-                    tex_reached += 1
-
-        # Laser beams: computed now so models can use the point light.
-        # The beam itself is drawn after the scanline overlay but before
-        # the models, so the laser head model stays in front.
-        if (
-            op_player
-            and self.main_shader
-            and machine
-            and self.laser_beam_renderer
-        ):
-            self.laser_beam_renderer.prepare(ctx)
-            ctx.laser_light_pos = self.laser_beam_renderer.laser_light_pos
-        else:
-            ctx.laser_light_pos = None
-
-        ctx.mvp_flat_gl = mvp_ui_gl
-        ctx.mvp_rot_gl = rot_cyl_gl
-        deferred_ring_renders = []
-        for group in self.layer_groups:
-            if self.main_shader:
-                with render_pass(self.main_shader):
-                    ring = group.render(
-                        ctx,
-                        shaders,
-                        op_player,
-                    )
-                if ring is not None:
-                    deferred_ring_renders.append(ring)
-
-        if self.cylinder_renderers and self.main_shader:
-            for renderer in self.cylinder_renderers.values():
-                renderer.prepare(ctx)
-                with render_pass(self.main_shader):
-                    renderer.render(ctx, shaders)
-
-        if self.texture_renderer and self.texture_shader:
-            ctx.reached_count = tex_reached
-            self.texture_renderer.prepare(ctx)
-            with render_pass(self.texture_shader):
-                self.texture_renderer.render(ctx, shaders)
-
-        for ring_renderer, exec_ring in deferred_ring_renders:
-            if self.main_shader:
-                ctx.executed_vertex_count = exec_ring
-                ring_renderer.prepare(ctx)
-                with render_pass(self.main_shader):
-                    ring_renderer.render(ctx, shaders)
-
-        if self.laser_beam_renderer and self.main_shader:
-            with render_pass(self.main_shader):
-                self.laser_beam_renderer.render(ctx, shaders)
-
-        if show_models and self.model_renderers and machine:
-            for renderer in self.model_renderers:
-                if self.main_shader:
-                    renderer.prepare(ctx)
-                    with render_pass(self.main_shader):
-                        renderer.render(ctx, shaders)
+        for renderer, shader_keys in self.render_registry:
+            pass_shaders = tuple(getattr(shaders, key) for key in shader_keys)
+            with render_pass(*pass_shaders):
+                renderer.render(ctx, shaders)
