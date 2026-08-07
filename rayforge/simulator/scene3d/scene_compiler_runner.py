@@ -14,16 +14,16 @@ from .scene_compiler import compile_scene
 logger = logging.getLogger(__name__)
 
 
-def compile_scene_in_thread(
+def compile_scene_from_job(
     artifact_store: ArtifactStore,
     job_handle_dict: Dict[str, Any],
     render_config_dict: dict,
 ) -> Optional[CompiledSceneArtifact]:
-    """Compile a 3D scene from a job artifact on the calling thread.
+    """Compile a 3D scene from a job artifact.
 
-    Runs in-process (via ``run_thread``) and returns the compiled
-    artifact directly, avoiding pickling of raygeo ``Ops`` objects
-    through multiprocessing queues.
+    Runs synchronously on the calling thread; the caller owns threading.
+    The compiled artifact is returned directly, avoiding pickling of
+    raygeo ``Ops`` objects through multiprocessing queues.
     """
     config = RenderConfig3D.from_dict(render_config_dict)
 
@@ -38,7 +38,7 @@ def compile_scene_in_thread(
         logger.error(f"Expected JobArtifact, got {type(artifact).__name__}.")
         return None
 
-    ops = artifact.mapped_ops if artifact.mapped_ops else artifact.ops
+    ops = artifact.preview_ops
     if ops is None or ops.is_empty():
         logger.debug("Job artifact ops are empty.")
         return None
