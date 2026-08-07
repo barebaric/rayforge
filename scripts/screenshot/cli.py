@@ -135,6 +135,10 @@ def run_script(script_name: str, target: str) -> int:
         print(f"Running: {' '.join(cmd)} (TARGET={target})")
         env = os.environ.copy()
         env["TARGET"] = target
+        # Force the isolated test config even if the --config argument
+        # were ever dropped or parsed by a wrapping command, so screenshots
+        # never depend on the developer's personal machine configuration.
+        env["RAYFORGE_CONFIG_DIR"] = tmpdir
         return subprocess.run(cmd, env=env).returncode
 
 
