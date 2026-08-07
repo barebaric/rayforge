@@ -57,7 +57,6 @@ from .main_menu import MainMenu
 from .project_cmd import ProjectCmd
 from .settings.settings_dialog import SettingsWindow
 from .shared.gtk import get_monitor_geometry
-from .shared.playback_overlay import PlaybackOverlay
 from .shared.progress_bar import ProgressBar
 from .shared.sanity_check_dialog import SanityCheckDialog
 from .shared.time_estimate_overlay import TimeEstimateOverlay
@@ -66,6 +65,7 @@ from .shared.visibility_overlay import VisibilityOverlay
 from .sim3d import Canvas3D
 from .sim3d import initialized as canvas3d_initialized
 from .sim3d.camera import ViewDirection
+from .sim3d.playback_overlay import PlaybackOverlay
 from .sim3d.viewport import ViewportConfig
 from .toolbar import MainToolbar
 from .view_mode_cmd import ViewModeCmd
@@ -1411,7 +1411,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._canvas3d_vis_overlay.set_margin_end(424)
         self._canvas3d_overlay.add_overlay(self._canvas3d_vis_overlay)
         self._canvas3d_playback = PlaybackOverlay()
-        self.canvas3d.set_playback_overlay(self._canvas3d_playback)
+        self._canvas3d_playback.set_canvas(self.canvas3d)
         self._canvas3d_playback.step_changed.connect(
             self._on_3d_playback_step_changed
         )
