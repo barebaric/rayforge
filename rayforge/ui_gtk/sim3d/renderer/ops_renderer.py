@@ -170,7 +170,7 @@ class OpsRenderer(BaseRenderer):
         if shader is None:
             return
 
-        mvp = ctx.mvp_rot_gl if self.is_rotary else ctx.mvp_flat_gl
+        mvp = ctx.mvp_rot if self.is_rotary else ctx.mvp_ui
         if mvp is None:
             return
 

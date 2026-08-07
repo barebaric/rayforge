@@ -208,7 +208,7 @@ class ModelRenderer(BaseRenderer):
                     module_transform[:3, 3] = pos.astype(np.float32)
 
         combined = ctx.mvp_ui @ ctx.margin_shift @ module_transform
-        self._mvp_matrix = combined.T
+        self._mvp_matrix = combined
         self._model_matrix = ctx.margin_shift @ module_transform
         self._point_light_pos = ctx.laser_light_pos
 

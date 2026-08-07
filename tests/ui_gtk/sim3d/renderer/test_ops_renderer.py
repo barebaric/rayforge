@@ -150,7 +150,7 @@ def test_render_raises_on_invalid_executed_count(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
     ctx = _make_ctx(colors, show_travel_moves=True)
-    ctx.mvp_flat_gl = mvp
+    ctx.mvp_ui = mvp
     ctx.executed_vertex_count = 999
 
     with (
@@ -183,7 +183,7 @@ def test_render_draws_powered_and_travel(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
     ctx = _make_ctx(colors, show_travel_moves=True)
-    ctx.mvp_flat_gl = mvp
+    ctx.mvp_ui = mvp
 
     with (
         patch("OpenGL.GL.glBindVertexArray"),
@@ -221,7 +221,7 @@ def test_render_hides_travel_when_disabled(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
     ctx = _make_ctx(colors, show_travel_moves=False)
-    ctx.mvp_flat_gl = mvp
+    ctx.mvp_ui = mvp
 
     with (
         patch("OpenGL.GL.glBindVertexArray"),
@@ -245,7 +245,7 @@ def test_render_noop_when_empty(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
     ctx = _make_ctx(colors, show_travel_moves=True)
-    ctx.mvp_flat_gl = mvp
+    ctx.mvp_ui = mvp
 
     with (
         patch("OpenGL.GL.glBindVertexArray"),

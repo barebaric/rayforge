@@ -69,8 +69,9 @@ class RenderContext:
     """
     Frame-level rendering state shared across all renderers.
 
-    Matrices are row-major (NumPy convention).  Renderers that need
-    column-major for OpenGL should transpose the matrix.
+    Matrices are row-major (NumPy convention).  ``Shader.set_mat4`` /
+    ``Shader.set_mat3`` transpose to column-major at the GL boundary,
+    so renderers pass row-major matrices directly.
 
     The frame-state fields below default to ``None``/sentinel so that
     legacy callers that only populate the original geometry fields keep
@@ -107,11 +108,10 @@ class RenderContext:
     executed_travel_vertex_count: int = -1
     alpha_pending: float = 0.2
     reached_count: Optional[int] = None
-    mvp_flat_gl: Optional[np.ndarray] = None
-    mvp_rot_gl: Optional[np.ndarray] = None
-    cyl_mesh_mvp_gl: Optional[np.ndarray] = None
     laser_light_pos: Optional[np.ndarray] = None
     rot_4x4: Optional[np.ndarray] = None
+    mvp_rot: Optional[np.ndarray] = None
+    cyl_mesh_mvp: Optional[np.ndarray] = None
     show_grid: bool = True
     show_nogo_zones: bool = True
     show_models: bool = True

@@ -64,11 +64,11 @@ def _build(
 def test_build_returns_render_context():
     _, ctx = _build()
     assert isinstance(ctx, RenderContext)
-    assert ctx.mvp_flat_gl is not None
-    assert ctx.mvp_rot_gl is not None
-    assert ctx.cyl_mesh_mvp_gl is not None
+    assert ctx.mvp_ui is not None
+    assert ctx.mvp_rot is not None
+    assert ctx.cyl_mesh_mvp is not None
     assert ctx.rot_4x4 is not None
-    for m in (ctx.mvp_flat_gl, ctx.mvp_rot_gl, ctx.cyl_mesh_mvp_gl):
+    for m in (ctx.mvp_ui, ctx.mvp_rot, ctx.cyl_mesh_mvp):
         assert m.shape == (4, 4)
 
 
@@ -77,9 +77,9 @@ def test_build_flat_branch_matches_ui_mvp():
     _, ctx = _build(viewport=ViewportConfig.default())
     assert ctx.rotary_axis is None
     assert ctx.had_rotary_layers is False
-    mvp_flat = ctx.mvp_flat_gl
-    mvp_rot = ctx.mvp_rot_gl
-    cyl_mesh = ctx.cyl_mesh_mvp_gl
+    mvp_flat = ctx.mvp_ui
+    mvp_rot = ctx.mvp_rot
+    cyl_mesh = ctx.cyl_mesh_mvp
     rot = ctx.rot_4x4
     assert mvp_flat is not None
     assert mvp_rot is not None
@@ -106,8 +106,8 @@ def test_build_rotary_branch_applies_rotation():
     assert ctx.rotary_axis is Axis.A
     assert ctx.had_rotary_layers is True
     rot = ctx.rot_4x4
-    mvp_rot = ctx.mvp_rot_gl
-    mvp_flat = ctx.mvp_flat_gl
+    mvp_rot = ctx.mvp_rot
+    mvp_flat = ctx.mvp_ui
     assert rot is not None
     assert mvp_rot is not None
     assert mvp_flat is not None

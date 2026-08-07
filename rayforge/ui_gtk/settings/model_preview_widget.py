@@ -92,7 +92,7 @@ class ModelPreviewWidget(Gtk.GLArea):
         GL.glClear(color_bit | depth_bit)
         proj = self._camera.get_projection_matrix()
         view = self._camera.get_view_matrix()
-        mvp = (proj @ view).T
+        mvp = proj @ view
         self._shader.reset_uniforms()
         with render_pass(self._shader):
             self._renderer.render(

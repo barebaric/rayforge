@@ -211,7 +211,7 @@ class LaserBeamRenderer(BaseRenderer):
                 model[1, 3] = np.float32(position[1])
                 model[2, 3] = np.float32(position[2])
 
-                mvp = (proj_matrix @ view_matrix @ model).T
+                mvp = proj_matrix @ view_matrix @ model
                 shader.set_mat4("uMVP", mvp)
                 shader.set_float("uEmissive", 1.0)
                 shader.set_vec4("uColor", pass_color)

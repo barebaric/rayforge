@@ -29,12 +29,11 @@ class RenderContextBuilder:
 
     @staticmethod
     def _world_size_to_pixels(
-        mvp_gl: np.ndarray,
+        mvp: np.ndarray,
         world_mm: float,
         viewport_w: int,
         viewport_h: int,
     ) -> float:
-        mvp = mvp_gl.T
         p0 = mvp @ np.array([0, 0, 0, 1], dtype=np.float32)
         p1 = mvp @ np.array([world_mm, 0, 0, 1], dtype=np.float32)
         if abs(p0[3]) < 1e-9 or abs(p1[3]) < 1e-9:
@@ -46,7 +45,7 @@ class RenderContextBuilder:
         self,
         machine: Optional["Machine"],
         camera: Camera,
-        mvp_gl: np.ndarray,
+        mvp: np.ndarray,
     ) -> float:
         spot_mm = 0.1
         laser_head = machine.get_default_laser_head() if machine else None
@@ -55,7 +54,7 @@ class RenderContextBuilder:
         if not camera:
             return 2.0
         px = self._world_size_to_pixels(
-            mvp_gl,
+            mvp,
             spot_mm,
             camera.width,
             camera.height,
@@ -113,12 +112,9 @@ class RenderContextBuilder:
         # Final MVP for scene geometry (grid, axes, rotary)
         mvp_matrix_scene = mvp_matrix_ui @ grid_model_matrix
 
-        # Convert to column-major for OpenGL
-        mvp_matrix_ui_gl = mvp_matrix_ui.T
-
         # Build the shared render context for this frame
         spot_line_width = self._compute_spot_line_width(
-            machine, camera, mvp_matrix_ui_gl
+            machine, camera, mvp_matrix_ui
         )
         rotary_axis = op_player.rotary_axis if op_player else None
         ctx = RenderContext(
@@ -152,7 +148,6 @@ class RenderContextBuilder:
 
         # Compute the rotary helper fields once per frame so the
         # renderers can consume them.
-        ctx.mvp_flat_gl = mvp_matrix_ui_gl
         cyl_angle = 0.0
         if (
             op_player
@@ -179,13 +174,13 @@ class RenderContextBuilder:
         vis_rot_axis = np.array([1.0, 0.0, 0.0], dtype=np.float64)
         rot_4x4 = rotation_4x4(vis_rot_axis, cyl_angle)
         ctx.rot_4x4 = rot_4x4
-        ctx.mvp_rot_gl = (cyl_base_mvp @ rot_4x4).T.astype(np.float32)
+        ctx.mvp_rot = (cyl_base_mvp @ rot_4x4).astype(np.float32)
         cyl_mesh_mvp = (
             mvp_matrix_ui
             @ viewport.margin_shift
             @ scene.cylinder_transform
             @ rot_4x4
         ).astype(np.float64)
-        ctx.cyl_mesh_mvp_gl = cyl_mesh_mvp.T.astype(np.float32)
+        ctx.cyl_mesh_mvp = cyl_mesh_mvp.astype(np.float32)
 
         return ctx

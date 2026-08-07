@@ -258,7 +258,7 @@ class TextRenderer(BaseRenderer):
         if shader is None:
             return
 
-        mvp_matrix = ctx.mvp_ui.T
+        mvp_matrix = ctx.mvp_ui
 
         shader.use()
         GL.glActiveTexture(GL.GL_TEXTURE0)
@@ -290,8 +290,7 @@ class TextRenderer(BaseRenderer):
             )
             camera_rotation_matrix_row_major = np.identity(3)
 
-        billboard_matrix_col_major = camera_rotation_matrix_row_major.T
-        shader.set_mat3("uBillboard", billboard_matrix_col_major)
+        shader.set_mat3("uBillboard", camera_rotation_matrix_row_major)
 
         # --- CALCULATE LAYOUT AND RENDER CHARACTERS ---
         pixel_to_world_scale = height_in_world_units / self.atlas_height
