@@ -12,16 +12,25 @@ presenter can build playback after the fresh layer groups exist.
 """
 
 import logging
-from typing import TYPE_CHECKING, Callable, Optional
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Callable, List, Optional
 
 from blinker import Signal
 from gi.repository import GLib
 
 if TYPE_CHECKING:
     from ...simulator.scene3d import CompiledSceneArtifact
-    from .renderer.scene_renderer import SceneRenderer
+    from .renderer.scene_renderer import SceneRenderer, UploadItem
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class _UploadState:
+    """Progress of a chunked upload in flight."""
+
+    items: List["UploadItem"]
+    index: int
 
 
 class ChunkedUploadController:
@@ -54,7 +63,7 @@ class ChunkedUploadController:
         self._on_luts_required = on_luts_required
 
         self._artifact_gl_dirty = False
-        self._upload_state = None
+        self._upload_state: Optional[_UploadState] = None
         self._idle_source_id: Optional[int] = None
 
     def mark_artifact_dirty(self):
@@ -83,10 +92,7 @@ class ChunkedUploadController:
     def start(self):
         artifact = self._get_artifact()
         if not artifact:
-            for renderer in self._scene.ops_renderers:
-                renderer.clear()
-            if self._scene.texture_renderer:
-                self._scene.texture_renderer.clear()
+            self._scene.clear_layers()
             self._request_render()
             return
 
@@ -95,18 +101,18 @@ class ChunkedUploadController:
 
         self._make_current()
 
-        # Upload the power colour LUTs before any vertex data. The chunked
-        # upload runs on idle callbacks, which can be pre-empted by a
-        # redraw between items; a redraw that renders powered lines against
-        # an uninitialised LUT would draw them at full brightness.
         upload_items = self._scene.prepare_chunked_upload(
             artifact, self._get_show_travel_moves()
         )
 
-        self._upload_state = {
-            "items": upload_items,
-            "index": 0,
-        }
+        # Upload the power colour LUTs before any vertex data. The chunked
+        # upload runs on idle callbacks, which can be pre-empted by a
+        # redraw between items; a redraw that renders powered lines against
+        # an uninitialised LUT would draw them at full brightness. This must
+        # run after prepare_chunked_upload so the fresh renderers get it.
+        self._on_luts_required()
+
+        self._upload_state = _UploadState(items=upload_items, index=0)
         self._idle_source_id = GLib.idle_add(self._step)
 
     def _step(self) -> bool:
@@ -114,37 +120,18 @@ class ChunkedUploadController:
         if self._upload_state is None:
             return False
 
-        items = self._upload_state["items"]
-        idx = self._upload_state["index"]
-
-        if idx >= len(items):
+        state = self._upload_state
+        if state.index >= len(state.items):
             self._upload_state = None
             self.upload_complete.send(self)
             self._request_render()
             return False
 
-        item = items[idx]
-        self._upload_state["index"] = idx + 1
+        item = state.items[state.index]
+        state.index += 1
 
         try:
-            kind = item[0]
-
-            if kind == "ops":
-                _, ops_renderer, vl, show_travel_moves = item
-                ops_renderer.update_from_vertex_layer(vl, show_travel_moves)
-
-            elif kind == "overlay":
-                _, ring_renderer, ol = item
-                ring_renderer.update_from_overlay_layer(ol)
-
-            elif kind == "textures":
-                _, artifact = item
-                if self._scene.texture_renderer:
-                    self._scene.texture_renderer.update_from_artifact(artifact)
-
-            elif kind == "color_luts":
-                self._on_luts_required()
-
+            self._scene.upload_chunk(item)
         except Exception:
             logger.exception("[CANVAS3D] Error during chunked upload")
             self._upload_state = None
