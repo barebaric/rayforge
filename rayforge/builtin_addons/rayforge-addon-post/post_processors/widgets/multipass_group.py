@@ -55,7 +55,6 @@ class MultiPassSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             _("Z Step-Down per Pass"),
             _("Distance to lower Z-axis for each subsequent pass"),
             upper=50.0,
-            max_value_in_base=50.0,
             value_in_base=transformer.z_step_down,
         )
         self.add(z_step_row)

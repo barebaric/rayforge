@@ -170,8 +170,6 @@ class TransformPropertyProvider(PropertyProvider):
             _("Zero is on the left side"),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
         )
         self.x_row.value_changed.connect(self._on_x_changed)
 
@@ -186,8 +184,6 @@ class TransformPropertyProvider(PropertyProvider):
             _("Y Position"),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
         )
         self.y_row.value_changed.connect(self._on_y_changed)
 
@@ -212,7 +208,6 @@ class TransformPropertyProvider(PropertyProvider):
             _("Width"),
             lower=1,
             upper=10000,
-            min_value_in_base=1.0,
         )
         self.width_row.value_changed.connect(self._on_width_changed)
 
@@ -221,7 +216,6 @@ class TransformPropertyProvider(PropertyProvider):
             _("Height"),
             lower=1,
             upper=10000,
-            min_value_in_base=1.0,
         )
         self.height_row.value_changed.connect(self._on_height_changed)
 

@@ -277,8 +277,6 @@ class PrintAndCutWizard(PatchedDialogWindow):
             _("Distance"),
             lower=0.1,
             upper=1000.0,
-            min_value_in_base=0.1,
-            max_value_in_base=1000.0,
             value_in_base=10.0,
         )
         self._distance_row.value_changed.connect(self._on_distance_changed)

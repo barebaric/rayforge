@@ -60,8 +60,6 @@ class AdvancedPreferencesPage(TrackedPreferencesPage):
             upper=10.0,
             step_increment=0.001,
             digits=3,
-            min_value_in_base=0.001,
-            max_value_in_base=10.0,
             value_in_base=self.machine.arc_tolerance,
         )
         self.arc_tolerance_row.set_width_chars(5)

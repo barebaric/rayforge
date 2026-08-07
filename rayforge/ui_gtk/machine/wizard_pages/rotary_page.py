@@ -91,7 +91,6 @@ class RotaryPage(WizardPage):
             _("Auto-fetched from GRBL $101/$103 if probing"),
             upper=100000,
             digits=3,
-            max_value_in_base=100000.0,
             value_in_base=0,
         )
         self.details_group.add(self.mm_per_rotation_row)
@@ -99,7 +98,6 @@ class RotaryPage(WizardPage):
         self.default_diameter_row = LengthSpinRow(
             _("Default Workpiece Ø"),
             upper=1000,
-            max_value_in_base=1000.0,
             value_in_base=25.0,
         )
         self.details_group.add(self.default_diameter_row)
@@ -107,7 +105,6 @@ class RotaryPage(WizardPage):
         self.max_length_row = LengthSpinRow(
             _("Max Workpiece Length"),
             upper=10000,
-            max_value_in_base=10000.0,
             value_in_base=300.0,
         )
         self.details_group.add(self.max_length_row)
@@ -116,7 +113,6 @@ class RotaryPage(WizardPage):
             _("Roller Ø"),
             _("Required when using roller-type rotary"),
             upper=1000,
-            max_value_in_base=1000.0,
             value_in_base=0.0,
         )
         self.details_group.add(self.roller_diameter_row)

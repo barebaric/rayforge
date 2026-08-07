@@ -45,7 +45,6 @@ class SpeedRowAdapter(RowAdapter):
             escape_title(var.label),
             lower=min_val,
             upper=max_speed,
-            max_value_in_base=max_speed,
             value_in_base=(int(initial_val) if initial_val is not None else 0),
         )
         return row, cls(row)
@@ -60,5 +59,4 @@ class SpeedRowAdapter(RowAdapter):
         assert isinstance(var, SpeedVar)
         if var.label:
             self._row.set_title(escape_title(var.label))
-        if var.min_val is not None or var.max_val is not None:
-            self._row.set_bounds_in_base(var.min_val, var.max_val)
+        self._row.set_range(var.min_val or 0, _resolve_max_speed(var))

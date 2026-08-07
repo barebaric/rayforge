@@ -77,7 +77,6 @@ class StockPropertiesDialog(PatchedDialogWindow):
             _("Thickness"),
             _("Material thickness"),
             upper=999,
-            max_value_in_base=999,
         )
         if self.stock_item.thickness is not None:
             self.thickness_row.set_value_in_base_units(

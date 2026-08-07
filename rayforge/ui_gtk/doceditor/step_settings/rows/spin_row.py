@@ -99,9 +99,6 @@ class SpinRow(DebouncedMixin, StepRow):
             self.widget.set_value(target)
 
     def set_range(self, lower: float, upper: float):
-        if self.quantity:
-            self.widget.set_bounds_in_base(lower, upper)
-            return
         adj = self.widget.get_adjustment()
         if (
             abs(adj.get_lower() - lower) > 1e-9

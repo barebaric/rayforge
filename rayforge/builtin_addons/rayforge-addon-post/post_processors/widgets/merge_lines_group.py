@@ -44,8 +44,6 @@ class MergeLinesSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             _("Maximum distance for lines to be considered overlapping"),
             lower=0.01,
             upper=10.0,
-            min_value_in_base=0.01,
-            max_value_in_base=10.0,
             value_in_base=transformer.tolerance,
         )
         self.tolerance_row.value_changed.connect(

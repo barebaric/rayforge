@@ -32,12 +32,6 @@ class LengthRowAdapter(RowAdapter):
             None,
             lower=min_val,
             upper=max_val,
-            min_value_in_base=(
-                var.min_val if var.min_val is not None else None
-            ),
-            max_value_in_base=(
-                var.max_val if var.max_val is not None else None
-            ),
             value_in_base=(
                 float(initial_val) if initial_val is not None else 0.0
             ),
@@ -57,4 +51,7 @@ class LengthRowAdapter(RowAdapter):
         if var.label:
             self._row.set_title(escape_title(var.label))
         if var.min_val is not None or var.max_val is not None:
-            self._row.set_bounds_in_base(var.min_val, var.max_val)
+            self._row.set_range(
+                var.min_val if var.min_val is not None else -2147483647,
+                var.max_val if var.max_val is not None else 2147483647,
+            )

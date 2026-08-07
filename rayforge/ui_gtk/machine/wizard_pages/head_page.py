@@ -86,7 +86,6 @@ class HeadPage(WizardPage):
             _("Laser beam width on X axis"),
             upper=10,
             digits=3,
-            max_value_in_base=10.0,
             value_in_base=0.1,
         )
         self.laser_group.add(self.spot_x_row)
@@ -96,7 +95,6 @@ class HeadPage(WizardPage):
             _("Laser beam width on Y axis"),
             upper=10,
             digits=3,
-            max_value_in_base=10.0,
             value_in_base=0.1,
         )
         self.laser_group.add(self.spot_y_row)
@@ -115,7 +113,6 @@ class HeadPage(WizardPage):
             _("Focal Distance"),
             _("Lens-to-workpiece distance"),
             upper=1000,
-            max_value_in_base=1000.0,
             value_in_base=0,
         )
         self.laser_group.add(self.focal_distance_row)

@@ -60,7 +60,6 @@ class LeadInOutSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             _("Lead-In Distance"),
             _("Distance of zero-power move before cut starts"),
             upper=50.0,
-            max_value_in_base=50.0,
             value_in_base=transformer.lead_in_mm,
         )
         self.add(self.lead_in_row)
@@ -69,7 +68,6 @@ class LeadInOutSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             _("Lead-Out Distance"),
             _("Distance of zero-power move after cut ends"),
             upper=50.0,
-            max_value_in_base=50.0,
             value_in_base=transformer.lead_out_mm,
         )
         self.add(self.lead_out_row)

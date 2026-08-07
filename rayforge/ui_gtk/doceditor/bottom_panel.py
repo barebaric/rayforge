@@ -429,7 +429,6 @@ class BottomPanel(Gtk.Box):
             _("Speed"),
             lower=1,
             upper=60000,
-            max_value_in_base=60000,
             value_in_base=1000,
         )
         self.speed_row.value_changed.connect(self._on_speed_changed)
@@ -440,8 +439,6 @@ class BottomPanel(Gtk.Box):
             _("Distance in machine units"),
             lower=0.1,
             upper=1000,
-            min_value_in_base=0.1,
-            max_value_in_base=1000.0,
             value_in_base=10.0,
         )
         self.distance_row.value_changed.connect(self._on_distance_changed)

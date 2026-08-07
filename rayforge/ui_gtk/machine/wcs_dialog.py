@@ -36,8 +36,6 @@ class WcsDialog(Adw.MessageDialog):
             _("X Offset"),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
             value_in_base=off_x,
         )
         group.add(self._row_x)
@@ -46,8 +44,6 @@ class WcsDialog(Adw.MessageDialog):
             _("Y Offset"),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
             value_in_base=off_y,
         )
         group.add(self._row_y)
@@ -56,8 +52,6 @@ class WcsDialog(Adw.MessageDialog):
             _("Z Offset"),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
             value_in_base=off_z,
         )
         group.add(self._row_z)

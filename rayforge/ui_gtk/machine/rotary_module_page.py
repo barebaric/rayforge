@@ -326,8 +326,6 @@ class RotaryModulePage(TrackedPreferencesPage):
             _("Offset from module position to rotation axis (X)"),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
         )
         self.axis_position_x_row.value_changed.connect(
             self._on_axis_position_changed
@@ -339,8 +337,6 @@ class RotaryModulePage(TrackedPreferencesPage):
             _("Offset from module position to rotation axis (Y)"),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
         )
         self.axis_position_y_row.value_changed.connect(
             self._on_axis_position_changed
@@ -352,8 +348,6 @@ class RotaryModulePage(TrackedPreferencesPage):
             _("Offset from module position to rotation axis (Z)"),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
         )
         self.axis_position_z_row.value_changed.connect(
             self._on_axis_position_changed
@@ -381,7 +375,6 @@ class RotaryModulePage(TrackedPreferencesPage):
             _("Roller Diameter"),
             _("Diameter of the drive roller"),
             upper=10000,
-            max_value_in_base=10000.0,
         )
         self.roller_diameter_row.value_changed.connect(
             self._on_roller_diameter_changed
@@ -407,8 +400,6 @@ class RotaryModulePage(TrackedPreferencesPage):
             _("Default diameter for new layers using this module"),
             lower=1,
             upper=10000,
-            min_value_in_base=1.0,
-            max_value_in_base=10000.0,
         )
         self.default_diameter_row.value_changed.connect(
             self._on_default_diameter_changed
@@ -420,8 +411,6 @@ class RotaryModulePage(TrackedPreferencesPage):
             _("Maximum workpiece length this module can accommodate"),
             lower=1,
             upper=10000,
-            min_value_in_base=1.0,
-            max_value_in_base=10000.0,
         )
         self.max_workpiece_length_row.value_changed.connect(
             self._on_max_workpiece_length_changed
@@ -451,8 +440,6 @@ class RotaryModulePage(TrackedPreferencesPage):
             _("X coordinate in machine space"),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
         )
         self.x_row.value_changed.connect(self._on_position_changed)
         self.model_group.add(self.x_row)
@@ -462,8 +449,6 @@ class RotaryModulePage(TrackedPreferencesPage):
             _("Y coordinate in machine space"),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
         )
         self.y_row.value_changed.connect(self._on_position_changed)
         self.model_group.add(self.y_row)
@@ -473,8 +458,6 @@ class RotaryModulePage(TrackedPreferencesPage):
             _("Z coordinate in machine space"),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
         )
         self.z_row.value_changed.connect(self._on_position_changed)
         self.model_group.add(self.z_row)

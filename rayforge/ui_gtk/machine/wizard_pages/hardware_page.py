@@ -59,7 +59,6 @@ class HardwarePage(WizardPage):
             _("Full X-axis travel range"),
             lower=10,
             upper=10000,
-            max_value_in_base=10000.0,
         )
         axes_group.add(self.x_row)
 
@@ -68,7 +67,6 @@ class HardwarePage(WizardPage):
             _("Full Y-axis travel range"),
             lower=10,
             upper=10000,
-            max_value_in_base=10000.0,
         )
         axes_group.add(self.y_row)
 
@@ -184,7 +182,6 @@ class HardwarePage(WizardPage):
             upper=60000,
             step_increment=100,
             digits=0,
-            max_value_in_base=60000.0,
         )
         speed_group.add(self.travel_speed_row)
 
@@ -194,7 +191,6 @@ class HardwarePage(WizardPage):
             upper=60000,
             step_increment=100,
             digits=0,
-            max_value_in_base=60000.0,
         )
         speed_group.add(self.cut_speed_row)
 
@@ -206,7 +202,6 @@ class HardwarePage(WizardPage):
             ),
             upper=10000,
             digits=0,
-            max_value_in_base=10000.0,
         )
         speed_group.add(self.accel_row)
 
@@ -245,7 +240,6 @@ class HardwarePage(WizardPage):
             title=title,
             subtitle=subtitle,
             upper=10000,
-            max_value_in_base=10000.0,
         )
         group.add(row)
         return row
@@ -265,10 +259,10 @@ class HardwarePage(WizardPage):
     def _on_extents_changed(self, row) -> None:
         x = self.x_row.get_value_in_base_units()
         y = self.y_row.get_value_in_base_units()
-        self.soft_x_min_row.set_bounds_in_base(0.0, x)
-        self.soft_x_max_row.set_bounds_in_base(0.0, x)
-        self.soft_y_min_row.set_bounds_in_base(0.0, y)
-        self.soft_y_max_row.set_bounds_in_base(0.0, y)
+        self.soft_x_min_row.set_range(0.0, x)
+        self.soft_x_max_row.set_range(0.0, x)
+        self.soft_y_min_row.set_range(0.0, y)
+        self.soft_y_max_row.set_range(0.0, y)
 
     def _on_soft_limits_toggle(self, row, _param) -> None:
         enabled = row.get_active()

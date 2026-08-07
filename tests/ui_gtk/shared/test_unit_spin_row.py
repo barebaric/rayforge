@@ -201,13 +201,34 @@ def test_no_debounce_emits_immediately(ui_context_initializer):
 
 
 @pytest.mark.ui
-def test_set_bounds_in_base(ui_context_initializer):
+def test_set_range(ui_context_initializer):
     ui_context_initializer.config.unit_preferences["length"] = "mm"
     row = LengthSpinRow("Len", lower=0, upper=1000)
-    row.set_bounds_in_base(10.0, 500.0)
+    row.set_range(10.0, 500.0)
     adj = row.get_spin_button().get_adjustment()
     assert adj.get_lower() == pytest.approx(10.0)
     assert adj.get_upper() == pytest.approx(500.0)
+
+
+@pytest.mark.ui
+def test_bounds_follow_display_unit(ui_context_initializer):
+    config = ui_context_initializer.config
+    config.unit_preferences["length"] = "mm"
+    row = LengthSpinRow("Len", lower=0, upper=25.4)
+    adj = row.get_spin_button().get_adjustment()
+    assert adj.get_upper() == pytest.approx(25.4)
+    config.set_unit_preference("length", "in")
+    assert adj.get_upper() == pytest.approx(1.0)
+
+
+@pytest.mark.ui
+def test_set_range_in_base_units(ui_context_initializer):
+    config = ui_context_initializer.config
+    config.unit_preferences["length"] = "in"
+    row = LengthSpinRow("Len", lower=0, upper=1000)
+    row.set_range(0.0, 25.4)
+    adj = row.get_spin_button().get_adjustment()
+    assert adj.get_upper() == pytest.approx(1.0)
 
 
 @pytest.mark.ui
@@ -241,7 +262,6 @@ def test_edit_text_survives_config_round_trip(ui_context_initializer):
         "Len",
         lower=0.01,
         upper=10.0,
-        max_value_in_base=10.0,
         value_in_base=0.1,
     )
     row.value_changed.connect(
