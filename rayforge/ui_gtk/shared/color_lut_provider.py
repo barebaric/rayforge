@@ -25,7 +25,9 @@ class ColorLutProvider:
 
     Encapsulates the per-laser ``ColorSet`` resolution from the machine
     and the assembly of the 1D/2D LUT arrays passed to the renderers'
-    ``update_color_lut`` methods.
+    ``update_color_lut`` methods.  The assembled arrays are cached and
+    rebuilt only after :meth:`invalidate` (e.g. on a theme or laser
+    change).
     """
 
     def __init__(
@@ -35,6 +37,9 @@ class ColorLutProvider:
     ):
         self._color_set = color_set
         self._laser_color_sets = laser_color_sets
+        self._cut_lut: Optional[np.ndarray] = None
+        self._engrave_lut: Optional[np.ndarray] = None
+        self._ring_lut: Optional[np.ndarray] = None
 
     @classmethod
     def from_machine(
@@ -74,23 +79,23 @@ class ColorLutProvider:
         """Number of resolved lasers (at least 1)."""
         return len(self._laser_color_sets) or 1
 
+    def invalidate(self):
+        """Drop the cached LUTs so they rebuild on the next read."""
+        self._cut_lut = None
+        self._engrave_lut = None
+        self._ring_lut = None
+
     def cut_lut(self) -> np.ndarray:
         """LUT for cut/engraved lines, dimmed by power."""
-        if self.has_lasers:
-            lut = np.zeros((self.num_lasers, 256, 4), dtype=np.float32)
-            for row_idx, uid in enumerate(self._laser_color_sets):
-                lut[row_idx] = self._laser_color_sets[uid].get_lut("cut")
-            return lut
-        return create_lut_from_color(self._color_set.get_rgba("cut"))
+        if self._cut_lut is None:
+            self._cut_lut = self._build_cut_lut()
+        return self._cut_lut
 
     def engrave_lut_2d(self) -> np.ndarray:
         """LUT for texture/engrave rendering."""
-        if self.has_lasers:
-            lut = np.zeros((self.num_lasers, 256, 4), dtype=np.float32)
-            for row_idx, uid in enumerate(self._laser_color_sets):
-                lut[row_idx] = self._laser_color_sets[uid].get_lut("engrave")
-            return lut
-        return self._color_set.get_lut("engrave")
+        if self._engrave_lut is None:
+            self._engrave_lut = self._build_engrave_lut()
+        return self._engrave_lut
 
     def ring_lut_2d(self) -> np.ndarray:
         """
@@ -99,6 +104,27 @@ class ColorLutProvider:
         The overlay dims by power too, so each laser gets a brightness
         ramp rather than a flat colour.
         """
+        if self._ring_lut is None:
+            self._ring_lut = self._build_ring_lut()
+        return self._ring_lut
+
+    def _build_cut_lut(self) -> np.ndarray:
+        if self.has_lasers:
+            lut = np.zeros((self.num_lasers, 256, 4), dtype=np.float32)
+            for row_idx, uid in enumerate(self._laser_color_sets):
+                lut[row_idx] = self._laser_color_sets[uid].get_lut("cut")
+            return lut
+        return create_lut_from_color(self._color_set.get_rgba("cut"))
+
+    def _build_engrave_lut(self) -> np.ndarray:
+        if self.has_lasers:
+            lut = np.zeros((self.num_lasers, 256, 4), dtype=np.float32)
+            for row_idx, uid in enumerate(self._laser_color_sets):
+                lut[row_idx] = self._laser_color_sets[uid].get_lut("engrave")
+            return lut
+        return self._color_set.get_lut("engrave")
+
+    def _build_ring_lut(self) -> np.ndarray:
         if self.has_lasers:
             lut = np.zeros((self.num_lasers, 256, 4), dtype=np.float32)
             for row_idx, uid in enumerate(self._laser_color_sets):

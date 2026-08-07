@@ -84,6 +84,24 @@ def test_multi_laser_rows_follow_laser_order():
     assert np.allclose(cut[1, -1], (0.0, 0.0, 1.0, 1.0))
 
 
+def test_luts_cached_across_calls():
+    provider = ColorLutProvider(_theme_color_set(), {})
+    assert provider.cut_lut() is provider.cut_lut()
+    assert provider.engrave_lut_2d() is provider.engrave_lut_2d()
+    assert provider.ring_lut_2d() is provider.ring_lut_2d()
+
+
+def test_invalidate_rebuilds_luts():
+    provider = ColorLutProvider(_theme_color_set(), {})
+    provider.cut_lut()
+    provider.engrave_lut_2d()
+    provider.ring_lut_2d()
+    provider.invalidate()
+    assert provider.cut_lut() is not None
+    assert provider.engrave_lut_2d() is not None
+    assert provider.ring_lut_2d() is not None
+
+
 def test_from_machine_filters_non_laser_heads():
     head1 = LaserHead()
     head2 = LaserHead()
