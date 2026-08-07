@@ -50,6 +50,7 @@ class ThemeColorService:
         self._color_set: Optional[ColorSet] = None
         self._laser_color_sets: Dict[str, ColorSet] = {}
         self._layer_color_sets: Dict[str, ColorSet] = {}
+        self._lut_provider: Optional[ColorLutProvider] = None
 
     def bind(self, widget: "Gtk.Widget"):
         """
@@ -98,6 +99,7 @@ class ThemeColorService:
     def mark_dirty(self):
         """Mark all cached colours as stale."""
         self._dirty = True
+        self._lut_provider = None
 
     @property
     def dirty(self) -> bool:
@@ -127,7 +129,11 @@ class ThemeColorService:
         color_set = self.color_set
         if color_set is None:
             return None
-        return ColorLutProvider(color_set, self.laser_color_sets)
+        if self._lut_provider is None:
+            self._lut_provider = ColorLutProvider(
+                color_set, self.laser_color_sets
+            )
+        return self._lut_provider
 
     def _refresh_if_dirty(self):
         if not self._dirty:

@@ -97,6 +97,22 @@ def test_color_lut_provider_uses_service_sets(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_color_lut_provider_cached_until_dirty(ui_context_initializer):
+    service, widget = ThemeColorService(), MagicMock()
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(
+            GtkColorResolver, "resolve", lambda self, spec: _theme_color_set()
+        )
+        service.bind(widget)
+        first = service.color_lut_provider()
+        second = service.color_lut_provider()
+        assert second is first
+        service.mark_dirty()
+        rebuilt = service.color_lut_provider()
+        assert rebuilt is not first
+
+
+@pytest.mark.ui
 def test_set_machine_same_instance_no_extra_dirty(ui_context_initializer):
     service, widget = ThemeColorService(), MagicMock()
     machine = MagicMock(heads=[])
