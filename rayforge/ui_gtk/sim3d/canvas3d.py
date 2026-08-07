@@ -31,6 +31,7 @@ from ...simulator.scene3d import (
 from .camera import ViewDirection
 from .camera_controller import CameraController
 from .chunked_upload import ChunkedUploadController
+from .doc_signals import DocSignalHub
 from .gl_utils import RenderContext, rotation_4x4
 from .renderer.scene_renderer import SceneRenderer
 from .theme_resolver import ThemeResolver
@@ -39,7 +40,6 @@ from .viewport import ViewportConfig
 if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...doceditor.editor import DocEditor
-    from ...machine.models.machine import Machine
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -99,6 +99,19 @@ class Canvas3D(Gtk.GLArea):
             on_key_pressed=self._on_key_pressed,
         )
 
+        self._doc_hub = DocSignalHub(
+            self._context,
+            self._doc_editor,
+            set_viewport=lambda vp: setattr(self, "_viewport", vp),
+            mark_scene_dirty=lambda: setattr(self, "_scene_gl_dirty", True),
+            request_render=self.queue_render,
+            refresh_scene=self.update_scene_from_doc,
+            get_gl_initialized=lambda: self._gl_initialized,
+            get_job_handle=lambda: self._current_job_handle,
+            on_pipeline_state_changed=self._on_pipeline_state_changed,
+            on_job_generation_finished=self._on_job_generation_finished,
+        )
+
         self.set_has_depth_buffer(True)
         self.set_focusable(True)
         self.connect("realize", self.on_realize)
@@ -107,36 +120,26 @@ class Canvas3D(Gtk.GLArea):
         self.connect("resize", self._cam_ctrl.on_resize)
         self.connect("notify::style", self._theme_resolver.on_style_changed)
 
-        # Connect to machine for WCS updates
-        machine = self._context.machine
-        if machine:
-            machine.wcs_updated.connect(self._on_wcs_updated)
-            machine.changed.connect(self._on_wcs_updated)
-            self._on_wcs_updated(machine)
-
-        # Connect to doc for per-layer WCS updates
-        self.doc.active_layer_changed.connect(self._on_active_layer_changed)
-        self._active_layer_wcs_conn = None
-        self._connect_active_layer_wcs()
+        self._doc_hub.connect()
 
         self._context.config.changed.connect(self._on_config_changed)
+
+    def set_machine(self, viewport: Optional[ViewportConfig] = None):
+        self._doc_hub.set_machine(viewport)
+
+    def has_stale_job(self) -> bool:
+        """True if the cached job handle is from an older generation."""
+        return self._doc_hub.has_stale_job()
 
     @property
     def doc(self) -> "Doc":
         """Returns the current document from the editor."""
-        return self._doc_editor.doc
+        return self._doc_hub.doc
 
     @property
     def pipeline(self) -> "Pipeline":
         """Returns the current pipeline from the editor."""
-        return self._doc_editor.pipeline
-
-    @property
-    def rotary_enabled(self) -> bool:
-        """Returns True if the active layer has rotary mode enabled."""
-        if self.doc and self.doc.active_layer:
-            return self.doc.active_layer.rotary_enabled
-        return False
+        return self._doc_hub.pipeline
 
     def reset_view(self, direction: ViewDirection):
         """Resets the camera to the specified preset view."""
@@ -159,88 +162,13 @@ class Canvas3D(Gtk.GLArea):
         self._playback_overlay = overlay
         overlay.set_canvas(self)
 
-    def has_stale_job(self) -> bool:
-        """True if the cached job handle is from an older generation."""
-        if self._current_job_handle is None:
-            return True
-        return (
-            self._current_job_handle.generation_id
-            != self.pipeline.data_generation_id
-        )
-
-    def _on_wcs_updated(self, machine: "Machine", **kwargs):
-        """Handler for when the machine's WCS state changes."""
-        if machine:
-            self._viewport = self._build_viewport(machine)
-        self._scene_gl_dirty = True
-        self.queue_render()
-
-    def _get_active_layer_wcs_offset(self, machine: "Machine"):
-        """Returns the WCS offset for the active layer."""
-        layer = self.doc.active_layer if self.doc else None
-        if layer and layer.wcs:
-            return machine.get_wcs_offset(layer.wcs)
-        return machine.get_active_wcs_offset()
-
-    def _build_viewport(self, machine: "Machine") -> "ViewportConfig":
-        """Build a ViewportConfig using the active layer's WCS."""
-        return ViewportConfig.from_machine_with_wcs(
-            machine, self._get_active_layer_wcs_offset(machine)
-        )
-
-    def _connect_active_layer_wcs(self):
-        """Connect to the active layer's updated signal for WCS changes."""
-        if self._active_layer_wcs_conn is not None:
-            old_layer = self.doc.active_layer
-            old_layer.updated.disconnect(self._active_layer_wcs_conn)
-            self._active_layer_wcs_conn = None
-
-        layer = self.doc.active_layer
-        if layer:
-            self._active_layer_wcs_conn = layer.updated.connect(
-                self._on_active_layer_updated
-            )
-
-    def _on_active_layer_changed(self, sender):
-        """Reconnect WCS tracking to the new active layer."""
-        self._connect_active_layer_wcs()
-        machine = self._context.machine
-        if machine:
-            self._on_wcs_updated(machine)
-
-    def _on_active_layer_updated(self, layer):
-        """Handle property changes on the active layer, including WCS."""
-        machine = self._context.machine
-        if machine:
-            self._on_wcs_updated(machine)
-
-    def set_machine(self, viewport: Optional[ViewportConfig] = None):
-        old_machine = self._context.machine
-        if old_machine:
-            old_machine.wcs_updated.disconnect(self._on_wcs_updated)
-            old_machine.changed.disconnect(self._on_wcs_updated)
-
-        if viewport is None:
-            viewport = ViewportConfig.default()
-
-        self._viewport = viewport
-
-        new_machine = self._context.machine
-        if new_machine:
-            new_machine.wcs_updated.connect(self._on_wcs_updated)
-            new_machine.changed.connect(self._on_wcs_updated)
-            self._on_wcs_updated(new_machine)
-
-        if self._gl_initialized:
-            self.update_scene_from_doc()
-
     def _on_pipeline_state_changed(self, sender, *, is_processing: bool):
         """
         Handler for when the pipeline's busy state changes. When it becomes
         not busy, the document has settled and the scene should be updated.
         """
         if not is_processing and self._current_job_handle is not None:
-            if self.has_stale_job():
+            if self._doc_hub.has_stale_job():
                 logger.debug(
                     "Pipeline settled with stale job. Clearing 3D scene."
                 )
@@ -294,24 +222,6 @@ class Canvas3D(Gtk.GLArea):
         self._theme_resolver.update_renderer_color_luts()
         self.queue_render()
 
-    def _connect_pipeline_signals(self):
-        if self.pipeline:
-            self.pipeline.processing_state_changed.connect(
-                self._on_pipeline_state_changed
-            )
-            self.pipeline.job_generation_finished.connect(
-                self._on_job_generation_finished
-            )
-
-    def _disconnect_pipeline_signals(self):
-        if self.pipeline:
-            self.pipeline.processing_state_changed.disconnect(
-                self._on_pipeline_state_changed
-            )
-            self.pipeline.job_generation_finished.disconnect(
-                self._on_job_generation_finished
-            )
-
     def on_realize(self, area) -> None:
         """Called when the GLArea is ready to have its context made current."""
         logger.info("GLArea realized.")
@@ -323,7 +233,7 @@ class Canvas3D(Gtk.GLArea):
 
         self.reset_view(ViewDirection.ISO)
         self._theme_resolver.update_theme_and_colors()
-        self._connect_pipeline_signals()
+        self._doc_hub.connect_pipeline()
 
         if self._current_job_handle is None and self.pipeline:
             self._current_job_handle = self.pipeline.last_completed_handle
@@ -339,11 +249,7 @@ class Canvas3D(Gtk.GLArea):
     def on_unrealize(self, area) -> None:
         """Called before the GLArea is unrealized."""
         logger.info("GLArea unrealized. Cleaning up GL resources.")
-        self._disconnect_pipeline_signals()
-        machine = self._context.machine
-        if machine:
-            machine.wcs_updated.disconnect(self._on_wcs_updated)
-            machine.changed.disconnect(self._on_wcs_updated)
+        self._doc_hub.disconnect()
         self._context.config.changed.disconnect(self._on_config_changed)
         self._upload_ctrl.cancel()
         try:
