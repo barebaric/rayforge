@@ -12,6 +12,7 @@ from rayforge.core.doc import Doc
 from rayforge.machine.kinematic_mapping import (
     KinematicMapping,
     RotaryAxisConfig,
+    build_layer_assembly,
     resolve_layer_rotary,
 )
 from rayforge.machine.models.machine import Machine
@@ -438,3 +439,37 @@ class TestResolveLayerRotary:
 
         cfg = resolve_layer_rotary(layer, machine)
         assert cfg == RotaryAxisConfig(Axis.Y, None, None)
+
+
+class TestBuildLayerAssembly:
+    def _make_machine(self) -> Machine:
+        return Machine(RayforgeContext())
+
+    def test_flat_layer_builds_flat_assembly(self):
+        machine = self._make_machine()
+        layer = Doc().active_layer
+        assembly = build_layer_assembly(machine, layer)
+        assert not assembly.has_rotary
+        assert not machine._layer_configured
+
+    def test_rotary_layer_mounts_rotary_module(self):
+        machine = self._make_machine()
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+        rm.set_axis(Axis.A)
+        machine.add_rotary_module(rm)
+
+        layer = Doc().active_layer
+        layer.uid = "test"
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_module_uid(rm.uid)
+
+        assembly = build_layer_assembly(machine, layer)
+        assert assembly.has_rotary
+        assert not machine._layer_configured
+
+    def test_none_layer_builds_flat_assembly(self):
+        machine = self._make_machine()
+        assembly = build_layer_assembly(machine, None)
+        assert not assembly.has_rotary
+        assert not machine._layer_configured

@@ -9,7 +9,10 @@ gi.require_version("Adw", "1")
 from unittest.mock import MagicMock, patch
 
 import pytest
+from raygeo.ops.axis import Axis
 
+from rayforge.machine.models.machine import Machine
+from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
 from rayforge.simulator.scene3d import CompiledSceneArtifact
 from rayforge.ui_gtk.sim3d.scene_presenter import ScenePresenter
 
@@ -146,6 +149,48 @@ def test_on_scene_prepared_null_artifact_clears(ui_context_initializer):
 
     assert presenter.compiled_artifact is None
     assert calls["artifact_dirty"] == [True]
+
+
+@pytest.mark.ui
+def test_on_playback_layer_changed_builds_assembly(ui_context_initializer):
+    machine = Machine(MagicMock())
+    rm = RotaryModule()
+    rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+    rm.set_axis(Axis.A)
+    machine.add_rotary_module(rm)
+
+    doc = MagicMock()
+    layer = MagicMock()
+    layer.rotary_enabled = True
+    layer.rotary_module_uid = rm.uid
+    doc.layers = [layer]
+
+    scene = MagicMock()
+    presenter, _, calls = _make_presenter(
+        context=MagicMock(machine=machine),
+        scene=scene,
+        doc_editor=MagicMock(doc=doc),
+    )
+    player = MagicMock()
+    player.get_effective_layer.return_value = layer
+
+    presenter._on_playback_layer_changed(player, layer_uid=layer.uid)
+
+    assert presenter.playback_assembly is not None
+    assert calls["rendered"] == [True]
+    scene.set_cylinder_transform.assert_called_once()
+
+
+@pytest.mark.ui
+def test_on_playback_layer_changed_no_machine(ui_context_initializer):
+    scene = MagicMock()
+    presenter, _, calls = _make_presenter(scene=scene)
+    player = MagicMock()
+
+    presenter._on_playback_layer_changed(player)
+
+    assert presenter.playback_assembly is None
+    assert calls["rendered"] == []
 
 
 @pytest.mark.ui

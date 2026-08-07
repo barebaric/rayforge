@@ -17,6 +17,7 @@ from raygeo.ops import Ops
 from ...context import RayforgeContext
 from ...machine.kinematic_mapping import (
     KinematicMapping,
+    build_layer_assembly,
     resolve_layer_rotary,
 )
 from ...pipeline.artifact.handle import BaseArtifactHandle
@@ -34,6 +35,7 @@ from .camera import ViewDirection
 if TYPE_CHECKING:
     from ...core.doc import Doc
     from ...doceditor.editor import DocEditor
+    from ...machine.assembly import Assembly
     from .renderer.scene_renderer import SceneRenderer
     from .theme_resolver import ThemeResolver
     from .viewport import ViewportConfig
@@ -88,6 +90,7 @@ class ScenePresenter:
         self._compiled_artifact: Optional[CompiledSceneArtifact] = None
         self._current_job_handle: Optional[BaseArtifactHandle] = None
         self._op_player: Optional[OpPlayer] = None
+        self._playback_assembly: Optional["Assembly"] = None
         self._playback_overlay = None
 
     @property
@@ -99,6 +102,11 @@ class ScenePresenter:
     def op_player(self) -> Optional[OpPlayer]:
         """The current playback player, or None."""
         return self._op_player
+
+    @property
+    def playback_assembly(self) -> Optional["Assembly"]:
+        """The throwaway assembly for the current playback layer, or None."""
+        return self._playback_assembly
 
     @property
     def compiled_artifact(self) -> Optional[CompiledSceneArtifact]:
@@ -186,6 +194,7 @@ class ScenePresenter:
 
         if ops is None or ops.is_empty():
             self._op_player = None
+            self._playback_assembly = None
             for group in self._scene.layer_groups:
                 group.powered_offsets = np.array([], dtype=np.int32)
                 group.travel_offsets = np.array([], dtype=np.int32)
@@ -218,6 +227,8 @@ class ScenePresenter:
             player.seek_to_first_layer()
             initial_index = 0
         self._op_player = player
+        player.layer_changed.connect(self._on_playback_layer_changed)
+        self._on_playback_layer_changed(player)
         if self._playback_overlay:
             self._playback_overlay.set_player(player, initial_index)
         self._request_render()
@@ -240,6 +251,28 @@ class ScenePresenter:
             when_done=_on_snapshots_done,
         )
 
+    def _on_playback_layer_changed(self, player, layer_uid=None, **_kwargs):
+        """Rebuild the throwaway playback assembly for the current layer.
+
+        Connected to ``OpPlayer.layer_changed`` and also called once on
+        player creation.  Resolves the effective layer (current or the
+        first layer while in the preamble) and updates the scene's
+        cylinder transform without mutating the live machine.
+        """
+        machine = self._context.machine
+        if machine is None or player is None:
+            return
+        layer = player.get_effective_layer(self.doc)
+        assembly = build_layer_assembly(machine, layer)
+        self._playback_assembly = assembly
+        if assembly.has_rotary:
+            self._scene.set_cylinder_transform(
+                assembly.cylinder_base_transform()
+            )
+        else:
+            self._scene.set_cylinder_transform(np.eye(4, dtype=np.float64))
+        self._request_render()
+
     def _on_scene_prepared(self, task: Task):
         """
         Callback for when the background scene compilation task is
@@ -254,6 +287,7 @@ class ScenePresenter:
             else:
                 self._compiled_artifact = None
                 self._op_player = None
+                self._playback_assembly = None
                 logger.error("[CANVAS3D] Scene preparation task failed.")
                 self._mark_artifact_dirty()
                 self._request_render()

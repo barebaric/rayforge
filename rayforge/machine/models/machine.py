@@ -421,10 +421,13 @@ class Machine:
             return True
         return False
 
-    def _build_assembly(self) -> Assembly:
-        rotaries = self._mounted_rotaries
-        if not rotaries and not self._layer_configured and self.rotary_modules:
-            rotaries = list(self.rotary_modules.values())[:1]
+    def get_head_specs(self) -> List[HeadSpec]:
+        """Return the head specs used to build an assembly.
+
+        Does not build or mutate anything.  Each spec is a ``(model,
+        transform)`` pair with the focal distance folded into the
+        transform's Z translation.
+        """
         head_specs: List[HeadSpec] = []
         for h in self.heads:
             t = h.transform.copy()
@@ -435,15 +438,33 @@ class Machine:
                 Model.from_path(Path(h.model_path)) if h.model_path else None
             )
             head_specs.append((model, t))
+        return head_specs
+
+    def build_assembly_for_rotary(
+        self,
+        rotary_modules: Optional[Dict[str, RotaryModule]] = None,
+    ) -> Assembly:
+        """Build a throwaway assembly for the given rotary modules.
+
+        Unlike ``configure_for_layer`` + ``assembly``, this never mutates
+        machine state.  When *rotary_modules* is None or empty, a flat
+        assembly (no rotary) is built.
+        """
+        return build_assembly(
+            axis_set=self.axes,
+            head_specs=self.get_head_specs(),
+            rotary_modules=rotary_modules or None,
+        )
+
+    def _build_assembly(self) -> Assembly:
+        rotaries = self._mounted_rotaries
+        if not rotaries and not self._layer_configured and self.rotary_modules:
+            rotaries = list(self.rotary_modules.values())[:1]
         rotary_modules_for_build: Dict[str, RotaryModule] = {}
         if rotaries:
             for r in rotaries:
                 rotary_modules_for_build[r.uid] = r
-        return build_assembly(
-            axis_set=self.axes,
-            head_specs=head_specs,
-            rotary_modules=rotary_modules_for_build or None,
-        )
+        return self.build_assembly_for_rotary(rotary_modules_for_build or None)
 
     @property
     def machine_space_wcs(self) -> str:

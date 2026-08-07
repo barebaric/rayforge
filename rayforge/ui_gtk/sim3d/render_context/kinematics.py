@@ -107,7 +107,10 @@ class KinematicsContext:
         self.laser_light_pos = None
         mvp_ui = camera.mvp_ui
         machine = frame.machine
-        if machine is None or machine.assembly is None:
+        asm = frame.playback_assembly
+        if asm is None and machine is not None:
+            asm = machine.assembly
+        if asm is None:
             self._apply_flat(
                 mvp_ui,
                 model_world_transforms={},
@@ -117,7 +120,6 @@ class KinematicsContext:
             )
             return
 
-        asm = machine.assembly
         state = frame.op_player.state if frame.op_player else MachineState()
         wcs = viewport.wcs_offset_mm
         model_world_transforms = asm.model_world_transforms(
@@ -219,9 +221,11 @@ def _current_rotary_diameter(
     return current_layer.rotary_diameter or 0.0
 
 
-def _head_focal_distance(machine: "Machine", head_name: str) -> float:
+def _head_focal_distance(
+    machine: Optional["Machine"], head_name: str
+) -> float:
     """Return the focal distance of the named laser head."""
-    if not head_name.startswith("head_"):
+    if machine is None or not head_name.startswith("head_"):
         return _DEFAULT_FOCAL_DISTANCE
     try:
         idx = int(head_name.split("_")[1])
@@ -236,7 +240,10 @@ def _head_focal_distance(machine: "Machine", head_name: str) -> float:
 
 
 def _focused_rotary_head_positions(
-    machine: "Machine", asm, state: MachineState, diameter: float
+    machine: Optional["Machine"],
+    asm,
+    state: MachineState,
+    diameter: float,
 ) -> Dict[str, np.ndarray]:
     """Rotary head positions with each head's focal distance applied.
 
@@ -256,13 +263,13 @@ def _focused_rotary_head_positions(
     return result
 
 
-def _head_config(machine: "Machine", head_name: str) -> HeadConfig:
+def _head_config(machine: Optional["Machine"], head_name: str) -> HeadConfig:
     """Return the beam config for the named head link."""
     default = HeadConfig(
         beam_height=_DEFAULT_FOCAL_DISTANCE,
         beam_color=(1.0, 0.3, 0.1, 1.0),
     )
-    if not head_name.startswith("head_"):
+    if machine is None or not head_name.startswith("head_"):
         return default
     try:
         idx = int(head_name.split("_")[1])

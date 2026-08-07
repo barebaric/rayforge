@@ -142,10 +142,8 @@ class OpPlayer:
             self._source_axis = Axis.Y
             self._rotary_axis = None
 
-        self._prev_layer_uid = None
         self.advance_to(index)
         self._emit_layer_change()
-        self._sync_machine_config()
 
     def _find_snapshot(self, index: int) -> Optional[int]:
         if not self._snapshots:
@@ -204,23 +202,22 @@ class OpPlayer:
                 return item
         return None
 
+    def get_effective_layer(self, doc: Doc) -> Optional[Layer]:
+        """Return the layer that should drive playback configuration.
+
+        Falls back to the first layer of the document while the player is
+        in the preamble (before the first LAYER_START command).
+        """
+        layer = self.get_current_layer(doc)
+        if layer is None and doc.layers:
+            layer = doc.layers[0]
+        return layer
+
     def _emit_layer_change(self):
         uid = self.state.current_layer_uid
         if uid != self._prev_layer_uid:
             self._prev_layer_uid = uid
             self.layer_changed.send(self, layer_uid=uid)
-            self._sync_machine_config()
-
-    def _sync_machine_config(self):
-        """Configure the machine for the layer at the current position.
-
-        Falls back to the first layer of the document while the player is
-        in the preamble (before the first LAYER_START command).
-        """
-        layer = self.get_current_layer(self._doc)
-        if layer is None and self._doc.layers:
-            layer = self._doc.layers[0]
-        self._machine.configure_for_layer(layer)
 
 
 class SnapshotBuilder:
