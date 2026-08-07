@@ -805,6 +805,9 @@ class Canvas3D(Gtk.GLArea):
 
             # Build the shared render context for this frame
             spot_line_width = self._compute_spot_line_width(mvp_matrix_ui_gl)
+            op_player = self._op_player
+            machine = self._context.machine
+            rotary_axis = op_player.rotary_axis if op_player else None
             ctx = RenderContext(
                 proj_matrix=proj_matrix,
                 view_matrix=view_matrix,
@@ -817,27 +820,22 @@ class Canvas3D(Gtk.GLArea):
                 color_set=self._color_set,
                 show_travel_moves=self._show_travel_moves,
                 line_width=spot_line_width,
+                machine=machine,
+                doc=self.doc,
+                op_player=op_player,
+                compiled_artifact=self._compiled_artifact,
+                viewport=self._viewport,
+                rotary_axis=rotary_axis,
+                had_rotary_layers=self._scene.had_rotary_layers,
+                show_grid=self._show_grid,
+                show_nogo_zones=self._show_nogo_zones,
+                show_models=self._show_models,
+                wcs_offset_mm=self._viewport.wcs_offset_mm,
+                x_right=self._viewport.x_right,
+                y_down=self._viewport.y_down,
+                x_negative=self._viewport.x_negative,
+                y_negative=self._viewport.y_negative,
             )
-
-            # Populate the per-frame state consumed by the scene renderers.
-            op_player = self._op_player
-            machine = self._context.machine
-            rotary_axis = op_player.rotary_axis if op_player else None
-            ctx.machine = machine
-            ctx.doc = self.doc
-            ctx.op_player = op_player
-            ctx.compiled_artifact = self._compiled_artifact
-            ctx.viewport = self._viewport
-            ctx.rotary_axis = rotary_axis
-            ctx.had_rotary_layers = self._scene.had_rotary_layers
-            ctx.show_grid = self._show_grid
-            ctx.show_nogo_zones = self._show_nogo_zones
-            ctx.show_models = self._show_models
-            ctx.wcs_offset_mm = self._viewport.wcs_offset_mm
-            ctx.x_right = self._viewport.x_right
-            ctx.y_down = self._viewport.y_down
-            ctx.x_negative = self._viewport.x_negative
-            ctx.y_negative = self._viewport.y_negative
 
             # Compute the rotary helper fields once per frame so the
             # renderers can consume them.
