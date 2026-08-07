@@ -1,6 +1,8 @@
 """UI tests for the CameraController interaction logic."""
 
 # flake8: noqa: E402
+import math
+
 import gi
 
 gi.require_version("Gtk", "4.0")
@@ -10,7 +12,7 @@ import numpy as np
 import pytest
 from gi.repository import Gtk
 
-from rayforge.ui_gtk.sim3d.camera import ViewDirection
+from rayforge.ui_gtk.sim3d.camera import Camera, ViewDirection
 from rayforge.ui_gtk.sim3d.camera_controller import CameraController
 from rayforge.ui_gtk.sim3d.viewport import ViewportConfig
 
@@ -79,6 +81,30 @@ def test_get_world_coords_on_plane_returns_point(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_get_world_coords_on_plane_ortho_uses_parallel_ray(
+    ui_context_initializer,
+):
+    ctrl = _make_ctrl()
+    ctrl.create_camera(640, 480)
+    cam = ctrl.camera
+    assert cam is not None
+
+    cam.set_view(ViewDirection.TOP, 100.0, 100.0)
+    assert cam._ortho_ref_distance is not None
+    ndc_x = 2.0 * 400 / 640 - 1.0
+    ndc_y = 1.0 - 2.0 * 200 / 480
+    half_height = cam._ortho_ref_distance * math.tan(math.radians(45.0) / 2.0)
+    right = half_height * (640 / 480)
+
+    pt = ctrl.get_world_coords_on_plane(400, 200)
+    assert pt is not None
+    expected = np.array(
+        [50.0 + ndc_x * right, 50.0 + ndc_y * half_height, 0.0]
+    )
+    assert np.allclose(pt, expected, atol=1e-6)
+
+
+@pytest.mark.ui
 def test_on_scroll_dollies_camera(ui_context_initializer):
     rendered = []
     ctrl = _make_ctrl(request_render=lambda: rendered.append(True))
@@ -87,9 +113,87 @@ def test_on_scroll_dollies_camera(ui_context_initializer):
     assert cam is not None
     cam.is_perspective = True
     before = cam.position.copy()
-    ctrl.on_scroll(None, 0.0, -1.0)
+    scroll = Gtk.EventControllerScroll.new(
+        Gtk.EventControllerScrollFlags.VERTICAL
+    )
+    ctrl.on_scroll(scroll, 0.0, -1.0)
     assert not np.array_equal(cam.position, before)
     assert rendered == [True]
+
+
+@pytest.mark.ui
+def test_on_scroll_zooms_towards_cursor_point(ui_context_initializer):
+    ctrl = _make_ctrl()
+    ctrl.create_camera(640, 480)
+    cam = ctrl.camera
+    assert cam is not None
+    cam.is_perspective = True
+
+    cursor = (400.0, 200.0)
+    before = ctrl.get_world_coords_on_plane(*cursor)
+    assert before is not None
+
+    ctrl._mouse_pos = cursor
+    scroll = Gtk.EventControllerScroll.new(
+        Gtk.EventControllerScrollFlags.VERTICAL
+    )
+    ctrl.on_scroll(scroll, 0.0, -1.0)
+
+    after = ctrl.get_world_coords_on_plane(*cursor)
+    assert after is not None
+    assert np.allclose(before, after, atol=1e-6)
+
+
+@pytest.mark.ui
+def test_zoom_towards_point_dollies_camera(ui_context_initializer):
+    ctrl = _make_ctrl()
+    ctrl.create_camera(640, 480)
+    cam = ctrl.camera
+    assert cam is not None
+    cam.is_perspective = True
+    before = cam.position.copy()
+    ctrl.zoom_towards_point(320, 240, -1.0)
+    assert not np.array_equal(cam.position, before)
+
+
+@pytest.mark.ui
+def test_zoom_towards_point_keeps_cursor_point_fixed(ui_context_initializer):
+    ctrl = _make_ctrl()
+    ctrl.create_camera(640, 480)
+    cam = ctrl.camera
+    assert cam is not None
+    cam.is_perspective = True
+
+    cursor = (400.0, 200.0)
+    before = ctrl.get_world_coords_on_plane(*cursor)
+    assert before is not None
+
+    ctrl.zoom_towards_point(*cursor, -1.0)
+
+    after = ctrl.get_world_coords_on_plane(*cursor)
+    assert after is not None
+    assert np.allclose(before, after, atol=1e-6)
+
+
+@pytest.mark.ui
+def test_zoom_towards_point_keeps_cursor_point_fixed_ortho(
+    ui_context_initializer,
+):
+    ctrl = _make_ctrl()
+    ctrl.create_camera(640, 480)
+    cam = ctrl.camera
+    assert cam is not None
+
+    cursor = (400.0, 200.0)
+    before = ctrl.get_world_coords_on_plane(*cursor)
+    assert before is not None
+    assert not np.allclose(before, cam.target, atol=1e-3)
+
+    ctrl.zoom_towards_point(*cursor, -1.0)
+
+    after = ctrl.get_world_coords_on_plane(*cursor)
+    assert after is not None
+    assert np.allclose(before, after, atol=1e-6)
 
 
 @pytest.mark.ui
@@ -125,6 +229,16 @@ class _FakeGesture:
         return self._event
 
 
+class _FakeEvent:
+    """Minimal Gdk.Event stand-in providing a cursor position."""
+
+    def __init__(self, position):
+        self._position = position
+
+    def get_position(self):
+        return True, self._position[0], self._position[1]
+
+
 @pytest.mark.ui
 def test_drag_begin_sets_orbit_state(ui_context_initializer):
     ctrl = _make_ctrl()
@@ -132,3 +246,100 @@ def test_drag_begin_sets_orbit_state(ui_context_initializer):
     ctrl.on_drag_begin(_FakeGesture(shift=False), 100.0, 100.0)
     assert ctrl._is_orbiting is True
     assert ctrl._rotation_pivot is not None
+
+
+@pytest.mark.ui
+def test_drag_begin_orbits_around_plane_point(ui_context_initializer):
+    ctrl = _make_ctrl()
+    ctrl.create_camera(640, 480)
+    cam = ctrl.camera
+    assert cam is not None
+
+    cursor = (400.0, 200.0)
+    expected = ctrl.get_world_coords_on_plane(*cursor)
+    assert expected is not None
+    assert not np.allclose(expected, cam.target, atol=1e-3)
+
+    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
+    assert ctrl._rotation_pivot is not None
+    assert np.allclose(ctrl._rotation_pivot, expected, atol=1e-6)
+
+
+@pytest.mark.ui
+def test_drag_begin_orbits_around_plane_point_perspective(
+    ui_context_initializer,
+):
+    ctrl = _make_ctrl()
+    ctrl.create_camera(640, 480)
+    cam = ctrl.camera
+    assert cam is not None
+    cam.is_perspective = True
+
+    cursor = (400.0, 200.0)
+    expected = ctrl.get_world_coords_on_plane(*cursor)
+    assert expected is not None
+
+    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
+    assert ctrl._rotation_pivot is not None
+    assert np.allclose(ctrl._rotation_pivot, expected, atol=1e-6)
+
+
+def _screen_pos(camera: Camera, world: np.ndarray) -> np.ndarray:
+    """Projects a world point to NDC screen coordinates."""
+    view = camera.get_view_matrix() @ np.append(world, 1.0)
+    clip = camera.get_projection_matrix() @ view
+    return np.array([clip[0], clip[1]]) / clip[3]
+
+
+@pytest.mark.ui
+def test_ortho_orbit_keeps_pivot_fixed_on_screen(ui_context_initializer):
+    ctrl = _make_ctrl()
+    ctrl.create_camera(640, 480)
+    cam = ctrl.camera
+    assert cam is not None
+    cam.set_view(ViewDirection.TOP, 100.0, 100.0)
+
+    cursor = (400.0, 200.0)
+    pivot = ctrl.get_world_coords_on_plane(*cursor)
+    assert pivot is not None
+
+    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
+    ctrl.on_drag_update(_FakeGesture(event=_FakeEvent(cursor)), 0.0, 0.0)
+    before = _screen_pos(cam, pivot)
+
+    ctrl.on_drag_update(
+        _FakeGesture(event=_FakeEvent((420.0, 200.0))), 0.0, 0.0
+    )
+    after_yaw = _screen_pos(cam, pivot)
+
+    ctrl.on_drag_update(
+        _FakeGesture(event=_FakeEvent((420.0, 180.0))), 0.0, 0.0
+    )
+    after_pitch = _screen_pos(cam, pivot)
+
+    assert np.allclose(before, after_yaw, atol=1e-6)
+    assert np.allclose(before, after_pitch, atol=1e-6)
+    assert not np.allclose(cam.target, pivot, atol=1e-3)
+
+
+@pytest.mark.ui
+def test_perspective_orbit_keeps_pivot_fixed_on_screen(ui_context_initializer):
+    ctrl = _make_ctrl()
+    ctrl.create_camera(640, 480)
+    cam = ctrl.camera
+    assert cam is not None
+    cam.is_perspective = True
+
+    cursor = (400.0, 200.0)
+    pivot = ctrl.get_world_coords_on_plane(*cursor)
+    assert pivot is not None
+
+    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
+    ctrl.on_drag_update(_FakeGesture(event=_FakeEvent(cursor)), 0.0, 0.0)
+    before = _screen_pos(cam, pivot)
+
+    ctrl.on_drag_update(
+        _FakeGesture(event=_FakeEvent((420.0, 200.0))), 0.0, 0.0
+    )
+
+    assert np.allclose(before, _screen_pos(cam, pivot), atol=1e-6)
