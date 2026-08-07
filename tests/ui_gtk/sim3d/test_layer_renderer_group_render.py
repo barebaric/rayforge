@@ -4,8 +4,12 @@ from unittest.mock import MagicMock
 
 import numpy as np
 
-from rayforge.ui_gtk.sim3d.gl_utils import RenderContext
 from rayforge.ui_gtk.sim3d.layer_renderer_group import LayerRendererGroup
+from rayforge.ui_gtk.sim3d.render_context import (
+    KinematicsContext,
+    PlaybackContext,
+    RenderContext,
+)
 
 
 class _FakePlayer:
@@ -14,21 +18,10 @@ class _FakePlayer:
 
 
 def _make_ctx(mvp_flat, mvp_rot, op_player=None):
-    ctx = RenderContext(
-        proj_matrix=np.eye(4, dtype=np.float32),
-        view_matrix=np.eye(4, dtype=np.float32),
-        mvp_ui=np.eye(4, dtype=np.float32),
-        mvp_scene=np.eye(4, dtype=np.float32),
-        margin_shift=np.eye(4, dtype=np.float32),
-        model_matrix=np.eye(4, dtype=np.float32),
-        viewport_height=800,
-        camera_position=np.zeros(3),
-        color_set=MagicMock(),
+    return RenderContext(
+        kinematics=KinematicsContext(mvp_ui=mvp_flat, mvp_rot=mvp_rot),
+        playback=PlaybackContext(op_player=op_player),
     )
-    ctx.mvp_ui = mvp_flat
-    ctx.mvp_rot = mvp_rot
-    ctx.op_player = op_player
-    return ctx
 
 
 def _make_group(
@@ -61,8 +54,8 @@ def test_group_render_uses_rotary_mvp_and_deferred_ring():
 
     group.prepare(ctx)
     group.render(ctx, shaders)
-    assert ctx.executed_vertex_count == 10
-    assert ctx.executed_travel_vertex_count == 5
+    assert ctx.playback.executed_vertex_count == 10
+    assert ctx.playback.executed_travel_vertex_count == 5
 
     group.render_ring(ctx, shaders)
 
@@ -71,7 +64,7 @@ def test_group_render_uses_rotary_mvp_and_deferred_ring():
     assert ops.render.call_args.args[1] is shaders
 
     ring.render.assert_called_once()
-    assert ctx.executed_vertex_count == 1
+    assert ctx.playback.executed_vertex_count == 1
 
 
 def test_group_render_flat_mvp_no_ring():
@@ -87,7 +80,7 @@ def test_group_render_flat_mvp_no_ring():
     group.render_ring(ctx, MagicMock())
 
     ops.render.assert_called_once()
-    assert ctx.executed_vertex_count == 10
+    assert ctx.playback.executed_vertex_count == 10
     ring.render.assert_not_called()
 
 
@@ -98,9 +91,9 @@ def test_group_render_mid_and_last_index():
     ctx = _make_ctx(None, None, _FakePlayer(1))
     group.prepare(ctx)
     group.render(ctx, MagicMock())
-    assert ctx.executed_vertex_count == 200
+    assert ctx.playback.executed_vertex_count == 200
 
     ctx = _make_ctx(None, None, _FakePlayer(2))
     group.prepare(ctx)
     group.render(ctx, MagicMock())
-    assert ctx.executed_vertex_count == 300
+    assert ctx.playback.executed_vertex_count == 300

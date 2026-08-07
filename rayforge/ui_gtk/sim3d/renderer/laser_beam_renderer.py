@@ -10,9 +10,8 @@ from typing import List, Optional, Tuple
 import numpy as np
 from OpenGL import GL
 
-from ....core.color import hex_to_rgba
-from ....machine.models.laser import LaserHead
-from ..gl_utils import RenderContext, ShaderSet
+from ..gl_utils import ShaderSet
+from ..render_context import RenderContext
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -84,53 +83,31 @@ class LaserBeamRenderer(BaseRenderer):
         self._beams = []
         self.laser_light_pos = None
 
-        op_player = ctx.op_player
-        machine = ctx.machine
-        if op_player is None or machine is None:
-            ctx.laser_light_pos = None
+        op_player = ctx.playback.op_player
+        if op_player is None:
+            ctx.kinematics.laser_light_pos = None
             return
 
         state = op_player.state
-        viewport = ctx.viewport
-        if viewport is None:
-            ctx.laser_light_pos = None
+        kinematics = ctx.kinematics
+        if ctx.viewport is None or not kinematics.head_positions:
+            ctx.kinematics.laser_light_pos = None
             return
 
-        ra = ctx.rotary_axis
-        doc = ctx.doc
-        margin_shift = ctx.margin_shift
-
-        asm = machine.assembly
-        wcs = viewport.wcs_offset_mm
-        heads = asm.head_positions(state, wcs_offset=wcs)
+        ra = kinematics.rotary_axis
+        margin_shift = ctx.viewport.margin_shift
         vis_mat = margin_shift.astype(np.float32)
-        for name, (hx, hy, hz) in heads.items():
+        for name, (hx, hy, hz) in kinematics.head_positions.items():
             head_pos = vis_mat @ np.array([hx, hy, hz, 1.0], dtype=np.float32)
-            beam_height = 50.0
-            beam_color = (1.0, 0.3, 0.1, 1.0)
-            if name.startswith("head_"):
-                try:
-                    idx = int(name.split("_")[1])
-                    laser = machine.heads[idx]
-                    if not isinstance(laser, LaserHead):
-                        continue
-                    if laser.focal_distance > 0:
-                        beam_height = laser.focal_distance
-                    beam_color = hex_to_rgba(laser.cut_color)
-                except (ValueError, IndexError):
-                    pass
+            cfg = kinematics.head_configs.get(name)
+            if cfg is None or not cfg.valid:
+                continue
+            beam_height = cfg.beam_height
+            beam_color = cfg.beam_color
             if not state.laser_on:
                 continue
-            if ra is not None and asm.has_rotary:
-                current_layer = (
-                    op_player.get_current_layer(doc)
-                    if doc is not None
-                    else None
-                )
-                diameter = (
-                    current_layer.rotary_diameter if current_layer else 0.0
-                )
-                rotary_heads = asm.head_rotary_positions(state, diameter)
+            if ra is not None and kinematics.has_rotary:
+                rotary_heads = kinematics.rotary_head_positions or {}
                 if name in rotary_heads:
                     beam_pos = vis_mat @ np.array(
                         [*rotary_heads[name], 1.0], dtype=np.float32
@@ -142,7 +119,7 @@ class LaserBeamRenderer(BaseRenderer):
             self._beams.append((beam_pos[:3], beam_height, beam_color))
             self.laser_light_pos = beam_pos[:3].astype(np.float32)
 
-        ctx.laser_light_pos = self.laser_light_pos
+        ctx.kinematics.laser_light_pos = self.laser_light_pos
 
     def render(self, ctx: RenderContext, shaders: ShaderSet):
         if not self.vao:
@@ -152,9 +129,9 @@ class LaserBeamRenderer(BaseRenderer):
         if shader is None:
             return
 
-        proj_matrix = ctx.proj_matrix
-        view_matrix = ctx.view_matrix
-        viewport_height = ctx.viewport_height
+        proj_matrix = ctx.camera.proj_matrix
+        view_matrix = ctx.camera.view_matrix
+        viewport_height = ctx.camera.viewport_height
 
         p11 = float(proj_matrix[1, 1])
         if abs(p11) < 1e-6:

@@ -12,10 +12,8 @@ import trimesh
 from OpenGL import GL
 from trimesh.visual.color import ColorVisuals
 
-from ....machine.assembly import LinkRole
-from ....machine.models.laser import LaserHead
-from ....simulator.machine_state import MachineState
-from ..gl_utils import RenderContext, ShaderSet
+from ..gl_utils import ShaderSet
+from ..render_context import RenderContext
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -157,60 +155,27 @@ class ModelRenderer(BaseRenderer):
 
     def prepare(self, ctx: RenderContext) -> None:
         """Computes and caches the per-frame matrices for the model mesh."""
-        machine = ctx.machine
-        if machine is None or ctx.viewport is None:
+        kinematics = ctx.kinematics
+        if not kinematics.model_world_transforms or ctx.viewport is None:
             return
 
-        asm = machine.assembly
-        if asm is None:
-            return
-
-        model_state = ctx.op_player.state if ctx.op_player else MachineState()
-        wcs = ctx.viewport.wcs_offset_mm
-        model_transforms = asm.model_world_transforms(
-            model_state, wcs_offset=wcs
-        )
-        t = model_transforms.get(self.link_name)
+        t = kinematics.model_world_transforms.get(self.link_name)
         if t is None:
             return
 
         module_transform = t.astype(np.float32)
-        is_rotary = ctx.rotary_axis is not None and asm.has_rotary
-        if is_rotary:
-            link = asm.get_link(self.link_name)
-            if link and link.role != LinkRole.CHUCK:
-                focal = 50.0
-                if link.name.startswith("head_"):
-                    try:
-                        idx = int(link.name.split("_")[1])
-                        laser = machine.heads[idx]
-                        if isinstance(laser, LaserHead):
-                            if laser.focal_distance > 0:
-                                focal = laser.focal_distance
-                    except (ValueError, IndexError):
-                        pass
-                layer_rotary_diameter = 0.0
-                if ctx.op_player:
-                    current_layer = (
-                        ctx.op_player.get_current_layer(ctx.doc)
-                        if ctx.doc is not None
-                        else None
-                    )
-                    if current_layer:
-                        layer_rotary_diameter = current_layer.rotary_diameter
-                rotary_heads = asm.head_rotary_positions(
-                    model_state,
-                    layer_rotary_diameter,
-                    focal_distance=focal,
-                )
-                if link.name in rotary_heads:
-                    pos = rotary_heads[link.name]
-                    module_transform[:3, 3] = pos.astype(np.float32)
+        if kinematics.is_rotary:
+            focused = kinematics.focused_rotary_head_positions
+            if focused and self.link_name in focused:
+                pos = focused[self.link_name]
+                module_transform[:3, 3] = pos.astype(np.float32)
 
-        combined = ctx.mvp_ui @ ctx.margin_shift @ module_transform
+        combined = (
+            ctx.camera.mvp_ui @ ctx.viewport.margin_shift @ module_transform
+        )
         self._mvp_matrix = combined
-        self._model_matrix = ctx.margin_shift @ module_transform
-        self._point_light_pos = ctx.laser_light_pos
+        self._model_matrix = ctx.viewport.margin_shift @ module_transform
+        self._point_light_pos = kinematics.laser_light_pos
 
     def _load_mesh(self) -> bool:
         self._mesh_data = _load_mesh_data(self._path)
@@ -276,7 +241,7 @@ class ModelRenderer(BaseRenderer):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
     def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
-        if not ctx.show_models:
+        if not ctx.camera.show_models:
             return
         if not self._vao or self._mvp_matrix is None:
             return
@@ -287,7 +252,7 @@ class ModelRenderer(BaseRenderer):
 
         light_dir = np.array([0.5, 0.8, 1.0], dtype=np.float32)
         fill_dir = np.array([-0.6, -0.4, 0.3], dtype=np.float32)
-        camera_position = ctx.camera_position
+        camera_position = ctx.camera.camera_position
         model_matrix = self._model_matrix
         point_light_pos = self._point_light_pos
 

@@ -15,7 +15,8 @@ from typing import Optional, Tuple
 import numpy as np
 from OpenGL import GL
 
-from ..gl_utils import RenderContext, ShaderSet, set_line_width
+from ..gl_utils import ShaderSet, set_line_width
+from ..render_context import RenderContext
 from .base import BaseRenderer
 from .plane_renderer import PlaneRenderer
 from .text_renderer import TextRenderer
@@ -341,7 +342,7 @@ class AxisRenderer3D(BaseRenderer):
         ):
             return
 
-        if not ctx.show_grid:
+        if not ctx.camera.show_grid:
             return
 
         line_shader = shaders.main
@@ -349,10 +350,10 @@ class AxisRenderer3D(BaseRenderer):
         if line_shader is None or text_shader is None:
             return
 
-        text_mvp = ctx.mvp_ui
+        text_mvp = ctx.camera.mvp_ui
         origin_offset_mm = (
-            ctx.wcs_offset_mm
-            if ctx.wcs_offset_mm is not None
+            ctx.viewport.wcs_offset_mm
+            if ctx.viewport.wcs_offset_mm is not None
             else (0.0, 0.0, 0.0)
         )
 
@@ -362,10 +363,10 @@ class AxisRenderer3D(BaseRenderer):
         off_x, off_y, off_z = origin_offset_mm
 
         offset_vec = np.array([off_x, off_y, off_z, 1.0], dtype=np.float32)
-        world_offset_vec = ctx.model_matrix @ offset_vec
+        world_offset_vec = ctx.viewport.model_matrix @ offset_vec
 
         # 2. Construct the MVP for the static grid/axes.
-        grid_mvp = text_mvp @ ctx.model_matrix
+        grid_mvp = text_mvp @ ctx.viewport.model_matrix
 
         # Enable blending for transparent objects
         GL.glEnable(GL.GL_BLEND)
@@ -422,20 +423,20 @@ class AxisRenderer3D(BaseRenderer):
         """Helper method to render text labels along the axes."""
         if not self.text_renderer:
             return
-        model_matrix = ctx.model_matrix
+        model_matrix = ctx.viewport.model_matrix
         label_height_mm = 2.5
         x_axis_label_y_offset = label_height_mm * 1.2
         y_axis_label_x_offset = label_height_mm * 0.6
 
         # origin_offset_mm is in grid coordinates (workarea-relative)
         origin_offset_mm = (
-            ctx.wcs_offset_mm
-            if ctx.wcs_offset_mm is not None
+            ctx.viewport.wcs_offset_mm
+            if ctx.viewport.wcs_offset_mm is not None
             else (0.0, 0.0, 0.0)
         )
-        x_right = ctx.x_right
-        x_negative = ctx.x_negative
-        y_negative = ctx.y_negative
+        x_right = ctx.viewport.x_right
+        x_negative = ctx.viewport.x_negative
+        y_negative = ctx.viewport.y_negative
         wcs_local_x, wcs_local_y, _ = origin_offset_mm
 
         # X-axis labels

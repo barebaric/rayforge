@@ -4,7 +4,8 @@ import logging
 from typing import Any, List, Optional
 
 from ...simulator.scene3d import ScanlineOverlayLayer, VertexLayer
-from .gl_utils import RenderContext, ShaderSet
+from .gl_utils import ShaderSet
+from .render_context import RenderContext
 from .renderer.ops_renderer import OpsRenderer
 from .renderer.ring_buffer_renderer import RingBufferRenderer
 
@@ -55,14 +56,14 @@ class LayerRendererGroup:
         """
         Computes the executed-vertex counts for this frame.
 
-        Reads the playhead from ``ctx.op_player`` and maps it through the
-        group's command offsets, stashing the resulting counts so the ops
-        and ring draws can consume them.
+        Reads the playhead from ``ctx.playback.op_player`` and maps it
+        through the group's command offsets, stashing the resulting
+        counts so the ops and ring draws can consume them.
         """
         exec_powered = -1
         exec_travel = -1
         exec_ring = -1
-        op_player = ctx.op_player
+        op_player = ctx.playback.op_player
         if op_player:
             idx = op_player.current_index
             if len(self.powered_offsets) > 0 and idx + 1 < len(
@@ -94,8 +95,8 @@ class LayerRendererGroup:
 
     def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
         """Renders the group's ops (toolpaths)."""
-        ctx.executed_vertex_count = self._exec_powered
-        ctx.executed_travel_vertex_count = self._exec_travel
+        ctx.playback.executed_vertex_count = self._exec_powered
+        ctx.playback.executed_travel_vertex_count = self._exec_travel
         self.ops_renderer.render(ctx, shaders)
 
     def render_ring(self, ctx: RenderContext, shaders: ShaderSet) -> None:
@@ -108,7 +109,7 @@ class LayerRendererGroup:
             f"exec={self._exec_ring} "
             f"total={self.ring_renderer.vertex_count}"
         )
-        ctx.executed_vertex_count = self._exec_ring
+        ctx.playback.executed_vertex_count = self._exec_ring
         self.ring_renderer.render(ctx, shaders)
 
     def clear(self):

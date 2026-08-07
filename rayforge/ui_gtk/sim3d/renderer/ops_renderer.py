@@ -9,7 +9,8 @@ from OpenGL import GL
 
 from ....simulator.scene3d import VertexLayer
 from ...shared.color_lut_provider import ColorLutProvider
-from ..gl_utils import RenderContext, ShaderSet, set_line_width
+from ..gl_utils import ShaderSet, set_line_width
+from ..render_context import RenderContext
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -170,16 +171,18 @@ class OpsRenderer(BaseRenderer):
         if shader is None:
             return
 
-        mvp = ctx.mvp_rot if self.is_rotary else ctx.mvp_ui
+        mvp = ctx.kinematics.mvp_for(self.is_rotary)
         if mvp is None:
             return
 
-        colors = ctx.color_set
-        show_travel_moves = ctx.show_travel_moves
-        line_width = ctx.line_width
-        executed_vertex_count = ctx.executed_vertex_count
-        executed_travel_vertex_count = ctx.executed_travel_vertex_count
-        alpha_pending = ctx.alpha_pending
+        colors = ctx.camera.color_set
+        show_travel_moves = ctx.camera.show_travel_moves
+        line_width = ctx.camera.line_width
+        executed_vertex_count = ctx.playback.executed_vertex_count
+        executed_travel_vertex_count = (
+            ctx.playback.executed_travel_vertex_count
+        )
+        alpha_pending = ctx.playback.alpha_pending
 
         if executed_vertex_count > self.powered_vertex_count:
             raise ValueError(

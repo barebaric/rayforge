@@ -8,7 +8,13 @@ import numpy as np
 import pytest
 
 from rayforge.core.color import ColorSet
-from rayforge.ui_gtk.sim3d.gl_utils import RenderContext, ShaderSet
+from rayforge.ui_gtk.sim3d.gl_utils import ShaderSet
+from rayforge.ui_gtk.sim3d.render_context import (
+    CameraContext,
+    KinematicsContext,
+    PlaybackContext,
+    RenderContext,
+)
 from rayforge.ui_gtk.sim3d.renderer.ops_renderer import OpsRenderer
 
 
@@ -31,16 +37,12 @@ def colors():
 
 def _make_ctx(colors, show_travel_moves=False):
     return RenderContext(
-        proj_matrix=np.eye(4, dtype=np.float32),
-        view_matrix=np.eye(4, dtype=np.float32),
-        mvp_ui=np.eye(4, dtype=np.float32),
-        mvp_scene=np.eye(4, dtype=np.float32),
-        margin_shift=np.eye(4, dtype=np.float32),
-        model_matrix=np.eye(4, dtype=np.float32),
-        viewport_height=800,
-        camera_position=np.zeros(3),
-        color_set=colors,
-        show_travel_moves=show_travel_moves,
+        camera=CameraContext(
+            color_set=colors,
+            show_travel_moves=show_travel_moves,
+        ),
+        kinematics=KinematicsContext(mvp_ui=np.eye(4, dtype=np.float32)),
+        playback=PlaybackContext(),
     )
 
 
@@ -150,8 +152,8 @@ def test_render_raises_on_invalid_executed_count(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
     ctx = _make_ctx(colors, show_travel_moves=True)
-    ctx.mvp_ui = mvp
-    ctx.executed_vertex_count = 999
+    ctx.kinematics._mvp_ui = mvp
+    ctx.playback.executed_vertex_count = 999
 
     with (
         patch("OpenGL.GL.glBindVertexArray"),
@@ -183,7 +185,7 @@ def test_render_draws_powered_and_travel(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
     ctx = _make_ctx(colors, show_travel_moves=True)
-    ctx.mvp_ui = mvp
+    ctx.kinematics._mvp_ui = mvp
 
     with (
         patch("OpenGL.GL.glBindVertexArray"),
@@ -221,7 +223,7 @@ def test_render_hides_travel_when_disabled(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
     ctx = _make_ctx(colors, show_travel_moves=False)
-    ctx.mvp_ui = mvp
+    ctx.kinematics._mvp_ui = mvp
 
     with (
         patch("OpenGL.GL.glBindVertexArray"),
@@ -245,7 +247,7 @@ def test_render_noop_when_empty(renderer, colors):
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
     ctx = _make_ctx(colors, show_travel_moves=True)
-    ctx.mvp_ui = mvp
+    ctx.kinematics._mvp_ui = mvp
 
     with (
         patch("OpenGL.GL.glBindVertexArray"),

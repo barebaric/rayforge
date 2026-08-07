@@ -14,7 +14,8 @@ from OpenGL import GL
 
 from ....simulator.scene3d import ScanlineOverlayLayer
 from ...shared.color_lut_provider import ColorLutProvider
-from ..gl_utils import RenderContext, ShaderSet, set_line_width
+from ..gl_utils import ShaderSet, set_line_width
+from ..render_context import RenderContext
 from .base import BaseRenderer
 
 
@@ -154,24 +155,24 @@ class RingBufferRenderer(BaseRenderer):
         if shader is None:
             return
 
-        mvp = ctx.mvp_rot if self.is_rotary else ctx.mvp_ui
+        mvp = ctx.kinematics.mvp_for(self.is_rotary)
         if mvp is None:
             return
 
         draw_count = self.vertex_count
-        executed_vertex_count = ctx.executed_vertex_count
+        executed_vertex_count = ctx.playback.executed_vertex_count
 
-        line_width = ctx.line_width
+        line_width = ctx.camera.line_width
         shader.use()
         shader.set_mat4("uMVP", mvp)
         shader.set_float("uHasNormals", 0.0)
         shader.set_float("uUsePowerLUT", 1.0)
         shader.set_int("uNumLaserLUTs", self._num_laser_luts)
         shader.set_vec4(
-            "uZeroPowerColor", ctx.color_set.get_rgba("zero_power")
+            "uZeroPowerColor", ctx.camera.color_set.get_rgba("zero_power")
         )
         shader.set_int("uExecutedVertexCount", executed_vertex_count)
-        shader.set_float("uAlphaPending", ctx.alpha_pending)
+        shader.set_float("uAlphaPending", ctx.playback.alpha_pending)
 
         GL.glActiveTexture(GL.GL_TEXTURE1)
         GL.glBindTexture(GL.GL_TEXTURE_2D, self._color_lut_texture)

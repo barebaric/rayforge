@@ -6,7 +6,8 @@ import numpy as np
 from OpenGL import GL
 
 from ....machine.models.zone import Zone, ZoneShape
-from ..gl_utils import RenderContext, ShaderSet
+from ..gl_utils import ShaderSet
+from ..render_context import RenderContext
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -344,7 +345,7 @@ class ZoneRenderer(BaseRenderer):
         pass
 
     def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
-        if not ctx.show_nogo_zones:
+        if not ctx.camera.show_nogo_zones:
             return
         if not self._fill_vao and not self._edge_vao:
             return
@@ -353,7 +354,7 @@ class ZoneRenderer(BaseRenderer):
         if shader is None:
             return
 
-        mvp = ctx.mvp_ui @ ctx.margin_shift
+        mvp = ctx.camera.mvp_ui @ ctx.viewport.margin_shift
 
         shader.use()
         GL.glEnable(GL.GL_BLEND)

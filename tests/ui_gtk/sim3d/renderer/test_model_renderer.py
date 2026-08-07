@@ -5,7 +5,12 @@ import numpy as np
 import trimesh
 
 from rayforge.core.color import ColorSet
-from rayforge.ui_gtk.sim3d.gl_utils import RenderContext
+from rayforge.ui_gtk.sim3d.render_context import (
+    CameraContext,
+    KinematicsContext,
+    RenderContext,
+    ViewportContext,
+)
 from rayforge.ui_gtk.sim3d.renderer.model_renderer import (
     ModelRenderer,
     _load_mesh_data,
@@ -107,15 +112,14 @@ class TestModelRenderer:
         mock_shader = MagicMock()
         mvp = np.eye(4, dtype=np.float32)
         ctx = RenderContext(
-            proj_matrix=np.eye(4, dtype=np.float32),
-            view_matrix=np.eye(4, dtype=np.float32),
-            mvp_ui=mvp,
-            mvp_scene=mvp,
-            margin_shift=np.eye(4, dtype=np.float32),
-            model_matrix=np.eye(4, dtype=np.float32),
-            viewport_height=800,
-            camera_position=np.zeros(3),
-            color_set=ColorSet(),
+            camera=CameraContext(
+                mvp_ui=mvp,
+                viewport_height=800,
+                camera_position=np.zeros(3),
+                color_set=ColorSet(),
+            ),
+            viewport=ViewportContext(),
+            kinematics=KinematicsContext(mvp_ui=mvp),
         )
         renderer.render(ctx, mock_shader)
         mock_shader.use.assert_not_called()
@@ -123,3 +127,45 @@ class TestModelRenderer:
     def test_bounds_property(self, tmp_path):
         renderer = ModelRenderer(tmp_path / "test.glb")
         assert renderer.bounds is None
+
+    def test_prepare_reads_kinematics_from_context(self, tmp_path):
+        renderer = ModelRenderer(tmp_path / "test.glb", link_name="gantry")
+        mvp = np.eye(4, dtype=np.float32)
+        kinematics = KinematicsContext(
+            mvp_ui=mvp,
+            model_world_transforms={"gantry": np.eye(4, dtype=np.float32)},
+        )
+        kinematics.laser_light_pos = np.array([1.0, 2.0, 3.0])
+        ctx = RenderContext(
+            camera=CameraContext(
+                mvp_ui=mvp,
+                viewport_height=800,
+                camera_position=np.zeros(3),
+                color_set=ColorSet(),
+            ),
+            viewport=ViewportContext(margin_shift=np.eye(4)),
+            kinematics=kinematics,
+        )
+
+        renderer.prepare(ctx)
+
+        assert renderer._mvp_matrix is not None
+        assert renderer._model_matrix is not None
+        assert renderer._point_light_pos is not None
+        np.testing.assert_allclose(renderer._point_light_pos, [1.0, 2.0, 3.0])
+
+    def test_prepare_noop_without_kinematics(self, tmp_path):
+        renderer = ModelRenderer(tmp_path / "test.glb", link_name="gantry")
+        mvp = np.eye(4, dtype=np.float32)
+        ctx = RenderContext(
+            camera=CameraContext(
+                mvp_ui=mvp,
+                viewport_height=800,
+                camera_position=np.zeros(3),
+                color_set=ColorSet(),
+            ),
+            viewport=ViewportContext(margin_shift=np.eye(4)),
+            kinematics=KinematicsContext(mvp_ui=mvp),
+        )
+        renderer.prepare(ctx)
+        assert renderer._mvp_matrix is None
