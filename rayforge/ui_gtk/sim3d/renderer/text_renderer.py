@@ -167,11 +167,16 @@ class TextRenderer(BaseRenderer):
         else:
             self._atlas_buffer = bytes(buffer)
 
+    def _cleanup_self(self) -> None:
+        """Resets GPU-bound state so a later init_gl can recreate it."""
+        self.texture_id = 0
+        self.vao = 0
+        self.vbo = 0
+
     def init_gl(self) -> None:
         """Initializes all OpenGL resources."""
-        if self._atlas_buffer:
+        if self.texture_id == 0:
             self._upload_atlas_to_gpu()
-            self._atlas_buffer = None  # Free CPU memory
 
         self.vao = self._create_vao()
         self.vbo = self._create_vbo()
