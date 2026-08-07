@@ -3,7 +3,6 @@ import math
 import time
 from typing import TYPE_CHECKING, Optional
 
-import numpy as np
 from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
 
@@ -17,7 +16,7 @@ from .camera import ViewDirection
 from .camera_controller import CameraController
 from .chunked_upload import ChunkedUploadController
 from .doc_signals import DocSignalHub
-from .gl_utils import RenderContext, rotation_4x4
+from .render_context_builder import RenderContextBuilder
 from .renderer.scene_renderer import SceneRenderer
 from .scene_presenter import ScenePresenter
 from .theme_resolver import ThemeResolver
@@ -47,6 +46,7 @@ class Canvas3D(Gtk.GLArea):
         self._viewport = viewport
 
         self._scene = SceneRenderer()
+        self._ctx_builder = RenderContextBuilder()
         self._show_travel_moves = False
         self._show_nogo_zones = True
         self._show_models = True
@@ -276,37 +276,6 @@ class Canvas3D(Gtk.GLArea):
                 self._scene.update_zones_from_machine(machine)
         self._upload_ctrl.process_pending()
 
-    @staticmethod
-    def _world_size_to_pixels(
-        mvp_gl: np.ndarray,
-        world_mm: float,
-        viewport_w: int,
-        viewport_h: int,
-    ) -> float:
-        mvp = mvp_gl.T
-        p0 = mvp @ np.array([0, 0, 0, 1], dtype=np.float32)
-        p1 = mvp @ np.array([world_mm, 0, 0, 1], dtype=np.float32)
-        if abs(p0[3]) < 1e-9 or abs(p1[3]) < 1e-9:
-            return 1.0
-        ndc_dx = (p1[0] / p1[3]) - (p0[0] / p0[3])
-        return abs(ndc_dx) * viewport_w * 0.5
-
-    def _compute_spot_line_width(self, mvp_gl: np.ndarray) -> float:
-        machine = self._context.machine
-        spot_mm = 0.1
-        laser_head = machine.get_default_laser_head() if machine else None
-        if laser_head is not None:
-            spot_mm = laser_head.spot_size_mm[0]
-        if not self._cam_ctrl.camera:
-            return 2.0
-        px = self._world_size_to_pixels(
-            mvp_gl,
-            spot_mm,
-            self._cam_ctrl.camera.width,
-            self._cam_ctrl.camera.height,
-        )
-        return max(2.0, px)
-
     def on_render(self, area, ctx) -> bool:
         """The main rendering loop."""
         if not self._cam_ctrl.camera or not self._gl_initialized:
@@ -329,112 +298,20 @@ class Canvas3D(Gtk.GLArea):
                 GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT  # type: ignore
             )
 
-            proj_matrix = self._cam_ctrl.camera.get_projection_matrix()
-            view_matrix = self._cam_ctrl.camera.get_view_matrix()
-
-            # Base MVP for UI elements that should not be model-transformed
-            mvp_matrix_ui = proj_matrix @ view_matrix
-
-            # Create WCS translation matrix
-            offset_x, offset_y, offset_z = self._viewport.wcs_offset_mm
-            wcs_translation_matrix = np.array(
-                [
-                    [1, 0, 0, offset_x],
-                    [0, 1, 0, offset_y],
-                    [0, 0, 1, offset_z],
-                    [0, 0, 0, 1],
-                ],
-                dtype=np.float32,
-            )
-
-            # Final model matrix for the grid combines the origin flip and WCS
-            # translation. Grid/Axes vertices are in local (0..W, 0..H).
-            # 1. Apply wcs_translation (shift by offset).
-            # 2. Apply model_matrix (orient to machine coords).
-            # Note: matrix order A @ B applies B then A.
-            # This order applies WCS translation locally, THEN applies the
-            # machine flip/origin shift.
-            grid_model_matrix = (
-                self._viewport.model_matrix @ wcs_translation_matrix
-            )
-
-            # Final MVP for scene geometry (grid, axes, rotary)
-            mvp_matrix_scene = mvp_matrix_ui @ grid_model_matrix
-
-            # Convert to column-major for OpenGL
-            mvp_matrix_ui_gl = mvp_matrix_ui.T
-
-            # Build the shared render context for this frame
-            spot_line_width = self._compute_spot_line_width(mvp_matrix_ui_gl)
-            op_player = self._presenter.op_player
-            machine = self._context.machine
-            rotary_axis = op_player.rotary_axis if op_player else None
-            ctx = RenderContext(
-                proj_matrix=proj_matrix,
-                view_matrix=view_matrix,
-                mvp_ui=mvp_matrix_ui,
-                mvp_scene=mvp_matrix_scene,
-                margin_shift=self._viewport.margin_shift,
-                model_matrix=self._viewport.model_matrix,
-                viewport_height=self._cam_ctrl.camera.height,
-                camera_position=self._cam_ctrl.camera.position,
-                color_set=self._theme_resolver.color_set,
-                show_travel_moves=self._show_travel_moves,
-                line_width=spot_line_width,
-                machine=machine,
-                doc=self.doc,
-                op_player=op_player,
-                compiled_artifact=self._presenter.compiled_artifact,
+            ctx = self._ctx_builder.build(
+                camera=self._cam_ctrl.camera,
                 viewport=self._viewport,
-                rotary_axis=rotary_axis,
-                had_rotary_layers=self._scene.had_rotary_layers,
+                color_set=self._theme_resolver.color_set,
+                scene=self._scene,
+                op_player=self._presenter.op_player,
+                compiled_artifact=self._presenter.compiled_artifact,
+                doc=self.doc,
+                machine=self._context.machine,
+                show_travel_moves=self._show_travel_moves,
                 show_grid=self._show_grid,
                 show_nogo_zones=self._show_nogo_zones,
                 show_models=self._show_models,
-                wcs_offset_mm=self._viewport.wcs_offset_mm,
-                x_right=self._viewport.x_right,
-                y_down=self._viewport.y_down,
-                x_negative=self._viewport.x_negative,
-                y_negative=self._viewport.y_negative,
             )
-
-            # Compute the rotary helper fields once per frame so the
-            # renderers can consume them.
-            ctx.mvp_flat_gl = mvp_matrix_ui_gl
-            cyl_angle = 0.0
-            if (
-                op_player
-                and self._scene.had_rotary_layers
-                and machine
-                and rotary_axis is not None
-            ):
-                asm = machine.assembly
-                if asm.has_rotary:
-                    degrees = op_player.state.axes.get(rotary_axis, 0.0)
-                    cyl_angle = math.radians(degrees)
-
-            if self._scene.had_rotary_layers and machine:
-                cyl_base_mvp = (
-                    mvp_matrix_ui.astype(np.float64)
-                    @ self._viewport.margin_shift.astype(np.float64)
-                    @ self._scene.cylinder_transform
-                )
-            else:
-                cyl_base_mvp = mvp_matrix_ui.astype(
-                    np.float64
-                ) @ self._viewport.margin_shift.astype(np.float64)
-
-            vis_rot_axis = np.array([1.0, 0.0, 0.0], dtype=np.float64)
-            rot_4x4 = rotation_4x4(vis_rot_axis, cyl_angle)
-            ctx.rot_4x4 = rot_4x4
-            ctx.mvp_rot_gl = (cyl_base_mvp @ rot_4x4).T.astype(np.float32)
-            cyl_mesh_mvp = (
-                mvp_matrix_ui
-                @ self._viewport.margin_shift
-                @ self._scene.cylinder_transform
-                @ rot_4x4
-            ).astype(np.float64)
-            ctx.cyl_mesh_mvp_gl = cyl_mesh_mvp.T.astype(np.float32)
 
             self._scene.render(ctx)
 
