@@ -48,7 +48,7 @@ class CylinderRenderer(BaseRenderer):
 
     def prepare(self, ctx: RenderContext) -> None:
         """Caches the per-frame MVP matrix for the cylinder mesh."""
-        self._mvp = ctx.cyl_mesh_mvp_gl
+        self._mvp = ctx.cyl_mesh_mvp
 
     def init_gl(self) -> None:
         """Generates cylinder wireframe vertices and initializes OpenGL."""

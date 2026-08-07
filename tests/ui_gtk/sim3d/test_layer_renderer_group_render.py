@@ -25,8 +25,8 @@ def _make_ctx(mvp_flat, mvp_rot, op_player=None):
         camera_position=np.zeros(3),
         color_set=MagicMock(),
     )
-    ctx.mvp_flat_gl = mvp_flat
-    ctx.mvp_rot_gl = mvp_rot
+    ctx.mvp_ui = mvp_flat
+    ctx.mvp_rot = mvp_rot
     ctx.op_player = op_player
     return ctx
 

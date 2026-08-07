@@ -111,32 +111,34 @@ class Shader:
         """
         Sets a mat4 uniform in the shader.
 
-        The matrix is expected to be in column-major format (or a
-        transposed NumPy array).
+        The matrix is expected to be in row-major format (NumPy
+        convention); it is transposed here so the GPU receives
+        column-major data.  All renderers pass row-major matrices.
 
         Args:
             name: The name of the uniform variable in the shader.
-            mat: A 4x4 NumPy array, column-major.
+            mat: A 4x4 NumPy array, row-major.
         """
         loc = GL.glGetUniformLocation(self.program, name)
         if loc != -1:
-            GL.glUniformMatrix4fv(loc, 1, GL.GL_FALSE, mat)
+            GL.glUniformMatrix4fv(loc, 1, GL.GL_TRUE, mat)
             self._uniform_values[name] = ("mat4", np.array(mat, copy=True))
 
     def set_mat3(self, name: str, mat: np.ndarray) -> None:
         """
         Sets a mat3 uniform in the shader.
 
-        The matrix is expected to be in column-major format (or a
-        transposed NumPy array).
+        The matrix is expected to be in row-major format (NumPy
+        convention); it is transposed here so the GPU receives
+        column-major data.  All renderers pass row-major matrices.
 
         Args:
             name: The name of the uniform variable in the shader.
-            mat: A 3x3 NumPy array, column-major.
+            mat: A 3x3 NumPy array, row-major.
         """
         loc = GL.glGetUniformLocation(self.program, name)
         if loc != -1:
-            GL.glUniformMatrix3fv(loc, 1, GL.GL_FALSE, mat)
+            GL.glUniformMatrix3fv(loc, 1, GL.GL_TRUE, mat)
             self._uniform_values[name] = ("mat3", np.array(mat, copy=True))
 
     def set_vec2(self, name: str, vec: Union[tuple, list, np.ndarray]) -> None:

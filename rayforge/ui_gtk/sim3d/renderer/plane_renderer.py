@@ -88,7 +88,7 @@ class PlaneRenderer(BaseRenderer):
         if shader is None:
             return
 
-        mvp = ctx.model_matrix.T @ ctx.mvp_ui.T
+        mvp = ctx.mvp_ui @ ctx.model_matrix
 
         shader.set_mat4("uMVP", mvp)
         shader.set_vec4("uColor", self.color)

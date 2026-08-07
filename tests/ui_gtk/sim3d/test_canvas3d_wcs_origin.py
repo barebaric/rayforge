@@ -151,8 +151,8 @@ def test_wcs_marker_position(
     assert len(mvp_calls) >= 2
     wcs_mvp = mvp_calls[-1]
 
-    actual_x = wcs_mvp[3, 0]
-    actual_y = wcs_mvp[3, 1]
+    actual_x = wcs_mvp[0, 3]
+    actual_y = wcs_mvp[1, 3]
 
     np.testing.assert_allclose(
         (actual_x, actual_y),

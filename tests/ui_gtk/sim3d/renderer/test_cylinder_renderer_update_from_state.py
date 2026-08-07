@@ -26,7 +26,7 @@ def renderer():
 
 def _make_ctx(mvp=None):
     ctx = MagicMock()
-    ctx.cyl_mesh_mvp_gl = mvp
+    ctx.cyl_mesh_mvp = mvp
     return ctx
 
 

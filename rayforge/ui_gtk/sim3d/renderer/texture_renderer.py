@@ -47,10 +47,7 @@ class TextureArtifactRenderer(BaseRenderer):
     def prepare(self, ctx: RenderContext) -> None:
         """Caches the per-frame MVP matrices for the texture quads."""
         self._flat_mvp = ctx.mvp_ui
-        if ctx.cyl_mesh_mvp_gl is not None:
-            self._cyl_mvp = ctx.cyl_mesh_mvp_gl.T
-        else:
-            self._cyl_mvp = None
+        self._cyl_mvp = ctx.cyl_mesh_mvp
 
         reached_count = None
         op_player = ctx.op_player
@@ -393,7 +390,7 @@ class TextureArtifactRenderer(BaseRenderer):
             shader.set_int("uLaserIndex", instance.get("laser_index", 0))
 
             final_mvp = self._flat_mvp @ instance["model_matrix"]
-            shader.set_mat4("uMVP", final_mvp.T)
+            shader.set_mat4("uMVP", final_mvp)
 
             GL.glActiveTexture(GL.GL_TEXTURE1)
             GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)
@@ -465,7 +462,7 @@ class TextureArtifactRenderer(BaseRenderer):
 
             # Draw using the full Scene Matrix, so it correctly
             # inherits WCS and _model_matrix.
-            shader.set_mat4("uMVP", self._cyl_mvp.T)
+            shader.set_mat4("uMVP", self._cyl_mvp)
 
             GL.glActiveTexture(GL.GL_TEXTURE1)
             GL.glBindTexture(GL.GL_TEXTURE_2D, self.color_lut_texture)

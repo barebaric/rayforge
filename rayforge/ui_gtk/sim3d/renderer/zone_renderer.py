@@ -353,7 +353,7 @@ class ZoneRenderer(BaseRenderer):
         if shader is None:
             return
 
-        mvp = (ctx.mvp_ui @ ctx.margin_shift).T
+        mvp = ctx.mvp_ui @ ctx.margin_shift
 
         shader.use()
         GL.glEnable(GL.GL_BLEND)

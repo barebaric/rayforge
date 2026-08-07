@@ -349,7 +349,7 @@ class AxisRenderer3D(BaseRenderer):
         if line_shader is None or text_shader is None:
             return
 
-        text_mvp = ctx.mvp_ui.T
+        text_mvp = ctx.mvp_ui
         origin_offset_mm = (
             ctx.wcs_offset_mm
             if ctx.wcs_offset_mm is not None
@@ -365,7 +365,7 @@ class AxisRenderer3D(BaseRenderer):
         world_offset_vec = ctx.model_matrix @ offset_vec
 
         # 2. Construct the MVP for the static grid/axes.
-        grid_mvp = ctx.model_matrix.T @ text_mvp
+        grid_mvp = text_mvp @ ctx.model_matrix
 
         # Enable blending for transparent objects
         GL.glEnable(GL.GL_BLEND)
@@ -396,7 +396,7 @@ class AxisRenderer3D(BaseRenderer):
         # 3. Draw the WCS origin marker
         wcs_translation_matrix = np.identity(4, dtype=np.float32)
         wcs_translation_matrix[:3, 3] = world_offset_vec[:3]
-        wcs_marker_mvp = wcs_translation_matrix.T @ text_mvp
+        wcs_marker_mvp = text_mvp @ wcs_translation_matrix
 
         line_shader.set_mat4("uMVP", wcs_marker_mvp)
         line_shader.set_vec4("uColor", self.wcs_marker_color)
