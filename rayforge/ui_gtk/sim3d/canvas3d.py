@@ -67,13 +67,13 @@ class Canvas3D(Gtk.GLArea):
             self._doc_editor,
             self._scene,
             theme_resolver=self._theme_resolver,
-            get_viewport=lambda: self._viewport,
+            get_viewport=self._get_viewport,
             get_gl_initialized=lambda: self._gl_initialized,
             get_show_travel_moves=lambda: self._show_travel_moves,
             get_has_stale_job=lambda: self._doc_hub.has_stale_job(),
             get_camera_available=lambda: self._cam_ctrl.camera is not None,
             make_current=self.make_current,
-            mark_scene_dirty=lambda: setattr(self, "_scene_gl_dirty", True),
+            mark_scene_dirty=self._mark_scene_dirty,
             mark_artifact_dirty=lambda: (
                 self._upload_ctrl.mark_artifact_dirty()
             ),
@@ -94,7 +94,7 @@ class Canvas3D(Gtk.GLArea):
 
         self._cam_ctrl = CameraController(
             self,
-            get_viewport=lambda: self._viewport,
+            get_viewport=self._get_viewport,
             request_render=self.queue_render,
             on_key_pressed=self._on_key_pressed,
         )
@@ -102,8 +102,8 @@ class Canvas3D(Gtk.GLArea):
         self._doc_hub = DocSignalHub(
             self._context,
             self._doc_editor,
-            set_viewport=lambda vp: setattr(self, "_viewport", vp),
-            mark_scene_dirty=lambda: setattr(self, "_scene_gl_dirty", True),
+            set_viewport=self._set_viewport,
+            mark_scene_dirty=self._mark_scene_dirty,
             request_render=self.queue_render,
             refresh_scene=self._presenter.update_scene_from_doc,
             get_gl_initialized=lambda: self._gl_initialized,
@@ -165,11 +165,6 @@ class Canvas3D(Gtk.GLArea):
         """Attach the playback overlay widget and bind it to this canvas."""
         self._presenter.set_playback_overlay(overlay)
         overlay.set_canvas(self)
-
-    def _on_style_changed(self, widget, gparam):
-        """Marks theme resources as dirty when the GTK theme changes."""
-        self._theme_resolver.mark_dirty()
-        self.queue_render()
 
     def _on_config_changed(self, sender, **kwargs):
         """Updates renderer color LUTs when config settings change."""
@@ -258,6 +253,18 @@ class Canvas3D(Gtk.GLArea):
         except Exception as e:
             logger.error(f"OpenGL Initialization Error: {e}", exc_info=True)
             self._gl_initialized = False
+
+    def _get_viewport(self) -> ViewportConfig:
+        """Returns the current viewport configuration."""
+        return self._viewport
+
+    def _set_viewport(self, viewport: ViewportConfig):
+        """Sets the viewport configuration (from the signal hub)."""
+        self._viewport = viewport
+
+    def _mark_scene_dirty(self):
+        """Mark the GL scene as needing a rebuild on the next frame."""
+        self._scene_gl_dirty = True
 
     def _process_pending_gl_updates(self):
         if self._scene_gl_dirty:
