@@ -9,6 +9,7 @@ gi.require_version("Adw", "1")
 from unittest.mock import MagicMock, patch
 
 import pytest
+from blinker import Signal
 from raygeo.ops.axis import Axis
 
 from rayforge.machine.models.machine import Machine
@@ -30,13 +31,13 @@ def _make_presenter(**overrides):
         "get_viewport": lambda: MagicMock(),
         "get_gl_initialized": lambda: True,
         "get_show_travel_moves": lambda: False,
-        "get_has_stale_job": lambda: False,
         "get_camera_available": lambda: True,
         "make_current": MagicMock(),
         "mark_scene_dirty": lambda: calls["scene_dirty"].append(True),
         "mark_artifact_dirty": lambda: calls["artifact_dirty"].append(True),
         "reset_view": MagicMock(),
         "request_render": lambda: calls["rendered"].append(True),
+        "upload_complete": Signal(),
     }
     defaults.update(overrides)
 
@@ -48,13 +49,13 @@ def _make_presenter(**overrides):
         get_viewport=defaults["get_viewport"],
         get_gl_initialized=defaults["get_gl_initialized"],
         get_show_travel_moves=defaults["get_show_travel_moves"],
-        get_has_stale_job=defaults["get_has_stale_job"],
         get_camera_available=defaults["get_camera_available"],
         make_current=defaults["make_current"],
         mark_scene_dirty=defaults["mark_scene_dirty"],
         mark_artifact_dirty=defaults["mark_artifact_dirty"],
         reset_view=defaults["reset_view"],
         request_render=defaults["request_render"],
+        upload_complete=defaults["upload_complete"],
     )
     return presenter, defaults, calls
 
@@ -255,8 +256,12 @@ def test_build_op_player_async_preserves_playhead(ui_context_initializer):
 
 @pytest.mark.ui
 def test_on_pipeline_state_changed_clears_stale_job(ui_context_initializer):
-    presenter, _, calls = _make_presenter(get_has_stale_job=lambda: True)
-    presenter.job_handle = MagicMock()
+    doc_editor = MagicMock()
+    doc_editor.pipeline = MagicMock()
+    doc_editor.pipeline.data_generation_id = 2
+    presenter, _, calls = _make_presenter(doc_editor=doc_editor)
+    presenter._current_job_handle = MagicMock()
+    presenter._current_job_handle.generation_id = 1
     presenter._compiled_artifact = MagicMock()
 
     presenter._on_pipeline_state_changed(None, is_processing=False)
@@ -268,18 +273,58 @@ def test_on_pipeline_state_changed_clears_stale_job(ui_context_initializer):
 
 
 @pytest.mark.ui
-def test_on_op_player_required_binds_player(ui_context_initializer):
+def test_on_upload_complete_binds_player(ui_context_initializer):
     scene = MagicMock()
     presenter, _, _ = _make_presenter(scene=scene)
     presenter._build_op_player_async = MagicMock()
     presenter._op_player = MagicMock()
     presenter._compiled_artifact = MagicMock()
 
-    presenter._on_op_player_required()
+    presenter._on_upload_complete(None)
 
     presenter._build_op_player_async.assert_called_once()
     scene.extract_playback_offsets.assert_called_once_with(
         presenter.compiled_artifact
+    )
+
+
+@pytest.mark.ui
+def test_has_stale_job(ui_context_initializer):
+    doc_editor = MagicMock()
+    doc_editor.pipeline = MagicMock()
+    doc_editor.pipeline.data_generation_id = 5
+    presenter, _, _ = _make_presenter(doc_editor=doc_editor)
+    assert presenter.has_stale_job() is True
+
+    handle = MagicMock()
+    handle.generation_id = 5
+    presenter._current_job_handle = handle
+    assert presenter.has_stale_job() is False
+
+    doc_editor.pipeline.data_generation_id = 6
+    assert presenter.has_stale_job() is True
+
+
+@pytest.mark.ui
+def test_connect_and_disconnect_subscribe_pipeline(ui_context_initializer):
+    presenter, defaults, _ = _make_presenter()
+    pipeline = MagicMock()
+    defaults["doc_editor"].pipeline = pipeline
+
+    presenter.connect()
+    pipeline.processing_state_changed.connect.assert_called_once_with(
+        presenter._on_pipeline_state_changed
+    )
+    pipeline.job_generation_finished.connect.assert_called_once_with(
+        presenter._on_job_generation_finished
+    )
+
+    presenter.disconnect()
+    pipeline.processing_state_changed.disconnect.assert_called_once_with(
+        presenter._on_pipeline_state_changed
+    )
+    pipeline.job_generation_finished.disconnect.assert_called_once_with(
+        presenter._on_job_generation_finished
     )
 
 

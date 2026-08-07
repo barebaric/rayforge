@@ -28,9 +28,6 @@ def _make_hub(context=None, doc_editor=None):
         request_render=lambda: rendered.append(True),
         refresh_scene=lambda: refreshed.append(True),
         get_gl_initialized=lambda: True,
-        get_job_handle=lambda: MagicMock(generation_id=1),
-        on_pipeline_state_changed=lambda *a, **kw: None,
-        on_job_generation_finished=lambda *a, **kw: None,
     )
     return hub, viewports, scene_dirty, rendered, refreshed
 
@@ -97,12 +94,6 @@ def test_connect_active_layer_wcs(ui_context_initializer):
     layer.updated.send(layer)
     assert rendered == [True]
     assert len(viewports) >= 1
-
-
-@pytest.mark.ui
-def test_has_stale_job(ui_context_initializer):
-    hub, _, _, _, _ = _make_hub()
-    assert hub.has_stale_job() is True
 
 
 @pytest.mark.ui

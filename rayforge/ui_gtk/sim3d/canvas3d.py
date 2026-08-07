@@ -62,25 +62,6 @@ class Canvas3D(Gtk.GLArea):
             request_render=self.queue_render,
         )
 
-        self._presenter = ScenePresenter(
-            self._context,
-            self._doc_editor,
-            self._scene,
-            theme_resolver=self._theme_resolver,
-            get_viewport=self._get_viewport,
-            get_gl_initialized=lambda: self._gl_initialized,
-            get_show_travel_moves=lambda: self._show_travel_moves,
-            get_has_stale_job=lambda: self._doc_hub.has_stale_job(),
-            get_camera_available=lambda: self._cam_ctrl.camera is not None,
-            make_current=self.make_current,
-            mark_scene_dirty=self._mark_scene_dirty,
-            mark_artifact_dirty=lambda: (
-                self._upload_ctrl.mark_artifact_dirty()
-            ),
-            reset_view=self.reset_view,
-            request_render=self.queue_render,
-        )
-
         self._upload_ctrl = ChunkedUploadController(
             self._scene,
             get_artifact=lambda: self._presenter.compiled_artifact,
@@ -89,7 +70,25 @@ class Canvas3D(Gtk.GLArea):
             make_current=self.make_current,
             request_render=self.queue_render,
             on_luts_required=self._theme_resolver.update_renderer_color_luts,
-            on_op_player_required=self._presenter._on_op_player_required,
+        )
+
+        self._presenter = ScenePresenter(
+            self._context,
+            self._doc_editor,
+            self._scene,
+            theme_resolver=self._theme_resolver,
+            get_viewport=self._get_viewport,
+            get_gl_initialized=lambda: self._gl_initialized,
+            get_show_travel_moves=lambda: self._show_travel_moves,
+            get_camera_available=lambda: self._cam_ctrl.camera is not None,
+            make_current=self.make_current,
+            mark_scene_dirty=self._mark_scene_dirty,
+            mark_artifact_dirty=lambda: (
+                self._upload_ctrl.mark_artifact_dirty()
+            ),
+            reset_view=self.reset_view,
+            request_render=self.queue_render,
+            upload_complete=self._upload_ctrl.upload_complete,
         )
 
         self._cam_ctrl = CameraController(
@@ -107,13 +106,6 @@ class Canvas3D(Gtk.GLArea):
             request_render=self.queue_render,
             refresh_scene=self._presenter.update_scene_from_doc,
             get_gl_initialized=lambda: self._gl_initialized,
-            get_job_handle=lambda: self._presenter.job_handle,
-            on_pipeline_state_changed=(
-                self._presenter._on_pipeline_state_changed
-            ),
-            on_job_generation_finished=(
-                self._presenter._on_job_generation_finished
-            ),
         )
 
         self.set_has_depth_buffer(True)
@@ -133,7 +125,7 @@ class Canvas3D(Gtk.GLArea):
 
     def has_stale_job(self) -> bool:
         """True if the cached job handle is from an older generation."""
-        return self._doc_hub.has_stale_job()
+        return self._presenter.has_stale_job()
 
     @property
     def doc(self) -> "Doc":
@@ -193,7 +185,7 @@ class Canvas3D(Gtk.GLArea):
 
         self.reset_view(ViewDirection.ISO)
         self._theme_resolver.update_theme_and_colors()
-        self._doc_hub.connect_pipeline()
+        self._presenter.connect()
 
         if self._presenter.job_handle is None and self.pipeline:
             self._presenter.job_handle = self.pipeline.last_completed_handle
@@ -210,6 +202,7 @@ class Canvas3D(Gtk.GLArea):
     def on_unrealize(self, area) -> None:
         """Called before the GLArea is unrealized."""
         logger.info("GLArea unrealized. Cleaning up GL resources.")
+        self._presenter.disconnect()
         self._doc_hub.disconnect()
         self._context.config.changed.disconnect(self._on_config_changed)
         self._upload_ctrl.cancel()

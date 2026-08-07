@@ -6,11 +6,15 @@ artifact becomes GL-dirty, the controller prepares the per-layer upload
 items and steps through them one per idle callback so a frame is never
 blocked uploading a whole artifact.  It also tracks the pending idle
 source so it can be cancelled on teardown.
+
+Emits ``upload_complete`` once every item has been processed, so the
+presenter can build playback after the fresh layer groups exist.
 """
 
 import logging
 from typing import TYPE_CHECKING, Callable, Optional
 
+from blinker import Signal
 from gi.repository import GLib
 
 if TYPE_CHECKING:
@@ -39,8 +43,8 @@ class ChunkedUploadController:
         make_current: Callable[[], None],
         request_render: Callable[[], None],
         on_luts_required: Callable[[], None],
-        on_op_player_required: Callable[[], None],
     ):
+        self.upload_complete = Signal()
         self._scene = scene
         self._get_artifact = get_artifact
         self._get_show_travel_moves = get_show_travel_moves
@@ -48,7 +52,6 @@ class ChunkedUploadController:
         self._make_current = make_current
         self._request_render = request_render
         self._on_luts_required = on_luts_required
-        self._on_op_player_required = on_op_player_required
 
         self._artifact_gl_dirty = False
         self._upload_state = None
@@ -116,6 +119,7 @@ class ChunkedUploadController:
 
         if idx >= len(items):
             self._upload_state = None
+            self.upload_complete.send(self)
             self._request_render()
             return False
 
@@ -142,9 +146,6 @@ class ChunkedUploadController:
 
             elif kind == "color_luts":
                 self._on_luts_required()
-
-            elif kind == "op_player":
-                self._on_op_player_required()
 
         except Exception:
             logger.exception("[CANVAS3D] Error during chunked upload")

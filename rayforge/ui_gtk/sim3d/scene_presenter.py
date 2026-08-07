@@ -12,6 +12,7 @@ import time
 from typing import TYPE_CHECKING, Callable, Dict, Optional
 
 import numpy as np
+from blinker import Signal
 from raygeo.ops import Ops
 
 from ...context import RayforgeContext
@@ -63,13 +64,13 @@ class ScenePresenter:
         get_viewport: Callable[[], "ViewportConfig"],
         get_gl_initialized: Callable[[], bool],
         get_show_travel_moves: Callable[[], bool],
-        get_has_stale_job: Callable[[], bool],
         get_camera_available: Callable[[], bool],
         make_current: Callable[[], None],
         mark_scene_dirty: Callable[[], None],
         mark_artifact_dirty: Callable[[], None],
         reset_view: Callable[[ViewDirection], None],
         request_render: Callable[[], None],
+        upload_complete: Signal,
     ):
         self._context = context
         self._doc_editor = doc_editor
@@ -78,13 +79,13 @@ class ScenePresenter:
         self._get_viewport = get_viewport
         self._get_gl_initialized = get_gl_initialized
         self._get_show_travel_moves = get_show_travel_moves
-        self._get_has_stale_job = get_has_stale_job
         self._get_camera_available = get_camera_available
         self._make_current = make_current
         self._mark_scene_dirty = mark_scene_dirty
         self._mark_artifact_dirty = mark_artifact_dirty
         self._reset_view = reset_view
         self._request_render = request_render
+        self._upload_complete = upload_complete
 
         self._scene_preparation_task: Optional[Task] = None
         self._compiled_artifact: Optional[CompiledSceneArtifact] = None
@@ -92,6 +93,35 @@ class ScenePresenter:
         self._op_player: Optional[OpPlayer] = None
         self._playback_assembly: Optional["Assembly"] = None
         self._playback_overlay = None
+
+    def connect(self):
+        """Subscribe to the pipeline and upload events that drive the scene.
+
+        Called once the canvas has realized its GL context.  ``connect`` /
+        ``disconnect`` pair keeps the presenter's signal wiring in one
+        place instead of being threaded through the canvas.
+        """
+        self._upload_complete.connect(self._on_upload_complete)
+        pipeline = self._doc_editor.pipeline
+        if pipeline:
+            pipeline.processing_state_changed.connect(
+                self._on_pipeline_state_changed
+            )
+            pipeline.job_generation_finished.connect(
+                self._on_job_generation_finished
+            )
+
+    def disconnect(self):
+        """Unsubscribe from pipeline and upload events."""
+        self._upload_complete.disconnect(self._on_upload_complete)
+        pipeline = self._doc_editor.pipeline
+        if pipeline:
+            pipeline.processing_state_changed.disconnect(
+                self._on_pipeline_state_changed
+            )
+            pipeline.job_generation_finished.disconnect(
+                self._on_job_generation_finished
+            )
 
     @property
     def doc(self) -> "Doc":
@@ -142,13 +172,23 @@ class ScenePresenter:
             self._scene_preparation_task.cancel()
             self._scene_preparation_task = None
 
+    def has_stale_job(self) -> bool:
+        """True if the cached job handle is from an older generation."""
+        handle = self._current_job_handle
+        if handle is None:
+            return True
+        return (
+            handle.generation_id
+            != self._doc_editor.pipeline.data_generation_id
+        )
+
     def _on_pipeline_state_changed(self, sender, *, is_processing: bool):
         """
         Handler for when the pipeline's busy state changes. When it becomes
         not busy, the document has settled and the scene should be updated.
         """
         if not is_processing and self._current_job_handle is not None:
-            if self._get_has_stale_job():
+            if self.has_stale_job():
                 logger.debug(
                     "Pipeline settled with stale job. Clearing 3D scene."
                 )
@@ -181,7 +221,7 @@ class ScenePresenter:
                 self._mark_artifact_dirty()
                 self._request_render()
 
-    def _on_op_player_required(self):
+    def _on_upload_complete(self, sender=None, **_kwargs):
         self._build_op_player_async()
         if self._compiled_artifact and self._op_player:
             self._scene.extract_playback_offsets(self._compiled_artifact)
