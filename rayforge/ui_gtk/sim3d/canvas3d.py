@@ -463,7 +463,7 @@ class Canvas3D(Gtk.GLArea):
         style_context = self.get_style_context()
         found, bg_rgba = style_context.lookup_color("theme_bg_color")
         if not found:
-            found, bg_rgba = style_context.lookup_color("theme_bg_color")
+            found, bg_rgba = style_context.lookup_color("view_bg_color")
 
         if found:
             bg_color = (
