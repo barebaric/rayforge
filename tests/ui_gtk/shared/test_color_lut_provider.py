@@ -45,11 +45,13 @@ def test_no_laser_fallback_shapes():
 
 
 def test_color_set_and_laser_color_sets_properties():
+    theme = _theme_color_set()
     laser_sets = {
         "a": _laser_color_set((1.0, 0.0, 0.0)),
     }
-    provider = ColorLutProvider(_theme_color_set(), laser_sets)
-    assert provider.color_set is _theme_color_set()
+    provider = ColorLutProvider(theme, laser_sets)
+    # The provider stores the exact instances it was given.
+    assert provider.color_set is theme
     assert provider.laser_color_sets is laser_sets
 
 

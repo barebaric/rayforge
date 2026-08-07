@@ -139,7 +139,7 @@ def test_clear_resets_counts(renderer):
 
 
 @pytest.mark.ui
-def test_render_raises_on_invalid_executed_count(renderer, colors):
+def test_render_clamps_executed_count_to_vertex_count(renderer, colors):
     _init_renderer(renderer)
 
     powered_verts = np.array([0, 0, 0, 1, 1, 1], dtype=np.float32)
@@ -162,6 +162,11 @@ def test_render_raises_on_invalid_executed_count(renderer, colors):
     ctx.kinematics._mvp_ui = mvp
     renderer.prepare(ctx)
 
+    # The fractional exec mapping clamps to the uploaded vertex count
+    # instead of overrunning the buffer.
+    assert renderer._exec_powered == 2
+    assert renderer._partial_powered_id == -1
+
     with (
         patch("OpenGL.GL.glBindVertexArray"),
         patch("OpenGL.GL.glEnable"),
@@ -169,8 +174,7 @@ def test_render_raises_on_invalid_executed_count(renderer, colors):
         patch("OpenGL.GL.glDrawArrays"),
         patch("rayforge.ui_gtk.sim3d.renderer.ops_renderer.set_line_width"),
     ):
-        with pytest.raises(ValueError, match="executed_vertex_count"):
-            renderer.render(ctx, _make_shaders(shader))
+        renderer.render(ctx, _make_shaders(shader))
 
 
 @pytest.mark.ui
@@ -287,8 +291,8 @@ def test_prepare_publishes_exec_counts_to_render():
             powered_verts, powered_attrib, travel_verts
         )
 
-    renderer.powered_offsets = np.array([0, 1, 2], dtype=np.int32)
-    renderer.travel_offsets = np.array([0, 1], dtype=np.int32)
+    renderer.powered_offsets = np.array([0, 2, 4], dtype=np.int32)
+    renderer.travel_offsets = np.array([0, 2], dtype=np.int32)
 
     shader = MagicMock()
     mvp = np.eye(4, dtype=np.float32)
@@ -298,8 +302,8 @@ def test_prepare_publishes_exec_counts_to_render():
     ctx.kinematics._mvp_ui = mvp
     renderer.prepare(ctx)
 
-    assert renderer._exec_powered == 1
-    assert renderer._exec_travel == 1
+    assert renderer._exec_powered == 2
+    assert renderer._exec_travel == 2
 
     with (
         patch("OpenGL.GL.glBindVertexArray"),
@@ -313,5 +317,5 @@ def test_prepare_publishes_exec_counts_to_render():
     ):
         renderer.render(ctx, _make_shaders(shader))
 
-    assert ctx.playback.executed_vertex_count == 1
-    assert ctx.playback.executed_travel_vertex_count == 1
+    assert ctx.playback.executed_vertex_count == 2
+    assert ctx.playback.executed_travel_vertex_count == 2

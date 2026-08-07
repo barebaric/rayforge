@@ -39,7 +39,10 @@ class RingBufferRenderer(BaseRenderer):
         self.pow_vbo: int = 0
         self.vertex_count: int = 0
         self.ring_offsets: np.ndarray = np.array([], dtype=np.int32)
+        self._positions: np.ndarray = np.array([], dtype=np.float32)
         self._exec_ring = -1
+        self._partial_ring_id = -1
+        self._partial_ring_end = np.zeros(3, dtype=np.float32)
         self._color_lut_texture: int = 0
         self._num_laser_luts: int = 1
 
@@ -89,6 +92,7 @@ class RingBufferRenderer(BaseRenderer):
             f"{self._capacity}"
         )
 
+        self._positions = pos
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.pos_vbo)
         GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, pos.nbytes, pos)
 
@@ -151,15 +155,67 @@ class RingBufferRenderer(BaseRenderer):
 
         Reads the playhead from ``ctx.playback.op_player`` and maps it
         through the renderer's command offsets, stashing the resulting
-        count so ``render`` can publish it back into ``ctx``.
+        count so ``render`` can publish it back into ``ctx``.  When the
+        playhead falls inside a command, a fractional executed count is
+        split into an int count plus a partial boundary segment for a
+        smooth reveal.
         """
         exec_ring = -1
+        self._partial_ring_id = -1
+        self._partial_ring_end = np.zeros(3, dtype=np.float32)
         op_player = ctx.playback.op_player
         if op_player:
-            idx = op_player.current_index
-            if len(self.ring_offsets) > 0 and idx + 1 < len(self.ring_offsets):
-                exec_ring = self.ring_offsets[idx + 1]
+            prog = getattr(op_player, "playback_progress", None)
+            if prog is not None:
+                p, frac = prog()
+            else:
+                p = op_player.current_index + 1
+                frac = 0.0
+            exec_ring, self._partial_ring_id, self._partial_ring_end = (
+                self._fractional_exec_count(
+                    self.ring_offsets, self._positions, p, frac
+                )
+            )
         self._exec_ring = exec_ring
+
+    @staticmethod
+    def _fractional_exec_count(offsets, positions, p, frac):
+        """Map ``(in_progress_command, fraction)`` to executed vertices.
+
+        Returns ``(executed_count, partial_vertex_id, partial_end)``;
+        see :meth:`OpsRenderer._fractional_exec_count` for details.
+        """
+        if len(offsets) == 0:
+            return -1, -1, np.zeros(3, dtype=np.float32)
+        total = positions.size // 3 if positions is not None else 0
+        if len(offsets) < 2:
+            return total, -1, np.zeros(3, dtype=np.float32)
+        if p + 1 >= len(offsets):
+            p = len(offsets) - 2
+            frac = 1.0
+        if p < 0:
+            p = 0
+        base = int(offsets[p])
+        span = int(offsets[p + 1]) - base
+        exec_f = base + frac * span
+        zero = np.zeros(3, dtype=np.float32)
+        if total == 0:
+            # No position data uploaded: fall back to the raw count.
+            return int(exec_f), -1, zero
+        if exec_f >= total:
+            return total, -1, zero
+        if exec_f <= 0:
+            return 0, -1, zero
+        seg = int(exec_f) // 2
+        f_in_seg = exec_f - 2 * seg
+        if f_in_seg <= 1e-9:
+            return 2 * seg, -1, zero
+        if positions is None or 2 * seg + 1 >= total:
+            return 2 * seg + 2, -1, zero
+        v0 = positions[2 * seg * 3 : 2 * seg * 3 + 3]
+        v1 = positions[(2 * seg + 1) * 3 : (2 * seg + 1) * 3 + 3]
+        partial_end = (v0 + (v1 - v0) * (f_in_seg / 2.0)).astype(np.float32)
+        return 2 * seg + 2, 2 * seg + 1, partial_end
 
     def render(self, ctx: RenderContext, shaders: ShaderSet, **kwargs):
         if self.vertex_count == 0:
@@ -189,6 +245,12 @@ class RingBufferRenderer(BaseRenderer):
         )
         shader.set_int("uExecutedVertexCount", executed_vertex_count)
         shader.set_float("uAlphaPending", ctx.playback.alpha_pending)
+        if self._partial_ring_id >= 0:
+            shader.set_int("uPartialVertexID", self._partial_ring_id)
+            shader.set_vec3("uPartialEnd", self._partial_ring_end)
+        else:
+            shader.set_int("uPartialVertexID", -1)
+            shader.set_vec3("uPartialEnd", (0.0, 0.0, 0.0))
 
         GL.glActiveTexture(GL.GL_TEXTURE1)
         GL.glBindTexture(GL.GL_TEXTURE_2D, self._color_lut_texture)

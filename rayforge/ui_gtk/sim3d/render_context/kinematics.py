@@ -120,7 +120,12 @@ class KinematicsContext:
             )
             return
 
-        state = frame.op_player.state if frame.op_player else MachineState()
+        op_player = frame.op_player
+        state = (
+            op_player.render_state()
+            if op_player is not None
+            else MachineState()
+        )
         wcs = viewport.wcs_offset_mm
         model_world_transforms = asm.model_world_transforms(
             state, wcs_offset=wcs
@@ -156,9 +161,7 @@ class KinematicsContext:
 
         cyl_angle = 0.0
         if op_player and rotary_axis is not None and has_rotary:
-            cyl_angle = math.radians(
-                op_player.state.axes.get(rotary_axis, 0.0)
-            )
+            cyl_angle = math.radians(state.axes.get(rotary_axis, 0.0))
 
         margin_shift = viewport.margin_shift
         cylinder_transform = (

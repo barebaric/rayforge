@@ -367,3 +367,192 @@ def test_build_snapshots_clears_reached_textures():
     assert snapshots
     for _, state, _, _ in snapshots:
         assert len(state.reached_textures) == 0
+
+
+# --- playback clock helpers ---
+
+
+def test_playback_params_defaults_match_raygeo():
+    ops = _make_ops()
+    player = OpPlayer(ops, _make_machine(), Doc())
+    assert player.get_cumulative_time(0) >= 0.0
+
+
+def test_set_playback_params_changes_cumulative_time():
+    ops = _make_ops()
+    player = OpPlayer(ops, _make_machine(), Doc())
+    player.set_playback_params(600.0, 1200.0, 0.0)
+    # cmd3 line_to(10, 0) at 800mm/min feed (from ops) = 0.75s
+    assert player.get_cumulative_time(3) == pytest.approx(0.75, abs=1e-9)
+    assert player.get_cumulative_time(4) == pytest.approx(0.75, abs=1e-9)
+    # cmd5 line_to(10, 10) at 800mm/min = 0.75s more
+    assert player.get_cumulative_time(5) == pytest.approx(1.5, abs=1e-9)
+    # cmd6 move_to(0, 0) at 1200mm/min rapid = 14.14mm / 20mm/s
+    assert player.get_cumulative_time(6) == pytest.approx(
+        1.5 + math.sqrt(200.0) / 20.0, abs=1e-9
+    )
+
+
+def test_get_cumulative_time_out_of_range_clamps():
+    ops = _make_ops()
+    player = OpPlayer(ops, _make_machine(), Doc())
+    player.set_playback_params(600.0, 1200.0, 0.0)
+    total = player.get_cumulative_time(6)
+    assert player.get_cumulative_time(999) == pytest.approx(total, abs=1e-9)
+
+
+def test_find_index_at_sim_time_matches_cumulative():
+    ops = _make_ops()
+    player = OpPlayer(ops, _make_machine(), Doc())
+    player.set_playback_params(600.0, 1200.0, 0.0)
+    # cum: [0, 0, 0, 0.75, 0.75, 1.5, 2.207]
+    assert player.find_index_at_sim_time(0.0) == 2
+    assert player.find_index_at_sim_time(0.5) == 2
+    assert player.find_index_at_sim_time(0.75) == 4
+    assert player.find_index_at_sim_time(1.0) == 4
+    assert player.find_index_at_sim_time(1.5) == 5
+    assert player.find_index_at_sim_time(100.0) == 6
+
+
+def test_find_index_at_sim_time_before_first_completion():
+    ops = Ops()
+    ops.line_to(10.0, 0.0, 0.0)  # 10mm at 600mm/min = 1.0s
+    player = OpPlayer(ops, _make_machine(), Doc())
+    player.set_playback_params(600.0, 1200.0, 0.0)
+    assert player.get_cumulative_time(0) == pytest.approx(1.0, abs=1e-9)
+    assert player.find_index_at_sim_time(0.5) == 0
+    assert player.find_index_at_sim_time(1.0) == 0
+    assert player.find_index_at_sim_time(1.5) == 0
+
+
+def test_find_index_at_sim_time_with_acceleration():
+    ops = _make_ops()
+    player = OpPlayer(ops, _make_machine(), Doc())
+    player.set_playback_params(600.0, 1200.0, 1000.0)
+    # Acceleration slows every move: cumulative time grows.
+    no_accel = OpPlayer(ops, _make_machine(), Doc())
+    no_accel.set_playback_params(600.0, 1200.0, 0.0)
+    assert player.get_cumulative_time(6) > no_accel.get_cumulative_time(6)
+
+
+# --- playback progress (fractional playhead) ---
+
+
+def _make_progress_player():
+    player = OpPlayer(_make_ops(), _make_machine(), Doc())
+    player.set_playback_params(600.0, 1200.0, 0.0)
+    return player
+
+
+def test_playback_progress_mid_command():
+    player = _make_progress_player()
+    player.set_sim_time(0.375)  # halfway through the 0.75s cmd3 cut
+    assert player.playback_progress() == (3, pytest.approx(0.5))
+
+
+def test_playback_progress_at_command_boundary():
+    player = _make_progress_player()
+    player.set_sim_time(0.75)  # cmd3 just completed
+    p, frac = player.playback_progress()
+    assert p == 5
+    assert frac == pytest.approx(0.0)
+
+
+def test_playback_progress_after_end():
+    player = _make_progress_player()
+    player.set_sim_time(100.0)
+    p, frac = player.playback_progress()
+    assert p == 6
+    assert frac == pytest.approx(1.0)
+
+
+def test_playback_progress_before_first_completion():
+    ops = Ops()
+    ops.line_to(10.0, 0.0, 0.0)  # 10mm at 600mm/min = 1.0s
+    player = OpPlayer(ops, _make_machine(), Doc())
+    player.set_playback_params(600.0, 1200.0, 0.0)
+    player.set_sim_time(0.5)
+    p, frac = player.playback_progress()
+    assert p == 0
+    assert frac == pytest.approx(0.5)
+
+
+def test_render_state_interpolates_within_command():
+    player = _make_progress_player()
+    player.seek(2)  # state at (0, 0) after move_to
+    player.set_sim_time(0.375)  # halfway through cmd3 cut to (10, 0)
+    state = player.render_state()
+    assert state.axes[Axis.X] == pytest.approx(5.0)
+    assert state.axes[Axis.Y] == pytest.approx(0.0)
+    assert state.axes[Axis.Z] == pytest.approx(0.0)
+
+
+def test_render_state_returns_state_at_boundary():
+    player = _make_progress_player()
+    player.seek(3)
+    player.set_sim_time(0.75)  # exactly at a command boundary
+    assert player.render_state() is player.state
+
+
+def test_render_state_returns_state_for_non_moving_command():
+    ops = Ops()
+    ops.set_feed_rate(600)  # 10 mm/s
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 0.0, 0.0)  # 1s
+    ops.dwell(1000.0)  # 1s dwell
+    player = OpPlayer(ops, _make_machine(), Doc())
+    player.set_playback_params(600.0, 1200.0, 0.0)
+    player.seek(2)  # state at (10, 0) after the line
+    # cum: [0, 0, 1.0, 2.0]; at t=1.5 the dwell (idx 3) is in progress.
+    player.set_sim_time(1.5)
+    p, frac = player.playback_progress()
+    assert p == 3
+    assert frac == pytest.approx(0.5)
+    # The in-progress command does not move: the plain state is used.
+    assert player.render_state() is player.state
+    assert player.state.axes[Axis.X] == pytest.approx(10.0)
+
+
+def test_render_state_from_home_before_first_completion():
+    ops = Ops()
+    ops.line_to(10.0, 0.0, 0.0)  # 10mm at 600mm/min = 1.0s
+    player = OpPlayer(ops, _make_machine(), Doc())
+    player.set_playback_params(600.0, 1200.0, 0.0)
+    player.set_sim_time(0.5)
+    state = player.render_state()
+    home_x = player._home_axes[Axis.X]
+    assert state.axes[Axis.X] == pytest.approx(home_x + 0.5 * (10.0 - home_x))
+
+
+def test_render_state_paused_returns_plain_state():
+    player = _make_progress_player()
+    player.seek(3)
+    player.set_sim_time(0.0)
+    assert player.render_state() is player.state
+
+
+def test_render_state_laser_on_during_cut():
+    player = _make_progress_player()
+    player.seek(2)  # state after move_to
+    player.set_sim_time(0.375)  # halfway through the cmd3 cut
+    state = player.render_state()
+    assert state.laser_on is True
+
+
+def test_render_state_laser_off_during_travel():
+    player = _make_progress_player()
+    player.seek(5)
+    player.set_sim_time(1.75)  # midway through the final move_to travel
+    state = player.render_state()
+    assert state.laser_on is False
+
+
+def test_render_state_laser_on_for_whole_cut():
+    player = _make_progress_player()
+    player.seek(2)
+    # The cut spans cum[2]=0 to cum[3]=0.75; laser must be on at the
+    # very start of the cut, not only once the cut command completes.
+    player.set_sim_time(0.01)
+    assert player.render_state().laser_on is True
+    player.set_sim_time(0.74)
+    assert player.render_state().laser_on is True

@@ -35,8 +35,14 @@ class OpsRenderer(BaseRenderer):
 
         self.powered_offsets: np.ndarray = np.array([], dtype=np.int32)
         self.travel_offsets: np.ndarray = np.array([], dtype=np.int32)
+        self._powered_positions: np.ndarray = np.array([], dtype=np.float32)
+        self._travel_positions: np.ndarray = np.array([], dtype=np.float32)
         self._exec_powered = -1
         self._exec_travel = -1
+        self._partial_powered_id = -1
+        self._partial_powered_end = np.zeros(3, dtype=np.float32)
+        self._partial_travel_id = -1
+        self._partial_travel_end = np.zeros(3, dtype=np.float32)
 
         self._color_lut_texture: int = 0
         self._num_laser_luts: int = 1
@@ -109,12 +115,18 @@ class OpsRenderer(BaseRenderer):
         travel_vertices: np.ndarray,
     ):
         self.powered_vertex_count = powered_vertices.size // 3
+        self._powered_positions = np.ascontiguousarray(
+            powered_vertices, dtype=np.float32
+        )
         self._load_buffer_data(self.powered_vbo, powered_vertices)
         self._load_buffer_data(
             self.powered_powers_vbo,
             np.ascontiguousarray(powered_attrib, dtype=np.float32),
         )
         self.travel_vertex_count = travel_vertices.size // 3
+        self._travel_positions = np.ascontiguousarray(
+            travel_vertices, dtype=np.float32
+        )
         self._load_buffer_data(self.travel_vbo, travel_vertices)
 
     def update_color_lut(self, lut_data: np.ndarray, num_lasers: int = 1):
@@ -162,23 +174,99 @@ class OpsRenderer(BaseRenderer):
 
         Reads the playhead from ``ctx.playback.op_player`` and maps it
         through the renderer's command offsets, stashing the resulting
-        counts so ``render`` can publish them back into ``ctx``.
+        counts so ``render`` can publish them back into ``ctx``.  When
+        the playhead falls inside a command, a fractional executed count
+        is split into an int count plus a partial boundary segment (the
+        moved end vertex + interpolated endpoint) for a smooth reveal.
         """
         exec_powered = -1
         exec_travel = -1
+        self._partial_powered_id = -1
+        self._partial_powered_end = np.zeros(3, dtype=np.float32)
+        self._partial_travel_id = -1
+        self._partial_travel_end = np.zeros(3, dtype=np.float32)
         op_player = ctx.playback.op_player
         if op_player:
-            idx = op_player.current_index
-            if len(self.powered_offsets) > 0 and idx + 1 < len(
-                self.powered_offsets
-            ):
-                exec_powered = self.powered_offsets[idx + 1]
-            if len(self.travel_offsets) > 0 and idx + 1 < len(
-                self.travel_offsets
-            ):
-                exec_travel = self.travel_offsets[idx + 1]
+            p, frac = self._playback_progress(op_player)
+            (
+                exec_powered,
+                self._partial_powered_id,
+                self._partial_powered_end,
+            ) = self._fractional_exec_count(
+                self.powered_offsets,
+                self._powered_positions,
+                p,
+                frac,
+            )
+            exec_travel, self._partial_travel_id, self._partial_travel_end = (
+                self._fractional_exec_count(
+                    self.travel_offsets,
+                    self._travel_positions,
+                    p,
+                    frac,
+                )
+            )
         self._exec_powered = exec_powered
         self._exec_travel = exec_travel
+
+    @staticmethod
+    def _playback_progress(op_player):
+        """Return ``(in_progress_command, fraction)`` from the player.
+
+        Falls back to the next command with no fraction for minimal
+        player stubs used in tests.
+        """
+        prog = getattr(op_player, "playback_progress", None)
+        if prog is not None:
+            return prog()
+        return op_player.current_index + 1, 0.0
+
+    @staticmethod
+    def _fractional_exec_count(
+        offsets: np.ndarray,
+        positions: np.ndarray,
+        p: int,
+        frac: float,
+    ):
+        """Map ``(in_progress_command, fraction)`` to executed vertices.
+
+        Returns ``(executed_count, partial_vertex_id, partial_end)``.
+        ``executed_count`` is the int uniform value (fully drawn
+        vertices plus the boundary segment); ``partial_vertex_id`` is
+        the end vertex of the boundary segment that ``render`` moves to
+        ``partial_end`` (or -1 when no partial segment exists).
+        """
+        if len(offsets) == 0:
+            return -1, -1, np.zeros(3, dtype=np.float32)
+        total = positions.size // 3 if positions is not None else 0
+        if len(offsets) < 2:
+            return total, -1, np.zeros(3, dtype=np.float32)
+        if p + 1 >= len(offsets):
+            p = len(offsets) - 2
+            frac = 1.0
+        if p < 0:
+            p = 0
+        base = int(offsets[p])
+        span = int(offsets[p + 1]) - base
+        exec_f = base + frac * span
+        zero = np.zeros(3, dtype=np.float32)
+        if total == 0:
+            # No position data uploaded: fall back to the raw count.
+            return int(exec_f), -1, zero
+        if exec_f >= total:
+            return total, -1, zero
+        if exec_f <= 0:
+            return 0, -1, zero
+        seg = int(exec_f) // 2
+        f_in_seg = exec_f - 2 * seg
+        if f_in_seg <= 1e-9:
+            return 2 * seg, -1, zero
+        if positions is None or 2 * seg + 1 >= total:
+            return 2 * seg + 2, -1, zero
+        v0 = positions[2 * seg * 3 : 2 * seg * 3 + 3]
+        v1 = positions[(2 * seg + 1) * 3 : (2 * seg + 1) * 3 + 3]
+        partial_end = (v0 + (v1 - v0) * (f_in_seg / 2.0)).astype(np.float32)
+        return 2 * seg + 2, 2 * seg + 1, partial_end
 
     def render(self, ctx: RenderContext, shaders: ShaderSet, **kwargs) -> None:
         """
@@ -228,6 +316,12 @@ class OpsRenderer(BaseRenderer):
         shader.set_int("uExecutedVertexCount", executed_vertex_count)
         shader.set_float("uAlphaPending", alpha_pending)
         shader.set_float("uEmissive", 1.0)
+        if self._partial_powered_id >= 0:
+            shader.set_int("uPartialVertexID", self._partial_powered_id)
+            shader.set_vec3("uPartialEnd", self._partial_powered_end)
+        else:
+            shader.set_int("uPartialVertexID", -1)
+            shader.set_vec3("uPartialEnd", (0.0, 0.0, 0.0))
 
         if self.powered_vertex_count > 0:
             set_line_width(line_width)
@@ -251,6 +345,12 @@ class OpsRenderer(BaseRenderer):
             shader.set_int(
                 "uExecutedVertexCount", executed_travel_vertex_count
             )
+            if self._partial_travel_id >= 0:
+                shader.set_int("uPartialVertexID", self._partial_travel_id)
+                shader.set_vec3("uPartialEnd", self._partial_travel_end)
+            else:
+                shader.set_int("uPartialVertexID", -1)
+                shader.set_vec3("uPartialEnd", (0.0, 0.0, 0.0))
             shader.set_vec4("uColor", colors.get_rgba("travel"))
             GL.glBindVertexArray(self.travel_vao)
             GL.glDrawArrays(GL.GL_LINES, 0, self.travel_vertex_count)

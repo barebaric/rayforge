@@ -254,6 +254,11 @@ class ScenePresenter:
             reused_snapshots = self._op_player.snapshots
 
         player = OpPlayer(ops, machine, self.doc, build_snapshots=False)
+        player.set_playback_params(
+            machine.max_cut_speed,
+            machine.max_travel_speed,
+            machine.acceleration,
+        )
         player.set_snapshots(reused_snapshots)
 
         # Make the player available right away so that the next render
