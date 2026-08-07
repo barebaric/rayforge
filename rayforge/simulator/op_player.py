@@ -15,6 +15,50 @@ from .machine_state import MachineState
 _SNAPSHOT_INTERVAL = 1000
 
 
+def create_home_state(machine: Machine) -> MachineState:
+    """Create the machine-origin (home) state for a playback session."""
+    state = MachineState.from_axis_set(machine.axes)
+    space = machine.get_coordinate_space()
+    home_x, home_y = space.machine_point_to_world(0.0, 0.0)
+    state.axes[Axis.X] = home_x
+    state.axes[Axis.Y] = home_y
+    return state
+
+
+def build_snapshots(
+    ops: Ops,
+    machine: Machine,
+    doc: Doc,
+) -> List[Tuple[int, MachineState, Axis, Optional[Axis]]]:
+    """Build the seek-acceleration snapshots for *ops*.
+
+    Returns a fresh list of ``(target, state, source_axis, rotary_axis)``
+    tuples spaced every ``_SNAPSHOT_INTERVAL`` commands, or an empty list
+    for short op lists. The returned list may be built off the main thread
+    and attached to an :class:`OpPlayer` via ``set_snapshots``.
+    """
+    n = ops.len()
+    if n <= _SNAPSHOT_INTERVAL:
+        return []
+    builder = SnapshotBuilder(ops, machine, doc, create_home_state(machine))
+    snapshots: List[Tuple[int, MachineState, Axis, Optional[Axis]]] = []
+    for target in range(_SNAPSHOT_INTERVAL, n, _SNAPSHOT_INTERVAL):
+        builder.advance_to(target - 1)
+        # reached_textures is only needed for real-time playback,
+        # not for seeking. Clear before snapshot to avoid copying
+        # a set that grows to millions of entries.
+        builder.state.reached_textures.clear()
+        snapshots.append(
+            (
+                target,
+                builder.state.copy(),
+                builder._source_axis,
+                builder._rotary_axis,
+            )
+        )
+    return snapshots
+
+
 class OpPlayer:
     def __init__(
         self,
@@ -50,27 +94,7 @@ class OpPlayer:
         self._snapshots = snapshots
 
     def _build_snapshots(self):
-        n = self.ops.len()
-        if n <= _SNAPSHOT_INTERVAL:
-            return
-        temp_player = SnapshotBuilder(
-            self.ops, self._machine, self._doc, self._create_home_state()
-        )
-        interval = _SNAPSHOT_INTERVAL
-        for target in range(interval, n, interval):
-            temp_player.advance_to(target - 1)
-            # reached_textures is only needed for real-time playback,
-            # not for seeking. Clear before snapshot to avoid copying
-            # a set that grows to millions of entries.
-            temp_player.state.reached_textures.clear()
-            self._snapshots.append(
-                (
-                    target,
-                    temp_player.state.copy(),
-                    temp_player._source_axis,
-                    temp_player._rotary_axis,
-                )
-            )
+        self._snapshots = build_snapshots(self.ops, self._machine, self._doc)
 
     @property
     def current_index(self) -> int:
@@ -85,12 +109,7 @@ class OpPlayer:
         return self._rotary_axis
 
     def _create_home_state(self) -> MachineState:
-        state = MachineState.from_axis_set(self._machine.axes)
-        space = self._machine.get_coordinate_space()
-        home_x, home_y = space.machine_point_to_world(0.0, 0.0)
-        state.axes[Axis.X] = home_x
-        state.axes[Axis.Y] = home_y
-        return state
+        return create_home_state(self._machine)
 
     def _update_rotary_config(self, layer_uid: str) -> None:
         item = self._doc.find_descendant_by_uid(layer_uid)
