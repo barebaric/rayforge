@@ -75,9 +75,8 @@ def main():
         )
 
         def _set_perspective() -> None:
-            if win.canvas3d and win.canvas3d.camera:
-                win.canvas3d.camera.is_perspective = True
-                win.canvas3d.queue_render()
+            if win.canvas3d:
+                win.canvas3d.set_perspective(True)
 
         run_on_main_thread(_set_perspective)
         time.sleep(0.5)

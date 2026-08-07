@@ -111,6 +111,7 @@ class PlaybackOverlay(Gtk.Box):
         self._canvas = None
         self._player: Optional[PlaybackPlayer] = None
         self._is_syncing = False
+        self._suppress_seek = False
 
         self.connect("destroy", self._on_destroy)
 
@@ -122,14 +123,20 @@ class PlaybackOverlay(Gtk.Box):
         """Connect this overlay to a Canvas3D instance."""
         self._canvas = canvas
 
-    def set_player(self, player: Optional[PlaybackPlayer]):
-        """Set the OpPlayer backing this overlay's slider and seek calls."""
+    def set_player(
+        self,
+        player: Optional[PlaybackPlayer],
+        initial_index: int = 0,
+    ):
+        """Set the OpPlayer backing this overlay's slider and seek calls.
+
+        ``initial_index`` positions the slider for a freshly built player
+        (typically 0). The player itself may already be seeked to the
+        first layer for rendering.
+        """
         self._player = player
         if player is not None:
-            self.update_ops_range(
-                len(player.ops),
-                player.current_index,
-            )
+            self.update_ops_range(len(player.ops), initial_index)
         else:
             self.update_ops_range(0)
 

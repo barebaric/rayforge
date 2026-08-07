@@ -95,6 +95,41 @@ def test_seek_without_player_noop(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_set_player_enables_controls(ui_context_initializer):
+    overlay = PlaybackOverlay()
+    overlay.set_player(FakePlayer(n_ops=0))
+    assert not overlay._play_button.get_sensitive()
+    assert not overlay._step_back_button.get_sensitive()
+    assert not overlay._step_fwd_button.get_sensitive()
+    assert not overlay._slider.get_sensitive()
+
+    overlay.set_player(FakePlayer(n_ops=10))
+    assert overlay._play_button.get_sensitive()
+    assert overlay._step_back_button.get_sensitive()
+    assert overlay._step_fwd_button.get_sensitive()
+    assert overlay._slider.get_sensitive()
+
+
+@pytest.mark.ui
+def test_set_player_starts_slider_at_zero(ui_context_initializer):
+    overlay = PlaybackOverlay()
+    player = FakePlayer(n_ops=10)
+    player.seek(4)
+    overlay.set_player(player)
+    assert int(overlay._slider.get_value()) == 0
+
+
+@pytest.mark.ui
+def test_set_player_with_initial_index_positions_slider(
+    ui_context_initializer,
+):
+    overlay = PlaybackOverlay()
+    player = FakePlayer(n_ops=10)
+    overlay.set_player(player, initial_index=4)
+    assert int(overlay._slider.get_value()) == 4
+
+
+@pytest.mark.ui
 def test_seek_to_fraction_seeks_and_syncs_slider(ui_context_initializer):
     overlay = PlaybackOverlay()
     canvas = FakeCanvas()
