@@ -3,18 +3,40 @@ Base class for OpenGL renderers that manage their own GPU resources.
 """
 
 import logging
-from typing import Optional, final
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Optional, final
 
 from OpenGL import GL
 
 from ..shader.base import Shader
 
+if TYPE_CHECKING:
+    from ..gl_utils import ShaderSet
+    from ..render_context import RenderContext
+
 logger = logging.getLogger(__name__)
 
 
-class BaseRenderer:
+class BaseRenderer(ABC):
     """A base class for an OpenGL renderer that manages its own
     resources."""
+
+    @abstractmethod
+    def prepare(self, ctx: "RenderContext") -> None:
+        """Per-frame state setup before the draw."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def render(
+        self, ctx: "RenderContext", shaders: "ShaderSet", **kwargs
+    ) -> None:
+        """Performs the GL draw using the given shaders."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def init_gl(self) -> None:
+        """Creates the renderer's OpenGL resources."""
+        raise NotImplementedError
 
     def __init__(self):
         """Initializes the resource tracking lists."""
@@ -45,6 +67,13 @@ class BaseRenderer:
     def _add_child_renderer(self, renderer: "BaseRenderer"):
         """Adds a child renderer to be cleaned up automatically."""
         self._owned_renderers.append(renderer)
+
+    def _remove_child_renderer(self, renderer: "BaseRenderer") -> None:
+        """Removes a child renderer from automatic cleanup."""
+        try:
+            self._owned_renderers.remove(renderer)
+        except ValueError:
+            pass
 
     def _delete_owned(self, vao: int = 0, vbo: int = 0) -> None:
         """Deletes owned GL resources and untracks them from cleanup."""

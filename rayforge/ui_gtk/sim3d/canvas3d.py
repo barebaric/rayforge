@@ -240,7 +240,9 @@ class Canvas3D(Gtk.GLArea):
                     font_family = font_desc.get_family() or "sans-serif"
                     logger.debug(f"Pango normalized font to {font_family}")
 
-            self._scene.init_gl(self._viewport, font_family)
+            self._scene.set_viewport(self._viewport)
+            self._scene.set_font_family(font_family)
+            self._scene.init_gl()
 
             self._gl_initialized = True
         except Exception as e:
@@ -315,7 +317,8 @@ class Canvas3D(Gtk.GLArea):
                 show_models=self._show_models,
             )
             self._ctx.update(frame)
-            self._scene.render(self._ctx)
+            self._scene.prepare(self._ctx)
+            self._scene.render(self._ctx, None)
 
         except Exception as e:
             logger.error("OpenGL Render Error: %s", e, exc_info=True)

@@ -33,6 +33,11 @@ class OpsRenderer(BaseRenderer):
         self.powered_vertex_count: int = 0
         self.travel_vertex_count: int = 0
 
+        self.powered_offsets: np.ndarray = np.array([], dtype=np.int32)
+        self.travel_offsets: np.ndarray = np.array([], dtype=np.int32)
+        self._exec_powered = -1
+        self._exec_travel = -1
+
         self._color_lut_texture: int = 0
         self._num_laser_luts: int = 1
 
@@ -152,21 +157,44 @@ class OpsRenderer(BaseRenderer):
         self.update_color_lut(provider.cut_lut(), provider.num_lasers)
 
     def prepare(self, ctx: RenderContext) -> None:
-        """No per-frame state to prepare."""
-        pass
+        """
+        Computes the executed-vertex counts for this frame.
 
-    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
+        Reads the playhead from ``ctx.playback.op_player`` and maps it
+        through the renderer's command offsets, stashing the resulting
+        counts so ``render`` can publish them back into ``ctx``.
+        """
+        exec_powered = -1
+        exec_travel = -1
+        op_player = ctx.playback.op_player
+        if op_player:
+            idx = op_player.current_index
+            if len(self.powered_offsets) > 0 and idx + 1 < len(
+                self.powered_offsets
+            ):
+                exec_powered = self.powered_offsets[idx + 1]
+            if len(self.travel_offsets) > 0 and idx + 1 < len(
+                self.travel_offsets
+            ):
+                exec_travel = self.travel_offsets[idx + 1]
+        self._exec_powered = exec_powered
+        self._exec_travel = exec_travel
+
+    def render(self, ctx: RenderContext, shaders: ShaderSet, **kwargs) -> None:
         """
         Renders the toolpaths. The vertices are assumed to be in world space.
 
-        Pulls the MVP, executed-vertex counts, and pending alpha from
-        ``ctx`` (populated by the calling layer group / scene renderer).
+        Publishes the executed-vertex counts computed in ``prepare`` into
+        ``ctx``, then pulls the MVP and pending alpha from it.
 
         Args:
             ctx: The current render context (carries color set, line width,
               travel-move visibility, and per-frame execution state).
             shaders: The shader set; the ``main`` program is used.
         """
+        ctx.playback.executed_vertex_count = self._exec_powered
+        ctx.playback.executed_travel_vertex_count = self._exec_travel
+
         shader = shaders.main
         if shader is None:
             return

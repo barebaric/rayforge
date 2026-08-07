@@ -38,6 +38,8 @@ class RingBufferRenderer(BaseRenderer):
         self.pos_vbo: int = 0
         self.pow_vbo: int = 0
         self.vertex_count: int = 0
+        self.ring_offsets: np.ndarray = np.array([], dtype=np.int32)
+        self._exec_ring = -1
         self._color_lut_texture: int = 0
         self._num_laser_luts: int = 1
 
@@ -144,12 +146,26 @@ class RingBufferRenderer(BaseRenderer):
         self.vertex_count = 0
 
     def prepare(self, ctx: RenderContext) -> None:
-        """No per-frame state to prepare."""
-        pass
+        """
+        Computes the executed-vertex count for this frame.
 
-    def render(self, ctx: RenderContext, shaders: ShaderSet):
+        Reads the playhead from ``ctx.playback.op_player`` and maps it
+        through the renderer's command offsets, stashing the resulting
+        count so ``render`` can publish it back into ``ctx``.
+        """
+        exec_ring = -1
+        op_player = ctx.playback.op_player
+        if op_player:
+            idx = op_player.current_index
+            if len(self.ring_offsets) > 0 and idx + 1 < len(self.ring_offsets):
+                exec_ring = self.ring_offsets[idx + 1]
+        self._exec_ring = exec_ring
+
+    def render(self, ctx: RenderContext, shaders: ShaderSet, **kwargs):
         if self.vertex_count == 0:
             return
+
+        ctx.playback.executed_vertex_count = self._exec_ring
 
         shader = shaders.main
         if shader is None:

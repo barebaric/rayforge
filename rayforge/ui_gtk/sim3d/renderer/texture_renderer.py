@@ -337,7 +337,7 @@ class TextureArtifactRenderer(BaseRenderer):
         """Updates the colour LUT from a shared ColorLutProvider."""
         self.update_color_lut(provider.engrave_lut_2d(), provider.num_lasers)
 
-    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
+    def render(self, ctx: RenderContext, shaders: ShaderSet, **kwargs) -> None:
         """
         Renders all texture instances: flat quads first, then the
         cylinder-mapped (rotary) ones.

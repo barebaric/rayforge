@@ -65,7 +65,7 @@ class BackgroundRenderer(BaseRenderer):
         """No per-frame state to prepare."""
         pass
 
-    def render(self, ctx: RenderContext, shaders: ShaderSet):
+    def render(self, ctx: RenderContext, shaders: ShaderSet, **kwargs):
         shader = shaders.background
         if not shader or not self.vao:
             return

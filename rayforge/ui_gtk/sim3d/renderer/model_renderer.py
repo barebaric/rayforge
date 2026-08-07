@@ -240,7 +240,7 @@ class ModelRenderer(BaseRenderer):
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
+    def render(self, ctx: RenderContext, shaders: ShaderSet, **kwargs) -> None:
         if not ctx.camera.show_models:
             return
         if not self._vao or self._mvp_matrix is None:

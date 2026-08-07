@@ -83,8 +83,8 @@ class ChunkedUploadController:
     def start(self):
         artifact = self._get_artifact()
         if not artifact:
-            for group in self._scene.layer_groups:
-                group.ops_renderer.clear()
+            for renderer in self._scene.ops_renderers:
+                renderer.clear()
             if self._scene.texture_renderer:
                 self._scene.texture_renderer.clear()
             self._request_render()
@@ -130,14 +130,12 @@ class ChunkedUploadController:
             kind = item[0]
 
             if kind == "ops":
-                _, group, vl, show_travel_moves = item
-                group.ops_renderer.update_from_vertex_layer(
-                    vl, show_travel_moves
-                )
+                _, ops_renderer, vl, show_travel_moves = item
+                ops_renderer.update_from_vertex_layer(vl, show_travel_moves)
 
             elif kind == "overlay":
-                _, group, ol = item
-                group.ring_renderer.update_from_overlay_layer(ol)
+                _, ring_renderer, ol = item
+                ring_renderer.update_from_overlay_layer(ol)
 
             elif kind == "textures":
                 _, artifact = item

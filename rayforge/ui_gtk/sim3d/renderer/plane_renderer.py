@@ -80,7 +80,7 @@ class PlaneRenderer(BaseRenderer):
         """No per-frame state to prepare."""
         pass
 
-    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
+    def render(self, ctx: RenderContext, shaders: ShaderSet, **kwargs) -> None:
         """Draws the plane."""
         if not self.vao:
             return

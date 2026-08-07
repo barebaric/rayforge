@@ -199,7 +199,8 @@ def test_build_op_player_async_empty_ops_clears_offsets(
     ui_context_initializer,
 ):
     scene = MagicMock()
-    scene.layer_groups = []
+    scene.ops_renderers = []
+    scene.ring_renderers = []
     presenter, _, calls = _make_presenter(
         context=MagicMock(machine=MagicMock()),
         scene=scene,
@@ -219,7 +220,8 @@ def test_build_op_player_async_preserves_playhead(ui_context_initializer):
     presenter, _, _ = _make_presenter(
         context=MagicMock(machine=MagicMock()),
     )
-    presenter._scene.layer_groups = []
+    presenter._scene.ops_renderers = []
+    presenter._scene.ring_renderers = []
     ops = MagicMock()
     ops.is_empty.return_value = False
 
