@@ -69,6 +69,15 @@ class JobArtifact(BaseArtifact):
         self._encoded_output: Optional["EncodedOutput"] = encoded_output
 
     @property
+    def preview_ops(self) -> Optional[Ops]:
+        """Returns the ops suitable for 3D preview/playback.
+
+        Prefers the rotary-mapped ops (``mapped_ops``) when available,
+        falling back to the raw assembled ``ops``.
+        """
+        return self.mapped_ops if self.mapped_ops is not None else self.ops
+
+    @property
     def machine_code(self) -> Optional[str]:
         """
         Lazily decodes and caches the G-code string from encoded_output.

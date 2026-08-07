@@ -29,7 +29,7 @@ from ...simulator.scene3d import (
     CompiledSceneArtifact,
     LayerRenderConfig,
     RenderConfig3D,
-    compile_scene_in_thread,
+    compile_scene_from_job,
 )
 from .camera import ViewDirection
 
@@ -404,10 +404,7 @@ class ScenePresenter:
         if handle is not None:
             artifact = self._context.artifact_store.get(handle)
             if isinstance(artifact, JobArtifact):
-                if artifact.mapped_ops is not None:
-                    return artifact.mapped_ops
-                if artifact.ops is not None:
-                    return artifact.ops
+                return artifact.preview_ops
         return None
 
     def update_scene_from_doc(self):
@@ -535,7 +532,7 @@ class ScenePresenter:
         logger.debug("[CANVAS3D] Scheduling scene compilation task.")
         assert render_config_dict is not None
         self._scene_preparation_task = task_mgr.run_thread(
-            compile_scene_in_thread,
+            compile_scene_from_job,
             self._context.artifact_store,
             job_handle.to_dict(),
             render_config_dict,
