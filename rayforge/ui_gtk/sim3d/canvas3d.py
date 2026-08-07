@@ -130,11 +130,6 @@ class Canvas3D(Gtk.GLArea):
             return self.doc.active_layer.rotary_enabled
         return False
 
-    def set_playback_overlay(self, overlay):
-        """Set the playback overlay widget for slider sync."""
-        self._playback_overlay = overlay
-        overlay.set_canvas(self)
-
     def has_stale_job(self) -> bool:
         """True if the cached job handle is from an older generation."""
         if self._current_job_handle is None:
@@ -333,8 +328,7 @@ class Canvas3D(Gtk.GLArea):
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
         if keyval == Gdk.KEY_space and self._playback_overlay:
-            if self._playback_overlay.can_play():
-                self._playback_overlay.toggle_playback()
+            self._playback_overlay.handle_space()
             return True
         return False
 
@@ -650,7 +644,8 @@ class Canvas3D(Gtk.GLArea):
                 group.powered_offsets = np.array([], dtype=np.int32)
                 group.travel_offsets = np.array([], dtype=np.int32)
                 group.ring_offsets = np.array([], dtype=np.int32)
-            GLib.idle_add(self._notify_playback_overlay, 0)
+            if self._playback_overlay:
+                self._playback_overlay.set_player(None)
             self.queue_render()
             return
 
@@ -672,15 +667,11 @@ class Canvas3D(Gtk.GLArea):
         # previous playhead fast as well.
         if saved_index is not None:
             player.seek(saved_index)
-            initial_index = saved_index
         else:
-            initial_index = player.seek_to_first_layer()
+            player.seek_to_first_layer()
         self._op_player = player
-        GLib.idle_add(
-            self._notify_playback_overlay,
-            len(player.ops),
-            initial_index,
-        )
+        if self._playback_overlay:
+            self._playback_overlay.set_player(player)
         self.queue_render()
 
         # Build seek-acceleration snapshots in the background.  They are
@@ -1183,41 +1174,6 @@ class Canvas3D(Gtk.GLArea):
         )
 
         self.queue_render()
-
-    def _notify_playback_overlay(
-        self, command_count: int, initial_index: int = 0
-    ):
-        if self._playback_overlay is not None:
-            self._playback_overlay.update_ops_range(
-                command_count, initial_index
-            )
-
-    def seek_playback(self, index: int):
-        if self._op_player:
-            self._op_player.seek(index)
-            self.queue_render()
-
-    @property
-    def playback_command_count(self) -> int:
-        if self._op_player:
-            return len(self._op_player.ops)
-        return 0
-
-    @property
-    def playback_current_index(self) -> int:
-        if self._op_player:
-            return self._op_player.current_index
-        return -1
-
-    def seek_playback_to_fraction(self, fraction: float):
-        if self._op_player:
-            self._op_player.seek_to_fraction(fraction)
-            if self._playback_overlay:
-                self._playback_overlay.update_ops_range(
-                    len(self._op_player.ops),
-                    self._op_player.current_index,
-                )
-            self.queue_render()
 
     def _get_ops_for_playback(self) -> Optional[Ops]:
         handle = self._current_job_handle

@@ -1,14 +1,28 @@
 import logging
 from gettext import gettext as _
-from typing import Optional
+from typing import Any, Optional, Protocol
 
 from blinker import Signal
 from gi.repository import GLib, Gtk
 
 from ..icons import get_icon
-from .gtk import apply_css
+from ..shared.gtk import apply_css
 
 logger = logging.getLogger(__name__)
+
+
+class PlaybackPlayer(Protocol):
+    """Minimal OpPlayer surface required by the playback overlay."""
+
+    ops: Any
+
+    @property
+    def current_index(self) -> int: ...
+
+    def seek(self, index: int) -> None: ...
+
+    def seek_to_fraction(self, fraction: float) -> None: ...
+
 
 SPEED_OPTIONS = [1, 2, 4, 8, 16]
 
@@ -95,6 +109,7 @@ class PlaybackOverlay(Gtk.Box):
         self._playing = False
         self._timer_id: Optional[int] = None
         self._canvas = None
+        self._player: Optional[PlaybackPlayer] = None
         self._is_syncing = False
 
         self.connect("destroy", self._on_destroy)
@@ -106,6 +121,54 @@ class PlaybackOverlay(Gtk.Box):
     def set_canvas(self, canvas):
         """Connect this overlay to a Canvas3D instance."""
         self._canvas = canvas
+
+    def set_player(self, player: Optional[PlaybackPlayer]):
+        """Set the OpPlayer backing this overlay's slider and seek calls."""
+        self._player = player
+        if player is not None:
+            self.update_ops_range(
+                len(player.ops),
+                player.current_index,
+            )
+        else:
+            self.update_ops_range(0)
+
+    @property
+    def command_count(self) -> int:
+        """Number of commands in the current playback, or 0."""
+        if self._player:
+            return len(self._player.ops)
+        return 0
+
+    @property
+    def current_index(self) -> int:
+        """Current OpPlayer index, or -1."""
+        if self._player:
+            return self._player.current_index
+        return -1
+
+    def seek(self, index: int):
+        """Seek the OpPlayer to the given command index."""
+        if self._player:
+            self._player.seek(index)
+            if self._canvas:
+                self._canvas.queue_render()
+
+    def seek_to_fraction(self, fraction: float):
+        """Seek the OpPlayer by fraction (0.0 to 1.0) and sync the slider."""
+        if self._player:
+            self._player.seek_to_fraction(fraction)
+            self.update_ops_range(
+                len(self._player.ops),
+                self._player.current_index,
+            )
+            if self._canvas:
+                self._canvas.queue_render()
+
+    def handle_space(self):
+        """Toggle playback when the space key is pressed."""
+        if self.can_play():
+            self.toggle_playback()
 
     def update_ops_range(self, command_count: int, initial_index: int = 0):
         """Update slider range for the given number of commands.
@@ -134,8 +197,8 @@ class PlaybackOverlay(Gtk.Box):
     def _on_slider_changed(self, slider):
         if self._canvas:
             index = int(slider.get_value())
-            if self._canvas.playback_current_index != index:
-                self._canvas.seek_playback(index)
+            if self.current_index != index:
+                self.seek(index)
         if not self._is_syncing:
             self.step_changed.send(self, ops_index=int(slider.get_value()))
 
@@ -163,9 +226,9 @@ class PlaybackOverlay(Gtk.Box):
             self._start_playback()
 
     def _start_playback(self):
-        if not self._canvas or self._canvas.playback_command_count == 0:
+        if not self._canvas or self.command_count == 0:
             return
-        max_idx = self._canvas.playback_command_count - 1
+        max_idx = self.command_count - 1
         current = int(self._slider.get_value())
         if max_idx >= 0 and current >= max_idx:
             self._slider.set_value(0)
@@ -190,11 +253,11 @@ class PlaybackOverlay(Gtk.Box):
         if not self._canvas or not self._canvas.get_realized():
             self._stop_playback()
             return False
-        if self._canvas.playback_command_count == 0:
+        if self.command_count == 0:
             self._stop_playback()
             return False
 
-        max_idx = self._canvas.playback_command_count - 1
+        max_idx = self.command_count - 1
         current = int(self._slider.get_value())
         speed = SPEED_OPTIONS[self._speed_index]
         next_val = current + speed

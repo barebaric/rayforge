@@ -784,10 +784,7 @@ def seek_3d_playback(win: "MainWindow", fraction: float) -> None:
     """
 
     def _seek() -> None:
-        canvas = win.canvas3d
-        if canvas is None:
-            return
-        canvas.seek_playback_to_fraction(fraction)
+        win._canvas3d_playback.seek_to_fraction(fraction)
 
     run_on_main_thread(_seek)
     time.sleep(0.3)
