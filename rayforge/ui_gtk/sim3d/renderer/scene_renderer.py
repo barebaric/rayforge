@@ -19,12 +19,13 @@ from ....shared.units.formatter import (
 from ....simulator.scene3d import CompiledSceneArtifact
 from ...shared.color_lut_provider import ColorLutProvider
 from ..gl_state import render_pass
-from ..gl_utils import LayerRenderer, RenderContext, ShaderSet
+from ..gl_utils import LayerRenderer, ShaderSet
 from ..layer_renderer_group import (
     LayerRendererGroup,
     match_overlay_layer,
     match_vertex_layer,
 )
+from ..render_context import RenderContext
 from ..shader import (
     BackgroundShader,
     Shader,

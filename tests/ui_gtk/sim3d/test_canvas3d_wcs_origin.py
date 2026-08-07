@@ -5,7 +5,12 @@ import pytest
 
 from rayforge.core.color import ColorSet
 from rayforge.machine.models.machine import Origin
-from rayforge.ui_gtk.sim3d.gl_utils import RenderContext, ShaderSet
+from rayforge.ui_gtk.sim3d.gl_utils import ShaderSet
+from rayforge.ui_gtk.sim3d.render_context import (
+    CameraContext,
+    RenderContext,
+    ViewportContext,
+)
 from rayforge.ui_gtk.sim3d.renderer.axis_renderer_3d import AxisRenderer3D
 
 
@@ -117,25 +122,22 @@ def test_wcs_marker_position(
         mock_text_shader = MagicMock()
 
         text_mvp = np.identity(4, dtype=np.float32)
-        scene_mvp = np.identity(4, dtype=np.float32)
-        view_matrix = np.identity(4, dtype=np.float32)
 
         ctx = RenderContext(
-            proj_matrix=np.eye(4, dtype=np.float32),
-            view_matrix=view_matrix,
-            mvp_ui=text_mvp,
-            mvp_scene=scene_mvp,
-            margin_shift=np.eye(4, dtype=np.float32),
-            model_matrix=model_matrix,
-            viewport_height=800,
-            camera_position=np.zeros(3),
-            color_set=ColorSet(),
+            camera=CameraContext(
+                mvp_ui=text_mvp,
+                viewport_height=800,
+                camera_position=np.zeros(3),
+                color_set=ColorSet(),
+            ),
+            viewport=ViewportContext(
+                model_matrix=model_matrix,
+                wcs_offset_mm=(wcs_x, wcs_y, 0.0),
+                x_right=x_right,
+                x_negative=x_neg,
+                y_negative=y_neg,
+            ),
         )
-        ctx.wcs_offset_mm = (wcs_x, wcs_y, 0.0)
-        ctx.x_right = x_right
-        ctx.y_down = y_down
-        ctx.x_negative = x_neg
-        ctx.y_negative = y_neg
 
         shaders = ShaderSet(main=mock_line_shader, text=mock_text_shader)
         renderer.render(ctx=ctx, shaders=shaders)

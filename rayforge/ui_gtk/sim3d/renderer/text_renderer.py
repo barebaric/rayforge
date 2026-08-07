@@ -15,7 +15,8 @@ import numpy as np
 from gi.repository import Pango, PangoCairo
 from OpenGL import GL
 
-from ..gl_utils import RenderContext, ShaderSet
+from ..gl_utils import ShaderSet
+from ..render_context import RenderContext
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -258,7 +259,7 @@ class TextRenderer(BaseRenderer):
         if shader is None:
             return
 
-        mvp_matrix = ctx.mvp_ui
+        mvp_matrix = ctx.camera.mvp_ui
 
         shader.use()
         GL.glActiveTexture(GL.GL_TEXTURE0)
@@ -275,7 +276,7 @@ class TextRenderer(BaseRenderer):
 
         # Get the camera's rotation matrix to billboard the text.
         try:
-            inv_view = np.linalg.inv(ctx.view_matrix)
+            inv_view = np.linalg.inv(ctx.camera.view_matrix)
             camera_rotation_matrix_row_major = inv_view[:3, :3]
             u = camera_rotation_matrix_row_major[:, 0]
             u /= np.linalg.norm(u)

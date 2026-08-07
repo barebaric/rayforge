@@ -9,7 +9,8 @@ import logging
 import numpy as np
 from OpenGL import GL
 
-from ..gl_utils import RenderContext, ShaderSet
+from ..gl_utils import ShaderSet
+from ..render_context import RenderContext
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -88,7 +89,7 @@ class PlaneRenderer(BaseRenderer):
         if shader is None:
             return
 
-        mvp = ctx.mvp_ui @ ctx.model_matrix
+        mvp = ctx.camera.mvp_ui @ ctx.viewport.model_matrix
 
         shader.set_mat4("uMVP", mvp)
         shader.set_vec4("uColor", self.color)

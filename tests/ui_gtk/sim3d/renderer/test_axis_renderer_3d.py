@@ -5,7 +5,12 @@ import pytest
 
 from rayforge.core.color import ColorSet
 from rayforge.machine.models.machine import Origin
-from rayforge.ui_gtk.sim3d.gl_utils import RenderContext, ShaderSet
+from rayforge.ui_gtk.sim3d.gl_utils import ShaderSet
+from rayforge.ui_gtk.sim3d.render_context import (
+    CameraContext,
+    RenderContext,
+    ViewportContext,
+)
 from rayforge.ui_gtk.sim3d.renderer.axis_renderer_3d import AxisRenderer3D
 
 # Test scenarios for axis label expectations, mirrored from the 2D canvas tests
@@ -130,24 +135,23 @@ def test_axis_label_rendering(
 
     # Dummy matrices are sufficient as we only test label text, not position
     dummy_mvp = np.identity(4, dtype=np.float32)
-    dummy_view = np.identity(4, dtype=np.float32)
 
     # 4. Call the private method containing the label generation logic
     ctx = RenderContext(
-        proj_matrix=np.eye(4, dtype=np.float32),
-        view_matrix=dummy_view,
-        mvp_ui=dummy_mvp,
-        mvp_scene=dummy_mvp,
-        margin_shift=np.eye(4, dtype=np.float32),
-        model_matrix=model_matrix,
-        viewport_height=800,
-        camera_position=np.zeros(3),
-        color_set=ColorSet(),
+        camera=CameraContext(
+            mvp_ui=dummy_mvp,
+            viewport_height=800,
+            camera_position=np.zeros(3),
+            color_set=ColorSet(),
+        ),
+        viewport=ViewportContext(
+            model_matrix=model_matrix,
+            wcs_offset_mm=wcs_offset,
+            x_right=x_right,
+            x_negative=x_negative,
+            y_negative=y_negative,
+        ),
     )
-    ctx.wcs_offset_mm = wcs_offset
-    ctx.x_right = x_right
-    ctx.x_negative = x_negative
-    ctx.y_negative = y_negative
     axis_renderer._render_axis_labels(
         ctx=ctx,
         shaders=ShaderSet(text=MagicMock()),
@@ -193,19 +197,18 @@ def test_axis_labels_in_preferred_unit():
     axis_renderer.text_renderer = mock_text_renderer
 
     dummy_mvp = np.identity(4, dtype=np.float32)
-    dummy_view = np.identity(4, dtype=np.float32)
     ctx = RenderContext(
-        proj_matrix=np.eye(4, dtype=np.float32),
-        view_matrix=dummy_view,
-        mvp_ui=dummy_mvp,
-        mvp_scene=dummy_mvp,
-        margin_shift=np.eye(4, dtype=np.float32),
-        model_matrix=np.eye(4, dtype=np.float32),
-        viewport_height=800,
-        camera_position=np.zeros(3),
-        color_set=ColorSet(),
+        camera=CameraContext(
+            mvp_ui=dummy_mvp,
+            viewport_height=800,
+            camera_position=np.zeros(3),
+            color_set=ColorSet(),
+        ),
+        viewport=ViewportContext(
+            model_matrix=np.eye(4, dtype=np.float32),
+            wcs_offset_mm=(0.0, 0.0, 0.0),
+        ),
     )
-    ctx.wcs_offset_mm = (0.0, 0.0, 0.0)
     axis_renderer._render_axis_labels(
         ctx=ctx,
         shaders=ShaderSet(text=MagicMock()),

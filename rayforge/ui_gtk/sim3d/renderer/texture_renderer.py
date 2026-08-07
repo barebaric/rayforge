@@ -12,7 +12,8 @@ from OpenGL import GL
 from ....pipeline.artifact.base import TextureData
 from ....simulator.scene3d import CompiledSceneArtifact, TextureLayer
 from ...shared.color_lut_provider import ColorLutProvider
-from ..gl_utils import RenderContext, ShaderSet
+from ..gl_utils import ShaderSet
+from ..render_context import RenderContext
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
@@ -46,19 +47,19 @@ class TextureArtifactRenderer(BaseRenderer):
 
     def prepare(self, ctx: RenderContext) -> None:
         """Caches the per-frame MVP matrices for the texture quads."""
-        self._flat_mvp = ctx.mvp_ui
-        self._cyl_mvp = ctx.cyl_mesh_mvp
+        self._flat_mvp = ctx.camera.mvp_ui
+        self._cyl_mvp = ctx.kinematics.cylinder_mesh_mvp()
 
         reached_count = None
-        op_player = ctx.op_player
-        compiled_artifact = ctx.compiled_artifact
+        op_player = ctx.playback.op_player
+        compiled_artifact = ctx.playback.compiled_artifact
         if op_player is not None and compiled_artifact is not None:
             reached_count = 0
             playhead = op_player.current_index
             for tl in compiled_artifact.texture_layers:
                 if playhead >= tl.activation_cmd_idx:
                     reached_count += 1
-        ctx.reached_count = reached_count
+        ctx.playback.reached_count = reached_count
 
     def init_gl(self):
         """
@@ -352,7 +353,7 @@ class TextureArtifactRenderer(BaseRenderer):
         if shader is None:
             return
 
-        reached_count = ctx.reached_count
+        reached_count = ctx.playback.reached_count
         pending_alpha = 0.3
         self._draw_flat(shader, reached_count, pending_alpha)
         self._draw_cylinder(shader, reached_count, pending_alpha)

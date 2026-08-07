@@ -14,7 +14,13 @@ import pytest
 from OpenGL import GL
 
 from rayforge.core.color import ColorSet
-from rayforge.ui_gtk.sim3d.gl_utils import RenderContext, ShaderSet
+from rayforge.ui_gtk.sim3d.gl_utils import ShaderSet
+from rayforge.ui_gtk.sim3d.render_context import (
+    CameraContext,
+    KinematicsContext,
+    RenderContext,
+    ViewportContext,
+)
 from rayforge.ui_gtk.sim3d.renderer.plane_renderer import PlaneRenderer
 from rayforge.ui_gtk.sim3d.renderer.texture_renderer import (
     TextureArtifactRenderer,
@@ -34,18 +40,25 @@ def _make_shader() -> Shader:
 def _make_ctx(
     mvp_ui: Optional[np.ndarray] = None,
     model_matrix: Optional[np.ndarray] = None,
+    cyl_mesh_mvp: Optional[np.ndarray] = None,
 ) -> RenderContext:
     identity = np.eye(4, dtype=np.float32)
     return RenderContext(
-        proj_matrix=identity,
-        view_matrix=identity,
-        mvp_ui=mvp_ui if mvp_ui is not None else identity,
-        mvp_scene=identity,
-        margin_shift=identity,
-        model_matrix=model_matrix if model_matrix is not None else identity,
-        viewport_height=800,
-        camera_position=np.zeros(3),
-        color_set=ColorSet(),
+        camera=CameraContext(
+            mvp_ui=mvp_ui if mvp_ui is not None else identity,
+            viewport_height=800,
+            camera_position=np.zeros(3),
+            color_set=ColorSet(),
+        ),
+        viewport=ViewportContext(
+            model_matrix=(
+                model_matrix if model_matrix is not None else identity
+            )
+        ),
+        kinematics=KinematicsContext(
+            mvp_ui=mvp_ui if mvp_ui is not None else identity,
+            cyl_mesh_mvp=cyl_mesh_mvp,
+        ),
     )
 
 
@@ -136,10 +149,9 @@ def test_texture_renderer_cylinder_mvp_kept_row_major():
         ],
         dtype=np.float32,
     )
-    ctx = _make_ctx()
-    ctx.cyl_mesh_mvp = cyl_mvp
+    ctx = _make_ctx(cyl_mesh_mvp=cyl_mvp)
 
     renderer.prepare(ctx)
 
     assert renderer._cyl_mvp is cyl_mvp
-    assert renderer._flat_mvp is ctx.mvp_ui
+    assert renderer._flat_mvp is ctx.camera.mvp_ui

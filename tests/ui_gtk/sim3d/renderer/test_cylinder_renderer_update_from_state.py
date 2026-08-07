@@ -5,6 +5,10 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
+from rayforge.ui_gtk.sim3d.render_context import (
+    KinematicsContext,
+    RenderContext,
+)
 from rayforge.ui_gtk.sim3d.renderer.cylinder_renderer import CylinderRenderer
 
 
@@ -25,9 +29,7 @@ def renderer():
 
 
 def _make_ctx(mvp=None):
-    ctx = MagicMock()
-    ctx.cyl_mesh_mvp = mvp
-    return ctx
+    return RenderContext(kinematics=KinematicsContext(cyl_mesh_mvp=mvp))
 
 
 def _make_shaders(shader):

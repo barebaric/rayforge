@@ -16,7 +16,7 @@ from .camera import ViewDirection
 from .camera_controller import CameraController
 from .chunked_upload import ChunkedUploadController
 from .doc_signals import DocSignalHub
-from .render_context_builder import RenderContextBuilder
+from .render_context import FrameInputs, RenderContext
 from .renderer.scene_renderer import SceneRenderer
 from .scene_presenter import ScenePresenter
 from .theme_resolver import ThemeResolver
@@ -46,7 +46,7 @@ class Canvas3D(Gtk.GLArea):
         self._viewport = viewport
 
         self._scene = SceneRenderer()
-        self._ctx_builder = RenderContextBuilder()
+        self._ctx = RenderContext()
         self._show_travel_moves = False
         self._show_nogo_zones = True
         self._show_models = True
@@ -305,22 +305,23 @@ class Canvas3D(Gtk.GLArea):
                 GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT  # type: ignore
             )
 
-            ctx = self._ctx_builder.build(
+            frame = FrameInputs(
                 camera=self._cam_ctrl.camera,
                 viewport=self._viewport,
                 color_set=self._theme_resolver.color_set,
-                scene=self._scene,
                 op_player=self._presenter.op_player,
+                machine=self._context.machine,
                 compiled_artifact=self._presenter.compiled_artifact,
                 doc=self.doc,
-                machine=self._context.machine,
+                cylinder_transform=self._scene.cylinder_transform,
+                had_rotary_layers=self._scene.had_rotary_layers,
                 show_travel_moves=self._show_travel_moves,
                 show_grid=self._show_grid,
                 show_nogo_zones=self._show_nogo_zones,
                 show_models=self._show_models,
             )
-
-            self._scene.render(ctx)
+            self._ctx.update(frame)
+            self._scene.render(self._ctx)
 
         except Exception as e:
             logger.error("OpenGL Render Error: %s", e, exc_info=True)
