@@ -234,8 +234,6 @@ class NogoZonesPage(TrackedPreferencesPage):
             ),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
         )
         self.x_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.x_row)
@@ -247,8 +245,6 @@ class NogoZonesPage(TrackedPreferencesPage):
             ),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
         )
         self.y_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.y_row)
@@ -260,8 +256,6 @@ class NogoZonesPage(TrackedPreferencesPage):
             ),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
         )
         self.z_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.z_row)
@@ -270,7 +264,6 @@ class NogoZonesPage(TrackedPreferencesPage):
             _("Width"),
             _("Width"),
             upper=10000,
-            max_value_in_base=10000.0,
         )
         self.w_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.w_row)
@@ -279,7 +272,6 @@ class NogoZonesPage(TrackedPreferencesPage):
             _("Height"),
             _("Height"),
             upper=10000,
-            max_value_in_base=10000.0,
         )
         self.h_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.h_row)
@@ -288,7 +280,6 @@ class NogoZonesPage(TrackedPreferencesPage):
             _("Depth"),
             _("Depth (Z extent)"),
             upper=10000,
-            max_value_in_base=10000.0,
         )
         self.d_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.d_row)
@@ -297,7 +288,6 @@ class NogoZonesPage(TrackedPreferencesPage):
             _("Radius"),
             _("Cylinder radius"),
             upper=10000,
-            max_value_in_base=10000.0,
         )
         self.radius_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.radius_row)
@@ -306,7 +296,6 @@ class NogoZonesPage(TrackedPreferencesPage):
             _("Cylinder Height"),
             _("Cylinder height"),
             upper=10000,
-            max_value_in_base=10000.0,
         )
         self.cyl_height_row.value_changed.connect(self._on_param_changed)
         self.config_group.add(self.cyl_height_row)

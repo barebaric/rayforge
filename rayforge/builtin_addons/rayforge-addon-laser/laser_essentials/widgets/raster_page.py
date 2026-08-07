@@ -188,7 +188,6 @@ class RasterSettingsPage(LaserStepSettingsPage):
         self.z_step_row = LengthSpinRow(
             _("Z Step-Down per Level"),
             upper=50,
-            max_value_in_base=50,
             value_in_base=step.z_step_down,
         )
         self._add(engrave_group, self.z_step_row)
@@ -308,17 +307,17 @@ class RasterSettingsPage(LaserStepSettingsPage):
         head = self.get_selected_head()
         laser = head if isinstance(head, LaserHead) else None
         default_line_interval_mm = laser.spot_size_mm[1] if laser else 0.1
-        default_sample_interval_mm = laser.spot_size_mm[0] if laser else 0.1
+        default_sample_interval_mm = (
+            laser.spot_size_mm[0] / 2.0 if laser else 0.05
+        )
 
         self.line_interval_row = LengthSpinRow(
             _("Line Spacing"),
             _("Distance between scan lines"),
             lower=0.001,
-            upper=10.0,
+            upper=20.0,
             step_increment=0.01,
             digits=3,
-            min_value_in_base=0.001,
-            max_value_in_base=10.0,
             value_in_base=(
                 self.step.line_interval_mm
                 if self.step.line_interval_mm is not None
@@ -339,10 +338,10 @@ class RasterSettingsPage(LaserStepSettingsPage):
                 "Distance between power samples along scan line. "
                 "Lower values improve accuracy, but increase output size. "
             ),
-            lower=0.01,
-            upper=10.0,
-            min_value_in_base=0.01,
-            max_value_in_base=10.0,
+            lower=0.001,
+            upper=20.0,
+            step_increment=0.01,
+            digits=3,
             value_in_base=(
                 self.step.sample_interval_mm
                 if self.step.sample_interval_mm is not None
@@ -369,7 +368,6 @@ class RasterSettingsPage(LaserStepSettingsPage):
             upper=5.0,
             step_increment=0.01,
             digits=3,
-            max_value_in_base=5.0,
             value_in_base=(
                 self.step.dot_width_correction_mm
                 if self.step.dot_width_correction_mm is not None
@@ -394,8 +392,6 @@ class RasterSettingsPage(LaserStepSettingsPage):
             upper=5.0,
             step_increment=0.01,
             digits=3,
-            min_value_in_base=-5.0,
-            max_value_in_base=5.0,
             value_in_base=self.step.bidir_x_offset_mm,
         )
         self._add(group, self.bidir_x_offset_row)

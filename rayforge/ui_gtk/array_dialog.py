@@ -319,8 +319,6 @@ class GridArrayDialog(_BaseArrayDialog):
             _("Column spacing"),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
             value_in_base=1.0,
         )
         self._col_spacing_row.value_changed.connect(
@@ -330,8 +328,6 @@ class GridArrayDialog(_BaseArrayDialog):
             _("Row spacing"),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
             value_in_base=1.0,
         )
         self._row_spacing_row.value_changed.connect(
@@ -502,8 +498,6 @@ class CircularArrayDialog(_BaseArrayDialog):
             _("Center X"),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
             value_in_base=self._centre[0],
         )
         self._c_center_x_row.value_changed.connect(
@@ -513,8 +507,6 @@ class CircularArrayDialog(_BaseArrayDialog):
             _("Center Y"),
             lower=-10000,
             upper=10000,
-            min_value_in_base=-10000.0,
-            max_value_in_base=10000.0,
             value_in_base=self._centre[1],
         )
         self._c_center_y_row.value_changed.connect(
@@ -524,7 +516,6 @@ class CircularArrayDialog(_BaseArrayDialog):
         self._c_radius_row = LengthSpinRow(
             _("Radius"),
             upper=10000,
-            max_value_in_base=10000.0,
             value_in_base=r,
         )
         self._c_radius_row.value_changed.connect(

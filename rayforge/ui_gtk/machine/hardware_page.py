@@ -33,7 +33,6 @@ class HardwarePage(TrackedPreferencesPage):
             _("Full X-axis travel range"),
             lower=50,
             upper=10000,
-            max_value_in_base=10000.0,
             value_in_base=self.machine.axis_extents[0],
         )
         self.x_extent_row.value_changed.connect(self.on_x_extent_changed)
@@ -44,7 +43,6 @@ class HardwarePage(TrackedPreferencesPage):
             _("Full Y-axis travel range"),
             lower=50,
             upper=10000,
-            max_value_in_base=10000.0,
             value_in_base=self.machine.axis_extents[1],
         )
         self.y_extent_row.value_changed.connect(self.on_y_extent_changed)
@@ -133,7 +131,6 @@ class HardwarePage(TrackedPreferencesPage):
             _("Left Margin"),
             _("Unusable space from left edge"),
             upper=10000,
-            max_value_in_base=10000.0,
             value_in_base=ml,
         )
         self.margin_left_row.value_changed.connect(self.on_margins_changed)
@@ -143,7 +140,6 @@ class HardwarePage(TrackedPreferencesPage):
             _("Top Margin"),
             _("Unusable space from top edge"),
             upper=10000,
-            max_value_in_base=10000.0,
             value_in_base=mt,
         )
         self.margin_top_row.value_changed.connect(self.on_margins_changed)
@@ -153,7 +149,6 @@ class HardwarePage(TrackedPreferencesPage):
             _("Right Margin"),
             _("Unusable space from right edge"),
             upper=10000,
-            max_value_in_base=10000.0,
             value_in_base=mr,
         )
         self.margin_right_row.value_changed.connect(self.on_margins_changed)
@@ -163,7 +158,6 @@ class HardwarePage(TrackedPreferencesPage):
             _("Bottom Margin"),
             _("Unusable space from bottom edge"),
             upper=10000,
-            max_value_in_base=10000.0,
             value_in_base=mb,
         )
         self.margin_bottom_row.value_changed.connect(self.on_margins_changed)
@@ -265,10 +259,10 @@ class HardwarePage(TrackedPreferencesPage):
 
     def _update_soft_limits_ui(self):
         w, h = self.machine.axis_extents
-        self.soft_x_min_row.set_bounds_in_base(0.0, w)
-        self.soft_x_max_row.set_bounds_in_base(0.0, w)
-        self.soft_y_min_row.set_bounds_in_base(0.0, h)
-        self.soft_y_max_row.set_bounds_in_base(0.0, h)
+        self.soft_x_min_row.set_range(0.0, w)
+        self.soft_x_max_row.set_range(0.0, w)
+        self.soft_y_min_row.set_range(0.0, h)
+        self.soft_y_max_row.set_range(0.0, h)
         limits = self.machine.soft_limits or (0, 0, w, h)
         self.soft_x_min_row.set_value_in_base_units(limits[0])
         self.soft_y_min_row.set_value_in_base_units(limits[1])

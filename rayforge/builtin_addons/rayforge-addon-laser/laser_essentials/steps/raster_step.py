@@ -223,7 +223,7 @@ class EngraveStep(LaserStep):
         kwargs = self.get_assembler_kwargs(machine, workpiece)
         depth_mode = DepthMode[self.depth_mode]
         line_interval = kwargs["line_interval_mm"] or spot_y
-        sample_interval = kwargs["sample_interval_mm"] or spot_x
+        sample_interval = kwargs["sample_interval_mm"] or spot_x / 2.0
         dot_width = (
             kwargs["dot_width_correction_mm"]
             if kwargs["dot_width_correction_mm"] is not None
@@ -502,7 +502,7 @@ def _build_raster_part(
         return Part(size_mm=size), None
 
     spot_x, spot_y = LaserHead.get_spot_size(step.get_selected_laser(machine))
-    px_per_mm_x = 1.0 / (step.sample_interval_mm or spot_x)
+    px_per_mm_x = 1.0 / (step.sample_interval_mm or spot_x / 2.0)
     px_per_mm_y = 1.0 / spot_y
 
     target_w = max(1, int(size[0] * px_per_mm_x))

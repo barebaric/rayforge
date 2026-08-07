@@ -107,7 +107,6 @@ class CardPage(CameraWizardPage):
             _("Card width"),
             lower=20.0,
             upper=300.0,
-            max_value_in_base=300.0,
             value_in_base=self._card_width,
         )
         self._width_row.value_changed.connect(self._on_size_changed)
@@ -118,7 +117,6 @@ class CardPage(CameraWizardPage):
             _("Card height"),
             lower=20.0,
             upper=300.0,
-            max_value_in_base=300.0,
             value_in_base=self._card_height,
         )
         self._height_row.value_changed.connect(self._on_size_changed)

@@ -72,7 +72,6 @@ class OverscanSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             _("Overscan Distance"),
             _("Manual distance setting"),
             upper=50.0,
-            max_value_in_base=50.0,
             value_in_base=transformer.distance_mm,
         )
         self.add(distance_row)

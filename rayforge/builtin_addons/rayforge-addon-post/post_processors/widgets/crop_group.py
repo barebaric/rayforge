@@ -43,8 +43,6 @@ class CropSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             _("Grow/shrink stock boundary before cropping"),
             lower=-100.0,
             upper=100.0,
-            min_value_in_base=-100.0,
-            max_value_in_base=100.0,
             value_in_base=transformer.offset,
         )
         self.offset_row.value_changed.connect(

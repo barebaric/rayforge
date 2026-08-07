@@ -52,8 +52,6 @@ class AddTabsPopover(Gtk.Popover):
             _("Tab Width"),
             lower=0.1,
             upper=100,
-            min_value_in_base=0.1,
-            max_value_in_base=100.0,
             value_in_base=2.0,
         )
         rows_container.append(self.tab_width_row)

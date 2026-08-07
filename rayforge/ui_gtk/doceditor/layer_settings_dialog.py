@@ -135,8 +135,6 @@ class LayerSettingsDialog(PatchedDialogWindow):
             _("Diameter of the cylindrical object"),
             lower=1,
             upper=1000,
-            min_value_in_base=1.0,
-            max_value_in_base=1000.0,
             value_in_base=layer.rotary_diameter,
         )
         self.rotary_diameter_row.value_changed.connect(

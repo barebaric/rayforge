@@ -20,6 +20,9 @@ class UnitSpinRow(SpinRow):
 
     Values are exchanged with the caller in application base units through
     :meth:`get_value_in_base_units` / :meth:`set_value_in_base_units`.
+    Bounds passed as ``lower``/``upper`` (or :meth:`set_range`) are also
+    expressed in base units and converted to the display unit whenever it
+    changes.
     """
 
     __gtype_name__ = "RayforgeUnitSpinRow"
@@ -37,8 +40,6 @@ class UnitSpinRow(SpinRow):
         digits: int = 2,
         numeric: bool = False,
         value_in_base: Optional[float] = None,
-        min_value_in_base: Optional[float] = None,
-        max_value_in_base: Optional[float] = None,
         debounce_ms: int = 0,
     ):
         super().__init__(
@@ -56,8 +57,8 @@ class UnitSpinRow(SpinRow):
         self.quantity = quantity
         self._unit: Optional[Unit] = None
         self._min_digits = digits
-        self._min_value_in_base = min_value_in_base
-        self._max_value_in_base = max_value_in_base
+        self._lower = lower
+        self._upper = upper
 
         self._config_handler_id = get_context().config.changed.connect(
             self._on_config_changed
@@ -89,7 +90,8 @@ class UnitSpinRow(SpinRow):
         Re-read the active unit and refresh the unit tooltip, adjustment
         bounds, and digits.
 
-        Does not touch the current value and does not manage the
+        The bounds are converted from base units to the active display
+        unit. Does not touch the current value and does not manage the
         ``_is_updating`` guard; callers wrap as needed.
         """
         unit_name = self._resolve_unit_name()
@@ -105,10 +107,8 @@ class UnitSpinRow(SpinRow):
         )
 
         adj = self._spin_button.get_adjustment()
-        if self._max_value_in_base is not None:
-            adj.set_upper(self._unit.from_base(self._max_value_in_base))
-        if self._min_value_in_base is not None:
-            adj.set_lower(self._unit.from_base(self._min_value_in_base))
+        adj.set_lower(self._unit.from_base(self._lower))
+        adj.set_upper(self._unit.from_base(self._upper))
         self._spin_button.set_digits(
             max(self._unit.precision, self._min_digits)
         )
@@ -133,14 +133,10 @@ class UnitSpinRow(SpinRow):
         finally:
             self._is_updating = False
 
-    def set_bounds_in_base(
-        self,
-        min_value_in_base: Optional[float],
-        max_value_in_base: Optional[float],
-    ) -> None:
-        """Update the adjustment bounds (in base units) and re-render."""
-        self._min_value_in_base = min_value_in_base
-        self._max_value_in_base = max_value_in_base
+    def set_range(self, lower: float, upper: float) -> None:
+        """Set the adjustment bounds (in base units) and re-render."""
+        self._lower = lower
+        self._upper = upper
         self.update_unit_and_bounds()
 
     def set_min_digits(self, min_digits: int) -> None:

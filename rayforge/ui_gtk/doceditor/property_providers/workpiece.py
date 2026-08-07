@@ -163,8 +163,6 @@ class TabsPropertyProvider(PropertyProvider):
             _("Length along the path"),
             lower=0.1,
             upper=100.0,
-            min_value_in_base=0.1,
-            max_value_in_base=100.0,
             value_in_base=1.0,
         )
         self.tab_width_row.value_changed.connect(self._on_tab_width_changed)

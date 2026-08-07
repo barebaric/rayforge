@@ -485,7 +485,6 @@ class LaserHeadDetailWidget(DebounceMixin):
             upper=10.0,
             step_increment=0.01,
             page_increment=0.05,
-            max_value_in_base=10.0,
             value_in_base=0.1,
         )
         self.spot_size_x_row.value_changed.connect(self._on_spot_size_changed)
@@ -498,7 +497,6 @@ class LaserHeadDetailWidget(DebounceMixin):
             upper=10.0,
             step_increment=0.01,
             page_increment=0.05,
-            max_value_in_base=10.0,
             value_in_base=0.1,
         )
         self.spot_size_y_row.value_changed.connect(self._on_spot_size_changed)
@@ -534,7 +532,6 @@ class LaserHeadDetailWidget(DebounceMixin):
             _("Focal Distance"),
             _("Distance from the laser head to the work surface (Z offset)"),
             upper=10000,
-            max_value_in_base=10000.0,
             value_in_base=0,
         )
         self.focal_distance_row.value_changed.connect(
