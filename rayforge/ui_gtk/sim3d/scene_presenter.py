@@ -427,9 +427,8 @@ class ScenePresenter:
 
         t_update_elapsed = (time.perf_counter() - t_update_start) * 1000
         if t_update_elapsed > 5:
-            logger.info(
-                f"[CANVAS3D] update_scene_from_doc took "
-                f"{t_update_elapsed:.1f}ms"
+            logger.debug(
+                f"update_scene_from_doc took {t_update_elapsed:.1f}ms"
             )
 
     def _schedule_scene_preparation(
