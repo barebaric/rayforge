@@ -80,8 +80,8 @@ class LayerRendererGroup:
             off_len = len(self.powered_offsets)
             if exec_powered >= 0 and idx % 50 == 0:
                 tag = "rot" if self.is_rotary else "flat"
-                logger.info(
-                    f"[PLAYBACK-DIAG] {tag} "
+                logger.debug(
+                    f"{tag} "
                     f"idx={idx}/{off_len - 1} "
                     f"exec={exec_powered}/{pv_total} "
                     f"off[-3:]="

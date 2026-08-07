@@ -46,8 +46,5 @@ def compile_scene_in_thread(
     t_start = time.perf_counter()
     compiled = compile_scene(ops, config)
     elapsed = (time.perf_counter() - t_start) * 1000
-    logger.info(
-        f"[SCENE_COMPILER] Compilation took {elapsed:.1f}ms "
-        f"(commands={len(ops)})"
-    )
+    logger.debug(f"Compilation took {elapsed:.1f}ms (commands={len(ops)})")
     return compiled

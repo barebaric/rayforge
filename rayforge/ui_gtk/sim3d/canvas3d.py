@@ -328,7 +328,7 @@ class Canvas3D(Gtk.GLArea):
 
         t_render_elapsed = (time.perf_counter() - t_render_start) * 1000
         if t_render_elapsed > 16:
-            logger.info(f"[CANVAS3D] on_render took {t_render_elapsed:.1f}ms")
+            logger.debug(f"on_render took {t_render_elapsed:.1f}ms")
         return True
 
     def set_show_travel_moves(self, visible: bool):
