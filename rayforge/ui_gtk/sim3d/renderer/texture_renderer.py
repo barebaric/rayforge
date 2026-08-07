@@ -50,17 +50,6 @@ class TextureArtifactRenderer(BaseRenderer):
         self._flat_mvp = ctx.camera.mvp_ui
         self._cyl_mvp = ctx.kinematics.cylinder_mesh_mvp()
 
-        reached_count = None
-        op_player = ctx.playback.op_player
-        compiled_artifact = ctx.playback.compiled_artifact
-        if op_player is not None and compiled_artifact is not None:
-            reached_count = 0
-            playhead = op_player.current_index
-            for tl in compiled_artifact.texture_layers:
-                if playhead >= tl.activation_cmd_idx:
-                    reached_count += 1
-        ctx.playback.reached_count = reached_count
-
     def init_gl(self):
         """
         Initializes OpenGL resources for rendering textured quads.
@@ -353,15 +342,13 @@ class TextureArtifactRenderer(BaseRenderer):
         if shader is None:
             return
 
-        reached_count = ctx.playback.reached_count
         pending_alpha = 0.3
-        self._draw_flat(shader, reached_count, pending_alpha)
-        self._draw_cylinder(shader, reached_count, pending_alpha)
+        self._draw_flat(shader, pending_alpha)
+        self._draw_cylinder(shader, pending_alpha)
 
     def _draw_flat(
         self,
         shader,
-        reached_count: Optional[int] = None,
         pending_alpha: float = 0.3,
     ):
         """Draws all flat (non-rotary) texture instances."""
@@ -383,10 +370,7 @@ class TextureArtifactRenderer(BaseRenderer):
             if instance["rotary_enabled"]:
                 continue
 
-            if reached_count is not None and i >= reached_count:
-                shader.set_float("uAlpha", pending_alpha)
-            else:
-                shader.set_float("uAlpha", 1.0)
+            shader.set_float("uAlpha", pending_alpha)
 
             shader.set_int("uLaserIndex", instance.get("laser_index", 0))
 
@@ -403,7 +387,6 @@ class TextureArtifactRenderer(BaseRenderer):
     def _draw_cylinder(
         self,
         shader,
-        reached_count: Optional[int] = None,
         pending_alpha: float = 0.3,
     ):
         """Draws all texture instances mapped onto a cylinder."""
@@ -429,10 +412,7 @@ class TextureArtifactRenderer(BaseRenderer):
                 continue
             num_rotary += 1
 
-            if reached_count is not None and i >= reached_count:
-                shader.set_float("uAlpha", pending_alpha)
-            else:
-                shader.set_float("uAlpha", 1.0)
+            shader.set_float("uAlpha", pending_alpha)
 
             shader.set_int("uLaserIndex", instance.get("laser_index", 0))
 
