@@ -95,7 +95,7 @@ class ModelPreviewWidget(Gtk.GLArea):
         mvp = proj @ view
         self._shader.reset_uniforms()
         with render_pass(self._shader):
-            self._renderer.render(
+            self._renderer.draw(
                 self._shader, mvp, camera_position=self._camera.position
             )
         return True
@@ -212,7 +212,22 @@ class _SimpleModelRenderer(BaseRenderer):
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
-    def render(
+    def prepare(self, ctx) -> None:
+        """No per-frame scene state to prepare."""
+        pass
+
+    def render(self, ctx, shaders, **kwargs) -> None:
+        """
+        Not used — the preview widget drives :meth:`draw` directly.
+
+        This renderer is not part of the scene render registry, so the
+        uniform ``render`` entry point has no meaning here.
+        """
+        raise NotImplementedError(
+            "_SimpleModelRenderer is driven via draw(), not render()."
+        )
+
+    def draw(
         self,
         shader: Shader,
         mvp_matrix: np.ndarray,

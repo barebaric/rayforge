@@ -15,8 +15,12 @@ class VertexLayer:
     powered_attrib: np.ndarray
     travel_verts: np.ndarray
     zero_power_verts: np.ndarray
-    powered_cmd_offsets: Any = field(default_factory=list)
-    travel_cmd_offsets: Any = field(default_factory=list)
+    powered_cmd_offsets: np.ndarray = field(
+        default_factory=lambda: np.array([], dtype=np.int32)
+    )
+    travel_cmd_offsets: np.ndarray = field(
+        default_factory=lambda: np.array([], dtype=np.int32)
+    )
     is_rotary: bool = False
 
 
@@ -37,7 +41,7 @@ class TextureLayer:
 class ScanlineOverlayLayer:
     positions: np.ndarray
     overlay_attrib: np.ndarray
-    cmd_offsets: Any
+    cmd_offsets: np.ndarray
     is_rotary: bool = False
 
 

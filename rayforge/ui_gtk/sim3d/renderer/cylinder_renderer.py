@@ -106,7 +106,7 @@ class CylinderRenderer(BaseRenderer):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         GL.glBindVertexArray(0)
 
-    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
+    def render(self, ctx: RenderContext, shaders: ShaderSet, **kwargs) -> None:
         """
         Renders the cylinder wireframe.
 

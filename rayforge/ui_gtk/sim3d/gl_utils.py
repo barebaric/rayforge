@@ -7,13 +7,12 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional, Protocol
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from OpenGL import GL
 
 if TYPE_CHECKING:
-    from .render_context.base import RenderContext
     from .shader.base import Shader
 
 
@@ -61,7 +60,7 @@ def set_line_width(requested: float) -> None:
 @dataclass
 class ShaderSet:
     """
-    Bag of shaders passed to ``LayerRenderer.render``.
+    Bag of shaders passed to ``render``.
 
     Each renderer picks the program it needs (``main`` / ``text`` /
     ``texture``) instead of receiving a bespoke positional ``shader``
@@ -73,21 +72,3 @@ class ShaderSet:
     text: Optional["Shader"] = None
     texture: Optional["Shader"] = None
     background: Optional["Shader"] = None
-
-
-class LayerRenderer(Protocol):
-    """
-    Polymorphic renderer contract.
-
-    ``prepare`` performs per-frame state setup (the work formerly done
-    by each renderer's divergent ``update_from_state``); ``render``
-    performs the GL draw.  Both pull everything they need from the
-    shared :class:`RenderContext`.  This is a ``Protocol`` (duck-typed);
-    renderers are not required to inherit from it.
-    """
-
-    def prepare(self, ctx: RenderContext) -> None: ...
-
-    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None: ...
-
-    def init_gl(self) -> None: ...

@@ -235,10 +235,11 @@ class ScenePresenter:
         if ops is None or ops.is_empty():
             self._op_player = None
             self._playback_assembly = None
-            for group in self._scene.layer_groups:
-                group.powered_offsets = np.array([], dtype=np.int32)
-                group.travel_offsets = np.array([], dtype=np.int32)
-                group.ring_offsets = np.array([], dtype=np.int32)
+            for renderer in self._scene.ops_renderers:
+                renderer.powered_offsets = np.array([], dtype=np.int32)
+                renderer.travel_offsets = np.array([], dtype=np.int32)
+            for renderer in self._scene.ring_renderers:
+                renderer.ring_offsets = np.array([], dtype=np.int32)
             if self._playback_overlay:
                 self._playback_overlay.set_player(None)
             self._request_render()
@@ -363,10 +364,11 @@ class ScenePresenter:
 
     def update_renderers_from_artifact(self):
         if not self._compiled_artifact:
-            for group in self._scene.layer_groups:
-                group.ops_renderer.clear()
-                group.ring_renderer.clear()
-                group.ring_offsets = []
+            for renderer in self._scene.ops_renderers:
+                renderer.clear()
+            for renderer in self._scene.ring_renderers:
+                renderer.clear()
+                renderer.ring_offsets = np.array([], dtype=np.int32)
             if self._scene.texture_renderer:
                 self._scene.texture_renderer.clear()
             self._request_render()
@@ -388,10 +390,10 @@ class ScenePresenter:
             % ", ".join(
                 "%s:%d"
                 % (
-                    "rot" if g.is_rotary else "flat",
-                    g.ring_renderer.vertex_count,
+                    "rot" if r.is_rotary else "flat",
+                    r.vertex_count,
                 )
-                for g in self._scene.layer_groups
+                for r in self._scene.ring_renderers
             )
         )
 

@@ -2,9 +2,9 @@
 A composite renderer owning all scene GPU resources for the 3D canvas.
 
 The SceneRenderer owns the child renderers and shaders plus the per-layer
-collections (layer groups, cylinders, models).  Canvas3D is responsible for
-the GL context lifecycle and per-frame state; it delegates resource creation,
-rebuilds and theme/colour application to this class.
+collections (ops/ring renderers, cylinders, models).  Canvas3D is
+responsible for the GL context lifecycle and per-frame state; it delegates
+resource creation, rebuilds and theme/colour application to this class.
 """
 
 import logging
@@ -16,15 +16,14 @@ from ....shared.units.formatter import (
     get_default_grid_step_mm,
     get_preferred_unit_factor,
 )
-from ....simulator.scene3d import CompiledSceneArtifact
+from ....simulator.scene3d import (
+    CompiledSceneArtifact,
+    ScanlineOverlayLayer,
+    VertexLayer,
+)
 from ...shared.color_lut_provider import ColorLutProvider
 from ..gl_state import render_pass
-from ..gl_utils import LayerRenderer, ShaderSet
-from ..layer_renderer_group import (
-    LayerRendererGroup,
-    match_overlay_layer,
-    match_vertex_layer,
-)
+from ..gl_utils import ShaderSet
 from ..render_context import RenderContext
 from ..shader import (
     BackgroundShader,
@@ -40,33 +39,32 @@ from .base import BaseRenderer
 from .cylinder_renderer import CylinderRenderer
 from .laser_beam_renderer import LaserBeamRenderer
 from .model_renderer import ModelRenderer
+from .ops_renderer import OpsRenderer
+from .ring_buffer_renderer import RingBufferRenderer
 from .texture_renderer import TextureArtifactRenderer
 from .zone_renderer import ZoneRenderer
 
 logger = logging.getLogger(__name__)
 
 
-class RingPassAdapter:
-    """
-    Draws a layer group's ring buffer as a separate registry pass.
+def match_vertex_layer(
+    vertex_layers: List[VertexLayer], is_rotary: bool
+) -> Optional[VertexLayer]:
+    """Returns the vertex layer matching the given rotary flag."""
+    for vl in vertex_layers:
+        if vl.is_rotary == is_rotary:
+            return vl
+    return None
 
-    The layer group renders its toolpaths in the main pass; the ring
-    buffer must draw *after* the texture renderer so scanlines appear on
-    top of the texture quads.  This adapter exposes just the ring draw so
-    the scene can place it late in the registry.
-    """
 
-    def __init__(self, group: LayerRendererGroup):
-        self._group = group
-
-    def prepare(self, ctx: RenderContext) -> None:
-        pass
-
-    def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
-        self._group.render_ring(ctx, shaders)
-
-    def init_gl(self) -> None:
-        pass
+def match_overlay_layer(
+    overlay_layers: List[ScanlineOverlayLayer], is_rotary: bool
+) -> Optional[ScanlineOverlayLayer]:
+    """Returns the overlay layer matching the given rotary flag."""
+    for ol in overlay_layers:
+        if ol.is_rotary == is_rotary:
+            return ol
+    return None
 
 
 class SceneRenderer(BaseRenderer):
@@ -90,34 +88,38 @@ class SceneRenderer(BaseRenderer):
             LaserBeamRenderer()
         )
 
-        self.layer_groups: List[LayerRendererGroup] = []
+        self.ops_renderers: List[OpsRenderer] = []
+        self.ring_renderers: List[RingBufferRenderer] = []
         self.cylinder_renderers: Dict[float, CylinderRenderer] = {}
         self.model_renderers: List[ModelRenderer] = []
         self.had_rotary_layers = False
         self.cylinder_transform = np.eye(4, dtype=np.float64)
 
+        self._viewport: Optional[ViewportConfig] = None
+        self._font_family: Optional[str] = None
+
         # Ordered list of (renderer, shader_keys) in draw order.  The
         # deferred ring passes come after the texture renderer so rings
         # draw on top of the textures during playback.
-        self.render_registry: List[Tuple[LayerRenderer, Tuple[str, ...]]] = []
+        self.render_registry: List[Tuple[BaseRenderer, Tuple[str, ...]]] = []
 
     def _rebuild_registry(self) -> None:
         """Rebuilds the render registry from the current children."""
-        registry: List[Tuple[LayerRenderer, Tuple[str, ...]]] = []
+        registry: List[Tuple[BaseRenderer, Tuple[str, ...]]] = []
         if self.background_renderer is not None:
             registry.append((self.background_renderer, ("background",)))
         if self.axis_renderer is not None:
             registry.append((self.axis_renderer, ("main", "text")))
         if self.zone_renderer is not None:
             registry.append((self.zone_renderer, ("main",)))
-        for group in self.layer_groups:
-            registry.append((group, ("main",)))
+        for renderer in self.ops_renderers:
+            registry.append((renderer, ("main",)))
         for renderer in self.cylinder_renderers.values():
             registry.append((renderer, ("main",)))
         if self.texture_renderer is not None:
             registry.append((self.texture_renderer, ("texture",)))
-        for group in self.layer_groups:
-            registry.append((RingPassAdapter(group), ("main",)))
+        for renderer in self.ring_renderers:
+            registry.append((renderer, ("main",)))
         if self.laser_beam_renderer is not None:
             registry.append((self.laser_beam_renderer, ("main",)))
         for renderer in self.model_renderers:
@@ -128,8 +130,20 @@ class SceneRenderer(BaseRenderer):
         """Stores the assembly's cylinder base transform."""
         self.cylinder_transform = transform
 
-    def init_gl(self, viewport: ViewportConfig, font_family: str):
+    def set_viewport(self, viewport: ViewportConfig):
+        """Stores the viewport config used to build children in init_gl."""
+        self._viewport = viewport
+
+    def set_font_family(self, font_family: str):
+        """Stores the font family used to build the axis labels."""
+        self._font_family = font_family
+
+    def init_gl(self):
         """Creates and initializes all scene shaders and renderers."""
+        viewport = self._viewport
+        if viewport is None:
+            viewport = ViewportConfig.default()
+        font_family = self._font_family or "sans-serif"
         self.main_shader = SimpleShader()
         self.text_shader = TextShader()
         self.texture_shader = TextureShader()
@@ -166,22 +180,31 @@ class SceneRenderer(BaseRenderer):
             self.background_renderer = None
         self.zone_renderer = ZoneRenderer()
         self.zone_renderer.init_gl()
+
+        for renderer in (
+            self.axis_renderer,
+            self.background_renderer,
+            self.texture_renderer,
+            self.zone_renderer,
+            self.laser_beam_renderer,
+        ):
+            if renderer is not None:
+                self._add_child_renderer(renderer)
+
         self._rebuild_registry()
 
     def _cleanup_self(self):
-        """Cleans up all scene-owned renderers and shaders."""
-        for group in self.layer_groups:
-            group.cleanup()
-        if self.axis_renderer:
-            self.axis_renderer.cleanup()
-        if self.laser_beam_renderer:
-            self.laser_beam_renderer.cleanup()
-        if self.background_renderer:
-            self.background_renderer.cleanup()
-        if self.texture_renderer:
-            self.texture_renderer.cleanup()
-        if self.zone_renderer:
-            self.zone_renderer.cleanup()
+        """Cleans up dynamically-rebuilt collections and shaders.
+
+        Static children (axis, background, texture, zone, laser) are
+        cleaned automatically by the base ``cleanup()`` walking
+        ``_owned_renderers``.  Only the rebuilt collections and the
+        owned shaders need manual cleanup here.
+        """
+        for renderer in self.ops_renderers:
+            renderer.cleanup()
+        for renderer in self.ring_renderers:
+            renderer.cleanup()
         for renderer in self.cylinder_renderers.values():
             renderer.cleanup()
         for renderer in self.model_renderers:
@@ -221,6 +244,7 @@ class SceneRenderer(BaseRenderer):
             self.apply_extent_frame(viewport)
             return False
         font_family = self.axis_renderer.font_family
+        self._remove_child_renderer(self.axis_renderer)
         self.axis_renderer.cleanup()
         self.axis_renderer = AxisRenderer3D(
             viewport.width_mm,
@@ -231,6 +255,7 @@ class SceneRenderer(BaseRenderer):
         )
         self.apply_extent_frame(viewport)
         self.axis_renderer.init_gl()
+        self._add_child_renderer(self.axis_renderer)
         self._rebuild_registry()
         return True
 
@@ -347,9 +372,10 @@ class SceneRenderer(BaseRenderer):
         """Fans out the shared colour LUT provider to all consumers."""
         if provider is None:
             return
-        for group in self.layer_groups:
-            group.ops_renderer.update_color_lut_from(provider)
-            group.ring_renderer.update_color_lut_from(provider)
+        for renderer in self.ops_renderers:
+            renderer.update_color_lut_from(provider)
+        for renderer in self.ring_renderers:
+            renderer.update_color_lut_from(provider)
 
         if self.texture_renderer:
             if provider.has_lasers:
@@ -362,17 +388,32 @@ class SceneRenderer(BaseRenderer):
     def update_from_artifact(
         self, artifact: CompiledSceneArtifact, show_travel_moves: bool
     ):
-        """Rebuilds layer groups/textures synchronously from an artifact."""
-        for group in self.layer_groups:
-            group.cleanup()
-        self.layer_groups.clear()
+        """Rebuilds the per-layer ops/ring renderers from an artifact."""
+        for renderer in self.ops_renderers:
+            renderer.cleanup()
+        for renderer in self.ring_renderers:
+            renderer.cleanup()
+        self.ops_renderers.clear()
+        self.ring_renderers.clear()
 
         for vl in artifact.vertex_layers:
+            ops = OpsRenderer(is_rotary=vl.is_rotary)
+            ops.init_gl()
+            ops.update_from_vertex_layer(vl, show_travel_moves)
+            ops.powered_offsets = vl.powered_cmd_offsets
+            ops.travel_offsets = vl.travel_cmd_offsets
+            self.ops_renderers.append(ops)
+
+            ring = RingBufferRenderer(is_rotary=vl.is_rotary)
+            ring.init_gl()
             ol = match_overlay_layer(artifact.overlay_layers, vl.is_rotary)
-            group = LayerRendererGroup(is_rotary=vl.is_rotary)
-            group.init_gl()
-            group.update_from_artifact(vl, ol, show_travel_moves)
-            self.layer_groups.append(group)
+            if ol is not None:
+                ring.update_from_overlay_layer(ol)
+                ring.ring_offsets = ol.cmd_offsets
+            else:
+                ring.clear()
+                ring.ring_offsets = np.array([], dtype=np.int32)
+            self.ring_renderers.append(ring)
 
         if self.texture_renderer:
             self.texture_renderer.update_from_artifact(artifact)
@@ -381,23 +422,30 @@ class SceneRenderer(BaseRenderer):
     def prepare_chunked_upload(
         self, artifact: CompiledSceneArtifact, show_travel_moves: bool
     ) -> List:
-        """Creates fresh layer groups and returns the deferred upload items."""
-        for group in self.layer_groups:
-            group.cleanup()
-        self.layer_groups.clear()
+        """Creates fresh per-layer renderers and returns upload items."""
+        for renderer in self.ops_renderers:
+            renderer.cleanup()
+        for renderer in self.ring_renderers:
+            renderer.cleanup()
+        self.ops_renderers.clear()
+        self.ring_renderers.clear()
 
         upload_items: List[Any] = [("color_luts",)]
 
         for vl in artifact.vertex_layers:
-            group = LayerRendererGroup(is_rotary=vl.is_rotary)
-            group.init_gl()
-            self.layer_groups.append(group)
-            upload_items.append(("ops", group, vl, show_travel_moves))
+            ops = OpsRenderer(is_rotary=vl.is_rotary)
+            ops.init_gl()
+            self.ops_renderers.append(ops)
+            upload_items.append(("ops", ops, vl, show_travel_moves))
+
+            ring = RingBufferRenderer(is_rotary=vl.is_rotary)
+            ring.init_gl()
+            self.ring_renderers.append(ring)
 
         for ol in artifact.overlay_layers:
-            for group in self.layer_groups:
-                if group.is_rotary == ol.is_rotary:
-                    upload_items.append(("overlay", group, ol))
+            for ring in self.ring_renderers:
+                if ring.is_rotary == ol.is_rotary:
+                    upload_items.append(("overlay", ring, ol))
                     break
 
         upload_items.append(("textures", artifact))
@@ -405,30 +453,49 @@ class SceneRenderer(BaseRenderer):
         return upload_items
 
     def extract_playback_offsets(self, artifact: CompiledSceneArtifact):
-        """Stores each layer group's playback offsets from an artifact."""
-        for group in self.layer_groups:
-            vl = match_vertex_layer(artifact.vertex_layers, group.is_rotary)
+        """Stores each renderer's playback offsets from an artifact."""
+        for renderer in self.ops_renderers:
+            vl = match_vertex_layer(artifact.vertex_layers, renderer.is_rotary)
             if vl is not None:
-                group.powered_offsets = vl.powered_cmd_offsets
-                group.travel_offsets = vl.travel_cmd_offsets
+                renderer.powered_offsets = vl.powered_cmd_offsets
+                renderer.travel_offsets = vl.travel_cmd_offsets
             else:
-                group.powered_offsets = []
-                group.travel_offsets = []
+                renderer.powered_offsets = np.array([], dtype=np.int32)
+                renderer.travel_offsets = np.array([], dtype=np.int32)
 
-            ol = match_overlay_layer(artifact.overlay_layers, group.is_rotary)
+        for renderer in self.ring_renderers:
+            ol = match_overlay_layer(
+                artifact.overlay_layers, renderer.is_rotary
+            )
             if ol is not None:
-                group.ring_offsets = ol.cmd_offsets
+                renderer.ring_offsets = ol.cmd_offsets
             else:
-                group.ring_offsets = []
+                renderer.ring_offsets = np.array([], dtype=np.int32)
 
-    def render(self, ctx: RenderContext) -> None:
+    def prepare(self, ctx: RenderContext) -> None:
+        """
+        Prepares every registry renderer for the current frame.
+
+        Runs the ``prepare`` phase of each renderer in the registry so
+        that frame-level cross-dependencies (e.g. the laser point light
+        feeding the model renderers) resolve before any draw.
+        """
+        for renderer, _ in self.render_registry:
+            renderer.prepare(ctx)
+
+    def render(
+        self,
+        ctx: RenderContext,
+        shaders: Optional[ShaderSet] = None,
+        **kwargs,
+    ) -> None:
         """
         Renders the whole scene for one frame via the render registry.
 
         All per-frame state is read from ``ctx`` (populated by the
-        caller).  Every renderer is prepared before any render so that
-        frame-level cross-dependencies (e.g. the laser point light
-        feeding the model renderers) resolve before any draw.
+        caller).  The root composite owns the shaders, so it uses
+        ``self.shader_set`` and passes them to each registry renderer
+        under ``render_pass`` state isolation.
         """
         for shader in (
             self.main_shader,
@@ -439,12 +506,9 @@ class SceneRenderer(BaseRenderer):
             if shader:
                 shader.reset_uniforms()
 
-        shaders = self.shader_set
+        shaders = self.shader_set if shaders is None else shaders
         if shaders is None:
             return
-
-        for renderer, _ in self.render_registry:
-            renderer.prepare(ctx)
 
         for renderer, shader_keys in self.render_registry:
             pass_shaders = tuple(getattr(shaders, key) for key in shader_keys)

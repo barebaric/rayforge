@@ -16,7 +16,8 @@ def test_scene_renderer_constructs_children():
 
     assert isinstance(scene.laser_beam_renderer, LaserBeamRenderer)
     assert isinstance(scene.background_renderer, BackgroundRenderer)
-    assert scene.layer_groups == []
+    assert scene.ops_renderers == []
+    assert scene.ring_renderers == []
     assert scene.cylinder_renderers == {}
     assert scene.model_renderers == []
     assert scene.had_rotary_layers is False
@@ -64,7 +65,9 @@ def test_scene_renderer_init_gl_creates_children():
         patch.object(LaserBeamRenderer, "init_gl"),
         patch.object(BackgroundRenderer, "init_gl"),
     ):
-        scene.init_gl(viewport, "sans-serif")
+        scene.set_viewport(viewport)
+        scene.set_font_family("sans-serif")
+        scene.init_gl()
 
     assert scene.axis_renderer is mock_axis.return_value
     assert scene.texture_renderer is mock_tex.return_value
@@ -93,27 +96,74 @@ def test_scene_renderer_init_gl_creates_children():
     ]
 
 
+def test_cleanup_walks_static_children_once():
+    """cleanup() cleans registered static children via the base walk."""
+    scene = SceneRenderer()
+    static_children = [
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+    ]
+    for child in static_children:
+        scene._add_child_renderer(child)
+
+    scene.cleanup()
+
+    for child in static_children:
+        child.cleanup.assert_called_once()
+
+
+def test_update_axis_from_viewport_swaps_child_registration():
+    """Rebuilding the axis renderer replaces it in the child registry."""
+    scene = SceneRenderer()
+    old_axis = MagicMock()
+    new_axis = MagicMock()
+    old_axis.width_mm = 100.0
+    old_axis.height_mm = 100.0
+    old_axis.font_family = "sans-serif"
+    scene.axis_renderer = old_axis
+    scene._add_child_renderer(old_axis)
+
+    viewport = MagicMock()
+    viewport.width_mm = 200.0
+    viewport.depth_mm = 200.0
+    viewport.extent_frame = None
+
+    with (
+        patch(
+            "rayforge.ui_gtk.sim3d.renderer.scene_renderer.AxisRenderer3D"
+        ) as mock_axis,
+        patch.object(new_axis, "init_gl"),
+        patch.object(scene, "apply_extent_frame"),
+    ):
+        mock_axis.return_value = new_axis
+        result = scene.update_axis_from_viewport(viewport)
+
+    assert result is True
+    old_axis.cleanup.assert_called_once()
+    assert old_axis not in scene._owned_renderers
+    assert new_axis in scene._owned_renderers
+
+
 def test_render_registry_orders_rings_after_texture():
     scene = SceneRenderer()
 
-    group = MagicMock()
-    group.is_rotary = False
-    scene.layer_groups = [group]
+    ops = MagicMock()
+    ring = MagicMock()
+    scene.ops_renderers = [ops]
+    scene.ring_renderers = [ring]
     scene.cylinder_renderers = {25.0: MagicMock()}
     scene.model_renderers = [MagicMock()]
     scene.texture_renderer = MagicMock()
 
     scene._rebuild_registry()
 
-    types = [
-        r.__class__.__name__ if hasattr(r, "__class__") else type(r).__name__
-        for r, _ in scene.render_registry
-    ]
-    assert "RingPassAdapter" in types
-    ring_index = types.index("RingPassAdapter")
-    texture_index = next(
-        i
-        for i, (r, _) in enumerate(scene.render_registry)
-        if r is scene.texture_renderer
-    )
+    renderers = [r for r, _ in scene.render_registry]
+    assert ring in renderers
+    assert ops in renderers
+    ring_index = renderers.index(ring)
+    texture_index = renderers.index(scene.texture_renderer)
     assert ring_index > texture_index
+    assert renderers.index(ops) < texture_index

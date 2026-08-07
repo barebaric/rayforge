@@ -229,15 +229,21 @@ class TextRenderer(BaseRenderer):
             GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR
         )
 
-    def render_text(
+    def prepare(self, ctx: RenderContext) -> None:
+        """No per-frame state to prepare."""
+        pass
+
+    def render(
         self,
         ctx: RenderContext,
         shaders: ShaderSet,
+        *,
         text: str,
         position: np.ndarray,
         height_in_world_units: float,
         color: Tuple[float, float, float, float],
         align: str = "center",
+        **kwargs,
     ) -> None:
         """
         Renders a string of text at a given 3D position, facing the camera.

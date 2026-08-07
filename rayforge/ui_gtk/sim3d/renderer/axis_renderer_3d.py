@@ -115,29 +115,16 @@ class AxisRenderer3D(BaseRenderer):
 
     def _clear_line_resources(self) -> None:
         """Deletes the grid/axis/marker/frame buffers before rebuilding."""
-        self._delete_buffer_pair(self.grid_vao, self.grid_vbo)
+        self._delete_owned(vao=self.grid_vao, vbo=self.grid_vbo)
         self.grid_vao, self.grid_vbo = 0, 0
-        self._delete_buffer_pair(self.axes_vao, self.axes_vbo)
+        self._delete_owned(vao=self.axes_vao, vbo=self.axes_vbo)
         self.axes_vao, self.axes_vbo = 0, 0
-        self._delete_buffer_pair(self.wcs_marker_vao, self.wcs_marker_vbo)
+        self._delete_owned(vao=self.wcs_marker_vao, vbo=self.wcs_marker_vbo)
         self.wcs_marker_vao, self.wcs_marker_vbo = 0, 0
-        self._delete_buffer_pair(self.extent_frame_vao, self.extent_frame_vbo)
+        self._delete_owned(
+            vao=self.extent_frame_vao, vbo=self.extent_frame_vbo
+        )
         self.extent_frame_vao, self.extent_frame_vbo = 0, 0
-
-    def _delete_buffer_pair(self, vao: int, vbo: int) -> None:
-        """Deletes a VAO/VBO pair and untracks it from the owned lists."""
-        if vao:
-            try:
-                self._owned_vaos.remove(vao)
-            except ValueError:
-                pass
-            GL.glDeleteVertexArrays(1, [vao])
-        if vbo:
-            try:
-                self._owned_vbos.remove(vbo)
-            except ValueError:
-                pass
-            GL.glDeleteBuffers(1, [vbo])
 
     def set_grid_unit_factor(self, grid_unit_factor: float) -> None:
         """Sets the number of mm in one user-preferred length unit."""
@@ -322,6 +309,7 @@ class AxisRenderer3D(BaseRenderer):
         self,
         ctx: RenderContext,
         shaders: ShaderSet,
+        **kwargs,
     ) -> None:
         """
         Orchestrates the rendering of all components in the correct order.
@@ -474,13 +462,13 @@ class AxisRenderer3D(BaseRenderer):
             label_val = label_val / self.grid_unit_factor
             label_text = str(int(round(label_val)))
 
-            self.text_renderer.render_text(
+            self.text_renderer.render(
                 ctx,
                 shaders,
-                label_text,
-                pos_final,
-                label_height_mm,
-                self.label_color,
+                text=label_text,
+                position=pos_final,
+                height_in_world_units=label_height_mm,
+                color=self.label_color,
             )
 
         # Y-axis labels
@@ -510,12 +498,12 @@ class AxisRenderer3D(BaseRenderer):
             label_val = label_val / self.grid_unit_factor
             label_text = str(int(round(label_val)))
 
-            self.text_renderer.render_text(
+            self.text_renderer.render(
                 ctx,
                 shaders,
-                label_text,
-                pos_final,
-                label_height_mm,
-                self.label_color,
+                text=label_text,
+                position=pos_final,
+                height_in_world_units=label_height_mm,
+                color=self.label_color,
                 align=y_label_align,
             )

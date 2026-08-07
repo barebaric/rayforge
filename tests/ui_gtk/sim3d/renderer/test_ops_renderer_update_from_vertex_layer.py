@@ -15,8 +15,8 @@ def _make_vertex_layer(powered_count=2, zero_power_count=3, travel_count=4):
         powered_attrib=np.zeros((powered_count, 4), dtype=np.float32),
         travel_verts=np.zeros(travel_count * 3, dtype=np.float32),
         zero_power_verts=np.zeros(zero_power_count * 3, dtype=np.float32),
-        powered_cmd_offsets=[0, 1],
-        travel_cmd_offsets=[2, 3],
+        powered_cmd_offsets=np.array([0, 1], dtype=np.int32),
+        travel_cmd_offsets=np.array([2, 3], dtype=np.int32),
         is_rotary=False,
     )
 

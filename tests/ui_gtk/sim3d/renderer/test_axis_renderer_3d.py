@@ -159,10 +159,10 @@ def test_axis_label_rendering(
 
     # 5. Collect and verify the results against expectations
     rendered_labels = []
-    if mock_text_renderer.render_text.called:
-        for call_args in mock_text_renderer.render_text.call_args_list:
-            # The label text is the second positional argument (index 1)
-            label_text = call_args.args[2]
+    if mock_text_renderer.render.called:
+        for call_args in mock_text_renderer.render.call_args_list:
+            # The label text is passed as a keyword argument
+            label_text = call_args.kwargs["text"]
             if label_text:
                 rendered_labels.append(int(label_text))
 
@@ -215,9 +215,9 @@ def test_axis_labels_in_preferred_unit():
     )
 
     rendered_labels = set()
-    if mock_text_renderer.render_text.called:
-        for call_args in mock_text_renderer.render_text.call_args_list:
-            label_text = call_args.args[2]
+    if mock_text_renderer.render.called:
+        for call_args in mock_text_renderer.render.call_args_list:
+            label_text = call_args.kwargs["text"]
             if label_text:
                 rendered_labels.add(int(label_text))
 

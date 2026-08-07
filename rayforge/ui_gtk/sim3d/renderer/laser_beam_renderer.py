@@ -121,7 +121,7 @@ class LaserBeamRenderer(BaseRenderer):
 
         ctx.kinematics.laser_light_pos = self.laser_light_pos
 
-    def render(self, ctx: RenderContext, shaders: ShaderSet):
+    def render(self, ctx: RenderContext, shaders: ShaderSet, **kwargs):
         if not self.vao:
             return
 
