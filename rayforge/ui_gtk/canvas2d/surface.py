@@ -24,6 +24,7 @@ from ...core.stock_asset import StockAsset
 from ...core.workpiece import WorkPiece
 from ...machine.models.machine import Machine
 from ...pipeline.artifact import RenderContext
+from ...shared.units.formatter import get_preferred_unit_factor
 from ..canvas import Canvas, CanvasElement, WorldSurface
 from ..shared.keyboard import is_primary_modifier
 from . import context_menu
@@ -106,6 +107,12 @@ class WorkSurface(WorldSurface):
             coordinate_space=coordinate_space,
             **kwargs,
         )
+
+        # Keep the grid unit labels in sync with the user's unit preference.
+        self._axis_renderer.set_grid_unit_factor(
+            get_preferred_unit_factor("length")
+        )
+        get_context().config.changed.connect(self._on_config_changed)
 
         # Prevent GTK from implicitly grabbing focus on click, which can
         # interfere with popover/menu closing logic.
@@ -410,7 +417,10 @@ class WorkSurface(WorldSurface):
 
     def _on_config_changed(self, sender, **kwargs):
         """Re-renders ops when config settings change."""
-        super()._on_config_changed(sender, **kwargs)
+        self._axis_renderer.set_grid_unit_factor(
+            get_preferred_unit_factor("length")
+        )
+        self.queue_draw()
         self._update_pipeline_view_context()
 
     def _on_doc_structure_changed(self, sender, **kwargs):
