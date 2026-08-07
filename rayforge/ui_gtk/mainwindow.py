@@ -1411,7 +1411,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._canvas3d_vis_overlay.set_margin_end(424)
         self._canvas3d_overlay.add_overlay(self._canvas3d_vis_overlay)
         self._canvas3d_playback = PlaybackOverlay()
-        self._canvas3d_playback.set_canvas(self.canvas3d)
+        self.canvas3d.set_playback_overlay(self._canvas3d_playback)
         self._canvas3d_playback.step_changed.connect(
             self._on_3d_playback_step_changed
         )

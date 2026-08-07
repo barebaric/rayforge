@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Dict, Optional
 import numpy as np
 from gi.repository import Gdk, GLib, Gtk, Pango
 from OpenGL import GL
-from raygeo.geo.types import Point
 from raygeo.ops import Ops
 
 from ...context import RayforgeContext
@@ -31,7 +30,8 @@ from ...simulator.scene3d import (
     compile_scene_in_thread,
 )
 from ..shared.gtk_color import GtkColorResolver
-from .camera import Camera, ViewDirection, rotation_matrix_from_axis_angle
+from .camera import ViewDirection
+from .camera_controller import CameraController
 from .color_lut_provider import ColorLutProvider
 from .gl_utils import RenderContext, rotation_4x4
 from .renderer.scene_renderer import SceneRenderer
@@ -61,7 +61,6 @@ class Canvas3D(Gtk.GLArea):
         self._doc_editor = doc_editor
         self._viewport = viewport
 
-        self.camera: Optional[Camera] = None
         self._scene = SceneRenderer()
         self._scene_preparation_task: Optional[Task] = None
         self._compiled_artifact: Optional[CompiledSceneArtifact] = None
@@ -72,8 +71,6 @@ class Canvas3D(Gtk.GLArea):
         self._show_nogo_zones = True
         self._show_models = True
         self._show_grid = True
-        self._is_orbiting = False
-        self._is_z_rotating = False
         self._gl_initialized = False
         self._scene_gl_dirty = False
         self._artifact_gl_dirty = False
@@ -84,20 +81,20 @@ class Canvas3D(Gtk.GLArea):
         self._lut_provider: Optional[ColorLutProvider] = None
         self._theme_is_dirty = True
 
-        # State for interactions
-        self._last_pan_offset: Optional[Point] = None
-        self._rotation_pivot: Optional[np.ndarray] = None
-        self._last_orbit_pos: Optional[Point] = None
-        self._last_z_rotate_screen_pos: Optional[Point] = None
+        self._cam_ctrl = CameraController(
+            self,
+            get_viewport=lambda: self._viewport,
+            request_render=self.queue_render,
+            on_key_pressed=self._on_key_pressed,
+        )
 
         self.set_has_depth_buffer(True)
         self.set_focusable(True)
         self.connect("realize", self.on_realize)
         self.connect("unrealize", self.on_unrealize)
         self.connect("render", self.on_render)
-        self.connect("resize", self.on_resize)
+        self.connect("resize", self._cam_ctrl.on_resize)
         self.connect("notify::style", self._on_style_changed)
-        self._setup_interactions()
 
         # Connect to machine for WCS updates
         machine = self._context.machine
@@ -129,6 +126,27 @@ class Canvas3D(Gtk.GLArea):
         if self.doc and self.doc.active_layer:
             return self.doc.active_layer.rotary_enabled
         return False
+
+    def reset_view(self, direction: ViewDirection):
+        """Resets the camera to the specified preset view."""
+        self._cam_ctrl.reset_view(direction)
+
+    def set_perspective(self, enabled: bool) -> bool:
+        """Toggles the 3D camera between perspective and orthographic.
+
+        Returns True if the camera was available and updated.
+        """
+        camera = self._cam_ctrl.camera
+        if camera is None:
+            return False
+        camera.is_perspective = enabled
+        self.queue_render()
+        return True
+
+    def set_playback_overlay(self, overlay):
+        """Attach the playback overlay widget and bind it to this canvas."""
+        self._playback_overlay = overlay
+        overlay.set_canvas(self)
 
     def has_stale_job(self) -> bool:
         """True if the cached job handle is from an older generation."""
@@ -265,95 +283,6 @@ class Canvas3D(Gtk.GLArea):
         self._update_renderer_color_luts()
         self.queue_render()
 
-    def get_world_coords_on_plane(
-        self, x: float, y: float, camera: Camera
-    ) -> Optional[np.ndarray]:
-        """Calculates the 3D world coordinates on the XY plane from 2D."""
-        ndc_x = (2.0 * x) / camera.width - 1.0
-        ndc_y = 1.0 - (2.0 * y) / camera.height
-
-        try:
-            inv_proj = np.linalg.inv(camera.get_projection_matrix())
-            inv_view = np.linalg.inv(camera.get_view_matrix())
-        except np.linalg.LinAlgError:
-            return None
-
-        clip_coords = np.array([ndc_x, ndc_y, -1.0, 1.0], dtype=np.float32)
-        eye_coords = inv_proj @ clip_coords
-        eye_coords[2] = -1.0
-        eye_coords[3] = 0.0
-
-        world_coords_vec4 = inv_view @ eye_coords
-        ray_dir = world_coords_vec4[:3] / np.linalg.norm(world_coords_vec4[:3])
-        ray_origin = camera.position
-
-        plane_normal = np.array([0, 0, 1], dtype=np.float64)
-        denom = np.dot(plane_normal, ray_dir)
-        if abs(denom) < 1e-6:
-            return None
-
-        t = -np.dot(plane_normal, ray_origin) / denom
-        if t < 0:
-            return None
-
-        return ray_origin + t * ray_dir
-
-    def _setup_interactions(self):
-        """Connects GTK4 gesture and event controllers for interaction."""
-        # Middle mouse drag for Pan/Orbit
-        drag_middle = Gtk.GestureDrag.new()
-        drag_middle.set_button(Gdk.BUTTON_MIDDLE)
-        drag_middle.connect("drag-begin", self.on_drag_begin)
-        drag_middle.connect("drag-update", self.on_drag_update)
-        drag_middle.connect("drag-end", self.on_drag_end)
-        self.add_controller(drag_middle)
-
-        # Left mouse drag for Z-axis rotation
-        drag_left = Gtk.GestureDrag.new()
-        drag_left.set_button(Gdk.BUTTON_PRIMARY)
-        drag_left.connect("drag-begin", self.on_z_rotate_begin)
-        drag_left.connect("drag-update", self.on_z_rotate_update)
-        drag_left.connect("drag-end", self.on_z_rotate_end)
-        self.add_controller(drag_left)
-
-        scroll = Gtk.EventControllerScroll.new(
-            Gtk.EventControllerScrollFlags.VERTICAL
-        )
-        scroll.connect("scroll", self.on_scroll)
-        self.add_controller(scroll)
-
-        key_controller = Gtk.EventControllerKey.new()
-        key_controller.connect("key-pressed", self._on_key_pressed)
-        self.add_controller(key_controller)
-
-    def _on_key_pressed(self, controller, keyval, keycode, state):
-        if keyval == Gdk.KEY_space and self._playback_overlay:
-            self._playback_overlay.handle_space()
-            return True
-        return False
-
-    def _clear_drag_state(self):
-        """Resets all state variables related to any drag operation."""
-        self._is_orbiting = False
-        self._is_z_rotating = False
-        self._last_pan_offset = None
-        self._rotation_pivot = None
-        self._last_orbit_pos = None
-        self._last_z_rotate_screen_pos = None
-
-    def reset_view(self, direction: ViewDirection):
-        """Resets the camera to the specified preset view."""
-        if not self.camera:
-            return
-        logger.info("Resetting to %s view.", direction.value)
-        self.camera.set_view(
-            direction,
-            self._viewport.width_mm,
-            self._viewport.depth_mm,
-        )
-        self._clear_drag_state()
-        self.queue_render()
-
     def _connect_pipeline_signals(self):
         if self.pipeline:
             self.pipeline.processing_state_changed.connect(
@@ -376,13 +305,7 @@ class Canvas3D(Gtk.GLArea):
         """Called when the GLArea is ready to have its context made current."""
         logger.info("GLArea realized.")
 
-        self.camera = Camera(
-            np.array([0.0, 0.0, 1.0]),
-            np.array([0.0, 0.0, 0.0]),
-            np.array([0.0, 1.0, 0.0]),
-            self.get_width(),
-            self.get_height(),
-        )
+        self._cam_ctrl.create_camera(self.get_width(), self.get_height())
 
         self._init_gl_resources()
         self._theme_is_dirty = True
@@ -395,6 +318,12 @@ class Canvas3D(Gtk.GLArea):
             self._current_job_handle = self.pipeline.last_completed_handle
 
         self.update_scene_from_doc()
+
+    def _on_key_pressed(self, controller, keyval, keycode, state):
+        if keyval == Gdk.KEY_space and self._playback_overlay:
+            self._playback_overlay.handle_space()
+            return True
+        return False
 
     def on_unrealize(self, area) -> None:
         """Called before the GLArea is unrealized."""
@@ -667,11 +596,13 @@ class Canvas3D(Gtk.GLArea):
         # previous playhead fast as well.
         if saved_index is not None:
             player.seek(saved_index)
+            initial_index = saved_index
         else:
             player.seek_to_first_layer()
+            initial_index = 0
         self._op_player = player
         if self._playback_overlay:
-            self._playback_overlay.set_player(player)
+            self._playback_overlay.set_player(player, initial_index)
         self.queue_render()
 
         # Build seek-acceleration snapshots in the background.  They are
@@ -735,16 +666,19 @@ class Canvas3D(Gtk.GLArea):
         laser_head = machine.get_default_laser_head() if machine else None
         if laser_head is not None:
             spot_mm = laser_head.spot_size_mm[0]
-        if not self.camera:
+        if not self._cam_ctrl.camera:
             return 2.0
         px = self._world_size_to_pixels(
-            mvp_gl, spot_mm, self.camera.width, self.camera.height
+            mvp_gl,
+            spot_mm,
+            self._cam_ctrl.camera.width,
+            self._cam_ctrl.camera.height,
         )
         return max(2.0, px)
 
     def on_render(self, area, ctx) -> bool:
         """The main rendering loop."""
-        if not self.camera or not self._gl_initialized:
+        if not self._cam_ctrl.camera or not self._gl_initialized:
             return False
 
         self._process_pending_gl_updates()
@@ -757,13 +691,15 @@ class Canvas3D(Gtk.GLArea):
 
         t_render_start = time.perf_counter()
         try:
-            GL.glViewport(0, 0, self.camera.width, self.camera.height)
+            GL.glViewport(
+                0, 0, self._cam_ctrl.camera.width, self._cam_ctrl.camera.height
+            )
             GL.glClear(
                 GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT  # type: ignore
             )
 
-            proj_matrix = self.camera.get_projection_matrix()
-            view_matrix = self.camera.get_view_matrix()
+            proj_matrix = self._cam_ctrl.camera.get_projection_matrix()
+            view_matrix = self._cam_ctrl.camera.get_view_matrix()
 
             # Base MVP for UI elements that should not be model-transformed
             mvp_matrix_ui = proj_matrix @ view_matrix
@@ -809,8 +745,8 @@ class Canvas3D(Gtk.GLArea):
                 mvp_scene=mvp_matrix_scene,
                 margin_shift=self._viewport.margin_shift,
                 model_matrix=self._viewport.model_matrix,
-                viewport_height=self.camera.height,
-                camera_position=self.camera.position,
+                viewport_height=self._cam_ctrl.camera.height,
+                camera_position=self._cam_ctrl.camera.position,
                 color_set=self._color_set,
                 show_travel_moves=self._show_travel_moves,
                 line_width=spot_line_width,
@@ -879,193 +815,6 @@ class Canvas3D(Gtk.GLArea):
         if t_render_elapsed > 16:
             logger.info(f"[CANVAS3D] on_render took {t_render_elapsed:.1f}ms")
         return True
-
-    def on_resize(self, area, width: int, height: int):
-        """Handles the window resize event."""
-        if self.camera:
-            self.camera.width, self.camera.height = int(width), int(height)
-        self.queue_render()
-
-    def on_drag_begin(self, gesture, x: float, y: float):
-        """Handles the start of a middle-mouse-button drag."""
-        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
-        state = gesture.get_current_event_state()
-        is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
-
-        if not is_shift and self.camera:
-            if self.camera.is_perspective:
-                # For perspective, pick a point on the floor plane to orbit.
-                self._rotation_pivot = self.get_world_coords_on_plane(
-                    x, y, self.camera
-                )
-                if self._rotation_pivot is None:
-                    self._rotation_pivot = self.camera.target.copy()
-            else:  # Orthographic
-                # For ortho, always orbit around the camera's current look-at
-                # point. This is stable and intuitive.
-                self._rotation_pivot = self.camera.target.copy()
-
-            self._last_orbit_pos = None
-            self._is_orbiting = True
-        else:
-            self._last_pan_offset = 0.0, 0.0
-            self._is_orbiting = False
-
-    def on_drag_update(self, gesture, offset_x: float, offset_y: float):
-        """Handles updates during a drag operation (panning or orbiting)."""
-        if not self.camera:
-            return
-
-        state = gesture.get_current_event_state()
-        is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
-
-        if is_shift:
-            if self._last_pan_offset is None:
-                self._last_pan_offset = 0.0, 0.0
-            dx = offset_x - self._last_pan_offset[0]
-            dy = offset_y - self._last_pan_offset[1]
-            self.camera.pan(-dx, -dy)
-            self._last_pan_offset = offset_x, offset_y
-        else:  # CAD-style Orbit Logic
-            if not self._is_orbiting or self._rotation_pivot is None:
-                return
-
-            event = gesture.get_last_event()
-            if not event:
-                return
-            _, x_curr, y_curr = event.get_position()
-
-            if self._last_orbit_pos is None:
-                self._last_orbit_pos = x_curr, y_curr
-                return
-
-            prev_x, prev_y = self._last_orbit_pos
-            self._last_orbit_pos = x_curr, y_curr
-            delta_x = x_curr - prev_x
-            delta_y = y_curr - prev_y
-
-            sensitivity = 0.004
-
-            if self.camera.is_perspective:
-                # Perspective orbit (Turntable Style)
-                if abs(delta_x) > 1e-6:
-                    axis_yaw = np.array([0, 1, 0], dtype=np.float64)
-                    self.camera.orbit(
-                        self._rotation_pivot, axis_yaw, -delta_x * sensitivity
-                    )
-                if abs(delta_y) > 1e-6:
-                    forward = self.camera.target - self.camera.position
-                    axis_pitch = np.cross(forward, self.camera.up)
-                    if np.linalg.norm(axis_pitch) > 1e-6:
-                        self.camera.orbit(
-                            self._rotation_pivot,
-                            axis_pitch,
-                            -delta_y * sensitivity,
-                        )
-            else:
-                # Orthographic orbit (Z-Up Turntable)
-                yaw_angle = -delta_x * sensitivity
-                pitch_angle = -delta_y * sensitivity
-
-                # Yaw Rotation (around World Z axis)
-                if abs(yaw_angle) > 1e-6:
-                    axis_yaw = np.array([0.0, 0.0, 1.0], dtype=np.float64)
-                    rot_yaw = rotation_4x4(axis_yaw, yaw_angle)[:3, :3]
-                    # Apply to position and up vectors
-                    self.camera.position = self._rotation_pivot + rot_yaw @ (
-                        self.camera.position - self._rotation_pivot
-                    )
-                    self.camera.up = rot_yaw @ self.camera.up
-
-                # Pitch Rotation (around Camera's local right axis)
-                if abs(pitch_angle) > 1e-6:
-                    # Get camera's state *after* the yaw rotation
-                    forward_vec = self.camera.target - self.camera.position
-                    world_z_axis = np.array([0.0, 0.0, 1.0])
-
-                    # Gimbal Lock Prevention
-                    norm_fwd = np.linalg.norm(forward_vec)
-                    if norm_fwd > 1e-6:
-                        dot_prod = np.dot(forward_vec / norm_fwd, world_z_axis)
-                        # Stop if looking down and trying to pitch more down
-                        if dot_prod < -0.999 and pitch_angle < 0:
-                            pitch_angle = 0.0
-                        # Stop if looking up and trying to pitch more up
-                        elif dot_prod > 0.999 and pitch_angle > 0:
-                            pitch_angle = 0.0
-
-                    if abs(pitch_angle) > 1e-6:
-                        axis_pitch = np.cross(forward_vec, self.camera.up)
-                        if np.linalg.norm(axis_pitch) > 1e-6:
-                            rot_pitch = rotation_matrix_from_axis_angle(
-                                axis_pitch, pitch_angle
-                            )
-                            # Apply to position and up vectors
-                            self.camera.position = (
-                                self._rotation_pivot
-                                + rot_pitch
-                                @ (self.camera.position - self._rotation_pivot)
-                            )
-                            self.camera.up = rot_pitch @ self.camera.up
-
-                # Ensure target is always correct
-                self.camera.target = self._rotation_pivot
-
-        self.queue_render()
-
-    def on_drag_end(self, gesture, offset_x, offset_y):
-        """Handles the end of a drag operation."""
-        self._clear_drag_state()
-        self.queue_render()
-
-    def on_z_rotate_begin(self, gesture, x: float, y: float):
-        """
-        Handles the start of a left-mouse-button drag for Z-axis rotation.
-        """
-        if not self.camera:
-            return
-        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
-        self._is_z_rotating = True
-        self._last_z_rotate_screen_pos = None  # Will be set on first update
-
-    def on_z_rotate_update(self, gesture, offset_x: float, offset_y: float):
-        """Handles updates during a Z-axis rotation drag (linear motion)."""
-        if not self.camera or not self._is_z_rotating:
-            return
-
-        # Initialize the last position with the current offset if it's None.
-        # This handles the start of the drag smoothly.
-        if self._last_z_rotate_screen_pos is None:
-            self._last_z_rotate_screen_pos = (0.0, 0.0)
-
-        prev_off_x, _ = self._last_z_rotate_screen_pos
-
-        # Calculate delta from the last frame's offset
-        delta_x = offset_x - prev_off_x
-
-        # Update the stored offset for the next frame
-        self._last_z_rotate_screen_pos = (offset_x, offset_y)
-
-        # Apply rotation. Dragging left/right rotates around world Z.
-        # Sensitivity: Radians per pixel.
-        sensitivity = 0.01
-        angle = -delta_x * sensitivity
-
-        axis_z = np.array([0, 0, 1], dtype=np.float64)
-        pivot_world = self.camera.target
-        self.camera.orbit(pivot_world, axis_z, angle)
-        self.queue_render()
-
-    def on_z_rotate_end(self, gesture, offset_x, offset_y):
-        """Handles the end of a Z-axis rotation drag."""
-        self._clear_drag_state()
-        self.queue_render()
-
-    def on_scroll(self, controller, dx, dy):
-        """Handles the mouse scroll wheel for zooming."""
-        if self.camera:
-            self.camera.dolly(dy)
-            self.queue_render()
 
     def set_show_travel_moves(self, visible: bool):
         """Sets the visibility of travel moves in the 3D view."""
@@ -1209,7 +958,11 @@ class Canvas3D(Gtk.GLArea):
         # Update cylinder renderers and camera based on layer rotary state
         any_rotary = any(layer.rotary_enabled for layer in self.doc.layers)
         self._scene_gl_dirty = True
-        if self._scene.had_rotary_layers and not any_rotary and self.camera:
+        if (
+            self._scene.had_rotary_layers
+            and not any_rotary
+            and self._cam_ctrl.camera
+        ):
             self.reset_view(ViewDirection.ISO)
         self._scene.had_rotary_layers = any_rotary
 
