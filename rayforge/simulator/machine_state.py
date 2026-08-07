@@ -81,6 +81,8 @@ class MachineState:
         new.cut_speed = self.cut_speed
         new.travel_speed = self.travel_speed
         new.active_laser_uid = self.active_laser_uid
+        new.frequency = self.frequency
+        new.pulse_width = self.pulse_width
         new.axes = dict(self.axes)
         new.laser_on = self.laser_on
         new.reached_textures = set(self.reached_textures)
