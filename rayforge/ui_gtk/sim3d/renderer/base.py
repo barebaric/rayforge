@@ -46,6 +46,21 @@ class BaseRenderer:
         """Adds a child renderer to be cleaned up automatically."""
         self._owned_renderers.append(renderer)
 
+    def _delete_owned(self, vao: int = 0, vbo: int = 0) -> None:
+        """Deletes owned GL resources and untracks them from cleanup."""
+        if vao:
+            try:
+                self._owned_vaos.remove(vao)
+            except ValueError:
+                pass
+            GL.glDeleteVertexArrays(1, [vao])
+        if vbo:
+            try:
+                self._owned_vbos.remove(vbo)
+            except ValueError:
+                pass
+            GL.glDeleteBuffers(1, [vbo])
+
     def _cleanup_self(self) -> None:
         """
         A method for subclasses to override for their specific cleanup

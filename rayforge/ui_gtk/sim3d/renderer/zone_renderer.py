@@ -301,18 +301,12 @@ class ZoneRenderer(BaseRenderer):
             if edge_fn:
                 edge_verts.extend(edge_fn(zone.params))
 
-        if self._fill_vao:
-            GL.glDeleteVertexArrays(1, [self._fill_vao])
-            self._fill_vao = 0
-        if self._fill_vbo:
-            GL.glDeleteBuffers(1, [self._fill_vbo])
-            self._fill_vbo = 0
-        if self._edge_vao:
-            GL.glDeleteVertexArrays(1, [self._edge_vao])
-            self._edge_vao = 0
-        if self._edge_vbo:
-            GL.glDeleteBuffers(1, [self._edge_vbo])
-            self._edge_vbo = 0
+        self._delete_owned(self._fill_vao, self._fill_vbo)
+        self._fill_vao = 0
+        self._fill_vbo = 0
+        self._delete_owned(self._edge_vao, self._edge_vbo)
+        self._edge_vao = 0
+        self._edge_vbo = 0
 
         if fill_verts:
             self._fill_vao = self._create_vao()

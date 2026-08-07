@@ -13,11 +13,12 @@ from OpenGL import GL
 from ...core.color import ColorSet
 
 if TYPE_CHECKING:
+    from raygeo.ops.axis import Axis
+
     from ...core.doc import Doc
     from ...machine.models.machine import Machine
     from ...simulator.op_player import OpPlayer
     from ...simulator.scene3d.compiled_scene import CompiledSceneArtifact
-    from raygeo.ops.axis import Axis
     from .shader.base import Shader
     from .viewport import ViewportConfig
 
