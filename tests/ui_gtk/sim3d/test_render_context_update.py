@@ -36,6 +36,7 @@ def _update(
     scene=None,
     op_player=None,
     machine=None,
+    playback_assembly=None,
     show_travel_moves=False,
     show_grid=True,
     show_nogo_zones=True,
@@ -49,6 +50,7 @@ def _update(
         compiled_artifact=MagicMock(),
         doc=MagicMock(),
         machine=machine,
+        playback_assembly=playback_assembly,
         cylinder_transform=(
             scene.cylinder_transform
             if scene
@@ -172,6 +174,37 @@ def test_update_flat_kinematics_without_op_player():
     assert ctx.kinematics.head_positions == {}
     assert ctx.kinematics.rotary_head_positions == {}
     machine.assembly.head_positions.assert_called_once()
+
+
+@pytest.mark.ui
+def test_update_prefers_playback_assembly_over_machine():
+    playback_assembly = MagicMock()
+    playback_assembly.has_rotary = True
+    playback_assembly.model_world_transforms.return_value = {
+        "head_0": np.eye(4, dtype=np.float64)
+    }
+    playback_assembly.head_positions.return_value = {}
+    playback_assembly.head_rotary_positions.return_value = {}
+
+    machine = MagicMock()
+    machine.get_default_laser_head.return_value = None
+    machine.assembly = MagicMock()
+    machine.assembly.has_rotary = False
+
+    op_player = MagicMock()
+    op_player.rotary_axis = Axis.A
+    op_player.state.axes = {Axis.A: 30.0}
+
+    ctx = _update(
+        op_player=op_player,
+        machine=machine,
+        playback_assembly=playback_assembly,
+        scene=_make_scene(had_rotary_layers=True),
+    )
+
+    assert ctx.kinematics.has_rotary is True
+    playback_assembly.head_positions.assert_called_once()
+    machine.assembly.head_positions.assert_not_called()
 
 
 @pytest.mark.ui

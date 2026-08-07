@@ -311,6 +311,7 @@ class Canvas3D(Gtk.GLArea):
                 color_set=self._theme_resolver.color_set,
                 op_player=self._presenter.op_player,
                 machine=self._context.machine,
+                playback_assembly=self._presenter.playback_assembly,
                 compiled_artifact=self._presenter.compiled_artifact,
                 doc=self.doc,
                 cylinder_transform=self._scene.cylinder_transform,

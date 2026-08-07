@@ -13,6 +13,7 @@ from .viewport import ViewportContext
 if TYPE_CHECKING:
     from ....core.color import ColorSet
     from ....core.doc import Doc
+    from ....machine.assembly import Assembly
     from ....machine.models.machine import Machine
     from ....simulator.op_player import OpPlayer
     from ....simulator.scene3d import CompiledSceneArtifact
@@ -34,6 +35,7 @@ class FrameInputs:
     color_set: "ColorSet"
     op_player: Optional["OpPlayer"] = None
     machine: Optional["Machine"] = None
+    playback_assembly: Optional["Assembly"] = None
     compiled_artifact: Optional["CompiledSceneArtifact"] = None
     doc: Optional["Doc"] = None
     cylinder_transform: Optional[np.ndarray] = None

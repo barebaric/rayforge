@@ -1,5 +1,4 @@
 import math
-from unittest.mock import patch
 
 import pytest
 from raygeo.ops import Ops
@@ -7,6 +6,7 @@ from raygeo.ops.axis import Axis
 
 from rayforge.context import RayforgeContext
 from rayforge.core.doc import Doc
+from rayforge.machine.kinematic_mapping import build_layer_assembly
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
 from rayforge.simulator.machine_state import MachineState
@@ -260,7 +260,7 @@ def _make_rotary_doc(uid, machine):
     return doc
 
 
-def test_seek_into_layer_configures_machine_for_that_layer():
+def test_seek_into_layer_emits_layer_changed():
     machine = _make_machine()
     doc = _make_rotary_doc("test", machine)
 
@@ -270,12 +270,17 @@ def test_seek_into_layer_configures_machine_for_that_layer():
     ops.line_to(10, 20, 0)
 
     player = OpPlayer(ops, machine, doc)
-    with patch.object(machine, "configure_for_layer") as mock_cfg:
-        player.seek(ops.len() - 1)
-    mock_cfg.assert_called_with(doc.active_layer)
+    received = []
+
+    def _on_layer_changed(sender, **kw):
+        received.append(kw["layer_uid"])
+
+    player.layer_changed.connect(_on_layer_changed)
+    player.seek(ops.len() - 1)
+    assert "test" in received
 
 
-def test_seek_preamble_configures_machine_for_first_layer():
+def test_seek_preamble_effective_layer_is_first_layer():
     machine = _make_machine()
     doc = _make_rotary_doc("test", machine)
 
@@ -286,12 +291,11 @@ def test_seek_preamble_configures_machine_for_first_layer():
     ops.line_to(10, 20, 0)
 
     player = OpPlayer(ops, machine, doc)
-    with patch.object(machine, "configure_for_layer") as mock_cfg:
-        player.seek(0)
-    mock_cfg.assert_called_with(doc.layers[0])
+    player.seek(0)
+    assert player.get_effective_layer(doc) is doc.layers[0]
 
 
-def test_seek_flat_layer_configures_machine_flat():
+def test_seek_flat_layer_builds_flat_assembly():
     machine = _make_machine()
     rm = RotaryModule()
     machine.add_rotary_module(rm)
@@ -305,7 +309,9 @@ def test_seek_flat_layer_configures_machine_flat():
 
     player = OpPlayer(ops, machine, doc)
     player.seek(ops.len() - 1)
-    assert not machine.assembly.has_rotary
+    assembly = build_layer_assembly(machine, player.get_effective_layer(doc))
+    assert not assembly.has_rotary
+    assert not machine._layer_configured
 
 
 def _make_long_ops(n=1000):

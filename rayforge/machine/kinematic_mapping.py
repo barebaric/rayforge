@@ -13,6 +13,7 @@ from .models.rotary_module import RotaryMode, RotaryType
 
 if TYPE_CHECKING:
     from ..core.doc import Doc
+    from .assembly import Assembly
     from .models.machine import Machine
     from .models.rotary_module import RotaryModule
 
@@ -78,6 +79,25 @@ def resolve_layer_rotary(
     else:
         rotary_axis = Axis.Y
     return RotaryAxisConfig(Axis.Y, rotary_axis, module)
+
+
+def build_layer_assembly(
+    machine: "Machine",
+    layer: Optional[Layer] = None,
+) -> "Assembly":
+    """Build a throwaway assembly for *layer*'s rotary config.
+
+    Reads only: it resolves the layer's rotary module via
+    ``machine.get_rotary_module_for_layer`` and builds a fresh assembly
+    without mutating the machine.  When *layer* is None or flat, a flat
+    assembly (no rotary) is returned.
+    """
+    modules = None
+    if layer is not None and layer.rotary_enabled:
+        module = machine.get_rotary_module_for_layer(layer)
+        if module is not None:
+            modules = {module.uid: module}
+    return machine.build_assembly_for_rotary(modules)
 
 
 class KinematicMapping:
