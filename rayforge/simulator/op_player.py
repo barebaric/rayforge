@@ -8,8 +8,8 @@ from raygeo.ops.types import CommandCategory, CommandType
 
 from ..core.doc import Doc
 from ..core.layer import Layer
+from ..machine.kinematic_mapping import resolve_layer_rotary
 from ..machine.models.machine import Machine
-from ..machine.models.rotary_module import RotaryMode
 from .machine_state import MachineState
 
 _SNAPSHOT_INTERVAL = 1000
@@ -94,24 +94,10 @@ class OpPlayer:
 
     def _update_rotary_config(self, layer_uid: str) -> None:
         item = self._doc.find_descendant_by_uid(layer_uid)
-        if not isinstance(item, Layer):
-            self._source_axis = Axis.Y
-            self._rotary_axis = None
-            return
-        module = (
-            self._machine.rotary_modules.get(item.rotary_module_uid)
-            if item.rotary_module_uid
-            else None
-        )
-        if module:
-            self._source_axis = Axis.Y
-            if module.mode == RotaryMode.TRUE_4TH_AXIS:
-                self._rotary_axis = module.axis
-            else:
-                self._rotary_axis = Axis.Y
-        else:
-            self._source_axis = Axis.Y
-            self._rotary_axis = self._machine.get_rotary_axis_for_layer(item)
+        layer = item if isinstance(item, Layer) else None
+        cfg = resolve_layer_rotary(layer, self._machine)
+        self._source_axis = cfg.source_axis
+        self._rotary_axis = cfg.rotary_axis
 
     def seek(self, index: int):
         if index >= self.ops.len():
@@ -239,27 +225,9 @@ class SnapshotBuilder:
             ct = self.ops.command_type(i)
             if ct == CommandType.LAYER_START:
                 item = self._doc.find_descendant_by_uid(self.ops.layer_uid(i))
-                if isinstance(item, Layer):
-                    module = (
-                        self._machine.rotary_modules.get(
-                            item.rotary_module_uid
-                        )
-                        if item.rotary_module_uid
-                        else None
-                    )
-                    if module:
-                        self._source_axis = Axis.Y
-                        if module.mode == RotaryMode.TRUE_4TH_AXIS:
-                            self._rotary_axis = module.axis
-                        else:
-                            self._rotary_axis = Axis.Y
-                    else:
-                        self._source_axis = Axis.Y
-                        self._rotary_axis = (
-                            self._machine.get_rotary_axis_for_layer(item)
-                        )
-                else:
-                    self._source_axis = Axis.Y
-                    self._rotary_axis = None
+                layer = item if isinstance(item, Layer) else None
+                cfg = resolve_layer_rotary(layer, self._machine)
+                self._source_axis = cfg.source_axis
+                self._rotary_axis = cfg.rotary_axis
             self.state.apply_command(self.ops, i)
         self._current_index = index

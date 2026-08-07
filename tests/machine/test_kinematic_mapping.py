@@ -1,4 +1,5 @@
 import math
+from typing import Optional
 
 import numpy as np
 import pytest
@@ -6,12 +7,20 @@ from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 from raygeo.ops.types import CommandType
 
-from rayforge.machine.kinematic_mapping import KinematicMapping
+from rayforge.context import RayforgeContext
+from rayforge.core.doc import Doc
+from rayforge.machine.kinematic_mapping import (
+    KinematicMapping,
+    RotaryAxisConfig,
+    resolve_layer_rotary,
+)
+from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.rotary_module import (
     RotaryMode,
     RotaryModule,
     RotaryType,
 )
+from rayforge.simulator.op_player import OpPlayer, SnapshotBuilder
 
 
 class TestKinematicMappingApply:
@@ -318,3 +327,114 @@ class TestKinematicMappingFromModule:
         assert mapping.cylinder_dir[0] == pytest.approx(1.0)
         assert mapping.cylinder_dir[1] == pytest.approx(0.0)
         assert mapping.cylinder_dir[2] == pytest.approx(0.0)
+
+
+class TestResolveLayerRotary:
+    @staticmethod
+    def _make_machine() -> Machine:
+        return Machine(RayforgeContext())
+
+    @staticmethod
+    def _make_ops(layer_uid: str) -> Ops:
+        ops = Ops()
+        ops.move_to(0, 0, 0)
+        ops.layer_start(layer_uid)
+        ops.line_to(10, 20, 0)
+        return ops
+
+    @staticmethod
+    def _expected(
+        enabled: bool,
+        module: Optional[RotaryModule],
+        mode: RotaryMode,
+        axis: Axis,
+    ) -> RotaryAxisConfig:
+        if not enabled or module is None:
+            return RotaryAxisConfig(Axis.Y, None, None)
+        rotary_axis = axis if mode == RotaryMode.TRUE_4TH_AXIS else Axis.Y
+        return RotaryAxisConfig(Axis.Y, rotary_axis, module)
+
+    @pytest.mark.parametrize(
+        "mode", [RotaryMode.TRUE_4TH_AXIS, RotaryMode.AXIS_REPLACEMENT]
+    )
+    @pytest.mark.parametrize("axis", [Axis.A, Axis.B])
+    @pytest.mark.parametrize("enabled", [True, False])
+    @pytest.mark.parametrize(
+        "uid_state",
+        ["direct", "stale", "default", "none"],
+    )
+    def test_resolver_matches_op_player_and_snapshot_builder(
+        self, mode, axis, enabled, uid_state
+    ):
+        machine = self._make_machine()
+        linked = RotaryModule()
+        linked.set_mode(mode)
+        linked.set_axis(axis)
+        default = RotaryModule()
+        default.set_mode(mode)
+        default.set_axis(axis)
+        machine.add_rotary_module(linked)
+        machine.add_rotary_module(default)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.uid = "test"
+        layer.set_rotary_enabled(enabled)
+        if uid_state == "direct":
+            layer.set_rotary_module_uid(linked.uid)
+        elif uid_state == "stale":
+            layer.set_rotary_module_uid("ghost-uid")
+            machine.set_default_rotary_module_uid(default.uid)
+        elif uid_state == "default":
+            machine.set_default_rotary_module_uid(default.uid)
+        module = machine.get_rotary_module_for_layer(layer)
+        expected = self._expected(enabled, module, mode, axis)
+
+        cfg = resolve_layer_rotary(layer, machine)
+        assert cfg == expected
+
+        ops = self._make_ops(layer.uid)
+        player = OpPlayer(ops, machine, doc)
+        player.seek(ops.len() - 1)
+        assert player._source_axis == cfg.source_axis
+        assert player._rotary_axis == cfg.rotary_axis
+
+        builder = SnapshotBuilder(
+            ops,
+            machine,
+            doc,
+            player._create_home_state(),
+        )
+        builder.advance_to(ops.len() - 1)
+        assert builder._source_axis == cfg.source_axis
+        assert builder._rotary_axis == cfg.rotary_axis
+
+    def test_resolver_layer_uid_resolved_via_doc(self):
+        machine = self._make_machine()
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+        rm.set_axis(Axis.A)
+        machine.add_rotary_module(rm)
+
+        doc = Doc()
+        doc.active_layer.uid = "test"
+        doc.active_layer.set_rotary_enabled(True)
+        doc.active_layer.set_rotary_module_uid(rm.uid)
+
+        ops = self._make_ops(doc.active_layer.uid)
+        player = OpPlayer(ops, machine, doc)
+        player.seek(ops.len() - 1)
+        cfg = resolve_layer_rotary(doc.active_layer, machine)
+        assert player._source_axis == cfg.source_axis
+        assert player._rotary_axis == cfg.rotary_axis
+        assert player._rotary_axis == Axis.A
+
+    def test_resolver_none_for_unknown_uid(self):
+        machine = self._make_machine()
+        layer = Doc().active_layer
+        layer.uid = "test"
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_module_uid("ghost-uid")
+
+        cfg = resolve_layer_rotary(layer, machine)
+        assert cfg == RotaryAxisConfig(Axis.Y, None, None)

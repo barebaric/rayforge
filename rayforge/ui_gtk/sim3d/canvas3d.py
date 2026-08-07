@@ -11,7 +11,10 @@ from raygeo.ops import Ops
 
 from ...context import RayforgeContext
 from ...core.color import OPS_COLOR_SPEC, ColorSet
-from ...machine.kinematic_mapping import KinematicMapping
+from ...machine.kinematic_mapping import (
+    KinematicMapping,
+    resolve_layer_rotary,
+)
 from ...pipeline.artifact.handle import BaseArtifactHandle
 from ...pipeline.artifact.job import JobArtifact
 from ...pipeline.pipeline import Pipeline
@@ -1279,22 +1282,22 @@ class Canvas3D(Gtk.GLArea):
             reverse = False
             axis_position_3d = None
             cylinder_dir = None
-            if layer.rotary_enabled:
-                if machine:
-                    module = machine.get_rotary_module_for_layer(layer)
-                    if module:
-                        mapping = KinematicMapping.from_rotary_module(
-                            module,
-                            layer.rotary_diameter,
-                            apply_gear_ratio=False,
+            if layer.rotary_enabled and machine:
+                cfg = resolve_layer_rotary(layer, machine)
+                module = cfg.module
+                if module is not None:
+                    mapping = KinematicMapping.from_rotary_module(
+                        module,
+                        layer.rotary_diameter,
+                        apply_gear_ratio=False,
+                    )
+                    if mapping is not None:
+                        axis_position = mapping.axis_position
+                        axis_position_3d = tuple(
+                            mapping.axis_position_3d.tolist()
                         )
-                        if mapping is not None:
-                            axis_position = mapping.axis_position
-                            axis_position_3d = tuple(
-                                mapping.axis_position_3d.tolist()
-                            )
-                            cylinder_dir = tuple(mapping.cylinder_dir.tolist())
-                            reverse = mapping.reverse
+                        cylinder_dir = tuple(mapping.cylinder_dir.tolist())
+                        reverse = mapping.reverse
             layer_configs[layer.uid] = LayerRenderConfig(
                 rotary_enabled=layer.rotary_enabled,
                 rotary_diameter=layer.rotary_diameter,
