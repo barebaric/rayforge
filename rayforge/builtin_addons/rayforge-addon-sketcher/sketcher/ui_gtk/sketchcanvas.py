@@ -9,6 +9,7 @@ from raygeo.geo import Matrix
 from rayforge.camera.controller import CameraController
 from rayforge.context import get_context
 from rayforge.core.expression import ExpressionContext, safe_evaluate
+from rayforge.shared.units.formatter import get_preferred_unit_factor
 from rayforge.ui_gtk.canvas import WorldSurface
 from rayforge.ui_gtk.canvas2d.elements.camera_image import CameraImageElement
 from rayforge.ui_gtk.shared.expression_entry import ExpressionEntry
@@ -55,6 +56,12 @@ class SketchCanvas(WorldSurface):
         self.single_mode = single_mode
         self.set_has_tooltip(True)
 
+        # Keep the grid unit labels in sync with the user's unit preference.
+        self._axis_renderer.set_grid_unit_factor(
+            get_preferred_unit_factor("length")
+        )
+        get_context().config.changed.connect(self._on_config_changed)
+
         # This will hold a reference to the active dialog to prevent it from
         # being garbage-collected prematurely.
         self._active_dialog: Optional[Adw.MessageDialog] = None
@@ -75,6 +82,13 @@ class SketchCanvas(WorldSurface):
 
         self._camera_elements: dict[CameraController, CameraImageElement] = {}
         self._cam_visible: bool = False
+
+    def _on_config_changed(self, sender, **kwargs):
+        """Updates the grid unit when the user's unit preference changes."""
+        self._axis_renderer.set_grid_unit_factor(
+            get_preferred_unit_factor("length")
+        )
+        self.queue_draw()
 
     def sync_camera_elements(self):
         """Synchronizes camera elements with the current machine's cameras."""
