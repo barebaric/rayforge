@@ -1,0 +1,469 @@
+"""
+Scene presenter for the 3D canvas.
+
+Owns scene compilation scheduling, the compiled artifact, the playback
+OpPlayer, and the playback overlay binding.  Constructed by Canvas3D with
+injected callables so it never reaches back into the widget; the canvas
+keeps the GL lifecycle and per-frame rendering.
+"""
+
+import logging
+import time
+from typing import TYPE_CHECKING, Callable, Dict, Optional
+
+import numpy as np
+from raygeo.ops import Ops
+
+from ...context import RayforgeContext
+from ...machine.kinematic_mapping import (
+    KinematicMapping,
+    resolve_layer_rotary,
+)
+from ...pipeline.artifact.handle import BaseArtifactHandle
+from ...pipeline.artifact.job import JobArtifact
+from ...shared.tasker import Task, task_mgr
+from ...simulator.op_player import OpPlayer, build_snapshots
+from ...simulator.scene3d import (
+    CompiledSceneArtifact,
+    LayerRenderConfig,
+    RenderConfig3D,
+    compile_scene_in_thread,
+)
+from .camera import ViewDirection
+
+if TYPE_CHECKING:
+    from ...core.doc import Doc
+    from ...doceditor.editor import DocEditor
+    from .renderer.scene_renderer import SceneRenderer
+    from .theme_resolver import ThemeResolver
+    from .viewport import ViewportConfig
+
+logger = logging.getLogger(__name__)
+
+
+class ScenePresenter:
+    """
+    Compiles the scene, builds the playback player, and binds playback.
+
+    The canvas owns the GL context and per-frame render state; this class
+    owns everything that turns a document + job artifact into a compiled
+    ``CompiledSceneArtifact`` and an ``OpPlayer``.  Dependencies are
+    injected as callables so the presenter stays independent of the widget.
+    """
+
+    def __init__(
+        self,
+        context: RayforgeContext,
+        doc_editor: "DocEditor",
+        scene: "SceneRenderer",
+        *,
+        theme_resolver: "ThemeResolver",
+        get_viewport: Callable[[], "ViewportConfig"],
+        get_gl_initialized: Callable[[], bool],
+        get_show_travel_moves: Callable[[], bool],
+        get_has_stale_job: Callable[[], bool],
+        get_camera_available: Callable[[], bool],
+        make_current: Callable[[], None],
+        mark_scene_dirty: Callable[[], None],
+        mark_artifact_dirty: Callable[[], None],
+        reset_view: Callable[[ViewDirection], None],
+        request_render: Callable[[], None],
+    ):
+        self._context = context
+        self._doc_editor = doc_editor
+        self._scene = scene
+        self._theme_resolver = theme_resolver
+        self._get_viewport = get_viewport
+        self._get_gl_initialized = get_gl_initialized
+        self._get_show_travel_moves = get_show_travel_moves
+        self._get_has_stale_job = get_has_stale_job
+        self._get_camera_available = get_camera_available
+        self._make_current = make_current
+        self._mark_scene_dirty = mark_scene_dirty
+        self._mark_artifact_dirty = mark_artifact_dirty
+        self._reset_view = reset_view
+        self._request_render = request_render
+
+        self._scene_preparation_task: Optional[Task] = None
+        self._compiled_artifact: Optional[CompiledSceneArtifact] = None
+        self._current_job_handle: Optional[BaseArtifactHandle] = None
+        self._op_player: Optional[OpPlayer] = None
+        self._playback_overlay = None
+
+    @property
+    def doc(self) -> "Doc":
+        """Returns the current document from the editor."""
+        return self._doc_editor.doc
+
+    @property
+    def op_player(self) -> Optional[OpPlayer]:
+        """The current playback player, or None."""
+        return self._op_player
+
+    @property
+    def compiled_artifact(self) -> Optional[CompiledSceneArtifact]:
+        """The last compiled scene artifact, or None."""
+        return self._compiled_artifact
+
+    @property
+    def scene_preparation_task(self) -> Optional[Task]:
+        """The in-flight scene compilation task, or None."""
+        return self._scene_preparation_task
+
+    @property
+    def job_handle(self) -> Optional[BaseArtifactHandle]:
+        """The job artifact handle driving the scene, or None."""
+        return self._current_job_handle
+
+    @job_handle.setter
+    def job_handle(self, handle: Optional[BaseArtifactHandle]):
+        self._current_job_handle = handle
+
+    @property
+    def playback_overlay(self):
+        """The attached playback overlay widget, or None."""
+        return self._playback_overlay
+
+    def set_playback_overlay(self, overlay):
+        """Store the playback overlay so players can be bound to it."""
+        self._playback_overlay = overlay
+
+    def cancel_scene_preparation(self):
+        """Cancel any in-flight scene compilation task."""
+        if self._scene_preparation_task:
+            self._scene_preparation_task.cancel()
+            self._scene_preparation_task = None
+
+    def _on_pipeline_state_changed(self, sender, *, is_processing: bool):
+        """
+        Handler for when the pipeline's busy state changes. When it becomes
+        not busy, the document has settled and the scene should be updated.
+        """
+        if not is_processing and self._current_job_handle is not None:
+            if self._get_has_stale_job():
+                logger.debug(
+                    "Pipeline settled with stale job. Clearing 3D scene."
+                )
+                self._current_job_handle = None
+                self._compiled_artifact = None
+                self._mark_artifact_dirty()
+                self._request_render()
+            else:
+                logger.debug("Pipeline has settled. Updating 3D scene.")
+                self.update_scene_from_doc()
+
+    def _on_job_generation_finished(self, sender, **kwargs):
+        task_status = kwargs.get("task_status")
+        handle = kwargs.get("handle")
+        logger.debug(
+            f"[CANVAS3D] _on_job_generation_finished: "
+            f"status={task_status}, handle={'yes' if handle else 'none'}"
+        )
+        if task_status == "completed":
+            if handle is not None:
+                self._current_job_handle = handle
+                self.update_scene_from_doc()
+                self._request_render()
+            else:
+                logger.debug(
+                    "[CANVAS3D] Job completed with no output. Clearing scene."
+                )
+                self._current_job_handle = None
+                self._compiled_artifact = None
+                self._mark_artifact_dirty()
+                self._request_render()
+
+    def _on_op_player_required(self):
+        self._build_op_player_async()
+        if self._compiled_artifact and self._op_player:
+            self._scene.extract_playback_offsets(self._compiled_artifact)
+
+    def _build_op_player_async(self):
+        ops = self._get_ops_for_playback()
+        machine = self._context.machine
+        if machine is None:
+            return
+
+        if ops is None or ops.is_empty():
+            self._op_player = None
+            for group in self._scene.layer_groups:
+                group.powered_offsets = np.array([], dtype=np.int32)
+                group.travel_offsets = np.array([], dtype=np.int32)
+                group.ring_offsets = np.array([], dtype=np.int32)
+            if self._playback_overlay:
+                self._playback_overlay.set_player(None)
+            self._request_render()
+            return
+
+        # Preserve the playhead and seek snapshots when the underlying
+        # ops object has not changed (e.g. only the viewport moved).
+        saved_index = None
+        reused_snapshots = []
+        if self._op_player is not None and self._op_player.ops is ops:
+            saved_index = self._op_player.current_index
+            reused_snapshots = self._op_player.snapshots
+
+        player = OpPlayer(ops, machine, self.doc, build_snapshots=False)
+        player.set_snapshots(reused_snapshots)
+
+        # Make the player available right away so that the next render
+        # can dim textures that have not been reached yet.  Seeking to
+        # the first layer is cheap (the first LAYER_START is near the
+        # start of the ops), and reused snapshots keep restores of a
+        # previous playhead fast as well.
+        if saved_index is not None:
+            player.seek(saved_index)
+            initial_index = saved_index
+        else:
+            player.seek_to_first_layer()
+            initial_index = 0
+        self._op_player = player
+        if self._playback_overlay:
+            self._playback_overlay.set_player(player, initial_index)
+        self._request_render()
+
+        # Build seek-acceleration snapshots in the background.  They are
+        # collected into a fresh list and attached from the main thread
+        # to avoid racing with concurrent seeks reading _snapshots.
+        def _on_snapshots_done(task):
+            if task.get_status() != "completed":
+                return
+            if self._op_player is player:
+                player.set_snapshots(task.result())
+
+        task_mgr.run_thread(
+            build_snapshots,
+            ops,
+            machine,
+            self.doc,
+            key=(id(self), "build-snapshots"),
+            when_done=_on_snapshots_done,
+        )
+
+    def _on_scene_prepared(self, task: Task):
+        """
+        Callback for when the background scene compilation task is
+        finished.  The compiled artifact is available directly as
+        ``task.result_value`` since the compilation runs in-process.
+        """
+        if task.get_status() != "completed":
+            if task.is_cancelled():
+                logger.debug(
+                    "[CANVAS3D] Scene preparation task cancelled (superseded)."
+                )
+            else:
+                self._compiled_artifact = None
+                self._op_player = None
+                logger.error("[CANVAS3D] Scene preparation task failed.")
+                self._mark_artifact_dirty()
+                self._request_render()
+            return
+
+        self._scene_preparation_task = None
+
+        artifact = task.result()
+        if artifact is None:
+            logger.warning(
+                "[CANVAS3D] Scene task completed but produced no "
+                "artifact (possibly empty scene)."
+            )
+            self._compiled_artifact = None
+            self._mark_artifact_dirty()
+            self._request_render()
+            return
+
+        if not isinstance(artifact, CompiledSceneArtifact):
+            logger.error(
+                f"[CANVAS3D] Expected CompiledSceneArtifact, got "
+                f"{type(artifact).__name__}"
+            )
+            self._compiled_artifact = None
+            self._mark_artifact_dirty()
+            self._request_render()
+            return
+
+        logger.debug("[CANVAS3D] Scene compilation finished.")
+        self._compiled_artifact = artifact
+        self._mark_artifact_dirty()
+        self._request_render()
+
+    def update_renderers_from_artifact(self):
+        if not self._compiled_artifact:
+            for group in self._scene.layer_groups:
+                group.ops_renderer.clear()
+                group.ring_renderer.clear()
+                group.ring_offsets = []
+            if self._scene.texture_renderer:
+                self._scene.texture_renderer.clear()
+            self._request_render()
+            return
+
+        if not self._get_gl_initialized():
+            return
+
+        self._make_current()
+
+        self._scene.update_from_artifact(
+            self._compiled_artifact, self._get_show_travel_moves()
+        )
+
+        self._theme_resolver.update_renderer_color_luts()
+
+        logger.debug(
+            "[CANVAS3D] Scanline overlay uploaded. Groups: %s"
+            % ", ".join(
+                "%s:%d"
+                % (
+                    "rot" if g.is_rotary else "flat",
+                    g.ring_renderer.vertex_count,
+                )
+                for g in self._scene.layer_groups
+            )
+        )
+
+        self._request_render()
+
+    def _get_ops_for_playback(self) -> Optional[Ops]:
+        handle = self._current_job_handle
+        if handle is not None:
+            artifact = self._context.artifact_store.get(handle)
+            if isinstance(artifact, JobArtifact):
+                if artifact.mapped_ops is not None:
+                    return artifact.mapped_ops
+                if artifact.ops is not None:
+                    return artifact.ops
+        return None
+
+    def update_scene_from_doc(self):
+        """
+        Updates the entire scene content from the document. This is the main
+        entry point for refreshing the 3D view.
+        """
+        if not self._get_gl_initialized():
+            return
+        if not self._scene.texture_renderer:
+            return
+
+        t_update_start = time.perf_counter()
+        logger.debug("Canvas3D: Updating scene from document.")
+
+        # Theme/color updates only need to happen once per theme change
+        if self._theme_resolver.theme_is_dirty:
+            self._theme_resolver.update_theme_and_colors()
+        if not self._theme_resolver.color_set:
+            logger.warning("Cannot update scene, color set not resolved.")
+            return
+
+        viewport = self._get_viewport()
+
+        # Update cylinder renderers and camera based on layer rotary state
+        any_rotary = any(layer.rotary_enabled for layer in self.doc.layers)
+        self._mark_scene_dirty()
+        if (
+            self._scene.had_rotary_layers
+            and not any_rotary
+            and self._get_camera_available()
+        ):
+            self._reset_view(ViewDirection.ISO)
+        self._scene.had_rotary_layers = any_rotary
+
+        world_to_visual = np.identity(4, dtype=np.float32)
+        world_to_cyl_local = np.identity(4, dtype=np.float32)
+
+        machine = self._context.machine
+        if machine:
+            ms = viewport.margin_shift
+            wcs = viewport.wcs_offset_mm
+            world_to_visual[0, 3] = ms[0, 3]
+            world_to_visual[1, 3] = ms[1, 3]
+            world_to_visual[2, 3] = wcs[2]
+
+            asm = machine.assembly
+            if asm.has_rotary:
+                self._scene.set_cylinder_transform(
+                    asm.cylinder_base_transform()
+                )
+            else:
+                self._scene.set_cylinder_transform(np.eye(4, dtype=np.float64))
+
+        layer_configs: Dict[str, LayerRenderConfig] = {}
+        for layer in self.doc.layers:
+            axis_position = 0.0
+            reverse = False
+            axis_position_3d = None
+            cylinder_dir = None
+            if layer.rotary_enabled and machine:
+                cfg = resolve_layer_rotary(layer, machine)
+                module = cfg.module
+                if module is not None:
+                    mapping = KinematicMapping.from_rotary_module(
+                        module,
+                        layer.rotary_diameter,
+                        apply_gear_ratio=False,
+                    )
+                    if mapping is not None:
+                        axis_position = mapping.axis_position
+                        axis_position_3d = tuple(
+                            mapping.axis_position_3d.tolist()
+                        )
+                        cylinder_dir = tuple(mapping.cylinder_dir.tolist())
+                        reverse = mapping.reverse
+            layer_configs[layer.uid] = LayerRenderConfig(
+                rotary_enabled=layer.rotary_enabled,
+                rotary_diameter=layer.rotary_diameter,
+                axis_position=axis_position,
+                reverse=reverse,
+                axis_position_3d=axis_position_3d,
+                cylinder_dir=cylinder_dir,
+            )
+
+        render_config = RenderConfig3D(
+            world_to_visual=world_to_visual,
+            world_to_cyl_local=world_to_cyl_local,
+            layer_configs=layer_configs,
+        )
+
+        self._schedule_scene_preparation(render_config.to_dict())
+
+        t_update_elapsed = (time.perf_counter() - t_update_start) * 1000
+        if t_update_elapsed > 5:
+            logger.info(
+                f"[CANVAS3D] update_scene_from_doc took "
+                f"{t_update_elapsed:.1f}ms"
+            )
+
+    def _schedule_scene_preparation(
+        self,
+        render_config_dict: Dict,
+    ):
+        task_key = (id(self), "prepare-3d-scene-vertices")
+
+        if (
+            not self._get_gl_initialized()
+            or self._theme_resolver.color_set is None
+        ):
+            return
+
+        job_handle = self._current_job_handle
+        if job_handle is None:
+            logger.debug("[CANVAS3D] No job artifact, skipping compilation.")
+            return
+
+        if self._scene_preparation_task:
+            self._scene_preparation_task.cancel()
+            self._scene_preparation_task = None
+            logger.debug(
+                "[CANVAS3D] Cancelled in-progress compilation, "
+                "scheduling new one."
+            )
+
+        logger.debug("[CANVAS3D] Scheduling scene compilation task.")
+        assert render_config_dict is not None
+        self._scene_preparation_task = task_mgr.run_thread(
+            compile_scene_in_thread,
+            self._context.artifact_store,
+            job_handle.to_dict(),
+            render_config_dict,
+            key=task_key,
+            when_done=self._on_scene_prepared,
+        )
