@@ -50,6 +50,10 @@ class CameraController:
         self._last_orbit_pos: Optional[Point] = None
         self._last_z_rotate_screen_pos: Optional[Point] = None
 
+        # The EventControllerScroll provides no access to the pointer
+        # position, so it is tracked here via a motion controller.
+        self._mouse_pos: Optional[tuple[float, float]] = None
+
         self._setup_interactions(on_key_pressed)
 
     def create_camera(self, width: int, height: int) -> Camera:
@@ -86,14 +90,23 @@ class CameraController:
         except np.linalg.LinAlgError:
             return None
 
-        clip_coords = np.array([ndc_x, ndc_y, -1.0, 1.0], dtype=np.float32)
-        eye_coords = inv_proj @ clip_coords
-        eye_coords[2] = -1.0
-        eye_coords[3] = 0.0
+        # Unproject two points on the near and far clip planes and use
+        # their difference as the ray direction. This yields converging
+        # rays for the perspective projection and parallel rays for the
+        # orthographic projection.
+        near_clip = np.array([ndc_x, ndc_y, -1.0, 1.0], dtype=np.float32)
+        far_clip = np.array([ndc_x, ndc_y, 1.0, 1.0], dtype=np.float32)
+        near_eye = inv_proj @ near_clip
+        far_eye = inv_proj @ far_clip
+        near_world = inv_view @ (near_eye / near_eye[3])
+        far_world = inv_view @ (far_eye / far_eye[3])
 
-        world_coords_vec4 = inv_view @ eye_coords
-        ray_dir = world_coords_vec4[:3] / np.linalg.norm(world_coords_vec4[:3])
-        ray_origin = camera.position
+        ray_dir = far_world[:3] - near_world[:3]
+        norm = np.linalg.norm(ray_dir)
+        if norm < 1e-6:
+            return None
+        ray_dir = ray_dir / norm
+        ray_origin = near_world[:3]
 
         plane_normal = np.array([0, 0, 1], dtype=np.float64)
         denom = np.dot(plane_normal, ray_dir)
@@ -130,6 +143,12 @@ class CameraController:
         scroll.connect("scroll", self.on_scroll)
         self._widget.add_controller(scroll)
 
+        # Track the pointer position for zooming towards the cursor.
+        motion = Gtk.EventControllerMotion.new()
+        motion.connect("motion", self.on_motion)
+        motion.connect("leave", self.on_motion_leave)
+        self._widget.add_controller(motion)
+
         key_controller = Gtk.EventControllerKey.new()
         if on_key_pressed is not None:
             key_controller.connect("key-pressed", on_key_pressed)
@@ -165,14 +184,9 @@ class CameraController:
         is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
 
         if not is_shift and self.camera:
-            if self.camera.is_perspective:
-                # For perspective, pick a point on the floor plane to orbit.
-                self._rotation_pivot = self.get_world_coords_on_plane(x, y)
-                if self._rotation_pivot is None:
-                    self._rotation_pivot = self.camera.target.copy()
-            else:  # Orthographic
-                # For ortho, always orbit around the camera's current look-at
-                # point. This is stable and intuitive.
+            # Orbit around the point on the floor plane under the cursor.
+            self._rotation_pivot = self.get_world_coords_on_plane(x, y)
+            if self._rotation_pivot is None:
                 self._rotation_pivot = self.camera.target.copy()
 
             self._last_orbit_pos = None
@@ -280,16 +294,14 @@ class CameraController:
         if abs(yaw_angle) > 1e-6:
             axis_yaw = np.array([0.0, 0.0, 1.0], dtype=np.float64)
             rot_yaw = rotation_4x4(axis_yaw, yaw_angle)[:3, :3]
-            # Apply to position and up vectors
+            # Apply to position and target vectors
             camera.position = pivot + rot_yaw @ (camera.position - pivot)
+            camera.target = pivot + rot_yaw @ (camera.target - pivot)
             camera.up = rot_yaw @ camera.up
 
         # Pitch Rotation (around Camera's local right axis)
         if abs(pitch_angle) > 1e-6:
             self._apply_ortho_pitch(camera, pivot, pitch_angle)
-
-        # Ensure target is always correct
-        camera.target = pivot
 
     def _apply_ortho_pitch(
         self, camera: Camera, pivot: np.ndarray, pitch_angle: float
@@ -316,8 +328,9 @@ class CameraController:
                 rot_pitch = rotation_matrix_from_axis_angle(
                     axis_pitch, pitch_angle
                 )
-                # Apply to position and up vectors
+                # Apply to position and target vectors
                 camera.position = pivot + rot_pitch @ (camera.position - pivot)
+                camera.target = pivot + rot_pitch @ (camera.target - pivot)
                 camera.up = rot_pitch @ camera.up
 
     def on_drag_end(self, gesture, offset_x, offset_y):
@@ -368,8 +381,52 @@ class CameraController:
         self._clear_drag_state()
         self._request_render()
 
+    def on_motion(self, controller, x: float, y: float):
+        """Stores the current pointer position for scroll zooming."""
+        self._mouse_pos = x, y
+
+    def on_motion_leave(self, controller):
+        """Clears the stored pointer position when the pointer leaves."""
+        self._mouse_pos = None
+
     def on_scroll(self, controller, dx, dy):
-        """Handles the mouse scroll wheel for zooming."""
-        if self.camera:
+        """Handles the mouse scroll wheel for zooming.
+
+        Zooms towards the point on the floor plane under the mouse cursor:
+        the camera is dollied and then translated so that the plane point
+        under the cursor stays under the cursor.
+        """
+        if not self.camera:
+            return
+
+        if self._mouse_pos is not None:
+            self.zoom_towards_point(*self._mouse_pos, dy)
+        else:
             self.camera.dolly(dy)
-            self._request_render()
+        self._request_render()
+
+    def zoom_towards_point(self, x: float, y: float, dy: float) -> None:
+        """
+        Dollies the camera keeping the floor plane point under the cursor.
+
+        The plane point under the screen position (x, y) is anchored before
+        the dolly and the camera is translated afterwards so that the same
+        point stays under (x, y) at the new zoom level.
+
+        Args:
+            x: The screen x coordinate of the anchor point.
+            y: The screen y coordinate of the anchor point.
+            dy: The scroll delta passed to :meth:`Camera.dolly`.
+        """
+        camera = self.camera
+        if camera is None:
+            return
+
+        anchor = self.get_world_coords_on_plane(x, y)
+        camera.dolly(dy)
+        if anchor is not None:
+            follow = self.get_world_coords_on_plane(x, y)
+            if follow is not None:
+                shift = anchor - follow
+                camera.position += shift
+                camera.target += shift
