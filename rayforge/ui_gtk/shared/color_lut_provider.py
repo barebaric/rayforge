@@ -1,9 +1,9 @@
 """
-Shared colour LUT assembly for the 3D renderers.
+Shared colour LUT assembly for the renderers.
 
 Builds the per-laser and fallback colour lookup tables consumed by the
-ops, ring buffer, and texture renderers, so that the canvas no longer
-assembles raw arrays itself.
+3D ops, ring buffer, and texture renderers, so that the canvases no
+longer assemble raw arrays themselves.
 """
 
 from typing import TYPE_CHECKING, Dict, Optional
@@ -53,6 +53,16 @@ class ColorLutProvider:
                 laser_color_set = OpsColorSet.from_laser(laser, color_set)
                 laser_color_sets[laser.uid] = laser_color_set.to_color_set()
         return cls(color_set, laser_color_sets)
+
+    @property
+    def color_set(self) -> ColorSet:
+        """The resolved base theme ColorSet."""
+        return self._color_set
+
+    @property
+    def laser_color_sets(self) -> Dict[str, ColorSet]:
+        """Per-laser colour sets keyed by laser UID."""
+        return self._laser_color_sets
 
     @property
     def has_lasers(self) -> bool:

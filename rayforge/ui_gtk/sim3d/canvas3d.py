@@ -9,7 +9,6 @@ from OpenGL import GL
 from raygeo.ops import Ops
 
 from ...context import RayforgeContext
-from ...core.color import OPS_COLOR_SPEC, ColorSet
 from ...machine.kinematic_mapping import (
     KinematicMapping,
     resolve_layer_rotary,
@@ -29,12 +28,11 @@ from ...simulator.scene3d import (
     RenderConfig3D,
     compile_scene_in_thread,
 )
-from ..shared.gtk_color import GtkColorResolver
 from .camera import ViewDirection
 from .camera_controller import CameraController
-from .color_lut_provider import ColorLutProvider
 from .gl_utils import RenderContext, rotation_4x4
 from .renderer.scene_renderer import SceneRenderer
+from .theme_resolver import ThemeResolver
 from .viewport import ViewportConfig
 
 if TYPE_CHECKING:
@@ -76,10 +74,13 @@ class Canvas3D(Gtk.GLArea):
         self._artifact_gl_dirty = False
         self._upload_state = None
 
-        self._color_spec = OPS_COLOR_SPEC
-        self._color_set: Optional[ColorSet] = None
-        self._lut_provider: Optional[ColorLutProvider] = None
-        self._theme_is_dirty = True
+        self._theme_resolver = ThemeResolver(
+            self,
+            scene=self._scene,
+            get_machine=lambda: self._context.machine,
+            get_gl_initialized=lambda: self._gl_initialized,
+            request_render=self.queue_render,
+        )
 
         self._cam_ctrl = CameraController(
             self,
@@ -94,7 +95,7 @@ class Canvas3D(Gtk.GLArea):
         self.connect("unrealize", self.on_unrealize)
         self.connect("render", self.on_render)
         self.connect("resize", self._cam_ctrl.on_resize)
-        self.connect("notify::style", self._on_style_changed)
+        self.connect("notify::style", self._theme_resolver.on_style_changed)
 
         # Connect to machine for WCS updates
         machine = self._context.machine
@@ -264,7 +265,7 @@ class Canvas3D(Gtk.GLArea):
 
     def _on_style_changed(self, widget, gparam):
         """Marks theme resources as dirty when the GTK theme changes."""
-        self._theme_is_dirty = True
+        self._theme_resolver.mark_dirty()
         self.queue_render()
 
     def _on_config_changed(self, sender, **kwargs):
@@ -280,7 +281,7 @@ class Canvas3D(Gtk.GLArea):
             axis_renderer.set_grid_unit_factor(
                 get_preferred_unit_factor("length")
             )
-        self._update_renderer_color_luts()
+        self._theme_resolver.update_renderer_color_luts()
         self.queue_render()
 
     def _connect_pipeline_signals(self):
@@ -308,10 +309,10 @@ class Canvas3D(Gtk.GLArea):
         self._cam_ctrl.create_camera(self.get_width(), self.get_height())
 
         self._init_gl_resources()
-        self._theme_is_dirty = True
+        self._theme_resolver.mark_dirty()
 
         self.reset_view(ViewDirection.ISO)
-        self._update_theme_and_colors()
+        self._theme_resolver.update_theme_and_colors()
         self._connect_pipeline_signals()
 
         if self._current_job_handle is None and self.pipeline:
@@ -376,99 +377,11 @@ class Canvas3D(Gtk.GLArea):
             logger.error(f"OpenGL Initialization Error: {e}", exc_info=True)
             self._gl_initialized = False
 
-    def _update_theme_and_colors(self):
-        """
-        Resolves the ColorSet and updates other theme-dependent elements.
-        """
-        if not self._scene.axis_renderer or not self._scene.texture_renderer:
-            return
-
-        resolver = GtkColorResolver(self)
-        self._color_set = resolver.resolve(self._color_spec)
-
-        style_context = self.get_style_context()
-        found, bg_rgba = style_context.lookup_color("theme_bg_color")
-        if not found:
-            found, bg_rgba = style_context.lookup_color("view_bg_color")
-
-        if found:
-            bg_color = (
-                bg_rgba.red * 0.35,
-                bg_rgba.green * 0.35,
-                bg_rgba.blue * 0.35,
-            )
-            bg_light = (
-                min(1.0, bg_rgba.red * 0.9),
-                min(1.0, bg_rgba.green * 0.9),
-                min(1.0, bg_rgba.blue * 0.9),
-            )
-            clear_color = (
-                bg_rgba.red,
-                bg_rgba.green,
-                bg_rgba.blue,
-                bg_rgba.alpha,
-            )
-        else:
-            bg_color = (0.11, 0.11, 0.14)
-            bg_light = (0.2, 0.2, 0.25)
-            clear_color = (0.2, 0.2, 0.25, 1.0)
-
-        self._scene.apply_background_colors(bg_color, bg_light)
-
-        GL.glClearColor(*clear_color)
-
-        # Get the foreground color for axes and labels
-        found, fg_rgba = style_context.lookup_color("view_fg_color")
-        if found:
-            axis_color = (
-                fg_rgba.red,
-                fg_rgba.green,
-                fg_rgba.blue,
-                fg_rgba.alpha,
-            )
-            # Grid color is derived from fg color to be less prominent
-            grid_color = fg_rgba.red, fg_rgba.green, fg_rgba.blue, 0.5
-            bg_plane_color = fg_rgba.red, fg_rgba.green, fg_rgba.blue, 0.08
-
-            self._scene.apply_axis_colors(
-                axis_color, grid_color, bg_plane_color
-            )
-
-        self._update_laser_colors()
-        self._update_renderer_color_luts()
-        self._theme_is_dirty = False
-
-    def _update_laser_colors(self):
-        """
-        Build the shared colour LUT provider from the machine's lasers.
-
-        This resolves per-laser color sets using the machine's laser list
-        and the current theme colors for travel/zero_power.
-        """
-        if self._color_set is None:
-            self._lut_provider = None
-            return
-        self._lut_provider = ColorLutProvider.from_machine(
-            self._context.machine, self._color_set
-        )
-
-    def _update_renderer_color_luts(self):
-        if not self._color_set or not self._gl_initialized:
-            return
-
-        if self._lut_provider is None:
-            self._update_laser_colors()
-        provider = self._lut_provider
-        if provider is None:
-            return
-
-        self._scene.update_color_luts(provider)
-
     def _process_pending_gl_updates(self):
         if self._scene_gl_dirty:
             self._scene_gl_dirty = False
             if self._scene.update_axis_from_viewport(self._viewport):
-                self._theme_is_dirty = True
+                self._theme_resolver.mark_dirty()
             self.make_current()
             self._scene.update_cylinders_from_doc(
                 self.doc, self._viewport, self._context.machine
@@ -545,7 +458,7 @@ class Canvas3D(Gtk.GLArea):
                     self._scene.texture_renderer.update_from_artifact(artifact)
 
             elif kind == "color_luts":
-                self._update_renderer_color_luts()
+                self._theme_resolver.update_renderer_color_luts()
 
             elif kind == "op_player":
                 self._build_op_player_async()
@@ -683,10 +596,10 @@ class Canvas3D(Gtk.GLArea):
 
         self._process_pending_gl_updates()
 
-        if self._theme_is_dirty:
-            self._update_theme_and_colors()
+        if self._theme_resolver.theme_is_dirty:
+            self._theme_resolver.update_theme_and_colors()
 
-        if not self._color_set:
+        if not self._theme_resolver.color_set:
             return False
 
         t_render_start = time.perf_counter()
@@ -747,7 +660,7 @@ class Canvas3D(Gtk.GLArea):
                 model_matrix=self._viewport.model_matrix,
                 viewport_height=self._cam_ctrl.camera.height,
                 camera_position=self._cam_ctrl.camera.position,
-                color_set=self._color_set,
+                color_set=self._theme_resolver.color_set,
                 show_travel_moves=self._show_travel_moves,
                 line_width=spot_line_width,
                 machine=machine,
@@ -908,7 +821,7 @@ class Canvas3D(Gtk.GLArea):
             self._compiled_artifact, self._show_travel_moves
         )
 
-        self._update_renderer_color_luts()
+        self._theme_resolver.update_renderer_color_luts()
 
         logger.debug(
             "[CANVAS3D] Scanline overlay uploaded. Groups: %s"
@@ -949,9 +862,9 @@ class Canvas3D(Gtk.GLArea):
         logger.debug("Canvas3D: Updating scene from document.")
 
         # Theme/color updates only need to happen once per theme change
-        if self._theme_is_dirty:
-            self._update_theme_and_colors()
-        if not self._color_set:
+        if self._theme_resolver.theme_is_dirty:
+            self._theme_resolver.update_theme_and_colors()
+        if not self._theme_resolver.color_set:
             logger.warning("Cannot update scene, color set not resolved.")
             return
 
@@ -1037,7 +950,7 @@ class Canvas3D(Gtk.GLArea):
     ):
         task_key = (id(self), "prepare-3d-scene-vertices")
 
-        if not self._gl_initialized or self._color_set is None:
+        if not self._gl_initialized or self._theme_resolver.color_set is None:
             return
 
         job_handle = self._current_job_handle

@@ -1561,6 +1561,7 @@ class MainWindow(Adw.ApplicationWindow):
             style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK)
         else:  # "system" or any other invalid value
             style_manager.set_color_scheme(Adw.ColorScheme.DEFAULT)
+        get_context().theme.bind(self)
 
     def on_running_tasks_changed(self, sender, tasks, progress):
         self._update_actions_and_ui()

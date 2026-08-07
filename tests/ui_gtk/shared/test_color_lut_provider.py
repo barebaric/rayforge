@@ -1,5 +1,5 @@
 """
-Tests for the shared ColorLutProvider used by the 3D renderers.
+Tests for the shared ColorLutProvider used by the renderers.
 """
 
 from unittest.mock import MagicMock
@@ -8,7 +8,7 @@ import numpy as np
 
 from rayforge.core.color import ColorSet
 from rayforge.machine.models.laser import LaserHead
-from rayforge.ui_gtk.sim3d.color_lut_provider import ColorLutProvider
+from rayforge.ui_gtk.shared.color_lut_provider import ColorLutProvider
 
 
 def _theme_color_set() -> ColorSet:
@@ -42,6 +42,15 @@ def test_no_laser_fallback_shapes():
     assert provider.cut_lut().shape == (256, 4)
     assert provider.engrave_lut_2d().shape == (256, 4)
     assert provider.ring_lut_2d().shape == (256, 4)
+
+
+def test_color_set_and_laser_color_sets_properties():
+    laser_sets = {
+        "a": _laser_color_set((1.0, 0.0, 0.0)),
+    }
+    provider = ColorLutProvider(_theme_color_set(), laser_sets)
+    assert provider.color_set is _theme_color_set()
+    assert provider.laser_color_sets is laser_sets
 
 
 def test_no_laser_ring_lut_is_white_ramp():
