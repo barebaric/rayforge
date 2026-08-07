@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from ...machine.models.machine import Machine
     from ...simulator.op_player import OpPlayer
     from ...simulator.scene3d.compiled_scene import CompiledSceneArtifact
+    from raygeo.ops.axis import Axis
     from .shader.base import Shader
     from .viewport import ViewportConfig
 
@@ -95,7 +96,7 @@ class RenderContext:
     op_player: "Optional[OpPlayer]" = None
     compiled_artifact: "Optional[CompiledSceneArtifact]" = None
     viewport: "Optional[ViewportConfig]" = None
-    rotary_axis: Optional[str] = None
+    rotary_axis: "Optional[Axis]" = None
     wcs_offset_mm: Optional[tuple] = None
     x_right: bool = False
     y_down: bool = False

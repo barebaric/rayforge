@@ -819,17 +819,65 @@ class Canvas3D(Gtk.GLArea):
                 line_width=spot_line_width,
             )
 
-            self._scene.render(
-                ctx,
-                self._op_player,
-                self._viewport,
-                self._context.machine,
-                self._compiled_artifact,
-                self.doc,
-                show_grid=self._show_grid,
-                show_nogo_zones=self._show_nogo_zones,
-                show_models=self._show_models,
-            )
+            # Populate the per-frame state consumed by the scene renderers.
+            op_player = self._op_player
+            machine = self._context.machine
+            rotary_axis = op_player.rotary_axis if op_player else None
+            ctx.machine = machine
+            ctx.doc = self.doc
+            ctx.op_player = op_player
+            ctx.compiled_artifact = self._compiled_artifact
+            ctx.viewport = self._viewport
+            ctx.rotary_axis = rotary_axis
+            ctx.had_rotary_layers = self._scene.had_rotary_layers
+            ctx.show_grid = self._show_grid
+            ctx.show_nogo_zones = self._show_nogo_zones
+            ctx.show_models = self._show_models
+            ctx.wcs_offset_mm = self._viewport.wcs_offset_mm
+            ctx.x_right = self._viewport.x_right
+            ctx.y_down = self._viewport.y_down
+            ctx.x_negative = self._viewport.x_negative
+            ctx.y_negative = self._viewport.y_negative
+
+            # Compute the rotary helper fields once per frame so the
+            # renderers can consume them.
+            ctx.mvp_flat_gl = mvp_matrix_ui_gl
+            cyl_angle = 0.0
+            if (
+                op_player
+                and self._scene.had_rotary_layers
+                and machine
+                and rotary_axis is not None
+            ):
+                asm = machine.assembly
+                if asm.has_rotary:
+                    degrees = op_player.state.axes.get(rotary_axis, 0.0)
+                    cyl_angle = math.radians(degrees)
+
+            if self._scene.had_rotary_layers and machine:
+                cyl_base_mvp = (
+                    mvp_matrix_ui.astype(np.float64)
+                    @ self._viewport.margin_shift.astype(np.float64)
+                    @ self._scene.cylinder_transform
+                )
+            else:
+                cyl_base_mvp = mvp_matrix_ui.astype(
+                    np.float64
+                ) @ self._viewport.margin_shift.astype(np.float64)
+
+            vis_rot_axis = np.array([1.0, 0.0, 0.0], dtype=np.float64)
+            rot_4x4 = rotation_4x4(vis_rot_axis, cyl_angle)
+            ctx.rot_4x4 = rot_4x4
+            ctx.mvp_rot_gl = (cyl_base_mvp @ rot_4x4).T.astype(np.float32)
+            cyl_mesh_mvp = (
+                mvp_matrix_ui
+                @ self._viewport.margin_shift
+                @ self._scene.cylinder_transform
+                @ rot_4x4
+            ).astype(np.float64)
+            ctx.cyl_mesh_mvp_gl = cyl_mesh_mvp.T.astype(np.float32)
+
+            self._scene.render(ctx)
 
         except Exception as e:
             logger.error("OpenGL Render Error: %s", e, exc_info=True)

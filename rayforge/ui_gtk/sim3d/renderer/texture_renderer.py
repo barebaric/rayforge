@@ -52,6 +52,17 @@ class TextureArtifactRenderer(BaseRenderer):
         else:
             self._cyl_mvp = None
 
+        reached_count = None
+        op_player = ctx.op_player
+        compiled_artifact = ctx.compiled_artifact
+        if op_player is not None and compiled_artifact is not None:
+            reached_count = 0
+            playhead = op_player.current_index
+            for tl in compiled_artifact.texture_layers:
+                if playhead >= tl.activation_cmd_idx:
+                    reached_count += 1
+        ctx.reached_count = reached_count
+
     def init_gl(self):
         """
         Initializes OpenGL resources for rendering textured quads.

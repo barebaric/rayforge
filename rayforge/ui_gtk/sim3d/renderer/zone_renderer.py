@@ -350,6 +350,8 @@ class ZoneRenderer(BaseRenderer):
         pass
 
     def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
+        if not ctx.show_nogo_zones:
+            return
         if not self._fill_vao and not self._edge_vao:
             return
 

@@ -276,6 +276,8 @@ class ModelRenderer(BaseRenderer):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
     def render(self, ctx: RenderContext, shaders: ShaderSet) -> None:
+        if not ctx.show_models:
+            return
         if not self._vao or self._mvp_matrix is None:
             return
 
