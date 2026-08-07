@@ -21,7 +21,7 @@ from ...shared.units.formatter import (
     get_default_grid_step_mm,
     get_preferred_unit_factor,
 )
-from ...simulator.op_player import OpPlayer, SnapshotBuilder
+from ...simulator.op_player import OpPlayer, build_snapshots
 from ...simulator.scene3d import (
     CompiledSceneArtifact,
     LayerRenderConfig,
@@ -369,30 +369,8 @@ class Canvas3D(Gtk.GLArea):
             if self._op_player is player:
                 player.set_snapshots(task.result())
 
-        def _build_snapshots_thread(ops, machine, doc):
-            n = ops.len()
-            if n <= 1000:
-                return []
-            temp = SnapshotBuilder(
-                ops, machine, doc, player._create_home_state()
-            )
-            interval = 1000
-            snapshots = []
-            for target in range(interval, n, interval):
-                temp.advance_to(target - 1)
-                temp.state.reached_textures.clear()
-                snapshots.append(
-                    (
-                        target,
-                        temp.state.copy(),
-                        temp._source_axis,
-                        temp._rotary_axis,
-                    )
-                )
-            return snapshots
-
         task_mgr.run_thread(
-            _build_snapshots_thread,
+            build_snapshots,
             ops,
             machine,
             self.doc,

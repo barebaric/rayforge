@@ -9,7 +9,8 @@ from rayforge.context import RayforgeContext
 from rayforge.core.doc import Doc
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
-from rayforge.simulator.op_player import OpPlayer
+from rayforge.simulator.machine_state import MachineState
+from rayforge.simulator.op_player import OpPlayer, build_snapshots
 
 
 def _make_machine():
@@ -305,3 +306,58 @@ def test_seek_flat_layer_configures_machine_flat():
     player = OpPlayer(ops, machine, doc)
     player.seek(ops.len() - 1)
     assert not machine.assembly.has_rotary
+
+
+def _make_long_ops(n=1000):
+    ops = Ops()
+    ops.set_power(0.5)
+    ops.move_to(0.0, 0.0, 0.0)
+    for i in range(n):
+        ops.line_to(float(i % 20), float((i // 20) % 20), 0.0)
+    return ops
+
+
+def test_build_snapshots_empty_for_short_ops():
+    ops = _make_long_ops(n=10)
+    assert build_snapshots(ops, _make_machine(), Doc()) == []
+
+
+def test_build_snapshots_targets_spaced_every_interval():
+    ops = _make_long_ops(n=2500)
+    snapshots = build_snapshots(ops, _make_machine(), Doc())
+    assert [s[0] for s in snapshots] == [1000, 2000]
+    for target, state, source, rotary in snapshots:
+        assert isinstance(target, int)
+        assert isinstance(state, MachineState)
+        assert source == Axis.Y
+        assert rotary is None
+
+
+def test_build_snapshots_matches_sequential_playback():
+    machine = _make_machine()
+    doc = Doc()
+    ops = _make_long_ops(n=1000)
+
+    sequential = OpPlayer(ops, machine, doc)
+    sequential.seek(ops.len() - 1)
+
+    player = OpPlayer(ops, machine, doc, build_snapshots=False)
+    player.set_snapshots(build_snapshots(ops, machine, doc))
+    player.seek(ops.len() - 1)
+
+    assert player.state.axes == sequential.state.axes
+    assert player.state.power == sequential.state.power
+    assert player.state.cut_speed == sequential.state.cut_speed
+
+
+def test_build_snapshots_clears_reached_textures():
+    ops = Ops()
+    ops.move_to(0.0, 0.0, 0.0)
+    for i in range(1000):
+        ops.scan_to(float(i % 20), 0.0, 0.0, bytearray([i % 255]))
+    ops.line_to(50.0, 0.0, 0.0)
+
+    snapshots = build_snapshots(ops, _make_machine(), Doc())
+    assert snapshots
+    for _, state, _, _ in snapshots:
+        assert len(state.reached_textures) == 0
