@@ -34,6 +34,7 @@ class Shader:
         # ``set_*``.  ``save()`` / ``restore()`` use this to snapshot
         # and replay uniforms across a renderer pass without re-issuing
         # GL queries.
+        self.program = None
         self._uniform_values: dict[str, Any] = {}
         self._uniform_snapshots: list[dict[str, Any]] = []
         # Determine the correct GLSL header for the current context.
@@ -226,7 +227,7 @@ class Shader:
 
     def cleanup(self) -> None:
         """Deletes the shader program from GPU context to free resources."""
-        if getattr(self, "program", None):
+        if self.program:
             GL.glDeleteProgram(self.program)
             self.program = None
 
