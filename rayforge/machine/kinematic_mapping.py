@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 import numpy as np
@@ -38,6 +39,45 @@ def _is_valid_replacement_module(module):
     if module.mm_per_rotation > 0:
         return True
     return module.axis in KinematicMapping._AXIS_TO_INDEX
+
+
+@dataclass(frozen=True)
+class RotaryAxisConfig:
+    """Resolved rotary configuration for a layer.
+
+    ``source_axis`` is the world-space axis whose movement is mapped
+    onto ``rotary_axis``. ``module`` is the effective rotary module
+    resolved for the layer (``None`` when rotary is disabled or no
+    module applies).
+    """
+
+    source_axis: Axis
+    rotary_axis: Optional[Axis]
+    module: Optional["RotaryModule"] = None
+
+
+def resolve_layer_rotary(
+    layer: Optional[Layer], machine: "Machine"
+) -> RotaryAxisConfig:
+    """Resolve the rotary axis configuration for *layer*.
+
+    Single source of truth shared by ``OpPlayer``, ``SnapshotBuilder``,
+    and the 3D canvas.  Rotary is only active for layers with
+    ``rotary_enabled``; the effective module is resolved through
+    ``machine.get_rotary_module_for_layer`` (including default-module
+    fallback).  TRUE_4TH_AXIS modules map the source axis onto
+    ``module.axis``; all other modes use ``Axis.Y`` as the rotary axis.
+    """
+    if not isinstance(layer, Layer) or not layer.rotary_enabled:
+        return RotaryAxisConfig(Axis.Y, None, None)
+    module = machine.get_rotary_module_for_layer(layer)
+    if module is None:
+        return RotaryAxisConfig(Axis.Y, None, None)
+    if module.mode == RotaryMode.TRUE_4TH_AXIS:
+        rotary_axis = module.axis
+    else:
+        rotary_axis = Axis.Y
+    return RotaryAxisConfig(Axis.Y, rotary_axis, module)
 
 
 class KinematicMapping:
