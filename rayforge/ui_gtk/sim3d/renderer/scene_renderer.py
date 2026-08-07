@@ -8,7 +8,8 @@ resource creation, rebuilds and theme/colour application to this class.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Protocol, Tuple
 
 import numpy as np
 
@@ -65,6 +66,51 @@ def match_overlay_layer(
         if ol.is_rotary == is_rotary:
             return ol
     return None
+
+
+class UploadItem(Protocol):
+    """A single unit of work in a chunked scene upload."""
+
+    def upload(self) -> None:
+        """Uploads this item's data into its renderer."""
+        raise NotImplementedError
+
+
+@dataclass
+class OpsLayerUploadItem:
+    """Uploads a vertex layer into an ops renderer."""
+
+    renderer: "OpsRenderer"
+    vertex_layer: VertexLayer
+    show_travel_moves: bool
+
+    def upload(self) -> None:
+        self.renderer.update_from_vertex_layer(
+            self.vertex_layer, self.show_travel_moves
+        )
+
+
+@dataclass
+class OverlayLayerUploadItem:
+    """Uploads an overlay layer into a ring renderer."""
+
+    renderer: "RingBufferRenderer"
+    overlay_layer: ScanlineOverlayLayer
+
+    def upload(self) -> None:
+        self.renderer.update_from_overlay_layer(self.overlay_layer)
+
+
+@dataclass
+class TextureUploadItem:
+    """Uploads the artifact's texture layers into the texture renderer."""
+
+    renderer: Optional["TextureArtifactRenderer"]
+    artifact: CompiledSceneArtifact
+
+    def upload(self) -> None:
+        if self.renderer is not None:
+            self.renderer.update_from_artifact(self.artifact)
 
 
 class SceneRenderer(BaseRenderer):
@@ -421,7 +467,7 @@ class SceneRenderer(BaseRenderer):
 
     def prepare_chunked_upload(
         self, artifact: CompiledSceneArtifact, show_travel_moves: bool
-    ) -> List:
+    ) -> List[UploadItem]:
         """Creates fresh per-layer renderers and returns upload items."""
         for renderer in self.ops_renderers:
             renderer.cleanup()
@@ -430,13 +476,13 @@ class SceneRenderer(BaseRenderer):
         self.ops_renderers.clear()
         self.ring_renderers.clear()
 
-        upload_items: List[Any] = [("color_luts",)]
+        upload_items: List[UploadItem] = []
 
         for vl in artifact.vertex_layers:
             ops = OpsRenderer(is_rotary=vl.is_rotary)
             ops.init_gl()
             self.ops_renderers.append(ops)
-            upload_items.append(("ops", ops, vl, show_travel_moves))
+            upload_items.append(OpsLayerUploadItem(ops, vl, show_travel_moves))
 
             ring = RingBufferRenderer(is_rotary=vl.is_rotary)
             ring.init_gl()
@@ -445,12 +491,25 @@ class SceneRenderer(BaseRenderer):
         for ol in artifact.overlay_layers:
             for ring in self.ring_renderers:
                 if ring.is_rotary == ol.is_rotary:
-                    upload_items.append(("overlay", ring, ol))
+                    upload_items.append(OverlayLayerUploadItem(ring, ol))
                     break
 
-        upload_items.append(("textures", artifact))
+        upload_items.append(TextureUploadItem(self.texture_renderer, artifact))
         self._rebuild_registry()
         return upload_items
+
+    def upload_chunk(self, item: UploadItem) -> None:
+        """Processes one prepared per-layer upload item."""
+        item.upload()
+
+    def clear_layers(self) -> None:
+        """Clears all per-layer ops/ring/texture GPU buffers."""
+        for renderer in self.ops_renderers:
+            renderer.clear()
+        for renderer in self.ring_renderers:
+            renderer.clear()
+        if self.texture_renderer:
+            self.texture_renderer.clear()
 
     def extract_playback_offsets(self, artifact: CompiledSceneArtifact):
         """Stores each renderer's playback offsets from an artifact."""

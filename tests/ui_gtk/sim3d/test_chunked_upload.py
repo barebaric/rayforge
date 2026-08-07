@@ -10,7 +10,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from rayforge.ui_gtk.sim3d.chunked_upload import ChunkedUploadController
+from rayforge.ui_gtk.sim3d.chunked_upload import (
+    ChunkedUploadController,
+    _UploadState,
+)
 
 
 def _make_controller(artifact=None, gl_initialized=True):
@@ -49,6 +52,7 @@ def test_start_without_artifact_clears_renderers(ui_context_initializer):
     controller, scene, rendered, _, _, _ = _make_controller(artifact=None)
     controller.start()
     scene.prepare_chunked_upload.assert_not_called()
+    scene.clear_layers.assert_called_once()
     assert rendered == [True]
 
 
@@ -70,7 +74,7 @@ def test_start_prepares_upload_and_schedules_idle(ui_context_initializer):
     controller.start()
     scene.prepare_chunked_upload.assert_called_once()
     assert made_current == [True]
-    assert controller._upload_state == {"items": [], "index": 0}
+    assert controller._upload_state == _UploadState(items=[], index=0)
     assert controller._idle_source_id is not None
 
 
@@ -97,23 +101,27 @@ def test_cancel_clears_state(ui_context_initializer):
 
 
 @pytest.mark.ui
-def test_step_dispatch_kinds(ui_context_initializer):
-    controller, scene, _, luts_called, uploads, _ = _make_controller(
+def test_step_uploads_items(ui_context_initializer):
+    controller, scene, _, _, uploads, _ = _make_controller(
         artifact=MagicMock()
     )
-    controller._upload_state = {
-        "items": [
-            ("color_luts",),
-            ("textures", MagicMock()),
-        ],
-        "index": 0,
-    }
+    item = MagicMock()
+    controller._upload_state = _UploadState(items=[item], index=0)
     controller._step()
     controller._step()
-    controller._step()
-    assert luts_called == [True]
+    scene.upload_chunk.assert_called_once_with(item)
     assert uploads == [True]
     assert controller._upload_state is None
+
+
+@pytest.mark.ui
+def test_start_uploads_luts_after_prepare(ui_context_initializer):
+    controller, scene, _, luts_called, _, _ = _make_controller(
+        artifact=MagicMock()
+    )
+    controller.start()
+    assert luts_called == [True]
+    scene.prepare_chunked_upload.assert_called_once()
 
 
 @pytest.mark.ui
