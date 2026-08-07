@@ -1,15 +1,13 @@
 """
 Document/model signal hub for the 3D canvas.
 
-Owns the machine, document, and pipeline signal subscriptions, the
-viewport (re)build on WCS/layer changes, and the active-layer WCS
-tracking.  The canvas asks the hub to refresh the viewport through
-callbacks and keeps scene compilation out of this module.
+Owns the machine and document signal subscriptions, the viewport (re)build
+on WCS/layer changes, and the active-layer WCS tracking.  The canvas asks
+the hub to refresh the viewport through callbacks and keeps scene
+compilation out of this module.
 """
 
 from typing import TYPE_CHECKING, Callable, Optional
-
-from ...pipeline.artifact.handle import BaseArtifactHandle
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -20,7 +18,7 @@ if TYPE_CHECKING:
 
 class DocSignalHub:
     """
-    Manages the machine/doc/pipeline signal wiring and WCS viewport math.
+    Manages the machine/doc signal wiring and WCS viewport math.
 
     Signal handlers that need scene state are provided as callbacks so the
     hub stays a pure subscription/viewport module.
@@ -36,9 +34,6 @@ class DocSignalHub:
         request_render: Callable[[], None],
         refresh_scene: Callable[[], None],
         get_gl_initialized: Callable[[], bool],
-        get_job_handle: Callable[[], Optional[BaseArtifactHandle]],
-        on_pipeline_state_changed: Callable[..., None],
-        on_job_generation_finished: Callable[..., None],
     ):
         self._context = context
         self._doc_editor = doc_editor
@@ -47,9 +42,6 @@ class DocSignalHub:
         self._request_render = request_render
         self._refresh_scene = refresh_scene
         self._get_gl_initialized = get_gl_initialized
-        self._get_job_handle = get_job_handle
-        self._on_pipeline_state_changed = on_pipeline_state_changed
-        self._on_job_generation_finished = on_job_generation_finished
 
         self._active_layer_wcs_conn = None
 
@@ -70,13 +62,6 @@ class DocSignalHub:
             return self.doc.active_layer.rotary_enabled
         return False
 
-    def has_stale_job(self) -> bool:
-        """True if the cached job handle is from an older generation."""
-        handle = self._get_job_handle()
-        if handle is None:
-            return True
-        return handle.generation_id != self.pipeline.data_generation_id
-
     def connect(self):
         """Subscribe to the machine and doc signals."""
         machine = self._context.machine
@@ -88,19 +73,8 @@ class DocSignalHub:
         self.doc.active_layer_changed.connect(self._on_active_layer_changed)
         self._connect_active_layer_wcs()
 
-    def connect_pipeline(self):
-        """Subscribe to the pipeline signals."""
-        if self.pipeline:
-            self.pipeline.processing_state_changed.connect(
-                self._on_pipeline_state_changed
-            )
-            self.pipeline.job_generation_finished.connect(
-                self._on_job_generation_finished
-            )
-
     def disconnect(self):
-        """Unsubscribe from the machine, doc, and pipeline signals."""
-        self._disconnect_pipeline()
+        """Unsubscribe from the machine and doc signals."""
         self._disconnect_active_layer_wcs()
         self.doc.active_layer_changed.disconnect(self._on_active_layer_changed)
 
@@ -108,15 +82,6 @@ class DocSignalHub:
         if machine:
             machine.wcs_updated.disconnect(self._on_wcs_updated)
             machine.changed.disconnect(self._on_wcs_updated)
-
-    def _disconnect_pipeline(self):
-        if self.pipeline:
-            self.pipeline.processing_state_changed.disconnect(
-                self._on_pipeline_state_changed
-            )
-            self.pipeline.job_generation_finished.disconnect(
-                self._on_job_generation_finished
-            )
 
     def set_machine(self, viewport: Optional["ViewportConfig"] = None):
         """Reconnect the machine signals and refresh the viewport."""

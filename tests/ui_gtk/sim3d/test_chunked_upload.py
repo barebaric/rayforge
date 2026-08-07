@@ -18,8 +18,11 @@ def _make_controller(artifact=None, gl_initialized=True):
     scene.prepare_chunked_upload.return_value = []
     rendered = []
     luts_called = []
-    op_player_called = []
+    uploads = []
     made_current = []
+
+    def _on_upload_complete(sender):
+        uploads.append(True)
 
     controller = ChunkedUploadController(
         scene,
@@ -29,14 +32,14 @@ def _make_controller(artifact=None, gl_initialized=True):
         make_current=lambda: made_current.append(True),
         request_render=lambda: rendered.append(True),
         on_luts_required=lambda: luts_called.append(True),
-        on_op_player_required=lambda: op_player_called.append(True),
     )
+    controller.upload_complete.connect(_on_upload_complete, weak=False)
     return (
         controller,
         scene,
         rendered,
         luts_called,
-        op_player_called,
+        uploads,
         made_current,
     )
 
@@ -95,13 +98,13 @@ def test_cancel_clears_state(ui_context_initializer):
 
 @pytest.mark.ui
 def test_step_dispatch_kinds(ui_context_initializer):
-    controller, scene, _, luts_called, op_player_called, _ = _make_controller(
+    controller, scene, _, luts_called, uploads, _ = _make_controller(
         artifact=MagicMock()
     )
     controller._upload_state = {
         "items": [
             ("color_luts",),
-            ("op_player",),
+            ("textures", MagicMock()),
         ],
         "index": 0,
     }
@@ -109,7 +112,7 @@ def test_step_dispatch_kinds(ui_context_initializer):
     controller._step()
     controller._step()
     assert luts_called == [True]
-    assert op_player_called == [True]
+    assert uploads == [True]
     assert controller._upload_state is None
 
 

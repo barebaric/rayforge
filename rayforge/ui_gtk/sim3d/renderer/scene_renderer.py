@@ -401,7 +401,6 @@ class SceneRenderer(BaseRenderer):
                     break
 
         upload_items.append(("textures", artifact))
-        upload_items.append(("op_player",))
         self._rebuild_registry()
         return upload_items
 
