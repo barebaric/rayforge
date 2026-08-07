@@ -2,7 +2,6 @@ import logging
 import math
 from typing import (
     TYPE_CHECKING,
-    Any,
     Dict,
     List,
     Optional,
@@ -16,20 +15,16 @@ from gi.repository import Gdk, GLib, Graphene, Gtk
 
 from ...camera.controller import CameraController
 from ...context import get_context
-from ...core.color import OPS_COLOR_SPEC, ColorRGBA, ColorSet, hex_to_rgba
+from ...core.color import ColorRGBA, hex_to_rgba
 from ...core.group import Group
 from ...core.item import DocItem
 from ...core.layer import Layer
 from ...core.stock import StockItem
 from ...core.stock_asset import StockAsset
 from ...core.workpiece import WorkPiece
-from ...image.util.srgb import create_lut_from_color
-from ...machine.models.colors import OpsColorSet
-from ...machine.models.laser import LaserHead
 from ...machine.models.machine import Machine
 from ...pipeline.artifact import RenderContext
 from ..canvas import Canvas, CanvasElement, WorldSurface
-from ..shared.gtk_color import GtkColorResolver
 from ..shared.keyboard import is_primary_modifier
 from . import context_menu
 from .elements.axis_extent_frame import (
@@ -916,80 +911,27 @@ class WorkSurface(WorldSurface):
             )
             return
 
-        color_set_dict = self._get_theme_color_dict()
-        laser_color_dicts = self._get_laser_color_dicts()
-        layer_color_dicts = self._get_layer_color_dicts()
-        ops_color_mode = get_context().config.ops_color_mode
+        theme = get_context().theme
+        theme.set_machine(self.machine)
+        theme.set_doc(self.doc)
+        color_set = theme.color_set
+        if color_set is None:
+            return
 
         context = RenderContext(
             pixels_per_mm=(ppm_x, ppm_y),
             show_travel_moves=self._show_travel_moves,
             margin_px=5,
-            color_set_dict=color_set_dict.to_dict(),
-            laser_color_sets=laser_color_dicts,
-            layer_color_sets=layer_color_dicts,
-            ops_color_mode=ops_color_mode,
+            color_set_dict=color_set.to_dict(),
+            laser_color_sets={
+                uid: cs.to_dict() for uid, cs in theme.laser_color_sets.items()
+            },
+            layer_color_sets={
+                uid: cs.to_dict() for uid, cs in theme.layer_color_sets.items()
+            },
+            ops_color_mode=get_context().config.ops_color_mode,
         )
-
         self.editor.view_manager.update_render_context(context)
-
-    def _get_laser_color_dicts(self) -> Dict[str, Dict[str, Any]]:
-        """
-        Resolve colors for each laser in the machine.
-
-        Returns a dictionary mapping laser UID to its color set dictionary.
-        """
-        if not self.machine:
-            return {}
-
-        theme_colors = self._get_theme_color_dict()
-        laser_colors: Dict[str, Dict[str, Any]] = {}
-
-        for laser in self.machine.heads:
-            if not isinstance(laser, LaserHead):
-                continue
-            laser_color_set = OpsColorSet.from_laser(laser, theme_colors)
-            laser_colors[laser.uid] = laser_color_set.to_color_set().to_dict()
-
-        return laser_colors
-
-    def _get_layer_color_dicts(self) -> Dict[str, Dict[str, Any]]:
-        """
-        Resolve colors for each layer in the document.
-
-        Returns a dictionary mapping layer UID to its color set dictionary.
-        """
-        doc = self.doc
-        if not doc:
-            return {}
-
-        theme_colors = self._get_theme_color_dict()
-        layer_colors: Dict[str, Dict[str, Any]] = {}
-
-        for layer in doc.layers:
-            cut_rgba = hex_to_rgba(layer.color)
-            cut_lut = create_lut_from_color(cut_rgba)
-            data = {
-                "cut": cut_lut,
-                "engrave": cut_lut,
-                "travel": theme_colors.get_rgba("travel"),
-                "zero_power": theme_colors.get_rgba("zero_power"),
-            }
-            color_set = ColorSet(_data=data)
-            layer_colors[layer.uid] = color_set.to_dict()
-
-        return layer_colors
-
-    def _get_theme_color_dict(self) -> ColorSet:
-        """
-        Gets the current theme color set as a dictionary.
-
-        This method extracts the color set from the current GTK style
-        and converts it to a dictionary format suitable for the pipeline.
-        """
-        color_resolver = GtkColorResolver(self)
-
-        return color_resolver.resolve(OPS_COLOR_SPEC)
 
     def _get_handle_color(self, elem: CanvasElement) -> Optional[ColorRGBA]:
         """Returns the layer color for the element's selection handles."""

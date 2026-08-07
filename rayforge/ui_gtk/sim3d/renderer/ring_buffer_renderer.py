@@ -13,7 +13,7 @@ import numpy as np
 from OpenGL import GL
 
 from ....simulator.scene3d import ScanlineOverlayLayer
-from ..color_lut_provider import ColorLutProvider
+from ...shared.color_lut_provider import ColorLutProvider
 from ..gl_utils import RenderContext, ShaderSet, set_line_width
 from .base import BaseRenderer
 

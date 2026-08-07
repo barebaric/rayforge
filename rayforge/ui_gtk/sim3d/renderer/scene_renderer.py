@@ -17,7 +17,7 @@ from ....shared.units.formatter import (
     get_preferred_unit_factor,
 )
 from ....simulator.scene3d import CompiledSceneArtifact
-from ..color_lut_provider import ColorLutProvider
+from ...shared.color_lut_provider import ColorLutProvider
 from ..gl_state import render_pass
 from ..gl_utils import LayerRenderer, RenderContext, ShaderSet
 from ..layer_renderer_group import (

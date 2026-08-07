@@ -11,7 +11,7 @@ from OpenGL import GL
 
 from ....pipeline.artifact.base import TextureData
 from ....simulator.scene3d import CompiledSceneArtifact, TextureLayer
-from ..color_lut_provider import ColorLutProvider
+from ...shared.color_lut_provider import ColorLutProvider
 from ..gl_utils import RenderContext, ShaderSet
 from .base import BaseRenderer
 

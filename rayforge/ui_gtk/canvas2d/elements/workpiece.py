@@ -8,7 +8,6 @@ from gi.repository import Gdk, GLib
 from raygeo.geo import Arc, Bezier, Geometry, Line, Matrix, Move
 from raygeo.image.composite import composite_views_into
 
-from ....core.color import OPS_COLOR_SPEC, ColorSet, ColorSpecDict
 from ....core.step import Step
 from ....core.workpiece import WorkPiece
 from ....pipeline.artifact import (
@@ -16,7 +15,6 @@ from ....pipeline.artifact import (
     WorkPieceArtifact,
 )
 from ...canvas import CanvasElement
-from ...shared.gtk_color import GtkColorResolver
 from ..ops_cache_registry import registry
 from .tab_handle import TabHandleElement
 
@@ -135,9 +133,6 @@ class WorkPieceElement(CanvasElement):
         # Default to False; the correct state will be pulled from the surface.
         self._tabs_visible_override: bool = False
 
-        self._color_spec: ColorSpecDict = OPS_COLOR_SPEC
-        self._color_set: Optional[ColorSet] = None
-        self._last_style_context_hash = -1
         self._rendered_ppm: float = 0.0
 
         # The element's geometry is a 1x1 unit square.
@@ -1077,29 +1072,6 @@ class WorkPieceElement(CanvasElement):
         if self.canvas:
             self.canvas.queue_draw()
 
-    def _resolve_colors_if_needed(self):
-        """
-        Creates or updates the ColorSet if the theme has changed. This
-        should be called before any rendering operation.
-        """
-        if not self.canvas:
-            return
-
-        # A simple hash check to see if the style context has changed.
-        # This is not perfect but good enough to detect theme switches.
-        style_context = self.canvas.get_style_context()
-        current_hash = hash(style_context)
-        if (
-            self._color_set is None
-            or current_hash != self._last_style_context_hash
-        ):
-            logger.debug(
-                "Resolving colors for WorkPieceElement due to theme change."
-            )
-            resolver = GtkColorResolver(self.canvas)
-            self._color_set = resolver.resolve(self._color_spec)
-            self._last_style_context_hash = current_hash
-
     def _on_model_content_changed(self, workpiece: WorkPiece):
         """Handler for when the workpiece model's content changes."""
         logger.debug(
@@ -1227,7 +1199,6 @@ class WorkPieceElement(CanvasElement):
             return
 
         # Draw view artifacts (complete, pre-rendered bitmaps)
-        self._resolve_colors_if_needed()
         world_w, world_h = self.data.size
 
         if world_w < 1e-9 or world_h < 1e-9:

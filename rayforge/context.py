@@ -68,6 +68,22 @@ class RayforgeContext:
         self._recipe_mgr: Optional["RecipeManager"] = None
         self._device_profile_mgr: Optional["DeviceProfileManager"] = None
         self._color_preset_mgr: Optional["ColorPresetManager"] = None
+        self._theme_service = None
+
+    @property
+    def theme(self):
+        """
+        Returns the shared theme colour service.
+
+        The service is created lazily on first access (deferred import so
+        GTK is never imported eagerly in headless/worker processes) and
+        bound to a widget by the main window on realize.
+        """
+        if self._theme_service is None:
+            from .ui_gtk.shared.theme_service import ThemeColorService
+
+            self._theme_service = ThemeColorService()
+        return self._theme_service
 
     @property
     def machine(self) -> Optional["Machine"]:
