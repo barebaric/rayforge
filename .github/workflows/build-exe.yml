@@ -146,7 +146,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: rayforge-v${{ needs.build.outputs.version }}-windows-bundle
 
@@ -198,7 +198,7 @@ jobs:
           fi
 
       - name: Download Installer Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           # For the release, we use the installer artifact
           name: rayforge-v${{ needs.build.outputs.version }}-installer.zip
