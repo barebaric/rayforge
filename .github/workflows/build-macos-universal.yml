@@ -348,7 +348,7 @@ jobs:
           name: rayforge-${{ needs.version.outputs.version }}-macos-universal-dmg
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             rayforge-${{ needs.version.outputs.version }}-macos-intel-app.zip
