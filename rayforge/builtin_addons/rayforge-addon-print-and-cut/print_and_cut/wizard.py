@@ -16,7 +16,7 @@ from rayforge.ui_gtk.machine.jog_widget import JogWidget
 from rayforge.ui_gtk.shared.patched_dialog_window import (
     PatchedDialogWindow,
 )
-from rayforge.ui_gtk.shared.pref_rows.length_spin_row import LengthSpinRow
+from rayforge.ui_gtk.shared.pref_rows import LengthSpinRow
 
 from .pick_surface import PickSurface
 

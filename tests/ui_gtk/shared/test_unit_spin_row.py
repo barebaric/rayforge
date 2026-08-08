@@ -9,17 +9,15 @@ gi.require_version("Adw", "1")
 import pytest
 from gi.repository import Adw
 
-from rayforge.ui_gtk.shared.pref_rows.acceleration_spin_row import (
+from rayforge.ui_gtk.shared.pref_rows import (
     AccelerationSpinRow,
-)
-from rayforge.ui_gtk.shared.pref_rows.angle_spin_row import AngleSpinRow
-from rayforge.ui_gtk.shared.pref_rows.base import SpinRow
-from rayforge.ui_gtk.shared.pref_rows.length_choice_spin_row import (
+    AngleSpinRow,
     LengthChoiceSpinRow,
+    LengthSpinRow,
+    SpeedSpinRow,
+    SpinRow,
+    UnitSpinRow,
 )
-from rayforge.ui_gtk.shared.pref_rows.length_spin_row import LengthSpinRow
-from rayforge.ui_gtk.shared.pref_rows.speed_spin_row import SpeedSpinRow
-from rayforge.ui_gtk.shared.pref_rows.unit_spin_row import UnitSpinRow
 
 
 @pytest.mark.ui

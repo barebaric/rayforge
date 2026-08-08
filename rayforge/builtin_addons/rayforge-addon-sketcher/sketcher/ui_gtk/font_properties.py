@@ -6,7 +6,7 @@ from gi.repository import Adw, Gtk, Pango
 from raygeo.geo.shape.text import FontConfig
 
 from rayforge.ui_gtk.icons import get_icon
-from rayforge.ui_gtk.shared.pref_rows.base import SpinRow
+from rayforge.ui_gtk.shared.pref_rows import SpinRow
 
 from ..core.commands.text_property import (
     ModifyTextPropertyCommand,
