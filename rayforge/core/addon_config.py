@@ -101,11 +101,18 @@ class AddonConfig:
         except IOError as e:
             logger.error(f"Failed to save addon config: {e}")
 
-    def get_state(self, addon_name: str) -> str:
-        """Get the state of an addon. Defaults to ENABLED."""
+    def get_state(self, addon_name: str, default: Optional[str] = None) -> str:
+        """
+        Get the state of an addon.
+
+        Args:
+            addon_name: The canonical name of the addon.
+            default: The state to return if no config entry exists.
+                If None, defaults to ENABLED.
+        """
         entry = self._entries.get(addon_name)
         if entry is None:
-            return AddonState.ENABLED
+            return default if default is not None else AddonState.ENABLED
         if entry.state not in (AddonState.ENABLED, AddonState.DISABLED):
             logger.warning(
                 f"Invalid state '{entry.state}' for addon '{addon_name}', "

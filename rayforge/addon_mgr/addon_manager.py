@@ -621,7 +621,10 @@ class AddonManager:
                 return
 
             if self.addon_config:
-                state = self.addon_config.get_state(addon_name)
+                state = self.addon_config.get_state(
+                    addon_name,
+                    default=addon.metadata.default_state,
+                )
                 if state == ConfigAddonState.DISABLED:
                     logger.info(
                         f"Addon '{addon_name}' is disabled, skipping load"
