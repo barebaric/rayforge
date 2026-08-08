@@ -95,12 +95,12 @@ class MockSmoothieServer:
                     except (OSError, AttributeError):
                         pass
                     sock.close()
-            except Exception:
+            except (OSError, AttributeError):
                 pass
 
             try:
                 writer.close()
-            except Exception:
+            except OSError:
                 pass
 
         # 3. Cancel all client tasks
@@ -183,7 +183,7 @@ class MockSmoothieServer:
             try:
                 writer.close()
                 await writer.wait_closed()
-            except Exception:
+            except OSError:
                 pass
 
 

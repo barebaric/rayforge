@@ -273,7 +273,7 @@ class PdfVectorImporter(Importer):
             try:
                 self._doc.close()
             except Exception:
-                pass
+                logger.debug("Failed to close PDF document", exc_info=True)
             self._doc = None
             self._page = None
 

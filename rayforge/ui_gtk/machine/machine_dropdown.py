@@ -175,7 +175,7 @@ class MachineDropdown(Gtk.DropDown):
         for ref in list_item._signal_refs:
             try:
                 ref[0].disconnect(ref[1])
-            except (TypeError, Exception):
+            except TypeError:
                 pass
 
         refs = []
@@ -208,7 +208,7 @@ class MachineDropdown(Gtk.DropDown):
         for ref in list_item._signal_refs:
             try:
                 ref[0].disconnect(ref[1])
-            except (TypeError, Exception):
+            except TypeError:
                 pass
         list_item._signal_refs = []
 

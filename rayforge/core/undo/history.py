@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterator
 from contextlib import contextmanager
 
@@ -7,6 +8,8 @@ from blinker import Signal
 
 from .command import Command
 from .composite_cmd import CompositeCommand
+
+logger = logging.getLogger(__name__)
 
 # Maximum time in seconds between two commands to be considered for coalescing.
 COALESCE_THRESHOLD = 0.5
@@ -137,7 +140,7 @@ class HistoryManager:
                 except Exception:
                     # Best effort: log this secondary error. For now, we
                     # continue.
-                    pass
+                    logger.exception("Secondary error during undo")
             self.abort_transaction()
             # The state has changed due to the undos, so we signal.
             self.changed.send(self, command=None)

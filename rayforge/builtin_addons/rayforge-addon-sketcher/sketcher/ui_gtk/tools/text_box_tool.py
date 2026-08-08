@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, cast
 
 import cairo
 from blinker import Signal
+from gi.repository import Gdk, GLib
 from raygeo.geo.shape.polygon import is_point_inside_polygon
 from raygeo.geo.shape.text import text_to_geometry
 
@@ -561,8 +562,6 @@ class TextBoxTool(SketchTool):
             self.element.mark_dirty()
             return True
         elif key == SketcherKey.COPY and ctrl:
-            from gi.repository import Gdk
-
             display = Gdk.Display.get_default()
             if display is None:
                 return True
@@ -570,8 +569,6 @@ class TextBoxTool(SketchTool):
             clipboard.set(self.get_selected_text())
             return True
         elif key == SketcherKey.CUT and ctrl:
-            from gi.repository import Gdk
-
             display = Gdk.Display.get_default()
             if display is None:
                 return True
@@ -595,8 +592,6 @@ class TextBoxTool(SketchTool):
                     )
             return True
         elif key == SketcherKey.PASTE and ctrl:
-            from gi.repository import Gdk
-
             display = Gdk.Display.get_default()
             if display is None:
                 return True
@@ -631,7 +626,7 @@ class TextBoxTool(SketchTool):
                             self.live_edit_cmd.capture_state(
                                 self.text_buffer, self.cursor_pos
                             )
-                except Exception:
+                except GLib.Error:
                     pass
 
             clipboard.read_text_async(None, on_paste_ready)

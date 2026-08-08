@@ -73,7 +73,7 @@ class MockUdpServer:
                 await self._listen_task
             except asyncio.CancelledError:
                 pass
-            except Exception:
+            except OSError:
                 pass
 
     async def _listen_loop(self):

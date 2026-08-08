@@ -142,7 +142,9 @@ class NoDeviceDriver(Driver):
                         await result
                 except Exception:
                     # Don't let callback exceptions stop execution
-                    pass
+                    logger.debug(
+                        "Job callback raised on op %d", op_index, exc_info=True
+                    )
         self.job_finished.send(self)
 
     async def run_raw(self, machine_code: str) -> None:

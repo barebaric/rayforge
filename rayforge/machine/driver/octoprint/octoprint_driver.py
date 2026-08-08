@@ -275,7 +275,7 @@ class OctoPrintDriver(Driver):
                     self._user_name = login.get("name")
                     return
             except Exception:
-                pass
+                logger.debug("Passive login attempt failed", exc_info=True)
 
         self.state.error = DeviceError(
             code=403,
