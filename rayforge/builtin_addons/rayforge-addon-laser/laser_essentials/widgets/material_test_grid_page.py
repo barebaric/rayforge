@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 from gi.repository import Adw, GLib, GObject, Gtk
 
 from rayforge.machine.models.laser import LaserHead
-from rayforge.ui_gtk.shared.pref_rows.base import SpinRow
+from rayforge.ui_gtk.shared.pref_rows import SpinRow
 from rayforge.ui_gtk.shared.slider import create_slider_row
 
 from ..material_test_helpers import GridMode
