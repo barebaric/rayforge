@@ -401,8 +401,7 @@ class ScenePresenter:
         logger.debug(
             "[CANVAS3D] Scanline overlay uploaded. Groups: {}".format(
                 ", ".join(
-                    "%s:%d"
-                    % (
+                    "{}:{}".format(
                         "rot" if r.is_rotary else "flat",
                         r.vertex_count,
                     )

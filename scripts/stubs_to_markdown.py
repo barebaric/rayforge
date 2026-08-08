@@ -409,7 +409,7 @@ def extract_params(
         type_str = f"{ann}" if ann else ""
         if def_str:
             type_str = (
-                f"{type_str}{def_str}" if type_str else def_str.strip(" = ")
+                f"{type_str}{def_str}" if type_str else def_str.strip(" =")
             )
         params.append({"name": arg.arg, "type": type_str})
 

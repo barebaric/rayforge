@@ -2,7 +2,7 @@ import logging
 import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional
 
 import semver
 import yaml
@@ -117,7 +117,7 @@ class AddonProvides:
     assets: list[dict[str, str]] = field(default_factory=list)
 
 
-VersionType = Union[str, object]
+VersionType = str | object
 
 
 @dataclass

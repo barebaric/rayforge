@@ -54,7 +54,7 @@ def run_script(script_path: Path, application, window):
         try:
             with open(script_path, "r") as f:
                 code = compile(f.read(), str(script_path), "exec")
-            exec(code, script_globals)
+            exec(code, script_globals)  # noqa: S102
         except Exception as e:
             logger.error(f"Error executing UI script: {e}")
             traceback.print_exc()

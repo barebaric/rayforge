@@ -44,7 +44,7 @@ class DocItemPropertiesWidget(Gtk.Box):
         *args,
         **kwargs,
     ):
-        super().__init__(orientation=Gtk.Orientation.VERTICAL, *args, **kwargs)
+        super().__init__(*args, orientation=Gtk.Orientation.VERTICAL, **kwargs)
 
         self.editor = editor
         self.items: list[DocItem] = []

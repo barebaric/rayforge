@@ -220,7 +220,7 @@ class TestVar:
         data = vs.to_dict(include_value=True)
         restored = VarSet.from_dict(data)
 
-        assert "name" in restored.keys()
+        assert "name" in restored.keys()  # noqa: SIM118
         restored_var = restored.get("name")
         assert restored_var is not None
         assert restored_var.value == "world"

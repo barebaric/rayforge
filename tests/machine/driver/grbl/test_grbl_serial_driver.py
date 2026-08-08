@@ -383,7 +383,8 @@ class TestGrblSerialDriver:
         settings = settings_read_mock.call_args.kwargs["settings"]
 
         step_pulse_varset = next(
-            (s for s in settings if "0" in s.keys()), None
+            (s for s in settings if "0" in s.keys()),  # noqa: SIM118
+            None,
         )
         assert step_pulse_varset is not None
         assert step_pulse_varset["0"].value == "10"

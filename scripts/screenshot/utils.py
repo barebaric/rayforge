@@ -383,7 +383,7 @@ def wait_for_3d_rendered(win: "MainWindow", timeout: float = 15.0) -> bool:
             time.sleep(0.1)
             continue
 
-        ready = run_on_main_thread(lambda: canvas.scene_is_ready())
+        ready = run_on_main_thread(lambda c=canvas: c.scene_is_ready())
         if ready:
             time.sleep(0.3)
             logger.info("3D scene is compiled and rendered")

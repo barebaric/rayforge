@@ -155,7 +155,7 @@ class TestColorSetImmutability:
     def test_frozen_dataclass(self):
         colorset = ColorSet(_data={"color": (1.0, 0.0, 0.0, 1.0)})
 
-        with pytest.raises(Exception):
+        with pytest.raises(AttributeError):
             colorset._data = {}
 
 

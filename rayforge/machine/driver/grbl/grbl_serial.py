@@ -1232,7 +1232,7 @@ class GrblSerialDriver(Driver):
         key_to_varset_map = {
             var_key: varset
             for varset in known_varsets
-            for var_key in varset.keys()
+            for var_key in varset.keys()  # noqa: SIM118
         }
 
         unknown_vars = VarSet(

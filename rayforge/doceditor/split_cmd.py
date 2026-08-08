@@ -58,7 +58,7 @@ class SplitCmd:
     def split_items(
         self,
         items: list[WorkPiece],
-        strategy: SplitStrategy = ConnectivitySplitStrategy(),
+        strategy: SplitStrategy | None = None,
     ) -> list[DocItem]:
         """
         Splits the provided items into multiple fragments based on the given
@@ -73,6 +73,8 @@ class SplitCmd:
         Returns:
             A list of the newly created items.
         """
+        if strategy is None:
+            strategy = ConnectivitySplitStrategy()
         if not items:
             return []
 

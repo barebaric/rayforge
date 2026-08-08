@@ -457,7 +457,7 @@ class WorkPiece(DocItem):
         Accessing this property triggers boundary computation, which also
         populates the fills cache.
         """
-        self.boundaries
+        _ = self.boundaries  # trigger boundary computation
         return self._fills_cache
 
     @property

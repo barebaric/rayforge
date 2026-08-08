@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import numpy as np
 import pytest
@@ -127,7 +127,7 @@ def test_set_calibration_result():
         dtype=np.float64,
     )
     distortion_coeffs = np.array([-0.1, 0.05, 0.001, -0.002, 0.02])
-    calibration_date = datetime(2024, 1, 15, 10, 30, 0)
+    calibration_date = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
 
     result = CalibrationResult(
         camera_matrix=camera_matrix,
@@ -220,7 +220,7 @@ def test_to_from_json_with_calibration():
         dtype=np.float64,
     )
     distortion_coeffs = np.array([-0.1, 0.05, 0.001, -0.002, 0.02])
-    calibration_date = datetime(2024, 1, 15, 10, 30, 0)
+    calibration_date = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
 
     result = CalibrationResult(
         camera_matrix=camera_matrix,

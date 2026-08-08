@@ -7,13 +7,15 @@ transparent localization of text content.
 
 import gettext
 import locale
+import logging
 import os
 from pathlib import Path
-from typing import Union
+
+logger = logging.getLogger(__name__)
 
 SUPPORTED_LANGUAGES = ["en", "de", "es", "fr", "pt", "uk", "zh_CN"]
 
-LocalizedString = Union[str, dict[str, str]]
+LocalizedString = str | dict[str, str]
 
 
 def _get_context_language() -> str | None:
@@ -277,6 +279,12 @@ class _AddonDomainChain:
             try:
                 addon_result = translator.gettext(msg)
             except Exception:
+                logger.debug(
+                    "Translator %s failed for %r",
+                    translator,
+                    msg,
+                    exc_info=True,
+                )
                 continue
             # An empty translation usually means the .mo file was
             # compiled with empty msgstr entries (untranslated). Treat

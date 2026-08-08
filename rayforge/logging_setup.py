@@ -1,3 +1,4 @@
+# ruff: noqa: LOG015
 import logging
 import sys
 from datetime import datetime

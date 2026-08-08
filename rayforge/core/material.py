@@ -4,14 +4,14 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Union, cast
+from typing import Any, cast
 
 import yaml
 
 from ..shared.util.localized import LocalizedField
 
 # Accept both plain strings and LocalizedField as input
-LocalizedInput = Union[str, LocalizedField]
+LocalizedInput = str | LocalizedField
 
 logger = logging.getLogger(__name__)
 

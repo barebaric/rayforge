@@ -26,8 +26,8 @@ class TestVarSet:
         ]
         vs = VarSet(vars=vars_list)
         assert len(vs) == 2
-        assert "a" in vs.keys()
-        assert "b" in vs.keys()
+        assert "a" in vs.keys()  # noqa: SIM118
+        assert "b" in vs.keys()  # noqa: SIM118
 
     def test_add_var(self):
         """Test adding a Var to the set."""
@@ -35,7 +35,7 @@ class TestVarSet:
         v = Var(key="test1", label="Test 1", var_type=str, default="abc")
         vs.add(v)
         assert len(vs) == 1
-        assert "test1" in vs.keys()
+        assert "test1" in vs.keys()  # noqa: SIM118
         assert vs["test1"] is v
 
     def test_add_duplicate_key(self):
@@ -239,7 +239,7 @@ class TestVarSet:
         assert rehydrated_vs.title == original_vs.title
         assert rehydrated_vs.description == original_vs.description
         assert len(rehydrated_vs) == len(original_vs)
-        for key in original_vs.keys():
+        for key in original_vs.keys():  # noqa: SIM118
             assert rehydrated_vs[key].to_dict() == original_vs[key].to_dict()
 
     def test_serialization_metadata_flag(self):
@@ -374,8 +374,8 @@ class TestVarSet:
 
         # --- Assert ---
         # 1. The VarSet's keys should be updated.
-        assert "new_key" in vs.keys()
-        assert "old_key" not in vs.keys()
+        assert "new_key" in vs.keys()  # noqa: SIM118
+        assert "old_key" not in vs.keys()  # noqa: SIM118
         assert sorted(vs.keys()) == ["new_key", "other_key"]
 
         # 2. Accessing by the new key should work.
