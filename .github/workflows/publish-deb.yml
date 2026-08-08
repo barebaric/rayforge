@@ -171,7 +171,7 @@ jobs:
           name: ${{ needs.publish-to-ppa.outputs.deb_filename }}
 
       - name: Attach .deb to GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: ${{ needs.publish-to-ppa.outputs.deb_filename }}
           draft: false
