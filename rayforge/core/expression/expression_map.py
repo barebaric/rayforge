@@ -45,7 +45,7 @@ class ExpressionMap:
             expr, _, fmt = key.partition(":")
             try:
                 result = eval(expr.strip(), self._namespace)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - arbitrary user expression
                 logger.debug(f"Failed to evaluate expression '{expr}': {e}")
                 return match.group(0)
             if fmt:

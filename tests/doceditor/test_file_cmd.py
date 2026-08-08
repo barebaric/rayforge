@@ -209,7 +209,8 @@ class TestScanImportFile:
 
         with (
             patch(
-                "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+                "rayforge.doceditor.file_cmd.importer_registry."
+                "get_by_mime_type",
                 return_value=None,
             ),
             patch(
@@ -697,7 +698,8 @@ class TestGetImporterInfo:
         mock_importer.features = {ImporterFeature.BITMAP_TRACING}
         with (
             patch(
-                "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+                "rayforge.doceditor.file_cmd.importer_registry."
+                "get_by_mime_type",
                 return_value=None,
             ),
             patch(
@@ -714,7 +716,8 @@ class TestGetImporterInfo:
         """Test case where no importer is found."""
         with (
             patch(
-                "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+                "rayforge.doceditor.file_cmd.importer_registry."
+                "get_by_mime_type",
                 return_value=None,
             ),
             patch(
@@ -792,7 +795,8 @@ class TestAnalyzeImportTarget:
         # Ensure no importers match
         with (
             patch(
-                "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+                "rayforge.doceditor.file_cmd.importer_registry."
+                "get_by_mime_type",
                 return_value=None,
             ),
             patch(

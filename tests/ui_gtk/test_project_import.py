@@ -31,7 +31,9 @@ logger = logging.getLogger(__name__)
 
 
 def process_events_for_duration(duration_sec: float):
-    """Processes all pending GTK events for a given duration without blocking."""
+    """
+    Processes all pending GTK events for a given duration without blocking.
+    """
     import time
 
     end_time = time.monotonic() + duration_sec

@@ -217,7 +217,12 @@ class AddonManager:
                 meta = AddonMetadata.from_registry_entry(addon_id, addon_data)
                 self._pick_compatible_version(meta)
                 result.append(meta)
-            except Exception as e:
+            except (
+                AddonValidationError,
+                ValueError,
+                KeyError,
+                TypeError,
+            ) as e:
                 logger.warning(
                     f"Failed to parse registry entry '{addon_id}': {e}"
                 )
@@ -265,7 +270,7 @@ class AddonManager:
                     return []
                 data = response.read()
                 parsed = yaml.safe_load(data)
-        except Exception as e:
+        except (OSError, TimeoutError, ValueError, yaml.YAMLError) as e:
             logger.error(f"Failed to fetch or parse registry: {e}")
             return []
 
@@ -285,7 +290,12 @@ class AddonManager:
                     )
                     self._pick_compatible_version(meta)
                     result.append(meta)
-                except Exception as e:
+                except (
+                    AddonValidationError,
+                    ValueError,
+                    KeyError,
+                    TypeError,
+                ) as e:
                     logger.warning(
                         "Failed to parse list-based registry entry '%s': %s",
                         addon_id,
@@ -360,7 +370,7 @@ class AddonManager:
                     "Could not fetch remote registry for update check."
                 )
                 return []
-        except Exception as e:
+        except (OSError, TimeoutError, ValueError, yaml.YAMLError) as e:
             logger.error(f"Failed to fetch registry for update check: {e}")
             return []
 
@@ -487,7 +497,11 @@ class AddonManager:
                     )
                     name = addon.metadata.name
                     requires = list(addon.metadata.requires)
-                except Exception as e:
+                except (
+                    AddonValidationError,
+                    FileNotFoundError,
+                    RuntimeError,
+                ) as e:
                     logger.debug(
                         f"Could not pre-parse metadata for {child}: {e}"
                     )
@@ -767,7 +781,7 @@ class AddonManager:
                 self.loaded_addons[name] = addon
                 if name in self._load_errors:
                     del self._load_errors[name]
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - addon import boundary
             error_msg = str(e)
             logger.error(f"Error importing addon {name}: {e}")
             self._load_errors[name] = error_msg
@@ -926,13 +940,14 @@ class AddonManager:
             return self._download_addon_zip(git_url, dest)
 
         from git import Repo
+        from git.exc import GitError
 
         logger.info(f"Cloning {git_url} to staging area...")
         try:
             Repo.clone_from(git_url, dest)
             logger.info(f"Successfully cloned {git_url}")
             return True
-        except Exception as e:
+        except GitError as e:
             logger.error(f"Git clone failed: {e}")
             return False
 
@@ -1080,7 +1095,12 @@ class AddonManager:
                         if temp_addon.metadata.name == addon_name:
                             self._cleanup_directory(child)
                             return True
-                    except Exception as e:
+                    except (
+                        AddonValidationError,
+                        FileNotFoundError,
+                        RuntimeError,
+                        OSError,
+                    ) as e:
                         logger.error(
                             f"Failed to uninstall addon {addon_name}: {e}"
                         )
@@ -1106,7 +1126,7 @@ class AddonManager:
                     mod_path = str(Path(module.__file__).resolve())
                     if mod_path.startswith(addon_path_str):
                         modules_to_unload.append(name)
-                except Exception:
+                except OSError:
                     logger.warning(
                         f"Could not resolve path for module {name}, "
                         "skipping unload."
@@ -1141,7 +1161,7 @@ class AddonManager:
 
             return True
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - best-effort uninstall
             logger.error(f"Failed to uninstall {addon_name}: {e}")
             return False
 
@@ -1192,7 +1212,7 @@ class AddonManager:
                 if resp.status != 200:
                     return None
                 tags = json.loads(resp.read())
-        except Exception as e:
+        except (OSError, TimeoutError, ValueError) as e:
             logger.debug(f"Remote tag lookup failed for {git_url}: {e}")
             return None
         if not tags or not isinstance(tags, list):
@@ -1236,7 +1256,7 @@ class AddonManager:
                     logger.error(f"Zip download failed: HTTP {resp.status}")
                     return None
                 return io.BytesIO(resp.read())
-        except Exception as e:
+        except (OSError, TimeoutError) as e:
             logger.error(f"Zip download failed: {e}")
             return None
 
@@ -1300,7 +1320,7 @@ class AddonManager:
             if addon_path.exists():
                 shutil.rmtree(addon_path)
                 logger.debug(f"Cleaned up directory: {addon_path}")
-        except Exception as e:
+        except OSError as e:
             logger.error(f"Failed to clean up {addon_path}: {e}")
 
     def enable_addon(self, addon_name: str) -> bool:
@@ -1380,7 +1400,7 @@ class AddonManager:
                 mod_path = str(Path(module.__file__).resolve())
                 if mod_path.startswith(addon_path_str):
                     modules_to_unload.append(name)
-            except Exception:
+            except OSError:
                 logger.warning(
                     f"Could not resolve path for module {name}, "
                     "skipping unload."

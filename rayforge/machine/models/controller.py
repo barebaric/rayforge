@@ -734,7 +734,7 @@ class MachineController:
             setup_vars.validate()
         except ValidationError as e:
             return False, str(e)
-        except Exception as e:
+        except (ValueError, KeyError, TypeError) as e:
             return False, _(
                 "An unexpected error occurred during validation: {error}"
             ).format(error=str(e))

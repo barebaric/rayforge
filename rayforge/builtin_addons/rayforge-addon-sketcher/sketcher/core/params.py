@@ -66,7 +66,7 @@ class ParameterContext:
 
         try:
             return eval(str(expression), {"__builtins__": None}, ctx)
-        except Exception:
+        except Exception:  # noqa: BLE001 - arbitrary user expression eval
             return 0.0
 
     def evaluate_all(

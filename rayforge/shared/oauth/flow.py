@@ -150,7 +150,7 @@ class OAuthFlow:
         def run_server():
             try:
                 server.handle_request()
-            except Exception as e:
+            except (OSError, TimeoutError, ValueError) as e:
                 on_error(e)
                 return
 
@@ -158,7 +158,7 @@ class OAuthFlow:
                 try:
                     result = self._exchange_code(callback_received["code"])
                     on_complete(result)
-                except Exception as e:
+                except (OSError, TimeoutError, ValueError) as e:
                     on_error(e)
             else:
                 err = callback_received["error"] or "Unknown error"

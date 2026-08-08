@@ -183,7 +183,7 @@ class PatreonProvider(LicenseProvider):
                 status=LicenseStatus.ERROR,
                 message=f"Network error: {e.reason}",
             )
-        except Exception as e:
+        except (OSError, TimeoutError, ValueError) as e:
             logger.error(f"Patreon validation failed: {e}")
             return LicenseResult(
                 status=LicenseStatus.ERROR,
@@ -286,7 +286,7 @@ class PatreonProvider(LicenseProvider):
             if self._access_token:
                 self._save_config()
                 return True
-        except Exception as e:
+        except (OSError, TimeoutError, ValueError) as e:
             logger.error(f"Failed to exchange Patreon OAuth code: {e}")
 
         return False

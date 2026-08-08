@@ -444,7 +444,7 @@ class TaskManager:
             )
             try:
                 callback_to_invoke(task_to_callback)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - user callback boundary
                 logger.debug(
                     f"when_done callback for cancelled task '{key}' "
                     f"raised {type(e).__name__}: {e}. This may occur "
@@ -475,7 +475,7 @@ class TaskManager:
                     task.when_done_callback = None
                     try:
                         callback(task)
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001 - callback boundary
                         logger.debug(
                             f"when_done callback for cancelled task "
                             f"'{task.key}' raised {type(e).__name__}: {e}"

@@ -54,7 +54,7 @@ class UdpTransport(Transport):
             self._connection_task = asyncio.create_task(
                 self._manage_connection()
             )
-        except Exception as e:
+        except OSError as e:
             # Failed to connect, report error and re-raise so caller knows.
             logger.error(f"Failed to connect to {self.host}:{self.port}: {e}")
             self.status_changed.send(
@@ -68,7 +68,7 @@ class UdpTransport(Transport):
         """
         try:
             await self._receive_loop()
-        except Exception as e:
+        except OSError as e:
             self.status_changed.send(
                 self, status=TransportStatus.ERROR, message=str(e)
             )
@@ -124,7 +124,7 @@ class UdpTransport(Transport):
                 logger.debug(f"Purged data: {data!r}")
         except asyncio.TimeoutError:
             pass
-        except Exception as e:
+        except OSError as e:
             logger.warning(f"Error during purge: {e}")
 
     async def _receive_loop(self) -> None:
@@ -141,7 +141,7 @@ class UdpTransport(Transport):
                     break
             except asyncio.CancelledError:
                 break
-            except Exception as e:
+            except OSError as e:
                 self.status_changed.send(
                     self, status=TransportStatus.ERROR, message=str(e)
                 )

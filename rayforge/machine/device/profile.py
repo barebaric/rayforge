@@ -408,7 +408,7 @@ class DeviceProfile:
             driver_uses_gcode = driver_cls.uses_gcode
             try:
                 m.set_driver(driver_cls, cfg.driver_args)
-            except Exception as exc:
+            except (ValueError, TypeError, RuntimeError) as exc:
                 logger.error(
                     f"Failed to create driver {cfg.driver} "
                     f"for device '{self.name}': {exc}"

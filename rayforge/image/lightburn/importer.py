@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import logging
 import math
 import re
@@ -336,7 +337,7 @@ def _shape_to_geometry(
         if w > 0 and h > 0 and data_b64:
             try:
                 png_bytes = base64.b64decode(data_b64)
-            except Exception:
+            except (binascii.Error, ValueError):
                 logger.warning("Failed to decode Bitmap data")
                 return None
             if bitmaps is not None:

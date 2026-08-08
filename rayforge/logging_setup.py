@@ -156,7 +156,7 @@ def _cleanup_old_logs(log_dir: Path, keep_count: int):
                     f.unlink()
                 except OSError as e:
                     logging.warning(f"Could not delete old log file {f}: {e}")
-    except Exception as e:
+    except OSError as e:
         # We don't want a logging failure to crash the app startup
         logging.error(f"An unexpected error occurred during log cleanup: {e}")
 

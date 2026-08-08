@@ -1,6 +1,7 @@
 import io
 import sys
 import tempfile
+import urllib.error
 import zipfile
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
@@ -685,7 +686,9 @@ class TestAddonManagerUpdates:
             name="pkg1", version="1.0.0"
         )
         with patch.object(
-            manager, "fetch_registry", side_effect=Exception("Network error")
+            manager,
+            "fetch_registry",
+            side_effect=urllib.error.URLError("Network error"),
         ):
             updates = manager.check_for_updates()
         assert len(updates) == 0
@@ -827,7 +830,7 @@ class TestAddonManagerHelpers:
         """Test that _download_addon_zip returns False on network error."""
         with patch(
             "urllib.request.urlopen",
-            side_effect=Exception("Connection refused"),
+            side_effect=urllib.error.URLError("Connection refused"),
         ):
             dest = tmp_path / "output"
             dest.mkdir()

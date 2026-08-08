@@ -88,8 +88,10 @@ async def test_import_svg_export_gcode(
     dialect_uid = "grbl"
     expected_file = "expected_square_grbl.gcode"
 
-    # The expected G-code was generated assuming "Identity" transformation (no flip).
-    # In the updated Machine model, Origin.BOTTOM_LEFT represents the Identity state
+    # The expected G-code was generated assuming "Identity" transformation
+    # (no flip).
+    # In the updated Machine model, Origin.BOTTOM_LEFT represents the
+    # Identity state
     # (matching the internal Y-Up Cartesian coordinates).
     machine = get_context().machine
     assert machine is not None, "Machine should be initialized in context"

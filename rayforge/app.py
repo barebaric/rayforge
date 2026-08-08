@@ -69,7 +69,7 @@ def _read_language_from_config() -> str | None:
             data = yaml.safe_load(f)
             if data and data.get("language"):
                 return data["language"]
-    except Exception as e:
+    except (OSError, yaml.YAMLError) as e:
         logger.warning(f"Could not read language from config: {e}")
     return None
 
@@ -135,7 +135,8 @@ if hasattr(sys, "_MEIPASS"):
         # This must be at module level to run during worker import.
         if sys.platform == "win32":
             logger.info(
-                f"Windows build detected. Adding '{base_dir}' to DLL search path."
+                f"Windows build detected. Adding '{base_dir}' "
+                "to DLL search path."
             )
             try:
                 os.add_dll_directory(str(base_dir))
@@ -292,7 +293,8 @@ def main():
 
             self.win.present()
 
-            # Now that the UI is active, trigger the initial machine connections.
+            # Now that the UI is active, trigger the initial machine
+            # connections.
             context = get_context()
             if context.machine_mgr:
                 context.machine_mgr.initialize_connections()
@@ -300,7 +302,8 @@ def main():
         def _load_initial_files(self, widget):
             """
             Loads files passed via the command line. This is called from the
-            'map' signal handler to ensure the main window is fully initialized.
+            'map' signal handler to ensure the main window is fully
+            initialized.
             Command line files always override the startup behavior setting.
             """
             # These imports must be inside the method.
@@ -334,7 +337,8 @@ def main():
                     editor.notification_requested.send(
                         self,
                         message=_(
-                            "Cannot open '{file}'. The required addon may be disabled."
+                            "Cannot open '{file}'. The required addon "
+                            "may be disabled."
                         ).format(file=file_path.name),
                     )
                     continue
@@ -418,7 +422,8 @@ def main():
                     self.win.load_project(project_path)
                 else:
                     logger.warning(
-                        f"Startup project path {project_path} is not a .ryp file"
+                        f"Startup project path {project_path} "
+                        "is not a .ryp file"
                     )
             elif project_path:
                 logger.warning(
@@ -512,7 +517,8 @@ def main():
     # ===================================================================
 
     # Set the PyOpenGL platform before importing anything that uses OpenGL.
-    # 'egl' is generally the best choice for GTK4 on modern Linux (Wayland/X11).
+    # 'egl' is generally the best choice for GTK4 on modern Linux
+    # (Wayland/X11).
     # On Windows and macOS, letting PyOpenGL auto-detect is more reliable.
     if sys.platform.startswith("linux"):
         logger.info("Linux detected. Setting PYOPENGL_PLATFORM=egl")
@@ -596,7 +602,8 @@ def main():
         await context.shutdown()
         logger.info("Async shutdown complete.")
 
-    # 2. Run the async shutdown on the TaskManager's event loop and wait for it.
+    # 2. Run the async shutdown on the TaskManager's event loop and
+    # wait for it.
     loop = rayforge.shared.tasker.task_mgr.loop
     if loop.is_running():
         logger.info(f"Running async shutdown on loop {loop}...")
@@ -604,7 +611,7 @@ def main():
         try:
             # Block until the async cleanup is finished.
             future.result(timeout=10)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - graceful shutdown boundary
             logger.error(f"Error during graceful shutdown: {e}")
     else:
         logger.warning(

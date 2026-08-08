@@ -259,7 +259,7 @@ class GrblSerialSimpleDriver(Driver):
 
             except asyncio.CancelledError:
                 break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - connection loop boundary
                 logger.error(f"Connection error: {e}")
                 self._update_connection_status(TransportStatus.ERROR, str(e))
 

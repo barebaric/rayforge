@@ -80,7 +80,7 @@ class ColorPresetManager:
         try:
             with open(self._presets_file, "r") as f:
                 data = yaml.safe_load(f)
-        except Exception as e:
+        except (OSError, yaml.YAMLError) as e:
             logger.error(f"Failed to load color presets: {e}")
             return
         if not isinstance(data, dict):
@@ -104,7 +104,7 @@ class ColorPresetManager:
         try:
             with open(self._presets_file, "w") as f:
                 yaml.safe_dump(data, f, sort_keys=True)
-        except Exception as e:
+        except (OSError, yaml.YAMLError) as e:
             logger.error(f"Failed to save color presets: {e}")
 
     def add_preset(self, preset: ColorPreset) -> None:

@@ -43,7 +43,7 @@ def safe_list_ports_linux() -> list[str]:
     ]:
         try:
             ports.extend(glob.glob(pattern))
-        except Exception as e:
+        except OSError as e:
             logger.warning(
                 f"Error scanning for serial ports. Pattern '{pattern}': {e}"
             )
@@ -66,7 +66,7 @@ class SerialTransport(Transport):
         # On other systems or outside a Snap, the default is fine.
         try:
             return sorted([p.device for p in list_ports.comports()])
-        except Exception as e:
+        except (OSError, serial.SerialException, TypeError) as e:
             # Fallback for any other unexpected errors
             logger.error(f"Failed to list serial ports with pyserial: {e}")
             return []
@@ -223,7 +223,7 @@ class SerialTransport(Transport):
         if self._serial:
             try:
                 self._serial.close()
-            except Exception as e:
+            except serial.SerialException as e:
                 logger.warning(f"Error closing serial port: {e}")
 
         # Wait for the reader thread to finish.
@@ -288,7 +288,7 @@ class SerialTransport(Transport):
         try:
             self._serial.reset_input_buffer()
             logger.debug("Input buffer purged.")
-        except Exception as e:
+        except serial.SerialException as e:
             logger.warning(f"Error during purge: {e}")
 
     def _dispatch_received(self, data: bytes) -> None:
@@ -341,7 +341,7 @@ class SerialTransport(Transport):
                         self._dispatch_error, str(e)
                     )
                 break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - reader thread boundary
                 if self._stop_event.is_set():
                     break
                 logger.error(f"Unexpected error in reader thread: {e}")

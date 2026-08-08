@@ -222,5 +222,5 @@ def compile_po_to_mo(po_path: Path, mo_path: Path) -> bool:
             return False
         write_mo_file(mo_path, translated)
         return True
-    except Exception:
+    except (OSError, ValueError, UnicodeError):
         return False

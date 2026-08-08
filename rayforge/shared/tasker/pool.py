@@ -101,7 +101,7 @@ def _worker_main_loop(
     if initializer is not None:
         try:
             initializer(shared_state, *initargs)
-        except Exception:
+        except Exception:  # noqa: BLE001 - arbitrary worker initializer
             # If initialization fails, report it and exit immediately.
             error_info = traceback.format_exc()
             worker_logger.critical(
@@ -230,7 +230,7 @@ def _worker_main_loop(
             # crashes), the entry remains so the health check can detect
             # the orphaned task.
             shared_state.pop(f"_wpool:{os.getpid()}", None)
-        except Exception:
+        except Exception:  # noqa: BLE001 - arbitrary user task function
             error_info = traceback.format_exc()
             worker_logger.error(
                 f"Worker {os.getpid()} task '{key}' failed:\n{error_info}"
@@ -679,8 +679,10 @@ class WorkerPoolManager:
             # named pipe / Unix socket resources.
             try:
                 self._manager.shutdown()
-            except Exception:
-                logger.debug("Manager shutdown failed (may already be gone).")
+            except (OSError, EOFError, ValueError) as e:
+                logger.debug(
+                    f"Manager shutdown failed (may already be gone): {e}"
+                )
 
             logger.info("Worker pool shutdown complete.")
         except KeyboardInterrupt:

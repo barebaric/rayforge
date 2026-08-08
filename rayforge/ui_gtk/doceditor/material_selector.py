@@ -33,7 +33,11 @@ class MaterialSelectorRow(Adw.ActionRow):
         color_box.set_size_request(24, 24)
         color_box.add_css_class("material-color-selector")
         color_provider = Gtk.CssProvider()
-        color_data = f".material-color-selector {{ background-color: {self.material.get_display_color()}; }}"
+        display_color = self.material.get_display_color()
+        color_data = (
+            f".material-color-selector "
+            f"{{ background-color: {display_color}; }}"
+        )
         color_provider.load_from_string(color_data)
         color_box.get_style_context().add_provider(
             color_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION

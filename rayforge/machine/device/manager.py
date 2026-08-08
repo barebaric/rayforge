@@ -337,7 +337,7 @@ class DeviceProfileManager:
                 pkg = DeviceProfile.from_path(child)
                 self._profiles[pkg.name] = pkg
                 logger.debug(f"Loaded device profile: {pkg.name} from {child}")
-            except Exception as e:
+            except (OSError, ValueError, TypeError, yaml.YAMLError) as e:
                 key = str(child)
                 self._load_errors[key] = str(e)
                 logger.error(

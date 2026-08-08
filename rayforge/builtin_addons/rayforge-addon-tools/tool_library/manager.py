@@ -41,7 +41,7 @@ class ToolManager:
                     continue
                 tool = Tool.from_dict(data)
                 self.tools[tool.uid] = tool
-            except Exception as e:
+            except (OSError, ValueError, TypeError, yaml.YAMLError) as e:
                 logger.error(f"Error loading tool {path.name}: {e}")
         logger.info(f"Loaded {len(self.tools)} tools.")
 
@@ -50,7 +50,7 @@ class ToolManager:
         try:
             with open(path, "w") as f:
                 yaml.safe_dump(tool.to_dict(), f, sort_keys=False)
-        except Exception as e:
+        except (OSError, ValueError, TypeError, yaml.YAMLError) as e:
             logger.error(f"Failed to save tool {tool.uid}: {e}")
 
     def save(self, tool: Tool) -> None:

@@ -315,7 +315,7 @@ class OctoPrintDriver(Driver):
                 await self._verify_connection()
                 try:
                     await self._run_websocket()
-                except Exception as ws_err:
+                except DeviceConnectionError as ws_err:
                     logger.info(
                         f"WebSocket unavailable, using polling: {ws_err}"
                     )
@@ -324,7 +324,7 @@ class OctoPrintDriver(Driver):
                 return
             except DeviceConnectionError as e:
                 self._update_connection_status(TransportStatus.ERROR, str(e))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - connection loop boundary
                 self._update_connection_status(TransportStatus.ERROR, str(e))
 
             if self.keep_running:
@@ -496,7 +496,7 @@ class OctoPrintDriver(Driver):
 
             except DeviceConnectionError:
                 raise
-            except Exception as e:
+            except (aiohttp.ClientError, ValueError) as e:
                 logger.warning(f"Polling error: {e}")
 
             await asyncio.sleep(_POLL_INTERVAL)

@@ -30,7 +30,9 @@ from rayforge.ui_gtk.varset.varset_editor import (
 
 
 def process_events(duration_sec: float = 0.1):
-    """Processes all pending GTK events for a short duration without blocking."""
+    """
+    Processes all pending GTK events for a short duration without blocking.
+    """
     end_time = time.monotonic() + duration_sec
     context = GLib.main_context_default()
     while time.monotonic() < end_time:

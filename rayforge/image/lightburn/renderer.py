@@ -109,7 +109,8 @@ class LightBurnRenderer(Renderer):
             surface = render_svg_to_cairo(svg_bytes, width, height)
             if surface:
                 return cairo_surface_to_vips(surface)
-        except (pyvips.Error, Exception):
+        except pyvips.Error as e:
+            logger.warning(f"Failed to render SVG image: {e}")
             return None
         return None
 

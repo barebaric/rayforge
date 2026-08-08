@@ -94,7 +94,7 @@ def _scan_cameras_in_subprocess() -> list[str]:
             for r in results:
                 if r is not None and str(r) not in devices:
                     devices.append(str(r))
-    except Exception as e:
+    except (mp.ProcessError, mp.TimeoutError, OSError) as e:
         logger.warning(f"Subprocess camera scan failed: {e}")
         return _scan_cameras_fallback()
 
@@ -126,7 +126,7 @@ def _scan_cameras_fallback() -> list[str]:
                     break
                 if cap:
                     cap.release()
-            except Exception as e:
+            except (cv2.error, OSError) as e:
                 logger.debug(f"Error probing camera {target}: {e}")
 
     return devices
@@ -206,7 +206,7 @@ class VideoCaptureDevice:
                     f"OpenCV error camera {device_id_int} {name} "
                     f"(attempt {attempt + 1}): {e}"
                 )
-            except Exception as e:
+            except OSError as e:
                 logger.warning(
                     f"Error camera {device_id_int} {name} "
                     f"(attempt {attempt + 1}): {e}"
@@ -238,7 +238,7 @@ class VideoCaptureDevice:
                     f"(backend: {self._backend_used})"
                 )
                 self.cap.release()
-        except Exception as e:
+        except (cv2.error, OSError) as e:
             logger.warning(f"Error releasing camera {self.device_id}: {e}")
         finally:
             self.cap = None
@@ -312,7 +312,7 @@ class CameraController:
                         break
                 except cv2.error as e:
                     logger.debug(f"OpenCV error camera {target} {name}: {e}")
-                except Exception as e:
+                except OSError as e:
                     logger.debug(f"Error camera {target}: {e}")
 
         logger.info(f"Available cameras: {devices}")
@@ -584,7 +584,7 @@ class CameraController:
 
             self._settings_dirty = False
             logger.debug("Applied camera hardware settings.")
-        except Exception as e:
+        except (cv2.error, OSError, ValueError) as e:
             # We log as a warning because the stream may still work
             logger.warning(f"Could not apply one or more camera settings: {e}")
 
@@ -654,7 +654,7 @@ class CameraController:
                 frame_to_process = cv2.undistort(
                     frame_to_process, cam_mat, dist
                 )
-            except Exception as e:
+            except cv2.error as e:
                 logger.error(f"Failed to undistort frame: {e}")
 
         return frame_to_process
@@ -677,7 +677,7 @@ class CameraController:
             # Emit the signal in a GLib-safe way
             idle_add(self.image_captured.send, self)
             return True
-        except Exception as e:
+        except (cv2.error, OSError, ValueError) as e:
             logger.error(f"Error reading frame: {e}")
             return False
 

@@ -159,7 +159,7 @@ class WorkPiece(DocItem):
                 height = max(max_y - min_y, 1e-9)
             else:
                 width, height = 0.0, 0.0
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - plugin provider boundary
             logger.warning(
                 f"Failed to calculate initial geometry for provider "
                 f"{provider.provider_type_name}: {e}"

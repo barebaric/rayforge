@@ -168,7 +168,7 @@ class SmoothieDriver(Driver):
 
             except asyncio.CancelledError:
                 break  # cleanup is called
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - connection loop boundary
                 self.on_telnet_status_changed(
                     self, TransportStatus.ERROR, str(e)
                 )

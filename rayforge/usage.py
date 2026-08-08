@@ -21,7 +21,7 @@ def _get_language() -> str:
         if lang:
             return lang.replace("_", "-")
         return "en-US"
-    except Exception:
+    except locale.Error:
         return "en-US"
 
 
@@ -35,7 +35,7 @@ def _get_os_info() -> str:
             if version:
                 return f"linux/{distro}/{version}"
             return f"linux/{distro}"
-        except Exception:
+        except (OSError, KeyError, ValueError):
             return "linux"
     elif system == "Windows":
         return f"windows/{platform.release()}"
@@ -148,7 +148,7 @@ class UsageTracker:
                 )
             except urllib.error.URLError as e:
                 logger.warning(f"Usage tracking request failed: {e}")
-            except Exception as e:
+            except (OSError, TimeoutError, ValueError) as e:
                 logger.warning(f"Usage tracking error: {e}")
 
         thread = threading.Thread(target=_send, daemon=True)

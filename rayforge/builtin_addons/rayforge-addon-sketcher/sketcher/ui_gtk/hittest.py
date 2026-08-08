@@ -42,7 +42,7 @@ class SketchHitTester:
             mx, my = inv_content.transform_point((lx, ly))
 
             return mx, my
-        except Exception:
+        except ValueError:
             return 0.0, 0.0
 
     def get_model_to_screen_transform(self, element: Any) -> Any:

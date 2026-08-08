@@ -132,26 +132,19 @@ class SketchElement(CanvasElement):
     def _disconnect_signals(self):
         """Disconnects signals to prevent leaks."""
         self.sketch.updated.disconnect(self._on_model_changed)
-        try:
-            self.sketch.input_parameters.var_added.disconnect(
-                self._on_model_changed
-            )
-            self.sketch.input_parameters.var_removed.disconnect(
-                self._on_model_changed
-            )
-            self.sketch.input_parameters.var_value_changed.disconnect(
-                self._on_model_changed
-            )
-            self.sketch.input_parameters.var_definition_changed.disconnect(
-                self._on_model_changed
-            )
-            self.sketch.input_parameters.cleared.disconnect(
-                self._on_model_changed
-            )
-        except Exception as e:
-            logger.warning(
-                f"Error during signal disconnection (safe to ignore): {e}"
-            )
+        self.sketch.input_parameters.var_added.disconnect(
+            self._on_model_changed
+        )
+        self.sketch.input_parameters.var_removed.disconnect(
+            self._on_model_changed
+        )
+        self.sketch.input_parameters.var_value_changed.disconnect(
+            self._on_model_changed
+        )
+        self.sketch.input_parameters.var_definition_changed.disconnect(
+            self._on_model_changed
+        )
+        self.sketch.input_parameters.cleared.disconnect(self._on_model_changed)
 
     def _create_snap_engine(self) -> SnapEngine:
         engine = SnapEngine()

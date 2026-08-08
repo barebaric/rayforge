@@ -597,7 +597,7 @@ def test_sketch_deserialization_backward_compatibility():
     # 2. Try to load it
     try:
         sketch = Sketch.from_dict(old_sketch_data)
-    except Exception as e:
+    except (KeyError, ValueError, TypeError) as e:
         pytest.fail(f"Sketch.from_dict failed to load old format: {e}")
 
     # 3. Assert the result is a valid sketch

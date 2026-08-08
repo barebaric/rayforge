@@ -86,7 +86,7 @@ class MockUdpServer:
                 self.last_addr = addr
             except asyncio.CancelledError:
                 break
-            except Exception:
+            except (OSError, ValueError, asyncudp.ClosedError):
                 # Socket closed or other error
                 break
 
