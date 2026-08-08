@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Screenshot: Array dialog with canvas showing array preview.
 

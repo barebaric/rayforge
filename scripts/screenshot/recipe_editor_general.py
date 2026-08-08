@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Screenshot: Recipe editor - General page."""
 
 import logging

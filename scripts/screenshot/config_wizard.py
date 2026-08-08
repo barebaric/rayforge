@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Screenshot: Unified machine configuration wizard pages.
 
 The wizard's adaptive routing means many of the intermediate steps

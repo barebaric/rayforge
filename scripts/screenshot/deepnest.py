@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Screenshot: Deepnest addon settings dialog."""
 
 import logging

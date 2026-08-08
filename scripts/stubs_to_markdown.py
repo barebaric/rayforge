@@ -310,7 +310,7 @@ def format_annotation(node: ast.expr | None) -> str:
         return ""
     try:
         return clean_type(ast.unparse(node))
-    except Exception:
+    except (TypeError, ValueError, IndexError, AttributeError):
         return ""
 
 
@@ -321,7 +321,7 @@ def format_default(node: ast.expr | None) -> str:
         return ""
     try:
         return f" = {ast.unparse(node)}"
-    except Exception:
+    except (TypeError, ValueError, IndexError, AttributeError):
         return ""
 
 

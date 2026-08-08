@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Screenshot: Add Machine dialog (Unified Wizard, Step 1).
 

@@ -53,8 +53,12 @@ TARGETS = {
     "machine-settings:camera": "machine_settings_camera",
     "machine-settings:camera:image-settings": "machine_settings_camera",
     "machine-settings:camera:lens-calibration": "machine_settings_camera",
-    "machine-settings:camera:lens-calibration:wizard-card": "machine_settings_camera",
-    "machine-settings:camera:lens-calibration:wizard-capture": "machine_settings_camera",
+    "machine-settings:camera:lens-calibration:wizard-card": (
+        "machine_settings_camera"
+    ),
+    "machine-settings:camera:lens-calibration:wizard-capture": (
+        "machine_settings_camera"
+    ),
     "machine-settings:camera:image-alignment": "machine_settings_camera",
     "machine-settings:maintenance": "machine_settings_maintenance",
     "machine-settings:nogo-zones": "machine_settings_nogo_zones",
@@ -139,7 +143,7 @@ def run_script(script_name: str, target: str) -> int:
         # were ever dropped or parsed by a wrapping command, so screenshots
         # never depend on the developer's personal machine configuration.
         env["RAYFORGE_CONFIG_DIR"] = tmpdir
-        return subprocess.run(cmd, env=env).returncode
+        return subprocess.run(cmd, env=env, check=False).returncode
 
 
 def generate_help_text() -> str:

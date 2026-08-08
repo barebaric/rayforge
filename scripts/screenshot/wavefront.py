@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Screenshot: Wavefront operation in the main window.
 

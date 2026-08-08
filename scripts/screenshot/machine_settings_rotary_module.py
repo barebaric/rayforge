@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Screenshot: Machine settings - Rotary Module page."""
 
 import logging

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Shared utilities for screenshot scripts.
 
@@ -80,11 +79,14 @@ def _save_png_deterministic(img: Image.Image, output_path: Path) -> bool:
     if output_path.exists():
         try:
             existing = Image.open(output_path)
-            if existing.size == img.size and existing.mode == img.mode:
-                if _images_visually_equal(existing, img):
-                    logger.info(f"Screenshot unchanged: {output_path}")
-                    return True
-        except Exception as e:
+            if (
+                existing.size == img.size
+                and existing.mode == img.mode
+                and _images_visually_equal(existing, img)
+            ):
+                logger.info(f"Screenshot unchanged: {output_path}")
+                return True
+        except (OSError, ValueError) as e:
             logger.debug(f"Comparison failed: {e}")
 
     pnginfo = PngInfo()
@@ -133,7 +135,7 @@ def run_on_main_thread(func: Callable[[], T], timeout: float = 10.0) -> T:
     def wrapper() -> bool:
         try:
             result.append(func())
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - arbitrary main-thread callback
             exception[0] = e
         finally:
             done.set()
@@ -169,6 +171,7 @@ def take_screenshot(output_name: str) -> bool:
             [*cmd_args, str(temp_path)],
             capture_output=True,
             text=True,
+            check=False,
         )
         if result.returncode == 0:
             try:
@@ -176,7 +179,7 @@ def take_screenshot(output_name: str) -> bool:
                 _save_png_deterministic(img, output_path)
                 temp_path.unlink()
                 return True
-            except Exception as e:
+            except (OSError, ValueError, TypeError) as e:
                 logger.error(f"Failed to process screenshot: {e}")
                 if temp_path.exists():
                     temp_path.unlink()
@@ -215,6 +218,7 @@ def take_window_screenshot(win: "MainWindow", output_name: str) -> bool:
         ["xwininfo", "-id", str(xid)],
         capture_output=True,
         text=True,
+        check=False,
     )
     if result.returncode != 0:
         logger.error(f"xwininfo failed: {result.stderr}")
@@ -262,6 +266,7 @@ def take_window_screenshot(win: "MainWindow", output_name: str) -> bool:
             [*args, str(temp_path)],
             capture_output=True,
             text=True,
+            check=False,
         )
         if result.returncode == 0:
             try:
@@ -277,7 +282,7 @@ def take_window_screenshot(win: "MainWindow", output_name: str) -> bool:
                 temp_path.unlink()
                 logger.info(f"Window screenshot saved to {output_path}")
                 return True
-            except Exception as e:
+            except (OSError, ValueError, TypeError) as e:
                 logger.error(f"Failed to process screenshot: {e}")
                 if temp_path.exists():
                     temp_path.unlink()
@@ -321,6 +326,7 @@ def take_cropped_screenshot(
             [*cmd_args, str(temp_path)],
             capture_output=True,
             text=True,
+            check=False,
         )
         if result.returncode == 0:
             success = True
@@ -346,7 +352,7 @@ def take_cropped_screenshot(
         temp_path.unlink()
         logger.info(f"Cropped screenshot saved to {output_path}")
         return True
-    except Exception as e:
+    except (OSError, ValueError, TypeError) as e:
         logger.error(f"Failed to crop screenshot: {e}")
         if temp_path.exists():
             temp_path.unlink()

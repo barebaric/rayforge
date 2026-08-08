@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Screenshot: Machine settings - Camera page and dialogs."""
 
 import logging
@@ -185,9 +184,10 @@ def take_wizard_screenshot(parent_dialog, wizard_page: str, output: str):
             capture_output=True,
             text=True,
             timeout=5,
+            check=False,
         )
         time.sleep(0.25)
-    except Exception:
+    except (FileNotFoundError, subprocess.TimeoutExpired):
         logger.warning("xdotool not available, relying on window focus")
 
     take_screenshot(output)

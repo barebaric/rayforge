@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Screenshot: Main window in 3D mode with rotary project.
 

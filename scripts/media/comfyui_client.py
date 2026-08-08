@@ -3,12 +3,15 @@
 
 import argparse
 import json
+import logging
 import os
 import random
 import shutil
 import sys
 import urllib.request
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 COMFYUI_URL = os.getenv("COMFYUI_URL", "http://127.0.0.1:8188")
 _default_output = (
@@ -309,8 +312,8 @@ def get_models() -> list[str]:
             required = data["CheckpointLoaderSimple"]["input"]["required"]
             if "ckpt_name" in required:
                 return required["ckpt_name"][0]
-    except Exception:
-        pass
+    except (OSError, ValueError, KeyError):
+        logger.debug("Could not fetch checkpoint model list", exc_info=True)
 
     return []
 

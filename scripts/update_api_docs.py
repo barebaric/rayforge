@@ -64,9 +64,10 @@ def _sync_dir(src: Path, dst: Path) -> None:
 
     for dst_path in existing_dst_files:
         rel = dst_path.relative_to(dst)
-        if rel not in {p.relative_to(src) for p in src_files}:
-            if dst_path.is_file():
-                dst_path.unlink()
+        if rel not in {p.relative_to(src) for p in src_files} and (
+            dst_path.is_file()
+        ):
+            dst_path.unlink()
 
 
 def main() -> int:

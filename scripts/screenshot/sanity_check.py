@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Screenshot: Sanity check dialog.
 
@@ -66,7 +65,7 @@ def main():
                     ops_result["ops"] = artifact.ops
                 else:
                     ops_result["error"] = RuntimeError("Not a JobArtifact")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - pipeline callback boundary
             ops_result["error"] = e
         done_event.set()
 
@@ -90,10 +89,11 @@ def main():
     checker = SanityChecker(machine)
     report = checker.check(ops_result["ops"], mode=CheckMode.FAST)
 
+    errors = sum(1 for i in report.issues if i.severity.value == "error")
+    warnings = sum(1 for i in report.issues if i.severity.value == "warning")
     logger.info(
         f"Sanity check found {len(report.issues)} issue(s): "
-        f"{sum(1 for i in report.issues if i.severity.value == 'error')} errors, "
-        f"{sum(1 for i in report.issues if i.severity.value == 'warning')} warnings"
+        f"{errors} errors, {warnings} warnings"
     )
 
     if report.is_clean:

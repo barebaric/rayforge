@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Screenshot: Recipe editor - Step Settings page for a laser step."""
 
 import logging
