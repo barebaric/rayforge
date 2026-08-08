@@ -232,6 +232,7 @@ def test_build_op_player_async_preserves_playhead(ui_context_initializer):
     presenter._op_player = previous
 
     presenter._get_ops_for_playback = MagicMock(return_value=ops)
+    presenter._get_time_ops_for_playback = MagicMock(return_value=ops)
 
     with (
         patch(
@@ -249,6 +250,7 @@ def test_build_op_player_async_preserves_playhead(ui_context_initializer):
         presenter._context.machine,
         presenter.doc,
         build_snapshots=False,
+        time_ops=ops,
     )
     mock_player.set_snapshots.assert_called_once_with(previous.snapshots)
     mock_player.seek.assert_called_once_with(7)

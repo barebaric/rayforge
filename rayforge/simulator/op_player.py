@@ -66,10 +66,18 @@ class OpPlayer:
         machine: Machine,
         doc: Doc,
         build_snapshots: bool = True,
+        time_ops: Optional[Ops] = None,
     ):
         if not ops or ops.is_empty():
             raise ValueError("OpPlayer requires a non-empty Ops")
         self.ops = ops
+        # Time model backing: defaults to *ops* itself. Rotary-mapped
+        # ops keep their endpoints at a constant Y (the real rotation
+        # lives in extra axes), which distorts line distances and makes
+        # arcs degenerate, so playback passes the unmapped ops here.
+        # Command indices and order are identical, so the cumulative
+        # time index stays in sync with *ops*.
+        self._time_ops = time_ops if time_ops is not None else ops
         self._machine = machine
         self._doc = doc
         self._current_index: int = -1
@@ -123,11 +131,11 @@ class OpPlayer:
 
     def find_index_at_sim_time(self, t: float) -> int:
         """Command index in effect at simulated time *t* (seconds)."""
-        return self.ops.find_index_at_time(t, *self._play_params)
+        return self._time_ops.find_index_at_time(t, *self._play_params)
 
     def get_cumulative_time(self, idx: int) -> float:
         """Cumulative simulated time (seconds) up to command *idx*."""
-        return self.ops.get_cumulative_time_at(idx, *self._play_params)
+        return self._time_ops.get_cumulative_time_at(idx, *self._play_params)
 
     def set_sim_time(self, t: float) -> None:
         """Set the simulated playback time and cache the playhead progress.
