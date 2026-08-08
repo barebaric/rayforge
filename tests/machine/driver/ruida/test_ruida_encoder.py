@@ -632,10 +632,10 @@ class TestComplexJobs:
         lines = result.text.split("\n")
         assert "AIR_ASSIST ON" in lines[0]
         on_idx = lines.index(
-            [line for line in lines if "AIR_ASSIST ON" in line][0]
+            next(line for line in lines if "AIR_ASSIST ON" in line)
         )
         off_idx = lines.index(
-            [line for line in lines if "AIR_ASSIST OFF" in line][0]
+            next(line for line in lines if "AIR_ASSIST OFF" in line)
         )
         assert on_idx < off_idx
 

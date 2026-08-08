@@ -223,7 +223,7 @@ def test_snap_line_index_query_combined():
 
     results = index.query(22.0, 18.0, 5.0)
     assert len(results) == 2
-    snap_lines, distances = zip(*results)
+    snap_lines, _distances = zip(*results)
     assert h_line2 in snap_lines
     assert v_line2 in snap_lines
 

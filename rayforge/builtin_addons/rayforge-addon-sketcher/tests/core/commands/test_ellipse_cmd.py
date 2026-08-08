@@ -179,7 +179,7 @@ def test_calculate_ellipse_params_constrain_circle():
 
 def test_calculate_ellipse_params_constrain_circle_negative_direction():
     """Test constrain_circle with negative drag direction."""
-    cx, cy, rx, ry = EllipseCommand._calculate_ellipse_params(
+    _cx, _cy, rx, ry = EllipseCommand._calculate_ellipse_params(
         100, 100, 0, 50, center_on_start=False, constrain_circle=True
     )
     assert rx == ry

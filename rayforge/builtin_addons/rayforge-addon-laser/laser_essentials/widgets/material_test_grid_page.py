@@ -330,7 +330,7 @@ class MaterialTestGridSettingsPage(LaserStepSettingsPage):
             step_increment=0.1,
             value=self.step.label_power_percent,
         )
-        self.label_power_row, power_scale = create_slider_row(
+        self.label_power_row, _power_scale = create_slider_row(
             title=_("Label Engrave Power (%)"),
             adjustment=power_adj,
             digits=1,

@@ -343,7 +343,7 @@ class MachineSpace(CoordinateSpace):
         origin setting, offset by the margins.
         """
         ml, mt, mr, mb = self.margins
-        width, height = self.extents
+        _width, _height = self.extents
 
         origin_is_top = self.origin in (
             OriginCorner.TOP_LEFT,
@@ -387,7 +387,7 @@ class MachineSpace(CoordinateSpace):
         """
         if wcs_is_workarea_origin:
             ml, mt, mr, mb = self.margins
-            width, height = self.extents
+            _width, _height = self.extents
 
             origin_is_right = self.origin in (
                 OriginCorner.TOP_RIGHT,

@@ -50,9 +50,7 @@ def get_git_tag_version(path: Path) -> str:
         repo = Repo(path)
         tags = repo.tags
         if tags:
-            latest_tag = sorted(
-                tags, key=lambda t: t.commit.committed_datetime
-            )[-1]
+            latest_tag = max(tags, key=lambda t: t.commit.committed_datetime)
             return latest_tag.name
         raise RuntimeError(f"No git tags found in {path}")
     except Exception as e:

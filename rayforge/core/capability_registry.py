@@ -49,7 +49,7 @@ class StepCapabilityRegistry:
         """
         if name in self._capabilities:
             del self._capabilities[name]
-            for _, items in self._addon_items.items():
+            for items in self._addon_items.values():
                 items.discard(name)
             return True
         return False

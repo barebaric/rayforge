@@ -453,14 +453,12 @@ class Addon:
         if "your-github-username" in self.metadata.author.name.lower():
             raise AddonValidationError("Placeholder detected in author name.")
 
-        if self.metadata.author.email:
-            if not re.match(
-                r"^[^@\s]+@[^@\s]+\.[^@\s]+$", self.metadata.author.email
-            ):
-                logger.warning(
-                    f"Author email '{self.metadata.author.email}' "
-                    "appears invalid."
-                )
+        if self.metadata.author.email and not re.match(
+            r"^[^@\s]+@[^@\s]+\.[^@\s]+$", self.metadata.author.email
+        ):
+            logger.warning(
+                f"Author email '{self.metadata.author.email}' appears invalid."
+            )
 
         for asset in self.metadata.provides.assets:
             path_str = asset.get("path")

@@ -57,7 +57,7 @@ def test_start_without_artifact_clears_renderers(ui_context_initializer):
 
 @pytest.mark.ui
 def test_start_without_gl_skips(ui_context_initializer):
-    controller, scene, rendered, _, _, made_current = _make_controller(
+    controller, scene, _rendered, _, _, made_current = _make_controller(
         artifact=MagicMock(), gl_initialized=False
     )
     controller.start()

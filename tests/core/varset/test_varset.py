@@ -376,7 +376,7 @@ class TestVarSet:
         # 1. The VarSet's keys should be updated.
         assert "new_key" in vs.keys()
         assert "old_key" not in vs.keys()
-        assert sorted(list(vs.keys())) == ["new_key", "other_key"]
+        assert sorted(vs.keys()) == ["new_key", "other_key"]
 
         # 2. Accessing by the new key should work.
         assert vs.get("new_key") is v1
@@ -563,7 +563,7 @@ class TestMergeVarsets:
         second = VarSet(vars=[Var(key="b", label="B", var_type=int)])
         merged = merge_varsets(first, second)
         assert set(merged.keys()) == {"a", "b"}
-        assert list(merged)[0].key == "a"
+        assert next(iter(merged)).key == "a"
         assert list(merged)[1].key == "b"
 
     def test_later_overrides_shared_key(self):

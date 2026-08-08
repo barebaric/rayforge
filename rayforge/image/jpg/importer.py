@@ -144,7 +144,7 @@ class JpgImporter(Importer):
             native_unit_to_mm = 25.4 / default_dpi
 
         # World frame is Y-Up, so y-origin is 0.
-        x, y, w, h = document_bounds
+        x, _y, w, h = document_bounds
         world_frame = (
             x * native_unit_to_mm,
             0.0,

@@ -154,7 +154,7 @@ class BmpImporter(Importer):
         document_bounds = (0.0, 0.0, float(width), float(height))
 
         # World frame is Y-Up, so y-origin is 0. BMPs have no untrimmed bounds.
-        x, y, w, h = document_bounds
+        x, _y, w, h = document_bounds
         world_frame = (
             x * native_unit_to_mm,
             0.0,

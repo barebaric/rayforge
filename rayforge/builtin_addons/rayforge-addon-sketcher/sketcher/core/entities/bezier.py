@@ -67,7 +67,7 @@ class Bezier(Entity):
         return cp1_x, cp1_y, cp2_x, cp2_y
 
     def is_line(self, registry: "EntityRegistry") -> bool:
-        cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points(registry)
+        cp1_x, _cp1_y, cp2_x, _cp2_y = self.get_control_points(registry)
         return cp1_x is None and cp2_x is None
 
     def get_point_ids(self) -> list[EntityID]:

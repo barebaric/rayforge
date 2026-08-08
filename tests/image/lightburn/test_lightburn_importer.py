@@ -158,14 +158,14 @@ class TestBuildEllipse:
     def test_circle(self):
         geo = _build_ellipse(50, 50)
         assert not geo.is_empty()
-        min_x, min_y, max_x, max_y = geo.rect()
+        min_x, min_y, _max_x, _max_y = geo.rect()
         assert abs(min_x - (-50.0)) < 1.0
         assert abs(min_y - (-50.0)) < 1.0
 
     def test_ellipse(self):
         geo = _build_ellipse(100, 50)
         assert not geo.is_empty()
-        min_x, min_y, max_x, max_y = geo.rect()
+        min_x, min_y, _max_x, _max_y = geo.rect()
         assert abs(min_x - (-100.0)) < 1.0
         assert abs(min_y - (-50.0)) < 1.0
 
@@ -309,7 +309,7 @@ class TestApplyXFormToGeo:
         geo = _build_rect(10, 10, 0)
         xform = _parse_xform("1 0 0 1 100 50")
         geo = _apply_xform_to_geo(geo, xform)
-        min_x, min_y, max_x, max_y = geo.rect()
+        min_x, min_y, _max_x, _max_y = geo.rect()
         assert abs(min_x - 95.0) < 1e-6
         assert abs(min_y - 45.0) < 1e-6
 
@@ -704,7 +704,7 @@ class TestApplySettingsDispatch:
         # _is_image_layer alone — without dot_width_correction_mm — must
         # still route to EngraveStep. offset is a vector concept but should
         # be tolerated on image layers without crashing.
-        contour_cls, engrave_cls = self._step_classes()
+        _contour_cls, engrave_cls = self._step_classes()
         from rayforge.image.assembler import ItemAssembler
 
         layer = Layer(name="img")

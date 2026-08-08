@@ -322,7 +322,7 @@ def _shape_to_geometry(
             for child in children_elem.findall("Shape"):
                 child_result = _shape_to_geometry(child, cut_settings, bitmaps)
                 if child_result is not None:
-                    child_cut_idx, child_geo = child_result
+                    _child_cut_idx, child_geo = child_result
                     child_geo = _apply_xform_to_geo(child_geo, xform)
                     combined.extend(child_geo)
             if not combined.is_empty():
@@ -524,9 +524,11 @@ class LightBurnImporter(Importer):
         vw = max(max_x - min_x, 1.0)
         vh = max(max_y - min_y, 1.0)
         svg_parts = [
-            '<svg xmlns="http://www.w3.org/2000/svg"'
-            ' xmlns:xlink="http://www.w3.org/1999/xlink"'
-            f' viewBox="{min_x} {min_y} {vw} {vh}">'
+            (
+                '<svg xmlns="http://www.w3.org/2000/svg"'
+                ' xmlns:xlink="http://www.w3.org/1999/xlink"'
+                f' viewBox="{min_x} {min_y} {vw} {vh}">'
+            )
         ]
         svg_parts.extend(image_tags)
         svg_parts.append("</svg>")

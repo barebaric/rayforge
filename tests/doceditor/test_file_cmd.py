@@ -148,7 +148,7 @@ def sample_parse_result():
     """Provides a sample ParsingResult."""
     document_bounds = (0, 0, 10, 10)
     unit_scale = 1.0
-    x, y, w, h = document_bounds
+    x, _y, w, h = document_bounds
     world_frame = (x * unit_scale, 0.0, w * unit_scale, h * unit_scale)
     return ParsingResult(
         document_bounds=document_bounds,
@@ -312,7 +312,7 @@ class TestCalculateItemsBbox:
         result = file_cmd._calculate_items_bbox([sample_workpiece])
 
         assert result is not None
-        x, y, w, h = result
+        _x, _y, w, h = result
         assert w == 10.0
         assert h == 20.0
 

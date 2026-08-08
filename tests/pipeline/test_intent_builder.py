@@ -1327,7 +1327,7 @@ def _extract_cut_coords(gcode):
     x = y = 0.0
     for line in gcode.split("\n"):
         line = line.split(";")[0].strip()
-        if not (line.startswith("G0") or line.startswith("G1")):
+        if not (line.startswith(("G0", "G1"))):
             continue
         # Skip the final return-to-origin G0.
         if "Return to origin" in line:

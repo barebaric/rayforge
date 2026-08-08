@@ -240,9 +240,9 @@ class RayforgeContext:
             self._config_mgr = CoreConfigManager(CONFIG_FILE, self.machine_mgr)
             self._config = self._config_mgr.config
             if not self._config.machine:
-                machine = sorted(
+                machine = min(
                     self.machine_mgr.machines.values(), key=lambda m: m.id
-                )[0]
+                )
                 self._config.set_machine(machine)
             # Sync the context language with the configured preference.
             # This overrides the system-detected language if the user has
@@ -389,9 +389,9 @@ class RayforgeContext:
         self._config_mgr = CoreConfigManager(config_file, self._machine_mgr)
         self._config = self._config_mgr.config
         if not self._config.machine:
-            machine = sorted(
+            machine = min(
                 self._machine_mgr.machines.values(), key=lambda m: m.id
-            )[0]
+            )
             self._config.set_machine(machine)
 
     async def shutdown(self):

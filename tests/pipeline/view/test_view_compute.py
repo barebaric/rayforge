@@ -16,7 +16,7 @@ from rayforge.pipeline.view.view_compute import (
 def create_test_color_set(spec: dict) -> ColorSet:
     """Creates a mock resolved ColorSet for testing without GTK."""
     resolved_data = {}
-    for key, colors in spec.items():
+    for key in spec:
         lut = np.zeros((256, 4), dtype=np.float32)
         if key == "cut":
             lut[:, 0] = np.linspace(0, 1, 256)
@@ -157,7 +157,7 @@ def test_render_workpiece_view_travel_moves_shown():
     result = render_workpiece_view_in_process(artifact, context)
 
     assert result is not None
-    bitmap, bbox, wp_size = result
+    bitmap, _bbox, _wp_size = result
     assert bitmap.shape[2] == 4
 
 

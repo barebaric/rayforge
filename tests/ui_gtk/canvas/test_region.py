@@ -70,7 +70,7 @@ class TestMoveGizmoGeometry:
         """The gizmo should be horizontally centered relative to the
         bounding box."""
         width, height = 120, 90
-        x, y, w, h = get_region_rect(
+        x, _y, w, _h = get_region_rect(
             ElementRegion.MOVE, width, height, 20, 1.0
         )
         center_x = x + w / 2

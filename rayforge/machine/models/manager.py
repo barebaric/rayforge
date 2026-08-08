@@ -19,8 +19,8 @@ class MachineManager:
     def __init__(self, base_dir: Path):
         base_dir.mkdir(parents=True, exist_ok=True)
         self.base_dir = base_dir
-        self.controllers: dict[str, MachineController] = dict()
-        self.machines: dict[str, Machine] = dict()
+        self.controllers: dict[str, MachineController] = {}
+        self.machines: dict[str, Machine] = {}
         self.machine_added = Signal()
         self.machine_removed = Signal()
         self.machine_updated = Signal()
@@ -200,7 +200,7 @@ class MachineManager:
 
     def get_machines(self) -> list["Machine"]:
         """Returns a list of all managed machines, sorted by name."""
-        return sorted(list(self.machines.values()), key=lambda m: m.name)
+        return sorted(self.machines.values(), key=lambda m: m.name)
 
     def create_default_machine(self):
         machine = Machine(get_context())

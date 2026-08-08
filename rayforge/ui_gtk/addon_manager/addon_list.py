@@ -339,7 +339,7 @@ class AddonListWidget(PreferencesGroupWithButton):
 
                 def on_response(dialog, response):
                     if response == "enable":
-                        success, enabled = am.enable_addon_with_deps(
+                        success, _enabled = am.enable_addon_with_deps(
                             addon_name
                         )
                         if not success:

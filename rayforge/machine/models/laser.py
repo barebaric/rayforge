@@ -113,7 +113,7 @@ class LaserHead(Head):
 
     def _percent_to_gcode(self, percent):
         """Convert percentage (0-100) to gcode power value (0-max_power)."""
-        return int(round((percent / 100) * self.max_power))
+        return round((percent / 100) * self.max_power)
 
     def set_spot_size(self, spot_size_x_mm, spot_size_y_mm):
         self.spot_size_mm = spot_size_x_mm, spot_size_y_mm

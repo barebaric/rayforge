@@ -44,7 +44,7 @@ class SmoothSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             lower=0, upper=100, step_increment=1, page_increment=10
         )
         amount_adj.set_value(transformer.amount)
-        amount_row, amount_scale = create_slider_row(
+        amount_row, _amount_scale = create_slider_row(
             title=_("Smoothness"),
             subtitle=_("Higher values produce smoother curves"),
             adjustment=amount_adj,

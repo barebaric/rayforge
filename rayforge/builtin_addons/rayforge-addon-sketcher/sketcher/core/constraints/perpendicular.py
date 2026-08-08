@@ -62,9 +62,7 @@ class PerpendicularConstraint(Constraint):
         e2 = sketch.registry.get_entity(selection.entity_ids[1])
         if not isinstance(e1, (Line, Arc, Circle)):
             return False
-        if not isinstance(e2, (Line, Arc, Circle)):
-            return False
-        return True
+        return isinstance(e2, (Line, Arc, Circle))
 
     @staticmethod
     def get_type_name() -> str:

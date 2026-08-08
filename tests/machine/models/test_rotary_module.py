@@ -653,5 +653,5 @@ class TestMachineRotaryModules:
         assert data["machine"]["rotary_modules"][0]["model_path"] is None
 
         machine2 = Machine.from_dict(data, context=lite_context)
-        rm2 = list(machine2.rotary_modules.values())[0]
+        rm2 = next(iter(machine2.rotary_modules.values()))
         assert rm2.model_path is None

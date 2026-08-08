@@ -493,7 +493,7 @@ class TestMachine:
 
         # --- Assert ---
         run_spy.assert_called_once()
-        encoded, received_doc, received_ops = run_spy.call_args.args
+        encoded, received_doc, _received_ops = run_spy.call_args.args
         assert isinstance(encoded, EncodedOutput)
         assert received_doc is doc
 
@@ -541,7 +541,7 @@ class TestMachine:
 
         # --- Assert ---
         run_spy.assert_called_once()
-        encoded, received_doc, received_ops = run_spy.call_args.args
+        encoded, received_doc, _received_ops = run_spy.call_args.args
         from rayforge.pipeline.encoder.base import EncodedOutput
 
         assert isinstance(encoded, EncodedOutput)

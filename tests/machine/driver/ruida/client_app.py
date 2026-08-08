@@ -295,7 +295,7 @@ class ClientWindow(Gtk.ApplicationWindow):
 
         self.ref_buttons = {}
         self.ref_point = "MACHINE"
-        for name in REF_POINT_COMMANDS.keys():
+        for name in REF_POINT_COMMANDS:
             btn = Gtk.ToggleButton(label=name)
             btn.connect("toggled", self._on_ref_toggled, name)
             ref_box.append(btn)

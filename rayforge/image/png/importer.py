@@ -139,7 +139,7 @@ class PngImporter(Importer):
             default_dpi = 96.0
             native_unit_to_mm = 25.4 / default_dpi
 
-        x, y, w, h = document_bounds
+        x, _y, w, h = document_bounds
         world_frame = (
             x * native_unit_to_mm,
             0.0,

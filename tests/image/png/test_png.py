@@ -333,7 +333,7 @@ class TestPngRenderer:
         """Test natural size calculation on the renderer."""
         size = bilevel_workpiece.natural_size
         assert size is not None
-        width_mm, height_mm = size
+        width_mm, _height_mm = size
         expected_width_mm = 243 * (25.4 / 96.0)
         assert width_mm == pytest.approx(expected_width_mm, 5)
 

@@ -34,13 +34,12 @@ class LayoutStrategyRegistry:
             name: Unique name for this strategy.
             addon_name: Optional name of the addon registering this strategy.
         """
-        if name in self._strategies:
-            if addon_name:
-                old_info = self._strategies.get(name)
-                if old_info and name in self._addon_items:
-                    for addon in list(self._addon_items.keys()):
-                        if name in self._addon_items.get(addon, set()):
-                            self._addon_items[addon].discard(name)
+        if name in self._strategies and addon_name:
+            old_info = self._strategies.get(name)
+            if old_info and name in self._addon_items:
+                for addon in list(self._addon_items.keys()):
+                    if name in self._addon_items.get(addon, set()):
+                        self._addon_items[addon].discard(name)
 
         self._strategies[name] = strategy_class
 

@@ -1020,22 +1020,21 @@ class Canvas(Gtk.DrawingArea):
                         drag_start_angle=self._drag_start_angle,
                     )
                     self.queue_draw()
-            elif self._shearing:
-                if (
-                    self._drag_target
-                    and self._initial_transform
-                    and self._initial_world_transform
-                ):
-                    transform.shear_element(
-                        element=self._drag_target,
-                        world_dx=world_dx,
-                        world_dy=world_dy,
-                        initial_local_transform=self._initial_transform,
-                        initial_world_transform=self._initial_world_transform,
-                        active_region=self._active_region,
-                        view_transform=self.view_transform,
-                    )
-                    self.queue_draw()
+            elif self._shearing and (
+                self._drag_target
+                and self._initial_transform
+                and self._initial_world_transform
+            ):
+                transform.shear_element(
+                    element=self._drag_target,
+                    world_dx=world_dx,
+                    world_dy=world_dy,
+                    initial_local_transform=self._initial_transform,
+                    initial_world_transform=self._initial_world_transform,
+                    active_region=self._active_region,
+                    view_transform=self.view_transform,
+                )
+                self.queue_draw()
 
     def _start_rotation(
         self,

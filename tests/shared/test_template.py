@@ -183,8 +183,10 @@ class TestTemplateFormatter:
         macro = Macro(name="Circular1", code=["@include(Circular2)"])
         result = formatter.expand_macro(macro)
         assert result == [
-            "; ERROR: Circular dependency detected. Macro 'Circular1'"
-            " was included again."
+            (
+                "; ERROR: Circular dependency detected. Macro 'Circular1'"
+                " was included again."
+            )
         ]
 
     def test_float_formatting_locale_independent(self, context_and_machine):

@@ -199,11 +199,11 @@ class TestCompileMultiLayer:
 
         assert len(artifact.vertex_layers) == 2
 
-        flat_vl = [vl for vl in artifact.vertex_layers if not vl.is_rotary][0]
+        flat_vl = next(vl for vl in artifact.vertex_layers if not vl.is_rotary)
         pv_flat = flat_vl.powered_verts.reshape(-1, 3)
         assert pv_flat[0, 2] == 0.0
 
-        rot_vl = [vl for vl in artifact.vertex_layers if vl.is_rotary][0]
+        rot_vl = next(vl for vl in artifact.vertex_layers if vl.is_rotary)
         pv_rot = rot_vl.powered_verts.reshape(-1, 3)
         assert abs(pv_rot[0, 2] - 25.0) < 1e-3
 

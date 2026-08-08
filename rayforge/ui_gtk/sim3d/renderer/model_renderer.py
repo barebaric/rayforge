@@ -196,9 +196,8 @@ class ModelRenderer(BaseRenderer):
         return True
 
     def init_gl(self) -> None:
-        if not self._loaded:
-            if not self._load_mesh():
-                return
+        if not self._loaded and not self._load_mesh():
+            return
 
         self._vao = self._create_vao()
         self._vbo_pos = self._create_vbo()

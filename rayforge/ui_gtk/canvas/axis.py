@@ -323,7 +323,7 @@ class AxisRenderer:
         # expressed in the user's preferred length unit.
         grid_step_units = grid_size_mm / self.grid_unit_factor
         if grid_step_units < 1.0 - 1e-9:
-            precision = int(math.ceil(-math.log10(grid_step_units)))
+            precision = math.ceil(-math.log10(grid_step_units))
         else:
             precision = 0
 

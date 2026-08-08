@@ -130,7 +130,7 @@ class SerialPortAdapter(ComboAdapter):
         port_set = set(SerialTransport.list_ports())
         if initial_val:
             port_set.add(initial_val)
-        sorted_ports = sorted(list(port_set), key=natural_sort_key)
+        sorted_ports = sorted(port_set, key=natural_sort_key)
         choices = [NULL_CHOICE_LABEL] + sorted_ports
         store = Gtk.StringList.new(choices)
         row = Adw.ComboRow(model=store, title=escape_title(var.label))
@@ -149,7 +149,7 @@ class SerialPortAdapter(ComboAdapter):
             port_set = set(new_ports)
             if current_sel and current_sel != NULL_CHOICE_LABEL:
                 port_set.add(current_sel)
-            new_sorted = sorted(list(port_set), key=natural_sort_key)
+            new_sorted = sorted(port_set, key=natural_sort_key)
             new_choices = [NULL_CHOICE_LABEL] + new_sorted
 
             model = row.get_model()

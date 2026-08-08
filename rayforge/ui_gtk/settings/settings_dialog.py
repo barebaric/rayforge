@@ -176,7 +176,7 @@ class SettingsWindow(PatchedDialogWindow):
     def _on_registry_changed(self, registry):
         """Reconcile addon pages with the current registry contents."""
         current = registry.get_pages()
-        current_set = set(id(cls) for cls in current)
+        current_set = {id(cls) for cls in current}
 
         # Remove pages that are no longer registered.
         for cls in list(self._addon_page_classes):
@@ -184,7 +184,7 @@ class SettingsWindow(PatchedDialogWindow):
                 self._remove_addon_page(cls)
 
         # Add pages that are newly registered, preserving registry order.
-        existing_ids = set(id(cls) for cls in self._addon_page_classes)
+        existing_ids = {id(cls) for cls in self._addon_page_classes}
         for cls in current:
             if id(cls) not in existing_ids:
                 self._add_addon_page(cls)

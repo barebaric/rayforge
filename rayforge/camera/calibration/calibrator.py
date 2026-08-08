@@ -144,8 +144,10 @@ class CameraCalibrator:
         if self._frame_count < self.MIN_FRAMES:
             return (
                 False,
-                f"Need at least {self.MIN_FRAMES} frames "
-                f"(have {self._frame_count})",
+                (
+                    f"Need at least {self.MIN_FRAMES} frames "
+                    f"(have {self._frame_count})"
+                ),
             )
 
         total_unique_corners = len(
@@ -155,9 +157,11 @@ class CameraCalibrator:
         if total_unique_corners < self.MIN_UNIQUE_CORNERS:
             return (
                 False,
-                f"Need {self.MIN_UNIQUE_CORNERS}+ unique corners "
-                f"(have {total_unique_corners}). "
-                f"Move card to different positions.",
+                (
+                    f"Need {self.MIN_UNIQUE_CORNERS}+ unique corners "
+                    f"(have {total_unique_corners}). "
+                    f"Move card to different positions."
+                ),
             )
 
         coverage_level, coverage_msg = self.get_coverage_quality()

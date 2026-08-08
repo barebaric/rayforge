@@ -81,7 +81,7 @@ class TestDummyDriverCallback:
 
         # Verify callback was called with correct op_index
         for i, call in enumerate(callback_mock.call_args_list):
-            args, kwargs = call
+            args, _kwargs = call
             assert args[0] == i  # op_index
 
     @pytest.mark.asyncio
@@ -99,7 +99,7 @@ class TestDummyDriverCallback:
 
         # Verify all callbacks were awaited
         for call in callback_mock.call_args_list:
-            args, kwargs = call
+            args, _kwargs = call
             assert args[0] in range(len(simple_ops))
 
     @pytest.mark.asyncio

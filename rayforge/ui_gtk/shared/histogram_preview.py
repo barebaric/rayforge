@@ -92,7 +92,7 @@ class HistogramPreview(Gtk.DrawingArea):
     def _x_to_value(self, x: float, width: int) -> int:
         draw_width = width - 2 * self.MARGIN
         ratio = (x - self.MARGIN) / draw_width
-        return int(round(ratio * 255))
+        return round(ratio * 255)
 
     def _get_handle_at(
         self, x: float, y: float, width: int, height: int

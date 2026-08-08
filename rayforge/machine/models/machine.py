@@ -352,7 +352,7 @@ class Machine:
         """
         Returns the list of supported Work Coordinate Systems from the driver.
         """
-        return sorted(list(self.coordinate_systems.keys()))
+        return sorted(self.coordinate_systems.keys())
 
     def get_wcs_list(self) -> list[CoordinateSystem]:
         """Returns a sorted list of CoordinateSystem objects."""
@@ -406,9 +406,7 @@ class Machine:
             return True
         current_uids = {r.uid for r in self._mounted_rotaries}
         new_uids = {r.uid for r in rotaries}
-        if current_uids != new_uids:
-            return True
-        return False
+        return current_uids != new_uids
 
     def get_head_specs(self) -> list[HeadSpec]:
         """Return the head specs used to build an assembly.

@@ -100,7 +100,7 @@ def check_pixel_hit(
     # --- Fuzzy hit check ---
     else:
         # The hit_distance is in screen pixels, making it intuitive.
-        radius_px = int(round(hit_distance))
+        radius_px = round(hit_distance)
         # Add a safety clamp to prevent a deadlock if a huge value is given
         radius_px = min(radius_px, 50)
         radius_sq = radius_px * radius_px

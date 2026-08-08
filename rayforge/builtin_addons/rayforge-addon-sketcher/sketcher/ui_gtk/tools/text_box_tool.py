@@ -699,15 +699,17 @@ class TextBoxTool(SketchTool):
                     and constr.p1 == entity.width_id
                 ):
                     width_is_horizontal = True
-            elif isinstance(constr, VerticalConstraint):
-                if (
+            elif isinstance(constr, VerticalConstraint) and (
+                (
                     constr.p1 == entity.origin_id
                     and constr.p2 == entity.height_id
-                ) or (
+                )
+                or (
                     constr.p2 == entity.origin_id
                     and constr.p1 == entity.height_id
-                ):
-                    height_is_vertical = True
+                )
+            ):
+                height_is_vertical = True
 
         # Directly set point positions, respecting constraints
         if width_is_horizontal:

@@ -32,7 +32,7 @@ def test_straighten_converts_bezier_to_line(sketch, curved_bezier):
 
 
 def test_straighten_preserves_construction_flag(sketch, curved_bezier):
-    bezier_id, p1, p2 = curved_bezier
+    bezier_id, _p1, _p2 = curved_bezier
     bezier = sketch.registry.get_entity(bezier_id)
     bezier.construction = True
 
@@ -45,7 +45,7 @@ def test_straighten_preserves_construction_flag(sketch, curved_bezier):
 
 
 def test_straighten_undo_restores_bezier(sketch, curved_bezier):
-    bezier_id, p1, p2 = curved_bezier
+    bezier_id, _p1, _p2 = curved_bezier
     original_bezier = sketch.registry.get_entity(bezier_id)
     original_cp1 = original_bezier.cp1
     original_cp2 = original_bezier.cp2

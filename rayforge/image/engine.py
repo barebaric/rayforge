@@ -143,7 +143,7 @@ class NormalizationEngine:
             parse_result.untrimmed_document_bounds
             or parse_result.document_bounds
         )
-        ref_x_native, ref_y_native, ref_w_native, ref_h_native = ref_bounds
+        _ref_x_native, ref_y_native, _ref_w_native, ref_h_native = ref_bounds
 
         if parse_result.is_y_down:
             # Native is Y-Down (0 at top). We invert relative to the full page.
@@ -263,7 +263,7 @@ class NormalizationEngine:
         if not target_layers:
             # Fallback for empty files or no matching layers: use page bounds.
             # But if page bounds are effectively zero-sized, return empty plan.
-            bx, by, bw, bh = result.document_bounds
+            _bx, _by, bw, bh = result.document_bounds
             if bw <= 1e-6 or bh <= 1e-6:
                 return []
             return [

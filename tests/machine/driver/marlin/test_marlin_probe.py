@@ -12,8 +12,10 @@ from rayforge.shared.units.system import UnitSystem
 class TestBuildMarlinProfile:
     def test_full_profile(self):
         m115_lines = [
-            "FIRMWARE_NAME:Marlin 2.1.2.7 "
-            "MACHINE_TYPE:CustomLaser EXTRUDER_COUNT:1"
+            (
+                "FIRMWARE_NAME:Marlin 2.1.2.7 "
+                "MACHINE_TYPE:CustomLaser EXTRUDER_COUNT:1"
+            )
         ]
         m211_lines = ["X: 400.00 Y: 300.00 Z: 200.00 S: 1 (Enabled)"]
         m503_lines = [
@@ -39,7 +41,7 @@ class TestBuildMarlinProfile:
         assert warnings == []
 
     def test_minimal_profile(self):
-        profile, warnings = build_marlin_profile([], [], [], [])
+        profile, _warnings = build_marlin_profile([], [], [], [])
         assert profile.meta.name == "Unknown Marlin Device"
         assert profile.machine_config.axis_extents is None
         assert profile.machine_config.max_travel_speed is None
@@ -102,8 +104,10 @@ class TestDriverProbe:
         )
 
         m115_lines = [
-            "FIRMWARE_NAME:Marlin 2.1.2.7 "
-            "MACHINE_TYPE:CustomLaser EXTRUDER_COUNT:1"
+            (
+                "FIRMWARE_NAME:Marlin 2.1.2.7 "
+                "MACHINE_TYPE:CustomLaser EXTRUDER_COUNT:1"
+            )
         ]
         m211_lines = ["X: 400.00 Y: 300.00 Z: 200.00 S: 1 (Enabled)"]
         m503_lines = [
@@ -139,7 +143,7 @@ class TestDriverProbe:
         mock_cleanup = AsyncMock()
         mocker.patch.object(MarlinSerialDriver, "cleanup", mock_cleanup)
 
-        profile, warnings = await MarlinSerialDriver.probe(
+        profile, _warnings = await MarlinSerialDriver.probe(
             context_initializer,
             port="/dev/ttyUSB0",
             baudrate=115200,

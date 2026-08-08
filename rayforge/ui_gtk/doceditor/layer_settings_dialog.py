@@ -265,9 +265,9 @@ class LayerSettingsDialog(PatchedDialogWindow):
         if self._is_initializing:
             return
         rgba = button.get_rgba()
-        r = int(round(rgba.red * 255))
-        g = int(round(rgba.green * 255))
-        b = int(round(rgba.blue * 255))
+        r = round(rgba.red * 255)
+        g = round(rgba.green * 255)
+        b = round(rgba.blue * 255)
         hex_color = f"#{r:02x}{g:02x}{b:02x}"
         self.layer.set_color(hex_color)
 

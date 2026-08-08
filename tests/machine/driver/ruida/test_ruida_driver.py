@@ -99,7 +99,7 @@ async def driver(
 
     Uses the host/port from the running simulator fixture.
     """
-    sim, host, port, jog_port = ruida_simulator
+    _sim, host, port, jog_port = ruida_simulator
 
     machine = Machine(lite_context)
     machine.driver_name = "RuidaDriver"
@@ -138,7 +138,7 @@ async def test_connect_to_simulator(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_move_to_updates_position(driver, ruida_simulator):
     """Test that move_to command updates simulator position."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -157,7 +157,7 @@ async def test_move_to_updates_position(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_move_to_negative_position(driver, ruida_simulator):
     """Test that move_to works with negative coordinates."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -176,7 +176,7 @@ async def test_move_to_negative_position(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_home_xy_resets_position(driver, ruida_simulator):
     """Test that home_xy command resets position to zero."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -195,7 +195,7 @@ async def test_home_xy_resets_position(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_home_z_axis(driver, ruida_simulator):
     """Test that home command with Z only does not move axes."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -212,7 +212,7 @@ async def test_home_z_axis(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_home_all_axes(driver, ruida_simulator):
     """Test that home with None moves to origin (soft home)."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -233,7 +233,7 @@ async def test_home_all_axes(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_home_xy_only(driver, ruida_simulator):
     """Test that home can target only XY axes."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -254,7 +254,7 @@ async def test_home_xy_only(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_set_power(driver, ruida_simulator):
     """Test that set_power command works correctly."""
-    sim, host, port, jog_port = ruida_simulator
+    _sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -271,7 +271,7 @@ async def test_set_power(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_set_power_zero(driver, ruida_simulator):
     """Test that set_power(0) disables power."""
-    sim, host, port, jog_port = ruida_simulator
+    _sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -288,7 +288,7 @@ async def test_set_power_zero(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_jog_x_axis(driver, ruida_simulator):
     """Test that jog command works for X axis."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -305,7 +305,7 @@ async def test_jog_x_axis(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_jog_y_axis(driver, ruida_simulator):
     """Test that jog command works for Y axis."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -322,7 +322,7 @@ async def test_jog_y_axis(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_jog_both_axes(driver, ruida_simulator):
     """Test that jog can move both axes simultaneously."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -341,7 +341,7 @@ async def test_jog_both_axes(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_jog_negative_direction(driver, ruida_simulator):
     """Test that jog works in negative direction."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -358,7 +358,7 @@ async def test_jog_negative_direction(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_set_hold(driver, ruida_simulator):
     """Test that set_hold pauses the process."""
-    sim, host, port, jog_port = ruida_simulator
+    _sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -374,7 +374,7 @@ async def test_set_hold(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_cancel(driver, ruida_simulator):
     """Test that cancel stops the process."""
-    sim, host, port, jog_port = ruida_simulator
+    _sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -387,7 +387,7 @@ async def test_cancel(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_clear_alarm(driver, ruida_simulator):
     """Test that clear_alarm works."""
-    sim, host, port, jog_port = ruida_simulator
+    _sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -450,7 +450,7 @@ async def test_set_wcs_offset_noop(driver):
 @pytest.mark.asyncio
 async def test_read_wcs_offsets(driver, ruida_simulator):
     """Test that read_wcs_offsets returns ref point offsets."""
-    sim, host, port, jog_port = ruida_simulator
+    _sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -500,7 +500,7 @@ async def test_run_probe_cycle_not_supported(driver):
 @pytest.mark.asyncio
 async def test_run_with_machine_code(driver, ruida_simulator):
     """Test that run method executes encoded commands on the simulator."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     doc = Doc()
     ops = Ops()
@@ -564,7 +564,7 @@ async def test_connection_status_signals(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_unit_conversion_mm_to_um(driver, ruida_simulator):
     """Test that mm values are correctly converted to µm."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -583,7 +583,7 @@ async def test_unit_conversion_mm_to_um(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_unit_conversion_small_values(driver, ruida_simulator):
     """Test unit conversion with sub-millimeter values."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -602,7 +602,7 @@ async def test_unit_conversion_small_values(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_multiple_moves_in_sequence(driver, ruida_simulator):
     """Test that multiple move commands work in sequence."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -627,7 +627,7 @@ async def test_multiple_moves_in_sequence(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_home_then_move(driver, ruida_simulator):
     """Test that home followed by move works correctly."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -652,7 +652,7 @@ async def test_home_then_move(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_multiple_jogs_in_sequence(driver, ruida_simulator):
     """Test that multiple jog commands work in sequence."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     assert await wait_for_connection(driver)
 
@@ -765,7 +765,7 @@ async def test_disconnect_when_not_connected(driver):
 @pytest.mark.asyncio
 async def test_cleanup_resets_transport(driver, ruida_simulator):
     """Test that cleanup properly resets transport objects."""
-    _, host, port, jog_port = ruida_simulator
+    _, host, port, _jog_port = ruida_simulator
     driver._setup_implementation(host=host, port=port, response_port=0)
 
     await driver.cleanup()
@@ -846,7 +846,7 @@ async def test_keepalive_timeout_behavior(driver, ruida_simulator):
 @pytest.mark.asyncio
 async def test_position_polling_updates_state(driver, ruida_simulator):
     """Test that position polling reads current position from controller."""
-    sim, host, port, jog_port = ruida_simulator
+    sim, _host, _port, _jog_port = ruida_simulator
 
     sim.x = 50000
     sim.y = 75000

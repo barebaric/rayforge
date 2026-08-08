@@ -282,12 +282,12 @@ class TestValidatePacket:
     """Test packet validation function."""
 
     def test_validate_empty_packet(self):
-        is_valid, payload, exp, act = validate_packet(b"")
+        is_valid, payload, _exp, _act = validate_packet(b"")
         assert is_valid is False
         assert payload == b""
 
     def test_validate_single_byte_packet(self):
-        is_valid, payload, exp, act = validate_packet(b"\x00")
+        is_valid, payload, _exp, _act = validate_packet(b"\x00")
         assert is_valid is False
         assert payload == b""
 

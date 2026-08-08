@@ -57,7 +57,7 @@ class LaserHeadVar(ChoiceVar):
             ]
             self.name_to_uid_map = {h.name: h.uid for h in laser_heads}
             self.uid_to_name_map = {h.uid: h.name for h in laser_heads}
-            head_names = sorted(list(self.name_to_uid_map.keys()))
+            head_names = sorted(self.name_to_uid_map.keys())
 
         # The value stored in the Var itself is the UID.
         # We need to translate the initial name-based value to a UID.

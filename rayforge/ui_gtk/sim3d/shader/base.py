@@ -12,6 +12,7 @@ from typing import Any
 import numpy as np
 from OpenGL import GL
 from OpenGL.GL import shaders
+from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +81,7 @@ class Shader:
         """Activates this shader program for rendering."""
         GL.glUseProgram(self.program)
 
-    def __enter__(self) -> "Shader":
+    def __enter__(self) -> Self:
         """
         Snapshots the current uniform values.
 

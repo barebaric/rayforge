@@ -33,7 +33,7 @@ def test_aspect_ratio_constraint(setup_env):
 
 
 def test_aspect_ratio_constraint_user_visible(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     p3 = reg.add_point(0, 10)
@@ -98,7 +98,7 @@ def test_aspect_ratio_constraint_zero_second_distance(setup_env):
 
 
 def test_aspect_ratio_constrains_radius_method(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     p3 = reg.add_point(0, 10)
@@ -110,7 +110,7 @@ def test_aspect_ratio_constrains_radius_method(setup_env):
 
 
 def test_aspect_ratio_targets_segment(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     p3 = reg.add_point(0, 10)
@@ -219,7 +219,7 @@ def test_aspect_ratio_constraint_serialization_round_trip(setup_env):
 
 
 def test_aspect_ratio_constraint_serialization_dict_format(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     p3 = reg.add_point(0, 10)
@@ -239,7 +239,7 @@ def test_aspect_ratio_constraint_serialization_dict_format(setup_env):
 
 
 def test_aspect_ratio_depends_on_points(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     p3 = reg.add_point(0, 10)
@@ -257,7 +257,7 @@ def test_aspect_ratio_depends_on_points(setup_env):
 
 
 def test_aspect_ratio_depends_on_entities(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     p3 = reg.add_point(0, 10)
@@ -270,7 +270,7 @@ def test_aspect_ratio_depends_on_entities(setup_env):
 
 
 def test_aspect_ratio_draw(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     p3 = reg.add_point(0, 10)

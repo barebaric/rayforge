@@ -97,7 +97,7 @@ def _handle_lbdev(
     callback: Callable[[DeviceProfile | None, str | None], None],
 ):
     try:
-        profile, summary = convert_to_profile(file_path)
+        _profile, summary = convert_to_profile(file_path)
     except Exception as e:
         logger.error(f"LightBurn import failed: {e}")
         callback(None, str(e))

@@ -55,7 +55,7 @@ def _build_group(ui_context):
 
 @pytest.mark.ui
 def test_crop_offset_shows_mm_by_default(ui_context):
-    group, transformer = _build_group(ui_context)
+    group, _transformer = _build_group(ui_context)
 
     assert group.offset_row.get_value_in_base_units() == pytest.approx(25.4)
     assert group.offset_row.get_value() == pytest.approx(25.4, abs=1e-2)
@@ -64,7 +64,7 @@ def test_crop_offset_shows_mm_by_default(ui_context):
 @pytest.mark.ui
 def test_crop_offset_shows_inches_when_imperial(ui_context):
     ui_context.config.unit_preferences["length"] = "in"
-    group, transformer = _build_group(ui_context)
+    group, _transformer = _build_group(ui_context)
 
     assert group.offset_row.get_value_in_base_units() == pytest.approx(25.4)
     assert group.offset_row.get_value() == pytest.approx(1.0, abs=1e-2)

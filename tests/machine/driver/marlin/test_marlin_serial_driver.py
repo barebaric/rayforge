@@ -140,7 +140,7 @@ class MarlinSimulator:
             self._write("ok\n")
         elif cmd == "M410":
             self._write("ok\n")
-        elif cmd.startswith("G0 ") or cmd.startswith("G1 "):
+        elif cmd.startswith(("G0 ", "G1 ")):
             xm = re.search(r"X([+-]?\d+\.?\d*)", cmd)
             ym = re.search(r"Y([+-]?\d+\.?\d*)", cmd)
             if xm:

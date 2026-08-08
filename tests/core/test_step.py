@@ -102,7 +102,7 @@ def test_set_visible_fires_signals(step):
 
 def test_hierarchy_properties(step_in_doc):
     """Tests the .workflow and .layer properties."""
-    doc, layer, workflow, step = step_in_doc
+    _doc, layer, workflow, step = step_in_doc
     assert step.workflow is workflow
     assert step.layer is layer
 

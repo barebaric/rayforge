@@ -80,8 +80,8 @@ def _get_margins_from_data(
         if not w_str or not h_str:
             return 0.0, 0.0, 0.0, 0.0  # Cannot determine aspect ratio.
 
-        orig_w, w_unit = parse_svg_length(w_str)
-        orig_h, h_unit = parse_svg_length(h_str)
+        orig_w, _w_unit = parse_svg_length(w_str)
+        orig_h, _h_unit = parse_svg_length(h_str)
         # Normalise to numeric values (unit suffix is handled separately)
         orig_w = float(orig_w)
         orig_h = float(orig_h)

@@ -76,7 +76,7 @@ class LayoutStrategy(ABC):
         items_to_measure = []
         if isinstance(item, WorkPiece):
             items_to_measure.append(item)
-        elif isinstance(item, Group) or isinstance(item, Layer):
+        elif isinstance(item, (Group, Layer)):
             items_to_measure.extend(item.get_descendants(of_type=WorkPiece))
         elif isinstance(item, StockItem):
             items_to_measure.append(item)

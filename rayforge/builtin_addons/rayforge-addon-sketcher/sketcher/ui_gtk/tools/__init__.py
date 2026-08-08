@@ -75,7 +75,7 @@ def build_key_to_tool_map() -> dict[str, str]:
 def build_action_tool_map() -> dict[str, str]:
     """Build mapping: action name -> tool name for all tools."""
     action_map = {}
-    for tool_name, tool_cls in TOOL_REGISTRY.items():
+    for tool_name in TOOL_REGISTRY:
         action_name = f"tool_{tool_name}"
         action_map[action_name] = tool_name
     return action_map

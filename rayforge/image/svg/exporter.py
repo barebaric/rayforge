@@ -53,8 +53,10 @@ class GeometrySvgExporter(BaseExporter):
             f'viewBox="{-padding} {-padding} {svg_width:.3f} {svg_height:.3f}"'
         )
         svg_parts = [
-            f'<svg xmlns="http://www.w3.org/2000/svg" '
-            f'width="{svg_width:.3f}mm" height="{svg_height:.3f}mm" {vb}>'
+            (
+                f'<svg xmlns="http://www.w3.org/2000/svg" '
+                f'width="{svg_width:.3f}mm" height="{svg_height:.3f}mm" {vb}>'
+            )
         ]
 
         if path_data:
@@ -191,8 +193,10 @@ class MultiGeometrySvgExporter(BaseExporter):
             f'viewBox="{-padding} {-padding} {svg_width:.3f} {svg_height:.3f}"'
         )
         svg_parts = [
-            f'<svg xmlns="http://www.w3.org/2000/svg" '
-            f'width="{svg_width:.3f}mm" height="{svg_height:.3f}mm" {vb}>'
+            (
+                f'<svg xmlns="http://www.w3.org/2000/svg" '
+                f'width="{svg_width:.3f}mm" height="{svg_height:.3f}mm" {vb}>'
+            )
         ]
 
         single_exporter = GeometrySvgExporter(Geometry())

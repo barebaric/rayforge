@@ -144,7 +144,7 @@ def setup_camera_page(dialog):
 def take_wizard_screenshot(parent_dialog, wizard_page: str, output: str):
     """Open the lens calibration wizard directly and take a screenshot."""
 
-    camera, controller = add_mock_camera(parent_dialog)
+    _camera, controller = add_mock_camera(parent_dialog)
     if not controller:
         logger.error("Failed to create mock camera controller")
         return
@@ -226,7 +226,7 @@ def main():
         app.quit_idle()
         return
 
-    camera, controller = add_mock_camera(dialog)
+    _camera, controller = add_mock_camera(dialog)
     if not controller:
         logger.error("Failed to create mock camera controller")
         app.quit_idle()

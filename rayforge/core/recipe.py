@@ -194,12 +194,10 @@ class Recipe:
             if self.material_uid is not None:
                 return False
             # If recipe has thickness constraint, it can't match without stock
-            if (
+            return not (
                 self.min_thickness_mm is not None
                 or self.max_thickness_mm is not None
-            ):
-                return False
-            return True
+            )
 
         # 6. Check if recipe matches ANY of the stock items
         for stock_item in stock_items:

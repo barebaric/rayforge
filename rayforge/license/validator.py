@@ -48,12 +48,11 @@ class LicenseValidator:
         )
         has_patreon = license_config.get("patreon_tier_ids")
 
-        if has_gumroad:
-            if self._gumroad.is_configured():
-                result = self._gumroad.validate(license_config)
-                if result.status == LicenseStatus.VALID:
-                    self._cache[addon_id] = (result, datetime.now())
-                    return result
+        if has_gumroad and self._gumroad.is_configured():
+            result = self._gumroad.validate(license_config)
+            if result.status == LicenseStatus.VALID:
+                self._cache[addon_id] = (result, datetime.now())
+                return result
 
         if has_patreon and self._patreon:
             if self._patreon.is_configured():

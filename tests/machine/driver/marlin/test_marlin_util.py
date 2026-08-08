@@ -257,12 +257,14 @@ class TestStripGcodeComments:
 class TestParseM115FirmwareInfo:
     def test_full_m115_response(self):
         lines = [
-            "FIRMWARE_NAME:Marlin 2.1.2.7 "
-            "(Marlin 3D Printer Firmware) "
-            "SOURCE_CODE_URL:https://github.com/MarlinFirmware"
-            "/Marlin PROTOCOL_VERSION:1.0 "
-            "MACHINE_TYPE:Custom Laser "
-            "EXTRUDER_COUNT:1 UUID:abcdef",
+            (
+                "FIRMWARE_NAME:Marlin 2.1.2.7 "
+                "(Marlin 3D Printer Firmware) "
+                "SOURCE_CODE_URL:https://github.com/MarlinFirmware"
+                "/Marlin PROTOCOL_VERSION:1.0 "
+                "MACHINE_TYPE:Custom Laser "
+                "EXTRUDER_COUNT:1 UUID:abcdef"
+            ),
         ]
         result = parse_m115_firmware_info(lines)
         assert result["firmware_name"] == "Marlin"
@@ -337,15 +339,19 @@ class TestParseM503Settings:
 class TestExtractMarlinDeviceName:
     def test_machine_type_from_m115(self):
         lines = [
-            "FIRMWARE_NAME:Marlin 2.1.2.7 "
-            "MACHINE_TYPE:CustomCNC EXTRUDER_COUNT:1"
+            (
+                "FIRMWARE_NAME:Marlin 2.1.2.7 "
+                "MACHINE_TYPE:CustomCNC EXTRUDER_COUNT:1"
+            )
         ]
         assert extract_marlin_device_name(lines) == "CustomCNC"
 
     def test_generic_machine_type_falls_back(self):
         lines = [
-            "FIRMWARE_NAME:Marlin 2.1.2.7 "
-            "MACHINE_TYPE:3D Printer EXTRUDER_COUNT:1"
+            (
+                "FIRMWARE_NAME:Marlin 2.1.2.7 "
+                "MACHINE_TYPE:3D Printer EXTRUDER_COUNT:1"
+            )
         ]
         assert extract_marlin_device_name(lines) == "Marlin"
 

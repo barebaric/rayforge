@@ -183,7 +183,7 @@ class LicenseSettingsPage(TrackedPreferencesPage):
                     "Set RAYFORGE_PATREON_CLIENT_ID environment variable."
                 )
                 return
-            port, thread = result
+            _port, _thread = result
             oauth_url = validator.get_patreon_oauth_url()
             if oauth_url:
                 logger.info("Opening Patreon OAuth URL")

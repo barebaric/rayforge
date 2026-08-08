@@ -131,7 +131,7 @@ class PdfVectorImporter(Importer):
             )
 
             native_unit_to_mm = PT_TO_MM
-            x, y, w, h = document_bounds
+            x, _y, w, h = document_bounds
             world_frame = (
                 x * native_unit_to_mm,
                 0.0,

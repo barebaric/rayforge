@@ -102,9 +102,7 @@ class ConversionEngine:
                 self.unitmap[(t2_squared, t1_squared)] = 1 / squared_factor
 
         # Add identity conversions
-        all_units = set(k[0] for k in self.unitmap) | set(
-            k[1] for k in self.unitmap
-        )
+        all_units = {k[0] for k in self.unitmap} | {k[1] for k in self.unitmap}
         for unit in all_units:
             self.unitmap[(unit, unit)] = 1.0
 

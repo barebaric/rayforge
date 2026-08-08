@@ -433,10 +433,7 @@ class SketchCanvas(WorldSurface):
             return True
 
         # Then, let the base class handle its keys (e.g., '1' for reset view)
-        if super().on_key_pressed(controller, keyval, keycode, state):
-            return True
-
-        return False
+        return bool(super().on_key_pressed(controller, keyval, keycode, state))
 
     def update_sketch_cursor(self):
         """Forces an update of the cursor based on the editor's state."""

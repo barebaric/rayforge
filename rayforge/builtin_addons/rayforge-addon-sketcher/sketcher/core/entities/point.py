@@ -55,12 +55,10 @@ class Point:
         if sketch is not None:
             point_ids.update(sketch.get_coincident_points(self.id))
         for entity in registry.entities:
-            if isinstance(entity, Bezier):
-                if (
-                    entity.start_idx in point_ids
-                    or entity.end_idx in point_ids
-                ):
-                    connected.append(entity)
+            if isinstance(entity, Bezier) and (
+                entity.start_idx in point_ids or entity.end_idx in point_ids
+            ):
+                connected.append(entity)
         return connected
 
     def get_paired_beziers(

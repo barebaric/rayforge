@@ -93,8 +93,10 @@ def test_safe_list_ports_linux(monkeypatch):
             return ["/dev/ttyACM0"]
         if pattern == "/dev/serial/by-id/*":
             return [
-                "/dev/serial/by-id/"
-                "usb-FTDI_FT232R_USB_UART_AH03K1A0-if00-port0"
+                (
+                    "/dev/serial/by-id/"
+                    "usb-FTDI_FT232R_USB_UART_AH03K1A0-if00-port0"
+                )
             ]
         if pattern == "/dev/serial/by-path/*":
             return ["/dev/serial/by-path/pci-0000:00:14.0-usb-0:1:1.0-port0"]
@@ -122,8 +124,10 @@ def test_safe_list_ports_linux_symlinks_only(monkeypatch):
             return []
         if pattern == "/dev/serial/by-id/*":
             return [
-                "/dev/serial/by-id/"
-                "usb-FTDI_FT232R_USB_UART_AH03K1A0-if00-port0"
+                (
+                    "/dev/serial/by-id/"
+                    "usb-FTDI_FT232R_USB_UART_AH03K1A0-if00-port0"
+                )
             ]
         if pattern == "/dev/serial/by-path/*":
             return []
