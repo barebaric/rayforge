@@ -181,10 +181,15 @@ class DistanceConstraint(Constraint):
         if p1 and p2:
             entities = reg.entities or []
             for entity in entities:
-                if isinstance(entity, Line):
-                    if {entity.p1_idx, entity.p2_idx} == {self.p1, self.p2}:
-                        has_geometry = True
-                        break
+                if isinstance(entity, Line) and {
+                    entity.p1_idx,
+                    entity.p2_idx,
+                } == {
+                    self.p1,
+                    self.p2,
+                }:
+                    has_geometry = True
+                    break
 
             if not has_geometry:
                 s1 = to_screen((p1.x, p1.y))
@@ -275,10 +280,12 @@ class DistanceConstraint(Constraint):
         has_geometry = False
         entities = registry.entities or []
         for entity in entities:
-            if isinstance(entity, Line):
-                if {entity.p1_idx, entity.p2_idx} == {self.p1, self.p2}:
-                    has_geometry = True
-                    break
+            if isinstance(entity, Line) and {entity.p1_idx, entity.p2_idx} == {
+                self.p1,
+                self.p2,
+            }:
+                has_geometry = True
+                break
 
         if not has_geometry:
             ctx.set_line_width(1)

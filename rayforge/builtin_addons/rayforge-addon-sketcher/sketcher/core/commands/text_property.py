@@ -115,16 +115,16 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
             }
             # Find and store the old aspect ratio constraint
             for idx, constr in enumerate(self.sketch.constraints or []):
-                if isinstance(constr, AspectRatioConstraint):
-                    if (
-                        constr.p1 == text_entity.origin_id
-                        and constr.p2 == text_entity.width_id
-                        and constr.p3 == text_entity.origin_id
-                        and constr.p4 == text_entity.height_id
-                    ):
-                        self.aspect_ratio_constraint_idx = idx
-                        self.old_aspect_ratio = constr.ratio
-                        break
+                if (
+                    isinstance(constr, AspectRatioConstraint)
+                    and constr.p1 == text_entity.origin_id
+                    and constr.p2 == text_entity.width_id
+                    and constr.p3 == text_entity.origin_id
+                    and constr.p4 == text_entity.height_id
+                ):
+                    self.aspect_ratio_constraint_idx = idx
+                    self.old_aspect_ratio = constr.ratio
+                    break
 
         # Update the entity's content first.
         text_entity.content = self.new_content
@@ -203,9 +203,11 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         point_ids = {pt.id for pt in self._removed_points}
 
         for constr in self.sketch.constraints:
-            if constr not in self._removed_constraints:
-                if constr.depends_on_points(point_ids):
-                    self._removed_constraints.append(constr)
+            if (
+                constr not in self._removed_constraints
+                and constr.depends_on_points(point_ids)
+            ):
+                self._removed_constraints.append(constr)
 
         registry.entities = [
             e for e in registry.entities if e.id != text_entity.id
@@ -261,9 +263,11 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         point_ids = {pt.id for pt in self._removed_points}
 
         for constr in self.sketch.constraints:
-            if constr not in self._removed_constraints:
-                if constr.depends_on_points(point_ids):
-                    self._removed_constraints.append(constr)
+            if (
+                constr not in self._removed_constraints
+                and constr.depends_on_points(point_ids)
+            ):
+                self._removed_constraints.append(constr)
 
         registry.entities = [
             e for e in registry.entities if e.id != text_entity.id

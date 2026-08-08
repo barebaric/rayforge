@@ -1108,11 +1108,15 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_machine_status_changed(self, machine: Machine, state: DeviceState):
         """Called when the active machine's state changes."""
         config = get_context().config
-        if self.needs_homing and config.machine and config.machine.driver:
-            if state.status == DeviceStatus.IDLE:
-                self.needs_homing = False
-                driver = config.machine.driver
-                task_mgr.add_coroutine(lambda ctx: driver.home())
+        if (
+            self.needs_homing
+            and config.machine
+            and config.machine.driver
+            and state.status == DeviceStatus.IDLE
+        ):
+            self.needs_homing = False
+            driver = config.machine.driver
+            task_mgr.add_coroutine(lambda ctx: driver.home())
         self._update_actions_and_ui()
 
     def _on_connection_status_changed(

@@ -580,24 +580,29 @@ class WorkSurface(WorldSurface):
         logger.debug("WorkSurface.on_button_press fired")
 
         # Handle click-to-zero mode
-        if self._click_to_zero_mode:
-            if gesture.get_button() == Gdk.BUTTON_PRIMARY and n_press == 1:
-                world_x, world_y = self._get_world_coords(x, y)
-                if self.machine:
-                    space = self.machine.get_coordinate_space()
-                    machine_x, machine_y = space.world_point_to_machine(
-                        world_x, world_y
-                    )
-                else:
-                    machine_x, machine_y = world_x, world_y
-                self.work_zero_requested.send(self, x=machine_x, y=machine_y)
-                return
+        if (
+            self._click_to_zero_mode
+            and gesture.get_button() == Gdk.BUTTON_PRIMARY
+            and n_press == 1
+        ):
+            world_x, world_y = self._get_world_coords(x, y)
+            if self.machine:
+                space = self.machine.get_coordinate_space()
+                machine_x, machine_y = space.world_point_to_machine(
+                    world_x, world_y
+                )
+            else:
+                machine_x, machine_y = world_x, world_y
+            self.work_zero_requested.send(self, x=machine_x, y=machine_y)
+            return
 
         # A left-click should clear any lingering right-click context.
-        if gesture.get_button() == Gdk.BUTTON_PRIMARY:
-            if self.right_click_context:
-                self.right_click_context = None
-                self.context_changed.send(self)
+        if (
+            gesture.get_button() == Gdk.BUTTON_PRIMARY
+            and self.right_click_context
+        ):
+            self.right_click_context = None
+            self.context_changed.send(self)
 
         logger.debug(
             f"Button press: n_press={n_press}, pos=({x:.2f}, {y:.2f})"

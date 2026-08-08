@@ -154,19 +154,16 @@ def _validate_machine_config(config: dict[str, Any], manifest_path: Path):
     if "heads" in config and not isinstance(config["heads"], list):
         raise ValueError(f"'heads' must be a list in {manifest_path}")
 
-    if "hookmacros" in config:
-        if not isinstance(config["hookmacros"], list):
-            raise ValueError(f"'hookmacros' must be a list in {manifest_path}")
+    if "hookmacros" in config and not isinstance(config["hookmacros"], list):
+        raise ValueError(f"'hookmacros' must be a list in {manifest_path}")
 
-    if "rotary_modules" in config:
-        if not isinstance(config["rotary_modules"], list):
-            raise ValueError(
-                f"'rotary_modules' must be a list in {manifest_path}"
-            )
+    if "rotary_modules" in config and not isinstance(
+        config["rotary_modules"], list
+    ):
+        raise ValueError(f"'rotary_modules' must be a list in {manifest_path}")
 
-    if "nogo_zones" in config:
-        if not isinstance(config["nogo_zones"], list):
-            raise ValueError(f"'nogo_zones' must be a list in {manifest_path}")
+    if "nogo_zones" in config and not isinstance(config["nogo_zones"], list):
+        raise ValueError(f"'nogo_zones' must be a list in {manifest_path}")
 
     if "cameras" in config and not isinstance(config["cameras"], list):
         raise ValueError(f"'cameras' must be a list in {manifest_path}")

@@ -54,15 +54,14 @@ class LicenseValidator:
                 self._cache[addon_id] = (result, datetime.now(tz=timezone.utc))
                 return result
 
-        if has_patreon and self._patreon:
-            if self._patreon.is_configured():
-                result = self._patreon.validate(license_config)
-                if result.status == LicenseStatus.VALID:
-                    self._cache[addon_id] = (
-                        result,
-                        datetime.now(tz=timezone.utc),
-                    )
-                    return result
+        if has_patreon and self._patreon and self._patreon.is_configured():
+            result = self._patreon.validate(license_config)
+            if result.status == LicenseStatus.VALID:
+                self._cache[addon_id] = (
+                    result,
+                    datetime.now(tz=timezone.utc),
+                )
+                return result
 
         if has_gumroad and has_patreon:
             message = (

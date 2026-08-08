@@ -169,9 +169,11 @@ class UnstickJunctionCommand(SketchChangeCommand):
                     e.center_idx,
                 ]:
                     entities_at_junction.append(e)
-            elif isinstance(e, Circle):
-                if self.junction_pid in [e.center_idx, e.radius_pt_idx]:
-                    entities_at_junction.append(e)
+            elif isinstance(e, Circle) and self.junction_pid in [
+                e.center_idx,
+                e.radius_pt_idx,
+            ]:
+                entities_at_junction.append(e)
 
         if len(entities_at_junction) < 2:
             return

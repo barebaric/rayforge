@@ -197,12 +197,13 @@ class _VarSetRowManager:
     ):
         self._add_apply_button_if_needed(row, var.key)
         self._add_reset_button_if_needed(row, var, adapter)
-        if adapter is not None:
-            if not self.explicit_apply or adapter.has_natural_commit:
-                adapter.changed.connect(
-                    lambda sender: self._on_data_changed(var.key),
-                    weak=False,
-                )
+        if adapter is not None and (
+            not self.explicit_apply or adapter.has_natural_commit
+        ):
+            adapter.changed.connect(
+                lambda sender: self._on_data_changed(var.key),
+                weak=False,
+            )
 
     def set_apply_buttons_sensitive(self, sensitive: bool):
         for button in self._apply_buttons:

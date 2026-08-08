@@ -651,9 +651,8 @@ class CircularArrayDialog(_BaseArrayDialog):
         self._update_preview()
 
     def _detach_preview(self) -> None:
-        if self._crosshair is not None:
-            if self._crosshair.parent is not None:
-                self._crosshair.remove()
+        if self._crosshair is not None and self._crosshair.parent is not None:
+            self._crosshair.remove()
         self._crosshair = None
         super()._detach_preview()
 

@@ -358,11 +358,9 @@ class Sketch(IAsset, IGeometryProvider):
 
         # 4. Check all points
         for p in self.registry.points:
-            if not p.constrained:
-                # If point is unconstrained, it must be in the exempt list
-                if p.id not in allowed_unconstrained_ids:
-                    return False
-
+            if not p.constrained and p.id not in allowed_unconstrained_ids:
+                # Unconstrained points must be in the exempt list
+                return False
         return True
 
     @property
@@ -923,11 +921,10 @@ class Sketch(IAsset, IGeometryProvider):
                 else:
                     loop = []  # Loop did not close
 
-                if loop:
-                    if self._calculate_loop_signed_area(loop) > 1e-6:
-                        loops.append(loop)
-                        # Mark all half-edges from the valid loop as visited
-                        visited_half_edges.update(loop_half_edges)
+                if loop and self._calculate_loop_signed_area(loop) > 1e-6:
+                    loops.append(loop)
+                    # Mark all half-edges from the valid loop as visited
+                    visited_half_edges.update(loop_half_edges)
 
         # Add circles as single-entity loops
         for e in self.registry.entities:
@@ -1376,10 +1373,13 @@ class Sketch(IAsset, IGeometryProvider):
 
         # Apply Coincident Constraints
         for c in self.constraints:
-            if isinstance(c, CoincidentConstraint):
-                # Ensure points exist (sanity check)
-                if c.p1 in parent and c.p2 in parent:
-                    union(c.p1, c.p2)
+            if (
+                isinstance(c, CoincidentConstraint)
+                and c.p1 in parent
+                and c.p2 in parent
+            ):
+                # Points exist (sanity check)
+                union(c.p1, c.p2)
 
         adj = defaultdict(list)
         for e in chainable:

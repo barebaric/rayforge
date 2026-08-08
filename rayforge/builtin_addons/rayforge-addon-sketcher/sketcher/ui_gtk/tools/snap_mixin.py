@@ -294,9 +294,10 @@ class SnapMixin:
             and self.current_snap_result.primary_snap_point
         ):
             sp = self.current_snap_result.primary_snap_point
-            if sp.line_type == SnapLineType.ENTITY_POINT:
-                if isinstance(sp.source, Point):
-                    return sp.source.id
+            if sp.line_type == SnapLineType.ENTITY_POINT and isinstance(
+                sp.source, Point
+            ):
+                return sp.source.id
         return None
 
     def clear_snap_result(self) -> None:

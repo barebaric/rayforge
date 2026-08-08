@@ -1052,9 +1052,12 @@ class CanvasElement:
 
         # 4. Optional: If inside the bounding box, perform pixel-perfect check.
         # Draggable elements should be hittable anywhere within their bbox.
-        if self.pixel_perfect_hit and not self.draggable:
-            if not self.is_pixel_opaque(local_geom_x, local_geom_y):
-                return None
+        if (
+            self.pixel_perfect_hit
+            and not self.draggable
+            and not self.is_pixel_opaque(local_geom_x, local_geom_y)
+        ):
+            return None
 
         # 5. If all checks pass, we have a hit on this element.
         return self

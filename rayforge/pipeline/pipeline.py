@@ -108,9 +108,12 @@ class Pipeline:
         if not self._doc:
             return False
         for layer in self._doc.layers:
-            if layer.workflow and layer.workflow.steps:
-                if layer.all_workpieces:
-                    return True
+            if (
+                layer.workflow
+                and layer.workflow.steps
+                and layer.all_workpieces
+            ):
+                return True
         return False
 
     def _can_generate_job(self) -> bool:

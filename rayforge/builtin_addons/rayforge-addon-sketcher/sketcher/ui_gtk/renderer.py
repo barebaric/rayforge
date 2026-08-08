@@ -629,11 +629,11 @@ class SketchRenderer:
                 continue
 
             # Hide constraints referencing construction geometry when hidden
-            if construction_entity_ids or construction_point_ids:
-                if constr.depends_on_entities(
-                    construction_entity_ids
-                ) or constr.depends_on_points(construction_point_ids):
-                    continue
+            if (construction_entity_ids or construction_point_ids) and (
+                constr.depends_on_entities(construction_entity_ids)
+                or constr.depends_on_points(construction_point_ids)
+            ):
+                continue
 
             is_sel = idx == self.element.selection.constraint_idx
             is_hovered = idx == hovered_constraint_idx
@@ -934,11 +934,11 @@ class SketchRenderer:
         if isinstance(tool, PathTool):
             preview_state = tool.get_preview_state()
 
-        if isinstance(preview_state, BezierPreviewState):
-            if not preview_state.is_line_preview:
-                self._draw_bezier_preview_handles(
-                    ctx, to_screen, preview_state
-                )
+        if (
+            isinstance(preview_state, BezierPreviewState)
+            and not preview_state.is_line_preview
+        ):
+            self._draw_bezier_preview_handles(ctx, to_screen, preview_state)
 
         selected_bezier_ids: set[int] = set()
         selected_point_ids: set[int] = set()

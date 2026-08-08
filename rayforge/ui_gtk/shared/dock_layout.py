@@ -286,12 +286,13 @@ class DockLayout(Gtk.Widget):
         pos = 0
         for i in range(len(self._area_sizes)):
             pos += self._area_sizes[i]
-            if abs(x - (pos + self._DIVIDER_WIDTH / 2)) <= self._DIVIDER_WIDTH:
-                if i + 1 < len(self._areas):
-                    left = self._areas[i].get_hexpand()
-                    right = self._areas[i + 1].get_hexpand()
-                    if left and right:
-                        return i
+            if abs(
+                x - (pos + self._DIVIDER_WIDTH / 2)
+            ) <= self._DIVIDER_WIDTH and i + 1 < len(self._areas):
+                left = self._areas[i].get_hexpand()
+                right = self._areas[i + 1].get_hexpand()
+                if left and right:
+                    return i
             pos += self._DIVIDER_WIDTH
 
         return -1

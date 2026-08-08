@@ -138,9 +138,10 @@ class SetWaypointTypeCommand(SketchChangeCommand):
 
         connected = []
         for entity in registry.entities:
-            if isinstance(entity, Line):
-                if entity.p1_idx in point_ids or entity.p2_idx in point_ids:
-                    connected.append((entity.id, entity.p1_idx, entity.p2_idx))
+            if isinstance(entity, Line) and (
+                entity.p1_idx in point_ids or entity.p2_idx in point_ids
+            ):
+                connected.append((entity.id, entity.p1_idx, entity.p2_idx))
         return connected
 
     def _convert_lines_to_beziers(

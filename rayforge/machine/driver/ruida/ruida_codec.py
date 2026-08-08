@@ -74,9 +74,12 @@ class RuidaCodec:
 
         Returns detected magic or None.
         """
-        if len(unswizzled) >= 4 and unswizzled[0] == 0xDA:
-            if unswizzled[1] == 0x00:
-                mem = parse_mem(unswizzled[2:4])
-                if mem in CARD_ID_TO_MAGIC:
-                    return CARD_ID_TO_MAGIC[mem]
+        if (
+            len(unswizzled) >= 4
+            and unswizzled[0] == 0xDA
+            and unswizzled[1] == 0x00
+        ):
+            mem = parse_mem(unswizzled[2:4])
+            if mem in CARD_ID_TO_MAGIC:
+                return CARD_ID_TO_MAGIC[mem]
         return None

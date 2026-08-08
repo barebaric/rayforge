@@ -601,11 +601,13 @@ class GrblSerialDriver(Driver):
             DeviceStatus.HOLD,
         ):
             return True
+
         buf_avail = self.state.buffer_available
-        if buf_avail is not None and transport._rx_buffer_size > 0:
-            if buf_avail >= transport._rx_buffer_size:
-                return True
-        return False
+        return (
+            buf_avail is not None
+            and transport._rx_buffer_size > 0
+            and buf_avail >= transport._rx_buffer_size
+        )
 
     async def _poll_and_check_idle(
         self, transport, hold_lock: bool = True
@@ -777,11 +779,13 @@ class GrblSerialDriver(Driver):
                         "Job cancelled, errored, or machine in ALARM "
                         "state. Stopping G-code sending."
                     )
-                    if self.state.status == DeviceStatus.ALARM:
-                        if not self._job_exception:
-                            self._job_exception = DeviceConnectionError(
-                                "Machine entered ALARM state during job."
-                            )
+                    if (
+                        self.state.status == DeviceStatus.ALARM
+                        and not self._job_exception
+                    ):
+                        self._job_exception = DeviceConnectionError(
+                            "Machine entered ALARM state during job."
+                        )
                     break
 
                 line = strip_gcode_comments(line)
@@ -1509,27 +1513,28 @@ class GrblSerialDriver(Driver):
             self.command_status_changed.send(self, status=TransportStatus.IDLE)
             logger.debug(f"Command '{request.command}' completed with 'ok'")
             self._set_request_finished(request)
-
         # Logic for streaming protocol during a job
-        if self._job_running and pending is not None:
-            if self._on_command_done and pending.op_index is not None:
-                for i in range(
-                    self._last_reported_op_index + 1,
-                    pending.op_index + 1,
-                ):
-                    try:
-                        logger.debug(
-                            f"Firing on_command_done for op_index {i}"
-                        )
-                        result = self._on_command_done(i)
-                        if inspect.isawaitable(result):
-                            asyncio.ensure_future(result)
-                    except Exception as e:
-                        logger.error(
-                            "Error in on_command_done callback",
-                            exc_info=e,
-                        )
-                self._last_reported_op_index = pending.op_index
+        if (
+            self._job_running
+            and pending is not None
+            and self._on_command_done
+            and pending.op_index is not None
+        ):
+            for i in range(
+                self._last_reported_op_index + 1,
+                pending.op_index + 1,
+            ):
+                try:
+                    logger.debug(f"Firing on_command_done for op_index {i}")
+                    result = self._on_command_done(i)
+                    if inspect.isawaitable(result):
+                        asyncio.ensure_future(result)
+                except Exception as e:
+                    logger.error(
+                        "Error in on_command_done callback",
+                        exc_info=e,
+                    )
+            self._last_reported_op_index = pending.op_index
 
     def _handle_error(self, text: str):
         """Handle a parsed 'error:...' response."""

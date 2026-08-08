@@ -135,10 +135,11 @@ class LeadInOutSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         self.lead_out_row.set_value_in_base_units(new_distance)
 
     def _on_step_updated(self, step: "Step"):
-        if self.target_dict.get("auto", True):
-            if step.cut_speed != self._previous_cut_speed:
-                self._previous_cut_speed = step.cut_speed
-                self._recalculate_distance()
+        if self.target_dict.get("auto", True) and (
+            step.cut_speed != self._previous_cut_speed
+        ):
+            self._previous_cut_speed = step.cut_speed
+            self._recalculate_distance()
 
     def _on_machine_changed(self, machine):
         if self.target_dict.get("auto", True):

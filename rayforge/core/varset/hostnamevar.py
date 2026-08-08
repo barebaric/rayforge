@@ -16,9 +16,12 @@ def is_valid_hostname_or_ip(s: str) -> bool:
     if len(s) <= 2 or len(s) > 253 or s.endswith("."):
         return False
     labels = s.split(".")
-    if len(labels) == 4 and any(label.isdigit() for label in labels):
-        if not all(label.isdigit() for label in labels):
-            return False
+    if (
+        len(labels) == 4
+        and any(label.isdigit() for label in labels)
+        and not all(label.isdigit() for label in labels)
+    ):
+        return False
     if s.replace(".", "").isdigit():
         return False
     for label in labels:

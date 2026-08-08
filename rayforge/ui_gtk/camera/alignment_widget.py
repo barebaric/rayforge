@@ -89,9 +89,11 @@ class CameraAlignmentSurface(WorldSurface):
         scale_x = content_w / self.width_mm if self.width_mm > 0 else 1
         scaled_threshold = threshold / (self.zoom_level * scale_x)
         for i, pt in enumerate(self.owner.image_points or []):
-            if pt is not None:
-                if math.hypot(pt[0] - x, pt[1] - y) < scaled_threshold:
-                    return i
+            if (
+                pt is not None
+                and math.hypot(pt[0] - x, pt[1] - y) < scaled_threshold
+            ):
+                return i
         return -1
 
     def on_image_click(self, gesture, n, x, y):
