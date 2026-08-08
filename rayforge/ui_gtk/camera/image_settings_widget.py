@@ -255,11 +255,12 @@ class CameraImageSettings(Gtk.Box):
         if self._updating_ui:
             return
         idx = self.resolution_row.get_selected()
-        if 0 <= idx < len(self._resolution_values):
-            if self._resolution_values[idx] == (-1, -1):
-                w = self.custom_width_row.get_int_value()
-                h = self.custom_height_row.get_int_value()
-                self.camera.resolution = (w, h)
+        if 0 <= idx < len(self._resolution_values) and (
+            self._resolution_values[idx] == (-1, -1)
+        ):
+            w = self.custom_width_row.get_int_value()
+            h = self.custom_height_row.get_int_value()
+            self.camera.resolution = (w, h)
 
     def _on_resolutions_probed(self, controller) -> None:
         self._resolution_values = [None]

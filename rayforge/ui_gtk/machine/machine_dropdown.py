@@ -248,10 +248,12 @@ class MachineDropdown(Gtk.DropDown):
 
             if selected_index >= 0 and self.get_selected() != selected_index:
                 self.set_selected(selected_index)
-            elif selected_index < 0 and self.get_selected() >= 0:
-                if len(self._model) > 0:
-                    self.set_selected(0)
-
+            elif (
+                selected_index < 0
+                and self.get_selected() >= 0
+                and len(self._model) > 0
+            ):
+                self.set_selected(0)
         finally:
             self.handler_unblock(self._selection_changed_handler_id)
 

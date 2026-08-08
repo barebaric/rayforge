@@ -263,9 +263,13 @@ class LaserControlWidget(Gtk.Box):
     def _turn_off(self):
         self._cancel_timer()
         head = self._get_selected_head()
-        if head and self.machine and self.machine.is_connected():
-            if self.machine_cmd:
-                self.machine_cmd.set_focus_power(head, 0, self.machine)
+        if (
+            head
+            and self.machine
+            and self.machine.is_connected()
+            and self.machine_cmd
+        ):
+            self.machine_cmd.set_focus_power(head, 0, self.machine)
         self._is_on = False
         self._update_toggle_ui()
         self._update_sensitivity()

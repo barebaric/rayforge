@@ -885,36 +885,45 @@ def _recalculate_positions(
 
     # 1. Infer WCO if explicitly missing but both MPos and WPos exist.
     # WCO = MPos - WPos
-    if mpos_found and wpos_found and not wco_found:
-        if all(v is not None for v in machine_pos) and all(
-            v is not None for v in work_pos
-        ):
-            m_float = cast(tuple[float, ...], machine_pos)
-            w_float = cast(tuple[float, ...], work_pos)
-            wco = tuple(m_float[i] - w_float[i] for i in range(n))
+    if (
+        mpos_found
+        and wpos_found
+        and not wco_found
+        and all(v is not None for v in machine_pos)
+        and all(v is not None for v in work_pos)
+    ):
+        m_float = cast(tuple[float, ...], machine_pos)
+        w_float = cast(tuple[float, ...], work_pos)
+        wco = tuple(m_float[i] - w_float[i] for i in range(n))
 
     # 2. Recalculate missing positions based on what we have.
     # If MPos is known, calculate WPos.
-    if mpos_found and all(v is not None for v in machine_pos):
-        if all(v is not None for v in wco):
-            m_float = cast(tuple[float, ...], machine_pos)
-            wco_float = cast(tuple[float, ...], wco)
-            return (
-                machine_pos,
-                tuple(m_float[i] - wco_float[i] for i in range(n)),
-                wco,
-            )
+    if (
+        mpos_found
+        and all(v is not None for v in machine_pos)
+        and all(v is not None for v in wco)
+    ):
+        m_float = cast(tuple[float, ...], machine_pos)
+        wco_float = cast(tuple[float, ...], wco)
+        return (
+            machine_pos,
+            tuple(m_float[i] - wco_float[i] for i in range(n)),
+            wco,
+        )
 
     # If WPos is known (and MPos isn't), calculate MPos.
-    elif wpos_found and all(v is not None for v in work_pos):
-        if all(v is not None for v in wco):
-            w_float = cast(tuple[float, ...], work_pos)
-            wco_float = cast(tuple[float, ...], wco)
-            return (
-                tuple(w_float[i] + wco_float[i] for i in range(n)),
-                work_pos,
-                wco,
-            )
+    elif (
+        wpos_found
+        and all(v is not None for v in work_pos)
+        and all(v is not None for v in wco)
+    ):
+        w_float = cast(tuple[float, ...], work_pos)
+        wco_float = cast(tuple[float, ...], wco)
+        return (
+            tuple(w_float[i] + wco_float[i] for i in range(n)),
+            work_pos,
+            wco,
+        )
 
     return machine_pos, work_pos, wco
 

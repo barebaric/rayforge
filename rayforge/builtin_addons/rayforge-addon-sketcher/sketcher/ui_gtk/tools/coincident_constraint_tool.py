@@ -43,20 +43,23 @@ class CoincidentConstraintTool(SketchTool):
         self, sketch, p1_id: int, p2_id: int
     ) -> bool:
         for c in sketch.constraints:
-            if isinstance(c, CoincidentConstraint):
-                if (c.p1 == p1_id and c.p2 == p2_id) or (
-                    c.p1 == p2_id and c.p2 == p1_id
-                ):
-                    return True
+            if isinstance(c, CoincidentConstraint) and (
+                (c.p1 == p1_id and c.p2 == p2_id)
+                or (c.p1 == p2_id and c.p2 == p1_id)
+            ):
+                return True
         return False
 
     def _has_point_on_line_constraint(
         self, sketch, point_id: int, entity_id: int
     ) -> bool:
         for c in sketch.constraints:
-            if isinstance(c, PointOnLineConstraint):
-                if c.point_id == point_id and c.shape_id == entity_id:
-                    return True
+            if (
+                isinstance(c, PointOnLineConstraint)
+                and c.point_id == point_id
+                and c.shape_id == entity_id
+            ):
+                return True
         return False
 
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:

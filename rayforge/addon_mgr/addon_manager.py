@@ -892,10 +892,13 @@ class AddonManager:
         compiled_count = 0
         for po_file in locales_dir.rglob("*.po"):
             mo_file = po_file.with_suffix(".mo")
-            if force or needs_compilation(po_file, mo_file):
-                if compile_po_to_mo(po_file, mo_file):
-                    compiled_count += 1
-                    logger.debug(f"Compiled {po_file} -> {mo_file}")
+            if (
+                force
+                or needs_compilation(po_file, mo_file)
+                and compile_po_to_mo(po_file, mo_file)
+            ):
+                compiled_count += 1
+                logger.debug(f"Compiled {po_file} -> {mo_file}")
 
         if compiled_count > 0:
             logger.info(f"Compiled {compiled_count} translation file(s)")

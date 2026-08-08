@@ -157,35 +157,40 @@ class Recipe:
             True if the recipe is a valid match, False otherwise.
         """
         # 1. Check step type compatibility
-        if self.target_step_type:
+        if self.target_step_type and (
+            not step_type or step_type != self.target_step_type
+        ):
             # This recipe targets a specific step class. It can only
             # match when a step type context is provided and matches.
-            if not step_type or step_type != self.target_step_type:
-                return False
+            return False
 
         # 2. Check machine compatibility
-        if self.target_machine_id:
+        if self.target_machine_id and (
+            not machine or machine.id != self.target_machine_id
+        ):
             # This recipe requires a specific machine.
-            if not machine or machine.id != self.target_machine_id:
-                return False
+            return False
 
         # A recipe is considered compatible up to this point, so now check
         # secondary constraints like laser head.
 
         # 3. Check head compatibility (if specified in settings)
         target_head_uid = self.settings.get("selected_head_uid")
-        if target_head_uid:
+        if target_head_uid and (
+            not machine
+            or not any(head.uid == target_head_uid for head in machine.heads)
+        ):
             # This recipe requires a specific head. It can only match if
             # a machine context is provided and that machine has the head.
-            if not machine or not any(
-                head.uid == target_head_uid for head in machine.heads
-            ):
-                return False
+            return False
 
         # 4. Check capability (only when the recipe constrains it)
-        if self.target_capability_name and capabilities:
-            if self.capability not in capabilities:
-                return False
+        if (
+            self.target_capability_name
+            and capabilities
+            and self.capability not in capabilities
+        ):
+            return False
 
         # 5. If no stock items to check against, only match generic recipes
         # (recipes without material/thickness constraints)
@@ -211,10 +216,11 @@ class Recipe:
         Checks if this recipe matches a single stock item.
         """
         # Check material compatibility
-        if self.material_uid:
+        if self.material_uid and (
+            not stock_item or stock_item.material_uid != self.material_uid
+        ):
             # This recipe requires a specific material.
-            if not stock_item or stock_item.material_uid != self.material_uid:
-                return False
+            return False
 
         # Check thickness compatibility
         thickness_mm = stock_item.thickness if stock_item else None

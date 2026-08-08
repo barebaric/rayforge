@@ -66,9 +66,11 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
         elif isinstance(entity, Line):
             p1_id, p2_id = entity.p1_idx, entity.p2_idx
             for constr in constraints:
-                if isinstance(constr, DistanceConstraint):
-                    if {constr.p1, constr.p2} == {p1_id, p2_id}:
-                        return constr
+                if isinstance(constr, DistanceConstraint) and {
+                    constr.p1,
+                    constr.p2,
+                } == {p1_id, p2_id}:
+                    return constr
 
         elif isinstance(entity, Circle):
             for constr in constraints:

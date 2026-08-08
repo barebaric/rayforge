@@ -293,8 +293,9 @@ def check_region_hit(
             return region
 
     # If no handle is hit, check the body if it's a candidate.
-    if ElementRegion.BODY in regions_to_check:
-        if 0 <= local_x < width and 0 <= local_y < height:
-            return ElementRegion.BODY
+    if ElementRegion.BODY in regions_to_check and (
+        0 <= local_x < width and 0 <= local_y < height
+    ):
+        return ElementRegion.BODY
 
     return ElementRegion.NONE

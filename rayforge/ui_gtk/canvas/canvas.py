@@ -1327,9 +1327,8 @@ class Canvas(Gtk.DrawingArea):
             self._ctrl_pressed = True
             # Allow propagation for accelerators
         elif keyval in (Gdk.KEY_Delete, Gdk.KEY_BackSpace):
-            if self.edit_context:
-                if self.edit_context.handle_edit_key(keyval):
-                    return True
+            if self.edit_context and self.edit_context.handle_edit_key(keyval):
+                return True
             selected_elements = list(self.root.get_selected())
             if selected_elements:
                 self.elements_deleted.send(self, elements=selected_elements)

@@ -276,14 +276,12 @@ class TestAxisRendererDrawing:
                 and current_call[1][0] == "20"
                 and i > 0
             ):
-                prev_call = calls[i - 1]
-                if prev_call[0] == "move_to":
-                    # prev_call is ('move_to', (x, y))
-                    if np.isclose(
-                        prev_call[1][0], 20.0 - 5.0
-                    ):  # 20.0 - text_width/2
-                        found_label = True
-                        break
+                prev_call = calls[i - 1]  # prev_call is ('move_to', (x, y))
+                if prev_call[0] == "move_to" and np.isclose(
+                    prev_call[1][0], 20.0 - 5.0
+                ):  # 20.0 - text_width/2
+                    found_label = True
+                    break
         assert found_label, 'Label "20" not found at the correct X position'
 
     def test_draw_labels_with_offset(

@@ -27,10 +27,11 @@ class EqualConstraintCommand:
         final_ids = set(selected_ids)
 
         for constr in sketch.constraints:
-            if isinstance(constr, EqualLengthConstraint):
-                if not selected_ids.isdisjoint(constr.entity_ids):
-                    existing_constraints_to_merge.append(constr)
-                    final_ids.update(constr.entity_ids)
+            if isinstance(
+                constr, EqualLengthConstraint
+            ) and not selected_ids.isdisjoint(constr.entity_ids):
+                existing_constraints_to_merge.append(constr)
+                final_ids.update(constr.entity_ids)
 
         return EqualConstraintMergeResult(
             final_entity_ids=list(final_ids),

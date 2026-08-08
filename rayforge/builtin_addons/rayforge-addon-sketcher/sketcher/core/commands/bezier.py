@@ -139,18 +139,20 @@ class BezierCommand(SketchChangeCommand):
                 if not start_pt.is_sharp():
                     connected = start_pt.get_connected_beziers(registry)
                     for other_b in connected:
-                        if other_b.end_idx == snapped_pid:
-                            if other_b.cp2 is not None:
-                                effective_virtual_cp = (
-                                    -other_b.cp2[0],
-                                    -other_b.cp2[1],
-                                )
-                        elif other_b.start_idx == snapped_pid:
-                            if other_b.cp1 is not None:
-                                effective_virtual_cp = (
-                                    -other_b.cp1[0],
-                                    -other_b.cp1[1],
-                                )
+                        if other_b.end_idx == snapped_pid and (
+                            other_b.cp2 is not None
+                        ):
+                            effective_virtual_cp = (
+                                -other_b.cp2[0],
+                                -other_b.cp2[1],
+                            )
+                        elif other_b.start_idx == snapped_pid and (
+                            other_b.cp1 is not None
+                        ):
+                            effective_virtual_cp = (
+                                -other_b.cp1[0],
+                                -other_b.cp1[1],
+                            )
                         break
             except (IndexError, ValueError):
                 pass
@@ -262,12 +264,14 @@ class BezierCommand(SketchChangeCommand):
                 for other_b in connected:
                     if other_b.id == preview_state.temp_entity_id:
                         continue
-                    if other_b.end_idx == preview_state.start_id:
-                        if other_b.cp2 is not None:
-                            cp1_val = (-other_b.cp2[0], -other_b.cp2[1])
-                    elif other_b.start_idx == preview_state.start_id:
-                        if other_b.cp1 is not None:
-                            cp1_val = (-other_b.cp1[0], -other_b.cp1[1])
+                    if other_b.end_idx == preview_state.start_id and (
+                        other_b.cp2 is not None
+                    ):
+                        cp1_val = (-other_b.cp2[0], -other_b.cp2[1])
+                    elif other_b.start_idx == preview_state.start_id and (
+                        other_b.cp1 is not None
+                    ):
+                        cp1_val = (-other_b.cp1[0], -other_b.cp1[1])
                     break
 
             if cp1_val is None:
@@ -418,20 +422,24 @@ class BezierCommand(SketchChangeCommand):
                 if not start_pt.is_sharp():
                     connected = start_pt.get_connected_beziers(registry)
                     for other_b in connected:
-                        if other_b.id != new_entity.id:
-                            if other_b.end_idx == self.start_id:
-                                if other_b.cp2 is not None:
-                                    new_entity.cp1 = (
-                                        -other_b.cp2[0],
-                                        -other_b.cp2[1],
-                                    )
-                            elif other_b.start_idx == self.start_id:
-                                if other_b.cp1 is not None:
-                                    new_entity.cp1 = (
-                                        -other_b.cp1[0],
-                                        -other_b.cp1[1],
-                                    )
-                            break
+                        if (
+                            other_b.id != new_entity.id
+                            and other_b.end_idx == self.start_id
+                            and other_b.cp2 is not None
+                        ):
+                            new_entity.cp1 = (
+                                -other_b.cp2[0],
+                                -other_b.cp2[1],
+                            )
+                        elif (
+                            other_b.start_idx == self.start_id
+                            and other_b.cp1 is not None
+                        ):
+                            new_entity.cp1 = (
+                                -other_b.cp1[0],
+                                -other_b.cp1[1],
+                            )
+                        break
             except (IndexError, ValueError):
                 pass
 
@@ -440,20 +448,24 @@ class BezierCommand(SketchChangeCommand):
                 if end_pt is not None and not end_pt.is_sharp():
                     connected = end_pt.get_connected_beziers(registry)
                     for other_b in connected:
-                        if other_b.id != new_entity.id:
-                            if other_b.start_idx == end_pid:
-                                if other_b.cp1 is not None:
-                                    new_entity.cp2 = (
-                                        -other_b.cp1[0],
-                                        -other_b.cp1[1],
-                                    )
-                            elif other_b.end_idx == end_pid:
-                                if other_b.cp2 is not None:
-                                    new_entity.cp2 = (
-                                        -other_b.cp2[0],
-                                        -other_b.cp2[1],
-                                    )
-                            break
+                        if (
+                            other_b.id != new_entity.id
+                            and other_b.start_idx == end_pid
+                            and other_b.cp1 is not None
+                        ):
+                            new_entity.cp2 = (
+                                -other_b.cp1[0],
+                                -other_b.cp1[1],
+                            )
+                        elif (
+                            other_b.end_idx == end_pid
+                            and other_b.cp2 is not None
+                        ):
+                            new_entity.cp2 = (
+                                -other_b.cp2[0],
+                                -other_b.cp2[1],
+                            )
+                        break
             except (IndexError, ValueError):
                 pass
 

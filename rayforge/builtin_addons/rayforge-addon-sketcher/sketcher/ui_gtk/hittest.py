@@ -222,9 +222,11 @@ class SketchHitTester:
                     or constr.p2 in text_box_point_ids
                 ):
                     continue
-            elif isinstance(constr, PointOnLineConstraint):
-                if constr.point_id in text_box_point_ids:
-                    continue
+            elif (
+                isinstance(constr, PointOnLineConstraint)
+                and constr.point_id in text_box_point_ids
+            ):
+                continue
             if constr.is_hit(
                 cursor_sx,
                 cursor_sy,

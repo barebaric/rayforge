@@ -130,9 +130,10 @@ def build_assembly(
     replacement_modules = []
     if rotary_modules is not None:
         for rm in rotary_modules.values():
-            if rm.mode == RotaryMode.AXIS_REPLACEMENT:
-                if not any(rm.axis == ac.letter for ac in rotary_list):
-                    replacement_modules.append(rm)
+            if rm.mode == RotaryMode.AXIS_REPLACEMENT and not any(
+                rm.axis == ac.letter for ac in rotary_list
+            ):
+                replacement_modules.append(rm)
 
     for i, module in enumerate(replacement_modules):
         idx = len(rotary_list) + i

@@ -126,13 +126,14 @@ class RemoveItemsCommand(SketchChangeCommand):
         to_delete_point_ids = set(selection.point_ids)
 
         # 1. Selected Constraints
-        if selection.constraint_idx is not None:
-            if sketch.constraints and (
-                0 <= selection.constraint_idx < len(sketch.constraints)
-            ):
-                to_delete_constraints.append(
-                    sketch.constraints[selection.constraint_idx]
-                )
+        if (
+            selection.constraint_idx is not None
+            and sketch.constraints
+            and (0 <= selection.constraint_idx < len(sketch.constraints))
+        ):
+            to_delete_constraints.append(
+                sketch.constraints[selection.constraint_idx]
+            )
 
         # Iteratively find all dependencies until no new items are added
         while True:
@@ -203,22 +204,21 @@ class RemoveItemsCommand(SketchChangeCommand):
                         set1 = {constr.p1, constr.p2}
                         set2 = {constr.p3, constr.p4}
                         target1, target2 = {c, s}, {c, end}
-                        if (set1 == target1 and set2 == target2) or (
-                            set1 == target2 and set2 == target1
-                        ):
-                            if constr not in to_delete_constraints:
-                                to_delete_constraints.append(constr)
+                        if (
+                            (set1 == target1 and set2 == target2)
+                            or (set1 == target2 and set2 == target1)
+                        ) and constr not in to_delete_constraints:
+                            to_delete_constraints.append(constr)
 
         # 4. Cleanup Constraints (Dependencies)
         for constr in sketch.constraints:
             if constr in to_delete_constraints:
                 continue
-            if constr.depends_on_points(
-                to_delete_point_ids
-            ) or constr.depends_on_entities(to_delete_entity_ids):
-                if constr not in to_delete_constraints:
-                    to_delete_constraints.append(constr)
-
+            if (
+                constr.depends_on_points(to_delete_point_ids)
+                or constr.depends_on_entities(to_delete_entity_ids)
+            ) and constr not in to_delete_constraints:
+                to_delete_constraints.append(constr)
         # 5. Get actual objects from IDs
         final_points = [
             p

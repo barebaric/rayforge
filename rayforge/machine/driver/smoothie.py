@@ -430,14 +430,20 @@ class SmoothieDriver(Driver):
         self.connection_status_changed.send(
             self, status=status, message=message
         )
-        if status in [TransportStatus.DISCONNECTED, TransportStatus.ERROR]:
-            if self.state.status != DeviceStatus.UNKNOWN:
-                self.state.status = DeviceStatus.UNKNOWN
-                logger.info(
-                    f"Device state changed: {self.state.status.name}",
-                    extra=self._log_extra("STATE_CHANGE"),
-                )
-                self.state_changed.send(self, state=self.state)
+        if (
+            status
+            in [
+                TransportStatus.DISCONNECTED,
+                TransportStatus.ERROR,
+            ]
+            and self.state.status != DeviceStatus.UNKNOWN
+        ):
+            self.state.status = DeviceStatus.UNKNOWN
+            logger.info(
+                f"Device state changed: {self.state.status.name}",
+                extra=self._log_extra("STATE_CHANGE"),
+            )
+            self.state_changed.send(self, state=self.state)
 
     async def read_settings(self) -> None:
         raise NotImplementedError(

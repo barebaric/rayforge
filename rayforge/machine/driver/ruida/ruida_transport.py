@@ -147,9 +147,8 @@ class RuidaTransport(Transport):
                 self.magic_changed.send(self, magic=detected)
         else:
             detected = self._codec.detect_magic_from_mem_request(unswizzled)
-            if detected is not None:
-                if self._codec.set_magic(detected):
-                    self.magic_changed.send(self, magic=detected)
+            if detected is not None and self._codec.set_magic(detected):
+                self.magic_changed.send(self, magic=detected)
 
         self.decoded_received.send(self, data=unswizzled)
 
@@ -286,9 +285,10 @@ class RuidaServerTransport:
             if detected is not None:
                 magic_detected = detected
 
-        if magic_detected is not None:
-            if self._codec.set_magic(magic_detected):
-                self.magic_changed.send(self, magic=magic_detected)
+        if magic_detected is not None and self._codec.set_magic(
+            magic_detected
+        ):
+            self.magic_changed.send(self, magic=magic_detected)
 
         self.decoded_received.send(self, data=unswizzled, addr=addr)
 

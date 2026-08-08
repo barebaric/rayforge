@@ -48,9 +48,11 @@ class StepCmd:
             old_value = target_dict.get(key)
             if old_value is None:
                 pass
-            elif isinstance(old_value, (int, float)):
-                if abs(new_value - old_value) < 1e-6:
-                    return
+            elif (
+                isinstance(old_value, (int, float))
+                and abs(new_value - old_value) < 1e-6
+            ):
+                return
         elif new_value == target_dict.get(key):
             return
 

@@ -135,9 +135,10 @@ class SvgImporter(Importer):
                             and item.source_segment.pristine_geometry
                         ):
                             return True
-                    elif isinstance(item, Layer):
-                        if check_for_geometry(item.children):
-                            return True
+                    elif isinstance(item, Layer) and check_for_geometry(
+                        item.children
+                    ):
+                        return True
                 return False
 
             item_count = len(import_result.payload.items)

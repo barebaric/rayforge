@@ -127,9 +127,11 @@ class StepRegistry:
         for cls in self._steps.values():
             if cls.HIDDEN:
                 continue
-            if machine_caps is not None:
-                if not cls.REQUIRED_MACHINE_CAPS.issubset(machine_caps):
-                    continue
+            if (
+                machine_caps is not None
+                and not cls.REQUIRED_MACHINE_CAPS.issubset(machine_caps)
+            ):
+                continue
             factories.append(cls.create)
         return factories
 

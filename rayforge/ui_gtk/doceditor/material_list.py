@@ -192,16 +192,16 @@ class MaterialListWidget(PreferencesGroupWithButton):
 
         def on_response(d, response_id):
             if response_id == "delete":
-                if self._current_library is not None:
-                    if self._current_library.remove_material(material.uid):
-                        self._populate_materials()
-                        self.material_deleted.send(
-                            self, library=self._current_library
-                        )
-                    else:
-                        logger.error(
-                            f"Failed to remove material '{material.uid}'"
-                        )
+                if (
+                    self._current_library is not None
+                    and self._current_library.remove_material(material.uid)
+                ):
+                    self._populate_materials()
+                    self.material_deleted.send(
+                        self, library=self._current_library
+                    )
+                else:
+                    logger.error(f"Failed to remove material '{material.uid}'")
             d.destroy()
 
         dialog.connect("response", on_response)
