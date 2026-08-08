@@ -245,7 +245,7 @@ class UnifiedWizard(PatchedDialogWindow):
 
             return page
         except Exception as exc:
-            logger.exception("Failed to build page %s: %s", name, exc)
+            logger.exception("Failed to build page %s", name)
             return None
 
     def _wire_page_signals(self, page: WizardPage, name: str) -> None:
@@ -373,7 +373,7 @@ class UnifiedWizard(PatchedDialogWindow):
         try:
             machine = self._materialize_machine()
         except Exception as exc:
-            logger.exception("Failed to create machine: %s", exc)
+            logger.exception("Failed to create machine")
             self.show_error(_("Could not create machine"), str(exc))
             return
         self.profile_created.send(self, profile=self.profile, machine=machine)

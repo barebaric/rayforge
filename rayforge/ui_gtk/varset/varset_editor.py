@@ -762,7 +762,7 @@ class VarSetEditorWidget(PreferencesGroupWithButton):
                 widget.set_expanded(True)
                 label_row = widget.label_row
 
-                def _grab_focus():
+                def _grab_focus(label_row=label_row):
                     label_row.grab_focus()
                     return GLib.SOURCE_REMOVE
 

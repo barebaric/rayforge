@@ -236,14 +236,13 @@ class AIWorkpieceGeneratorDialog(PatchedDialogWindow):
 
     def _import_svg_as_geometry(self, svg_content: str) -> None:
         """Fall back to importing SVG as non-editable geometry."""
-        temp_file = tempfile.NamedTemporaryFile(
+        with tempfile.NamedTemporaryFile(
             mode="w",
             suffix=".svg",
             delete=False,
             encoding="utf-8",
-        )
-        temp_file.write(svg_content)
-        temp_file.close()
+        ) as temp_file:
+            temp_file.write(svg_content)
 
         machine_dims = self._editor.machine_dimensions
         position_mm = None

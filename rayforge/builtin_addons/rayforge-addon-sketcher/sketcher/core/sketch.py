@@ -3,7 +3,7 @@ import logging
 import math
 import uuid
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import datetime, timezone
 from gettext import gettext as _
 from pathlib import Path
 from typing import Any, ClassVar
@@ -1304,7 +1304,7 @@ class Sketch(IAsset, IGeometryProvider):
                 initial_values.update(self.input_parameters.get_values())
             solve_params.evaluate_all(initial_values=initial_values)
             ctx = solve_params.get_all_values()
-            ctx["today"] = lambda: date.today()
+            ctx["today"] = lambda: datetime.now(tz=timezone.utc).date()
             ctx["now"] = lambda: datetime.now()
             ctx["uuid4"] = lambda: str(uuid.uuid4())[:8]
             expr_map = ExpressionMap(ctx)

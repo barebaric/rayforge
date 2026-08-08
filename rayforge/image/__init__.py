@@ -2,7 +2,6 @@ import inspect
 import logging
 import mimetypes
 from pathlib import Path
-from typing import Optional, Union
 
 from ..core.item import DocItem
 from ..core.source_asset import SourceAsset

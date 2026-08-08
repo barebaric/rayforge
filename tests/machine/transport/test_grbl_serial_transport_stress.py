@@ -401,14 +401,12 @@ class TestAckInterleavingFuzz:
             await transport.send_gcode(f"G0 X{i}\n".encode(), op_index=i)
 
         stream = bytearray()
-        ack_count = 0
         for i in range(300):
             if rng.random() < 0.05:
                 stream.extend(b"ALARM:1\r\n")
             if i in {50, 150}:
                 stream.extend(b"error:20\r\n")
             stream.extend(b"ok\r\n")
-            ack_count += 1
             if rng.random() < 0.3:
                 stream.extend(rng.choice(STATUS_REPORTS))
 

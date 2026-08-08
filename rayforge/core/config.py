@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass, fields
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -210,7 +210,7 @@ class Config:
             return False
         try:
             consent_date = datetime.fromisoformat(self.usage_consent_date)
-            policy_date = datetime(2026, 2, 24)
+            policy_date = datetime(2026, 2, 24, tzinfo=timezone.utc)
             return consent_date >= policy_date
         except (ValueError, TypeError):
             return False

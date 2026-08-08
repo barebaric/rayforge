@@ -8,14 +8,14 @@ gi.require_version("Gtk", "4.0")
 
 import cairo
 from gi.repository import Gdk, Gtk
-
-base_path = Path(__file__).parent
-logging.basicConfig(level=logging.DEBUG)
-
 from raygeo.geo import Matrix
 from raygeo.geo.types import Point
 
 from rayforge.ui_gtk.canvas import Canvas, CanvasElement, ShrinkWrapGroup
+
+base_path = Path(__file__).parent
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 class ExampleElement(CanvasElement):
@@ -203,7 +203,7 @@ class EditableElement(CanvasElement):
         return surface
 
     def on_edit_mode_enter(self):
-        logging.info("EditableElement entered edit mode.")
+        logger.info("EditableElement entered edit mode.")
         self.background = (0.2, 0.2, 0.4, 1.0)  # Dark blue in edit mode
         # Store original buffered state and temporarily disable it for smooth
         # interactive drawing.
@@ -212,7 +212,7 @@ class EditableElement(CanvasElement):
         self.trigger_update()
 
     def on_edit_mode_leave(self):
-        logging.info("EditableElement left edit mode.")
+        logger.info("EditableElement left edit mode.")
         self.background = self.original_background
         self.buffered = self._was_buffered
         self._active_vertex_idx = None
@@ -286,7 +286,7 @@ class EditableElement(CanvasElement):
         if hit_idx is not None:
             self._active_vertex_idx = hit_idx
             self._initial_vertex_pos = self.vertices[hit_idx][:]
-            logging.debug(f"Editing vertex {hit_idx}")
+            logger.debug(f"Editing vertex {hit_idx}")
             return True
         return False
 
@@ -323,7 +323,7 @@ class EditableElement(CanvasElement):
     def handle_edit_release(self, world_x: float, world_y: float):
         self._active_vertex_idx = None
         self._initial_vertex_pos = None
-        logging.debug("Finished editing vertex.")
+        logger.debug("Finished editing vertex.")
 
 
 class CanvasApp(Gtk.Application):

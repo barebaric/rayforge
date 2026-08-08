@@ -525,7 +525,7 @@ class DragDropCmd:
                 logger.warning(f"GLib error reading clipboard texture: {e}")
                 self._show_clipboard_error()
             except Exception as e:
-                logger.exception(f"Failed to process clipboard texture: {e}")
+                logger.exception("Failed to process clipboard texture")
                 self._show_clipboard_error()
 
         # Start the asynchronous clipboard read.
@@ -607,7 +607,7 @@ class DragDropCmd:
             )
 
         except Exception as e:
-            logger.exception(f"Failed to import from clipboard: {e}")
+            logger.exception("Failed to import from clipboard")
             self._show_clipboard_error()
 
         return False  # Don't repeat

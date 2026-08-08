@@ -1742,8 +1742,8 @@ class Machine:
                     f"Skipping unknown hook trigger '{trigger_name}'"
                 )
 
-        macro_data = ma_data.get("macros", {})
-        for uid, macro_data in macro_data.items():
+        macros_data = ma_data.get("macros", {})
+        for uid, macro_data in macros_data.items():
             macro_data["uid"] = uid  # Ensure UID is consistent with key
             ma.macros[uid] = Macro.from_dict(macro_data)
 

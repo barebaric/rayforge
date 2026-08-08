@@ -79,8 +79,7 @@ class RenderContext:
         """Compare two color set dictionaries for equality."""
         if dict1.keys() != dict2.keys():
             return False
-        for key in dict1:
-            val1 = dict1[key]
+        for key, val1 in dict1.items():
             val2 = dict2.get(key)
             if isinstance(val1, dict) and isinstance(val2, dict):
                 if not self._compare_color_sets(val1, val2):

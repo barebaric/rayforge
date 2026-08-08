@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime, timezone
 from typing import cast
 
 from raygeo.geo.shape.text import FontConfig
@@ -110,7 +110,7 @@ def test_resolve_date_today():
     s.solve()
     resolved = s._resolve_text_content(box)
     assert resolved is not None
-    assert date.today().isoformat() in resolved
+    assert datetime.now(tz=timezone.utc).date().isoformat() in resolved
 
 
 def test_resolve_uuid4():

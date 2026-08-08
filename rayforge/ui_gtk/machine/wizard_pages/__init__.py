@@ -14,7 +14,7 @@ later steps adaptively.
 """
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from blinker import Signal
 from gi.repository import Adw, Gtk

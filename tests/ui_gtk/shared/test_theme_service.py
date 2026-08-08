@@ -121,7 +121,7 @@ def test_set_machine_same_instance_no_extra_dirty(ui_context_initializer):
         )
         service.bind(widget)
         service.set_machine(machine)
-        service.color_set  # trigger refresh, clears dirty
+        _ = service.color_set  # trigger refresh, clears dirty
         service.set_machine(machine)
 
     assert service.dirty is False
@@ -138,7 +138,7 @@ def test_machine_change_marks_dirty(ui_context_initializer):
         )
         service.bind(widget)
         service.set_machine(machine)
-        service.color_set  # trigger refresh, clears dirty
+        _ = service.color_set  # trigger refresh, clears dirty
         assert service.dirty is False
         machine.changed.send(machine)
 
@@ -156,7 +156,7 @@ def test_doc_update_marks_dirty(ui_context_initializer):
         )
         service.bind(widget)
         service.set_doc(doc)
-        service.color_set  # trigger refresh, clears dirty
+        _ = service.color_set  # trigger refresh, clears dirty
         assert service.dirty is False
         doc.descendant_updated.send(doc)
 
@@ -177,7 +177,7 @@ def test_switching_machine_disconnects_old_signal(ui_context_initializer):
         service.bind(widget)
         service.set_machine(old_machine)
         service.set_machine(new_machine)
-        service.color_set  # trigger refresh, clears dirty
+        _ = service.color_set  # trigger refresh, clears dirty
         old_machine.changed.send(old_machine)
 
     assert service.dirty is False

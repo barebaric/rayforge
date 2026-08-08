@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime, timezone
 
 from rayforge.core.expression import ExpressionMap
 
@@ -77,13 +77,13 @@ def test_context_overrides_math():
 
 def test_attribute_access():
     """Expressions with attribute access work (regex-based)."""
-    today = date.today()
+    today = datetime.now(tz=timezone.utc).date()
     result = _fmt("{d.isoformat()}", {"d": today})
     assert result == today.isoformat()
 
 
 def test_chained_attribute_access():
     """Chained attribute access and method calls work."""
-    today = date.today()
+    today = datetime.now(tz=timezone.utc).date()
     result = _fmt("{d.year}", {"d": today})
     assert result == str(today.year)

@@ -431,6 +431,11 @@ class AddonManager:
                         )
                         return addon_name in self.loaded_addons
                 except Exception:
+                    logger.debug(
+                        "Skipping addon directory %s during search",
+                        child,
+                        exc_info=True,
+                    )
                     continue
         logger.warning(f"Addon '{addon_name}' not found in addon directories")
         return False

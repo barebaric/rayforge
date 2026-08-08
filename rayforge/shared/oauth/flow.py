@@ -6,7 +6,7 @@ import urllib.request
 import webbrowser
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
 from typing import Any
@@ -196,7 +196,8 @@ class OAuthFlow:
         expires_at = None
         if expires_in:
             expires_at = datetime.fromtimestamp(
-                datetime.now().timestamp() + int(expires_in)
+                datetime.now(tz=timezone.utc).timestamp() + int(expires_in),
+                tz=timezone.utc,
             )
 
         return OAuthResult(
@@ -229,7 +230,8 @@ class OAuthFlow:
         expires_at = None
         if expires_in:
             expires_at = datetime.fromtimestamp(
-                datetime.now().timestamp() + int(expires_in)
+                datetime.now(tz=timezone.utc).timestamp() + int(expires_in),
+                tz=timezone.utc,
             )
 
         return OAuthResult(

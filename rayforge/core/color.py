@@ -1,7 +1,7 @@
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 
@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 # A fully resolved, render-ready RGBA color.
 ColorRGBA = tuple[float, float, float, float]
 
-ColorAtom = Union[
-    str, tuple[float, float, float], tuple[float, float, float, float]
-]
-ColorSpec = Union[ColorAtom, tuple[ColorAtom, float]]
+ColorAtom = (
+    str | tuple[float, float, float] | tuple[float, float, float, float]
+)
+ColorSpec = ColorAtom | tuple[ColorAtom, float]
 GradientSpec = tuple[ColorSpec, ColorSpec]
 ColorSpecDict = dict[str, ColorSpec | GradientSpec]
 

@@ -237,16 +237,11 @@ def _worker_main_loop(
             )
             # Also flush on error to send any last-known state
             proxy.flush()
-            try:
-                result_queue.put_nowait((key, task_id, "error", error_info))
-                # Clean up ONLY after error was successfully reported.
-                # If this raises (worker crashes), entry stays for
-                # health check detection.
-                shared_state.pop(f"_wpool:{os.getpid()}", None)
-            except Exception:
-                # Couldn't send error either. Worker will exit and
-                # the DictProxy entry stays for the health check.
-                raise
+            result_queue.put_nowait((key, task_id, "error", error_info))
+            # Clean up ONLY after error was successfully reported.
+            # If this raises (worker crashes), entry stays for
+            # health check detection.
+            shared_state.pop(f"_wpool:{os.getpid()}", None)
         worker_logger.debug(f"Worker {os.getpid()} finished task '{key}'.")
 
 

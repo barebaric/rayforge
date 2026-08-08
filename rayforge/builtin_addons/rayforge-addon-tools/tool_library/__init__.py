@@ -13,7 +13,6 @@ global service registry::
 """
 
 import logging
-from typing import Optional
 
 from rayforge.config import CONFIG_DIR
 from rayforge.core.hooks import hookimpl
