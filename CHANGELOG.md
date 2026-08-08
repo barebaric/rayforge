@@ -5,6 +5,49 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.0-beta4
+
+### Added
+
+- Simulated playback now advances by simulated machine time at
+  (approximately) real machine speed, with a 1x-16x speed multiplier:
+  the toolpath reveal, laser head, and laser beam interpolate within
+  each command so playback is smooth instead of stepping one command
+  per frame
+- Step forward/backward buttons glide to the next command over a short
+  fixed duration instead of jumping; rapid clicks coalesce into a
+  single glide that covers the net number of commands
+- Zoom and orbit now rotate around the point under the cursor
+- Playback controls (play, step, speed, slider) shown as a bar below
+  the 3D canvas
+- The 2D and 3D canvas grids draw in the preferred length unit
+- Warn when a project uses cooling methods not supported by the
+  current machine
+- Recipe manager shows the selected step in the recipe description
+
+### Changed
+
+- Upgrade raygeo to 1.33.0: simulated playback now runs at accurate
+  machine speed, ops no longer move slightly through the cylinder
+  during rotary simulation, and stroke-only cut lines are no longer
+  missing from the generated ops
+- Internal: 3D canvas refactored into a scene presenter, camera
+  controller, playback overlay, renderer registry, and chunked upload
+  controller
+- Updated translations
+
+### Fixed
+
+- Texture alpha no longer brightens after a layer completes
+- Laser beam rendered over the scanline ring buffer
+- Scanline overlay stays visible after playback completes
+- Legacy opsproducer step parameters migrated when loading projects
+- Step settings refresh when a recipe is applied
+- Material colors applied per-widget in lists
+- Simple GRBL driver wakes an in-flight ping-pong on cancel
+- 3D canvas background falls back to the theme view background color
+- Frequency and pulse width preserved in MachineState.copy
+
 ## 1.9.0-beta3
 
 ### Added
