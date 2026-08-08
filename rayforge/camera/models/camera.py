@@ -1,7 +1,7 @@
 import json
 import logging
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import numpy as np
@@ -132,7 +132,7 @@ class Camera:
     @contrast.setter
     def contrast(self, value: float):
         if not isinstance(value, (int, float)):
-            raise ValueError("Contrast must be a number.")
+            raise TypeError("Contrast must be a number.")
         if not (0.0 <= value <= 100.0):
             logger.warning(
                 f"Contrast value {value} is outside range (0.0-100.0). "
@@ -155,7 +155,7 @@ class Camera:
     @brightness.setter
     def brightness(self, value: float):
         if not isinstance(value, (int, float)):
-            raise ValueError("Brightness must be a number.")
+            raise TypeError("Brightness must be a number.")
         if not (-100.0 <= value <= 100.0):
             logger.warning(
                 f"Brightness value {value} is outside range (-100.0-100.0). "
@@ -178,7 +178,7 @@ class Camera:
     @transparency.setter
     def transparency(self, value: float):
         if not isinstance(value, (int, float)):
-            raise ValueError("Transparency must be a number.")
+            raise TypeError("Transparency must be a number.")
         if not (0.0 <= value <= 1.0):
             logger.warning(
                 f"Transparency value {value} is outside range (0.0-1.0). "
@@ -202,7 +202,7 @@ class Camera:
     @denoise.setter
     def denoise(self, value: float):
         if not isinstance(value, (int, float)):
-            raise ValueError("Denoise must be a number.")
+            raise TypeError("Denoise must be a number.")
         # Clamp between 0.0 (off) and 0.95 (extreme smoothing)
         value = max(0.0, min(value, 0.95))
         if self._denoise == value:
@@ -220,7 +220,7 @@ class Camera:
     @prefer_yuyv.setter
     def prefer_yuyv(self, value: bool):
         if not isinstance(value, bool):
-            raise ValueError("prefer_yuyv must be a boolean.")
+            raise TypeError("prefer_yuyv must be a boolean.")
         if self._prefer_yuyv == value:
             return
         logger.debug(
@@ -266,7 +266,7 @@ class Camera:
     @distortion_k1.setter
     def distortion_k1(self, value: float):
         self._distortion_k1 = float(value)
-        self._calibration_date = datetime.now()
+        self._calibration_date = datetime.now(tz=timezone.utc)
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -277,7 +277,7 @@ class Camera:
     @distortion_k2.setter
     def distortion_k2(self, value: float):
         self._distortion_k2 = float(value)
-        self._calibration_date = datetime.now()
+        self._calibration_date = datetime.now(tz=timezone.utc)
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -288,7 +288,7 @@ class Camera:
     @distortion_p1.setter
     def distortion_p1(self, value: float):
         self._distortion_p1 = float(value)
-        self._calibration_date = datetime.now()
+        self._calibration_date = datetime.now(tz=timezone.utc)
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -299,7 +299,7 @@ class Camera:
     @distortion_p2.setter
     def distortion_p2(self, value: float):
         self._distortion_p2 = float(value)
-        self._calibration_date = datetime.now()
+        self._calibration_date = datetime.now(tz=timezone.utc)
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -310,7 +310,7 @@ class Camera:
     @distortion_k3.setter
     def distortion_k3(self, value: float):
         self._distortion_k3 = float(value)
-        self._calibration_date = datetime.now()
+        self._calibration_date = datetime.now(tz=timezone.utc)
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -440,7 +440,7 @@ class Camera:
         )
         self._image_to_world = value
         if value is not None:
-            self._alignment_date = datetime.now()
+            self._alignment_date = datetime.now(tz=timezone.utc)
         else:
             self._alignment_date = None
         self.changed.send(self)
@@ -657,7 +657,7 @@ class Camera:
                 data["alignment_date"]
             )
         elif camera._image_to_world is not None:
-            camera._alignment_date = datetime.now()
+            camera._alignment_date = datetime.now(tz=timezone.utc)
 
         camera._camera_matrix_fx = data.get("camera_matrix_fx")
         camera._camera_matrix_fy = data.get("camera_matrix_fy")
@@ -678,7 +678,7 @@ class Camera:
                 camera._distortion_p2,
             ]
         ):
-            camera._calibration_date = datetime.now()
+            camera._calibration_date = datetime.now(tz=timezone.utc)
         if data.get("calibration_image_size"):
             camera._calibration_image_size = tuple(
                 data["calibration_image_size"]

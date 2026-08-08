@@ -328,7 +328,7 @@ class GcodeDialect:
         Logs warnings for unknown keys.
         """
         if not isinstance(data, dict):
-            raise ValueError(f"Invalid dialect data: {source}")
+            raise TypeError(f"Invalid dialect data: {source}")
         required, _, all_fields = cls._template_field_sets()
         missing = required - set(data.keys())
         if missing:

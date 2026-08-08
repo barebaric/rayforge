@@ -3,7 +3,7 @@ import logging
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -158,7 +158,7 @@ class GumroadProvider(LicenseProvider):
                 message="License is valid",
                 license_type=license_type,
                 customer_email=purchase.get("email"),
-                last_validated=datetime.now(),
+                last_validated=datetime.now(tz=timezone.utc),
                 metadata={
                     "product_id": product_id,
                     "product_name": purchase.get("product_name"),
@@ -188,18 +188,18 @@ class GumroadProvider(LicenseProvider):
             )
 
     def _create_test_result(self, product_id: str) -> LicenseResult:
-        expires_at = datetime.now() + timedelta(days=1)
+        expires_at = datetime.now(tz=timezone.utc) + timedelta(days=1)
         result = LicenseResult(
             status=LicenseStatus.VALID,
             message="Test license key",
             license_type=LicenseType.ONE_TIME,
             expires_at=expires_at,
             customer_email="test@example.com",
-            last_validated=datetime.now(),
+            last_validated=datetime.now(tz=timezone.utc),
             metadata={
                 "product_id": product_id,
                 "product_name": "Test Product",
-                "purchase_date": datetime.now().isoformat(),
+                "purchase_date": datetime.now(tz=timezone.utc).isoformat(),
             },
         )
         self._cache_result(product_id, result)

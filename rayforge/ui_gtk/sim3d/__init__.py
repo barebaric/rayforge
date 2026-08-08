@@ -68,11 +68,9 @@ def initialize():
     except Exception as e:
         # Catch other potential errors during initial module load.
         initialization_error = e
-        logger.error(
+        logger.exception(
             "An unexpected error occurred during OpenGL initialization. "
-            "The 3D canvas will be disabled. Error: %s",
-            e,
-            exc_info=True,
+            "The 3D canvas will be disabled."
         )
         initialized = False
 

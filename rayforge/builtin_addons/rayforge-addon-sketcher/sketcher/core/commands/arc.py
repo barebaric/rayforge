@@ -211,10 +211,10 @@ class ArcCommand(SketchChangeCommand):
             snapped_pid: An existing point ID to snap to, or None.
 
         Raises:
-            AttributeError: If preview_state is not an ArcPreviewState.
+            TypeError: If preview_state is not an ArcPreviewState.
         """
         if not isinstance(preview_state, ArcPreviewState):
-            raise AttributeError("Expected ArcPreviewState")
+            raise TypeError("Expected ArcPreviewState")
 
         if snapped_pid is not None and snapped_pid != preview_state.center_id:
             start_id = snapped_pid
@@ -291,10 +291,10 @@ class ArcCommand(SketchChangeCommand):
             x, y: The new cursor coordinates.
 
         Raises:
-            AttributeError: If preview_state is not an ArcPreviewState.
+            TypeError: If preview_state is not an ArcPreviewState.
         """
         if not isinstance(preview_state, ArcPreviewState):
-            raise AttributeError("Expected ArcPreviewState")
+            raise TypeError("Expected ArcPreviewState")
         if (
             preview_state.temp_end_id is None
             or preview_state.temp_entity_id is None
@@ -348,10 +348,10 @@ class ArcCommand(SketchChangeCommand):
             preview_state: The preview state from start_preview.
 
         Raises:
-            AttributeError: If preview_state is not an ArcPreviewState.
+            TypeError: If preview_state is not an ArcPreviewState.
         """
         if not isinstance(preview_state, ArcPreviewState):
-            raise AttributeError("Expected ArcPreviewState")
+            raise TypeError("Expected ArcPreviewState")
 
         if preview_state.temp_entity_id is not None:
             try:
@@ -385,10 +385,10 @@ class ArcCommand(SketchChangeCommand):
             preview_state: The preview state from start_center_preview.
 
         Raises:
-            AttributeError: If preview_state is not an ArcPreviewState.
+            TypeError: If preview_state is not an ArcPreviewState.
         """
         if not isinstance(preview_state, ArcPreviewState):
-            raise AttributeError("Expected ArcPreviewState")
+            raise TypeError("Expected ArcPreviewState")
 
     def _do_execute(self) -> None:
         if self.add_cmd:

@@ -75,7 +75,7 @@ class DxfImporter(Importer):
                 title=self.source_file.name, errors=self._errors
             )
         except Exception as e:
-            logger.error(f"DXF scan error: {e}", exc_info=True)
+            logger.exception("DXF scan error")
             self.add_error(_(f"Unexpected error while scanning DXF: {e}"))
             return ImportManifest(
                 title=self.source_file.name, errors=self._errors

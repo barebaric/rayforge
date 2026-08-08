@@ -483,7 +483,7 @@ class GrblSerialSimpleDriver(Driver):
         except DeviceConnectionError as e:
             logger.warning(f"Job interrupted: {e}")
         except Exception as e:
-            logger.error(f"Unexpected streaming error: {e!r}", exc_info=True)
+            logger.exception("Unexpected streaming error")
         finally:
             self._job_running = False
             self._on_command_done = None

@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from .var import Var
@@ -86,7 +86,7 @@ class OAuthFlowVar(Var[str]):
             return False
         try:
             expires_at = datetime.fromisoformat(expires_at_str)
-            return datetime.now() >= expires_at
+            return datetime.now(tz=timezone.utc) >= expires_at
         except (ValueError, TypeError):
             return False
 

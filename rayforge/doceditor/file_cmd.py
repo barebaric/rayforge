@@ -188,10 +188,9 @@ class FileCmd:
             manifest = importer_instance.scan()
             return manifest
         except Exception as e:
-            logger.error(
+            logger.exception(
                 f"Error scanning file {file_path.name} with "
-                f"{importer_cls.__name__}: {e}",
-                exc_info=True,
+                f"{importer_cls.__name__}"
             )
             return ImportManifest(
                 title=file_path.name,
@@ -256,9 +255,7 @@ class FileCmd:
             )
 
         except Exception as e:
-            logger.error(
-                f"Failed to generate import preview: {e}", exc_info=True
-            )
+            logger.exception("Failed to generate import preview")
             return None
 
     def _generate_rich_preview_result(
@@ -668,9 +665,8 @@ class FileCmd:
                                 main_thread_done.set_result, True
                             )
                     except Exception as e:
-                        logger.error(
-                            "Failed import finalization on main thread.",
-                            exc_info=True,
+                        logger.exception(
+                            "Failed import finalization on main thread."
                         )
                         if not main_thread_done.done():
                             loop.call_soon_threadsafe(
@@ -985,7 +981,7 @@ class FileCmd:
                             "Assembly process returned no artifact."
                         )
                     if not isinstance(artifact, JobArtifact):
-                        raise ValueError("Expected a JobArtifact for export.")
+                        raise TypeError("Expected a JobArtifact for export.")
                     if artifact.machine_code is None:
                         raise ValueError(
                             "Final artifact is missing G-code data."

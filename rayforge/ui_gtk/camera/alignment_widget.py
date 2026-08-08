@@ -7,7 +7,7 @@ and the camera wizard's alignment page so the two stay in sync.
 
 import logging
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 from gettext import gettext as _
 
 import numpy as np
@@ -523,7 +523,7 @@ class CameraAlignment(Gtk.Box):
         if len(image_points) < 4:
             raise ValueError("Less than 4 points for alignment.")
         self.camera.image_to_world = (image_points, world_points)
-        self.camera.alignment_date = datetime.now()
+        self.camera.alignment_date = datetime.now(tz=timezone.utc)
         logger.info("Camera alignment applied.")
         self.applied.send(self)
 

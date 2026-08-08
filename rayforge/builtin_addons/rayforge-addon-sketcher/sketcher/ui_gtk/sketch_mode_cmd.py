@@ -71,9 +71,7 @@ class SketchModeCmd:
             self._win.insert_action_group("sketch", sketch_studio.action_group)
             self._win.add_controller(sketch_studio.shortcut_controller)
         except Exception as e:
-            logger.error(
-                f"Failed to load sketch for editing: {e}", exc_info=True
-            )
+            logger.exception("Failed to load sketch for editing")
 
     def exit_sketch_mode(self):
         """Returns to the main 2D/3D view from the SketchStudio."""
@@ -105,10 +103,7 @@ class SketchModeCmd:
             self._win.insert_action_group("sketch", sketch_studio.action_group)
             self._win.add_controller(sketch_studio.shortcut_controller)
         except Exception as e:
-            logger.error(
-                f"Failed to load sketch definition for editing: {e}",
-                exc_info=True,
-            )
+            logger.exception("Failed to load sketch definition for editing")
 
     def on_sketch_definition_activated(self, sender, *, sketch: Sketch):
         """Handles activation of a sketch definition from the sketch list."""

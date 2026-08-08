@@ -1,5 +1,5 @@
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -64,7 +64,7 @@ class TestGumroadProvider:
             "message": "Cached",
             "license_type": "one_time",
             "customer_email": None,
-            "last_validated": datetime.now().isoformat(),
+            "last_validated": datetime.now(tz=timezone.utc).isoformat(),
             "metadata": {},
         }
 

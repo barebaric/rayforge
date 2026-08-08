@@ -681,10 +681,7 @@ class AddonManager:
         except (AddonValidationError, FileNotFoundError) as e:
             logger.warning(f"Skipping invalid addon at {addon_path}: {e}")
         except Exception as e:
-            logger.error(
-                f"Failed to load addon at {addon_path}: {e}",
-                exc_info=True,
-            )
+            logger.exception(f"Failed to load addon at {addon_path}")
 
     def _check_version_compatibility(self, addon: Addon):
         """
@@ -1049,7 +1046,7 @@ class AddonManager:
                 logger.error(f"Addon validation failed: {e}")
                 return None
             except Exception as e:
-                logger.error(f"Installation failed: {e}", exc_info=True)
+                logger.exception("Installation failed")
                 return None
 
         logger.info(f"install_addon returning: {result}")

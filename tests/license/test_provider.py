@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from rayforge.license import LicenseResult, LicenseStatus, LicenseType
 
@@ -19,7 +19,7 @@ class TestLicenseResult:
         result = LicenseResult(
             status=LicenseStatus.VALID,
             license_type=LicenseType.SUBSCRIPTION,
-            last_validated=datetime.now() - timedelta(days=10),
+            last_validated=datetime.now(tz=timezone.utc) - timedelta(days=10),
         )
         assert result.is_valid_for_offline()
 
@@ -27,7 +27,7 @@ class TestLicenseResult:
         result = LicenseResult(
             status=LicenseStatus.VALID,
             license_type=LicenseType.SUBSCRIPTION,
-            last_validated=datetime.now() - timedelta(days=35),
+            last_validated=datetime.now(tz=timezone.utc) - timedelta(days=35),
         )
         assert not result.is_valid_for_offline()
 
@@ -50,7 +50,7 @@ class TestLicenseResult:
         result = LicenseResult(
             status=LicenseStatus.VALID,
             license_type=LicenseType.ONE_TIME,
-            expires_at=datetime.now() + timedelta(days=1),
+            expires_at=datetime.now(tz=timezone.utc) + timedelta(days=1),
         )
         assert not result.is_expired()
 
@@ -58,7 +58,7 @@ class TestLicenseResult:
         result = LicenseResult(
             status=LicenseStatus.VALID,
             license_type=LicenseType.ONE_TIME,
-            expires_at=datetime.now() - timedelta(seconds=1),
+            expires_at=datetime.now(tz=timezone.utc) - timedelta(seconds=1),
         )
         assert result.is_expired()
 
@@ -66,6 +66,6 @@ class TestLicenseResult:
         result = LicenseResult(
             status=LicenseStatus.VALID,
             license_type=LicenseType.ONE_TIME,
-            expires_at=datetime.now() - timedelta(seconds=1),
+            expires_at=datetime.now(tz=timezone.utc) - timedelta(seconds=1),
         )
         assert not result.is_valid_for_offline()

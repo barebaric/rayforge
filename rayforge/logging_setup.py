@@ -1,7 +1,7 @@
 # ruff: noqa: LOG015
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from blinker import Signal
@@ -214,7 +214,7 @@ def setup_logging(loglevel_str: str):
     _cleanup_old_logs(LOG_DIR, LOG_FILES_TO_KEEP)
 
     # 2. Session File Handler (for persistent, detailed logs)
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    timestamp = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
     log_file = LOG_DIR / f"session-{timestamp}.log"
     file_handler = logging.FileHandler(log_file, encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)

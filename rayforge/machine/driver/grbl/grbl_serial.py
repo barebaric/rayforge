@@ -443,10 +443,7 @@ class GrblSerialDriver(Driver):
                 logger.info("Connection loop cancelled.")
                 break
             except Exception as e:
-                logger.error(
-                    f"Unexpected error in connection loop: {e}",
-                    exc_info=True,
-                )
+                logger.exception("Unexpected error in connection loop")
                 self._update_connection_status(TransportStatus.ERROR, str(e))
             finally:
                 if self.grbl_transport and self.grbl_transport.is_connected:
@@ -522,10 +519,7 @@ class GrblSerialDriver(Driver):
                 logger.info("Command queue processing cancelled.")
                 break
             except Exception as e:
-                logger.error(
-                    f"Unexpected error in command queue: {e}",
-                    exc_info=True,
-                )
+                logger.exception("Unexpected error in command queue")
                 self._update_connection_status(TransportStatus.ERROR, str(e))
         logger.debug("Leaving _process_command_queue.")
 
@@ -925,10 +919,7 @@ class GrblSerialDriver(Driver):
                 "Connection remains active."
             )
         except Exception as e:
-            logger.error(
-                f"Job terminated with unexpected error: {e!r}",
-                exc_info=True,
-            )
+            logger.exception("Job terminated with unexpected error")
 
     async def run_raw(self, machine_code: str) -> None:
         """
@@ -949,10 +940,7 @@ class GrblSerialDriver(Driver):
                 "Connection remains active."
             )
         except Exception as e:
-            logger.error(
-                f"Raw G-code terminated with unexpected error: {e!r}",
-                exc_info=True,
-            )
+            logger.exception("Raw G-code terminated with unexpected error")
 
     async def cancel(self) -> None:
         logger.debug("Cancel command initiated.")

@@ -353,10 +353,10 @@ class RectangleCommand(SketchChangeCommand):
             x, y: The new end point coordinates.
 
         Raises:
-            AttributeError: If preview_state is not a RectanglePreviewState.
+            TypeError: If preview_state is not a RectanglePreviewState.
         """
         if not isinstance(preview_state, RectanglePreviewState):
-            raise AttributeError("Expected RectanglePreviewState")
+            raise TypeError("Expected RectanglePreviewState")
         try:
             p_end = registry.get_point(preview_state.p_end_id)
             p_start = registry.get_point(preview_state.start_id)
@@ -407,10 +407,10 @@ class RectangleCommand(SketchChangeCommand):
             preview_state: The preview state from start_preview.
 
         Raises:
-            AttributeError: If preview_state is not a RectanglePreviewState.
+            TypeError: If preview_state is not a RectanglePreviewState.
         """
         if not isinstance(preview_state, RectanglePreviewState):
-            raise AttributeError("Expected RectanglePreviewState")
+            raise TypeError("Expected RectanglePreviewState")
         preview_ids = preview_state.preview_ids
         p_end_id = preview_state.p_end_id
 

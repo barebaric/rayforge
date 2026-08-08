@@ -500,9 +500,8 @@ class TaskManager:
             await task.run(context)
         except Exception:
             # This is the master error handler for all background tasks.
-            logger.error(
-                f"Unhandled exception in managed task '{task.key}':",
-                exc_info=True,
+            logger.exception(
+                f"Unhandled exception in managed task '{task.key}'"
             )
         finally:
             context.flush()

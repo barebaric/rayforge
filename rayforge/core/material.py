@@ -111,7 +111,7 @@ class Material:
             )
 
         if not isinstance(data, dict):
-            raise ValueError(
+            raise TypeError(
                 f"Material file {file_path} must contain a dictionary"
             )
 

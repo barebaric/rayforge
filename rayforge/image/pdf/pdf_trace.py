@@ -77,10 +77,8 @@ class PdfTraceImporter(Importer):
                 title=self.source_file.name, errors=self._errors
             )
         except Exception as e:
-            logger.error(
-                f"Unexpected error during PDF scan for "
-                f"{self.source_file.name}: {e}",
-                exc_info=True,
+            logger.exception(
+                f"Unexpected error during PDF scan for {self.source_file.name}"
             )
             self.add_error(_(f"Unexpected error while scanning PDF: {e}"))
             return ImportManifest(

@@ -829,9 +829,8 @@ class ViewManager:
             )
 
         except Exception as e:
-            logger.error(
-                f"[{composite_id}] Failed to allocate live buffer: {e}",
-                exc_info=True,
+            logger.exception(
+                f"[{composite_id}] Failed to allocate live buffer"
             )
 
     def on_generation_starting(

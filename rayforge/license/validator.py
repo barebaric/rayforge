@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Callable
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from threading import Thread
 
@@ -40,7 +40,7 @@ class LicenseValidator:
         cached = self._cache.get(addon_id)
         if cached:
             result, timestamp = cached
-            if datetime.now() - timestamp < self.CACHE_DURATION:
+            if datetime.now(tz=timezone.utc) - timestamp < self.CACHE_DURATION:
                 return result
 
         has_gumroad = license_config.get("product_ids") or license_config.get(
@@ -51,14 +51,17 @@ class LicenseValidator:
         if has_gumroad and self._gumroad.is_configured():
             result = self._gumroad.validate(license_config)
             if result.status == LicenseStatus.VALID:
-                self._cache[addon_id] = (result, datetime.now())
+                self._cache[addon_id] = (result, datetime.now(tz=timezone.utc))
                 return result
 
         if has_patreon and self._patreon:
             if self._patreon.is_configured():
                 result = self._patreon.validate(license_config)
                 if result.status == LicenseStatus.VALID:
-                    self._cache[addon_id] = (result, datetime.now())
+                    self._cache[addon_id] = (
+                        result,
+                        datetime.now(tz=timezone.utc),
+                    )
                     return result
 
         if has_gumroad and has_patreon:
@@ -74,7 +77,7 @@ class LicenseValidator:
             message = "License required."
 
         result = LicenseResult(status=LicenseStatus.NOT_FOUND, message=message)
-        self._cache[addon_id] = (result, datetime.now())
+        self._cache[addon_id] = (result, datetime.now(tz=timezone.utc))
         return result
 
     def check_license(

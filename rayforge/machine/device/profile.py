@@ -54,7 +54,7 @@ def parse_meta(data: dict, manifest_path: Path) -> DeviceMeta:
 
     device_data = data.get("device", {})
     if not isinstance(device_data, dict):
-        raise ValueError(f"Invalid 'device' section in {manifest_path}")
+        raise TypeError(f"Invalid 'device' section in {manifest_path}")
 
     if not device_data.get("name"):
         raise ValueError(f"Missing 'device.name' in {manifest_path}")
@@ -74,7 +74,7 @@ _VALID_ORIGINS = sorted(o.value for o in Origin)
 def parse_machine_config(data: dict, manifest_path: Path) -> "MachineConfig":
     raw = data.get("machine", {})
     if not isinstance(raw, dict):
-        raise ValueError(f"Invalid 'machine' section in {manifest_path}")
+        raise TypeError(f"Invalid 'machine' section in {manifest_path}")
 
     _validate_machine_config(raw, manifest_path)
 
@@ -368,7 +368,7 @@ class DeviceProfile:
             data = yaml.safe_load(f)
 
         if not isinstance(data, dict):
-            raise ValueError(
+            raise TypeError(
                 f"Invalid device manifest: {manifest_path} is not a mapping"
             )
 

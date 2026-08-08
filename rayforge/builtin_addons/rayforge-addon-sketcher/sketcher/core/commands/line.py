@@ -176,10 +176,10 @@ class LineCommand(SketchChangeCommand):
             x, y: The new cursor coordinates.
 
         Raises:
-            AttributeError: If preview_state is not a LinePreviewState.
+            TypeError: If preview_state is not a LinePreviewState.
         """
         if not isinstance(preview_state, LinePreviewState):
-            raise AttributeError("Expected LinePreviewState")
+            raise TypeError("Expected LinePreviewState")
 
         if preview_state.locked_length is not None:
             return
@@ -206,10 +206,10 @@ class LineCommand(SketchChangeCommand):
             preview_state: The preview state from start_preview.
 
         Raises:
-            AttributeError: If preview_state is not a LinePreviewState.
+            TypeError: If preview_state is not a LinePreviewState.
         """
         if not isinstance(preview_state, LinePreviewState):
-            raise AttributeError("Expected LinePreviewState")
+            raise TypeError("Expected LinePreviewState")
 
         if preview_state.entity_id is not None:
             registry.entities = [

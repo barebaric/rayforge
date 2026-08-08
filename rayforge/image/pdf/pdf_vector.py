@@ -190,7 +190,7 @@ class PdfVectorImporter(Importer):
             )
 
         except Exception as e:
-            logger.error(f"Failed to parse PDF: {e}", exc_info=True)
+            logger.exception("Failed to parse PDF")
             self.add_error(_(f"Failed to parse PDF: {e}"))
             self._close_document()
             return None
