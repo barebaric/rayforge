@@ -116,6 +116,23 @@ dropdown.machine-dropdown button {
 """
 
 
+class CappedWidthBox(Gtk.Box):
+    """A Gtk.Box whose natural width is capped to a maximum value."""
+
+    def __init__(self, max_natural_width: int, **kwargs):
+        super().__init__(**kwargs)
+        self._max_natural_width = max_natural_width
+
+    def do_measure(self, orientation, for_size):
+        minimum, natural, min_baseline, nat_baseline = super().do_measure(
+            orientation, for_size
+        )
+        if orientation == Gtk.Orientation.HORIZONTAL:
+            minimum = min(minimum, self._max_natural_width)
+            natural = min(natural, self._max_natural_width)
+        return minimum, natural, min_baseline, nat_baseline
+
+
 class MainWindow(Adw.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -333,7 +350,7 @@ class MainWindow(Adw.ApplicationWindow):
             show_tabs=True,
             shortcuts=SHORTCUTS,
         )
-        self._surface_vis_overlay.set_margin_end(424)
+        self._surface_vis_overlay.set_margin_end(454)
         self.surface_overlay.add_overlay(self._surface_vis_overlay)
         self._time_estimate_overlay = TimeEstimateOverlay()
         self.surface_overlay.add_overlay(self._time_estimate_overlay)
@@ -375,8 +392,10 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Create a vertical box to organize the content within the
         # ScrolledWindow.
-        right_pane_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        right_pane_box.set_size_request(400, -1)
+        right_pane_box = CappedWidthBox(
+            430, orientation=Gtk.Orientation.VERTICAL
+        )
+        right_pane_box.set_size_request(430, -1)
         self._right_pane.set_child(right_pane_box)
 
         # The WorkflowView will be updated when a layer is activated.
@@ -1409,7 +1428,7 @@ class MainWindow(Adw.ApplicationWindow):
             show_grid=True,
             shortcuts=SHORTCUTS,
         )
-        self._canvas3d_vis_overlay.set_margin_end(424)
+        self._canvas3d_vis_overlay.set_margin_end(454)
         self._canvas3d_overlay.add_overlay(self._canvas3d_vis_overlay)
         self._canvas3d_playback = PlaybackOverlay()
         self.canvas3d.set_playback_overlay(self._canvas3d_playback)

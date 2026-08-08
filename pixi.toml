@@ -136,7 +136,7 @@ cmd = "pyright"
 
 [tasks.rayforge]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
-cmd = "scripts/with_gdk.sh rayforge"
+cmd = "scripts/with_gdk.sh python -m rayforge"
 
 [tasks.testapp]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0):/usr/lib/x86_64-linux-gnu/girepository-1.0"}
