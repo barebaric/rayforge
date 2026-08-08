@@ -149,10 +149,22 @@ class CameraController:
         motion.connect("leave", self.on_motion_leave)
         self._widget.add_controller(motion)
 
+        # Grab keyboard focus when the canvas is clicked so that the
+        # EventControllerKey actually receives key events.  Without this,
+        # the previously-focused widget keeps consuming them.
+        click = Gtk.GestureClick.new()
+        click.set_button(0)
+        click.connect("pressed", self._on_click_focus)
+        self._widget.add_controller(click)
+
         key_controller = Gtk.EventControllerKey.new()
         if on_key_pressed is not None:
             key_controller.connect("key-pressed", on_key_pressed)
         self._widget.add_controller(key_controller)
+
+    def _on_click_focus(self, gesture, n_press, x, y):
+        """Grab keyboard focus so the canvas receives key events."""
+        self._widget.grab_focus()
 
     def _clear_drag_state(self):
         """Resets all state variables related to any drag operation."""
