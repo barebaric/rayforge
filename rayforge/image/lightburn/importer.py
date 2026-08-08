@@ -421,7 +421,7 @@ class LightBurnImporter(Importer):
             root = ET.fromstring(self.raw_data)
         except ET.ParseError as e:
             logger.warning("LightBurn scan failed: %s", e)
-            self.add_error(_(f"LightBurn file is invalid XML: {e}"))
+            self.add_error(_("LightBurn file is invalid XML: {}").format(e))
             return ImportManifest(
                 title=self.source_file.name, errors=self._errors
             )
@@ -698,7 +698,9 @@ class LightBurnImporter(Importer):
         try:
             root = ET.fromstring(self.raw_data)
         except ET.ParseError as e:
-            self.add_error(_(f"LightBurn file is corrupt or invalid: {e}"))
+            self.add_error(
+                _("LightBurn file is corrupt or invalid: {}").format(e)
+            )
             return None
 
         project = root.find("LightBurnProject")

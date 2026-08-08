@@ -72,7 +72,7 @@ class PdfTraceImporter(Importer):
             )
         except PdfReadError as e:
             logger.warning(f"PDF scan failed for {self.source_file.name}: {e}")
-            self.add_error(_(f"Could not read PDF: {e}"))
+            self.add_error(_("Could not read PDF: {}").format(e))
             return ImportManifest(
                 title=self.source_file.name, errors=self._errors
             )
@@ -80,7 +80,9 @@ class PdfTraceImporter(Importer):
             logger.exception(
                 f"Unexpected error during PDF scan for {self.source_file.name}"
             )
-            self.add_error(_(f"Unexpected error while scanning PDF: {e}"))
+            self.add_error(
+                _("Unexpected error while scanning PDF: {}").format(e)
+            )
             return ImportManifest(
                 title=self.source_file.name, errors=self._errors
             )
@@ -143,7 +145,9 @@ class PdfTraceImporter(Importer):
             size_mm = (to_mm(width_pt, "pt"), to_mm(height_pt, "pt"))
         except Exception as e:
             logger.error(f"Failed to read PDF size: {e}")
-            self.add_error(_(f"Failed to read PDF page dimensions: {e}"))
+            self.add_error(
+                _("Failed to read PDF page dimensions: {}").format(e)
+            )
             self._image = None
             return None
 

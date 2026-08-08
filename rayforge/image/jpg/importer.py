@@ -58,7 +58,7 @@ class JpgImporter(Importer):
             logger.warning(
                 f"JPEG scan failed for {self.source_file.name}: {e}"
             )
-            self.add_error(_(f"Failed to scan JPEG file: {e}"))
+            self.add_error(_("Failed to scan JPEG file: {}").format(e))
             return ImportManifest(
                 title=self.source_file.name, errors=self._errors
             )
@@ -122,7 +122,7 @@ class JpgImporter(Importer):
             )
         except pyvips.Error as e:
             logger.exception("pyvips failed to load JPEG buffer")
-            self.add_error(_(f"Image load failed: {e}"))
+            self.add_error(_("Image load failed: {}").format(e))
             self._image = None
             return None
 

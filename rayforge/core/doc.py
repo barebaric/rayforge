@@ -46,7 +46,7 @@ class Doc(DocItem):
 
         # A new document starts with three empty workpiece layers
         for i in range(3):
-            workpiece_layer = Layer(_(f"Layer {i + 1}"))
+            workpiece_layer = Layer(_("Layer {}").format(i + 1))
             workpiece_layer.color = COLOR_PALETTE[i % len(COLOR_PALETTE)]
             self.add_child(workpiece_layer)
 

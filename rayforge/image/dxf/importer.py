@@ -70,13 +70,15 @@ class DxfImporter(Importer):
             doc = ezdxf.read(io.StringIO(normalized_str))  # type: ignore
         except DXFStructureError as e:
             logger.warning(f"DXF scan failed: {e}")
-            self.add_error(_(f"DXF file structure is invalid: {e}"))
+            self.add_error(_("DXF file structure is invalid: {}").format(e))
             return ImportManifest(
                 title=self.source_file.name, errors=self._errors
             )
         except Exception as e:
             logger.exception("DXF scan error")
-            self.add_error(_(f"Unexpected error while scanning DXF: {e}"))
+            self.add_error(
+                _("Unexpected error while scanning DXF: {}").format(e)
+            )
             return ImportManifest(
                 title=self.source_file.name, errors=self._errors
             )
@@ -292,7 +294,7 @@ class DxfImporter(Importer):
             self._dxf_doc = doc
         except DXFStructureError as e:
             self._dxf_doc = None
-            self.add_error(_(f"DXF file is corrupt or invalid: {e}"))
+            self.add_error(_("DXF file is corrupt or invalid: {}").format(e))
             return None
 
         # 1. Bounds

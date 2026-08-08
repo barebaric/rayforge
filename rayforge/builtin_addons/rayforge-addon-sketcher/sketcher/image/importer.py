@@ -63,7 +63,7 @@ class SketchImporter(Importer):
             logger.warning(
                 f"Sketch scan failed for {self.source_file.name}: {e}"
             )
-            self.add_error(_(f"Sketch file is invalid JSON: {e}"))
+            self.add_error(_("Sketch file is invalid JSON: {}").format(e))
             return ImportManifest(
                 title=self.source_file.name, errors=self._errors
             )
@@ -119,7 +119,7 @@ class SketchImporter(Importer):
             self.parsed_sketch = Sketch.from_dict(sketch_dict)
         except (json.JSONDecodeError, KeyError, TypeError) as e:
             logger.error(f"Failed to parse sketch data: {e}")
-            self.add_error(_(f"Failed to load sketch structure: {e}"))
+            self.add_error(_("Failed to load sketch structure: {}").format(e))
             return None
 
         final_name = self.parsed_sketch.name

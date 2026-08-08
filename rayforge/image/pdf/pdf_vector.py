@@ -100,7 +100,7 @@ class PdfVectorImporter(Importer):
             )
         except Exception as e:
             logger.warning(f"PDF scan failed for {self.source_file.name}: {e}")
-            self.add_error(_(f"Could not read PDF: {e}"))
+            self.add_error(_("Could not read PDF: {}").format(e))
             return ImportManifest(
                 title=self.source_file.name, errors=self._errors
             )
@@ -191,7 +191,7 @@ class PdfVectorImporter(Importer):
 
         except Exception as e:
             logger.exception("Failed to parse PDF")
-            self.add_error(_(f"Failed to parse PDF: {e}"))
+            self.add_error(_("Failed to parse PDF: {}").format(e))
             self._close_document()
             return None
 
