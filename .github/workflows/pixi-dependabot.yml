@@ -1,0 +1,49 @@
+name: Update Pixi Dependencies
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  pixi-upgrade:
+    name: Update Pixi Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Pixi
+        uses: prefix-dev/setup-pixi@v0.9.4
+        with:
+          pixi-version: v0.68.1
+          run-install: false
+
+      - name: Generate dependency diff
+        run: |
+          set -o pipefail
+          pixi update --json | pixi exec pixi-diff-to-markdown >> diff.md
+
+      - name: Upgrade dependencies
+        run: pixi upgrade
+
+      - name: Sync pip requirement files
+        run: python3 scripts/sync_requirements.py
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          commit-message: "deps: update pixi dependencies"
+          title: "deps: update pixi dependencies"
+          body-path: diff.md
+          branch: pixi-dependabot
+          base: main
+          delete-branch: true
+          add-paths: |
+            pixi.toml
+            pixi.lock
+            requirements.txt
+            debian/requirements-bundle.txt

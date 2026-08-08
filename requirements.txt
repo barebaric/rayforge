@@ -14,12 +14,12 @@ PyMuPDF==1.27.2.2
 PyOpenGL==3.1.10
 PyOpenGL_accelerate==3.1.10
 pypdf==6.14.2
-pyserial>=3.5
+pyserial~=3.5
 pyvips==3.0.0
 PyYAML==6.0.2
 scipy==1.17.1
 semver==3.0.2
-svgelements==1.9.6
+svgelements>=1.9.6,<2
 trimesh==4.6.8
 vtracer==0.6.11
 websockets==14.2
