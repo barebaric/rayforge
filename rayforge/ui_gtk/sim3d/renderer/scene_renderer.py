@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Optional, Protocol
 
 import numpy as np
+from OpenGL.error import GLError
 
 from ....shared.units.formatter import (
     get_default_grid_step_mm,
@@ -217,7 +218,7 @@ class SceneRenderer(BaseRenderer):
         try:
             if self.background_renderer:
                 self.background_renderer.init_gl()
-        except Exception as e:
+        except GLError as e:
             logger.warning(
                 "Background renderer init failed, "
                 "falling back to clear color: %s",

@@ -18,18 +18,23 @@ While a lookup runs, a thin pulsing progress bar (mirroring the AI
 workpiece generator dialog) gives the user live feedback.
 """
 
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from blinker import Signal
-from gi.repository import Adw, GLib, Gtk
+from gi.repository import Adw, GLib, GObject, Gtk
 
 from ....context import get_context
 from ....core.ai.spec_lookup import is_ai_configured, lookup_machine_specs
-from ....machine.device.profile import DeviceProfile
+from ....machine.device.profile import DeviceProfile, MachineConfig
 from ....machine.models.machine import Origin
-from ....shared.tasker import task_mgr
+from ....shared.tasker import Task, task_mgr
+from ....shared.tasker.context import ExecutionContext
 from . import WizardPage, _makePreferencesGroup
+
+if TYPE_CHECKING:
+    from ..unified_wizard import UnifiedWizard
 
 # Fields the AI may return and the wizard knows how to merge. Each
 # entry maps the JSON key to (target_machine_config_attr, label,
@@ -82,7 +87,7 @@ class AILookupPage(WizardPage):
 
     # Sent once the user advances with accepted suggestions. Payload
     # is the dict of accepted suggestions.
-    def __init__(self, wizard, **kwargs):
+    def __init__(self, wizard: "UnifiedWizard", **kwargs: Any) -> None:
         self.suggestions_applied = Signal()
         self._pulse_source_id = None
         self._progress_bar: Gtk.ProgressBar | None = None
@@ -217,7 +222,9 @@ class AILookupPage(WizardPage):
         self.banner.set_child(box)
         self.lookup_button.set_sensitive(False)
 
-    def _on_inputs_changed(self, _entry, _param) -> None:
+    def _on_inputs_changed(
+        self, _entry: Adw.EntryRow | None, _param: GObject.ParamSpec | None
+    ) -> None:
         has_input = bool(self.vendor_row.get_text()) or bool(
             self.model_row.get_text()
         )
@@ -254,7 +261,7 @@ class AILookupPage(WizardPage):
 
         context = get_context()
 
-        async def _coro(exec_ctx):
+        async def _coro(exec_ctx: ExecutionContext) -> dict[str, Any]:
             return {
                 "specs": await lookup_machine_specs(vendor, model, context),
                 "vendor": vendor,
@@ -267,14 +274,14 @@ class AILookupPage(WizardPage):
             when_done=self._on_lookup_done,
         )
 
-    def _on_lookup_done(self, task) -> None:
+    def _on_lookup_done(self, task: Task) -> None:
         def _update():
             self._stop_pulse()
             self.lookup_button.set_sensitive(True)
             self.lookup_button.set_label(_("Look Up Specs"))
             try:
                 result = task.result()
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - async task boundary
                 self._show_lookup_error(str(exc))
                 return
             if task.get_status() != "completed":
@@ -333,7 +340,9 @@ class AILookupPage(WizardPage):
             self.suggestions_group.add(row)
             self._rows.append(row)
 
-    def _make_toggle_handler(self, key: str, value: Any):
+    def _make_toggle_handler(
+        self, key: str, value: Any
+    ) -> Callable[[Adw.SwitchRow, GObject.ParamSpec], None]:
         """Return a notify::active handler bound to this suggestion.
 
         ``notify::active`` delivers ``(switch, pspec)``, so plain
@@ -342,7 +351,9 @@ class AILookupPage(WizardPage):
         instead.
         """
 
-        def _on_active_changed(switch, _pspec) -> None:
+        def _on_active_changed(
+            switch: Adw.SwitchRow, _pspec: GObject.ParamSpec
+        ) -> None:
             self._on_suggestion_toggled(key, value, switch.get_active())
 
         return _on_active_changed
@@ -404,7 +415,9 @@ class AILookupPage(WizardPage):
 
     # ----- head merge ----------------------------------------------------
 
-    def _merge_head_field(self, mc, key: str, value: Any) -> None:
+    def _merge_head_field(
+        self, mc: MachineConfig, key: str, value: Any
+    ) -> None:
         head = mc.heads[0] if mc.heads else {}
 
         if key == "head_type":

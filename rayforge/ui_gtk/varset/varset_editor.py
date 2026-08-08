@@ -794,7 +794,7 @@ class VarSetEditorWidget(PreferencesGroupWithButton):
             if target_index != -1:
                 self._var_set.move_var(source_key, target_index)
                 self.populate(self._var_set)
-        except Exception as e:
+        except (KeyError, ValueError) as e:
             logger.error(f"Failed to reorder vars: {e}")
 
     def populate(self, var_set: VarSet):

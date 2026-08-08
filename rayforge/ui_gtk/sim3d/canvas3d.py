@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
+from OpenGL.error import GLError
 
 from ...context import RayforgeContext
 from ...pipeline.pipeline import Pipeline
@@ -210,7 +211,7 @@ class Canvas3D(Gtk.GLArea):
             self.make_current()
             self._presenter.cancel_scene_preparation()
             self._scene.cleanup()
-        except Exception as e:
+        except GLError as e:
             logger.debug("Error during GL cleanup on unrealize: %s", e)
         finally:
             self._gl_initialized = False

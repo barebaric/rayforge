@@ -1,8 +1,10 @@
 import logging
+import zipfile
 from collections.abc import Callable
 from gettext import gettext as _
 from pathlib import Path
 
+import yaml
 from gi.repository import Gio, GLib, Gtk
 
 from ...context import get_context
@@ -84,7 +86,14 @@ def _handle_zip(file_path: Path, callback):
     mgr = get_context().device_profile_mgr
     try:
         profile = mgr.install_from_zip(file_path)
-    except Exception as e:
+    except (
+        OSError,
+        ValueError,
+        TypeError,
+        RuntimeError,
+        zipfile.BadZipFile,
+        yaml.YAMLError,
+    ) as e:
         logger.error(f"Import failed: {e}")
         callback(None, str(e))
         return
@@ -98,7 +107,7 @@ def _handle_lbdev(
 ):
     try:
         _profile, summary = convert_to_profile(file_path)
-    except Exception as e:
+    except (OSError, ValueError, TypeError) as e:
         logger.error(f"LightBurn import failed: {e}")
         callback(None, str(e))
         return
@@ -121,7 +130,7 @@ def _install_lbdev_and_callback(
     mgr = get_context().device_profile_mgr
     try:
         installed_profile, _ = mgr.install_from_lbdev(file_path)
-    except Exception as e:
+    except (OSError, ValueError, TypeError, RuntimeError) as e:
         logger.error(f"LightBurn install failed: {e}")
         callback(None, str(e))
         return

@@ -334,7 +334,7 @@ class WorkPieceElement(CanvasElement):
                 bitmap,
                 (bbox_mm, workpiece_size_mm),
             )
-        except Exception as e:
+        except (cairo.Error, ValueError) as e:
             logger.warning(
                 f"Failed to update ops cache for step {step_uid}: {e}"
             )
@@ -1236,7 +1236,7 @@ class WorkPieceElement(CanvasElement):
                 ctx.paint()
 
                 ctx.restore()
-            except Exception as e:
+            except cairo.Error as e:
                 logger.warning(
                     f"Failed to draw composited ops for "
                     f"'{self.data.name}': {e}"

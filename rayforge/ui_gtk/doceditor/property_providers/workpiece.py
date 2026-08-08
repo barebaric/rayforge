@@ -2,7 +2,7 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, cast
 
-from gi.repository import Adw, Gio, Gtk
+from gi.repository import Adw, Gio, GLib, Gtk
 
 from ....core.item import DocItem
 from ....core.workpiece import WorkPiece
@@ -110,7 +110,7 @@ class WorkpieceInfoProvider(PropertyProvider):
                     Gtk.Window, self.source_file_row.get_ancestor(Gtk.Window)
                 )
                 launcher.open_containing_folder(window, None, None)
-            except Exception as e:
+            except GLib.Error as e:
                 logger.error(f"Failed to show file in browser: {e}")
 
     def _on_metadata_info_clicked(self, button):

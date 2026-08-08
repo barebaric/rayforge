@@ -6,6 +6,10 @@ from pathlib import Path
 import numpy as np
 from gi.repository import Gtk
 from OpenGL import GL
+from OpenGL.GL.shaders import (
+    ShaderCompilationError,
+    ShaderLinkError,
+)
 
 from ..sim3d.camera import Camera
 from ..sim3d.gl_state import render_pass
@@ -57,7 +61,7 @@ class ModelPreviewWidget(Gtk.GLArea):
         GL.glClearColor(0.12, 0.12, 0.14, 1.0)
         try:
             self._shader = SimpleShader()
-        except Exception as e:
+        except (ShaderCompilationError, ShaderLinkError) as e:
             logger.error(f"Shader compilation failed: {e}")
             return
         if self._mesh_data:

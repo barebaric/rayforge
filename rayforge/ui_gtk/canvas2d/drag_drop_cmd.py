@@ -335,7 +335,7 @@ class DragDropCmd:
                 overlay_parent.remove_overlay(self._drop_overlay_label)
             self._drop_overlay_label = None
             logger.debug("Drop overlay removed")
-        except Exception as e:
+        except GLib.Error as e:
             logger.warning(f"Error removing drop overlay: {e}")
             self._drop_overlay_label = None  # Clear reference anyway
 
@@ -383,7 +383,7 @@ class DragDropCmd:
                     None,
                 )
                 mime_type = file_info.get_content_type()
-            except Exception as e:
+            except GLib.Error as e:
                 logger.warning(
                     f"Could not query file info for {file_path}: {e}"
                 )
@@ -557,7 +557,7 @@ class DragDropCmd:
             pixbuf.savev(str(temp_path), "png", [], [])
             return temp_path
 
-        except Exception as e:
+        except (GLib.Error, OSError) as e:
             logger.error(f"Failed to save texture: {e}")
             return None
 
@@ -625,7 +625,7 @@ class DragDropCmd:
         try:
             temp_path.unlink()
             logger.debug(f"Cleaned up clipboard temp file: {temp_path}")
-        except Exception as e:
+        except OSError as e:
             logger.warning(f"Failed to clean up temp file: {e}")
 
         return False  # Don't repeat

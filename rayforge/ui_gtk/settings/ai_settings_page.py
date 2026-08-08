@@ -3,13 +3,16 @@
 import asyncio
 import logging
 import uuid
+from collections.abc import Callable
+from concurrent.futures import Future
 from gettext import gettext as _
-from typing import cast
+from typing import Any, cast
 
 from blinker import Signal
 from gi.repository import Adw, GLib, Gtk
 
 from ...context import get_context
+from ...core.ai.ai_service import AIService
 from ...core.ai.provider import AIProviderConfig, AIProviderType
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
@@ -26,10 +29,10 @@ class ProviderRow(Gtk.Box):
         provider_id: str,
         config: AIProviderConfig,
         is_default: bool,
-        on_toggle_enabled,
-        on_delete_callback,
-        on_set_default_callback,
-    ):
+        on_toggle_enabled: Callable[[str, bool], None],
+        on_delete_callback: Callable[[str, str], None],
+        on_set_default_callback: Callable[[str], None],
+    ) -> None:
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         self.provider_id = provider_id
         self.config = config
@@ -39,7 +42,7 @@ class ProviderRow(Gtk.Box):
         self.on_set_default_callback = on_set_default_callback
         self._setup_ui()
 
-    def _setup_ui(self):
+    def _setup_ui(self) -> None:
         self.set_margin_top(6)
         self.set_margin_bottom(6)
         self.set_margin_start(12)
@@ -96,7 +99,9 @@ class ProviderRow(Gtk.Box):
         delete_btn.connect("clicked", self._on_delete_clicked)
         suffix_box.append(delete_btn)
 
-    def update_from_config(self, config: AIProviderConfig, is_default: bool):
+    def update_from_config(
+        self, config: AIProviderConfig, is_default: bool
+    ) -> None:
         self.config = config
         self.is_default = is_default
         self.title_label.set_label(config.name)
@@ -105,7 +110,7 @@ class ProviderRow(Gtk.Box):
         self.default_btn.set_visible(not is_default)
         self.enable_switch.set_active(config.enabled)
 
-    def _update_title_style(self):
+    def _update_title_style(self) -> None:
         if self.config.enabled:
             self.title_label.remove_css_class("dim-label")
         else:
@@ -115,17 +120,17 @@ class ProviderRow(Gtk.Box):
         self.on_toggle_enabled(self.provider_id, state)
         return False
 
-    def _on_delete_clicked(self, button):
+    def _on_delete_clicked(self, button: Gtk.Button) -> None:
         self.on_delete_callback(self.provider_id, self.config.name)
 
-    def _on_set_default_clicked(self, button):
+    def _on_set_default_clicked(self, button: Gtk.Button) -> None:
         self.on_set_default_callback(self.provider_id)
 
 
 class ProviderListWidget(PreferencesGroupWithButton):
     """Widget for displaying and managing a list of AI providers."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(
             button_label=_("Add Provider"),
             selection_mode=Gtk.SelectionMode.SINGLE,
@@ -135,7 +140,7 @@ class ProviderListWidget(PreferencesGroupWithButton):
         self._row_widgets: dict[str, ProviderRow] = {}
         self._setup_ui()
 
-    def _setup_ui(self):
+    def _setup_ui(self) -> None:
         placeholder = Gtk.Label(
             label=_("No providers configured"),
             halign=Gtk.Align.CENTER,
@@ -146,7 +151,7 @@ class ProviderListWidget(PreferencesGroupWithButton):
         self.list_box.set_placeholder(placeholder)
         self.list_box.connect("row-selected", self._on_provider_selected)
 
-    def populate_and_select(self, select_id: str | None = None):
+    def populate_and_select(self, select_id: str | None = None) -> None:
         ai_service = get_context().ai_service
         providers = list(ai_service.providers.items())
         default_id = ai_service.default_provider_id
@@ -205,7 +210,9 @@ class ProviderListWidget(PreferencesGroupWithButton):
     def get_row_for_provider(self, provider_id: str) -> ProviderRow | None:
         return self._row_widgets.get(provider_id)
 
-    def create_row_widget(self, item) -> ProviderRow:
+    def create_row_widget(
+        self, item: tuple[str, AIProviderConfig]
+    ) -> ProviderRow:
         provider_id, config = item
         row_widget = ProviderRow(
             provider_id,
@@ -217,7 +224,7 @@ class ProviderListWidget(PreferencesGroupWithButton):
         )
         return row_widget
 
-    def _on_add_clicked(self, button: Gtk.Button):
+    def _on_add_clicked(self, button: Gtk.Button) -> None:
         ai_service = get_context().ai_service
         new_config = AIProviderConfig(
             id=str(uuid.uuid4())[:8],
@@ -230,7 +237,7 @@ class ProviderListWidget(PreferencesGroupWithButton):
         )
         ai_service.add_provider(new_config)
 
-    def _on_toggle_enabled(self, provider_id: str, enabled: bool):
+    def _on_toggle_enabled(self, provider_id: str, enabled: bool) -> None:
         ai_service = get_context().ai_service
         config = ai_service.get_config(provider_id)
         if config:
@@ -245,7 +252,7 @@ class ProviderListWidget(PreferencesGroupWithButton):
             )
             ai_service.update_provider(new_config)
 
-    def _on_delete_provider(self, provider_id: str, name: str):
+    def _on_delete_provider(self, provider_id: str, name: str) -> None:
         root = self.get_root()
         dialog = Adw.MessageDialog(
             transient_for=cast(Gtk.Window, root) if root else None,
@@ -270,13 +277,13 @@ class ProviderListWidget(PreferencesGroupWithButton):
         dialog.connect("response", on_response)
         dialog.present()
 
-    def _on_set_default(self, provider_id: str):
+    def _on_set_default(self, provider_id: str) -> None:
         get_context().ai_service.default_provider_id = provider_id
         self.populate_and_select(select_id=provider_id)
 
     def _on_provider_selected(
         self, listbox: Gtk.ListBox, row: Gtk.ListBoxRow | None
-    ):
+    ) -> None:
         provider_id = None
         config = None
         selected_row = listbox.get_selected_row()
@@ -295,14 +302,16 @@ class ProviderListWidget(PreferencesGroupWithButton):
 class ProviderEditorWidget(Adw.PreferencesGroup):
     """Inline editor widget for AI provider settings with instant apply."""
 
-    def __init__(self, list_widget: "ProviderListWidget", **kwargs):
+    def __init__(
+        self, list_widget: "ProviderListWidget", **kwargs: Any
+    ) -> None:
         super().__init__(**kwargs)
         self.list_widget = list_widget
         self.provider_id: str | None = None
         self._updating = False
         self._setup_ui()
 
-    def _setup_ui(self):
+    def _setup_ui(self) -> None:
         self.name_row = Adw.EntryRow(title=_("Name"))
         self.name_row.connect("changed", self._on_name_changed)
         self.add(self.name_row)
@@ -355,7 +364,7 @@ class ProviderEditorWidget(Adw.PreferencesGroup):
 
     def set_provider(
         self, provider_id: str | None, config: AIProviderConfig | None
-    ):
+    ) -> None:
         self._updating = True
         self.provider_id = provider_id
 
@@ -376,7 +385,7 @@ class ProviderEditorWidget(Adw.PreferencesGroup):
         self.set_visible(True)
         self._updating = False
 
-    def _clear_form(self):
+    def _clear_form(self) -> None:
         self.name_row.set_text("")
         self.api_key_row.set_text("")
         self.base_url_row.set_text("")
@@ -384,7 +393,7 @@ class ProviderEditorWidget(Adw.PreferencesGroup):
         self.type_row.set_selected(0)
         self._clear_test_status()
 
-    def _clear_test_status(self):
+    def _clear_test_status(self) -> bool:
         self.test_row.set_subtitle(
             _("Verify the provider configuration is working")
         )
@@ -398,7 +407,7 @@ class ProviderEditorWidget(Adw.PreferencesGroup):
         types = [AIProviderType.OPENAI_COMPATIBLE]
         return types[idx]
 
-    def _on_name_changed(self, entry_row):
+    def _on_name_changed(self, entry_row: Adw.EntryRow) -> None:
         if self._updating or not self.provider_id:
             return
 
@@ -412,7 +421,7 @@ class ProviderEditorWidget(Adw.PreferencesGroup):
 
         self._save_config()
 
-    def _on_field_changed(self, *args):
+    def _on_field_changed(self, *args: Any) -> None:
         if self._updating or not self.provider_id:
             return
 
@@ -422,7 +431,7 @@ class ProviderEditorWidget(Adw.PreferencesGroup):
 
         self._save_config()
 
-    def _save_config(self):
+    def _save_config(self) -> None:
         if not self.provider_id:
             return
 
@@ -454,13 +463,13 @@ class ProviderEditorWidget(Adw.PreferencesGroup):
         if row:
             row.config = new_config
 
-    def _on_test_clicked(self, button):
+    def _on_test_clicked(self, button: Gtk.Button) -> None:
         self.test_row.set_subtitle(_("Testing..."))
         self.test_success_icon.set_visible(False)
         self.test_error_icon.set_visible(False)
         self.test_btn.set_sensitive(False)
 
-        async def do_test():
+        async def do_test() -> tuple[bool, str]:
             try:
                 test_config = AIProviderConfig(
                     id="test",
@@ -479,23 +488,23 @@ class ProviderEditorWidget(Adw.PreferencesGroup):
                 await provider.close()
 
                 return success, message
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - async task boundary
                 return False, str(e)
 
         from ...shared.tasker import task_mgr
 
         future = asyncio.run_coroutine_threadsafe(do_test(), task_mgr.loop)
 
-        def on_test_done(f):
+        def on_test_done(f: Future[tuple[bool, str]]) -> None:
             try:
                 success, message = f.result()
                 GLib.idle_add(self._update_test_result, success, message)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - async task boundary
                 GLib.idle_add(self._update_test_result, False, str(e))
 
         future.add_done_callback(on_test_done)
 
-    def _update_test_result(self, success: bool, message: str):
+    def _update_test_result(self, success: bool, message: str) -> None:
         if success:
             self.test_row.set_subtitle("")
             self.test_success_icon.set_visible(True)
@@ -513,7 +522,7 @@ class AISettingsPage(TrackedPreferencesPage):
 
     key = "ai"
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.set_title(_("AI"))
         self.set_icon_name("ai-symbolic")
@@ -543,20 +552,20 @@ class AISettingsPage(TrackedPreferencesPage):
 
     def _on_provider_selected(
         self,
-        sender,
+        sender: ProviderListWidget,
         provider_id: str | None,
         config: AIProviderConfig | None,
-    ):
+    ) -> None:
         if provider_id and config:
             self.provider_editor.set_provider(provider_id, config)
         else:
             self.provider_editor.set_visible(False)
 
-    def _on_service_changed(self, sender):
+    def _on_service_changed(self, sender: AIService) -> None:
         if self.provider_editor._updating:
             return
         GLib.idle_add(self._refresh_after_change)
 
-    def _refresh_after_change(self):
+    def _refresh_after_change(self) -> None:
         current_id = self.provider_editor.provider_id
         self.provider_list.populate_and_select(select_id=current_id)

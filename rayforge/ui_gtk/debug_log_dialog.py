@@ -110,7 +110,7 @@ class DebugLogDialog(Adw.MessageDialog):
                     self._on_error(
                         _("Error saving file: {msg}").format(msg=e.message)
                     )
-            except Exception as e:
+            except OSError as e:
                 if self._on_error:
                     self._on_error(
                         _("An unexpected error occurred: {error}").format(

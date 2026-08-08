@@ -84,7 +84,7 @@ class CameraPage(WizardPage):
 
         try:
             by_id_paths = get_sorted_by_id_paths()
-        except Exception:
+        except OSError:
             by_id_paths = []
 
         if not by_id_paths:

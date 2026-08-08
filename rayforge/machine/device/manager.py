@@ -160,6 +160,18 @@ class DeviceProfileManager:
         compatible ``api_version``, then extracts to the install
         directory.  Uses a temporary directory so a failed extraction
         never leaves corrupted state.
+
+        Raises:
+            FileNotFoundError: if ``zip_path`` does not exist.
+            RuntimeError: if no install directory is configured.
+            ValueError: if the zip contains no ``device.yaml`` manifest,
+                an entry escapes the target directory, or the manifest
+                is invalid (unsupported ``api_version``, missing
+                ``device.name``, etc.).
+            TypeError: if the manifest sections have the wrong types.
+            zipfile.BadZipFile: if ``zip_path`` is not a valid zip
+                archive.
+            OSError: on filesystem errors during extraction.
         """
         if not zip_path.exists():
             raise FileNotFoundError(f"Zip file not found: {zip_path}")
@@ -203,6 +215,15 @@ class DeviceProfileManager:
 
         Returns ``(profile, summary)`` so the caller can display the
         :class:`ImportSummary` to the user.
+
+        Raises:
+            FileNotFoundError: if ``lbdev_path`` does not exist.
+            RuntimeError: if no install directory is configured.
+            ValueError: if the LightBurn profile is invalid (malformed
+                JSON, missing or empty ``DeviceList``, etc.).
+            TypeError: if the resulting manifest sections have the
+                wrong types.
+            OSError: on filesystem errors during install.
         """
         if not lbdev_path.exists():
             raise FileNotFoundError(

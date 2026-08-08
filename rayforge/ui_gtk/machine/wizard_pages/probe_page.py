@@ -17,6 +17,7 @@ The page offers:
 """
 
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -24,8 +25,13 @@ from gi.repository import Adw, Gtk
 from ....context import get_context
 from ....machine.device.profile import DeviceProfile
 from ....machine.driver import Driver, get_driver_cls
-from ....shared.tasker import task_mgr
+from ....machine.driver.driver import DriverPrecheckError
+from ....shared.tasker import Task, task_mgr
+from ....shared.tasker.context import ExecutionContext
 from . import WizardPage, _makePreferencesGroup
+
+if TYPE_CHECKING:
+    from ..unified_wizard import UnifiedWizard
 
 
 class ProbePage(WizardPage):
@@ -39,7 +45,7 @@ class ProbePage(WizardPage):
     # Sent after a successful probe. Payload ``(profile, warnings)``
     # where ``profile`` is the working profile with probed values
     # merged in; warnings is a list of human-readable strings.
-    def __init__(self, wizard, **kwargs):
+    def __init__(self, wizard: "UnifiedWizard", **kwargs: Any) -> None:
         self._driver_cls: type[Driver] | None = None
         # True once probing has been attempted on this page instance,
         # so re-entering via Back does not auto-restart a probe.
@@ -118,7 +124,7 @@ class ProbePage(WizardPage):
         # Lightweight precheck (var_set validation, port format, ...).
         try:
             driver_cls.precheck(**params)
-        except Exception as exc:
+        except DriverPrecheckError as exc:
             self._show_error(str(exc))
             return
 
@@ -135,7 +141,9 @@ class ProbePage(WizardPage):
 
         context = get_context()
 
-        async def _coroutine(exec_ctx):
+        async def _coroutine(
+            exec_ctx: ExecutionContext,
+        ) -> tuple[DeviceProfile, list[str]]:
             return await driver_cls.probe(context, **params)
 
         task_mgr.add_coroutine(
@@ -144,12 +152,12 @@ class ProbePage(WizardPage):
             when_done=self._on_probe_done,
         )
 
-    def _on_probe_done(self, task) -> None:
+    def _on_probe_done(self, task: Task) -> None:
         # Marshal back to the GTK main thread before touching widgets.
         def _update():
             try:
                 result = task.result()
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - async task boundary
                 self._show_error(str(exc) or _("Probe failed"))
                 return
 

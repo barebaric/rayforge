@@ -216,7 +216,7 @@ class AppKeyAdapter(RowAdapter):
                     _("Request failed: {code}").format(code=e.code)
                 )
             return
-        except Exception as e:
+        except (OSError, TimeoutError, ValueError) as e:
             self._row.set_subtitle(
                 _("Connection failed: {err}").format(err=str(e))
             )

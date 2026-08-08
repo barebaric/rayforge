@@ -397,7 +397,7 @@ class ImportDialog(PatchedDialogWindow):
         """Returns True if the user has defined any color rules."""
         try:
             return bool(get_context().color_preset_mgr.all_presets())
-        except Exception:
+        except OSError:
             return False
 
     def _get_layer_source(self) -> LayerSource:
