@@ -122,10 +122,10 @@ def test_gl_state_restores_on_exception():
         ),
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glBindTexture"),
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glActiveTexture"),
+        pytest.raises(RuntimeError, match="boom"),
+        gl_state(),
     ):
-        with pytest.raises(RuntimeError, match="boom"):
-            with gl_state():
-                raise RuntimeError("boom")
+        raise RuntimeError("boom")
 
     line_width.assert_called_with(2.5)
     pixel_store.assert_called_with(GL.GL_UNPACK_ALIGNMENT, 1)
@@ -190,10 +190,10 @@ def test_shader_context_protocol_restores_on_exception():
     with (
         patch.object(shader, "save", return_value=snapshot),
         patch.object(shader, "restore") as mock_restore,
+        pytest.raises(ValueError, match="mid"),
+        shader,
     ):
-        with pytest.raises(ValueError, match="mid"):
-            with shader:
-                raise ValueError("mid")
+        raise ValueError("mid")
 
     mock_restore.assert_called_once_with(snapshot)
 
@@ -216,9 +216,9 @@ def test_render_pass_restores_gl_state_and_uniforms():
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glPixelStorei"),
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glBindTexture"),
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glActiveTexture"),
+        render_pass(shader),
     ):
-        with render_pass(shader):
-            pass
+        pass
 
     mock_save.assert_called_once()
     mock_restore.assert_called_once_with(snapshot)
@@ -238,6 +238,6 @@ def test_render_pass_without_shader_only_restores_gl_state():
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glPixelStorei"),
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glBindTexture"),
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glActiveTexture"),
+        render_pass(),
     ):
-        with render_pass():
-            pass
+        pass

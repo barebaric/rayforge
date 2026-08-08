@@ -81,17 +81,17 @@ class AppUpdateChecker:
 
     async def _fetch_latest_release(self) -> dict | None:
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get(
                     GITHUB_RELEASES_API,
                     timeout=aiohttp.ClientTimeout(total=15),
-                ) as response:
-                    if response.status == 200:
-                        return await response.json()
-                    logger.warning(
-                        f"GitHub API returned status {response.status}"
-                    )
-                    return None
+                ) as response,
+            ):
+                if response.status == 200:
+                    return await response.json()
+                logger.warning(f"GitHub API returned status {response.status}")
+                return None
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             logger.error(f"Error fetching release info: {e}")
             return None
