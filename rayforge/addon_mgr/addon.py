@@ -140,6 +140,7 @@ class AddonMetadata:
     requires: list[str] = field(default_factory=list)
     license: Optional[AddonLicense] = None
     version_entries: list[dict[str, Any]] = field(default_factory=list)
+    default_state: str = "enabled"
 
     @property
     def license_name(self) -> str:
@@ -207,6 +208,7 @@ class AddonMetadata:
             requires=requires,
             license=AddonLicense.from_dict(data.get("license")),
             version_entries=version_entries,
+            default_state=data.get("default_state", "enabled"),
         )
 
 
@@ -340,6 +342,8 @@ class Addon:
             else:
                 resolved_version = get_git_tag_version(addon_dir)
 
+            default_state = data.get("default_state", "enabled")
+
             metadata = AddonMetadata(
                 name=addon_name,
                 display_name=data.get("display_name", addon_name),
@@ -352,6 +356,7 @@ class Addon:
                 api_version=data.get("api_version", PLUGIN_API_VERSION),
                 requires=requires,
                 license=AddonLicense.from_dict(data.get("license")),
+                default_state=default_state,
             )
 
             return cls(path=addon_dir, metadata=metadata)
