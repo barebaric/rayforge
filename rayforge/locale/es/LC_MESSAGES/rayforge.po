@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 02:51+0200\n"
+"POT-Creation-Date: 2026-08-07 04:07+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -6301,31 +6301,6 @@ msgstr "Sin parámetros"
 msgid "Show all options"
 msgstr "Mostrar todas las opciones"
 
-#: rayforge/ui_gtk/shared/unit_spin_row.py
-#, python-brace-format
-msgid "Value in {unit}"
-msgstr "Valor en {unit}"
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Play simulation"
-msgstr "Reproducir simulación"
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Step backward"
-msgstr "Retroceder paso"
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Step forward"
-msgstr "Avanzar paso"
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Playback speed"
-msgstr "Velocidad de reproducción"
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Pause simulation"
-msgstr "Pausar simulación"
-
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 msgid "Select Model"
 msgstr "Seleccionar modelo"
@@ -6366,6 +6341,11 @@ msgstr ""
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Errors"
 msgstr "Errores"
+
+#: rayforge/ui_gtk/shared/pref_rows/unit_spin_row.py
+#, python-brace-format
+msgid "Value in {unit}"
+msgstr "Valor en {unit}"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "New"
@@ -7893,6 +7873,26 @@ msgstr "{count} paso"
 #, python-brace-format
 msgid "{count} steps"
 msgstr "{count} pasos"
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Play simulation"
+msgstr "Reproducir simulación"
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Step backward"
+msgstr "Retroceder paso"
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Step forward"
+msgstr "Avanzar paso"
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Playback speed"
+msgstr "Velocidad de reproducción"
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Pause simulation"
+msgstr "Pausar simulación"
 
 #: rayforge/ui_gtk/about.py
 msgid "Not found"

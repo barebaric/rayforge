@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 02:51+0200\n"
+"POT-Creation-Date: 2026-08-07 04:07+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -5913,31 +5913,6 @@ msgstr ""
 msgid "Show all options"
 msgstr ""
 
-#: rayforge/ui_gtk/shared/unit_spin_row.py
-#, python-brace-format
-msgid "Value in {unit}"
-msgstr ""
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Play simulation"
-msgstr ""
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Step backward"
-msgstr ""
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Step forward"
-msgstr ""
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Playback speed"
-msgstr ""
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Pause simulation"
-msgstr ""
-
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 msgid "Select Model"
 msgstr ""
@@ -5975,6 +5950,11 @@ msgstr ""
 
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Errors"
+msgstr ""
+
+#: rayforge/ui_gtk/shared/pref_rows/unit_spin_row.py
+#, python-brace-format
+msgid "Value in {unit}"
 msgstr ""
 
 #: rayforge/ui_gtk/main_menu.py
@@ -7456,6 +7436,26 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/workflow_view.py
 #, python-brace-format
 msgid "{count} steps"
+msgstr ""
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Play simulation"
+msgstr ""
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Step backward"
+msgstr ""
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Step forward"
+msgstr ""
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Playback speed"
+msgstr ""
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Pause simulation"
 msgstr ""
 
 #: rayforge/ui_gtk/about.py

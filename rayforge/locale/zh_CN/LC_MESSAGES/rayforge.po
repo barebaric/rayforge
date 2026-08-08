@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 02:51+0200\n"
+"POT-Creation-Date: 2026-08-07 04:07+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -5985,31 +5985,6 @@ msgstr "无参数"
 msgid "Show all options"
 msgstr "显示所有选项"
 
-#: rayforge/ui_gtk/shared/unit_spin_row.py
-#, python-brace-format
-msgid "Value in {unit}"
-msgstr "{unit} 中的值"
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Play simulation"
-msgstr "播放模拟"
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Step backward"
-msgstr "后退"
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Step forward"
-msgstr "前进"
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Playback speed"
-msgstr "播放速度"
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Pause simulation"
-msgstr "暂停模拟"
-
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 msgid "Select Model"
 msgstr "选择模型"
@@ -6048,6 +6023,11 @@ msgstr "发现{summary}。继续操作可能会损坏您的机器或工件。"
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Errors"
 msgstr "错误"
+
+#: rayforge/ui_gtk/shared/pref_rows/unit_spin_row.py
+#, python-brace-format
+msgid "Value in {unit}"
+msgstr "{unit} 中的值"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "New"
@@ -7538,6 +7518,26 @@ msgstr "{count} 个步骤"
 #, python-brace-format
 msgid "{count} steps"
 msgstr "{count} 个步骤"
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Play simulation"
+msgstr "播放模拟"
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Step backward"
+msgstr "后退"
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Step forward"
+msgstr "前进"
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Playback speed"
+msgstr "播放速度"
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Pause simulation"
+msgstr "暂停模拟"
 
 #: rayforge/ui_gtk/about.py
 msgid "Not found"
