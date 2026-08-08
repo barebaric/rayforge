@@ -91,7 +91,7 @@ class AIService:
             else:
                 loop.run_until_complete(old_provider.close())
         except Exception:
-            pass
+            logger.debug("Failed to close old AI provider", exc_info=True)
 
         provider = self._create_provider(config)
         self._providers[config.id] = provider
@@ -120,7 +120,7 @@ class AIService:
             else:
                 loop.run_until_complete(provider.close())
         except Exception:
-            pass
+            logger.debug("Failed to close AI provider", exc_info=True)
 
         del self._providers[provider_id]
         del self._configs[provider_id]

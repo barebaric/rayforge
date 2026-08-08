@@ -42,11 +42,10 @@ def _check_svg_load_capability() -> bool:
         if img.width == 1 and img.height == 1:
             return True
     except pyvips.Error:
-        pass
+        return False
     except Exception:
-        pass
-
-    return False
+        logger.debug("SVG load capability probe failed", exc_info=True)
+        return False
 
 
 SVG_LOAD_AVAILABLE = _check_svg_load_capability()

@@ -64,7 +64,7 @@ def _probe_camera_device(args):
             return device_id
         if cap:
             cap.release()
-    except Exception:
+    except cv2.error:
         pass
     return None
 

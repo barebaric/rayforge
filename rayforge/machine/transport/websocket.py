@@ -161,6 +161,6 @@ class WebSocketTransport(Transport):
             except Exception:
                 # Ignore errors on close, as we are tearing down the
                 # connection.
-                pass
+                logger.debug("Error closing websocket", exc_info=True)
             finally:
                 self._websocket = None

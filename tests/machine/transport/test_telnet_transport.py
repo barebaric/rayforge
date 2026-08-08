@@ -78,7 +78,7 @@ class MockTelnetServer:
                 writer.close()
                 try:
                     await writer.wait_closed()
-                except Exception:
+                except OSError:
                     pass
         self.clients.clear()
 
@@ -100,7 +100,7 @@ class MockTelnetServer:
                 # Echo the data back
                 writer.write(data)
                 await writer.drain()
-        except Exception:
+        except OSError:
             pass
         finally:
             if writer in self.clients:

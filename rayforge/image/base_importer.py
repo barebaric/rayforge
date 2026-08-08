@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import enum
+import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -8,6 +9,8 @@ from typing import TYPE_CHECKING
 from ..core.vectorization_spec import PassthroughSpec, TraceSpec
 from .assembler import ItemAssembler
 from .engine import NormalizationEngine
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from ..core.source_asset import SourceAsset
@@ -311,7 +314,7 @@ class Importer(ABC):
             if image:
                 return image.pngsave_buffer()
         except Exception:
-            pass
+            logger.debug("Failed to render thumbnail", exc_info=True)
         return None
 
     def _resolve_default_spec(self) -> VectorizationSpec:

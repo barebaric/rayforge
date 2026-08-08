@@ -57,7 +57,7 @@ try:
         "sodipodi", "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
     )
     ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
-except Exception:
+except ValueError:
     pass  # Best effort registration
 
 

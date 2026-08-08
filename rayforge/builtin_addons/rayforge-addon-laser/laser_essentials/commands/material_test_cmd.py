@@ -75,7 +75,7 @@ class MaterialTestCmd:
     def _disconnect_doc_signals(self):
         try:
             self._doc.descendant_updated.disconnect(self._on_step_updated)
-        except Exception:
+        except KeyError:
             pass
 
     def _on_document_changed(self, sender):

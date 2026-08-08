@@ -56,7 +56,7 @@ class _TaggedQueue:
         except Exception:
             # This can happen if the queue is closed during shutdown.
             # It's safe to ignore.
-            pass
+            logger.debug("Result queue closed during shutdown", exc_info=True)
 
 
 def _worker_main_loop(

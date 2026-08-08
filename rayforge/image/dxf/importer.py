@@ -409,7 +409,11 @@ class DxfImporter(Importer):
                         path.transform(transform)
                     )
             except Exception:
-                pass
+                logger.debug(
+                    "Failed to convert DXF entity %s",
+                    entity.dxftype(),
+                    exc_info=True,
+                )
 
         # 1. Collect all paths (Disordered)
         identity = ezdxf.math.Matrix44()
