@@ -3,6 +3,8 @@
 import logging
 from typing import Callable
 
+from blinker import Signal
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,10 +22,14 @@ class SettingsPageRegistry:
     Implements the :class:`~rayforge.addon_mgr.addon_manager.AddonRegistry`
     protocol so that pages are removed automatically when their addon is
     unloaded.
+
+    Emits the :attr:`changed` signal whenever pages are added or removed
+    so that open settings windows can rebuild themselves live.
     """
 
     def __init__(self) -> None:
         self._pages: list[tuple[Callable[[], object], str]] = []
+        self.changed = Signal()
 
     def register(
         self,
@@ -47,6 +53,7 @@ class SettingsPageRegistry:
         logger.debug(
             f"Registered settings page {page_class!r} for '{addon_name}'"
         )
+        self.changed.send(self)
 
     def get_pages(self) -> list[Callable[[], object]]:
         """Return all registered page classes in insertion order."""
@@ -68,6 +75,7 @@ class SettingsPageRegistry:
             logger.info(
                 f"Removed {removed} settings pages from '{addon_name}'"
             )
+            self.changed.send(self)
         return removed
 
 
