@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 02:51+0200\n"
+"POT-Creation-Date: 2026-08-07 04:07+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -6238,31 +6238,6 @@ msgstr "Немає параметрів"
 msgid "Show all options"
 msgstr "Показати всі параметри"
 
-#: rayforge/ui_gtk/shared/unit_spin_row.py
-#, python-brace-format
-msgid "Value in {unit}"
-msgstr "Значення в {unit}"
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Play simulation"
-msgstr "Відтворити симуляцію"
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Step backward"
-msgstr "Крок назад"
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Step forward"
-msgstr "Крок уперед"
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Playback speed"
-msgstr "Швидкість відтворення"
-
-#: rayforge/ui_gtk/shared/playback_overlay.py
-msgid "Pause simulation"
-msgstr "Призупинити симуляцію"
-
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 msgid "Select Model"
 msgstr "Вибрати модель"
@@ -6303,6 +6278,11 @@ msgstr ""
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Errors"
 msgstr "Помилки"
+
+#: rayforge/ui_gtk/shared/pref_rows/unit_spin_row.py
+#, python-brace-format
+msgid "Value in {unit}"
+msgstr "Значення в {unit}"
 
 #: rayforge/ui_gtk/main_menu.py
 msgid "New"
@@ -7820,6 +7800,26 @@ msgstr "{count} крок"
 #, python-brace-format
 msgid "{count} steps"
 msgstr "{count} кроків"
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Play simulation"
+msgstr "Відтворити симуляцію"
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Step backward"
+msgstr "Крок назад"
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Step forward"
+msgstr "Крок уперед"
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Playback speed"
+msgstr "Швидкість відтворення"
+
+#: rayforge/ui_gtk/sim3d/playback_overlay.py
+msgid "Pause simulation"
+msgstr "Призупинити симуляцію"
 
 #: rayforge/ui_gtk/about.py
 msgid "Not found"
