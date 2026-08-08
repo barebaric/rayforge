@@ -787,7 +787,7 @@ class MainWindow(Adw.ApplicationWindow):
         try:
             # Check for exceptions during job assembly or submission.
             future.result()
-        except Exception as e:
+        except Exception:
             logger.exception("Job submission failed")
             # If the submission failed, the driver's 'job_finished' signal
             # will never fire, so we must stop the live view here to prevent

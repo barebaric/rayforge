@@ -57,7 +57,7 @@ class ProceduralRenderer(Renderer):
             KeyError,
             ImportError,
             AttributeError,
-        ) as e:
+        ):
             logger.exception("Failed to load procedural function")
             return None, None, None
 
@@ -95,7 +95,7 @@ class ProceduralRenderer(Renderer):
 
         try:
             draw_func(ctx, width, height, params)
-        except Exception as e:
+        except Exception:
             logger.exception("Error executing procedural drawing function")
             return None
 

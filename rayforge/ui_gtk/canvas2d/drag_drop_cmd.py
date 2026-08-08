@@ -524,7 +524,7 @@ class DragDropCmd:
                 # This can happen if clipboard content changes during read.
                 logger.warning(f"GLib error reading clipboard texture: {e}")
                 self._show_clipboard_error()
-            except Exception as e:
+            except Exception:
                 logger.exception("Failed to process clipboard texture")
                 self._show_clipboard_error()
 
@@ -606,7 +606,7 @@ class DragDropCmd:
                 Adw.Toast.new(_("Image imported from clipboard"))
             )
 
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to import from clipboard")
             self._show_clipboard_error()
 

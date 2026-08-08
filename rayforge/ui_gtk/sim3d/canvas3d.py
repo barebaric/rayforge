@@ -245,7 +245,7 @@ class Canvas3D(Gtk.GLArea):
             self._scene.init_gl()
 
             self._gl_initialized = True
-        except Exception as e:
+        except Exception:
             logger.exception("OpenGL Initialization Error")
             self._gl_initialized = False
 
@@ -320,7 +320,7 @@ class Canvas3D(Gtk.GLArea):
             self._scene.prepare(self._ctx)
             self._scene.render(self._ctx, None)
 
-        except Exception as e:
+        except Exception:
             logger.exception("OpenGL Render Error")
             return False
 

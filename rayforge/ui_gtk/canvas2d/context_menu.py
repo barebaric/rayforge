@@ -82,7 +82,7 @@ class ContextMenuExtensionRegistry:
         for handler in self._handlers:
             try:
                 handler(surface, item, gesture, menu)
-            except Exception as e:
+            except Exception:
                 logger.exception(
                     f"Error in context menu handler {handler.__name__}"
                 )

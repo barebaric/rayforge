@@ -187,7 +187,7 @@ class FileCmd:
             )
             manifest = importer_instance.scan()
             return manifest
-        except Exception as e:
+        except Exception:
             logger.exception(
                 f"Error scanning file {file_path.name} with "
                 f"{importer_cls.__name__}"
@@ -254,7 +254,7 @@ class FileCmd:
                 import_result, file_bytes, spec, preview_size_px
             )
 
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to generate import preview")
             return None
 

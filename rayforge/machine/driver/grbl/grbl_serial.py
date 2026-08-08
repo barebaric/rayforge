@@ -918,7 +918,7 @@ class GrblSerialDriver(Driver):
                 f"Job terminated due to device error: {e}. "
                 "Connection remains active."
             )
-        except Exception as e:
+        except Exception:
             logger.exception("Job terminated with unexpected error")
 
     async def run_raw(self, machine_code: str) -> None:
@@ -939,7 +939,7 @@ class GrblSerialDriver(Driver):
                 f"Raw G-code terminated due to device error: {e}. "
                 "Connection remains active."
             )
-        except Exception as e:
+        except Exception:
             logger.exception("Raw G-code terminated with unexpected error")
 
     async def cancel(self) -> None:

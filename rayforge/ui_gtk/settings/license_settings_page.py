@@ -188,7 +188,7 @@ class LicenseSettingsPage(TrackedPreferencesPage):
             if oauth_url:
                 logger.info("Opening Patreon OAuth URL")
                 webbrowser.open(oauth_url)
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to start Patreon OAuth")
 
     def _on_unlink_patreon(self, btn):
