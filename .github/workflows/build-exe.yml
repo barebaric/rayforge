@@ -204,7 +204,7 @@ jobs:
           name: rayforge-v${{ needs.build.outputs.version }}-installer.zip
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           # The file to attach to the release is the installer
           files: rayforge-v${{ needs.build.outputs.version }}-installer.exe
