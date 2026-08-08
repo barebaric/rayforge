@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Screenshot: App settings - Materials page."""
 
 import logging

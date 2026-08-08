@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Screenshot: Projector Mode addon window."""
 
 import logging

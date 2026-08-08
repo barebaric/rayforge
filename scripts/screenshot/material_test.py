@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Screenshot: Material test grid dialog."""
 
 import logging

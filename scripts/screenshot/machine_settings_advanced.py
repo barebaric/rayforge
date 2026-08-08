@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Screenshot: Machine settings - Advanced page."""
 
 import logging

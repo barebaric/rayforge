@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Screenshot: Circular array dialog with canvas showing array preview.
 

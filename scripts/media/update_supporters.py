@@ -35,12 +35,14 @@ def load_config():
 async def get_campaign_id(access_token):
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"{PATREON_API_BASE}/campaigns"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers=headers) as resp:
-            resp.raise_for_status()
-            data = await resp.json()
-            if data.get("data"):
-                return data["data"][0]["id"]
+    async with (
+        aiohttp.ClientSession() as session,
+        session.get(url, headers=headers) as resp,
+    ):
+        resp.raise_for_status()
+        data = await resp.json()
+        if data.get("data"):
+            return data["data"][0]["id"]
     return None
 
 

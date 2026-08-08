@@ -110,7 +110,12 @@ def get_snap_downloads_cli(snap_name, start_date=None):
         if start_date:
             cmd.extend(["--start", start_date])
         proc = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60, env=env
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            env=env,
+            check=False,
         )
         if proc.returncode != 0:
             result["error"] = f"snapcraft CLI failed: {proc.stderr.strip()}"

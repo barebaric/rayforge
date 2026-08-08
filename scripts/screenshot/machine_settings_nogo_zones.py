@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Screenshot: Machine settings - No-Go Zones page."""
 
 import logging

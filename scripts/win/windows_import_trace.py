@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Attempts to import key native modules and run a vtracer call.
 import faulthandler
 import sys
@@ -12,7 +11,7 @@ for m in ["vtracer", "pyvips", "gi", "cv2", "numpy"]:
     try:
         __import__(m)
         print(f"=== Imported {m} OK ===", flush=True)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - report any import failure
         print(
             f"=== Import {m} failed: {type(e).__name__}: {e} ===", flush=True
         )
@@ -32,7 +31,8 @@ try:
         )
         # Use positional arguments to avoid ABI crash in pyo3
         # extract_arguments_fastcall
-        # Signature: (img_bytes, img_format, colormode, hierarchical, mode, ...)
+        # Signature:
+        #  (img_bytes, img_format, colormode, hierarchical, mode, ...)
         out = vtracer.convert_raw_image_to_svg(
             buf.tobytes(),  # img_bytes
             "bmp",  # img_format
@@ -46,7 +46,7 @@ try:
         )
     else:
         print("=== cv2.imencode failed ===", flush=True)
-except Exception as e:
+except Exception as e:  # noqa: BLE001 - diagnostic tool
     print(
         f"=== Error in vtracer call: {type(e).__name__}: {e} ===", flush=True
     )

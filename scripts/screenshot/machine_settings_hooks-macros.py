@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Screenshot: Machine settings - Hooks & Macros page."""
 
 import logging

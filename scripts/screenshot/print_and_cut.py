@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Screenshot: Print & Cut addon wizard dialog."""
 
 import importlib

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Screenshot: Bottom panel dock tabs (cropped to just the panel).
 
