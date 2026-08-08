@@ -280,7 +280,7 @@ class BottomPanel(Gtk.Box):
         async def send_command(ctx):
             try:
                 await machine.run_raw(command)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - fire-and-forget task
                 logger.error(str(e), extra={"log_category": "ERROR"})
 
         task_mgr.add_coroutine(send_command)

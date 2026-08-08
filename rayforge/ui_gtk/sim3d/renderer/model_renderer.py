@@ -122,7 +122,7 @@ def _load_mesh_data(path: Path) -> _CachedModelData | None:
         )
         _model_cache[path] = data
         return data
-    except Exception as e:
+    except (OSError, ValueError) as e:
         logger.error("Failed to load model %s: %s", path, e)
         return None
 

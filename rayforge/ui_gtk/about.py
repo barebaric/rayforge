@@ -116,7 +116,7 @@ def get_dependency_info() -> dict:
 
         pyvips_ver = _get_version("pyvips")
         graphics_deps.append(("pyvips", pyvips_ver))
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - best-effort diagnostics
         msg = f"failed to find pyvips version: {e}"
         logger.warning(msg)
         graphics_deps.append(("pyvips", msg))
@@ -125,7 +125,7 @@ def get_dependency_info() -> dict:
     try:
         libvips_ver = pyvips.version(0) if pyvips else None
         graphics_deps.append(("libvips", libvips_ver))
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - best-effort diagnostics
         msg = f"failed to find libvips version: {e}"
         logger.warning(msg)
         graphics_deps.append(("libvips", msg))

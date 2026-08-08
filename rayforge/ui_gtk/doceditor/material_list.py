@@ -249,7 +249,7 @@ class MaterialListWidget(PreferencesGroupWithButton):
                     f"'{library.library_id}'"
                 )
                 self.material_added.send(self, library=library)
-            except Exception as e:
+            except (OSError, ValueError) as e:
                 logger.error(f"Failed to update material: {e}")
                 root = self.get_root()
                 err_dialog = Adw.MessageDialog(

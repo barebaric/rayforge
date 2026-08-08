@@ -8,6 +8,7 @@ from typing import Any
 
 import numpy as np
 from OpenGL import GL
+from OpenGL.error import GLError
 
 from ....pipeline.artifact.base import TextureData
 from ....simulator.scene3d import CompiledSceneArtifact, TextureLayer
@@ -157,7 +158,7 @@ class TextureArtifactRenderer(BaseRenderer):
         try:
             self.clear()
             self.is_initialized = False
-        except Exception as e:
+        except GLError as e:
             logger.warning(f"TextureArtifactRenderer cleanup warning: {e}")
 
     def _downsample_texture(

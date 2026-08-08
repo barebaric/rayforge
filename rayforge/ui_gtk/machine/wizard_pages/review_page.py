@@ -72,7 +72,7 @@ def _format_connection(mc) -> str:
             d = get_driver_cls(mc.driver)
             for var in d.get_setup_vars():
                 labels[var.key] = var.label
-        except Exception:
+        except (ValueError, TypeError):
             labels = {}
     parts: list[str] = []
     for key, value in args.items():

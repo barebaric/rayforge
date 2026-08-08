@@ -339,7 +339,7 @@ class MachineSettingsDialog(PatchedDialogWindow):
                     timeout=5,
                 )
             )
-        except Exception as e:
+        except (OSError, ValueError, RuntimeError) as e:
             logger.error(f"Export failed: {e}")
             self.toast_overlay.add_toast(
                 Adw.Toast(title=_("Export failed: {error}").format(error=e))

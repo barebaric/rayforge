@@ -29,7 +29,8 @@ class Shader:
             fragment_source: The source code for the fragment shader.
 
         Raises:
-            Exception: If shader compilation or linking fails.
+            ShaderCompilationError: If a shader source fails to compile.
+            ShaderLinkError: If the shader program fails to link.
         """
         # Cache of the most recent value written to each uniform by
         # ``set_*``.  ``save()`` / ``restore()`` use this to snapshot

@@ -98,7 +98,7 @@ class ConnectionPage(WizardPage):
             return
         try:
             values = self.connect_widget.get_values()
-        except Exception:
+        except ValueError:
             self.set_ready(False)
             return
         for key in self._required_keys:
@@ -113,7 +113,7 @@ class ConnectionPage(WizardPage):
             return True
         try:
             values = self.connect_widget.get_values()
-        except Exception as exc:
+        except ValueError as exc:
             self.wizard.show_error(_("Invalid input"), str(exc))
             return False
         # Drop empty-string / None values so we don't blur defaults.

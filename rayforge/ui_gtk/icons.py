@@ -3,7 +3,7 @@ import logging
 import pathlib
 from functools import lru_cache
 
-from gi.repository import GdkPixbuf, Gio, Gtk
+from gi.repository import GdkPixbuf, Gio, GLib, Gtk
 
 from ..resources import icons  # type: ignore
 
@@ -67,7 +67,7 @@ def get_icon(icon_name: str) -> Gtk.Image:
             icon = Gio.FileIcon.new(icon_file)
             _icon_cache[icon_name] = icon
             return Gtk.Image.new_from_gicon(icon)
-        except Exception as e:
+        except GLib.Error as e:
             logger.error(f"Failed to load local icon '{icon_name}': {e}")
             # Continue to fallback...
 
@@ -99,7 +99,7 @@ def get_icon_pixbuf(icon_name: str, size: int = 24):
                 str(path), size, size, True
             )
             return pixbuf
-        except Exception as e:
+        except GLib.Error as e:
             logger.error(f"Failed to load local icon '{icon_name}': {e}")
 
     # Return None if icon couldn't be loaded
