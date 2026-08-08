@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 import argparse
 import asyncio
 import gettext

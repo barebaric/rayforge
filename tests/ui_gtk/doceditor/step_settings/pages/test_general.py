@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 """Tests for the GeneralStepSettingsPage fallback."""
 
 import gi

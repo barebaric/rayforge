@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 """UI tests: post-processor transformer settings groups show units.
 
 The crop offset (and other length rows) must display and convert in the

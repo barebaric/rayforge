@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 """Tests for applying a recipe and syncing the settings page widgets."""
 
 import gi

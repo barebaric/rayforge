@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 import multiprocessing
 import os
 import sys

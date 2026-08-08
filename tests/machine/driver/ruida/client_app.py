@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 """
 Ruida Client App - A GUI client for controlling a Ruida laser
 controller/simulator.
