@@ -14,7 +14,7 @@ Offers the user three entry points:
 """
 
 from gettext import gettext as _
-from typing import List, Optional
+from typing import Optional
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -46,7 +46,7 @@ class ProfilePage(WizardPage):
     # optional profile payload. The orchestrator uses this to choose
     # the next page.
     def __init__(self, wizard, **kwargs):
-        self._all_profiles: List[DeviceProfile] = []
+        self._all_profiles: list[DeviceProfile] = []
         self.source_selected = Signal()
         super().__init__(wizard, **kwargs)
 
@@ -89,7 +89,7 @@ class ProfilePage(WizardPage):
         # source_selected directly and the orchestrator moves on.
         self.set_ready(True)
 
-    def footer_buttons(self) -> List[Gtk.Button]:
+    def footer_buttons(self) -> list[Gtk.Button]:
         return [self.import_button, self.other_button]
 
     def enter(self, profile: DeviceProfile) -> None:

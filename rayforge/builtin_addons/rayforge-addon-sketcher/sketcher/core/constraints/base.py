@@ -6,11 +6,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
-    Set,
-    Tuple,
     Union,
 )
 
@@ -85,13 +81,13 @@ class Constraint:
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Union[float, Tuple[float, ...], List[float]]:
+    ) -> Union[float, tuple[float, ...], list[float]]:
         """Calculates the error of the constraint."""
         return 0.0
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         """
         Calculates the partial derivatives (Jacobian entries) of the error.
         Returns a map: point_id -> list of (d_error/dx, d_error/dy).
@@ -111,7 +107,7 @@ class Constraint:
         """
         return False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the constraint to a dictionary."""
         return {}  # Default for non-serializable constraints like Drag
 
@@ -200,7 +196,7 @@ class Constraint:
         """
         pass
 
-    def update_from_context(self, context: Dict[str, Any]):
+    def update_from_context(self, context: dict[str, Any]):
         """
         Re-evaluates the expression (if present) using the provided context
         and updates self.value and self.status.
@@ -217,7 +213,7 @@ class Constraint:
             # If there's no expression, it's just a valid numeric constraint.
             self.status = ConstraintStatus.VALID
 
-    def depends_on_points(self, point_ids: Set[EntityID]) -> bool:
+    def depends_on_points(self, point_ids: set[EntityID]) -> bool:
         """Checks if the constraint references any of the given point IDs."""
         for attr in ["p1", "p2", "p3", "p4", "center", "point_id"]:
             if hasattr(self, attr):
@@ -226,7 +222,7 @@ class Constraint:
                     return True
         return False
 
-    def depends_on_entities(self, entity_ids: Set[EntityID]) -> bool:
+    def depends_on_entities(self, entity_ids: set[EntityID]) -> bool:
         """Checks if the constraint references any of the given entity IDs."""
         for attr in [
             "e1_id",

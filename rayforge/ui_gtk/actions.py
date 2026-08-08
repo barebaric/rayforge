@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Callable, Optional, cast
 
 from gi.repository import Gio, GLib, Gtk
 
@@ -102,10 +102,10 @@ class ActionExtensionRegistry:
     """
 
     def __init__(self):
-        self._setup_handlers: List[ActionSetupHandler] = []
-        self._state_update_handlers: List[ActionStateUpdateHandler] = []
-        self._setup_addon_map: Dict[str, str] = {}
-        self._state_update_addon_map: Dict[str, str] = {}
+        self._setup_handlers: list[ActionSetupHandler] = []
+        self._state_update_handlers: list[ActionStateUpdateHandler] = []
+        self._setup_addon_map: dict[str, str] = {}
+        self._state_update_addon_map: dict[str, str] = {}
 
     def register_setup(self, handler: ActionSetupHandler, addon_name: str):
         """Register a handler to be called during action setup."""
@@ -216,9 +216,9 @@ class ActionManager:
 
     def __init__(self, win: "MainWindow"):
         self.win = win
-        self.actions: Dict[str, Gio.SimpleAction] = {}
+        self.actions: dict[str, Gio.SimpleAction] = {}
         self._shortcut_controller: Optional[Gtk.ShortcutController] = None
-        self._layout_shortcuts: List[Gtk.Shortcut] = []
+        self._layout_shortcuts: list[Gtk.Shortcut] = []
         # A convenient alias to the central controller
         self.editor = self.win.doc_editor
         self.doc = self.editor.doc

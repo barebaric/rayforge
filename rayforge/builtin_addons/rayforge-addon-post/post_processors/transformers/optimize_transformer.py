@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.ops.transform.optimize import OptimizeSpec
 
@@ -28,7 +28,7 @@ class Optimize(OpsTransformer):
         enabled: bool = True,
         allow_flip: bool = True,
         preserve_first: bool = False,
-        preserve_order: Optional[List[str]] = None,
+        preserve_order: Optional[list[str]] = None,
         **kwargs,
     ):
         super().__init__(enabled=enabled, **kwargs)
@@ -47,8 +47,8 @@ class Optimize(OpsTransformer):
     def to_spec(
         self,
         workpiece: Optional[WorkPiece],
-        stock_geometries: Optional[List["Geometry"]],
-        settings: Optional[Dict[str, Any]],
+        stock_geometries: Optional[list["Geometry"]],
+        settings: Optional[dict[str, Any]],
     ) -> OptimizeSpec:
         return OptimizeSpec(
             allow_flip=self.allow_flip,
@@ -56,7 +56,7 @@ class Optimize(OpsTransformer):
             preserve_order=list(self.preserve_order),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         result = super().to_dict()
         result["allow_flip"] = self.allow_flip
         result["preserve_first"] = self.preserve_first
@@ -64,7 +64,7 @@ class Optimize(OpsTransformer):
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Optimize":
+    def from_dict(cls, data: dict[str, Any]) -> "Optimize":
         if data.get("name") != cls.__name__:
             raise ValueError(
                 f"Mismatched transformer name: expected {cls.__name__},"

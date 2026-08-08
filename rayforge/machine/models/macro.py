@@ -4,7 +4,7 @@ import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from gettext import gettext as _
-from typing import Any, Dict, List
+from typing import Any
 
 
 class MacroTrigger(Enum):
@@ -41,12 +41,12 @@ class Macro:
     """A generic, named block of G-code with an enabled state."""
 
     name: str = ""
-    code: List[str] = field(default_factory=list)
+    code: list[str] = field(default_factory=list)
     enabled: bool = True
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
-    extra: Dict[str, Any] = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the macro to a dictionary."""
         result = {
             "uid": self.uid,
@@ -58,7 +58,7 @@ class Macro:
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Macro":
+    def from_dict(cls, data: dict[str, Any]) -> "Macro":
         """Creates a macro instance from a dictionary."""
         known_keys = {"uid", "name", "code", "enabled"}
         extra = {k: v for k, v in data.items() if k not in known_keys}

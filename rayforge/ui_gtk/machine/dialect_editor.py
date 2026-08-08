@@ -1,7 +1,7 @@
 import copy
 import re
 from gettext import gettext as _
-from typing import List, Optional, Set, cast
+from typing import Optional, cast
 
 from gi.repository import Adw, Gtk
 
@@ -13,7 +13,7 @@ from ..varset.varsetwidget import VarSetWidget
 from .template_selector import DialectTemplateSelectorDialog
 
 
-def _text_to_list(text: str) -> List[str]:
+def _text_to_list(text: str) -> list[str]:
     """
     Converts a single string with newlines to a list of non-empty strings.
     """
@@ -21,7 +21,7 @@ def _text_to_list(text: str) -> List[str]:
 
 
 def _get_template_validation_error(
-    template: str, allowed_vars: Set[str]
+    template: str, allowed_vars: set[str]
 ) -> Optional[str]:
     """
     Validates a template's syntax and variable names, returning an error

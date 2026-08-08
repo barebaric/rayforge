@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 import cairo
 import numpy as np
@@ -38,8 +38,8 @@ class AxisRenderer:
         x_axis_right: bool = False,
         x_axis_negative: bool = False,
         y_axis_negative: bool = False,
-        fg_color: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 1.0),
-        grid_color: Tuple[float, float, float, float] = (0.9, 0.9, 0.9, 1.0),
+        fg_color: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 1.0),
+        grid_color: tuple[float, float, float, float] = (0.9, 0.9, 0.9, 1.0),
         show_grid: bool = True,
         show_axis: bool = True,
         label_font_size: float = 12.0,
@@ -57,8 +57,8 @@ class AxisRenderer:
         self.x_axis_right: bool = x_axis_right
         self.x_axis_negative: bool = x_axis_negative
         self.y_axis_negative: bool = y_axis_negative
-        self.fg_color: Tuple[float, float, float, float] = fg_color
-        self.grid_color: Tuple[float, float, float, float] = grid_color
+        self.fg_color: tuple[float, float, float, float] = fg_color
+        self.grid_color: tuple[float, float, float, float] = grid_color
         self.show_grid: bool = show_grid
         self.show_axis: bool = show_axis
         self.label_font_size: float = label_font_size
@@ -71,7 +71,7 @@ class AxisRenderer:
 
     def get_content_layout(
         self, widget_w: int, widget_h: int
-    ) -> Tuple[float, float, float, float]:
+    ) -> tuple[float, float, float, float]:
         """
         Calculates the content area's rectangle in widget pixels, respecting
         the mm aspect ratio. This is the single source of truth for layout.
@@ -541,10 +541,10 @@ class AxisRenderer:
     def set_y_axis_negative(self, y_axis_negative: bool):
         self.y_axis_negative = y_axis_negative
 
-    def set_fg_color(self, fg_color: Tuple[float, float, float, float]):
+    def set_fg_color(self, fg_color: tuple[float, float, float, float]):
         self.fg_color = fg_color
 
-    def set_grid_color(self, grid_color: Tuple[float, float, float, float]):
+    def set_grid_color(self, grid_color: tuple[float, float, float, float]):
         self.grid_color = grid_color
 
     def set_grid_unit_factor(self, grid_unit_factor: float):

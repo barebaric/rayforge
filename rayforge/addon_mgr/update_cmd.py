@@ -2,7 +2,7 @@ import asyncio
 import logging
 from gettext import gettext as _
 from gettext import ngettext
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING
 
 from blinker import Signal
 
@@ -93,7 +93,7 @@ class UpdateCommand:
             logger.error(f"Failed to check for addon updates: {e}")
             ctx.set_message(_("Update check failed."))
 
-    def install_updates(self, updates: List[Tuple[Addon, AddonMetadata]]):
+    def install_updates(self, updates: list[tuple[Addon, AddonMetadata]]):
         """
         Initiates a background task to install a list of addon updates.
         This method is non-blocking.
@@ -107,7 +107,7 @@ class UpdateCommand:
         )
 
     async def _install_updates_worker(
-        self, ctx, updates: List[Tuple[Addon, AddonMetadata]]
+        self, ctx, updates: list[tuple[Addon, AddonMetadata]]
     ):
         """
         The async worker that installs multiple addons concurrently.

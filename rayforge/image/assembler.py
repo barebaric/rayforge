@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
@@ -54,12 +54,12 @@ class ItemAssembler:
     def create_items(
         self,
         source_asset: SourceAsset,
-        layout_plan: List[LayoutItem],
+        layout_plan: list[LayoutItem],
         spec: VectorizationSpec,
         source_name: str,
-        geometries: Dict[Optional[str], Geometry],
+        geometries: dict[Optional[str], Geometry],
         document_bounds: Optional[Rect] = None,
-    ) -> List[DocItem]:
+    ) -> list[DocItem]:
         """
         Creates DocItems from the layout plan.
 
@@ -111,7 +111,7 @@ class ItemAssembler:
 
         # If we have multiple items, we generally wrap them in Layers (if
         # requested by spec) or return a list of WorkPieces.
-        items: List[DocItem] = []
+        items: list[DocItem] = []
 
         logger.debug(f"ItemAssembler: document_bounds={document_bounds}")
 
@@ -200,7 +200,7 @@ class ItemAssembler:
         return items
 
     @staticmethod
-    def _apply_settings(layer: Layer, settings: Dict[str, Any]) -> None:
+    def _apply_settings(layer: Layer, settings: dict[str, Any]) -> None:
         """Create a configured step on the layer from importer settings.
 
         Layers tagged ``_is_image_layer`` (e.g. LightBurn

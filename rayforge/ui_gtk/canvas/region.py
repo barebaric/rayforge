@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     from raygeo.geo.types import Rect
@@ -34,7 +34,7 @@ class ElementRegion(Enum):
     MOVE = auto()
 
 
-RESIZE_HANDLES: Set[ElementRegion] = {
+RESIZE_HANDLES: set[ElementRegion] = {
     ElementRegion.TOP_LEFT,
     ElementRegion.TOP_MIDDLE,
     ElementRegion.TOP_RIGHT,
@@ -45,55 +45,55 @@ RESIZE_HANDLES: Set[ElementRegion] = {
     ElementRegion.BOTTOM_RIGHT,
 }
 
-BBOX_REGIONS: Set[ElementRegion] = {ElementRegion.BODY} | RESIZE_HANDLES
+BBOX_REGIONS: set[ElementRegion] = {ElementRegion.BODY} | RESIZE_HANDLES
 
-ROTATE_HANDLES: Set[ElementRegion] = {
+ROTATE_HANDLES: set[ElementRegion] = {
     ElementRegion.ROTATE_TOP_LEFT,
     ElementRegion.ROTATE_TOP_RIGHT,
     ElementRegion.ROTATE_BOTTOM_LEFT,
     ElementRegion.ROTATE_BOTTOM_RIGHT,
 }
 
-SHEAR_HANDLES: Set[ElementRegion] = {
+SHEAR_HANDLES: set[ElementRegion] = {
     ElementRegion.SHEAR_TOP,
     ElementRegion.SHEAR_RIGHT,
     ElementRegion.SHEAR_BOTTOM,
     ElementRegion.SHEAR_LEFT,
 }
 
-ROTATE_SHEAR_HANDLES: Set[ElementRegion] = ROTATE_HANDLES | SHEAR_HANDLES
+ROTATE_SHEAR_HANDLES: set[ElementRegion] = ROTATE_HANDLES | SHEAR_HANDLES
 
-MOVE_HANDLES: Set[ElementRegion] = {ElementRegion.MOVE}
+MOVE_HANDLES: set[ElementRegion] = {ElementRegion.MOVE}
 
-LEFT_HANDLES: Set[ElementRegion] = {
+LEFT_HANDLES: set[ElementRegion] = {
     ElementRegion.TOP_LEFT,
     ElementRegion.MIDDLE_LEFT,
     ElementRegion.BOTTOM_LEFT,
 }
 
-RIGHT_HANDLES: Set[ElementRegion] = {
+RIGHT_HANDLES: set[ElementRegion] = {
     ElementRegion.TOP_RIGHT,
     ElementRegion.MIDDLE_RIGHT,
     ElementRegion.BOTTOM_RIGHT,
 }
 
-TOP_HANDLES: Set[ElementRegion] = {
+TOP_HANDLES: set[ElementRegion] = {
     ElementRegion.TOP_LEFT,
     ElementRegion.TOP_MIDDLE,
     ElementRegion.TOP_RIGHT,
 }
 
-BOTTOM_HANDLES: Set[ElementRegion] = {
+BOTTOM_HANDLES: set[ElementRegion] = {
     ElementRegion.BOTTOM_LEFT,
     ElementRegion.BOTTOM_MIDDLE,
     ElementRegion.BOTTOM_RIGHT,
 }
 
-CORNER_RESIZE_HANDLES: Set[ElementRegion] = (TOP_HANDLES | BOTTOM_HANDLES) & (
+CORNER_RESIZE_HANDLES: set[ElementRegion] = (TOP_HANDLES | BOTTOM_HANDLES) & (
     LEFT_HANDLES | RIGHT_HANDLES
 )
 
-MIDDLE_RESIZE_HANDLES: Set[ElementRegion] = (
+MIDDLE_RESIZE_HANDLES: set[ElementRegion] = (
     RESIZE_HANDLES - CORNER_RESIZE_HANDLES
 )
 
@@ -103,7 +103,7 @@ def get_region_rect(
     width: float,
     height: float,
     base_handle_size: float,
-    scale_compensation: Union[float, Tuple[float, float]] = 1.0,
+    scale_compensation: Union[float, tuple[float, float]] = 1.0,
 ) -> Rect:
     """
     A generic function to calculate the rectangle (x, y, w, h) for a given
@@ -258,8 +258,8 @@ def check_region_hit(
     width: float,
     height: float,
     base_handle_size: float,
-    scale_compensation: Union[float, Tuple[float, float]] = 1.0,
-    candidates: Optional[Set[ElementRegion]] = None,
+    scale_compensation: Union[float, tuple[float, float]] = 1.0,
+    candidates: Optional[set[ElementRegion]] = None,
 ) -> ElementRegion:
     """
     Checks which interactive region is hit by a point in LOCAL coordinates.

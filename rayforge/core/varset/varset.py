@@ -1,6 +1,7 @@
 import importlib
 import logging
-from typing import Any, Dict, Iterator, KeysView, List, Optional
+from collections.abc import Iterator, KeysView
+from typing import Any, Optional
 
 from blinker import Signal
 
@@ -17,7 +18,7 @@ class VarSet:
 
     def __init__(
         self,
-        vars: Optional[List[Var]] = None,
+        vars: Optional[list[Var]] = None,
         title: Optional[str] = None,
         description: Optional[str] = None,
     ):
@@ -31,9 +32,9 @@ class VarSet:
         """
         self.title = title
         self.description = description
-        self._vars: Dict[str, Var] = {}
-        self._order: List[str] = []  # Explicit order tracking
-        self.extra: Dict[str, Any] = {}
+        self._vars: dict[str, Var] = {}
+        self._order: list[str] = []  # Explicit order tracking
+        self.extra: dict[str, Any] = {}
 
         self.var_added = Signal()
         self.var_removed = Signal()
@@ -86,7 +87,7 @@ class VarSet:
         self.var_definition_changed.send(self, var=var, **kwargs)
 
     @staticmethod
-    def _create_var_from_dict(data: Dict[str, Any]) -> Var:
+    def _create_var_from_dict(data: dict[str, Any]) -> Var:
         """
         Internal factory to instantiate a Var subclass from its serialized
         definition.
@@ -110,7 +111,7 @@ class VarSet:
         return VarClass(**data_copy)
 
     @property
-    def vars(self) -> List[Var]:
+    def vars(self) -> list[Var]:
         """Returns the list of Var objects in the set in order."""
         return [self._vars[key] for key in self._order]
 
@@ -176,7 +177,7 @@ class VarSet:
 
     def to_dict(
         self, include_value: bool = False, include_metadata: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Serializes the VarSet's definition to a dictionary.
 
@@ -185,7 +186,7 @@ class VarSet:
             include_metadata: If True, include the VarSet's title and
                               description.
         """
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "vars": [
                 self._vars[key].to_dict(include_value=include_value)
                 for key in self._order
@@ -198,7 +199,7 @@ class VarSet:
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "VarSet":
+    def from_dict(cls, data: dict[str, Any]) -> "VarSet":
         """Deserializes a dictionary into a full VarSet instance."""
         known_keys = {"vars", "title", "description"}
         extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -242,11 +243,11 @@ class VarSet:
         """Returns a view of the Var keys."""
         return self._vars.keys()
 
-    def get_values(self) -> Dict[str, Any]:
+    def get_values(self) -> dict[str, Any]:
         """Returns a dictionary of all keys and their current values."""
         return {key: var.value for key, var in self._vars.items()}
 
-    def set_values(self, values: Dict[str, Any]):
+    def set_values(self, values: dict[str, Any]):
         """
         Sets the values for multiple Vars from a dictionary.
         Ignores keys that are not in the VarSet.
@@ -287,7 +288,7 @@ def merge_varsets(*varsets: VarSet) -> VarSet:
     Vars are collected by key, with later VarSets overriding earlier
     ones for shared keys. The merged VarSet carries no title.
     """
-    merged: Dict[str, Var] = {}
+    merged: dict[str, Var] = {}
     for vs in varsets:
         for var in vs:
             merged[var.key] = var

@@ -1,21 +1,21 @@
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
 # A fully resolved, render-ready RGBA color.
-ColorRGBA = Tuple[float, float, float, float]
+ColorRGBA = tuple[float, float, float, float]
 
 ColorAtom = Union[
-    str, Tuple[float, float, float], Tuple[float, float, float, float]
+    str, tuple[float, float, float], tuple[float, float, float, float]
 ]
-ColorSpec = Union[ColorAtom, Tuple[ColorAtom, float]]
-GradientSpec = Tuple[ColorSpec, ColorSpec]
-ColorSpecDict = Dict[str, Union[ColorSpec, GradientSpec]]
+ColorSpec = Union[ColorAtom, tuple[ColorAtom, float]]
+GradientSpec = tuple[ColorSpec, ColorSpec]
+ColorSpecDict = dict[str, Union[ColorSpec, GradientSpec]]
 
 OPS_COLOR_SPEC: ColorSpecDict = {
     "cut": ("#ffeeff", "#ff00ff"),
@@ -43,7 +43,7 @@ def hex_to_rgba(hex_color: str) -> ColorRGBA:
         raise ValueError(f"Invalid hex color: {hex_color}")
 
 
-_CSS_NAMED_COLORS: Dict[str, str] = {
+_CSS_NAMED_COLORS: dict[str, str] = {
     "aliceblue": "f0f8ff",
     "antiquewhite": "faebd7",
     "aqua": "00ffff",
@@ -250,7 +250,7 @@ class ColorSet:
     This object is immutable and thread-safe.
     """
 
-    _data: Dict[str, Any] = field(default_factory=dict)
+    _data: dict[str, Any] = field(default_factory=dict)
 
     def get_lut(self, name: str) -> np.ndarray:
         """
@@ -323,9 +323,9 @@ class ColorSet:
         keys = sorted(self._data.keys())
         return f"ColorSet(keys={keys})"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the ColorSet to a dictionary."""
-        serialized_data: Dict[str, Any] = {}
+        serialized_data: dict[str, Any] = {}
         for key, value in self._data.items():
             if isinstance(value, np.ndarray):
                 serialized_data[key] = {
@@ -338,9 +338,9 @@ class ColorSet:
         return {"_data": serialized_data}
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ColorSet":
+    def from_dict(cls, data: dict[str, Any]) -> "ColorSet":
         """Deserializes a ColorSet from a dictionary."""
-        deserialized_data: Dict[str, Any] = {}
+        deserialized_data: dict[str, Any] = {}
         source_data = data.get("_data", data)  # Handle both formats
         for key, value in source_data.items():
             if isinstance(value, dict) and "__type__" in value:

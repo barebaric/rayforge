@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -33,7 +33,7 @@ class StockPropertiesDialog(PatchedDialogWindow):
         # Used to delay updates from continuous-change widgets
         self._debounce_timer = 0
         self._debounced_callback = None
-        self._debounced_args: Tuple = ()
+        self._debounced_args: tuple = ()
 
         # Connect to stock item updates to refresh UI
         self.stock_item.updated.connect(self.on_stock_item_updated)

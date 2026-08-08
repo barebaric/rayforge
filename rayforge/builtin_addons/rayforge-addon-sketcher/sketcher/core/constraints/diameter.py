@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 from raygeo.geo.types import Point
 
@@ -83,7 +83,7 @@ class DiameterConstraint(Constraint):
     ) -> bool:
         return entity_id is not None and self.circle_id == entity_id
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         data = {
             "type": "DiameterConstraint",
             "circle_id": self.circle_id,
@@ -95,7 +95,7 @@ class DiameterConstraint(Constraint):
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "DiameterConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> "DiameterConstraint":
         return cls(
             circle_id=data["circle_id"],
             value=data["value"],
@@ -125,7 +125,7 @@ class DiameterConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         entity = reg.get_entity(self.circle_id)
         if isinstance(entity, Circle):
             c = reg.get_point(entity.center_idx)

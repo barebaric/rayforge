@@ -1,5 +1,4 @@
 from gettext import gettext as _
-from typing import List
 
 from gi.repository import Adw
 
@@ -23,7 +22,7 @@ class CapabilitiesPage(TrackedPreferencesPage):
             **kwargs,
         )
         self.machine = machine
-        self._rows: List[Adw.ActionRow] = []
+        self._rows: list[Adw.ActionRow] = []
 
         self.capability_group = Adw.PreferencesGroup(
             title=_("Machine Capabilities"),

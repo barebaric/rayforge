@@ -1,14 +1,12 @@
 import logging
 import re
+from collections.abc import Iterable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Iterable,
     Literal,
     Optional,
-    Tuple,
-    Type,
     cast,
 )
 
@@ -41,7 +39,7 @@ def adjust_value(
     max_val: Optional[float],
     value: float,
     keep: Literal["min", "max", "value"],
-) -> Tuple[Optional[float], Optional[float], float]:
+) -> tuple[Optional[float], Optional[float], float]:
     """
     Adjusts min, max, and value to be consistent, keeping one value fixed.
     Returns a tuple of (final_min, final_max, final_value).
@@ -647,7 +645,7 @@ class VarSetEditorWidget(PreferencesGroupWithButton):
 
     def __init__(
         self,
-        vartypes: Optional[Iterable[Type[Var]]] = None,
+        vartypes: Optional[Iterable[type[Var]]] = None,
         undo_manager: Optional["HistoryManager"] = None,
         **kwargs,
     ):

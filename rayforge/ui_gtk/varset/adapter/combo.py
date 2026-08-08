@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional
 
 from gi.repository import Adw, Gtk
 
@@ -32,10 +32,10 @@ class ComboAdapter(RowAdapter):
     @classmethod
     def create(
         cls, var: Var, target_property: str
-    ) -> Tuple[Adw.PreferencesRow, "ComboAdapter"]:
+    ) -> tuple[Adw.PreferencesRow, "ComboAdapter"]:
         assert isinstance(var, ChoiceVar)
         null_label = var.null_label or NULL_CHOICE_LABEL
-        choices: List[str] = (
+        choices: list[str] = (
             [null_label] + var.choices if var.allow_none else list(var.choices)
         )
         store = Gtk.StringList.new(choices)
@@ -107,7 +107,7 @@ class BaudRateAdapter(ComboAdapter):
     @classmethod
     def create(
         cls, var: Var, target_property: str
-    ) -> Tuple[Adw.PreferencesRow, "BaudRateAdapter"]:
+    ) -> tuple[Adw.PreferencesRow, "BaudRateAdapter"]:
         assert isinstance(var, BaudrateVar)
         choices_str = [str(rate) for rate in var.choices]
         store = Gtk.StringList.new(choices_str)
@@ -125,7 +125,7 @@ class SerialPortAdapter(ComboAdapter):
     @classmethod
     def create(
         cls, var: Var, target_property: str
-    ) -> Tuple[Adw.PreferencesRow, "SerialPortAdapter"]:
+    ) -> tuple[Adw.PreferencesRow, "SerialPortAdapter"]:
         initial_val = getattr(var, target_property)
         port_set = set(SerialTransport.list_ports())
         if initial_val:

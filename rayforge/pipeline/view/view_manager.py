@@ -4,7 +4,7 @@ import logging
 import threading
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 import numpy as np
 from blinker import Signal
@@ -42,8 +42,8 @@ class ViewEntry:
     """Holds state for a single view artifact."""
 
     bitmap: Optional[np.ndarray] = None
-    bbox_mm: Optional[Tuple[float, float, float, float]] = None
-    workpiece_size_mm: Optional[Tuple[float, float]] = None
+    bbox_mm: Optional[tuple[float, float, float, float]] = None
+    workpiece_size_mm: Optional[tuple[float, float]] = None
     handle: Optional[WorkPieceViewArtifactHandle] = None
     render_context: Optional[RenderContext] = None
     source_handle: Optional[WorkPieceArtifactHandle] = None
@@ -93,22 +93,22 @@ class ViewManager:
         self._render_semaphore = threading.Semaphore(
             MAX_CONCURRENT_VIEW_RENDERS
         )
-        self._pending_render_queue: list[Tuple[str, str]] = []
+        self._pending_render_queue: list[tuple[str, str]] = []
         self._pending_render_lock = threading.Lock()
 
         # Keys are (workpiece_uid, step_uid)
-        self._source_artifact_handles: Dict[
-            Tuple[str, str], WorkPieceArtifactHandle
+        self._source_artifact_handles: dict[
+            tuple[str, str], WorkPieceArtifactHandle
         ] = {}
-        self._view_entries: Dict[Tuple[str, str], ViewEntry] = {}
+        self._view_entries: dict[tuple[str, str], ViewEntry] = {}
 
         # Stable task keys for view computation (deduplication/cancellation).
-        self._view_task_keys: Dict[Tuple[str, str], str] = {}
+        self._view_task_keys: dict[tuple[str, str], str] = {}
 
         # Throttling state keyed by the composite key (workpiece_uid, step_uid)
-        self._pending_updates: Dict[Tuple[str, str], bool] = {}
-        self._last_update_time: Dict[Tuple[str, str], float] = {}
-        self._throttle_timers: Dict[Tuple[str, str], threading.Timer] = {}
+        self._pending_updates: dict[tuple[str, str], bool] = {}
+        self._last_update_time: dict[tuple[str, str], float] = {}
+        self._throttle_timers: dict[tuple[str, str], threading.Timer] = {}
 
         self.view_artifact_created = Signal()
         self.view_artifact_updated = Signal()
@@ -761,7 +761,7 @@ class ViewManager:
             step_uid=step_uid,
         )
 
-    def _cancel_pending_throttled_update(self, composite_id: Tuple[str, str]):
+    def _cancel_pending_throttled_update(self, composite_id: tuple[str, str]):
         """Cancels any pending throttled update for the given composite."""
         self._pending_updates.pop(composite_id, None)
         timer = self._throttle_timers.pop(composite_id, None)
@@ -896,8 +896,8 @@ class ViewManager:
     def get_view_bitmap(
         self, workpiece_uid: str, step_uid: str
     ) -> Optional[
-        Tuple[
-            np.ndarray, Tuple[float, float, float, float], Tuple[float, float]
+        tuple[
+            np.ndarray, tuple[float, float, float, float], tuple[float, float]
         ]
     ]:
         """Get the view bitmap for a specific workpiece and step.

@@ -3,7 +3,7 @@ import logging
 import urllib.error
 import urllib.request
 from gettext import gettext as _
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -52,7 +52,7 @@ class AppKeyAdapter(RowAdapter):
     @classmethod
     def create(
         cls, var: Var, target_property: str
-    ) -> Tuple[Adw.PreferencesRow, "AppKeyAdapter"]:
+    ) -> tuple[Adw.PreferencesRow, "AppKeyAdapter"]:
         app_var = var
         assert isinstance(app_var, AppKeyVar)
 

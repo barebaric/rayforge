@@ -1,7 +1,7 @@
 """Registry for addon-contributed Settings dialog pages."""
 
 import logging
-from typing import Callable, List, Tuple
+from typing import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class SettingsPageRegistry:
     """
 
     def __init__(self) -> None:
-        self._pages: List[Tuple[Callable[[], object], str]] = []
+        self._pages: list[tuple[Callable[[], object], str]] = []
 
     def register(
         self,
@@ -48,7 +48,7 @@ class SettingsPageRegistry:
             f"Registered settings page {page_class!r} for '{addon_name}'"
         )
 
-    def get_pages(self) -> List[Callable[[], object]]:
+    def get_pages(self) -> list[Callable[[], object]]:
         """Return all registered page classes in insertion order."""
         return [cls for cls, _ in self._pages]
 

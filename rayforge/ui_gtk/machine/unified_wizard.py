@@ -14,7 +14,7 @@ pair.
 
 import logging
 from gettext import gettext as _
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 # Ordered list of step names the wizard knows about. Adaptive routing
 # may skip individual entries based on the user's choices.
-_STEP_ORDER: List[str] = [
+_STEP_ORDER: list[str] = [
     "profile",
     "controller",
     "connect",
@@ -91,11 +91,11 @@ class UnifiedWizard(PatchedDialogWindow):
         # Aux state for pages that need to carry session-only fields
         # not part of DeviceProfile (e.g. axis reversals applied at
         # machine-creation time).
-        self.aux_state: Dict[str, Any] = {}
+        self.aux_state: dict[str, Any] = {}
         # Set when the user picks a known profile or import on Step 1;
         # None for "Other / unknown machine". Used to skip the AI
         # lookup steps when the specs are already in the profile.
-        self._source: Optional[Dict[str, Any]] = None
+        self._source: Optional[dict[str, Any]] = None
 
         self.toast_overlay = Adw.ToastOverlay()
         self.set_content(self.toast_overlay)
@@ -127,10 +127,10 @@ class UnifiedWizard(PatchedDialogWindow):
         # Lazily-built pages keyed by step name. We construct each
         # page only when the user visits it so that pages that touch
         # hardware (e.g. probe) only initialize when relevant.
-        self._pages: Dict[str, WizardPage] = {}
+        self._pages: dict[str, WizardPage] = {}
 
         # History stack — supports the Back button.
-        self._history: List[str] = []
+        self._history: list[str] = []
 
         # Steps we deliberately won't re-enter when the user presses
         # Back — populated as the user proceeds (e.g. "controller" gets
@@ -188,7 +188,7 @@ class UnifiedWizard(PatchedDialogWindow):
             spacing=12,
         )
         self._button_box.append(self._action_box)
-        self._footer_action_buttons: List[Gtk.Button] = []
+        self._footer_action_buttons: list[Gtk.Button] = []
 
         self.next_btn = Gtk.Button(label=_("Next"))
         self.next_btn.add_css_class("suggested-action")
@@ -533,7 +533,7 @@ class UnifiedWizard(PatchedDialogWindow):
         self._navigate_to(target)
 
     def _on_probe_succeeded(
-        self, sender, *, profile: DeviceProfile, warnings: List[str]
+        self, sender, *, profile: DeviceProfile, warnings: list[str]
     ) -> None:
         """Step 4: the probe merged values into a working profile."""
         # Merge probed machine_config fields into our working profile.

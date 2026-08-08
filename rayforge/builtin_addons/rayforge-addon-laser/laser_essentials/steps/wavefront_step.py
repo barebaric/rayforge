@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly import Assembler
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 class WavefrontStep(LaserStep):
     TYPELABEL = _("Wavefront")
     ICON = "step-wavefront-symbolic"
-    CAPABILITIES: Tuple[StepCapability, ...] = (CUT,)
+    CAPABILITIES: tuple[StepCapability, ...] = (CUT,)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "wavefront"
 
@@ -88,7 +88,7 @@ class WavefrontStep(LaserStep):
         self,
         machine: "Machine",
         workpiece: "WorkPiece",
-    ) -> "Tuple[Part, ComputePayload]":
+    ) -> "tuple[Part, ComputePayload]":
         """Build a :class:`Part` with normalised-winding vector
         geometry and a :class:`ComputePayload` carrying an
         :class:`AdaptiveWavefrontSpec`.
@@ -143,7 +143,7 @@ class WavefrontStep(LaserStep):
         return step
 
     @classmethod
-    def get_default_transformers_dicts(cls) -> Tuple[List, List]:
+    def get_default_transformers_dicts(cls) -> tuple[list, list]:
         CropTransformer = transformer_registry.get("CropTransformer")
         Optimize = transformer_registry.get("Optimize")
         MultiPassTransformer = transformer_registry.get("MultiPassTransformer")

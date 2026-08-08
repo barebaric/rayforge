@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.ops.transform.bidir_scan_offset import BidirScanOffsetSpec
 
@@ -43,15 +43,15 @@ class BidirScanOffsetTransformer(OpsTransformer):
     def to_spec(
         self,
         workpiece: Optional["WorkPiece"],
-        stock_geometries: Optional[List["Geometry"]],
-        settings: Optional[Dict[str, Any]],
+        stock_geometries: Optional[list["Geometry"]],
+        settings: Optional[dict[str, Any]],
     ) -> BidirScanOffsetSpec:
         offset = settings.get("bidir_x_offset_mm", 0.0) if settings else 0.0
         return BidirScanOffsetSpec(offset_mm=offset)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {**super().to_dict()}
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "BidirScanOffsetTransformer":
+    def from_dict(cls, data: dict[str, Any]) -> "BidirScanOffsetTransformer":
         return cls(enabled=data.get("enabled", True))

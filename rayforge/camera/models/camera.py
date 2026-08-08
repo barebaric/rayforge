@@ -1,13 +1,14 @@
 import json
 import logging
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Optional
 
 import numpy as np
 from blinker import Signal
 
 logger = logging.getLogger(__name__)
-Pos = Tuple[float, float]
+Pos = tuple[float, float]
 PointList = Sequence[Pos]
 
 
@@ -30,7 +31,7 @@ class Camera:
 
         self._prefer_yuyv: bool = False
 
-        self._resolution: Optional[Tuple[int, int]] = None
+        self._resolution: Optional[tuple[int, int]] = None
 
         # Lens calibration parameters
         # Distortion coefficients: k1, k2, p1, p2, k3 (OpenCV order)
@@ -49,17 +50,17 @@ class Camera:
         # Calibration metadata
         self._calibration_rms: Optional[float] = None
         self._calibration_date: Optional[datetime] = None
-        self._calibration_image_size: Optional[Tuple[int, int]] = None
+        self._calibration_image_size: Optional[tuple[int, int]] = None
         self._calibration_frames_used: Optional[int] = None
 
         # Properties for camera alignment points
-        self._image_to_world: Optional[Tuple[PointList, PointList]] = None
+        self._image_to_world: Optional[tuple[PointList, PointList]] = None
         self._alignment_date: Optional[datetime] = None
 
         # Signals
         self.changed = Signal()
         self.settings_changed = Signal()
-        self.extra: Dict[str, Any] = {}
+        self.extra: dict[str, Any] = {}
 
     @property
     def name(self) -> str:
@@ -230,11 +231,11 @@ class Camera:
         self.settings_changed.send(self)
 
     @property
-    def resolution(self) -> Optional[Tuple[int, int]]:
+    def resolution(self) -> Optional[tuple[int, int]]:
         return self._resolution
 
     @resolution.setter
-    def resolution(self, value: Optional[Tuple[int, int]]):
+    def resolution(self, value: Optional[tuple[int, int]]):
         if value is not None:
             if not (
                 isinstance(value, tuple)
@@ -392,11 +393,11 @@ class Camera:
     # ---------------------------------------------
 
     @property
-    def image_to_world(self) -> Optional[Tuple[PointList, PointList]]:
+    def image_to_world(self) -> Optional[tuple[PointList, PointList]]:
         return self._image_to_world
 
     @image_to_world.setter
-    def image_to_world(self, value: Optional[Tuple[PointList, PointList]]):
+    def image_to_world(self, value: Optional[tuple[PointList, PointList]]):
         if value is not None:
             if not (isinstance(value, tuple) and len(value) == 2):
                 raise ValueError(
@@ -492,7 +493,7 @@ class Camera:
         return self._calibration_date
 
     @property
-    def calibration_image_size(self) -> Optional[Tuple[int, int]]:
+    def calibration_image_size(self) -> Optional[tuple[int, int]]:
         return self._calibration_image_size
 
     @property
@@ -525,7 +526,7 @@ class Camera:
             return False
         return self._alignment_date >= self._calibration_date
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         data = {
             "name": self.name,
             "device_id": self.device_id,
@@ -585,7 +586,7 @@ class Camera:
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Camera":
+    def from_dict(cls, data: dict[str, Any]) -> "Camera":
         known_keys = {
             "name",
             "device_id",

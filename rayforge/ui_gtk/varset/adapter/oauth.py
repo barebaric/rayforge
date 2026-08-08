@@ -1,7 +1,7 @@
 import json
 import logging
 from gettext import gettext as _
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -37,7 +37,7 @@ class OAuthFlowAdapter(RowAdapter):
         sign_in_btn: Gtk.Button,
         sign_out_btn: Gtk.Button,
         var: OAuthFlowVar,
-        dynamic_entries: Optional[Dict[str, Adw.EntryRow]] = None,
+        dynamic_entries: Optional[dict[str, Adw.EntryRow]] = None,
     ):
         super().__init__()
         self._row = row
@@ -53,7 +53,7 @@ class OAuthFlowAdapter(RowAdapter):
     @classmethod
     def create(
         cls, var: Var, target_property: str
-    ) -> Tuple[Adw.PreferencesRow, "OAuthFlowAdapter"]:
+    ) -> tuple[Adw.PreferencesRow, "OAuthFlowAdapter"]:
         oauth_var = var
         assert isinstance(oauth_var, OAuthFlowVar)
 
@@ -61,7 +61,7 @@ class OAuthFlowAdapter(RowAdapter):
             getattr(oauth_var, key, None) is None for key, _ in cls._FIELD_DEFS
         )
 
-        dynamic_entries: Dict[str, Adw.EntryRow] = {}
+        dynamic_entries: dict[str, Adw.EntryRow] = {}
         if needs_entries:
             row = cls._create_expander_row(oauth_var, dynamic_entries)
         else:
@@ -104,7 +104,7 @@ class OAuthFlowAdapter(RowAdapter):
     def _create_expander_row(
         cls,
         oauth_var: OAuthFlowVar,
-        dynamic_entries: Dict[str, Adw.EntryRow],
+        dynamic_entries: dict[str, Adw.EntryRow],
     ) -> Adw.ExpanderRow:
         row = Adw.ExpanderRow(title=escape_title(oauth_var.label))
         if oauth_var.description:
@@ -144,7 +144,7 @@ class OAuthFlowAdapter(RowAdapter):
     # Internal
     # ------------------------------------------------------------------
 
-    def _get_token_data(self) -> Optional[Dict[str, Any]]:
+    def _get_token_data(self) -> Optional[dict[str, Any]]:
         if not self._token_value:
             return None
         try:
@@ -169,8 +169,8 @@ class OAuthFlowAdapter(RowAdapter):
             self._sign_in_btn.set_label(_("Sign In"))
             self._sign_out_btn.set_visible(False)
 
-    def _collect_overrides(self) -> Dict[str, str]:
-        overrides: Dict[str, str] = {}
+    def _collect_overrides(self) -> dict[str, str]:
+        overrides: dict[str, str] = {}
         for field_key, entry_row in self._dynamic_entries.items():
             text = entry_row.get_text().strip()
             if text:
@@ -257,7 +257,7 @@ class OAuthFlowAdapter(RowAdapter):
 
     def _on_flow_complete(self, result) -> bool:
         self._sign_in_btn.set_sensitive(True)
-        token_data: Dict[str, Any] = {
+        token_data: dict[str, Any] = {
             "access_token": result.access_token,
         }
         if result.refresh_token:

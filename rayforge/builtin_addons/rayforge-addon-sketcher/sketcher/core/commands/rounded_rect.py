@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -33,7 +33,7 @@ class RoundedRectPreviewState(PreviewState):
         start_id: EntityID,
         start_temp: bool,
         p_end_id: EntityID,
-        preview_ids: Dict[str, EntityID],
+        preview_ids: dict[str, EntityID],
         radius: float,
     ):
         self.start_id = start_id
@@ -45,7 +45,7 @@ class RoundedRectPreviewState(PreviewState):
         self.locked_height: Optional[float] = None
         self.locked_radius: Optional[float] = None
 
-    def get_preview_point_ids(self) -> Set[EntityID]:
+    def get_preview_point_ids(self) -> set[EntityID]:
         """
         Returns IDs of temporary preview points that shouldn't be snapped to.
 
@@ -114,7 +114,7 @@ class RoundedRectPreviewState(PreviewState):
 
     def get_dimensions(
         self, registry: "EntityRegistry"
-    ) -> List["DimensionData"]:
+    ) -> list["DimensionData"]:
         """
         Returns width, height and radius dimensions for preview.
 
@@ -204,7 +204,7 @@ class RoundedRectCommand(SketchChangeCommand):
         fixed_width: Optional[float] = None,
         fixed_height: Optional[float] = None,
         fixed_radius: Optional[float] = None,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """Calculates geometry for a rounded rectangle."""
         width, height = abs(x2 - x1), abs(y2 - y1)
         if width < 1e-6 or height < 1e-6:
@@ -353,8 +353,8 @@ class RoundedRectCommand(SketchChangeCommand):
         start_pid: EntityID,
         end_pid: EntityID,
         radius: float,
-        preview_ids: Optional[Dict[str, EntityID]] = None,
-    ) -> Optional[Dict[str, EntityID]]:
+        preview_ids: Optional[dict[str, EntityID]] = None,
+    ) -> Optional[dict[str, EntityID]]:
         """
         Creates or updates preview geometry in the registry.
 

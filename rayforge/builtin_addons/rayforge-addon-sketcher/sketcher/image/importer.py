@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Iterator
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from raygeo.geo import Matrix
 
@@ -77,7 +78,7 @@ class SketchImporter(Importer):
         if not self.parsed_sketch:
             return payload
 
-        def find_workpieces(items: List[DocItem]) -> Iterator[WorkPiece]:
+        def find_workpieces(items: list[DocItem]) -> Iterator[WorkPiece]:
             """Recursively find all WorkPiece objects in a list of items."""
             for item in items:
                 if isinstance(item, WorkPiece):

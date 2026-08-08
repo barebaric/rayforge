@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import List
-
 from raygeo.geo import Matrix
 
 from .base import ArrayStrategy
@@ -26,13 +24,13 @@ class PointRotationStrategy(ArrayStrategy):
         super().__init__(unit_bbox)
         self.params = params
 
-    def calculate_placements(self) -> List[Matrix]:
+    def calculate_placements(self) -> list[Matrix]:
         p = self.params
         count = max(1, int(p.count))
         ax, ay = self.anchor_world
         offsets = self.distribute_angles(count, p.total_angle_deg)
 
-        placements: List[Matrix] = []
+        placements: list[Matrix] = []
         for i, ang_offset in enumerate(offsets):
             # Instance 0 is always the identity: the original stays put.
             if i == 0:

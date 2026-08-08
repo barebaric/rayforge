@@ -1,12 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     Optional,
-    Sequence,
 )
 
 from raygeo.ops.transform.merge_lines import MergeLinesSpec
@@ -59,17 +58,17 @@ class MergeLinesTransformer(OpsTransformer):
         self,
         workpiece: Optional[WorkPiece],
         stock_geometries: Optional[Sequence["Geometry"]],
-        settings: Optional[Dict[str, Any]],
+        settings: Optional[dict[str, Any]],
     ) -> MergeLinesSpec:
         return MergeLinesSpec(tolerance=self._tolerance)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         data = super().to_dict()
         data["tolerance"] = self._tolerance
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "MergeLinesTransformer":
+    def from_dict(cls, data: dict[str, Any]) -> "MergeLinesTransformer":
         if data.get("name") != cls.__name__:
             raise ValueError(
                 f"Mismatched transformer name: expected {cls.__name__},"

@@ -5,7 +5,7 @@ import math
 import re
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Optional, cast
 
 try:
     import pymupdf
@@ -56,7 +56,7 @@ class PdfVectorImporter(Importer):
         self._page: Optional[pymupdf.Page] = None
         self._page_width_pt: float = 0.0
         self._page_height_pt: float = 0.0
-        self._geometries_by_layer: Dict[Optional[str], Geometry] = {}
+        self._geometries_by_layer: dict[Optional[str], Geometry] = {}
 
     def scan(self) -> ImportManifest:
         try:
@@ -160,7 +160,7 @@ class PdfVectorImporter(Importer):
             ):
                 self.add_warning(_("PDF contains no vector geometry."))
 
-            layer_geometries: List[LayerGeometry] = []
+            layer_geometries: list[LayerGeometry] = []
             for layer_id, geo in geometries.items():
                 if not geo.is_empty():
                     layer_geometries.append(
@@ -216,11 +216,11 @@ class PdfVectorImporter(Importer):
             if spec.active_layer_ids:
                 active_layers_set = set(spec.active_layer_ids)
 
-        geometries: Dict[Optional[str], Geometry] = self._geometries_by_layer
+        geometries: dict[Optional[str], Geometry] = self._geometries_by_layer
         if not geometries:
             geometries = {None: Geometry()}
 
-        geometries_to_process: Dict[Optional[str], Geometry]
+        geometries_to_process: dict[Optional[str], Geometry]
         if active_layers_set:
             geometries_to_process = {
                 layer_id: geo
@@ -230,7 +230,7 @@ class PdfVectorImporter(Importer):
         else:
             geometries_to_process = geometries
 
-        final_geometries: Dict[Optional[str], Geometry]
+        final_geometries: dict[Optional[str], Geometry]
         if split_layers:
             final_geometries = {}
             for layer_id, geo in geometries_to_process.items():
@@ -277,11 +277,11 @@ class PdfVectorImporter(Importer):
             self._doc = None
             self._page = None
 
-    def _extract_page_geometry(self) -> Dict[Optional[str], Geometry]:
+    def _extract_page_geometry(self) -> dict[Optional[str], Geometry]:
         if self._page is None:
             return {None: Geometry()}
 
-        geometries_by_layer: Dict[Optional[str], Geometry] = {}
+        geometries_by_layer: dict[Optional[str], Geometry] = {}
 
         try:
             drawings = self._page.get_drawings()
@@ -301,9 +301,9 @@ class PdfVectorImporter(Importer):
         return geometries_by_layer
 
     def _add_drawing_to_geometry(
-        self, drawing: Dict[str, Any], geometry: Geometry
+        self, drawing: dict[str, Any], geometry: Geometry
     ) -> None:
-        items = cast(List[tuple], drawing.get("items", []))
+        items = cast(list[tuple], drawing.get("items", []))
         if not items:
             return
 
@@ -419,7 +419,7 @@ class PdfVectorImporter(Importer):
 
     def _parse_dash_pattern(
         self, dashes_str: str
-    ) -> Tuple[List[float], float]:
+    ) -> tuple[list[float], float]:
         if not dashes_str or dashes_str == "[] 0":
             return [], 0.0
         match = re.match(r"\[\s*([\d.\s]+)\s*\]\s*(\d+\.?\d*)", dashes_str)
@@ -430,8 +430,8 @@ class PdfVectorImporter(Importer):
         return pattern, phase
 
     def _expand_dashed_items(
-        self, items: List[tuple], pattern: List[float], phase: float
-    ) -> List[tuple]:
+        self, items: list[tuple], pattern: list[float], phase: float
+    ) -> list[tuple]:
         if not pattern:
             return items
         expanded = []
@@ -503,10 +503,10 @@ class PdfVectorImporter(Importer):
         y1: float,
         x2: float,
         y2: float,
-        pattern: List[float],
+        pattern: list[float],
         dash_pos: float,
         pattern_idx: int,
-    ) -> List[tuple]:
+    ) -> list[tuple]:
         segments = []
         length = math.hypot(x2 - x1, y2 - y1)
         if length < 0.001:
@@ -549,10 +549,10 @@ class PdfVectorImporter(Importer):
     def _advance_dash(
         self,
         length: float,
-        pattern: List[float],
+        pattern: list[float],
         dash_pos: float,
         pattern_idx: int,
-    ) -> Tuple[float, int]:
+    ) -> tuple[float, int]:
         if not pattern:
             return 0.0, 0
         total_pos = dash_pos + length
@@ -596,7 +596,7 @@ class PdfVectorImporter(Importer):
         y2: float,
         x3: float,
         y3: float,
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         t2, t3 = t * t, t * t * t
         mt, mt2, mt3 = 1 - t, (1 - t) ** 2, (1 - t) ** 3
         px = mt3 * x0 + 3 * mt2 * t * x1 + 3 * mt * t2 * x2 + t3 * x3
@@ -613,10 +613,10 @@ class PdfVectorImporter(Importer):
         y2: float,
         x3: float,
         y3: float,
-        pattern: List[float],
+        pattern: list[float],
         dash_pos: float,
         pattern_idx: int,
-    ) -> List[tuple]:
+    ) -> list[tuple]:
         segments = []
         total_length = self._bezier_arc_length(x0, y0, x1, y1, x2, y2, x3, y3)
         if total_length < 0.001:

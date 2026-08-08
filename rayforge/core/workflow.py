@@ -5,7 +5,8 @@ Defines the Workflow class, which holds an ordered sequence of Steps.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Iterable, List, Optional, TypeVar
+from collections.abc import Iterable
+from typing import Any, Optional, TypeVar
 
 from blinker import Signal
 from raygeo.geo import Matrix
@@ -40,9 +41,9 @@ class Workflow(DocItem):
         self.per_step_transformer_changed = Signal()
 
         # Forward compatibility: store unknown attributes
-        self.extra: Dict[str, Any] = {}
+        self.extra: dict[str, Any] = {}
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Serializes the workflow and its children to a dictionary."""
         result = {
             "uid": self.uid,
@@ -55,7 +56,7 @@ class Workflow(DocItem):
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Workflow":
+    def from_dict(cls, data: dict[str, Any]) -> "Workflow":
         """Deserializes a dictionary into a Workflow instance."""
         known_keys = {
             "uid",
@@ -80,7 +81,7 @@ class Workflow(DocItem):
         return workflow
 
     @property
-    def steps(self) -> List[Step]:
+    def steps(self) -> list[Step]:
         """Returns a list of all child items that are Steps."""
         return [child for child in self.children if isinstance(child, Step)]
 
@@ -133,7 +134,7 @@ class Workflow(DocItem):
         """Removes a step from the work plan."""
         self.remove_child(step)
 
-    def set_steps(self, steps: List[Step]):
+    def set_steps(self, steps: list[Step]):
         """Replaces the entire list of steps with a new one."""
         self.set_children(steps)
 

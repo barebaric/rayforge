@@ -1,7 +1,7 @@
 import logging
 import math
 from gettext import gettext as _
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 from gi.repository import Adw, Gtk
 from raygeo.geo import Matrix
@@ -28,10 +28,10 @@ _session_state: dict = {}
 
 
 def calculate_alignment_transform(
-    d1: Tuple[float, float],
-    d2: Tuple[float, float],
-    p1: Tuple[float, float],
-    p2: Tuple[float, float],
+    d1: tuple[float, float],
+    d2: tuple[float, float],
+    p1: tuple[float, float],
+    p2: tuple[float, float],
     allow_scale: bool = False,
 ) -> Matrix:
     angle_d = math.atan2(d2[1] - d1[1], d2[0] - d1[0])
@@ -73,11 +73,11 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._machine_cmd = machine_cmd
         self._editor = editor
 
-        self._design_point1: Optional[Tuple[float, float]] = None
-        self._design_point2: Optional[Tuple[float, float]] = None
+        self._design_point1: Optional[tuple[float, float]] = None
+        self._design_point2: Optional[tuple[float, float]] = None
 
-        self._physical_point1: Optional[Tuple[float, float]] = None
-        self._physical_point2: Optional[Tuple[float, float]] = None
+        self._physical_point1: Optional[tuple[float, float]] = None
+        self._physical_point2: Optional[tuple[float, float]] = None
 
         self._allow_scale: bool = False
 
@@ -664,12 +664,12 @@ class PrintAndCutWizard(PatchedDialogWindow):
 
     def _local_to_world(
         self, norm_x: float, norm_y: float
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         return self._item.get_world_transform().transform_point(
             (norm_x, norm_y)
         )
 
-    def _machine_to_world(self, wx: float, wy: float) -> Tuple[float, float]:
+    def _machine_to_world(self, wx: float, wy: float) -> tuple[float, float]:
         space = self._machine.get_coordinate_space()
         wcs_x, wcs_y, _wcs_z = self._machine.get_active_wcs_offset()
         return space.machine_point_to_world(wx + wcs_x, wy + wcs_y)

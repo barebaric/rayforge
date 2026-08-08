@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional, Protocol, Tuple, cast
+from typing import TYPE_CHECKING, Optional, Protocol, cast
 
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly import Assembler
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 class MaterialTestStep(LaserStep):
     TYPELABEL = _("Material Test Grid")
     ICON = "test-symbolic"
-    CAPABILITIES: Tuple[StepCapability, ...] = (MATERIAL_TEST,)
+    CAPABILITIES: tuple[StepCapability, ...] = (MATERIAL_TEST,)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "material_test_grid"
     HIDDEN = True
@@ -96,7 +96,7 @@ class MaterialTestStep(LaserStep):
         self,
         machine: "Machine",
         workpiece: "WorkPiece",
-    ) -> "Tuple[Part, ComputePayload]":
+    ) -> "tuple[Part, ComputePayload]":
         """Build a :class:`Part` (empty — the material-test grid
         needs no geometry) and a :class:`ComputePayload` carrying a
         :class:`MaterialTestGridSpec`."""
@@ -203,7 +203,7 @@ class MaterialTestStep(LaserStep):
         return step
 
     @classmethod
-    def get_default_transformers_dicts(cls) -> Tuple[List, List]:
+    def get_default_transformers_dicts(cls) -> tuple[list, list]:
         OverscanTransformer = transformer_registry.get("OverscanTransformer")
         Optimize = transformer_registry.get("Optimize")
         BidirScanOffsetTransformer = transformer_registry.get(

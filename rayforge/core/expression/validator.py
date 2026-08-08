@@ -1,5 +1,4 @@
 import ast
-from typing import Type
 
 from .context import ExpressionContext
 from .errors import (
@@ -81,7 +80,7 @@ class ExpressionValidator:
 class _TypeMismatchError(TypeError):
     """Custom exception for type checking visitor."""
 
-    def __init__(self, op_str: str, left: Type, right: Type):
+    def __init__(self, op_str: str, left: type, right: type):
         self.op_str = op_str
         self.left = left
         self.right = right
@@ -104,7 +103,7 @@ class _TypeCheckVisitor(ast.NodeVisitor):
     def __init__(self, context: ExpressionContext):
         self.context = context
 
-    def visit(self, node: ast.AST) -> Type:
+    def visit(self, node: ast.AST) -> type:
         # Override visit to ensure we return a type
         result = super().visit(node)
         if not isinstance(result, type):
@@ -112,18 +111,18 @@ class _TypeCheckVisitor(ast.NodeVisitor):
             return float
         return result
 
-    def visit_Expression(self, node: ast.Expression) -> Type:
+    def visit_Expression(self, node: ast.Expression) -> type:
         return self.visit(node.body)
 
-    def visit_Constant(self, node: ast.Constant) -> Type:
+    def visit_Constant(self, node: ast.Constant) -> type:
         return type(node.value)
 
-    def visit_Name(self, node: ast.Name) -> Type:
+    def visit_Name(self, node: ast.Name) -> type:
         # Assumes unknown variable check has already passed
         var_type = self.context.get_variable_type(node.id)
         return var_type or float  # Default to float for functions
 
-    def visit_BinOp(self, node: ast.BinOp) -> Type:
+    def visit_BinOp(self, node: ast.BinOp) -> type:
         left_type = self.visit(node.left)
         right_type = self.visit(node.right)
 
@@ -146,9 +145,9 @@ class _TypeCheckVisitor(ast.NodeVisitor):
         # Fallback for other combinations
         return float
 
-    def visit_UnaryOp(self, node: ast.UnaryOp) -> Type:
+    def visit_UnaryOp(self, node: ast.UnaryOp) -> type:
         return self.visit(node.operand)
 
-    def visit_Call(self, node: ast.Call) -> Type:
+    def visit_Call(self, node: ast.Call) -> type:
         # We assume all functions return a numeric (float) type for simplicity
         return float

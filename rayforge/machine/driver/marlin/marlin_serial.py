@@ -1,16 +1,13 @@
 import asyncio
 import inspect
 import logging
+from collections.abc import Awaitable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
     Callable,
-    Dict,
-    List,
     Optional,
-    Tuple,
     Union,
     cast,
 )
@@ -84,10 +81,10 @@ class MarlinSerialDriver(Driver):
             Callable[[int], Union[None, Awaitable[None]]]
         ] = None
         self._last_reported_op_index = -1
-        self._response_lines: List[str] = []
+        self._response_lines: list[str] = []
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._rx_buffer = ""
-        self._boot_lines: List[str] = []
+        self._boot_lines: list[str] = []
 
     @property
     def machine_space_wcs(self) -> str:
@@ -104,7 +101,7 @@ class MarlinSerialDriver(Driver):
         return None
 
     @property
-    def boot_lines(self) -> List[str]:
+    def boot_lines(self) -> list[str]:
         return self._boot_lines
 
     @classmethod
@@ -135,13 +132,13 @@ class MarlinSerialDriver(Driver):
         assert machine.dialect is not None
         return GcodeEncoder(machine.dialect)
 
-    def get_setting_vars(self) -> List["VarSet"]:
+    def get_setting_vars(self) -> list["VarSet"]:
         return [VarSet()]
 
     @classmethod
     async def probe(
         cls, context: "RayforgeContext", **kwargs: Any
-    ) -> Tuple["DeviceProfile", List[str]]:
+    ) -> tuple["DeviceProfile", list[str]]:
         return await probe_marlin_device(cls, context, **kwargs)
 
     def _setup_implementation(self, **kwargs: Any) -> None:
@@ -314,7 +311,7 @@ class MarlinSerialDriver(Driver):
 
     async def _send_and_wait(
         self, command: str, wait_for_ok: bool = True
-    ) -> List[str]:
+    ) -> list[str]:
         if not self._transport or not self._transport.is_connected:
             raise ConnectionError("Serial transport not connected")
 
@@ -346,7 +343,7 @@ class MarlinSerialDriver(Driver):
 
         return self._response_lines
 
-    async def execute_interactive_command(self, command: str) -> List[str]:
+    async def execute_interactive_command(self, command: str) -> list[str]:
         """
         Send a command and return its response lines.
 
@@ -377,8 +374,8 @@ class MarlinSerialDriver(Driver):
 
     async def _stream_gcode(
         self,
-        gcode_lines: List[str],
-        machine_code_to_op_map: Optional[Dict[int, int]] = None,
+        gcode_lines: list[str],
+        machine_code_to_op_map: Optional[dict[int, int]] = None,
     ):
         logger.debug(
             f"Starting Marlin streaming job with {len(gcode_lines)} lines."
@@ -614,7 +611,7 @@ class MarlinSerialDriver(Driver):
         )
         await self._send_and_wait(cmd)
 
-    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+    async def read_wcs_offsets(self) -> dict[str, Pos]:
         raise NotImplementedError(
             "Reading all WCS offsets is not supported by Marlin."
         )

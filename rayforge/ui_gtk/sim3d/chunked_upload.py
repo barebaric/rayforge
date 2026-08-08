@@ -13,7 +13,7 @@ presenter can build playback after the fresh layer groups exist.
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 from blinker import Signal
 from gi.repository import GLib
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class _UploadState:
     """Progress of a chunked upload in flight."""
 
-    items: List["UploadItem"]
+    items: list["UploadItem"]
     index: int
 
 

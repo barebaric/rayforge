@@ -1,6 +1,6 @@
 import logging
 import warnings
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 from xml.etree import ElementTree as ET
 
 from raygeo.geo.types import Rect
@@ -34,7 +34,7 @@ class SvgRenderer(Renderer):
     def compute_render_spec(
         self,
         segment: Optional["SourceAssetSegment"],
-        target_size: Tuple[int, int],
+        target_size: tuple[int, int],
         source_context: "RenderContext",
     ) -> "RenderSpecification":
         """
@@ -112,7 +112,7 @@ class SvgRenderer(Renderer):
         data: bytes,
         width: int,
         height: int,
-        visible_layer_ids: Optional[List[str]] = None,
+        visible_layer_ids: Optional[list[str]] = None,
         viewbox: Optional[Rect] = None,
         **kwargs,
     ) -> Optional[pyvips.Image]:

@@ -1,6 +1,6 @@
 """Viewport-derived render context section."""
 
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -20,7 +20,7 @@ class ViewportContext:
         *,
         model_matrix: Optional[np.ndarray] = None,
         margin_shift: Optional[np.ndarray] = None,
-        wcs_offset_mm: Optional[Tuple[float, float, float]] = None,
+        wcs_offset_mm: Optional[tuple[float, float, float]] = None,
         x_right: bool = False,
         x_negative: bool = False,
         y_negative: bool = False,

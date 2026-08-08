@@ -5,11 +5,7 @@ import math
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Optional,
-    Set,
-    Tuple,
     Union,
 )
 
@@ -29,18 +25,18 @@ logger = logging.getLogger(__name__)
 
 
 class MultiSelectionGroup:
-    def __init__(self, elements: List[CanvasElement], canvas: Canvas):
+    def __init__(self, elements: list[CanvasElement], canvas: Canvas):
         if not elements:
             raise ValueError(
                 "MultiSelectionGroup cannot be initialized with an "
                 "empty list of elements."
             )
 
-        self.elements: List[CanvasElement] = elements
+        self.elements: list[CanvasElement] = elements
         self.canvas: Canvas = canvas
         self._bounding_box: Rect = (0, 0, 0, 0)
         self._center: "Point" = (0, 0)
-        self.initial_states: List[Dict[str, Any]] = []
+        self.initial_states: list[dict[str, Any]] = []
         self.initial_center: "Point" = (0, 0)
 
         # The transformation matrix for the entire group, applied during a
@@ -156,7 +152,7 @@ class MultiSelectionGroup:
         self,
         region: ElementRegion,
         base_handle_size: float,
-        scale_compensation: Union[float, Tuple[float, float]] = 1.0,
+        scale_compensation: Union[float, tuple[float, float]] = 1.0,
     ) -> Rect:
         return get_region_rect(
             region,
@@ -170,7 +166,7 @@ class MultiSelectionGroup:
         self,
         x: float,
         y: float,
-        candidates: Optional[Set[ElementRegion]] = None,
+        candidates: Optional[set[ElementRegion]] = None,
     ) -> ElementRegion:
         # The group's bounding box is (min_x, min_y, width, height) in world
         # coords. We convert the world mouse coordinate (x,y) into the group's

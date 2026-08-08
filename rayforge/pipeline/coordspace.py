@@ -15,7 +15,7 @@ Coordinate Spaces:
 from abc import ABC
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 from raygeo.geo.types import Point, Point3D, Rect
@@ -68,7 +68,7 @@ class CoordinateSpace(ABC):
         return self.y_positive_direction == AxisDirection.POSITIVE_DOWN
 
     def get_transform_to_world(
-        self, extents: Tuple[float, float]
+        self, extents: tuple[float, float]
     ) -> np.ndarray:
         """
         Returns the 4x4 transformation matrix to convert from this space
@@ -127,7 +127,7 @@ class CoordinateSpace(ABC):
         return origin_transform
 
     def transform_point_to_world(
-        self, x: float, y: float, extents: Tuple[float, float]
+        self, x: float, y: float, extents: tuple[float, float]
     ) -> Point:
         """
         Transform a point from this space to world space.
@@ -159,7 +159,7 @@ class MachineSpace(CoordinateSpace):
         margins: The (left, top, right, bottom) margins in mm.
     """
 
-    extents: Tuple[float, float] = (200.0, 200.0)
+    extents: tuple[float, float] = (200.0, 200.0)
     margins: Rect = (0.0, 0.0, 0.0, 0.0)
 
     @classmethod
@@ -288,7 +288,7 @@ class MachineSpace(CoordinateSpace):
             return (wcs_offset[0], wcs_offset[1], 0.0)
 
     @property
-    def workarea_size(self) -> Tuple[float, float]:
+    def workarea_size(self) -> tuple[float, float]:
         """Returns the (width, height) of the workarea in mm."""
         ml, mt, mr, mb = self.margins
         width, height = self.extents
@@ -304,7 +304,7 @@ class MachineSpace(CoordinateSpace):
         return (wx, wy, w, h)
 
     def world_position_from_origin(
-        self, ref_x: float, ref_y: float, size: Tuple[float, float]
+        self, ref_x: float, ref_y: float, size: tuple[float, float]
     ) -> Point:
         """
         Convert a reference position at the origin corner to world coords.
@@ -513,7 +513,7 @@ class MachineSpace(CoordinateSpace):
     def world_item_to_machine(
         self,
         pos: Point,
-        size: Tuple[float, float],
+        size: tuple[float, float],
     ) -> Point:
         """
         Convert item position from world space to machine space.
@@ -561,7 +561,7 @@ class MachineSpace(CoordinateSpace):
     def machine_item_to_world(
         self,
         pos: Point,
-        size: Tuple[float, float],
+        size: tuple[float, float],
     ) -> Point:
         """
         Convert item position from machine space to world space.

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from raygeo.geo.types import Point
 
@@ -71,7 +71,7 @@ class HorizontalConstraint(Constraint):
             )
         return ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "HorizontalConstraint",
             "p1": self.p1,
@@ -80,7 +80,7 @@ class HorizontalConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "HorizontalConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> "HorizontalConstraint":
         return cls(
             p1=data["p1"],
             p2=data["p2"],
@@ -94,7 +94,7 @@ class HorizontalConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         return {
             self.p1: [(0.0, 1.0)],
             self.p2: [(0.0, -1.0)],

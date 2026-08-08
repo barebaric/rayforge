@@ -2,8 +2,9 @@ import asyncio
 import logging
 import re
 import threading
+from collections.abc import Awaitable
 from enum import Enum, auto
-from typing import Awaitable, Callable, List, NamedTuple, Optional
+from typing import Callable, NamedTuple, Optional
 
 from .serial import SerialTransport
 from .transport import Transport
@@ -96,7 +97,7 @@ class GrblSerialTransport:
     def status_changed(self):
         return self._transport.status_changed
 
-    def parse_incoming(self, data: bytes) -> List[GrblResponse]:
+    def parse_incoming(self, data: bytes) -> list[GrblResponse]:
         """
         Parse raw serial bytes into GRBL responses.
 
@@ -110,7 +111,7 @@ class GrblSerialTransport:
         """
         self._log_rx(data)
         self._status_buffer.extend(data)
-        responses: List[GrblResponse] = []
+        responses: list[GrblResponse] = []
 
         self._extract_acks_from_buffer(responses)
 

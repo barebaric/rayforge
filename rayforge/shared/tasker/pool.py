@@ -15,7 +15,7 @@ from multiprocessing.managers import DictProxy
 from multiprocessing.process import BaseProcess
 from multiprocessing.queues import Queue as MpQueue
 from queue import Empty
-from typing import Any, Callable, List, Optional, Set, Tuple
+from typing import Any, Callable, Optional
 
 from blinker import Signal
 
@@ -63,7 +63,7 @@ def _worker_main_loop(
     result_queue: MpQueue,
     log_level: int,
     initializer: Optional[Callable[..., None]],
-    initargs: Tuple[Any, ...],
+    initargs: tuple[Any, ...],
     adoption_signals: DictProxy[str, bool],
     shared_state: DictProxy[str, Any],
 ):
@@ -259,7 +259,7 @@ class WorkerPoolManager:
         self,
         num_workers: int | None = None,
         initializer: Optional[Callable[..., None]] = None,
-        initargs: Tuple[Any, ...] = (),
+        initargs: tuple[Any, ...] = (),
         shared_state: Optional[DictProxy[str, Any]] = None,
     ):
         if num_workers is None:
@@ -281,11 +281,11 @@ class WorkerPoolManager:
             self._shared_state = shared_state
         else:
             self._shared_state = self._manager.dict()
-        self._workers: List[BaseProcess] = []
-        self._cancelled_task_ids: Set[int] = set()
+        self._workers: list[BaseProcess] = []
+        self._cancelled_task_ids: set[int] = set()
         self._lock = threading.Lock()
         self._worker_shutdown_info: dict[int, tuple[int, Any | None]] = {}
-        self._worker_task_map: dict[int, Tuple[Any, int]] = {}
+        self._worker_task_map: dict[int, tuple[Any, int]] = {}
         self._pid_to_worker: dict[int, BaseProcess] = {}
         self._health_check_counter = 0
         self._shutting_down = False

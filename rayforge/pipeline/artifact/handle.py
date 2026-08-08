@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Optional
 
-_handle_registry: Dict[str, Type["BaseArtifactHandle"]] = {}
+_handle_registry: dict[str, type["BaseArtifactHandle"]] = {}
 
 
 class BaseArtifactHandle(ABC):
@@ -13,7 +13,7 @@ class BaseArtifactHandle(ABC):
         handle_class_name: str,
         artifact_type_name: str,
         generation_id: int,
-        array_metadata: Optional[Dict[str, Any]] = None,
+        array_metadata: Optional[dict[str, Any]] = None,
         **_kwargs,
     ):
         self.key = key
@@ -24,7 +24,7 @@ class BaseArtifactHandle(ABC):
             array_metadata if array_metadata is not None else {}
         )
         self.refcount: int = 1
-        self.holders: List[str] = []
+        self.holders: list[str] = []
 
     def __init_subclass__(cls, **kwargs):
         """
@@ -34,7 +34,7 @@ class BaseArtifactHandle(ABC):
         super().__init_subclass__(**kwargs)
         _handle_registry[cls.__name__] = cls
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Serializes the handle to a dictionary. Subclasses will be handled
         correctly.
@@ -57,7 +57,7 @@ class BaseArtifactHandle(ABC):
 
     @classmethod
     def from_dict(
-        cls: Type[Any], data: Dict[str, Any]
+        cls: type[Any], data: dict[str, Any]
     ) -> "BaseArtifactHandle":
         # This simple deserialization works for direct instantiation, but the
         # factory function below should be used for polymorphic
@@ -65,7 +65,7 @@ class BaseArtifactHandle(ABC):
         return cls(**data)
 
 
-def create_handle_from_dict(data: Dict[str, Any]) -> "BaseArtifactHandle":
+def create_handle_from_dict(data: dict[str, Any]) -> "BaseArtifactHandle":
     """
     Factory function to reconstruct the correct, typed handle subclass from a
     dictionary.

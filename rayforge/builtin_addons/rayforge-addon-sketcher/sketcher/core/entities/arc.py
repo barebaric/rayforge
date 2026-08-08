@@ -1,5 +1,6 @@
 import math
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.geo import Geometry
 from raygeo.geo.shape.arc import (
@@ -36,23 +37,23 @@ class Arc(Entity):
         self.clockwise = clockwise
         self.type = "arc"
 
-    def get_state(self) -> Optional[Dict[str, Any]]:
+    def get_state(self) -> Optional[dict[str, Any]]:
         state = super().get_state() or {}
         state["clockwise"] = self.clockwise
         return state
 
-    def set_state(self, state: Dict[str, Any]) -> None:
+    def set_state(self, state: dict[str, Any]) -> None:
         super().set_state(state)
         if "clockwise" in state:
             self.clockwise = state["clockwise"]
 
-    def get_point_ids(self) -> List[EntityID]:
+    def get_point_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx, self.center_idx]
 
-    def get_endpoint_ids(self) -> List[EntityID]:
+    def get_endpoint_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx]
 
-    def get_junction_point_ids(self) -> List[EntityID]:
+    def get_junction_point_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx, self.center_idx]
 
     def hit_test(
@@ -212,7 +213,7 @@ class Arc(Entity):
 
         return vertices
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the Arc to a dictionary."""
         data = super().to_dict()
         data.update(
@@ -226,7 +227,7 @@ class Arc(Entity):
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Arc":
+    def from_dict(cls, data: dict[str, Any]) -> "Arc":
         """Deserializes a dictionary into an Arc instance."""
         return cls(
             id=data["id"],

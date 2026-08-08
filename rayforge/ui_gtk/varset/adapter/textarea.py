@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 from gi.repository import Adw, Gtk
 
@@ -16,7 +16,7 @@ class TextAreaAdapter(RowAdapter):
     @classmethod
     def create(
         cls, var: Var, target_property: str
-    ) -> Tuple[Adw.PreferencesRow, "TextAreaAdapter"]:
+    ) -> tuple[Adw.PreferencesRow, "TextAreaAdapter"]:
         row = Adw.ExpanderRow(title=escape_title(var.label))
         if var.description:
             row.set_subtitle(var.description)

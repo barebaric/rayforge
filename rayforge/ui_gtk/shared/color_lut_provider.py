@@ -6,7 +6,7 @@ Builds the per-laser and fallback colour lookup tables consumed by the
 longer assemble raw arrays themselves.
 """
 
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -33,7 +33,7 @@ class ColorLutProvider:
     def __init__(
         self,
         color_set: ColorSet,
-        laser_color_sets: Dict[str, ColorSet],
+        laser_color_sets: dict[str, ColorSet],
     ):
         self._color_set = color_set
         self._laser_color_sets = laser_color_sets
@@ -50,7 +50,7 @@ class ColorLutProvider:
         """
         Build a provider from a machine's laser heads and a theme ColorSet.
         """
-        laser_color_sets: Dict[str, ColorSet] = {}
+        laser_color_sets: dict[str, ColorSet] = {}
         if machine is not None:
             for laser in machine.heads:
                 if not isinstance(laser, LaserHead):
@@ -65,7 +65,7 @@ class ColorLutProvider:
         return self._color_set
 
     @property
-    def laser_color_sets(self) -> Dict[str, ColorSet]:
+    def laser_color_sets(self) -> dict[str, ColorSet]:
         """Per-laser colour sets keyed by laser UID."""
         return self._laser_color_sets
 

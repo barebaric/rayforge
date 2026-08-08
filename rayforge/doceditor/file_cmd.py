@@ -11,11 +11,7 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Callable,
-    List,
     Optional,
-    Set,
-    Tuple,
-    Type,
     cast,
 )
 
@@ -73,12 +69,12 @@ _COOLANT_MODE_LABELS = {
 
 def _unsupported_coolant_labels(
     doc: "Doc", machine: Optional["Machine"]
-) -> List[str]:
+) -> list[str]:
     """Human-readable labels of coolant methods used by the doc's steps
     that the current machine does not support."""
     if machine is None:
         return []
-    unsupported: Set[CoolantMode] = set()
+    unsupported: set[CoolantMode] = set()
     for layer in doc.layers:
         if not layer.workflow:
             continue
@@ -100,7 +96,7 @@ class PreviewResult:
     payload: Optional[ImportPayload]
     parse_result: Optional[ParsingResult]  # Context for rendering
     aspect_ratio: float = 1.0
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     content_bounds: Optional[Rect] = None
 
 
@@ -125,7 +121,7 @@ class FileCmd:
 
     def get_importer_info(
         self, file_path: Path, mime_type: Optional[str]
-    ) -> Tuple[Optional[Type[Importer]], Set[ImporterFeature]]:
+    ) -> tuple[Optional[type[Importer]], set[ImporterFeature]]:
         """
         Finds the importer for a file and returns its class and feature set.
         """
@@ -364,7 +360,7 @@ class FileCmd:
         )
 
     def _extract_first_workpiece(
-        self, items: List[DocItem]
+        self, items: list[DocItem]
     ) -> Optional[WorkPiece]:
         """Recursively extract the first WorkPiece from a list of items."""
         for item in items:
@@ -396,7 +392,7 @@ class FileCmd:
             importer.get_doc_items, vectorization_spec
         )
 
-    def _get_positionable_content(self, items: List[DocItem]) -> List[DocItem]:
+    def _get_positionable_content(self, items: list[DocItem]) -> list[DocItem]:
         """
         Extracts the actual content (WorkPieces, Groups) from a list of
         imported items, looking inside any top-level Layer containers.
@@ -411,7 +407,7 @@ class FileCmd:
 
     def _position_newly_imported_items(
         self,
-        items: List[DocItem],
+        items: list[DocItem],
         position_mm: Optional[Point],
     ):
         """
@@ -457,7 +453,7 @@ class FileCmd:
             )
 
     @staticmethod
-    def _unwrap_item(item: DocItem) -> List[DocItem]:
+    def _unwrap_item(item: DocItem) -> list[DocItem]:
         """Extract content items from a Layer, or return the item itself."""
         if isinstance(item, Layer):
             return item.get_content_items()
@@ -465,10 +461,10 @@ class FileCmd:
 
     def _resolve_destinations(
         self,
-        items: List[DocItem],
+        items: list[DocItem],
         mode: LayerImportMode,
         target_layer: Optional[Layer] = None,
-    ) -> List[Tuple[DocItem, DocItem]]:
+    ) -> list[tuple[DocItem, DocItem]]:
         """
         Resolve each item to a (owner, item) pair based on the import mode.
         Returns a flat list of (destination_owner, item_to_add) tuples.
@@ -478,7 +474,7 @@ class FileCmd:
             target_layer or self._editor.default_workpiece_layer,
         )
         doc = self._editor.doc
-        pairs: List[Tuple[DocItem, DocItem]] = []
+        pairs: list[tuple[DocItem, DocItem]] = []
 
         if mode == LayerImportMode.MAP_TO_EXISTING:
             existing = doc.layers
@@ -506,12 +502,12 @@ class FileCmd:
 
     def _commit_items_to_document(
         self,
-        items: List[DocItem],
+        items: list[DocItem],
         source: Optional[SourceAsset],
         filename: Path,
-        assets: Optional[List["IAsset"]] = None,
+        assets: Optional[list["IAsset"]] = None,
         vectorization_spec: Optional[VectorizationSpec] = None,
-    ) -> List[Layer]:
+    ) -> list[Layer]:
         """
         Adds the imported items and their source to the document model using
         the history manager.
@@ -710,7 +706,7 @@ class FileCmd:
 
     def execute_batch_import(
         self,
-        files: List[Path],
+        files: list[Path],
         spec: VectorizationSpec,
         pos: Optional[Point],
     ):
@@ -726,7 +722,7 @@ class FileCmd:
 
     def _calculate_items_bbox(
         self,
-        items: List[DocItem],
+        items: list[DocItem],
     ) -> Optional[Rect]:
         """
         Calculates the world-space bounding box that encloses a list of
@@ -787,7 +783,7 @@ class FileCmd:
 
         return min_x, min_y, max_x - min_x, max_y - min_y
 
-    def _scale_to_fit_if_oversized(self, items: List[DocItem]) -> float:
+    def _scale_to_fit_if_oversized(self, items: list[DocItem]) -> float:
         """
         Scales items to fit within machine work area if they are too
         large, preserving aspect ratio.
@@ -850,7 +846,7 @@ class FileCmd:
 
         return scale_factor
 
-    def _position_at_reference_origin(self, items: List[DocItem]):
+    def _position_at_reference_origin(self, items: list[DocItem]):
         """
         Positions items at the reference origin.
 
@@ -898,7 +894,7 @@ class FileCmd:
                 item.matrix = translation_matrix @ item.matrix
 
     def _show_scale_down_notification(
-        self, content_items: List[DocItem], scale_factor: float
+        self, content_items: list[DocItem], scale_factor: float
     ):
         """
         Shows a persistent notification that the imported item was scaled
@@ -1054,7 +1050,7 @@ class FileCmd:
             raise ValueError(
                 f"No exporter registered for extension {file_path.suffix}"
             )
-        exporter = cast(Type[Exporter], exporter_cls)(workpiece)
+        exporter = cast(type[Exporter], exporter_cls)(workpiece)
         return self._do_export(file_path, exporter)
 
     def _do_export(self, file_path: Path, exporter) -> bool:
@@ -1283,7 +1279,7 @@ class FileCmd:
 
     def _finalize_reimport(
         self,
-        items: List[DocItem],
+        items: list[DocItem],
         position_mm: Optional[Point],
         vectorization_spec: Optional[VectorizationSpec] = None,
         target_layer: Optional[Layer] = None,

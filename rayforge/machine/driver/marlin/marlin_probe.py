@@ -4,12 +4,8 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Optional,
     Protocol,
-    Tuple,
-    Type,
     runtime_checkable,
 )
 
@@ -55,17 +51,17 @@ class _MarlinProbeDriver(Protocol):
 
     async def cleanup(self) -> None: ...
 
-    async def execute_interactive_command(self, command: str) -> List[str]: ...
+    async def execute_interactive_command(self, command: str) -> list[str]: ...
 
     @property
-    def boot_lines(self) -> List[str]: ...
+    def boot_lines(self) -> list[str]: ...
 
 
 async def probe_marlin_device(
-    driver_cls: Type[_MarlinProbeDriver],
+    driver_cls: type[_MarlinProbeDriver],
     context: "RayforgeContext",
     **kwargs: Any,
-) -> Tuple["DeviceProfile", List[str]]:
+) -> tuple["DeviceProfile", list[str]]:
     """
     Shared probe orchestration for all Marlin drivers.
 
@@ -109,12 +105,12 @@ async def probe_marlin_device(
 
 
 def build_marlin_profile(
-    m115_lines: List[str],
-    m211_lines: List[str],
-    m503_lines: List[str],
-    m149_lines: List[str],
-    boot_lines: Optional[List[str]] = None,
-) -> Tuple["DeviceProfile", List[str]]:
+    m115_lines: list[str],
+    m211_lines: list[str],
+    m503_lines: list[str],
+    m149_lines: list[str],
+    boot_lines: Optional[list[str]] = None,
+) -> tuple["DeviceProfile", list[str]]:
     """
     Build a ``DeviceProfile`` from raw Marlin M115, M211, M503, and
     M149 response lines.
@@ -134,12 +130,12 @@ def build_marlin_profile(
     )
 
     boot = boot_lines or []
-    warnings: List[str] = []
+    warnings: list[str] = []
 
     name = extract_marlin_device_name(m115_lines, boot)
 
     fw_info = parse_m115_firmware_info(m115_lines)
-    driver_config: Dict[str, Any] = {}
+    driver_config: dict[str, Any] = {}
     fw_name = fw_info.get("firmware_name", "")
     if fw_name:
         for line in boot:
@@ -149,7 +145,7 @@ def build_marlin_profile(
                 break
         driver_config["firmware_version"] = fw_name
 
-    extents: Optional[Tuple[float, float]] = None
+    extents: Optional[tuple[float, float]] = None
     endstops = parse_m211_endstops(m211_lines)
     if endstops is not None:
         x_max, y_max = endstops

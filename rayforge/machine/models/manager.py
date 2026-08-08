@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 import yaml
 from blinker import Signal
@@ -19,8 +19,8 @@ class MachineManager:
     def __init__(self, base_dir: Path):
         base_dir.mkdir(parents=True, exist_ok=True)
         self.base_dir = base_dir
-        self.controllers: Dict[str, MachineController] = dict()
-        self.machines: Dict[str, Machine] = dict()
+        self.controllers: dict[str, MachineController] = dict()
+        self.machines: dict[str, Machine] = dict()
         self.machine_added = Signal()
         self.machine_removed = Signal()
         self.machine_updated = Signal()
@@ -198,7 +198,7 @@ class MachineManager:
     def get_machine_by_id(self, machine_id):
         return self.machines.get(machine_id)
 
-    def get_machines(self) -> List["Machine"]:
+    def get_machines(self) -> list["Machine"]:
         """Returns a list of all managed machines, sorted by name."""
         return sorted(list(self.machines.values()), key=lambda m: m.name)
 

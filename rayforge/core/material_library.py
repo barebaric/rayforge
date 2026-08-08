@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 import yaml
 
@@ -29,7 +29,7 @@ class MaterialLibrary:
         """
         self._directory = directory
         self._read_only = read_only
-        self._materials: Dict[str, Material] = {}
+        self._materials: dict[str, Material] = {}
         self._loaded = False
         self._display_name: str = ""
         self._library_id: str = ""
@@ -214,7 +214,7 @@ class MaterialLibrary:
 
         return self._materials.get(uid)
 
-    def get_all_materials(self) -> List[Material]:
+    def get_all_materials(self) -> list[Material]:
         """
         Get all materials in the library.
 

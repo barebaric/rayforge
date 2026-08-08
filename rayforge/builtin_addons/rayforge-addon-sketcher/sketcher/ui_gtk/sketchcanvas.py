@@ -1,7 +1,7 @@
 import logging
 import math
 from gettext import gettext as _
-from typing import List, Optional, cast
+from typing import Optional, cast
 
 from gi.repository import Adw, Gdk, Gtk
 from raygeo.geo import Matrix
@@ -128,7 +128,7 @@ class SketchCanvas(WorldSurface):
 
         self.queue_draw()
 
-    def set_camera_controllers(self, controllers: List[CameraController]):
+    def set_camera_controllers(self, controllers: list[CameraController]):
         """Sets the camera controllers and creates/removes camera elements."""
         current_elements = self._camera_elements
         current_controllers = set(current_elements.keys())

@@ -3,10 +3,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
     Generic,
     Optional,
-    Type,
     TypeVar,
 )
 
@@ -31,7 +29,7 @@ class Var(Generic[T]):
     validation, and data handling.
     """
 
-    _registry: Dict[str, Type["Var"]] = {}
+    _registry: dict[str, type["Var"]] = {}
 
     display_name: Optional[str] = None
 
@@ -43,7 +41,7 @@ class Var(Generic[T]):
         self,
         key: str,
         label: str,
-        var_type: Type[T],
+        var_type: type[T],
         description: Optional[str] = None,
         default: Optional[T] = None,
         value: Optional[T] = None,
@@ -225,7 +223,7 @@ class Var(Generic[T]):
                 old_value=old_effective_value,
             )
 
-    def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
+    def to_dict(self, include_value: bool = False) -> dict[str, Any]:
         """
         Serializes the Var's definition to a dictionary.
 

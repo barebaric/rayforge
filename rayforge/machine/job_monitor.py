@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import time
 from collections import deque
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from blinker import Signal
 from raygeo.geo.types import Point3D
@@ -38,7 +38,7 @@ class JobMonitor:
         self.start_time = time.monotonic()
 
         # Create a map from op_index to the distance of that op
-        self._distance_map: Dict[int, float] = {}
+        self._distance_map: dict[int, float] = {}
         last_point: Optional[Point3D] = None
         for i in range(ops.len()):
             dist = ops.distance_at(i, last_point)
@@ -55,7 +55,7 @@ class JobMonitor:
         self.progress_updated = Signal()
 
     @property
-    def metrics(self) -> Dict[str, Any]:
+    def metrics(self) -> dict[str, Any]:
         """Returns the current progress metrics as a dictionary."""
         progress_fraction = (
             self.traveled_distance / self.total_distance

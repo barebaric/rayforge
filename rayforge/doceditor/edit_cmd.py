@@ -1,14 +1,10 @@
 import logging
 import uuid
+from collections.abc import Sequence
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
-    Dict,
-    List,
     Optional,
-    Sequence,
-    Set,
-    Tuple,
     cast,
 )
 
@@ -40,9 +36,9 @@ class EditCmd:
     def __init__(self, editor: "DocEditor"):
         self._editor = editor
         # Module-level state for the clipboard is now instance state
-        self._clipboard_snapshot: List[Dict] = []
+        self._clipboard_snapshot: list[dict] = []
         self._paste_counter = 0
-        self._paste_increment_mm: Tuple[float, float] = (10.0, -10.0)
+        self._paste_increment_mm: tuple[float, float] = (10.0, -10.0)
 
     def can_paste(self) -> bool:
         """Checks if there is anything on the clipboard to paste."""
@@ -50,7 +46,7 @@ class EditCmd:
 
     def _get_top_level_items(
         self, all_items: Sequence[DocItem]
-    ) -> List[DocItem]:
+    ) -> list[DocItem]:
         """From a list of items, returns only the top-level ones."""
         if not all_items:
             return []
@@ -69,7 +65,7 @@ class EditCmd:
                 top_level.append(item)
         return top_level
 
-    def copy_items(self, items: List[DocItem]):
+    def copy_items(self, items: list[DocItem]):
         """
         Snapshots the current state of the selected items for the clipboard
         and resets the paste sequence. It only copies the top-level items
@@ -87,7 +83,7 @@ class EditCmd:
             "Paste counter set to 1."
         )
 
-    def cut_items(self, items: List[DocItem]):
+    def cut_items(self, items: list[DocItem]):
         """
         Copies the selected items to the clipboard and then removes them
         from the document in a single undoable transaction.
@@ -101,7 +97,7 @@ class EditCmd:
 
         self.remove_items(items, "Cut item(s)")
 
-    def paste_items(self) -> List[DocItem]:
+    def paste_items(self) -> list[DocItem]:
         """
         Pastes a new set of items from the clipboard snapshot. It creates new
         unique IDs for all pasted items and their children, and applies a
@@ -157,7 +153,7 @@ class EditCmd:
 
         return newly_pasted_items
 
-    def duplicate_items(self, items: List[DocItem]) -> List[DocItem]:
+    def duplicate_items(self, items: list[DocItem]) -> list[DocItem]:
         """
         Creates an exact copy of the selected items in the same location.
         This operation is a single undoable transaction.
@@ -198,11 +194,11 @@ class EditCmd:
 
     def add_items(
         self,
-        items: List[DocItem],
-        source_assets: Optional[List["SourceAsset"]] = None,
-        assets: Optional[List["IAsset"]] = None,
+        items: list[DocItem],
+        source_assets: Optional[list["SourceAsset"]] = None,
+        assets: Optional[list["IAsset"]] = None,
         name: str = "Add item(s)",
-    ) -> List[DocItem]:
+    ) -> list[DocItem]:
         """
         Adds a list of items and their associated source assets to the
         document.
@@ -238,7 +234,7 @@ class EditCmd:
 
     def remove_items(
         self,
-        items: List[DocItem],
+        items: list[DocItem],
         transaction_name: str = "Remove item(s)",
     ):
         """Removes a list of items from the document."""
@@ -305,7 +301,7 @@ class EditCmd:
     def delete_contours(
         self,
         workpiece: WorkPiece,
-        indices_to_remove: Set[int],
+        indices_to_remove: set[int],
     ):
         """Removes selected contours from a workpiece's boundaries.
 
@@ -357,7 +353,7 @@ class EditCmd:
     def delete_segments(
         self,
         workpiece: WorkPiece,
-        segment_indices: Set[int],
+        segment_indices: set[int],
     ):
         """Removes selected segments from a workpiece's boundaries.
 
@@ -406,7 +402,7 @@ class EditCmd:
     def add_geometry_provider_instance(
         self,
         provider_uid: str,
-        position_mm: Tuple[float, float],
+        position_mm: tuple[float, float],
         target_layer: Optional["Layer"] = None,
     ) -> WorkPiece:
         """

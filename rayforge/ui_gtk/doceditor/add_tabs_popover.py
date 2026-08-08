@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from gi.repository import Gtk
 
@@ -20,7 +20,7 @@ class AddTabsPopover(Gtk.Popover):
     def __init__(
         self,
         editor: DocEditor,
-        workpieces: List[WorkPiece],
+        workpieces: list[WorkPiece],
     ):
         super().__init__()
         self.editor = editor

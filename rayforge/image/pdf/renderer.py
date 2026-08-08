@@ -1,7 +1,7 @@
 import io
 import logging
 import warnings
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
@@ -26,7 +26,7 @@ class PdfRenderer(RasterRenderer):
     def compute_render_spec(
         self,
         segment: Optional["SourceAssetSegment"],
-        target_size: Tuple[int, int],
+        target_size: tuple[int, int],
         source_context: "RenderContext",
     ) -> "RenderSpecification":
         target_width, target_height = target_size
@@ -110,7 +110,7 @@ class PdfRenderer(RasterRenderer):
             import_result, target_width, target_height
         )
 
-    def _get_page_points(self, data: bytes) -> Optional[Tuple[float, float]]:
+    def _get_page_points(self, data: bytes) -> Optional[tuple[float, float]]:
         try:
             reader = PdfReader(io.BytesIO(data))
             mb = reader.pages[0].mediabox

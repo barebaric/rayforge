@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 from gi.repository import Gtk
 
@@ -15,7 +15,7 @@ css = """
 class Shortcut(Gtk.Box):
     def __init__(
         self,
-        keys: List[str],
+        keys: list[str],
         description: Optional[str] = None,
         separator: str = "+",
         **kwargs,

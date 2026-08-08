@@ -14,7 +14,7 @@ later steps adaptively.
 """
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -100,7 +100,7 @@ class WizardPage(Adw.Bin):
         """
         return True
 
-    def footer_buttons(self) -> List[Gtk.Button]:
+    def footer_buttons(self) -> list[Gtk.Button]:
         """Action buttons this page wants in the wizard's footer bar.
 
         Pages construct their buttons once in :meth:`build_ui` and
@@ -136,7 +136,7 @@ def _makePreferencesGroup(
     description: Optional[str] = None,
 ) -> Adw.PreferencesGroup:
     """Helper constructor that omits None titles entirely."""
-    kwargs: Dict[str, Any] = {}
+    kwargs: dict[str, Any] = {}
     if title:
         kwargs["title"] = title
     if description:

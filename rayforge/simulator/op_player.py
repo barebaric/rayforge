@@ -1,5 +1,5 @@
 from bisect import bisect_right
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 from blinker import Signal
 from raygeo.ops import Ops
@@ -29,7 +29,7 @@ def build_snapshots(
     ops: Ops,
     machine: Machine,
     doc: Doc,
-) -> List[Tuple[int, MachineState, Axis, Optional[Axis]]]:
+) -> list[tuple[int, MachineState, Axis, Optional[Axis]]]:
     """Build the seek-acceleration snapshots for *ops*.
 
     Returns a fresh list of ``(target, state, source_axis, rotary_axis)``
@@ -41,7 +41,7 @@ def build_snapshots(
     if n <= _SNAPSHOT_INTERVAL:
         return []
     builder = SnapshotBuilder(ops, machine, doc, create_home_state(machine))
-    snapshots: List[Tuple[int, MachineState, Axis, Optional[Axis]]] = []
+    snapshots: list[tuple[int, MachineState, Axis, Optional[Axis]]] = []
     for target in range(_SNAPSHOT_INTERVAL, n, _SNAPSHOT_INTERVAL):
         builder.advance_to(target - 1)
         # reached_textures is only needed for real-time playback,
@@ -85,20 +85,20 @@ class OpPlayer:
         self._rotary_axis: Optional[Axis] = None
         self._prev_layer_uid: Optional[str] = None
         self.state = self._create_home_state()
-        self._home_axes: Dict[Axis, float] = dict(self.state.axes)
+        self._home_axes: dict[Axis, float] = dict(self.state.axes)
         self.layer_changed = Signal()
-        self._snapshots: List[
-            Tuple[int, MachineState, Axis, Optional[Axis]]
+        self._snapshots: list[
+            tuple[int, MachineState, Axis, Optional[Axis]]
         ] = []
         # Playback time model: feed/rapid rates in mm/min, accel in
         # mm/s^2. Defaults match the raygeo cumulative-time index.
-        self._play_params: Tuple[float, float, float] = (
+        self._play_params: tuple[float, float, float] = (
             1000.0,
             3000.0,
             1000.0,
         )
         self._sim_time: float = 0.0
-        self._playback: Tuple[int, float] = (0, 0.0)
+        self._playback: tuple[int, float] = (0, 0.0)
         if build_snapshots:
             self._build_snapshots()
 
@@ -146,7 +146,7 @@ class OpPlayer:
         self._sim_time = float(t)
         self._playback = self._compute_playback_progress(self._sim_time)
 
-    def playback_progress(self) -> Tuple[int, float]:
+    def playback_progress(self) -> tuple[int, float]:
         """Return ``(in_progress_command_index, fraction)`` for the
         current simulated time.
 
@@ -155,7 +155,7 @@ class OpPlayer:
         """
         return self._playback
 
-    def _compute_playback_progress(self, t: float) -> Tuple[int, float]:
+    def _compute_playback_progress(self, t: float) -> tuple[int, float]:
         n = self.ops.len()
         if n == 0:
             return (0, 0.0)

@@ -1,5 +1,6 @@
 import math
-from typing import TYPE_CHECKING, Iterator, Optional
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Optional
 
 from raygeo.geo.types import Point as GeoPoint
 

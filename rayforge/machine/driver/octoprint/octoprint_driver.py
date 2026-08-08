@@ -2,14 +2,12 @@ import asyncio
 import inspect
 import json
 import logging
+from collections.abc import Awaitable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
     Callable,
-    Dict,
-    List,
     Optional,
     Union,
     cast,
@@ -49,7 +47,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_STATE_MAP: Dict[str, DeviceStatus] = {
+_STATE_MAP: dict[str, DeviceStatus] = {
     "Operational": DeviceStatus.IDLE,
     "Printing": DeviceStatus.RUN,
     "Pausing": DeviceStatus.HOLD,
@@ -407,7 +405,7 @@ class OctoPrintDriver(Driver):
                 continue
             self._process_push_message(payload)
 
-    def _process_push_message(self, payload: Dict[str, Any]) -> None:
+    def _process_push_message(self, payload: dict[str, Any]) -> None:
         if "current" in payload:
             self._handle_current_update(payload["current"])
         elif "history" in payload:
@@ -415,7 +413,7 @@ class OctoPrintDriver(Driver):
         elif "event" in payload:
             self._handle_event(payload["event"])
 
-    def _handle_current_update(self, data: Dict[str, Any]) -> None:
+    def _handle_current_update(self, data: dict[str, Any]) -> None:
         state = data.get("state")
         if state:
             self._update_state_from_octoprint(state)
@@ -426,7 +424,7 @@ class OctoPrintDriver(Driver):
             if completion is not None:
                 self._update_job_progress(completion)
 
-    def _handle_event(self, event: Dict[str, Any]) -> None:
+    def _handle_event(self, event: dict[str, Any]) -> None:
         event_type = event.get("type", "")
         if event_type == "PrintDone":
             self._on_job_completed(success=True)
@@ -504,7 +502,7 @@ class OctoPrintDriver(Driver):
 
             await asyncio.sleep(_POLL_INTERVAL)
 
-    def _update_state_from_octoprint(self, state_data: Dict[str, Any]) -> None:
+    def _update_state_from_octoprint(self, state_data: dict[str, Any]) -> None:
         flags = state_data.get("flags", {})
         text = state_data.get("text", "Unknown")
 
@@ -599,7 +597,7 @@ class OctoPrintDriver(Driver):
 
         url = f"{self._base_url}/api/files/local"
         assert self._api_key is not None
-        headers: Dict[str, str] = {"X-Api-Key": self._api_key}
+        headers: dict[str, str] = {"X-Api-Key": self._api_key}
 
         log_data = f"POST {url} with file '{filename}' size {len(gcode)}"
         logger.debug(
@@ -740,7 +738,7 @@ class OctoPrintDriver(Driver):
         return True
 
     async def jog(self, speed: int, **deltas: float) -> None:
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "command": "jog",
             "speed": self._to_machine_speed(speed),
         }
@@ -771,7 +769,7 @@ class OctoPrintDriver(Driver):
             )
         )
 
-    def get_setting_vars(self) -> List["VarSet"]:
+    def get_setting_vars(self) -> list["VarSet"]:
         return []
 
     async def clear_alarm(self) -> None:
@@ -825,7 +823,7 @@ class OctoPrintDriver(Driver):
             json={"command": cmd},
         )
 
-    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+    async def read_wcs_offsets(self) -> dict[str, Pos]:
         return {}
 
     async def run_probe_cycle(

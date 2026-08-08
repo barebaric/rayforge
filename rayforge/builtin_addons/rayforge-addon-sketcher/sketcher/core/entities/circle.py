@@ -1,5 +1,6 @@
 import math
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.geo import Geometry
 from raygeo.geo.shape.circle import (
@@ -29,13 +30,13 @@ class Circle(Entity):
         self.radius_pt_idx: EntityID = radius_pt_idx
         self.type = "circle"
 
-    def get_point_ids(self) -> List[EntityID]:
+    def get_point_ids(self) -> list[EntityID]:
         return [self.center_idx, self.radius_pt_idx]
 
-    def get_endpoint_ids(self) -> List[EntityID]:
+    def get_endpoint_ids(self) -> list[EntityID]:
         return []
 
-    def get_junction_point_ids(self) -> List[EntityID]:
+    def get_junction_point_ids(self) -> list[EntityID]:
         return [self.center_idx, self.radius_pt_idx]
 
     def hit_test(
@@ -57,7 +58,7 @@ class Circle(Entity):
         dist_mouse = math.hypot(mx - center.x, my - center.y)
         return abs(dist_mouse - radius) < threshold
 
-    def get_ignorable_unconstrained_points(self) -> List[EntityID]:
+    def get_ignorable_unconstrained_points(self) -> list[EntityID]:
         """
         If the circle is geometrically constrained, the radius point (which
         acts only as a handle for the radius value) does not need to be
@@ -147,7 +148,7 @@ class Circle(Entity):
         geo.arc_to(radius_pt.x, radius_pt.y, dx, dy, clockwise=False)
         return geo
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the Circle to a dictionary."""
         data = super().to_dict()
         data.update(
@@ -159,7 +160,7 @@ class Circle(Entity):
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Circle":
+    def from_dict(cls, data: dict[str, Any]) -> "Circle":
         """Deserializes a dictionary into a Circle instance."""
         return cls(
             id=data["id"],

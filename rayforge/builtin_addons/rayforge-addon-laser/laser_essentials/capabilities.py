@@ -5,7 +5,7 @@ MATERIAL_TEST) and the ``LaserHeadVar`` settings var.
 """
 
 from gettext import gettext as _
-from typing import Dict, Optional
+from typing import Optional
 
 from rayforge.context import get_context
 from rayforge.core.capability import MachineCapability, StepCapability
@@ -45,8 +45,8 @@ class LaserHeadVar(ChoiceVar):
             default: The default value (a laser head UID).
             value: The initial value. If provided, it overrides the default.
         """
-        self.name_to_uid_map: Dict[str, str] = {}
-        self.uid_to_name_map: Dict[str, str] = {}
+        self.name_to_uid_map: dict[str, str] = {}
+        self.uid_to_name_map: dict[str, str] = {}
         head_names: list[str] = []
 
         active_machine = get_context().machine

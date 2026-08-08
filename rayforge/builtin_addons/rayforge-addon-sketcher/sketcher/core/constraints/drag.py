@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from raygeo.geo.types import Point
 
@@ -52,7 +52,7 @@ class DragConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         return {
             self.point_id: [(self.weight, 0.0), (0.0, self.weight)],
         }

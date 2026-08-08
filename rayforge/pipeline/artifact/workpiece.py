@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional
 
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
@@ -16,13 +16,13 @@ class WorkPieceArtifactHandle(BaseArtifactHandle):
     def __init__(
         self,
         is_scalable: bool,
-        generation_size: Tuple[float, float],
+        generation_size: tuple[float, float],
         key: str,
         handle_class_name: str,
         artifact_type_name: str,
         generation_id: int,
-        source_dimensions: Optional[Tuple[float, float]] = None,
-        array_metadata: Optional[Dict[str, Any]] = None,
+        source_dimensions: Optional[tuple[float, float]] = None,
+        array_metadata: Optional[dict[str, Any]] = None,
         **_kwargs,
     ):
         super().__init__(
@@ -49,9 +49,9 @@ class WorkPieceArtifact(BaseArtifact):
         self,
         ops: "Ops",
         is_scalable: bool,
-        generation_size: Tuple[float, float],
+        generation_size: tuple[float, float],
         generation_id: int,
-        source_dimensions: Optional[Tuple[float, float]] = None,
+        source_dimensions: Optional[tuple[float, float]] = None,
     ):
         super().__init__()
         self.ops = ops

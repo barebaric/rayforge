@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from ..core.color import pick_unused_color
 from ..core.group import Group
@@ -29,7 +29,7 @@ class MoveWorkpiecesLayerCommand(Command):
 
     def __init__(
         self,
-        workpieces: List[WorkPiece],
+        workpieces: list[WorkPiece],
         new_layer: Layer,
         old_layer: Layer,
         name: Optional[str] = None,
@@ -66,7 +66,7 @@ class MoveItemsLayerCommand(Command):
 
     def __init__(
         self,
-        items: List[DocItem],
+        items: list[DocItem],
         new_layer: Layer,
         old_layer: Layer,
         name: Optional[str] = None,
@@ -164,7 +164,7 @@ class LayerCmd:
         self._editor = editor
 
     def move_workpieces_to_layer(
-        self, workpieces: List[WorkPiece], target_layer: Layer
+        self, workpieces: list[WorkPiece], target_layer: Layer
     ):
         """
         Creates an undoable command to move workpieces to a specific layer.
@@ -301,7 +301,7 @@ class LayerCmd:
         )
         self._editor.history_manager.execute(cmd)
 
-    def reorder_layers(self, new_order: List[Layer]):
+    def reorder_layers(self, new_order: list[Layer]):
         """Reorders layers with an undoable command."""
         cmd = ReorderListCommand(
             target_obj=self._editor.doc,
@@ -311,7 +311,7 @@ class LayerCmd:
         )
         self._editor.history_manager.execute(cmd)
 
-    def reorder_workpieces(self, layer: Layer, new_order: List[WorkPiece]):
+    def reorder_workpieces(self, layer: Layer, new_order: list[WorkPiece]):
         """Reorders workpieces within a layer with an undoable command."""
         cmd = ReorderListCommand(
             target_obj=layer,
@@ -322,12 +322,12 @@ class LayerCmd:
         )
         self._editor.history_manager.execute(cmd)
 
-    def move_items_to_layer(self, items: List[DocItem], target_layer: Layer):
+    def move_items_to_layer(self, items: list[DocItem], target_layer: Layer):
         """Creates an undoable command to move items to a specific layer."""
         if not items:
             return
 
-        by_layer: Dict[Layer, List[DocItem]] = {}
+        by_layer: dict[Layer, list[DocItem]] = {}
         for item in items:
             if isinstance(item, (WorkPiece, Group)):
                 layer = item.layer
@@ -348,7 +348,7 @@ class LayerCmd:
                 )
                 t.execute(cmd)
 
-    def reorder_content_items(self, layer: Layer, new_order: List[DocItem]):
+    def reorder_content_items(self, layer: Layer, new_order: list[DocItem]):
         """Reorders content items within a layer with an undoable command."""
         cmd = ReorderListCommand(
             target_obj=layer,

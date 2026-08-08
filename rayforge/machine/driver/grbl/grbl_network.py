@@ -1,16 +1,13 @@
 import asyncio
 import inspect
 import logging
+from collections.abc import Awaitable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
     Callable,
-    Dict,
-    List,
     Optional,
-    Tuple,
     Union,
     cast,
 )
@@ -98,7 +95,7 @@ class GrblNetworkDriver(Driver):
     @classmethod
     async def probe(
         cls, context: "RayforgeContext", **kwargs: Any
-    ) -> Tuple["DeviceProfile", List[str]]:
+    ) -> tuple["DeviceProfile", list[str]]:
         return await probe_grbl_device(cls, context, **kwargs)
 
     @property
@@ -449,7 +446,7 @@ class GrblNetworkDriver(Driver):
             if not self._is_cancelled:
                 self.job_finished.send(self)
 
-    async def execute_interactive_command(self, command: str) -> List[str]:
+    async def execute_interactive_command(self, command: str) -> list[str]:
         """
         Sends a command via HTTP and waits for the full response from the
         WebSocket, including an 'ok' or 'error:'.
@@ -693,7 +690,7 @@ class GrblNetworkDriver(Driver):
     ):
         self._update_connection_status(status, message)
 
-    def get_setting_vars(self) -> List["VarSet"]:
+    def get_setting_vars(self) -> list["VarSet"]:
         return get_grbl_setting_varsets()
 
     async def detect_unit_system(self) -> Optional[UnitSystem]:
@@ -786,7 +783,7 @@ class GrblNetworkDriver(Driver):
         )
         await self.execute_interactive_command(cmd)
 
-    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+    async def read_wcs_offsets(self) -> dict[str, Pos]:
         response_lines = await self.execute_interactive_command("$#")
         offsets = {}
         for line in response_lines:

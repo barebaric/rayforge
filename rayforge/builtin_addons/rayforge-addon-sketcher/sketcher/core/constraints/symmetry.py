@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import cairo
 from raygeo.geo.types import Point
@@ -110,7 +110,7 @@ class SymmetryConstraint(Constraint):
             )
         return ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "SymmetryConstraint",
             "p1": self.p1,
@@ -121,7 +121,7 @@ class SymmetryConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SymmetryConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> "SymmetryConstraint":
         return cls(
             p1=data["p1"],
             p2=data["p2"],
@@ -132,7 +132,7 @@ class SymmetryConstraint(Constraint):
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> List[float]:
+    ) -> list[float]:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
 
@@ -177,7 +177,7 @@ class SymmetryConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         if self.center is not None:
             # P1+P2 - 2C = 0. Safe to use dict literal as keys are distinct.
             return {

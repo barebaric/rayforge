@@ -22,8 +22,9 @@ except ValueError:
 import asyncio
 import gc
 import logging
+from collections.abc import AsyncGenerator
 from functools import partial
-from typing import TYPE_CHECKING, AsyncGenerator
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest

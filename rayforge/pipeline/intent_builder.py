@@ -40,16 +40,12 @@ import hashlib
 import json
 import logging
 import math
+from collections.abc import Mapping, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
-    List,
-    Mapping,
     Optional,
-    Sequence,
-    Tuple,
 )
 
 import numpy as np
@@ -165,21 +161,21 @@ class IntentBuilder:
     def generation_id(self) -> int:
         return self._generation_id
 
-    def build(self, doc: "Doc") -> List[NodeRequest]:
+    def build(self, doc: "Doc") -> list[NodeRequest]:
         """
         Walk *doc* and produce one NodeRequest per workpiece-step pair,
         one per step, and one final job aggregate.
         """
         self._doc = doc
-        nodes: List[NodeRequest] = []
+        nodes: list[NodeRequest] = []
         # Map each step's key to the list of upstream workpiece compute
         # inputs — the step aggregate token and placement depend on all
         # of them.
-        step_compute_inputs: Dict[str, List[Tuple[str, int, WorkPiece]]] = {}
+        step_compute_inputs: dict[str, list[tuple[str, int, WorkPiece]]] = {}
         # Per-step aggregate version tokens, used by the job aggregate
         # token so a position change that invalidates one step's
         # aggregate also invalidates the job aggregate (and encode).
-        step_tokens: Dict[str, int] = {}
+        step_tokens: dict[str, int] = {}
 
         for layer in doc.layers:
             if not layer.workflow or not layer.workflow.steps:
@@ -221,15 +217,15 @@ class IntentBuilder:
         self,
         step: "Step",
         workpieces: "Sequence[WorkPiece]",
-        out: List[NodeRequest],
-    ) -> List[Tuple[str, int, WorkPiece]]:
+        out: list[NodeRequest],
+    ) -> list[tuple[str, int, WorkPiece]]:
         """
         Append one compute NodeRequest per workpiece for *step* and
         return the list of ``(node_key, version_token, workpiece)``
         triples the step aggregate consumes.
         """
         pos_sensitive = step.is_position_sensitive()
-        inputs: List[Tuple[str, int, WorkPiece]] = []
+        inputs: list[tuple[str, int, WorkPiece]] = []
 
         # Parallelise per-workpiece Part construction (rendering + image
         # preprocessing) when we have a reference to the TaskManager's
@@ -237,7 +233,7 @@ class IntentBuilder:
         # (dithering, grayscale, auto-levels) delegates to
         # raygeo Rust code which releases the GIL, so threads yield
         # real parallelism.
-        stages: "List[StageSpec.Compute]"
+        stages: "list[StageSpec.Compute]"
         loop = self._loop
         if loop is not None and len(workpieces) > 1:
 
@@ -269,8 +265,8 @@ class IntentBuilder:
         self,
         step: "Step",
         layer: "Layer",
-        upstream: List[Tuple[str, int, WorkPiece]],
-        out: List[NodeRequest],
+        upstream: list[tuple[str, int, WorkPiece]],
+        out: list[NodeRequest],
     ) -> None:
         key = step_key(step.uid)
         token = self._aggregate_token(step, layer, upstream)
@@ -280,8 +276,8 @@ class IntentBuilder:
     def _build_job_node(
         self,
         doc: "Doc",
-        out: List[NodeRequest],
-        step_tokens: Dict[str, int],
+        out: list[NodeRequest],
+        step_tokens: dict[str, int],
     ) -> None:
         key = job_key()
         token = self._job_token(doc, step_tokens)
@@ -291,8 +287,8 @@ class IntentBuilder:
     def _build_machine_transform_node(
         self,
         doc: "Doc",
-        out: List[NodeRequest],
-        step_tokens: Dict[str, int],
+        out: list[NodeRequest],
+        step_tokens: dict[str, int],
     ) -> None:
         """Append the machine-transform compute node between the job
         aggregate and the encoder.
@@ -314,8 +310,8 @@ class IntentBuilder:
     def _build_encoder_node(
         self,
         doc: "Doc",
-        out: List[NodeRequest],
-        step_tokens: Dict[str, int],
+        out: list[NodeRequest],
+        step_tokens: dict[str, int],
     ) -> None:
         """Append the encoder compute node that consumes the
         machine-transform node's machine-space Ops and produces
@@ -392,7 +388,7 @@ class IntentBuilder:
         self,
         step: "Step",
         layer: "Layer",
-        upstream: List[Tuple[str, int, "WorkPiece"]],
+        upstream: list[tuple[str, int, "WorkPiece"]],
     ) -> int:
         # Fold the per-workpiece placement matrix and target dimensions
         # into the token. The aggregate applies the placement matrix
@@ -400,7 +396,7 @@ class IntentBuilder:
         # that leaves the compute cache untouched must still invalidate
         # the aggregate — otherwise the cached step ops are displayed
         # at their previous world position.
-        placements: List[Any] = []
+        placements: list[Any] = []
         for _k, _t, wp in upstream:
             placements.append(
                 {
@@ -422,7 +418,7 @@ class IntentBuilder:
             payload["stock_rev"] = self._stock_revision()
         return _hash_int(payload)
 
-    def _job_token(self, doc: "Doc", step_tokens: Dict[str, int]) -> int:
+    def _job_token(self, doc: "Doc", step_tokens: dict[str, int]) -> int:
         # The job aggregate concatenates the step aggregates' outputs
         # verbatim (identity placement at the job level). Its token
         # therefore folds in the per-step aggregate tokens so that any
@@ -445,7 +441,7 @@ class IntentBuilder:
                         "spxf": _canonical(step.per_step_transformers_dicts),
                     }
                 )
-        payload: Dict[str, Any] = {"kind": "job", "steps": payloads}
+        payload: dict[str, Any] = {"kind": "job", "steps": payloads}
         return _hash_int(payload)
 
     # ------------------------------------------------------------------
@@ -525,10 +521,10 @@ class IntentBuilder:
 
     def _build_transformer_specs(
         self,
-        transformer_dicts: List[Dict[str, Any]],
+        transformer_dicts: list[dict[str, Any]],
         *,
         workpiece: "Optional[WorkPiece]" = None,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Build typed Rust ``*Spec`` pyclasses from a list of
         serialised transformer dicts.
 
@@ -538,7 +534,7 @@ class IntentBuilder:
         that position-sensitive transformers (e.g. CropTransformer)
         can resolve their regions.
         """
-        transformers: List[OpsTransformer] = []
+        transformers: list[OpsTransformer] = []
         for t_dict in transformer_dicts:
             if not t_dict.get("enabled", True):
                 continue
@@ -571,7 +567,7 @@ class IntentBuilder:
             specs.append(t.to_spec(workpiece, stock, settings))
         return specs
 
-    def _transformer_settings(self) -> Optional[Dict[str, Any]]:
+    def _transformer_settings(self) -> Optional[dict[str, Any]]:
         """Return the settings dict forwarded to ``to_spec``.
 
         Currently this carries the ``driver_native_overscan`` flag so
@@ -586,7 +582,7 @@ class IntentBuilder:
             native = False
         return {"driver_native_overscan": native}
 
-    def _resolve_stock_geometries(self) -> Optional[List[Any]]:
+    def _resolve_stock_geometries(self) -> Optional[list[Any]]:
         """Return the world-space stock boundary geometries.
 
         Transformers such as CropTransformer use this to clip
@@ -597,7 +593,7 @@ class IntentBuilder:
         machine workarea rectangle is used as a fallback only when
         no doc stock exists.
         """
-        geos: List[Any] = []
+        geos: list[Any] = []
 
         if self._doc is not None:
             for item in self._doc.stock_items:
@@ -641,7 +637,7 @@ class IntentBuilder:
     def _step_stage(
         self,
         step: "Step",
-        upstream: List[Tuple[str, int, "WorkPiece"]],
+        upstream: list[tuple[str, int, "WorkPiece"]],
     ) -> StageSpec.Aggregate:
         """
         Build an aggregate :class:`StageSpec.Aggregate` for the step
@@ -661,7 +657,7 @@ class IntentBuilder:
         populated from the resolved machine so the aggregate's time
         estimate is correct.
         """
-        groups: List[AggregateGroup] = []
+        groups: list[AggregateGroup] = []
         for wp_key, _token, wp in upstream:
             placement = _workpiece_placement_matrix(wp)
             target = wp.size
@@ -710,7 +706,7 @@ class IntentBuilder:
     # ------------------------------------------------------------------
 
     def _job_stage(
-        self, doc: "Doc", step_tokens: Dict[str, int]
+        self, doc: "Doc", step_tokens: dict[str, int]
     ) -> StageSpec.Aggregate:
         """
         Build the final job aggregate :class:`StageSpec.Aggregate`.
@@ -724,11 +720,11 @@ class IntentBuilder:
         populated from the resolved machine so the aggregate's time
         estimate is correct.
         """
-        groups: List[AggregateGroup] = []
+        groups: list[AggregateGroup] = []
         for layer in doc.layers:
             if not layer.workflow:
                 continue
-            step_inputs: List[AggregateInput] = []
+            step_inputs: list[AggregateInput] = []
             for step in layer.workflow.steps:
                 if not step.visible:
                     continue
@@ -973,7 +969,7 @@ class IntentBuilder:
     # Encoder token
     # ------------------------------------------------------------------
 
-    def _encode_token(self, doc: "Doc", step_tokens: Dict[str, int]) -> int:
+    def _encode_token(self, doc: "Doc", step_tokens: dict[str, int]) -> int:
         """Compute the version token for the job encode node.
 
         Folds in the machine-transform node's token plus the encoder
@@ -988,7 +984,7 @@ class IntentBuilder:
         return _hash_int(payload)
 
     def _machine_transform_token(
-        self, doc: "Doc", step_tokens: Dict[str, int]
+        self, doc: "Doc", step_tokens: dict[str, int]
     ) -> int:
         """Compute the version token for the machine-transform node.
 
@@ -1012,7 +1008,7 @@ class IntentBuilder:
 # ----------------------------------------------------------------------
 
 
-def _workpiece_placement_matrix(wp: "WorkPiece") -> List[List[float]]:
+def _workpiece_placement_matrix(wp: "WorkPiece") -> list[list[float]]:
     """
     Build the 4×4 placement matrix for a workpiece's aggregate input.
 
@@ -1065,7 +1061,7 @@ def _hash_int(payload: Mapping[str, Any]) -> int:
 # from the step's ``ASSEMBLER_NAME``.
 
 
-_IDENTITY_4X4: List[List[float]] = [
+_IDENTITY_4X4: list[list[float]] = [
     [1.0, 0.0, 0.0, 0.0],
     [0.0, 1.0, 0.0, 0.0],
     [0.0, 0.0, 1.0, 0.0],
@@ -1099,11 +1095,11 @@ def _machine_token_payload(machine: "Optional[Machine]") -> Any:
 
 def _machine_transform_config_payload(
     machine: "Machine", doc: "Doc"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build a JSON-serialisable payload of machine transform config
     for the machine-transform token."""
 
-    payload: Dict[str, Any] = {
+    payload: dict[str, Any] = {
         "wcs_origin_is_workarea_origin": machine.wcs_origin_is_workarea_origin,
     }
     # Rotary module UIDs per layer (to detect rotary config changes).

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Union
 
 import numpy as np
 from raygeo.geo.types import Rect
@@ -23,26 +23,26 @@ class RenderContext:
     perform a render of a workpiece view.
     """
 
-    pixels_per_mm: Tuple[float, float]
+    pixels_per_mm: tuple[float, float]
     show_travel_moves: bool
     margin_px: int
-    color_set_dict: Dict[str, Any]
-    laser_color_sets: Dict[str, Dict[str, Any]] = field(default_factory=dict)
-    layer_color_sets: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    color_set_dict: dict[str, Any]
+    laser_color_sets: dict[str, dict[str, Any]] = field(default_factory=dict)
+    layer_color_sets: dict[str, dict[str, Any]] = field(default_factory=dict)
     ops_color_mode: Any = None
 
     def __post_init__(self):
         if self.ops_color_mode is None:
             self.ops_color_mode = _get_ops_color_mode_enum().LASER
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the context to a dictionary."""
         d = asdict(self)
         d["ops_color_mode"] = self.ops_color_mode.value
         return d
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RenderContext":
+    def from_dict(cls, data: dict[str, Any]) -> "RenderContext":
         """Deserializes a RenderContext from a dictionary."""
         OpsColorMode = _get_ops_color_mode_enum()
         mode = data.get("ops_color_mode", OpsColorMode.LASER.value)
@@ -74,7 +74,7 @@ class RenderContext:
         )
 
     def _compare_color_sets(
-        self, dict1: Dict[str, Any], dict2: Dict[str, Any]
+        self, dict1: dict[str, Any], dict2: dict[str, Any]
     ) -> bool:
         """Compare two color set dictionaries for equality."""
         if dict1.keys() != dict2.keys():
@@ -94,12 +94,12 @@ class WorkPieceViewArtifactHandle(BaseArtifactHandle):
     def __init__(
         self,
         bbox_mm: Rect,
-        workpiece_size_mm: Tuple[float, float],
+        workpiece_size_mm: tuple[float, float],
         key: str,
         handle_class_name: str,
         artifact_type_name: str,
         generation_id: int,
-        array_metadata: Union[Dict[str, Any], None] = None,
+        array_metadata: Union[dict[str, Any], None] = None,
         **_kwargs,
     ):
         super().__init__(
@@ -123,7 +123,7 @@ class WorkPieceViewArtifact(BaseArtifact):
         self,
         bitmap_data: np.ndarray,
         bbox_mm: Rect,
-        workpiece_size_mm: Tuple[float, float],
+        workpiece_size_mm: tuple[float, float],
         generation_id: int,
     ):
         super().__init__()

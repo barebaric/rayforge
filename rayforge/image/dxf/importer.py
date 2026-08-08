@@ -2,10 +2,11 @@ import io
 import logging
 import math
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import replace
 from gettext import gettext as _
 from pathlib import Path
-from typing import DefaultDict, Dict, Iterable, List, Optional, Tuple
+from typing import Optional
 
 import ezdxf
 import ezdxf.math
@@ -61,7 +62,7 @@ class DxfImporter(Importer):
     def __init__(self, data: bytes, source_file: Optional[Path] = None):
         super().__init__(data, source_file)
         self._dxf_doc: Optional[ezdxf.document.Drawing] = None  # type: ignore
-        self._geometries_by_layer: Dict[Optional[str], Geometry] = {}
+        self._geometries_by_layer: dict[Optional[str], Geometry] = {}
 
     def scan(self) -> ImportManifest:
         try:
@@ -82,7 +83,7 @@ class DxfImporter(Importer):
             )
 
         # Count entities per layer to detect empty layers
-        counts: DefaultDict[str, int] = defaultdict(int)
+        counts: defaultdict[str, int] = defaultdict(int)
         if doc.modelspace():
             for e in doc.modelspace():
                 counts[e.dxf.layer] += 1
@@ -166,7 +167,7 @@ class DxfImporter(Importer):
                 active_layers_set = set(spec.active_layer_ids)
 
         # Filter geometries based on the active layers in the spec
-        geometries_to_process: Dict[Optional[str], Geometry]
+        geometries_to_process: dict[Optional[str], Geometry]
         if active_layers_set:
             geometries_to_process = {
                 layer_id: geo
@@ -176,7 +177,7 @@ class DxfImporter(Importer):
         else:
             geometries_to_process = self._geometries_by_layer
 
-        final_geometries: Dict[Optional[str], Geometry]
+        final_geometries: dict[Optional[str], Geometry]
         if split_layers:
             # For a "split" strategy, return the dictionary of individual
             # layer geometries.
@@ -281,7 +282,7 @@ class DxfImporter(Importer):
             background_world_transform=bg_item.world_matrix,
         )
 
-    def _get_layer_manifest(self, doc) -> List[Dict[str, str]]:
+    def _get_layer_manifest(self, doc) -> list[dict[str, str]]:
         return [
             {"id": layer.dxf.name, "name": layer.dxf.name}
             for layer in doc.layers
@@ -369,13 +370,13 @@ class DxfImporter(Importer):
 
         return result
 
-    def _extract_geometries(self, doc) -> Dict[Optional[str], Geometry]:
+    def _extract_geometries(self, doc) -> dict[Optional[str], Geometry]:
         """
         Recursively extracts, flattens, sorts, and consumes DXF entities.
         Sorting is critical for creating continuous paths from scrambled
         modelspace entities.
         """
-        raw_paths_by_layer: DefaultDict[str, List] = defaultdict(list)
+        raw_paths_by_layer: defaultdict[str, list] = defaultdict(list)
 
         def process_entity(entity, parent_transform: ezdxf.math.Matrix44):
             # Transform Composition
@@ -436,7 +437,7 @@ class DxfImporter(Importer):
 
         return final_geometries
 
-    def _chain_paths(self, paths: List) -> List:
+    def _chain_paths(self, paths: list) -> list:
         """
         Greedy sorting of paths to restore continuity.
         Groups paths that share endpoints into contiguous chains.
@@ -446,7 +447,7 @@ class DxfImporter(Importer):
 
         # Index start points for O(1) lookups
         # Precision: 3 decimal places ensures visual continuity matches
-        start_map: DefaultDict[Tuple[int, int], List[int]] = defaultdict(list)
+        start_map: defaultdict[tuple[int, int], list[int]] = defaultdict(list)
 
         for i, p in enumerate(paths):
             s = p.start

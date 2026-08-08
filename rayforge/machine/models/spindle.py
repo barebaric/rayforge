@@ -1,5 +1,6 @@
+from collections.abc import Iterable
 from gettext import gettext as _
-from typing import Any, Dict, Iterable, Tuple
+from typing import Any
 
 from raygeo.ops.state import CoolantMode
 
@@ -13,7 +14,7 @@ _COOLANT_MODE_BY_NAME = {
 
 def _normalize_cooling_methods(
     methods: Iterable[CoolantMode],
-) -> Tuple[CoolantMode, ...]:
+) -> tuple[CoolantMode, ...]:
     """Keep only real coolant methods, in a stable order.
 
     ``CoolantMode.OFF`` is always available and therefore not a
@@ -37,7 +38,7 @@ class SpindleHead(Head):
         self.name: str = _("Spindle Head")
         self.max_rpm: int = 20000
         self.min_rpm: int = 1000
-        self.cooling_methods: Tuple[CoolantMode, ...] = ()
+        self.cooling_methods: tuple[CoolantMode, ...] = ()
 
     @property
     def machine_capability(self) -> MachineCapability:
@@ -67,7 +68,7 @@ class SpindleHead(Head):
         self.cooling_methods = normalized
         self.changed.send(self)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         result = super().to_dict()
         result.update(
             {
@@ -79,7 +80,7 @@ class SpindleHead(Head):
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SpindleHead":
+    def from_dict(cls, data: dict[str, Any]) -> "SpindleHead":
         known_keys = _HEAD_SERIALIZED_KEYS | {
             "max_rpm",
             "min_rpm",
@@ -91,7 +92,7 @@ class SpindleHead(Head):
         sh.max_rpm = data.get("max_rpm", sh.max_rpm)
         sh.min_rpm = data.get("min_rpm", sh.min_rpm)
         raw_methods = data.get("cooling_methods", ())
-        methods: Tuple[CoolantMode, ...] = ()
+        methods: tuple[CoolantMode, ...] = ()
         if isinstance(raw_methods, (list, tuple)):
             parsed = [
                 _COOLANT_MODE_BY_NAME[name]

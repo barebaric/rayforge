@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional, Set
+from typing import TYPE_CHECKING, Optional
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -34,7 +34,7 @@ class CirclePreviewState(PreviewState):
         self.entity_id = entity_id
         self.locked_diameter: Optional[float] = None
 
-    def get_preview_point_ids(self) -> Set[EntityID]:
+    def get_preview_point_ids(self) -> set[EntityID]:
         """
         Returns IDs of temporary preview points that shouldn't be snapped to.
 
@@ -75,7 +75,7 @@ class CirclePreviewState(PreviewState):
 
     def get_dimensions(
         self, registry: "EntityRegistry"
-    ) -> List["DimensionData"]:
+    ) -> list["DimensionData"]:
         """
         Returns the circle diameter dimension for preview.
 
@@ -267,7 +267,7 @@ class CircleCommand(SketchChangeCommand):
         temp_circle_id = registry._id_counter + (1 if new_point else 0)
         new_circle = Circle(temp_circle_id, self.center_id, end_pid)
 
-        points_to_add: List[Point] = [new_point] if new_point else []
+        points_to_add: list[Point] = [new_point] if new_point else []
 
         if self.is_center_temp:
             try:

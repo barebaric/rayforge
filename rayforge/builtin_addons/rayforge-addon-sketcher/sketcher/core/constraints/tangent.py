@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import cairo
 from raygeo.geo.shape.line import get_line_closest_point
@@ -74,7 +74,7 @@ class TangentConstraint(Constraint):
                 )
         return ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "TangentConstraint",
             "line_id": self.line_id,
@@ -83,7 +83,7 @@ class TangentConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "TangentConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> "TangentConstraint":
         return cls(
             line_id=data["line_id"],
             shape_id=data["shape_id"],
@@ -126,7 +126,7 @@ class TangentConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         line = reg.get_entity(self.line_id)
         shape = reg.get_entity(self.shape_id)
         grad = {}

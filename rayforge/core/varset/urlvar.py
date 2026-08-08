@@ -1,12 +1,12 @@
 from gettext import gettext as _
-from typing import Optional, Tuple
+from typing import Optional
 from urllib.parse import urlparse
 
 from .var import ValidationError, Var
 
 
 def url_validator(
-    url: Optional[str], allowed_schemes: Optional[Tuple[str, ...]] = None
+    url: Optional[str], allowed_schemes: Optional[tuple[str, ...]] = None
 ):
     """
     Raises ValidationError if the string is not a valid URL.
@@ -49,7 +49,7 @@ class UrlVar(Var[str]):
         description: Optional[str] = None,
         default: Optional[str] = None,
         value: Optional[str] = None,
-        allowed_schemes: Optional[Tuple[str, ...]] = None,
+        allowed_schemes: Optional[tuple[str, ...]] = None,
     ):
         self.allowed_schemes = allowed_schemes
 

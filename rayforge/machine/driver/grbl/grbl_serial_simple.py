@@ -11,16 +11,13 @@ lower throughput compared to the advanced ``GrblSerialDriver``.
 import asyncio
 import logging
 import re
+from collections.abc import Awaitable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
     Callable,
-    Dict,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -80,14 +77,14 @@ class _PingPongPending:
     def __init__(self, command: str):
         self.command = command
         self.event = asyncio.Event()
-        self.response_lines: List[str] = []
+        self.response_lines: list[str] = []
         self.error: Optional[str] = None
 
     def set_result(self, error: Optional[str] = None):
         self.error = error
         self.event.set()
 
-    async def wait(self, timeout: float = 30.0) -> List[str]:
+    async def wait(self, timeout: float = 30.0) -> list[str]:
         await asyncio.wait_for(self.event.wait(), timeout=timeout)
         if self.error is not None:
             raise DeviceConnectionError(self.error)
@@ -183,7 +180,7 @@ class GrblSerialSimpleDriver(Driver):
     @classmethod
     async def probe(
         cls, context: "RayforgeContext", **kwargs: Any
-    ) -> Tuple["DeviceProfile", List[str]]:
+    ) -> tuple["DeviceProfile", list[str]]:
         return await probe_grbl_device(cls, context, **kwargs)
 
     def _setup_implementation(self, **kwargs: Any) -> None:
@@ -218,7 +215,7 @@ class GrblSerialSimpleDriver(Driver):
                 await self._transport.disconnect()
         await super().cleanup()
 
-    def _log_extra(self, category: str) -> Dict[str, Optional[str]]:
+    def _log_extra(self, category: str) -> dict[str, Optional[str]]:
         return {
             "log_category": category,
             "machine_id": self._machine.id if self._machine else None,
@@ -315,7 +312,7 @@ class GrblSerialSimpleDriver(Driver):
 
     async def _ping_pong(
         self, command: str, timeout: float = 30.0
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Send *command* and wait for ``ok`` / ``error:`` response.
         Returns collected response lines.
@@ -447,8 +444,8 @@ class GrblSerialSimpleDriver(Driver):
 
     async def _stream_gcode_ping_pong(
         self,
-        gcode_lines: List[str],
-        op_map: Optional[Dict[int, int]] = None,
+        gcode_lines: list[str],
+        op_map: Optional[dict[int, int]] = None,
     ) -> None:
         """
         Stream G-code using strict ping-pong: send one line,
@@ -555,13 +552,13 @@ class GrblSerialSimpleDriver(Driver):
         else:
             raise ConnectionError("Serial transport not initialized")
 
-    async def _execute_command(self, command: str) -> List[str]:
+    async def _execute_command(self, command: str) -> list[str]:
         """Send a command using ping-pong and return response lines."""
         self._is_cancelled = False
         async with self._cmd_lock:
             return await self._ping_pong(command)
 
-    async def execute_interactive_command(self, command: str) -> List[str]:
+    async def execute_interactive_command(self, command: str) -> list[str]:
         """Send a command and await its full response."""
         if not self._transport or not self._transport.is_connected:
             raise ConnectionError("Serial transport not connected")
@@ -648,7 +645,7 @@ class GrblSerialSimpleDriver(Driver):
         cmd = " ".join(cmd_parts)
         await self._execute_command(cmd)
 
-    def get_setting_vars(self) -> List["VarSet"]:
+    def get_setting_vars(self) -> list["VarSet"]:
         return get_grbl_setting_varsets()
 
     async def detect_unit_system(self) -> Optional[UnitSystem]:
@@ -727,7 +724,7 @@ class GrblSerialSimpleDriver(Driver):
         )
         await self._execute_command(cmd)
 
-    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+    async def read_wcs_offsets(self) -> dict[str, Pos]:
         response_lines = await self.execute_interactive_command("$#")
         offsets = {}
         for line in response_lines:

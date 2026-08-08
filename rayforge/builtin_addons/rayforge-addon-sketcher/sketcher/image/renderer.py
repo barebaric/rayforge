@@ -4,7 +4,6 @@ import warnings
 from typing import (
     TYPE_CHECKING,
     Optional,
-    Tuple,
 )
 
 from raygeo.geo import Geometry
@@ -41,7 +40,7 @@ class SketchRenderer(Renderer):
     def compute_render_spec(
         self,
         segment: Optional["SourceAssetSegment"],
-        target_size: Tuple[int, int],
+        target_size: tuple[int, int],
         source_context: "RenderContext",
     ) -> "RenderSpecification":
         """

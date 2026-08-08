@@ -8,7 +8,6 @@ for all supported dialects using a reference square SVG file.
 import logging
 import re
 from pathlib import Path
-from typing import List, Tuple
 
 import pytest
 
@@ -35,7 +34,7 @@ def parse_gcode_line(line: str) -> dict:
     return parts
 
 
-def get_dialect_test_cases() -> List[Tuple[str, str]]:
+def get_dialect_test_cases() -> list[tuple[str, str]]:
     """
     Returns a list of (dialect_uid, expected_file) tuples for all
     dialects that have corresponding expected output files.

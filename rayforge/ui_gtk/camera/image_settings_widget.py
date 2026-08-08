@@ -6,7 +6,7 @@ wizard's image-settings page so the two stay in sync.
 
 import logging
 from gettext import gettext as _
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from gi.repository import Adw, Gtk
 
@@ -67,7 +67,7 @@ class CameraImageSettings(Gtk.Box):
         )
         settings_box.append(image_group)
 
-        self._resolution_values: List[Optional[Tuple[int, int]]] = [None]
+        self._resolution_values: list[Optional[tuple[int, int]]] = [None]
         resolution_labels = [_("Default")]
         for w, h in self.controller.available_resolutions:
             self._resolution_values.append((w, h))

@@ -1,6 +1,5 @@
 import logging
 import math
-from typing import List, Tuple
 
 import numpy as np
 from OpenGL import GL
@@ -17,7 +16,7 @@ _DEFAULT_EDGE_COLOR = (1.0, 0.0, 0.0, 0.2)
 _CYLINDER_SEGMENTS = 16
 
 
-def _rect_triangles(p: dict) -> List[float]:
+def _rect_triangles(p: dict) -> list[float]:
     x, y = p.get("x", 0.0), p.get("y", 0.0)
     w, h = p.get("w", 10.0), p.get("h", 10.0)
     z = 0.003
@@ -43,7 +42,7 @@ def _rect_triangles(p: dict) -> List[float]:
     ]
 
 
-def _rect_edges(p: dict) -> List[float]:
+def _rect_edges(p: dict) -> list[float]:
     x, y = p.get("x", 0.0), p.get("y", 0.0)
     w, h = p.get("w", 10.0), p.get("h", 10.0)
     z = 0.004
@@ -75,7 +74,7 @@ def _rect_edges(p: dict) -> List[float]:
     ]
 
 
-def _box_triangles(p: dict) -> List[float]:
+def _box_triangles(p: dict) -> list[float]:
     x, y, z = p.get("x", 0.0), p.get("y", 0.0), p.get("z", 0.0)
     w, h, d = p.get("w", 10.0), p.get("h", 10.0), p.get("d", 10.0)
     x2, y2, z2 = x + w, y + h, z + d
@@ -93,7 +92,7 @@ def _box_triangles(p: dict) -> List[float]:
     return verts
 
 
-def _box_edges(p: dict) -> List[float]:
+def _box_edges(p: dict) -> list[float]:
     x, y, z = p.get("x", 0.0), p.get("y", 0.0), p.get("z", 0.0)
     w, h, d = p.get("w", 10.0), p.get("h", 10.0), p.get("d", 10.0)
     x2, y2, z2 = x + w, y + h, z + d
@@ -173,13 +172,13 @@ def _box_edges(p: dict) -> List[float]:
     ]
 
 
-def _cylinder_triangles(p: dict) -> List[float]:
+def _cylinder_triangles(p: dict) -> list[float]:
     cx, cy = p.get("x", 0.0), p.get("y", 0.0)
     cz = p.get("z", 0.0)
     radius = p.get("radius", 5.0)
     height = p.get("height", 10.0)
     n = _CYLINDER_SEGMENTS
-    verts: List[float] = []
+    verts: list[float] = []
     for i in range(n):
         a1 = 2.0 * math.pi * i / n
         a2 = 2.0 * math.pi * (i + 1) / n
@@ -243,13 +242,13 @@ def _cylinder_triangles(p: dict) -> List[float]:
     return verts
 
 
-def _cylinder_edges(p: dict) -> List[float]:
+def _cylinder_edges(p: dict) -> list[float]:
     cx, cy = p.get("x", 0.0), p.get("y", 0.0)
     cz = p.get("z", 0.0)
     radius = p.get("radius", 5.0)
     height = p.get("height", 10.0)
     n = _CYLINDER_SEGMENTS
-    verts: List[float] = []
+    verts: list[float] = []
     for i in range(n):
         a1 = 2.0 * math.pi * i / n
         a2 = 2.0 * math.pi * (i + 1) / n
@@ -286,12 +285,12 @@ class ZoneRenderer(BaseRenderer):
         self._edge_vao = 0
         self._edge_vbo = 0
         self._edge_vertex_count = 0
-        self._fill_color: Tuple[float, ...] = _DEFAULT_FILL_COLOR
-        self._edge_color: Tuple[float, ...] = _DEFAULT_EDGE_COLOR
+        self._fill_color: tuple[float, ...] = _DEFAULT_FILL_COLOR
+        self._edge_color: tuple[float, ...] = _DEFAULT_EDGE_COLOR
 
-    def update_zones(self, zones: List[Zone]):
-        fill_verts: List[float] = []
-        edge_verts: List[float] = []
+    def update_zones(self, zones: list[Zone]):
+        fill_verts: list[float] = []
+        edge_verts: list[float] = []
         for zone in zones:
             if not zone.enabled:
                 continue

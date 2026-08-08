@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from ..core.vectorization_spec import PassthroughSpec, TraceSpec
 from .assembler import ItemAssembler
@@ -137,11 +137,11 @@ class Importer(ABC):
     """
 
     label: str
-    mime_types: Tuple[str, ...]
-    extensions: Tuple[str, ...]
+    mime_types: tuple[str, ...]
+    extensions: tuple[str, ...]
 
     # The base set of features is empty. Subclasses MUST override this.
-    features: Set[ImporterFeature] = set()
+    features: set[ImporterFeature] = set()
 
     def __init__(self, data: bytes, source_file: Optional[Path] = None):
         """
@@ -149,8 +149,8 @@ class Importer(ABC):
         """
         self.raw_data = data
         self.source_file = source_file or Path("Untitled")
-        self._warnings: List[str] = []
-        self._errors: List[str] = []
+        self._warnings: list[str] = []
+        self._errors: list[str] = []
         self._vectorization_spec: Optional[VectorizationSpec] = None
 
     def add_warning(self, message: str) -> None:

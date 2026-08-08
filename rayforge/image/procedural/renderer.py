@@ -2,7 +2,7 @@ import importlib
 import json
 import logging
 import warnings
-from typing import TYPE_CHECKING, Callable, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Optional
 
 import cairo
 
@@ -31,7 +31,7 @@ class ProceduralRenderer(Renderer):
 
     def _get_recipe_and_func_internal(
         self, source_original_data: Optional[bytes], func_key: str
-    ) -> Tuple[Optional[dict], Optional[dict], Optional[Callable]]:
+    ) -> tuple[Optional[dict], Optional[dict], Optional[Callable]]:
         """Helper to deserialize the recipe and import a function."""
         if not source_original_data:
             logger.warning("Procedural source has no original_data.")

@@ -10,7 +10,7 @@ are fully independent.
 import logging
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from gi.repository import Adw, Gtk
 
@@ -60,7 +60,7 @@ class _BaseArrayDialog(PatchedDialogWindow):
         parent: Gtk.Window,
         editor: "DocEditor",
         surface: "WorkSurface",
-        items: List[DocItem],
+        items: list[DocItem],
         mode: ArrayMode,
         title: str,
     ):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.geo.shape.text import FontConfig
 from raygeo.geo.types import Point as GeoPoint
@@ -36,18 +36,18 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         self.new_font_config = new_font_config
         self.old_content = ""
         self.old_font_config: Optional[FontConfig] = None
-        self.old_point_positions: Dict[EntityID, GeoPoint] = {}
+        self.old_point_positions: dict[EntityID, GeoPoint] = {}
         self.old_aspect_ratio: Optional[float] = None
         self.aspect_ratio_constraint_idx: Optional[int] = None
-        self._added_constraints: List[Constraint] = []
+        self._added_constraints: list[Constraint] = []
 
         self._entity_was_removed = False
         self._removed_entity: Optional[TextBoxEntity] = None
-        self._removed_points: List[Point] = []
-        self._removed_entities: List[Any] = []
-        self._removed_constraints: List[Constraint] = []
-        self._modified_equal_length_constraints: List[
-            Tuple[EntityID, List[EntityID]]
+        self._removed_points: list[Point] = []
+        self._removed_entities: list[Any] = []
+        self._removed_constraints: list[Constraint] = []
+        self._modified_equal_length_constraints: list[
+            tuple[EntityID, list[EntityID]]
         ] = []
 
     def _shed_size_constraints(self, text_entity: TextBoxEntity) -> None:

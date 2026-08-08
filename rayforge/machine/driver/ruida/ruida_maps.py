@@ -7,13 +7,12 @@ Based on:
 - https://github.com/StevenIsaacs/ruida-protocol-analyzer
 """
 
-from typing import Dict, Tuple
 
 # =============================================================================
 # CARD/DEVICE IDENTIFICATION
 # =============================================================================
 
-CARD_ID_TO_MAGIC: Dict[int, int] = {
+CARD_ID_TO_MAGIC: dict[int, int] = {
     0x2210: 0x16,
     0x3835: 0x38,
     0x6300: 0x33,
@@ -53,7 +52,7 @@ CARD_ID_TO_MAGIC: Dict[int, int] = {
 # =============================================================================
 
 # 0xA5 - Interface commands (also on jog port)
-INTERFACE_COMMANDS: Dict[int, str] = {
+INTERFACE_COMMANDS: dict[int, str] = {
     0x01: "-X",
     0x02: "+X",
     0x03: "+Y",
@@ -75,7 +74,7 @@ INTERFACE_COMMANDS: Dict[int, str] = {
 }
 
 # 0xA7 - Keypress commands
-A7_KEYPRESS_COMMANDS: Dict[int, str] = {
+A7_KEYPRESS_COMMANDS: dict[int, str] = {
     0x00: "KeyPress Origin",
     0x01: "KeyPress -X +Left",
     0x02: "KeyPress +X +Right",
@@ -93,7 +92,7 @@ A7_KEYPRESS_COMMANDS: Dict[int, str] = {
 }
 
 # 0xC6 - Power/delay commands
-C6_POWER_COMMANDS: Dict[int, str] = {
+C6_POWER_COMMANDS: dict[int, str] = {
     0x01: "Power 1 min",
     0x02: "Power 1 max",
     0x05: "Power 3 min",
@@ -108,7 +107,7 @@ C6_POWER_COMMANDS: Dict[int, str] = {
     0x56: "Through Power 4",
 }
 
-C6_DELAY_COMMANDS: Dict[int, str] = {
+C6_DELAY_COMMANDS: dict[int, str] = {
     0x10: "Laser Interval",
     0x11: "Add Delay",
     0x12: "Laser On Delay",
@@ -117,7 +116,7 @@ C6_DELAY_COMMANDS: Dict[int, str] = {
     0x16: "Laser Off Delay 2",
 }
 
-C6_PART_POWER_COMMANDS: Dict[int, str] = {
+C6_PART_POWER_COMMANDS: dict[int, str] = {
     0x31: "Power 1 Min",
     0x32: "Power 1 Max",
     0x35: "Power 3 Min",
@@ -128,12 +127,12 @@ C6_PART_POWER_COMMANDS: Dict[int, str] = {
     0x42: "Power 2 Max",
 }
 
-C6_FREQUENCY_COMMANDS: Dict[int, str] = {
+C6_FREQUENCY_COMMANDS: dict[int, str] = {
     0x60: "Part, Frequency",
 }
 
 # 0xCA - Layer/mode commands
-CA_MODE_COMMANDS: Dict[int, str] = {
+CA_MODE_COMMANDS: dict[int, str] = {
     0x00: "End Layer",
     0x01: "Work Mode 1",
     0x02: "Work Mode 2",
@@ -151,7 +150,7 @@ CA_MODE_COMMANDS: Dict[int, str] = {
 }
 
 # 0xD8 - Realtime commands
-D8_COMMANDS: Dict[int, str] = {
+D8_COMMANDS: dict[int, str] = {
     0x00: "Start Process",
     0x01: "Stop Process",
     0x02: "Pause Process",
@@ -205,7 +204,7 @@ D8_COMMANDS: Dict[int, str] = {
 }
 
 # 0xDA - Memory commands
-DA_COMMANDS: Dict[int, str] = {
+DA_COMMANDS: dict[int, str] = {
     0x00: "Get Setting",
     0x01: "Set/Respond Setting",
     0x04: "OEM On/Off, CardIO On/Off",
@@ -221,7 +220,7 @@ DA_COMMANDS: Dict[int, str] = {
 }
 
 # 0xE5 - Document commands
-E5_COMMANDS: Dict[int, str] = {
+E5_COMMANDS: dict[int, str] = {
     0x00: "Document Page Number",
     0x02: "Document Data End",
     0x03: "Is TblCor Usable",
@@ -230,7 +229,7 @@ E5_COMMANDS: Dict[int, str] = {
 }
 
 # 0xE8 - File actions
-E8_FILE_ACTIONS: Dict[int, str] = {
+E8_FILE_ACTIONS: dict[int, str] = {
     0x00: "Delete",
     0x01: "Name",
     0x03: "Select",
@@ -241,7 +240,7 @@ E8_FILE_ACTIONS: Dict[int, str] = {
 # MEMORY MAPS
 # =============================================================================
 
-DEFAULT_MEMORY_MAP: Dict[int, Tuple[str, int]] = {
+DEFAULT_MEMORY_MAP: dict[int, tuple[str, int]] = {
     0x0002: ("Laser Info", 0),
     0x0003: ("Machine Def", 0),
     0x0004: ("IOEnable", 0),
@@ -544,7 +543,7 @@ DEFAULT_MEMORY_MAP: Dict[int, Tuple[str, int]] = {
     0x05C0: ("Laser Life", 0),
 }
 
-DYNAMIC_MEMORY_KEYS: Dict[int, Tuple[str, str]] = {
+DYNAMIC_MEMORY_KEYS: dict[int, tuple[str, str]] = {
     0x0026: ("Axis Range 1, Get Frame X", "bed_x"),
     0x0036: ("Axis Range 2, Get Frame Y", "bed_y"),
     0x0046: ("Axis Range 3, Get Frame Z", "z_range"),
@@ -590,7 +589,7 @@ CHECKSUM_COMMANDS: set = {
 }
 
 # D8 jog keydown -> (axis, direction)
-D8_KEYDOWN_AXIS_MAP: Dict[int, Tuple[str, int]] = {
+D8_KEYDOWN_AXIS_MAP: dict[int, tuple[str, int]] = {
     0x20: ("x", -1),
     0x21: ("x", 1),
     0x22: ("y", 1),
@@ -602,7 +601,7 @@ D8_KEYDOWN_AXIS_MAP: Dict[int, Tuple[str, int]] = {
 }
 
 # D8 jog keyup -> axis
-D8_KEYUP_AXIS_MAP: Dict[int, str] = {
+D8_KEYUP_AXIS_MAP: dict[int, str] = {
     0x30: "x",
     0x31: "x",
     0x32: "y",
@@ -654,29 +653,29 @@ DA_VARIABLE_4_BYTE_SUBCOMMANDS: set = {
     0x7C,
 }
 
-REF_POINT_OFFSET_ADDRESSES: Dict[str, tuple[int, int]] = {
+REF_POINT_OFFSET_ADDRESSES: dict[str, tuple[int, int]] = {
     "REF0": (0x0224, 0x0234),
     "REF1": (0x0228, 0x0238),
 }
 
-REF_POINT_COMMANDS: Dict[str, bytes] = {
+REF_POINT_COMMANDS: dict[str, bytes] = {
     "MACHINE": b"\xd8\x10",
     "REF0": b"\xd8\x12",
     "REF1": b"\xd8\x11",
 }
 
-REF_POINT_MODE_TO_NAME: Dict[int, str] = {
+REF_POINT_MODE_TO_NAME: dict[int, str] = {
     0: "REF0",
     1: "REF1",
     2: "MACHINE",
 }
 
-REF_POINT_NAME_TO_MODE: Dict[str, int] = {
+REF_POINT_NAME_TO_MODE: dict[str, int] = {
     v: k for k, v in REF_POINT_MODE_TO_NAME.items()
 }
 
 CARD_ID_ADDRESS = 0x057E
 
-CARD_ID_TO_MODEL: Dict[int, str] = {
+CARD_ID_TO_MODEL: dict[int, str] = {
     0x65106510: "RDC6442S",
 }

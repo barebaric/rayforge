@@ -9,7 +9,6 @@ default selection: the user must consciously choose a controller
 """
 
 from gettext import gettext as _
-from typing import Dict, List, Type
 
 from blinker import Signal
 from gi.repository import Gtk
@@ -22,7 +21,7 @@ from . import WizardPage, _makePreferencesGroup
 
 # Symbolic icon shown on each driver's tile. New drivers without an
 # entry fall back to a generic device icon.
-_DRIVER_ICONS: Dict[str, str] = {
+_DRIVER_ICONS: dict[str, str] = {
     "GrblNetworkDriver": "network-wired-symbolic",
     "GrblTelnetDriver": "network-wired-symbolic",
     "RuidaDriver": "network-wired-symbolic",
@@ -47,7 +46,7 @@ class ControllerPage(WizardPage):
         self.controller_selected = Signal()
         # Pre-compute the sorted, de-duplicated driver list before
         # build_ui() runs (the base __init__ calls build_ui last).
-        driver_set: List[Type[Driver]] = []
+        driver_set: list[type[Driver]] = []
         seen_classnames: set = set()
         for d in drivers:
             if d.__name__ in seen_classnames:
@@ -60,7 +59,7 @@ class ControllerPage(WizardPage):
             driver_set.append(d)
             seen_classnames.add(d.__name__)
 
-        self._drivers: List[Type[Driver]] = sorted(
+        self._drivers: list[type[Driver]] = sorted(
             driver_set, key=lambda d: d.label.lower()
         )
         super().__init__(wizard, **kwargs)
@@ -87,7 +86,7 @@ class ControllerPage(WizardPage):
         self.flow_box.connect("child-activated", self._on_child_activated)
         self.content.append(self.flow_box)
 
-        self._tiles: List[Gtk.FlowBoxChild] = []
+        self._tiles: list[Gtk.FlowBoxChild] = []
         for index, d in enumerate(self._drivers):
             self._tiles.append(
                 self._make_tile(

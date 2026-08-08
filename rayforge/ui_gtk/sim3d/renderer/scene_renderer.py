@@ -9,7 +9,7 @@ resource creation, rebuilds and theme/colour application to this class.
 
 import logging
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Protocol, Tuple
+from typing import Optional, Protocol
 
 import numpy as np
 
@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 
 def match_vertex_layer(
-    vertex_layers: List[VertexLayer], is_rotary: bool
+    vertex_layers: list[VertexLayer], is_rotary: bool
 ) -> Optional[VertexLayer]:
     """Returns the vertex layer matching the given rotary flag."""
     for vl in vertex_layers:
@@ -59,7 +59,7 @@ def match_vertex_layer(
 
 
 def match_overlay_layer(
-    overlay_layers: List[ScanlineOverlayLayer], is_rotary: bool
+    overlay_layers: list[ScanlineOverlayLayer], is_rotary: bool
 ) -> Optional[ScanlineOverlayLayer]:
     """Returns the overlay layer matching the given rotary flag."""
     for ol in overlay_layers:
@@ -134,10 +134,10 @@ class SceneRenderer(BaseRenderer):
             LaserBeamRenderer()
         )
 
-        self.ops_renderers: List[OpsRenderer] = []
-        self.ring_renderers: List[RingBufferRenderer] = []
-        self.cylinder_renderers: Dict[float, CylinderRenderer] = {}
-        self.model_renderers: List[ModelRenderer] = []
+        self.ops_renderers: list[OpsRenderer] = []
+        self.ring_renderers: list[RingBufferRenderer] = []
+        self.cylinder_renderers: dict[float, CylinderRenderer] = {}
+        self.model_renderers: list[ModelRenderer] = []
         self.had_rotary_layers = False
         self.cylinder_transform = np.eye(4, dtype=np.float64)
 
@@ -147,11 +147,11 @@ class SceneRenderer(BaseRenderer):
         # Ordered list of (renderer, shader_keys) in draw order.  The
         # deferred ring passes come after the texture renderer so rings
         # draw on top of the textures during playback.
-        self.render_registry: List[Tuple[BaseRenderer, Tuple[str, ...]]] = []
+        self.render_registry: list[tuple[BaseRenderer, tuple[str, ...]]] = []
 
     def _rebuild_registry(self) -> None:
         """Rebuilds the render registry from the current children."""
-        registry: List[Tuple[BaseRenderer, Tuple[str, ...]]] = []
+        registry: list[tuple[BaseRenderer, tuple[str, ...]]] = []
         if self.background_renderer is not None:
             registry.append((self.background_renderer, ("background",)))
         if self.axis_renderer is not None:
@@ -307,7 +307,7 @@ class SceneRenderer(BaseRenderer):
 
     def update_cylinders_from_doc(self, doc, viewport, machine):
         """Reads chuck diameters from the assembly and rebuilds cylinders."""
-        desired_diameters: Dict[float, bool] = {}
+        desired_diameters: dict[float, bool] = {}
         if machine and self.had_rotary_layers:
             for layer in doc.layers:
                 if layer.rotary_enabled and layer.rotary_diameter > 0:
@@ -467,7 +467,7 @@ class SceneRenderer(BaseRenderer):
 
     def prepare_chunked_upload(
         self, artifact: CompiledSceneArtifact, show_travel_moves: bool
-    ) -> List[UploadItem]:
+    ) -> list[UploadItem]:
         """Creates fresh per-layer renderers and returns upload items."""
         for renderer in self.ops_renderers:
             renderer.cleanup()
@@ -476,7 +476,7 @@ class SceneRenderer(BaseRenderer):
         self.ops_renderers.clear()
         self.ring_renderers.clear()
 
-        upload_items: List[UploadItem] = []
+        upload_items: list[UploadItem] = []
 
         for vl in artifact.vertex_layers:
             ops = OpsRenderer(is_rotary=vl.is_rotary)

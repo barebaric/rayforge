@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from raygeo.geo.types import Point
 
@@ -82,7 +82,7 @@ class EqualDistanceConstraint(Constraint):
         target = {p1, p2}
         return target == {self.p1, self.p2} or target == {self.p3, self.p4}
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "EqualDistanceConstraint",
             "p1": self.p1,
@@ -93,7 +93,7 @@ class EqualDistanceConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "EqualDistanceConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> "EqualDistanceConstraint":
         return cls(
             p1=data["p1"],
             p2=data["p2"],
@@ -117,7 +117,7 @@ class EqualDistanceConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         pt3 = reg.get_point(self.p3)
@@ -131,7 +131,7 @@ class EqualDistanceConstraint(Constraint):
         dy2 = pt4.y - pt3.y
         dist2 = math.hypot(dx2, dy2)
 
-        grad: Dict[EntityID, List[Point]] = {}
+        grad: dict[EntityID, list[Point]] = {}
 
         def add(pid, gx, gy):
             if pid not in grad:

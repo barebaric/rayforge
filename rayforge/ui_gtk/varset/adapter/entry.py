@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 from gi.repository import Adw
 
@@ -18,7 +18,7 @@ class EntryAdapter(RowAdapter):
     @classmethod
     def create(
         cls, var: Var, target_property: str
-    ) -> Tuple[Adw.PreferencesRow, "EntryAdapter"]:
+    ) -> tuple[Adw.PreferencesRow, "EntryAdapter"]:
         row = Adw.EntryRow(title=escape_title(var.label))
         if var.description:
             row.set_tooltip_text(var.description)
@@ -46,7 +46,7 @@ class HostnameAdapter(EntryAdapter):
     @classmethod
     def create(
         cls, var: Var, target_property: str
-    ) -> Tuple[Adw.PreferencesRow, "HostnameAdapter"]:
+    ) -> tuple[Adw.PreferencesRow, "HostnameAdapter"]:
         row = Adw.EntryRow(title=escape_title(var.label))
         if var.description:
             row.set_tooltip_text(var.description)

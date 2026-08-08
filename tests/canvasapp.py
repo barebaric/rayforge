@@ -6,7 +6,7 @@ from pathlib import Path
 import gi
 
 gi.require_version("Gtk", "4.0")
-from typing import Dict, List, Optional
+from typing import Optional
 
 import cairo
 from gi.repository import Gdk, Gtk
@@ -145,7 +145,7 @@ class EditableElement(CanvasElement):
     "edit mode" where its vertices can be moved.
     """
 
-    vertices: List[List[float]]
+    vertices: list[list[float]]
 
     def __init__(self, x, y, width, height, **kwargs):
         # Ensure is_editable is set to True
@@ -161,7 +161,7 @@ class EditableElement(CanvasElement):
             [width * 0.1, height * 0.9],  # Bottom-left
         ]
         self._active_vertex_idx: Optional[int] = None
-        self._initial_vertex_pos: Optional[List[float]] = None
+        self._initial_vertex_pos: Optional[list[float]] = None
 
     def _draw_content(self, ctx: cairo.Context, width: float, height: float):
         """Draws a polygon connecting the vertices."""
@@ -333,8 +333,8 @@ class EditableElement(CanvasElement):
 class CanvasApp(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="com.example.CanvasApp")
-        self.mouse_pos: Dict[Gtk.Widget, Point] = {}
-        self.initial_pan_transforms: Dict[str, Matrix] = {}
+        self.mouse_pos: dict[Gtk.Widget, Point] = {}
+        self.initial_pan_transforms: dict[str, Matrix] = {}
 
     def do_activate(self):
         win = Gtk.ApplicationWindow(application=self)

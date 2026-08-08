@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from gi.repository import Gdk, Gtk
 
@@ -19,8 +19,8 @@ class PopoverMenu(Gtk.Popover):
     def __init__(
         self,
         *,
-        step_factories: Optional[List[Callable]] = None,
-        items: Optional[List[Tuple[str, Any]]] = None,
+        step_factories: Optional[list[Callable]] = None,
+        items: Optional[list[tuple[str, Any]]] = None,
         context: Optional["RayforgeContext"] = None,
         **kwargs,
     ):

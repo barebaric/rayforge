@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 import cairo
 from gi.repository import Gdk, GLib
@@ -11,9 +11,9 @@ from .region import ROTATE_HANDLES, ElementRegion
 
 logger = logging.getLogger(__name__)
 
-_cursor_cache: Dict[int, Gdk.Cursor] = {}
-_arc_cursor_cache: Dict[int, Gdk.Cursor] = {}
-_tool_cursor_cache: Dict[Tuple[str, ColorRGBA], Gdk.Cursor] = {}
+_cursor_cache: dict[int, Gdk.Cursor] = {}
+_arc_cursor_cache: dict[int, Gdk.Cursor] = {}
+_tool_cursor_cache: dict[tuple[str, ColorRGBA], Gdk.Cursor] = {}
 
 # This map defines the base angle for each resize handle, using a standard
 # counter-clockwise (CCW) convention where 0 degrees is to the right.

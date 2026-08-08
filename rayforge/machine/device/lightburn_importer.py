@@ -12,7 +12,7 @@ import logging
 from dataclasses import dataclass
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from ...machine.models.machine import Origin
 from .profile import (
@@ -23,7 +23,7 @@ from .profile import (
 
 logger = logging.getLogger(__name__)
 
-_DRIVER_MAP: Dict[str, Optional[str]] = {
+_DRIVER_MAP: dict[str, Optional[str]] = {
     "Serial": "GrblSerialDriver",
     "Network": "GrblNetworkDriver",
     "Ruida": "RuidaDriver",
@@ -34,13 +34,13 @@ _DRIVER_MAP: Dict[str, Optional[str]] = {
     "Custom": None,
 }
 
-_CUT_ORIGIN_MAP: Dict[int, Optional[str]] = {
+_CUT_ORIGIN_MAP: dict[int, Optional[str]] = {
     0: None,
     1: "top_left",
     2: "bottom_left",
 }
 
-_DEFAULT_GRBL_DIALECT: Dict[str, Any] = {
+_DEFAULT_GRBL_DIALECT: dict[str, Any] = {
     "laser_on": "M4 S{power:.0f}",
     "laser_off": "M5",
     "focus_laser_on": "M3 S{power:.0f}",
@@ -81,9 +81,9 @@ class ImportSummary:
     """
 
     name: str = ""
-    axis_extents: Optional[Tuple[float, float]] = None
+    axis_extents: Optional[tuple[float, float]] = None
     driver: Optional[str] = None
-    driver_args: Optional[Dict[str, Any]] = None
+    driver_args: Optional[dict[str, Any]] = None
     home_on_start: Optional[bool] = None
     max_travel_speed: Optional[int] = None
     origin: Optional[str] = None
@@ -91,9 +91,9 @@ class ImportSummary:
     mirror_y: Optional[bool] = None
     camera_calibration: bool = False
 
-    def to_lines(self) -> List[str]:
+    def to_lines(self) -> list[str]:
         """Return a bulleted list of human-readable summary lines."""
-        lines: List[str] = []
+        lines: list[str] = []
         if self.name:
             lines.append(f"\u2022 Device name: {self.name}")
         if self.axis_extents:
@@ -123,9 +123,9 @@ class ImportSummary:
             lines.append(_("(no fields mapped)"))
         return lines
 
-    def to_items(self) -> List[Tuple[str, str]]:
+    def to_items(self) -> list[tuple[str, str]]:
         """Return ``(field_label, value)`` pairs for table display."""
-        items: List[Tuple[str, str]] = []
+        items: list[tuple[str, str]] = []
         if self.name:
             items.append((_("Device name"), self.name))
         if self.axis_extents:
@@ -154,7 +154,7 @@ class ImportSummary:
         return items
 
 
-def parse_lbdev(path: Path) -> Dict[str, Any]:
+def parse_lbdev(path: Path) -> dict[str, Any]:
     """Parse a LightBurn .lbdev JSON file and return the first device."""
     if not path.exists():
         raise FileNotFoundError(f"LightBurn profile not found: {path}")
@@ -183,8 +183,8 @@ def _map_origin(cut_origin: Optional[int]) -> Optional[str]:
 
 
 def _parse_camera_data(
-    settings: Dict[str, Any],
-) -> Optional[Dict[str, Any]]:
+    settings: dict[str, Any],
+) -> Optional[dict[str, Any]]:
     """Extract camera calibration data from LightBurn settings."""
 
     camera_matrix_raw = settings.get("cameraMatrix")
@@ -193,7 +193,7 @@ def _parse_camera_data(
     if not camera_matrix_raw and not distortion_raw:
         return None
 
-    cam: Dict[str, Any] = {}
+    cam: dict[str, Any] = {}
 
     name = settings.get("LastCamera") or "LightBurn Camera"
     cam["name"] = name
@@ -229,7 +229,7 @@ def _parse_camera_data(
 
 def convert_to_profile(
     lbdev_path: Path,
-) -> Tuple[DeviceProfile, ImportSummary]:
+) -> tuple[DeviceProfile, ImportSummary]:
     """
     Parse a LightBurn ``.lbdev`` file and produce a
     :class:`DeviceProfile` and :class:`ImportSummary`.
@@ -251,8 +251,8 @@ def convert_to_profile(
 
 
 def _convert(
-    device_data: Dict[str, Any],
-) -> Tuple[DeviceMeta, "MachineConfig", "ImportSummary"]:
+    device_data: dict[str, Any],
+) -> tuple[DeviceMeta, "MachineConfig", "ImportSummary"]:
     """
     Convert a parsed LightBurn device dict to Rayforge models.
     """
@@ -262,7 +262,7 @@ def _convert(
     )
     summary = ImportSummary(name=name)
 
-    kwargs: Dict[str, Any] = {}
+    kwargs: dict[str, Any] = {}
 
     device_type = device_data.get("Type", "")
     driver_name = _map_driver(device_type)

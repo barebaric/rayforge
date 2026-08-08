@@ -1,5 +1,4 @@
 from gettext import gettext as _
-from typing import Set
 
 from gi.repository import Adw, Gtk
 
@@ -13,7 +12,7 @@ class MissingFeaturesDialog(Adw.MessageDialog):
     installed).
     """
 
-    def __init__(self, parent: Gtk.Window, missing_types: Set[str]):
+    def __init__(self, parent: Gtk.Window, missing_types: set[str]):
         super().__init__(transient_for=parent, modal=True)
         self.set_heading(_("Missing Features"))
 

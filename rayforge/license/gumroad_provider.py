@@ -5,7 +5,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import yaml
 
@@ -24,8 +24,8 @@ class GumroadProvider(LicenseProvider):
 
     def __init__(self, licenses_dir: Path):
         self.config_file = licenses_dir / "gumroad.yaml"
-        self._licenses: Dict[str, str] = {}
-        self._cache: Dict[str, Dict[str, Any]] = {}
+        self._licenses: dict[str, str] = {}
+        self._cache: dict[str, dict[str, Any]] = {}
         self._load_config()
 
     @property
@@ -47,10 +47,10 @@ class GumroadProvider(LicenseProvider):
         self._cache.pop(product_id, None)
         self._save_config()
 
-    def get_licenses(self) -> Dict[str, str]:
+    def get_licenses(self) -> dict[str, str]:
         return dict(self._licenses)
 
-    def get_cached_result(self, product_id: str) -> Optional[Dict]:
+    def get_cached_result(self, product_id: str) -> Optional[dict]:
         return self._cache.get(product_id)
 
     def clear_cache(self, product_id: Optional[str] = None) -> None:
@@ -62,7 +62,7 @@ class GumroadProvider(LicenseProvider):
     def validate_key(self, product_id: str, license_key: str) -> LicenseResult:
         return self._validate_single(product_id, license_key)
 
-    def validate(self, config: Dict) -> LicenseResult:
+    def validate(self, config: dict) -> LicenseResult:
         product_ids = config.get("product_ids", [])
         if not product_ids:
             product_id = config.get("product_id")
@@ -205,7 +205,7 @@ class GumroadProvider(LicenseProvider):
         self._cache_result(product_id, result)
         return result
 
-    def _get_valid_cache(self, product_id: str) -> Optional[Dict]:
+    def _get_valid_cache(self, product_id: str) -> Optional[dict]:
         cached = self._cache.get(product_id)
         if not cached:
             return None
@@ -235,7 +235,7 @@ class GumroadProvider(LicenseProvider):
         self._cache[product_id] = cache_data
         self._save_cache()
 
-    def _cached_to_result(self, cached: Dict) -> LicenseResult:
+    def _cached_to_result(self, cached: dict) -> LicenseResult:
         status = LicenseStatus(cached.get("status"))
         license_type = LicenseType(cached.get("license_type", "unknown"))
         last_validated_str = cached.get("last_validated")

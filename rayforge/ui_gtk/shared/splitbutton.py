@@ -1,6 +1,6 @@
 import logging
+from collections.abc import Sequence
 from gettext import gettext as _
-from typing import Sequence, Tuple
 
 from gi.repository import Gtk
 
@@ -19,7 +19,7 @@ class SplitMenuButton(Gtk.Box):
 
     def __init__(
         self,
-        actions: Sequence[Tuple[str, str, str]],
+        actions: Sequence[tuple[str, str, str]],
         default_index: int = 0,
         **kwargs,
     ):
@@ -120,7 +120,7 @@ class SplitMenuButton(Gtk.Box):
         self.main_button.set_tooltip_text(name)
         self.main_button.set_action_name(action_name)
 
-    def update_actions(self, actions: Sequence[Tuple[str, str, str]]):
+    def update_actions(self, actions: Sequence[tuple[str, str, str]]):
         """
         Updates the list of actions in the button.
 

@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 import cairo
 import numpy as np
@@ -75,11 +75,11 @@ class VectorEditState:
 
     def __init__(self, geometry: Geometry):
         self.geometry = geometry
-        self.selected_segments: Set[int] = set()
+        self.selected_segments: set[int] = set()
         self.hovered_segment: Optional[int] = None
-        self.frame_start: Optional[Tuple[float, float]] = None
-        self.frame_end: Optional[Tuple[float, float]] = None
-        self.frame_drag_start_world: Optional[Tuple[float, float]] = None
+        self.frame_start: Optional[tuple[float, float]] = None
+        self.frame_end: Optional[tuple[float, float]] = None
+        self.frame_drag_start_world: Optional[tuple[float, float]] = None
 
 
 class WorkPieceElement(CanvasElement):
@@ -114,22 +114,22 @@ class WorkPieceElement(CanvasElement):
         self._base_image_visible = True
         self._surface: Optional[cairo.ImageSurface] = None
 
-        self._ops_visibility: Dict[str, bool] = {}
-        self._artifact_cache: Dict[str, Optional[WorkPieceArtifact]] = {}
-        self._ops_surface_cache: Dict[str, cairo.ImageSurface] = {}
-        self._ops_surface_data_cache: Dict[str, np.ndarray] = {}
-        self._ops_metadata_cache: Dict[str, Tuple] = {}
+        self._ops_visibility: dict[str, bool] = {}
+        self._artifact_cache: dict[str, Optional[WorkPieceArtifact]] = {}
+        self._ops_surface_cache: dict[str, cairo.ImageSurface] = {}
+        self._ops_surface_data_cache: dict[str, np.ndarray] = {}
+        self._ops_metadata_cache: dict[str, tuple] = {}
 
         # Composited ops surface: a single surface that blends all
         # visible step surfaces, rebuilt incrementally.
         self._composited_surface: Optional[cairo.ImageSurface] = None
         self._composited_data: Optional[np.ndarray] = None
         self._composited_dirty: bool = True
-        self._composited_bbox_mm: Optional[Tuple] = None
-        self._composited_wp_size_mm: Optional[Tuple] = None
+        self._composited_bbox_mm: Optional[tuple] = None
+        self._composited_wp_size_mm: Optional[tuple] = None
         self._composited_bytes: int = 0
 
-        self._tab_handles: List[TabHandleElement] = []
+        self._tab_handles: list[TabHandleElement] = []
         # Default to False; the correct state will be pulled from the surface.
         self._tabs_visible_override: bool = False
 
@@ -346,7 +346,7 @@ class WorkPieceElement(CanvasElement):
         step_uid: str,
         surface: cairo.ImageSurface,
         data: np.ndarray,
-        metadata: Tuple,
+        metadata: tuple,
     ):
         """
         Stores a step's Cairo surface, backing data, and metadata.
@@ -653,7 +653,7 @@ class WorkPieceElement(CanvasElement):
 
     def get_closest_point_on_path(
         self, world_x: float, world_y: float, threshold_px: float = 5.0
-    ) -> Optional[Dict]:
+    ) -> Optional[dict]:
         """
         Checks if a point in world coordinates is close to the workpiece's
         vector path.
@@ -691,7 +691,7 @@ class WorkPieceElement(CanvasElement):
 
         natural_size = self.data.natural_size
         if natural_size and None not in natural_size:
-            natural_w, natural_h = cast(Tuple[float, float], natural_size)
+            natural_w, natural_h = cast(tuple[float, float], natural_size)
         else:
             natural_w, natural_h = self.data.get_local_size()
 
@@ -866,14 +866,14 @@ class WorkPieceElement(CanvasElement):
 
     def _segments_in_frame(
         self, x1: float, y1: float, x2: float, y2: float
-    ) -> Set[int]:
+    ) -> set[int]:
         if not self._edit_state:
             return set()
         return set(self._edit_state.geometry.segments_in_frame(x1, y1, x2, y2))
 
     def _world_to_local(
         self, wx: float, wy: float
-    ) -> Optional[Tuple[float, float]]:
+    ) -> Optional[tuple[float, float]]:
         try:
             inv = self.get_world_transform().invert()
             return inv.transform_point((wx, wy))

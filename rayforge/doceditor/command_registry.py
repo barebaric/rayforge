@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Set, Type
+from typing import Optional
 
 
 class CommandRegistry:
@@ -11,13 +11,13 @@ class CommandRegistry:
     """
 
     def __init__(self):
-        self._command_classes: Dict[str, Type] = {}
-        self._addon_items: Dict[str, Set[str]] = {}
+        self._command_classes: dict[str, type] = {}
+        self._addon_items: dict[str, set[str]] = {}
 
     def register(
         self,
         command_name: str,
-        command_class: Type,
+        command_class: type,
         addon_name: Optional[str] = None,
     ) -> None:
         """
@@ -71,7 +71,7 @@ class CommandRegistry:
                 count += 1
         return count
 
-    def get(self, command_name: str) -> Optional[Type]:
+    def get(self, command_name: str) -> Optional[type]:
         """
         Look up a command class by name.
 
@@ -83,7 +83,7 @@ class CommandRegistry:
         """
         return self._command_classes.get(command_name)
 
-    def all_commands(self) -> Dict[str, Type]:
+    def all_commands(self) -> dict[str, type]:
         """
         Return a copy of all registered command classes.
 

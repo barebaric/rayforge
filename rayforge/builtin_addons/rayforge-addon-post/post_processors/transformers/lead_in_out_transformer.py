@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.ops.transform.lead_in_out import LeadInOutSpec
 
@@ -114,14 +114,14 @@ class LeadInOutTransformer(OpsTransformer):
     def to_spec(
         self,
         workpiece: Optional[WorkPiece],
-        stock_geometries: Optional[List["Geometry"]],
-        settings: Optional[Dict[str, Any]],
+        stock_geometries: Optional[list["Geometry"]],
+        settings: Optional[dict[str, Any]],
     ) -> LeadInOutSpec:
         return LeadInOutSpec(
             lead_in_mm=self.lead_in_mm, lead_out_mm=self.lead_out_mm
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             **super().to_dict(),
             "lead_in_mm": self.lead_in_mm,
@@ -130,7 +130,7 @@ class LeadInOutTransformer(OpsTransformer):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "LeadInOutTransformer":
+    def from_dict(cls, data: dict[str, Any]) -> "LeadInOutTransformer":
         return cls(
             enabled=data.get("enabled", True),
             lead_in_mm=data.get("lead_in_mm", 2.0),

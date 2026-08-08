@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 from raygeo.ops import Ops
 
@@ -19,8 +19,8 @@ class MachineCodeOpMap:
                      index that generated it.
     """
 
-    op_to_machine_code: Dict[int, List[int]] = field(default_factory=dict)
-    machine_code_to_op: Dict[int, int] = field(default_factory=dict)
+    op_to_machine_code: dict[int, list[int]] = field(default_factory=dict)
+    machine_code_to_op: dict[int, int] = field(default_factory=dict)
 
 
 @dataclass
@@ -36,7 +36,7 @@ class EncodedOutput:
 
     text: str
     op_map: MachineCodeOpMap
-    driver_data: Dict[str, Any] = field(default_factory=dict)
+    driver_data: dict[str, Any] = field(default_factory=dict)
 
 
 class OpsEncoder(ABC):

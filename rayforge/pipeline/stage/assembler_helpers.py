@@ -15,7 +15,6 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Optional,
-    Tuple,
 )
 
 import numpy as np
@@ -223,7 +222,7 @@ MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 
 def build_part_vector_with_raster_fallback(
     workpiece: WorkPiece,
-    pixels_per_mm: Tuple[float, float],
+    pixels_per_mm: tuple[float, float],
     *,
     override_threshold: bool = False,
     threshold: float = 0.5,
@@ -290,14 +289,14 @@ def preprocess_raster_image(
     mode: DepthMode,
     invert: bool = False,
     auto_levels: bool = True,
-    computed_auto_levels: Optional[Tuple[int, int]] = None,
+    computed_auto_levels: Optional[tuple[int, int]] = None,
     black_point: int = 0,
     white_point: int = 255,
     threshold: int = 128,
     dither_algorithm: Optional[DitherAlgorithm] = None,
     laser_spot_x_mm: float = 0.1,
     pixels_per_mm_x: float = 1.0,
-) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+) -> tuple[Optional[np.ndarray], Optional[np.ndarray]]:
     """Convert a Cairo surface into an image array for a raster assembler.
 
     Handles depth-mode preprocessing: grayscale with optional levels,
@@ -376,7 +375,7 @@ def _apply_raster_levels(
     alpha: np.ndarray,
     *,
     auto_levels: bool = True,
-    computed_auto_levels: Optional[Tuple[int, int]] = None,
+    computed_auto_levels: Optional[tuple[int, int]] = None,
     black_point: int = 0,
     white_point: int = 255,
 ) -> np.ndarray:
@@ -399,11 +398,11 @@ def _apply_raster_levels(
 
 def compute_raster_auto_levels(
     workpiece: "WorkPiece",
-    pixels_per_mm: Tuple[float, float],
+    pixels_per_mm: tuple[float, float],
     *,
     invert: bool = False,
     max_preview_pixels: int = 512,
-) -> Optional[Tuple[int, int]]:
+) -> Optional[tuple[int, int]]:
     """Compute auto-levels from a low-resolution preview render.
 
     Renders a small preview of the workpiece, converts it to

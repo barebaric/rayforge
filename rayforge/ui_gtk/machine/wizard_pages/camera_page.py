@@ -18,7 +18,7 @@ applies.
 """
 
 from gettext import gettext as _
-from typing import Any, Dict, List
+from typing import Any
 
 from gi.repository import Adw
 
@@ -52,19 +52,19 @@ class CameraPage(WizardPage):
         self.content.append(self.cameras_group)
 
         # Each row is a 2-tuple of (substr_for_by_id_path, switch_row).
-        self._device_id_for_row: Dict[int, str] = {}
+        self._device_id_for_row: dict[int, str] = {}
         # Holds both real SwitchRows and the single empty-state
         # ActionRow shown when no cameras are detected.
-        self._switch_rows: List[Adw.PreferencesRow] = []
+        self._switch_rows: list[Adw.PreferencesRow] = []
         # Detection is deferred to `enter()` so we re-scan each time
         # the page is shown (USB cameras may have been plugged in
         # since the wizard was opened).
 
         self.set_ready(True)
 
-    def selected_device_ids(self) -> List[str]:
+    def selected_device_ids(self) -> list[str]:
         """Device IDs the user has enabled on this page."""
-        ids: List[str] = []
+        ids: list[str] = []
         for row in self._switch_rows:
             if not isinstance(row, Adw.SwitchRow):
                 continue
@@ -113,7 +113,7 @@ class CameraPage(WizardPage):
             self._device_id_for_row[id(row)] = by_id
 
     def apply_to_profile(self, profile: DeviceProfile) -> bool:
-        selected: List[Dict[str, Any]] = []
+        selected: list[dict[str, Any]] = []
         for by_id in self.selected_device_ids():
             cam = Camera(name=display_name(by_id), device_id=by_id)
             cam.enabled = True

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 from raygeo.geo.types import Rect
@@ -90,7 +90,7 @@ def _get_content_bbox(
 def calculate_render_dimensions(
     bbox: Rect,
     render_context: RenderContext,
-) -> Optional[Tuple[int, int, float, float]]:
+) -> Optional[tuple[int, int, float, float]]:
     """
     Calculates pixel dimensions and effective pixels-per-mm for rendering.
 
@@ -133,7 +133,7 @@ def calculate_render_dimensions(
 def _make_view_spec(
     render_context: RenderContext,
     color_set: ColorSet,
-    render_bbox_mm: Tuple[float, float, float, float],
+    render_bbox_mm: tuple[float, float, float, float],
 ) -> ViewSpec:
     """Build a raygeo ViewSpec from the render context and colour set."""
     return ViewSpec(
@@ -152,9 +152,9 @@ def _make_view_spec(
 
 def _expand_bbox_by_px(
     bbox: Rect,
-    ppm: Tuple[float, float],
+    ppm: tuple[float, float],
     margin_px: int,
-) -> Tuple[float, float, float, float]:
+) -> tuple[float, float, float, float]:
     """Expand a ``(x, y, w, h)`` bbox by ``margin_px`` on each side,
     returning ``(min_x, min_y, max_x, max_y)``."""
     x, y, w, h = bbox
@@ -174,7 +174,7 @@ def render_workpiece_view_in_process(
     render_context: RenderContext,
     laser_uid: Optional[str] = None,
     layer_uid: Optional[str] = None,
-) -> Optional[Tuple[np.ndarray, Rect, Tuple[float, float]]]:
+) -> Optional[tuple[np.ndarray, Rect, tuple[float, float]]]:
     """
     Render a WorkPieceArtifact into a view bitmap in-process.
 

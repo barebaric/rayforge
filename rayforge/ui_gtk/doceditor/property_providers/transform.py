@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gtk
 
@@ -29,10 +29,10 @@ class TransformPropertyProvider(PropertyProvider):
 
     priority = 10
 
-    def can_handle(self, items: List[DocItem]) -> bool:
+    def can_handle(self, items: list[DocItem]) -> bool:
         return bool(items)
 
-    def create_widgets(self) -> List[Gtk.Widget]:
+    def create_widgets(self) -> list[Gtk.Widget]:
         """Creates the widgets for transform properties once."""
         logger.debug("Creating transform property widgets.")
         self._rows = []
@@ -41,7 +41,7 @@ class TransformPropertyProvider(PropertyProvider):
         self._create_angle_shear_rows()
         return self._rows
 
-    def update_widgets(self, editor: "DocEditor", items: List[DocItem]):
+    def update_widgets(self, editor: "DocEditor", items: list[DocItem]):
         """Updates the transform widgets with data from the selected items."""
         logger.debug(f"Updating transform widgets for {len(items)} items.")
         self.editor = editor

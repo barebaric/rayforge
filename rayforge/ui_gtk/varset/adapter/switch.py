@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 from gi.repository import Adw
 
@@ -18,7 +18,7 @@ class SwitchAdapter(RowAdapter):
     @classmethod
     def create(
         cls, var: Var, target_property: str
-    ) -> Tuple[Adw.PreferencesRow, "SwitchAdapter"]:
+    ) -> tuple[Adw.PreferencesRow, "SwitchAdapter"]:
         row = Adw.SwitchRow(title=escape_title(var.label))
         if var.description:
             row.set_subtitle(var.description)

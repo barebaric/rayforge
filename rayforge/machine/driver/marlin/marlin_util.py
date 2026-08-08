@@ -1,7 +1,7 @@
 """Parsing utilities for the Marlin firmware driver."""
 
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 from ....shared.units.system import UnitSystem
 
@@ -35,8 +35,8 @@ m211_max_re = re.compile(
 
 
 def parse_m114_position(
-    response_lines: List[str],
-) -> Optional[Tuple[float, float, float]]:
+    response_lines: list[str],
+) -> Optional[tuple[float, float, float]]:
     """
     Parse M114 output to extract the (X, Y, Z) position.
 
@@ -130,15 +130,15 @@ def is_boot_message(line: str) -> bool:
 
 
 def parse_m115_firmware_info(
-    response_lines: List[str],
-) -> Dict[str, str]:
+    response_lines: list[str],
+) -> dict[str, str]:
     """
     Parse M115 response to extract firmware name and machine type.
 
     Returns a dict with optional keys ``firmware_name`` and
     ``machine_type``.
     """
-    info: Dict[str, str] = {}
+    info: dict[str, str] = {}
     for line in response_lines:
         match = m115_firmware_re.search(line)
         if match:
@@ -150,8 +150,8 @@ def parse_m115_firmware_info(
 
 
 def parse_m211_endstops(
-    response_lines: List[str],
-) -> Optional[Tuple[float, float]]:
+    response_lines: list[str],
+) -> Optional[tuple[float, float]]:
     """
     Parse M211 output to extract X/Y max travel from software endstops.
 
@@ -165,8 +165,8 @@ def parse_m211_endstops(
 
 
 def parse_m503_settings(
-    response_lines: List[str],
-) -> Dict[str, float]:
+    response_lines: list[str],
+) -> dict[str, float]:
     """
     Parse M503 output to extract key motion settings.
 
@@ -174,7 +174,7 @@ def parse_m503_settings(
       - ``max_feedrate_x``, ``max_feedrate_y`` (mm/s from M203)
       - ``acceleration`` (mm/s^2 from M204 S)
     """
-    settings: Dict[str, float] = {}
+    settings: dict[str, float] = {}
     for line in response_lines:
         match = m203_feedrate_re.search(line)
         if match:
@@ -187,7 +187,7 @@ def parse_m503_settings(
 
 
 def detect_unit_system_from_m149(
-    response_lines: List[str],
+    response_lines: list[str],
 ) -> Optional[UnitSystem]:
     """
     Inspect Marlin ``M149`` response lines and infer the device's
@@ -211,8 +211,8 @@ def detect_unit_system_from_m149(
 
 
 def extract_marlin_device_name(
-    m115_lines: List[str],
-    boot_lines: Optional[List[str]] = None,
+    m115_lines: list[str],
+    boot_lines: Optional[list[str]] = None,
 ) -> str:
     """
     Extract a human-readable device name from M115 and boot output.

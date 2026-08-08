@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Iterable, Optional
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Optional
 
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
@@ -24,7 +25,7 @@ class MachineState:
         self.frequency: Optional[int] = None
         self.pulse_width: Optional[float] = None
         if axis_letters is not None:
-            self.axes: Dict[Axis, float] = {a: 0.0 for a in axis_letters}
+            self.axes: dict[Axis, float] = {a: 0.0 for a in axis_letters}
         else:
             self.axes = {
                 Axis.X: 0.0,

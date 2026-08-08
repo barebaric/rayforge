@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Type
+from typing import TYPE_CHECKING
 
 from gi.repository import Gtk
 
@@ -22,11 +22,11 @@ class PropertyProviderRegistry:
     """
 
     def __init__(self):
-        self._providers: List[Type["PropertyProvider"]] = []
-        self._addon_map: Dict[Type["PropertyProvider"], str] = {}
+        self._providers: list[type["PropertyProvider"]] = []
+        self._addon_map: dict[type["PropertyProvider"], str] = {}
 
     def register(
-        self, provider_cls: Type["PropertyProvider"], addon_name: str
+        self, provider_cls: type["PropertyProvider"], addon_name: str
     ) -> None:
         """
         Register a property provider class.
@@ -45,7 +45,7 @@ class PropertyProviderRegistry:
                 f"Registered property provider: {provider_cls.__name__}"
             )
 
-    def unregister(self, provider_cls: Type["PropertyProvider"]) -> bool:
+    def unregister(self, provider_cls: type["PropertyProvider"]) -> bool:
         """
         Unregister a property provider class.
 
@@ -80,7 +80,7 @@ class PropertyProviderRegistry:
             )
         return len(to_remove)
 
-    def create_instances(self) -> List["PropertyProvider"]:
+    def create_instances(self) -> list["PropertyProvider"]:
         """
         Create instances of all registered providers, sorted by priority.
 
@@ -94,7 +94,7 @@ class PropertyProviderRegistry:
         )
         return [cls() for cls in sorted_providers]
 
-    def all(self) -> List[Type["PropertyProvider"]]:
+    def all(self) -> list[type["PropertyProvider"]]:
         """Return all registered provider classes."""
         return self._providers.copy()
 
@@ -122,16 +122,16 @@ class PropertyProvider(ABC):
 
     def __init__(self):
         self.editor: "DocEditor"
-        self.items: List[DocItem] = []
+        self.items: list[DocItem] = []
         self._in_update: bool = False
         # A list of all widgets created by this provider to manage them
-        self._rows: List[Gtk.Widget] = []
+        self._rows: list[Gtk.Widget] = []
         logger.debug(
             f"PropertyProvider '{self.__class__.__name__}' initialized."
         )
 
     @abstractmethod
-    def can_handle(self, items: List[DocItem]) -> bool:
+    def can_handle(self, items: list[DocItem]) -> bool:
         """
         Returns True if this provider is applicable to the given selection
         of items.
@@ -139,7 +139,7 @@ class PropertyProvider(ABC):
         ...
 
     @abstractmethod
-    def create_widgets(self) -> List[Gtk.Widget]:
+    def create_widgets(self) -> list[Gtk.Widget]:
         """
         Creates the necessary Gtk.Widget instances for this provider.
         This method is called only once. The created widgets should be
@@ -148,7 +148,7 @@ class PropertyProvider(ABC):
         ...
 
     @abstractmethod
-    def update_widgets(self, editor: "DocEditor", items: List[DocItem]):
+    def update_widgets(self, editor: "DocEditor", items: list[DocItem]):
         """
         Updates the state of the widgets created by `create_widgets` to
         reflect the properties of the currently selected items.

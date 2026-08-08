@@ -1,5 +1,6 @@
 import math
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.geo import Geometry
 from raygeo.geo.types import Point, Rect
@@ -20,27 +21,27 @@ class Ellipse(Entity):
         radius_x_pt_idx: EntityID,
         radius_y_pt_idx: EntityID,
         construction: bool = False,
-        helper_line_ids: Optional[List[EntityID]] = None,
+        helper_line_ids: Optional[list[EntityID]] = None,
     ):
         super().__init__(id, construction)
         self.center_idx: EntityID = center_idx
         self.radius_x_pt_idx: EntityID = radius_x_pt_idx
         self.radius_y_pt_idx: EntityID = radius_y_pt_idx
-        self.helper_line_ids: List[EntityID] = helper_line_ids or []
+        self.helper_line_ids: list[EntityID] = helper_line_ids or []
         self.type = "ellipse"
 
-    def get_point_ids(self) -> List[EntityID]:
+    def get_point_ids(self) -> list[EntityID]:
         return [self.center_idx, self.radius_x_pt_idx, self.radius_y_pt_idx]
 
-    def get_endpoint_ids(self) -> List[EntityID]:
+    def get_endpoint_ids(self) -> list[EntityID]:
         return []
 
-    def get_junction_point_ids(self) -> List[EntityID]:
+    def get_junction_point_ids(self) -> list[EntityID]:
         return [self.center_idx, self.radius_x_pt_idx, self.radius_y_pt_idx]
 
     def get_rigidly_connected_points(
         self, point_id: EntityID
-    ) -> List[EntityID]:
+    ) -> list[EntityID]:
         if point_id == self.center_idx:
             return [
                 self.center_idx,
@@ -79,7 +80,7 @@ class Ellipse(Entity):
         dist = math.sqrt((local_x / rx) ** 2 + (local_y / ry) ** 2)
         return abs(dist - 1.0) < (threshold / min(rx, ry))
 
-    def get_ignorable_unconstrained_points(self) -> List[EntityID]:
+    def get_ignorable_unconstrained_points(self) -> list[EntityID]:
         if self.constrained:
             return [self.radius_x_pt_idx, self.radius_y_pt_idx]
         return []
@@ -102,7 +103,7 @@ class Ellipse(Entity):
 
         self.constrained = center_is_constrained and radii_are_defined
 
-    def _get_radii(self, registry: "EntityRegistry") -> Tuple[float, float]:
+    def _get_radii(self, registry: "EntityRegistry") -> tuple[float, float]:
         center = registry.get_point(self.center_idx)
         radius_x_pt = registry.get_point(self.radius_x_pt_idx)
         radius_y_pt = registry.get_point(self.radius_y_pt_idx)
@@ -224,7 +225,7 @@ class Ellipse(Entity):
     ) -> Optional[Geometry]:
         return self.to_geometry(registry)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         data = super().to_dict()
         data.update(
             {
@@ -237,7 +238,7 @@ class Ellipse(Entity):
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Ellipse":
+    def from_dict(cls, data: dict[str, Any]) -> "Ellipse":
         return cls(
             id=data["id"],
             center_idx=data["center_idx"],

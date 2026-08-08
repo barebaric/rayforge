@@ -4,16 +4,12 @@ import logging
 import uuid
 import weakref
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
-    Iterable,
-    List,
     Optional,
-    Tuple,
-    Type,
     TypeVar,
     overload,
 )
@@ -76,7 +72,7 @@ class DocItem(ABC):
         self.uid: str = str(uuid.uuid4())
         self._name: str = name
         self._parent: Optional[DocItem] = None
-        self.children: List[DocItem] = []
+        self.children: list[DocItem] = []
         self._matrix: Matrix = Matrix.identity()
 
         # Monotonic revision counters bumped whenever the corresponding
@@ -111,7 +107,7 @@ class DocItem(ABC):
         # Fired when a descendant's `transform_changed` signal is fired.
         self.descendant_transform_changed = Signal()
 
-        self._natural_size: Tuple[float, float] = (0.0, 0.0)
+        self._natural_size: tuple[float, float] = (0.0, 0.0)
 
     # -- Revision counters ------------------------------------------------
 
@@ -177,18 +173,18 @@ class DocItem(ABC):
         return x, y, w, h
 
     @abstractmethod
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Serializes the item to a dictionary."""
         raise NotImplementedError
 
     @classmethod
     @abstractmethod
-    def from_dict(cls, data: Dict) -> "DocItem":
+    def from_dict(cls, data: dict) -> "DocItem":
         """Deserializes the item from a dictionary."""
         raise NotImplementedError
 
     @staticmethod
-    def create_from_dict(data: Dict) -> "DocItem":
+    def create_from_dict(data: dict) -> "DocItem":
         """
         Factory method that deserializes a dictionary into the appropriate
         DocItem subclass based on the 'type' field.
@@ -300,7 +296,7 @@ class DocItem(ABC):
         self.matrix = new_local_matrix
 
     @property
-    def size(self) -> Tuple[float, float]:
+    def size(self) -> tuple[float, float]:
         """
         The world-space size (width, height) in mm, as absolute values,
         decomposed from the world transformation matrix.
@@ -375,7 +371,7 @@ class DocItem(ABC):
         self.matrix = new_local_matrix
 
     @property
-    def natural_size(self) -> Tuple[float, float]:
+    def natural_size(self) -> tuple[float, float]:
         """
         Returns the natural size (untransformed width and height) of this item.
 
@@ -734,17 +730,17 @@ class DocItem(ABC):
         return depth
 
     @overload
-    def get_descendants(self) -> List["DocItem"]: ...
+    def get_descendants(self) -> list["DocItem"]: ...
 
     @overload
-    def get_descendants(self, of_type: Type[T_Desc]) -> List[T_Desc]: ...
+    def get_descendants(self, of_type: type[T_Desc]) -> list[T_Desc]: ...
 
-    def get_descendants(self, of_type: Optional[Type[T_Desc]] = None) -> List:
+    def get_descendants(self, of_type: Optional[type[T_Desc]] = None) -> list:
         """
         Recursively finds and returns a flattened list of all descendant
         DocItems, optionally filtered by type.
         """
-        all_descendants: List[DocItem] = []
+        all_descendants: list[DocItem] = []
         for child in self.children:
             all_descendants.append(child)
             # This recursive call unambiguously matches the first overload.
@@ -883,7 +879,7 @@ class DocItem(ABC):
             return parent_transform @ self.matrix
         return self.matrix
 
-    def get_ancestor_by_type(self, ancestor_type: Type) -> Optional["DocItem"]:
+    def get_ancestor_by_type(self, ancestor_type: type) -> Optional["DocItem"]:
         """
         Traverses the parent hierarchy to find the first ancestor of the
         specified type.

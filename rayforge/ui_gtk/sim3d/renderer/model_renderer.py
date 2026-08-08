@@ -5,7 +5,7 @@ Renders a .glb 3D model using OpenGL triangles with per-vertex normals.
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import trimesh
@@ -25,11 +25,11 @@ class _CachedModelData:
     normals: np.ndarray
     colors: Optional[np.ndarray]
     faces: np.ndarray
-    bounds: Tuple[np.ndarray, np.ndarray]
+    bounds: tuple[np.ndarray, np.ndarray]
     triangle_count: int
 
 
-_model_cache: Dict[Path, _CachedModelData] = {}
+_model_cache: dict[Path, _CachedModelData] = {}
 
 
 def _extract_color(mesh: trimesh.Trimesh) -> Optional[np.ndarray]:
@@ -146,7 +146,7 @@ class ModelRenderer(BaseRenderer):
         self._vbo_color: int = 0
         self._vertex_count: int = 0
         self._has_colors: bool = False
-        self._bounds: Optional[Tuple[np.ndarray, np.ndarray]] = None
+        self._bounds: Optional[tuple[np.ndarray, np.ndarray]] = None
         self._loaded: bool = False
         self._mesh_data: Optional[_CachedModelData] = None
         self._mvp_matrix: Optional[np.ndarray] = None

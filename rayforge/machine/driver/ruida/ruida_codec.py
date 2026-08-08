@@ -6,7 +6,7 @@ detected from certain packets (card ID queries) or set explicitly.
 """
 
 import logging
-from typing import Dict, Optional
+from typing import Optional
 
 from .ruida_maps import CARD_ID_TO_MAGIC
 from .ruida_util import build_swizzle_lut, parse_mem
@@ -27,7 +27,7 @@ class RuidaCodec:
         self._swizzle_lut, self._unswizzle_lut = build_swizzle_lut(magic)
         self._magic_keys = self._build_magic_keys()
 
-    def _build_magic_keys(self) -> Dict[bytes, int]:
+    def _build_magic_keys(self) -> dict[bytes, int]:
         """Build lookup table for magic key detection from 4-byte packets."""
         keys = {}
         for g in range(256):

@@ -11,7 +11,7 @@ selection that stays in place.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from raygeo.geo import Matrix
 from raygeo.geo.types import Rect
@@ -36,7 +36,7 @@ class ArrayStrategy(ABC):
     def __init__(
         self,
         unit_bbox: Rect,
-        anchor: Optional[Tuple[float, float]] = None,
+        anchor: Optional[tuple[float, float]] = None,
     ):
         """
         Args:
@@ -49,17 +49,17 @@ class ArrayStrategy(ABC):
                 ``None`` the strategy-specific default is used.
         """
         self.unit_bbox: Rect = unit_bbox
-        self._custom_anchor: Optional[Tuple[float, float]] = anchor
+        self._custom_anchor: Optional[tuple[float, float]] = anchor
 
     @property
-    def anchor(self) -> Tuple[float, float]:
+    def anchor(self) -> tuple[float, float]:
         """The effective LOCAL anchor ``(u, v)`` for this strategy."""
         if self._custom_anchor is not None:
             return self._custom_anchor
         return self._default_anchor
 
     @property
-    def anchor_world(self) -> Tuple[float, float]:
+    def anchor_world(self) -> tuple[float, float]:
         """The anchor evaluated in world coordinates for the current
         ``unit_bbox``."""
         u, v = self.anchor
@@ -69,27 +69,27 @@ class ArrayStrategy(ABC):
         return (min_x + u * w, min_y + v * h)
 
     @property
-    def _default_anchor(self) -> Tuple[float, float]:
+    def _default_anchor(self) -> tuple[float, float]:
         """Default anchor — the bbox centre ``(0.5, 0.5)``."""
         return (0.5, 0.5)
 
     @property
-    def _unit_center(self) -> Tuple[float, float]:
+    def _unit_center(self) -> tuple[float, float]:
         min_x, min_y, max_x, max_y = self.unit_bbox
         return ((min_x + max_x) / 2.0, (min_y + max_y) / 2.0)
 
     @property
-    def _unit_size(self) -> Tuple[float, float]:
+    def _unit_size(self) -> tuple[float, float]:
         min_x, min_y, max_x, max_y = self.unit_bbox
         return (max_x - min_x, max_y - min_y)
 
     @abstractmethod
-    def calculate_placements(self) -> List[Matrix]:
+    def calculate_placements(self) -> list[Matrix]:
         """Return one world-space delta Matrix per array instance."""
         raise NotImplementedError
 
     @staticmethod
-    def distribute_angles(count: int, total_angle_deg: float) -> List[float]:
+    def distribute_angles(count: int, total_angle_deg: float) -> list[float]:
         """Distributes ``count`` angular offsets over ``total_angle_deg``.
 
         The step is always ``total / count`` so that every offset is

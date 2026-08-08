@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional
 
 import cairo
 
@@ -26,7 +26,7 @@ class SketchHitTester:
 
     def screen_to_model(
         self, wx: float, wy: float, element: Any
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Converts world coordinates to Model coordinates
         (accounting for content_transform).
@@ -61,7 +61,7 @@ class SketchHitTester:
 
     def get_hit_data(
         self, wx: float, wy: float, element: Any
-    ) -> Tuple[Optional[str], Any]:
+    ) -> tuple[Optional[str], Any]:
         """
         Determines what was clicked using Model coordinates.
         Returns (type_string, object_id_or_index).
@@ -95,7 +95,7 @@ class SketchHitTester:
         max_y: float,
         element: Any,
         strict_containment: bool = False,
-    ) -> Tuple[List[int], List[int]]:
+    ) -> tuple[list[int], list[int]]:
         """
         Finds all points and entities within a Model Space rectangle.
 
@@ -159,7 +159,7 @@ class SketchHitTester:
                 best_pid = p.id
         return best_pid
 
-    def _hit_test_overlays(self, wx, wy, element) -> Tuple[Optional[str], Any]:
+    def _hit_test_overlays(self, wx, wy, element) -> tuple[Optional[str], Any]:
         if not element.canvas:
             return None, None
         to_screen = self.get_model_to_screen_transform(element)

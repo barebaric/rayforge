@@ -1,7 +1,7 @@
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Optional
 
 import cairo
 from blinker import Signal
@@ -48,7 +48,7 @@ class ImportDialog(PatchedDialogWindow):
         editor: "DocEditor",
         file_path: Path,
         mime_type: str,
-        features: Set[ImporterFeature],
+        features: set[ImporterFeature],
         source_asset: Optional[SourceAsset] = None,
         initial_spec: Optional[VectorizationSpec] = None,
     ):
@@ -66,7 +66,7 @@ class ImportDialog(PatchedDialogWindow):
         self._preview_result: Optional[PreviewResult] = None
         self._background_pixbuf: Optional[GdkPixbuf.Pixbuf] = None
         self._in_update = False  # Prevent signal recursion
-        self._layer_widgets: Dict[Gtk.Switch, str] = {}
+        self._layer_widgets: dict[Gtk.Switch, str] = {}
         self._layers_expander: Optional[Adw.ExpanderRow] = None
 
         self._layer_import_model = Gtk.StringList.new(
@@ -412,7 +412,7 @@ class ImportDialog(PatchedDialogWindow):
         ctx: cairo.Context,
         width: int,
         height: int,
-        rgb: Optional[Tuple[float, float, float]],
+        rgb: Optional[tuple[float, float, float]],
     ):
         if rgb is None:
             return
@@ -421,7 +421,7 @@ class ImportDialog(PatchedDialogWindow):
         ctx.fill()
 
     def _make_color_swatch(
-        self, rgb: Optional[Tuple[float, float, float]]
+        self, rgb: Optional[tuple[float, float, float]]
     ) -> Gtk.DrawingArea:
         area = Gtk.DrawingArea()
         area.set_content_width(18)
@@ -490,7 +490,7 @@ class ImportDialog(PatchedDialogWindow):
 
         expander.add_row(self.layer_import_mode_row)
 
-    def _get_active_layer_ids(self) -> Optional[List[str]]:
+    def _get_active_layer_ids(self) -> Optional[list[str]]:
         if not self._layer_widgets:
             return None
         return [
@@ -771,7 +771,7 @@ class ImportDialog(PatchedDialogWindow):
         constant_line_width = abs(px)
 
         def draw_item(
-            item: DocItem, color: Optional[Tuple[float, float, float]] = None
+            item: DocItem, color: Optional[tuple[float, float, float]] = None
         ):
             if isinstance(item, WorkPiece) and item.boundaries:
                 ctx.save()
@@ -803,7 +803,7 @@ class ImportDialog(PatchedDialogWindow):
     @staticmethod
     def _hex_to_rgb(
         color: Optional[str],
-    ) -> Optional[Tuple[float, float, float]]:
+    ) -> Optional[tuple[float, float, float]]:
         """Converts a '#rrggbb' hex string to an RGB 0-1 tuple."""
         if not color:
             return None

@@ -4,8 +4,6 @@ import logging
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
-    Dict,
-    List,
     NamedTuple,
     Optional,
 )
@@ -50,14 +48,14 @@ class TabOpsTransformer(OpsTransformer):
 
     def _generate_tab_clip_data(
         self, workpiece: WorkPiece
-    ) -> List[_ClipPoint]:
+    ) -> list[_ClipPoint]:
         if not workpiece.boundaries or workpiece.boundaries.is_empty():
             logger.debug(
                 "TabOps: workpiece has no vectors, cannot generate clip data."
             )
             return []
 
-        clip_data: List[_ClipPoint] = []
+        clip_data: list[_ClipPoint] = []
         vectors = workpiece.boundaries
 
         logger.debug(
@@ -110,8 +108,8 @@ class TabOpsTransformer(OpsTransformer):
     def to_spec(
         self,
         workpiece: Optional[WorkPiece],
-        stock_geometries: Optional[List["Geometry"]],
-        settings: Optional[Dict],
+        stock_geometries: Optional[list["Geometry"]],
+        settings: Optional[dict],
     ) -> TabsSpec:
         tab_power = settings.get("tab_power", 0.0) if settings else 0.0
         original_power = settings.get("power", 1.0) if settings else 1.0
@@ -146,7 +144,7 @@ class TabOpsTransformer(OpsTransformer):
         )
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "TabOpsTransformer":
+    def from_dict(cls, data: dict) -> "TabOpsTransformer":
         if data.get("name") != cls.__name__:
             raise ValueError(
                 f"Mismatched transformer name: expected {cls.__name__},"

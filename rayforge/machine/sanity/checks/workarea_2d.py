@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Set
+from typing import TYPE_CHECKING
 
 from raygeo.ops.types import CommandCategory
 
@@ -16,12 +16,12 @@ class WorkareaCheck2D(BaseCheck):
     def category(self) -> IssueCategory:
         return IssueCategory.WORKAREA
 
-    def run(self, context: "SanityContext") -> List[SanityIssue]:
+    def run(self, context: "SanityContext") -> list[SanityIssue]:
         wa = context.work_area
         x_min, y_min = wa[0], wa[1]
         x_max, y_max = wa[0] + wa[2], wa[1] + wa[3]
-        seen: Set[str] = set()
-        issues: List[SanityIssue] = []
+        seen: set[str] = set()
+        issues: list[SanityIssue] = []
         ops = context.ops
         for i in range(ops.len()):
             if ops.category(i) != CommandCategory.MOVING:
@@ -32,8 +32,8 @@ class WorkareaCheck2D(BaseCheck):
 
     @staticmethod
     def _check_point(
-        issues: List[SanityIssue],
-        seen: Set[str],
+        issues: list[SanityIssue],
+        seen: set[str],
         point,
         x_min: float,
         y_min: float,

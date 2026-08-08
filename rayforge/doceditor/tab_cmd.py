@@ -4,7 +4,7 @@ import logging
 from copy import deepcopy
 from dataclasses import replace
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from raygeo.geo import Geometry
 
@@ -26,7 +26,7 @@ class SetWorkpieceTabsCommand(Command):
         self,
         editor: DocEditor,
         workpiece: WorkPiece,
-        new_tabs: List[Tab],
+        new_tabs: list[Tab],
         name: str = "Set Tabs",
     ):
         super().__init__(name=name)
@@ -64,7 +64,7 @@ class TabCmd:
 
     def _calculate_equidistant_tabs(
         self, geometry: Geometry, count: int, width: float
-    ) -> List[Tab]:
+    ) -> list[Tab]:
         """Calculates positions for a number of equally spaced tabs."""
         if count <= 0:
             return []
@@ -83,7 +83,7 @@ class TabCmd:
 
     def _calculate_cardinal_tabs(
         self, geometry: Geometry, width: float
-    ) -> List[Tab]:
+    ) -> list[Tab]:
         """Calculates positions for 4 tabs at the cardinal points."""
         if geometry.is_empty():
             return []
@@ -107,7 +107,7 @@ class TabCmd:
         ]
 
         # 3. For each point, find the closest location on the geometry path
-        tabs: List[Tab] = []
+        tabs: list[Tab] = []
         for x, y in cardinal_points:
             closest = geometry.find_closest_point(x, y)
             if closest:
@@ -121,8 +121,8 @@ class TabCmd:
                 )
 
         # 4. Deduplicate tabs that might land on the same spot (e.g., corners)
-        unique_tabs: List[Tab] = []
-        seen: set[Tuple[int, int]] = set()
+        unique_tabs: list[Tab] = []
+        seen: set[tuple[int, int]] = set()
         for tab in tabs:
             # Round `t` to avoid floating point inaccuracies causing missed
             # duplicates

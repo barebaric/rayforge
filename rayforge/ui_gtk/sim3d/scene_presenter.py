@@ -9,7 +9,7 @@ keeps the GL lifecycle and per-frame rendering.
 
 import logging
 import time
-from typing import TYPE_CHECKING, Callable, Dict, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 import numpy as np
 from blinker import Signal
@@ -487,7 +487,7 @@ class ScenePresenter:
             else:
                 self._scene.set_cylinder_transform(np.eye(4, dtype=np.float64))
 
-        layer_configs: Dict[str, LayerRenderConfig] = {}
+        layer_configs: dict[str, LayerRenderConfig] = {}
         for layer in self.doc.layers:
             axis_position = 0.0
             reverse = False
@@ -534,7 +534,7 @@ class ScenePresenter:
 
     def _schedule_scene_preparation(
         self,
-        render_config_dict: Dict,
+        render_config_dict: dict,
     ):
         task_key = (id(self), "prepare-3d-scene-vertices")
 

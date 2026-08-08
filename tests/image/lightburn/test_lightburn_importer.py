@@ -2,7 +2,6 @@
 
 import math
 from pathlib import Path
-from typing import Dict, List
 
 import pytest
 from raygeo.geo import Matrix
@@ -242,7 +241,7 @@ class TestBuildStepConfig:
 
 class TestBuildPath:
     def test_line_closed(self):
-        verts: List[Dict[str, float]] = [
+        verts: list[dict[str, float]] = [
             {"x": 0.0, "y": 0.0},
             {"x": 10.0, "y": 0.0},
             {"x": 10.0, "y": 10.0},
@@ -254,7 +253,7 @@ class TestBuildPath:
         assert not geo.is_empty()
 
     def test_lineclosed_string(self):
-        verts: List[Dict[str, float]] = [
+        verts: list[dict[str, float]] = [
             {"x": 0.0, "y": 0.0},
             {"x": 10.0, "y": 0.0},
             {"x": 10.0, "y": 10.0},
@@ -268,12 +267,12 @@ class TestBuildPath:
         assert geo.is_empty()
 
     def test_single_vert_lineclosed(self):
-        verts: List[Dict[str, float]] = [{"x": 5.0, "y": 5.0}]
+        verts: list[dict[str, float]] = [{"x": 5.0, "y": 5.0}]
         geo = _build_path_from_verts_and_prims(verts, [], "LineClosed")
         assert not geo.is_empty()
 
     def test_bezier(self):
-        verts: List[Dict[str, float]] = [
+        verts: list[dict[str, float]] = [
             {
                 "x": 0.0,
                 "y": 0.0,
@@ -296,7 +295,7 @@ class TestBuildPath:
         assert not geo.is_empty()
 
     def test_bezier_missing_controls_falls_back_to_line(self):
-        verts: List[Dict[str, float]] = [
+        verts: list[dict[str, float]] = [
             {"x": 0.0, "y": 0.0},
             {"x": 10.0, "y": 10.0},
         ]

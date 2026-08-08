@@ -17,8 +17,9 @@ Usage::
         self.zone_renderer.render(ctx, self.shader_set)
 """
 
+from collections.abc import Generator
 from contextlib import ExitStack, contextmanager
-from typing import Generator, Optional
+from typing import Optional
 
 import numpy as np
 from OpenGL import GL

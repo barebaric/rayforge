@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from .var import Var
 
@@ -60,13 +60,13 @@ class AppKeyVar(Var[str]):
 
     def resolve_config(
         self,
-        overrides: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
-        sibling_values: Dict[str, Any] = {}
+        overrides: Optional[dict[str, str]] = None,
+    ) -> dict[str, Any]:
+        sibling_values: dict[str, Any] = {}
         if self._varset is not None:
             sibling_values = self._varset.get_values()
 
-        merged: Dict[str, Any] = {
+        merged: dict[str, Any] = {
             "app_name": self.app_name,
             "probe_url": self.probe_url,
             "request_url": self.request_url,
@@ -87,7 +87,7 @@ class AppKeyVar(Var[str]):
         merged["poll_url"] = _resolve(merged["poll_url"])
         return merged
 
-    def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
+    def to_dict(self, include_value: bool = False) -> dict[str, Any]:
         data = super().to_dict(include_value=include_value)
         data["app_name"] = self.app_name
         data["probe_url"] = self.probe_url

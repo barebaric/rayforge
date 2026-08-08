@@ -1,6 +1,6 @@
 from dataclasses import asdict
 from pathlib import Path
-from typing import Tuple, cast
+from typing import cast
 
 import cairo
 import pytest
@@ -34,7 +34,7 @@ def sample_svg_data() -> bytes:
 @pytest.fixture
 def doc_with_workpiece(
     sample_svg_data: bytes, tmp_path: Path
-) -> Tuple[Doc, WorkPiece, SourceAsset]:
+) -> tuple[Doc, WorkPiece, SourceAsset]:
     """
     Creates a Doc with a single WorkPiece linked to a SourceAsset,
     which is the correct way to test a WorkPiece's data-dependent methods.
@@ -61,7 +61,7 @@ def doc_with_workpiece(
 
 @pytest.fixture
 def workpiece_instance(
-    doc_with_workpiece: Tuple[Doc, WorkPiece, SourceAsset],
+    doc_with_workpiece: tuple[Doc, WorkPiece, SourceAsset],
 ):
     """Provides the WorkPiece instance from the doc_with_workpiece fixture."""
     return doc_with_workpiece[1]

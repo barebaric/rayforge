@@ -3,7 +3,7 @@ import sys
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -90,8 +90,8 @@ def create_mock_addon(
     name: str = "test_plugin",
     version: str = "1.0.0",
     worker: Optional[str] = "plugin",
-    depends: Optional[List] = None,
-    requires: Optional[List] = None,
+    depends: Optional[list] = None,
+    requires: Optional[list] = None,
 ) -> MagicMock:
     """Creates a MagicMock that accurately mimics a Addon object."""
     if depends is None:

@@ -13,7 +13,7 @@ is a self-contained :class:`Adw.PreferencesPage` subclass:
 
 import logging
 from gettext import gettext as _
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -89,8 +89,8 @@ class RecipeApplicabilityPage(Adw.PreferencesPage):
         self._ui_capabilities = list(
             step_capability_registry.all_capabilities()
         )
-        self._ui_step_types: List[Optional[str]] = []
-        self._machine_ids: List[Optional[str]] = [None]
+        self._ui_step_types: list[Optional[str]] = []
+        self._machine_ids: list[Optional[str]] = [None]
         self._selected_material_uid: Optional[str] = (
             recipe.material_uid if recipe else None
         )
@@ -356,10 +356,10 @@ class RecipeSettingsPage(Adw.PreferencesPage):
     def populate(self, varset: VarSet):
         self._widget.populate(varset)
 
-    def set_values(self, values: Dict[str, Any]):
+    def set_values(self, values: dict[str, Any]):
         self._widget.set_values(values)
 
-    def get_values(self) -> Dict[str, Any]:
+    def get_values(self) -> dict[str, Any]:
         return self._widget.get_values()
 
     @property

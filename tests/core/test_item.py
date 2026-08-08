@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Optional
+from typing import Optional
 
 import pytest
 from blinker import Signal
@@ -27,11 +27,11 @@ class ConcreteItem(DocItem):
     This item is NOT a workpiece.
     """
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {"name": self.name}
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "ConcreteItem":
+    def from_dict(cls, data: dict) -> "ConcreteItem":
         return cls(name=data.get("name", "ConcreteItem"))
 
 

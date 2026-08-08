@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Coroutine
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Callable, Coroutine, Dict, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 import numpy as np
 from blinker import Signal
@@ -354,7 +355,7 @@ class MachineCmd:
             lambda ctx: driver.clear_alarm(), key="clear-alarm"
         )
 
-    def jog(self, machine: "Machine", deltas: Dict[Axis, float], speed: int):
+    def jog(self, machine: "Machine", deltas: dict[Axis, float], speed: int):
         """
         Adds a task to jog the machine along specific axes.
         """

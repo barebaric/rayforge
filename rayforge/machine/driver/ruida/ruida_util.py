@@ -7,8 +7,6 @@ Based on:
 - https://github.com/StevenIsaacs/ruida-protocol-analyzer
 """
 
-from typing import Tuple
-
 from rayforge.machine.driver.ruida.ruida_maps import (
     DA_4_BYTE_RESPONSE_SUBCOMMANDS,
     DA_VARIABLE_4_BYTE_SUBCOMMANDS,
@@ -37,7 +35,7 @@ def unswizzle_byte(b: int, magic: int = 0x88) -> int:
     return b
 
 
-def build_swizzle_lut(magic: int) -> Tuple[bytes, bytes]:
+def build_swizzle_lut(magic: int) -> tuple[bytes, bytes]:
     """Build lookup tables for swizzling and unswizzling."""
     swizzle = bytes([swizzle_byte(i, magic) for i in range(256)])
     unswizzle = bytes([unswizzle_byte(i, magic) for i in range(256)])
@@ -112,7 +110,7 @@ def calculate_checksum(data: bytes) -> int:
     return sum(data) & 0xFFFF
 
 
-def decode_abs_coords(data: bytes) -> Tuple[float, float]:
+def decode_abs_coords(data: bytes) -> tuple[float, float]:
     """
     Decode absolute X,Y coordinates from 10 bytes.
     Returns coordinates in millimeters.
@@ -122,7 +120,7 @@ def decode_abs_coords(data: bytes) -> Tuple[float, float]:
     return x_um / UM_PER_MM, y_um / UM_PER_MM
 
 
-def decode_rel_coords(data: bytes) -> Tuple[float, float]:
+def decode_rel_coords(data: bytes) -> tuple[float, float]:
     """
     Decode relative X,Y coordinates from 4 bytes.
     Returns coordinates in millimeters.
@@ -146,7 +144,7 @@ def frame_packet(payload: bytes) -> bytes:
     return bytes([checksum >> 8, checksum & 0xFF]) + payload
 
 
-def validate_packet(data: bytes) -> Tuple[bool, bytes, int, int]:
+def validate_packet(data: bytes) -> tuple[bool, bytes, int, int]:
     """
     Validate a complete packet and extract payload.
 

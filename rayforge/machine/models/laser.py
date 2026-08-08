@@ -1,6 +1,6 @@
 from enum import Enum
 from gettext import gettext as _
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 from ...core.capability import MachineCapability
 from .head import _HEAD_SERIALIZED_KEYS, Head
@@ -36,7 +36,7 @@ class LaserHead(Head):
         self.frame_speed: int = 0  # mm/min, 0 = use machine max travel speed
         self.frame_repeat_count: int = 20
         self.frame_corner_pause: float = 0  # seconds
-        self.spot_size_mm: Tuple[float, float] = 0.1, 0.1  # millimeters
+        self.spot_size_mm: tuple[float, float] = 0.1, 0.1  # millimeters
         self.cut_color: str = "#ff00ff"  # Magenta for cut
         self.raster_color: str = "#000000"  # Black for raster
         self.focal_distance: float = 0.0
@@ -63,7 +63,7 @@ class LaserHead(Head):
         return spot_x / 2.0
 
     @staticmethod
-    def get_spot_size(head: Optional["LaserHead"]) -> Tuple[float, float]:
+    def get_spot_size(head: Optional["LaserHead"]) -> tuple[float, float]:
         """The effective spot size ``(x, y)`` in mm for a laser head.
 
         Falls back to a sane minimum when no laser head is available.
@@ -184,7 +184,7 @@ class LaserHead(Head):
             self.pulse_width = max_width
         self.changed.send(self)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         result = super().to_dict()
         result.update(
             {
@@ -210,7 +210,7 @@ class LaserHead(Head):
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "LaserHead":
+    def from_dict(cls, data: dict[str, Any]) -> "LaserHead":
         known_keys = _HEAD_SERIALIZED_KEYS | {
             "max_power",
             "frame_power_percent",

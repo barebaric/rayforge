@@ -16,7 +16,7 @@ rendering.
 
 import logging
 import math
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import cairo
 
@@ -40,18 +40,18 @@ class OutlineElement(CanvasElement):
         )
         # Each entry in _shapes is a list of world-space (x, y) corners
         # forming the footprint of one source item.
-        self._shapes: List[List[Tuple[float, float]]] = []
+        self._shapes: list[list[tuple[float, float]]] = []
         # List of world-space delta Matrices; each shape is drawn once
         # per delta. An identity delta is skipped.
         self._deltas = []
         # Optional guide circle (world center, world radius).
-        self._guide_circle: Optional[Tuple[Tuple[float, float], float]] = None
+        self._guide_circle: Optional[tuple[tuple[float, float], float]] = None
 
     def set_outlines(
         self,
         shapes,
         deltas,
-        guide_circle: Optional[Tuple[Tuple[float, float], float]] = None,
+        guide_circle: Optional[tuple[tuple[float, float], float]] = None,
     ) -> None:
         """Stores the per-item shape corners, transform deltas and an
         optional guide circle, then redraws.

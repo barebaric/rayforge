@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from raygeo.geo import Matrix
 from raygeo.geo.types import Rect
@@ -70,7 +70,7 @@ class NormalizationEngine:
         parse_result: ParsingResult,
         layer_id: Optional[str] = None,
         layer_name: Optional[str] = None,
-        settings: Optional[Dict[str, Any]] = None,
+        settings: Optional[dict[str, Any]] = None,
         color: Optional[str] = None,
     ) -> LayoutItem:
         """
@@ -174,7 +174,7 @@ class NormalizationEngine:
         self,
         vec_result: VectorizationResult,
         spec: Optional[VectorizationSpec],
-    ) -> List[LayoutItem]:
+    ) -> list[LayoutItem]:
         """
         Calculates the layout plan for creating WorkPieces.
 
@@ -254,7 +254,7 @@ class NormalizationEngine:
                 active_layers = set(spec.active_layer_ids)
 
         # Filter relevant layers
-        target_layers: List[LayerGeometry] = result.layers
+        target_layers: list[LayerGeometry] = result.layers
         if active_layers:
             target_layers = [
                 geo for geo in result.layers if geo.layer_id in active_layers
@@ -309,7 +309,7 @@ class NormalizationEngine:
                 )
             ]
 
-    def _calculate_union_rect(self, rects: List[Rect]) -> Rect:
+    def _calculate_union_rect(self, rects: list[Rect]) -> Rect:
         if not rects:
             return (0.0, 0.0, 0.0, 0.0)
 

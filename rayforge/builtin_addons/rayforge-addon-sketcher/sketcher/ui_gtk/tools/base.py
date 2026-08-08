@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Optional, Union
 
 import cairo
 
@@ -38,7 +38,7 @@ class SketchTool(ABC):
 
     ICON: Optional[str] = None
     LABEL: Optional[str] = None
-    SHORTCUTS: List[str] = []
+    SHORTCUTS: list[str] = []
     CURSOR_ICON: Optional[str] = None
 
     def __init__(self, element: SketchElement):
@@ -109,7 +109,7 @@ class SketchTool(ABC):
 
     def get_active_shortcuts(
         self,
-    ) -> List[Tuple[Union[str, List[str]], str, Optional[Callable[[], bool]]]]:
+    ) -> list[tuple[Union[str, list[str]], str, Optional[Callable[[], bool]]]]:
         """
         Returns shortcuts currently available based on tool state.
 

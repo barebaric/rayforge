@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Optional
 
 from gi.repository import Adw, Gtk
 
@@ -45,7 +45,7 @@ class RecipeSelectorDialog(Adw.MessageDialog):
         self,
         parent: Gtk.Window,
         editor: "DocEditor",
-        capabilities: Tuple[StepCapability, ...],
+        capabilities: tuple[StepCapability, ...],
         on_select_callback: Callable[[Recipe], None],
         step_type: Optional[str] = None,
     ):
@@ -54,7 +54,7 @@ class RecipeSelectorDialog(Adw.MessageDialog):
         self.capabilities = capabilities
         self.step_type = step_type
         self.on_select_callback = on_select_callback
-        self._all_recipes: List[Recipe] = []
+        self._all_recipes: list[Recipe] = []
 
         self.set_heading(_("Select Recipe"))
         self.set_body(_("Choose a recipe to apply to the current step."))

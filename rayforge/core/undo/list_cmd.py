@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional
 
 from .command import Command
 
@@ -41,7 +41,7 @@ class ReorderListCommand(Command):
         self,
         target_obj: Any,
         list_property_name: str,
-        new_list: List[Any],
+        new_list: list[Any],
         setter_method_name: Optional[str] = None,
         on_change_callback: Optional[Callable[[], None]] = None,
         name: Optional[str] = None,
@@ -53,7 +53,7 @@ class ReorderListCommand(Command):
         self.setter_method_name = setter_method_name
         self.old_list = list(getattr(target_obj, list_property_name))
 
-    def _set_list(self, new_order: List[Any]):
+    def _set_list(self, new_order: list[Any]):
         if self.setter_method_name:
             setter_func = getattr(self.target_obj, self.setter_method_name)
             setter_func(new_order)

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from raygeo.geo.types import Point3D
@@ -12,11 +12,11 @@ from .models.axis import AxisSet
 if TYPE_CHECKING:
     from ..simulator.machine_state import MachineState
 
-RotarySpec = Tuple[Axis, float, np.ndarray, Optional[Model]]
-HeadSpec = Tuple[Optional[Model], np.ndarray]
+RotarySpec = tuple[Axis, float, np.ndarray, Optional[Model]]
+HeadSpec = tuple[Optional[Model], np.ndarray]
 
 
-def _axis_direction(axis_letter: Axis) -> Tuple[float, float, float]:
+def _axis_direction(axis_letter: Axis) -> tuple[float, float, float]:
     mapping = {
         Axis.X: (1.0, 0.0, 0.0),
         Axis.Y: (0.0, 1.0, 0.0),
@@ -25,7 +25,7 @@ def _axis_direction(axis_letter: Axis) -> Tuple[float, float, float]:
     return mapping.get(axis_letter, (0.0, 0.0, 0.0))
 
 
-def _joint_axis_for_rotary(axis_letter: Axis) -> Tuple[float, float, float]:
+def _joint_axis_for_rotary(axis_letter: Axis) -> tuple[float, float, float]:
     mapping = {
         Axis.A: (1.0, 0.0, 0.0),
         Axis.B: (0.0, 1.0, 0.0),
@@ -36,7 +36,7 @@ def _joint_axis_for_rotary(axis_letter: Axis) -> Tuple[float, float, float]:
 
 def build_assembly(
     axis_set: AxisSet,
-    head_specs: Optional[List[HeadSpec]] = None,
+    head_specs: Optional[list[HeadSpec]] = None,
     rotary_modules=None,
 ) -> Assembly:
     if head_specs is None:
@@ -204,21 +204,21 @@ class Kinematics:
         state: "MachineState",
         diameter: float,
         focal_distance: float = 0.0,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         return self._assembly.head_rotary_positions(
             state, diameter, focal_distance
         )
 
-    def head_positions(self, state: "MachineState") -> Dict[str, Point3D]:
+    def head_positions(self, state: "MachineState") -> dict[str, Point3D]:
         return self._assembly.head_positions(state)
 
-    def chuck_angles(self, state: "MachineState") -> Dict[str, float]:
+    def chuck_angles(self, state: "MachineState") -> dict[str, float]:
         return self._assembly.chuck_angles(state)
 
 
 def create_kinematics(
     axis_set: AxisSet,
-    head_specs: Optional[List[HeadSpec]] = None,
+    head_specs: Optional[list[HeadSpec]] = None,
     rotary_modules=None,
 ) -> Kinematics:
     return Kinematics(build_assembly(axis_set, head_specs, rotary_modules))

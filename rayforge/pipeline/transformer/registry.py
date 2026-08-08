@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, Optional, Set, Type
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .base import OpsTransformer
@@ -14,12 +14,12 @@ class TransformerRegistry:
     """
 
     def __init__(self):
-        self._transformers: Dict[str, Type["OpsTransformer"]] = {}
-        self._addon_items: Dict[str, Set[str]] = {}
+        self._transformers: dict[str, type["OpsTransformer"]] = {}
+        self._addon_items: dict[str, set[str]] = {}
 
     def register(
         self,
-        transformer_class: Type["OpsTransformer"],
+        transformer_class: type["OpsTransformer"],
         name: Optional[str] = None,
         addon_name: Optional[str] = None,
     ) -> None:
@@ -61,7 +61,7 @@ class TransformerRegistry:
                 count += 1
         return count
 
-    def get(self, name: str) -> Optional[Type["OpsTransformer"]]:
+    def get(self, name: str) -> Optional[type["OpsTransformer"]]:
         """
         Look up a transformer class by name.
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import uuid
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 from blinker import Signal
 from raygeo.geo import Geometry
@@ -49,7 +49,7 @@ class StockAsset(IAsset):
         self.material_uid: Optional[str] = None
         self._hidden: bool = False
         self._updated = Signal()
-        self.extra: Dict[str, Any] = {}
+        self.extra: dict[str, Any] = {}
 
     @property
     def uid(self) -> str:
@@ -78,7 +78,7 @@ class StockAsset(IAsset):
             self._name = value
             self._updated.send(self)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the StockAsset to a dictionary."""
         result = {
             "uid": self.uid,
@@ -93,7 +93,7 @@ class StockAsset(IAsset):
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "StockAsset":
+    def from_dict(cls, data: dict[str, Any]) -> "StockAsset":
         """Deserializes a dictionary into a StockAsset instance."""
         known_keys = {
             "uid",

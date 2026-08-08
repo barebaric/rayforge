@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 from gi.repository import Adw, Gtk
 
@@ -26,7 +26,7 @@ class SliderAdapter(RowAdapter):
     @classmethod
     def create(
         cls, var: Var, target_property: str
-    ) -> Tuple[Adw.PreferencesRow, "SliderAdapter"]:
+    ) -> tuple[Adw.PreferencesRow, "SliderAdapter"]:
         assert isinstance(var, SliderFloatVar)
         min_val = var.min_val if var.min_val is not None else 0.0
         max_val = var.max_val if var.max_val is not None else 1.0

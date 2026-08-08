@@ -7,7 +7,7 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 import pyvips
 from blinker import Signal
@@ -43,7 +43,7 @@ class SourceAsset(IAsset):
     renderer: "Renderer"
     base_render_data: Optional[bytes] = field(default=None, repr=False)
     thumbnail_data: Optional[bytes] = field(default=None, repr=False)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     width_px: Optional[int] = None
     height_px: Optional[int] = None
     width_mm: float = 0.0
@@ -52,7 +52,7 @@ class SourceAsset(IAsset):
     _name: str = field(init=False, repr=False)
     _hidden: bool = field(init=False, default=False)
     _updated: Signal = field(init=False, default_factory=Signal)
-    extra: Dict[str, Any] = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
     _base_image_cache: OrderedDict = field(
         init=False, default_factory=OrderedDict, repr=False
     )
@@ -138,7 +138,7 @@ class SourceAsset(IAsset):
         image = resized.colourspace("srgb")
         return image.pngsave_buffer()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes SourceAsset to a dictionary."""
         result = {
             "uid": self.uid,
@@ -170,7 +170,7 @@ class SourceAsset(IAsset):
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SourceAsset":
+    def from_dict(cls, data: dict[str, Any]) -> "SourceAsset":
         """Deserializes a dictionary into a SourceAsset instance."""
         from ..image import renderer_registry
         from ..image.base_renderer import UnknownRenderer

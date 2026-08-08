@@ -6,7 +6,7 @@ for the Ruida laser controller simulator.
 """
 
 import logging
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional
 
 from .ruida_maps import (
     A7_KEYPRESS_COMMANDS,
@@ -72,7 +72,7 @@ class RuidaServer:
 
         return response
 
-    def _process_single_command(self, data: bytes) -> Tuple[bytes, int]:
+    def _process_single_command(self, data: bytes) -> tuple[bytes, int]:
         """
         Process a single command and return (response, length consumed).
 
@@ -222,7 +222,7 @@ class RuidaServer:
         self._log_command(f"Unknown command 0x{cmd:02X}", data[:1])
         return b"", 1
 
-    def _handle_d0_command(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_d0_command(self, data: bytes) -> tuple[bytes, int]:
         """Handle D0 set inhale zone command."""
         if len(data) < 2:
             return b"", 1
@@ -231,7 +231,7 @@ class RuidaServer:
         self._log_command(f"Set Inhale Zone: {zone}", data[:2])
         return b"", 2
 
-    def _handle_d8_command(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_d8_command(self, data: bytes) -> tuple[bytes, int]:
         """Handle D8 realtime commands."""
         if len(data) < 2:
             return b"", 1
@@ -289,7 +289,7 @@ class RuidaServer:
 
         return b"", 2
 
-    def _handle_d9_command(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_d9_command(self, data: bytes) -> tuple[bytes, int]:
         """Handle D9 rapid move commands."""
         if len(data) < 2:
             return b"", 1
@@ -400,7 +400,7 @@ class RuidaServer:
 
         return b"", 2
 
-    def _handle_da_command(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_da_command(self, data: bytes) -> tuple[bytes, int]:
         """Handle DA memory commands."""
         if len(data) < 4:
             return b"", 1
@@ -468,7 +468,7 @@ class RuidaServer:
 
         return b"", 4
 
-    def _handle_a5_command(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_a5_command(self, data: bytes) -> tuple[bytes, int]:
         """Handle A5 interface commands (also on jog port)."""
         if len(data) < 3:
             return b"", 1
@@ -485,7 +485,7 @@ class RuidaServer:
 
         return b"", 3
 
-    def _handle_a7_command(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_a7_command(self, data: bytes) -> tuple[bytes, int]:
         """Handle A7 keypress commands."""
         if len(data) < 2:
             return b"", 1
@@ -495,7 +495,7 @@ class RuidaServer:
         self._log_command(desc, data[:2])
         return b"", 2
 
-    def _handle_e5_command(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_e5_command(self, data: bytes) -> tuple[bytes, int]:
         """Handle E5 document commands."""
         s = self.state
         if len(data) < 1:
@@ -549,7 +549,7 @@ class RuidaServer:
 
         return b"", 2
 
-    def _handle_e7_command(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_e7_command(self, data: bytes) -> tuple[bytes, int]:
         """Handle E7 file layout commands."""
         if len(data) < 2:
             return b"", 1
@@ -838,7 +838,7 @@ class RuidaServer:
 
         return b"", 2
 
-    def _handle_e8_command(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_e8_command(self, data: bytes) -> tuple[bytes, int]:
         """Handle E8 file interaction commands."""
         if len(data) < 2:
             return b"", 1
@@ -874,7 +874,7 @@ class RuidaServer:
 
         return b"", 2
 
-    def _handle_move_abs(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_move_abs(self, data: bytes) -> tuple[bytes, int]:
         """Handle absolute move command (0x88)."""
         s = self.state
         if len(data) < 11:
@@ -886,7 +886,7 @@ class RuidaServer:
         s.y = y
         return b"", 11
 
-    def _handle_move_rel(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_move_rel(self, data: bytes) -> tuple[bytes, int]:
         """Handle relative move command (0x89)."""
         s = self.state
         if len(data) < 5:
@@ -898,7 +898,7 @@ class RuidaServer:
         s.y += dy
         return b"", 5
 
-    def _handle_move_rel_x(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_move_rel_x(self, data: bytes) -> tuple[bytes, int]:
         """Handle relative X move command (0x8A)."""
         s = self.state
         if len(data) < 3:
@@ -908,7 +908,7 @@ class RuidaServer:
         s.x += dx
         return b"", 3
 
-    def _handle_move_rel_y(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_move_rel_y(self, data: bytes) -> tuple[bytes, int]:
         """Handle relative Y move command (0x8B)."""
         s = self.state
         if len(data) < 3:
@@ -918,7 +918,7 @@ class RuidaServer:
         s.y += dy
         return b"", 3
 
-    def _handle_cut_abs(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_cut_abs(self, data: bytes) -> tuple[bytes, int]:
         """Handle absolute cut command (0xA8)."""
         s = self.state
         if len(data) < 11:
@@ -930,7 +930,7 @@ class RuidaServer:
         s.y = y
         return b"", 11
 
-    def _handle_cut_rel(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_cut_rel(self, data: bytes) -> tuple[bytes, int]:
         """Handle relative cut command (0xA9)."""
         s = self.state
         if len(data) < 5:
@@ -942,7 +942,7 @@ class RuidaServer:
         s.y += dy
         return b"", 5
 
-    def _handle_cut_rel_x(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_cut_rel_x(self, data: bytes) -> tuple[bytes, int]:
         """Handle relative X cut command (0xAA)."""
         s = self.state
         if len(data) < 3:
@@ -952,7 +952,7 @@ class RuidaServer:
         s.x += dx
         return b"", 3
 
-    def _handle_cut_rel_y(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_cut_rel_y(self, data: bytes) -> tuple[bytes, int]:
         """Handle relative Y cut command (0xAB)."""
         s = self.state
         if len(data) < 3:
@@ -962,7 +962,7 @@ class RuidaServer:
         s.y += dy
         return b"", 3
 
-    def _handle_c6_command(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_c6_command(self, data: bytes) -> tuple[bytes, int]:
         """Handle C6 power/delay commands."""
         if len(data) < 2:
             return b"", 1
@@ -1013,7 +1013,7 @@ class RuidaServer:
 
     def _handle_power_command(
         self, name: str, data: bytes, length: int
-    ) -> Tuple[bytes, int]:
+    ) -> tuple[bytes, int]:
         """Handle immediate/end power commands."""
         if len(data) < length:
             return b"", 1
@@ -1021,7 +1021,7 @@ class RuidaServer:
         self._log_command(f"{name}: {power:.1f}%", data[:length])
         return b"", length
 
-    def _handle_c9_command(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_c9_command(self, data: bytes) -> tuple[bytes, int]:
         """Handle C9 speed commands."""
         if len(data) < 2:
             return b"", 1
@@ -1060,7 +1060,7 @@ class RuidaServer:
 
         return b"", 2
 
-    def _handle_ca_command(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_ca_command(self, data: bytes) -> tuple[bytes, int]:
         """Handle CA layer/mode commands."""
         if len(data) < 2:
             return b"", 1
@@ -1153,7 +1153,7 @@ class RuidaServer:
 
         return b"", 2
 
-    def _handle_axis_move(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_axis_move(self, data: bytes) -> tuple[bytes, int]:
         """Handle 0x80 axis move commands."""
         s = self.state
         if len(data) < 2:
@@ -1177,7 +1177,7 @@ class RuidaServer:
 
         return b"", 2
 
-    def _handle_axis_move_a0(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_axis_move_a0(self, data: bytes) -> tuple[bytes, int]:
         """Handle 0xA0 axis move commands."""
         s = self.state
         if len(data) < 2:
@@ -1201,7 +1201,7 @@ class RuidaServer:
 
         return b"", 2
 
-    def _handle_f1_command(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_f1_command(self, data: bytes) -> tuple[bytes, int]:
         """Handle F1 commands."""
         if len(data) < 2:
             return b"", 1
@@ -1259,7 +1259,7 @@ class RuidaServer:
 
         return b"", 2
 
-    def _handle_f2_command(self, data: bytes) -> Tuple[bytes, int]:
+    def _handle_f2_command(self, data: bytes) -> tuple[bytes, int]:
         """Handle F2 element commands."""
         if len(data) < 2:
             return b"", 1

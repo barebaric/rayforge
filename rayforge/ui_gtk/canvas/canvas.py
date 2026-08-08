@@ -2,15 +2,12 @@ from __future__ import annotations
 
 import logging
 import math
+from collections.abc import Generator
 from enum import Enum, auto
 from typing import (
     TYPE_CHECKING,
     Any,
-    Generator,
-    List,
     Optional,
-    Set,
-    Tuple,
     Union,
 )
 
@@ -103,7 +100,7 @@ class Canvas(Gtk.DrawingArea):
         self._selection_group: Optional[MultiSelectionGroup] = None
         self._framing_selection: bool = False
         self._selection_frame_rect: Optional[Rect] = None
-        self._selection_before_framing: Set[CanvasElement] = set()
+        self._selection_before_framing: set[CanvasElement] = set()
         self._group_hovered: bool = False
         self._last_mouse_x: float = 0.0
         self._last_mouse_y: float = 0.0
@@ -113,7 +110,7 @@ class Canvas(Gtk.DrawingArea):
         self._shearing: bool = False
         self._was_dragging: bool = False
         self._edit_dragging: bool = False
-        self._transforming_elements: List[CanvasElement] = []
+        self._transforming_elements: list[CanvasElement] = []
         self.edit_context: Optional[CanvasElement] = None
 
         # --- Rotation State ---
@@ -169,7 +166,7 @@ class Canvas(Gtk.DrawingArea):
         """
         return self.root.find_by_type(thetype)
 
-    def size(self) -> Tuple[float, float]:
+    def size(self) -> tuple[float, float]:
         """Gets the (width, height) of the canvas."""
         return self.root.size()
 
@@ -401,7 +398,7 @@ class Canvas(Gtk.DrawingArea):
 
         # Priority 1: Check for a valid handle hit on the current selection.
         # We build a set of candidate regions based on the current mode.
-        handle_candidates: Optional[Set[ElementRegion]] = None
+        handle_candidates: Optional[set[ElementRegion]] = None
         if self._selection_mode == SelectionMode.RESIZE:
             handle_candidates = RESIZE_HANDLES | MOVE_HANDLES
         elif self._selection_mode == SelectionMode.ROTATE_SHEAR:
@@ -1269,7 +1266,7 @@ class Canvas(Gtk.DrawingArea):
         if len(selected) > 0:
             self._selection_mode = SelectionMode.RESIZE
 
-    def _get_element_world_corners(self, elem: CanvasElement) -> List[Point]:
+    def _get_element_world_corners(self, elem: CanvasElement) -> list[Point]:
         """
         Calculates the four corners of an element in world coordinates.
         """
@@ -1361,7 +1358,7 @@ class Canvas(Gtk.DrawingArea):
         """
         return self._active_elem
 
-    def get_selected_elements(self) -> List[CanvasElement]:
+    def get_selected_elements(self) -> list[CanvasElement]:
         """Returns a list of all currently selected elements."""
         return list(self.root.get_selected())
 

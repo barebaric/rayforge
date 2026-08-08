@@ -8,7 +8,7 @@ from a specified font for the characters '0'-'9'.
 
 import logging
 import math
-from typing import Dict, Optional, Tuple, Union
+from typing import Optional, Union
 
 import cairo
 import numpy as np
@@ -36,7 +36,7 @@ class TextRenderer(BaseRenderer):
             font_size: The size of the font for the texture atlas.
         """
         super().__init__()
-        self.char_data: Dict[str, Dict[str, Union[float, int]]] = {}
+        self.char_data: dict[str, dict[str, Union[float, int]]] = {}
         self.texture_id: int = 0
         self.atlas_width: int = 0
         self.atlas_height: int = 0
@@ -241,7 +241,7 @@ class TextRenderer(BaseRenderer):
         text: str,
         position: np.ndarray,
         height_in_world_units: float,
-        color: Tuple[float, float, float, float],
+        color: tuple[float, float, float, float],
         align: str = "center",
         **kwargs,
     ) -> None:

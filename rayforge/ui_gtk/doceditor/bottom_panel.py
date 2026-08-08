@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Callable, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Optional
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -65,7 +65,7 @@ class BottomPanel(Gtk.Box):
         self._updating_wcs_ui = False
         self._active_layer = None
         self._get_bounds_callback: Optional[
-            Callable[[], Optional[Tuple[float, float, float, float]]]
+            Callable[[], Optional[tuple[float, float, float, float]]]
         ] = None
 
         self.console = Console()
@@ -519,7 +519,7 @@ class BottomPanel(Gtk.Box):
     def set_get_bounds_callback(
         self,
         callback: Optional[
-            Callable[[], Optional[Tuple[float, float, float, float]]]
+            Callable[[], Optional[tuple[float, float, float, float]]]
         ],
     ):
         self._get_bounds_callback = callback

@@ -4,10 +4,7 @@ import math
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -65,10 +62,10 @@ def _handle_colors(
 
 def _draw_quad_handle(
     ctx: cairo.Context,
-    p1: Tuple[float, float],
-    p2: Tuple[float, float],
-    p3: Tuple[float, float],
-    p4: Tuple[float, float],
+    p1: tuple[float, float],
+    p2: tuple[float, float],
+    p3: tuple[float, float],
+    p4: tuple[float, float],
     is_hovered: bool,
     color: Optional[ColorRGBA] = None,
 ):
@@ -246,7 +243,7 @@ _ARC_HANDLE_BASE_ANGLES_DEG = {
     ElementRegion.ROTATE_BOTTOM_RIGHT: 45,
 }
 
-HANDLE_DRAW_INFO: Dict[ElementRegion, Dict[str, Any]] = {
+HANDLE_DRAW_INFO: dict[ElementRegion, dict[str, Any]] = {
     region: {
         "draw": _draw_square_handle,
         "get_angle": lambda t, r: t.get_x_axis_angle(),
@@ -353,10 +350,10 @@ def _render_handles(
     ctx: cairo.Context,
     target: Union[CanvasElement, MultiSelectionGroup],
     transform_to_screen: Matrix,
-    regions: List[ElementRegion],
+    regions: list[ElementRegion],
     hovered_region: ElementRegion,
     base_handle_size: float,
-    scale_compensation: Tuple[float, float],
+    scale_compensation: tuple[float, float],
     color: Optional[ColorRGBA] = None,
 ):
     sx_abs, sy_abs = transform_to_screen.get_abs_scale()

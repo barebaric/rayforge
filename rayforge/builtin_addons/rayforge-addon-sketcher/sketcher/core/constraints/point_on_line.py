@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import cairo
 from raygeo.geo.types import Point
@@ -76,7 +76,7 @@ class PointOnLineConstraint(Constraint):
             return _("Point at {}").format(self._format_coord(pt.x, pt.y))
         return ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "PointOnLineConstraint",
             "point_id": self.point_id,
@@ -85,7 +85,7 @@ class PointOnLineConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "PointOnLineConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> "PointOnLineConstraint":
         return cls(
             point_id=data["point_id"],
             shape_id=data["shape_id"],
@@ -152,7 +152,7 @@ class PointOnLineConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         pt = reg.get_point(self.point_id)
         shape = reg.get_entity(self.shape_id)
 

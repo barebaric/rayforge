@@ -1,7 +1,7 @@
 import uuid
 from enum import Enum
 from gettext import gettext as _
-from typing import Any, Dict
+from typing import Any
 
 from blinker import Signal
 from raygeo.geo.shape.arc import (
@@ -31,7 +31,7 @@ class Zone:
         self.uid: str = str(uuid.uuid4())
         self.name: str = _("No-Go Zone")
         self.shape: ZoneShape = ZoneShape.RECT
-        self.params: Dict[str, float] = {
+        self.params: dict[str, float] = {
             "x": 0.0,
             "y": 0.0,
             "w": 10.0,
@@ -39,7 +39,7 @@ class Zone:
         }
         self.enabled: bool = True
         self.changed = Signal()
-        self.extra: Dict[str, Any] = {}
+        self.extra: dict[str, Any] = {}
 
     def set_name(self, name: str):
         if self.name == name:
@@ -123,7 +123,7 @@ class Zone:
         cc, cr = self._get_circle()
         return arc_intersects_circle(start, end, center, clockwise, cc, cr)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         result = {
             "uid": self.uid,
             "name": self.name,
@@ -135,7 +135,7 @@ class Zone:
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Zone":
+    def from_dict(cls, data: dict[str, Any]) -> "Zone":
         known_keys = {
             "uid",
             "name",

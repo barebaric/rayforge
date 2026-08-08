@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, Optional, Set, Type
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .asset import IAsset
@@ -14,8 +14,8 @@ class AssetTypeRegistry:
     """
 
     def __init__(self):
-        self._types: Dict[str, Type["IAsset"]] = {}
-        self._addon_items: Dict[str, Set[str]] = {}
+        self._types: dict[str, type["IAsset"]] = {}
+        self._addon_items: dict[str, set[str]] = {}
         self._builtins_registered: bool = False
 
     def _register_builtins(self) -> None:
@@ -37,7 +37,7 @@ class AssetTypeRegistry:
 
     def register(
         self,
-        asset_class: Type["IAsset"],
+        asset_class: type["IAsset"],
         type_name: str,
         addon_name: Optional[str] = None,
     ) -> None:
@@ -93,7 +93,7 @@ class AssetTypeRegistry:
                 count += 1
         return count
 
-    def get(self, type_name: str) -> Optional[Type["IAsset"]]:
+    def get(self, type_name: str) -> Optional[type["IAsset"]]:
         """
         Look up an asset class by type name.
 
@@ -106,7 +106,7 @@ class AssetTypeRegistry:
         self._register_builtins()
         return self._types.get(type_name)
 
-    def all_types(self) -> Dict[str, Type["IAsset"]]:
+    def all_types(self) -> dict[str, type["IAsset"]]:
         """
         Return a copy of all registered asset types.
 

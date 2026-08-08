@@ -9,7 +9,6 @@ back to the caller via the ``machine_created`` signal.
 """
 
 from gettext import gettext as _
-from typing import Dict, List
 
 from gi.repository import Adw
 
@@ -67,7 +66,7 @@ def _format_connection(mc) -> str:
     args = mc.driver_args or {}
     if not args:
         return _("—")
-    labels: Dict[str, str] = {}
+    labels: dict[str, str] = {}
     if mc.driver:
         try:
             d = get_driver_cls(mc.driver)
@@ -75,7 +74,7 @@ def _format_connection(mc) -> str:
                 labels[var.key] = var.label
         except Exception:
             labels = {}
-    parts: List[str] = []
+    parts: list[str] = []
     for key, value in args.items():
         label = labels.get(key) or key
         if any(s in key.lower() for s in _SECRET_ARG_KEYS):
@@ -119,7 +118,7 @@ class ReviewPage(WizardPage):
 
         self.summary_group = _makePreferencesGroup(title=_("Summary"))
         self.content.append(self.summary_group)
-        self._summary_rows: List[Adw.ActionRow] = []
+        self._summary_rows: list[Adw.ActionRow] = []
 
         # Warnings surface config issues (e.g. driver missing) but
         # do not block machine creation — they round-trip into the
@@ -127,7 +126,7 @@ class ReviewPage(WizardPage):
         self.warnings_group = _makePreferencesGroup(title=_("Warnings"))
         self.warnings_group.set_visible(False)
         self.content.append(self.warnings_group)
-        self._warning_rows: List[Adw.ActionRow] = []
+        self._warning_rows: list[Adw.ActionRow] = []
 
         self.set_ready(True)
 
@@ -179,7 +178,7 @@ class ReviewPage(WizardPage):
             self._summary_rows.append(row)
 
     def _populate_warnings(self, profile: DeviceProfile) -> None:
-        warnings: List[str] = self._check_profile(profile)
+        warnings: list[str] = self._check_profile(profile)
         for row in self._warning_rows:
             self.warnings_group.remove(row)
         self._warning_rows.clear()
@@ -193,8 +192,8 @@ class ReviewPage(WizardPage):
             self._warning_rows.append(row)
         self.warnings_group.set_visible(True)
 
-    def _check_profile(self, profile: DeviceProfile) -> List[str]:
-        warnings: List[str] = []
+    def _check_profile(self, profile: DeviceProfile) -> list[str]:
+        warnings: list[str] = []
         mc = profile.machine_config
 
         if not mc.driver:

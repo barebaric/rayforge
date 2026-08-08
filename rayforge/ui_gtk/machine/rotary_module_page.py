@@ -1,6 +1,6 @@
 from gettext import gettext as _
 from pathlib import Path
-from typing import List, Optional, cast
+from typing import Optional, cast
 
 from gi.repository import Adw, Gtk
 from raygeo.ops.axis import Axis
@@ -606,7 +606,7 @@ class RotaryModulePage(TrackedPreferencesPage):
         if selected < len(self._valid_axes):
             module.set_axis(self._valid_axes[selected])
 
-    def _get_valid_axes_for_mode(self, mode: RotaryMode) -> List[Axis]:
+    def _get_valid_axes_for_mode(self, mode: RotaryMode) -> list[Axis]:
         if mode == RotaryMode.TRUE_4TH_AXIS:
             return [Axis.A, Axis.B, Axis.C, Axis.U]
         return [Axis.Y, Axis.Z]

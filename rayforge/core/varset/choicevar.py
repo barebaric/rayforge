@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from .var import Var
 
@@ -15,7 +15,7 @@ class ChoiceVar(Var[str]):
         self,
         key: str,
         label: str,
-        choices: List[str],
+        choices: list[str],
         description: Optional[str] = None,
         default: Optional[str] = None,
         value: Optional[str] = None,
@@ -58,7 +58,7 @@ class ChoiceVar(Var[str]):
 
         self.validator = _choice_validator
 
-    def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
+    def to_dict(self, include_value: bool = False) -> dict[str, Any]:
         data = super().to_dict(include_value=include_value)
         data.update({"choices": self.choices})
         return data

@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 import pytest
 from raygeo.geo import Geometry, Matrix
@@ -20,7 +20,7 @@ def engine():
 
 def create_vec_result(
     document_bounds: Rect,
-    layers: List[Tuple[str, Rect]],
+    layers: list[tuple[str, Rect]],
     is_y_down: bool = True,
     unit_scale: float = 1.0,
 ) -> VectorizationResult:
@@ -43,7 +43,7 @@ def create_vec_result(
         background_world_transform=Matrix.identity(),
     )
     # The engine currently doesn't use the geometry, so we can mock it.
-    geometries: Dict[Optional[str], Geometry] = {
+    geometries: dict[Optional[str], Geometry] = {
         layer.layer_id: Geometry() for layer in parse_result.layers
     }
     return VectorizationResult(

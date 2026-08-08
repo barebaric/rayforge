@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING
 
 from rayforge.core.undo.command import Command
 from rayforge.core.undo.history import COALESCE_THRESHOLD
@@ -24,7 +24,7 @@ class LiveTextEditCommand(Command):
         self.text_entity_id = text_entity_id
         self._sketch = sketch
         # History stores tuples of (content, cursor_pos, timestamp)
-        self.history: List[Tuple[str, int, float]] = []
+        self.history: list[tuple[str, int, float]] = []
         self.current_index = -1
         # Maintained for attribute compatibility with tests
         self.cursor_pos = 0

@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, Optional, Union
 
 import cairo
 
@@ -185,7 +185,7 @@ class CircleTool(SnapMixin, SketchTool):
 
     def get_active_shortcuts(
         self,
-    ) -> List[Tuple[Union[str, List[str]], str, Optional[Callable[[], bool]]]]:
+    ) -> list[tuple[Union[str, list[str]], str, Optional[Callable[[], bool]]]]:
         """Returns shortcuts for the status bar."""
         if self._preview_state is not None:
             return [

@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 from blinker import Signal
 from gi.repository import Adw, GLib, Gtk
@@ -28,8 +28,8 @@ class _VarSetRowManager:
         self.explicit_apply = explicit_apply
         self.debounce_ms = debounce_ms
         self.show_reset = show_reset
-        self.widget_map: Dict[str, Tuple[Adw.PreferencesRow, Var]] = {}
-        self._adapters: Dict[str, RowAdapter] = {}
+        self.widget_map: dict[str, tuple[Adw.PreferencesRow, Var]] = {}
+        self._adapters: dict[str, RowAdapter] = {}
         self._created_rows = []
         self._apply_buttons = []
         self._reset_buttons = []
@@ -111,7 +111,7 @@ class _VarSetRowManager:
                 if adapter is not None:
                     self._adapters[var.key] = adapter
 
-    def get_values(self) -> Dict[str, Any]:
+    def get_values(self) -> dict[str, Any]:
         values = {}
         for key in self.widget_map:
             adapter = self._adapters.get(key)
@@ -121,7 +121,7 @@ class _VarSetRowManager:
                 values[key] = None
         return values
 
-    def set_values(self, values: Dict[str, Any]):
+    def set_values(self, values: dict[str, Any]):
         for key, value in values.items():
             if key not in self.widget_map or value is None:
                 continue

@@ -7,7 +7,8 @@ from __future__ import annotations
 import asyncio
 import logging
 from asyncio.exceptions import CancelledError
-from typing import Any, Callable, Coroutine, Optional
+from collections.abc import Coroutine
+from typing import Any, Callable, Optional
 
 from blinker import Signal
 

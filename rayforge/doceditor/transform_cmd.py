@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from raygeo.geo import Matrix
 
@@ -24,7 +24,7 @@ class TransformCmd:
 
     def create_transform_transaction(
         self,
-        changes: List[Tuple[DocItem, Matrix, Matrix]],
+        changes: list[tuple[DocItem, Matrix, Matrix]],
     ):
         """
         Creates a single, undoable transaction for a list of matrix changes
@@ -57,8 +57,8 @@ class TransformCmd:
 
     @staticmethod
     def group_bbox_world(
-        items: List[DocItem],
-    ) -> Tuple[float, float, float, float]:
+        items: list[DocItem],
+    ) -> tuple[float, float, float, float]:
         """Returns ``(min_x, min_y, max_x, max_y)`` of the items' combined
         axis-aligned bounding box in world space.
 
@@ -78,7 +78,7 @@ class TransformCmd:
         return min_x, min_y, max_x, max_y
 
     @classmethod
-    def group_center_world(cls, items: List[DocItem]) -> Tuple[float, float]:
+    def group_center_world(cls, items: list[DocItem]) -> tuple[float, float]:
         """World-space centre of the items' combined bounding box."""
         min_x, min_y, max_x, max_y = cls.group_bbox_world(items)
         return (min_x + max_x) / 2.0, (min_y + max_y) / 2.0
@@ -99,7 +99,7 @@ class TransformCmd:
 
     def nudge_items(
         self,
-        items: List[DocItem],
+        items: list[DocItem],
         dx_mm: float,
         dy_mm: float,
     ):
@@ -135,7 +135,7 @@ class TransformCmd:
                 )
                 t.execute(cmd)
 
-    def flip_horizontal(self, items: List[DocItem]):
+    def flip_horizontal(self, items: list[DocItem]):
         """
         Flips a list of DocItems horizontally (mirrors along the Y-axis),
         creating a single undoable transaction for the operation.
@@ -172,7 +172,7 @@ class TransformCmd:
                 )
                 t.execute(cmd)
 
-    def flip_vertical(self, items: List[DocItem]):
+    def flip_vertical(self, items: list[DocItem]):
         """
         Flips a list of DocItems vertically (mirrors along the X-axis),
         creating a single undoable transaction for the operation.
@@ -209,7 +209,7 @@ class TransformCmd:
                 )
                 t.execute(cmd)
 
-    def set_position(self, items: List[DocItem], x: float, y: float):
+    def set_position(self, items: list[DocItem], x: float, y: float):
         """
         Sets the position of **every** item individually using machine
         coordinates.  Each item's top-left corner is moved to the world
@@ -263,7 +263,7 @@ class TransformCmd:
                 )
                 t.execute(cmd)
 
-    def set_angle(self, items: List[DocItem], angle: float):
+    def set_angle(self, items: list[DocItem], angle: float):
         """Sets **every** item's local rotation angle to *angle* degrees,
         preserving each item's own world-space center."""
         history_manager = self._editor.history_manager
@@ -287,7 +287,7 @@ class TransformCmd:
                 )
                 t.execute(cmd)
 
-    def set_shear(self, items: List[DocItem], shear: float):
+    def set_shear(self, items: list[DocItem], shear: float):
         """Sets **every** item's local shear angle to *shear* degrees,
         preserving each item's own world-space center."""
         history_manager = self._editor.history_manager
@@ -313,11 +313,11 @@ class TransformCmd:
 
     def set_size(
         self,
-        items: List[DocItem],
+        items: list[DocItem],
         width: Optional[float] = None,
         height: Optional[float] = None,
         fixed_ratio: bool = False,
-        sizes: Optional[List[Tuple[float, float]]] = None,
+        sizes: Optional[list[tuple[float, float]]] = None,
     ):
         """Sets the size of each item individually.
 
@@ -342,7 +342,7 @@ class TransformCmd:
 
         def _calculate_missing_dim(
             item: DocItem, w: Optional[float], h: Optional[float]
-        ) -> Tuple[float, float]:
+        ) -> tuple[float, float]:
             """Calculates final width and height handling aspect ratio."""
             current_w, current_h = item.size
             final_w = w if w is not None else current_w
@@ -385,7 +385,7 @@ class TransformCmd:
                 )
                 t.execute(cmd)
 
-    def set_position_group(self, items: List[DocItem], x: float, y: float):
+    def set_position_group(self, items: list[DocItem], x: float, y: float):
         """Moves the selection so its **combined bounding box** reaches
         the given target in machine coordinates.
 
@@ -436,7 +436,7 @@ class TransformCmd:
                 )
                 t.execute(cmd)
 
-    def set_angle_group(self, items: List[DocItem], angle: float):
+    def set_angle_group(self, items: list[DocItem], angle: float):
         """Rotates the whole selection so the anchor item (``items[0]``)
         reaches *angle* degrees.
 
@@ -481,7 +481,7 @@ class TransformCmd:
                 )
                 t.execute(cmd)
 
-    def set_shear_group(self, items: List[DocItem], shear: float):
+    def set_shear_group(self, items: list[DocItem], shear: float):
         """Shears the whole selection so the anchor item (``items[0]``)
         reaches *shear* degrees.
 
@@ -522,7 +522,7 @@ class TransformCmd:
 
     def set_size_group(
         self,
-        items: List[DocItem],
+        items: list[DocItem],
         width: Optional[float] = None,
         height: Optional[float] = None,
         fixed_ratio: bool = False,
@@ -601,35 +601,35 @@ class TransformCmd:
                 )
                 t.execute(cmd)
 
-    def reset_position(self, items: List[DocItem]):
+    def reset_position(self, items: list[DocItem]):
         """Moves every item's top-left corner to machine (0, 0)."""
         self.set_position(items, 0.0, 0.0)
 
-    def reset_position_group(self, items: List[DocItem]):
+    def reset_position_group(self, items: list[DocItem]):
         """Moves the selection's bounding box so its origin-corner sits
         at machine (0, 0)."""
         self.set_position_group(items, 0.0, 0.0)
 
-    def reset_angle(self, items: List[DocItem]):
+    def reset_angle(self, items: list[DocItem]):
         """Sets every item's angle to 0°."""
         self.set_angle(items, 0.0)
 
-    def reset_angle_group(self, items: List[DocItem]):
+    def reset_angle_group(self, items: list[DocItem]):
         """Resets the group's rotation to 0°."""
         self.set_angle_group(items, 0.0)
 
-    def reset_shear(self, items: List[DocItem]):
+    def reset_shear(self, items: list[DocItem]):
         """Sets every item's shear to 0°."""
         self.set_shear(items, 0.0)
 
-    def reset_shear_group(self, items: List[DocItem]):
+    def reset_shear_group(self, items: list[DocItem]):
         """Resets the group's shear to 0°."""
         self.set_shear_group(items, 0.0)
 
     @classmethod
     def get_position_group(
-        cls, items: List[DocItem]
-    ) -> Optional[Tuple[float, float]]:
+        cls, items: list[DocItem]
+    ) -> Optional[tuple[float, float]]:
         """Machine-coordinate position of the group's bounding-box
         origin-corner (the corner the machine origin refers to).
 
@@ -647,8 +647,8 @@ class TransformCmd:
 
     @classmethod
     def get_size_group(
-        cls, items: List[DocItem]
-    ) -> Optional[Tuple[float, float]]:
+        cls, items: list[DocItem]
+    ) -> Optional[tuple[float, float]]:
         """World-space (width, height) of the group bounding box."""
         if not items:
             return None
@@ -656,14 +656,14 @@ class TransformCmd:
         return (max_x - min_x, max_y - min_y)
 
     @classmethod
-    def get_angle_group(cls, items: List[DocItem]) -> Optional[float]:
+    def get_angle_group(cls, items: list[DocItem]) -> Optional[float]:
         """Angle (degrees) of the anchor item, representing the group."""
         if not items:
             return None
         return items[0].angle
 
     @classmethod
-    def get_shear_group(cls, items: List[DocItem]) -> Optional[float]:
+    def get_shear_group(cls, items: list[DocItem]) -> Optional[float]:
         """Shear (degrees) of the anchor item, representing the group."""
         if not items:
             return None

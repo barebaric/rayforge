@@ -1,7 +1,7 @@
 """Base class for a step's settings page."""
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -47,8 +47,8 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         producer_type = step.ASSEMBLER_NAME or "unknown"
         self.key = f"{producer_type.lower()}/step-settings"
         self.path_prefix = "/step-settings/"
-        self._sections: List[Adw.PreferencesGroup] = []
-        self._rows: List[Any] = []
+        self._sections: list[Adw.PreferencesGroup] = []
+        self._rows: list[Any] = []
         if self.show_identity:
             self._add_identity_section()
             self._add_cooling_section()

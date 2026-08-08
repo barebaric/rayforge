@@ -1,12 +1,9 @@
 import logging
+from collections.abc import Iterable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
-    Dict,
-    Iterable,
-    List,
     Optional,
-    Set,
     TypeVar,
     cast,
 )
@@ -45,8 +42,8 @@ class Doc(DocItem):
         self.job_assembly_invalidated = Signal()
 
         # Asset Management
-        self.assets: Dict[str, IAsset] = {}
-        self.asset_order: List[str] = []
+        self.assets: dict[str, IAsset] = {}
+        self.asset_order: list[str] = []
 
         # A new document starts with three empty workpiece layers
         for i in range(3):
@@ -58,7 +55,7 @@ class Doc(DocItem):
         self._active_layer_index: int = 0
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Doc":
+    def from_dict(cls, data: dict) -> "Doc":
         """Deserializes the document from a dictionary."""
         from raygeo.geo import Matrix
 
@@ -70,7 +67,7 @@ class Doc(DocItem):
         # --- Polymorphic Deserialization Factories ---
         item_class_map = {"layer": Layer, "stockitem": StockItem}
 
-        def _deserialize_asset(asset_data: Dict) -> IAsset:
+        def _deserialize_asset(asset_data: dict) -> IAsset:
             asset_type = asset_data.get("type")
             if not asset_type:
                 raise TypeError("Asset data missing 'type' field")
@@ -82,7 +79,7 @@ class Doc(DocItem):
                 return UnknownAsset.from_dict(asset_data)
             return asset_class.from_dict(asset_data)
 
-        def _deserialize_item(item_data: Dict) -> DocItem:
+        def _deserialize_item(item_data: dict) -> DocItem:
             item_type = item_data.get("type")
             item_class = None
             if item_type:
@@ -153,7 +150,7 @@ class Doc(DocItem):
         return doc
 
     @property
-    def stock_items(self) -> List["StockItem"]:
+    def stock_items(self) -> list["StockItem"]:
         """Returns a list of all child items that are StockItems."""
         from .stock import StockItem
 
@@ -167,7 +164,7 @@ class Doc(DocItem):
         """
         return self.source_assets.get(uid)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Serializes the document and its children to a dictionary."""
         return {
             "uid": self.uid,
@@ -217,7 +214,7 @@ class Doc(DocItem):
         """Retrieves any asset from the document's registry by its UID."""
         return self.assets.get(uid)
 
-    def set_asset_order(self, new_order_uids: List[str]):
+    def set_asset_order(self, new_order_uids: list[str]):
         """Sets the canonical order for all assets."""
         if set(new_order_uids) != set(self.assets.keys()):
             raise ValueError(
@@ -226,13 +223,13 @@ class Doc(DocItem):
         self.asset_order = new_order_uids
         self.updated.send(self)
 
-    def get_all_assets(self) -> List[IAsset]:
+    def get_all_assets(self) -> list[IAsset]:
         """Returns a unified list of all assets in the canonical order."""
         return [
             self.assets[uid] for uid in self.asset_order if uid in self.assets
         ]
 
-    def get_assets_by_type(self, type_name: str) -> Dict[str, IAsset]:
+    def get_assets_by_type(self, type_name: str) -> dict[str, IAsset]:
         """
         Returns a dictionary of all assets of a specific type.
 
@@ -249,7 +246,7 @@ class Doc(DocItem):
         }
 
     @property
-    def source_assets(self) -> Dict[str, "SourceAsset"]:
+    def source_assets(self) -> dict[str, "SourceAsset"]:
         """
         Returns a dictionary of all SourceAssets for compatibility.
         NOTE: The order of this dictionary is not guaranteed.
@@ -261,7 +258,7 @@ class Doc(DocItem):
         }
 
     @property
-    def stock_assets(self) -> Dict[str, "StockAsset"]:
+    def stock_assets(self) -> dict[str, "StockAsset"]:
         """
         Returns a dictionary of all StockAssets for compatibility.
         NOTE: The order of this dictionary is not guaranteed.
@@ -280,12 +277,12 @@ class Doc(DocItem):
         return self
 
     @property
-    def layers(self) -> List[Layer]:
+    def layers(self) -> list[Layer]:
         """Returns a list of all child items that are Layers."""
         return [child for child in self.children if isinstance(child, Layer)]
 
     @property
-    def all_workpieces(self) -> List[WorkPiece]:
+    def all_workpieces(self) -> list[WorkPiece]:
         """
         Recursively finds and returns a flattened list of all WorkPiece
         objects contained within this document.
@@ -304,7 +301,7 @@ class Doc(DocItem):
         if workpiece.parent:
             workpiece.parent.remove_child(workpiece)
 
-    def get_top_level_items(self) -> List["DocItem"]:
+    def get_top_level_items(self) -> list["DocItem"]:
         """
         Returns a list of all top-level, user-facing items in the document by
         querying each layer for its content.
@@ -405,7 +402,7 @@ class Doc(DocItem):
             # The active layer instance hasn't changed, so no change signal
             # needed.
 
-    def set_layers(self, layers: List[Layer]):
+    def set_layers(self, layers: list[Layer]):
         new_layers_list = list(layers)
 
         # A document must always have at least one workpiece layer.
@@ -489,11 +486,11 @@ class Doc(DocItem):
         return None
 
     @property
-    def missing_step_types(self) -> Set[str]:
+    def missing_step_types(self) -> set[str]:
         """Step type names referenced but not registered in step_registry."""
         from .step_registry import step_registry
 
-        missing: Set[str] = set()
+        missing: set[str] = set()
         for layer in self.layers:
             if layer.workflow:
                 for step in layer.workflow.steps:

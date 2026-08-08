@@ -1,14 +1,12 @@
 import asyncio
 import inspect
 import logging
+from collections.abc import Awaitable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
     Callable,
-    Dict,
-    List,
     Optional,
     Union,
     cast,
@@ -49,8 +47,8 @@ class NoDeviceDriver(Driver):
         # Internal state for WCS offsets to behave like a stateful machine
         # Initialize from machine's persisted state to prevent overwriting
         # loaded configuration with defaults upon connection.
-        self._offsets: Dict[str, Pos] = cast(
-            Dict[str, Pos],
+        self._offsets: dict[str, Pos] = cast(
+            dict[str, Pos],
             {k: v.offset for k, v in machine.coordinate_systems.items()},
         )
 
@@ -93,7 +91,7 @@ class NoDeviceDriver(Driver):
         assert machine.dialect is not None
         return GcodeEncoder(machine.dialect)
 
-    def get_setting_vars(self) -> List["VarSet"]:
+    def get_setting_vars(self) -> list["VarSet"]:
         return [VarSet(title=_("No settings"))]
 
     async def _connect_implementation(self) -> None:
@@ -234,7 +232,7 @@ class NoDeviceDriver(Driver):
         # Notify machine that the driver updated offsets
         self.wcs_updated.send(self, offsets=self._offsets)
 
-    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+    async def read_wcs_offsets(self) -> dict[str, Pos]:
         """Dummy implementation, returns internal state."""
         self.wcs_updated.send(self, offsets=self._offsets)
         return self._offsets

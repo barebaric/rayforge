@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.ops.transform.overscan import OverscanSpec
 
@@ -102,14 +102,14 @@ class OverscanTransformer(OpsTransformer):
     def to_spec(
         self,
         workpiece: Optional[WorkPiece],
-        stock_geometries: Optional[List["Geometry"]],
-        settings: Optional[Dict[str, Any]],
+        stock_geometries: Optional[list["Geometry"]],
+        settings: Optional[dict[str, Any]],
     ) -> OverscanSpec:
         if settings and settings.get("driver_native_overscan"):
             return OverscanSpec(distance_mm=0.0)
         return OverscanSpec(distance_mm=self.distance_mm)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             **super().to_dict(),
             "distance_mm": self.distance_mm,
@@ -117,7 +117,7 @@ class OverscanTransformer(OpsTransformer):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "OverscanTransformer":
+    def from_dict(cls, data: dict[str, Any]) -> "OverscanTransformer":
         return cls(
             enabled=data.get("enabled", True),
             distance_mm=data.get("distance_mm", 2.0),

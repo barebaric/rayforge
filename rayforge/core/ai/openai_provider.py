@@ -1,7 +1,8 @@
 import json
 import logging
+from collections.abc import AsyncGenerator
 from gettext import gettext as _
-from typing import AsyncGenerator, List, Optional, Tuple
+from typing import Optional
 
 import aiohttp
 
@@ -41,7 +42,7 @@ class OpenAICompatibleProvider(AIProvider):
 
     async def chat(
         self,
-        messages: List[ChatMessage],
+        messages: list[ChatMessage],
         model: Optional[str] = None,
         **kwargs,
     ) -> ChatResponse:
@@ -74,7 +75,7 @@ class OpenAICompatibleProvider(AIProvider):
 
     async def chat_stream(
         self,
-        messages: List[ChatMessage],
+        messages: list[ChatMessage],
         model: Optional[str] = None,
         **kwargs,
     ) -> AsyncGenerator[str, None]:
@@ -118,7 +119,7 @@ class OpenAICompatibleProvider(AIProvider):
                 _("Connection failed - please check your network")
             ) from e
 
-    async def list_models(self) -> List[str]:
+    async def list_models(self) -> list[str]:
         session = await self._get_session()
         try:
             async with session.get("models") as resp:
@@ -134,7 +135,7 @@ class OpenAICompatibleProvider(AIProvider):
                 _("Connection failed - please check your network")
             ) from e
 
-    async def test_connection(self) -> Tuple[bool, str]:
+    async def test_connection(self) -> tuple[bool, str]:
         try:
             models = await self.list_models()
         except AIServiceError as e:

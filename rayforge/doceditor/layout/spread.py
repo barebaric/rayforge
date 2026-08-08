@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Optional
 
 from .base import LayoutStrategy
 
@@ -16,7 +16,7 @@ class SpreadHorizontallyStrategy(LayoutStrategy):
 
     def calculate_deltas(
         self, context: Optional[ExecutionContext] = None
-    ) -> Dict[DocItem, Matrix]:
+    ) -> dict[DocItem, Matrix]:
         if len(self.items) < 3:
             return {}
 
@@ -61,7 +61,7 @@ class SpreadVerticallyStrategy(LayoutStrategy):
 
     def calculate_deltas(
         self, context: Optional[ExecutionContext] = None
-    ) -> Dict[DocItem, Matrix]:
+    ) -> dict[DocItem, Matrix]:
         if len(self.items) < 3:
             return {}
 

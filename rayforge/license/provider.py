@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 
 class LicenseStatus(Enum):
@@ -27,7 +27,7 @@ class LicenseResult:
     expires_at: Optional[datetime] = None
     customer_email: Optional[str] = None
     last_validated: Optional[datetime] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def is_expired(self) -> bool:
         if self.expires_at is None:
@@ -60,5 +60,5 @@ class LicenseProvider(ABC):
         pass
 
     @abstractmethod
-    def validate(self, config: Dict[str, Any]) -> LicenseResult:
+    def validate(self, config: dict[str, Any]) -> LicenseResult:
         pass

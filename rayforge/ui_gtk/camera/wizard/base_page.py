@@ -1,6 +1,6 @@
 """Base class for camera-wizard pages."""
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from gi.repository import Gtk
 
@@ -47,7 +47,7 @@ class CameraWizardPage:
     def can_proceed(self) -> bool:
         return True
 
-    def footer_buttons(self) -> List[Gtk.Button]:
+    def footer_buttons(self) -> list[Gtk.Button]:
         return []
 
     def back_target(self) -> Optional[str]:

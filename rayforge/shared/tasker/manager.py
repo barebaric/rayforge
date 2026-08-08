@@ -7,15 +7,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import threading
+from collections.abc import Coroutine, Iterator
 from multiprocessing import get_context
 from multiprocessing.managers import DictProxy
 from typing import (
     Any,
     Callable,
-    Coroutine,
-    Dict,
-    Iterator,
-    List,
     Optional,
     Protocol,
     runtime_checkable,
@@ -44,13 +41,13 @@ class TaskManager:
         shared_state: Optional[DictProxy[str, Any]] = None,
     ) -> None:
         logger.debug("Initializing TaskManager")
-        self._tasks: Dict[Any, Task] = {}
+        self._tasks: dict[Any, Task] = {}
         # A holding area for recently replaced/cancelled tasks to
         # catch in-flight messages.
-        self._zombie_tasks: Dict[int, Task] = {}
+        self._zombie_tasks: dict[int, Task] = {}
         # Invisible tasks that don't appear in UI but still need callbacks
-        self._invisible_tasks: Dict[int, Task] = {}
-        self._progress_map: Dict[
+        self._invisible_tasks: dict[int, Task] = {}
+        self._progress_map: dict[
             Any, float
         ] = {}  # Stores progress of all current tasks
 
@@ -265,7 +262,7 @@ class TaskManager:
         """
         loop = self.loop
         cancelled = False
-        timer_handle: List[Optional[asyncio.TimerHandle]] = [None]
+        timer_handle: list[Optional[asyncio.TimerHandle]] = [None]
 
         def _execute():
             if not cancelled:
@@ -964,7 +961,7 @@ class TaskManagerProxy:
     def __init__(self):
         self._instance: Optional[TaskManager] = None
         self._lock = threading.Lock()
-        self._init_kwargs: Dict[str, Any] = {}
+        self._init_kwargs: dict[str, Any] = {}
 
     def initialize(self, **kwargs: Any) -> None:
         """

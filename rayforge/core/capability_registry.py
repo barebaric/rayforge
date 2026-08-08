@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .capability import StepCapability
@@ -15,8 +15,8 @@ class StepCapabilityRegistry:
     """
 
     def __init__(self):
-        self._capabilities: Dict[str, "StepCapability"] = {}
-        self._addon_items: Dict[str, Set[str]] = {}
+        self._capabilities: dict[str, "StepCapability"] = {}
+        self._addon_items: dict[str, set[str]] = {}
 
     def register(
         self, capability: "StepCapability", addon_name: Optional[str] = None
@@ -86,7 +86,7 @@ class StepCapabilityRegistry:
         """
         return self._capabilities.get(name)
 
-    def all_capabilities(self) -> List["StepCapability"]:
+    def all_capabilities(self) -> list["StepCapability"]:
         """
         Return all registered capabilities in registration order.
 

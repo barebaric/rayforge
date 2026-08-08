@@ -16,7 +16,7 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 import pytest
 from raygeo.geo import Geometry
@@ -102,8 +102,8 @@ class StressTestController:
     contour_step_class: type
     engrave_step_class: type
 
-    _snapshots: List[MetricsSnapshot] = field(default_factory=list)
-    _workpieces: List[WorkPiece] = field(default_factory=list)
+    _snapshots: list[MetricsSnapshot] = field(default_factory=list)
+    _workpieces: list[WorkPiece] = field(default_factory=list)
     _workpiece_counter: int = 0
     _view_manager: Optional["ViewManager"] = None
     _svg_data: bytes = field(
@@ -199,7 +199,7 @@ class StressTestController:
 
         return workpiece
 
-    def _get_available_steps(self) -> List:
+    def _get_available_steps(self) -> list:
         """Get all available steps in the document."""
         steps = []
         for layer in self.doc.layers:
@@ -351,13 +351,13 @@ class StressTestController:
         )
         return snapshot
 
-    def _get_artifact_breakdown(self) -> Dict[str, int]:
+    def _get_artifact_breakdown(self) -> dict[str, int]:
         """
         Get a breakdown of SHM blocks by artifact type.
         Calculates exact unique SHM names across all tracking registries
         to confidently identify untracked (leaked) blocks.
         """
-        breakdown: Dict[str, int] = {}
+        breakdown: dict[str, int] = {}
         tracked_shms = set()
 
         # Tracked by pipeline handle dicts

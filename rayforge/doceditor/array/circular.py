@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-from typing import List
 
 from raygeo.geo import Matrix
 
@@ -28,7 +27,7 @@ class CircularArrayStrategy(ArrayStrategy):
         super().__init__(unit_bbox)
         self.params = params
 
-    def calculate_placements(self) -> List[Matrix]:
+    def calculate_placements(self) -> list[Matrix]:
         p = self.params
         count = max(1, int(p.count))
 
@@ -40,7 +39,7 @@ class CircularArrayStrategy(ArrayStrategy):
         base_angle = math.atan2(uy - cy, ux - cx)
         offsets = self.distribute_angles(count, p.total_angle_deg)
 
-        placements: List[Matrix] = []
+        placements: list[Matrix] = []
         for i, ang_offset in enumerate(offsets):
             # Instance 0 is always the identity: the original selection
             # stays in place as the anchor of the array.

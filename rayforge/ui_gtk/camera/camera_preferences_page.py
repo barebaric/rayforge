@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import List, Optional, cast
+from typing import Optional, cast
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -102,7 +102,7 @@ class CameraListEditor(PreferencesGroupWithButton):
         self.list_box.set_selection_mode(Gtk.SelectionMode.SINGLE)
         self.list_box.set_show_separators(True)
 
-    def set_cameras(self, cameras: List[Camera]):
+    def set_cameras(self, cameras: list[Camera]):
         """Rebuilds the list to match the provided list of cameras."""
         selected_camera = None
         selected_row = self.list_box.get_selected_row()
@@ -303,8 +303,8 @@ class CameraPreferencesPage(TrackedPreferencesPage):
         super().__init__(
             title=_("Camera"), icon_name="camera-on-symbolic", **kwargs
         )
-        self._controllers: List[CameraController] = []
-        self._cameras: List[Camera] = []
+        self._controllers: list[CameraController] = []
+        self._cameras: list[Camera] = []
         self.selected_controller: Optional[CameraController] = None
 
         # Signals
@@ -338,7 +338,7 @@ class CameraPreferencesPage(TrackedPreferencesPage):
             "row-selected", self.on_camera_selected
         )
 
-    def set_controllers(self, controllers: List[CameraController]):
+    def set_controllers(self, controllers: list[CameraController]):
         """Sets the list of camera controllers and refreshes the UI."""
         self._controllers = controllers
         self._cameras = [c.config for c in controllers]

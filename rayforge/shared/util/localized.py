@@ -9,11 +9,11 @@ import gettext
 import locale
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 SUPPORTED_LANGUAGES = ["en", "de", "es", "fr", "pt", "uk", "zh_CN"]
 
-LocalizedString = Union[str, Dict[str, str]]
+LocalizedString = Union[str, dict[str, str]]
 
 
 def _get_context_language() -> Optional[str]:
@@ -115,7 +115,7 @@ class LocalizedField(str):
     __slots__ = ("_default", "_translations")
 
     def __new__(
-        cls, default: str, translations: Optional[Dict[str, str]] = None
+        cls, default: str, translations: Optional[dict[str, str]] = None
     ):
         """
         Create a new LocalizedField.
@@ -141,7 +141,7 @@ class LocalizedField(str):
         return self._default
 
     @property
-    def translations(self) -> Dict[str, str]:
+    def translations(self) -> dict[str, str]:
         """Get all translations."""
         return self._translations.copy()
 
@@ -198,7 +198,7 @@ class LocalizedField(str):
 
         return self._translations.get(language, self._default)
 
-    def get_all_values(self) -> Dict[str, str]:
+    def get_all_values(self) -> dict[str, str]:
         """
         Get all available translations including default.
 
@@ -248,7 +248,7 @@ class _AddonDomainChain:
     """
 
     def __init__(self) -> None:
-        self._translators: List[gettext.NullTranslations] = []
+        self._translators: list[gettext.NullTranslations] = []
         self._original = None
 
     def register(self, translator: "gettext.NullTranslations") -> None:

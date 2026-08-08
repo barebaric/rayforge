@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from blinker import Signal
 
@@ -12,8 +12,8 @@ class SketchSelection:
     """Manages the selection state of the sketch editor."""
 
     def __init__(self):
-        self.point_ids: List[EntityID] = []
-        self.entity_ids: List[EntityID] = []
+        self.point_ids: list[EntityID] = []
+        self.entity_ids: list[EntityID] = []
         self.constraint_idx: Optional[int] = None
         self.junction_pid: Optional[EntityID] = None
         self.changed = Signal()
@@ -87,7 +87,7 @@ class SketchSelection:
         self.changed.send(self)
 
     def _update_list(
-        self, collection: List[EntityID], item_id: EntityID, is_multi: bool
+        self, collection: list[EntityID], item_id: EntityID, is_multi: bool
     ):
         """Helper to handle toggle vs replace selection logic."""
         if is_multi:

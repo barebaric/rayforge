@@ -11,7 +11,7 @@ protocol so a service is removed automatically when its addon unloads.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class ServiceRegistry:
     """Maps a string key to a service, tracking the owning addon."""
 
     def __init__(self) -> None:
-        self._services: Dict[str, Tuple[Any, str]] = {}
+        self._services: dict[str, tuple[Any, str]] = {}
 
     def register(self, key: str, service: Any, addon_name: str = "") -> None:
         """
@@ -41,7 +41,7 @@ class ServiceRegistry:
         entry = self._services.get(key)
         return entry[0] if entry is not None else None
 
-    def keys(self) -> List[str]:
+    def keys(self) -> list[str]:
         """Return all registered service keys."""
         return list(self._services.keys())
 

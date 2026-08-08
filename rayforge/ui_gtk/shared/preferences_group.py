@@ -1,5 +1,6 @@
+from collections.abc import Iterable
 from gettext import gettext as _
-from typing import Any, Iterable
+from typing import Any
 
 from gi.repository import Adw, Gtk
 

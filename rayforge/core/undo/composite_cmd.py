@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 from .command import Command
 
@@ -10,7 +10,7 @@ class CompositeCommand(Command):
 
     def __init__(
         self,
-        commands: List[Command],
+        commands: list[Command],
         name: str,
         on_change_callback: Optional[Callable[[], None]] = None,
     ):

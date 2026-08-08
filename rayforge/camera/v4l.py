@@ -8,7 +8,7 @@ cameras using persistent /dev/v4l/by-id/ symlinks instead.
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ def _is_video_capture_symlink(name: str) -> bool:
     return "-video-index" in name
 
 
-def scan_v4l_by_id() -> Dict[str, str]:
+def scan_v4l_by_id() -> dict[str, str]:
     """Scan /dev/v4l/by-id/ for video capture devices.
 
     Returns:
@@ -38,7 +38,7 @@ def scan_v4l_by_id() -> Dict[str, str]:
         logger.debug("/dev/v4l/by-id/ does not exist")
         return {}
 
-    result: Dict[str, str] = {}
+    result: dict[str, str] = {}
 
     try:
         for entry in sorted(V4L_BY_ID_DIR.iterdir()):
@@ -62,7 +62,7 @@ def scan_v4l_by_id() -> Dict[str, str]:
     return result
 
 
-def get_sorted_by_id_paths() -> List[str]:
+def get_sorted_by_id_paths() -> list[str]:
     """Return by-id paths sorted by underlying /dev/videoN number."""
     mapping = scan_v4l_by_id()
 
@@ -117,7 +117,7 @@ def display_name(device_id: str) -> str:
     return device_id
 
 
-def migrate_camera_data(data: Dict[str, Any]) -> Dict[str, Any]:
+def migrate_camera_data(data: dict[str, Any]) -> dict[str, Any]:
     """Migrate numeric device IDs to persistent by-id paths.
 
     On Linux, numeric device IDs like "0" are replaced with

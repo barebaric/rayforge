@@ -1,5 +1,4 @@
 from gettext import gettext as _
-from typing import List
 
 from gi.repository import Gio, GLib, Gtk
 
@@ -266,14 +265,14 @@ class MainMenu(Gio.Menu):
             if info.label:
                 group.append(info.label, f"win.{info.action_name}")
 
-    def update_macros_menu(self, macros: List[Macro]):
+    def update_macros_menu(self, macros: list[Macro]):
         """Clears and rebuilds the dynamic macro execution menu items."""
         self.dynamic_macros_section.remove_all()
         for macro in macros:
             action_name = f"win.execute-macro('{macro.uid}')"
             self.dynamic_macros_section.append(macro.name, action_name)
 
-    def update_recent_files_menu(self, recent_infos: List[Gtk.RecentInfo]):
+    def update_recent_files_menu(self, recent_infos: list[Gtk.RecentInfo]):
         """Clears and rebuilds the dynamic recent files menu."""
         self.dynamic_recent_files_section.remove_all()
 

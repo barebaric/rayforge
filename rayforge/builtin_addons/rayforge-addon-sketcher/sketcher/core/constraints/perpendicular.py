@@ -6,10 +6,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
-    Tuple,
     Union,
     cast,
 )
@@ -90,7 +87,7 @@ class PerpendicularConstraint(Constraint):
             )
         return ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "PerpendicularConstraint",
             "e1_id": self.e1_id,
@@ -99,7 +96,7 @@ class PerpendicularConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "PerpendicularConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> "PerpendicularConstraint":
         return cls(
             e1_id=data["e1_id"],
             e2_id=data["e2_id"],
@@ -185,7 +182,7 @@ class PerpendicularConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         e1 = reg.get_entity(self.e1_id)
         e2 = reg.get_entity(self.e2_id)
         grad = {}
@@ -284,7 +281,7 @@ class PerpendicularConstraint(Constraint):
         self,
         reg: "EntityRegistry",
         to_screen: Callable[[Point], Point],
-    ) -> Optional[Tuple[float, float, Optional[float], Optional[float]]]:
+    ) -> Optional[tuple[float, float, Optional[float], Optional[float]]]:
         """Calculates screen position and angles for visualization."""
         e1 = reg.get_entity(self.e1_id)
         e2 = reg.get_entity(self.e2_id)

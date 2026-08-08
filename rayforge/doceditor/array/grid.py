@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import List, Tuple
-
 from raygeo.geo import Matrix
 
 from .base import ArrayStrategy
@@ -29,11 +27,11 @@ class GridArrayStrategy(ArrayStrategy):
         self.params = params
 
     @property
-    def _default_anchor(self) -> Tuple[float, float]:
+    def _default_anchor(self) -> tuple[float, float]:
         """Grid's default anchor is the bbox origin corner."""
         return (0.0, 0.0)
 
-    def _resolve_pitch(self) -> Tuple[float, float]:
+    def _resolve_pitch(self) -> tuple[float, float]:
         """Returns the (x, y) center-to-center pitch."""
         p = self.params
         if p.spacing_mode == SpacingMode.GAP:
@@ -45,7 +43,7 @@ class GridArrayStrategy(ArrayStrategy):
             pitch_y = p.row_spacing_mm
         return pitch_x, pitch_y
 
-    def calculate_placements(self) -> List[Matrix]:
+    def calculate_placements(self) -> list[Matrix]:
         p = self.params
         rows = max(1, int(p.rows))
         cols = max(1, int(p.cols))
@@ -53,7 +51,7 @@ class GridArrayStrategy(ArrayStrategy):
         ax, ay = self.anchor_world
         ox, oy = self.unit_bbox[0], self.unit_bbox[1]
 
-        placements: List[Matrix] = []
+        placements: list[Matrix] = []
         for row in range(rows):
             for col in range(cols):
                 dx = (ax - ox) + col * pitch_x

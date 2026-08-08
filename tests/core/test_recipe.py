@@ -1,6 +1,6 @@
 """Tests for the Recipe class."""
 
-from typing import List, Optional
+from typing import Optional
 from unittest.mock import Mock
 
 import pytest
@@ -17,7 +17,7 @@ from rayforge.core.varset import BoolVar, VarSet
 class _StubCapability(StepCapability):
     """A minimal capability for exercising recipe matching logic."""
 
-    def __init__(self, name: str, label: str, keys: List[str]):
+    def __init__(self, name: str, label: str, keys: list[str]):
         self._name = name
         self._label = label
         self._varset = VarSet(

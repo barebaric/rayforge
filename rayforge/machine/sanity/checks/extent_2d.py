@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Set
+from typing import TYPE_CHECKING
 
 from raygeo.ops.types import CommandCategory
 
@@ -16,10 +16,10 @@ class ExtentCheck2D(BaseCheck):
     def category(self) -> IssueCategory:
         return IssueCategory.MACHINE_EXTENT
 
-    def run(self, context: "SanityContext") -> List[SanityIssue]:
+    def run(self, context: "SanityContext") -> list[SanityIssue]:
         max_x, max_y = context.axis_extents
-        seen: Set[str] = set()
-        issues: List[SanityIssue] = []
+        seen: set[str] = set()
+        issues: list[SanityIssue] = []
         ops = context.ops
         for i in range(ops.len()):
             if ops.category(i) != CommandCategory.MOVING:
@@ -31,8 +31,8 @@ class ExtentCheck2D(BaseCheck):
 
     @staticmethod
     def _check_point(
-        issues: List[SanityIssue],
-        seen: Set[str],
+        issues: list[SanityIssue],
+        seen: set[str],
         point,
         max_x: float,
         max_y: float,

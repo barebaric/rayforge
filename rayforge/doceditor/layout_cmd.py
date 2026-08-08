@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING
 
 from ..core.item import DocItem
 from ..core.undo import ChangePropertyCommand
@@ -130,7 +130,7 @@ class LayoutCmd:
         )
 
     def center_horizontally(
-        self, selected_items: List[DocItem], surface_width_mm: float
+        self, selected_items: list[DocItem], surface_width_mm: float
     ):
         """Action handler for centering selected items horizontally."""
         if not selected_items:
@@ -142,7 +142,7 @@ class LayoutCmd:
         self.execute_layout(strategy, _("Center Horizontally"))
 
     def center_vertically(
-        self, selected_items: List[DocItem], surface_height_mm: float
+        self, selected_items: list[DocItem], surface_height_mm: float
     ):
         """Action handler for centering selected items vertically."""
         if not selected_items:
@@ -153,7 +153,7 @@ class LayoutCmd:
         )
         self.execute_layout(strategy, _("Center Vertically"))
 
-    def align_left(self, selected_items: List[DocItem]):
+    def align_left(self, selected_items: list[DocItem]):
         """Action handler for aligning selected items to the left."""
         if not selected_items:
             return
@@ -162,7 +162,7 @@ class LayoutCmd:
         self.execute_layout(strategy, _("Align Left"))
 
     def align_right(
-        self, selected_items: List[DocItem], surface_width_mm: float
+        self, selected_items: list[DocItem], surface_width_mm: float
     ):
         """Action handler for aligning selected items to the right."""
         if not selected_items:
@@ -174,7 +174,7 @@ class LayoutCmd:
         self.execute_layout(strategy, _("Align Right"))
 
     def align_top(
-        self, selected_items: List[DocItem], surface_height_mm: float
+        self, selected_items: list[DocItem], surface_height_mm: float
     ):
         """Action handler for aligning selected items to the top."""
         if not selected_items:
@@ -185,7 +185,7 @@ class LayoutCmd:
         )
         self.execute_layout(strategy, _("Align Top"))
 
-    def align_bottom(self, selected_items: List[DocItem]):
+    def align_bottom(self, selected_items: list[DocItem]):
         """Action handler for aligning selected items to the bottom."""
         if not selected_items:
             return
@@ -193,7 +193,7 @@ class LayoutCmd:
         strategy = BboxAlignBottomStrategy(selected_items)
         self.execute_layout(strategy, _("Align Bottom"))
 
-    def spread_horizontally(self, selected_items: List[DocItem]):
+    def spread_horizontally(self, selected_items: list[DocItem]):
         """Action handler for spreading selected items horizontally."""
         if not selected_items:
             return
@@ -201,7 +201,7 @@ class LayoutCmd:
         strategy = SpreadHorizontallyStrategy(selected_items)
         self.execute_layout(strategy, _("Spread Horizontally"))
 
-    def spread_vertically(self, selected_items: List[DocItem]):
+    def spread_vertically(self, selected_items: list[DocItem]):
         """Action handler for spreading selected items vertically."""
         if not selected_items:
             return
@@ -210,7 +210,7 @@ class LayoutCmd:
         self.execute_layout(strategy, _("Spread Vertically"))
 
     def position_at(
-        self, selected_items: List[DocItem], position_mm: Tuple[float, float]
+        self, selected_items: list[DocItem], position_mm: tuple[float, float]
     ):
         """Action handler for positioning the selection's center at a point."""
         if not selected_items:
@@ -221,7 +221,7 @@ class LayoutCmd:
         )
         self.execute_layout(strategy, _("Position at Point"))
 
-    def layout_pixel_perfect(self, selected_items: List[DocItem]):
+    def layout_pixel_perfect(self, selected_items: list[DocItem]):
         """Action handler for the pixel-perfect packing layout."""
         items_to_layout = self.get_items_to_layout(selected_items)
 
@@ -237,8 +237,8 @@ class LayoutCmd:
         self.execute_layout(strategy, _("Auto Layout"))
 
     def get_items_to_layout(
-        self, selected_items: List[DocItem]
-    ) -> List[DocItem]:
+        self, selected_items: list[DocItem]
+    ) -> list[DocItem]:
         """Determine items to layout based on selection context."""
         if not selected_items:
             # If nothing is selected, get all top-level content items from

@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 
 class ArrayMode(Enum):
@@ -51,7 +51,7 @@ class GridArrayParams:
     # Vertical distance between adjacent rows.
     row_spacing_mm: float = 1.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "rows": self.rows,
             "cols": self.cols,
@@ -61,7 +61,7 @@ class GridArrayParams:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "GridArrayParams":
+    def from_dict(cls, data: dict[str, Any]) -> "GridArrayParams":
         try:
             spacing = SpacingMode(data.get("spacing_mode", "gap"))
         except ValueError:
@@ -86,14 +86,14 @@ class PointRotationParams:
     count: int = 6
     total_angle_deg: float = 360.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "count": self.count,
             "total_angle_deg": self.total_angle_deg,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "PointRotationParams":
+    def from_dict(cls, data: dict[str, Any]) -> "PointRotationParams":
         return cls(
             count=int(data.get("count", 6)),
             total_angle_deg=float(data.get("total_angle_deg", 360.0)),
@@ -113,11 +113,11 @@ class CircularArrayParams:
 
     count: int = 6
     total_angle_deg: float = 360.0
-    center_mm: Tuple[float, float] = (0.0, 0.0)
+    center_mm: tuple[float, float] = (0.0, 0.0)
     radius_mm: float = 10.0
     rotate_copies: bool = True
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "count": self.count,
             "total_angle_deg": self.total_angle_deg,
@@ -127,7 +127,7 @@ class CircularArrayParams:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "CircularArrayParams":
+    def from_dict(cls, data: dict[str, Any]) -> "CircularArrayParams":
         center = data.get("center_mm", [0.0, 0.0])
         return cls(
             count=int(data.get("count", 6)),
@@ -149,7 +149,7 @@ class ArrayParams:
     )
     circular: CircularArrayParams = field(default_factory=CircularArrayParams)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "mode": self.mode.value,
             "grid": self.grid.to_dict(),
@@ -158,7 +158,7 @@ class ArrayParams:
         }
 
     @classmethod
-    def from_dict(cls, data: Optional[Dict[str, Any]]) -> "ArrayParams":
+    def from_dict(cls, data: Optional[dict[str, Any]]) -> "ArrayParams":
         if not data:
             return cls()
         try:

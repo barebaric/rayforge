@@ -1,15 +1,13 @@
 import asyncio
 import inspect
 import logging
+from collections.abc import Awaitable
 from dataclasses import replace
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
     Callable,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -93,7 +91,7 @@ class RuidaDriver(Driver):
         return _("Machine Coordinates")
 
     @property
-    def supported_wcs(self) -> List[str]:
+    def supported_wcs(self) -> list[str]:
         if not self._client:
             return [self.machine_space_wcs]
         return list(self._client.ref_points)
@@ -501,7 +499,7 @@ class RuidaDriver(Driver):
         await asyncio.sleep(0)
         self.settings_read.send(self, settings=[])
 
-    def get_setting_vars(self) -> List["VarSet"]:
+    def get_setting_vars(self) -> list["VarSet"]:
         return [VarSet(title=_("No settings"))]
 
     async def write_setting(self, key: str, value: Any) -> None:
@@ -559,13 +557,13 @@ class RuidaDriver(Driver):
         await self._client.set_ref_point_offset(wcs_slot, x_um, y_um)
         self.wcs_updated.send(self, offsets={wcs_slot: (x, y, z)})
 
-    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+    async def read_wcs_offsets(self) -> dict[str, Pos]:
         """
         Read reference point offsets from the controller.
 
         Returns offsets for REF0 and REF1 in mm. MACHINE is always zero.
         """
-        offsets: Dict[str, Pos] = {"MACHINE": (0.0, 0.0, 0.0)}
+        offsets: dict[str, Pos] = {"MACHINE": (0.0, 0.0, 0.0)}
 
         if not self._client or not self._is_connected:
             self.wcs_updated.send(self, offsets=offsets)

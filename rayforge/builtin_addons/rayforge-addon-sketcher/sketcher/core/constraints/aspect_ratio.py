@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import cairo
 from raygeo.geo.types import Point
@@ -73,7 +73,7 @@ class AspectRatioConstraint(Constraint):
             )
         return ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "AspectRatioConstraint",
             "p1": self.p1,
@@ -85,7 +85,7 @@ class AspectRatioConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AspectRatioConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> "AspectRatioConstraint":
         return cls(
             p1=data["p1"],
             p2=data["p2"],
@@ -112,7 +112,7 @@ class AspectRatioConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         pt3 = reg.get_point(self.p3)

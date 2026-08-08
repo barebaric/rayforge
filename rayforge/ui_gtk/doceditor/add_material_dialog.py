@@ -2,7 +2,7 @@
 
 import logging
 from gettext import gettext as _
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from gi.repository import Adw, Gdk, Gtk
 
@@ -108,7 +108,7 @@ class AddMaterialDialog(Adw.MessageDialog):
             if rgba.parse(color_hex):
                 self.color_button.set_rgba(rgba)
 
-    def get_material_data(self) -> Dict[str, Any]:
+    def get_material_data(self) -> dict[str, Any]:
         """Returns a dictionary with the entered material data."""
         return {
             "name": self.get_name().strip(),
