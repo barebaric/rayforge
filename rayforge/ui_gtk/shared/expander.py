@@ -1,4 +1,4 @@
-from gi.repository import Gtk
+from gi.repository import Gtk, Pango
 
 from ..icons import get_icon
 from .gtk import apply_css
@@ -90,10 +90,16 @@ class Expander(Gtk.Box):
 
         self.title_label = Gtk.Label(xalign=0)
         self.title_label.add_css_class("expander-title")
+        self.title_label.set_ellipsize(Pango.EllipsizeMode.END)
+        self.title_label.set_max_width_chars(40)
+        self.title_label.set_hexpand(True)
         label_box.append(self.title_label)
 
         self.subtitle_label = Gtk.Label(xalign=0)
         self.subtitle_label.add_css_class("expander-subtitle")
+        self.subtitle_label.set_ellipsize(Pango.EllipsizeMode.END)
+        self.subtitle_label.set_max_width_chars(40)
+        self.subtitle_label.set_hexpand(True)
         label_box.append(self.subtitle_label)
 
         self.suffix_box = Gtk.Box(

@@ -2,7 +2,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from blinker import Signal
-from gi.repository import Gtk
+from gi.repository import Gtk, Pango
 
 from ...context import get_context
 from ...core.step import Step
@@ -47,6 +47,9 @@ class StepBox(Gtk.Box):
         content.append(title_row)
 
         self.title_label = Gtk.Label(xalign=0)
+        self.title_label.set_ellipsize(Pango.EllipsizeMode.END)
+        self.title_label.set_max_width_chars(40)
+        self.title_label.set_hexpand(True)
         title_row.append(self.title_label)
 
         self.mode_tag = TagWidget(active=False)
@@ -57,6 +60,9 @@ class StepBox(Gtk.Box):
         self.subtitle_label = Gtk.Label(xalign=0)
         self.subtitle_label.add_css_class("caption")
         self.subtitle_label.add_css_class("dim-label")
+        self.subtitle_label.set_ellipsize(Pango.EllipsizeMode.END)
+        self.subtitle_label.set_max_width_chars(40)
+        self.subtitle_label.set_hexpand(True)
         content.append(self.subtitle_label)
 
         self.visibility_switch = Gtk.Switch()
