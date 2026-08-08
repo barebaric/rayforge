@@ -2,7 +2,7 @@
 
 import logging
 from gettext import gettext as _
-from typing import Optional, cast
+from typing import cast
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -126,7 +126,7 @@ class LibraryListWidget(PreferencesGroupWithButton):
         self.list_box.set_show_separators(True)
         self.list_box.connect("row-selected", self._on_library_selected)
 
-    def populate_and_select(self, select_name: Optional[str] = None):
+    def populate_and_select(self, select_name: str | None = None):
         """
         Populates the list with libraries and selects a specific one.
 
@@ -312,7 +312,7 @@ class LibraryListWidget(PreferencesGroupWithButton):
         entry.grab_focus()
 
     def _on_library_selected(
-        self, listbox: Gtk.ListBox, row: Optional[Gtk.ListBoxRow]
+        self, listbox: Gtk.ListBox, row: Gtk.ListBoxRow | None
     ):
         """Handle library selection."""
         logger.debug("LibraryListEditor: Handling library selection")

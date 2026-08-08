@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from blinker import ANY, Signal
 from gi.repository import Adw, GLib, Gtk
@@ -53,15 +52,15 @@ class SpinRow(Adw.ActionRow):
     def __init__(
         self,
         title: str,
-        subtitle: Optional[str] = None,
+        subtitle: str | None = None,
         *,
         lower: float = 0.0,
         upper: float = 1e9,
         step_increment: float = 1.0,
-        page_increment: Optional[float] = None,
+        page_increment: float | None = None,
         digits: int = 0,
         numeric: bool = False,
-        value: Optional[float] = None,
+        value: float | None = None,
         debounce_ms: int = 0,
     ):
         super().__init__(title=title, activatable=False)
@@ -70,8 +69,8 @@ class SpinRow(Adw.ActionRow):
 
         self._is_updating = False
         self._debounce_ms = debounce_ms
-        self._debounce_timer_id: Optional[int] = None
-        self._last_emitted_value: Optional[float] = None
+        self._debounce_timer_id: int | None = None
+        self._last_emitted_value: float | None = None
 
         adj = Gtk.Adjustment(
             lower=lower,

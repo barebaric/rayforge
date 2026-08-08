@@ -1,10 +1,9 @@
 from gettext import gettext as _
-from typing import Optional
 
 from .intvar import IntVar, ValidationError
 
 
-def port_validator(port: Optional[int]):
+def port_validator(port: int | None):
     """Raises ValidationError if port is not a valid network port."""
     if port is None:
         raise ValidationError(_("Port cannot be empty."))
@@ -21,11 +20,11 @@ class PortVar(IntVar):
         self,
         key: str,
         label: str,
-        description: Optional[str] = None,
-        default: Optional[int] = None,
-        value: Optional[int] = None,
-        min_val: Optional[int] = None,
-        max_val: Optional[int] = None,
+        description: str | None = None,
+        default: int | None = None,
+        value: int | None = None,
+        min_val: int | None = None,
+        max_val: int | None = None,
     ):
         super().__init__(
             key=key,

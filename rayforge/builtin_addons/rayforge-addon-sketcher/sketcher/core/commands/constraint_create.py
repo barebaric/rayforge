@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from ..constraints import (
     DiameterConstraint,
@@ -34,15 +34,15 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
     ):
         super().__init__(sketch, name)
         self.entity = entity
-        self._existing_constraint: Optional[Constraint] = None
-        self._created_constraint: Optional[Constraint] = None
-        self._add_cmd: Optional[AddItemsCommand] = None
+        self._existing_constraint: Constraint | None = None
+        self._created_constraint: Constraint | None = None
+        self._add_cmd: AddItemsCommand | None = None
 
     @staticmethod
     def get_constraint_for_entity(
         sketch: Sketch,
         entity: Entity,
-    ) -> Optional[Constraint]:
+    ) -> Constraint | None:
         """
         Returns existing constraint for entity, or None.
 
@@ -84,8 +84,8 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
     def create_constraint_for_entity(
         sketch: Sketch,
         entity: Entity,
-        initial_value: Optional[float] = None,
-    ) -> Optional[Constraint]:
+        initial_value: float | None = None,
+    ) -> Constraint | None:
         """
         Creates and returns a new constraint for the entity.
 
@@ -132,7 +132,7 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
         return None
 
     @property
-    def constraint(self) -> Optional[Constraint]:
+    def constraint(self) -> Constraint | None:
         """
         Returns the constraint involved in this operation.
 

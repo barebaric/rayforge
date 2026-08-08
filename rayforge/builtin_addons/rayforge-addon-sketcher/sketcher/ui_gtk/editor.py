@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, GLib, Gtk
 
@@ -33,7 +33,7 @@ class SketchEditor:
 
     def __init__(self, parent_window: Gtk.Window):
         self.parent_window = parent_window
-        self.sketch_element: Optional["SketchElement"] = None
+        self.sketch_element: SketchElement | None = None
 
         # The SketchEditor manages its own undo/redo history, separate from
         # the main document editor.
@@ -41,8 +41,8 @@ class SketchEditor:
 
         # 1. Key Press Handling State
         self.key_sequence = []
-        self.key_sequence_timer_id: Optional[int] = None
-        self.text_edit_cursor_timer_id: Optional[int] = None
+        self.key_sequence_timer_id: int | None = None
+        self.text_edit_cursor_timer_id: int | None = None
         self._init_shortcuts()
 
         # 2. Pie Menu Setup
@@ -121,7 +121,7 @@ class SketchEditor:
         self.pie_menu.unparent()
         self.pie_menu.set_parent(self.parent_window)
 
-    def get_current_cursor(self) -> Optional[Gdk.Cursor]:
+    def get_current_cursor(self) -> Gdk.Cursor | None:
         """
         Determines the appropriate cursor based on the current tool and
         context (e.g., hovering over a point).
@@ -179,8 +179,8 @@ class SketchEditor:
         # Use the element's canvas to convert from widget to world coordinates
         world_x, world_y = sketch_element.canvas._get_world_coords(x, y)
 
-        target: Optional[Union[Point, Entity, Constraint]] = None
-        target_type: Optional[str] = None
+        target: Point | Entity | Constraint | None = None
+        target_type: str | None = None
 
         # Before showing the menu, we deactivate the current tool to clean
         # up any in-progress state.

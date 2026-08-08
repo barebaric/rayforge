@@ -4,7 +4,7 @@ import asyncio
 import logging
 import uuid
 from gettext import gettext as _
-from typing import Optional, cast
+from typing import cast
 
 from blinker import Signal
 from gi.repository import Adw, GLib, Gtk
@@ -146,7 +146,7 @@ class ProviderListWidget(PreferencesGroupWithButton):
         self.list_box.set_placeholder(placeholder)
         self.list_box.connect("row-selected", self._on_provider_selected)
 
-    def populate_and_select(self, select_id: Optional[str] = None):
+    def populate_and_select(self, select_id: str | None = None):
         ai_service = get_context().ai_service
         providers = list(ai_service.providers.items())
         default_id = ai_service.default_provider_id
@@ -202,7 +202,7 @@ class ProviderListWidget(PreferencesGroupWithButton):
             else:
                 self._on_provider_selected(self.list_box, None)
 
-    def get_row_for_provider(self, provider_id: str) -> Optional[ProviderRow]:
+    def get_row_for_provider(self, provider_id: str) -> ProviderRow | None:
         return self._row_widgets.get(provider_id)
 
     def create_row_widget(self, item) -> ProviderRow:
@@ -275,7 +275,7 @@ class ProviderListWidget(PreferencesGroupWithButton):
         self.populate_and_select(select_id=provider_id)
 
     def _on_provider_selected(
-        self, listbox: Gtk.ListBox, row: Optional[Gtk.ListBoxRow]
+        self, listbox: Gtk.ListBox, row: Gtk.ListBoxRow | None
     ):
         provider_id = None
         config = None
@@ -298,7 +298,7 @@ class ProviderEditorWidget(Adw.PreferencesGroup):
     def __init__(self, list_widget: "ProviderListWidget", **kwargs):
         super().__init__(**kwargs)
         self.list_widget = list_widget
-        self.provider_id: Optional[str] = None
+        self.provider_id: str | None = None
         self._updating = False
         self._setup_ui()
 
@@ -354,7 +354,7 @@ class ProviderEditorWidget(Adw.PreferencesGroup):
         self._clear_form()
 
     def set_provider(
-        self, provider_id: Optional[str], config: Optional[AIProviderConfig]
+        self, provider_id: str | None, config: AIProviderConfig | None
     ):
         self._updating = True
         self.provider_id = provider_id
@@ -544,8 +544,8 @@ class AISettingsPage(TrackedPreferencesPage):
     def _on_provider_selected(
         self,
         sender,
-        provider_id: Optional[str],
-        config: Optional[AIProviderConfig],
+        provider_id: str | None,
+        config: AIProviderConfig | None,
     ):
         if provider_id and config:
             self.provider_editor.set_provider(provider_id, config)

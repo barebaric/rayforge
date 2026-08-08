@@ -1,8 +1,8 @@
 import logging
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from pathlib import Path
 from threading import Thread
-from typing import Callable, Optional
 
 from blinker import Signal
 
@@ -20,11 +20,9 @@ logger = logging.getLogger(__name__)
 class LicenseValidator:
     CACHE_DURATION = timedelta(hours=24)
 
-    def __init__(
-        self, config_dir: Path, patreon_client_id: Optional[str] = None
-    ):
+    def __init__(self, config_dir: Path, patreon_client_id: str | None = None):
         self._gumroad: GumroadProvider = GumroadProvider(config_dir)
-        self._patreon: Optional[PatreonProvider] = None
+        self._patreon: PatreonProvider | None = None
         self._cache: dict[str, tuple] = {}
         self.changed = Signal()
 
@@ -100,13 +98,13 @@ class LicenseValidator:
 
         return False, result.message, purchase_url
 
-    def invalidate_cache(self, addon_id: Optional[str] = None) -> None:
+    def invalidate_cache(self, addon_id: str | None = None) -> None:
         if addon_id:
             self._cache.pop(addon_id, None)
         else:
             self._cache.clear()
 
-    def get_provider(self, name: str) -> Optional[LicenseProvider]:
+    def get_provider(self, name: str) -> LicenseProvider | None:
         if name == "gumroad":
             return self._gumroad
         if name == "patreon":
@@ -138,13 +136,13 @@ class LicenseValidator:
             self.invalidate_cache()
 
     def start_patreon_oauth(
-        self, on_complete: Callable[[bool, Optional[str]], None]
-    ) -> Optional[tuple[int, Thread]]:
+        self, on_complete: Callable[[bool, str | None], None]
+    ) -> tuple[int, Thread] | None:
         if not self._patreon:
             return None
         return self._patreon.start_oauth_flow(on_complete)
 
-    def get_patreon_oauth_url(self) -> Optional[str]:
+    def get_patreon_oauth_url(self) -> str | None:
         if not self._patreon:
             return None
         return self._patreon.get_oauth_url()

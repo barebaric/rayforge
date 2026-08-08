@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -35,8 +35,8 @@ class RectanglePreviewState(PreviewState):
         self.start_temp = start_temp
         self.p_end_id = p_end_id
         self.preview_ids = preview_ids
-        self.locked_width: Optional[float] = None
-        self.locked_height: Optional[float] = None
+        self.locked_width: float | None = None
+        self.locked_height: float | None = None
 
     def get_preview_point_ids(self) -> set[EntityID]:
         """
@@ -53,9 +53,9 @@ class RectanglePreviewState(PreviewState):
 
     def set_dimensions(
         self,
-        registry: "EntityRegistry",
-        width: Optional[float] = None,
-        height: Optional[float] = None,
+        registry: EntityRegistry,
+        width: float | None = None,
+        height: float | None = None,
     ) -> None:
         """
         Sets the rectangle dimensions from numeric input.
@@ -99,9 +99,7 @@ class RectanglePreviewState(PreviewState):
             preview_ids=self.preview_ids,
         )
 
-    def get_dimensions(
-        self, registry: "EntityRegistry"
-    ) -> list["DimensionData"]:
+    def get_dimensions(self, registry: EntityRegistry) -> list[DimensionData]:
         """
         Returns width and height dimensions for preview.
 
@@ -141,10 +139,10 @@ class RectangleCommand(SketchChangeCommand):
         sketch: Sketch,
         start_pid: EntityID,
         end_pos: GeoPoint,
-        end_pid: Optional[EntityID] = None,
+        end_pid: EntityID | None = None,
         is_start_temp: bool = False,
-        fixed_width: Optional[float] = None,
-        fixed_height: Optional[float] = None,
+        fixed_width: float | None = None,
+        fixed_height: float | None = None,
     ):
         super().__init__(sketch, _("Add Rectangle"))
         self.start_pid = start_pid
@@ -153,11 +151,11 @@ class RectangleCommand(SketchChangeCommand):
         self.is_start_temp = is_start_temp
         self.fixed_width = fixed_width
         self.fixed_height = fixed_height
-        self.add_cmd: Optional[AddItemsCommand] = None
-        self._committed_end_id: Optional[EntityID] = None
+        self.add_cmd: AddItemsCommand | None = None
+        self._committed_end_id: EntityID | None = None
 
     @property
-    def committed_end_id(self) -> Optional[EntityID]:
+    def committed_end_id(self) -> EntityID | None:
         """
         The final end point ID after execute(), or None if not applicable.
         """
@@ -170,10 +168,10 @@ class RectangleCommand(SketchChangeCommand):
         x2: float,
         y2: float,
         start_pid: EntityID,
-        end_pid: Optional[EntityID],
-        fixed_width: Optional[float] = None,
-        fixed_height: Optional[float] = None,
-    ) -> Optional[dict[str, Any]]:
+        end_pid: EntityID | None,
+        fixed_width: float | None = None,
+        fixed_height: float | None = None,
+    ) -> dict[str, Any] | None:
         """Calculates the points, entities, and constraints for a rectangle."""
         if abs(x2 - x1) < 1e-6 or abs(y2 - y1) < 1e-6:
             return None
@@ -246,8 +244,8 @@ class RectangleCommand(SketchChangeCommand):
         registry: EntityRegistry,
         start_pid: EntityID,
         end_pid: EntityID,
-        preview_ids: Optional[dict[str, EntityID]] = None,
-    ) -> Optional[dict[str, EntityID]]:
+        preview_ids: dict[str, EntityID] | None = None,
+    ) -> dict[str, EntityID] | None:
         """
         Creates or updates preview geometry in the registry.
 
@@ -303,7 +301,7 @@ class RectangleCommand(SketchChangeCommand):
         registry: EntityRegistry,
         x: float,
         y: float,
-        snapped_pid: Optional[EntityID] = None,
+        snapped_pid: EntityID | None = None,
         **kwargs,
     ) -> RectanglePreviewState:
         """

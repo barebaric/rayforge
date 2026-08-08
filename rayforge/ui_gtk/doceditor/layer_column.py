@@ -1,7 +1,7 @@
 import json
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 from blinker import Signal
 from gi.repository import Adw, Gdk, Gio, Gtk, Pango
@@ -136,7 +136,7 @@ class LayerColumn(Gtk.Box):
         self._click_gesture.connect("released", self._on_column_released)
         self.add_controller(self._click_gesture)
 
-        self._context_popover: Optional[Gtk.PopoverMenu] = None
+        self._context_popover: Gtk.PopoverMenu | None = None
         self._row_drag_happened: bool = False
 
         right_click = Gtk.GestureClick()
@@ -804,7 +804,7 @@ class LayerColumn(Gtk.Box):
             picked = picked.get_parent()
         return None
 
-    def _find_item_by_uid(self, uid: str) -> Optional[DocItem]:
+    def _find_item_by_uid(self, uid: str) -> DocItem | None:
         for layer in self.doc.layers:
             for item in layer.get_content_items():
                 if item.uid == uid:

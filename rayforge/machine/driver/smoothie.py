@@ -1,14 +1,11 @@
 import asyncio
 import inspect
 import logging
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Optional,
-    Union,
     cast,
 )
 
@@ -62,11 +59,11 @@ class SmoothieDriver(Driver):
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
-        self.telnet: Optional[TelnetTransport] = None
-        self.host: Optional[str] = None
-        self.port: Optional[int] = None
+        self.telnet: TelnetTransport | None = None
+        self.host: str | None = None
+        self.port: int | None = None
         self.keep_running = False
-        self._connection_task: Optional[asyncio.Task] = None
+        self._connection_task: asyncio.Task | None = None
         self._ok_event = asyncio.Event()
 
     @property
@@ -78,7 +75,7 @@ class SmoothieDriver(Driver):
         return _("Machine Coordinates (G53)")
 
     @property
-    def resource_uri(self) -> Optional[str]:
+    def resource_uri(self) -> str | None:
         if self.host:
             return f"tcp://{self.host}:{self.port}"
         return None
@@ -214,9 +211,7 @@ class SmoothieDriver(Driver):
         encoded: EncodedOutput,
         doc: "Doc",
         ops: "Ops",
-        on_command_done: Optional[
-            Callable[[int], Union[None, Awaitable[None]]]
-        ] = None,
+        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
     ) -> None:
         gcode_lines = encoded.text.splitlines()
         op_map = encoded.op_map
@@ -288,11 +283,11 @@ class SmoothieDriver(Driver):
         # Send Ctrl+C
         await self._send_and_wait(b"\x03")
 
-    def can_home(self, axis: Optional[Axis] = None) -> bool:
+    def can_home(self, axis: Axis | None = None) -> bool:
         """Smoothie supports homing for all axes."""
         return True
 
-    async def home(self, axes: Optional[Axis] = None) -> None:
+    async def home(self, axes: Axis | None = None) -> None:
         """
         Homes the specified axes or all axes if none specified.
 
@@ -319,7 +314,7 @@ class SmoothieDriver(Driver):
         )
         await self._send_and_wait(cmd.encode())
 
-    def can_jog(self, axis: Optional[Axis] = None) -> bool:
+    def can_jog(self, axis: Axis | None = None) -> bool:
         """Smoothie supports jogging for all axes."""
         return True
 
@@ -426,7 +421,7 @@ class SmoothieDriver(Driver):
                 self.state_changed.send(self, state=self.state)
 
     def on_telnet_status_changed(
-        self, sender, status: TransportStatus, message: Optional[str] = None
+        self, sender, status: TransportStatus, message: str | None = None
     ):
         log_data = f"Connection status: {status.name}"
         if message:
@@ -480,7 +475,7 @@ class SmoothieDriver(Driver):
 
     async def run_probe_cycle(
         self, axis: Axis, max_travel: float, feed_rate: int
-    ) -> Optional[Pos]:
+    ) -> Pos | None:
         """
         Probing is not implemented due to difficulty in reliably capturing
         real-time probe position feedback over the standard Telnet protocol.

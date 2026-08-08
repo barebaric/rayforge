@@ -1,4 +1,3 @@
-# flake8: noqa: E402
 """Tests for the SpinRow generic row."""
 
 import gi

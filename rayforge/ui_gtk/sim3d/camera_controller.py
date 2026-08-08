@@ -7,7 +7,8 @@ stays a thin ``Gtk.GLArea`` that consumes the camera during rendering.
 """
 
 import logging
-from typing import TYPE_CHECKING, Callable, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import numpy as np
 from gi.repository import Gdk, Gtk
@@ -35,9 +36,9 @@ class CameraController:
         widget: Gtk.Widget,
         get_viewport: Callable[[], "ViewportConfig"],
         request_render: Callable[[], None],
-        on_key_pressed: Optional[Callable] = None,
+        on_key_pressed: Callable | None = None,
     ):
-        self.camera: Optional[Camera] = None
+        self.camera: Camera | None = None
         self._widget = widget
         self._get_viewport = get_viewport
         self._request_render = request_render
@@ -45,14 +46,14 @@ class CameraController:
         # State for interactions
         self._is_orbiting = False
         self._is_z_rotating = False
-        self._last_pan_offset: Optional[Point] = None
-        self._rotation_pivot: Optional[np.ndarray] = None
-        self._last_orbit_pos: Optional[Point] = None
-        self._last_z_rotate_screen_pos: Optional[Point] = None
+        self._last_pan_offset: Point | None = None
+        self._rotation_pivot: np.ndarray | None = None
+        self._last_orbit_pos: Point | None = None
+        self._last_z_rotate_screen_pos: Point | None = None
 
         # The EventControllerScroll provides no access to the pointer
         # position, so it is tracked here via a motion controller.
-        self._mouse_pos: Optional[tuple[float, float]] = None
+        self._mouse_pos: tuple[float, float] | None = None
 
         self._setup_interactions(on_key_pressed)
 
@@ -75,7 +76,7 @@ class CameraController:
 
     def get_world_coords_on_plane(
         self, x: float, y: float
-    ) -> Optional[np.ndarray]:
+    ) -> np.ndarray | None:
         """Calculates the 3D world coordinates on the XY plane from 2D."""
         camera = self.camera
         if camera is None:
@@ -119,7 +120,7 @@ class CameraController:
 
         return ray_origin + t * ray_dir
 
-    def _setup_interactions(self, on_key_pressed: Optional[Callable] = None):
+    def _setup_interactions(self, on_key_pressed: Callable | None = None):
         """Connects GTK4 gesture and event controllers for interaction."""
         # Middle mouse drag for Pan/Orbit
         drag_middle = Gtk.GestureDrag.new()
@@ -235,7 +236,7 @@ class CameraController:
         camera.pan(-dx, -dy)
         self._last_pan_offset = offset_x, offset_y
 
-    def _get_orbit_delta(self, gesture) -> Optional[tuple[float, float]]:
+    def _get_orbit_delta(self, gesture) -> tuple[float, float] | None:
         """Returns the (dx, dy) since the last orbit step, or None."""
         if not self._is_orbiting or self._rotation_pivot is None:
             return None
@@ -328,10 +329,12 @@ class CameraController:
         if norm_fwd > 1e-6:
             dot_prod = np.dot(forward_vec / norm_fwd, world_z_axis)
             # Stop if looking down and trying to pitch more down
-            if dot_prod < -0.999 and pitch_angle < 0:
-                pitch_angle = 0.0
-            # Stop if looking up and trying to pitch more up
-            elif dot_prod > 0.999 and pitch_angle > 0:
+            if (
+                dot_prod < -0.999
+                and pitch_angle < 0
+                or dot_prod > 0.999
+                and pitch_angle > 0
+            ):
                 pitch_angle = 0.0
 
         if abs(pitch_angle) > 1e-6:

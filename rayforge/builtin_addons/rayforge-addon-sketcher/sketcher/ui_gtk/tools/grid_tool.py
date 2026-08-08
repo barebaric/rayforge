@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, Union, cast
+from typing import TYPE_CHECKING, Union, cast
 
 from gi.repository import Adw, Gtk
 
@@ -20,8 +20,8 @@ class GridTool(SketchTool):
 
     def is_available(
         self,
-        target: Optional[Union["Point", "Entity", "Constraint"]],
-        target_type: Optional[str],
+        target: Union["Point", "Entity", "Constraint"] | None,
+        target_type: str | None,
     ) -> bool:
         return target is None
 

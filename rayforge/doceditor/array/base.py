@@ -11,7 +11,6 @@ selection that stays in place.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional
 
 from raygeo.geo import Matrix
 from raygeo.geo.types import Rect
@@ -36,7 +35,7 @@ class ArrayStrategy(ABC):
     def __init__(
         self,
         unit_bbox: Rect,
-        anchor: Optional[tuple[float, float]] = None,
+        anchor: tuple[float, float] | None = None,
     ):
         """
         Args:
@@ -49,7 +48,7 @@ class ArrayStrategy(ABC):
                 ``None`` the strategy-specific default is used.
         """
         self.unit_bbox: Rect = unit_bbox
-        self._custom_anchor: Optional[tuple[float, float]] = anchor
+        self._custom_anchor: tuple[float, float] | None = anchor
 
     @property
     def anchor(self) -> tuple[float, float]:

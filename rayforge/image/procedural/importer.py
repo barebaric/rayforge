@@ -3,7 +3,6 @@ import json
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional
 
 from raygeo.geo import Geometry
 
@@ -130,7 +129,7 @@ class ProceduralImporter(Importer):
 
         return payload
 
-    def parse(self) -> Optional[ParsingResult]:
+    def parse(self) -> ParsingResult | None:
         """
         Phase 2: "Parse" the procedural parameters to determine geometric
         properties.

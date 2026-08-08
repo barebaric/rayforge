@@ -1,7 +1,7 @@
 import uuid
 from abc import ABC
 from gettext import gettext as _
-from typing import Any, Optional, Self
+from typing import Any, Self
 
 import numpy as np
 from blinker import Signal
@@ -32,13 +32,13 @@ class Head(ABC):
         self.uid: str = str(uuid.uuid4())
         self.name: str = _("Head")
         self.tool_number: int = 0
-        self.model_path: Optional[str] = None
+        self.model_path: str | None = None
         self.transform: np.ndarray = np.eye(4, dtype=np.float64)
         self.changed = Signal()
         self.extra: dict[str, Any] = {}
 
     @property
-    def machine_capability(self) -> Optional[MachineCapability]:
+    def machine_capability(self) -> MachineCapability | None:
         """
         The machine capability this head type implies, or ``None`` for
         passive heads that contribute no capability.
@@ -53,7 +53,7 @@ class Head(ABC):
         self.tool_number = tool_number
         self.changed.send(self)
 
-    def set_model_path(self, model_path: Optional[str]):
+    def set_model_path(self, model_path: str | None):
         if self.model_path == model_path:
             return
         self.model_path = model_path

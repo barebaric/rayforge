@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from ..core.vectorization_spec import PassthroughSpec, TraceSpec
 from .assembler import ItemAssembler
@@ -143,7 +143,7 @@ class Importer(ABC):
     # The base set of features is empty. Subclasses MUST override this.
     features: set[ImporterFeature] = set()
 
-    def __init__(self, data: bytes, source_file: Optional[Path] = None):
+    def __init__(self, data: bytes, source_file: Path | None = None):
         """
         The constructor that all subclasses must implement.
         """
@@ -151,7 +151,7 @@ class Importer(ABC):
         self.source_file = source_file or Path("Untitled")
         self._warnings: list[str] = []
         self._errors: list[str] = []
-        self._vectorization_spec: Optional[VectorizationSpec] = None
+        self._vectorization_spec: VectorizationSpec | None = None
 
     def add_warning(self, message: str) -> None:
         """Records a warning message to be displayed to the user."""
@@ -189,7 +189,7 @@ class Importer(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def parse(self) -> Optional["ParsingResult"]:
+    def parse(self) -> ParsingResult | None:
         """
         Phase 2: Parse raw data into geometric facts.
 
@@ -228,8 +228,8 @@ class Importer(ABC):
 
     @abstractmethod
     def vectorize(
-        self, parse_result: "ParsingResult", spec: "VectorizationSpec"
-    ) -> "VectorizationResult":
+        self, parse_result: ParsingResult, spec: VectorizationSpec
+    ) -> VectorizationResult:
         """
         Phase 3: Convert parsed data to vector geometry.
 
@@ -263,9 +263,7 @@ class Importer(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def create_source_asset(
-        self, parse_result: "ParsingResult"
-    ) -> "SourceAsset":
+    def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
         """
         Creates a SourceAsset representing the imported file.
 
@@ -287,13 +285,13 @@ class Importer(ABC):
         """
         raise NotImplementedError
 
-    def _stamp_importer_identity(self, source_asset: "SourceAsset") -> None:
+    def _stamp_importer_identity(self, source_asset: SourceAsset) -> None:
         source_asset.metadata["_importer_class"] = type(self).__name__
         if self.mime_types:
             source_asset.metadata["_importer_mime"] = self.mime_types[0]
 
     @staticmethod
-    def _render_thumbnail_from_vips(image, size: int = 256) -> Optional[bytes]:
+    def _render_thumbnail_from_vips(image, size: int = 256) -> bytes | None:
         if image is None:
             return None
         try:
@@ -304,8 +302,8 @@ class Importer(ABC):
 
     @staticmethod
     def _render_thumbnail_from_renderer(
-        renderer, data: Optional[bytes], size: int = 256
-    ) -> Optional[bytes]:
+        renderer, data: bytes | None, size: int = 256
+    ) -> bytes | None:
         if not data:
             return None
         try:
@@ -316,7 +314,7 @@ class Importer(ABC):
             pass
         return None
 
-    def _resolve_default_spec(self) -> "VectorizationSpec":
+    def _resolve_default_spec(self) -> VectorizationSpec:
         if ImporterFeature.DIRECT_VECTOR in self.features:
             return PassthroughSpec()
         elif ImporterFeature.BITMAP_TRACING in self.features:
@@ -326,10 +324,10 @@ class Importer(ABC):
 
     def _run_pipeline(
         self,
-        vectorization_spec: "VectorizationSpec",
-        source_asset: "SourceAsset",
-        parse_result: Optional["ParsingResult"] = None,
-    ) -> "ImportResult":
+        vectorization_spec: VectorizationSpec,
+        source_asset: SourceAsset,
+        parse_result: ParsingResult | None = None,
+    ) -> ImportResult:
         """
         Shared phases 2–5 of the import pipeline.
 
@@ -411,8 +409,8 @@ class Importer(ABC):
         )
 
     def get_doc_items(
-        self, vectorization_spec: Optional["VectorizationSpec"] = None
-    ) -> Optional["ImportResult"]:
+        self, vectorization_spec: VectorizationSpec | None = None
+    ) -> ImportResult | None:
         """
         Template method that orchestrates the full five-phase import pipeline.
 
@@ -468,9 +466,7 @@ class Importer(ABC):
 
         return self._run_pipeline(spec, source_asset, parse_result)
 
-    def _post_process_payload(
-        self, payload: "ImportPayload"
-    ) -> "ImportPayload":
+    def _post_process_payload(self, payload: ImportPayload) -> ImportPayload:
         """
         An optional hook for subclasses to modify the final payload after
         assembly. This is useful for importers that need to add extra data
@@ -480,9 +476,9 @@ class Importer(ABC):
 
     def get_doc_items_for_reimport(
         self,
-        existing_source_asset: "SourceAsset",
-        vectorization_spec: "VectorizationSpec",
-    ) -> Optional["ImportResult"]:
+        existing_source_asset: SourceAsset,
+        vectorization_spec: VectorizationSpec,
+    ) -> ImportResult | None:
         """
         Re-run the import pipeline using an existing SourceAsset.
 

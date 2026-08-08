@@ -4,7 +4,7 @@ A renderer for visualizing texture-based artifacts using GPU texture rendering.
 
 import logging
 import time
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 from OpenGL import GL
@@ -42,8 +42,8 @@ class TextureArtifactRenderer(BaseRenderer):
         self.cylinder_vao: int = 0
         self.cylinder_vbo: int = 0
         self._num_laser_luts: int = 1
-        self._flat_mvp: Optional[np.ndarray] = None
-        self._cyl_mvp: Optional[np.ndarray] = None
+        self._flat_mvp: np.ndarray | None = None
+        self._cyl_mvp: np.ndarray | None = None
 
     def prepare(self, ctx: RenderContext) -> None:
         """Caches the per-frame MVP matrices for the texture quads."""
@@ -189,7 +189,7 @@ class TextureArtifactRenderer(BaseRenderer):
         final_model_matrix: np.ndarray,
         rotary_enabled: bool = False,
         rotary_diameter: float = 25.0,
-        cylinder_vertices: Optional[np.ndarray] = None,
+        cylinder_vertices: np.ndarray | None = None,
         laser_index: int = 0,
     ):
         """Adds a texture artifact to be rendered in the next frame."""
@@ -263,7 +263,7 @@ class TextureArtifactRenderer(BaseRenderer):
     def add_instance_from_texture_layer(
         self,
         tl: TextureLayer,
-        laser_uid_order: Optional[list[str]] = None,
+        laser_uid_order: list[str] | None = None,
     ):
         """Adds a texture instance from a compiled texture layer."""
         laser_index = 0

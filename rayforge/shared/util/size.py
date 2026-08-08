@@ -4,12 +4,11 @@ Size comparison utilities for pipeline artifacts.
 
 import math
 from gettext import gettext as _
-from typing import Optional
 
 
 def sizes_are_close(
-    size1: Optional[tuple[float, float]],
-    size2: Optional[tuple[float, float]],
+    size1: tuple[float, float] | None,
+    size2: tuple[float, float] | None,
 ) -> bool:
     """Compares two size tuples with a safe tolerance for float errors."""
     if size1 is None or size2 is None:

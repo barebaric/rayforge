@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
@@ -16,7 +16,7 @@ class StepOpsArtifactHandle(BaseArtifactHandle):
         handle_class_name: str,
         artifact_type_name: str,
         generation_id: int,
-        array_metadata: Optional[dict[str, Any]] = None,
+        array_metadata: dict[str, Any] | None = None,
         **_kwargs,
     ):
         super().__init__(
@@ -36,7 +36,7 @@ class StepOpsArtifact(BaseArtifact):
 
     def __init__(
         self,
-        ops: "Ops",
+        ops: Ops,
         generation_id: int,
     ):
         super().__init__()

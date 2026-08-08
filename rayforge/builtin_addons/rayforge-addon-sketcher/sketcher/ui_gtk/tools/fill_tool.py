@@ -1,5 +1,4 @@
 from gettext import gettext as _
-from typing import Optional
 
 import cairo
 
@@ -55,7 +54,7 @@ class FillTool(SketchTool):
 
     def _find_text_entity_at_point(
         self, mx: float, my: float
-    ) -> Optional[TextBoxEntity]:
+    ) -> TextBoxEntity | None:
         """Check if a model-space point falls inside any text glyph."""
         registry = self.element.sketch.registry
         surface = cairo.RecordingSurface(cairo.CONTENT_COLOR_ALPHA, None)

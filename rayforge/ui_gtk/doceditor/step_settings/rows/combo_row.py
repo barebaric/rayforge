@@ -1,7 +1,7 @@
 """Generic combo row for an enum-like step attribute."""
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from gi.repository import Adw, Gtk
 
@@ -25,7 +25,7 @@ class ComboRow(StepRow):
         attr: str,
         title: str,
         choices: Sequence[tuple[str, Any]],
-        subtitle: Optional[str] = None,
+        subtitle: str | None = None,
     ):
         self._choices = list(choices)
         self._labels = [label for label, _ in choices]

@@ -5,7 +5,6 @@ import os
 import threading
 import time
 from gettext import gettext as _
-from typing import Optional
 
 import serial
 from serial.tools import list_ports
@@ -18,13 +17,9 @@ logger = logging.getLogger(__name__)
 class SerialPort(str):
     """A string subclass for identifying serial ports, for UI generation."""
 
-    pass
-
 
 class SerialPortPermissionError(Exception):
     """Custom exception for systemic serial port permission issues."""
-
-    pass
 
 
 def safe_list_ports_linux() -> list[str]:
@@ -172,11 +167,11 @@ class SerialTransport(Transport):
         super().__init__()
         self.port = port
         self.baudrate = baudrate
-        self._serial: Optional[serial.Serial] = None
+        self._serial: serial.Serial | None = None
         self._running = False
         self._stop_event = threading.Event()
-        self._reader_thread: Optional[threading.Thread] = None
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._reader_thread: threading.Thread | None = None
+        self._loop: asyncio.AbstractEventLoop | None = None
 
     @property
     def is_connected(self) -> bool:

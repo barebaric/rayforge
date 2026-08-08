@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -24,23 +24,22 @@ class MovePointCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: "Sketch",
+        sketch: Sketch,
         point_id: EntityID,
         start_pos: GeoPoint,
         end_pos: GeoPoint,
         # snapshot is: (points_dict, entities_dict)
-        snapshot: Optional[
-            tuple[dict[EntityID, GeoPoint], dict[EntityID, Any]]
-        ] = None,
-        snap_constraints: Optional[list["Constraint"]] = None,
+        snapshot: tuple[dict[EntityID, GeoPoint], dict[EntityID, Any]]
+        | None = None,
+        snap_constraints: list[Constraint] | None = None,
     ):
         super().__init__(sketch, _("Move Point"))
         self.point_id = point_id
         self.start_pos = start_pos
         self.end_pos = end_pos
-        self._point_ref: Optional[Point] = None
-        self._snap_constraints: list["Constraint"] = snap_constraints or []
-        self._created_constraints: list["Constraint"] = []
+        self._point_ref: Point | None = None
+        self._snap_constraints: list[Constraint] = snap_constraints or []
+        self._created_constraints: list[Constraint] = []
 
         # If we are provided a snapshot (from the tool), use it.
         # This is critical because the drag operation changes coordinates
@@ -48,7 +47,7 @@ class MovePointCommand(SketchChangeCommand):
         if snapshot:
             self._snapshot = snapshot
 
-    def _get_point(self) -> Optional["Point"]:
+    def _get_point(self) -> Point | None:
         """Gets a live reference to the point object."""
         # Check cache first
         if self._point_ref and self._point_ref.id == self.point_id:
@@ -106,11 +105,11 @@ class MoveControlPointCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: "Sketch",
+        sketch: Sketch,
         bezier_id: EntityID,
         cp_index: int,
-        start_offset: Optional[GeoPoint],
-        end_offset: Optional[GeoPoint],
+        start_offset: GeoPoint | None,
+        end_offset: GeoPoint | None,
     ):
         label = _("Move Control Point")
         super().__init__(sketch, label)
@@ -119,7 +118,7 @@ class MoveControlPointCommand(SketchChangeCommand):
         self.start_offset = start_offset
         self.end_offset = end_offset
 
-    def _get_bezier(self) -> Optional[Bezier]:
+    def _get_bezier(self) -> Bezier | None:
         entity = self.sketch.registry.get_entity(self.bezier_id)
         if isinstance(entity, Bezier):
             return entity
@@ -145,10 +144,10 @@ class MoveControlPointCommand(SketchChangeCommand):
 class UnstickJunctionCommand(SketchChangeCommand):
     """Command to separate entities at a shared point."""
 
-    def __init__(self, sketch: "Sketch", junction_pid: EntityID):
+    def __init__(self, sketch: Sketch, junction_pid: EntityID):
         super().__init__(sketch, _("Unstick Junction"))
         self.junction_pid = junction_pid
-        self.new_point: Optional[Point] = None
+        self.new_point: Point | None = None
         # Stores {entity_id: (attribute_name, old_pid)}
         self.modified_map: dict[EntityID, tuple[str, EntityID]] = {}
 

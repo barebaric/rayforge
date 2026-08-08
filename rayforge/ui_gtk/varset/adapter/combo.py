@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from gi.repository import Adw, Gtk
 
@@ -53,7 +53,7 @@ class ComboAdapter(RowAdapter):
             row.set_selected(0)
         return row, cls(row, var)
 
-    def get_value(self) -> Optional[Any]:
+    def get_value(self) -> Any | None:
         selected = self._row.get_selected_item()
         display_str = ""
         if selected:

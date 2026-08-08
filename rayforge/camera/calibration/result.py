@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -107,8 +106,8 @@ class CalibrationResult:
         )
 
     def get_undistort_maps(
-        self, image_size: Optional[tuple[int, int]] = None
-    ) -> Optional[tuple[np.ndarray, np.ndarray]]:
+        self, image_size: tuple[int, int] | None = None
+    ) -> tuple[np.ndarray, np.ndarray] | None:
         size = image_size or self.image_size
         if size[0] <= 0 or size[1] <= 0:
             return None

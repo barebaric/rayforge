@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_SVG_LOAD_AVAILABLE: Optional[bool] = None
+_SVG_LOAD_AVAILABLE: bool | None = None
 
 
 def _check_svg_load_capability() -> bool:
@@ -109,7 +109,7 @@ def render_svg_to_cairo(
 
 def cairo_surface_to_vips(
     surface: "cairo.ImageSurface",
-) -> Optional[pyvips.Image]:
+) -> pyvips.Image | None:
     """
     Converts a Cairo ImageSurface to a pyvips Image.
 
@@ -146,8 +146,8 @@ def cairo_surface_to_vips(
 
 
 def load_svg_with_fallback(
-    svg_data: bytes, width: Optional[int] = None, height: Optional[int] = None
-) -> Optional[pyvips.Image]:
+    svg_data: bytes, width: int | None = None, height: int | None = None
+) -> pyvips.Image | None:
     """
     Loads SVG data using either libvips or Cairo fallback.
 

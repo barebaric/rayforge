@@ -21,7 +21,7 @@ task_mgr: TaskManager = TaskManagerProxy()  # type: ignore
 
 
 __all__ = [
-    "TaskManager",
     "Task",
+    "TaskManager",
     "task_mgr",
 ]

@@ -2,7 +2,6 @@
 
 import logging
 from gettext import gettext as _
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -14,7 +13,7 @@ from ...camera.controller import CameraController
 logger = logging.getLogger(__name__)
 
 
-def numpy_to_pixbuf(image: np.ndarray) -> Optional[GdkPixbuf.Pixbuf]:
+def numpy_to_pixbuf(image: np.ndarray) -> GdkPixbuf.Pixbuf | None:
     if image is None:
         return None
     if len(image.shape) == 2:
@@ -43,14 +42,14 @@ class CalibrationCaptureSurface(Gtk.Widget):
     def __init__(
         self,
         controller: CameraController,
-        board: Optional[CharucoBoard] = None,
+        board: CharucoBoard | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.controller = controller
         self.board = board
-        self._last_corners: Optional[list[tuple[float, float]]] = None
-        self._last_ids: Optional[list[int]] = None
+        self._last_corners: list[tuple[float, float]] | None = None
+        self._last_ids: list[int] | None = None
 
         self.set_hexpand(True)
         self.set_vexpand(True)
@@ -134,7 +133,7 @@ class CalibrationCaptureSurface(Gtk.Widget):
     @property
     def last_detection(
         self,
-    ) -> Optional[tuple[list[tuple[float, float]], list[int]]]:
+    ) -> tuple[list[tuple[float, float]], list[int]] | None:
         if self._last_corners and self._last_ids:
             return self._last_corners, self._last_ids
         return None

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import cairo
 
@@ -61,7 +61,7 @@ class SketchHitTester:
 
     def get_hit_data(
         self, wx: float, wy: float, element: Any
-    ) -> tuple[Optional[str], Any]:
+    ) -> tuple[str | None, Any]:
         """
         Determines what was clicked using Model coordinates.
         Returns (type_string, object_id_or_index).
@@ -137,7 +137,7 @@ class SketchHitTester:
 
         return points_inside, entities_inside
 
-    def _hit_test_points(self, wx, wy, element) -> Optional[int]:
+    def _hit_test_points(self, wx, wy, element) -> int | None:
         """Precise point hit-testing in SCREEN coordinates."""
         if not element.canvas:
             return None
@@ -159,7 +159,7 @@ class SketchHitTester:
                 best_pid = p.id
         return best_pid
 
-    def _hit_test_overlays(self, wx, wy, element) -> tuple[Optional[str], Any]:
+    def _hit_test_overlays(self, wx, wy, element) -> tuple[str | None, Any]:
         if not element.canvas:
             return None, None
         to_screen = self.get_model_to_screen_transform(element)
@@ -236,7 +236,7 @@ class SketchHitTester:
                 return "constraint", idx
         return None, None
 
-    def _hit_test_entities(self, wx, wy, element) -> Optional[Entity]:
+    def _hit_test_entities(self, wx, wy, element) -> Entity | None:
         mx, my = self.screen_to_model(wx, wy, element)
         scale = 1.0
         if isinstance(element.canvas, WorldSurface):

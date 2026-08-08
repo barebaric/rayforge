@@ -16,7 +16,6 @@ rendering.
 
 import logging
 import math
-from typing import Optional
 
 import cairo
 
@@ -45,13 +44,13 @@ class OutlineElement(CanvasElement):
         # per delta. An identity delta is skipped.
         self._deltas = []
         # Optional guide circle (world center, world radius).
-        self._guide_circle: Optional[tuple[tuple[float, float], float]] = None
+        self._guide_circle: tuple[tuple[float, float], float] | None = None
 
     def set_outlines(
         self,
         shapes,
         deltas,
-        guide_circle: Optional[tuple[tuple[float, float], float]] = None,
+        guide_circle: tuple[tuple[float, float], float] | None = None,
     ) -> None:
         """Stores the per-item shape corners, transform deltas and an
         optional guide circle, then redraws.

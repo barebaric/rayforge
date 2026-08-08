@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# flake8: noqa: E402
 import sys
 from pathlib import Path
 
@@ -11,7 +10,6 @@ sys.path.insert(0, str(project_root))
 
 import json
 import logging
-from typing import Optional
 
 import gi
 
@@ -33,8 +31,8 @@ from sketcher.ui_gtk.studio import SketchStudio
 class SketcherApp(Adw.Application):
     def __init__(self):
         super().__init__(application_id="com.example.SketcherApp")
-        self.studio: Optional[SketchStudio] = None
-        self.window: Optional[Gtk.ApplicationWindow] = None
+        self.studio: SketchStudio | None = None
+        self.window: Gtk.ApplicationWindow | None = None
 
         # Create and register the "quit" action
         quit_action = Gio.SimpleAction.new("quit", None)

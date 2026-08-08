@@ -11,14 +11,14 @@ from .types import (
 )
 
 __all__ = [
-    "SnapLine",
-    "SnapPoint",
-    "SnapResult",
-    "SnapLineType",
-    "SnapLineStyle",
     "SNAP_LINE_STYLES",
     "DragContext",
     "SnapEngine",
-    "SnapLineProducer",
+    "SnapLine",
     "SnapLineIndex",
+    "SnapLineProducer",
+    "SnapLineStyle",
+    "SnapLineType",
+    "SnapPoint",
+    "SnapResult",
 ]

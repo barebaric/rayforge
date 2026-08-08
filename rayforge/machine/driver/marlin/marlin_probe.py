@@ -4,7 +4,6 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Optional,
     Protocol,
     runtime_checkable,
 )
@@ -109,7 +108,7 @@ def build_marlin_profile(
     m211_lines: list[str],
     m503_lines: list[str],
     m149_lines: list[str],
-    boot_lines: Optional[list[str]] = None,
+    boot_lines: list[str] | None = None,
 ) -> tuple["DeviceProfile", list[str]]:
     """
     Build a ``DeviceProfile`` from raw Marlin M115, M211, M503, and
@@ -145,7 +144,7 @@ def build_marlin_profile(
                 break
         driver_config["firmware_version"] = fw_name
 
-    extents: Optional[tuple[float, float]] = None
+    extents: tuple[float, float] | None = None
     endstops = parse_m211_endstops(m211_lines)
     if endstops is not None:
         x_max, y_max = endstops
@@ -154,14 +153,14 @@ def build_marlin_profile(
 
     m503 = parse_m503_settings(m503_lines)
 
-    max_speed: Optional[int] = None
+    max_speed: int | None = None
     max_feed_x = m503.get("max_feedrate_x")
     max_feed_y = m503.get("max_feedrate_y")
     if max_feed_x is not None and max_feed_y is not None:
         max_speed_mm_s = min(max_feed_x, max_feed_y)
         max_speed = int(max_speed_mm_s * 60)
 
-    accel: Optional[int] = None
+    accel: int | None = None
     accel_val = m503.get("acceleration")
     if accel_val is not None:
         accel = int(accel_val)

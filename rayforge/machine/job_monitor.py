@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import time
 from collections import deque
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from blinker import Signal
 from raygeo.geo.types import Point3D
@@ -25,7 +25,7 @@ class JobMonitor:
     with detailed metrics whenever the progress changes.
     """
 
-    def __init__(self, ops: "Ops"):
+    def __init__(self, ops: Ops):
         """
         Initializes the JobMonitor.
 
@@ -39,7 +39,7 @@ class JobMonitor:
 
         # Create a map from op_index to the distance of that op
         self._distance_map: dict[int, float] = {}
-        last_point: Optional[Point3D] = None
+        last_point: Point3D | None = None
         for i in range(ops.len()):
             dist = ops.distance_at(i, last_point)
             self._distance_map[i] = dist
@@ -103,8 +103,9 @@ class JobMonitor:
         self.traveled_distance += distance_for_op
 
         # Clamp to ensure we don't exceed total_distance due to float errors
-        if self.traveled_distance > self.total_distance:
-            self.traveled_distance = self.total_distance
+        self.traveled_distance = min(
+            self.traveled_distance, self.total_distance
+        )
 
         # Only add a sample for ETA calculation if there's actual distance
         if distance_for_op > 0.0:

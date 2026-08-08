@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry
 from raygeo.geo.types import Polygon, Rect
@@ -22,7 +22,7 @@ class Entity:
         # Constrained state is calculated by solver
         self.constrained = False
 
-    def get_state(self) -> Optional[dict[str, Any]]:
+    def get_state(self) -> dict[str, Any] | None:
         """
         Returns a dictionary of solver-relevant discrete state (e.g. winding),
         or None if the entity has no mutable discrete state.
@@ -125,7 +125,7 @@ class Entity:
 
     def create_fill_geometry(
         self, registry: "EntityRegistry"
-    ) -> Optional[Geometry]:
+    ) -> Geometry | None:
         """
         Creates a fill geometry for single-entity loops.
         Returns None if the entity does not support fill geometry.
@@ -142,7 +142,6 @@ class Entity:
         Appends this entity to an existing geometry object.
         Used for multi-segment loops.
         """
-        pass
 
     def to_polygon_vertices(
         self,
@@ -157,7 +156,7 @@ class Entity:
 
     def create_text_fill_geometry(
         self, registry: "EntityRegistry"
-    ) -> Optional[Geometry]:
+    ) -> Geometry | None:
         """
         Creates a fill geometry for text entities.
         Returns None if the entity does not support text fill geometry.

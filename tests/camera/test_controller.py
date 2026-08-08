@@ -1,4 +1,3 @@
-# flake8: noqa: E402
 import gi
 
 gi.require_version("GdkPixbuf", "2.0")

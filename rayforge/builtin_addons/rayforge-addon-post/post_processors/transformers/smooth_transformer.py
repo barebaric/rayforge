@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.ops.transform.smooth import SmoothSpec
 
@@ -82,9 +82,9 @@ class Smooth(OpsTransformer):
 
     def to_spec(
         self,
-        workpiece: Optional[WorkPiece],
-        stock_geometries: Optional[list["Geometry"]],
-        settings: Optional[dict[str, Any]],
+        workpiece: WorkPiece | None,
+        stock_geometries: list["Geometry"] | None,
+        settings: dict[str, Any] | None,
     ) -> SmoothSpec:
         return SmoothSpec(
             amount=self.amount,

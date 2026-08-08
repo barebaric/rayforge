@@ -4,7 +4,6 @@ Switch user units mm -> in and verify a selected item's size/pos don't
 change in the model.
 """
 
-# flake8: noqa: E402
 import gi
 
 gi.require_version("Gtk", "4.0")

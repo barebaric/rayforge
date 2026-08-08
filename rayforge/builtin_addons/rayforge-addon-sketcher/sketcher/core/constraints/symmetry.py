@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point
@@ -13,7 +14,7 @@ from .base import Constraint, ConstraintStatus
 
 
 def draw_symmetry_arrows(
-    ctx: "cairo.Context",
+    ctx: cairo.Context,
     s1: Point,
     s2: Point,
 ) -> None:
@@ -63,8 +64,8 @@ class SymmetryConstraint(Constraint):
         self,
         p1: EntityID,
         p2: EntityID,
-        center: Optional[EntityID] = None,
-        axis: Optional[EntityID] = None,
+        center: EntityID | None = None,
+        axis: EntityID | None = None,
         user_visible: bool = True,
     ):
         super().__init__(user_visible=user_visible)
@@ -79,7 +80,7 @@ class SymmetryConstraint(Constraint):
 
     @classmethod
     def can_apply_to(
-        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+        cls, selection: SketchSelection, sketch: Sketch | None = None
     ) -> bool:
         if len(selection.point_ids) == 3 and not selection.entity_ids:
             return True
@@ -99,7 +100,7 @@ class SymmetryConstraint(Constraint):
         """Returns a human-readable title for this constraint."""
         return self.get_type_name()
 
-    def get_subtitle(self, registry: "EntityRegistry") -> str:
+    def get_subtitle(self, registry: EntityRegistry) -> str:
         """Returns a human-readable subtitle describing constrained points."""
         p1 = registry.get_point(self.p1)
         p2 = registry.get_point(self.p2)
@@ -121,7 +122,7 @@ class SymmetryConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "SymmetryConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> SymmetryConstraint:
         return cls(
             p1=data["p1"],
             p2=data["p2"],
@@ -131,7 +132,7 @@ class SymmetryConstraint(Constraint):
         )
 
     def error(
-        self, reg: "EntityRegistry", params: "ParameterContext"
+        self, reg: EntityRegistry, params: ParameterContext
     ) -> list[float]:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
@@ -176,7 +177,7 @@ class SymmetryConstraint(Constraint):
         return [0.0, 0.0]
 
     def gradient(
-        self, reg: "EntityRegistry", params: "ParameterContext"
+        self, reg: EntityRegistry, params: ParameterContext
     ) -> dict[EntityID, list[Point]]:
         if self.center is not None:
             # P1+P2 - 2C = 0. Safe to use dict literal as keys are distinct.
@@ -231,7 +232,7 @@ class SymmetryConstraint(Constraint):
         self,
         sx: float,
         sy: float,
-        reg: "EntityRegistry",
+        reg: EntityRegistry,
         to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
@@ -258,8 +259,8 @@ class SymmetryConstraint(Constraint):
 
     def draw(
         self,
-        ctx: "cairo.Context",
-        registry: "EntityRegistry",
+        ctx: cairo.Context,
+        registry: EntityRegistry,
         to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,

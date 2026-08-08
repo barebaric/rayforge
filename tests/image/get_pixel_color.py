@@ -38,7 +38,7 @@ def get_pixel_color(image_path, x, y):
         print(f"Error: File '{image_path}' not found.")
         return None
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e!s}")
         return None
 
 

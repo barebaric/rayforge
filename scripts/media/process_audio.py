@@ -297,8 +297,7 @@ def create_concat_file(
         output_file: Path to the concat file.
     """
     with open(output_file, "w") as f:
-        for seg_file in segment_files:
-            f.write(f"file '{seg_file}'\n")
+        f.writelines(f"file '{seg_file}'\n" for seg_file in segment_files)
 
 
 def concat_segments(

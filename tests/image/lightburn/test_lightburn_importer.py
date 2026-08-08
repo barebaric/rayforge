@@ -552,7 +552,7 @@ class TestLightBurnImporter:
                 # create a default step later.
                 if wf and wf.has_steps():
                     step = wf.steps[0]
-                    assert abs(getattr(step, "power") - 0.2) < 1e-6
+                    assert abs(step.power - 0.2) < 1e-6
                     assert step.cut_speed == 500
                 found = True
                 break
@@ -569,9 +569,9 @@ class TestLightBurnImporter:
                 wf = item.workflow
                 if wf and wf.has_steps():
                     step = wf.steps[0]
-                    assert abs(getattr(step, "power") - 0.7) < 1e-6
+                    assert abs(step.power - 0.7) < 1e-6
                     assert step.cut_speed == 400
-                    assert abs(getattr(step, "offset_mm") - 0.03) < 1e-6
+                    assert abs(step.offset_mm - 0.03) < 1e-6
                 found = True
                 break
         assert found, "No Layer found in imported items"
@@ -625,11 +625,11 @@ class TestLightBurnImporter:
             f"{type(step).__name__} — dispatch fell back to contour."
         )
         # All raster settings from the fixture should be applied.
-        assert getattr(step, "dot_width_correction_mm") == 0.04
-        assert getattr(step, "line_interval_mm") == 0.04
-        assert getattr(step, "scan_angle") == 45.0
-        assert getattr(step, "min_power_level") == 0.1
-        assert getattr(step, "max_power_level") == 0.5
+        assert step.dot_width_correction_mm == 0.04
+        assert step.line_interval_mm == 0.04
+        assert step.scan_angle == 45.0
+        assert step.min_power_level == 0.1
+        assert step.max_power_level == 0.5
 
 
 class TestApplySettingsDispatch:
@@ -673,12 +673,12 @@ class TestApplySettingsDispatch:
         assert isinstance(step, engrave_cls)
         assert not isinstance(step, contour_cls)
         # EngraveStep-specific raster settings must all be applied.
-        assert getattr(step, "dot_width_correction_mm") == 0.04
-        assert getattr(step, "line_interval_mm") == 0.04
-        assert getattr(step, "scan_angle") == 45.0
+        assert step.dot_width_correction_mm == 0.04
+        assert step.line_interval_mm == 0.04
+        assert step.scan_angle == 45.0
         # The raster range is set directly from the canonical settings.
-        assert getattr(step, "min_power_level") == 0.1
-        assert getattr(step, "max_power_level") == 0.5
+        assert step.min_power_level == 0.1
+        assert step.max_power_level == 0.5
 
     def test_vector_layer_creates_contour_step(self):
         contour_cls, engrave_cls = self._step_classes()
@@ -696,9 +696,9 @@ class TestApplySettingsDispatch:
         assert not isinstance(step, engrave_cls)
         # ContourStep has no dot_width_correction_mm attribute.
         assert not hasattr(step, "dot_width_correction_mm")
-        assert getattr(step, "offset_mm") == 0.03
-        assert getattr(step, "power") == 0.7
-        assert getattr(step, "cut_speed") == 400
+        assert step.offset_mm == 0.03
+        assert step.power == 0.7
+        assert step.cut_speed == 400
 
     def test_image_layer_without_dot_width_still_uses_engrave_step(self):
         # _is_image_layer alone — without dot_width_correction_mm — must

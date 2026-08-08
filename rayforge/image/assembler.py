@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
@@ -57,8 +57,8 @@ class ItemAssembler:
         layout_plan: list[LayoutItem],
         spec: VectorizationSpec,
         source_name: str,
-        geometries: dict[Optional[str], Geometry],
-        document_bounds: Optional[Rect] = None,
+        geometries: dict[str | None, Geometry],
+        document_bounds: Rect | None = None,
     ) -> list[DocItem]:
         """
         Creates DocItems from the layout plan.
@@ -119,7 +119,7 @@ class ItemAssembler:
             # 1. Create the Segment
             # This links the WorkPiece to the specific subset of the source
             # file
-            geo: Optional[Geometry] = None
+            geo: Geometry | None = None
             if item.layer_id is not None:
                 # Split strategy: get geometry for the specific layer
                 geo = geometries.get(item.layer_id)

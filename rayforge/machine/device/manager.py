@@ -84,11 +84,11 @@ class DeviceProfileManager:
 
     def __init__(
         self,
-        source_dirs: Optional[list[Path]] = None,
-        install_dir: Optional[Path] = None,
+        source_dirs: list[Path] | None = None,
+        install_dir: Path | None = None,
     ):
         self._source_dirs: list[Path] = source_dirs or []
-        self._install_dir: Optional[Path] = install_dir
+        self._install_dir: Path | None = install_dir
         self._profiles: dict[str, DeviceProfile] = {}
         self._load_errors: dict[str, str] = {}
 
@@ -97,7 +97,7 @@ class DeviceProfileManager:
         return list(self._source_dirs)
 
     @property
-    def install_dir(self) -> Optional[Path]:
+    def install_dir(self) -> Path | None:
         return self._install_dir
 
     def add_source_dir(self, directory: Path):
@@ -135,7 +135,7 @@ class DeviceProfileManager:
     def get_all(self) -> list[DeviceProfile]:
         return sorted(self._profiles.values(), key=lambda p: p.name.lower())
 
-    def get(self, name: str) -> Optional[DeviceProfile]:
+    def get(self, name: str) -> DeviceProfile | None:
         return self._profiles.get(name)
 
     def get_load_errors(self) -> dict[str, str]:

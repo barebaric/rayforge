@@ -12,7 +12,7 @@ import logging
 from dataclasses import dataclass
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from ...machine.models.machine import Origin
 from .profile import (
@@ -23,7 +23,7 @@ from .profile import (
 
 logger = logging.getLogger(__name__)
 
-_DRIVER_MAP: dict[str, Optional[str]] = {
+_DRIVER_MAP: dict[str, str | None] = {
     "Serial": "GrblSerialDriver",
     "Network": "GrblNetworkDriver",
     "Ruida": "RuidaDriver",
@@ -34,7 +34,7 @@ _DRIVER_MAP: dict[str, Optional[str]] = {
     "Custom": None,
 }
 
-_CUT_ORIGIN_MAP: dict[int, Optional[str]] = {
+_CUT_ORIGIN_MAP: dict[int, str | None] = {
     0: None,
     1: "top_left",
     2: "bottom_left",
@@ -81,14 +81,14 @@ class ImportSummary:
     """
 
     name: str = ""
-    axis_extents: Optional[tuple[float, float]] = None
-    driver: Optional[str] = None
-    driver_args: Optional[dict[str, Any]] = None
-    home_on_start: Optional[bool] = None
-    max_travel_speed: Optional[int] = None
-    origin: Optional[str] = None
-    mirror_x: Optional[bool] = None
-    mirror_y: Optional[bool] = None
+    axis_extents: tuple[float, float] | None = None
+    driver: str | None = None
+    driver_args: dict[str, Any] | None = None
+    home_on_start: bool | None = None
+    max_travel_speed: int | None = None
+    origin: str | None = None
+    mirror_x: bool | None = None
+    mirror_y: bool | None = None
     camera_calibration: bool = False
 
     def to_lines(self) -> list[str]:
@@ -172,11 +172,11 @@ def parse_lbdev(path: Path) -> dict[str, Any]:
     return device_list[0]
 
 
-def _map_driver(device_type: str) -> Optional[str]:
+def _map_driver(device_type: str) -> str | None:
     return _DRIVER_MAP.get(device_type)
 
 
-def _map_origin(cut_origin: Optional[int]) -> Optional[str]:
+def _map_origin(cut_origin: int | None) -> str | None:
     if cut_origin is None:
         return None
     return _CUT_ORIGIN_MAP.get(cut_origin)
@@ -184,7 +184,7 @@ def _map_origin(cut_origin: Optional[int]) -> Optional[str]:
 
 def _parse_camera_data(
     settings: dict[str, Any],
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Extract camera calibration data from LightBurn settings."""
 
     camera_matrix_raw = settings.get("cameraMatrix")

@@ -41,9 +41,15 @@ enabled = true
 dependencies = {file = ["requirements.txt"]}
 
 [tool.ruff]
-lint = { ignore = ["E203"] }
 builtins = ["_"]
 line-length = 79
+
+[tool.ruff.lint]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+"rayforge/builtin_addons/*/tests/**" = ["S101"]
+"rayforge/private_addons/*/tests/**" = ["S101"]
 
 [tool.ruff.format]
 quote-style = "double"

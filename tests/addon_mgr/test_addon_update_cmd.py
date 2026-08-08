@@ -104,7 +104,7 @@ class TestUpdateCheck:
             # Check the keyword arguments of the signal send
             sent_kwargs = mock_send.call_args.kwargs
             assert "message" in sent_kwargs
-            assert "persistent" in sent_kwargs and sent_kwargs["persistent"]
+            assert sent_kwargs.get("persistent")
             assert "action_label" in sent_kwargs
             assert "action_callback" in sent_kwargs
             mock_ctx_task.set_message.assert_called_with(

@@ -12,9 +12,9 @@ def register_builtin_providers():
 
 __all__ = [
     "PropertyProvider",
-    "property_provider_registry",
-    "register_builtin_providers",
+    "TabsPropertyProvider",
     "TransformPropertyProvider",
     "WorkpieceInfoProvider",
-    "TabsPropertyProvider",
+    "property_provider_registry",
+    "register_builtin_providers",
 ]

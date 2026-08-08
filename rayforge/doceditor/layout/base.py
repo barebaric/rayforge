@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from blinker import Signal
 from raygeo.geo import Matrix
@@ -66,7 +66,7 @@ class LayoutStrategy(ABC):
     @staticmethod
     def _get_item_world_bbox(
         item: DocItem,
-    ) -> Optional[Rect]:
+    ) -> Rect | None:
         """
         Calculates the axis-aligned bounding box (min_x, min_y, max_x, max_y)
         of a single DocItem (WorkPiece, Group, or StockItem) in world (mm)
@@ -76,9 +76,7 @@ class LayoutStrategy(ABC):
         items_to_measure = []
         if isinstance(item, WorkPiece):
             items_to_measure.append(item)
-        elif isinstance(item, Group):
-            items_to_measure.extend(item.get_descendants(of_type=WorkPiece))
-        elif isinstance(item, Layer):
+        elif isinstance(item, Group) or isinstance(item, Layer):
             items_to_measure.extend(item.get_descendants(of_type=WorkPiece))
         elif isinstance(item, StockItem):
             items_to_measure.append(item)
@@ -108,7 +106,7 @@ class LayoutStrategy(ABC):
 
     def _get_selection_world_bbox(
         self,
-    ) -> Optional[Rect]:
+    ) -> Rect | None:
         """
         Calculates the collective world-space bounding box for all
         items. Returns (min_x, min_y, max_x, max_y).
@@ -132,7 +130,7 @@ class LayoutStrategy(ABC):
 
     @abstractmethod
     def calculate_deltas(
-        self, context: Optional[ExecutionContext] = None
+        self, context: ExecutionContext | None = None
     ) -> dict[DocItem, Matrix]:
         """
         Calculates the required delta transformation matrix for each
@@ -143,12 +141,11 @@ class LayoutStrategy(ABC):
             when pre-multiplied with the item's current matrix, will
             move it to the target position.
         """
-        pass
 
     async def calculate_deltas_async(
         self,
-        context: Optional[ExecutionContext] = None,
-        task_manager: "Optional[TaskManager]" = None,
+        context: ExecutionContext | None = None,
+        task_manager: TaskManager | None = None,
     ) -> dict[DocItem, Matrix]:
         """
         Asynchronous version of calculate_deltas.

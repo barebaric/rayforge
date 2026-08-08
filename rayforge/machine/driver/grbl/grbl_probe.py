@@ -4,7 +4,6 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Optional,
     Protocol,
     runtime_checkable,
 )
@@ -118,7 +117,7 @@ def build_grbl_profile(
         MachineConfig,
     )
 
-    rx_buffer_size: Optional[int] = None
+    rx_buffer_size: int | None = None
     compile_flags: str = ""
     for line in build_info:
         rx = parse_opt_info(line)
@@ -143,11 +142,11 @@ def build_grbl_profile(
     homing_enabled = settings.get("22")
     report_inches = settings.get("13")
 
-    max_speed: Optional[int] = None
+    max_speed: int | None = None
     if max_x_rate is not None and max_y_rate is not None:
         max_speed = int(min(max_x_rate, max_y_rate))
 
-    accel: Optional[int] = None
+    accel: int | None = None
     if x_accel is not None and y_accel is not None:
         accel = int(min(x_accel, y_accel))
 
@@ -165,15 +164,15 @@ def build_grbl_profile(
     if arc_tol is not None:
         driver_config["arc_tolerance"] = arc_tol
 
-    extents: Optional[tuple[float, float]] = None
+    extents: tuple[float, float] | None = None
     if axis_x is not None and axis_y is not None:
         extents = (float(axis_x), float(axis_y))
 
-    heads: Optional[list[dict[str, Any]]] = None
+    heads: list[dict[str, Any]] | None = None
     if max_spindle is not None:
         heads = [{"max_power": int(max_spindle)}]
 
-    home_on_start: Optional[bool] = None
+    home_on_start: bool | None = None
     if homing_enabled is not None:
         home_on_start = bool(int(homing_enabled))
 

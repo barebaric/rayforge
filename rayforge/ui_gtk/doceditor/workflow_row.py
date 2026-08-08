@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Gio, Gtk
 
@@ -61,13 +61,13 @@ class WorkflowRow(Gtk.Box):
 
         self.editor = editor
         self.layer = layer
-        self._workflow: Optional["Workflow"] = None
-        self._drag_source_uid: Optional[str] = None
+        self._workflow: Workflow | None = None
+        self._drag_source_uid: str | None = None
         self._potential_drop_index: int = -1
         self._step_buttons: list = []
         self._btn_uids: dict = {}
-        self._drop_indicator: Optional[Gtk.Box] = None
-        self._context_popover: Optional[Gtk.PopoverMenu] = None
+        self._drop_indicator: Gtk.Box | None = None
+        self._context_popover: Gtk.PopoverMenu | None = None
         self._context_step = None
 
         actions = Gio.SimpleActionGroup()
@@ -162,7 +162,7 @@ class WorkflowRow(Gtk.Box):
     def _get_step_icon(self, step) -> str:
         return step.ICON or _FALLBACK_ICON
 
-    def _get_step_color(self, step) -> Optional[str]:
+    def _get_step_color(self, step) -> str | None:
         if not step.visible:
             return None
         machine = get_context().machine
@@ -241,14 +241,14 @@ class WorkflowRow(Gtk.Box):
         add_btn.connect("clicked", self._on_add_step_clicked)
         self.append(add_btn)
 
-    def _step_uid_at(self, x: float) -> Optional[str]:
+    def _step_uid_at(self, x: float) -> str | None:
         for btn in self._step_buttons:
             alloc = btn.get_allocation()
             if alloc.x <= x < alloc.x + alloc.width:
                 return self._btn_uids.get(id(btn))
         return None
 
-    def _btn_at(self, x: float) -> Optional[Gtk.Button]:
+    def _btn_at(self, x: float) -> Gtk.Button | None:
         for btn in self._step_buttons:
             alloc = btn.get_allocation()
             if alloc.x <= x < alloc.x + alloc.width:

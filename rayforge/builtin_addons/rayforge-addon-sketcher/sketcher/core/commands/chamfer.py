@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from ..constraints import (
     CollinearConstraint,
@@ -39,18 +39,18 @@ class ChamferCommand(SketchChangeCommand):
         self.distance = distance
 
         # State for undo/redo
-        self.add_cmd: Optional[AddItemsCommand] = None
-        self.remove_cmd: Optional[RemoveItemsCommand] = None
+        self.add_cmd: AddItemsCommand | None = None
+        self.remove_cmd: RemoveItemsCommand | None = None
         self._prepared = False
 
     @staticmethod
     def calculate_geometry(
-        reg: "EntityRegistry",
+        reg: EntityRegistry,
         corner_pid: EntityID,
         line1_id: EntityID,
         line2_id: EntityID,
         distance: float,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Calculates the points, entities, and constraints for a chamfer.
         This is a pure function for testability and reusability.

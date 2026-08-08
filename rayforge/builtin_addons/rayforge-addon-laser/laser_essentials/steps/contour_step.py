@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly import Assembler
@@ -79,9 +79,7 @@ class ContourStep(LaserStep):
             ]
         )
 
-    def __init__(
-        self, name: Optional[str] = None, typelabel: Optional[str] = None
-    ):
+    def __init__(self, name: str | None = None, typelabel: str | None = None):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)
         self.power = 0.8
         self.cut_side = "CENTERLINE"
@@ -100,8 +98,8 @@ class ContourStep(LaserStep):
 
     def get_assembler_kwargs(
         self,
-        machine: "Machine",
-        workpiece: "WorkPiece",
+        machine: Machine,
+        workpiece: WorkPiece,
     ) -> dict:
         kwargs: dict = {}
         kwargs["cut_side"] = str(self.cut_side).lower()
@@ -116,9 +114,9 @@ class ContourStep(LaserStep):
 
     def build_compute_payload(
         self,
-        machine: "Machine",
-        workpiece: "WorkPiece",
-    ) -> "tuple[Part, ComputePayload]":
+        machine: Machine,
+        workpiece: WorkPiece,
+    ) -> tuple[Part, ComputePayload]:
         """Build a :class:`Part` (from the workpiece's vector
         geometry) and a :class:`ComputePayload` carrying a
         :class:`ContourSpec` populated from this step's resolved
@@ -149,9 +147,9 @@ class ContourStep(LaserStep):
 
     def assembler_token_params(
         self,
-        machine: "Machine",
-        workpiece: "WorkPiece",
-    ) -> Optional[dict]:
+        machine: Machine,
+        workpiece: WorkPiece,
+    ) -> dict | None:
         """Expose the resolved assembler kwargs for the compute token."""
         return self.get_assembler_kwargs(machine, workpiece)
 
@@ -174,7 +172,7 @@ class ContourStep(LaserStep):
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> "ContourStep":
+    def from_dict(cls, data: dict) -> ContourStep:
         step = cast("ContourStep", super().from_dict(data))
         legacy = legacy_producer_params(data)
         step.cut_side = data.get(
@@ -239,11 +237,11 @@ class ContourStep(LaserStep):
     @classmethod
     def create(
         cls,
-        context: "RayforgeContext",
-        name: Optional[str] = None,
+        context: RayforgeContext,
+        name: str | None = None,
         optimize: bool = True,
         **kwargs,
-    ) -> "ContourStep":
+    ) -> ContourStep:
         machine = context.machine
         assert machine is not None
         default_head = machine.get_default_laser_head()
@@ -272,7 +270,7 @@ class ContourStep(LaserStep):
 
         LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")
         if LeadInOutTransformer:
-            calc = getattr(LeadInOutTransformer, "calculate_auto_distance")
+            calc = LeadInOutTransformer.calculate_auto_distance
             auto_distance = calc(step.cut_speed, machine.acceleration)
             for t in per_wp:
                 if t.get("name") == "LeadInOutTransformer":

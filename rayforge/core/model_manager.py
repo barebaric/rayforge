@@ -4,7 +4,6 @@ import importlib.resources
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional
 
 from blinker import Signal
 
@@ -33,7 +32,7 @@ class ModelManager(AddonRegistry):
     def __init__(self):
         self.changed = Signal()
         self._libraries: dict[str, ModelLibrary] = {}
-        self._library_addons: dict[str, Optional[str]] = {}
+        self._library_addons: dict[str, str | None] = {}
 
     def get_libraries(self) -> list[ModelLibrary]:
         """Return all registered libraries in registration order."""
@@ -42,7 +41,7 @@ class ModelManager(AddonRegistry):
     def add_library(
         self,
         library: ModelLibrary,
-        addon_name: Optional[str] = None,
+        addon_name: str | None = None,
     ) -> bool:
         """
         Register a model library.
@@ -65,10 +64,10 @@ class ModelManager(AddonRegistry):
     def add_library_from_path(
         self,
         path: Path,
-        display_name: Optional[str] = None,
+        display_name: str | None = None,
         read_only: bool = True,
-        addon_name: Optional[str] = None,
-    ) -> Optional[str]:
+        addon_name: str | None = None,
+    ) -> str | None:
         """
         Create and register a library from a directory path.
 
@@ -128,7 +127,7 @@ class ModelManager(AddonRegistry):
             self.changed.send(self)
         return len(to_remove)
 
-    def resolve(self, model: Model) -> Optional[Path]:
+    def resolve(self, model: Model) -> Path | None:
         """
         Resolve a Model to an absolute filesystem path.
 
@@ -194,7 +193,7 @@ class ModelManager(AddonRegistry):
                     seen_filenames.add(m.path.name)
         return sorted(combined, key=lambda m: m.name)
 
-    def _get_bundled_path(self) -> Optional[Path]:
+    def _get_bundled_path(self) -> Path | None:
         try:
             from rayforge.resources import models as resource_models
 

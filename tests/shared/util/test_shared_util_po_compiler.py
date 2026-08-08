@@ -323,7 +323,7 @@ msgstr "你好世界"
 
         assert result is True
         content = mo_file.read_bytes()
-        assert "你好世界".encode("utf-8") in content
+        assert "你好世界".encode() in content
 
 
 class TestMoFileWithGettext:

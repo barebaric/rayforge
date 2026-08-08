@@ -19,7 +19,7 @@ workpiece generator dialog) gives the user live feedback.
 """
 
 from gettext import gettext as _
-from typing import Any, Optional
+from typing import Any
 
 from blinker import Signal
 from gi.repository import Adw, GLib, Gtk
@@ -85,7 +85,7 @@ class AILookupPage(WizardPage):
     def __init__(self, wizard, **kwargs):
         self.suggestions_applied = Signal()
         self._pulse_source_id = None
-        self._progress_bar: Optional[Gtk.ProgressBar] = None
+        self._progress_bar: Gtk.ProgressBar | None = None
         super().__init__(wizard, **kwargs)
 
     def build_ui(self) -> None:

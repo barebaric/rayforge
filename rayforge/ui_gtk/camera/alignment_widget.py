@@ -9,7 +9,6 @@ import logging
 import math
 from datetime import datetime
 from gettext import gettext as _
-from typing import Optional
 
 import numpy as np
 from gi.repository import Gdk, GLib, Graphene, Gtk
@@ -208,7 +207,7 @@ class CameraAlignment(Gtk.Box):
 
         self.controller = controller
         self.camera = controller.config
-        self.image_points: list[Optional[Pos]] = []
+        self.image_points: list[Pos | None] = []
         self.world_points: list[Pos] = []
         self.active_point_index = -1
         self._display_ready = False

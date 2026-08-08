@@ -37,9 +37,9 @@ class ColorLutProvider:
     ):
         self._color_set = color_set
         self._laser_color_sets = laser_color_sets
-        self._cut_lut: Optional[np.ndarray] = None
-        self._engrave_lut: Optional[np.ndarray] = None
-        self._ring_lut: Optional[np.ndarray] = None
+        self._cut_lut: np.ndarray | None = None
+        self._engrave_lut: np.ndarray | None = None
+        self._ring_lut: np.ndarray | None = None
 
     @classmethod
     def from_machine(

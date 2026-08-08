@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.ops import Ops
 
@@ -14,13 +14,13 @@ if TYPE_CHECKING:
 class JobArtifactHandle(BaseArtifactHandle):
     def __init__(
         self,
-        time_estimate: Optional[float],
+        time_estimate: float | None,
         distance: float,
         key: str,
         handle_class_name: str,
         artifact_type_name: str,
         generation_id: int,
-        array_metadata: Optional[dict[str, Any]] = None,
+        array_metadata: dict[str, Any] | None = None,
         **_kwargs,
     ):
         super().__init__(
@@ -55,21 +55,21 @@ class JobArtifact(BaseArtifact):
         ops: Ops,
         distance: float,
         generation_id: int,
-        time_estimate: Optional[float] = None,
-        mapped_ops: Optional[Ops] = None,
-        encoded_output: Optional["EncodedOutput"] = None,
+        time_estimate: float | None = None,
+        mapped_ops: Ops | None = None,
+        encoded_output: EncodedOutput | None = None,
     ):
         super().__init__()
         self.ops = ops
         self.distance = distance
         self.generation_id = generation_id
         self.time_estimate = time_estimate
-        self.mapped_ops: Optional[Ops] = mapped_ops
+        self.mapped_ops: Ops | None = mapped_ops
 
-        self._encoded_output: Optional["EncodedOutput"] = encoded_output
+        self._encoded_output: EncodedOutput | None = encoded_output
 
     @property
-    def preview_ops(self) -> Optional[Ops]:
+    def preview_ops(self) -> Ops | None:
         """Returns the ops suitable for 3D preview/playback.
 
         Prefers the rotary-mapped ops (``mapped_ops``) when available,
@@ -78,7 +78,7 @@ class JobArtifact(BaseArtifact):
         return self.mapped_ops if self.mapped_ops is not None else self.ops
 
     @property
-    def machine_code(self) -> Optional[str]:
+    def machine_code(self) -> str | None:
         """
         Lazily decodes and caches the G-code string from encoded_output.
         """
@@ -86,7 +86,7 @@ class JobArtifact(BaseArtifact):
         return encoded.text if encoded else None
 
     @property
-    def op_map(self) -> Optional["MachineCodeOpMap"]:
+    def op_map(self) -> MachineCodeOpMap | None:
         """
         Lazily decodes and caches the MachineCodeOpMap from encoded_output.
         """
@@ -94,7 +94,7 @@ class JobArtifact(BaseArtifact):
         return encoded.op_map if encoded else None
 
     @property
-    def encoded_output(self) -> Optional["EncodedOutput"]:
+    def encoded_output(self) -> EncodedOutput | None:
         """Returns the cached EncodedOutput, if any."""
         return self._encoded_output
 
@@ -111,7 +111,7 @@ class JobArtifact(BaseArtifact):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "JobArtifact":
+    def from_dict(cls, data: dict[str, Any]) -> JobArtifact:
         """Creates an artifact from a dictionary."""
         ops = Ops.from_dict(data["ops"])
         common_args = {

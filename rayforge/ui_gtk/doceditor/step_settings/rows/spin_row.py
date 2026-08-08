@@ -1,6 +1,6 @@
 """Generic spin row for one numeric step attribute."""
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from rayforge.ui_gtk.shared import pref_rows
 from rayforge.ui_gtk.shared.pref_rows import (
@@ -30,13 +30,13 @@ class SpinRow(DebouncedMixin, StepRow):
         step: Any,
         attr: str,
         title: str,
-        subtitle: Optional[str],
+        subtitle: str | None,
         lower: float,
         upper: float,
         step_inc: float,
         digits: int,
         is_int: bool = False,
-        quantity: Optional[str] = None,
+        quantity: str | None = None,
     ):
         self.is_int = is_int
         self._digits = digits

@@ -255,11 +255,13 @@ def test_circle_tool_on_release_with_preview(circle_tool, mock_element):
     mock_element.hittester.screen_to_model.return_value = (50.0, 50.0)
     mock_element.hittester.get_hit_data.return_value = (None, None)
 
-    with patch(
-        "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
+    with (
+        patch(
+            "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
+        ),
+        patch("sketcher.ui_gtk.tools.circle_tool.EllipseCommand"),
     ):
-        with patch("sketcher.ui_gtk.tools.circle_tool.EllipseCommand"):
-            circle_tool.on_release(100.0, 200.0)
+        circle_tool.on_release(100.0, 200.0)
 
     assert circle_tool._preview_state is None
     mock_element.execute_command.assert_called_once()
@@ -293,18 +295,18 @@ def test_circle_tool_on_release_with_snapped_endpoint(
         primary_snap_point=mock_snap_point,
     )
 
-    with patch(
-        "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
+    with (
+        patch(
+            "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
+        ),
+        patch("sketcher.ui_gtk.tools.circle_tool.EllipseCommand") as MockCmd,
     ):
-        with patch(
-            "sketcher.ui_gtk.tools.circle_tool.EllipseCommand"
-        ) as MockCmd:
-            mock_cmd_instance = Mock()
-            MockCmd.return_value = mock_cmd_instance
-            circle_tool.on_release(100.0, 200.0)
+        mock_cmd_instance = Mock()
+        MockCmd.return_value = mock_cmd_instance
+        circle_tool.on_release(100.0, 200.0)
 
-            call_kwargs = MockCmd.call_args[1]
-            assert call_kwargs["end_pid"] == 99
+        call_kwargs = MockCmd.call_args[1]
+        assert call_kwargs["end_pid"] == 99
 
 
 @pytest.mark.ui
@@ -334,18 +336,18 @@ def test_circle_tool_on_release_ignores_preview_points(
         primary_snap_point=mock_snap_point,
     )
 
-    with patch(
-        "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
+    with (
+        patch(
+            "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
+        ),
+        patch("sketcher.ui_gtk.tools.circle_tool.EllipseCommand") as MockCmd,
     ):
-        with patch(
-            "sketcher.ui_gtk.tools.circle_tool.EllipseCommand"
-        ) as MockCmd:
-            mock_cmd_instance = Mock()
-            MockCmd.return_value = mock_cmd_instance
-            circle_tool.on_release(100.0, 200.0)
+        mock_cmd_instance = Mock()
+        MockCmd.return_value = mock_cmd_instance
+        circle_tool.on_release(100.0, 200.0)
 
-            call_kwargs = MockCmd.call_args[1]
-            assert call_kwargs["end_pid"] is None
+        call_kwargs = MockCmd.call_args[1]
+        assert call_kwargs["end_pid"] is None
 
 
 @pytest.mark.ui
@@ -364,19 +366,19 @@ def test_circle_tool_on_release_with_modifiers(circle_tool, mock_element):
     mock_element.hittester.screen_to_model.return_value = (50.0, 50.0)
     mock_element.hittester.get_hit_data.return_value = (None, None)
 
-    with patch(
-        "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
+    with (
+        patch(
+            "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
+        ),
+        patch("sketcher.ui_gtk.tools.circle_tool.EllipseCommand") as MockCmd,
     ):
-        with patch(
-            "sketcher.ui_gtk.tools.circle_tool.EllipseCommand"
-        ) as MockCmd:
-            mock_cmd_instance = Mock()
-            MockCmd.return_value = mock_cmd_instance
-            circle_tool.on_release(100.0, 200.0)
+        mock_cmd_instance = Mock()
+        MockCmd.return_value = mock_cmd_instance
+        circle_tool.on_release(100.0, 200.0)
 
-            call_kwargs = MockCmd.call_args[1]
-            assert call_kwargs["center_on_start"] is True
-            assert call_kwargs["constrain_circle"] is True
+        call_kwargs = MockCmd.call_args[1]
+        assert call_kwargs["center_on_start"] is True
+        assert call_kwargs["constrain_circle"] is True
 
 
 @pytest.mark.ui

@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Any, Optional
+from typing import Any
 
 from .evaluator import MATH_CONTEXT
 
@@ -31,7 +31,7 @@ class ExpressionMap:
         # "Part 50.0x30.0"
     """
 
-    def __init__(self, values: Optional[dict[str, Any]] = None):
+    def __init__(self, values: dict[str, Any] | None = None):
         self._namespace: dict[str, Any] = MATH_CONTEXT.copy()
         if values:
             self._namespace.update(values)

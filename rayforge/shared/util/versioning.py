@@ -2,7 +2,6 @@ import importlib
 import logging
 import re
 from pathlib import Path
-from typing import Optional
 
 import semver
 
@@ -88,7 +87,7 @@ def is_newer_version(remote_str: str, local_str: str) -> bool:
         return remote_str != local_str
 
 
-def parse_requirement(req: str) -> tuple[str, Optional[str]]:
+def parse_requirement(req: str) -> tuple[str, str | None]:
     """
     Parse a requirement string into name and version constraint.
 
@@ -115,7 +114,7 @@ def parse_requirement(req: str) -> tuple[str, Optional[str]]:
     return req, None
 
 
-def parse_version_constraint(constraint: str) -> Optional[tuple[str, str]]:
+def parse_version_constraint(constraint: str) -> tuple[str, str] | None:
     """
     Parse a version constraint string into operator and version.
 

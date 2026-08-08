@@ -212,29 +212,29 @@ def _copy_model_ref(
 
 @dataclass
 class MachineConfig:
-    driver: Optional[str] = None
-    driver_args: Optional[dict[str, Any]] = None
-    driver_config: Optional[dict[str, Any]] = None
-    gcode_precision: Optional[int] = None
-    supports_arcs: Optional[bool] = None
-    supports_curves: Optional[bool] = None
-    axis_extents: Optional[tuple[float, float]] = None
-    work_margins: Optional[tuple[float, float, float, float]] = None
-    soft_limits: Optional[tuple[float, float, float, float]] = None
-    origin: Optional[Origin] = None
-    max_travel_speed: Optional[int] = None
-    max_cut_speed: Optional[int] = None
-    home_on_start: Optional[bool] = None
-    acceleration: Optional[int] = None
-    single_axis_homing_enabled: Optional[bool] = None
-    rotary_enabled_default: Optional[bool] = None
-    unit_system: Optional[UnitSystem] = None
-    heads: Optional[list[dict[str, Any]]] = None
-    capabilities: Optional[list[str]] = None
-    hookmacros: Optional[list[dict[str, Any]]] = None
-    rotary_modules: Optional[list[dict[str, Any]]] = None
-    nogo_zones: Optional[list[dict[str, Any]]] = None
-    cameras: Optional[list[dict[str, Any]]] = None
+    driver: str | None = None
+    driver_args: dict[str, Any] | None = None
+    driver_config: dict[str, Any] | None = None
+    gcode_precision: int | None = None
+    supports_arcs: bool | None = None
+    supports_curves: bool | None = None
+    axis_extents: tuple[float, float] | None = None
+    work_margins: tuple[float, float, float, float] | None = None
+    soft_limits: tuple[float, float, float, float] | None = None
+    origin: Origin | None = None
+    max_travel_speed: int | None = None
+    max_cut_speed: int | None = None
+    home_on_start: bool | None = None
+    acceleration: int | None = None
+    single_axis_homing_enabled: bool | None = None
+    rotary_enabled_default: bool | None = None
+    unit_system: UnitSystem | None = None
+    heads: list[dict[str, Any]] | None = None
+    capabilities: list[str] | None = None
+    hookmacros: list[dict[str, Any]] | None = None
+    rotary_modules: list[dict[str, Any]] | None = None
+    nogo_zones: list[dict[str, Any]] | None = None
+    cameras: list[dict[str, Any]] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         result: dict[str, Any] = {}
@@ -243,9 +243,7 @@ class MachineConfig:
                 continue
             if isinstance(value, tuple):
                 result[key] = list(value)
-            elif isinstance(value, Origin):
-                result[key] = value.value
-            elif isinstance(value, UnitSystem):
+            elif isinstance(value, Origin) or isinstance(value, UnitSystem):
                 result[key] = value.value
             else:
                 result[key] = value
@@ -337,7 +335,7 @@ class DeviceProfile:
     meta: DeviceMeta
     machine_config: MachineConfig
     dialect_config: dict[str, Any]
-    source_dir: Optional[Path] = None
+    source_dir: Path | None = None
 
     @property
     def name(self) -> str:

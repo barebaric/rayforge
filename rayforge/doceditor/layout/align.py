@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.geo import Matrix
 
@@ -16,7 +16,7 @@ class BboxAlignLeftStrategy(LayoutStrategy):
     """Aligns the left edges of the selection's bounding boxes."""
 
     def calculate_deltas(
-        self, context: Optional[ExecutionContext] = None
+        self, context: ExecutionContext | None = None
     ) -> dict[DocItem, Matrix]:
         target_x: float
         if len(self.items) == 1:
@@ -45,13 +45,13 @@ class BboxAlignCenterStrategy(LayoutStrategy):
     def __init__(
         self,
         items: Sequence[DocItem],
-        surface_width_mm: Optional[float] = None,
+        surface_width_mm: float | None = None,
     ):
         super().__init__(items)
         self.surface_width_mm = surface_width_mm
 
     def calculate_deltas(
-        self, context: Optional[ExecutionContext] = None
+        self, context: ExecutionContext | None = None
     ) -> dict[DocItem, Matrix]:
         target_center_x: float
         if len(self.items) == 1 and self.surface_width_mm is not None:
@@ -80,13 +80,13 @@ class BboxAlignRightStrategy(LayoutStrategy):
     def __init__(
         self,
         items: Sequence[DocItem],
-        surface_width_mm: Optional[float] = None,
+        surface_width_mm: float | None = None,
     ):
         super().__init__(items)
         self.surface_width_mm = surface_width_mm
 
     def calculate_deltas(
-        self, context: Optional[ExecutionContext] = None
+        self, context: ExecutionContext | None = None
     ) -> dict[DocItem, Matrix]:
         target_x: float
         if len(self.items) == 1 and self.surface_width_mm is not None:
@@ -114,13 +114,13 @@ class BboxAlignTopStrategy(LayoutStrategy):
     def __init__(
         self,
         items: Sequence[DocItem],
-        surface_height_mm: Optional[float] = None,
+        surface_height_mm: float | None = None,
     ):
         super().__init__(items)
         self.surface_height_mm = surface_height_mm
 
     def calculate_deltas(
-        self, context: Optional[ExecutionContext] = None
+        self, context: ExecutionContext | None = None
     ) -> dict[DocItem, Matrix]:
         target_y: float
         if len(self.items) == 1 and self.surface_height_mm is not None:
@@ -148,13 +148,13 @@ class BboxAlignMiddleStrategy(LayoutStrategy):
     def __init__(
         self,
         items: Sequence[DocItem],
-        surface_height_mm: Optional[float] = None,
+        surface_height_mm: float | None = None,
     ):
         super().__init__(items)
         self.surface_height_mm = surface_height_mm
 
     def calculate_deltas(
-        self, context: Optional[ExecutionContext] = None
+        self, context: ExecutionContext | None = None
     ) -> dict[DocItem, Matrix]:
         target_center_y: float
         if len(self.items) == 1 and self.surface_height_mm is not None:
@@ -181,7 +181,7 @@ class BboxAlignBottomStrategy(LayoutStrategy):
     """Aligns the bottom edges of the selection's bounding boxes."""
 
     def calculate_deltas(
-        self, context: Optional[ExecutionContext] = None
+        self, context: ExecutionContext | None = None
     ) -> dict[DocItem, Matrix]:
         target_y: float
         if len(self.items) == 1:
@@ -217,7 +217,7 @@ class PositionAtStrategy(LayoutStrategy):
         self.position_mm = position_mm
 
     def calculate_deltas(
-        self, context: Optional[ExecutionContext] = None
+        self, context: ExecutionContext | None = None
     ) -> dict[DocItem, Matrix]:
         bbox = self._get_selection_world_bbox()
         if not bbox:

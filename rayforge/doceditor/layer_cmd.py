@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from ..core.color import pick_unused_color
 from ..core.group import Group
@@ -32,7 +32,7 @@ class MoveWorkpiecesLayerCommand(Command):
         workpieces: list[WorkPiece],
         new_layer: Layer,
         old_layer: Layer,
-        name: Optional[str] = None,
+        name: str | None = None,
     ):
         super().__init__(name)
         self.workpieces = workpieces
@@ -69,7 +69,7 @@ class MoveItemsLayerCommand(Command):
         items: list[DocItem],
         new_layer: Layer,
         old_layer: Layer,
-        name: Optional[str] = None,
+        name: str | None = None,
     ):
         super().__init__(name)
         self.items = items
@@ -96,14 +96,14 @@ class AddLayerAndSetActiveCommand(Command):
 
     def __init__(
         self,
-        editor: "DocEditor",
-        new_layer: Optional[Layer] = None,
+        editor: DocEditor,
+        new_layer: Layer | None = None,
         name: str = "Add layer",
     ):
         super().__init__(name=name)
         self._editor = editor
         self.new_layer = new_layer or self._create_default_layer()
-        self._old_active_layer: Optional[Layer] = None
+        self._old_active_layer: Layer | None = None
 
     def _create_default_layer(self) -> Layer:
         """Creates a new layer with a default, unique name and color."""
@@ -160,7 +160,7 @@ class AddLayerAndSetActiveCommand(Command):
 class LayerCmd:
     """Handles commands related to layer manipulation."""
 
-    def __init__(self, editor: "DocEditor"):
+    def __init__(self, editor: DocEditor):
         self._editor = editor
 
     def move_workpieces_to_layer(
@@ -184,7 +184,7 @@ class LayerCmd:
         self._editor.history_manager.execute(cmd)
 
     def move_selected_to_adjacent_layer(
-        self, surface: "WorkSurface", direction: int
+        self, surface: WorkSurface, direction: int
     ):
         """
         Creates an undoable command to move selected workpieces to the
@@ -244,7 +244,7 @@ class LayerCmd:
                 "workpiece layer list."
             )
 
-    def add_layer_and_set_active(self, new_layer: Optional[Layer] = None):
+    def add_layer_and_set_active(self, new_layer: Layer | None = None):
         """Adds a new layer to the document and sets it as the active layer."""
         cmd = AddLayerAndSetActiveCommand(self._editor, new_layer)
         self._editor.history_manager.execute(cmd)

@@ -151,8 +151,7 @@ class LaserHead(Head):
         if self.max_pwm_frequency == max_frequency:
             return
         self.max_pwm_frequency = max_frequency
-        if self.pwm_frequency > max_frequency:
-            self.pwm_frequency = max_frequency
+        self.pwm_frequency = min(self.pwm_frequency, max_frequency)
         self.changed.send(self)
 
     def set_pulse_width(self, width: int):
@@ -167,10 +166,8 @@ class LaserHead(Head):
         if self.min_pulse_width == min_width:
             return
         self.min_pulse_width = min_width
-        if min_width > self.max_pulse_width:
-            self.max_pulse_width = min_width
-        if self.pulse_width < min_width:
-            self.pulse_width = min_width
+        self.max_pulse_width = max(self.max_pulse_width, min_width)
+        self.pulse_width = max(self.pulse_width, min_width)
         self.changed.send(self)
 
     def set_max_pulse_width(self, max_width: int):
@@ -178,10 +175,8 @@ class LaserHead(Head):
         if self.max_pulse_width == max_width:
             return
         self.max_pulse_width = max_width
-        if max_width < self.min_pulse_width:
-            self.min_pulse_width = max_width
-        if self.pulse_width > max_width:
-            self.pulse_width = max_width
+        self.min_pulse_width = min(self.min_pulse_width, max_width)
+        self.pulse_width = min(self.pulse_width, max_width)
         self.changed.send(self)
 
     def to_dict(self) -> dict[str, Any]:

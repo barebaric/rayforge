@@ -1,14 +1,11 @@
 import asyncio
 import inspect
 import logging
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Optional,
-    Union,
     cast,
 )
 
@@ -68,21 +65,21 @@ class MarlinSerialDriver(Driver):
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
-        self._transport: Optional[SerialTransport] = None
+        self._transport: SerialTransport | None = None
         self._port: str = ""
         self._baudrate: int = 115200
         self.keep_running = False
-        self._connection_task: Optional[asyncio.Task] = None
+        self._connection_task: asyncio.Task | None = None
         self._ok_event = asyncio.Event()
         self._handshake_event = asyncio.Event()
         self._job_running = False
         self._is_cancelled = False
-        self._on_command_done: Optional[
-            Callable[[int], Union[None, Awaitable[None]]]
-        ] = None
+        self._on_command_done: (
+            Callable[[int], None | Awaitable[None]] | None
+        ) = None
         self._last_reported_op_index = -1
         self._response_lines: list[str] = []
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._loop: asyncio.AbstractEventLoop | None = None
         self._rx_buffer = ""
         self._boot_lines: list[str] = []
 
@@ -95,7 +92,7 @@ class MarlinSerialDriver(Driver):
         return _("Machine Coordinates")
 
     @property
-    def resource_uri(self) -> Optional[str]:
+    def resource_uri(self) -> str | None:
         if self._port:
             return f"serial://{self._port}"
         return None
@@ -157,7 +154,7 @@ class MarlinSerialDriver(Driver):
         self._transport.status_changed.connect(self.on_serial_status_changed)
 
     def on_serial_status_changed(
-        self, sender, status: TransportStatus, message: Optional[str] = None
+        self, sender, status: TransportStatus, message: str | None = None
     ):
         if status == TransportStatus.CONNECTED:
             logger.debug(
@@ -363,9 +360,7 @@ class MarlinSerialDriver(Driver):
 
     def _start_job(
         self,
-        on_command_done: Optional[
-            Callable[[int], Union[None, Awaitable[None]]]
-        ] = None,
+        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
     ):
         self._is_cancelled = False
         self._job_running = True
@@ -375,7 +370,7 @@ class MarlinSerialDriver(Driver):
     async def _stream_gcode(
         self,
         gcode_lines: list[str],
-        machine_code_to_op_map: Optional[dict[int, int]] = None,
+        machine_code_to_op_map: dict[int, int] | None = None,
     ):
         logger.debug(
             f"Starting Marlin streaming job with {len(gcode_lines)} lines."
@@ -436,9 +431,7 @@ class MarlinSerialDriver(Driver):
         encoded: EncodedOutput,
         doc: "Doc",
         ops: "Ops",
-        on_command_done: Optional[
-            Callable[[int], Union[None, Awaitable[None]]]
-        ] = None,
+        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
     ) -> None:
         self._start_job(on_command_done)
 
@@ -503,7 +496,7 @@ class MarlinSerialDriver(Driver):
             "on 8-bit boards. set_hold is a best-effort no-op."
         )
 
-    async def home(self, axes: Optional[Axis] = None) -> None:
+    async def home(self, axes: Axis | None = None) -> None:
         dialect = self.dialect
         if axes is None:
             await self._send_and_wait(dialect.home_all)
@@ -568,10 +561,10 @@ class MarlinSerialDriver(Driver):
             cmd = dialect.focus_laser_on.format(power=power_abs)
         await self._send_and_wait(cmd)
 
-    def can_home(self, axis: Optional[Axis] = None) -> bool:
+    def can_home(self, axis: Axis | None = None) -> bool:
         return True
 
-    def can_jog(self, axis: Optional[Axis] = None) -> bool:
+    def can_jog(self, axis: Axis | None = None) -> bool:
         return True
 
     async def read_settings(self) -> None:
@@ -579,7 +572,7 @@ class MarlinSerialDriver(Driver):
             "Device settings not implemented for this driver"
         )
 
-    async def detect_unit_system(self) -> Optional[UnitSystem]:
+    async def detect_unit_system(self) -> UnitSystem | None:
         """
         Queries the device's active linear unit via ``M149`` and
         maps the response to a ``UnitSystem``.
@@ -618,7 +611,7 @@ class MarlinSerialDriver(Driver):
 
     async def run_probe_cycle(
         self, axis: Axis, max_travel: float, feed_rate: int
-    ) -> Optional[Pos]:
+    ) -> Pos | None:
         raise NotImplementedError(
             "Probing is not implemented for the Marlin driver."
         )
@@ -699,7 +692,7 @@ class MarlinSerialDriver(Driver):
         self._response_lines.append(line)
 
     def _update_connection_status(
-        self, status: TransportStatus, message: Optional[str] = None
+        self, status: TransportStatus, message: str | None = None
     ):
         log_data = f"Connection status: {status.name}"
         if message:

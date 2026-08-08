@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from gettext import gettext as _
-from typing import Optional
 
 from .engine import engine
 
@@ -15,7 +14,7 @@ class Unit:
     name: str  # Programmatic, normalized identifier (e.g., "mm/min")
     label: str  # User-facing, translatable string (e.g., "mm/min")
     quantity: str  # Physical quantity measured (e.g., "speed", "length")
-    description: Optional[str] = None  # Translatable tooltip
+    description: str | None = None  # Translatable tooltip
     precision: int = 2  # Suggested decimal places for display
 
     def to_base(self, value: float) -> float:
@@ -68,12 +67,12 @@ def get_units_for_quantity(quantity: str) -> list[Unit]:
     return sorted(units, key=lambda u: u.label)
 
 
-def get_unit(name: str) -> Optional[Unit]:
+def get_unit(name: str) -> Unit | None:
     """Retrieves a specific unit by its programmatic name."""
     return _UNIT_REGISTRY.get(name)
 
 
-def get_base_unit_for_quantity(quantity: str) -> Optional[Unit]:
+def get_base_unit_for_quantity(quantity: str) -> Unit | None:
     """Retrieves the designated base unit for a quantity."""
     base_unit_name = _BASE_UNITS.get(quantity)
     return get_unit(base_unit_name) if base_unit_name else None

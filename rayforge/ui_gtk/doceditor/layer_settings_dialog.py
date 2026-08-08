@@ -154,7 +154,7 @@ class LayerSettingsDialog(PatchedDialogWindow):
 
     def _populate_wcs_store(self):
         self._wcs_store = Gtk.StringList()
-        self._wcs_values: list[Optional[str]] = [None]
+        self._wcs_values: list[str | None] = [None]
         self._wcs_store.append(_("Default"))
         machine = get_context().machine
         if machine:
@@ -169,7 +169,7 @@ class LayerSettingsDialog(PatchedDialogWindow):
         else:
             self.wcs_row.set_selected(0)
 
-    def _get_selected_wcs(self) -> Optional[str]:
+    def _get_selected_wcs(self) -> str | None:
         idx = self.wcs_row.get_selected()
         if idx < len(self._wcs_values):
             return self._wcs_values[idx]

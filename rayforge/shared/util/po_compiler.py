@@ -157,12 +157,16 @@ def write_mo_file(mo_path: Path, entries: list[tuple[str, str]]) -> None:
         f.write(struct.pack("<I", 0))
 
         # Original strings table
-        for length, offset in orig_strings:
-            f.write(struct.pack("<II", length, orig_strings_offset + offset))
+        f.writelines(
+            struct.pack("<II", length, orig_strings_offset + offset)
+            for length, offset in orig_strings
+        )
 
         # Translated strings table
-        for length, offset in trans_strings:
-            f.write(struct.pack("<II", length, trans_strings_offset + offset))
+        f.writelines(
+            struct.pack("<II", length, trans_strings_offset + offset)
+            for length, offset in trans_strings
+        )
 
         # Original strings data
         f.write(orig_data)

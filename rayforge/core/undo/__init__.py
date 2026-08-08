@@ -14,11 +14,11 @@ from .property_cmd import ChangePropertyCommand
 from .setter_cmd import SetterCommand
 
 __all__ = [
-    "HistoryManager",
-    "Command",
     "ChangePropertyCommand",
+    "Command",
     "CompositeCommand",
     "DictItemCommand",
+    "HistoryManager",
     "ListItemCommand",
     "ReorderListCommand",
     "SetterCommand",

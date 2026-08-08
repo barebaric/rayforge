@@ -1,6 +1,5 @@
 import logging
 from gettext import gettext as _
-from typing import Optional
 
 from blinker import Signal
 from gi.repository import Gtk
@@ -36,8 +35,8 @@ class PointBubbleWidget(Gtk.Box):
             orientation=Gtk.Orientation.VERTICAL, spacing=8, **kwargs
         )
         self.point_index = point_index
-        self.image_x: Optional[float] = None
-        self.image_y: Optional[float] = None
+        self.image_x: float | None = None
+        self.image_y: float | None = None
 
         apply_css(css)
         self.add_css_class("point-bubble")
@@ -181,7 +180,7 @@ class PointBubbleWidget(Gtk.Box):
         self.image_x = x
         self.image_y = y
 
-    def get_image_coords(self) -> Optional[tuple[float, float]]:
+    def get_image_coords(self) -> tuple[float, float] | None:
         if self.image_x is not None and self.image_y is not None:
             return (self.image_x, self.image_y)
         return None

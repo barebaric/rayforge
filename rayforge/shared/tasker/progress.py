@@ -8,7 +8,7 @@ that require throttling or debouncing of progress updates.
 
 import time
 from abc import ABC, abstractmethod
-from typing import Callable, Optional
+from collections.abc import Callable
 
 
 class ProgressContext(ABC):
@@ -48,7 +48,6 @@ class ProgressContext(ABC):
         Returns:
             True if the operation should be cancelled, False otherwise.
         """
-        pass
 
     def set_progress(self, progress: float) -> None:
         """Set progress as an absolute value.
@@ -69,7 +68,6 @@ class ProgressContext(ABC):
         Args:
             message: The status message to display.
         """
-        pass
 
     def set_total(self, total: float) -> None:
         """Set the total value for progress normalization.
@@ -107,7 +105,6 @@ class ProgressContext(ABC):
     @abstractmethod
     def flush(self) -> None:
         """Immediately send any pending updates."""
-        pass
 
     @abstractmethod
     def _report_normalized_progress(self, progress: float) -> None:
@@ -119,7 +116,6 @@ class ProgressContext(ABC):
         Args:
             progress: The normalized progress value (0.0-1.0).
         """
-        pass
 
     @abstractmethod
     def _create_sub_context(
@@ -143,7 +139,6 @@ class ProgressContext(ABC):
         Returns:
             A new ProgressContext configured as a sub-context.
         """
-        pass
 
 
 class ThrottledProgressContext(ProgressContext):
@@ -155,11 +150,9 @@ class ThrottledProgressContext(ProgressContext):
     to implement them.
     """
 
-    pass
-
 
 def set_progress(
-    context: Optional[ProgressContext],
+    context: ProgressContext | None,
     progress: float,
     message: str = "",
 ) -> None:
@@ -209,7 +202,6 @@ class NoOpProgressContext(ProgressContext):
         Args:
             progress: The absolute progress value (ignored).
         """
-        pass
 
     def set_message(self, message: str) -> None:
         """Set a descriptive status message (no-op).
@@ -217,7 +209,6 @@ class NoOpProgressContext(ProgressContext):
         Args:
             message: The status message (ignored).
         """
-        pass
 
     def set_total(self, total: float) -> None:
         """Set the total value for progress normalization (no-op).
@@ -225,7 +216,6 @@ class NoOpProgressContext(ProgressContext):
         Args:
             total: The total number of steps (ignored).
         """
-        pass
 
     def sub_context(
         self,
@@ -251,7 +241,6 @@ class NoOpProgressContext(ProgressContext):
 
     def flush(self) -> None:
         """Immediately send any pending updates (no-op)."""
-        pass
 
     def _report_normalized_progress(self, progress: float) -> None:
         """Report a normalized progress value (no-op).
@@ -259,7 +248,6 @@ class NoOpProgressContext(ProgressContext):
         Args:
             progress: The normalized progress value (ignored).
         """
-        pass
 
     def _create_sub_context(
         self,
@@ -344,7 +332,6 @@ class CallbackProgressContext(ProgressContext):
 
     def flush(self) -> None:
         """Immediately send any pending updates (no-op for callbacks)."""
-        pass
 
     def _report_normalized_progress(self, progress: float) -> None:
         """Report a normalized progress value via callback.

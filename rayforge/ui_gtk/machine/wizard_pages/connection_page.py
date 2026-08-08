@@ -11,7 +11,6 @@ pattern in the legacy ``config_wizard.py``.
 """
 
 from gettext import gettext as _
-from typing import Optional
 
 from gi.repository import Adw, Gtk
 
@@ -28,7 +27,7 @@ class ConnectionPage(WizardPage):
     subtitle = _("Enter the connection parameters for your device.")
 
     def __init__(self, wizard, **kwargs):
-        self._driver_cls: Optional[type[Driver]] = None
+        self._driver_cls: type[Driver] | None = None
         self._required_keys: set = set()
         super().__init__(wizard, **kwargs)
 
@@ -84,7 +83,7 @@ class ConnectionPage(WizardPage):
         saved_args = profile.machine_config.driver_args or {}
         if saved_args:
             for var in var_set:
-                if var.key in saved_args and saved_args[var.key]:
+                if saved_args.get(var.key):
                     var.value = saved_args[var.key]
         self.connect_widget.populate(var_set)
         self._refresh_ready()

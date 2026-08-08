@@ -38,7 +38,7 @@ class FrameInputs:
     playback_assembly: Optional["Assembly"] = None
     compiled_artifact: Optional["CompiledSceneArtifact"] = None
     doc: Optional["Doc"] = None
-    cylinder_transform: Optional[np.ndarray] = None
+    cylinder_transform: np.ndarray | None = None
     had_rotary_layers: bool = False
     show_travel_moves: bool = False
     show_grid: bool = True
@@ -69,10 +69,10 @@ class RenderContext:
 
     def __init__(
         self,
-        camera: Optional[CameraContext] = None,
-        viewport: Optional[ViewportContext] = None,
-        kinematics: Optional[KinematicsContext] = None,
-        playback: Optional[PlaybackContext] = None,
+        camera: CameraContext | None = None,
+        viewport: ViewportContext | None = None,
+        kinematics: KinematicsContext | None = None,
+        playback: PlaybackContext | None = None,
     ):
         self.camera = camera if camera is not None else CameraContext()
         self.viewport = viewport if viewport is not None else ViewportContext()

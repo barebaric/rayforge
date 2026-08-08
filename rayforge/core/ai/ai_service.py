@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from blinker import Signal
 
@@ -25,7 +24,7 @@ class AIService:
     def __init__(self):
         self._providers: dict[str, AIProvider] = {}
         self._configs: dict[str, AIProviderConfig] = {}
-        self._default_provider_id: Optional[str] = None
+        self._default_provider_id: str | None = None
         self.changed = Signal()
 
     @property
@@ -34,12 +33,12 @@ class AIService:
         return dict(self._configs)
 
     @property
-    def default_provider_id(self) -> Optional[str]:
+    def default_provider_id(self) -> str | None:
         """Return the ID of the default provider."""
         return self._default_provider_id
 
     @default_provider_id.setter
-    def default_provider_id(self, value: Optional[str]):
+    def default_provider_id(self, value: str | None):
         if value and value not in self._configs:
             raise ValueError(f"Unknown provider: {value}")
         self._default_provider_id = value
@@ -139,8 +138,8 @@ class AIService:
         raise ValueError(f"Unknown provider type: {config.provider_type}")
 
     def get_provider(
-        self, provider_id: Optional[str] = None
-    ) -> Optional[AIProvider]:
+        self, provider_id: str | None = None
+    ) -> AIProvider | None:
         """
         Get a provider by ID, or the default provider.
 
@@ -157,13 +156,13 @@ class AIService:
                 return self._providers[pid]
         return None
 
-    def get_config(self, provider_id: str) -> Optional[AIProviderConfig]:
+    def get_config(self, provider_id: str) -> AIProviderConfig | None:
         """Get a provider configuration by ID."""
         return self._configs.get(provider_id)
 
     async def chat(
-        self, messages: list, provider_id: Optional[str] = None, **kwargs
-    ) -> Optional[ChatResponse]:
+        self, messages: list, provider_id: str | None = None, **kwargs
+    ) -> ChatResponse | None:
         """
         Send a chat request using the specified or default provider.
 
@@ -181,7 +180,7 @@ class AIService:
         return await provider.chat(messages, **kwargs)
 
     async def chat_stream(
-        self, messages: list, provider_id: Optional[str] = None, **kwargs
+        self, messages: list, provider_id: str | None = None, **kwargs
     ):
         """
         Stream a chat response using the specified or default provider.

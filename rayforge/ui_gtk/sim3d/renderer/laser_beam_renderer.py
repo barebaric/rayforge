@@ -5,7 +5,6 @@ above the workpiece down to the current cutting position.
 
 import logging
 import math
-from typing import Optional
 
 import numpy as np
 from OpenGL import GL
@@ -55,7 +54,7 @@ class LaserBeamRenderer(BaseRenderer):
         self.vbo: int = 0
         self.vertex_count: int = 0
         self._beams: list[tuple[np.ndarray, float, tuple]] = []
-        self.laser_light_pos: Optional[np.ndarray] = None
+        self.laser_light_pos: np.ndarray | None = None
 
     def init_gl(self):
         self.vao = self._create_vao()

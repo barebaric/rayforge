@@ -4,7 +4,6 @@
 import argparse
 import re
 from pathlib import Path
-from typing import Optional
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -25,7 +24,7 @@ SECTION_ANONYMOUS = (
 )
 
 
-def find_font(font_name: str = "DejaVuSans-Bold.ttf") -> Optional[str]:
+def find_font(font_name: str = "DejaVuSans-Bold.ttf") -> str | None:
     font_paths = [
         Path("/usr/share/fonts/truetype/dejavu") / font_name,
         Path("/usr/share/fonts/truetype/liberation") / font_name,

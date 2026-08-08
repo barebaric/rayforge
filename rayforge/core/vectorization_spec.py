@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from raygeo.svg.color import ColorAttr
 
@@ -35,7 +35,7 @@ class VectorizationSpec(ABC):
         raise NotImplementedError
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "VectorizationSpec":
+    def from_dict(cls, data: dict[str, Any]) -> VectorizationSpec:
         """Factory to create a VectorizationSpec instance from a dictionary."""
         spec_type = data.get("type")
         if not spec_type:
@@ -69,7 +69,7 @@ class TraceSpec(VectorizationSpec):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "TraceSpec":
+    def from_dict(cls, data: dict[str, Any]) -> TraceSpec:
         return cls(
             threshold=data.get("threshold", 0.5),
             auto_threshold=data.get("auto_threshold", True),
@@ -84,7 +84,7 @@ class PassthroughSpec(VectorizationSpec):
     Specifies that vectors should be parsed directly from a vector source.
     """
 
-    active_layer_ids: Optional[list[str]] = None
+    active_layer_ids: list[str] | None = None
     layer_import_mode: LayerImportMode = LayerImportMode.MAP_TO_EXISTING
     layer_source: LayerSource = LayerSource.SVG_LAYERS
     color_attr: ColorAttr = ColorAttr.ANY
@@ -102,7 +102,7 @@ class PassthroughSpec(VectorizationSpec):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "PassthroughSpec":
+    def from_dict(cls, data: dict[str, Any]) -> PassthroughSpec:
         mode_str = data.get("layer_import_mode")
         if mode_str:
             mode = LayerImportMode(mode_str)
@@ -150,5 +150,5 @@ class ProceduralSpec(VectorizationSpec):
         return {"type": "ProceduralSpec", "ppi": self.ppi}
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ProceduralSpec":
+    def from_dict(cls, data: dict[str, Any]) -> ProceduralSpec:
         return cls(ppi=data.get("ppi", 96.0))

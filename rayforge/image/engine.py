@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from raygeo.geo import Matrix
 from raygeo.geo.types import Rect
@@ -68,10 +68,10 @@ class NormalizationEngine:
     def calculate_layout_item(
         bounds: Rect,
         parse_result: ParsingResult,
-        layer_id: Optional[str] = None,
-        layer_name: Optional[str] = None,
-        settings: Optional[dict[str, Any]] = None,
-        color: Optional[str] = None,
+        layer_id: str | None = None,
+        layer_name: str | None = None,
+        settings: dict[str, Any] | None = None,
+        color: str | None = None,
     ) -> LayoutItem:
         """
         Generates the transformation matrices for a specific bounding box.
@@ -173,7 +173,7 @@ class NormalizationEngine:
     def calculate_layout(
         self,
         vec_result: VectorizationResult,
-        spec: Optional[VectorizationSpec],
+        spec: VectorizationSpec | None,
     ) -> list[LayoutItem]:
         """
         Calculates the layout plan for creating WorkPieces.

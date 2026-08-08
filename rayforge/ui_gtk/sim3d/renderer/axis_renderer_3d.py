@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Optional
 
 import numpy as np
 from OpenGL import GL
@@ -32,7 +31,7 @@ class AxisRenderer3D(BaseRenderer):
         width_mm: float,
         height_mm: float,
         grid_size_mm: float = 10.0,
-        font_family: Optional[str] = None,
+        font_family: str | None = None,
         grid_unit_factor: float = 1.0,
     ):
         """Initializes the AxisRenderer3D with scene dimensions.
@@ -78,7 +77,7 @@ class AxisRenderer3D(BaseRenderer):
         )
         self._add_child_renderer(self.background_renderer)
 
-        self.text_renderer: Optional[TextRenderer] = None
+        self.text_renderer: TextRenderer | None = None
 
         # Grid and Axes resources
         self.grid_vao, self.grid_vbo, self.grid_vertex_count = 0, 0, 0
@@ -169,7 +168,6 @@ class AxisRenderer3D(BaseRenderer):
 
     def prepare(self, ctx: RenderContext) -> None:
         """No per-frame state to prepare."""
-        pass
 
     def _init_grid_and_axes(self):
         """Creates VAOs/VBOs for the grid and axis lines."""

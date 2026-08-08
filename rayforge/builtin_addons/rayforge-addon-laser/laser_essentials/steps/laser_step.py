@@ -6,7 +6,7 @@ settlers, serialization of the laser keys).
 """
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from raygeo.ops import Ops
 from raygeo.ops.state import AirAssistMode
@@ -148,7 +148,7 @@ class LaserStep(Step):
         )
         return params
 
-    def get_selected_laser(self, machine: "Machine") -> Optional[LaserHead]:
+    def get_selected_laser(self, machine: "Machine") -> LaserHead | None:
         """Typed convenience — returns the selected LaserHead or None."""
         head = self.get_selected_head(machine)
         if isinstance(head, LaserHead):
@@ -191,7 +191,7 @@ class LaserStep(Step):
             power_percent=power_percent, speed_str=speed_str
         )
 
-    def get_operation_color(self, head) -> Optional[str]:
+    def get_operation_color(self, head) -> str | None:
         """The head's cut color, used to represent cutting operations."""
         if isinstance(head, LaserHead):
             return head.cut_color

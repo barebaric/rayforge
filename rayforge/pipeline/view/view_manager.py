@@ -4,7 +4,7 @@ import logging
 import threading
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 from blinker import Signal
@@ -41,14 +41,14 @@ MAX_CONCURRENT_VIEW_RENDERS = 3
 class ViewEntry:
     """Holds state for a single view artifact."""
 
-    bitmap: Optional[np.ndarray] = None
-    bbox_mm: Optional[tuple[float, float, float, float]] = None
-    workpiece_size_mm: Optional[tuple[float, float]] = None
-    handle: Optional[WorkPieceViewArtifactHandle] = None
-    render_context: Optional[RenderContext] = None
-    source_handle: Optional[WorkPieceArtifactHandle] = None
-    laser_uid: Optional[str] = None
-    layer_uid: Optional[str] = None
+    bitmap: np.ndarray | None = None
+    bbox_mm: tuple[float, float, float, float] | None = None
+    workpiece_size_mm: tuple[float, float] | None = None
+    handle: WorkPieceViewArtifactHandle | None = None
+    render_context: RenderContext | None = None
+    source_handle: WorkPieceArtifactHandle | None = None
+    laser_uid: str | None = None
+    layer_uid: str | None = None
 
 
 class ViewManager:
@@ -79,15 +79,15 @@ class ViewManager:
 
     def __init__(
         self,
-        pipeline: "Pipeline",
-        artifact_store: "ArtifactStore",
-        machine: Optional["Machine"],
+        pipeline: Pipeline,
+        artifact_store: ArtifactStore,
+        machine: Machine | None,
     ):
         self._pipeline = pipeline
         self._store = artifact_store
         self._task_manager = pipeline.task_manager
         self._machine = machine
-        self._current_view_context: Optional[RenderContext] = None
+        self._current_view_context: RenderContext | None = None
         self._view_generation_id = 0
         self._is_shutdown = False
         self._render_semaphore = threading.Semaphore(
@@ -216,7 +216,7 @@ class ViewManager:
         self._last_update_time.pop(composite_id, None)
 
     @property
-    def current_view_context(self) -> Optional[RenderContext]:
+    def current_view_context(self) -> RenderContext | None:
         """Returns the current render context."""
         return self._current_view_context
 
@@ -226,7 +226,7 @@ class ViewManager:
         return self._view_generation_id
 
     @property
-    def store(self) -> "ArtifactStore":
+    def store(self) -> ArtifactStore:
         """Returns the artifact store."""
         return self._store
 
@@ -244,10 +244,10 @@ class ViewManager:
         self,
         workpiece_uid: str,
         step_uid: str,
-        new_context: Optional[RenderContext],
-        source_handle: Optional[WorkPieceArtifactHandle],
-        laser_uid: Optional[str] = None,
-        layer_uid: Optional[str] = None,
+        new_context: RenderContext | None,
+        source_handle: WorkPieceArtifactHandle | None,
+        laser_uid: str | None = None,
+        layer_uid: str | None = None,
     ) -> bool:
         """Check if a view needs re-rendering."""
         composite_id = (workpiece_uid, step_uid)
@@ -365,8 +365,8 @@ class ViewManager:
 
     def _handles_represent_same_artifact(
         self,
-        handle1: Optional[WorkPieceArtifactHandle],
-        handle2: Optional[WorkPieceArtifactHandle],
+        handle1: WorkPieceArtifactHandle | None,
+        handle2: WorkPieceArtifactHandle | None,
     ) -> bool:
         """
         Check if two handles represent the same artifact.
@@ -392,8 +392,8 @@ class ViewManager:
         self,
         sender,
         *,
-        step: "Step",
-        workpiece: "WorkPiece",
+        step: Step,
+        workpiece: WorkPiece,
         handle: BaseArtifactHandle,
         **kwargs,
     ) -> None:
@@ -623,7 +623,7 @@ class ViewManager:
         # pure computation — no store access.
         artifact = self._store.get(source_handle)
 
-        def when_done_callback(task: "Task"):
+        def when_done_callback(task: Task):
             logger.debug(
                 f"[{key}] when_done_callback called, "
                 f"task_status={task.get_status()}"
@@ -747,7 +747,7 @@ class ViewManager:
 
     def _on_render_complete(
         self,
-        task: "Task",
+        task: Task,
         key: str,
         view_id: int,
         workpiece_uid: str,
@@ -770,7 +770,7 @@ class ViewManager:
 
     def allocate_live_buffer(
         self,
-        workpiece: "WorkPiece",
+        workpiece: WorkPiece,
         step_uid: str,
         view_id: int,
         generation_id: int,
@@ -838,8 +838,8 @@ class ViewManager:
         self,
         sender,
         *,
-        step: "Step",
-        workpiece: "WorkPiece",
+        step: Step,
+        workpiece: WorkPiece,
         generation_id: int,
     ):
         """
@@ -860,9 +860,11 @@ class ViewManager:
             return
 
         need_new_buffer = False
-        if existing_handle is None:
-            need_new_buffer = True
-        elif entry is not None and entry.render_context != context:
+        if (
+            existing_handle is None
+            or entry is not None
+            and entry.render_context != context
+        ):
             need_new_buffer = True
         else:
             w_mm, h_mm = workpiece.size
@@ -887,7 +889,7 @@ class ViewManager:
 
     def get_view_handle(
         self, workpiece_uid: str, step_uid: str
-    ) -> Optional[WorkPieceViewArtifactHandle]:
+    ) -> WorkPieceViewArtifactHandle | None:
         """Get the view handle for a specific workpiece and step."""
         composite_id = (workpiece_uid, step_uid)
         entry = self._view_entries.get(composite_id)
@@ -895,11 +897,12 @@ class ViewManager:
 
     def get_view_bitmap(
         self, workpiece_uid: str, step_uid: str
-    ) -> Optional[
+    ) -> (
         tuple[
             np.ndarray, tuple[float, float, float, float], tuple[float, float]
         ]
-    ]:
+        | None
+    ):
         """Get the view bitmap for a specific workpiece and step.
 
         Returns ``(bitmap, bbox_mm, workpiece_size_mm)`` or ``None``

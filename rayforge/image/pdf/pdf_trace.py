@@ -3,7 +3,6 @@ import logging
 import warnings
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
@@ -48,9 +47,9 @@ class PdfTraceImporter(Importer):
     _TRACE_PPM = 24.0
     _MAX_RENDER_DIM = 16384
 
-    def __init__(self, data: bytes, source_file: Optional[Path] = None):
+    def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)
-        self._image: Optional[pyvips.Image] = None
+        self._image: pyvips.Image | None = None
 
     def scan(self) -> ImportManifest:
         try:
@@ -137,7 +136,7 @@ class PdfTraceImporter(Importer):
             source_parse_result=parse_result,
         )
 
-    def parse(self) -> Optional[ParsingResult]:
+    def parse(self) -> ParsingResult | None:
         try:
             reader = PdfReader(io.BytesIO(self.raw_data))
             media_box = reader.pages[0].mediabox

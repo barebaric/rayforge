@@ -48,16 +48,14 @@ class SpindleHead(Head):
         if self.max_rpm == rpm:
             return
         self.max_rpm = int(rpm)
-        if self.min_rpm > self.max_rpm:
-            self.min_rpm = self.max_rpm
+        self.min_rpm = min(self.min_rpm, self.max_rpm)
         self.changed.send(self)
 
     def set_min_rpm(self, rpm: int):
         if self.min_rpm == rpm:
             return
         self.min_rpm = int(rpm)
-        if self.max_rpm < self.min_rpm:
-            self.max_rpm = self.min_rpm
+        self.max_rpm = max(self.max_rpm, self.min_rpm)
         self.changed.send(self)
 
     def set_cooling_methods(self, methods: Iterable[CoolantMode]):

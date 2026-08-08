@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
-    Optional,
 )
 
 import numpy as np
@@ -31,18 +30,18 @@ class LinkRole(Enum):
 @dataclass
 class Link:
     name: str
-    parent: Optional[str]
+    parent: str | None
     joint_type: JointType
     joint_axis: tuple[float, float, float] = (0.0, 0.0, 0.0)
-    driver_axis: Optional[Axis] = None
+    driver_axis: Axis | None = None
     local_transform: np.ndarray = field(
         default_factory=lambda: np.eye(4, dtype=np.float64)
     )
-    model: Optional[Model] = None
+    model: Model | None = None
     model_transform: np.ndarray = field(
         default_factory=lambda: np.eye(4, dtype=np.float64)
     )
-    role: Optional[LinkRole] = None
+    role: LinkRole | None = None
 
     def __post_init__(self):
         if self.joint_type != JointType.FIXED and self.driver_axis is None:
@@ -155,13 +154,13 @@ class Assembly:
         return bool(self._roles.get(LinkRole.CHUCK))
 
     @property
-    def rotary_diameter(self) -> Optional[float]:
+    def rotary_diameter(self) -> float | None:
         chuck_names = self._roles.get(LinkRole.CHUCK, [])
         if not chuck_names:
             return None
         return self._chuck_diameters.get(chuck_names[0])
 
-    def get_link(self, name: str) -> Optional[Link]:
+    def get_link(self, name: str) -> Link | None:
         return self._link_map.get(name)
 
     def get_links_by_role(self, role: LinkRole) -> list[Link]:

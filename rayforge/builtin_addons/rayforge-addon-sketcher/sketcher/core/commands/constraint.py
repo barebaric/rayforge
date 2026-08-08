@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from .base import SketchChangeCommand
 
@@ -20,10 +20,10 @@ class ModifyConstraintCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: "Sketch",
-        constraint: "Constraint",
+        sketch: Sketch,
+        constraint: Constraint,
         new_value: float,
-        new_expression: Optional[str] = None,
+        new_expression: str | None = None,
         name: str = _("Edit Constraint"),
     ):
         super().__init__(sketch, name)

@@ -11,13 +11,13 @@ from .switch_row import SwitchRow
 from .travel_speed_row import TravelSpeedRow
 
 __all__ = [
-    "StepRow",
-    "SpinRow",
     "ComboRow",
     "CoolantRow",
-    "SwitchRow",
-    "SliderRow",
     "CutSpeedRow",
-    "TravelSpeedRow",
     "HeadRow",
+    "SliderRow",
+    "SpinRow",
+    "StepRow",
+    "SwitchRow",
+    "TravelSpeedRow",
 ]

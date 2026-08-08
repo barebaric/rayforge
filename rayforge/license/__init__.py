@@ -9,11 +9,11 @@ from .provider import (
 from .validator import LicenseValidator
 
 __all__ = [
+    "GumroadProvider",
     "LicenseProvider",
     "LicenseResult",
     "LicenseStatus",
     "LicenseType",
     "LicenseValidator",
-    "GumroadProvider",
     "PatreonProvider",
 ]

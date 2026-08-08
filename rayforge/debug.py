@@ -25,7 +25,7 @@ class DebugDumpManager:
 
     def create_dump_archive(
         self, editor: Optional["DocEditor"] = None
-    ) -> Optional[Path]:
+    ) -> Path | None:
         """
         Gathers all debug information, writes it to a temporary directory,
         and creates a ZIP archive.
@@ -69,8 +69,7 @@ class DebugDumpManager:
                     )
                     for category, deps in dep_info.items():
                         f.write(f"### {category}\n")
-                        for name, ver in deps:
-                            f.write(f"{name}: {ver}\n")
+                        f.writelines(f"{name}: {ver}\n" for name, ver in deps)
                         f.write("\n")
 
                 # 3. Write configs to YAML files

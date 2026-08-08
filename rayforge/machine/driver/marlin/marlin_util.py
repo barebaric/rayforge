@@ -1,7 +1,6 @@
 """Parsing utilities for the Marlin firmware driver."""
 
 import re
-from typing import Optional
 
 from ....shared.units.system import UnitSystem
 
@@ -36,7 +35,7 @@ m211_max_re = re.compile(
 
 def parse_m114_position(
     response_lines: list[str],
-) -> Optional[tuple[float, float, float]]:
+) -> tuple[float, float, float] | None:
     """
     Parse M114 output to extract the (X, Y, Z) position.
 
@@ -57,7 +56,7 @@ def parse_m114_position(
     return None
 
 
-def parse_marlin_version(line: str) -> Optional[str]:
+def parse_marlin_version(line: str) -> str | None:
     """
     Extract the Marlin version string from a boot line.
 
@@ -151,7 +150,7 @@ def parse_m115_firmware_info(
 
 def parse_m211_endstops(
     response_lines: list[str],
-) -> Optional[tuple[float, float]]:
+) -> tuple[float, float] | None:
     """
     Parse M211 output to extract X/Y max travel from software endstops.
 
@@ -188,7 +187,7 @@ def parse_m503_settings(
 
 def detect_unit_system_from_m149(
     response_lines: list[str],
-) -> Optional[UnitSystem]:
+) -> UnitSystem | None:
     """
     Inspect Marlin ``M149`` response lines and infer the device's
     unit system.
@@ -212,7 +211,7 @@ def detect_unit_system_from_m149(
 
 def extract_marlin_device_name(
     m115_lines: list[str],
-    boot_lines: Optional[list[str]] = None,
+    boot_lines: list[str] | None = None,
 ) -> str:
     """
     Extract a human-readable device name from M115 and boot output.
@@ -241,7 +240,7 @@ def extract_marlin_device_name(
     return "Unknown Marlin Device"
 
 
-def gcode_to_p_number(wcs_slot: str) -> Optional[int]:
+def gcode_to_p_number(wcs_slot: str) -> int | None:
     """Converts a G-code WCS name (e.g., "G54") to its P-number."""
     try:
         if not wcs_slot.startswith("G"):

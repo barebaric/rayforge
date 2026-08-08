@@ -2,7 +2,6 @@
 
 import logging
 from gettext import gettext as _
-from typing import Optional
 
 from gi.repository import Adw, Gtk
 
@@ -23,24 +22,24 @@ class CapturePage(CameraWizardPage):
 
     def __init__(self, wizard, controller):
         super().__init__(wizard, controller)
-        self._board: Optional[CharucoBoard] = None
-        self.calibrator: Optional[CameraCalibrator] = None
-        self._calibration_result: Optional[CalibrationResult] = None
-        self._capture_surface: Optional[CalibrationCaptureSurface] = None
+        self._board: CharucoBoard | None = None
+        self.calibrator: CameraCalibrator | None = None
+        self._calibration_result: CalibrationResult | None = None
+        self._capture_surface: CalibrationCaptureSurface | None = None
 
     @property
-    def capture_button(self) -> Optional[Gtk.Button]:
+    def capture_button(self) -> Gtk.Button | None:
         return self._capture_btn
 
     @property
-    def clear_button(self) -> Optional[Gtk.Button]:
+    def clear_button(self) -> Gtk.Button | None:
         return self._clear_btn
 
     @property
-    def calibrate_button(self) -> Optional[Gtk.Button]:
+    def calibrate_button(self) -> Gtk.Button | None:
         return self._calibrate_btn
 
-    def set_board(self, board: Optional[CharucoBoard]) -> None:
+    def set_board(self, board: CharucoBoard | None) -> None:
         self._board = board
         if self._capture_surface is not None:
             self._capture_surface.board = board

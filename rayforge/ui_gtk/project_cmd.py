@@ -1,8 +1,9 @@
 import logging
 import sys
+from collections.abc import Callable
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gio, GLib, Gtk
 

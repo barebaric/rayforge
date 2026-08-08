@@ -1,7 +1,7 @@
 """Generic slider row for one numeric step attribute."""
 
 import locale
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from gi.repository import Adw, Gtk
 
@@ -22,7 +22,7 @@ class SliderRow(DebouncedMixin, StepRow):
         step: Any,
         attr: str,
         title: str,
-        subtitle: Optional[str],
+        subtitle: str | None,
         lower: float,
         upper: float,
         step_inc: float,

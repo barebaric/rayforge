@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterable
-from typing import Any, Optional, TypeVar
+from typing import Any, TypeVar
 
 from blinker import Signal
 from raygeo.geo import Matrix
@@ -56,7 +56,7 @@ class Workflow(DocItem):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Workflow":
+    def from_dict(cls, data: dict[str, Any]) -> Workflow:
         """Deserializes a dictionary into a Workflow instance."""
         known_keys = {
             "uid",
@@ -96,7 +96,7 @@ class Workflow(DocItem):
         """
         self.per_step_transformer_changed.send(self)
 
-    def add_child(self, child: T, index: Optional[int] = None) -> T:
+    def add_child(self, child: T, index: int | None = None) -> T:
         if isinstance(child, Step):
             child.per_step_transformer_changed.connect(
                 self._on_per_step_transformer_changed

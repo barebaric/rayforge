@@ -11,7 +11,7 @@ YAML round-trip.
 import uuid
 from dataclasses import dataclass
 from gettext import gettext as _
-from typing import Any, Optional
+from typing import Any
 
 from raygeo.cnc.tool import (
     ToolCategory,
@@ -103,7 +103,7 @@ class ParamSpec:
     key: str
     title: str
     subtitle: str
-    quantity: Optional[str]
+    quantity: str | None
     upper: float
     digits: int = 1
     is_int: bool = False
@@ -214,7 +214,7 @@ class Tool:
     category: ToolCategory
     tool_material: ToolMaterial
     stickout: float
-    coating: Optional[str]
+    coating: str | None
     model: ToolModel
 
     def diameter(self) -> float:

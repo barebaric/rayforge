@@ -11,7 +11,7 @@ protocol so a service is removed automatically when its addon unloads.
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class ServiceRegistry:
         self._services[key] = (service, addon_name)
         logger.debug(f"Registered service '{key}' for '{addon_name}'")
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Return the service registered under ``key``, or ``None``."""
         entry = self._services.get(key)
         return entry[0] if entry is not None else None

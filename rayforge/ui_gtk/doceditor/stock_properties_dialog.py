@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -153,7 +153,7 @@ class StockPropertiesDialog(PatchedDialogWindow):
         )
         dialog.present()
 
-    def _on_material_selected(self, material_uid: Optional[str]):
+    def _on_material_selected(self, material_uid: str | None):
         """Callback for when a material is selected from the dialog."""
         if material_uid is not None:
             self.editor.stock.set_stock_material(self.stock_item, material_uid)
@@ -206,9 +206,7 @@ class StockPropertiesDialog(PatchedDialogWindow):
                 f"❓ {self.stock_item.material_uid}"
             )
 
-    def _get_material_library_name(
-        self, material: "Material"
-    ) -> Optional[str]:
+    def _get_material_library_name(self, material: "Material") -> str | None:
         """Get the display name of the library that contains this material."""
         material_mgr = get_context().material_mgr
         # Search through all libraries to find which one contains this material

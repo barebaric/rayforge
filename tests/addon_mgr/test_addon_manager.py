@@ -3,7 +3,6 @@ import sys
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -34,7 +33,7 @@ def create_addon_files(
     version: str = "1.0.0",
     author_name: str = "Test Author",
     author_email: str = "test@example.com",
-    worker: Optional[str] = "test_plugin.worker",
+    worker: str | None = "test_plugin.worker",
     api_version: int = 16,
 ) -> Path:
     """Create a minimal valid addon directory on disk."""
@@ -89,9 +88,9 @@ def manager():
 def create_mock_addon(
     name: str = "test_plugin",
     version: str = "1.0.0",
-    worker: Optional[str] = "plugin",
-    depends: Optional[list] = None,
-    requires: Optional[list] = None,
+    worker: str | None = "plugin",
+    depends: list | None = None,
+    requires: list | None = None,
 ) -> MagicMock:
     """Creates a MagicMock that accurately mimics a Addon object."""
     if depends is None:

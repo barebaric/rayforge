@@ -1,6 +1,6 @@
 import io
 from pathlib import Path
-from typing import Optional, Union, cast
+from typing import cast
 from unittest.mock import Mock
 
 import ezdxf
@@ -85,7 +85,7 @@ def multi_layer_dxf_importer():
 
 def _setup_workpiece_with_context(
     importer: DxfImporter,
-) -> Optional[WorkPiece]:
+) -> WorkPiece | None:
     """
     Helper to run importer, correctly link workpiece to its source,
     and mock the document context for rendering tests.
@@ -103,7 +103,7 @@ def _setup_workpiece_with_context(
     payload = import_result.payload
     # Handle both bare WorkPiece and Layer-wrapped WorkPiece for flexibility
     item = payload.items[0]
-    wp: Optional[WorkPiece] = None
+    wp: WorkPiece | None = None
     if isinstance(item, WorkPiece):
         wp = item
     elif isinstance(item, Layer) and item.workpieces:
@@ -127,17 +127,17 @@ def _setup_workpiece_with_context(
 
 
 @pytest.fixture
-def line_workpiece(line_dxf_importer) -> Optional[WorkPiece]:
+def line_workpiece(line_dxf_importer) -> WorkPiece | None:
     return _setup_workpiece_with_context(line_dxf_importer)
 
 
 @pytest.fixture
-def circle_workpiece(circle_dxf_importer) -> Optional[WorkPiece]:
+def circle_workpiece(circle_dxf_importer) -> WorkPiece | None:
     return _setup_workpiece_with_context(circle_dxf_importer)
 
 
 @pytest.fixture
-def inches_workpiece(inches_dxf_importer) -> Optional[WorkPiece]:
+def inches_workpiece(inches_dxf_importer) -> WorkPiece | None:
     return _setup_workpiece_with_context(inches_dxf_importer)
 
 
@@ -367,7 +367,7 @@ class TestDXFImporter:
         assert len(payload.items) == 1
         item = payload.items[0]
         assert isinstance(item, WorkPiece)
-        wp: Union[WorkPiece, Layer] = item
+        wp: WorkPiece | Layer = item
 
         boundaries = wp.boundaries
         assert boundaries is not None
@@ -394,7 +394,7 @@ class TestDXFImporter:
         assert len(payload.items) == 1
         item = payload.items[0]
         assert isinstance(item, WorkPiece)
-        wp: Union[WorkPiece, Layer] = item
+        wp: WorkPiece | Layer = item
 
         boundaries = wp.boundaries
         assert boundaries is not None

@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 from gi.repository import Gtk
 
@@ -32,7 +32,7 @@ class WorkflowView(ExpanderWithButton):
         **kwargs,
     ):
         super().__init__(button_label=_("Add New Step..."), **kwargs)
-        self.workflow: Optional[Workflow] = None
+        self.workflow: Workflow | None = None
         self.editor = editor
         self.set_expanded(True)
 
@@ -44,7 +44,7 @@ class WorkflowView(ExpanderWithButton):
 
         self.set_workflow(workflow)
 
-    def set_workflow(self, workflow: Optional[Workflow]):
+    def set_workflow(self, workflow: Workflow | None):
         """Sets the view to display a different workflow."""
         if self.workflow:
             try:

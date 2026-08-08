@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point
@@ -34,7 +35,7 @@ class PointOnLineConstraint(Constraint):
 
     @classmethod
     def can_apply_to(
-        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+        cls, selection: SketchSelection, sketch: Sketch | None = None
     ) -> bool:
         if len(selection.point_ids) != 1 or len(selection.entity_ids) != 1:
             return False
@@ -69,7 +70,7 @@ class PointOnLineConstraint(Constraint):
         """Returns a human-readable title for this constraint."""
         return self.get_type_name()
 
-    def get_subtitle(self, registry: "EntityRegistry") -> str:
+    def get_subtitle(self, registry: EntityRegistry) -> str:
         """Returns subtitle describing constrained entities."""
         pt = registry.get_point(self.point_id)
         if pt:
@@ -85,7 +86,7 @@ class PointOnLineConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "PointOnLineConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> PointOnLineConstraint:
         return cls(
             point_id=data["point_id"],
             shape_id=data["shape_id"],
@@ -93,7 +94,7 @@ class PointOnLineConstraint(Constraint):
         )
 
     def constrains_radius(
-        self, registry: "EntityRegistry", entity_id: EntityID
+        self, registry: EntityRegistry, entity_id: EntityID
     ) -> bool:
         """
         If this constraint forces a point onto the target entity (circle/arc),
@@ -109,9 +110,7 @@ class PointOnLineConstraint(Constraint):
         except IndexError:
             return False
 
-    def error(
-        self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> float:
+    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         pt = reg.get_point(self.point_id)
         shape = reg.get_entity(self.shape_id)
 
@@ -151,7 +150,7 @@ class PointOnLineConstraint(Constraint):
         return 0.0
 
     def gradient(
-        self, reg: "EntityRegistry", params: "ParameterContext"
+        self, reg: EntityRegistry, params: ParameterContext
     ) -> dict[EntityID, list[Point]]:
         pt = reg.get_point(self.point_id)
         shape = reg.get_entity(self.shape_id)
@@ -245,7 +244,7 @@ class PointOnLineConstraint(Constraint):
         self,
         sx: float,
         sy: float,
-        reg: "EntityRegistry",
+        reg: EntityRegistry,
         to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
@@ -258,8 +257,8 @@ class PointOnLineConstraint(Constraint):
 
     def draw(
         self,
-        ctx: "cairo.Context",
-        registry: "EntityRegistry",
+        ctx: cairo.Context,
+        registry: EntityRegistry,
         to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,

@@ -19,7 +19,6 @@ Usage::
 
 from collections.abc import Generator
 from contextlib import ExitStack, contextmanager
-from typing import Optional
 
 import numpy as np
 from OpenGL import GL
@@ -72,15 +71,15 @@ def gl_state(
     Renderers that are known not to touch a state can skip its
     save/restore to avoid extra GL queries.
     """
-    snap_depth_test: Optional[bool] = None
-    snap_blend: Optional[bool] = None
-    snap_blend_src: Optional[int] = None
-    snap_blend_dst: Optional[int] = None
-    snap_depth_mask: Optional[bool] = None
-    snap_depth_func: Optional[int] = None
-    snap_line_width: Optional[float] = None
-    snap_unpack_alignment: Optional[int] = None
-    snap_active_texture: Optional[int] = None
+    snap_depth_test: bool | None = None
+    snap_blend: bool | None = None
+    snap_blend_src: int | None = None
+    snap_blend_dst: int | None = None
+    snap_depth_mask: bool | None = None
+    snap_depth_func: int | None = None
+    snap_line_width: float | None = None
+    snap_unpack_alignment: int | None = None
+    snap_active_texture: int | None = None
     snap_texture_bindings: dict = {}
 
     try:
@@ -138,7 +137,7 @@ def gl_state(
 
 
 @contextmanager
-def render_pass(*shaders: Optional[Shader]) -> Generator[None, None, None]:
+def render_pass(*shaders: Shader | None) -> Generator[None, None, None]:
     """
     Bracket a single renderer draw call with state isolation.
 

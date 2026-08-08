@@ -8,7 +8,8 @@ resolver to refresh when its theme is dirty and reads the resolved state
 through properties.
 """
 
-from typing import TYPE_CHECKING, Callable, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Optional
 
 from OpenGL import GL
 
@@ -45,7 +46,7 @@ class ThemeResolver:
         self._request_render = request_render
 
     @property
-    def color_set(self) -> Optional[ColorSet]:
+    def color_set(self) -> ColorSet | None:
         """The resolved theme ColorSet, or None if not yet resolved."""
         return get_context().theme.color_set
 

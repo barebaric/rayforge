@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import socket
-from typing import Optional
 
 import asyncudp
 
@@ -11,17 +10,17 @@ logger = logging.getLogger(__name__)
 
 
 class UdpTransport(Transport):
-    def __init__(self, host: str, port: int, local_port: Optional[int] = None):
+    def __init__(self, host: str, port: int, local_port: int | None = None):
         super().__init__()
         self.host = host
         self.host_ip = socket.gethostbyname(host)
         self.port = port
         self.local_port = local_port
-        self.reader: Optional[asyncudp.Socket] = None
-        self.writer: Optional[asyncudp.Socket] = None
+        self.reader: asyncudp.Socket | None = None
+        self.writer: asyncudp.Socket | None = None
         self._running = False
         self._reconnect_interval = 5
-        self._connection_task: Optional[asyncio.Task] = None
+        self._connection_task: asyncio.Task | None = None
 
     @property
     def is_connected(self) -> bool:

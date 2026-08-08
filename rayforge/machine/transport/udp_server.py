@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from typing import Optional
 
 from .transport import Transport, TransportStatus
 
@@ -35,7 +34,7 @@ class UdpServerTransport(Transport):
         super().__init__()
         self.host = host
         self.port = port
-        self._transport: Optional[asyncio.DatagramTransport] = None
+        self._transport: asyncio.DatagramTransport | None = None
         self._running = False
 
     @property

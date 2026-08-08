@@ -1,6 +1,5 @@
 import logging
 from gettext import gettext as _
-from typing import Optional
 
 from gi.repository import Adw, Gtk
 
@@ -15,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 class CameraProperties(Adw.PreferencesGroup):
-    def __init__(self, controller: Optional[CameraController], **kwargs):
+    def __init__(self, controller: CameraController | None, **kwargs):
         super().__init__(**kwargs)
-        self._controller: Optional[CameraController] = None
-        self._camera: Optional[Camera] = None
+        self._controller: CameraController | None = None
+        self._camera: Camera | None = None
         self._updating_ui: bool = False
 
         self.set_title(_("Camera Properties"))
@@ -138,7 +137,7 @@ class CameraProperties(Adw.PreferencesGroup):
 
         self.set_controller(controller)
 
-    def set_controller(self, controller: Optional[CameraController]):
+    def set_controller(self, controller: CameraController | None):
         if self._camera:
             self._camera.changed.disconnect(self._on_camera_changed)
 

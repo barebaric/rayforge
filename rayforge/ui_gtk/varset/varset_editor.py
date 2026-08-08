@@ -35,11 +35,11 @@ logger = logging.getLogger(__name__)
 
 
 def adjust_value(
-    min_val: Optional[float],
-    max_val: Optional[float],
+    min_val: float | None,
+    max_val: float | None,
     value: float,
     keep: Literal["min", "max", "value"],
-) -> tuple[Optional[float], Optional[float], float]:
+) -> tuple[float | None, float | None, float]:
     """
     Adjusts min, max, and value to be consistent, keeping one value fixed.
     Returns a tuple of (final_min, final_max, final_value).
@@ -53,14 +53,12 @@ def adjust_value(
         if min_val is not None:
             if max_val is not None and min_val > max_val:
                 max_val = min_val
-            if value < min_val:
-                value = min_val
+            value = max(value, min_val)
     elif keep == "max":
         if max_val is not None:
             if min_val is not None and max_val < min_val:
                 min_val = max_val
-            if value > max_val:
-                value = max_val
+            value = min(value, max_val)
     return min_val, max_val, value
 
 
@@ -307,7 +305,7 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
         if sync_header:
             self._update_header()
 
-    def _sync_bound(self, row, toggle: Optional[Gtk.Switch], prop_name):
+    def _sync_bound(self, row, toggle: Gtk.Switch | None, prop_name):
         if not isinstance(self.var, (IntVar, FloatVar)) or not isinstance(
             row, SpinRow
         ):
@@ -469,9 +467,9 @@ class VarDefinitionRowWidget(Adw.ExpanderRow):
 
     def _commit_numeric_changes(
         self,
-        default: Optional[float],
-        min_val: Optional[float],
-        max_val: Optional[float],
+        default: float | None,
+        min_val: float | None,
+        max_val: float | None,
         keep: Literal["min", "max", "value"],
     ):
         if (
@@ -645,7 +643,7 @@ class VarSetEditorWidget(PreferencesGroupWithButton):
 
     def __init__(
         self,
-        vartypes: Optional[Iterable[type[Var]]] = None,
+        vartypes: Iterable[type[Var]] | None = None,
         undo_manager: Optional["HistoryManager"] = None,
         **kwargs,
     ):

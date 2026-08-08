@@ -1,4 +1,3 @@
-# flake8: noqa: E402
 """Tests for the StepSettingsDialog."""
 
 import gi

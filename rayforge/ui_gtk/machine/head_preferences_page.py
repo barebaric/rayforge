@@ -1,6 +1,6 @@
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional, cast
+from typing import cast
 
 from gi.repository import Adw, Gdk, Gtk
 from raygeo.ops.state import CoolantMode
@@ -265,7 +265,7 @@ class HeadModelGroup(Adw.PreferencesGroup):
             title=_("3D Model"),
             description=_("Select and configure a 3D model for this head."),
         )
-        self._head: Optional[Head] = None
+        self._head: Head | None = None
         self._setup_ui()
 
     def _setup_ui(self):
@@ -309,7 +309,7 @@ class HeadModelGroup(Adw.PreferencesGroup):
         self.rz_row.value_changed.connect(self._on_rotation_changed)
         self.add(self.rz_row)
 
-    def set_head(self, head: Optional[Head]):
+    def set_head(self, head: Head | None):
         """Syncs the rows with the given head."""
         self._head = head
         if head is None:
@@ -386,7 +386,7 @@ class LaserHeadDetailWidget(DebounceMixin):
 
     def __init__(self):
         super().__init__()
-        self._head: Optional[LaserHead] = None
+        self._head: LaserHead | None = None
         self._handler_ids = {}
         self._laser_type_values = [
             LaserType.DIODE,
@@ -652,7 +652,7 @@ class LaserHeadDetailWidget(DebounceMixin):
         )
         self.frame_group.add(self.frame_corner_pause_row)
 
-    def set_head(self, head: Optional[LaserHead]):
+    def set_head(self, head: LaserHead | None):
         """Syncs the laser rows with the given head."""
         self._head = head
         self.model_group.set_head(head)
@@ -869,7 +869,7 @@ class SpindleHeadDetailWidget:
     """Owns the PreferencesGroups for editing a SpindleHead."""
 
     def __init__(self):
-        self._head: Optional[SpindleHead] = None
+        self._head: SpindleHead | None = None
         self._handler_ids = {}
 
         self.properties_group = Adw.PreferencesGroup(
@@ -942,7 +942,7 @@ class SpindleHeadDetailWidget:
         )
         self.properties_group.add(self.mist_cooling_row)
 
-    def set_head(self, head: Optional[SpindleHead]):
+    def set_head(self, head: SpindleHead | None):
         """Syncs the spindle rows with the given head."""
         self._head = head
         self.model_group.set_head(head)
@@ -1061,7 +1061,7 @@ class HeadPreferencesPage(TrackedPreferencesPage):
 
         self.connect("destroy", self._on_destroy)
 
-    def _get_selected_head(self) -> Optional[Head]:
+    def _get_selected_head(self) -> Head | None:
         selected_row = self.head_list_editor.list_box.get_selected_row()
         if not selected_row:
             return None

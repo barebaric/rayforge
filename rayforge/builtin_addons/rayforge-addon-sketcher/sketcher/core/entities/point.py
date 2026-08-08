@@ -129,7 +129,7 @@ class Point:
     def _compute_constrained_cp(
         self,
         modified_cp: tuple[float, float],
-        other_cp: Optional[tuple[float, float]],
+        other_cp: tuple[float, float] | None,
         symmetric: bool,
     ) -> tuple[float, float]:
         if symmetric:

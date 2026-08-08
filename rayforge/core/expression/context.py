@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from collections.abc import Callable
 
 
 class ExpressionContext:
@@ -11,8 +11,8 @@ class ExpressionContext:
 
     def __init__(
         self,
-        variables: Optional[dict[str, type]] = None,
-        functions: Optional[dict[str, Callable]] = None,
+        variables: dict[str, type] | None = None,
+        functions: dict[str, Callable] | None = None,
     ):
         """
         Args:
@@ -31,6 +31,6 @@ class ExpressionContext:
         """Checks if a name corresponds to a known function."""
         return name in self.functions
 
-    def get_variable_type(self, name: str) -> Optional[type]:
+    def get_variable_type(self, name: str) -> type | None:
         """Returns the type of a known variable."""
         return self.variables.get(name)

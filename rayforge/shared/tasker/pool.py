@@ -10,12 +10,13 @@ import logging
 import os
 import threading
 import traceback
+from collections.abc import Callable
 from multiprocessing import get_context
 from multiprocessing.managers import DictProxy
 from multiprocessing.process import BaseProcess
 from multiprocessing.queues import Queue as MpQueue
 from queue import Empty
-from typing import Any, Callable, Optional
+from typing import Any
 
 from blinker import Signal
 
@@ -62,7 +63,7 @@ def _worker_main_loop(
     task_queue: MpQueue,
     result_queue: MpQueue,
     log_level: int,
-    initializer: Optional[Callable[..., None]],
+    initializer: Callable[..., None] | None,
     initargs: tuple[Any, ...],
     adoption_signals: DictProxy[str, bool],
     shared_state: DictProxy[str, Any],
@@ -84,7 +85,7 @@ def _worker_main_loop(
     )
     # Set up a null translator for gettext in the subprocess.
     if not hasattr(builtins, "_"):
-        setattr(builtins, "_", lambda s: s)
+        builtins._ = lambda s: s
 
     # Force reconfiguration of logging for this new process.
     root_logger = logging.getLogger()
@@ -159,7 +160,7 @@ def _worker_main_loop(
         last_task_key = key
 
         cancel_key = f"cancel:{task_id}"
-        if cancel_key in adoption_signals and adoption_signals[cancel_key]:
+        if adoption_signals.get(cancel_key):
             worker_logger.debug(
                 f"Worker {os.getpid()} skipping cancelled task "
                 f"'{key}' (id: {task_id})."
@@ -258,9 +259,9 @@ class WorkerPoolManager:
     def __init__(
         self,
         num_workers: int | None = None,
-        initializer: Optional[Callable[..., None]] = None,
+        initializer: Callable[..., None] | None = None,
         initargs: tuple[Any, ...] = (),
-        shared_state: Optional[DictProxy[str, Any]] = None,
+        shared_state: DictProxy[str, Any] | None = None,
     ):
         if num_workers is None:
             env_max = os.environ.get("RAYFORGE_MAX_WORKERS")
@@ -695,4 +696,3 @@ class WorkerPoolManager:
             # At this point, the main process is exiting anyway.
             # The daemon processes will be terminated by the OS. We can just
             # pass and allow the exit to proceed cleanly.
-            pass

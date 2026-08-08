@@ -31,7 +31,7 @@ class PlaybackContext:
         self.executed_vertex_count = -1
         self.executed_travel_vertex_count = -1
         self.alpha_pending = 0.2
-        self.reached_count: Optional[int] = None
+        self.reached_count: int | None = None
 
     def update(self, frame: "FrameInputs") -> None:
         """Refreshes the playback section from the current frame inputs."""

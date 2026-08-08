@@ -1,4 +1,3 @@
-# flake8: noqa: E402
 import multiprocessing
 import os
 import sys
@@ -106,18 +105,20 @@ def _test_worker_initializer(shared_state: dict):
 
     # This patch runs *inside the new worker process*
     # after it starts, but before the application's real initializer runs.
-    with patch(
-        "gi.repository.GLib.idle_add",
-        side_effect=lambda *args, **kwargs: pytest.fail(fail_msg),
-    ):
-        with patch(
+    with (
+        patch(
+            "gi.repository.GLib.idle_add",
+            side_effect=lambda *args, **kwargs: pytest.fail(fail_msg),
+        ),
+        patch(
             "rayforge.shared.util.glib.idle_add",
             side_effect=lambda *args, **kwargs: pytest.fail(
                 "GLib.idle_add called from within a worker process."
             ),
-        ):
-            # Now call the application's real initializer.
-            initialize_worker(shared_state)
+        ),
+    ):
+        # Now call the application's real initializer.
+        initialize_worker(shared_state)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -147,16 +148,18 @@ def block_glib_event_loop(request):
     )
 
     # Using `patch` as a context manager. It will be active during the `yield`.
-    with patch(
-        "gi.repository.GLib.idle_add",
-        side_effect=lambda *args, **kwargs: pytest.fail(fail_msg),
-    ):
-        with patch(
+    with (
+        patch(
+            "gi.repository.GLib.idle_add",
+            side_effect=lambda *args, **kwargs: pytest.fail(fail_msg),
+        ),
+        patch(
             "rayforge.shared.util.glib.idle_add",
             side_effect=lambda *args, **kwargs: pytest.fail(fail_msg),
-        ):
-            # The test session runs here, with the patches active.
-            yield
+        ),
+    ):
+        # The test session runs here, with the patches active.
+        yield
 
 
 @pytest.fixture(autouse=True)
@@ -589,7 +592,6 @@ def mock_task_mgr():
         func(*args, **kwargs)
         if when_done:
             when_done(None)
-        return None
 
     def has_tasks_impl():
         return len(created_tasks) > 0
@@ -652,7 +654,7 @@ def mock_progress_context():
             self.message_calls: list[str] = []
             self._is_cancelled = False
             self._total = 1.0
-            self._sub_contexts: list["_SimpleMockProgressContext"] = []
+            self._sub_contexts: list[_SimpleMockProgressContext] = []
 
         def is_cancelled(self) -> bool:
             return self._is_cancelled
@@ -758,7 +760,6 @@ class MockProgressContext(ProgressContext):
 
     def _report_normalized_progress(self, progress: float) -> None:
         """Report a normalized progress value."""
-        pass
 
     def _create_sub_context(
         self,
@@ -821,7 +822,7 @@ class _MockProgressContextImpl:
         self.message_calls: list[str] = []
         self.total_calls: list[float] = []
         self.flush_calls: int = 0
-        self.sub_contexts: list["_MockProgressContextImpl"] = []
+        self.sub_contexts: list[_MockProgressContextImpl] = []
 
     def is_cancelled(self) -> bool:
         """Check if the operation has been cancelled."""
@@ -905,11 +906,9 @@ class _InnerMockProgressContext:
 
     def set_message(self, message: str) -> None:
         """Set a descriptive status message."""
-        pass
 
     def flush(self) -> None:
         """Immediately send any pending updates."""
-        pass
 
     def set_total(self, total: float) -> None:
         """Set the total value for progress normalization."""
@@ -929,7 +928,6 @@ class _InnerMockProgressContext:
 
     def _report_normalized_progress(self, progress: float) -> None:
         """Report a normalized progress value."""
-        pass
 
     def _create_sub_context(
         self,

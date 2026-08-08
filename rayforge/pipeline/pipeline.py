@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Optional,
 )
 
 from blinker import Signal
@@ -58,16 +56,16 @@ class Pipeline:
 
     def __init__(
         self,
-        doc: Optional[Doc],
-        task_manager: "TaskManager",
+        doc: Doc | None,
+        task_manager: TaskManager,
         artifact_store: ArtifactStore,
-        machine: Optional["Machine"],
+        machine: Machine | None,
         cache_budget_bytes: int = 2 * 1024 * 1024 * 1024,
     ):
         if machine is None:
             raise RuntimeError("Machine is not configured in context")
 
-        self._doc: Optional[Doc] = doc
+        self._doc: Doc | None = doc
         self._task_manager = task_manager
         self._store = artifact_store
         self._machine = machine
@@ -77,7 +75,7 @@ class Pipeline:
         self._wp_handles: dict[tuple[str, str], BaseArtifactHandle] = {}
         self._step_handles: dict[str, BaseArtifactHandle] = {}
         self._last_aggregate_output: Any = None
-        self._last_job_handle: Optional[BaseArtifactHandle] = None
+        self._last_job_handle: BaseArtifactHandle | None = None
 
         self.processing_state_changed = Signal()
         self.workpiece_starting = Signal()
@@ -152,11 +150,11 @@ class Pipeline:
     # ------------------------------------------------------------------
 
     @property
-    def doc(self) -> Optional[Doc]:
+    def doc(self) -> Doc | None:
         return self._doc
 
     @doc.setter
-    def doc(self, new_doc: Optional[Doc]) -> None:
+    def doc(self, new_doc: Doc | None) -> None:
         if self._doc is new_doc:
             return
         self._doc = new_doc
@@ -167,11 +165,11 @@ class Pipeline:
         self._intent_ctl.set_doc(new_doc)
 
     @property
-    def machine(self) -> Optional["Machine"]:
+    def machine(self) -> Machine | None:
         return self._machine
 
     @property
-    def task_manager(self) -> "TaskManager":
+    def task_manager(self) -> TaskManager:
         return self._task_manager
 
     @property
@@ -183,7 +181,7 @@ class Pipeline:
         return self._intent_ctl.generation_id
 
     @property
-    def last_completed_handle(self) -> Optional[BaseArtifactHandle]:
+    def last_completed_handle(self) -> BaseArtifactHandle | None:
         return self._last_job_handle
 
     @property
@@ -231,7 +229,7 @@ class Pipeline:
     # Machine
     # ------------------------------------------------------------------
 
-    def set_machine(self, machine: "Machine") -> None:
+    def set_machine(self, machine: Machine) -> None:
         if self._machine is machine:
             return
         if self._machine is not None:
@@ -423,21 +421,21 @@ class Pipeline:
 
     def get_artifact_handle(
         self, step_uid: str, workpiece_uid: str
-    ) -> Optional[BaseArtifactHandle]:
+    ) -> BaseArtifactHandle | None:
         return self._wp_handles.get((workpiece_uid, step_uid))
 
     def get_step_ops_artifact_handle(
         self, step_uid: str
-    ) -> Optional[BaseArtifactHandle]:
+    ) -> BaseArtifactHandle | None:
         return self._step_handles.get(step_uid)
 
-    def get_artifact(self, step: "Step", workpiece: "WorkPiece") -> Any:
+    def get_artifact(self, step: Step, workpiece: WorkPiece) -> Any:
         handle = self._wp_handles.get((workpiece.uid, step.uid))
         if handle is None:
             return None
         return self._store.get(handle)
 
-    def get_existing_job_handle(self) -> Optional[BaseArtifactHandle]:
+    def get_existing_job_handle(self) -> BaseArtifactHandle | None:
         return self._last_job_handle
 
     # ------------------------------------------------------------------
@@ -454,7 +452,7 @@ class Pipeline:
     def generate_job_artifact(
         self,
         when_done: Callable[
-            [Optional[BaseArtifactHandle], Optional[Exception]], None
+            [BaseArtifactHandle | None, Exception | None], None
         ],
     ):
         if not self._doc:
@@ -484,7 +482,7 @@ class Pipeline:
 
     async def generate_job_artifact_async(
         self,
-    ) -> Optional[BaseArtifactHandle]:
+    ) -> BaseArtifactHandle | None:
         future = asyncio.get_running_loop().create_future()
 
         def _when_done(handle, error):

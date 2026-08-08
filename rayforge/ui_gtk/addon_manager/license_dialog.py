@@ -1,8 +1,9 @@
 import logging
 import threading
 import webbrowser
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import Callable, Optional, cast
+from typing import cast
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -23,7 +24,7 @@ class LicenseEntryDialog(Adw.MessageDialog):
         self,
         product_ids: list[str],
         addon_name: str,
-        on_success: Optional[Callable[[], None]] = None,
+        on_success: Callable[[], None] | None = None,
     ):
         super().__init__()
 
@@ -93,7 +94,7 @@ class LicenseEntryDialog(Adw.MessageDialog):
         GLib.idle_add(self._on_validation_complete, success, error_message)
 
     def _on_validation_complete(
-        self, success: bool, error_message: Optional[str]
+        self, success: bool, error_message: str | None
     ):
         self._is_validating = False
         self.set_sensitive(True)
@@ -111,7 +112,7 @@ class LicenseEntryDialog(Adw.MessageDialog):
 
     def _show_error(self, message: str):
         error_dialog = Adw.MessageDialog(
-            transient_for=cast(Optional[Gtk.Window], self.get_transient_for()),
+            transient_for=cast(Gtk.Window | None, self.get_transient_for()),
             modal=True,
             heading=_("License Invalid"),
             body=message,
@@ -131,8 +132,8 @@ class LicenseRequiredDialog(Adw.MessageDialog):
         self,
         addon_name: str,
         product_ids: list[str],
-        purchase_url: Optional[str],
-        on_license_added: Optional[Callable[[], None]] = None,
+        purchase_url: str | None,
+        on_license_added: Callable[[], None] | None = None,
     ):
         super().__init__()
 

@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from ....core.varset import HostnameVar, PortVar, Var, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
@@ -27,11 +27,11 @@ class GrblTelnetDriver(GrblSerialDriver):
 
     def __init__(self, context, machine):
         super().__init__(context, machine)
-        self._host: Optional[str] = None
-        self._port: Optional[int] = None
+        self._host: str | None = None
+        self._port: int | None = None
 
     @property
-    def resource_uri(self) -> Optional[str]:
+    def resource_uri(self) -> str | None:
         if self._host and self._port:
             return f"tcp://{self._host}:{self._port}"
         return None

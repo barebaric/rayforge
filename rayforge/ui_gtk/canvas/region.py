@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from raygeo.geo.types import Rect
@@ -103,7 +103,7 @@ def get_region_rect(
     width: float,
     height: float,
     base_handle_size: float,
-    scale_compensation: Union[float, tuple[float, float]] = 1.0,
+    scale_compensation: float | tuple[float, float] = 1.0,
 ) -> Rect:
     """
     A generic function to calculate the rectangle (x, y, w, h) for a given
@@ -167,8 +167,7 @@ def get_region_rect(
     # Side handles always start below the top corner handle's space.
     y_start_middle = effective_hh
     middle_height = h - 2.0 * effective_hh
-    if middle_height < 0:
-        middle_height = 0
+    middle_height = max(middle_height, 0)
 
     # Resize handles
     if region == ElementRegion.TOP_LEFT:
@@ -258,8 +257,8 @@ def check_region_hit(
     width: float,
     height: float,
     base_handle_size: float,
-    scale_compensation: Union[float, tuple[float, float]] = 1.0,
-    candidates: Optional[set[ElementRegion]] = None,
+    scale_compensation: float | tuple[float, float] = 1.0,
+    candidates: set[ElementRegion] | None = None,
 ) -> ElementRegion:
     """
     Checks which interactive region is hit by a point in LOCAL coordinates.

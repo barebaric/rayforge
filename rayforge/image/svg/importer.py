@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
@@ -49,8 +48,8 @@ class SvgImporter(Importer):
         return SvgVectorImporter(self.raw_data, self.source_file).scan()
 
     def get_doc_items(
-        self, vectorization_spec: Optional[VectorizationSpec] = None
-    ) -> Optional[ImportResult]:
+        self, vectorization_spec: VectorizationSpec | None = None
+    ) -> ImportResult | None:
         """
         Delegates the full import process to the appropriate strategy.
         """
@@ -172,7 +171,7 @@ class SvgImporter(Importer):
     # These abstract methods must be implemented to satisfy the ABC contract,
     # but get_doc_items bypasses them in this facade.
 
-    def parse(self) -> Optional[ParsingResult]:
+    def parse(self) -> ParsingResult | None:
         raise NotImplementedError(
             "SvgImporter is a facade; parse is delegated via get_doc_items"
         )
@@ -193,7 +192,7 @@ class SvgImporter(Importer):
         self,
         existing_source_asset: SourceAsset,
         vectorization_spec: VectorizationSpec,
-    ) -> Optional[ImportResult]:
+    ) -> ImportResult | None:
         if isinstance(vectorization_spec, TraceSpec):
             delegate = SvgTraceImporter(self.raw_data, self.source_file)
         else:

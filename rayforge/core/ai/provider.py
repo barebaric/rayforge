@@ -4,13 +4,10 @@ from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
 from enum import Enum
 from gettext import gettext as _
-from typing import Optional
 
 
 class AIServiceError(Exception):
     """Raised when AI service encounters an error."""
-
-    pass
 
 
 HTTP_STATUS_MESSAGES = {
@@ -25,7 +22,7 @@ HTTP_STATUS_MESSAGES = {
 }
 
 
-def extract_api_error(body: str) -> Optional[str]:
+def extract_api_error(body: str) -> str | None:
     """Extract a human-readable error from a JSON API response body."""
     try:
         data = json.loads(body)
@@ -112,17 +109,16 @@ class AIProvider(ABC):
     async def chat(
         self,
         messages: list[ChatMessage],
-        model: Optional[str] = None,
+        model: str | None = None,
         **kwargs,
     ) -> ChatResponse:
         """Send a chat completion request."""
-        pass
 
     @abstractmethod
     def chat_stream(
         self,
         messages: list[ChatMessage],
-        model: Optional[str] = None,
+        model: str | None = None,
         **kwargs,
     ) -> AsyncGenerator[str, None]:
         """
@@ -130,12 +126,10 @@ class AIProvider(ABC):
 
         This is an async generator that yields content chunks.
         """
-        pass
 
     @abstractmethod
     async def list_models(self) -> list[str]:
         """List available models."""
-        pass
 
     @abstractmethod
     async def test_connection(self) -> tuple[bool, str]:
@@ -145,9 +139,7 @@ class AIProvider(ABC):
         Returns:
             Tuple of (success, message) where message describes the result.
         """
-        pass
 
     @abstractmethod
     async def close(self):
         """Close any open connections."""
-        pass

@@ -7,7 +7,7 @@ re-syncs its value and dependent state whenever the step changes.
 """
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from gi.repository import GLib
 
@@ -96,7 +96,7 @@ class StepRow:
             return None
         return self.step.get_selected_head(machine)
 
-    def commit(self, value: Any, name: Optional[str] = None):
+    def commit(self, value: Any, name: str | None = None):
         if not self.attr:
             return
         if getattr(self.step, self.attr, None) == value:

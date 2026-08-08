@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from typing import Optional
 
 import websockets
 from websockets.exceptions import ConnectionClosed
@@ -18,12 +17,12 @@ class WebSocketTransport(Transport):
     def __init__(self, uri: str, origin=None):
         super().__init__()
         self.uri = uri
-        self._websocket: Optional[websockets.ClientConnection] = None
+        self._websocket: websockets.ClientConnection | None = None
         self._origin = origin
         self._running = False
         self._reconnect_interval = 5
         self._lock = asyncio.Lock()
-        self._receive_task: Optional[asyncio.Task] = None
+        self._receive_task: asyncio.Task | None = None
         self._status = TransportStatus.DISCONNECTED
 
     @property
@@ -32,7 +31,7 @@ class WebSocketTransport(Transport):
         return self._status == TransportStatus.CONNECTED
 
     def _set_status(
-        self, status: TransportStatus, message: Optional[str] = None
+        self, status: TransportStatus, message: str | None = None
     ) -> None:
         """
         Internal helper to set status and send signal, avoiding duplicates.

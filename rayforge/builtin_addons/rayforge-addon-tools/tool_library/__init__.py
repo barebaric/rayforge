@@ -23,7 +23,7 @@ from .manager import ToolManager
 
 logger = logging.getLogger(__name__)
 
-_manager: Optional[ToolManager] = None
+_manager: ToolManager | None = None
 
 
 def get_tool_manager() -> ToolManager:

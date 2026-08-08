@@ -1,6 +1,6 @@
 import logging
 import warnings
-from typing import Any, Optional
+from typing import Any
 from xml.etree import ElementTree as ET
 
 with warnings.catch_warnings():
@@ -244,7 +244,7 @@ def is_unitless_svg(data: bytes) -> bool:
 
 def get_natural_size(
     data: bytes, ppi: float = PPI
-) -> Optional[tuple[float, float]]:
+) -> tuple[float, float] | None:
     """
     Analyzes raw SVG data to extract its natural, untrimmed dimensions in mm.
 

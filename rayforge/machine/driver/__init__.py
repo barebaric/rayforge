@@ -43,17 +43,17 @@ def register_driver(driver: type[Driver]):
 
 
 __all__ = [
+    "DRIVER_MATURITY_LABELS",
     "Driver",
     "DriverMaturity",
-    "DRIVER_MATURITY_LABELS",
-    "NoDeviceDriver",
-    "PWMParams",
     "GrblNetworkDriver",
     "GrblSerialDriver",
     "GrblSerialSimpleDriver",
     "GrblTelnetDriver",
     "MarlinSerialDriver",
+    "NoDeviceDriver",
     "OctoPrintDriver",
+    "PWMParams",
     "RuidaDriver",
     "SmoothieDriver",
 ]

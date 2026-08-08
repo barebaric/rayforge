@@ -75,7 +75,7 @@ class PdfRenderer(RasterRenderer):
         import_result: "ImportResult",
         target_width: int,
         target_height: int,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         """
         Generates a preview image from a PDF import.
 
@@ -110,7 +110,7 @@ class PdfRenderer(RasterRenderer):
             import_result, target_width, target_height
         )
 
-    def _get_page_points(self, data: bytes) -> Optional[tuple[float, float]]:
+    def _get_page_points(self, data: bytes) -> tuple[float, float] | None:
         try:
             reader = PdfReader(io.BytesIO(data))
             mb = reader.pages[0].mediabox
@@ -140,7 +140,7 @@ class PdfRenderer(RasterRenderer):
         width: int,
         height: int,
         **kwargs,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         if not data:
             return None
 

@@ -1,5 +1,4 @@
 import ast
-from typing import Optional
 
 
 class ExpressionParser:
@@ -8,7 +7,7 @@ class ExpressionParser:
     extracts information like used variable names.
     """
 
-    def parse(self, expression: str) -> Optional[ast.AST]:
+    def parse(self, expression: str) -> ast.AST | None:
         """
         Parses an expression string into an AST object.
 

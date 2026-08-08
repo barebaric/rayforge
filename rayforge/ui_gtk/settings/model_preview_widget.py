@@ -2,7 +2,6 @@
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 from gi.repository import Gtk
@@ -24,12 +23,12 @@ class ModelPreviewWidget(Gtk.GLArea):
         super().__init__(**kwargs)
         self.set_has_depth_buffer(True)
         self.set_size_request(512, 288)
-        self._camera: Optional[Camera] = None
-        self._shader: Optional[Shader] = None
-        self._renderer: Optional[_SimpleModelRenderer] = None
+        self._camera: Camera | None = None
+        self._shader: Shader | None = None
+        self._renderer: _SimpleModelRenderer | None = None
         self._mesh_data = None
-        self._drag_start: Optional[tuple] = None
-        self._last_offset: Optional[tuple] = None
+        self._drag_start: tuple | None = None
+        self._last_offset: tuple | None = None
         self.connect("realize", self._on_realize)
         self.connect("render", self._on_render)
         self.connect("resize", self._on_resize)
@@ -214,7 +213,6 @@ class _SimpleModelRenderer(BaseRenderer):
 
     def prepare(self, ctx) -> None:
         """No per-frame scene state to prepare."""
-        pass
 
     def render(self, ctx, shaders, **kwargs) -> None:
         """
@@ -231,7 +229,7 @@ class _SimpleModelRenderer(BaseRenderer):
         self,
         shader: Shader,
         mvp_matrix: np.ndarray,
-        camera_position: Optional[np.ndarray] = None,
+        camera_position: np.ndarray | None = None,
     ):
         if not self._vao:
             return

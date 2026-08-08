@@ -2,7 +2,8 @@ import importlib
 import json
 import logging
 import warnings
-from typing import TYPE_CHECKING, Callable, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import cairo
 
@@ -30,8 +31,8 @@ class ProceduralRenderer(Renderer):
     """
 
     def _get_recipe_and_func_internal(
-        self, source_original_data: Optional[bytes], func_key: str
-    ) -> tuple[Optional[dict], Optional[dict], Optional[Callable]]:
+        self, source_original_data: bytes | None, func_key: str
+    ) -> tuple[dict | None, dict | None, Callable | None]:
         """Helper to deserialize the recipe and import a function."""
         if not source_original_data:
             logger.warning("Procedural source has no original_data.")
@@ -67,7 +68,7 @@ class ProceduralRenderer(Renderer):
         import_result: "ImportResult",
         target_width: int,
         target_height: int,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         """Renders the procedural recipe at the target preview dimensions."""
         if not import_result.payload:
             return None
@@ -84,7 +85,7 @@ class ProceduralRenderer(Renderer):
         width: int,
         height: int,
         **kwargs,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         _, params, draw_func = self._get_recipe_and_func_internal(
             data, "drawing_function_path"
         )

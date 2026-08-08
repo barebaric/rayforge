@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -30,7 +30,7 @@ class TextureLayer:
     width_px: int
     height_px: int
     model_matrix: np.ndarray
-    cylinder_vertices: Optional[np.ndarray] = None
+    cylinder_vertices: np.ndarray | None = None
     rotary_diameter: float = 0.0
     rotary_enabled: bool = False
     activation_cmd_idx: int = -1
@@ -52,7 +52,7 @@ class CompiledSceneArtifactHandle(BaseArtifactHandle):
         handle_class_name: str,
         artifact_type_name: str,
         generation_id: int,
-        array_metadata: Optional[dict[str, Any]] = None,
+        array_metadata: dict[str, Any] | None = None,
         **_kwargs,
     ):
         super().__init__(
@@ -71,7 +71,7 @@ class CompiledSceneArtifact(BaseArtifact):
         vertex_layers: list[VertexLayer],
         texture_layers: list[TextureLayer],
         overlay_layers: list[ScanlineOverlayLayer],
-        laser_uid_order: Optional[list[str]] = None,
+        laser_uid_order: list[str] | None = None,
     ):
         self.generation_id = generation_id
         self.vertex_layers = vertex_layers

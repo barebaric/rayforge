@@ -1,6 +1,5 @@
 import logging
 import math
-from typing import Optional, Union
 
 import cairo
 from blinker import Signal
@@ -31,7 +30,7 @@ class PickSurface(Canvas):
     bottom-left, Y-up). Supports scroll-to-zoom and middle-button panning.
     """
 
-    def __init__(self, item: Union[WorkPiece, Group], **kwargs):
+    def __init__(self, item: WorkPiece | Group, **kwargs):
         super().__init__(**kwargs)
         self._item = item
         self._is_group = isinstance(item, Group)
@@ -48,9 +47,9 @@ class PickSurface(Canvas):
         self._base_img_h: float = 0.0
 
         self._pick_phase: int = 0
-        self._point1: Optional[tuple[float, float]] = None
-        self._point2: Optional[tuple[float, float]] = None
-        self._dragging: Optional[int] = None
+        self._point1: tuple[float, float] | None = None
+        self._point2: tuple[float, float] | None = None
+        self._dragging: int | None = None
 
         self.point_picked = Signal()
         self.points_reset = Signal()
@@ -85,9 +84,9 @@ class PickSurface(Canvas):
         self._motion_controller.connect("motion", self._on_motion)
         self.add_controller(self._motion_controller)
 
-        self._hover_pos: Optional[tuple[float, float]] = None
-        self._drag_start_px: Optional[tuple[float, float]] = None
-        self._cached_surface: Optional[cairo.ImageSurface] = None
+        self._hover_pos: tuple[float, float] | None = None
+        self._drag_start_px: tuple[float, float] | None = None
+        self._cached_surface: cairo.ImageSurface | None = None
         self._cached_ppmm: float = 0.0
         self._pan_start_x_mm: float = 0.0
         self._pan_start_y_mm: float = 0.0
@@ -129,7 +128,7 @@ class PickSurface(Canvas):
 
         self.queue_draw()
 
-    def _get_image_surface(self) -> Optional[cairo.ImageSurface]:
+    def _get_image_surface(self) -> cairo.ImageSurface | None:
         if self._cached_surface is not None:
             return self._cached_surface
         ppmm = self._cached_ppmm
@@ -185,11 +184,11 @@ class PickSurface(Canvas):
             self._draw_crosshair(ctx, norm_x, norm_y)
 
     @property
-    def point1(self) -> Optional[tuple[float, float]]:
+    def point1(self) -> tuple[float, float] | None:
         return self._point1
 
     @property
-    def point2(self) -> Optional[tuple[float, float]]:
+    def point2(self) -> tuple[float, float] | None:
         return self._point2
 
     @property
@@ -206,8 +205,8 @@ class PickSurface(Canvas):
 
     def set_points(
         self,
-        p1: Optional[tuple[float, float]],
-        p2: Optional[tuple[float, float]],
+        p1: tuple[float, float] | None,
+        p2: tuple[float, float] | None,
     ):
         self._point1 = p1
         self._point2 = p2
@@ -260,7 +259,7 @@ class PickSurface(Canvas):
         self.pan_y_mm = self._pan_start_y_mm + offset_y / scale
         self._rebuild_view_transform()
 
-    def _hit_test_point(self, px: float, py: float) -> Optional[int]:
+    def _hit_test_point(self, px: float, py: float) -> int | None:
         if self._point1 is not None:
             sx, sy = self._local_to_pixel(*self._point1)
             if math.hypot(px - sx, py - sy) <= HIT_RADIUS:

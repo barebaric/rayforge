@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional, TypeGuard, cast
+from typing import Any, TypeGuard, cast
 
 import numpy as np
 from gi.repository import Gdk, Gtk
@@ -92,7 +92,7 @@ class GtkColorResolver:
         """
         Resolves a single ColorSpec into a concrete (r, g, b, a) tuple.
         """
-        alpha_override: Optional[float] = None
+        alpha_override: float | None = None
         atom: ColorAtom
         if _is_spec_with_alpha(spec):  # Tuple[ColorAtom, float]
             atom, alpha_override = spec

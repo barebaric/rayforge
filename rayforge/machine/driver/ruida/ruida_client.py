@@ -44,14 +44,14 @@ class RuidaClient:
     def __init__(
         self,
         transport: "RuidaTransport",
-        state: Optional[RuidaState] = None,
+        state: RuidaState | None = None,
         jog_transport: Optional["RuidaTransport"] = None,
     ):
         self._transport = transport
         self._jog_transport = jog_transport
         self.state = state or RuidaState()
         self._pending_mem_reads: dict[int, asyncio.Future] = {}
-        self._ref_point_mode: Optional[str] = "MACHINE"
+        self._ref_point_mode: str | None = "MACHINE"
         self.position_updated = Signal()
         self.state_changed = Signal()
 
@@ -632,7 +632,7 @@ class RuidaClient:
 
     async def _read_memory_wait(
         self, mem_address: int, timeout: float = 2.0
-    ) -> Optional[int]:
+    ) -> int | None:
         """
         Read a value from controller memory and wait for response.
 
@@ -675,7 +675,7 @@ class RuidaClient:
 
     async def get_ref_point_offset(
         self, ref_point: str
-    ) -> Optional[tuple[int, int]]:
+    ) -> tuple[int, int] | None:
         """
         Get the offset for a reference point.
 
@@ -713,7 +713,7 @@ class RuidaClient:
         await self.send_command(REF_POINT_COMMANDS[ref_point])
         self._ref_point_mode = ref_point
 
-    async def get_ref_point_mode(self) -> Optional[str]:
+    async def get_ref_point_mode(self) -> str | None:
         """
         Get the current reference point mode.
 
@@ -726,7 +726,7 @@ class RuidaClient:
         """
         return self._ref_point_mode
 
-    async def get_card_id(self) -> Optional[int]:
+    async def get_card_id(self) -> int | None:
         """
         Get the card ID from the controller.
 
@@ -735,7 +735,7 @@ class RuidaClient:
         """
         return await self._read_memory_wait(CARD_ID_ADDRESS)
 
-    async def get_model_name(self) -> Optional[str]:
+    async def get_model_name(self) -> str | None:
         """
         Get the controller model name.
 
@@ -750,7 +750,7 @@ class RuidaClient:
 
     async def get_card_info(
         self,
-    ) -> Optional[tuple[Optional[int], Optional[str]]]:
+    ) -> tuple[int | None, str | None] | None:
         """
         Get card ID and model name from the controller.
 

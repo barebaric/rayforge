@@ -11,7 +11,7 @@ from dataclasses import (
     replace,
 )
 from gettext import gettext as _
-from typing import Any, Optional
+from typing import Any
 
 from ....core.varset import BoolVar, TextAreaVar, Var, VarSet
 
@@ -72,7 +72,7 @@ class GcodeDialect:
         metadata={"template_meta": True},
     )
     is_custom: bool = field(default=False, metadata={"template_meta": True})
-    parent_uid: Optional[str] = field(
+    parent_uid: str | None = field(
         default=None, metadata={"template_meta": True}
     )
     extra: dict[str, Any] = field(
@@ -209,7 +209,7 @@ class GcodeDialect:
             "scripts": scripts_vs,
         }
 
-    def copy_as_custom(self, new_label: str) -> "GcodeDialect":
+    def copy_as_custom(self, new_label: str) -> GcodeDialect:
         """
         Creates a new, custom dialect instance from this one, generating a
         new UID.
@@ -232,8 +232,8 @@ class GcodeDialect:
     def from_dict(
         cls,
         data: dict[str, Any],
-        registry: Optional[dict[str, "GcodeDialect"]] = None,
-    ) -> "GcodeDialect":
+        registry: dict[str, GcodeDialect] | None = None,
+    ) -> GcodeDialect:
         """
         Creates a dialect instance from a dictionary, correctly handling
         missing fields by inheriting from parent dialect.
@@ -343,7 +343,7 @@ class GcodeDialect:
     @classmethod
     def from_template_dict(
         cls, data: dict[str, Any], **overrides
-    ) -> "GcodeDialect":
+    ) -> GcodeDialect:
         """
         Create a dialect from a device profile template dict.
 

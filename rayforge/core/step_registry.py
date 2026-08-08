@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Callable, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .capability import MachineCapability
@@ -15,11 +16,11 @@ class StepRegistry:
     """
 
     def __init__(self):
-        self._steps: dict[str, type["Step"]] = {}
+        self._steps: dict[str, type[Step]] = {}
         self._addon_items: dict[str, set[str]] = {}
 
     def register(
-        self, step_class: type["Step"], addon_name: Optional[str] = None
+        self, step_class: type["Step"], addon_name: str | None = None
     ) -> None:
         """
         Register a step class.
@@ -74,7 +75,7 @@ class StepRegistry:
                 count += 1
         return count
 
-    def get(self, name: str) -> Optional[type["Step"]]:
+    def get(self, name: str) -> type["Step"] | None:
         """
         Look up a step class by name.
 
@@ -86,7 +87,7 @@ class StepRegistry:
         """
         return self._steps.get(name)
 
-    def get_by_typelabel(self, typelabel: str) -> Optional[type["Step"]]:
+    def get_by_typelabel(self, typelabel: str) -> type["Step"] | None:
         """
         Look up a step class by its TYPELABEL attribute.
 
@@ -107,7 +108,7 @@ class StepRegistry:
 
     def get_factories(
         self,
-        machine_caps: Optional[frozenset["MachineCapability"]] = None,
+        machine_caps: frozenset["MachineCapability"] | None = None,
     ) -> list[Callable]:
         """
         Return all registered step factory methods.

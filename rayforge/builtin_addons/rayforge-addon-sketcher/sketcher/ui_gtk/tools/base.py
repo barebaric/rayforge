@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Callable, Optional, Union
+from typing import TYPE_CHECKING
 
 import cairo
 
@@ -36,10 +37,10 @@ class SketcherKey(Enum):
 class SketchTool(ABC):
     """Abstract base class for sketcher tools."""
 
-    ICON: Optional[str] = None
-    LABEL: Optional[str] = None
+    ICON: str | None = None
+    LABEL: str | None = None
     SHORTCUTS: list[str] = []
-    CURSOR_ICON: Optional[str] = None
+    CURSOR_ICON: str | None = None
 
     def __init__(self, element: SketchElement):
         self.element = element
@@ -58,7 +59,6 @@ class SketchTool(ABC):
 
     def on_hover_motion(self, world_x: float, world_y: float):
         """Optional hook for hover effects."""
-        pass
 
     def on_modifier_change(self, shift: bool = False, ctrl: bool = False):
         """
@@ -67,30 +67,26 @@ class SketchTool(ABC):
         Override in subclasses that need to respond to modifier key changes
         during drag operations.
         """
-        pass
 
     def on_deactivate(self):
         """
         Called when the tool is about to be switched or deactivated.
         Subclasses can implement this to clean up their state.
         """
-        pass
 
     def on_activate(self):
         """
         Called when the tool becomes active.
         Action tools override this to execute immediately.
         """
-        pass
 
     def draw_overlay(self, ctx: cairo.Context):
         """
         Called by the SketchElement to allow the active tool to draw
         transient UI (like selection boxes) in screen space.
         """
-        pass
 
-    def get_preview_state(self) -> Optional["PreviewState"]:
+    def get_preview_state(self) -> PreviewState | None:
         """
         Returns the current preview state for tools that support live preview.
         Override in subclasses that have a _preview_state attribute.
@@ -109,7 +105,7 @@ class SketchTool(ABC):
 
     def get_active_shortcuts(
         self,
-    ) -> list[tuple[Union[str, list[str]], str, Optional[Callable[[], bool]]]]:
+    ) -> list[tuple[str | list[str], str, Callable[[], bool] | None]]:
         """
         Returns shortcuts currently available based on tool state.
 
@@ -125,8 +121,8 @@ class SketchTool(ABC):
 
     def is_available(
         self,
-        target: Optional[Union["Point", "Entity", "Constraint"]],
-        target_type: Optional[str],
+        target: Point | Entity | Constraint | None,
+        target_type: str | None,
     ) -> bool:
         """
         Determines if this tool should be visible in the pie menu.

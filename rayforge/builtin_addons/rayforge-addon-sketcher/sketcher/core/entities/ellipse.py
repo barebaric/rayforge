@@ -1,6 +1,6 @@
 import math
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry
 from raygeo.geo.types import Point, Rect
@@ -21,7 +21,7 @@ class Ellipse(Entity):
         radius_x_pt_idx: EntityID,
         radius_y_pt_idx: EntityID,
         construction: bool = False,
-        helper_line_ids: Optional[list[EntityID]] = None,
+        helper_line_ids: list[EntityID] | None = None,
     ):
         super().__init__(id, construction)
         self.center_idx: EntityID = center_idx
@@ -222,7 +222,7 @@ class Ellipse(Entity):
 
     def create_fill_geometry(
         self, registry: "EntityRegistry"
-    ) -> Optional[Geometry]:
+    ) -> Geometry | None:
         return self.to_geometry(registry)
 
     def to_dict(self) -> dict[str, Any]:
@@ -248,7 +248,7 @@ class Ellipse(Entity):
             helper_line_ids=data.get("helper_line_ids"),
         )
 
-    def get_midpoint(self, registry: "EntityRegistry") -> Optional[Point]:
+    def get_midpoint(self, registry: "EntityRegistry") -> Point | None:
         radius_x_pt = registry.get_point(self.radius_x_pt_idx)
         if not radius_x_pt:
             return None

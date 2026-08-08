@@ -9,14 +9,14 @@ import gettext
 import locale
 import os
 from pathlib import Path
-from typing import Optional, Union
+from typing import Union
 
 SUPPORTED_LANGUAGES = ["en", "de", "es", "fr", "pt", "uk", "zh_CN"]
 
 LocalizedString = Union[str, dict[str, str]]
 
 
-def _get_context_language() -> Optional[str]:
+def _get_context_language() -> str | None:
     """
     Get the current language from the application context.
 
@@ -35,7 +35,7 @@ def _get_context_language() -> Optional[str]:
         return None
 
 
-def normalize_language_code(code: str) -> Optional[str]:
+def normalize_language_code(code: str) -> str | None:
     """
     Normalize a language code to our supported format.
 
@@ -114,9 +114,7 @@ class LocalizedField(str):
 
     __slots__ = ("_default", "_translations")
 
-    def __new__(
-        cls, default: str, translations: Optional[dict[str, str]] = None
-    ):
+    def __new__(cls, default: str, translations: dict[str, str] | None = None):
         """
         Create a new LocalizedField.
 
@@ -180,7 +178,7 @@ class LocalizedField(str):
             return self._default
         return {"default": self._default, **self._translations}
 
-    def get(self, language: Optional[str] = None) -> str:
+    def get(self, language: str | None = None) -> str:
         """
         Get the value for a specific language.
 

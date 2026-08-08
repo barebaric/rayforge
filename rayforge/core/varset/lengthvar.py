@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from .floatvar import FloatVar
 
@@ -15,12 +15,12 @@ class LengthVar(FloatVar):
         self,
         key: str,
         label: str,
-        description: Optional[str] = None,
-        default: Optional[float] = None,
-        value: Optional[float] = None,
-        min_val: Optional[float] = None,
-        max_val: Optional[float] = None,
-        extra_validator: Optional[Callable[[float], None]] = None,
+        description: str | None = None,
+        default: float | None = None,
+        value: float | None = None,
+        min_val: float | None = None,
+        max_val: float | None = None,
+        extra_validator: Callable[[float], None] | None = None,
     ):
         super().__init__(
             key=key,

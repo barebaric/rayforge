@@ -1,5 +1,5 @@
 import math
-from typing import Any, Optional, Union
+from typing import Any
 
 
 class ParameterContext:
@@ -30,7 +30,7 @@ class ParameterContext:
         new_context._dirty = True  # Force re-evaluation on next get
         return new_context
 
-    def set(self, name: str, value: Union[float, str]) -> None:
+    def set(self, name: str, value: float | str) -> None:
         """Sets a parameter. Can be a float or a math string."""
         self._expressions[name] = str(value)
         self._dirty = True
@@ -47,7 +47,7 @@ class ParameterContext:
             self.evaluate_all()
         return self._cache.copy()
 
-    def evaluate(self, expression: Union[str, float]) -> Any:
+    def evaluate(self, expression: str | float) -> Any:
         """Evaluates an arbitrary expression string using current context."""
         if isinstance(expression, (int, float)):
             return float(expression)
@@ -70,7 +70,7 @@ class ParameterContext:
             return 0.0
 
     def evaluate_all(
-        self, initial_values: Optional[dict[str, Any]] = None
+        self, initial_values: dict[str, Any] | None = None
     ) -> None:
         """
         Iteratively resolves dependencies.

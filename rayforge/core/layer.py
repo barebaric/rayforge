@@ -11,7 +11,6 @@ from collections.abc import Iterable
 from gettext import gettext as _
 from typing import (
     Any,
-    Optional,
     TypeVar,
 )
 
@@ -52,9 +51,9 @@ class Layer(DocItem):
         self.visible: bool = True
         self.rotary_enabled: bool = False
         self.rotary_diameter: float = 25.0
-        self.rotary_module_uid: Optional[str] = None
+        self.rotary_module_uid: str | None = None
         self.color: str = self.DEFAULT_COLOR
-        self.wcs: Optional[str] = None
+        self.wcs: str | None = None
 
         # Signals for notifying other parts of the application of changes.
         # This one is special and is bubbled manually.
@@ -86,7 +85,7 @@ class Layer(DocItem):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Layer":
+    def from_dict(cls, data: dict[str, Any]) -> Layer:
         """Deserializes a dictionary into a Layer instance."""
         known_keys = {
             "uid",
@@ -138,7 +137,7 @@ class Layer(DocItem):
         ]
 
     @property
-    def all_workpieces(self) -> list["WorkPiece"]:
+    def all_workpieces(self) -> list[WorkPiece]:
         """
         Recursively finds and returns a flattened list of all WorkPiece
         objects contained within this layer, including those inside groups.
@@ -154,7 +153,7 @@ class Layer(DocItem):
                 return True
         return False
 
-    def get_content_items(self) -> list["DocItem"]:
+    def get_content_items(self) -> list[DocItem]:
         """
         Returns a list of user-facing items in this layer (e.g.,
         WorkPieces, Groups), excluding internal objects like Workflows.
@@ -164,12 +163,12 @@ class Layer(DocItem):
         ]
 
     @property
-    def content_items(self) -> list["DocItem"]:
+    def content_items(self) -> list[DocItem]:
         """Property alias for get_content_items()."""
         return self.get_content_items()
 
     @property
-    def workflow(self) -> Optional[Workflow]:
+    def workflow(self) -> Workflow | None:
         """Returns the layer's workflow. A layer must have one workflow."""
         for child in self.children:
             if isinstance(child, Workflow):
@@ -184,7 +183,7 @@ class Layer(DocItem):
         """
         self.per_step_transformer_changed.send(self)
 
-    def add_child(self, child: T, index: Optional[int] = None) -> T:
+    def add_child(self, child: T, index: int | None = None) -> T:
         if isinstance(child, Workflow):
             child.per_step_transformer_changed.connect(
                 self._on_workflow_post_transformer_changed
@@ -265,7 +264,7 @@ class Layer(DocItem):
         self.rotary_diameter = diameter
         self.updated.send(self)
 
-    def set_rotary_module_uid(self, uid: Optional[str]):
+    def set_rotary_module_uid(self, uid: str | None):
         if self.rotary_module_uid == uid:
             return
         self.rotary_module_uid = uid
@@ -277,7 +276,7 @@ class Layer(DocItem):
         self.color = color
         self.updated.send(self)
 
-    def get_subtitle(self, rotary_module_name: Optional[str] = None) -> str:
+    def get_subtitle(self, rotary_module_name: str | None = None) -> str:
         """Returns a subtitle describing the layer type.
 
         Args:
@@ -295,7 +294,7 @@ class Layer(DocItem):
             return _("Rotary · {name}").format(name=rotary_module_name)
         return _("Rotary")
 
-    def set_wcs(self, wcs: Optional[str]):
+    def set_wcs(self, wcs: str | None):
         if self.wcs == wcs:
             return
         self.wcs = wcs
@@ -312,15 +311,15 @@ class Layer(DocItem):
         circumference = self.rotary_diameter * math.pi
         return (mm / circumference) * 360.0
 
-    def add_workpiece(self, workpiece: "WorkPiece"):
+    def add_workpiece(self, workpiece: WorkPiece):
         """Adds a single workpiece to the layer."""
         self.add_child(workpiece)
 
-    def remove_workpiece(self, workpiece: "WorkPiece"):
+    def remove_workpiece(self, workpiece: WorkPiece):
         """Removes a single workpiece from the layer."""
         self.remove_child(workpiece)
 
-    def set_workpieces(self, workpieces: list["WorkPiece"]):
+    def set_workpieces(self, workpieces: list[WorkPiece]):
         """
         Sets the layer's workpieces to a new list, preserving the
         existing workflow and groups.
@@ -334,7 +333,7 @@ class Layer(DocItem):
             new_children.append(current_workflow)
         self.set_children(new_children)
 
-    def reorder_workpieces(self, new_workpiece_order: list["WorkPiece"]):
+    def reorder_workpieces(self, new_workpiece_order: list[WorkPiece]):
         """
         Reorders workpieces while preserving the positions of groups
         and the workflow.

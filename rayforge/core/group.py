@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo import Matrix
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class GroupingResult:
     """A container for the results of the group creation calculation."""
 
-    new_group: "Group"
+    new_group: Group
     child_matrices: dict[str, Matrix]
 
 
@@ -39,7 +39,7 @@ class Group(DocItem):
         self.extra: dict[str, Any] = {}
 
     @property
-    def layer(self) -> Optional["Layer"]:
+    def layer(self) -> Layer | None:
         """Traverses the hierarchy to find the parent Layer."""
         from .layer import Layer  # Local import to avoid circular dependency
 
@@ -47,7 +47,7 @@ class Group(DocItem):
         return ancestor if isinstance(ancestor, Layer) else None
 
     @property
-    def all_workpieces(self) -> list["WorkPiece"]:
+    def all_workpieces(self) -> list[WorkPiece]:
         """
         Recursively finds and returns a flattened list of all WorkPiece
         objects contained within this layer, including those inside groups.
@@ -63,12 +63,12 @@ class Group(DocItem):
             return (0.0, 0.0)
         return (bbox[2], bbox[3])
 
-    def get_local_bbox(self) -> Optional[Rect]:
+    def get_local_bbox(self) -> Rect | None:
         return (0.0, 0.0, 1.0, 1.0)
 
     def render_to_pixels(
         self, width: int, height: int
-    ) -> Optional[cairo.ImageSurface]:
+    ) -> cairo.ImageSurface | None:
         """
         Render all children into a single composite surface.
 
@@ -137,7 +137,7 @@ class Group(DocItem):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Group":
+    def from_dict(cls, data: dict) -> Group:
         """Deserializes a dictionary into a Group instance."""
         known_keys = {"uid", "type", "name", "matrix", "children"}
         extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -167,7 +167,7 @@ class Group(DocItem):
     @staticmethod
     def _calculate_world_bbox(
         items: Sequence[DocItem],
-    ) -> Optional[Rect]:
+    ) -> Rect | None:
         """
         Calculates the union of the world-space bounding boxes for a list
         of DocItems.
@@ -193,7 +193,7 @@ class Group(DocItem):
     @classmethod
     def create_from_items(
         cls, items_to_group: list[DocItem], parent: DocItem
-    ) -> Optional[GroupingResult]:
+    ) -> GroupingResult | None:
         """
         Factory method to create a new Group sized and positioned to enclose
         a list of items. Only groupable items (WorkPiece, Group) are included.

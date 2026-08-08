@@ -11,12 +11,12 @@ import logging
 import os
 import subprocess
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
 from pathlib import Path
 from threading import Event
 from typing import (
     TYPE_CHECKING,
-    Callable,
     Optional,
     TypeVar,
 )
@@ -127,7 +127,7 @@ def run_on_main_thread(func: Callable[[], T], timeout: float = 10.0) -> T:
     Run a function on the main GTK thread and wait for completion.
     """
     result: list[T] = []
-    exception: list[Optional[Exception]] = [None]
+    exception: list[Exception | None] = [None]
     done = Event()
 
     def wrapper() -> bool:
@@ -290,10 +290,10 @@ def take_window_screenshot(win: "MainWindow", output_name: str) -> bool:
 def take_cropped_screenshot(
     output_name: str,
     *,
-    from_bottom: Optional[int] = None,
-    from_top: Optional[int] = None,
-    from_left: Optional[int] = None,
-    from_right: Optional[int] = None,
+    from_bottom: int | None = None,
+    from_top: int | None = None,
+    from_left: int | None = None,
+    from_right: int | None = None,
 ) -> bool:
     """
     Take a screenshot of the active window and crop it.
@@ -599,7 +599,7 @@ def get_all_steps(win: "MainWindow") -> list["Step"]:
     """Get all steps across all layers."""
 
     def _get() -> list["Step"]:
-        steps: list["Step"] = []
+        steps: list[Step] = []
         for layer in win.doc_editor.doc.layers:
             if layer.workflow and layer.workflow.steps:
                 steps.extend(layer.workflow.steps)
@@ -643,7 +643,7 @@ def open_recipe_editor(
     win: "MainWindow",
     page: str = "general",
     *,
-    step_type: Optional[str] = None,
+    step_type: str | None = None,
     settings_page: int = 0,
 ) -> "AddEditRecipeDialog":
     """Open recipe editor dialog from app settings.

@@ -2,7 +2,6 @@
 
 import tempfile
 from pathlib import Path
-from typing import Optional
 from unittest.mock import Mock
 
 import pytest
@@ -86,7 +85,7 @@ class TestRecipeManager:
         """
 
         def _create(
-            material_uid: Optional[str], thickness: Optional[float]
+            material_uid: str | None, thickness: float | None
         ) -> StockItem:
             doc = Doc()
             asset = StockAsset()

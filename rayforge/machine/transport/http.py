@@ -1,5 +1,4 @@
 import asyncio
-from typing import Optional
 
 import aiohttp
 
@@ -23,7 +22,7 @@ class HttpTransport(Transport):
         self._running = False
         self._reconnect_interval = 5
         self._receive_interval = receive_interval
-        self._connection_task: Optional[asyncio.Task] = None
+        self._connection_task: asyncio.Task | None = None
         self._connected = False
 
     @property
@@ -71,16 +70,18 @@ class HttpTransport(Transport):
         """
         Send data to HTTP endpoint via POST request.
         """
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
+        async with (
+            aiohttp.ClientSession() as session,
+            session.post(
                 f"{self.base_url}",
                 data=data,
                 timeout=aiohttp.ClientTimeout(total=5),
-            ) as response:
-                if response.status != 200:
-                    err = f"Send failed: {await response.text()}"
-                    self.status_changed.send(self, message=err)
-                    raise IOError(err)
+            ) as response,
+        ):
+            if response.status != 200:
+                err = f"Send failed: {await response.text()}"
+                self.status_changed.send(self, message=err)
+                raise OSError(err)
 
     async def purge(self) -> None:
         """
@@ -89,7 +90,6 @@ class HttpTransport(Transport):
         HTTP transport uses a new session for each request and does not
         maintain a persistent receive buffer. This method is a no-op.
         """
-        pass
 
     async def _receive_loop(self, session) -> None:
         """

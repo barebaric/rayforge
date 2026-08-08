@@ -6,7 +6,6 @@ column-major at the GL boundary (``GL_TRUE``).  These tests guard that
 boundary so renderers must keep passing row-major matrices.
 """
 
-from typing import Optional
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -38,9 +37,9 @@ def _make_shader() -> Shader:
 
 
 def _make_ctx(
-    mvp_ui: Optional[np.ndarray] = None,
-    model_matrix: Optional[np.ndarray] = None,
-    cyl_mesh_mvp: Optional[np.ndarray] = None,
+    mvp_ui: np.ndarray | None = None,
+    model_matrix: np.ndarray | None = None,
+    cyl_mesh_mvp: np.ndarray | None = None,
 ) -> RenderContext:
     identity = np.eye(4, dtype=np.float32)
     return RenderContext(

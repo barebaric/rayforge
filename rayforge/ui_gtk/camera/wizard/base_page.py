@@ -1,6 +1,6 @@
 """Base class for camera-wizard pages."""
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from gi.repository import Gtk
 
@@ -33,7 +33,7 @@ class CameraWizardPage:
     def __init__(self, wizard: "CameraWizard", controller: CameraController):
         self.wizard = wizard
         self.controller = controller
-        self.root: Optional[Gtk.Box] = None
+        self.root: Gtk.Box | None = None
 
     def build(self) -> Gtk.Box:
         raise NotImplementedError
@@ -50,7 +50,7 @@ class CameraWizardPage:
     def footer_buttons(self) -> list[Gtk.Button]:
         return []
 
-    def back_target(self) -> Optional[str]:
+    def back_target(self) -> str | None:
         return None
 
     # ----- ambient UI affordances (provided by the wizard) ------------

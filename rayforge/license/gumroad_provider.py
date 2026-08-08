@@ -5,7 +5,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -50,10 +50,10 @@ class GumroadProvider(LicenseProvider):
     def get_licenses(self) -> dict[str, str]:
         return dict(self._licenses)
 
-    def get_cached_result(self, product_id: str) -> Optional[dict]:
+    def get_cached_result(self, product_id: str) -> dict | None:
         return self._cache.get(product_id)
 
-    def clear_cache(self, product_id: Optional[str] = None) -> None:
+    def clear_cache(self, product_id: str | None = None) -> None:
         if product_id:
             self._cache.pop(product_id, None)
         else:
@@ -184,7 +184,7 @@ class GumroadProvider(LicenseProvider):
             logger.error(f"Gumroad validation failed: {e}")
             return LicenseResult(
                 status=LicenseStatus.ERROR,
-                message=f"Validation failed: {str(e)}",
+                message=f"Validation failed: {e!s}",
             )
 
     def _create_test_result(self, product_id: str) -> LicenseResult:
@@ -205,7 +205,7 @@ class GumroadProvider(LicenseProvider):
         self._cache_result(product_id, result)
         return result
 
-    def _get_valid_cache(self, product_id: str) -> Optional[dict]:
+    def _get_valid_cache(self, product_id: str) -> dict | None:
         cached = self._cache.get(product_id)
         if not cached:
             return None
@@ -264,7 +264,7 @@ class GumroadProvider(LicenseProvider):
                     if isinstance(data, dict):
                         self._licenses = data.get("licenses", {})
                         self._cache = data.get("cache", {})
-            except (yaml.YAMLError, IOError) as e:
+            except (OSError, yaml.YAMLError) as e:
                 logger.warning(f"Failed to load Gumroad config: {e}")
 
     def _save_config(self) -> None:

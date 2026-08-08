@@ -9,13 +9,13 @@ from .pwm_row import FrequencyRow, PulseWidthRow
 from .tab_power_row import TabPowerRow
 
 __all__ = [
-    "PowerRow",
     "AirAssistRow",
-    "TabPowerRow",
-    "FrequencyRow",
-    "PulseWidthRow",
     "CutSideRow",
-    "OffsetRow",
+    "FrequencyRow",
     "LaserSettingsPage",
     "LaserStepSettingsPage",
+    "OffsetRow",
+    "PowerRow",
+    "PulseWidthRow",
+    "TabPowerRow",
 ]

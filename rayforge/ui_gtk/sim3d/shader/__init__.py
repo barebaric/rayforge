@@ -9,9 +9,9 @@ from .text_shader import TextShader
 from .texture_shader import TextureShader
 
 __all__ = (
+    "BackgroundShader",
     "Shader",
     "SimpleShader",
     "TextShader",
     "TextureShader",
-    "BackgroundShader",
 )

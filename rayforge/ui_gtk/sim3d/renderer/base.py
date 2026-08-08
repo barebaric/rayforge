@@ -4,7 +4,7 @@ Base class for OpenGL renderers that manage their own GPU resources.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Optional, final
+from typing import TYPE_CHECKING, final
 
 from OpenGL import GL
 
@@ -40,7 +40,7 @@ class BaseRenderer(ABC):
 
     def __init__(self):
         """Initializes the resource tracking lists."""
-        self.shader: Optional[Shader] = None
+        self.shader: Shader | None = None
         self._owned_vaos: list[int] = []
         self._owned_vbos: list[int] = []
         self._owned_textures: list[int] = []
@@ -95,7 +95,6 @@ class BaseRenderer(ABC):
         A method for subclasses to override for their specific cleanup
         logic.
         """
-        pass
 
     @final
     def cleanup(self) -> None:

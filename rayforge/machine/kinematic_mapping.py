@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 from raygeo.ops import Ops
@@ -53,12 +53,12 @@ class RotaryAxisConfig:
     """
 
     source_axis: Axis
-    rotary_axis: Optional[Axis]
-    module: Optional["RotaryModule"] = None
+    rotary_axis: Axis | None
+    module: RotaryModule | None = None
 
 
 def resolve_layer_rotary(
-    layer: Optional[Layer], machine: "Machine"
+    layer: Layer | None, machine: Machine
 ) -> RotaryAxisConfig:
     """Resolve the rotary axis configuration for *layer*.
 
@@ -82,9 +82,9 @@ def resolve_layer_rotary(
 
 
 def build_layer_assembly(
-    machine: "Machine",
-    layer: Optional[Layer] = None,
-) -> "Assembly":
+    machine: Machine,
+    layer: Layer | None = None,
+) -> Assembly:
     """Build a throwaway assembly for *layer*'s rotary config.
 
     Reads only: it resolves the layer's rotary module via
@@ -116,9 +116,9 @@ class KinematicMapping:
         gear_ratio: float = 1.0,
         reverse: bool = False,
         axis_position: float = 0.0,
-        axis_position_3d: Optional[np.ndarray] = None,
-        cylinder_dir: Optional[np.ndarray] = None,
-        replaced_axis: Optional[Axis] = None,
+        axis_position_3d: np.ndarray | None = None,
+        cylinder_dir: np.ndarray | None = None,
+        replaced_axis: Axis | None = None,
     ):
         self.rotary_axis = rotary_axis
         self.diameter = diameter
@@ -143,7 +143,7 @@ class KinematicMapping:
         module: RotaryModule,
         diameter: float,
         apply_gear_ratio: bool = True,
-    ) -> Optional[KinematicMapping]:
+    ) -> KinematicMapping | None:
         if module.mode == RotaryMode.TRUE_4TH_AXIS:
             rotary_axis = module.axis
             replaced_axis = None

@@ -22,8 +22,8 @@ class PropertyProviderRegistry:
     """
 
     def __init__(self):
-        self._providers: list[type["PropertyProvider"]] = []
-        self._addon_map: dict[type["PropertyProvider"], str] = {}
+        self._providers: list[type[PropertyProvider]] = []
+        self._addon_map: dict[type[PropertyProvider], str] = {}
 
     def register(
         self, provider_cls: type["PropertyProvider"], addon_name: str
@@ -121,7 +121,7 @@ class PropertyProvider(ABC):
     """Subtitle for the separate Expander, updated by update_widgets()."""
 
     def __init__(self):
-        self.editor: "DocEditor"
+        self.editor: DocEditor
         self.items: list[DocItem] = []
         self._in_update: bool = False
         # A list of all widgets created by this provider to manage them

@@ -1,4 +1,3 @@
-# flake8: noqa: E402
 import argparse
 import asyncio
 import gettext
@@ -11,7 +10,7 @@ import traceback
 import warnings
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional, cast
+from typing import cast
 
 # Parse --config early before any rayforge imports, as they may
 # import config.py which computes CONFIG_DIR at module load time
@@ -58,7 +57,7 @@ except locale.Error:
 # gettext. This avoids importing the full Config class (which would
 # create circular dependencies at this early stage). None or missing
 # means "use the system default language".
-def _read_language_from_config() -> Optional[str]:
+def _read_language_from_config() -> str | None:
     import yaml
 
     from rayforge.config import CONFIG_FILE

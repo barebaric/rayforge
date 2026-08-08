@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -54,7 +54,7 @@ class EllipseCommand(SketchChangeCommand):
         sketch: Sketch,
         start_id: EntityID,
         end_pos: GeoPoint,
-        end_pid: Optional[EntityID] = None,
+        end_pid: EntityID | None = None,
         is_start_temp: bool = False,
         center_on_start: bool = False,
         constrain_circle: bool = False,
@@ -66,7 +66,7 @@ class EllipseCommand(SketchChangeCommand):
         self.is_start_temp = is_start_temp
         self.center_on_start = center_on_start
         self.constrain_circle = constrain_circle
-        self.add_cmd: Optional[AddItemsCommand] = None
+        self.add_cmd: AddItemsCommand | None = None
 
     @staticmethod
     def _calculate_ellipse_params(
@@ -109,7 +109,7 @@ class EllipseCommand(SketchChangeCommand):
         registry: EntityRegistry,
         x: float,
         y: float,
-        snapped_pid: Optional[EntityID] = None,
+        snapped_pid: EntityID | None = None,
         **kwargs,
     ) -> EllipsePreviewState:
         if snapped_pid is not None:

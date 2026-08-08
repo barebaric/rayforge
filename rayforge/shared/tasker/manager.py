@@ -7,13 +7,11 @@ from __future__ import annotations
 import asyncio
 import logging
 import threading
-from collections.abc import Coroutine, Iterator
+from collections.abc import Callable, Coroutine, Iterator
 from multiprocessing import get_context
 from multiprocessing.managers import DictProxy
 from typing import (
     Any,
-    Callable,
-    Optional,
     Protocol,
     runtime_checkable,
 )
@@ -36,9 +34,9 @@ class TaskManager:
     def __init__(
         self,
         main_thread_scheduler: Callable,
-        worker_initializer: Optional[Callable[..., None]] = None,
+        worker_initializer: Callable[..., None] | None = None,
         worker_initargs: tuple = (),
-        shared_state: Optional[DictProxy[str, Any]] = None,
+        shared_state: DictProxy[str, Any] | None = None,
     ) -> None:
         logger.debug("Initializing TaskManager")
         self._tasks: dict[Any, Task] = {}
@@ -194,7 +192,7 @@ class TaskManager:
         self._emit_tasks_updated_unsafe()
 
     def add_task(
-        self, task: Task, when_done: Optional[Callable[[Task], None]] = None
+        self, task: Task, when_done: Callable[[Task], None] | None = None
     ) -> None:
         """Add an asyncio-based task to the manager."""
         # For asyncio tasks, the when_done is handled by the _run_task wrapper.
@@ -213,8 +211,8 @@ class TaskManager:
         self,
         coro: Callable[..., Coroutine[Any, Any, Any]],
         *args: Any,
-        key: Optional[Any] = None,
-        when_done: Optional[Callable[[Task], None]] = None,
+        key: Any | None = None,
+        when_done: Callable[[Task], None] | None = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -262,7 +260,7 @@ class TaskManager:
         """
         loop = self.loop
         cancelled = False
-        timer_handle: list[Optional[asyncio.TimerHandle]] = [None]
+        timer_handle: list[asyncio.TimerHandle | None] = [None]
 
         def _execute():
             if not cancelled:
@@ -299,8 +297,8 @@ class TaskManager:
         self,
         func: Callable[..., Any],
         *args: Any,
-        key: Optional[Any] = None,
-        when_done: Optional[Callable[[Task], None]] = None,
+        key: Any | None = None,
+        when_done: Callable[[Task], None] | None = None,
         **kwargs: Any,
     ) -> Task:
         """
@@ -330,9 +328,9 @@ class TaskManager:
         self,
         func: Callable[..., Any],
         *args: Any,
-        key: Optional[Any] = None,
-        when_done: Optional[Callable[[Task], None]] = None,
-        when_event: Optional[Callable[[Task, str, dict], None]] = None,
+        key: Any | None = None,
+        when_done: Callable[[Task], None] | None = None,
+        when_event: Callable[[Task, str, dict], None] | None = None,
         visible: bool = True,
         **kwargs: Any,
     ) -> Task:
@@ -483,13 +481,13 @@ class TaskManager:
                             f"'{task.key}' raised {type(e).__name__}: {e}"
                         )
 
-    def get_task(self, key: Any) -> Optional[Task]:
+    def get_task(self, key: Any) -> Task | None:
         """Retrieves a task by its key."""
         with self._lock:
             return self._tasks.get(key)
 
     async def _run_task(
-        self, task: Task, when_done: Optional[Callable[[Task], None]]
+        self, task: Task, when_done: Callable[[Task], None] | None
     ) -> None:
         """Run an asyncio task and clean up when done."""
         context = ExecutionContext(
@@ -608,8 +606,8 @@ class TaskManager:
         self,
         key: Any,
         task_id: int,
-        progress: Optional[float] = None,
-        message: Optional[str] = None,
+        progress: float | None = None,
+        message: str | None = None,
     ):
         """Updates a Task object from the main thread."""
         with self._lock:
@@ -677,7 +675,7 @@ class TaskManager:
         task_id: int,
         status: str,
         result: Any = None,
-        error: Optional[str] = None,
+        error: str | None = None,
     ):
         """
         Finalizes a pooled task from the main thread. This is the single
@@ -884,7 +882,6 @@ class TaskManager:
                 "TaskManager shutdown interrupted by user. "
                 "Suppressing traceback."
             )
-            pass
 
     def wait_until_settled(self, timeout: int) -> bool:
         """
@@ -959,7 +956,7 @@ class TaskManagerProxy:
     """
 
     def __init__(self):
-        self._instance: Optional[TaskManager] = None
+        self._instance: TaskManager | None = None
         self._lock = threading.Lock()
         self._init_kwargs: dict[str, Any] = {}
 

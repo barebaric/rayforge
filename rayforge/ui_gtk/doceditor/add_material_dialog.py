@@ -2,7 +2,7 @@
 
 import logging
 from gettext import gettext as _
-from typing import Any, Optional
+from typing import Any
 
 from gi.repository import Adw, Gdk, Gtk
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class AddMaterialDialog(Adw.MessageDialog):
     """A dialog for creating a new material."""
 
-    def __init__(self, material: Optional[Material] = None, **kwargs):
+    def __init__(self, material: Material | None = None, **kwargs):
         super().__init__(**kwargs)
 
         self.material = material

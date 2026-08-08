@@ -46,9 +46,9 @@ class IGeometryProvider(Protocol):
 
     def get_geometry(
         self,
-        params: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         *,
-        resolved_text_cache: Optional[dict] = None,
+        resolved_text_cache: dict | None = None,
     ) -> tuple["Geometry", list["FillRenderData"]]:
         """
         Generate geometry with optional parameter overrides.

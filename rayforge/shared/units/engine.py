@@ -1,5 +1,4 @@
 import re
-from typing import Optional
 
 METERS_TO_INCH = 39.37007874
 METERS_TO_FEET = 3.280839895
@@ -109,7 +108,7 @@ class ConversionEngine:
         for unit in all_units:
             self.unitmap[(unit, unit)] = 1.0
 
-    def _suffix_split(self, unit: str) -> tuple[str, Optional[str]]:
+    def _suffix_split(self, unit: str) -> tuple[str, str | None]:
         if "/" in unit:
             base, suffix = unit.split("/", 1)
             return base, suffix
@@ -128,7 +127,7 @@ class ConversionEngine:
             return f"{normalized_base}/{normalized_suffix}"
         return normalized_base
 
-    def parse_value(self, value_str: str) -> tuple[float, Optional[str]]:
+    def parse_value(self, value_str: str) -> tuple[float, str | None]:
         if not isinstance(value_str, str):
             return value_str, None
         match = self._value_split_re.match(value_str.strip())

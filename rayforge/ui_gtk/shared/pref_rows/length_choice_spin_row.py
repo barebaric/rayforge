@@ -1,7 +1,5 @@
 """A length spin row with an inline unit-chooser dropdown."""
 
-from typing import Optional
-
 from gi.repository import Gtk
 
 from ....shared.units.definitions import get_units_for_quantity
@@ -25,10 +23,10 @@ class LengthChoiceSpinRow(LengthSpinRow):
     def __init__(
         self,
         title: str,
-        subtitle: Optional[str] = None,
+        subtitle: str | None = None,
         **kwargs,
     ):
-        self._unit_override: Optional[str] = None
+        self._unit_override: str | None = None
         self._units = get_units_for_quantity("length")
         self._dropdown_populated = False
         self._unit_dropdown = Gtk.DropDown()
@@ -39,7 +37,7 @@ class LengthChoiceSpinRow(LengthSpinRow):
         self._unit_dropdown.connect("notify::selected", self._on_unit_selected)
         self.add_suffix(self._unit_dropdown)
 
-    def _resolve_unit_name(self) -> Optional[str]:
+    def _resolve_unit_name(self) -> str | None:
         """Prefer the per-row choice over the global preference."""
         if self._unit_override is not None:
             return self._unit_override

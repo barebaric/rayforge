@@ -11,7 +11,6 @@ class ConcreteRasterRenderer(RasterRenderer):
 
     def render_base_image(self, data, width, height, **kwargs):
         """Minimal implementation to satisfy the ABC."""
-        pass
 
 
 @pytest.fixture

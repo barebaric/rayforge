@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from ..constraints import EqualLengthConstraint
 
@@ -21,7 +21,7 @@ class EqualConstraintCommand:
     def find_and_merge_constraints(
         sketch: Sketch,
         selected_entity_ids: list[int],
-    ) -> Optional[EqualConstraintMergeResult]:
+    ) -> EqualConstraintMergeResult | None:
         selected_ids = set(selected_entity_ids)
         existing_constraints_to_merge: list[Constraint] = []
         final_ids = set(selected_ids)

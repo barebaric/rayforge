@@ -1,14 +1,13 @@
 import bisect
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Optional
 
 from .types import SnapLine
 
 
 @dataclass
 class IndexedLine:
-    snap_line: Optional[SnapLine]
+    snap_line: SnapLine | None
     coordinate: float
 
     def __lt__(self, other: "IndexedLine") -> bool:

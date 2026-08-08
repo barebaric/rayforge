@@ -1,7 +1,7 @@
 """Base for settings groups that manage a transformer component."""
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from gi.repository import Adw
 
@@ -28,7 +28,7 @@ class TransformerSettingsGroup(Adw.PreferencesGroup):
         title: str,
         page: Adw.PreferencesPage,
         step: Any,
-        component: Optional[OpsTransformer] = None,
+        component: OpsTransformer | None = None,
         **kwargs,
     ):
         """
@@ -50,7 +50,7 @@ class TransformerSettingsGroup(Adw.PreferencesGroup):
         self.step = step
         self.history_manager = editor.history_manager
         self._rows: list = []
-        self.enable_switch: Optional[Adw.SwitchRow] = None
+        self.enable_switch: Adw.SwitchRow | None = None
 
         if isinstance(component, OpsTransformer):
             self._add_enable_switch(component)

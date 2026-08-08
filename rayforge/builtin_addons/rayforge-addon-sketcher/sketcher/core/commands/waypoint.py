@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -37,31 +37,31 @@ class SetWaypointTypeCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: "Sketch",
+        sketch: Sketch,
         waypoint_id: EntityID,
-        new_type: "WaypointType",
+        new_type: WaypointType,
     ):
         label = _("Set Waypoint Type")
         super().__init__(sketch, label)
         self.waypoint_id = waypoint_id
         self.new_type = new_type
-        self._old_waypoint_type: Optional[WaypointType] = None
-        self._old_bezier_states: Optional[
-            dict[int, tuple[Optional[GeoPoint], Optional[GeoPoint]]]
-        ] = None
-        self._converted_lines: Optional[list[tuple[int, int, int]]] = None
-        self._added_bezier_ids: Optional[list[int]] = None
+        self._old_waypoint_type: WaypointType | None = None
+        self._old_bezier_states: (
+            dict[int, tuple[GeoPoint | None, GeoPoint | None]] | None
+        ) = None
+        self._converted_lines: list[tuple[int, int, int]] | None = None
+        self._added_bezier_ids: list[int] | None = None
 
     def _get_segment_directions(
-        self, registry: "EntityRegistry", waypoint: "Point"
-    ) -> tuple[Optional[GeoPoint], Optional[GeoPoint]]:
+        self, registry: EntityRegistry, waypoint: Point
+    ) -> tuple[GeoPoint | None, GeoPoint | None]:
         """
         Get the incoming and outgoing direction vectors at this waypoint.
 
         Returns (incoming_dir, outgoing_dir) as normalized vectors.
         """
-        incoming_dir: Optional[GeoPoint] = None
-        outgoing_dir: Optional[GeoPoint] = None
+        incoming_dir: GeoPoint | None = None
+        outgoing_dir: GeoPoint | None = None
 
         point_ids = {waypoint.id}
         point_ids.update(self.sketch.get_coincident_points(waypoint.id))
@@ -127,7 +127,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         return incoming_dir, outgoing_dir
 
     def _find_connected_lines(
-        self, registry: "EntityRegistry", waypoint_id: EntityID
+        self, registry: EntityRegistry, waypoint_id: EntityID
     ) -> list[tuple[EntityID, EntityID, EntityID]]:
         """Find Line entities connected to this waypoint.
 
@@ -145,7 +145,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
 
     def _convert_lines_to_beziers(
         self,
-        registry: "EntityRegistry",
+        registry: EntityRegistry,
         lines: list[tuple[EntityID, EntityID, EntityID]],
     ) -> list[EntityID]:
         """Remove Line entities and add Bezier entities in their place."""
@@ -161,7 +161,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
 
     def _restore_lines(
         self,
-        registry: "EntityRegistry",
+        registry: EntityRegistry,
         lines: list[tuple[EntityID, EntityID, EntityID]],
         bezier_ids: list[EntityID],
     ):
@@ -203,7 +203,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
                 registry, waypoint
             )
 
-            avg_dir: Optional[GeoPoint] = None
+            avg_dir: GeoPoint | None = None
             if incoming_dir is not None and outgoing_dir is not None:
                 avg_dir = (
                     (incoming_dir[0] + outgoing_dir[0]) / 2,

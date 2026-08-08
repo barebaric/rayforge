@@ -3,7 +3,6 @@
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional
 
 from gi.repository import Adw, Gtk
 
@@ -24,12 +23,12 @@ class ModelSelectionDialog(Adw.MessageDialog):
 
     def __init__(
         self,
-        current_model_path: Optional[str] = None,
+        current_model_path: str | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self._current_model_path = current_model_path
-        self._selected_model_path: Optional[str] = None
+        self._selected_model_path: str | None = None
         self._row_paths: dict[Adw.ActionRow, str] = {}
         self._setup_ui()
 
@@ -122,5 +121,5 @@ class ModelSelectionDialog(Adw.MessageDialog):
         preview.set_hexpand(True)
         self._preview_box.append(preview)
 
-    def get_selected_model_path(self) -> Optional[str]:
+    def get_selected_model_path(self) -> str | None:
         return self._selected_model_path

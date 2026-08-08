@@ -2,7 +2,7 @@ import logging
 from dataclasses import replace
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import yaml
 from blinker import Signal
@@ -57,8 +57,8 @@ class DialectManager:
         self._registry[uid_key] = dialect
 
     def migrate_builtin_dialect_to_copy(
-        self, dialect_uid: Optional[str], machine_name: str
-    ) -> tuple[Optional[str], bool]:
+        self, dialect_uid: str | None, machine_name: str
+    ) -> tuple[str | None, bool]:
         """
         If dialect_uid references a built-in dialect, creates an isolated
         copy and returns the new UID with migrated=True. Otherwise returns
@@ -131,7 +131,7 @@ class DialectManager:
         try:
             with open(file_path, "w") as f:
                 yaml.safe_dump(dialect.to_dict(), f, sort_keys=False)
-        except (IOError, yaml.YAMLError) as e:
+        except (OSError, yaml.YAMLError) as e:
             logger.error(f"Failed to save custom dialect to {file_path}: {e}")
 
     def _delete_dialect_file(self, dialect: GcodeDialect):

@@ -1,5 +1,4 @@
 import warnings
-from typing import TYPE_CHECKING, Optional
 
 from ..base_renderer import RasterRenderer
 from .parser import parse_bmp
@@ -7,8 +6,6 @@ from .parser import parse_bmp
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
-if TYPE_CHECKING:
-    pass
 
 
 class BmpRenderer(RasterRenderer):
@@ -20,7 +17,7 @@ class BmpRenderer(RasterRenderer):
         width: int,
         height: int,
         **kwargs,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         if not data:
             return None
         parsed_data = parse_bmp(data)

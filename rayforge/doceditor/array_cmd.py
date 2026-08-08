@@ -12,7 +12,7 @@ import logging
 import math
 from collections.abc import Sequence
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.geo import Matrix
 from raygeo.geo.types import Rect
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 class ArrayCmd:
     """Handles undoable creation of item arrays."""
 
-    def __init__(self, editor: "DocEditor"):
+    def __init__(self, editor: DocEditor):
         self._editor = editor
 
     # ------------------------------------------------------------------
@@ -64,7 +64,7 @@ class ArrayCmd:
         return top_level
 
     @staticmethod
-    def _compute_unit_bbox(items: Sequence[DocItem]) -> Optional[Rect]:
+    def _compute_unit_bbox(items: Sequence[DocItem]) -> Rect | None:
         """Collective world-space bbox of the selection as one unit."""
         min_x = min_y = math.inf
         max_x = max_y = -math.inf
@@ -100,7 +100,7 @@ class ArrayCmd:
 
     def get_selection_bbox(
         self, source_items: Sequence[DocItem]
-    ) -> Optional[Rect]:
+    ) -> Rect | None:
         """Returns the collective world bbox of the selection, or None.
 
         Convenience wrapper for the live preview.

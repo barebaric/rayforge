@@ -16,14 +16,14 @@ else:
 
 
 __all__ = [
+    "GrblSerialTransport",
+    "HttpTransport",
+    "SerialServerTransport",
+    "SerialTransport",
+    "TelnetTransport",
     "Transport",
     "TransportStatus",
-    "HttpTransport",
-    "SerialTransport",
-    "SerialServerTransport",
-    "TelnetTransport",
-    "UdpTransport",
     "UdpServerTransport",
+    "UdpTransport",
     "WebSocketTransport",
-    "GrblSerialTransport",
 ]

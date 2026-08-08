@@ -13,7 +13,6 @@ the camera preferences page's "Wizard" button.
 
 import logging
 from gettext import gettext as _
-from typing import Optional
 
 from gi.repository import Adw, Gtk
 
@@ -53,7 +52,7 @@ class CameraWizard(PatchedDialogWindow):
 
         self._pages: dict[str, CameraWizardPage] = {}
         self._page_order: list[str] = []
-        self._current: Optional[str] = None
+        self._current: str | None = None
         self._history: list[str] = []
 
         self._setup_ui()
@@ -287,9 +286,9 @@ class CameraWizard(PatchedDialogWindow):
         for page in self._pages.values():
             if isinstance(page, CapturePage):
                 page.stop()
-            elif isinstance(page, ImageSettingsPage):
-                page.leave()
-            elif isinstance(page, AlignmentPage):
+            elif isinstance(page, ImageSettingsPage) or isinstance(
+                page, AlignmentPage
+            ):
                 page.leave()
         super().close()
 

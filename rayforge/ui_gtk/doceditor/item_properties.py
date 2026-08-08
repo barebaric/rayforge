@@ -40,7 +40,7 @@ class DocItemPropertiesWidget(Gtk.Box):
     def __init__(
         self,
         editor: "DocEditor",
-        items: Optional[list[DocItem]] = None,
+        items: list[DocItem] | None = None,
         *args,
         **kwargs,
     ):
@@ -127,7 +127,7 @@ class DocItemPropertiesWidget(Gtk.Box):
                     widget.set_visible(False)
                     self._rows_container.append(widget)
 
-    def set_items(self, items: Optional[list[DocItem]]):
+    def set_items(self, items: list[DocItem] | None):
         """Sets the currently selected items and updates the UI."""
         for item in self.items:
             item.updated.disconnect(self._on_item_data_changed)

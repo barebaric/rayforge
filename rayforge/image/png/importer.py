@@ -2,7 +2,6 @@ import logging
 import warnings
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -36,9 +35,9 @@ class PngImporter(Importer):
     extensions = (".png",)
     features = {ImporterFeature.BITMAP_TRACING}
 
-    def __init__(self, data: bytes, source_file: Optional[Path] = None):
+    def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)
-        self._image: Optional[pyvips.Image] = None
+        self._image: pyvips.Image | None = None
 
     def scan(self) -> ImportManifest:
         """
@@ -113,7 +112,7 @@ class PngImporter(Importer):
             source_parse_result=parse_result,
         )
 
-    def parse(self) -> Optional[ParsingResult]:
+    def parse(self) -> ParsingResult | None:
         """Phase 2: Parse the PNG into a vips image and extract facts."""
         try:
             image = pyvips.Image.pngload_buffer(

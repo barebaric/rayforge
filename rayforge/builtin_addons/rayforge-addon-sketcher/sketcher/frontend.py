@@ -16,7 +16,6 @@ ADDON_NAME = "sketcher"
 @hookimpl
 def step_settings_loaded(dialog, step, producer):
     """Add step settings widgets based on producer type."""
-    pass
 
 
 @hookimpl

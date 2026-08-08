@@ -1,7 +1,6 @@
 import logging
 import math
 from gettext import gettext as _
-from typing import Optional, Union
 
 from gi.repository import Adw, Gtk
 from raygeo.geo import Matrix
@@ -54,7 +53,7 @@ class PrintAndCutWizard(PatchedDialogWindow):
     def __init__(
         self,
         parent,
-        item: Union[WorkPiece, Group],
+        item: WorkPiece | Group,
         machine: Machine,
         machine_cmd: MachineCmd,
         editor: DocEditor,
@@ -73,11 +72,11 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._machine_cmd = machine_cmd
         self._editor = editor
 
-        self._design_point1: Optional[tuple[float, float]] = None
-        self._design_point2: Optional[tuple[float, float]] = None
+        self._design_point1: tuple[float, float] | None = None
+        self._design_point2: tuple[float, float] | None = None
 
-        self._physical_point1: Optional[tuple[float, float]] = None
-        self._physical_point2: Optional[tuple[float, float]] = None
+        self._physical_point1: tuple[float, float] | None = None
+        self._physical_point2: tuple[float, float] | None = None
 
         self._allow_scale: bool = False
 

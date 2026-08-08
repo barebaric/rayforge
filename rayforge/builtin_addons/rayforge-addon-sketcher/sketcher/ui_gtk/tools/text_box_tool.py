@@ -2,7 +2,7 @@ import logging
 import math
 from enum import Enum, auto
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 import cairo
 from blinker import Signal
@@ -46,17 +46,17 @@ class TextBoxTool(SketchTool):
     def __init__(self, element):
         super().__init__(element)
         self.state = TextBoxState.IDLE
-        self.editing_entity_id: Optional[EntityID] = None
+        self.editing_entity_id: EntityID | None = None
         self.text_buffer = ""
         self.cursor_pos: int = 0
         self.cursor_visible = True
         self.is_hovering = False
-        self.live_edit_cmd: Optional[LiveTextEditCommand] = None
+        self.live_edit_cmd: LiveTextEditCommand | None = None
         self._is_new_text_box = False
 
         # Text selection state
-        self.selection_start: Optional[int] = None
-        self.selection_end: Optional[int] = None
+        self.selection_start: int | None = None
+        self.selection_end: int | None = None
         self.is_drag_selecting = False
         self.drag_start_pos: int = 0
         self._drag_start_world_x: float = 0.0
@@ -298,7 +298,7 @@ class TextBoxTool(SketchTool):
                     return True
         return False
 
-    def _find_text_box_at_point(self, mx: float, my: float) -> Optional[int]:
+    def _find_text_box_at_point(self, mx: float, my: float) -> int | None:
         for entity in reversed(self.element.sketch.registry.entities):
             if isinstance(entity, TextBoxEntity):
                 if self._is_point_inside_entity_box(entity, mx, my):
@@ -644,7 +644,7 @@ class TextBoxTool(SketchTool):
 
     def _find_opposite_corner(
         self, text_entity: TextBoxEntity
-    ) -> Optional[Point]:
+    ) -> Point | None:
         """Finds the 4th point of the bounding box parallelogram."""
         p_w = text_entity.width_id
         for eid in text_entity.construction_line_ids:

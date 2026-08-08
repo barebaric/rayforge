@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 from xml.etree import ElementTree as ET
 
 import pytest
@@ -48,7 +47,7 @@ class ConcreteSvgImporter(SvgImporterBase):
     mime_types = ("image/svg+xml",)
     extensions = (".svg",)
 
-    def parse(self) -> Optional[ParsingResult]:
+    def parse(self) -> ParsingResult | None:
         return None
 
     def vectorize(

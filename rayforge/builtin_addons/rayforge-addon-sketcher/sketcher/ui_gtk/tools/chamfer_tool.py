@@ -1,7 +1,7 @@
 import logging
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Union
 
 from ...core.commands import ChamferCommand
 from ...core.entities import Entity, Line, Point
@@ -22,8 +22,8 @@ class ChamferTool(SketchTool):
 
     def is_available(
         self,
-        target: Optional[Union[Point, Entity, "Constraint"]],
-        target_type: Optional[str],
+        target: Union[Point, Entity, "Constraint"] | None,
+        target_type: str | None,
     ) -> bool:
         if target_type != "junction":
             return False

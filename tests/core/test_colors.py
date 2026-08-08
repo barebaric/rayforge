@@ -156,7 +156,7 @@ class TestColorSetImmutability:
         colorset = ColorSet(_data={"color": (1.0, 0.0, 0.0, 1.0)})
 
         with pytest.raises(Exception):
-            setattr(colorset, "_data", {})
+            colorset._data = {}
 
 
 class TestNormalizeColor:

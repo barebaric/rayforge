@@ -1,5 +1,4 @@
 from gettext import gettext as _
-from typing import Optional
 
 from gi.repository import Gtk
 
@@ -18,7 +17,7 @@ class MachineStatusIconWidget(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
 
         # Placeholder for the image widget
-        self.status_image: Optional[Gtk.Widget] = None
+        self.status_image: Gtk.Widget | None = None
 
         # Set the initial status
         self.set_status(DeviceStatus.UNKNOWN)
@@ -80,7 +79,7 @@ class MachineStatusIconWidget(Gtk.Box):
 class MachineStatusWidget(Gtk.Box):
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        self.machine: Optional[Machine] = None
+        self.machine: Machine | None = None
 
         self.label = Gtk.Label()
         self.append(self.label)
@@ -90,7 +89,7 @@ class MachineStatusWidget(Gtk.Box):
 
         self._update_display(DeviceState())  # Initial default state
 
-    def set_machine(self, machine: Optional[Machine]):
+    def set_machine(self, machine: Machine | None):
         if self.machine:
             try:
                 self.machine.state_changed.disconnect(self._on_state_changed)
@@ -108,7 +107,7 @@ class MachineStatusWidget(Gtk.Box):
     def _on_state_changed(self, machine: Machine, state: DeviceState):
         self._update_display(state)
 
-    def _update_display(self, state: Optional[DeviceState]):
+    def _update_display(self, state: DeviceState | None):
         is_nodriver = not self.machine or isinstance(
             self.machine.driver, NoDeviceDriver
         )

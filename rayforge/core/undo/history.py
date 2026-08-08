@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Optional
 
 from blinker import Signal
 
@@ -58,7 +57,7 @@ class HistoryManager:
         # checkpoint (no changes since checkpoint was set).
         # A Command reference means that command and all commands below it
         # in the undo stack represent the checkpointed state.
-        self._checkpoint: Optional[Command] = None
+        self._checkpoint: Command | None = None
 
     def execute(self, command: Command):
         """
@@ -195,7 +194,7 @@ class HistoryManager:
         self.transaction_commands = []
         self.transaction_name = ""
 
-    def _coalesce_commands(self, commands: list[Command]) -> Optional[Command]:
+    def _coalesce_commands(self, commands: list[Command]) -> Command | None:
         """
         Internal helper to optimize a list of commands from an explicit
         transaction. If there's only one command, it returns it directly.

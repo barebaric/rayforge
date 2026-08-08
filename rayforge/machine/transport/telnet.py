@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from typing import Optional
 
 from .transport import Transport, TransportStatus
 
@@ -12,11 +11,11 @@ class TelnetTransport(Transport):
         super().__init__()
         self.host = host
         self.port = port
-        self.reader: Optional[asyncio.StreamReader] = None
-        self.writer: Optional[asyncio.StreamWriter] = None
+        self.reader: asyncio.StreamReader | None = None
+        self.writer: asyncio.StreamWriter | None = None
         self._running = False
         self._reconnect_interval = 5
-        self._connection_task: Optional[asyncio.Task] = None
+        self._connection_task: asyncio.Task | None = None
 
     @property
     def is_connected(self) -> bool:

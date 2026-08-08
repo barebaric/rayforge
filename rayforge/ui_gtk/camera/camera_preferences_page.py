@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import Optional, cast
+from typing import cast
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -176,7 +176,7 @@ class CameraEnhancementGroup(Adw.PreferencesGroup):
             description=_("Reduce noise and improve image stability."),
             **kwargs,
         )
-        self._controller: Optional[CameraController] = None
+        self._controller: CameraController | None = None
         self._updating = False
 
         self.denoise_scale = create_slider(
@@ -196,7 +196,7 @@ class CameraEnhancementGroup(Adw.PreferencesGroup):
         row.add_suffix(self.denoise_scale)
         self.add(row)
 
-    def set_controller(self, controller: Optional[CameraController]):
+    def set_controller(self, controller: CameraController | None):
         self._controller = controller
         self.set_sensitive(controller is not None)
 
@@ -217,8 +217,7 @@ class CameraEnhancementGroup(Adw.PreferencesGroup):
         # Convert 0-100 slider to 0.0-0.95 range
         val = scale.get_value() / 100.0
         # Hard clamp to 0.95 to avoid accidental infinite freeze
-        if val > 0.95:
-            val = 0.95
+        val = min(val, 0.95)
 
         self._controller.config.denoise = val
 
@@ -236,7 +235,7 @@ class CameraDistortionGroup(Adw.PreferencesGroup):
             description=desc_text,
             **kwargs,
         )
-        self._controller: Optional[CameraController] = None
+        self._controller: CameraController | None = None
         self._updating = False
 
         self.k1_spin = self._create_spin_row(_("Radial 1 (k1)"))
@@ -263,7 +262,7 @@ class CameraDistortionGroup(Adw.PreferencesGroup):
         self.add(row)
         return spin
 
-    def set_controller(self, controller: Optional[CameraController]):
+    def set_controller(self, controller: CameraController | None):
         self._controller = controller
         self.set_sensitive(controller is not None)
 
@@ -305,7 +304,7 @@ class CameraPreferencesPage(TrackedPreferencesPage):
         )
         self._controllers: list[CameraController] = []
         self._cameras: list[Camera] = []
-        self.selected_controller: Optional[CameraController] = None
+        self.selected_controller: CameraController | None = None
 
         # Signals
         self.camera_add_requested = Signal()

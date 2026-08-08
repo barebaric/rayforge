@@ -3,6 +3,6 @@
 from .groups import PlaceholderSettingsGroup, TransformerSettingsGroup
 
 __all__ = [
-    "TransformerSettingsGroup",
     "PlaceholderSettingsGroup",
+    "TransformerSettingsGroup",
 ]

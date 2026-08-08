@@ -7,8 +7,6 @@ class RuidaRenderer(DxfRenderer):
     DxfRenderer.
     """
 
-    pass
-
 
 # The RUIDA importer produces vector geometry, so it uses a renderer that
 # can handle it. We create this alias for consistency and future extension.

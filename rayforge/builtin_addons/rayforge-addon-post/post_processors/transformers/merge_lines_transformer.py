@@ -5,7 +5,6 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Optional,
 )
 
 from raygeo.ops.transform.merge_lines import MergeLinesSpec
@@ -56,9 +55,9 @@ class MergeLinesTransformer(OpsTransformer):
 
     def to_spec(
         self,
-        workpiece: Optional[WorkPiece],
-        stock_geometries: Optional[Sequence["Geometry"]],
-        settings: Optional[dict[str, Any]],
+        workpiece: WorkPiece | None,
+        stock_geometries: Sequence[Geometry] | None,
+        settings: dict[str, Any] | None,
     ) -> MergeLinesSpec:
         return MergeLinesSpec(tolerance=self._tolerance)
 
@@ -68,7 +67,7 @@ class MergeLinesTransformer(OpsTransformer):
         return data
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "MergeLinesTransformer":
+    def from_dict(cls, data: dict[str, Any]) -> MergeLinesTransformer:
         if data.get("name") != cls.__name__:
             raise ValueError(
                 f"Mismatched transformer name: expected {cls.__name__},"

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.ops.transform.multipass import MultiPassSpec
 
@@ -81,9 +81,9 @@ class MultiPassTransformer(OpsTransformer):
 
     def to_spec(
         self,
-        workpiece: Optional[WorkPiece],
-        stock_geometries: Optional[list["Geometry"]],
-        settings: Optional[dict[str, Any]],
+        workpiece: WorkPiece | None,
+        stock_geometries: list[Geometry] | None,
+        settings: dict[str, Any] | None,
     ) -> MultiPassSpec:
         return MultiPassSpec(passes=self.passes, z_step_down=self.z_step_down)
 
@@ -96,7 +96,7 @@ class MultiPassTransformer(OpsTransformer):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "MultiPassTransformer":
+    def from_dict(cls, data: dict[str, Any]) -> MultiPassTransformer:
         """Creates a MultiPassTransformer instance from a dictionary."""
         if data.get("name") != cls.__name__:
             raise ValueError(

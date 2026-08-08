@@ -4,7 +4,6 @@ Renders a cylinder wireframe for visualizing rotary mode workpieces.
 
 import logging
 import math
-from typing import Optional
 
 import numpy as np
 from OpenGL import GL
@@ -35,7 +34,7 @@ class CylinderRenderer(BaseRenderer):
         self.vao: int = 0
         self.vbo: int = 0
         self.vertex_count = 0
-        self._mvp: Optional[np.ndarray] = None
+        self._mvp: np.ndarray | None = None
         self._color: tuple[float, float, float, float] = (
             0.5,
             0.5,

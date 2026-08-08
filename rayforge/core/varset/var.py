@@ -1,10 +1,9 @@
+from collections.abc import Callable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Generic,
-    Optional,
     TypeVar,
 )
 
@@ -20,8 +19,6 @@ T = TypeVar("T")
 class ValidationError(ValueError):
     """Custom exception for validation failures in Var."""
 
-    pass
-
 
 class Var(Generic[T]):
     """
@@ -31,7 +28,7 @@ class Var(Generic[T]):
 
     _registry: dict[str, type["Var"]] = {}
 
-    display_name: Optional[str] = None
+    display_name: str | None = None
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -42,10 +39,10 @@ class Var(Generic[T]):
         key: str,
         label: str,
         var_type: type[T],
-        description: Optional[str] = None,
-        default: Optional[T] = None,
-        value: Optional[T] = None,
-        validator: Optional[Callable[[Optional[T]], None]] = None,
+        description: str | None = None,
+        default: T | None = None,
+        value: T | None = None,
+        validator: Callable[[T | None], None] | None = None,
     ):
         """
         Initializes a new Var instance.
@@ -66,8 +63,8 @@ class Var(Generic[T]):
         self._description = description
         self._default = default
         self.validator = validator
-        self._value: Optional[T] = None
-        self._varset: Optional["VarSet"] = None
+        self._value: T | None = None
+        self._varset: VarSet | None = None
 
         # Signal sent when the Var's value or default value changes.
         self.value_changed = Signal()
@@ -101,12 +98,12 @@ class Var(Generic[T]):
             self.definition_changed.send(self, property="label")
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> str | None:
         """A longer, human-readable description."""
         return self._description
 
     @description.setter
-    def description(self, new_description: Optional[str]):
+    def description(self, new_description: str | None):
         if self._description != new_description:
             self._description = new_description
             self.definition_changed.send(self, property="description")
@@ -131,12 +128,12 @@ class Var(Generic[T]):
                 ) from e
 
     @property
-    def default(self) -> Optional[T]:
+    def default(self) -> T | None:
         """The default value of the variable."""
         return self._default
 
     @default.setter
-    def default(self, new_default: Optional[T]):
+    def default(self, new_default: T | None):
         """
         Sets the default value, triggering updates if effective value changes.
         """
@@ -161,12 +158,12 @@ class Var(Generic[T]):
             )
 
     @property
-    def raw_value(self) -> Optional[T]:
+    def raw_value(self) -> T | None:
         """The explicitly set value, or None if the default is being used."""
         return self._value
 
     @property
-    def value(self) -> Optional[T]:
+    def value(self) -> T | None:
         """
         The effective value of the variable (returns explicit value if set,
         otherwise default).
@@ -176,12 +173,12 @@ class Var(Generic[T]):
         return self.default
 
     @value.setter
-    def value(self, new_value: Optional[T]):
+    def value(self, new_value: T | None):
         """
         Sets the explicit override value for the variable.
         """
         old_effective_value = self.value
-        coerced_value: Optional[T]
+        coerced_value: T | None
 
         # 1. Coerce value if not None
         if new_value is None:

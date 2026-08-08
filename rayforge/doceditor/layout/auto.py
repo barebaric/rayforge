@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
-    Optional,
 )
 
 import cairo
@@ -93,7 +92,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         self.allow_rotation = allow_rotation
 
     def calculate_deltas(
-        self, context: Optional[ExecutionContext] = None
+        self, context: ExecutionContext | None = None
     ) -> dict[DocItem, Matrix]:
         """
         Calculates the transform for each workpiece for a dense layout. The
@@ -117,7 +116,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             context.set_progress(0.1)
 
         # Stock-aware Logic
-        stock_item: Optional[StockItem] = None
+        stock_item: StockItem | None = None
         stock_bbox = None
         doc = self.items[0].doc
         if doc:
@@ -414,7 +413,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         self,
         item_groups: list[list[WorkpieceVariant]],
         canvas: np.ndarray,
-        context: Optional[ExecutionContext] = None,
+        context: ExecutionContext | None = None,
     ) -> tuple[list[PlacedItem], list[DocItem]]:
         """
         Places workpiece variants onto the canvas greedily.
@@ -484,7 +483,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         variants: list[WorkpieceVariant],
         canvas: np.ndarray,
         placed_bounds: list[tuple[int, int, int, int]],
-    ) -> Optional[PlacedItem]:
+    ) -> PlacedItem | None:
         """
         Finds the best rotation and position for an item.
 
@@ -499,7 +498,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         Returns:
             The best `PlacedItem` if a fit is found, otherwise None.
         """
-        best_fit: Optional[dict] = None
+        best_fit: dict | None = None
         best_score = float("inf")
 
         for variant in variants:
@@ -684,14 +683,14 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
 
     def _render_and_mask(
         self, item: DocItem, angle_offset: int
-    ) -> Optional[tuple[np.ndarray, Rect, tuple[float, float]]]:
+    ) -> tuple[np.ndarray, Rect, tuple[float, float]] | None:
         """
         Renders a DocItem to a pixel mask at a specific orientation.
 
         Returns a tuple: (mask, local_bbox_of_rotated_shape,
             unrotated_shape_size).
         """
-        source_surface: Optional[cairo.ImageSurface] = None
+        source_surface: cairo.ImageSurface | None = None
         unrotated_w_mm, unrotated_h_mm = 0.0, 0.0
 
         if isinstance(item, WorkPiece):
@@ -829,7 +828,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
     @staticmethod
     def _find_first_fit(
         canvas: np.ndarray, item_mask: np.ndarray
-    ) -> Optional[tuple[int, int]]:
+    ) -> tuple[int, int] | None:
         """
         Finds the first top-left position where an item fits on the canvas.
 

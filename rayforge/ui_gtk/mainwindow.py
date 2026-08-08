@@ -1,11 +1,10 @@
 import asyncio
 import logging
 import webbrowser
-from collections.abc import Coroutine
+from collections.abc import Callable, Coroutine
 from concurrent.futures import Future
 from gettext import gettext as _
 from pathlib import Path
-from typing import Callable, Optional
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from raygeo.ops.axis import Axis
@@ -137,12 +136,12 @@ class MainWindow(Adw.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.set_title(const.APP_NAME)
-        self._current_machine: Optional[Machine] = None  # For signal handling
+        self._current_machine: Machine | None = None  # For signal handling
         self._last_bottom_panel_height = 200
         self._saved_bottom_panel_visible = False
         self._old_doc = None  # Track previous document for signal reconnection
-        self.canvas3d: Optional[Canvas3D] = None
-        self._canvas3d_time_overlay: Optional[TimeEstimateOverlay] = None
+        self.canvas3d: Canvas3D | None = None
+        self._canvas3d_time_overlay: TimeEstimateOverlay | None = None
         self._is_syncing_3d = False
 
         # The ToastOverlay will wrap the main content box
@@ -582,7 +581,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _get_selection_bounds(
         self,
-    ) -> Optional[tuple[float, float, float, float]]:
+    ) -> tuple[float, float, float, float] | None:
         """
         Get the bounding box of selected items or workarea bounds.
 
@@ -674,7 +673,7 @@ class MainWindow(Adw.ApplicationWindow):
         if child:
             self.main_stack.remove(child)
 
-    def get_stack_page(self, name: str) -> Optional[Gtk.Widget]:
+    def get_stack_page(self, name: str) -> Gtk.Widget | None:
         """Get a page widget from the main stack by name.
 
         Args:
@@ -867,7 +866,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.canvas3d.update_scene_from_doc()
 
     def _update_gcode_preview(
-        self, gcode_string: Optional[str], op_map: Optional[MachineCodeOpMap]
+        self, gcode_string: str | None, op_map: MachineCodeOpMap | None
     ):
         """Updates the G-code preview panel from a pre-generated string."""
         if gcode_string is None:
@@ -879,7 +878,7 @@ class MainWindow(Adw.ApplicationWindow):
             self.bottom_panel.gcode_viewer.set_op_map(op_map)
 
     def on_show_3d_view(
-        self, action: Gio.SimpleAction, value: Optional[GLib.Variant]
+        self, action: Gio.SimpleAction, value: GLib.Variant | None
     ):
         """Delegates the view switching logic to the command module."""
         self.view_cmd.toggle_3d_view(action, value)
@@ -1120,7 +1119,7 @@ class MainWindow(Adw.ApplicationWindow):
         self,
         machine: Machine,
         status: TransportStatus,
-        message: Optional[str] = None,
+        message: str | None = None,
     ):
         """Called when the active machine's connection status changes."""
         if (
@@ -1280,8 +1279,8 @@ class MainWindow(Adw.ApplicationWindow):
         sender,
         message: str,
         persistent: bool = False,
-        action_label: Optional[str] = None,
-        action_callback: Optional[Callable] = None,
+        action_label: str | None = None,
+        action_callback: Callable | None = None,
     ):
         """
         Shows a toast when requested by the DocEditor.
@@ -1325,8 +1324,8 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_assembly_for_preview_finished(
         self,
-        handle: Optional[BaseArtifactHandle],
-        error: Optional[Exception],
+        handle: BaseArtifactHandle | None,
+        error: Exception | None,
     ):
         """Callback for when the job assembly for previews is complete."""
         if error:
@@ -1343,7 +1342,7 @@ class MainWindow(Adw.ApplicationWindow):
         # The handle will be released in the main thread callback.
         GLib.idle_add(self._on_previews_ready, handle)
 
-    def _on_previews_ready(self, handle: Optional[BaseArtifactHandle]):
+    def _on_previews_ready(self, handle: BaseArtifactHandle | None):
         """
         Main-thread callback to distribute assembled Ops to all consumers.
         This method is responsible for releasing the artifact handle.
@@ -1458,7 +1457,7 @@ class MainWindow(Adw.ApplicationWindow):
         self,
         sender,
         elements: list[CanvasElement],
-        active_element: Optional[CanvasElement],
+        active_element: CanvasElement | None,
     ):
         """Handles the 'selection-changed' signal from the WorkSurface."""
         # Get all selected DocItems (WorkPieces, Groups, etc.)
@@ -1539,7 +1538,7 @@ class MainWindow(Adw.ApplicationWindow):
             # controller (and its signal) is already gone, so there is
             # nothing left to detach.
             if self._current_machine.has_controller:
-                self._current_machine.controller.laser_power_changed.disconnect(  # noqa: E501
+                self._current_machine.controller.laser_power_changed.disconnect(
                     self._on_laser_power_changed
                 )
 

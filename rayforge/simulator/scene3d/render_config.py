@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -12,8 +12,8 @@ class LayerRenderConfig:
     rotary_diameter: float
     axis_position: float = 0.0
     reverse: bool = False
-    axis_position_3d: Optional[tuple[float, ...]] = None
-    cylinder_dir: Optional[tuple[float, ...]] = None
+    axis_position_3d: tuple[float, ...] | None = None
+    cylinder_dir: tuple[float, ...] | None = None
 
     def to_dict(self) -> dict:
         d = {
@@ -29,7 +29,7 @@ class LayerRenderConfig:
         return d
 
     @classmethod
-    def from_dict(cls, data: dict) -> "LayerRenderConfig":
+    def from_dict(cls, data: dict) -> LayerRenderConfig:
         ap3d = data.get("axis_position_3d")
         if ap3d is not None:
             ap3d = tuple(ap3d)
@@ -50,7 +50,7 @@ class LayerRenderConfig:
 class RenderConfig3D:
     world_to_visual: np.ndarray
     world_to_cyl_local: np.ndarray
-    layer_configs: Optional[dict[str, LayerRenderConfig]] = None
+    layer_configs: dict[str, LayerRenderConfig] | None = None
 
     def to_dict(self) -> dict:
         d: dict[str, object] = {
@@ -68,7 +68,7 @@ class RenderConfig3D:
         return d
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "RenderConfig3D":
+    def from_dict(cls, data: dict[str, Any]) -> RenderConfig3D:
         w2v = (
             np.frombuffer(data["world_to_visual"], dtype=np.float32)
             .reshape(4, 4)

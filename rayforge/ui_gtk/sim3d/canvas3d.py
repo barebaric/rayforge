@@ -1,7 +1,7 @@
 import logging
 import math
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
@@ -120,7 +120,7 @@ class Canvas3D(Gtk.GLArea):
 
         self._context.config.changed.connect(self._on_config_changed)
 
-    def set_machine(self, viewport: Optional[ViewportConfig] = None):
+    def set_machine(self, viewport: ViewportConfig | None = None):
         self._doc_hub.set_machine(viewport)
 
     def has_stale_job(self) -> bool:

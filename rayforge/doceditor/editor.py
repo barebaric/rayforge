@@ -5,7 +5,7 @@ import logging
 import threading
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from blinker import Signal
 
@@ -54,8 +54,8 @@ class DocEditor:
 
     def __init__(
         self,
-        task_manager: "TaskManager",
-        context: "RayforgeContext",
+        task_manager: TaskManager,
+        context: RayforgeContext,
         doc: Doc | None = None,
     ):
         """
@@ -94,7 +94,7 @@ class DocEditor:
             context.artifact_store,
             context.machine,
         )
-        self.history_manager: "HistoryManager" = self.doc.history_manager
+        self.history_manager: HistoryManager = self.doc.history_manager
 
         # A set to track temporary artifacts (e.g., for job previews)
         # that don't live in the Pipeline cache.
@@ -105,7 +105,7 @@ class DocEditor:
         self._busy_task_count: int = 0
 
         # Track file path and saved state for the document
-        self._file_path: Optional[Path] = None
+        self._file_path: Path | None = None
         self._is_saved: bool = True
 
         # Signals for monitoring document processing state
@@ -240,7 +240,7 @@ class DocEditor:
         """
         Public handler for the 'add_tab' action, using context from the UI.
         """
-        workpiece: "WorkPiece" = context["workpiece"]
+        workpiece: WorkPiece = context["workpiece"]
         location: dict[str, Any] = context["location"]
         segment_index = location["segment_index"]
         pos = location["pos"]
@@ -253,15 +253,15 @@ class DocEditor:
         """
         Public handler for the 'remove_tab' action, using context from the UI.
         """
-        workpiece: "WorkPiece" = context["workpiece"]
-        tab_to_remove: "Tab" = context["tab_data"]
+        workpiece: WorkPiece = context["workpiece"]
+        tab_to_remove: Tab = context["tab_data"]
 
         self.tab.remove_single_tab(
             workpiece=workpiece, tab_to_remove=tab_to_remove
         )
 
     @property
-    def machine_dimensions(self) -> Optional[tuple[float, float]]:
+    def machine_dimensions(self) -> tuple[float, float] | None:
         """Returns the configured machine's axis extents, or None."""
         config = self.context.config
         if config and config.machine:
@@ -364,8 +364,8 @@ class DocEditor:
     async def import_file_from_path(
         self,
         filename: Path,
-        mime_type: Optional[str],
-        vectorization_spec: Optional[VectorizationSpec],
+        mime_type: str | None,
+        vectorization_spec: VectorizationSpec | None,
     ) -> None:
         """
         Imports a file from the specified path and waits for the operation
@@ -386,7 +386,7 @@ class DocEditor:
             import_result.payload, filename, position_mm=None
         )
 
-    async def export_gcode_to_path(self, output_path: "Path") -> None:
+    async def export_gcode_to_path(self, output_path: Path) -> None:
         """
         Exports the current document to a G-code file at the specified path
         and waits for the operation to complete. This awaitable version is
@@ -396,8 +396,8 @@ class DocEditor:
         artifact_store = self.pipeline.artifact_store
 
         def _on_export_assembly_done(
-            handle: Optional[BaseArtifactHandle],
-            error: Optional[Exception],
+            handle: BaseArtifactHandle | None,
+            error: Exception | None,
         ):
             try:
                 if error:
@@ -606,7 +606,7 @@ class DocEditor:
             self.saved_state_changed.send(self)
 
     @property
-    def file_path(self) -> Optional[Path]:
+    def file_path(self) -> Path | None:
         """Returns the current file path of the document."""
         return self._file_path
 
@@ -615,7 +615,7 @@ class DocEditor:
         """Returns True if the document has no unsaved changes."""
         return self._is_saved
 
-    def set_file_path(self, path: Optional[Path]):
+    def set_file_path(self, path: Path | None):
         """Sets the file path for the document."""
         self._file_path = path
         self.saved_state_changed.send(self)

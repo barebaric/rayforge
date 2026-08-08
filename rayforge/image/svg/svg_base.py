@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 from xml.etree import ElementTree as ET
 
 from raygeo.geo import Geometry, Matrix
@@ -43,9 +43,9 @@ class SvgImporterBase(Importer):
     - Converting SVG paths to Geometry (for bounds/trimming)
     """
 
-    def __init__(self, data: bytes, source_file: Optional[Path] = None):
+    def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)
-        self.trimmed_data: Optional[bytes] = None
+        self.trimmed_data: bytes | None = None
 
     def _get_ppi(self) -> float:
         if self._vectorization_spec and hasattr(
@@ -175,14 +175,7 @@ class SvgImporterBase(Importer):
 
     def _calculate_parsing_basics(
         self,
-    ) -> Optional[
-        tuple[
-            Rect,
-            float,
-            Optional[Rect],
-            Rect,
-        ]
-    ]:
+    ) -> tuple[Rect, float, Rect | None, Rect] | None:
         """
         Common parsing logic. Returns:
         (document_bounds, unit_to_mm, untrimmed_document_bounds,
@@ -241,7 +234,7 @@ class SvgImporterBase(Importer):
             unit_to_mm = final_dims_mm[0] / width_px if width_px > 0 else 1.0
 
         # Calculate untrimmed bounds in the same Native Units
-        untrimmed_document_bounds: Optional[Rect] = None
+        untrimmed_document_bounds: Rect | None = None
 
         # First, try to get the authoritative untrimmed viewbox by parsing
         # the original, untrimmed SVG data. This is the correct frame of
@@ -377,7 +370,7 @@ class SvgImporterBase(Importer):
 
     def _get_svg_parsing_facts(
         self, data: bytes
-    ) -> Optional[tuple[float, float, Optional[Rect]]]:
+    ) -> tuple[float, float, Rect | None] | None:
         try:
             meta = extract_svg_metadata(data.decode())
         except ValueError:

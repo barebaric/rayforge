@@ -48,7 +48,7 @@ Omit any field that you do not know with high confidence. Use the \
 manufacturer's official specifications when available."""
 
 
-def _extract_json_object(content: str) -> Optional[dict[str, Any]]:
+def _extract_json_object(content: str) -> dict[str, Any] | None:
     """Pull the first balanced JSON object out of an LLM response.
 
     LLMs occasionally wrap JSON in markdown fences or surrounding
@@ -203,7 +203,7 @@ async def lookup_machine_specs(
     return _coerce_specs(parsed)
 
 
-__all__ = ["lookup_machine_specs", "is_ai_configured"]
+__all__ = ["is_ai_configured", "lookup_machine_specs"]
 
 
 def is_ai_configured(context: Optional["RayforgeContext"] = None) -> bool:

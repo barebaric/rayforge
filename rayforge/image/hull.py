@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from raygeo.geo import Geometry
 from raygeo.geo.algo import hull as _hull
@@ -41,7 +39,7 @@ def get_enclosing_hull(
     scale_y: float,
     height_px: int,
     border_size: int,
-) -> Optional[Geometry]:
+) -> Geometry | None:
     """
     Calculates a single convex hull that encompasses all content in the image.
 
@@ -89,7 +87,7 @@ def get_concave_hull(
     height_px: int,
     border_size: int,
     gravity: float = 0.1,
-) -> Optional[Geometry]:
+) -> Geometry | None:
     """
     Calculates a smooth, constrained concave hull that "shrink-wraps" the
     content geometrically, mimicking a physical rubber band using Bézier

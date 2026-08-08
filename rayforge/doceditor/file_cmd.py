@@ -4,13 +4,13 @@ import logging
 import mimetypes
 import warnings
 import zipfile
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from gettext import gettext as _
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
-    Callable,
     Optional,
     cast,
 )
@@ -93,11 +93,11 @@ class PreviewResult:
     """
 
     image_bytes: bytes
-    payload: Optional[ImportPayload]
-    parse_result: Optional[ParsingResult]  # Context for rendering
+    payload: ImportPayload | None
+    parse_result: ParsingResult | None  # Context for rendering
     aspect_ratio: float = 1.0
     warnings: list[str] = field(default_factory=list)
-    content_bounds: Optional[Rect] = None
+    content_bounds: Rect | None = None
 
 
 class ImportAction(Enum):
@@ -120,8 +120,8 @@ class FileCmd:
         self._task_manager = task_manager
 
     def get_importer_info(
-        self, file_path: Path, mime_type: Optional[str]
-    ) -> tuple[Optional[type[Importer]], set[ImporterFeature]]:
+        self, file_path: Path, mime_type: str | None
+    ) -> tuple[type[Importer] | None, set[ImporterFeature]]:
         """
         Finds the importer for a file and returns its class and feature set.
         """
@@ -142,7 +142,7 @@ class FileCmd:
         return None, set()
 
     def analyze_import_target(
-        self, file_path: Path, mime_type: Optional[str] = None
+        self, file_path: Path, mime_type: str | None = None
     ) -> ImportAction:
         """
         Analyzes a file path (and optional mime type) to determine how it
@@ -207,7 +207,7 @@ class FileCmd:
         mime_type: str,
         spec: VectorizationSpec,
         preview_size_px: int,
-    ) -> Optional[PreviewResult]:
+    ) -> PreviewResult | None:
         """
         Generates a preview image and vector payload for the import dialog.
         Runs the heavy image processing in a background thread.
@@ -228,7 +228,7 @@ class FileCmd:
         mime_type: str,
         spec: VectorizationSpec,
         preview_size_px: int,
-    ) -> Optional[PreviewResult]:
+    ) -> PreviewResult | None:
         """Blocking implementation of preview generation."""
         importer_cls, _ = self.get_importer_info(Path(filename), mime_type)
         if not importer_cls:
@@ -267,7 +267,7 @@ class FileCmd:
         original_file_bytes: bytes,
         spec: VectorizationSpec,
         preview_size_px: int,
-    ) -> Optional[PreviewResult]:
+    ) -> PreviewResult | None:
         """
         Generates the final PreviewResult from a rich ImportResult.
         This is the new central logic for creating preview bitmaps.
@@ -361,7 +361,7 @@ class FileCmd:
 
     def _extract_first_workpiece(
         self, items: list[DocItem]
-    ) -> Optional[WorkPiece]:
+    ) -> WorkPiece | None:
         """Recursively extract the first WorkPiece from a list of items."""
         for item in items:
             if isinstance(item, WorkPiece):
@@ -375,9 +375,9 @@ class FileCmd:
     async def _load_file_async(
         self,
         filename: Path,
-        mime_type: Optional[str],
-        vectorization_spec: Optional[VectorizationSpec],
-    ) -> Optional[ImportResult]:
+        mime_type: str | None,
+        vectorization_spec: VectorizationSpec | None,
+    ) -> ImportResult | None:
         """
         Runs the blocking import function in a background thread and returns
         the resulting rich ImportResult.
@@ -408,7 +408,7 @@ class FileCmd:
     def _position_newly_imported_items(
         self,
         items: list[DocItem],
-        position_mm: Optional[Point],
+        position_mm: Point | None,
     ):
         """
         Applies transformations to newly imported items, either positioning
@@ -463,7 +463,7 @@ class FileCmd:
         self,
         items: list[DocItem],
         mode: LayerImportMode,
-        target_layer: Optional[Layer] = None,
+        target_layer: Layer | None = None,
     ) -> list[tuple[DocItem, DocItem]]:
         """
         Resolve each item to a (owner, item) pair based on the import mode.
@@ -503,10 +503,10 @@ class FileCmd:
     def _commit_items_to_document(
         self,
         items: list[DocItem],
-        source: Optional[SourceAsset],
+        source: SourceAsset | None,
         filename: Path,
-        assets: Optional[list["IAsset"]] = None,
-        vectorization_spec: Optional[VectorizationSpec] = None,
+        assets: list["IAsset"] | None = None,
+        vectorization_spec: VectorizationSpec | None = None,
     ) -> list[Layer]:
         """
         Adds the imported items and their source to the document model using
@@ -555,8 +555,8 @@ class FileCmd:
         self,
         payload: ImportPayload,
         filename: Path,
-        position_mm: Optional[Point],
-        vectorization_spec: Optional[VectorizationSpec] = None,
+        position_mm: Point | None,
+        vectorization_spec: VectorizationSpec | None = None,
     ):
         """
         Performs the final steps of an import on the main thread.
@@ -591,9 +591,9 @@ class FileCmd:
     def load_file_from_path(
         self,
         filename: Path,
-        mime_type: Optional[str],
-        vectorization_spec: Optional[VectorizationSpec],
-        position_mm: Optional[Point] = None,
+        mime_type: str | None,
+        vectorization_spec: VectorizationSpec | None,
+        position_mm: Point | None = None,
     ):
         """
         Public, synchronous method to launch a file import in the background.
@@ -708,7 +708,7 @@ class FileCmd:
         self,
         files: list[Path],
         spec: VectorizationSpec,
-        pos: Optional[Point],
+        pos: Point | None,
     ):
         """
         Imports multiple files using the same vectorization settings.
@@ -723,7 +723,7 @@ class FileCmd:
     def _calculate_items_bbox(
         self,
         items: list[DocItem],
-    ) -> Optional[Rect]:
+    ) -> Rect | None:
         """
         Calculates the world-space bounding box that encloses a list of
         DocItems by taking the union of their individual bboxes.
@@ -950,7 +950,7 @@ class FileCmd:
     def assemble_job_in_background(
         self,
         when_done: Callable[
-            [Optional[BaseArtifactHandle], Optional[Exception]], None
+            [BaseArtifactHandle | None, Exception | None], None
         ],
     ):
         """
@@ -972,8 +972,8 @@ class FileCmd:
         artifact_store = self._editor.pipeline.artifact_store
 
         def _on_export_assembly_done(
-            handle: Optional[BaseArtifactHandle],
-            error: Optional[Exception],
+            handle: BaseArtifactHandle | None,
+            error: Exception | None,
         ):
             try:
                 if error:
@@ -1233,9 +1233,9 @@ class FileCmd:
         self,
         source_asset: SourceAsset,
         vectorization_spec: VectorizationSpec,
-        position_mm: Optional[Point] = None,
-        target_layer: Optional[Layer] = None,
-    ) -> Optional[ImportResult]:
+        position_mm: Point | None = None,
+        target_layer: Layer | None = None,
+    ) -> ImportResult | None:
         """
         Re-run the import pipeline for an existing SourceAsset, producing
         fresh (or additional) workpieces from the original data.
@@ -1280,9 +1280,9 @@ class FileCmd:
     def _finalize_reimport(
         self,
         items: list[DocItem],
-        position_mm: Optional[Point],
-        vectorization_spec: Optional[VectorizationSpec] = None,
-        target_layer: Optional[Layer] = None,
+        position_mm: Point | None,
+        vectorization_spec: VectorizationSpec | None = None,
+        target_layer: Layer | None = None,
     ):
         """
         Commit reimported items to the document.

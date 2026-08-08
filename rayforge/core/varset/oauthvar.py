@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from .var import Var
 
@@ -24,15 +24,15 @@ class OAuthFlowVar(Var[str]):
         self,
         key: str,
         label: str,
-        authorize_url: Optional[str] = None,
-        token_url: Optional[str] = None,
-        client_id: Optional[str] = None,
-        client_secret: Optional[str] = None,
-        scopes: Optional[list[str]] = None,
+        authorize_url: str | None = None,
+        token_url: str | None = None,
+        client_id: str | None = None,
+        client_secret: str | None = None,
+        scopes: list[str] | None = None,
         redirect_port: int = 8765,
-        description: Optional[str] = None,
-        default: Optional[str] = None,
-        value: Optional[str] = None,
+        description: str | None = None,
+        default: str | None = None,
+        value: str | None = None,
     ):
         self.authorize_url = authorize_url
         self.token_url = token_url
@@ -49,7 +49,7 @@ class OAuthFlowVar(Var[str]):
             value=value,
         )
 
-    def get_tokens(self) -> Optional[dict[str, Any]]:
+    def get_tokens(self) -> dict[str, Any] | None:
         """Return parsed token dict, or None if not authenticated."""
         val = self.value
         if not val:
@@ -75,7 +75,7 @@ class OAuthFlowVar(Var[str]):
             return False
         return self._is_expired(tokens)
 
-    def get_refresh_token(self) -> Optional[str]:
+    def get_refresh_token(self) -> str | None:
         tokens = self.get_tokens()
         if tokens:
             return tokens.get("refresh_token")
@@ -94,7 +94,7 @@ class OAuthFlowVar(Var[str]):
 
     def resolve_config(
         self,
-        overrides: Optional[dict[str, str]] = None,
+        overrides: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         """
         Build a resolved config dict with all ``{key}`` placeholders

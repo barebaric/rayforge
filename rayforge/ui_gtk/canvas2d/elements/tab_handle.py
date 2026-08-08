@@ -2,7 +2,7 @@ import logging
 import math
 from copy import deepcopy
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 import cairo
 import numpy as np
@@ -41,13 +41,13 @@ class TabHandleElement(CanvasElement):
             preserves_selection_on_click=True,  # This is the key flag
             clip=False,
         )
-        self._initial_tabs_state: Optional[list[Tab]] = None
+        self._initial_tabs_state: list[Tab] | None = None
         # Cache for geometric calculations, in parent's normalized (0-1) space.
         self._local_pos_norm: tuple[float, float] = (0.0, 0.0)
         self._local_tangent_norm: tuple[float, float] = (1.0, 0.0)
 
         # Holds the transient state during a drag
-        self._dragged_tab_state: Optional[Tab] = None
+        self._dragged_tab_state: Tab | None = None
 
     def on_attached(self):
         """Lifecycle hook called when added to the canvas."""
@@ -65,7 +65,7 @@ class TabHandleElement(CanvasElement):
         self,
         sender,
         elements: list[CanvasElement],
-        drag_target: Optional[CanvasElement] = None,
+        drag_target: CanvasElement | None = None,
     ):
         """Called by the canvas when a move operation starts."""
         if drag_target is self:
@@ -80,7 +80,7 @@ class TabHandleElement(CanvasElement):
         self,
         sender,
         elements: list[CanvasElement],
-        drag_target: Optional[CanvasElement] = None,
+        drag_target: CanvasElement | None = None,
     ):
         """Called by the canvas when a move operation ends."""
         if (

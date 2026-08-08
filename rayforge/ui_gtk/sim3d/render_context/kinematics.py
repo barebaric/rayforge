@@ -55,14 +55,14 @@ class KinematicsContext:
     def __init__(
         self,
         *,
-        mvp_ui: Optional[np.ndarray] = None,
-        mvp_rot: Optional[np.ndarray] = None,
-        cyl_mesh_mvp: Optional[np.ndarray] = None,
-        model_world_transforms: Optional[dict[str, np.ndarray]] = None,
-        head_positions: Optional[dict[str, tuple]] = None,
-        head_configs: Optional[dict[str, HeadConfig]] = None,
-        rotary_head_positions: Optional[dict[str, np.ndarray]] = None,
-        focused_rotary_head_positions: Optional[dict[str, np.ndarray]] = None,
+        mvp_ui: np.ndarray | None = None,
+        mvp_rot: np.ndarray | None = None,
+        cyl_mesh_mvp: np.ndarray | None = None,
+        model_world_transforms: dict[str, np.ndarray] | None = None,
+        head_positions: dict[str, tuple] | None = None,
+        head_configs: dict[str, HeadConfig] | None = None,
+        rotary_head_positions: dict[str, np.ndarray] | None = None,
+        focused_rotary_head_positions: dict[str, np.ndarray] | None = None,
         has_rotary: bool = False,
         rotary_axis: Optional["Axis"] = None,
     ):
@@ -79,7 +79,7 @@ class KinematicsContext:
         )
         self.has_rotary = has_rotary
         self.rotary_axis = rotary_axis
-        self.laser_light_pos: Optional[np.ndarray] = None
+        self.laser_light_pos: np.ndarray | None = None
 
     @property
     def is_rotary(self) -> bool:
@@ -92,7 +92,7 @@ class KinematicsContext:
             return self._mvp_rot
         return self._mvp_ui
 
-    def cylinder_mesh_mvp(self) -> Optional[np.ndarray]:
+    def cylinder_mesh_mvp(self) -> np.ndarray | None:
         """MVP for the rotary cylinder mesh, or None when not rotary."""
         return self._cyl_mesh_mvp
 

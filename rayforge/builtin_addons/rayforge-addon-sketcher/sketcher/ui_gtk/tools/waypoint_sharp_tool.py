@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Union
 
 from ...core.commands import SetWaypointTypeCommand
 from ...core.entities import Bezier, Entity, Line, Point
@@ -17,8 +17,8 @@ class WaypointSharpTool(SketchTool):
 
     def is_available(
         self,
-        target: Optional[Union[Point, Entity, "Constraint"]],
-        target_type: Optional[str],
+        target: Union[Point, Entity, "Constraint"] | None,
+        target_type: str | None,
     ) -> bool:
         pid = self._get_waypoint_pid()
         if pid is None:
@@ -40,7 +40,7 @@ class WaypointSharpTool(SketchTool):
         self._set_waypoint_type(WaypointType.SHARP)
         self.element.set_tool("select")
 
-    def _get_waypoint_pid(self) -> Optional[EntityID]:
+    def _get_waypoint_pid(self) -> EntityID | None:
         sel = self.element.selection
         if sel.junction_pid is not None:
             return sel.junction_pid

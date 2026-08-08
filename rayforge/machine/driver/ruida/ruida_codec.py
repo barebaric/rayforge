@@ -6,7 +6,6 @@ detected from certain packets (card ID queries) or set explicitly.
 """
 
 import logging
-from typing import Optional
 
 from .ruida_maps import CARD_ID_TO_MAGIC
 from .ruida_util import build_swizzle_lut, parse_mem
@@ -56,7 +55,7 @@ class RuidaCodec:
         """Decode received data."""
         return bytes([self._unswizzle_lut[b] for b in data])
 
-    def detect_magic_from_payload(self, payload: bytes) -> Optional[int]:
+    def detect_magic_from_payload(self, payload: bytes) -> int | None:
         """
         Try to detect magic key from a swizzled payload.
 
@@ -66,9 +65,7 @@ class RuidaCodec:
             return self._magic_keys.get(payload)
         return None
 
-    def detect_magic_from_mem_request(
-        self, unswizzled: bytes
-    ) -> Optional[int]:
+    def detect_magic_from_mem_request(self, unswizzled: bytes) -> int | None:
         """
         Detect magic key from DA memory read requests.
 

@@ -35,7 +35,7 @@ class SketchModeCmd:
     def __init__(self, win: "MainWindow", editor: "DocEditor"):
         self._win = win
         self._editor = editor
-        self.active_sketch_workpiece: Optional[WorkPiece] = None
+        self.active_sketch_workpiece: WorkPiece | None = None
         self._is_editing_new_sketch = False
 
     def enter_sketch_mode(
@@ -45,7 +45,7 @@ class SketchModeCmd:
         sketch = None
         if workpiece.geometry_provider_uid:
             sketch = cast(
-                Optional[Sketch],
+                Sketch | None,
                 self._editor.doc.get_asset_by_uid(
                     workpiece.geometry_provider_uid
                 ),

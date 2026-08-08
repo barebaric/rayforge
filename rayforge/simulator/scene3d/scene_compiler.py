@@ -6,7 +6,7 @@ raygeo's Rust ``compile_scene_3d`` and handles texture generation.
 from __future__ import annotations
 
 import logging
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import numpy as np
 from raygeo.image import rasterize_scanlines
@@ -33,7 +33,7 @@ PX_PER_MM = 50.0
 def _rasterize_scanlines(
     ops: Ops,
     bbox: tuple[float, float, float, float],
-) -> Optional[tuple[np.ndarray, int, int, float]]:
+) -> tuple[np.ndarray, int, int, float] | None:
     x0, y0, w_mm, h_mm = bbox
     if w_mm <= 0 or h_mm <= 0:
         return None
@@ -209,7 +209,7 @@ def _wrap_compiled_scene(
 def compile_scene(
     ops: Ops,
     config: RenderConfig3D,
-    cancel_check: Optional[Callable[[], bool]] = None,
+    cancel_check: Callable[[], bool] | None = None,
     generation_id: int = 0,
 ) -> CompiledSceneArtifact:
     if cancel_check is not None and cancel_check():

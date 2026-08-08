@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
@@ -15,15 +15,15 @@ if TYPE_CHECKING:
 class MachineState:
     def __init__(
         self,
-        axis_letters: Optional[Iterable[Axis]] = None,
+        axis_letters: Iterable[Axis] | None = None,
     ):
         self.power: float = 0.0
         self.air_assist: bool = False
-        self.cut_speed: Optional[int] = None
-        self.travel_speed: Optional[int] = None
-        self.active_laser_uid: Optional[str] = None
-        self.frequency: Optional[int] = None
-        self.pulse_width: Optional[float] = None
+        self.cut_speed: int | None = None
+        self.travel_speed: int | None = None
+        self.active_laser_uid: str | None = None
+        self.frequency: int | None = None
+        self.pulse_width: float | None = None
         if axis_letters is not None:
             self.axes: dict[Axis, float] = {a: 0.0 for a in axis_letters}
         else:
@@ -34,7 +34,7 @@ class MachineState:
             }
         self.laser_on = False
         self.reached_textures: set = set()
-        self.current_layer_uid: Optional[str] = None
+        self.current_layer_uid: str | None = None
 
     @classmethod
     def from_axis_set(cls, axis_set: AxisSet) -> MachineState:

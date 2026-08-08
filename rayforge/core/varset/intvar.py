@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import Any, Callable, Optional
+from typing import Any
 
 from .var import ValidationError, Var
 
@@ -13,17 +14,17 @@ class IntVar(Var[int]):
         self,
         key: str,
         label: str,
-        description: Optional[str] = None,
-        default: Optional[int] = None,
-        value: Optional[int] = None,
-        min_val: Optional[int] = None,
-        max_val: Optional[int] = None,
-        validator: Optional[Callable[[Optional[int]], None]] = None,
+        description: str | None = None,
+        default: int | None = None,
+        value: int | None = None,
+        min_val: int | None = None,
+        max_val: int | None = None,
+        validator: Callable[[int | None], None] | None = None,
     ):
         self.min_val = min_val
         self.max_val = max_val
 
-        def thevalidator(v: Optional[int]):
+        def thevalidator(v: int | None):
             if self.min_val is not None and v is not None and v < self.min_val:
                 raise ValidationError(
                     _("Value must be at least {min_val}.").format(

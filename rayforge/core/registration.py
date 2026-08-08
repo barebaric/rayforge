@@ -1,7 +1,7 @@
 import importlib
 import logging
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +164,7 @@ def get_registries(headless: bool = False) -> dict[str, Any]:
 def call_registration_hooks(
     plugin_mgr,
     headless: bool = False,
-    registries: Optional[dict[str, Any]] = None,
+    registries: dict[str, Any] | None = None,
     window_required: bool = False,
 ):
     """

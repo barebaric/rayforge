@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from .intvar import IntVar
 
@@ -14,13 +14,13 @@ class SpeedVar(IntVar):
         self,
         key: str,
         label: str,
-        description: Optional[str] = None,
-        default: Optional[int] = None,
-        value: Optional[int] = None,
-        min_val: Optional[int] = None,
-        max_val: Optional[int] = None,
+        description: str | None = None,
+        default: int | None = None,
+        value: int | None = None,
+        min_val: int | None = None,
+        max_val: int | None = None,
         role: str = "cut",
-        validator: Optional[Callable[[Optional[int]], None]] = None,
+        validator: Callable[[int | None], None] | None = None,
     ):
         self.role = role
         super().__init__(

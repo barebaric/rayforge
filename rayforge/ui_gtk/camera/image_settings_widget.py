@@ -6,7 +6,6 @@ wizard's image-settings page so the two stay in sync.
 
 import logging
 from gettext import gettext as _
-from typing import Optional
 
 from gi.repository import Adw, Gtk
 
@@ -67,7 +66,7 @@ class CameraImageSettings(Gtk.Box):
         )
         settings_box.append(image_group)
 
-        self._resolution_values: list[Optional[tuple[int, int]]] = [None]
+        self._resolution_values: list[tuple[int, int] | None] = [None]
         resolution_labels = [_("Default")]
         for w, h in self.controller.available_resolutions:
             self._resolution_values.append((w, h))
@@ -347,8 +346,7 @@ class CameraImageSettings(Gtk.Box):
 
     def on_denoise_changed(self, scale) -> None:
         val = scale.get_value() / 100.0
-        if val > 0.95:
-            val = 0.95
+        val = min(val, 0.95)
         self.camera.denoise = val
 
     def on_transparency_changed(self, scale) -> None:

@@ -104,7 +104,7 @@ class GroupElement(ShrinkWrapGroup):
         return self if hit_candidate else None
 
     def _on_transform_changed(
-        self, group: Group, *, old_matrix: Optional[Matrix] = None
+        self, group: Group, *, old_matrix: Matrix | None = None
     ):
         """
         Handles transform changes from the model by applying the model's

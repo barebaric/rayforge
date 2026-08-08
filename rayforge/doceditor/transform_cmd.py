@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.geo import Matrix
 
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class TransformCmd:
     """Handles undoable transformations of document items."""
 
-    def __init__(self, editor: "DocEditor"):
+    def __init__(self, editor: DocEditor):
         self._editor = editor
 
     def create_transform_transaction(
@@ -85,8 +85,8 @@ class TransformCmd:
 
     @staticmethod
     def _world_to_local_matrix(
-        item: DocItem, world_transform: "Matrix"
-    ) -> "Matrix":
+        item: DocItem, world_transform: Matrix
+    ) -> Matrix:
         """Convert a world-space transform back to the item's local matrix
         by cancelling out the parent's world transform."""
         if item.parent:
@@ -314,10 +314,10 @@ class TransformCmd:
     def set_size(
         self,
         items: list[DocItem],
-        width: Optional[float] = None,
-        height: Optional[float] = None,
+        width: float | None = None,
+        height: float | None = None,
         fixed_ratio: bool = False,
-        sizes: Optional[list[tuple[float, float]]] = None,
+        sizes: list[tuple[float, float]] | None = None,
     ):
         """Sets the size of each item individually.
 
@@ -341,7 +341,7 @@ class TransformCmd:
             return
 
         def _calculate_missing_dim(
-            item: DocItem, w: Optional[float], h: Optional[float]
+            item: DocItem, w: float | None, h: float | None
         ) -> tuple[float, float]:
             """Calculates final width and height handling aspect ratio."""
             current_w, current_h = item.size
@@ -523,8 +523,8 @@ class TransformCmd:
     def set_size_group(
         self,
         items: list[DocItem],
-        width: Optional[float] = None,
-        height: Optional[float] = None,
+        width: float | None = None,
+        height: float | None = None,
         fixed_ratio: bool = False,
     ):
         """Resizes the whole selection uniformly so the combined bounding
@@ -629,7 +629,7 @@ class TransformCmd:
     @classmethod
     def get_position_group(
         cls, items: list[DocItem]
-    ) -> Optional[tuple[float, float]]:
+    ) -> tuple[float, float] | None:
         """Machine-coordinate position of the group's bounding-box
         origin-corner (the corner the machine origin refers to).
 
@@ -648,7 +648,7 @@ class TransformCmd:
     @classmethod
     def get_size_group(
         cls, items: list[DocItem]
-    ) -> Optional[tuple[float, float]]:
+    ) -> tuple[float, float] | None:
         """World-space (width, height) of the group bounding box."""
         if not items:
             return None
@@ -656,14 +656,14 @@ class TransformCmd:
         return (max_x - min_x, max_y - min_y)
 
     @classmethod
-    def get_angle_group(cls, items: list[DocItem]) -> Optional[float]:
+    def get_angle_group(cls, items: list[DocItem]) -> float | None:
         """Angle (degrees) of the anchor item, representing the group."""
         if not items:
             return None
         return items[0].angle
 
     @classmethod
-    def get_shear_group(cls, items: list[DocItem]) -> Optional[float]:
+    def get_shear_group(cls, items: list[DocItem]) -> float | None:
         """Shear (degrees) of the anchor item, representing the group."""
         if not items:
             return None

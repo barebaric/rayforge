@@ -3,7 +3,6 @@ import math
 from collections.abc import Sequence
 from typing import (
     TYPE_CHECKING,
-    Optional,
     cast,
 )
 
@@ -58,7 +57,7 @@ class WorkSurface(WorldSurface):
         self,
         editor: "DocEditor",
         parent_window: Gtk.Window,
-        machine: Optional[Machine],
+        machine: Machine | None,
         cam_visible: bool = False,
         **kwargs,
     ):
@@ -82,7 +81,7 @@ class WorkSurface(WorldSurface):
 
         self._cam_visible = cam_visible
         self._transform_start_states: dict[CanvasElement, dict] = {}
-        self.right_click_context: Optional[dict] = None
+        self.right_click_context: dict | None = None
 
         # Click-to-zero mode state
         self._click_to_zero_mode = False
@@ -91,7 +90,7 @@ class WorkSurface(WorldSurface):
         # During pan/zoom/drag, ops drawing and pipeline context updates
         # are suppressed. They are restored after ~200ms of idle time.
         self._ops_suppressed: bool = False
-        self._ops_restore_timer_id: Optional[int] = None
+        self._ops_restore_timer_id: int | None = None
 
         self._nogo_zone_elements: dict[str, NogoZoneElement] = {}
         self._nogo_zones_visible = True
@@ -198,7 +197,7 @@ class WorkSurface(WorldSurface):
 
         # Drag-drop command will be initialized by MainWindow after
         # construction
-        self.drag_drop_cmd: Optional["DragDropCmd"] = None
+        self.drag_drop_cmd: DragDropCmd | None = None
 
         # Initialize pipeline view context to ensure workpiece artifacts
         # can be rendered immediately when adopted
@@ -457,7 +456,7 @@ class WorkSurface(WorldSurface):
         self,
         sender,
         elements: list[CanvasElement],
-        drag_target: Optional[CanvasElement] = None,
+        drag_target: CanvasElement | None = None,
         **kwargs,
     ):
         """
@@ -656,7 +655,7 @@ class WorkSurface(WorldSurface):
             self.set_cursor(None)
         super().on_motion_leave(controller)
 
-    def set_machine(self, machine: Optional[Machine]):
+    def set_machine(self, machine: Machine | None):
         """
         Updates the WorkSurface to use a new machine instance. This handles
         disconnecting from the old machine's signals, connecting to the new
@@ -940,7 +939,7 @@ class WorkSurface(WorldSurface):
         )
         self.editor.view_manager.update_render_context(context)
 
-    def _get_handle_color(self, elem: CanvasElement) -> Optional[ColorRGBA]:
+    def _get_handle_color(self, elem: CanvasElement) -> ColorRGBA | None:
         """Returns the layer color for the element's selection handles."""
         data = getattr(elem, "data", None)
         if data is None:
@@ -1139,7 +1138,7 @@ class WorkSurface(WorldSurface):
             camera_elem.set_visible(visible and camera_elem.camera.enabled)
         self.queue_draw()
 
-    def _on_machine_changed(self, machine: Optional[Machine]):
+    def _on_machine_changed(self, machine: Machine | None):
         """
         Handles incremental updates from the currently-assigned machine model.
         """
@@ -1492,7 +1491,7 @@ class WorkSurface(WorldSurface):
 
         return False
 
-    def get_active_workpiece(self) -> Optional[WorkPiece]:
+    def get_active_workpiece(self) -> WorkPiece | None:
         active_elem = self.get_active_element()
         if active_elem and isinstance(active_elem.data, WorkPiece):
             return active_elem.data

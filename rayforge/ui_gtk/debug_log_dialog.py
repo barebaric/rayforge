@@ -1,7 +1,8 @@
 import logging
+from collections.abc import Callable
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Optional
 
 from gi.repository import Adw, Gio, GLib, Gtk
 
@@ -25,8 +26,8 @@ class DebugLogDialog(Adw.MessageDialog):
         self,
         parent: Gtk.Window,
         editor: Optional["DocEditor"] = None,
-        on_saved: Optional[Callable[[str], None]] = None,
-        on_error: Optional[Callable[[str], None]] = None,
+        on_saved: Callable[[str], None] | None = None,
+        on_error: Callable[[str], None] | None = None,
     ):
         super().__init__(transient_for=parent)
         self._editor = editor
@@ -65,7 +66,7 @@ class DebugLogDialog(Adw.MessageDialog):
     def include_project(self) -> bool:
         return self._include_switch.get_active()
 
-    def _create_archive(self) -> Optional[Path]:
+    def _create_archive(self) -> Path | None:
         editor = self._editor if self.include_project else None
         return get_context().debug_dump_manager.create_dump_archive(
             editor=editor,

@@ -2,7 +2,6 @@ import logging
 import webbrowser
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional
 
 from gi.repository import Adw, Gdk, GLib, Gtk
 
@@ -51,7 +50,7 @@ class MachineSettingsDialog(PatchedDialogWindow):
         *,
         machine: Machine,
         transient_for=None,
-        initial_page: Optional[str] = None,
+        initial_page: str | None = None,
         **kwargs,
     ):
         super().__init__(skip_usage_tracking=True, **kwargs)
@@ -60,8 +59,8 @@ class MachineSettingsDialog(PatchedDialogWindow):
         self.machine = machine
         self._row_to_page_name = {}
         self._initial_page = initial_page
-        self._gcode_row: Optional[Gtk.ListBoxRow] = None
-        self._gcode_stack_page: Optional[Gtk.StackPage] = None
+        self._gcode_row: Gtk.ListBoxRow | None = None
+        self._gcode_stack_page: Gtk.StackPage | None = None
         if machine.name:
             self.set_title(
                 _("{machine_name} - Machine Settings").format(

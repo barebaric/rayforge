@@ -6,7 +6,7 @@ text representation for UI display.
 """
 
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point3D
 from raygeo.ops import Ops
@@ -45,9 +45,9 @@ class RuidaEncoder(OpsEncoder):
     POWER_SCALE = 16384.0
 
     def __init__(self):
-        self.power: Optional[float] = None
-        self.cut_speed: Optional[float] = None
-        self.travel_speed: Optional[float] = None
+        self.power: float | None = None
+        self.cut_speed: float | None = None
+        self.travel_speed: float | None = None
         self.air_assist: bool = False
         self.current_pos: Point3D = (0.0, 0.0, 0.0)
         self.active_laser: int = 1

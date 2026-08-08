@@ -20,8 +20,6 @@ class AddonValidationError(Exception):
     Raised when an addon fails validation checks.
     """
 
-    pass
-
 
 @dataclass
 class AddonAuthor:
@@ -54,7 +52,7 @@ class AddonLicense:
 
     @classmethod
     def from_dict(
-        cls, data: Optional[dict[str, Any]]
+        cls, data: dict[str, Any] | None
     ) -> Optional["AddonLicense"]:
         """Creates an AddonLicense from a dictionary, or None if empty."""
         if not data:
@@ -114,8 +112,8 @@ class AddonProvides:
         assets (List[Dict[str, str]]): A list of asset definitions.
     """
 
-    worker: Optional[str] = None
-    frontend: Optional[str] = None
+    worker: str | None = None
+    frontend: str | None = None
     assets: list[dict[str, str]] = field(default_factory=list)
 
 
@@ -138,7 +136,7 @@ class AddonMetadata:
     url: str = ""
     display_name: str = ""
     requires: list[str] = field(default_factory=list)
-    license: Optional[AddonLicense] = None
+    license: AddonLicense | None = None
     version_entries: list[dict[str, Any]] = field(default_factory=list)
     default_state: str = "enabled"
 
@@ -258,7 +256,7 @@ class Addon:
     def load_from_directory(
         cls,
         addon_dir: Path,
-        version: Optional[VersionType] = None,
+        version: VersionType | None = None,
     ) -> "Addon":
         """
         Loads an addon from a directory by parsing its YAML metadata file.
@@ -335,9 +333,7 @@ class Addon:
                 requires = [requires]
 
             resolved_version: VersionType
-            if version is not None:
-                resolved_version = version
-            elif version is UnknownVersion:
+            if version is not None or version is UnknownVersion:
                 resolved_version = version
             else:
                 resolved_version = get_git_tag_version(addon_dir)
@@ -516,7 +512,7 @@ class Addon:
         parts = path.split(".")
         return all(part.isidentifier() for part in parts)
 
-    def _resolve_module_path(self, module_str: str) -> Optional[Path]:
+    def _resolve_module_path(self, module_str: str) -> Path | None:
         """
         Resolves a dotted module string or a filename to a path.
         """

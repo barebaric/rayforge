@@ -14,7 +14,7 @@ user via the dropdown (defaulting to their preferred unit).
 """
 
 from gettext import gettext as _
-from typing import Optional, cast
+from typing import cast
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -47,8 +47,8 @@ class AddEditToolDialog(PatchedDialogWindow):
 
     def __init__(
         self,
-        parent: Optional[Gtk.Window],
-        tool: Optional[Tool] = None,
+        parent: Gtk.Window | None,
+        tool: Tool | None = None,
     ):
         super().__init__(transient_for=parent, modal=True)
         self.response = Signal()
@@ -119,7 +119,7 @@ class AddEditToolDialog(PatchedDialogWindow):
 
     # --- Pages ----------------------------------------------------------
 
-    def _build_general_page(self, tool: Optional[Tool]) -> None:
+    def _build_general_page(self, tool: Tool | None) -> None:
         page = Adw.PreferencesPage()
         group = Adw.PreferencesGroup(
             title=_("General"),
@@ -147,7 +147,7 @@ class AddEditToolDialog(PatchedDialogWindow):
         self._add_page(page, "general", _("General"), "general-symbolic")
         self._name.grab_focus()
 
-    def _build_geometry_page(self, tool: Optional[Tool]) -> None:
+    def _build_geometry_page(self, tool: Tool | None) -> None:
         page = Adw.PreferencesPage()
         self._geom = Adw.PreferencesGroup(
             title=_("Geometry"),
@@ -194,7 +194,7 @@ class AddEditToolDialog(PatchedDialogWindow):
 
         self._add_page(page, "geometry", _("Geometry"), "tool-change-symbolic")
 
-    def _build_setup_page(self, tool: Optional[Tool]) -> None:
+    def _build_setup_page(self, tool: Tool | None) -> None:
         page = Adw.PreferencesPage()
         setup = Adw.PreferencesGroup(
             title=_("Setup"),
@@ -242,8 +242,8 @@ class AddEditToolDialog(PatchedDialogWindow):
     def _make_param_row(
         self,
         spec: ParamSpec,
-        value: Optional[float],
-    ) -> tuple[Gtk.Widget, Optional[LengthChoiceSpinRow]]:
+        value: float | None,
+    ) -> tuple[Gtk.Widget, LengthChoiceSpinRow | None]:
         if spec.quantity == "length":
             return self._add_length(
                 None, spec.title, spec.subtitle, spec.upper, value
@@ -263,11 +263,11 @@ class AddEditToolDialog(PatchedDialogWindow):
 
     def _add_length(
         self,
-        group: Optional[Adw.PreferencesGroup],
+        group: Adw.PreferencesGroup | None,
         title: str,
         subtitle: str,
         upper: float,
-        value: Optional[float] = None,
+        value: float | None = None,
     ) -> tuple[LengthChoiceSpinRow, LengthChoiceSpinRow]:
         row = LengthChoiceSpinRow(
             title=title,
@@ -282,11 +282,11 @@ class AddEditToolDialog(PatchedDialogWindow):
 
     def _add_plain(
         self,
-        group: Optional[Adw.PreferencesGroup],
+        group: Adw.PreferencesGroup | None,
         title: str,
         subtitle: str,
         upper: float,
-        value: Optional[float] = None,
+        value: float | None = None,
         digits: int = 1,
         is_int: bool = False,
     ) -> SpinRow:

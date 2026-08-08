@@ -1,12 +1,11 @@
 from gettext import gettext as _
-from typing import Optional
 from urllib.parse import urlparse
 
 from .var import ValidationError, Var
 
 
 def url_validator(
-    url: Optional[str], allowed_schemes: Optional[tuple[str, ...]] = None
+    url: str | None, allowed_schemes: tuple[str, ...] | None = None
 ):
     """
     Raises ValidationError if the string is not a valid URL.
@@ -46,14 +45,14 @@ class UrlVar(Var[str]):
         self,
         key: str,
         label: str,
-        description: Optional[str] = None,
-        default: Optional[str] = None,
-        value: Optional[str] = None,
-        allowed_schemes: Optional[tuple[str, ...]] = None,
+        description: str | None = None,
+        default: str | None = None,
+        value: str | None = None,
+        allowed_schemes: tuple[str, ...] | None = None,
     ):
         self.allowed_schemes = allowed_schemes
 
-        def validator(url: Optional[str]):
+        def validator(url: str | None):
             url_validator(url, allowed_schemes=allowed_schemes)
 
         super().__init__(
@@ -74,11 +73,11 @@ class WebsocketUrlVar(Var[str]):
         self,
         key: str,
         label: str,
-        description: Optional[str] = None,
-        default: Optional[str] = None,
-        value: Optional[str] = None,
+        description: str | None = None,
+        default: str | None = None,
+        value: str | None = None,
     ):
-        def validator(url: Optional[str]):
+        def validator(url: str | None):
             url_validator(url, allowed_schemes=("ws", "wss"))
 
         super().__init__(

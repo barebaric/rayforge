@@ -2,7 +2,7 @@ import logging
 import math
 from collections import defaultdict
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import cairo
 from raygeo.geo import Geometry, Matrix
@@ -449,7 +449,7 @@ class SketchRenderer:
             else:
                 ctx.set_source_rgb(0.0, 0.0, 0.0)
 
-    def _safe_get_point(self, pid: EntityID) -> Optional[Point]:
+    def _safe_get_point(self, pid: EntityID) -> Point | None:
         try:
             return self.element.sketch.registry.get_point(pid)
         except IndexError:
@@ -733,7 +733,7 @@ class SketchRenderer:
         ctx.stroke_preserve()
         ctx.restore()
 
-    def _get_entity_by_id(self, eid: EntityID) -> Optional[Entity]:
+    def _get_entity_by_id(self, eid: EntityID) -> Entity | None:
         return self.element.sketch.registry.get_entity(eid)
 
     # --- Points ---

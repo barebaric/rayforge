@@ -5,7 +5,6 @@ Renders a .glb 3D model using OpenGL triangles with per-vertex normals.
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import trimesh
@@ -24,7 +23,7 @@ logger = logging.getLogger(__name__)
 class _CachedModelData:
     positions: np.ndarray
     normals: np.ndarray
-    colors: Optional[np.ndarray]
+    colors: np.ndarray | None
     faces: np.ndarray
     bounds: tuple[np.ndarray, np.ndarray]
     triangle_count: int
@@ -33,7 +32,7 @@ class _CachedModelData:
 _model_cache: dict[Path, _CachedModelData] = {}
 
 
-def _extract_color(mesh: trimesh.Trimesh) -> Optional[np.ndarray]:
+def _extract_color(mesh: trimesh.Trimesh) -> np.ndarray | None:
     if mesh.visual is None:
         return None
     if isinstance(mesh.visual, ColorVisuals):
@@ -56,7 +55,7 @@ def _extract_color(mesh: trimesh.Trimesh) -> Optional[np.ndarray]:
     return None
 
 
-def _load_mesh_data(path: Path) -> Optional[_CachedModelData]:
+def _load_mesh_data(path: Path) -> _CachedModelData | None:
     cached = _model_cache.get(path)
     if cached is not None:
         return cached
@@ -128,7 +127,7 @@ def _load_mesh_data(path: Path) -> Optional[_CachedModelData]:
         return None
 
 
-def get_model_extent(path: Path) -> Optional[float]:
+def get_model_extent(path: Path) -> float | None:
     data = _load_mesh_data(path)
     if data is None:
         return None
@@ -149,12 +148,12 @@ class ModelRenderer(BaseRenderer):
         self._vbo_color: int = 0
         self._vertex_count: int = 0
         self._has_colors: bool = False
-        self._bounds: Optional[tuple[np.ndarray, np.ndarray]] = None
+        self._bounds: tuple[np.ndarray, np.ndarray] | None = None
         self._loaded: bool = False
-        self._mesh_data: Optional[_CachedModelData] = None
-        self._mvp_matrix: Optional[np.ndarray] = None
-        self._model_matrix: Optional[np.ndarray] = None
-        self._point_light_pos: Optional[np.ndarray] = None
+        self._mesh_data: _CachedModelData | None = None
+        self._mvp_matrix: np.ndarray | None = None
+        self._model_matrix: np.ndarray | None = None
+        self._point_light_pos: np.ndarray | None = None
 
     def prepare(self, ctx: RenderContext) -> None:
         """Computes and caches the per-frame matrices for the model mesh."""

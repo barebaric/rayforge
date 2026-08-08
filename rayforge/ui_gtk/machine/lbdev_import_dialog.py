@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import Callable, Optional
 
 from gi.repository import Adw, Gtk
 
@@ -18,7 +18,7 @@ class LBDevImportDialog(Adw.MessageDialog):
         self,
         parent: Gtk.Window,
         summary: ImportSummary,
-        on_import: Optional[Callable[[], None]] = None,
+        on_import: Callable[[], None] | None = None,
         **kwargs,
     ):
         super().__init__(

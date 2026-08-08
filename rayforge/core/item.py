@@ -4,12 +4,10 @@ import logging
 import uuid
 import weakref
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Optional,
     TypeVar,
     overload,
 )
@@ -47,8 +45,8 @@ class _RevisionSignal(Signal):
 
     def __init__(
         self,
-        owner_ref: "weakref.ref",
-        bump: "Callable[[DocItem], None]",
+        owner_ref: weakref.ref,
+        bump: Callable[[DocItem], None],
     ):
         super().__init__()
         self._owner_ref = owner_ref
@@ -71,7 +69,7 @@ class DocItem(ABC):
     def __init__(self, name: str = ""):
         self.uid: str = str(uuid.uuid4())
         self._name: str = name
-        self._parent: Optional[DocItem] = None
+        self._parent: DocItem | None = None
         self.children: list[DocItem] = []
         self._matrix: Matrix = Matrix.identity()
 
@@ -155,7 +153,7 @@ class DocItem(ABC):
             self._name = new_name
             self.updated.send(self)
 
-    def depends_on_asset(self, asset: "IAsset") -> bool:
+    def depends_on_asset(self, asset: IAsset) -> bool:
         """
         Checks if this item has a direct dependency on the given asset.
         Subclasses should override this to check their specific asset links.
@@ -179,12 +177,12 @@ class DocItem(ABC):
 
     @classmethod
     @abstractmethod
-    def from_dict(cls, data: dict) -> "DocItem":
+    def from_dict(cls, data: dict) -> DocItem:
         """Deserializes the item from a dictionary."""
         raise NotImplementedError
 
     @staticmethod
-    def create_from_dict(data: dict) -> "DocItem":
+    def create_from_dict(data: dict) -> DocItem:
         """
         Factory method that deserializes a dictionary into the appropriate
         DocItem subclass based on the 'type' field.
@@ -206,7 +204,7 @@ class DocItem(ABC):
         else:
             raise ValueError(f"Unknown item type: {item_type}")
 
-    def duplicate(self) -> "DocItem":
+    def duplicate(self) -> DocItem:
         """
         Creates a deep copy of this item with new UIDs.
 
@@ -217,7 +215,7 @@ class DocItem(ABC):
         item_dict = self.to_dict()
         new_item = self.__class__.from_dict(item_dict)
 
-        def assign_new_uids(item: "DocItem"):
+        def assign_new_uids(item: DocItem):
             item.uid = str(uuid.uuid4())
             for child in item.children:
                 assign_new_uids(child)
@@ -232,12 +230,12 @@ class DocItem(ABC):
         return iter(self.children)
 
     @property
-    def parent(self) -> Optional[DocItem]:
+    def parent(self) -> DocItem | None:
         """The parent DocItem in the hierarchy."""
         return self._parent
 
     @parent.setter
-    def parent(self, new_parent: Optional[DocItem]):
+    def parent(self, new_parent: DocItem | None):
         """
         Sets the parent of this item. This is typically managed by the
         parent's add/remove_child methods and should not be set directly.
@@ -245,7 +243,7 @@ class DocItem(ABC):
         self._parent = new_parent
 
     @property
-    def doc(self) -> Optional["Doc"]:
+    def doc(self) -> Doc | None:
         """The root Doc object, accessed via the parent hierarchy."""
         if self.parent:
             return self.parent.doc
@@ -385,7 +383,7 @@ class DocItem(ABC):
         """
         return self._natural_size
 
-    def get_local_bbox(self) -> Optional[Rect]:
+    def get_local_bbox(self) -> Rect | None:
         """
         Returns the bounding box of the item in its own local coordinate space
         (before the local matrix is applied).
@@ -429,21 +427,17 @@ class DocItem(ABC):
 
             has_valid_children = True
             for x, y in transformed_corners:
-                if x < min_x:
-                    min_x = x
-                if x > max_x:
-                    max_x = x
-                if y < min_y:
-                    min_y = y
-                if y > max_y:
-                    max_y = y
+                min_x = min(min_x, x)
+                max_x = max(max_x, x)
+                min_y = min(min_y, y)
+                max_y = max(max_y, y)
 
         if has_valid_children:
             self._natural_size = (max_x - min_x, max_y - min_y)
         else:
             self._natural_size = (0.0, 0.0)
 
-    def get_current_aspect_ratio(self) -> Optional[float]:
+    def get_current_aspect_ratio(self) -> float | None:
         w, h = self.size
         return w / h if h else None
 
@@ -575,7 +569,7 @@ class DocItem(ABC):
 
         self.matrix = final_local_matrix
 
-    def add_child(self, child: T, index: Optional[int] = None) -> T:
+    def add_child(self, child: T, index: int | None = None) -> T:
         if child in self.children:
             return child
 
@@ -604,7 +598,7 @@ class DocItem(ABC):
         self._recalculate_natural_size()
 
     def add_children(
-        self, children_to_add: Iterable[DocItem], index: Optional[int] = None
+        self, children_to_add: Iterable[DocItem], index: int | None = None
     ):
         """
         Adds multiple children in a bulk operation to improve performance,
@@ -730,12 +724,12 @@ class DocItem(ABC):
         return depth
 
     @overload
-    def get_descendants(self) -> list["DocItem"]: ...
+    def get_descendants(self) -> list[DocItem]: ...
 
     @overload
     def get_descendants(self, of_type: type[T_Desc]) -> list[T_Desc]: ...
 
-    def get_descendants(self, of_type: Optional[type[T_Desc]] = None) -> list:
+    def get_descendants(self, of_type: type[T_Desc] | None = None) -> list:
         """
         Recursively finds and returns a flattened list of all descendant
         DocItems, optionally filtered by type.
@@ -754,7 +748,7 @@ class DocItem(ABC):
 
         return all_descendants
 
-    def get_child_by_uid(self, uid: str) -> Optional["DocItem"]:
+    def get_child_by_uid(self, uid: str) -> DocItem | None:
         """
         Finds a direct child of this item by its unique identifier.
 
@@ -769,7 +763,7 @@ class DocItem(ABC):
                 return child
         return None
 
-    def find_descendant_by_uid(self, uid: str) -> Optional[DocItem]:
+    def find_descendant_by_uid(self, uid: str) -> DocItem | None:
         """
         Recursively searches the subtree for a descendant with a matching UID.
 
@@ -813,7 +807,7 @@ class DocItem(ABC):
         )
 
     def _on_child_transform_changed(
-        self, sender: DocItem, *, old_matrix: Optional["Matrix"] = None
+        self, sender: DocItem, *, old_matrix: Matrix | None = None
     ):
         self.descendant_transform_changed.send(
             self, origin=sender, parent_of_origin=self, old_matrix=old_matrix
@@ -846,7 +840,7 @@ class DocItem(ABC):
         *,
         origin: DocItem,
         parent_of_origin: DocItem,
-        old_matrix: Optional["Matrix"] = None,
+        old_matrix: Matrix | None = None,
     ):
         self.descendant_transform_changed.send(
             self,
@@ -856,19 +850,19 @@ class DocItem(ABC):
         )
 
     @property
-    def matrix(self) -> "Matrix":
+    def matrix(self) -> Matrix:
         """The 3x3 local transformation matrix for this item."""
         return self._matrix
 
     @matrix.setter
-    def matrix(self, value: "Matrix"):
+    def matrix(self, value: Matrix):
         if self._matrix == value:
             return
         old_matrix = self._matrix
         self._matrix = value
         self.transform_changed.send(self, old_matrix=old_matrix)
 
-    def get_world_transform(self) -> "Matrix":
+    def get_world_transform(self) -> Matrix:
         """
         Calculates the cumulative transformation matrix for this item,
         which transforms it from its local coordinate space into the
@@ -879,7 +873,7 @@ class DocItem(ABC):
             return parent_transform @ self.matrix
         return self.matrix
 
-    def get_ancestor_by_type(self, ancestor_type: type) -> Optional["DocItem"]:
+    def get_ancestor_by_type(self, ancestor_type: type) -> DocItem | None:
         """
         Traverses the parent hierarchy to find the first ancestor of the
         specified type.

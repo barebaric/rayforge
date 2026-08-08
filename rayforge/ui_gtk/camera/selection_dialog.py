@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Literal, Optional
+from typing import Literal
 
 from gi.repository import Adw, GdkPixbuf, Gtk
 
@@ -35,7 +35,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
             **kwargs,
         )
         self.set_size_request(450, 350)
-        self.selected_device_id: Optional[str] = None
+        self.selected_device_id: str | None = None
 
         apply_css("""
             .rounded-image {

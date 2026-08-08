@@ -199,7 +199,7 @@ class MaterialLibrary:
             f"{self._directory.name}"
         )
 
-    def get_material(self, uid: str) -> Optional[Material]:
+    def get_material(self, uid: str) -> Material | None:
         """
         Get a material by UID.
 

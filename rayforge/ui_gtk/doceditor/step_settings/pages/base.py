@@ -1,7 +1,7 @@
 """Base class for a step's settings page."""
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -104,7 +104,7 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         self,
         key: str,
         new_value: Any,
-        name: Optional[str] = None,
+        name: str | None = None,
     ):
         current = getattr(self.step, key, None)
         if current == new_value:
@@ -127,9 +127,9 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
 
     def add_section(
         self,
-        title: Optional[str],
+        title: str | None,
         *rows: Any,
-        description: Optional[str] = None,
+        description: str | None = None,
     ) -> Adw.PreferencesGroup:
         group = Adw.PreferencesGroup()
         if title:
