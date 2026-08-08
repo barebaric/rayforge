@@ -439,13 +439,15 @@ class EditCmd:
             position_mm[1] - height / 2,
         )
 
-        with history.transaction(_(f"Add {provider.name} Instance")) as t:
+        with history.transaction(
+            _("Add {} Instance").format(provider.name)
+        ) as t:
             command = ListItemCommand(
                 owner_obj=target_layer,
                 item=new_workpiece,
                 undo_command="remove_child",
                 redo_command="add_child",
-                name=_(f"Add {provider.name} Instance"),
+                name=_("Add {} Instance").format(provider.name),
             )
             t.execute(command)
 

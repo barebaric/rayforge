@@ -213,13 +213,13 @@ class DragDropCmd:
             position_mm[1] - h / 2,
         )
 
-        with history.transaction(_(f"Add {asset.name} Instance")) as t:
+        with history.transaction(_("Add {} Instance").format(asset.name)) as t:
             command = ListItemCommand(
                 owner_obj=doc,
                 item=stock_item,
                 undo_command="remove_child",
                 redo_command="add_child",
-                name=_(f"Add {asset.name} Instance"),
+                name=_("Add {} Instance").format(asset.name),
             )
             t.execute(command)
 

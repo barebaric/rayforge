@@ -44,10 +44,10 @@ def format_seconds(seconds: float, compact: bool = False) -> str:
         secs = int(seconds % 60)
         if compact and secs == 0:
             return _("{}m").format(minutes)
-        return _(f"{{}}m{sep}{{}}s").format(minutes, secs)
+        return _("{}m" + sep + "{}s").format(minutes, secs)
     else:
         hours = int(seconds // 3600)
         mins = int((seconds % 3600) // 60)
         if compact and mins == 0:
             return _("{}h").format(hours)
-        return _(f"{{}}h{sep}{{}}m").format(hours, mins)
+        return _("{}h" + sep + "{}m").format(hours, mins)

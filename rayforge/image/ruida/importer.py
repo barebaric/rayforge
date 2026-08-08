@@ -61,7 +61,7 @@ class RuidaImporter(Importer):
             logger.warning(
                 f"Ruida scan failed for {self.source_file.name}: {e}"
             )
-            self.add_error(_(f"Ruida file is invalid: {e}"))
+            self.add_error(_("Ruida file is invalid: {}").format(e))
             return ImportManifest(
                 title=self.source_file.name, errors=self._errors
             )
@@ -71,7 +71,7 @@ class RuidaImporter(Importer):
                 f"{self.source_file.name}"
             )
             self.add_error(
-                _(f"Unexpected error while scanning Ruida file: {e}")
+                _("Unexpected error while scanning Ruida file: {}").format(e)
             )
             return ImportManifest(
                 title=self.source_file.name, errors=self._errors
@@ -149,7 +149,7 @@ class RuidaImporter(Importer):
             self._job = job
         except RuidaParseError as e:
             logger.error("Ruida file parse failed: %s", e)
-            self.add_error(_(f"Failed to parse Ruida commands: {e}"))
+            self.add_error(_("Failed to parse Ruida commands: {}").format(e))
             self._job = None
             return None
 

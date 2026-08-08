@@ -92,7 +92,7 @@ class ProceduralImporter(Importer):
             )
         except (ImportError, AttributeError, ValueError) as e:
             logger.exception("Failed to calculate procedural size")
-            self.add_error(_(f"Failed to calculate parameters: {e}"))
+            self.add_error(_("Failed to calculate parameters: {}").format(e))
             return ImportManifest(title=self.name, errors=self._errors)
 
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
@@ -139,7 +139,7 @@ class ProceduralImporter(Importer):
             width_mm, height_mm = size_func(self.params)
         except (ImportError, AttributeError, ValueError) as e:
             logger.exception("Failed to load procedural size function")
-            self.add_error(_(f"Failed to execute generator: {e}"))
+            self.add_error(_("Failed to execute generator: {}").format(e))
             return None
 
         # Define the native coordinate system as 1 unit = 1 mm.

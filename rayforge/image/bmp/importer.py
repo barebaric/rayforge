@@ -51,7 +51,9 @@ class BmpImporter(Importer):
         try:
             parsed_data = parse_bmp(self.raw_data)
             if not parsed_data:
-                self.add_error(_(f"Could not parse BMP header in {fname}"))
+                self.add_error(
+                    _("Could not parse BMP header in {}").format(fname)
+                )
                 return ImportManifest(title=fname, errors=self._errors)
 
             _ignored, width, height, dpi_x, dpi_y = parsed_data
@@ -69,7 +71,7 @@ class BmpImporter(Importer):
             )
         except Exception as e:
             logger.warning(f"BMP scan failed for {fname}: {e}")
-            self.add_error(_(f"Failed to scan BMP file: {e}"))
+            self.add_error(_("Failed to scan BMP file: {}").format(e))
             return ImportManifest(title=fname, errors=self._errors)
 
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
@@ -144,7 +146,7 @@ class BmpImporter(Importer):
                 "Failed to create pyvips image from parsed BMP data: %s", e
             )
             self._image = None
-            self.add_error(_(f"Image processing failed: {e}"))
+            self.add_error(_("Image processing failed: {}").format(e))
             return None
 
         # Calculate unit conversion (pixels to mm)

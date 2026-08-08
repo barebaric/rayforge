@@ -56,7 +56,7 @@ class PngImporter(Importer):
             )
         except pyvips.Error as e:
             logger.warning(f"PNG scan failed for {self.source_file.name}: {e}")
-            self.add_error(_(f"Failed to scan PNG file: {e}"))
+            self.add_error(_("Failed to scan PNG file: {}").format(e))
             return ImportManifest(
                 title=self.source_file.name, errors=self._errors
             )
@@ -120,7 +120,7 @@ class PngImporter(Importer):
             )
         except pyvips.Error as e:
             logger.exception("pyvips failed to load PNG buffer")
-            self.add_error(_(f"Image load failed: {e}"))
+            self.add_error(_("Image load failed: {}").format(e))
             self._image = None
             return None
 
