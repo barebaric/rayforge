@@ -4,7 +4,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional, cast
 
 from blinker import Signal
-from gi.repository import Adw, Gdk, Gio, GObject, Gtk, Pango
+from gi.repository import Adw, Gdk, Gio, Gtk, Pango
 
 from ...context import get_context
 from ...core.doc import Doc
@@ -240,7 +240,7 @@ class LayerColumn(Gtk.Box):
         self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
 
         drop_target = Gtk.DropTarget.new(
-            GObject.TYPE_STRING,
+            str,
             Gdk.DragAction.MOVE | Gdk.DragAction.COPY,
         )
         drop_target.connect("accept", self._on_drop_accept)

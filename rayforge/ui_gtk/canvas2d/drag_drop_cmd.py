@@ -12,7 +12,7 @@ from gettext import gettext as _
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
-from gi.repository import Adw, Gdk, Gio, GLib, GObject, Gtk
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from raygeo.geo import Matrix
 
 from ...context import get_context
@@ -90,9 +90,7 @@ class DragDropCmd:
         rather than strings.
         """
         self._drop_target = Gtk.DropTarget.new(Gio.File, Gdk.DragAction.COPY)
-        self._drop_target.set_gtypes(
-            [Gio.File, Gdk.FileList, GObject.TYPE_STRING]
-        )
+        self._drop_target.set_gtypes([Gio.File, Gdk.FileList, str])
         self._drop_target.connect("drop", self._on_drop)
         self._drop_target.connect("enter", self._on_drag_enter)
         self._drop_target.connect("leave", self._on_drag_leave)
