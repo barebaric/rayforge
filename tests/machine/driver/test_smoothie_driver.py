@@ -142,7 +142,7 @@ class MockSmoothieServer:
                     continue
                 except asyncio.CancelledError:
                     raise
-                except Exception:
+                except (OSError, EOFError):
                     break
 
                 if not data:
@@ -174,7 +174,7 @@ class MockSmoothieServer:
             pass
         except asyncio.CancelledError:
             pass
-        except Exception as e:
+        except OSError as e:
             if not self._stopping:
                 logger.error(f"Mock server client error: {e}")
         finally:

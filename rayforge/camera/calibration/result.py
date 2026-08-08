@@ -1,8 +1,11 @@
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 
 import cv2
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -130,5 +133,6 @@ class CalibrationResult:
                 cv2.CV_16SC2,
             )
             return map1, map2
-        except Exception:
+        except cv2.error as e:
+            logger.error(f"Failed to compute undistort maps: {e}")
             return None

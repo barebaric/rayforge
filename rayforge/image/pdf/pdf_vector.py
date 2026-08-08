@@ -98,7 +98,7 @@ class PdfVectorImporter(Importer):
                 warnings=self._warnings,
                 errors=self._errors,
             )
-        except Exception as e:
+        except (pymupdf.FileDataError, ValueError, RuntimeError) as e:
             logger.warning(f"PDF scan failed for {self.source_file.name}: {e}")
             self.add_error(_("Could not read PDF: {}").format(e))
             return ImportManifest(
@@ -292,7 +292,7 @@ class PdfVectorImporter(Importer):
                 self._add_drawing_to_geometry(
                     drawing, geometries_by_layer[layer_name]
                 )
-        except Exception as e:
+        except (RuntimeError, ValueError, TypeError) as e:
             logger.warning(f"Failed to extract drawings: {e}")
 
         if not geometries_by_layer:

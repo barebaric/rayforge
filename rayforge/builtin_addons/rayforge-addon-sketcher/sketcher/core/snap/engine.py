@@ -92,7 +92,7 @@ class SnapEngine:
                     registry, drag_position, drag_context, self._threshold
                 ):
                     self._cached_points.append(snap_point)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - addon producer boundary
                 logger.warning(f"SnapLineProducer error: {e}")
 
         self._last_query_pos = drag_position

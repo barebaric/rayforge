@@ -44,6 +44,6 @@ def safe_evaluate(expression: str, context: dict[str, Any]) -> float:
         # Eval will use this for both globals and locals.
         result = eval(expr, namespace)
         return float(result)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - arbitrary user expression
         logger.error(f"Failed to evaluate expression '{expression}': {e}")
         raise ValueError(f"Invalid expression: {e}")

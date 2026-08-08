@@ -141,7 +141,7 @@ def extract_vips_metadata(image: pyvips.Image) -> dict[str, Any]:
             ):
                 value = str(value)
             metadata[field] = value
-        except Exception as e:
+        except pyvips.Error as e:
             logger.debug(f"Could not read metadata field '{field}': {e}")
     return metadata
 

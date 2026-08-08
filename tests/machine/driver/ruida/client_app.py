@@ -1,5 +1,6 @@
 """
-Ruida Client App - A GUI client for controlling a Ruida laser controller/simulator.
+Ruida Client App - A GUI client for controlling a Ruida laser
+controller/simulator.
 
 Sends movement commands to the simulator and displays the current position.
 """
@@ -98,8 +99,9 @@ class RuidaUdpClient:
             self._start_loop()
 
         assert self._loop is not None
+        loop_running = self._loop.is_running()
         logger.debug(
-            f"_run_async: submitting coroutine, loop running={self._loop.is_running()}"
+            f"_run_async: submitting coroutine, loop running={loop_running}"
         )
         future: Future = asyncio.run_coroutine_threadsafe(coro, self._loop)
         return future.result(timeout=timeout)
@@ -132,7 +134,7 @@ class RuidaUdpClient:
         try:
             self._run_async(self.client.send_command(cmd))
             return True
-        except Exception as e:
+        except (OSError, TimeoutError, ValueError) as e:
             logger.error(f"Error sending command: {e}")
             return False
 
@@ -320,7 +322,7 @@ class ClientWindow(Gtk.ApplicationWindow):
             )
             self.connect_btn.set_label("Disconnect")
             self._sync_ref_point_from_controller()
-        except Exception as e:
+        except (OSError, TimeoutError, ValueError) as e:
             self.status_label.set_text(f"● Error: {e}")
 
     def _sync_ref_point_from_controller(self):

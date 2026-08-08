@@ -70,7 +70,7 @@ class WebSocketTransport(Transport):
                 # This is an expected part of a clean shutdown or reconnect
                 # cycle.
                 pass
-            except Exception as e:
+            except (websockets.exceptions.WebSocketException, OSError) as e:
                 self._set_status(TransportStatus.ERROR, message=str(e))
             finally:
                 # Always clean up the connection before the next step.
@@ -133,7 +133,7 @@ class WebSocketTransport(Transport):
             pass
         except ConnectionClosed:
             pass
-        except Exception as e:
+        except websockets.exceptions.WebSocketException as e:
             logger.warning(f"Error during purge: {e}")
 
     async def _receive_loop(self) -> None:
@@ -148,7 +148,7 @@ class WebSocketTransport(Transport):
                     self.received.send(self, data=message)
         except ConnectionClosed:
             pass  # The outer connect() loop will handle this.
-        except Exception as e:
+        except websockets.exceptions.WebSocketException as e:
             self._set_status(TransportStatus.ERROR, message=str(e))
 
     async def _safe_close(self) -> None:

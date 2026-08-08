@@ -359,7 +359,7 @@ class Addon:
 
         except AddonValidationError:
             raise
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - wrap into AddonValidationError
             raise AddonValidationError(f"Structure error in metadata: {e}")
 
     def validate(self) -> bool:

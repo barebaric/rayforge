@@ -422,7 +422,7 @@ class DocEditor:
                     logger.info(f"Test export successful to {output_path}")
                     export_future.set_result(True)
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - forward to future
                 if not export_future.done():
                     export_future.set_exception(e)
 

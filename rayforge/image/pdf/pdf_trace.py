@@ -143,7 +143,7 @@ class PdfTraceImporter(Importer):
             width_pt = float(media_box.width)
             height_pt = float(media_box.height)
             size_mm = (to_mm(width_pt, "pt"), to_mm(height_pt, "pt"))
-        except Exception as e:
+        except (PdfReadError, ValueError, TypeError, KeyError) as e:
             logger.error(f"Failed to read PDF size: {e}")
             self.add_error(
                 _("Failed to read PDF page dimensions: {}").format(e)

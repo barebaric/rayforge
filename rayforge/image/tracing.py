@@ -275,7 +275,7 @@ def _convert_buffer_to_svg_with_vtracer(
             def thread_target():
                 try:
                     result[0] = _call_native()
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001 - native call boundary
                     error[0] = e
 
             # 8MB stack size (matching typical Linux default)
@@ -291,7 +291,7 @@ def _convert_buffer_to_svg_with_vtracer(
                 # Restore immediately
                 threading.stack_size(old_stack)
                 t.join()
-            except Exception as e:
+            except (ValueError, OSError, RuntimeError) as e:
                 # If stack adjustment fails (e.g. platform doesn't support it),
                 # try direct call and hope for the best.
                 logger.warning(f"Could not adjust stack size for vtracer: {e}")
@@ -395,7 +395,7 @@ def _get_geometries_from_image(
     try:
         raw_output = _convert_buffer_to_svg_with_vtracer(img_bytes, img_fmt)
         svg_str = _extract_svg_from_raw_output(raw_output)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - native call boundary
         logger.error(f"vtracer failed: {e}")
         return _fallback_to_enclosing_hull(
             image_to_trace,
@@ -468,7 +468,7 @@ def _get_geometries_from_color(
             img_bytes, img_fmt, colormode=ColorMode.COLOR
         )
         svg_str = _extract_svg_from_raw_output(raw_output)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - native call boundary
         logger.error(f"vtracer color failed: {e}")
         return []
 

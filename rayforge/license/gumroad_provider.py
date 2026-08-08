@@ -180,7 +180,7 @@ class GumroadProvider(LicenseProvider):
                 status=LicenseStatus.ERROR,
                 message=f"Network error: {e.reason}",
             )
-        except Exception as e:
+        except (OSError, TimeoutError, ValueError) as e:
             logger.error(f"Gumroad validation failed: {e}")
             return LicenseResult(
                 status=LicenseStatus.ERROR,

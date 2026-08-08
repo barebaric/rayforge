@@ -93,7 +93,7 @@ class TransformCmd:
             parent_world = item.parent.get_world_transform()
             try:
                 return parent_world.invert() @ world_transform
-            except Exception:
+            except ValueError:
                 return item.matrix.copy()
         return world_transform
 

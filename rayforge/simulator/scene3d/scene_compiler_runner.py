@@ -30,8 +30,8 @@ def compile_scene_from_job(
     try:
         handle = create_handle_from_dict(job_handle_dict)
         artifact = artifact_store.get(handle)
-    except Exception:
-        logger.warning("Job artifact no longer available. Aborting.")
+    except (ValueError, TypeError, RuntimeError) as e:
+        logger.warning(f"Job artifact no longer available. Aborting: {e}")
         return None
 
     if not isinstance(artifact, JobArtifact):

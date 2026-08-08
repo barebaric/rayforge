@@ -1,4 +1,5 @@
 import logging
+import struct
 import warnings
 from gettext import gettext as _
 from pathlib import Path
@@ -69,7 +70,7 @@ class BmpImporter(Importer):
                 warnings=self._warnings,
                 errors=self._errors,
             )
-        except Exception as e:
+        except (struct.error, ValueError, IndexError) as e:
             logger.warning(f"BMP scan failed for {fname}: {e}")
             self.add_error(_("Failed to scan BMP file: {}").format(e))
             return ImportManifest(title=fname, errors=self._errors)

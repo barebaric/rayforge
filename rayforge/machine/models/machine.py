@@ -491,7 +491,7 @@ class Machine:
             # If we are shutting down a specific machine instance:
             if self.id in self.context.machine_mgr.controllers:
                 await self.controller.shutdown()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - best-effort shutdown cleanup
             logger.warning(f"Error shutting down controller: {e}")
 
         self.context.dialect_mgr.dialects_changed.disconnect(

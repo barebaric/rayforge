@@ -211,7 +211,7 @@ class VarSet:
             try:
                 new_var = cls._create_var_from_dict(var_data)
                 new_set.add(new_var)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - arbitrary deserialized var
                 logger.warning("Could not deserialize var: %s", e)
         new_set.extra = extra
         return new_set

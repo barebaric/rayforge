@@ -269,7 +269,7 @@ class GrblSerialDriver(Driver):
                 await self._connection_task
             except asyncio.CancelledError:
                 pass
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - awaited task cleanup
                 logger.warning(
                     f"Ignored exception in connection task during cleanup: {e}"
                 )
@@ -281,7 +281,7 @@ class GrblSerialDriver(Driver):
                 await self._command_task
             except asyncio.CancelledError:
                 pass
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - awaited task cleanup
                 logger.warning(
                     f"Ignored exception in command task during cleanup: {e}"
                 )

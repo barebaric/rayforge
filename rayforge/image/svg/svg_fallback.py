@@ -70,7 +70,7 @@ def render_svg_to_cairo(
     import gi
 
     gi.require_version("Rsvg", "2.0")
-    from gi.repository import Rsvg
+    from gi.repository import GLib, Rsvg
 
     if not svg_data:
         return None
@@ -101,7 +101,7 @@ def render_svg_to_cairo(
         handle.render_document(ctx, viewport)
         return surface
 
-    except Exception as e:
+    except (cairo.Error, GLib.Error) as e:
         logger.error(f"Failed to render SVG with Cairo/Rsvg: {e}")
         return None
 
@@ -139,7 +139,7 @@ def cairo_surface_to_vips(
 
         return r.bandjoin([g, b, a])
 
-    except Exception as e:
+    except pyvips.Error as e:
         logger.error(f"Failed to convert Cairo surface to pyvips: {e}")
         return None
 

@@ -334,7 +334,7 @@ class RuidaDriver(Driver):
             except asyncio.CancelledError:
                 logger.debug("Connection loop cancelled")
                 break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - connection loop boundary
                 logger.error(f"Connection error: {e}")
                 self._update_connection_status(TransportStatus.ERROR, str(e))
                 await self._disconnect_transports()
@@ -349,17 +349,17 @@ class RuidaDriver(Driver):
         if self._client:
             try:
                 await self._client.disconnect()
-            except Exception as e:
+            except OSError as e:
                 logger.debug(f"Error disconnecting client: {e}")
         if self._jog_udp_transport:
             try:
                 await self._jog_udp_transport.disconnect()
-            except Exception as e:
+            except OSError as e:
                 logger.debug(f"Error disconnecting jog transport: {e}")
         if self._ruida_transport:
             try:
                 await self._ruida_transport.disconnect()
-            except Exception as e:
+            except OSError as e:
                 logger.debug(f"Error disconnecting ruida transport: {e}")
 
     async def _poll_position(self) -> None:
@@ -370,7 +370,7 @@ class RuidaDriver(Driver):
         try:
             logger.debug("Polling position from controller")
             await self._client.get_position()
-        except Exception as e:
+        except (OSError, asyncio.TimeoutError) as e:
             logger.debug(f"Error polling position: {e}")
 
     async def _poll_ref_point_mode(self) -> None:
@@ -383,7 +383,7 @@ class RuidaDriver(Driver):
             if mode and mode != self._machine.active_wcs:
                 logger.debug(f"Ref point mode changed: {mode}")
                 self._machine.set_active_wcs(mode)
-        except Exception as e:
+        except (OSError, asyncio.TimeoutError) as e:
             logger.debug(f"Error polling ref point mode: {e}")
 
     async def run(
@@ -614,7 +614,7 @@ class RuidaDriver(Driver):
                 f"Identified: {device}",
                 extra=self._log_extra("MACHINE_EVENT"),
             )
-        except Exception as e:
+        except (OSError, asyncio.TimeoutError) as e:
             logger.debug(f"Could not fetch card info: {e}")
 
     def _on_state_changed(self, sender) -> None:

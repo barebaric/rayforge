@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import pyvips
+
 from ..core.vectorization_spec import PassthroughSpec, TraceSpec
 from .assembler import ItemAssembler
 from .engine import NormalizationEngine
@@ -300,7 +302,7 @@ class Importer(ABC):
         try:
             thumb = image.thumbnail_image(size, height=size, size="both")
             return thumb.pngsave_buffer()
-        except Exception:
+        except pyvips.Error:
             return None
 
     @staticmethod

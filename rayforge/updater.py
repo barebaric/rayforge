@@ -44,7 +44,7 @@ class AppUpdateChecker:
         ctx.set_message(_("Checking for Rayforge updates..."))
         try:
             release = await self._fetch_latest_release()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - async task boundary
             logger.error(f"Failed to check for app updates: {e}")
             ctx.set_message(_("Update check failed."))
             return

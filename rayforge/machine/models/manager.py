@@ -118,7 +118,7 @@ class MachineManager:
                     f"Inactive machine '{machine.name}' deferred connection: "
                     "resource busy."
                 )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - async auto-connect task
             logger.error(
                 f"Failed to auto-connect machine '{machine.name}': {e}"
             )
@@ -251,5 +251,5 @@ class MachineManager:
         for file in self.base_dir.glob("*.yaml"):
             try:
                 self.load_machine(file.stem)
-            except Exception as e:
+            except (OSError, ValueError, TypeError, yaml.YAMLError) as e:
                 logger.error(f"Failed to load machine from {file}: {e}")

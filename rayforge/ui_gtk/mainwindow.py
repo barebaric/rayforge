@@ -1542,7 +1542,8 @@ class MainWindow(Adw.ApplicationWindow):
             # controller (and its signal) is already gone, so there is
             # nothing left to detach.
             if self._current_machine.has_controller:
-                self._current_machine.controller.laser_power_changed.disconnect(
+                controller = self._current_machine.controller
+                controller.laser_power_changed.disconnect(
                     self._on_laser_power_changed
                 )
 

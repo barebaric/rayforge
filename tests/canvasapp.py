@@ -258,7 +258,7 @@ class EditableElement(CanvasElement):
 
         try:
             inv_world = self.get_world_transform().invert()
-        except Exception:
+        except ValueError:
             return None
 
         local_x, local_y = inv_world.transform_point((world_x, world_y))
@@ -306,7 +306,7 @@ class EditableElement(CanvasElement):
             local_dx, local_dy = inv_rot_scale.transform_vector(
                 (world_dx, world_dy)
             )
-        except Exception:
+        except ValueError:
             return
 
         self.vertices[self._active_vertex_idx][0] = (
@@ -401,7 +401,7 @@ class CanvasApp(Gtk.Application):
         return Gdk.EVENT_PROPAGATE
 
     def on_scroll(self, controller, dx, dy, c_norm, c_flip):
-        """Handles zooming on both canvases simultaneously, centered on the mouse."""
+        """Handles zooming on both canvases, centered on the mouse."""
         zoom_factor = 1.1 if dy < 0 else 1 / 1.1
 
         canvas = controller.get_widget()

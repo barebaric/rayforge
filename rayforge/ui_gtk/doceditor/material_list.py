@@ -47,7 +47,10 @@ class MaterialRow(Gtk.Box):
         color_box.set_valign(Gtk.Align.CENTER)
         color_box.add_css_class("material-color")
         color_provider = Gtk.CssProvider()
-        color_data = f".material-color {{ background-color: {self.material.get_display_color()}; }}"
+        display_color = self.material.get_display_color()
+        color_data = (
+            f".material-color {{ background-color: {display_color}; }}"
+        )
         color_provider.load_from_string(color_data)
         color_box.get_style_context().add_provider(
             color_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION

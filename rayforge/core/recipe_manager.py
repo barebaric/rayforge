@@ -48,7 +48,7 @@ class RecipeManager:
                 recipe.uid = data.get("uid", file.stem)
                 self.recipes[recipe.uid] = recipe
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - arbitrary user YAML file
                 logger.error(f"Error loading recipe file {file.name}: {e}")
         logger.info(f"Loaded {len(self.recipes)} recipes.")
 
@@ -60,7 +60,7 @@ class RecipeManager:
             with open(recipe_file, "w") as f:
                 data = recipe.to_dict()
                 yaml.safe_dump(data, f, sort_keys=False)
-        except Exception as e:
+        except (OSError, yaml.YAMLError) as e:
             logger.error(f"Failed to save recipe {recipe.uid}: {e}")
 
     def add_recipe(self, recipe: Recipe):

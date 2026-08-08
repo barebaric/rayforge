@@ -34,7 +34,7 @@ def url_validator(
             )
     except ValidationError:
         raise
-    except Exception as e:
+    except (ValueError, TypeError) as e:
         raise ValidationError(_("Invalid URL: {error}").format(error=str(e)))
 
 

@@ -53,7 +53,7 @@ def get_git_tag_version(path: Path) -> str:
             latest_tag = max(tags, key=lambda t: t.commit.committed_datetime)
             return latest_tag.name
         raise RuntimeError(f"No git tags found in {path}")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - normalize to RuntimeError
         raise RuntimeError(f"Failed to get git tag version from {path}: {e}")
 
 

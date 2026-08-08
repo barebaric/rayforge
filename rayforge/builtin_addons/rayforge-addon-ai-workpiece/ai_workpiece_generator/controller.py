@@ -102,7 +102,7 @@ class AISvgGeneratorController:
                             "Successfully converted AI-generated SVG to "
                             "editable sketch"
                         )
-                except Exception as e:
+                except (ValueError, TypeError) as e:
                     logger.warning(
                         "Failed to convert SVG to sketch: %s", e, exc_info=True
                     )
@@ -122,7 +122,7 @@ class AISvgGeneratorController:
         def on_done(f):
             try:
                 f.result()
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - future callback boundary
                 logger.error("Generation future error: %s", e)
                 if not self._cancelled:
                     task_mgr.schedule_on_main_thread(on_error, str(e))

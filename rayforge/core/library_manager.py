@@ -191,7 +191,7 @@ class LibraryManager:
         """
         try:
             return self.get_material(uid)
-        except Exception as e:
+        except OSError as e:
             logger.warning(f"Error getting material {uid}: {e}")
             return None
 

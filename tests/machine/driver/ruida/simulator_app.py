@@ -64,7 +64,7 @@ class SimpleUdpServer:
                     self.send_to(response, addr)
         except BlockingIOError:
             pass
-        except Exception as e:
+        except (OSError, TimeoutError, ValueError) as e:
             logger.error(f"Error in UDP poll: {e}")
         return True
 

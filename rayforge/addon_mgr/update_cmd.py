@@ -89,7 +89,7 @@ class UpdateCommand:
             else:
                 ctx.set_message(_("Addons are up to date."))
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - async update-check task
             logger.error(f"Failed to check for addon updates: {e}")
             ctx.set_message(_("Update check failed."))
 

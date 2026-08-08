@@ -369,9 +369,7 @@ class GrblNetworkDriver(Driver):
                     tg.create_task(self.http.connect())
                     tg.create_task(self.websocket.connect())
 
-            except DeviceConnectionError as e:
-                self._update_connection_status(TransportStatus.ERROR, str(e))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - connection loop boundary
                 self._update_connection_status(TransportStatus.ERROR, str(e))
             finally:
                 if self.websocket:

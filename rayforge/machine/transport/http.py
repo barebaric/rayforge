@@ -44,7 +44,7 @@ class HttpTransport(Transport):
                 )
                 async with aiohttp.ClientSession() as session:
                     await self._receive_loop(session)
-            except Exception as e:
+            except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
                 self.status_changed.send(
                     self, status=TransportStatus.ERROR, message=str(e)
                 )

@@ -211,7 +211,7 @@ class AIService:
             try:
                 config = AIProviderConfig.from_dict(provider_data)
                 self.add_provider(config)
-            except Exception as e:
+            except ValueError as e:
                 logger.error(f"Failed to load provider: {e}")
 
         default_id = data.get("default_provider")
@@ -235,5 +235,5 @@ class AIService:
         for provider in self._providers.values():
             try:
                 await provider.close()
-            except Exception as e:
+            except (OSError, TimeoutError, ValueError) as e:
                 logger.warning(f"Error closing provider: {e}")
