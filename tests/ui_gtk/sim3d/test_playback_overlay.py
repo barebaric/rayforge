@@ -9,6 +9,7 @@ gi.require_version("Adw", "1")
 import pytest
 
 from rayforge.ui_gtk.sim3d.playback_overlay import (
+    STEP_ANIMATION_SECONDS,
     TICK_SECONDS,
     PlaybackOverlay,
 )
@@ -266,27 +267,228 @@ def test_tick_stops_at_last_command(ui_context_initializer):
 
 
 @pytest.mark.ui
-def test_step_forward_resyncs_sim_time(ui_context_initializer):
+def test_step_forward_animates_to_next_command(ui_context_initializer):
     overlay = PlaybackOverlay()
     overlay.set_canvas(FakeCanvas())
     player = FakePlayer(n_ops=10, cmd_time=1.0)
     overlay.set_player(player)
-    overlay._sim_time = 99.0
     overlay._on_step_fwd(None)
+    # Stepping is animated, not instant: the slider keeps showing the
+    # current command until the animation has played out.
+    assert overlay._step_animating
+    assert int(overlay._slider.get_value()) == 0
+    ticks = 0
+    while overlay._step_animating:
+        overlay._on_step_tick()
+        ticks += 1
+    assert ticks == int(STEP_ANIMATION_SECONDS / TICK_SECONDS)
     assert player.current_index == 1
     assert overlay._sim_time == pytest.approx(2.0)
+    assert int(overlay._slider.get_value()) == 1
 
 
 @pytest.mark.ui
-def test_step_back_resyncs_sim_time(ui_context_initializer):
+def test_step_back_animates_to_previous_command(ui_context_initializer):
     overlay = PlaybackOverlay()
     overlay.set_canvas(FakeCanvas())
     player = FakePlayer(n_ops=10, cmd_time=1.0)
     overlay.set_player(player)
     overlay._slider.set_value(5)
     overlay._on_step_back(None)
+    assert overlay._step_animating
+    while overlay._step_animating:
+        overlay._on_step_tick()
     assert player.current_index == 4
     assert overlay._sim_time == pytest.approx(5.0)
+    assert int(overlay._slider.get_value()) == 4
+
+
+@pytest.mark.ui
+def test_step_animation_interpolates_sim_time(ui_context_initializer):
+    overlay = PlaybackOverlay()
+    canvas = FakeCanvas()
+    overlay.set_canvas(canvas)
+    player = FakePlayer(n_ops=10, cmd_time=10.0)
+    overlay.set_player(player)
+    overlay._on_step_fwd(None)
+    # Halfway through the animation of a 10 s command the playhead is
+    # interpolated mid-command, not parked on a command edge.
+    for _ in range(int(STEP_ANIMATION_SECONDS / TICK_SECONDS / 2)):
+        overlay._on_step_tick()
+    assert overlay._sim_time == pytest.approx(15.0)
+    assert int(overlay._slider.get_value()) == 0
+    while overlay._step_animating:
+        overlay._on_step_tick()
+    assert player.current_index == 1
+
+
+@pytest.mark.ui
+def test_step_forward_while_playing_jumps_instantly(ui_context_initializer):
+    overlay = PlaybackOverlay()
+    overlay.set_canvas(FakeCanvas())
+    player = FakePlayer(n_ops=10, cmd_time=1.0)
+    overlay.set_player(player)
+    overlay._start_playback()
+    overlay._on_step_fwd(None)
+    assert not overlay._step_animating
+    assert player.current_index == 1
+
+
+@pytest.mark.ui
+def test_play_during_step_animation_keeps_interpolated_time(
+    ui_context_initializer,
+):
+    overlay = PlaybackOverlay()
+    overlay.set_canvas(FakeCanvas())
+    player = FakePlayer(n_ops=10, cmd_time=10.0)
+    overlay.set_player(player)
+    overlay._on_step_fwd(None)
+    for _ in range(int(STEP_ANIMATION_SECONDS / TICK_SECONDS / 2)):
+        overlay._on_step_tick()
+    mid = overlay._sim_time
+    overlay._start_playback()
+    assert not overlay._step_animating
+    assert overlay._playing
+    assert overlay._sim_time == pytest.approx(mid)
+
+
+@pytest.mark.ui
+def test_seek_cancels_in_flight_step_animation(ui_context_initializer):
+    overlay = PlaybackOverlay()
+    overlay.set_canvas(FakeCanvas())
+    player = FakePlayer(n_ops=10, cmd_time=10.0)
+    overlay.set_player(player)
+    overlay._on_step_fwd(None)
+    assert overlay._step_animating
+    overlay.seek(3)
+    assert not overlay._step_animating
+    assert player.current_index == 3
+
+
+@pytest.mark.ui
+def test_rapid_step_forward_clicks_coalesce(ui_context_initializer):
+    overlay = PlaybackOverlay()
+    overlay.set_canvas(FakeCanvas())
+    player = FakePlayer(n_ops=10, cmd_time=1.0)
+    overlay.set_player(player)
+    for _ in range(5):
+        overlay._on_step_fwd(None)
+    # The batch glides as one: five commands in the time of one step.
+    assert overlay._pending_steps == 5
+    assert overlay._step_animating
+    ticks = 0
+    while overlay._pending_steps or overlay._step_animating:
+        overlay._on_step_tick()
+        ticks += 1
+    assert ticks == int(STEP_ANIMATION_SECONDS / TICK_SECONDS)
+    assert player.current_index == 5
+    assert int(overlay._slider.get_value()) == 5
+    assert overlay._sim_time == pytest.approx(6.0)
+
+
+@pytest.mark.ui
+def test_rapid_step_back_clicks_coalesce(ui_context_initializer):
+    overlay = PlaybackOverlay()
+    overlay.set_canvas(FakeCanvas())
+    player = FakePlayer(n_ops=10, cmd_time=1.0)
+    overlay.set_player(player)
+    overlay._slider.set_value(6)
+    for _ in range(4):
+        overlay._on_step_back(None)
+    while overlay._pending_steps or overlay._step_animating:
+        overlay._on_step_tick()
+    assert player.current_index == 2
+    assert overlay._sim_time == pytest.approx(3.0)
+
+
+@pytest.mark.ui
+def test_mixed_step_clicks_coalesce_to_net(ui_context_initializer):
+    overlay = PlaybackOverlay()
+    overlay.set_canvas(FakeCanvas())
+    player = FakePlayer(n_ops=10, cmd_time=1.0)
+    overlay.set_player(player)
+    overlay._slider.set_value(3)
+    for _ in range(3):
+        overlay._on_step_fwd(None)
+    overlay._on_step_back(None)
+    assert overlay._pending_steps == 2
+    while overlay._pending_steps or overlay._step_animating:
+        overlay._on_step_tick()
+    assert player.current_index == 5
+    assert overlay._sim_time == pytest.approx(6.0)
+
+
+@pytest.mark.ui
+def test_step_queue_clamped_at_end(ui_context_initializer):
+    overlay = PlaybackOverlay()
+    overlay.set_canvas(FakeCanvas())
+    player = FakePlayer(n_ops=3, cmd_time=1.0)
+    overlay.set_player(player)
+    for _ in range(10):
+        overlay._on_step_fwd(None)
+    ticks = 0
+    while overlay._pending_steps or overlay._step_animating:
+        overlay._on_step_tick()
+        ticks += 1
+    # Ten clicks only reach the last command, in the time of one step.
+    assert ticks == int(STEP_ANIMATION_SECONDS / TICK_SECONDS)
+    assert int(overlay._slider.get_value()) == 2
+    assert player.current_index == 2
+
+
+@pytest.mark.ui
+def test_clicks_during_glide_merge_into_it(ui_context_initializer):
+    overlay = PlaybackOverlay()
+    overlay.set_canvas(FakeCanvas())
+    player = FakePlayer(n_ops=10, cmd_time=1.0)
+    overlay.set_player(player)
+    overlay._on_step_fwd(None)
+    # Two more clicks while the first glide is running merge into it.
+    overlay._on_step_fwd(None)
+    overlay._on_step_fwd(None)
+    assert overlay._pending_steps == 3
+    ticks = 0
+    while overlay._pending_steps or overlay._step_animating:
+        overlay._on_step_tick()
+        ticks += 1
+    # All three commands glide over in the time of a single step.
+    assert ticks == int(STEP_ANIMATION_SECONDS / TICK_SECONDS)
+    assert player.current_index == 3
+    assert int(overlay._slider.get_value()) == 3
+
+
+@pytest.mark.ui
+def test_opposing_clicks_during_glide_cancel_it(ui_context_initializer):
+    overlay = PlaybackOverlay()
+    canvas = FakeCanvas()
+    overlay.set_canvas(canvas)
+    player = FakePlayer(n_ops=10, cmd_time=1.0)
+    overlay.set_player(player)
+    overlay._on_step_fwd(None)
+    for _ in range(6):
+        overlay._on_step_tick()
+    # A backward click cancels the queued forward step: the glide snaps
+    # back to the playhead it started from.
+    overlay._on_step_back(None)
+    assert overlay._pending_steps == 0
+    assert not overlay._step_animating
+    assert overlay._sim_time == pytest.approx(1.0)
+    assert int(overlay._slider.get_value()) == 0
+
+
+@pytest.mark.ui
+def test_seek_during_glide_cancels_pending_steps(ui_context_initializer):
+    overlay = PlaybackOverlay()
+    overlay.set_canvas(FakeCanvas())
+    player = FakePlayer(n_ops=10, cmd_time=1.0)
+    overlay.set_player(player)
+    overlay._on_step_fwd(None)
+    overlay._on_step_fwd(None)
+    assert overlay._pending_steps == 2
+    overlay.seek(4)
+    assert not overlay._step_animating
+    assert overlay._pending_steps == 0
+    assert player.current_index == 4
 
 
 @pytest.mark.ui

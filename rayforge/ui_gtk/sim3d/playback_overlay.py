@@ -41,6 +41,13 @@ SPEED_OPTIONS = [1, 2, 4, 8, 16]
 # slider value (command index) changes.
 TICK_SECONDS = 1.0 / 60.0
 
+# Wall-clock span of the step-button animation (~0.2 s). Each manual
+# step plays out over this fixed number of ticks, regardless of the
+# command's simulated length, so the playhead glides to the next
+# command instead of jumping.
+STEP_ANIMATION_TICKS = 12
+STEP_ANIMATION_SECONDS = STEP_ANIMATION_TICKS * TICK_SECONDS
+
 css = """
 .playback-overlay {
     background-color: alpha(@theme_bg_color, 0.75);
@@ -130,6 +137,14 @@ class PlaybackOverlay(Gtk.Box):
         self._suppress_seek = False
         self._tick_driving_slider = False
         self._sim_time: float = 0.0
+        self._step_timer_id: Optional[int] = None
+        self._step_animating = False
+        self._step_ticks_remaining = 0
+        self._step_start_time = 0.0
+        self._step_end_time = 0.0
+        self._step_target = -1
+        self._step_consumed = 0
+        self._pending_steps = 0
 
         self.connect("destroy", self._on_destroy)
 
@@ -152,9 +167,16 @@ class PlaybackOverlay(Gtk.Box):
         (typically 0). The player itself may already be seeked to the
         first layer for rendering.
         """
+        self._cancel_step_animation()
         self._player = player
         if player is not None:
             self.update_ops_range(len(player.ops), initial_index)
+            # Sync the simulated clock even when the slider does not
+            # move (initial_index 0 with the slider already at 0), so
+            # that stepping and playback start from the real position.
+            if not self._playing:
+                self._sim_time = player.get_cumulative_time(initial_index)
+                player.set_sim_time(self._sim_time)
         else:
             self.update_ops_range(0)
 
@@ -178,6 +200,7 @@ class PlaybackOverlay(Gtk.Box):
         While paused, the simulated clock is resynced to the new
         position so that resuming play continues from there.
         """
+        self._cancel_step_animation()
         if self._player:
             self._player.seek(index)
             if not self._playing:
@@ -254,6 +277,7 @@ class PlaybackOverlay(Gtk.Box):
         Set the slider position from an external source (e.g. a G-code
         viewer click) without triggering a feedback loop.
         """
+        self._cancel_step_animation()
         self._is_syncing = True
         self._slider.set_value(ops_index)
         self._is_syncing = False
@@ -282,8 +306,13 @@ class PlaybackOverlay(Gtk.Box):
             current = 0
         # Resync the simulated clock to the current playhead so that
         # playback continues from wherever the user left the slider.
+        # An in-flight step animation keeps its interpolated time so
+        # that playback continues seamlessly from the gliding playhead.
         if self._player:
-            self._sim_time = self._player.get_cumulative_time(current)
+            if self._step_animating:
+                self._cancel_step_animation()
+            else:
+                self._sim_time = self._player.get_cumulative_time(current)
             self._player.set_sim_time(self._sim_time)
         else:
             self._sim_time = 0.0
@@ -297,6 +326,7 @@ class PlaybackOverlay(Gtk.Box):
         )
 
     def _stop_playback(self):
+        self._cancel_step_animation()
         self._playing = False
         self._play_button.set_child(self._play_icon)
         self._play_button.set_tooltip_text(_("Play simulation"))
@@ -342,12 +372,108 @@ class PlaybackOverlay(Gtk.Box):
         button.set_label(f"{SPEED_OPTIONS[self._speed_index]}x")
 
     def _on_step_back(self, button):
-        current = int(self._slider.get_value())
-        if current > 0:
-            self._slider.set_value(current - 1)
+        # The bounds check must look past the playhead (slider + queued
+        # steps): a backward click may cancel a forward glide even
+        # while the slider still sits at 0.
+        if self._pending_steps > 0 or int(self._slider.get_value()) > 0:
+            self._queue_step(-1)
 
     def _on_step_fwd(self, button):
-        current = int(self._slider.get_value())
         max_idx = self._slider.get_adjustment().get_upper()
-        if current < max_idx:
-            self._slider.set_value(current + 1)
+        if self._pending_steps < 0 or int(self._slider.get_value()) < max_idx:
+            self._queue_step(1)
+
+    def _queue_step(self, delta: int):
+        """Queue one manual step and start (or extend) its glide.
+
+        Clicks arriving while a glide is running accumulate into the
+        same glide, so rapid clicks move the coalesced number of
+        commands in the time of a single step. While playing, steps
+        jump instantly as before.
+        """
+        if self._playing or not self._player:
+            self._slider.set_value(int(self._slider.get_value()) + delta)
+            return
+        self._pending_steps += delta
+        self._start_step_glide()
+
+    def _start_step_glide(self):
+        """Start a glide covering the coalesced queued steps.
+
+        The batch takes the duration of a single step no matter how
+        many commands it spans; clicks arriving mid-glide retarget it
+        to the new coalesced total.
+        """
+        if self._playing or not self._player:
+            return
+        current = int(self._slider.get_value())
+        max_idx = int(self._slider.get_adjustment().get_upper())
+        target = max(0, min(current + self._pending_steps, max_idx))
+        consumed = target - current
+        if self._step_animating:
+            if consumed == 0:
+                # The queued clicks cancel each other out: snap back to
+                # the playhead and drop the batch.
+                self._cancel_step_animation()
+                self._sim_time = self._player.get_cumulative_time(current)
+                self._player.set_sim_time(self._sim_time)
+                if self._canvas:
+                    self._canvas.queue_render()
+                return
+            self._step_consumed = consumed
+            self._step_target = target
+            self._step_end_time = self._player.get_cumulative_time(target)
+            return
+        if consumed == 0:
+            self._pending_steps = 0
+            return
+        end_time = self._player.get_cumulative_time(target)
+        while end_time == self._sim_time:
+            # Zero-duration commands between the playhead and the
+            # target: move through them instantly, then continue with
+            # the rest of the batch.
+            self._pending_steps -= consumed
+            self._slider.set_value(target)
+            current = target
+            target = max(0, min(current + self._pending_steps, max_idx))
+            consumed = target - current
+            if consumed == 0:
+                return
+            end_time = self._player.get_cumulative_time(target)
+        self._step_animating = True
+        self._step_ticks_remaining = STEP_ANIMATION_TICKS
+        self._step_start_time = self._sim_time
+        self._step_end_time = end_time
+        self._step_target = target
+        self._step_consumed = consumed
+        self._step_timer_id = GLib.timeout_add(
+            int(TICK_SECONDS * 1000), self._on_step_tick
+        )
+
+    def _on_step_tick(self) -> bool:
+        """Advance an in-flight step glide by one tick."""
+        if not self._step_animating or not self._player:
+            return False
+        self._step_ticks_remaining -= 1
+        progress = 1.0 - self._step_ticks_remaining / STEP_ANIMATION_TICKS
+        self._sim_time = (
+            self._step_start_time
+            + (self._step_end_time - self._step_start_time) * progress
+        )
+        self._player.set_sim_time(self._sim_time)
+        if self._canvas:
+            self._canvas.queue_render()
+        if self._step_ticks_remaining == 0:
+            self._pending_steps -= self._step_consumed
+            self._cancel_step_animation()
+            self._slider.set_value(self._step_target)
+            return False
+        return True
+
+    def _cancel_step_animation(self):
+        """Stop any in-flight step glide and drop queued steps."""
+        if self._step_timer_id is not None:
+            GLib.source_remove(self._step_timer_id)
+            self._step_timer_id = None
+        self._step_animating = False
+        self._pending_steps = 0
