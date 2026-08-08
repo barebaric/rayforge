@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -30,17 +30,17 @@ class MovePointCommand(SketchChangeCommand):
         end_pos: GeoPoint,
         # snapshot is: (points_dict, entities_dict)
         snapshot: Optional[
-            tuple[Dict[EntityID, GeoPoint], Dict[EntityID, Any]]
+            tuple[dict[EntityID, GeoPoint], dict[EntityID, Any]]
         ] = None,
-        snap_constraints: Optional[List["Constraint"]] = None,
+        snap_constraints: Optional[list["Constraint"]] = None,
     ):
         super().__init__(sketch, _("Move Point"))
         self.point_id = point_id
         self.start_pos = start_pos
         self.end_pos = end_pos
         self._point_ref: Optional[Point] = None
-        self._snap_constraints: List["Constraint"] = snap_constraints or []
-        self._created_constraints: List["Constraint"] = []
+        self._snap_constraints: list["Constraint"] = snap_constraints or []
+        self._created_constraints: list["Constraint"] = []
 
         # If we are provided a snapshot (from the tool), use it.
         # This is critical because the drag operation changes coordinates
@@ -150,7 +150,7 @@ class UnstickJunctionCommand(SketchChangeCommand):
         self.junction_pid = junction_pid
         self.new_point: Optional[Point] = None
         # Stores {entity_id: (attribute_name, old_pid)}
-        self.modified_map: Dict[EntityID, Tuple[str, EntityID]] = {}
+        self.modified_map: dict[EntityID, tuple[str, EntityID]] = {}
 
     def _do_execute(self) -> None:
         try:

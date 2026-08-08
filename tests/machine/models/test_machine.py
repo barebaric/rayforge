@@ -1,6 +1,6 @@
 import asyncio
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator, Tuple
 from unittest.mock import MagicMock
 
 import pytest
@@ -77,7 +77,7 @@ def doc_editor(
     editor.cleanup()
 
 
-def create_test_workpiece_and_source() -> Tuple[WorkPiece, SourceAsset]:
+def create_test_workpiece_and_source() -> tuple[WorkPiece, SourceAsset]:
     """Creates a simple WorkPiece and its linked SourceAsset for testing."""
     svg_data = b'<svg><path d="M0,0 L10,10"/></svg>'
     source_file = Path("test.svg")

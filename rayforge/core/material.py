@@ -4,7 +4,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Optional, Union, cast
+from typing import Any, Optional, Union, cast
 
 import yaml
 
@@ -22,10 +22,10 @@ class MaterialAppearance:
 
     color: str = "#f0f0f0"
     pattern: str = "solid"
-    extra: Dict[str, Any] = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "MaterialAppearance":
+    def from_dict(cls, data: dict[str, Any]) -> "MaterialAppearance":
         """Create an instance from a dictionary."""
         known_keys = {"color", "pattern"}
         extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -36,7 +36,7 @@ class MaterialAppearance:
             extra=extra,
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the appearance to a dictionary."""
         result = {"color": self.color, "pattern": self.pattern}
         result.update(self.extra)
@@ -65,7 +65,7 @@ class Material:
     )
     appearance: MaterialAppearance = field(default_factory=MaterialAppearance)
     file_path: Optional[Path] = None
-    extra: Dict[str, Any] = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         """Post-initialization validation and setup."""
@@ -148,7 +148,7 @@ class Material:
 
         return material
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert the material to a dictionary representation.
 

@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 from ....core.varset import LengthVar, Var
 from ...shared.pref_rows.length_spin_row import LengthSpinRow
@@ -21,7 +21,7 @@ class LengthRowAdapter(RowAdapter):
     @classmethod
     def create(
         cls, var: Var, target_property: str
-    ) -> Tuple[LengthSpinRow, "LengthRowAdapter"]:
+    ) -> tuple[LengthSpinRow, "LengthRowAdapter"]:
         assert isinstance(var, LengthVar)
         initial_val = getattr(var, target_property)
         min_val = var.min_val if var.min_val is not None else -2147483647

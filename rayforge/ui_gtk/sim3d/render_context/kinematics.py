@@ -8,7 +8,7 @@ themselves.
 
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -58,11 +58,11 @@ class KinematicsContext:
         mvp_ui: Optional[np.ndarray] = None,
         mvp_rot: Optional[np.ndarray] = None,
         cyl_mesh_mvp: Optional[np.ndarray] = None,
-        model_world_transforms: Optional[Dict[str, np.ndarray]] = None,
-        head_positions: Optional[Dict[str, tuple]] = None,
-        head_configs: Optional[Dict[str, HeadConfig]] = None,
-        rotary_head_positions: Optional[Dict[str, np.ndarray]] = None,
-        focused_rotary_head_positions: Optional[Dict[str, np.ndarray]] = None,
+        model_world_transforms: Optional[dict[str, np.ndarray]] = None,
+        head_positions: Optional[dict[str, tuple]] = None,
+        head_configs: Optional[dict[str, HeadConfig]] = None,
+        rotary_head_positions: Optional[dict[str, np.ndarray]] = None,
+        focused_rotary_head_positions: Optional[dict[str, np.ndarray]] = None,
         has_rotary: bool = False,
         rotary_axis: Optional["Axis"] = None,
     ):
@@ -195,9 +195,9 @@ class KinematicsContext:
         self,
         mvp_ui: np.ndarray,
         *,
-        model_world_transforms: Dict[str, np.ndarray],
-        head_positions: Dict[str, tuple],
-        head_configs: Dict[str, HeadConfig],
+        model_world_transforms: dict[str, np.ndarray],
+        head_positions: dict[str, tuple],
+        head_configs: dict[str, HeadConfig],
         has_rotary: bool,
     ) -> None:
         self._mvp_ui = mvp_ui
@@ -247,7 +247,7 @@ def _focused_rotary_head_positions(
     asm,
     state: MachineState,
     diameter: float,
-) -> Dict[str, np.ndarray]:
+) -> dict[str, np.ndarray]:
     """Rotary head positions with each head's focal distance applied.
 
     Only links with HEAD role appear in the result, so it doubles as the
@@ -255,7 +255,7 @@ def _focused_rotary_head_positions(
     """
     if not asm.has_rotary:
         return {}
-    result: Dict[str, np.ndarray] = {}
+    result: dict[str, np.ndarray] = {}
     for name in asm.head_rotary_positions(state, diameter):
         focal = _head_focal_distance(machine, name)
         focused = asm.head_rotary_positions(

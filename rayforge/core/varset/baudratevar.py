@@ -1,9 +1,9 @@
 from gettext import gettext as _
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from .intvar import IntVar, ValidationError
 
-STANDARD_BAUD_RATES: List[int] = [
+STANDARD_BAUD_RATES: list[int] = [
     9600,
     19200,
     38400,
@@ -17,7 +17,7 @@ STANDARD_BAUD_RATES: List[int] = [
 ]
 
 
-def validate_baud_rate(rate: Optional[int], choices: List[int]):
+def validate_baud_rate(rate: Optional[int], choices: list[int]):
     """Raises ValidationError if the baud rate is not in the choices list."""
     if rate is None:
         raise ValidationError(_("Baud rate cannot be empty."))
@@ -41,9 +41,9 @@ class BaudrateVar(IntVar):
         value: Optional[int] = None,
         min_val: Optional[int] = None,
         max_val: Optional[int] = None,
-        choices: Optional[List[int]] = None,
+        choices: Optional[list[int]] = None,
     ):
-        self.choices: List[int] = (
+        self.choices: list[int] = (
             choices if choices is not None else list(STANDARD_BAUD_RATES)
         )
         super().__init__(
@@ -58,7 +58,7 @@ class BaudrateVar(IntVar):
             validator=lambda v: validate_baud_rate(v, self.choices),
         )
 
-    def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
+    def to_dict(self, include_value: bool = False) -> dict[str, Any]:
         data = super().to_dict(include_value=include_value)
         data["choices"] = self.choices
         return data

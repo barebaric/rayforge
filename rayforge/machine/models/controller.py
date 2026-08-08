@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from blinker import Signal
 from raygeo.geo.types import Point3D
@@ -301,7 +301,7 @@ class MachineController:
             return
         if not all(v is not None for v in state.wco):
             return
-        wco = cast(Tuple[float, float, float], state.wco)
+        wco = cast(tuple[float, float, float], state.wco)
         new_offset = (wco[0], wco[1], wco[2])
         current = self.machine.get_wcs_offset(active_wcs)
         if current != new_offset:
@@ -331,7 +331,7 @@ class MachineController:
         )
 
     def _on_driver_wcs_updated(
-        self, driver: Driver, offsets: Dict[str, Point3D]
+        self, driver: Driver, offsets: dict[str, Point3D]
     ):
         """Updates internal WCS state from driver updates."""
         if not offsets:
@@ -355,7 +355,7 @@ class MachineController:
             return
         await self.driver.home(axes)
 
-    async def jog(self, deltas: Dict[Axis, float], speed: int):
+    async def jog(self, deltas: dict[Axis, float], speed: int):
         """
         Jogs the machine along specified axes.
 
@@ -638,14 +638,14 @@ class MachineController:
         return self.driver.machine_space_wcs_display_name
 
     @property
-    def supported_wcs(self) -> List[str]:
+    def supported_wcs(self) -> list[str]:
         """
         Returns the list of supported Work Coordinate Systems.
         Delegates to the driver's supported_wcs property.
         """
         return self.driver.supported_wcs
 
-    def get_setting_vars(self) -> List["VarSet"]:
+    def get_setting_vars(self) -> list["VarSet"]:
         """
         Gets the setting definitions from the machine's active driver
         as a VarSet.
@@ -667,7 +667,7 @@ class MachineController:
                 self.machine.settings_error.send(self, error=err)
                 return
 
-            def on_settings_read(sender, settings: List["VarSet"]):
+            def on_settings_read(sender, settings: list["VarSet"]):
                 logger.debug("on_settings_read: Handler called.")
                 sender.settings_read.disconnect(on_settings_read)
                 self._scheduler(
@@ -711,7 +711,7 @@ class MachineController:
         finally:
             logger.debug(f"write_setting(key={key}): Done.")
 
-    def validate_driver_setup(self) -> Tuple[bool, Optional[str]]:
+    def validate_driver_setup(self) -> tuple[bool, Optional[str]]:
         """
         Validates the machine's driver arguments against the driver's setup
         VarSet.

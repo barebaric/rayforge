@@ -11,7 +11,7 @@ pattern in the legacy ``config_wizard.py``.
 """
 
 from gettext import gettext as _
-from typing import Optional, Type
+from typing import Optional
 
 from gi.repository import Adw, Gtk
 
@@ -28,7 +28,7 @@ class ConnectionPage(WizardPage):
     subtitle = _("Enter the connection parameters for your device.")
 
     def __init__(self, wizard, **kwargs):
-        self._driver_cls: Optional[Type[Driver]] = None
+        self._driver_cls: Optional[type[Driver]] = None
         self._required_keys: set = set()
         super().__init__(wizard, **kwargs)
 

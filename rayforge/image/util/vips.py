@@ -3,7 +3,7 @@ PyVips image manipulation utilities.
 """
 
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 import cairo
 import numpy
@@ -109,7 +109,7 @@ def safe_crop(
     return None
 
 
-def extract_vips_metadata(image: pyvips.Image) -> Dict[str, Any]:
+def extract_vips_metadata(image: pyvips.Image) -> dict[str, Any]:
     """
     Extracts file-based and content-based metadata from a pyvips Image.
     """
@@ -146,7 +146,7 @@ def extract_vips_metadata(image: pyvips.Image) -> Dict[str, Any]:
     return metadata
 
 
-def get_mm_per_pixel(image: pyvips.Image) -> Tuple[float, float]:
+def get_mm_per_pixel(image: pyvips.Image) -> tuple[float, float]:
     """
     Determines mm per pixel from a vips image metadata. Falls back to 96 DPI.
     """
@@ -166,7 +166,7 @@ def get_mm_per_pixel(image: pyvips.Image) -> Tuple[float, float]:
         return (mm_per_inch / dpi), (mm_per_inch / dpi)
 
 
-def get_physical_size_mm(image: pyvips.Image) -> Tuple[float, float]:
+def get_physical_size_mm(image: pyvips.Image) -> tuple[float, float]:
     """
     Determines the physical size of a vips image in mm.
     """

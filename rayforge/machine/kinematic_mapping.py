@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from raygeo.ops import Ops
@@ -194,7 +194,7 @@ class KinematicMapping:
             reverse=self.reverse,
         )
 
-    _AXIS_TO_INDEX: Dict[Axis, int] = {
+    _AXIS_TO_INDEX: dict[Axis, int] = {
         Axis.X: 0,
         Axis.Y: 1,
         Axis.Z: 2,
@@ -208,8 +208,8 @@ class KinematicMapping:
         )
 
         def on_endpoint(
-            end: List[float],
-            extra_axes: Dict[Axis, float],
+            end: list[float],
+            extra_axes: dict[Axis, float],
         ) -> None:
             degrees = self._mm_to_degrees(end[1])
             extra_axes[self.rotary_axis] = degrees
@@ -219,7 +219,7 @@ class KinematicMapping:
             if replaced_idx is not None:
                 end[replaced_idx] = 0.0
 
-        def on_aux_point(point: List[float]) -> None:
+        def on_aux_point(point: list[float]) -> None:
             point[1] = self._mm_to_degrees(point[1])
 
         ops.transform_moving(on_endpoint, on_aux_point)
@@ -301,8 +301,8 @@ class KinematicMapping:
         )
 
         def on_endpoint(
-            end: List[float],
-            extra_axes: Dict[Axis, float],
+            end: list[float],
+            extra_axes: dict[Axis, float],
         ) -> None:
             degrees = extra_axes.pop(Axis.Y, None)
             if degrees is None:
@@ -311,7 +311,7 @@ class KinematicMapping:
             if null_source:
                 end[1] = 0.0
 
-        def on_aux_point(point: List[float]) -> None:
+        def on_aux_point(point: list[float]) -> None:
             if idx < len(point):
                 point[idx] = KinematicMath.degrees_to_mm(
                     point[idx], mm_per_rotation

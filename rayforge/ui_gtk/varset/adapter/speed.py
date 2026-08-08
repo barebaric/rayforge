@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 from ....context import get_context
 from ....core.varset import SpeedVar, Var
@@ -35,7 +35,7 @@ class SpeedRowAdapter(RowAdapter):
     @classmethod
     def create(
         cls, var: Var, target_property: str
-    ) -> Tuple[SpeedSpinRow, "SpeedRowAdapter"]:
+    ) -> tuple[SpeedSpinRow, "SpeedRowAdapter"]:
         assert isinstance(var, SpeedVar)
         max_speed = _resolve_max_speed(var)
         initial_val = getattr(var, target_property)

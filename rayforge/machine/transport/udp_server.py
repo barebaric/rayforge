@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Optional, Tuple
+from typing import Optional
 
 from .transport import Transport, TransportStatus
 
@@ -13,7 +13,7 @@ class UdpServerProtocol(asyncio.DatagramProtocol):
     def __init__(self, transport: "UdpServerTransport"):
         self.transport = transport
 
-    def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
+    def datagram_received(self, data: bytes, addr: tuple[str, int]) -> None:
         self.transport._on_datagram_received(data, addr)
 
     def error_received(self, exc: Exception) -> None:
@@ -88,7 +88,7 @@ class UdpServerTransport(Transport):
             "Use send_to(data, addr) for UDP server transport"
         )
 
-    async def send_to(self, data: bytes, addr: Tuple[str, int]) -> None:
+    async def send_to(self, data: bytes, addr: tuple[str, int]) -> None:
         if not self._transport:
             raise ConnectionError("UDP server not started")
         self._transport.sendto(data, addr)
@@ -97,6 +97,6 @@ class UdpServerTransport(Transport):
         pass
 
     def _on_datagram_received(
-        self, data: bytes, addr: Tuple[str, int]
+        self, data: bytes, addr: tuple[str, int]
     ) -> None:
         self.received.send(self, data=data, addr=addr)

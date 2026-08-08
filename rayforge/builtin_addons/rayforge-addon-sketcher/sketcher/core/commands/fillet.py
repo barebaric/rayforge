@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from ..constraints import (
     CollinearConstraint,
@@ -51,7 +51,7 @@ class FilletCommand(SketchChangeCommand):
         line1_id: EntityID,
         line2_id: EntityID,
         radius: float,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """
         Calculates the points, entities, and constraints for a fillet.
         This is a pure function for testability and reusability.

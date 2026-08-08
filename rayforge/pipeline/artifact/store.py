@@ -13,8 +13,9 @@ from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Dict, Generator, Optional
+from typing import TYPE_CHECKING, Optional
 
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
@@ -30,8 +31,8 @@ class ArtifactStore:
     """In-process artifact store with reference-counted handles."""
 
     def __init__(self):
-        self._artifacts: Dict[str, BaseArtifact] = {}
-        self._handles: Dict[str, BaseArtifactHandle] = {}
+        self._artifacts: dict[str, BaseArtifact] = {}
+        self._handles: dict[str, BaseArtifactHandle] = {}
 
     def shutdown(self):
         for key in list(self._handles):

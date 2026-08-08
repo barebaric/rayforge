@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 from ..core.asset import IAsset
 from ..core.asset_registry import asset_type_registry
@@ -29,7 +29,7 @@ class UpdateAssetCommand(Command):
         self,
         doc: "Doc",
         asset_uid: str,
-        new_data: Dict[str, Any],
+        new_data: dict[str, Any],
         name: str = _("Update Asset"),
     ):
         super().__init__(name)
@@ -52,7 +52,7 @@ class UpdateAssetCommand(Command):
             if wp.geometry_provider_uid == asset_uid
         }
 
-    def _apply_state(self, data: Dict[str, Any]):
+    def _apply_state(self, data: dict[str, Any]):
         """Helper to apply an asset dictionary to the document state."""
         # 1. Deserialize and update the asset in the document registry
         asset_class = asset_type_registry.get(self.asset_type_name)

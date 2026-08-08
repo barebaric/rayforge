@@ -1,7 +1,7 @@
 import uuid
 from enum import Enum
 from gettext import gettext as _
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import numpy as np
 from blinker import Signal
@@ -37,7 +37,7 @@ class RotaryModule:
         self.model_path: Optional[str] = None
         self.transform: np.ndarray = np.eye(4, dtype=np.float64)
         self.changed = Signal()
-        self.extra: Dict[str, Any] = {}
+        self.extra: dict[str, Any] = {}
 
     def set_name(self, name: str):
         if self.name == name:
@@ -164,7 +164,7 @@ class RotaryModule:
     def get_collision_bbox(self) -> Optional[Rect3D]:
         return None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         result = {
             "uid": self.uid,
             "name": self.name,
@@ -188,7 +188,7 @@ class RotaryModule:
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RotaryModule":
+    def from_dict(cls, data: dict[str, Any]) -> "RotaryModule":
         known_keys = {
             "uid",
             "name",

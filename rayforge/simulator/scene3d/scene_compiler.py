@@ -6,7 +6,7 @@ raygeo's Rust ``compile_scene_3d`` and handles texture generation.
 from __future__ import annotations
 
 import logging
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Optional
 
 import numpy as np
 from raygeo.image import rasterize_scanlines
@@ -32,8 +32,8 @@ PX_PER_MM = 50.0
 
 def _rasterize_scanlines(
     ops: Ops,
-    bbox: Tuple[float, float, float, float],
-) -> Optional[Tuple[np.ndarray, int, int, float]]:
+    bbox: tuple[float, float, float, float],
+) -> Optional[tuple[np.ndarray, int, int, float]]:
     x0, y0, w_mm, h_mm = bbox
     if w_mm <= 0 or h_mm <= 0:
         return None
@@ -76,10 +76,10 @@ def _rasterize_scanlines(
 
 def _generate_texture_layers(
     ops: Ops,
-    layer_infos: List[LayerInfo],
+    layer_infos: list[LayerInfo],
     config: RenderConfig3D,
-) -> List[TextureLayer]:
-    texture_layers: List[TextureLayer] = []
+) -> list[TextureLayer]:
+    texture_layers: list[TextureLayer] = []
 
     for li in layer_infos:
         if not li.has_scanlines:
@@ -144,7 +144,7 @@ def _generate_texture_layers(
 # ── Spec building ─────────────────────────────────────────────────
 
 
-def _build_scene_spec(config: RenderConfig3D) -> Tuple[list, dict]:
+def _build_scene_spec(config: RenderConfig3D) -> tuple[list, dict]:
     w2v = config.world_to_visual.astype(np.float32).tolist()
     layer_configs = {}
     if config.layer_configs:
@@ -167,8 +167,8 @@ def _wrap_compiled_scene(
     config: RenderConfig3D,
     generation_id: int = 0,
 ) -> CompiledSceneArtifact:
-    vertex_layers: List[VertexLayer] = []
-    overlay_layers: List[ScanlineOverlayLayer] = []
+    vertex_layers: list[VertexLayer] = []
+    overlay_layers: list[ScanlineOverlayLayer] = []
 
     for g in raw.groups:
         vertex_layers.append(

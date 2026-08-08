@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -20,7 +20,7 @@ class SnapLineType(Enum):
 
     @property
     def priority(self) -> int:
-        priorities: Dict[SnapLineType, int] = {
+        priorities: dict[SnapLineType, int] = {
             SnapLineType.ENTITY_POINT: 100,
             SnapLineType.MIDPOINT: 90,
             SnapLineType.ON_ENTITY: 80,
@@ -35,11 +35,11 @@ class SnapLineType(Enum):
 @dataclass(frozen=True)
 class SnapLineStyle:
     color: ColorRGBA = (0.0, 0.6, 1.0, 0.8)
-    dash: Optional[Tuple[float, ...]] = None
+    dash: Optional[tuple[float, ...]] = None
     line_width: float = 1.0
 
 
-SNAP_LINE_STYLES: Dict[SnapLineType, SnapLineStyle] = {
+SNAP_LINE_STYLES: dict[SnapLineType, SnapLineStyle] = {
     SnapLineType.ENTITY_POINT: SnapLineStyle(
         color=(0.2, 0.6, 1.0, 0.9),
         dash=(8, 4),
@@ -86,7 +86,7 @@ class SnapPoint:
     source: Optional[Any] = None
     spacing: Optional[float] = None
     is_horizontal: bool = False
-    pattern_coords: Optional[Tuple[float, ...]] = None
+    pattern_coords: Optional[tuple[float, ...]] = None
     axis_coord: Optional[float] = None
 
     @property
@@ -122,8 +122,8 @@ class SnapLine:
 class SnapResult:
     snapped: bool = False
     position: GeoPoint = (0.0, 0.0)
-    snap_lines: List[SnapLine] = field(default_factory=list)
-    snap_points: List[SnapPoint] = field(default_factory=list)
+    snap_lines: list[SnapLine] = field(default_factory=list)
+    snap_points: list[SnapPoint] = field(default_factory=list)
     primary_snap_line: Optional[SnapLine] = None
     primary_snap_point: Optional[SnapPoint] = None
     distance: float = float("inf")
@@ -153,7 +153,7 @@ class SnapResult:
         cls,
         snap_point: SnapPoint,
         distance: float,
-        snap_lines: Optional[List[SnapLine]] = None,
+        snap_lines: Optional[list[SnapLine]] = None,
     ) -> "SnapResult":
         return cls(
             snapped=True,
@@ -168,13 +168,13 @@ class SnapResult:
 class DragContext:
     def __init__(
         self,
-        dragged_point_ids: Optional[Set[EntityID]] = None,
-        dragged_entity_ids: Optional[Set[EntityID]] = None,
-        initial_positions: Optional[Dict[EntityID, GeoPoint]] = None,
+        dragged_point_ids: Optional[set[EntityID]] = None,
+        dragged_entity_ids: Optional[set[EntityID]] = None,
+        initial_positions: Optional[dict[EntityID, GeoPoint]] = None,
     ):
-        self.dragged_point_ids: Set[EntityID] = dragged_point_ids or set()
-        self.dragged_entity_ids: Set[EntityID] = dragged_entity_ids or set()
-        self.initial_positions: Dict[EntityID, GeoPoint] = (
+        self.dragged_point_ids: set[EntityID] = dragged_point_ids or set()
+        self.dragged_entity_ids: set[EntityID] = dragged_entity_ids or set()
+        self.initial_positions: dict[EntityID, GeoPoint] = (
             initial_positions or {}
         )
 

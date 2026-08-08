@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.geo import Geometry
 from raygeo.geo.shape.line import (
@@ -36,7 +37,7 @@ class Bezier(Entity):
 
     def get_control_points(
         self, registry: "EntityRegistry"
-    ) -> Tuple[
+    ) -> tuple[
         Optional[float], Optional[float], Optional[float], Optional[float]
     ]:
         cp1_x, cp1_y = None, None
@@ -55,7 +56,7 @@ class Bezier(Entity):
 
     def get_control_points_or_endpoints(
         self, registry: "EntityRegistry"
-    ) -> Tuple[float, float, float, float]:
+    ) -> tuple[float, float, float, float]:
         start = registry.get_point(self.start_idx)
         end = registry.get_point(self.end_idx)
         cp1_x_opt, cp1_y_opt, cp2_x_opt, cp2_y_opt = self.get_control_points(
@@ -71,13 +72,13 @@ class Bezier(Entity):
         cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points(registry)
         return cp1_x is None and cp2_x is None
 
-    def get_point_ids(self) -> List[EntityID]:
+    def get_point_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx]
 
-    def get_endpoint_ids(self) -> List[EntityID]:
+    def get_endpoint_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx]
 
-    def get_junction_point_ids(self) -> List[EntityID]:
+    def get_junction_point_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx]
 
     def hit_test(
@@ -161,7 +162,7 @@ class Bezier(Entity):
         x3: float,
         y3: float,
         num_samples: int,
-    ) -> List[tuple]:
+    ) -> list[tuple]:
         points = []
         for i in range(num_samples + 1):
             t = i / num_samples
@@ -288,7 +289,7 @@ class Bezier(Entity):
             points = list(reversed(points))
         return points
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         data = super().to_dict()
         data.update(
             {
@@ -305,7 +306,7 @@ class Bezier(Entity):
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Bezier":
+    def from_dict(cls, data: dict[str, Any]) -> "Bezier":
         cp1 = None
         if "cp1_dx" in data and "cp1_dy" in data:
             cp1 = (data["cp1_dx"], data["cp1_dy"])

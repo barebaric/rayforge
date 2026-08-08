@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.geo.types import Point
 
@@ -58,7 +58,7 @@ class CollinearConstraint(Constraint):
             )
         return ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "CollinearConstraint",
             "p1": self.p1,
@@ -68,7 +68,7 @@ class CollinearConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "CollinearConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> "CollinearConstraint":
         return cls(
             p1=data["p1"],
             p2=data["p2"],
@@ -89,7 +89,7 @@ class CollinearConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         p1 = reg.get_point(self.p1)
         p2 = reg.get_point(self.p2)
         p3 = reg.get_point(self.p3)

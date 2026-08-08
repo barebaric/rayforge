@@ -8,7 +8,7 @@ types in JSON-serialisable dicts.
 """
 
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from raygeo.ops import Ops
 from raygeo.ops.convert import GcodeDialectSpec
@@ -71,7 +71,7 @@ def dialect_to_spec(
 # ── Path variable resolution ─────────────────────────────────────
 
 
-def _build_machine_path_vars(machine: "Machine") -> Dict[str, str]:
+def _build_machine_path_vars(machine: "Machine") -> dict[str, str]:
     """Static path variables that never change during encoding."""
     wcs_offset = machine.get_active_wcs_offset()
     ax_w, ax_h = machine.axis_extents
@@ -86,7 +86,7 @@ def _build_machine_path_vars(machine: "Machine") -> Dict[str, str]:
     }
 
 
-def _build_job_path_vars(ops: Ops, doc: "Doc") -> Dict[str, str]:
+def _build_job_path_vars(ops: Ops, doc: "Doc") -> dict[str, str]:
     """Job-level path variables (depend on ops extents and doc name)."""
     xmin, ymin, xmax, ymax = ops.rect()
     return {
@@ -100,8 +100,8 @@ def _build_job_path_vars(ops: Ops, doc: "Doc") -> Dict[str, str]:
 
 def _build_layer_path_vars_for_doc(
     doc: "Doc", machine: "Machine"
-) -> Dict[str, Dict[str, str]]:
-    result: Dict[str, Dict[str, str]] = {}
+) -> dict[str, dict[str, str]]:
+    result: dict[str, dict[str, str]] = {}
     if not doc:
         return result
     for layer in doc.layers:
@@ -118,8 +118,8 @@ def _build_layer_path_vars_for_doc(
 
 def _build_workpiece_path_vars_for_doc(
     doc: "Doc",
-) -> Dict[str, Dict[str, str]]:
-    result: Dict[str, Dict[str, str]] = {}
+) -> dict[str, dict[str, str]]:
+    result: dict[str, dict[str, str]] = {}
     if not doc:
         return result
     for layer in doc.layers:
@@ -139,12 +139,12 @@ def _build_workpiece_path_vars_for_doc(
 # ── Macro table ───────────────────────────────────────────────────
 
 
-def _build_macro_table(machine: "Machine") -> Dict:
+def _build_macro_table(machine: "Machine") -> dict:
     """Build the MacroTable dict for the Rust encoder."""
     hooks = machine.hookmacros
     macros = machine.macros  # Dict[str, Macro]
 
-    def _macro_dict(m) -> Optional[Dict]:
+    def _macro_dict(m) -> Optional[dict]:
         if m is None:
             return None
         return {"name": m.name, "code": m.code, "enabled": m.enabled}
@@ -155,12 +155,12 @@ def _build_macro_table(machine: "Machine") -> Dict:
         MacroTrigger.WORKPIECE_START: "workpiece_start",
         MacroTrigger.WORKPIECE_END: "workpiece_end",
     }
-    table: Dict = {}
+    table: dict = {}
     for trigger, key in trigger_map.items():
         table[key] = _macro_dict(hooks.get(trigger))
 
     # All macros by name for @include resolution
-    all_macros: Dict[str, Dict] = {}
+    all_macros: dict[str, dict] = {}
     for name, m in macros.items():
         all_macros[name] = {
             "name": m.name,
@@ -175,7 +175,7 @@ def _build_macro_table(machine: "Machine") -> Dict:
 # ── Laser heads ───────────────────────────────────────────────────
 
 
-def _build_heads(machine: "Machine") -> List[Dict]:
+def _build_heads(machine: "Machine") -> list[dict]:
     return [
         {
             "uid": head.uid,
@@ -190,9 +190,9 @@ def _build_heads(machine: "Machine") -> List[Dict]:
 # ── Layer WCS ─────────────────────────────────────────────────────
 
 
-def _build_layer_wcs(doc: "Doc", machine: "Machine") -> Dict[str, str]:
+def _build_layer_wcs(doc: "Doc", machine: "Machine") -> dict[str, str]:
     """Per-layer WCS command, keyed by layer UID."""
-    result: Dict[str, str] = {}
+    result: dict[str, str] = {}
     if not doc:
         return result
     for layer in doc.layers:
@@ -203,9 +203,9 @@ def _build_layer_wcs(doc: "Doc", machine: "Machine") -> Dict[str, str]:
 # ── Public entry points ──────────────────────────────────────────
 
 
-def build_encode_context(ops: Ops, machine: "Machine", doc: "Doc") -> Dict:
+def build_encode_context(ops: Ops, machine: "Machine", doc: "Doc") -> dict:
     """Build the EncodeContext dict for raygeo.ops.encode_gcode."""
-    path_vars: Dict[str, str] = {}
+    path_vars: dict[str, str] = {}
     path_vars.update(_build_machine_path_vars(machine))
     path_vars.update(_build_job_path_vars(ops, doc))
 

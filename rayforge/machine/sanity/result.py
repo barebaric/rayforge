@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from gettext import gettext as _
-from typing import List, Optional
+from typing import Optional
 
 from raygeo.geo.types import Point
 
@@ -44,7 +44,7 @@ class SanityIssue:
 @dataclass
 class SanityReport:
     mode: CheckMode
-    issues: List[SanityIssue] = field(default_factory=list)
+    issues: list[SanityIssue] = field(default_factory=list)
 
     @property
     def has_errors(self) -> bool:

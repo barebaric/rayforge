@@ -2,16 +2,13 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Generator
 from concurrent.futures import Future, ThreadPoolExecutor
 from copy import deepcopy
 from typing import (
     TYPE_CHECKING,
     Any,
-    Generator,
-    List,
     Optional,
-    Set,
-    Tuple,
     Union,
 )
 
@@ -60,7 +57,7 @@ class CanvasElement:
         selected: bool = False,
         selectable: bool = True,
         visible: bool = True,
-        background: Tuple[float, float, float, float] = (0, 0, 0, 0),
+        background: tuple[float, float, float, float] = (0, 0, 0, 0),
         canvas: Optional["Canvas"] = None,
         parent: Optional[Union["Canvas", CanvasElement]] = None,
         data: Any = None,
@@ -150,8 +147,8 @@ class CanvasElement:
         self.surface: Optional[cairo.ImageSurface] = None
         self.canvas: Optional["Canvas"] = canvas
         self.parent: Optional[Union["Canvas", CanvasElement]] = parent
-        self.children: List[CanvasElement] = []
-        self.background: Tuple[float, float, float, float] = background
+        self.children: list[CanvasElement] = []
+        self.background: tuple[float, float, float, float] = background
         self.data: Any = data
         self.dirty: bool = True
         self.clip: bool = clip
@@ -508,7 +505,7 @@ class CanvasElement:
         self,
         region: ElementRegion,
         base_handle_size: float,
-        scale_compensation: Union[float, Tuple[float, float]] = 1.0,
+        scale_compensation: Union[float, tuple[float, float]] = 1.0,
     ) -> Rect:
         """
         Gets the rect (x, y, w, h) for a region in local coordinates.
@@ -533,7 +530,7 @@ class CanvasElement:
         self,
         x_abs: float,
         y_abs: float,
-        candidates: Optional[Set[ElementRegion]] = None,
+        candidates: Optional[set[ElementRegion]] = None,
     ) -> ElementRegion:
         """
         Checks which region is hit at an absolute canvas position.
@@ -824,7 +821,7 @@ class CanvasElement:
         world_transform = self.get_world_transform()
         return world_transform.get_translation()
 
-    def size(self) -> Tuple[float, float]:
+    def size(self) -> tuple[float, float]:
         """Gets the element's size (width, height)."""
         return self.width, self.height
 

@@ -1,4 +1,3 @@
-from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest
@@ -50,7 +49,7 @@ def test_single_item_creation(assembler, source, spec, mock_geo):
             crop_window=(0, 0, 100, 100),
         )
     ]
-    geometries: Dict[str | None, Geometry] = {"some_layer": mock_geo}
+    geometries: dict[str | None, Geometry] = {"some_layer": mock_geo}
 
     items = assembler.create_items(source, plan, spec, "TestFile", geometries)
 
@@ -90,7 +89,7 @@ def test_split_layers_creation(assembler, source, mock_geo):
             crop_window=(20, 20, 10, 10),
         ),
     ]
-    geometries: Dict[str | None, Geometry] = {
+    geometries: dict[str | None, Geometry] = {
         "LayerA": mock_geo_a,
         "LayerB": mock_geo_b,
     }

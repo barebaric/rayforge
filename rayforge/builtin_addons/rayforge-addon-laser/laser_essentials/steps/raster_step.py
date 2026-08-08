@@ -4,11 +4,8 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Optional,
     Protocol,
-    Tuple,
     cast,
 )
 
@@ -55,7 +52,7 @@ if TYPE_CHECKING:
 class EngraveStep(LaserStep):
     TYPELABEL = _("Engrave")
     ICON = "step-raster-symbolic"
-    CAPABILITIES: Tuple[StepCapability, ...] = (ENGRAVE,)
+    CAPABILITIES: tuple[StepCapability, ...] = (ENGRAVE,)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "raster"
 
@@ -189,7 +186,7 @@ class EngraveStep(LaserStep):
             "angle_increment": self.angle_increment,
         }
 
-    def apply_import_settings(self, settings: Dict[str, Any]) -> None:
+    def apply_import_settings(self, settings: dict[str, Any]) -> None:
         """Apply importer-provided raster settings this step owns."""
         super().apply_import_settings(settings)
         for key in (
@@ -206,7 +203,7 @@ class EngraveStep(LaserStep):
         self,
         machine: "Machine",
         workpiece: "WorkPiece",
-    ) -> "Tuple[Part, ComputePayload]":
+    ) -> "tuple[Part, ComputePayload]":
         """Build a :class:`Part` with the preprocessed raster image
         attached as a :class:`WholeImageSource`, and a
         :class:`ComputePayload` carrying a :class:`RasterSpec`.
@@ -413,7 +410,7 @@ class EngraveStep(LaserStep):
         )
 
     @classmethod
-    def get_default_transformers_dicts(cls) -> Tuple[List, List]:
+    def get_default_transformers_dicts(cls) -> tuple[list, list]:
         OverscanTransformer = transformer_registry.get("OverscanTransformer")
         Optimize = transformer_registry.get("Optimize")
         MultiPassTransformer = transformer_registry.get("MultiPassTransformer")
@@ -486,7 +483,7 @@ def _build_raster_part(
     step: "EngraveStep",
     machine: "Machine",
     workpiece: "WorkPiece",
-) -> Tuple[Part, Optional[np.ndarray]]:
+) -> tuple[Part, Optional[np.ndarray]]:
     """Render and preprocess the workpiece into a :class:`Part`
     carrying a :class:`WholeImageSource`, and return the alpha
     channel separately so the caller can fold it into the

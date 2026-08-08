@@ -1,7 +1,7 @@
 """Base for settings groups that manage a transformer component."""
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from gi.repository import Adw
 
@@ -49,7 +49,7 @@ class TransformerSettingsGroup(Adw.PreferencesGroup):
         self.page = page
         self.step = step
         self.history_manager = editor.history_manager
-        self._rows: List = []
+        self._rows: list = []
         self.enable_switch: Optional[Adw.SwitchRow] = None
 
         if isinstance(component, OpsTransformer):
@@ -100,7 +100,7 @@ class TransformerSettingsGroup(Adw.PreferencesGroup):
         return False
 
     @property
-    def target_dict(self) -> Dict[str, Any]:
+    def target_dict(self) -> dict[str, Any]:
         """
         Get the dictionary backing the transformer component.
         """

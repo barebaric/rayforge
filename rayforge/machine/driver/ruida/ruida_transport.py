@@ -6,7 +6,6 @@ Wraps a generic transport (UDP, serial) to provide Ruida-specific encoding.
 """
 
 import logging
-from typing import Tuple
 
 from blinker import Signal
 
@@ -200,7 +199,7 @@ class RuidaServerTransport:
     async def disconnect(self) -> None:
         await self._transport.disconnect()
 
-    async def send_to(self, data: bytes, addr: Tuple[str, int]) -> None:
+    async def send_to(self, data: bytes, addr: tuple[str, int]) -> None:
         """
         Send raw data to a specific client.
 
@@ -209,7 +208,7 @@ class RuidaServerTransport:
         await self._transport.send_to(data, addr)
 
     async def send_response(
-        self, response: bytes, addr: Tuple[str, int]
+        self, response: bytes, addr: tuple[str, int]
     ) -> None:
         """
         Send a Ruida response (swizzled, no checksum prefix).
@@ -230,7 +229,7 @@ class RuidaServerTransport:
         await self._transport.send_to(swizzled, addr)
 
     async def send_command(
-        self, command: bytes, addr: Tuple[str, int]
+        self, command: bytes, addr: tuple[str, int]
     ) -> None:
         """
         Send a framed command to a specific client.
@@ -252,7 +251,7 @@ class RuidaServerTransport:
         await self._transport.send_to(framed, addr)
 
     def _on_raw_received(
-        self, sender, data: bytes, addr: Tuple[str, int]
+        self, sender, data: bytes, addr: tuple[str, int]
     ) -> None:
         """Handle raw data from underlying transport."""
         is_valid, payload, recv_cksum, calc_cksum = validate_packet(data)

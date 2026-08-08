@@ -1,7 +1,6 @@
 import logging
 import threading
 from gettext import gettext as _
-from typing import List
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -144,7 +143,7 @@ class AddonRegistryDialog(PatchedDialogWindow):
         result = validator.validate(addon.name, license_config.to_dict())
         return result.status.value == "valid"
 
-    def _get_product_ids(self, addon: AddonMetadata) -> List[str]:
+    def _get_product_ids(self, addon: AddonMetadata) -> list[str]:
         """Extract product IDs from addon license config."""
         license_config = addon.license
         if not license_config:
@@ -152,7 +151,7 @@ class AddonRegistryDialog(PatchedDialogWindow):
 
         return license_config.get_all_product_ids()
 
-    def _populate_list(self, data: List[AddonMetadata]):
+    def _populate_list(self, data: list[AddonMetadata]):
         """Populates the list box with registry items."""
         while child := self.list_box.get_row_at_index(0):
             self.list_box.remove(child)

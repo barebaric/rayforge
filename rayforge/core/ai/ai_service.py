@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Optional
+from typing import Optional
 
 from blinker import Signal
 
@@ -23,13 +23,13 @@ class AIService:
     """
 
     def __init__(self):
-        self._providers: Dict[str, AIProvider] = {}
-        self._configs: Dict[str, AIProviderConfig] = {}
+        self._providers: dict[str, AIProvider] = {}
+        self._configs: dict[str, AIProviderConfig] = {}
         self._default_provider_id: Optional[str] = None
         self.changed = Signal()
 
     @property
-    def providers(self) -> Dict[str, AIProviderConfig]:
+    def providers(self) -> dict[str, AIProviderConfig]:
         """Return a copy of provider configs."""
         return dict(self._configs)
 
@@ -162,7 +162,7 @@ class AIService:
         return self._configs.get(provider_id)
 
     async def chat(
-        self, messages: List, provider_id: Optional[str] = None, **kwargs
+        self, messages: list, provider_id: Optional[str] = None, **kwargs
     ) -> Optional[ChatResponse]:
         """
         Send a chat request using the specified or default provider.
@@ -181,7 +181,7 @@ class AIService:
         return await provider.chat(messages, **kwargs)
 
     async def chat_stream(
-        self, messages: List, provider_id: Optional[str] = None, **kwargs
+        self, messages: list, provider_id: Optional[str] = None, **kwargs
     ):
         """
         Stream a chat response using the specified or default provider.
@@ -200,7 +200,7 @@ class AIService:
         async for chunk in provider.chat_stream(messages, **kwargs):
             yield chunk
 
-    def load_from_config(self, data: Dict):
+    def load_from_config(self, data: dict):
         """
         Load providers from persisted configuration.
 
@@ -219,7 +219,7 @@ class AIService:
         if default_id and default_id in self._configs:
             self._default_provider_id = default_id
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """
         Serialize service state for persistence.
 

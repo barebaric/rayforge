@@ -1,6 +1,6 @@
 import math
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.geo.shape.rect import is_point_inside_rect
 from raygeo.geo.types import Point as GeoPoint
@@ -49,7 +49,7 @@ class Point:
         self,
         registry: "EntityRegistry",
         sketch: Optional["Sketch"] = None,
-    ) -> List["Bezier"]:
+    ) -> list["Bezier"]:
         connected = []
         point_ids = {self.id}
         if sketch is not None:
@@ -67,7 +67,7 @@ class Point:
         self,
         registry: "EntityRegistry",
         sketch: Optional["Sketch"] = None,
-    ) -> Tuple[Optional["Bezier"], Optional["Bezier"]]:
+    ) -> tuple[Optional["Bezier"], Optional["Bezier"]]:
         connected = self.get_connected_beziers(registry, sketch)
         if len(connected) >= 2:
             return connected[0], connected[1]
@@ -128,10 +128,10 @@ class Point:
 
     def _compute_constrained_cp(
         self,
-        modified_cp: Tuple[float, float],
-        other_cp: Optional[Tuple[float, float]],
+        modified_cp: tuple[float, float],
+        other_cp: Optional[tuple[float, float]],
         symmetric: bool,
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         if symmetric:
             return (-modified_cp[0], -modified_cp[1])
         else:
@@ -214,7 +214,7 @@ class Point:
     def pos(self) -> GeoPoint:
         return (self.x, self.y)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         data = {
             "id": self.id,
             "x": self.x,
@@ -226,7 +226,7 @@ class Point:
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Point":
+    def from_dict(cls, data: dict[str, Any]) -> "Point":
         wp_type_str = data.get("waypoint_type", "sharp")
         wp_type = WaypointType(wp_type_str)
         return cls(

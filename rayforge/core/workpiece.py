@@ -3,18 +3,15 @@ from __future__ import annotations
 import logging
 import math
 import warnings
+from collections.abc import Generator
 from copy import deepcopy
 from dataclasses import asdict
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    Generator,
-    List,
     NamedTuple,
     Optional,
-    Tuple,
     Union,
     cast,
 )
@@ -57,10 +54,10 @@ class RenderContext(NamedTuple):
     data: Union[bytes, Any]
     original_data: Optional[bytes]
     renderer: "Renderer"
-    source_pixel_dims: Optional[Tuple[int, int]]
-    metadata: Dict[str, Any]
+    source_pixel_dims: Optional[tuple[int, int]]
+    metadata: dict[str, Any]
     boundaries: Optional[Geometry]
-    fills: Optional[List["FillRenderData"]]
+    fills: Optional[list["FillRenderData"]]
 
 
 class WorkPiece(DocItem):
@@ -78,7 +75,7 @@ class WorkPiece(DocItem):
         super().__init__(name=name)
         self._source_segment = source_segment
         self._boundaries_cache: Optional[Geometry] = None
-        self._fills_cache: Optional[List["FillRenderData"]] = None
+        self._fills_cache: Optional[list["FillRenderData"]] = None
 
         # Natural (untransformed) dimensions of the workpiece content.
         self.natural_width_mm: float = 0.0
@@ -91,33 +88,33 @@ class WorkPiece(DocItem):
         self._edited_boundaries: Optional[Geometry] = None
 
         # The cache for rendered vips images. Key is (width, height).
-        self._render_cache: Dict[Tuple[int, int], pyvips.Image] = {}
+        self._render_cache: dict[tuple[int, int], pyvips.Image] = {}
 
         # Transient attributes for deserialized instances in subprocesses
         self._data: Optional[bytes] = None
         self._original_data: Optional[bytes] = None
         self._renderer: Optional["Renderer"] = None
-        self._transient_source_px_dims: Optional[Tuple[int, int]] = None
+        self._transient_source_px_dims: Optional[tuple[int, int]] = None
 
         self.geometry_provider_uid: Optional[str] = None
-        self._geometry_provider_params: Dict[str, Any] = {}
+        self._geometry_provider_params: dict[str, Any] = {}
         self._transient_geometry_provider: Optional["IGeometryProvider"] = None
         self._geometry_provider_connection: Optional[Any] = None
 
-        self._resolved_text_cache: Dict = {}
+        self._resolved_text_cache: dict = {}
 
         self.source_asset_uid: Optional[str] = None
 
-        self._tabs: List[Tab] = []
+        self._tabs: list[Tab] = []
         self._tabs_enabled: bool = True
 
         # Transient cache for UI view artifacts (Cairo surfaces, etc.)
         # This persists across view element destruction/creation
         # (e.g. Grouping) but is not serialized to disk.
-        self._view_cache: Dict[str, Any] = {}
+        self._view_cache: dict[str, Any] = {}
 
         # Forward compatibility: store unknown attributes
-        self.extra: Dict[str, Any] = {}
+        self.extra: dict[str, Any] = {}
 
     def depends_on_asset(self, asset: "IAsset") -> bool:
         """
@@ -151,7 +148,7 @@ class WorkPiece(DocItem):
         fill_data = []
         min_x, min_y = 0.0, 0.0
 
-        instance_cache: Dict = {}
+        instance_cache: dict = {}
 
         try:
             geometry, fill_data = provider.get_geometry(
@@ -228,7 +225,7 @@ class WorkPiece(DocItem):
             self.updated.send(self)
 
     @property
-    def natural_size(self) -> Tuple[float, float]:
+    def natural_size(self) -> tuple[float, float]:
         """
         Returns the natural (untransformed) size of the content in mm.
         This is the authoritative source for the workpiece's intrinsic size.
@@ -455,7 +452,7 @@ class WorkPiece(DocItem):
         return None
 
     @property
-    def fills(self) -> Optional[List["FillRenderData"]]:
+    def fills(self) -> Optional[list["FillRenderData"]]:
         """
         The fill geometry data for this workpiece, if any.
 
@@ -532,12 +529,12 @@ class WorkPiece(DocItem):
         return y_down_geo
 
     @property
-    def tabs(self) -> List[Tab]:
+    def tabs(self) -> list[Tab]:
         """The list of Tab objects for this workpiece."""
         return self._tabs
 
     @tabs.setter
-    def tabs(self, new_tabs: List[Tab]):
+    def tabs(self, new_tabs: list[Tab]):
         if self._tabs != new_tabs:
             self._tabs = new_tabs
             self.updated.send(self)
@@ -724,8 +721,8 @@ class WorkPiece(DocItem):
         self,
         image: pyvips.Image,
         spec: "RenderSpecification",
-        target_size: Tuple[int, int],
-        source_px_dims: Optional[Tuple[int, int]],
+        target_size: tuple[int, int],
+        source_px_dims: Optional[tuple[int, int]],
     ) -> Optional[pyvips.Image]:
         """
         Applies post-processing based on a RenderSpecification.
@@ -859,7 +856,7 @@ class WorkPiece(DocItem):
 
         return final_image
 
-    def get_local_size(self) -> Tuple[float, float]:
+    def get_local_size(self) -> tuple[float, float]:
         """
         The local-space size (width, height) in mm, as absolute values,
         decomposed from the local transformation matrix. This is used for
@@ -867,7 +864,7 @@ class WorkPiece(DocItem):
         """
         return self.matrix.get_abs_scale()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Serializes the WorkPiece state to a dictionary. Includes transient
         data if it has been hydrated.
@@ -918,7 +915,7 @@ class WorkPiece(DocItem):
         return state
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "WorkPiece":
+    def from_dict(cls, data: dict[str, Any]) -> "WorkPiece":
         """
         Restores a WorkPiece instance from a dictionary.
         """
@@ -1017,12 +1014,12 @@ class WorkPiece(DocItem):
         return wp
 
     @property
-    def geometry_provider_params(self) -> Dict[str, Any]:
+    def geometry_provider_params(self) -> dict[str, Any]:
         """Get the geometry provider parameters for this workpiece."""
         return self._geometry_provider_params
 
     @geometry_provider_params.setter
-    def geometry_provider_params(self, new_params: Dict[str, Any]):
+    def geometry_provider_params(self, new_params: dict[str, Any]):
         """
         Set the geometry provider parameters and trigger regeneration if
         needed.
@@ -1051,12 +1048,12 @@ class WorkPiece(DocItem):
 
     def get_default_size(
         self, bounds_width: float, bounds_height: float
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """Calculates a sensible default size based on the content's aspect
         ratio and the provided container bounds."""
         size = self.natural_size
         if size and size[0] > 0 and size[1] > 0:
-            return cast(Tuple[float, float], size)
+            return cast(tuple[float, float], size)
 
         aspect = self.get_natural_aspect_ratio()
         if aspect is None:
@@ -1109,7 +1106,7 @@ class WorkPiece(DocItem):
         max_chunk_width: Optional[int],
         max_chunk_height: Optional[int],
         max_memory_size: Optional[int],
-    ) -> Tuple[int, int, int, int]:
+    ) -> tuple[int, int, int, int]:
         bytes_per_pixel = 4
         effective_max_width = min(
             max_chunk_width
@@ -1145,7 +1142,7 @@ class WorkPiece(DocItem):
         max_chunk_width: Optional[int] = None,
         max_chunk_height: Optional[int] = None,
         max_memory_size: Optional[int] = None,
-    ) -> Generator[Tuple[cairo.ImageSurface, Tuple[float, float]], None, None]:
+    ) -> Generator[tuple[cairo.ImageSurface, tuple[float, float]], None, None]:
         """Renders in chunks at the workpiece's current size.
         Yields nothing if size is not valid."""
         from ..image import util
@@ -1274,7 +1271,7 @@ class WorkPiece(DocItem):
 
         return None
 
-    def get_tab_direction(self, tab: Tab) -> Optional[Tuple[float, float]]:
+    def get_tab_direction(self, tab: Tab) -> Optional[tuple[float, float]]:
         """
         Calculates the "outside" direction vector for a given tab in world
         coordinates.
@@ -1388,7 +1385,7 @@ class WorkPiece(DocItem):
 
         self.pos = (model_x, model_y)
 
-    def apply_split(self, fragments: List[Geometry]) -> List["WorkPiece"]:
+    def apply_split(self, fragments: list[Geometry]) -> list["WorkPiece"]:
         """
         Creates new WorkPiece instances from a list of normalized geometry
         fragments. Each fragment represents a subset of this workpiece's

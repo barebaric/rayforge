@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Iterator
+from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 

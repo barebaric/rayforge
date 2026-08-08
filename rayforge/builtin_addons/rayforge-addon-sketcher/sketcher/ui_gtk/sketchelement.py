@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 import cairo
 from blinker import Signal
@@ -322,7 +322,7 @@ class SketchElement(CanvasElement):
         tool.on_modifier_change(shift=shift, ctrl=ctrl)
         tool.on_hover_motion(world_x, world_y)
 
-    def get_lines_at_point(self, pid: EntityID) -> List[Line]:
+    def get_lines_at_point(self, pid: EntityID) -> list[Line]:
         return [
             e
             for e in self.sketch.registry.entities

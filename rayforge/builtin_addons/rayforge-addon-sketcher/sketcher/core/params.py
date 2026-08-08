@@ -1,5 +1,5 @@
 import math
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 
 class ParameterContext:
@@ -9,8 +9,8 @@ class ParameterContext:
     """
 
     def __init__(self) -> None:
-        self._expressions: Dict[str, str] = {}
-        self._cache: Dict[str, Any] = {}
+        self._expressions: dict[str, str] = {}
+        self._cache: dict[str, Any] = {}
         self._dirty: bool = False
 
         # Safe math context
@@ -18,12 +18,12 @@ class ParameterContext:
             k: v for k, v in vars(math).items() if not k.startswith("_")
         }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the parameter context to a dictionary."""
         return {"expressions": self._expressions.copy()}
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ParameterContext":
+    def from_dict(cls, data: dict[str, Any]) -> "ParameterContext":
         """Deserializes a dictionary into a ParameterContext instance."""
         new_context = cls()
         new_context._expressions = data.get("expressions", {})
@@ -41,7 +41,7 @@ class ParameterContext:
             self.evaluate_all()
         return self._cache.get(name, default)
 
-    def get_all_values(self) -> Dict[str, Any]:
+    def get_all_values(self) -> dict[str, Any]:
         """Evaluates all expressions and returns a dictionary of all values."""
         if self._dirty:
             self.evaluate_all()
@@ -70,7 +70,7 @@ class ParameterContext:
             return 0.0
 
     def evaluate_all(
-        self, initial_values: Optional[Dict[str, Any]] = None
+        self, initial_values: Optional[dict[str, Any]] = None
     ) -> None:
         """
         Iteratively resolves dependencies.

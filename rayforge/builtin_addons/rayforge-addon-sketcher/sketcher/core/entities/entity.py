@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.geo import Geometry
 from raygeo.geo.types import Polygon, Rect
@@ -21,7 +22,7 @@ class Entity:
         # Constrained state is calculated by solver
         self.constrained = False
 
-    def get_state(self) -> Optional[Dict[str, Any]]:
+    def get_state(self) -> Optional[dict[str, Any]]:
         """
         Returns a dictionary of solver-relevant discrete state (e.g. winding),
         or None if the entity has no mutable discrete state.
@@ -32,7 +33,7 @@ class Entity:
         # they have more state.
         return {"construction": self.construction}
 
-    def set_state(self, state: Dict[str, Any]) -> None:
+    def set_state(self, state: dict[str, Any]) -> None:
         """Restores state from a snapshot."""
         if "construction" in state:
             self.construction = state["construction"]
@@ -46,11 +47,11 @@ class Entity:
         """
         self.constrained = False
 
-    def get_point_ids(self) -> List[EntityID]:
+    def get_point_ids(self) -> list[EntityID]:
         """Returns IDs of all control points used by this entity."""
         return []
 
-    def get_endpoint_ids(self) -> List[EntityID]:
+    def get_endpoint_ids(self) -> list[EntityID]:
         """
         Returns IDs of the two endpoints for path/loop traversal.
         Returns empty list for single-point entities (Circle).
@@ -58,7 +59,7 @@ class Entity:
         """
         return []
 
-    def get_ignorable_unconstrained_points(self) -> List[EntityID]:
+    def get_ignorable_unconstrained_points(self) -> list[EntityID]:
         """
         Returns IDs of points that can remain unconstrained if this entity
         is constrained (e.g. radius handles).
@@ -78,7 +79,7 @@ class Entity:
         """
         return False
 
-    def get_junction_point_ids(self) -> List[EntityID]:
+    def get_junction_point_ids(self) -> list[EntityID]:
         """
         Returns point IDs that should be counted for junction detection.
         These are typically the endpoints of geometric entities.
@@ -87,7 +88,7 @@ class Entity:
 
     def get_rigidly_connected_points(
         self, point_id: EntityID
-    ) -> List[EntityID]:
+    ) -> list[EntityID]:
         """
         Returns point IDs that should move together with the given point
         as a rigid body during dragging. Used for entities where certain
@@ -163,7 +164,7 @@ class Entity:
         """
         return None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Base serialization method for entities."""
         data = {
             "id": self.id,
@@ -175,7 +176,7 @@ class Entity:
         return data
 
     @classmethod
-    def _from_dict_base(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _from_dict_base(cls, data: dict[str, Any]) -> dict[str, Any]:
         """Extract base entity attributes from a dictionary."""
         return {
             "id": data["id"],

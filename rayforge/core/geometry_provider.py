@@ -1,11 +1,8 @@
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Optional,
     Protocol,
-    Tuple,
     runtime_checkable,
 )
 
@@ -49,10 +46,10 @@ class IGeometryProvider(Protocol):
 
     def get_geometry(
         self,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
         *,
-        resolved_text_cache: Optional[Dict] = None,
-    ) -> Tuple["Geometry", List["FillRenderData"]]:
+        resolved_text_cache: Optional[dict] = None,
+    ) -> tuple["Geometry", list["FillRenderData"]]:
         """
         Generate geometry with optional parameter overrides.
 
@@ -68,6 +65,6 @@ class IGeometryProvider(Protocol):
         """
         ...
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize the provider to a dictionary."""
         ...

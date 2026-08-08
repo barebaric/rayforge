@@ -2,7 +2,7 @@ import logging
 import math
 from collections import defaultdict
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Optional, Set
+from typing import TYPE_CHECKING, Optional
 
 import cairo
 from raygeo.geo import Geometry, Matrix
@@ -657,8 +657,8 @@ class SketchRenderer:
         self,
         ctx: cairo.Context,
         to_screen: Callable[[GeoPoint], GeoPoint],
-        text_box_point_ids: Set[int],
-        construction_point_ids: Set[int] | None = None,
+        text_box_point_ids: set[int],
+        construction_point_ids: set[int] | None = None,
     ) -> None:
         if construction_point_ids is None:
             construction_point_ids = set()

@@ -1,4 +1,4 @@
-from typing import List, Sequence, Set
+from collections.abc import Sequence
 
 import numpy as np
 import scipy.linalg
@@ -33,7 +33,7 @@ class Solver:
         status of points and entities, which is useful for interactive updates.
         """
         # 1. Identify mutable points (degrees of freedom)
-        mutable_points: List[Point] = [
+        mutable_points: list[Point] = [
             p for p in self.registry.points if not p.fixed
         ]
 
@@ -174,7 +174,7 @@ class Solver:
 
         return success
 
-    def _analyze_dof(self, jacobian: np.ndarray, mutable_points: List[Point]):
+    def _analyze_dof(self, jacobian: np.ndarray, mutable_points: list[Point]):
         """
         Determines which points are fully constrained by analyzing the
         Null Space of the Jacobian matrix.
@@ -227,7 +227,7 @@ class Solver:
 
     def get_conflicting_constraints(
         self, threshold: float = CONFLICT_ERROR_THRESHOLD
-    ) -> Set[int]:
+    ) -> set[int]:
         """
         Identifies constraints that have significant residual error,
         indicating they conflict with other constraints or cannot be satisfied.
@@ -235,7 +235,7 @@ class Solver:
         Returns:
             Set of constraint indices in self.constraints that are conflicting.
         """
-        conflicting: Set[int] = set()
+        conflicting: set[int] = set()
 
         for idx, const in enumerate(self.constraints):
             err = const.error(self.registry, self.params)

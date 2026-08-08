@@ -7,7 +7,7 @@ sending them via transport, and parsing of responses.
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Optional
 
 from blinker import Signal
 
@@ -50,7 +50,7 @@ class RuidaClient:
         self._transport = transport
         self._jog_transport = jog_transport
         self.state = state or RuidaState()
-        self._pending_mem_reads: Dict[int, asyncio.Future] = {}
+        self._pending_mem_reads: dict[int, asyncio.Future] = {}
         self._ref_point_mode: Optional[str] = "MACHINE"
         self.position_updated = Signal()
         self.state_changed = Signal()

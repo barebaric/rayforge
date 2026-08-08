@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, Optional
 
 from .command import Command
 
@@ -12,8 +12,8 @@ class SetterCommand(Command):
         self,
         target: Any,
         setter_method_name: str,
-        new_args: Tuple[Any, ...],
-        old_args: Tuple[Any, ...],
+        new_args: tuple[Any, ...],
+        old_args: tuple[Any, ...],
         on_change_callback: Optional[Callable[[], None]] = None,
         name: Optional[str] = None,
     ):

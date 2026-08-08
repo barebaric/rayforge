@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
 
 from .var import ValidationError, Var
 
@@ -53,7 +53,7 @@ class FloatVar(Var[float]):
             validator=validator,
         )
 
-    def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
+    def to_dict(self, include_value: bool = False) -> dict[str, Any]:
         data = super().to_dict(include_value=include_value)
         data.update({"min_val": self.min_val, "max_val": self.max_val})
         return data
@@ -95,7 +95,7 @@ class SliderFloatVar(FloatVar):
             extra_validator=extra_validator,
         )
 
-    def to_dict(self, include_value: bool = False) -> Dict[str, Any]:
+    def to_dict(self, include_value: bool = False) -> dict[str, Any]:
         data = super().to_dict(include_value=include_value)
         data.update(
             {

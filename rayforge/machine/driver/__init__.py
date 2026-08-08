@@ -1,5 +1,5 @@
 import inspect
-from typing import Type, cast
+from typing import cast
 
 from .driver import (
     DRIVER_MATURITY_LABELS,
@@ -27,7 +27,7 @@ def isdriver(obj):
 
 
 drivers = [
-    cast(Type[Driver], obj) for obj in list(locals().values()) if isdriver(obj)
+    cast(type[Driver], obj) for obj in list(locals().values()) if isdriver(obj)
 ]
 
 driver_by_classname = {o.__name__: o for o in drivers}
@@ -37,7 +37,7 @@ def get_driver_cls(classname: str, default=NoDeviceDriver):
     return driver_by_classname.get(classname, default)
 
 
-def register_driver(driver: Type[Driver]):
+def register_driver(driver: type[Driver]):
     driver_by_classname[driver.__name__] = driver
     drivers.append(driver)
 

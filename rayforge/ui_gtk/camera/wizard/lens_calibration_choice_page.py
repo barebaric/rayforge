@@ -8,7 +8,7 @@ steps.
 """
 
 from gettext import gettext as _
-from typing import List, Optional
+from typing import Optional
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -89,7 +89,7 @@ class LensCalibrationChoicePage(CameraWizardPage):
 
         return self.root
 
-    def footer_buttons(self) -> List[Gtk.Button]:
+    def footer_buttons(self) -> list[Gtk.Button]:
         return [self._skip_btn] if self._skip_btn is not None else []
 
     def can_proceed(self) -> bool:

@@ -1,7 +1,7 @@
 import json
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 from rayforge.core.item import DocItem
 from rayforge.core.step import Step
@@ -41,7 +41,7 @@ _PARAM_KEYS = (
 )
 
 
-def _extract_params(step: Step) -> Dict[str, Any]:
+def _extract_params(step: Step) -> dict[str, Any]:
     """Extract material test params from step attributes."""
     return {k: getattr(step, k, None) for k in _PARAM_KEYS}
 

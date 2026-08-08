@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Optional, Tuple, cast
+from typing import Optional, cast
 
 from gi.repository import Gdk, Gtk
 
@@ -47,7 +47,7 @@ def get_monitor_geometry() -> Optional[Gdk.Rectangle]:
     return monitor_under_mouse.get_geometry()
 
 
-def get_screen_size() -> Optional[Tuple[int, int]]:
+def get_screen_size() -> Optional[tuple[int, int]]:
     """Get the current monitor's screen size as (width, height)."""
     geometry = get_monitor_geometry()
     if not geometry:

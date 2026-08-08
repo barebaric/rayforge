@@ -7,10 +7,9 @@ to .mo files without requiring the external msgfmt utility.
 
 import struct
 from pathlib import Path
-from typing import List, Tuple
 
 
-def parse_po_file(po_path: Path) -> List[Tuple[str, str]]:
+def parse_po_file(po_path: Path) -> list[tuple[str, str]]:
     """
     Parse a .po file and return list of (msgid, msgstr) tuples.
 
@@ -73,7 +72,7 @@ def parse_po_file(po_path: Path) -> List[Tuple[str, str]]:
     return entries
 
 
-def _join_po_lines(lines: List[str]) -> str:
+def _join_po_lines(lines: list[str]) -> str:
     """
     Join quoted .po file lines into a single string.
 
@@ -84,7 +83,7 @@ def _join_po_lines(lines: List[str]) -> str:
     return "".join(s.strip('"') for s in lines).replace("\\n", "\n")
 
 
-def write_mo_file(mo_path: Path, entries: List[Tuple[str, str]]) -> None:
+def write_mo_file(mo_path: Path, entries: list[tuple[str, str]]) -> None:
     """
     Write entries to a .mo file.
 

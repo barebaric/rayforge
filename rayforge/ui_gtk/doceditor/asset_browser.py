@@ -3,7 +3,7 @@ import json
 import logging
 import uuid
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 from blinker import Signal
 from gi.repository import Gdk, Gio, GLib, Graphene, Gtk, Pango
@@ -239,7 +239,7 @@ class AssetBrowser(Gtk.Box):
 
         self._cards: dict[str, list] = {}
         self._selected_uids: set[str] = set()
-        self._asset_clipboard: List[Dict] = []
+        self._asset_clipboard: list[dict] = []
         self._context_popover: Optional[Gtk.PopoverMenu] = None
         self._connect_signals()
         self._sync_cards(self.doc)
@@ -557,7 +557,7 @@ class AssetBrowser(Gtk.Box):
         menu.append_item(Gio.MenuItem.new(_("Delete"), "win.asset-delete"))
         self._popup_context_menu(menu, gesture)
 
-    def get_selected_assets(self) -> List[IAsset]:
+    def get_selected_assets(self) -> list[IAsset]:
         assets = []
         for uid in self._selected_uids:
             entry = self._cards.get(uid)

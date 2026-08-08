@@ -3,7 +3,7 @@
 import logging
 import uuid
 from gettext import gettext as _
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Optional, cast
 
 from blinker import Signal
 from gi.repository import Adw, Gdk, Gtk
@@ -35,7 +35,7 @@ def _hex_to_rgba(color: str) -> Gdk.RGBA:
     return rgba
 
 
-def _available_step_types() -> List[Tuple[str, str]]:
+def _available_step_types() -> list[tuple[str, str]]:
     """
     Returns (class name, typelabel) pairs for all non-hidden steps.
 
@@ -148,7 +148,7 @@ class ColorPresetDialog(Adw.MessageDialog):
         index = self.step_type_row.get_selected()
         return self._step_types[index][0]
 
-    def get_preset_data(self) -> Dict[str, Any]:
+    def get_preset_data(self) -> dict[str, Any]:
         """Returns the entered data as a dict suitable for ColorPreset."""
         return {
             "color": _rgba_to_hex(self.color_button.get_rgba()),

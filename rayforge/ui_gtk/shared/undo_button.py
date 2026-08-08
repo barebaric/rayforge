@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import List, Optional
+from typing import Optional
 
 from gi.repository import Gtk
 
@@ -106,7 +106,7 @@ class _HistoryButton(Gtk.Box):
             return
         self._act_to(command)
 
-    def _get_stack(self) -> List[Command]:
+    def _get_stack(self) -> list[Command]:
         """Subclasses must implement this to return the correct stack."""
         raise NotImplementedError
 
@@ -131,7 +131,7 @@ class UndoButton(_HistoryButton):
             **kwargs,
         )
 
-    def _get_stack(self) -> List[Command]:
+    def _get_stack(self) -> list[Command]:
         if not self.manager:
             return []
         # Newest action should appear first in the dropdown.
@@ -156,7 +156,7 @@ class RedoButton(_HistoryButton):
             **kwargs,
         )
 
-    def _get_stack(self) -> List[Command]:
+    def _get_stack(self) -> list[Command]:
         if not self.manager:
             return []
         # Newest action to be redone should appear first.

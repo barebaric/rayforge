@@ -2,7 +2,7 @@ import importlib
 import logging
 import re
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import semver
 
@@ -88,7 +88,7 @@ def is_newer_version(remote_str: str, local_str: str) -> bool:
         return remote_str != local_str
 
 
-def parse_requirement(req: str) -> Tuple[str, Optional[str]]:
+def parse_requirement(req: str) -> tuple[str, Optional[str]]:
     """
     Parse a requirement string into name and version constraint.
 
@@ -115,7 +115,7 @@ def parse_requirement(req: str) -> Tuple[str, Optional[str]]:
     return req, None
 
 
-def parse_version_constraint(constraint: str) -> Optional[Tuple[str, str]]:
+def parse_version_constraint(constraint: str) -> Optional[tuple[str, str]]:
     """
     Parse a version constraint string into operator and version.
 
@@ -189,7 +189,7 @@ def check_constraint(current_v, req_v, op: str) -> bool:
 
 
 def check_rayforge_compatibility(
-    depends: List[str], current_version: str
+    depends: list[str], current_version: str
 ) -> bool:
     """
     Check if rayforge version satisfies all rayforge dependencies.

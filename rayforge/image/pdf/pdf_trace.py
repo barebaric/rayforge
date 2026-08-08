@@ -3,7 +3,7 @@ import logging
 import warnings
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
@@ -214,7 +214,7 @@ class PdfTraceImporter(Importer):
 
     def _calculate_render_resolution(
         self, w_mm: float, h_mm: float
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         if w_mm <= 0 or h_mm <= 0:
             return 1, 1
 

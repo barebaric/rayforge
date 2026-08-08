@@ -3,7 +3,7 @@ import json
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 from raygeo.geo import Geometry
 
@@ -38,15 +38,15 @@ class ProceduralImporter(Importer):
 
     features = {ImporterFeature.PROCEDURAL_GENERATION}
     label = "Procedural"
-    mime_types: Tuple[str, ...] = ()
-    extensions: Tuple[str, ...] = ()
+    mime_types: tuple[str, ...] = ()
+    extensions: tuple[str, ...] = ()
 
     def __init__(
         self,
         *,
         drawing_function_path: str,
         size_function_path: str,
-        params: Dict,
+        params: dict,
         name: str,
     ):
         """

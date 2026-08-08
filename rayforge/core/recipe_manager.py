@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 import yaml
 
@@ -21,7 +21,7 @@ class RecipeManager:
 
     def __init__(self, base_dir: Path):
         self.base_dir = base_dir
-        self.recipes: Dict[str, Recipe] = {}
+        self.recipes: dict[str, Recipe] = {}
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self.load()
 
@@ -90,17 +90,17 @@ class RecipeManager:
         """Retrieves a recipe by its unique identifier."""
         return self.recipes.get(recipe_id)
 
-    def get_all_recipes(self) -> List[Recipe]:
+    def get_all_recipes(self) -> list[Recipe]:
         """Returns a list of all loaded recipes."""
         return list(self.recipes.values())
 
     def find_recipes(
         self,
-        stock_items: List["StockItem"],
-        capabilities: Optional[Tuple[StepCapability, ...]] = None,
+        stock_items: list["StockItem"],
+        capabilities: Optional[tuple[StepCapability, ...]] = None,
         machine: Optional["Machine"] = None,
         step_type: Optional[str] = None,
-    ) -> List[Recipe]:
+    ) -> list[Recipe]:
         """
         Finds matching recipes, sorted from most specific to least specific.
 

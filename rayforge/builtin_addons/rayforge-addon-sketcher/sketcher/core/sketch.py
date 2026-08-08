@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import date, datetime
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, ClassVar, Optional, Union
 
 from blinker import Signal
 from raygeo.geo import (
@@ -103,20 +103,20 @@ class Fill:
     def __init__(
         self,
         uid: str,
-        boundary: List[Tuple[EntityID, bool]],
+        boundary: list[tuple[EntityID, bool]],
         style: FillStyle = FillStyle.SOLID,
         color: ColorRGBA = DEFAULT_FILL_COLOR,
-        gradient_stops: Optional[List[Tuple[float, ColorRGBA]]] = None,
+        gradient_stops: Optional[list[tuple[float, ColorRGBA]]] = None,
         gradient_angle: float = 0.0,
     ):
         self.uid = uid
-        self.boundary: List[Tuple[EntityID, bool]] = boundary
+        self.boundary: list[tuple[EntityID, bool]] = boundary
         self.style = style
         self.color = color
         self.gradient_stops = gradient_stops or []
         self.gradient_angle = gradient_angle
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         data = {
             "uid": self.uid,
             "boundary": [list(item) for item in self.boundary],
@@ -132,7 +132,7 @@ class Fill:
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Fill":
+    def from_dict(cls, data: dict[str, Any]) -> "Fill":
         boundary = [tuple(item) for item in data["boundary"]]
         style = FillStyle(data.get("style", "solid"))
         color = tuple(data.get("color", list(DEFAULT_FILL_COLOR)))
@@ -174,16 +174,16 @@ class Sketch(IAsset, IGeometryProvider):
         self._name = name
         self.params = ParameterContext()
         self.registry = EntityRegistry()
-        self.constraints: List[Constraint] = []
-        self.fills: List[Fill] = []
+        self.constraints: list[Constraint] = []
+        self.fills: list[Fill] = []
         self.input_parameters = VarSet(
             title=_DEFAULT_VARSET_TITLE,
             description=_DEFAULT_VARSET_DESCRIPTION,
         )
         self._updated = Signal()
         self._hidden: bool = False
-        self._last_solve_values: Dict[str, Any] = {}
-        self._resolved_text_cache: Dict[EntityID, Optional[str]] = {}
+        self._last_solve_values: dict[str, Any] = {}
+        self._resolved_text_cache: dict[EntityID, Optional[str]] = {}
 
         # Initialize the Origin Point (Fixed Anchor)
         self.origin_id: EntityID = self.registry.add_point(
@@ -253,10 +253,10 @@ class Sketch(IAsset, IGeometryProvider):
 
     def get_geometry(
         self,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
         *,
-        resolved_text_cache: Optional[Dict] = None,
-    ) -> Tuple[Geometry, List[FillRenderData]]:
+        resolved_text_cache: Optional[dict] = None,
+    ) -> tuple[Geometry, list[FillRenderData]]:
         """
         Generate geometry with optional parameter overrides.
 
@@ -341,7 +341,7 @@ class Sketch(IAsset, IGeometryProvider):
             return False
 
         # 2. Calculate point usage counts to ensure exclusive ownership
-        usage_count: Dict[EntityID, int] = {}
+        usage_count: dict[EntityID, int] = {}
         for e in self.registry.entities:
             for pid in e.get_point_ids():
                 usage_count[pid] = usage_count.get(pid, 0) + 1
@@ -366,7 +366,7 @@ class Sketch(IAsset, IGeometryProvider):
         return True
 
     @property
-    def conflicting_constraints(self) -> List[Constraint]:
+    def conflicting_constraints(self) -> list[Constraint]:
         """
         Returns a list of constraints that are currently marked as CONFLICTING.
         """
@@ -383,7 +383,7 @@ class Sketch(IAsset, IGeometryProvider):
             c.status == ConstraintStatus.CONFLICTING for c in self.constraints
         )
 
-    def to_dict(self, include_input_values: bool = False) -> Dict[str, Any]:
+    def to_dict(self, include_input_values: bool = False) -> dict[str, Any]:
         """Serializes the Sketch to a dictionary."""
         return {
             "uid": self.uid,
@@ -401,7 +401,7 @@ class Sketch(IAsset, IGeometryProvider):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Sketch":
+    def from_dict(cls, data: dict[str, Any]) -> "Sketch":
         """Deserializes a dictionary into a Sketch instance."""
         required_keys = ["params", "registry", "constraints", "origin_id"]
         if not all(key in data for key in required_keys):
@@ -468,7 +468,7 @@ class Sketch(IAsset, IGeometryProvider):
         if geometry.data is None or len(geometry.data) == 0:
             return sketch
 
-        point_map: Dict[Tuple[float, float], EntityID] = {}
+        point_map: dict[tuple[float, float], EntityID] = {}
 
         def get_or_add_point(x: float, y: float) -> EntityID:
             key = (round(x, 6), round(y, 6))
@@ -567,8 +567,8 @@ class Sketch(IAsset, IGeometryProvider):
         start: EntityID,
         end: EntityID,
         construction: bool = False,
-        cp1: Optional[Tuple[float, float]] = None,
-        cp2: Optional[Tuple[float, float]] = None,
+        cp1: Optional[tuple[float, float]] = None,
+        cp2: Optional[tuple[float, float]] = None,
     ) -> EntityID:
         """Adds a cubic bezier curve defined by start and end point IDs.
 
@@ -583,7 +583,7 @@ class Sketch(IAsset, IGeometryProvider):
         """Adds a circle defined by a center and a point on its radius."""
         return self.registry.add_circle(center, radius_pt, construction)
 
-    def remove_entities(self, entities_to_remove: List[Entity]):
+    def remove_entities(self, entities_to_remove: list[Entity]):
         """
         Removes entities from the sketch and automatically cleans up any
         dependent fills.
@@ -615,7 +615,7 @@ class Sketch(IAsset, IGeometryProvider):
 
     def _get_edge_tangent_at_start(
         self, entity: Any, start_pid: EntityID
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """Helper to get the tangent vector for an entity at a given point."""
         if isinstance(entity, Line):
             p1 = self.registry.get_point(entity.p1_idx)
@@ -655,7 +655,7 @@ class Sketch(IAsset, IGeometryProvider):
                 return (end.x - cp2_x, end.y - cp2_y)
         return (1.0, 0.0)
 
-    def _build_adjacency_list(self) -> Dict[EntityID, List[Dict[str, Any]]]:
+    def _build_adjacency_list(self) -> dict[EntityID, list[dict[str, Any]]]:
         """
         Builds a map of point_id -> list of outgoing edges.
         Each edge dict contains: {'to': point_id, 'id': entity_id, 'fwd': bool}
@@ -666,7 +666,7 @@ class Sketch(IAsset, IGeometryProvider):
         adj = defaultdict(list)
 
         # Build a mapping from each point to its coincident group
-        point_to_group: Dict[EntityID, Set[EntityID]] = {}
+        point_to_group: dict[EntityID, set[EntityID]] = {}
         for p in self.registry.points:
             if p.id not in point_to_group:
                 coincident_group = self.get_coincident_points(p.id)
@@ -703,8 +703,8 @@ class Sketch(IAsset, IGeometryProvider):
         return adj
 
     def _sort_edges_by_angle(
-        self, adj: Dict[EntityID, List[Dict[str, Any]]]
-    ) -> Dict[EntityID, List[Dict[str, Any]]]:
+        self, adj: dict[EntityID, list[dict[str, Any]]]
+    ) -> dict[EntityID, list[dict[str, Any]]]:
         """
         Sorts the outgoing edges at each node by angle (CCW).
         """
@@ -729,8 +729,8 @@ class Sketch(IAsset, IGeometryProvider):
         current_p_id: EntityID,
         incoming_entity_id: EntityID,
         incoming_fwd: bool,
-        sorted_adj: Dict[EntityID, List[Dict[str, Any]]],
-    ) -> Optional[Dict[str, Any]]:
+        sorted_adj: dict[EntityID, list[dict[str, Any]]],
+    ) -> Optional[dict[str, Any]]:
         """
         Given an incoming edge to a node, picks the next edge in CCW order
         (left-most turn) to traverse faces.
@@ -758,7 +758,7 @@ class Sketch(IAsset, IGeometryProvider):
             return None
 
     def _calculate_loop_signed_area(
-        self, loop: List[Tuple[EntityID, bool]]
+        self, loop: list[tuple[EntityID, bool]]
     ) -> float:
         """Calculates signed area of the loop using Shoelace formula."""
         if not loop:
@@ -866,7 +866,7 @@ class Sketch(IAsset, IGeometryProvider):
 
         return area
 
-    def _find_all_closed_loops(self) -> List[List[Tuple[EntityID, bool]]]:
+    def _find_all_closed_loops(self) -> list[list[tuple[EntityID, bool]]]:
         """
         Finds all closed loops (faces) in the sketch graph.
         """
@@ -874,7 +874,7 @@ class Sketch(IAsset, IGeometryProvider):
         sorted_adj = self._sort_edges_by_angle(adj)
 
         loops = []
-        visited_half_edges: Set[Tuple[EntityID, EntityID, bool]] = set()
+        visited_half_edges: set[tuple[EntityID, EntityID, bool]] = set()
 
         for p_start, edges in sorted_adj.items():
             for start_edge in edges:
@@ -882,8 +882,8 @@ class Sketch(IAsset, IGeometryProvider):
                 if half_edge_key in visited_half_edges:
                     continue
 
-                loop: List[Tuple[EntityID, bool]] = []
-                loop_half_edges: List[Tuple[EntityID, EntityID, bool]] = []
+                loop: list[tuple[EntityID, bool]] = []
+                loop_half_edges: list[tuple[EntityID, EntityID, bool]] = []
                 curr_p = p_start
                 curr_edge = start_edge
 
@@ -942,13 +942,13 @@ class Sketch(IAsset, IGeometryProvider):
         return loops
 
     def _loop_to_polygon(
-        self, loop: List[Tuple[EntityID, bool]]
-    ) -> List[Tuple[float, float]]:
+        self, loop: list[tuple[EntityID, bool]]
+    ) -> list[tuple[float, float]]:
         """
         Converts a loop of entities into a list of 2D polygon vertices,
         sampling beziers and linearizing arcs.
         """
-        polygon: List[Tuple[float, float]] = []
+        polygon: list[tuple[float, float]] = []
 
         for eid, fwd in loop:
             entity = self.registry.get_entity(eid)
@@ -964,7 +964,7 @@ class Sketch(IAsset, IGeometryProvider):
 
     def get_loop_at_point(
         self, mx: float, my: float
-    ) -> Optional[List[Tuple[EntityID, bool]]]:
+    ) -> Optional[list[tuple[EntityID, bool]]]:
         """
         Finds the smallest closed loop containing the given point.
         Returns None if no loop contains the point.
@@ -1035,7 +1035,7 @@ class Sketch(IAsset, IGeometryProvider):
 
     # --- Constraint Shortcuts ---
 
-    def get_coincident_points(self, start_pid: EntityID) -> Set[EntityID]:
+    def get_coincident_points(self, start_pid: EntityID) -> set[EntityID]:
         """
         Finds all points transitively connected to start_pid via
         CoincidentConstraints.
@@ -1117,14 +1117,14 @@ class Sketch(IAsset, IGeometryProvider):
     def constrain_tangent(self, line: EntityID, shape: EntityID) -> None:
         self.constraints.append(TangentConstraint(line, shape))
 
-    def constrain_equal_length(self, entity_ids: List[EntityID]) -> None:
+    def constrain_equal_length(self, entity_ids: list[EntityID]) -> None:
         """Enforces equal length/radius between two or more entities."""
         if len(entity_ids) < 2:
             return
         self.constraints.append(EqualLengthConstraint(entity_ids))
 
     def constrain_symmetry(
-        self, point_ids: List[EntityID], entity_ids: List[EntityID]
+        self, point_ids: list[EntityID], entity_ids: list[EntityID]
     ) -> None:
         """
         Enforces symmetry.
@@ -1173,9 +1173,9 @@ class Sketch(IAsset, IGeometryProvider):
 
     def solve(
         self,
-        extra_constraints: Optional[List[Constraint]] = None,
+        extra_constraints: Optional[list[Constraint]] = None,
         update_constraint_status: bool = True,
-        variable_overrides: Optional[Dict[str, Any]] = None,
+        variable_overrides: Optional[dict[str, Any]] = None,
     ) -> bool:
         """
         Resolves all constraints.
@@ -1489,8 +1489,8 @@ class Sketch(IAsset, IGeometryProvider):
         return geo
 
     def get_fill_render_data(
-        self, exclude_ids: Optional[Set[EntityID]] = None
-    ) -> List[FillRenderData]:
+        self, exclude_ids: Optional[set[EntityID]] = None
+    ) -> list[FillRenderData]:
         """
         Generates FillRenderData objects for all defined fills.
 
@@ -1547,7 +1547,7 @@ class Sketch(IAsset, IGeometryProvider):
         return render_data
 
     def _create_fill_geometry(
-        self, fill: "Fill", exclude_ids: Set[EntityID]
+        self, fill: "Fill", exclude_ids: set[EntityID]
     ) -> Optional[Geometry]:
         """Create geometry for a single fill."""
         if len(fill.boundary) == 1:

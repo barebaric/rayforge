@@ -2,7 +2,7 @@ import logging
 import mimetypes
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Type
+from typing import Optional
 
 from .base_exporter import BaseExporter
 from .base_importer import Importer, ImporterFeature
@@ -12,8 +12,8 @@ from .base_renderer import Renderer
 @dataclass(frozen=True)
 class FileFilter:
     label: str
-    extensions: Tuple[str, ...]
-    mime_types: Tuple[str, ...]
+    extensions: tuple[str, ...]
+    mime_types: tuple[str, ...]
 
 
 logger = logging.getLogger(__name__)
@@ -23,14 +23,14 @@ class ImporterRegistry:
     """Registry for file importers."""
 
     def __init__(self):
-        self._importers_by_ext: Dict[str, Type[Importer]] = {}
-        self._importers_by_mime: Dict[str, Type[Importer]] = {}
-        self._importers_by_name: Dict[str, Type[Importer]] = {}
-        self._addon_items: Dict[str, set[str]] = {}
+        self._importers_by_ext: dict[str, type[Importer]] = {}
+        self._importers_by_mime: dict[str, type[Importer]] = {}
+        self._importers_by_name: dict[str, type[Importer]] = {}
+        self._addon_items: dict[str, set[str]] = {}
 
     def register(
         self,
-        importer_cls: Type[Importer],
+        importer_cls: type[Importer],
         addon_name: Optional[str] = None,
     ) -> None:
         """Register an importer for its extensions and MIME types."""
@@ -76,11 +76,11 @@ class ImporterRegistry:
                 del self._importers_by_mime[mime]
         return count
 
-    def get_by_extension(self, file_ext: str) -> Optional[Type[Importer]]:
+    def get_by_extension(self, file_ext: str) -> Optional[type[Importer]]:
         """Get importer class for a file extension."""
         return self._importers_by_ext.get(file_ext)
 
-    def get_by_mime_type(self, mime_type: str) -> Optional[Type[Importer]]:
+    def get_by_mime_type(self, mime_type: str) -> Optional[type[Importer]]:
         """Get importer class for a MIME type."""
         return self._importers_by_mime.get(mime_type)
 
@@ -88,11 +88,11 @@ class ImporterRegistry:
         """Get all supported file extensions."""
         return list(self._importers_by_ext.keys())
 
-    def get_by_name(self, name: str) -> Optional[Type[Importer]]:
+    def get_by_name(self, name: str) -> Optional[type[Importer]]:
         """Get importer class by its class name."""
         return self._importers_by_name.get(name)
 
-    def get_for_file(self, file_path: Path) -> Optional[Type[Importer]]:
+    def get_for_file(self, file_path: Path) -> Optional[type[Importer]]:
         """Get the appropriate importer for a file path."""
         mime_type, _ = mimetypes.guess_type(file_path)
         if mime_type:
@@ -102,7 +102,7 @@ class ImporterRegistry:
         file_ext = file_path.suffix.lower()
         return self.get_by_extension(file_ext)
 
-    def get_all_filters(self) -> List[FileFilter]:
+    def get_all_filters(self) -> list[FileFilter]:
         """
         Get all supported import filters.
 
@@ -123,7 +123,7 @@ class ImporterRegistry:
                 )
         return filters
 
-    def get_all(self) -> List[Type[Importer]]:
+    def get_all(self) -> list[type[Importer]]:
         """
         Get all registered importer classes.
 
@@ -132,7 +132,7 @@ class ImporterRegistry:
         """
         return list(self._importers_by_name.values())
 
-    def by_feature(self, feature: ImporterFeature) -> List[Type[Importer]]:
+    def by_feature(self, feature: ImporterFeature) -> list[type[Importer]]:
         """
         Get all importer classes that support a specific feature.
 
@@ -170,8 +170,8 @@ class RendererRegistry:
     """Registry for asset renderers."""
 
     def __init__(self):
-        self._renderers: Dict[str, Renderer] = {}
-        self._addon_items: Dict[str, set[str]] = {}
+        self._renderers: dict[str, Renderer] = {}
+        self._addon_items: dict[str, set[str]] = {}
 
     def register(
         self,
@@ -212,7 +212,7 @@ class RendererRegistry:
         """Get renderer for an asset type."""
         return self._renderers.get(asset_type)
 
-    def all(self) -> Dict[str, Renderer]:
+    def all(self) -> dict[str, Renderer]:
         """Return all registered renderers."""
         return self._renderers.copy()
 
@@ -225,13 +225,13 @@ class ExporterRegistry:
     """Registry for file exporters."""
 
     def __init__(self):
-        self._exporters_by_ext: Dict[str, Type[BaseExporter]] = {}
-        self._exporters_by_mime: Dict[str, Type[BaseExporter]] = {}
-        self._addon_items: Dict[str, set[str]] = {}
+        self._exporters_by_ext: dict[str, type[BaseExporter]] = {}
+        self._exporters_by_mime: dict[str, type[BaseExporter]] = {}
+        self._addon_items: dict[str, set[str]] = {}
 
     def register(
         self,
-        exporter_cls: Type[BaseExporter],
+        exporter_cls: type[BaseExporter],
         addon_name: Optional[str] = None,
     ) -> None:
         """Register an exporter for its extensions and MIME types."""
@@ -273,15 +273,15 @@ class ExporterRegistry:
                 del self._exporters_by_mime[mime]
         return count
 
-    def get_by_extension(self, file_ext: str) -> Optional[Type[BaseExporter]]:
+    def get_by_extension(self, file_ext: str) -> Optional[type[BaseExporter]]:
         """Get exporter class for a file extension."""
         return self._exporters_by_ext.get(file_ext)
 
-    def get_by_mime_type(self, mime_type: str) -> Optional[Type[BaseExporter]]:
+    def get_by_mime_type(self, mime_type: str) -> Optional[type[BaseExporter]]:
         """Get exporter class for a MIME type."""
         return self._exporters_by_mime.get(mime_type)
 
-    def get_all_filters(self) -> List[FileFilter]:
+    def get_all_filters(self) -> list[FileFilter]:
         """
         Get all supported export filters.
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import locale
 from dataclasses import dataclass, field
 from gettext import gettext as _
-from typing import Callable, List, Optional, Tuple, Union, cast
+from typing import Callable, Optional, Union, cast
 
 
 @dataclass
@@ -16,9 +16,9 @@ class DimensionInputHandler:
     """
 
     field_count: int = 1
-    field_labels: Optional[List[str]] = None
+    field_labels: Optional[list[str]] = None
     decimal_sep: str = field(default=".", init=False)
-    buffers: List[str] = field(default_factory=list, init=False)
+    buffers: list[str] = field(default_factory=list, init=False)
     current_field: int = field(default=0, init=False)
     _is_active: bool = field(default=False, init=False)
 
@@ -134,7 +134,7 @@ class DimensionInputHandler:
 
     def handle_tab(
         self, shift: bool = False
-    ) -> Tuple[bool, bool, Optional[int]]:
+    ) -> tuple[bool, bool, Optional[int]]:
         """
         Handle Tab key press.
 
@@ -187,7 +187,7 @@ class DimensionInputHandler:
         except ValueError:
             return None
 
-    def parse_values(self) -> Optional[List[float]]:
+    def parse_values(self) -> Optional[list[float]]:
         values = []
 
         for buf in self.buffers:
@@ -208,7 +208,7 @@ class DimensionInputHandler:
 
         return values
 
-    def commit(self) -> Optional[Tuple[Optional[float], ...]]:
+    def commit(self) -> Optional[tuple[Optional[float], ...]]:
         values = self.parse_values()
         self._is_active = False
         self._init_buffers()
@@ -218,7 +218,7 @@ class DimensionInputHandler:
 
     def get_active_shortcuts(
         self,
-    ) -> List[Tuple[Union[str, List[str]], str, Optional[Callable[[], bool]]]]:
+    ) -> list[tuple[Union[str, list[str]], str, Optional[Callable[[], bool]]]]:
         if not self._is_active:
             return []
 
@@ -233,8 +233,8 @@ class DimensionInputHandler:
             shortcuts.append(("⇧Tab", _("Prev field"), None))
 
         return cast(
-            List[
-                Tuple[Union[str, List[str]], str, Optional[Callable[[], bool]]]
+            list[
+                tuple[Union[str, list[str]], str, Optional[Callable[[], bool]]]
             ],
             shortcuts,
         )

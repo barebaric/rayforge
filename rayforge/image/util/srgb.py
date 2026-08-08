@@ -6,15 +6,13 @@ functions (create_lut_from_color, resize_linear_nd) have no raygeo
 equivalents and are kept in Python.
 """
 
-from typing import Tuple
-
 import cv2
 import numpy as np
 from raygeo.image.srgb import linear_to_srgb, srgb_to_linear
 
 
 def create_lut_from_color(
-    color: Tuple[float, float, float, float],
+    color: tuple[float, float, float, float],
 ) -> np.ndarray:
     """
     Create a 256x4 LUT from a single color (grayscale to color gradient).

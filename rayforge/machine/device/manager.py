@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 import yaml
 
@@ -84,16 +84,16 @@ class DeviceProfileManager:
 
     def __init__(
         self,
-        source_dirs: Optional[List[Path]] = None,
+        source_dirs: Optional[list[Path]] = None,
         install_dir: Optional[Path] = None,
     ):
-        self._source_dirs: List[Path] = source_dirs or []
+        self._source_dirs: list[Path] = source_dirs or []
         self._install_dir: Optional[Path] = install_dir
-        self._profiles: Dict[str, DeviceProfile] = {}
-        self._load_errors: Dict[str, str] = {}
+        self._profiles: dict[str, DeviceProfile] = {}
+        self._load_errors: dict[str, str] = {}
 
     @property
-    def source_dirs(self) -> List[Path]:
+    def source_dirs(self) -> list[Path]:
         return list(self._source_dirs)
 
     @property
@@ -107,7 +107,7 @@ class DeviceProfileManager:
     def discover(
         self,
         context: Optional["RayforgeContext"] = None,
-    ) -> List[DeviceProfile]:
+    ) -> list[DeviceProfile]:
         """
         Scan all source directories for device profiles and return
         the loaded list.
@@ -132,13 +132,13 @@ class DeviceProfileManager:
 
         return self.get_all()
 
-    def get_all(self) -> List[DeviceProfile]:
+    def get_all(self) -> list[DeviceProfile]:
         return sorted(self._profiles.values(), key=lambda p: p.name.lower())
 
     def get(self, name: str) -> Optional[DeviceProfile]:
         return self._profiles.get(name)
 
-    def get_load_errors(self) -> Dict[str, str]:
+    def get_load_errors(self) -> dict[str, str]:
         return dict(self._load_errors)
 
     def load_profile(self, path: Path) -> DeviceProfile:
@@ -193,7 +193,7 @@ class DeviceProfileManager:
 
     def install_from_lbdev(
         self, lbdev_path: Path
-    ) -> Tuple[DeviceProfile, ImportSummary]:
+    ) -> tuple[DeviceProfile, ImportSummary]:
         """
         Install a device profile from a LightBurn ``.lbdev`` file.
 

@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import Any, List
+from typing import Any
 
 import cairo
 from blinker import Signal
@@ -63,7 +63,7 @@ class PieMenu(Gtk.Popover):
         self.add_css_class("pie-menu")
         apply_css(css)
 
-        self.items: List[PieMenuItem] = []
+        self.items: list[PieMenuItem] = []
         self._active_index: int = -1
 
         self.drawing_area = Gtk.DrawingArea()
@@ -103,7 +103,7 @@ class PieMenu(Gtk.Popover):
         self.items.append(item)
         self.drawing_area.queue_draw()
 
-    def set_items(self, items: List[PieMenuItem]):
+    def set_items(self, items: list[PieMenuItem]):
         self.items = items
         self._active_index = -1
         self.drawing_area.queue_draw()

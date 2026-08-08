@@ -2,7 +2,7 @@ import math
 import uuid
 from dataclasses import asdict, dataclass, field
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional
 
 from .capability import StepCapability
 from .capability_registry import step_capability_registry
@@ -84,10 +84,10 @@ class Recipe:
 
     # --- Payload ---
     # A single dictionary of settings to be applied.
-    settings: Dict[str, Any] = field(default_factory=dict)
+    settings: dict[str, Any] = field(default_factory=dict)
 
     # Forward compatibility: store unknown attributes
-    extra: Dict[str, Any] = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
 
     @property
     def capability(self) -> StepCapability:
@@ -135,8 +135,8 @@ class Recipe:
 
     def matches(
         self,
-        stock_items: List["StockItem"],
-        capabilities: Optional[Tuple[StepCapability, ...]] = None,
+        stock_items: list["StockItem"],
+        capabilities: Optional[tuple[StepCapability, ...]] = None,
         machine: Optional["Machine"] = None,
         step_type: Optional[str] = None,
     ) -> bool:
@@ -241,7 +241,7 @@ class Recipe:
         # If all checks passed, it's a match.
         return True
 
-    def get_specificity_score(self) -> Tuple[int, int, int, int, int]:
+    def get_specificity_score(self) -> tuple[int, int, int, int, int]:
         """
         Calculates a score based on how specific the recipe's criteria are.
         A lower score indicates a more specific (and therefore better) match.
@@ -270,14 +270,14 @@ class Recipe:
             step_type_score,
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the Recipe to a dictionary suitable for YAML."""
         result = asdict(self)
         result.update(self.extra)
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Recipe":
+    def from_dict(cls, data: dict[str, Any]) -> "Recipe":
         """Deserializes a Recipe from a dictionary."""
         known_keys = {
             "uid",

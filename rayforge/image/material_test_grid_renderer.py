@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import cairo
 
@@ -31,7 +31,7 @@ class MaterialTestRenderer(Renderer):
 
     def _get_params_from_data(
         self, data: Optional[bytes]
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         if not data:
             return None
         try:
@@ -40,7 +40,7 @@ class MaterialTestRenderer(Renderer):
             logger.error(f"Failed to decode material test parameters: {e}")
             return None
 
-    def _draw_grid(self, ctx: cairo.Context, params: Dict[str, Any]):
+    def _draw_grid(self, ctx: cairo.Context, params: dict[str, Any]):
         cols, rows = (
             int(params["grid_dimensions"][0]),
             int(params["grid_dimensions"][1]),

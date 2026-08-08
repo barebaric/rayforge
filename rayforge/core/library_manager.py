@@ -4,7 +4,7 @@ import logging
 import shutil
 import uuid
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 from blinker import Signal
 
@@ -33,9 +33,9 @@ class LibraryManager:
         self.user_dir = user_dir
         self.libraries_changed = Signal()
 
-        self._libraries: Dict[str, MaterialLibrary] = {}
+        self._libraries: dict[str, MaterialLibrary] = {}
         # Track which addon registered each library (library_id -> addon_name)
-        self._library_addons: Dict[str, str] = {}
+        self._library_addons: dict[str, str] = {}
 
         self.user_dir.mkdir(parents=True, exist_ok=True)
 
@@ -136,7 +136,7 @@ class LibraryManager:
 
         return self._libraries.get(library_id)
 
-    def get_libraries(self) -> List[MaterialLibrary]:
+    def get_libraries(self) -> list[MaterialLibrary]:
         """
         Get all libraries.
 
@@ -258,7 +258,7 @@ class LibraryManager:
         library = self._libraries[library_id]
         return library.remove_material(uid)
 
-    def get_all_materials(self) -> List[Material]:
+    def get_all_materials(self) -> list[Material]:
         """
         Get all materials from all libraries.
 
@@ -287,7 +287,7 @@ class LibraryManager:
         self.libraries_changed.send(self)
         logger.info("Reloaded all material libraries")
 
-    def get_library_ids(self) -> List[str]:
+    def get_library_ids(self) -> list[str]:
         """
         Get the IDs of all libraries.
 

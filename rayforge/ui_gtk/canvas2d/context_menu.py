@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 from gi.repository import Gio, Gtk
 
@@ -26,8 +26,8 @@ class ContextMenuExtensionRegistry:
     """
 
     def __init__(self):
-        self._handlers: List[ContextMenuHandler] = []
-        self._addon_map: Dict[str, str] = {}
+        self._handlers: list[ContextMenuHandler] = []
+        self._addon_map: dict[str, str] = {}
 
     def register(self, handler: ContextMenuHandler, addon_name: str):
         """Register a context menu extension handler."""

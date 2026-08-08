@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 from raygeo.geo import Geometry
@@ -60,7 +60,7 @@ def get_hulls_from_image(
     scale_y: float,
     height_px: int,
     border_size: int,
-) -> List[Geometry]:
+) -> list[Geometry]:
     """
     Finds all distinct contours in a boolean image, calculates the convex
     hull for each, and returns them as a list of Geometry objects.

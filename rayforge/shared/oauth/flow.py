@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 from urllib.parse import parse_qs, urlparse
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class OAuthFlowConfig:
     token_url: str
     client_id: str
     client_secret: Optional[str] = None
-    scopes: List[str] = field(default_factory=list)
+    scopes: list[str] = field(default_factory=list)
     redirect_port: int = 8765
     use_pkce: bool = False
 
@@ -31,7 +31,7 @@ class OAuthResult:
     refresh_token: Optional[str] = None
     expires_at: Optional[datetime] = None
     scope: Optional[str] = None
-    raw_response: Dict[str, Any] = field(default_factory=dict)
+    raw_response: dict[str, Any] = field(default_factory=dict)
 
 
 class _OAuthCallbackHandler(BaseHTTPRequestHandler):
@@ -98,7 +98,7 @@ class OAuthFlow:
         redirect_uri = (
             f"http://127.0.0.1:{self._config.redirect_port}/callback"
         )
-        params: Dict[str, str] = {
+        params: dict[str, str] = {
             "response_type": "code",
             "client_id": self._config.client_id,
             "redirect_uri": redirect_uri,
@@ -116,7 +116,7 @@ class OAuthFlow:
         Start the OAuth flow. Opens the browser and listens for the
         callback on localhost. Calls on_complete or on_error when done.
         """
-        callback_received: Dict[str, Optional[str]] = {
+        callback_received: dict[str, Optional[str]] = {
             "code": None,
             "error": None,
         }
@@ -173,7 +173,7 @@ class OAuthFlow:
         redirect_uri = (
             f"http://127.0.0.1:{self._config.redirect_port}/callback"
         )
-        data_dict: Dict[str, Any] = {
+        data_dict: dict[str, Any] = {
             "code": code,
             "client_id": self._config.client_id,
             "grant_type": "authorization_code",
@@ -207,7 +207,7 @@ class OAuthFlow:
         )
 
     def refresh(self, refresh_token: str) -> OAuthResult:
-        data_dict: Dict[str, Any] = {
+        data_dict: dict[str, Any] = {
             "grant_type": "refresh_token",
             "refresh_token": refresh_token,
             "client_id": self._config.client_id,

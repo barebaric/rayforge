@@ -1,12 +1,9 @@
 import logging
 import math
+from collections.abc import Sequence
 from typing import (
     TYPE_CHECKING,
-    Dict,
-    List,
     Optional,
-    Sequence,
-    Tuple,
     cast,
 )
 
@@ -70,7 +67,7 @@ class WorkSurface(WorldSurface):
         self.machine = None  # will be assigned by set_machine() below
         self._show_travel_moves = False
         self._workpieces_visible = True
-        self._tracked_axis_extents: Tuple[float, float] = (0.0, 0.0)
+        self._tracked_axis_extents: tuple[float, float] = (0.0, 0.0)
         coordinate_space = None
         if machine:
             self._tracked_axis_extents = machine.axis_extents
@@ -84,8 +81,8 @@ class WorkSurface(WorldSurface):
             width_mm, height_mm = 100.0, 100.0
 
         self._cam_visible = cam_visible
-        self._transform_start_states: Dict[CanvasElement, dict] = {}
-        self.right_click_context: Optional[Dict] = None
+        self._transform_start_states: dict[CanvasElement, dict] = {}
+        self.right_click_context: Optional[dict] = None
 
         # Click-to-zero mode state
         self._click_to_zero_mode = False
@@ -96,7 +93,7 @@ class WorkSurface(WorldSurface):
         self._ops_suppressed: bool = False
         self._ops_restore_timer_id: Optional[int] = None
 
-        self._nogo_zone_elements: Dict[str, NogoZoneElement] = {}
+        self._nogo_zone_elements: dict[str, NogoZoneElement] = {}
         self._nogo_zones_visible = True
         self._projection = CanvasProjection()
 
@@ -459,7 +456,7 @@ class WorkSurface(WorldSurface):
     def _on_any_transform_begin(
         self,
         sender,
-        elements: List[CanvasElement],
+        elements: list[CanvasElement],
         drag_target: Optional[CanvasElement] = None,
         **kwargs,
     ):
@@ -517,7 +514,7 @@ class WorkSurface(WorldSurface):
                 "world_size"
             ] = wp.get_world_transform().get_abs_scale()
 
-    def _on_resize_begin(self, sender, elements: List[CanvasElement]):
+    def _on_resize_begin(self, sender, elements: list[CanvasElement]):
         """Handles start of a resize, which may invalidate Ops."""
         logger.debug(
             f"Resize begin for {len(elements)} element(s). Pausing pipeline."
@@ -529,7 +526,7 @@ class WorkSurface(WorldSurface):
         self._on_any_transform_begin(sender, elements)
         self.editor.pipeline.pause()
 
-    def _on_transform_end(self, sender, elements: List[CanvasElement]):
+    def _on_transform_end(self, sender, elements: list[CanvasElement]):
         """
         Finalizes an interactive transform by collecting all matrix changes
         from view elements and creating a single, undoable transaction.
@@ -1098,7 +1095,7 @@ class WorkSurface(WorldSurface):
             elem.set_visible(visible and elem.data.enabled)
         self.queue_draw()
 
-    def set_camera_controllers(self, controllers: List[CameraController]):
+    def set_camera_controllers(self, controllers: list[CameraController]):
         """
         Manages camera elements and their subscriptions based on the
         provided list of live controllers.
@@ -1501,7 +1498,7 @@ class WorkSurface(WorldSurface):
             return active_elem.data
         return None
 
-    def get_selected_workpieces(self) -> List[WorkPiece]:
+    def get_selected_workpieces(self) -> list[WorkPiece]:
         all_wps = []
         for elem in self.get_selected_elements():
             # Check for the element's direct data
@@ -1520,7 +1517,7 @@ class WorkSurface(WorldSurface):
             if isinstance(elem.data, DocItem)
         ]
 
-    def get_selected_top_level_items(self) -> List[DocItem]:
+    def get_selected_top_level_items(self) -> list[DocItem]:
         """
         Returns a list of the highest-level selected DocItems.
 

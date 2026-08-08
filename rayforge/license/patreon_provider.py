@@ -7,7 +7,7 @@ from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from threading import Thread
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 import yaml
 
@@ -80,7 +80,7 @@ class PatreonProvider(LicenseProvider):
         self.config_file = licenses_dir / "patreon.yaml"
         self.client_id = client_id
         self._access_token: Optional[str] = None
-        self._cache: Dict[str, Dict[str, Any]] = {}
+        self._cache: dict[str, dict[str, Any]] = {}
         self._load_config()
 
     @property
@@ -90,7 +90,7 @@ class PatreonProvider(LicenseProvider):
     def is_configured(self) -> bool:
         return self._access_token is not None
 
-    def validate(self, config: Dict) -> LicenseResult:
+    def validate(self, config: dict) -> LicenseResult:
         if not self._access_token:
             return LicenseResult(
                 status=LicenseStatus.NOT_FOUND,
@@ -189,10 +189,10 @@ class PatreonProvider(LicenseProvider):
                 message=f"Validation failed: {str(e)}",
             )
 
-    def _make_cache_key(self, tier_ids: List[str]) -> str:
+    def _make_cache_key(self, tier_ids: list[str]) -> str:
         return ",".join(sorted(tier_ids))
 
-    def _get_valid_cache(self, tier_ids: List[str]) -> Optional[Dict]:
+    def _get_valid_cache(self, tier_ids: list[str]) -> Optional[dict]:
         cache_key = self._make_cache_key(tier_ids)
         cached = self._cache.get(cache_key)
         if not cached:

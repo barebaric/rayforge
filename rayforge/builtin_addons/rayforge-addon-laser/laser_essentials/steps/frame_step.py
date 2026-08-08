@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly import Assembler
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 class FrameStep(LaserStep):
     TYPELABEL = _("Frame")
     ICON = "step-frame-symbolic"
-    CAPABILITIES: Tuple[StepCapability, ...] = (CUT, SCORE)
+    CAPABILITIES: tuple[StepCapability, ...] = (CUT, SCORE)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "frame"
 
@@ -85,7 +85,7 @@ class FrameStep(LaserStep):
         self,
         machine: "Machine",
         workpiece: "WorkPiece",
-    ) -> "Tuple[Part, ComputePayload]":
+    ) -> "tuple[Part, ComputePayload]":
         """Build a :class:`Part` (from the workpiece's vector
         geometry) and a :class:`ComputePayload` carrying a
         :class:`FrameSpec`.
@@ -142,7 +142,7 @@ class FrameStep(LaserStep):
         return step
 
     @classmethod
-    def get_default_transformers_dicts(cls) -> Tuple[List, List]:
+    def get_default_transformers_dicts(cls) -> tuple[list, list]:
         LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")
         TabOpsTransformer = transformer_registry.get("TabOpsTransformer")
         CropTransformer = transformer_registry.get("CropTransformer")

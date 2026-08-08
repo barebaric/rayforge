@@ -7,14 +7,11 @@ from __future__ import annotations
 
 import logging
 import math
+from collections.abc import Iterable
 from gettext import gettext as _
 from typing import (
     Any,
-    Dict,
-    Iterable,
-    List,
     Optional,
-    Tuple,
     TypeVar,
 )
 
@@ -64,13 +61,13 @@ class Layer(DocItem):
         self.per_step_transformer_changed = Signal()
 
         # Forward compatibility: store unknown attributes
-        self.extra: Dict[str, Any] = {}
+        self.extra: dict[str, Any] = {}
 
         # A new layer gets a workflow automatically.
         workflow = Workflow(_("{name} Workflow").format(name=name))
         self.add_child(workflow)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Serializes the layer and its children to a dictionary."""
         result = {
             "uid": self.uid,
@@ -89,7 +86,7 @@ class Layer(DocItem):
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Layer":
+    def from_dict(cls, data: dict[str, Any]) -> "Layer":
         """Deserializes a dictionary into a Layer instance."""
         known_keys = {
             "uid",
@@ -131,7 +128,7 @@ class Layer(DocItem):
         return layer
 
     @property
-    def workpieces(self) -> List[WorkPiece]:
+    def workpieces(self) -> list[WorkPiece]:
         """
         Returns a list of all child items that are WorkPieces.
         Note: This only returns direct children.
@@ -141,7 +138,7 @@ class Layer(DocItem):
         ]
 
     @property
-    def all_workpieces(self) -> List["WorkPiece"]:
+    def all_workpieces(self) -> list["WorkPiece"]:
         """
         Recursively finds and returns a flattened list of all WorkPiece
         objects contained within this layer, including those inside groups.
@@ -157,7 +154,7 @@ class Layer(DocItem):
                 return True
         return False
 
-    def get_content_items(self) -> List["DocItem"]:
+    def get_content_items(self) -> list["DocItem"]:
         """
         Returns a list of user-facing items in this layer (e.g.,
         WorkPieces, Groups), excluding internal objects like Workflows.
@@ -167,7 +164,7 @@ class Layer(DocItem):
         ]
 
     @property
-    def content_items(self) -> List["DocItem"]:
+    def content_items(self) -> list["DocItem"]:
         """Property alias for get_content_items()."""
         return self.get_content_items()
 
@@ -323,21 +320,21 @@ class Layer(DocItem):
         """Removes a single workpiece from the layer."""
         self.remove_child(workpiece)
 
-    def set_workpieces(self, workpieces: List["WorkPiece"]):
+    def set_workpieces(self, workpieces: list["WorkPiece"]):
         """
         Sets the layer's workpieces to a new list, preserving the
         existing workflow and groups.
         """
         groups = [c for c in self.children if isinstance(c, Group)]
         current_workflow = self.workflow
-        new_children: List[DocItem] = []
+        new_children: list[DocItem] = []
         new_children.extend(workpieces)
         new_children.extend(groups)
         if current_workflow:
             new_children.append(current_workflow)
         self.set_children(new_children)
 
-    def reorder_workpieces(self, new_workpiece_order: List["WorkPiece"]):
+    def reorder_workpieces(self, new_workpiece_order: list["WorkPiece"]):
         """
         Reorders workpieces while preserving the positions of groups
         and the workflow.
@@ -351,7 +348,7 @@ class Layer(DocItem):
                 new_children.append(child)
         self.set_children(new_children)
 
-    def reorder_content_items(self, new_content_order: List[DocItem]):
+    def reorder_content_items(self, new_content_order: list[DocItem]):
         """
         Reorders all content items (WorkPieces and Groups) while
         preserving the workflow's position.
@@ -365,7 +362,7 @@ class Layer(DocItem):
                 new_children.append(next(item_iter))
         self.set_children(new_children)
 
-    def get_renderable_items(self) -> List[Tuple[Step, WorkPiece]]:
+    def get_renderable_items(self) -> list[tuple[Step, WorkPiece]]:
         """
         Gets a list of all visible step/workpiece pairs for rendering.
 

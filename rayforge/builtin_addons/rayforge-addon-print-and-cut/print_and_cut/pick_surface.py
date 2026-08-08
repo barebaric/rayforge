@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 import cairo
 from blinker import Signal
@@ -48,8 +48,8 @@ class PickSurface(Canvas):
         self._base_img_h: float = 0.0
 
         self._pick_phase: int = 0
-        self._point1: Optional[Tuple[float, float]] = None
-        self._point2: Optional[Tuple[float, float]] = None
+        self._point1: Optional[tuple[float, float]] = None
+        self._point2: Optional[tuple[float, float]] = None
         self._dragging: Optional[int] = None
 
         self.point_picked = Signal()
@@ -85,8 +85,8 @@ class PickSurface(Canvas):
         self._motion_controller.connect("motion", self._on_motion)
         self.add_controller(self._motion_controller)
 
-        self._hover_pos: Optional[Tuple[float, float]] = None
-        self._drag_start_px: Optional[Tuple[float, float]] = None
+        self._hover_pos: Optional[tuple[float, float]] = None
+        self._drag_start_px: Optional[tuple[float, float]] = None
         self._cached_surface: Optional[cairo.ImageSurface] = None
         self._cached_ppmm: float = 0.0
         self._pan_start_x_mm: float = 0.0
@@ -185,11 +185,11 @@ class PickSurface(Canvas):
             self._draw_crosshair(ctx, norm_x, norm_y)
 
     @property
-    def point1(self) -> Optional[Tuple[float, float]]:
+    def point1(self) -> Optional[tuple[float, float]]:
         return self._point1
 
     @property
-    def point2(self) -> Optional[Tuple[float, float]]:
+    def point2(self) -> Optional[tuple[float, float]]:
         return self._point2
 
     @property
@@ -206,8 +206,8 @@ class PickSurface(Canvas):
 
     def set_points(
         self,
-        p1: Optional[Tuple[float, float]],
-        p2: Optional[Tuple[float, float]],
+        p1: Optional[tuple[float, float]],
+        p2: Optional[tuple[float, float]],
     ):
         self._point1 = p1
         self._point2 = p2

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from blinker import Signal
 
@@ -25,7 +25,7 @@ class OpsTransformer(ABC):
     def __init__(self, enabled: bool = True, **kwargs):
         self._enabled = enabled
         self.changed = Signal()
-        self.extra: Dict[str, Any] = {}
+        self.extra: dict[str, Any] = {}
 
     @property
     def enabled(self) -> bool:
@@ -58,8 +58,8 @@ class OpsTransformer(ABC):
     def to_spec(
         self,
         workpiece: Optional[WorkPiece],
-        stock_geometries: Optional[List["Geometry"]],
-        settings: Optional[Dict[str, Any]],
+        stock_geometries: Optional[list["Geometry"]],
+        settings: Optional[dict[str, Any]],
     ) -> Any:
         """Return the typed Rust spec for this transformer.
 
@@ -70,7 +70,7 @@ class OpsTransformer(ABC):
         """
         pass
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the transformer's configuration to a dictionary."""
         result = {
             "name": self.__class__.__name__,
@@ -80,7 +80,7 @@ class OpsTransformer(ABC):
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "OpsTransformer":
+    def from_dict(cls, data: dict[str, Any]) -> "OpsTransformer":
         """
         Acts as a factory to create a transformer instance from a dictionary.
         This method should be called on the base class, e.g.,

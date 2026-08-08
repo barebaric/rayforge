@@ -3,7 +3,6 @@ from __future__ import annotations
 import io
 import math
 from gettext import gettext as _
-from typing import List
 
 import ezdxf
 from raygeo.geo import Arc, Bezier, Geometry, Line, Move
@@ -45,7 +44,7 @@ class GeometryDxfExporter(BaseExporter):
         """Add geometry entities to a DXF modelspace."""
         last_x = 0.0
         last_y = 0.0
-        poly_points: List[tuple] = []
+        poly_points: list[tuple] = []
 
         def flush_polyline():
             nonlocal poly_points
@@ -128,7 +127,7 @@ class MultiGeometryDxfExporter(BaseExporter):
     extensions = (".dxf",)
     mime_types = ("image/vnd.dxf",)
 
-    def __init__(self, geometries: List[Geometry]):
+    def __init__(self, geometries: list[Geometry]):
         self.geometries = geometries
 
     def export(self) -> bytes:

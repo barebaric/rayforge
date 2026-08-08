@@ -1,10 +1,8 @@
-from typing import List, Tuple
-
 from gi.repository import Graphene
 
 
 def obb_intersects_aabb(
-    obb_corners: List[Tuple[float, float]], aabb: Graphene.Rect
+    obb_corners: list[tuple[float, float]], aabb: Graphene.Rect
 ) -> bool:
     """
     Checks if an Oriented Bounding Box (OBB) intersects with an Axis-Aligned

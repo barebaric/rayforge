@@ -5,7 +5,7 @@ import tempfile
 import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import yaml
 
@@ -80,7 +80,7 @@ class DebugDumpManager:
                 with open(tmp_path / "app_config.yaml", "w") as f:
                     yaml.safe_dump(config.to_dict(), f)
 
-                all_machines_dict: Dict[str, Dict[str, Any]] = {
+                all_machines_dict: dict[str, dict[str, Any]] = {
                     machine_id: machine.to_dict()
                     for machine_id, machine in machine_mgr.machines.items()
                 }

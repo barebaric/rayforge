@@ -2,7 +2,7 @@ import inspect
 import logging
 import mimetypes
 from pathlib import Path
-from typing import List, Optional, Type, Union
+from typing import Optional, Union
 
 from ..core.item import DocItem
 from ..core.source_asset import SourceAsset
@@ -78,7 +78,7 @@ for name, obj in list(locals().items()):
 
 
 def _hydrate_workpieces_for_preview(
-    items: List["DocItem"], source: "SourceAsset"
+    items: list["DocItem"], source: "SourceAsset"
 ):
     """
     Recursively finds all WorkPieces in a list of items and attaches the
@@ -180,7 +180,7 @@ def import_file(
         mime_type, _ = mimetypes.guess_type(source)
 
     # 1. Determine importer class
-    importer_class: Optional[Type[Importer]] = None
+    importer_class: Optional[type[Importer]] = None
     if mime_type:
         importer_class = importer_registry.get_by_mime_type(mime_type)
 

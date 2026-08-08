@@ -6,7 +6,7 @@ settlers, serialization of the laser keys).
 """
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from raygeo.ops import Ops
 from raygeo.ops.state import AirAssistMode
@@ -76,14 +76,14 @@ class LaserStep(Step):
         )
 
     @classmethod
-    def recipe_varset_groups(cls) -> List[Tuple[str, VarSet]]:
+    def recipe_varset_groups(cls) -> list[tuple[str, VarSet]]:
         """Split into a "Laser" group (inherited process settings) and a
         "Step Settings" group (attributes the concrete step adds)."""
         full = cls.recipe_varset()
         base_keys = {v.key for v in LaserStep.recipe_varset()}
         laser_vars = [v for v in full if v.key in base_keys]
         step_vars = [v for v in full if v.key not in base_keys]
-        groups: List[Tuple[str, VarSet]] = []
+        groups: list[tuple[str, VarSet]] = []
         if laser_vars:
             groups.append((_("Laser"), VarSet(vars=laser_vars)))
         if step_vars:
@@ -109,7 +109,7 @@ class LaserStep(Step):
         super().populate_payload(payload, machine)
         payload.power = self.power
 
-    def get_settings(self) -> Dict[str, Any]:
+    def get_settings(self) -> dict[str, Any]:
         """
         Bundles all physical process parameters into a dictionary.
         Only includes settings of the step itself, and not of producer,
@@ -127,14 +127,14 @@ class LaserStep(Step):
             "generated_workpiece_uid": self.generated_workpiece_uid,
         }
 
-    def apply_import_settings(self, settings: Dict[str, Any]) -> None:
+    def apply_import_settings(self, settings: dict[str, Any]) -> None:
         """Apply importer-provided laser settings this step owns."""
         super().apply_import_settings(settings)
         power = settings.get("power")
         if power is not None:
             self.set_power(power)
 
-    def get_cache_params(self) -> Dict[str, Any]:
+    def get_cache_params(self) -> dict[str, Any]:
         params = super().get_cache_params()
         params.update(
             {
@@ -197,7 +197,7 @@ class LaserStep(Step):
             return head.cut_color
         return None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         result = super().to_dict()
         result.update(
             {
@@ -212,7 +212,7 @@ class LaserStep(Step):
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "LaserStep":
+    def from_dict(cls, data: dict[str, Any]) -> "LaserStep":
         step = cast("LaserStep", super().from_dict(data))
         step.power = data.get("power", step.power)
         step.max_power = data.get("max_power", step.max_power)

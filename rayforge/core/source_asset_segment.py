@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, field, replace
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
@@ -10,7 +10,7 @@ from raygeo.geo.types import Rect
 from .vectorization_spec import VectorizationSpec
 
 # A type alias for a list of serializable modifier configurations.
-ImageModifierChain = List[Dict[str, Any]]
+ImageModifierChain = list[dict[str, Any]]
 
 
 @dataclass
@@ -35,7 +35,7 @@ class SourceAssetSegment:
     pristine_geometry: Optional[Geometry] = None
     normalization_matrix: Optional[Matrix] = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the configuration to a dictionary."""
         return {
             "source_asset_uid": self.source_asset_uid,
@@ -54,7 +54,7 @@ class SourceAssetSegment:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SourceAssetSegment":
+    def from_dict(cls, data: dict[str, Any]) -> "SourceAssetSegment":
         """Deserializes a dictionary into a SourceAssetSegment instance."""
         # Handle tuple conversion for crop_window_px if it's a list from JSON
         crop_window = data.get("crop_window_px")

@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Iterator, List, Optional, Set, Tuple
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Optional
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -78,9 +79,9 @@ class EquidistantLinesProducer(SnapLineProducer):
         fixed_x: Optional[float] = None,
         fixed_y: Optional[float] = None,
         threshold: float = 0.0,
-    ) -> Tuple[List[float], float]:
-        coords: List[float] = []
-        axis_values: List[float] = []
+    ) -> tuple[list[float], float]:
+        coords: list[float] = []
+        axis_values: list[float] = []
 
         for point in registry.points:
             if drag_context.is_point_dragged(point.id):
@@ -104,16 +105,16 @@ class EquidistantLinesProducer(SnapLineProducer):
 
     def _find_equidistant_snaps(
         self,
-        aligned_coords: List[float],
+        aligned_coords: list[float],
         drag_coord: float,
         threshold: float,
-    ) -> Iterator[Tuple[float, float, Tuple[float, ...]]]:
+    ) -> Iterator[tuple[float, float, tuple[float, ...]]]:
         if len(aligned_coords) < 2:
             return
 
-        seen_snaps: Set[float] = set()
+        seen_snaps: set[float] = set()
 
-        spacings: Set[float] = set()
+        spacings: set[float] = set()
         for i in range(len(aligned_coords) - 1):
             spacing = aligned_coords[i + 1] - aligned_coords[i]
             if spacing > 1e-6 and spacing <= self._max_spacing:
@@ -139,14 +140,14 @@ class EquidistantLinesProducer(SnapLineProducer):
 
     def _build_pattern(
         self,
-        aligned_coords: List[float],
+        aligned_coords: list[float],
         snap_coord: float,
         spacing: float,
-    ) -> Tuple[float, ...]:
-        all_coords: Set[float] = set(aligned_coords)
+    ) -> tuple[float, ...]:
+        all_coords: set[float] = set(aligned_coords)
         all_coords.add(snap_coord)
 
-        pattern: List[float] = []
+        pattern: list[float] = []
 
         coord = snap_coord
         while any(

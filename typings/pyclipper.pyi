@@ -1,8 +1,6 @@
-from typing import List, Optional, Tuple, Union
-
-Point = Tuple[int, int]
-Path = List[Point]
-Paths = List[Path]
+Point = tuple[int, int]
+Path = list[Point]
+Paths = list[Path]
 
 PFT_EVENODD: int
 PFT_NONZERO: int

@@ -19,7 +19,7 @@ workpiece generator dialog) gives the user live feedback.
 """
 
 from gettext import gettext as _
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from blinker import Signal
 from gi.repository import Adw, GLib, Gtk
@@ -40,7 +40,7 @@ from . import WizardPage, _makePreferencesGroup
 #   "string"    — string scalar (origin)
 #   "head_laser"  — head field, laser family
 #   "head_spindle" — head field, spindle family
-_FIELD_SPEC: List[Tuple[str, str, str]] = [
+_FIELD_SPEC: list[tuple[str, str, str]] = [
     ("axis_extents", _("Work area (X, Y)"), "tuple2_mm"),
     ("max_travel_speed", _("Max travel speed"), "int"),
     ("max_cut_speed", _("Max cut speed"), "int"),
@@ -127,8 +127,8 @@ class AILookupPage(WizardPage):
         self.suggestions_group.set_visible(False)
         self.content.append(self.suggestions_group)
 
-        self._rows: List[Adw.SwitchRow] = []
-        self._accepted: Dict[str, Any] = {}
+        self._rows: list[Adw.SwitchRow] = []
+        self._accepted: dict[str, Any] = {}
 
         # If AI isn't configured, surface a friendly message instead.
         if not is_ai_configured():
@@ -238,7 +238,7 @@ class AILookupPage(WizardPage):
         # The page never auto-advances; the user must click "Next" /
         # "Skip" via the wizard footer.
 
-    def footer_buttons(self) -> List[Gtk.Button]:
+    def footer_buttons(self) -> list[Gtk.Button]:
         return [self.lookup_button]
 
     # ----- async lookup --------------------------------------------------
@@ -280,7 +280,7 @@ class AILookupPage(WizardPage):
             if task.get_status() != "completed":
                 self._show_lookup_error(_("Lookup failed"))
                 return
-            specs: Dict[str, Any] = result.get("specs", {})
+            specs: dict[str, Any] = result.get("specs", {})
             if not specs:
                 self._show_lookup_error(
                     _(
@@ -306,7 +306,7 @@ class AILookupPage(WizardPage):
         box.append(label)
         self.banner.set_child(box)
 
-    def _render_suggestions(self, specs: Dict[str, Any]) -> None:
+    def _render_suggestions(self, specs: dict[str, Any]) -> None:
         for row in self._rows:
             self.suggestions_group.remove(row)
         self._rows.clear()

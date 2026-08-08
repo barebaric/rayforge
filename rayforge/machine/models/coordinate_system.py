@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 
 from raygeo.geo.types import Point3D
 
@@ -13,15 +13,15 @@ class CoordinateSystem:
     label: str = ""
     offset: Point3D = ZERO_OFFSET
 
-    def to_dict(self) -> Dict[str, Any]:
-        d: Dict[str, Any] = {"name": self.name}
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"name": self.name}
         if self.label:
             d["label"] = self.label
         d["offset"] = list(self.offset)
         return d
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "CoordinateSystem":
+    def from_dict(cls, data: dict[str, Any]) -> "CoordinateSystem":
         offset = tuple(data.get("offset", list(ZERO_OFFSET)))
         return cls(
             name=data["name"],
@@ -30,5 +30,5 @@ class CoordinateSystem:
         )
 
     @staticmethod
-    def defaults() -> Dict[str, "CoordinateSystem"]:
+    def defaults() -> dict[str, "CoordinateSystem"]:
         return {n: CoordinateSystem(name=n) for n in _DEFAULT_WCS}

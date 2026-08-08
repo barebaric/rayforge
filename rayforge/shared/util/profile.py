@@ -1,7 +1,7 @@
 import contextlib
 import os
 import time
-from typing import Iterator
+from collections.abc import Iterator
 
 
 @contextlib.contextmanager

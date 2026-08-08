@@ -1,7 +1,7 @@
 import logging
 import re
 from gettext import gettext as _
-from typing import Optional, Tuple
+from typing import Optional
 
 from rayforge.context import get_context
 from rayforge.core.ai import AIServiceError
@@ -55,7 +55,7 @@ def extract_svg_from_response(content: str) -> Optional[str]:
     return None
 
 
-async def generate_svg(prompt: str) -> Tuple[Optional[str], Optional[str]]:
+async def generate_svg(prompt: str) -> tuple[Optional[str], Optional[str]]:
     """
     Generate SVG from a text prompt using the configured AI provider.
 

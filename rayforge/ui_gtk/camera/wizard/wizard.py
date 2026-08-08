@@ -13,7 +13,7 @@ the camera preferences page's "Wizard" button.
 
 import logging
 from gettext import gettext as _
-from typing import Dict, List, Optional
+from typing import Optional
 
 from gi.repository import Adw, Gtk
 
@@ -51,10 +51,10 @@ class CameraWizard(PatchedDialogWindow):
         )
         self.controller = controller
 
-        self._pages: Dict[str, CameraWizardPage] = {}
-        self._page_order: List[str] = []
+        self._pages: dict[str, CameraWizardPage] = {}
+        self._page_order: list[str] = []
         self._current: Optional[str] = None
-        self._history: List[str] = []
+        self._history: list[str] = []
 
         self._setup_ui()
         self._build_pages()

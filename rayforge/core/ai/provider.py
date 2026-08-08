@@ -1,9 +1,10 @@
 import json
 from abc import ABC, abstractmethod
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
 from enum import Enum
 from gettext import gettext as _
-from typing import AsyncGenerator, Dict, List, Optional, Tuple
+from typing import Optional
 
 
 class AIServiceError(Exception):
@@ -64,7 +65,7 @@ class AIProviderConfig:
     default_model: str
     enabled: bool = True
 
-    def to_dict(self) -> Dict[str, object]:
+    def to_dict(self) -> dict[str, object]:
         return {
             "id": self.id,
             "name": self.name,
@@ -76,7 +77,7 @@ class AIProviderConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, object]) -> "AIProviderConfig":
+    def from_dict(cls, data: dict[str, object]) -> "AIProviderConfig":
         return cls(
             id=str(data.get("id", "")),
             name=str(data.get("name", "")),
@@ -93,7 +94,7 @@ class ChatMessage:
     role: str
     content: str
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         return {"role": self.role, "content": self.content}
 
 
@@ -101,7 +102,7 @@ class ChatMessage:
 class ChatResponse:
     content: str
     model: str
-    usage: Dict[str, int] = field(default_factory=dict)
+    usage: dict[str, int] = field(default_factory=dict)
 
 
 class AIProvider(ABC):
@@ -110,7 +111,7 @@ class AIProvider(ABC):
     @abstractmethod
     async def chat(
         self,
-        messages: List[ChatMessage],
+        messages: list[ChatMessage],
         model: Optional[str] = None,
         **kwargs,
     ) -> ChatResponse:
@@ -120,7 +121,7 @@ class AIProvider(ABC):
     @abstractmethod
     def chat_stream(
         self,
-        messages: List[ChatMessage],
+        messages: list[ChatMessage],
         model: Optional[str] = None,
         **kwargs,
     ) -> AsyncGenerator[str, None]:
@@ -132,12 +133,12 @@ class AIProvider(ABC):
         pass
 
     @abstractmethod
-    async def list_models(self) -> List[str]:
+    async def list_models(self) -> list[str]:
         """List available models."""
         pass
 
     @abstractmethod
-    async def test_connection(self) -> Tuple[bool, str]:
+    async def test_connection(self) -> tuple[bool, str]:
         """
         Test if the provider is reachable and configured.
 

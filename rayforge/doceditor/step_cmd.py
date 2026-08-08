@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, Optional
 
 from ..core.color_preset import get_color_preset_mgr
 from ..core.step_registry import step_registry
@@ -27,7 +27,7 @@ class StepCmd:
 
     def set_step_param(
         self,
-        target_dict: Dict[str, Any],
+        target_dict: dict[str, Any],
         key: str,
         new_value: Any,
         name: str,
@@ -190,7 +190,7 @@ class StepCmd:
                     f"layer '{layer.name}' (has fills)."
                 )
 
-    def _step_class_from_color_rule(self, layer) -> Optional[Type["Step"]]:
+    def _step_class_from_color_rule(self, layer) -> Optional[type["Step"]]:
         """
         Resolve the step class a color rule maps to for a layer.
 

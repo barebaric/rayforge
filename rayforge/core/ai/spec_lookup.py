@@ -13,7 +13,7 @@ the wizard falls back gracefully to manual entry.
 import json
 import logging
 import re
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from ...context import get_context
 from . import AIServiceError
@@ -48,7 +48,7 @@ Omit any field that you do not know with high confidence. Use the \
 manufacturer's official specifications when available."""
 
 
-def _extract_json_object(content: str) -> Optional[Dict[str, Any]]:
+def _extract_json_object(content: str) -> Optional[dict[str, Any]]:
     """Pull the first balanced JSON object out of an LLM response.
 
     LLMs occasionally wrap JSON in markdown fences or surrounding
@@ -110,14 +110,14 @@ def _extract_json_object(content: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def _coerce_specs(raw: Dict[str, Any]) -> Dict[str, Any]:
+def _coerce_specs(raw: dict[str, Any]) -> dict[str, Any]:
     """Normalize the parsed JSON into wizard-consumable fields.
 
     Drops keys with ``None`` values and converts numeric strings to
     floats/ints. Leaves unknown keys intact so the wizard can decide
     what to surface — callers consume defensively.
     """
-    out: Dict[str, Any] = {}
+    out: dict[str, Any] = {}
     for key, value in raw.items():
         if value is None:
             continue
@@ -142,7 +142,7 @@ async def lookup_machine_specs(
     vendor: str,
     model: str,
     context: Optional["RayforgeContext"] = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Query the AI for machine specifications.
 
     Args:

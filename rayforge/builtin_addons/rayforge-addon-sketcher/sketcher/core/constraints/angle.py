@@ -7,10 +7,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -111,7 +108,7 @@ class AngleConstraint(Constraint):
             return _("Between two lines")
         return ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         data = {
             "type": "AngleConstraint",
             "e1_id": self.e1_id,
@@ -126,7 +123,7 @@ class AngleConstraint(Constraint):
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AngleConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> "AngleConstraint":
         return cls(
             e1_id=data["e1_id"],
             e2_id=data["e2_id"],
@@ -139,7 +136,7 @@ class AngleConstraint(Constraint):
 
     def _get_line_params(
         self, reg: "EntityRegistry"
-    ) -> Optional[Tuple[Line, Line, Any, Any, Any, Any]]:
+    ) -> Optional[tuple[Line, Line, Any, Any, Any, Any]]:
         e1 = reg.get_entity(self.e1_id)
         e2 = reg.get_entity(self.e2_id)
         if not (isinstance(e1, Line) and isinstance(e2, Line)):
@@ -227,7 +224,7 @@ class AngleConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         result = self._get_line_params(reg)
         if result is None:
             return {}

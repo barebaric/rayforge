@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 from OpenGL import GL
@@ -94,12 +94,12 @@ class AxisRenderer3D(BaseRenderer):
             self.extent_frame_vertex_count,
         ) = (0, 0, 0)
 
-    def set_background_color(self, color: Tuple[float, float, float, float]):
+    def set_background_color(self, color: tuple[float, float, float, float]):
         """Sets the color for the background plane."""
         self.background_color = color
         self.background_renderer.color = color
 
-    def set_grid_color(self, color: Tuple[float, float, float, float]):
+    def set_grid_color(self, color: tuple[float, float, float, float]):
         """Sets the color for the grid lines."""
         self.grid_color = color
 
@@ -130,11 +130,11 @@ class AxisRenderer3D(BaseRenderer):
         """Sets the number of mm in one user-preferred length unit."""
         self.grid_unit_factor = float(grid_unit_factor)
 
-    def set_axis_color(self, color: Tuple[float, float, float, float]):
+    def set_axis_color(self, color: tuple[float, float, float, float]):
         """Sets the color for the main X and Y axis lines."""
         self.axis_color = color
 
-    def set_label_color(self, color: Tuple[float, float, float, float]):
+    def set_label_color(self, color: tuple[float, float, float, float]):
         """Sets the color for the axis labels."""
         self.label_color = color
 

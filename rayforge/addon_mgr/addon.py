@@ -2,7 +2,7 @@ import logging
 import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import semver
 import yaml
@@ -49,12 +49,12 @@ class AddonLicense:
     required: bool = False
     purchase_url: str = ""
     product_id: str = ""
-    product_ids: List[str] = field(default_factory=list)
-    patreon_tier_ids: List[str] = field(default_factory=list)
+    product_ids: list[str] = field(default_factory=list)
+    patreon_tier_ids: list[str] = field(default_factory=list)
 
     @classmethod
     def from_dict(
-        cls, data: Optional[Dict[str, Any]]
+        cls, data: Optional[dict[str, Any]]
     ) -> Optional["AddonLicense"]:
         """Creates an AddonLicense from a dictionary, or None if empty."""
         if not data:
@@ -76,7 +76,7 @@ class AddonLicense:
             patreon_tier_ids=tier_ids if isinstance(tier_ids, list) else [],
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Converts the license to a dictionary for serialization."""
         result = {}
         if self.name:
@@ -93,7 +93,7 @@ class AddonLicense:
             result["patreon_tier_ids"] = self.patreon_tier_ids
         return result
 
-    def get_all_product_ids(self) -> List[str]:
+    def get_all_product_ids(self) -> list[str]:
         """Returns all product IDs (both single and list)."""
         ids = list(self.product_ids)
         if self.product_id:
@@ -116,7 +116,7 @@ class AddonProvides:
 
     worker: Optional[str] = None
     frontend: Optional[str] = None
-    assets: List[Dict[str, str]] = field(default_factory=list)
+    assets: list[dict[str, str]] = field(default_factory=list)
 
 
 VersionType = Union[str, object]
@@ -131,22 +131,22 @@ class AddonMetadata:
     name: str
     description: str
     version: VersionType
-    depends: List[str]
+    depends: list[str]
     author: AddonAuthor
     provides: AddonProvides
     api_version: int = 1
     url: str = ""
     display_name: str = ""
-    requires: List[str] = field(default_factory=list)
+    requires: list[str] = field(default_factory=list)
     license: Optional[AddonLicense] = None
-    version_entries: List[Dict[str, Any]] = field(default_factory=list)
+    version_entries: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def license_name(self) -> str:
         """Returns the license name if available."""
         return self.license.name if self.license else ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Converts metadata back to a dictionary for YAML serialization."""
         result = asdict(self)
         if self.version is UnknownVersion:
@@ -157,7 +157,7 @@ class AddonMetadata:
 
     @classmethod
     def from_registry_entry(
-        cls, addon_name: str, data: Dict[str, Any]
+        cls, addon_name: str, data: dict[str, Any]
     ) -> "AddonMetadata":
         """
         Parses a registry dictionary entry into an AddonMetadata object.
@@ -212,13 +212,13 @@ class AddonMetadata:
 
 def _parse_version_entries(
     raw: list,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Parse the 'versions' list from registry data into structured dicts.
 
     Each entry may be either a string (legacy format, e.g. ``"v1.0.0"``)
     or a dict with keys ``version``, ``api_version``.
     """
-    entries: List[Dict[str, Any]] = []
+    entries: list[dict[str, Any]] = []
     if not isinstance(raw, list):
         return entries
     for item in raw:

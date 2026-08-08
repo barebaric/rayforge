@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, cast
+from typing import TYPE_CHECKING, cast
 
 from gi.repository import Adw, Gio, Gtk
 
@@ -22,10 +22,10 @@ class WorkpieceInfoProvider(PropertyProvider):
 
     priority = 20
 
-    def can_handle(self, items: List[DocItem]) -> bool:
+    def can_handle(self, items: list[DocItem]) -> bool:
         return len(items) == 1 and isinstance(items[0], WorkPiece)
 
-    def create_widgets(self) -> List[Gtk.Widget]:
+    def create_widgets(self) -> list[Gtk.Widget]:
         """Creates the widgets for workpiece info properties."""
         logger.debug("Creating workpiece info property widgets.")
         # Source File Row
@@ -55,7 +55,7 @@ class WorkpieceInfoProvider(PropertyProvider):
 
         return [self.source_file_row, self.vector_count_row]
 
-    def update_widgets(self, editor: "DocEditor", items: List[DocItem]):
+    def update_widgets(self, editor: "DocEditor", items: list[DocItem]):
         """Updates the workpiece info widgets with new data."""
         logger.debug(
             f"Updating workpiece info widgets for {len(items)} items."
@@ -132,14 +132,14 @@ class TabsPropertyProvider(PropertyProvider):
 
     priority = 30
 
-    def can_handle(self, items: List[DocItem]) -> bool:
+    def can_handle(self, items: list[DocItem]) -> bool:
         return (
             len(items) == 1
             and isinstance(items[0], WorkPiece)
             and items[0].boundaries is not None
         )
 
-    def create_widgets(self) -> List[Gtk.Widget]:
+    def create_widgets(self) -> list[Gtk.Widget]:
         """Creates the widgets for tab properties."""
         logger.debug("Creating tabs property widgets.")
         self._rows = []
@@ -181,7 +181,7 @@ class TabsPropertyProvider(PropertyProvider):
 
         return self._rows
 
-    def update_widgets(self, editor: "DocEditor", items: List[DocItem]):
+    def update_widgets(self, editor: "DocEditor", items: list[DocItem]):
         """Updates the tabs widgets with new data."""
         logger.debug(f"Updating tabs property widgets for {len(items)} items.")
         self.editor = editor

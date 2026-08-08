@@ -2,7 +2,7 @@ import asyncio
 import logging
 from collections import defaultdict
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from raygeo.geo import Matrix
 
@@ -27,7 +27,7 @@ class _CreateGroupCommand(Command):
     def __init__(
         self,
         layer: Layer,
-        items_to_group: List[DocItem],
+        items_to_group: list[DocItem],
         pipeline: "Pipeline",
         name: str = "Group Items",
         precalculated_result: Optional[GroupingResult] = None,
@@ -37,12 +37,12 @@ class _CreateGroupCommand(Command):
         self.items_to_group = list(items_to_group)
         self.pipeline = pipeline
         self.new_group: Optional[Group] = None
-        self._original_parents: Dict[str, DocItem] = {
+        self._original_parents: dict[str, DocItem] = {
             item.uid: item.parent
             for item in self.items_to_group
             if item.parent
         }
-        self._original_matrices: Dict[str, Matrix] = {
+        self._original_matrices: dict[str, Matrix] = {
             item.uid: item.matrix.copy() for item in self.items_to_group
         }
         self._precalculated_result = precalculated_result
@@ -112,10 +112,10 @@ class _UngroupCommand(Command):
 
     def __init__(
         self,
-        groups_to_ungroup: List[Group],
+        groups_to_ungroup: list[Group],
         pipeline: "Pipeline",
         name: str = "Ungroup Items",
-        precalculated_matrices: Optional[Dict[str, Dict[str, Matrix]]] = None,
+        precalculated_matrices: Optional[dict[str, dict[str, Matrix]]] = None,
     ):
         super().__init__(name)
         self.groups_to_ungroup = list(groups_to_ungroup)
@@ -140,7 +140,7 @@ class _UngroupCommand(Command):
     @staticmethod
     def _calculate_ungroup_transforms(
         group: Group, parent_inv_world: Matrix
-    ) -> Dict[str, Matrix]:
+    ) -> dict[str, Matrix]:
         """
         Calculates the new local matrices for a group's children using a
         pre-calculated parent inverse transform.
@@ -230,7 +230,7 @@ class GroupCmd:
         self._editor = editor
         self._task_manager = task_manager
 
-    def group_items(self, layer: Layer, items_to_group: List[DocItem]):
+    def group_items(self, layer: Layer, items_to_group: list[DocItem]):
         """
         Creates and executes an undoable command to group items. This operation
         runs as a background task.
@@ -281,7 +281,7 @@ class GroupCmd:
             key="group-items",
         )
 
-    def ungroup_items(self, groups_to_ungroup: List[Group]):
+    def ungroup_items(self, groups_to_ungroup: list[Group]):
         """
         Creates and executes an undoable command to ungroup items. This
         operation runs as a background task.
@@ -292,9 +292,9 @@ class GroupCmd:
         # Notify editor that we are starting a background task
         self._editor.notify_task_started()
 
-        def do_calculation_sync() -> Dict[str, Dict[str, Matrix]]:
+        def do_calculation_sync() -> dict[str, dict[str, Matrix]]:
             results = {}
-            parent_inverses: Dict[str, Matrix] = {}
+            parent_inverses: dict[str, Matrix] = {}
             for group in groups_to_ungroup:
                 if group.parent and group.parent.uid not in parent_inverses:
                     parent_inverses[group.parent.uid] = (

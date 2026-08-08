@@ -8,8 +8,6 @@ pipeline to build stable ``version_token`` values for raygeo
 :class:`NodeRequest` objects (slice B0 of the migration plan).
 """
 
-from typing import Dict
-
 from raygeo.geo import Matrix
 
 from rayforge.core.doc import Doc
@@ -20,11 +18,11 @@ from rayforge.core.item import DocItem
 class LeafItem(DocItem):
     """A minimal concrete DocItem for direct signal tests."""
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {"name": self.name}
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "LeafItem":
+    def from_dict(cls, data: dict) -> "LeafItem":
         return cls(name=data.get("name", "leaf"))
 
 
@@ -135,16 +133,16 @@ def test_step_name_change_bumps_geometry_revision():
     Step extends DocItem so it inherits the revision machinery.  We use
     a minimal concrete Step subclass to avoid pulling in addon loading.
     """
-    from typing import Any, Dict
+    from typing import Any
 
     from rayforge.core.step import Step
 
     class _DummyStep(Step):
-        def to_dict(self) -> Dict[str, Any]:
+        def to_dict(self) -> dict[str, Any]:
             return {}
 
         @classmethod
-        def from_dict(cls, data: Dict[str, Any]) -> "_DummyStep":
+        def from_dict(cls, data: dict[str, Any]) -> "_DummyStep":
             return cls(typelabel="dummy")
 
     step = _DummyStep(typelabel="dummy", name="step")

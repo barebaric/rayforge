@@ -1,7 +1,8 @@
 import logging
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Mapping, Optional
+from typing import Optional
 
 import yaml
 
@@ -28,7 +29,7 @@ class AddonConfigEntry:
     state: str
     version: Optional[str] = None
 
-    def to_dict(self) -> Dict[str, Optional[str]]:
+    def to_dict(self) -> dict[str, Optional[str]]:
         """Convert to a dictionary for YAML serialization."""
         return {"state": self.state, "version": self.version}
 
@@ -54,7 +55,7 @@ class AddonConfig:
 
     def __init__(self, config_dir: Path):
         self.config_file = config_dir / "addons.yaml"
-        self._entries: Dict[str, AddonConfigEntry] = {}
+        self._entries: dict[str, AddonConfigEntry] = {}
 
     def load(self):
         """Load addon configuration from the config file."""

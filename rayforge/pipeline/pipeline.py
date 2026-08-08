@@ -2,15 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Generator
 from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
-    Generator,
     Optional,
-    Tuple,
 )
 
 from blinker import Signal
@@ -76,8 +74,8 @@ class Pipeline:
         self._is_shutting_down = False
         self._last_known_busy = False
 
-        self._wp_handles: Dict[Tuple[str, str], BaseArtifactHandle] = {}
-        self._step_handles: Dict[str, BaseArtifactHandle] = {}
+        self._wp_handles: dict[tuple[str, str], BaseArtifactHandle] = {}
+        self._step_handles: dict[str, BaseArtifactHandle] = {}
         self._last_aggregate_output: Any = None
         self._last_job_handle: Optional[BaseArtifactHandle] = None
 

@@ -6,7 +6,7 @@ text representation for UI display.
 """
 
 import logging
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from raygeo.geo.types import Point3D
 from raygeo.ops import Ops
@@ -69,8 +69,8 @@ class RuidaEncoder(OpsEncoder):
         """
         self._reset_state()
 
-        binary_chunks: List[bytes] = []
-        text_lines: List[str] = []
+        binary_chunks: list[bytes] = []
+        text_lines: list[str] = []
         op_map = MachineCodeOpMap()
 
         for i in range(ops.len()):
@@ -119,8 +119,8 @@ class RuidaEncoder(OpsEncoder):
         ops: Ops,
         idx: int,
         machine: "Machine",
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Dispatch command to appropriate handler."""
         ct = ops.command_type(idx)
@@ -170,8 +170,8 @@ class RuidaEncoder(OpsEncoder):
         self,
         ops: Ops,
         idx: int,
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Handle SetPowerCommand - set laser power percentage."""
         power = ops.power(idx)
@@ -188,8 +188,8 @@ class RuidaEncoder(OpsEncoder):
         self,
         ops: Ops,
         idx: int,
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Handle SetCutSpeedCommand - set cutting speed in mm/s."""
         speed = ops.rate(idx)
@@ -202,8 +202,8 @@ class RuidaEncoder(OpsEncoder):
         self,
         ops: Ops,
         idx: int,
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Handle SetTravelSpeedCommand - store for move operations."""
         speed = ops.rate(idx)
@@ -217,8 +217,8 @@ class RuidaEncoder(OpsEncoder):
         self,
         ops: Ops,
         idx: int,
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Handle SetFrequencyCommand - emit 0xC6 0x60 frequency."""
         freq = ops.frequency(idx)
@@ -231,8 +231,8 @@ class RuidaEncoder(OpsEncoder):
         self,
         ops: Ops,
         idx: int,
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Handle SetPulseWidthCommand - emit 0xC6 0x10 interval."""
         pw = ops.pulse_width(idx)
@@ -246,8 +246,8 @@ class RuidaEncoder(OpsEncoder):
         self,
         ops: Ops,
         idx: int,
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Handle SetAirAssistCommand - update air assist state."""
         mode = ops.air_assist(idx)
@@ -266,8 +266,8 @@ class RuidaEncoder(OpsEncoder):
         self,
         ops: Ops,
         idx: int,
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Handle SetCoolantCommand - coolant not used on laser cutters."""
 
@@ -276,8 +276,8 @@ class RuidaEncoder(OpsEncoder):
         ops: Ops,
         idx: int,
         machine: "Machine",
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Handle SetLaserCommand - select active laser head."""
         laser_uid = ops.head_uid(idx)
@@ -303,8 +303,8 @@ class RuidaEncoder(OpsEncoder):
         self,
         ops: Ops,
         idx: int,
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Handle MoveToCommand - rapid move with laser off."""
         end = ops.endpoint(idx)
@@ -317,8 +317,8 @@ class RuidaEncoder(OpsEncoder):
         self,
         ops: Ops,
         idx: int,
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Handle LineToCommand - cutting move with laser on."""
         end = ops.endpoint(idx)
@@ -331,8 +331,8 @@ class RuidaEncoder(OpsEncoder):
         self,
         ops: Ops,
         idx: int,
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Handle ArcToCommand - linearize arc to series of cuts."""
         end = ops.endpoint(idx)
@@ -353,8 +353,8 @@ class RuidaEncoder(OpsEncoder):
         self,
         ops: Ops,
         idx: int,
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Handle ScanLinePowerCommand - linearize to power/line segments."""
         end = ops.endpoint(idx)
@@ -375,8 +375,8 @@ class RuidaEncoder(OpsEncoder):
     def _handle_job_start(
         self,
         machine: "Machine",
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """
         Handle JobStartCommand - select reference point and mark job start.
@@ -395,8 +395,8 @@ class RuidaEncoder(OpsEncoder):
 
     def _handle_job_end(
         self,
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Handle JobEndCommand - send end-of-file marker."""
         binary.append(b"\xd7")
@@ -406,8 +406,8 @@ class RuidaEncoder(OpsEncoder):
         self,
         ops: Ops,
         idx: int,
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Handle LayerStartCommand - mark layer beginning."""
         uid = ops.layer_uid(idx)
@@ -418,8 +418,8 @@ class RuidaEncoder(OpsEncoder):
         self,
         ops: Ops,
         idx: int,
-        binary: List[bytes],
-        text: List[str],
+        binary: list[bytes],
+        text: list[str],
     ) -> None:
         """Handle LayerEndCommand - mark layer end."""
         binary.append(b"\xca\x00")
@@ -429,7 +429,7 @@ class RuidaEncoder(OpsEncoder):
         self,
         ops: Ops,
         idx: int,
-        text: List[str],
+        text: list[str],
     ) -> None:
         """Handle WorkpieceStartCommand - mark workpiece beginning."""
         uid = ops.workpiece_uid(idx)
@@ -439,7 +439,7 @@ class RuidaEncoder(OpsEncoder):
         self,
         ops: Ops,
         idx: int,
-        text: List[str],
+        text: list[str],
     ) -> None:
         """Handle WorkpieceEndCommand - mark workpiece end."""
         text.append("; --- End Workpiece ---")

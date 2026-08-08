@@ -1,6 +1,6 @@
 import logging
 import warnings
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 from xml.etree import ElementTree as ET
 
 with warnings.catch_warnings():
@@ -244,7 +244,7 @@ def is_unitless_svg(data: bytes) -> bool:
 
 def get_natural_size(
     data: bytes, ppi: float = PPI
-) -> Optional[Tuple[float, float]]:
+) -> Optional[tuple[float, float]]:
     """
     Analyzes raw SVG data to extract its natural, untrimmed dimensions in mm.
 
@@ -279,7 +279,7 @@ def _get_local_tag_name(element: ET.Element) -> str:
     return element.tag.rsplit("}", 1)[-1]
 
 
-def hex_color_to_rgb(color: str) -> Tuple[float, float, float]:
+def hex_color_to_rgb(color: str) -> tuple[float, float, float]:
     """
     Converts a "#rrggbb" hex color string to an RGB tuple in the 0-1 range.
     """
@@ -292,7 +292,7 @@ def hex_color_to_rgb(color: str) -> Tuple[float, float, float]:
 
 def extract_color_manifest(
     data: bytes, color_attr: ColorAttr = ColorAttr.ANY
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Parses the SVG to find distinct colors, treating each as a layer.
 
@@ -334,7 +334,7 @@ def extract_color_manifest(
     return layers
 
 
-def extract_layer_manifest(data: bytes) -> List[Dict[str, Any]]:
+def extract_layer_manifest(data: bytes) -> list[dict[str, Any]]:
     """
     Parses the SVG to find top-level groups with IDs, treating them as layers.
     Also counts the number of geometric elements in each layer.
@@ -377,7 +377,7 @@ def extract_layer_manifest(data: bytes) -> List[Dict[str, Any]]:
     return layers
 
 
-def filter_svg_layers(data: bytes, visible_layer_ids: List[str]) -> bytes:
+def filter_svg_layers(data: bytes, visible_layer_ids: list[str]) -> bytes:
     """
     Returns a modified SVG with only specified top-level groups visible.
     """

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.geo.types import Point
 
@@ -56,7 +56,7 @@ class ParallelogramConstraint(Constraint):
             )
         return ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "ParallelogramConstraint",
             "p_origin": self.p_origin,
@@ -67,7 +67,7 @@ class ParallelogramConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ParallelogramConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> "ParallelogramConstraint":
         return cls(
             p_origin=data["p_origin"],
             p_width=data["p_width"],
@@ -97,7 +97,7 @@ class ParallelogramConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         """Returns the gradient of the error with respect to each point."""
         return {
             self.p_origin: [(-1.0, 0.0), (0.0, -1.0)],

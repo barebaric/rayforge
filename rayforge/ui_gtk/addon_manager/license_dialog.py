@@ -2,7 +2,7 @@ import logging
 import threading
 import webbrowser
 from gettext import gettext as _
-from typing import Callable, List, Optional, cast
+from typing import Callable, Optional, cast
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -21,7 +21,7 @@ class LicenseEntryDialog(Adw.MessageDialog):
 
     def __init__(
         self,
-        product_ids: List[str],
+        product_ids: list[str],
         addon_name: str,
         on_success: Optional[Callable[[], None]] = None,
     ):
@@ -130,7 +130,7 @@ class LicenseRequiredDialog(Adw.MessageDialog):
     def __init__(
         self,
         addon_name: str,
-        product_ids: List[str],
+        product_ids: list[str],
         purchase_url: Optional[str],
         on_license_added: Optional[Callable[[], None]] = None,
     ):

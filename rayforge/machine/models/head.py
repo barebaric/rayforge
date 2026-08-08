@@ -1,7 +1,7 @@
 import uuid
 from abc import ABC
 from gettext import gettext as _
-from typing import Any, Dict, Optional, Self
+from typing import Any, Optional, Self
 
 import numpy as np
 from blinker import Signal
@@ -35,7 +35,7 @@ class Head(ABC):
         self.model_path: Optional[str] = None
         self.transform: np.ndarray = np.eye(4, dtype=np.float64)
         self.changed = Signal()
-        self.extra: Dict[str, Any] = {}
+        self.extra: dict[str, Any] = {}
 
     @property
     def machine_capability(self) -> Optional[MachineCapability]:
@@ -93,7 +93,7 @@ class Head(ABC):
         self.transform[:3, 3] = pos
         self.changed.send(self)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         result = {
             HEAD_TYPE_KEY: self.HEAD_TYPE,
             "uid": self.uid,
@@ -106,7 +106,7 @@ class Head(ABC):
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> Self:
+    def from_dict(cls, data: dict[str, Any]) -> Self:
         head = cls()
         head.uid = data.get("uid", str(uuid.uuid4()))
         head.name = data.get("name", head.name)
@@ -132,7 +132,7 @@ class Head(ABC):
 
 
 def head_from_dict(
-    data: Dict[str, Any],
+    data: dict[str, Any],
 ) -> "Head":
     """
     Deserialize a head dict, dispatching on the ``type`` key.

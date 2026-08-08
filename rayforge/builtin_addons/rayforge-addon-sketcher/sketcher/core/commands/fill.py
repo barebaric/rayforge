@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import uuid
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from rayforge.core.color import ColorRGBA
 from rayforge.image.structures import FillStyle
@@ -24,10 +24,10 @@ class AddFillCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: "Sketch",
-        boundary: List[Tuple[int, bool]],
+        boundary: list[tuple[int, bool]],
         style: FillStyle = FillStyle.SOLID,
         color: ColorRGBA = DEFAULT_FILL_COLOR,
-        gradient_stops: Optional[List[Tuple[float, ColorRGBA]]] = None,
+        gradient_stops: Optional[list[tuple[float, ColorRGBA]]] = None,
         gradient_angle: float = 0.0,
         name: str = _("Add Fill"),
     ):

@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from gi.repository import Adw, Gtk
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class StepSettingsDialog(PatchedDialogWindow):
-    _open_dialogs: Dict[int, "StepSettingsDialog"] = {}
+    _open_dialogs: dict[int, "StepSettingsDialog"] = {}
 
     def __init__(
         self,
@@ -53,8 +53,8 @@ class StepSettingsDialog(PatchedDialogWindow):
         # --- Main Step Settings + addon-provided extra pages ---
         context = get_context()
         self.general_view: Optional[StepSettingsPage] = None
-        self._extra_pages: List[
-            Tuple[str, StepSettingsPage, Optional[str]]
+        self._extra_pages: list[
+            tuple[str, StepSettingsPage, Optional[str]]
         ] = []
         if context:
             context.plugin_mgr.hook.step_settings_loaded(

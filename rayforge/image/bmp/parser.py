@@ -1,6 +1,6 @@
 import logging
 import struct
-from typing import List, Optional, Tuple
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ _COMPRESSION_BITFIELDS = 3
 _SUPPORTED_BPP = 1, 8, 24, 32
 
 
-def parse_bmp(data: bytes) -> Optional[Tuple[bytes, int, int, float, float]]:
+def parse_bmp(data: bytes) -> Optional[tuple[bytes, int, int, float, float]]:
     """
     Parse a BMP file and extract image data and metadata.
 
@@ -128,7 +128,7 @@ def parse_file_header(data: bytes) -> Optional[int]:
 
 def parse_dib_header(
     data: bytes,
-) -> Optional[Tuple[int, int, int, int, float, float, bool]]:
+) -> Optional[tuple[int, int, int, int, float, float, bool]]:
     """
     Parse the DIB (Device-Independent Bitmap) header.
 
@@ -164,7 +164,7 @@ def parse_dib_header(
 
 def _parse_info_header(
     data: bytes,
-) -> Optional[Tuple[int, int, int, int, float, float, bool]]:
+) -> Optional[tuple[int, int, int, int, float, float, bool]]:
     """Parse a BITMAPINFOHEADER (40 bytes)."""
     if len(data) < 54:
         logger.error("Incomplete BITMAPINFOHEADER.")
@@ -198,7 +198,7 @@ def _parse_info_header(
 
 def _parse_v5_header(
     data: bytes,
-) -> Optional[Tuple[int, int, int, int, float, float, bool]]:
+) -> Optional[tuple[int, int, int, int, float, float, bool]]:
     """
     Parse a BITMAPV5HEADER (124 bytes).
 
@@ -215,7 +215,7 @@ def _parse_v5_header(
 
 def _parse_core_header(
     data: bytes,
-) -> Optional[Tuple[int, int, int, int, float, float, bool]]:
+) -> Optional[tuple[int, int, int, int, float, float, bool]]:
     """Parse a BITMAPCOREHEADER (12 bytes)."""
     if len(data) < 26:
         logger.error("Incomplete BITMAPCOREHEADER.")
@@ -260,7 +260,7 @@ def _validate_format(bits_per_pixel: int, compression: int) -> bool:
 
 def _parse_info_palette(
     data: bytes, palette_offset: int, num_colors: int
-) -> Optional[List[Tuple[int, int, int, int]]]:
+) -> Optional[list[tuple[int, int, int, int]]]:
     """Parse a BMP palette with 4-byte RGBQUAD entries."""
     palette_size = num_colors * 4
     if len(data) < palette_offset + palette_size:
@@ -280,7 +280,7 @@ def _parse_info_palette(
 
 def _parse_core_palette(
     data: bytes, palette_offset: int, num_colors: int
-) -> Optional[List[Tuple[int, int, int, int]]]:
+) -> Optional[list[tuple[int, int, int, int]]]:
     """Parse a BMP palette with 3-byte RGBTRIPLE entries."""
     palette_size = num_colors * 3
     if len(data) < palette_offset + palette_size:
@@ -410,7 +410,7 @@ def _process_1bit_row(
     row_data: bytes,
     width: int,
     y: int,
-    palette: List[Tuple[int, int, int, int]],
+    palette: list[tuple[int, int, int, int]],
     rgba_buffer: bytearray,
 ):
     """Process a single row of 1-bit monochrome data."""
@@ -431,7 +431,7 @@ def _process_8bit_row(
     row_data: bytes,
     width: int,
     y: int,
-    palette: List[Tuple[int, int, int, int]],
+    palette: list[tuple[int, int, int, int]],
     rgba_buffer: bytearray,
 ):
     """Process a single row of 8-bit paletted data."""

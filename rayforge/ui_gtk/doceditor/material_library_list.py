@@ -2,7 +2,7 @@
 
 import logging
 from gettext import gettext as _
-from typing import List, Optional, cast
+from typing import Optional, cast
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -118,7 +118,7 @@ class LibraryListWidget(PreferencesGroupWithButton):
         )
         self.library_selected = Signal()
         # Keep a persistent reference to the Python widget objects
-        self._row_widgets: List[LibraryRow] = []
+        self._row_widgets: list[LibraryRow] = []
         self._setup_ui()
 
     def _setup_ui(self):

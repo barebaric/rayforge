@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import math
 from gettext import gettext as _
-from typing import List
 
 from raygeo.geo import Arc, Bezier, Geometry, Line, Move
 from raygeo.geo.shape.arc import get_arc_angles
@@ -75,7 +74,7 @@ class GeometrySvgExporter(BaseExporter):
         min_y: float,
         max_y: float | None = None,
     ) -> str:
-        path_data: List[str] = []
+        path_data: list[str] = []
         if max_y is None:
             _, _, _, max_y = geometry.rect()
 
@@ -157,7 +156,7 @@ class MultiGeometrySvgExporter(BaseExporter):
     extensions = (".svg",)
     mime_types = ("image/svg+xml",)
 
-    def __init__(self, geometries: List[Geometry]):
+    def __init__(self, geometries: list[Geometry]):
         self.geometries = geometries
 
     def export(self) -> bytes:
@@ -177,7 +176,7 @@ class MultiGeometrySvgExporter(BaseExporter):
 
     def _geometries_to_svg(
         self,
-        geometries: List[Geometry],
+        geometries: list[Geometry],
         min_x: float,
         min_y: float,
         width: float,

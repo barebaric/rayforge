@@ -2,7 +2,7 @@ import enum
 import io
 import token as py_token
 import tokenize as py_tokenize
-from typing import List, NamedTuple, Optional
+from typing import NamedTuple, Optional
 
 
 class TokenType(enum.Enum):
@@ -39,7 +39,7 @@ class ExpressionTokenizer:
         py_token.OP: TokenType.OPERATOR,
     }
 
-    def tokenize(self, expression: str) -> List[Token]:
+    def tokenize(self, expression: str) -> list[Token]:
         """
         Converts an expression string into a list of Token objects.
 
@@ -52,7 +52,7 @@ class ExpressionTokenizer:
         if not expression.strip():
             return []
 
-        tokens: List[Token] = []
+        tokens: list[Token] = []
         try:
             # The tokenize module expects a callable that returns strings.
             # io.StringIO provides this.

@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 METERS_TO_INCH = 39.37007874
 METERS_TO_FEET = 3.280839895
@@ -68,7 +68,7 @@ class ConversionEngine:
     _time_squared_units = {"s²", "min²", "hr²"}
 
     def __init__(self):
-        self.unitmap: Dict[Tuple[str, str], float] = {}
+        self.unitmap: dict[tuple[str, str], float] = {}
         self._value_split_re = re.compile(r"^([\d\.\-eE]+)\s*(\S*)$")
         self._build_unit_map()
 
@@ -109,7 +109,7 @@ class ConversionEngine:
         for unit in all_units:
             self.unitmap[(unit, unit)] = 1.0
 
-    def _suffix_split(self, unit: str) -> Tuple[str, Optional[str]]:
+    def _suffix_split(self, unit: str) -> tuple[str, Optional[str]]:
         if "/" in unit:
             base, suffix = unit.split("/", 1)
             return base, suffix
@@ -128,7 +128,7 @@ class ConversionEngine:
             return f"{normalized_base}/{normalized_suffix}"
         return normalized_base
 
-    def parse_value(self, value_str: str) -> Tuple[float, Optional[str]]:
+    def parse_value(self, value_str: str) -> tuple[float, Optional[str]]:
         if not isinstance(value_str, str):
             return value_str, None
         match = self._value_split_re.match(value_str.strip())
@@ -140,7 +140,7 @@ class ConversionEngine:
 
     def convert(
         self, value: float, from_unit: str, to_unit: str
-    ) -> Tuple[float, str]:
+    ) -> tuple[float, str]:
         if from_unit == to_unit:
             return value, to_unit
 

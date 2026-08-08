@@ -1,6 +1,6 @@
 from gettext import gettext as _
 from pathlib import Path
-from typing import List, Optional, cast
+from typing import Optional, cast
 
 from gi.repository import Adw, Gdk, Gtk
 from raygeo.ops.state import CoolantMode
@@ -413,7 +413,7 @@ class LaserHeadDetailWidget(DebounceMixin):
             ),
         )
         self.model_group = HeadModelGroup()
-        self.groups: List[Adw.PreferencesGroup] = [
+        self.groups: list[Adw.PreferencesGroup] = [
             self.properties_group,
             self.pwm_group,
             self.frame_group,
@@ -877,7 +877,7 @@ class SpindleHeadDetailWidget:
             description=_("Configure the selected spindle head."),
         )
         self.model_group = HeadModelGroup()
-        self.groups: List[Adw.PreferencesGroup] = [
+        self.groups: list[Adw.PreferencesGroup] = [
             self.properties_group,
             self.model_group,
         ]

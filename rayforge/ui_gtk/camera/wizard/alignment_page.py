@@ -1,7 +1,6 @@
 """Camera wizard page: image↔world alignment."""
 
 from gettext import gettext as _
-from typing import List
 
 from blinker import Signal
 from gi.repository import Gtk
@@ -35,7 +34,7 @@ class AlignmentPage(CameraWizardPage):
     def can_proceed(self) -> bool:
         return False
 
-    def footer_buttons(self) -> List[Gtk.Button]:
+    def footer_buttons(self) -> list[Gtk.Button]:
         if self._widget is not None:
             return self._widget.footer_buttons()
         return []

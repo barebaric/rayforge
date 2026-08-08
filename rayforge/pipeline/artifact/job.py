@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.ops import Ops
 
@@ -20,7 +20,7 @@ class JobArtifactHandle(BaseArtifactHandle):
         handle_class_name: str,
         artifact_type_name: str,
         generation_id: int,
-        array_metadata: Optional[Dict[str, Any]] = None,
+        array_metadata: Optional[dict[str, Any]] = None,
         **_kwargs,
     ):
         super().__init__(
@@ -98,7 +98,7 @@ class JobArtifact(BaseArtifact):
         """Returns the cached EncodedOutput, if any."""
         return self._encoded_output
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Converts the artifact to a dictionary for serialization."""
         result = {
             "ops": self.ops.to_dict(),
@@ -111,7 +111,7 @@ class JobArtifact(BaseArtifact):
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "JobArtifact":
+    def from_dict(cls, data: dict[str, Any]) -> "JobArtifact":
         """Creates an artifact from a dictionary."""
         ops = Ops.from_dict(data["ops"])
         common_args = {

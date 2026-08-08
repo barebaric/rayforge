@@ -2,7 +2,7 @@ import logging
 import sys
 import threading
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import cairo
 import cv2
@@ -38,7 +38,7 @@ class ColorMode(Enum):
     COLOR = "color"
 
 
-def _remove_border_offset(geometries: List[Geometry]) -> None:
+def _remove_border_offset(geometries: list[Geometry]) -> None:
     """Remove the BORDER_SIZE offset added to vtracer input."""
     m = np.eye(4, dtype=np.float64)
     m[0, 3] = -BORDER_SIZE
@@ -49,7 +49,7 @@ def _remove_border_offset(geometries: List[Geometry]) -> None:
 
 def _get_image_from_surface(
     surface: cairo.ImageSurface,
-) -> Tuple[np.ndarray, int]:
+) -> tuple[np.ndarray, int]:
     """Extracts image data from a Cairo surface."""
     logger.debug("Entering _get_image_from_surface")
     surface_format = surface.get_format()
@@ -184,7 +184,7 @@ def _fallback_to_enclosing_hull(
     pixels_per_mm_x: float,
     pixels_per_mm_y: float,
     surface_height: int,
-) -> List[Geometry]:
+) -> list[Geometry]:
     """Generates an enclosing hull as a fallback."""
     logger.debug("Entering _fallback_to_enclosing_hull")
     geo = get_enclosing_hull(
@@ -199,7 +199,7 @@ def _fallback_to_enclosing_hull(
 
 def _encode_image_to_buffer(
     cleaned_boolean_image: np.ndarray,
-) -> Tuple[bool, bytes, str]:
+) -> tuple[bool, bytes, str]:
     """Encodes a boolean image to BMP bytes (robust format for vtracer)."""
     logger.debug("Entering _encode_image_to_buffer")
     img_uint8 = (~cleaned_boolean_image * 255).astype(np.uint8)
@@ -320,7 +320,7 @@ def _extract_svg_from_raw_output(raw_output: str) -> str:
 def _fallback_to_hulls_from_image(
     cleaned_boolean_image: np.ndarray,
     surface_height: int,
-) -> List[Geometry]:
+) -> list[Geometry]:
     """Generates convex hulls from an image as a fallback."""
     logger.debug("Entering _fallback_to_hulls_from_image")
     return get_hulls_from_image(
@@ -334,7 +334,7 @@ def _fallback_to_hulls_from_image(
 
 def _handle_oversized_image(
     image: np.ndarray, original_width: int, original_height: int
-) -> Tuple[np.ndarray, float, float, int]:
+) -> tuple[np.ndarray, float, float, int]:
     """
     Checks if an image exceeds the pixel limit and, if so, downscales it,
     returning the new image, upscaling factors, and new content height.
@@ -379,7 +379,7 @@ def _handle_oversized_image(
 
 def _get_geometries_from_image(
     image_to_trace: np.ndarray, processing_surface_height: int
-) -> List[Geometry]:
+) -> list[Geometry]:
     """
     Performs the core vectorization of a boolean image using vtracer,
     including complexity checks and fallbacks to hull generation.
@@ -428,8 +428,8 @@ def _get_geometries_from_image(
 
 
 def _apply_upscaling(
-    geometries: List[Geometry], upscale_x: float, upscale_y: float
-) -> List[Geometry]:
+    geometries: list[Geometry], upscale_x: float, upscale_y: float
+) -> list[Geometry]:
     """Applies an upscaling transform to a list of geometries if needed."""
     if upscale_x != 1.0 or upscale_y != 1.0:
         logger.debug(f"Upscaling traced geometry by {upscale_x}, {upscale_y}")
@@ -441,7 +441,7 @@ def _apply_upscaling(
 
 def _encode_color_to_buffer(
     color_image: np.ndarray,
-) -> Tuple[bool, bytes, str]:
+) -> tuple[bool, bytes, str]:
     """Encodes a BGR color image to BMP bytes for vtracer."""
     logger.debug("Entering _encode_color_to_buffer")
     if color_image.dtype != np.uint8:
@@ -456,7 +456,7 @@ def _encode_color_to_buffer(
 
 def _get_geometries_from_color(
     color_image: np.ndarray, processing_surface_height: int
-) -> List[Geometry]:
+) -> list[Geometry]:
     """
     Performs vectorization of a color image using vtracer in color mode.
     """
@@ -488,7 +488,7 @@ def _get_geometries_from_color(
 
 def trace_color_image(
     color_image: Optional[np.ndarray],
-) -> List[Geometry]:
+) -> list[Geometry]:
     """
     Traces a BGR color image and returns a list of Geometry objects.
 
@@ -567,7 +567,7 @@ def trace_color_image(
 def trace_surface(
     surface: cairo.ImageSurface,
     vectorization_spec: Optional[VectorizationSpec] = None,
-) -> List[Geometry]:
+) -> list[Geometry]:
     """
     Traces a Cairo surface and returns a list of Geometry objects. It uses
     vtracer for high-quality vectorization, includes an adaptive pre-processing

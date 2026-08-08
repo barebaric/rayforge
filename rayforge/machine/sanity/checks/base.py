@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from ..result import IssueCategory, SanityIssue
 
@@ -13,4 +13,4 @@ class BaseCheck(ABC):
     def category(self) -> IssueCategory: ...
 
     @abstractmethod
-    def run(self, context: "SanityContext") -> List[SanityIssue]: ...
+    def run(self, context: "SanityContext") -> list[SanityIssue]: ...

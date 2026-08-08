@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..core.item import DocItem
@@ -13,8 +13,8 @@ class BaseExporter(ABC):
     """
 
     label: str
-    extensions: Tuple[str, ...]
-    mime_types: Tuple[str, ...]
+    extensions: tuple[str, ...]
+    mime_types: tuple[str, ...]
 
     @abstractmethod
     def export(self) -> bytes:
@@ -35,8 +35,8 @@ class Exporter(BaseExporter):
     """
 
     label: str
-    extensions: Tuple[str, ...]
-    mime_types: Tuple[str, ...]
+    extensions: tuple[str, ...]
+    mime_types: tuple[str, ...]
 
     def __init__(self, doc_item: "DocItem"):
         """

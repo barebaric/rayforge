@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -47,10 +47,10 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         self.new_type = new_type
         self._old_waypoint_type: Optional[WaypointType] = None
         self._old_bezier_states: Optional[
-            Dict[int, Tuple[Optional[GeoPoint], Optional[GeoPoint]]]
+            dict[int, tuple[Optional[GeoPoint], Optional[GeoPoint]]]
         ] = None
-        self._converted_lines: Optional[List[Tuple[int, int, int]]] = None
-        self._added_bezier_ids: Optional[List[int]] = None
+        self._converted_lines: Optional[list[tuple[int, int, int]]] = None
+        self._added_bezier_ids: Optional[list[int]] = None
 
     def _get_segment_directions(
         self, registry: "EntityRegistry", waypoint: "Point"
@@ -128,7 +128,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
 
     def _find_connected_lines(
         self, registry: "EntityRegistry", waypoint_id: EntityID
-    ) -> List[Tuple[EntityID, EntityID, EntityID]]:
+    ) -> list[tuple[EntityID, EntityID, EntityID]]:
         """Find Line entities connected to this waypoint.
 
         Returns list of (line_id, p1_idx, p2_idx).
@@ -146,8 +146,8 @@ class SetWaypointTypeCommand(SketchChangeCommand):
     def _convert_lines_to_beziers(
         self,
         registry: "EntityRegistry",
-        lines: List[Tuple[EntityID, EntityID, EntityID]],
-    ) -> List[EntityID]:
+        lines: list[tuple[EntityID, EntityID, EntityID]],
+    ) -> list[EntityID]:
         """Remove Line entities and add Bezier entities in their place."""
         bezier_ids = []
         line_ids_to_remove = [lid for lid, unused1, unused2 in lines]
@@ -162,8 +162,8 @@ class SetWaypointTypeCommand(SketchChangeCommand):
     def _restore_lines(
         self,
         registry: "EntityRegistry",
-        lines: List[Tuple[EntityID, EntityID, EntityID]],
-        bezier_ids: List[EntityID],
+        lines: list[tuple[EntityID, EntityID, EntityID]],
+        bezier_ids: list[EntityID],
     ):
         """Remove Bezier entities and restore Line entities."""
         registry.remove_entities_by_id(bezier_ids)

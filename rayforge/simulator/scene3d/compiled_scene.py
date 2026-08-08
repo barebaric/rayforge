@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import numpy as np
 
@@ -52,7 +52,7 @@ class CompiledSceneArtifactHandle(BaseArtifactHandle):
         handle_class_name: str,
         artifact_type_name: str,
         generation_id: int,
-        array_metadata: Optional[Dict[str, Any]] = None,
+        array_metadata: Optional[dict[str, Any]] = None,
         **_kwargs,
     ):
         super().__init__(
@@ -68,10 +68,10 @@ class CompiledSceneArtifact(BaseArtifact):
     def __init__(
         self,
         generation_id: int,
-        vertex_layers: List[VertexLayer],
-        texture_layers: List[TextureLayer],
-        overlay_layers: List[ScanlineOverlayLayer],
-        laser_uid_order: Optional[List[str]] = None,
+        vertex_layers: list[VertexLayer],
+        texture_layers: list[TextureLayer],
+        overlay_layers: list[ScanlineOverlayLayer],
+        laser_uid_order: Optional[list[str]] = None,
     ):
         self.generation_id = generation_id
         self.vertex_layers = vertex_layers

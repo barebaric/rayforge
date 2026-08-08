@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Graphene, Gtk
 from raygeo.geo import Matrix
@@ -176,11 +176,11 @@ class WorldSurface(Canvas):
         self._rebuild_view_transform()
         self.queue_draw()
 
-    def get_size_mm(self) -> Tuple[float, float]:
+    def get_size_mm(self) -> tuple[float, float]:
         """Returns the size of the work surface in mm."""
         return self.width_mm, self.height_mm
 
-    def get_view_scale(self) -> Tuple[float, float]:
+    def get_view_scale(self) -> tuple[float, float]:
         """
         Returns the current effective pixels-per-millimeter scale of the view,
         taking into account the base scale, zoom, and widget size.

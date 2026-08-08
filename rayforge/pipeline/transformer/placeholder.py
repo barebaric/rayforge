@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from .base import OpsTransformer
 
@@ -49,8 +49,8 @@ class PlaceholderTransformer(OpsTransformer):
     def to_spec(
         self,
         workpiece: Optional["WorkPiece"],
-        stock_geometries: Optional[List["Geometry"]],
-        settings: Optional[Dict[str, Any]],
+        stock_geometries: Optional[list["Geometry"]],
+        settings: Optional[dict[str, Any]],
     ):
         raise RuntimeError(
             f"Transformer '{self._original_name}' is not available "

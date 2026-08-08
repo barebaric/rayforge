@@ -6,8 +6,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -101,7 +99,7 @@ class DistanceConstraint(Constraint):
     ) -> bool:
         return {self.p1, self.p2} == {p1, p2}
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         data = {
             "type": "DistanceConstraint",
             "p1": self.p1,
@@ -114,7 +112,7 @@ class DistanceConstraint(Constraint):
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "DistanceConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> "DistanceConstraint":
         return cls(
             p1=data["p1"],
             p2=data["p2"],
@@ -135,7 +133,7 @@ class DistanceConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         dx = pt2.x - pt1.x

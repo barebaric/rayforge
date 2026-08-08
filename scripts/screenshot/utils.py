@@ -17,9 +17,7 @@ from threading import Event
 from typing import (
     TYPE_CHECKING,
     Callable,
-    List,
     Optional,
-    Tuple,
     TypeVar,
 )
 
@@ -128,8 +126,8 @@ def run_on_main_thread(func: Callable[[], T], timeout: float = 10.0) -> T:
     """
     Run a function on the main GTK thread and wait for completion.
     """
-    result: List[T] = []
-    exception: List[Optional[Exception]] = [None]
+    result: list[T] = []
+    exception: list[Optional[Exception]] = [None]
     done = Event()
 
     def wrapper() -> bool:
@@ -597,11 +595,11 @@ def get_step_by_index(win: "MainWindow", index: int) -> Optional["Step"]:
     return run_on_main_thread(_get)
 
 
-def get_all_steps(win: "MainWindow") -> List["Step"]:
+def get_all_steps(win: "MainWindow") -> list["Step"]:
     """Get all steps across all layers."""
 
-    def _get() -> List["Step"]:
-        steps: List["Step"] = []
+    def _get() -> list["Step"]:
+        steps: list["Step"] = []
         for layer in win.doc_editor.doc.layers:
             if layer.workflow and layer.workflow.steps:
                 steps.extend(layer.workflow.steps)
@@ -610,10 +608,10 @@ def get_all_steps(win: "MainWindow") -> List["Step"]:
     return run_on_main_thread(_get)
 
 
-def get_step_types(win: "MainWindow") -> List[str]:
+def get_step_types(win: "MainWindow") -> list[str]:
     """Get all unique step types (typelabels) in the document."""
 
-    def _get() -> List[str]:
+    def _get() -> list[str]:
         types: set = set()
         for layer in win.doc_editor.doc.layers:
             if layer.workflow and layer.workflow.steps:
@@ -626,10 +624,10 @@ def get_step_types(win: "MainWindow") -> List[str]:
 
 def find_step_by_type(
     win: "MainWindow", step_type: str
-) -> Tuple[Optional["Step"], int]:
+) -> tuple[Optional["Step"], int]:
     """Find first step matching the given type."""
 
-    def _find() -> Tuple[Optional["Step"], int]:
+    def _find() -> tuple[Optional["Step"], int]:
         normalized = step_type.lower().replace(" ", "-")
         for layer in win.doc_editor.doc.layers:
             if layer.workflow and layer.workflow.steps:

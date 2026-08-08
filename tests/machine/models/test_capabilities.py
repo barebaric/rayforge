@@ -1,6 +1,7 @@
 """Tests for machine capabilities inferred from heads (1a-1d)."""
 
-from typing import Iterable, cast
+from collections.abc import Iterable
+from typing import cast
 
 from raygeo.ops.state import CoolantMode
 

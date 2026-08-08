@@ -1,6 +1,7 @@
 import logging
 import math
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.geo import Geometry
 from raygeo.geo.shape.line import does_line_segment_intersect_rect
@@ -31,7 +32,7 @@ class TextBoxEntity(Entity):
         content: str = "",
         font_config: Optional[FontConfig] = None,
         construction: bool = False,
-        construction_line_ids: Optional[List[EntityID]] = None,
+        construction_line_ids: Optional[list[EntityID]] = None,
     ):
         super().__init__(id, construction)
         self.origin_id: EntityID = origin_id
@@ -39,19 +40,19 @@ class TextBoxEntity(Entity):
         self.height_id: EntityID = height_id
         self.content = content
         self.font_config = font_config or FontConfig()
-        self.construction_line_ids: List[EntityID] = (
+        self.construction_line_ids: list[EntityID] = (
             construction_line_ids or []
         )
         self.fill_color: Optional[ColorRGBA] = None
         self.type = "text_box"
 
-    def get_point_ids(self) -> List[EntityID]:
+    def get_point_ids(self) -> list[EntityID]:
         return [self.origin_id, self.width_id, self.height_id]
 
-    def get_endpoint_ids(self) -> List[EntityID]:
+    def get_endpoint_ids(self) -> list[EntityID]:
         return []
 
-    def get_junction_point_ids(self) -> List[EntityID]:
+    def get_junction_point_ids(self) -> list[EntityID]:
         return []
 
     def hit_test(
@@ -81,7 +82,7 @@ class TextBoxEntity(Entity):
 
     def get_all_frame_point_ids(
         self, registry: "EntityRegistry"
-    ) -> List[EntityID]:
+    ) -> list[EntityID]:
         """Returns all 4 corner points of the text box frame."""
         ids = [self.origin_id, self.width_id, self.height_id]
         p4_id = self.get_fourth_corner_id(registry)
@@ -89,12 +90,12 @@ class TextBoxEntity(Entity):
             ids.append(p4_id)
         return ids
 
-    def get_font_metrics(self) -> Tuple[float, float, float]:
+    def get_font_metrics(self) -> tuple[float, float, float]:
         return self.font_config.get_font_metrics()
 
     def get_natural_size(
         self, content: Optional[str] = None
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """
         Returns the natural (width, height) of the text content.
 
@@ -138,7 +139,7 @@ class TextBoxEntity(Entity):
                     return entity.p1_idx
         return None
 
-    def get_state(self) -> Dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         state = super().get_state()
         if state is not None:
             state["fill_color"] = self.fill_color
@@ -146,7 +147,7 @@ class TextBoxEntity(Entity):
             state = {"fill_color": self.fill_color}
         return state
 
-    def set_state(self, state: Dict[str, Any]) -> None:
+    def set_state(self, state: dict[str, Any]) -> None:
         super().set_state(state)
         if "fill_color" in state:
             self.fill_color = state["fill_color"]
@@ -221,10 +222,10 @@ class TextBoxEntity(Entity):
         self,
         registry: "EntityRegistry",
         content: str,
-    ) -> Tuple[
-        Tuple[float, float],
-        Tuple[float, float],
-        Tuple[float, float],
+    ) -> tuple[
+        tuple[float, float],
+        tuple[float, float],
+        tuple[float, float],
     ]:
         """
         Builds a frame (origin, p_width, p_height) whose dimensions match
@@ -336,7 +337,7 @@ class TextBoxEntity(Entity):
             stable_src_height=geo_max_y - geo_min_y,
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         data = super().to_dict()
         data.update(
             {
@@ -353,7 +354,7 @@ class TextBoxEntity(Entity):
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "TextBoxEntity":
+    def from_dict(cls, data: dict[str, Any]) -> "TextBoxEntity":
         fill_color_raw = data.get("fill_color")
         fill_color = (
             tuple(fill_color_raw) if fill_color_raw is not None else None

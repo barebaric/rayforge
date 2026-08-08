@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 from xml.etree import ElementTree as ET
 
 from raygeo.geo import Geometry, Matrix
@@ -141,7 +141,7 @@ class SvgImporterBase(Importer):
         source.width_mm = w_native * parse_result.native_unit_to_mm
         source.height_mm = h_native * parse_result.native_unit_to_mm
 
-        metadata: Dict[str, Any] = {}
+        metadata: dict[str, Any] = {}
         try:
             ppi = self._get_ppi()
             untrimmed_size = get_natural_size(source.original_data, ppi=ppi)
@@ -176,7 +176,7 @@ class SvgImporterBase(Importer):
     def _calculate_parsing_basics(
         self,
     ) -> Optional[
-        Tuple[
+        tuple[
             Rect,
             float,
             Optional[Rect],
@@ -377,7 +377,7 @@ class SvgImporterBase(Importer):
 
     def _get_svg_parsing_facts(
         self, data: bytes
-    ) -> Optional[Tuple[float, float, Optional[Rect]]]:
+    ) -> Optional[tuple[float, float, Optional[Rect]]]:
         try:
             meta = extract_svg_metadata(data.decode())
         except ValueError:

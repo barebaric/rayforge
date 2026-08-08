@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, Optional
 
 from gi.repository import GLib
 
@@ -26,7 +26,7 @@ class DebounceMixin:
         super().__init__(*args, **kwargs)
         self._debounce_timer = 0
         self._debounced_callback: Optional[Callable] = None
-        self._debounced_args: Tuple = ()
+        self._debounced_args: tuple = ()
 
     def _debounce(self, callback: Callable, *args: Any):
         """

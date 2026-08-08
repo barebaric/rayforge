@@ -1,7 +1,7 @@
 import importlib
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -132,14 +132,14 @@ def _import_registry(entry: RegistryEntry) -> Any:
     return getattr(module, entry.attr_name)
 
 
-def get_registries(headless: bool = False) -> Dict[str, Any]:
+def get_registries(headless: bool = False) -> dict[str, Any]:
     """
     Import and return a dict of all active registries.
 
     The returned dict maps param_name -> registry instance for all
     registries appropriate for the given mode.
     """
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     for entry in REGISTRY_TABLE:
         if headless and not entry.worker_ok:
             continue
@@ -164,7 +164,7 @@ def get_registries(headless: bool = False) -> Dict[str, Any]:
 def call_registration_hooks(
     plugin_mgr,
     headless: bool = False,
-    registries: Optional[Dict[str, Any]] = None,
+    registries: Optional[dict[str, Any]] = None,
     window_required: bool = False,
 ):
     """

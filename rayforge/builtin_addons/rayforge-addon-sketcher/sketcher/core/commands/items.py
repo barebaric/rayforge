@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Optional
 
 from ..entities import Arc, Ellipse, TextBoxEntity
 from .base import SketchChangeCommand
@@ -33,7 +34,7 @@ class AddItemsCommand(SketchChangeCommand):
     def _do_execute(self) -> None:
         registry = self.sketch.registry
         new_points = []
-        id_map: Dict[int, int] = {}  # Map old temp IDs to new final IDs
+        id_map: dict[int, int] = {}  # Map old temp IDs to new final IDs
 
         for p in self.points:
             old_id = p.id
@@ -103,9 +104,9 @@ class RemoveItemsCommand(SketchChangeCommand):
         self,
         sketch: "Sketch",
         name: str,
-        points: Optional[List["Point"]] = None,
+        points: Optional[list["Point"]] = None,
         entities: Optional[Sequence["Entity"]] = None,
-        constraints: Optional[List["Constraint"]] = None,
+        constraints: Optional[list["Constraint"]] = None,
     ):
         super().__init__(sketch, name)
         self.points = points or []
@@ -115,12 +116,12 @@ class RemoveItemsCommand(SketchChangeCommand):
     @staticmethod
     def calculate_dependencies(
         sketch: Sketch, selection
-    ) -> Tuple[List["Point"], List["Entity"], List["Constraint"]]:
+    ) -> tuple[list["Point"], list["Entity"], list["Constraint"]]:
         """
         Calculates the full set of items to be deleted based on the current
         selection, including dependent items.
         """
-        to_delete_constraints: List[Constraint] = []
+        to_delete_constraints: list[Constraint] = []
         to_delete_entity_ids = set(selection.entity_ids)
         to_delete_point_ids = set(selection.point_ids)
 
@@ -164,7 +165,7 @@ class RemoveItemsCommand(SketchChangeCommand):
             for e in sketch.registry.entities:
                 if e.id in to_delete_entity_ids:
                     continue
-                p_ids: List[int] = e.get_point_ids()
+                p_ids: list[int] = e.get_point_ids()
                 if any(pid in to_delete_point_ids for pid in p_ids):
                     to_delete_entity_ids.add(e.id)
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import math
 from gettext import gettext as _
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
@@ -39,7 +39,7 @@ class SvgTraceImporter(SvgImporterBase):
 
     def __init__(self, data: bytes, source_file: Optional[Any] = None):
         super().__init__(data, source_file)
-        self.traced_artefacts: Dict[str, Any] = {}
+        self.traced_artefacts: dict[str, Any] = {}
 
     def _analytical_trim(self, data: bytes) -> bytes:
         return trim_svg(data)

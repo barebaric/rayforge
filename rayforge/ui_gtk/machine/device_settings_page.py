@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import List, cast
+from typing import cast
 
 from blinker import Signal
 from gi.repository import Adw, Gdk, GLib, Gtk
@@ -180,7 +180,7 @@ class DeviceSettingsPage(TrackedPreferencesPage):
         logger.debug("_on_state_changed: Updating UI.")
         self._update_ui_state()
 
-    def _rebuild_settings_widgets(self, var_sets: List[VarSet]):
+    def _rebuild_settings_widgets(self, var_sets: list[VarSet]):
         for widget in self._varset_widgets:
             self.remove(widget)
         self._varset_widgets.clear()
@@ -281,7 +281,7 @@ class DeviceSettingsPage(TrackedPreferencesPage):
             )
         logger.debug("_update_ui_state: Finished.")
 
-    def _on_settings_op_success(self, sender, var_sets: List[VarSet]):
+    def _on_settings_op_success(self, sender, var_sets: list[VarSet]):
         logger.debug("Success signal received with var_sets (from read).")
 
         scrolled_window = self.get_ancestor(Gtk.ScrolledWindow)

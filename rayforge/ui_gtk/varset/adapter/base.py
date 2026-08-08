@@ -3,11 +3,7 @@ from abc import ABC, abstractmethod
 from gettext import gettext as _
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
-    Type,
     TypeVar,
     Union,
 )
@@ -19,19 +15,19 @@ from ....core.varset import Var
 
 NULL_CHOICE_LABEL = _("None Selected")
 
-_ADAPTER_REGISTRY: Dict[Type[Var], Type["RowAdapter"]] = {}
+_ADAPTER_REGISTRY: dict[type[Var], type["RowAdapter"]] = {}
 
 _A = TypeVar("_A", bound="RowAdapter")
 
 
-def register_adapter(*var_classes: Type[Var]):
+def register_adapter(*var_classes: type[Var]):
     """
     Decorator to register a RowAdapter for one or more Var subclasses.
     Lookup uses MRO, so only the most-specific Var class needs
     registration — subclasses inherit the adapter automatically.
     """
 
-    def decorator(adapter_cls: Type[_A]) -> Type[_A]:
+    def decorator(adapter_cls: type[_A]) -> type[_A]:
         for var_cls in var_classes:
             _ADAPTER_REGISTRY[var_cls] = adapter_cls
         return adapter_cls
@@ -43,7 +39,7 @@ def escape_title(text: str) -> str:
     return text.replace("&", "&&")
 
 
-def natural_sort_key(s: str) -> List[Union[int, str]]:
+def natural_sort_key(s: str) -> list[Union[int, str]]:
     return [
         int(t) if t.isdigit() else t.lower() for t in re.split("([0-9]+)", s)
     ]
@@ -73,7 +69,7 @@ class RowAdapter(ABC):
     @classmethod
     def create(
         cls, var: Var, target_property: str
-    ) -> Tuple[Adw.PreferencesRow, "RowAdapter"]:
+    ) -> tuple[Adw.PreferencesRow, "RowAdapter"]:
         raise NotImplementedError
 
     @abstractmethod

@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from gi.repository import Gtk
 from raygeo.geo import Matrix
@@ -40,14 +40,14 @@ class DocItemPropertiesWidget(Gtk.Box):
     def __init__(
         self,
         editor: "DocEditor",
-        items: Optional[List[DocItem]] = None,
+        items: Optional[list[DocItem]] = None,
         *args,
         **kwargs,
     ):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, *args, **kwargs)
 
         self.editor = editor
-        self.items: List[DocItem] = []
+        self.items: list[DocItem] = []
 
         self._main_expander = Expander()
         self._main_expander.set_expanded(True)
@@ -58,14 +58,14 @@ class DocItemPropertiesWidget(Gtk.Box):
         self._rows_container.set_selection_mode(Gtk.SelectionMode.NONE)
         self._main_expander.set_child(self._rows_container)
 
-        self.providers: List[PropertyProvider] = (
+        self.providers: list[PropertyProvider] = (
             property_provider_registry.create_instances()
         )
-        self._provider_widget_map: List[
-            Tuple[PropertyProvider, List[Gtk.Widget]]
+        self._provider_widget_map: list[
+            tuple[PropertyProvider, list[Gtk.Widget]]
         ] = []
-        self._separate_groups: List[
-            Tuple[PropertyProvider, List[Gtk.Widget], Expander]
+        self._separate_groups: list[
+            tuple[PropertyProvider, list[Gtk.Widget], Expander]
         ] = []
         self._initialize_providers_ui()
 
@@ -127,7 +127,7 @@ class DocItemPropertiesWidget(Gtk.Box):
                     widget.set_visible(False)
                     self._rows_container.append(widget)
 
-    def set_items(self, items: Optional[List[DocItem]]):
+    def set_items(self, items: Optional[list[DocItem]]):
         """Sets the currently selected items and updates the UI."""
         for item in self.items:
             item.updated.disconnect(self._on_item_data_changed)

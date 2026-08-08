@@ -4,7 +4,7 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional
 
 from ..core.vectorization_spec import TraceSpec
 
@@ -28,8 +28,8 @@ class RenderSpecification:
     width: int
     height: int
     data: bytes
-    kwargs: Dict[str, Any] = field(default_factory=dict)
-    crop_rect: Optional[Tuple[int, int, int, int]] = None
+    kwargs: dict[str, Any] = field(default_factory=dict)
+    crop_rect: Optional[tuple[int, int, int, int]] = None
     apply_mask: bool = True
 
 
@@ -42,7 +42,7 @@ class Renderer(ABC):
     def compute_render_spec(
         self,
         segment: Optional["SourceAssetSegment"],
-        target_size: Tuple[int, int],
+        target_size: tuple[int, int],
         source_context: "RenderContext",
     ) -> "RenderSpecification":
         """
@@ -129,7 +129,7 @@ class RasterRenderer(Renderer):
     def compute_render_spec(
         self,
         segment: Optional["SourceAssetSegment"],
-        target_size: Tuple[int, int],
+        target_size: tuple[int, int],
         source_context: "RenderContext",
     ) -> "RenderSpecification":
         """
@@ -201,7 +201,7 @@ class UnknownRenderer(Renderer):
     def compute_render_spec(
         self,
         segment: Optional["SourceAssetSegment"],
-        target_size: Tuple[int, int],
+        target_size: tuple[int, int],
         source_context: "RenderContext",
     ) -> "RenderSpecification":
         """

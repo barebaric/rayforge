@@ -2,19 +2,14 @@ import asyncio
 import logging
 import multiprocessing
 import uuid
+from collections.abc import Sequence
 from enum import Enum
 from gettext import gettext as _
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    FrozenSet,
-    List,
     Optional,
-    Sequence,
-    Tuple,
-    Type,
 )
 
 from blinker import Signal
@@ -108,8 +103,8 @@ class Machine:
         self.device_state: DeviceState = DeviceState()
 
         self.driver_name: Optional[str] = None
-        self.driver_args: Dict[str, Any] = {}
-        self.driver_config: Dict[str, Any] = {}
+        self.driver_args: dict[str, Any] = {}
+        self.driver_config: dict[str, Any] = {}
         self.precheck_error: Optional[str] = None
 
         self.auto_connect: bool = True
@@ -124,13 +119,13 @@ class Machine:
         self.supports_curves: bool = False
         self.arc_tolerance: float = 0.03
         self.unit_system: UnitSystem = UnitSystem.METRIC
-        self.hookmacros: Dict[MacroTrigger, Macro] = {}
-        self.macros: Dict[str, Macro] = {}
-        self.heads: List[Head] = []
-        self._explicit_capabilities: Optional[FrozenSet[MachineCapability]] = (
+        self.hookmacros: dict[MacroTrigger, Macro] = {}
+        self.macros: dict[str, Macro] = {}
+        self.heads: list[Head] = []
+        self._explicit_capabilities: Optional[frozenset[MachineCapability]] = (
             None
         )
-        self.cameras: List[Camera] = []
+        self.cameras: list[Camera] = []
         self.max_travel_speed: int = 3000  # in mm/min
         self.max_cut_speed: int = 1000  # in mm/min
         self.acceleration: int = 1000  # in mm/s²
@@ -173,7 +168,7 @@ class Machine:
         # Any key NOT in wcs_offsets is considered an immutable/absolute system
         # with (0,0,0) offset.
         self.active_wcs: str = "G54"
-        self.coordinate_systems: Dict[str, CoordinateSystem] = (
+        self.coordinate_systems: dict[str, CoordinateSystem] = (
             CoordinateSystem.defaults()
         )
 
@@ -187,12 +182,12 @@ class Machine:
 
         self.add_head(LaserHead())
 
-        self.rotary_modules: Dict[str, RotaryModule] = {}
-        self.nogo_zones: Dict[str, Zone] = {}
+        self.rotary_modules: dict[str, RotaryModule] = {}
+        self.nogo_zones: dict[str, Zone] = {}
 
         self._assembly: Optional["Assembly"] = None
         self._assembly_dirty: bool = True
-        self._mounted_rotaries: List[RotaryModule] = []
+        self._mounted_rotaries: list[RotaryModule] = []
         self._layer_configured: bool = False
 
     @property
@@ -255,7 +250,7 @@ class Machine:
         self,
         step_capabilities: Sequence["StepCapability"],
         head: Optional[Head] = None,
-    ) -> Tuple["StepCapability", ...]:
+    ) -> tuple["StepCapability", ...]:
         """
         Filter a step's theoretical capabilities to those this machine
         actually supports.
@@ -271,7 +266,7 @@ class Machine:
             if cap.REQUIRED_MACHINE_CAPS <= machine_caps
         )
 
-    def get_capabilities(self) -> FrozenSet[MachineCapability]:
+    def get_capabilities(self) -> frozenset[MachineCapability]:
         """
         Returns the machine capabilities as the union of the explicitly
         declared capabilities, the capabilities inferred from the
@@ -290,7 +285,7 @@ class Machine:
         return frozenset(caps)
 
     def set_explicit_capabilities(
-        self, capabilities: Optional[FrozenSet[MachineCapability]]
+        self, capabilities: Optional[frozenset[MachineCapability]]
     ):
         """
         Sets the explicitly declared capabilities. ``None`` means
@@ -340,7 +335,7 @@ class Machine:
         if cs:
             cs.offset = offset
 
-    def update_wcs_offsets_batch(self, offsets: Dict[str, Point3D]) -> bool:
+    def update_wcs_offsets_batch(self, offsets: dict[str, Point3D]) -> bool:
         new_systems = {
             name: CoordinateSystem(name=name, label="", offset=offset)
             for name, offset in offsets.items()
@@ -359,13 +354,13 @@ class Machine:
         return cs.offset if cs else (0.0, 0.0, 0.0)
 
     @property
-    def supported_wcs(self) -> List[str]:
+    def supported_wcs(self) -> list[str]:
         """
         Returns the list of supported Work Coordinate Systems from the driver.
         """
         return sorted(list(self.coordinate_systems.keys()))
 
-    def get_wcs_list(self) -> List[CoordinateSystem]:
+    def get_wcs_list(self) -> list[CoordinateSystem]:
         """Returns a sorted list of CoordinateSystem objects."""
         return [self.coordinate_systems[k] for k in self.supported_wcs]
 
@@ -397,7 +392,7 @@ class Machine:
         self._assembly_dirty = True
 
     def configure_for_layer(self, layer: Optional["Layer"]) -> None:
-        required_rotaries: List[RotaryModule] = []
+        required_rotaries: list[RotaryModule] = []
         if layer and layer.rotary_enabled:
             module = self.get_rotary_module_for_layer(layer)
             if module:
@@ -409,7 +404,7 @@ class Machine:
 
     def _assembly_needs_rebuild(
         self,
-        rotaries: List[RotaryModule],
+        rotaries: list[RotaryModule],
     ) -> bool:
         if self._assembly_dirty:
             return True
@@ -421,14 +416,14 @@ class Machine:
             return True
         return False
 
-    def get_head_specs(self) -> List[HeadSpec]:
+    def get_head_specs(self) -> list[HeadSpec]:
         """Return the head specs used to build an assembly.
 
         Does not build or mutate anything.  Each spec is a ``(model,
         transform)`` pair with the focal distance folded into the
         transform's Z translation.
         """
-        head_specs: List[HeadSpec] = []
+        head_specs: list[HeadSpec] = []
         for h in self.heads:
             t = h.transform.copy()
             focal_distance = getattr(h, "focal_distance", 0.0)
@@ -442,7 +437,7 @@ class Machine:
 
     def build_assembly_for_rotary(
         self,
-        rotary_modules: Optional[Dict[str, RotaryModule]] = None,
+        rotary_modules: Optional[dict[str, RotaryModule]] = None,
     ) -> Assembly:
         """Build a throwaway assembly for the given rotary modules.
 
@@ -460,7 +455,7 @@ class Machine:
         rotaries = self._mounted_rotaries
         if not rotaries and not self._layer_configured and self.rotary_modules:
             rotaries = list(self.rotary_modules.values())[:1]
-        rotary_modules_for_build: Dict[str, RotaryModule] = {}
+        rotary_modules_for_build: dict[str, RotaryModule] = {}
         if rotaries:
             for r in rotaries:
                 rotary_modules_for_build[r.uid] = r
@@ -536,7 +531,7 @@ class Machine:
         self.name = str(name)
         self.changed.send(self)
 
-    def set_driver(self, driver_cls: Type["Driver"], args=None):
+    def set_driver(self, driver_cls: type["Driver"], args=None):
         new_driver_name = driver_cls.__name__
         new_args = args or {}
         if (
@@ -670,7 +665,7 @@ class Machine:
         self.changed.send(self)
 
     @property
-    def axis_extents(self) -> Tuple[float, float]:
+    def axis_extents(self) -> tuple[float, float]:
         """The full range of machine axis movement (width, height)."""
         x_cfg = self.axes.get(Axis.X)
         y_cfg = self.axes.get(Axis.Y)
@@ -1012,7 +1007,7 @@ class Machine:
         """Homes the specified axes or all axes if none specified."""
         await self.controller.home(axes)
 
-    async def jog(self, deltas: Dict[Axis, float], speed: int):
+    async def jog(self, deltas: dict[Axis, float], speed: int):
         """
         Jogs the machine along specified axes.
 
@@ -1246,7 +1241,7 @@ class Machine:
             if isinstance(h, LaserHead)
         )
 
-    def validate_driver_setup(self) -> Tuple[bool, Optional[str]]:
+    def validate_driver_setup(self) -> tuple[bool, Optional[str]]:
         """
         Validates the machine's driver arguments against the driver's setup
         VarSet. Delegates to the controller.
@@ -1289,7 +1284,7 @@ class Machine:
         cs = self.coordinate_systems.get(self.active_wcs)
         return cs.offset if cs else (0.0, 0.0, 0.0)
 
-    def get_workarea_origin_offset(self) -> Tuple[float, float]:
+    def get_workarea_origin_offset(self) -> tuple[float, float]:
         """
         Returns the position of the workarea origin in WORLD space.
 
@@ -1331,7 +1326,7 @@ class Machine:
         else:
             return self.get_active_wcs_offset()
 
-    def get_reference_position_world(self) -> Tuple[float, float]:
+    def get_reference_position_world(self) -> tuple[float, float]:
         """
         Returns the reference origin position in WORLD coordinates.
 
@@ -1345,7 +1340,7 @@ class Machine:
         machine_space = MachineSpace.from_machine(self)
         return machine_space.machine_point_to_world(offset_x, offset_y)
 
-    def get_visual_wcs_offset(self) -> Tuple[float, float]:
+    def get_visual_wcs_offset(self) -> tuple[float, float]:
         """
         Returns the WCS offset transformed to visual coordinates.
 
@@ -1463,14 +1458,14 @@ class Machine:
             ),  # Key includes setting key for uniqueness
         )
 
-    def get_setting_vars(self) -> List["VarSet"]:
+    def get_setting_vars(self) -> list["VarSet"]:
         """
         Gets the setting definitions from the machine's active driver
         as a VarSet.
         """
         return self.controller.get_setting_vars()
 
-    def to_dict(self, include_frozen_dialect: bool = True) -> Dict[str, Any]:
+    def to_dict(self, include_frozen_dialect: bool = True) -> dict[str, Any]:
         data = {
             "machine": {
                 "name": self.name,
@@ -1549,11 +1544,11 @@ class Machine:
 
     @staticmethod
     def _migrate_legacy_hooks_to_dialect(
-        hook_data: Dict[str, Any],
+        hook_data: dict[str, Any],
         current_dialect_uid: Optional[str],
         machine_name: str,
         context: RayforgeContext,
-    ) -> Tuple[Optional[str], Dict[str, Any]]:
+    ) -> tuple[Optional[str], dict[str, Any]]:
         """
         Checks for legacy JOB_START/JOB_END hooks and migrates them to a
         new custom dialect.
@@ -1610,8 +1605,8 @@ class Machine:
 
     @staticmethod
     def _parse_capabilities(
-        raw: Optional[List[Any]],
-    ) -> Optional[FrozenSet[MachineCapability]]:
+        raw: Optional[list[Any]],
+    ) -> Optional[frozenset[MachineCapability]]:
         """
         Parses a list of capability strings into a frozenset of
         MachineCapability. Returns None when the list is absent,
@@ -1630,7 +1625,7 @@ class Machine:
     @classmethod
     def from_dict(
         cls,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         context: Optional["RayforgeContext"] = None,
     ) -> "Machine":
         if context is None:

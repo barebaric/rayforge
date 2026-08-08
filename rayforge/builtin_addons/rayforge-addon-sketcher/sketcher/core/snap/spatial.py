@@ -1,6 +1,7 @@
 import bisect
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Iterator, List, Optional, Tuple
+from typing import Optional
 
 from .types import SnapLine
 
@@ -16,8 +17,8 @@ class IndexedLine:
 
 class SnapLineIndex:
     def __init__(self) -> None:
-        self._horizontal: List[IndexedLine] = []
-        self._vertical: List[IndexedLine] = []
+        self._horizontal: list[IndexedLine] = []
+        self._vertical: list[IndexedLine] = []
         self._dirty: bool = False
 
     def clear(self) -> None:
@@ -39,8 +40,8 @@ class SnapLineIndex:
 
     def query_horizontal(
         self, y: float, threshold: float
-    ) -> List[Tuple[SnapLine, float]]:
-        results: List[Tuple[SnapLine, float]] = []
+    ) -> list[tuple[SnapLine, float]]:
+        results: list[tuple[SnapLine, float]] = []
         low = y - threshold
         high = y + threshold
 
@@ -59,8 +60,8 @@ class SnapLineIndex:
 
     def query_vertical(
         self, x: float, threshold: float
-    ) -> List[Tuple[SnapLine, float]]:
-        results: List[Tuple[SnapLine, float]] = []
+    ) -> list[tuple[SnapLine, float]]:
+        results: list[tuple[SnapLine, float]] = []
         low = x - threshold
         high = x + threshold
 
@@ -79,8 +80,8 @@ class SnapLineIndex:
 
     def query(
         self, x: float, y: float, threshold: float
-    ) -> List[Tuple[SnapLine, float]]:
-        results: List[Tuple[SnapLine, float]] = []
+    ) -> list[tuple[SnapLine, float]]:
+        results: list[tuple[SnapLine, float]] = []
         results.extend(self.query_horizontal(y, threshold))
         results.extend(self.query_vertical(x, threshold))
         results.sort(key=lambda t: (t[1], -t[0].line_type.priority))

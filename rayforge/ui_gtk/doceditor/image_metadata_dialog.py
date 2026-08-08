@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional
 
 from gi.repository import Adw, Gdk, Gtk, Pango
 
@@ -135,7 +135,7 @@ class ImageMetadataDialog(PatchedDialogWindow):
 
         self.page.add(group)
 
-    def _create_metadata_section(self, items: List[Tuple[str, Any]]):
+    def _create_metadata_section(self, items: list[tuple[str, Any]]):
         """
         Creates the Metadata section containing all metadata attributes.
 

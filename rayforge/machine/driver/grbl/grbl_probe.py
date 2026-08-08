@@ -4,12 +4,8 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Optional,
     Protocol,
-    Tuple,
-    Type,
     runtime_checkable,
 )
 
@@ -55,14 +51,14 @@ class _GrblProbeDriver(Protocol):
 
     async def cleanup(self) -> None: ...
 
-    async def execute_interactive_command(self, command: str) -> List[str]: ...
+    async def execute_interactive_command(self, command: str) -> list[str]: ...
 
 
 async def probe_grbl_device(
-    driver_cls: Type[_GrblProbeDriver],
+    driver_cls: type[_GrblProbeDriver],
     context: "RayforgeContext",
     **kwargs: Any,
-) -> Tuple["DeviceProfile", List[str]]:
+) -> tuple["DeviceProfile", list[str]]:
     """
     Shared probe orchestration for all Grbl drivers.
 
@@ -101,9 +97,9 @@ async def probe_grbl_device(
 
 
 def build_grbl_profile(
-    build_info: List[str],
-    settings_lines: List[str],
-) -> Tuple["DeviceProfile", List[str]]:
+    build_info: list[str],
+    settings_lines: list[str],
+) -> tuple["DeviceProfile", list[str]]:
     """
     Build a ``DeviceProfile`` from raw Grbl ``$I`` and ``$``
     response lines.
@@ -133,7 +129,7 @@ def build_grbl_profile(
             compile_flags = match.group(1)
 
     settings = parse_grbl_settings(settings_lines)
-    warnings: List[str] = []
+    warnings: list[str] = []
 
     name = extract_device_name(build_info)
     axis_x = settings.get("130")
@@ -157,7 +153,7 @@ def build_grbl_profile(
 
     single_axis_homing = "H" in compile_flags
 
-    driver_config: Dict[str, Any] = {}
+    driver_config: dict[str, Any] = {}
     if rx_buffer_size is not None:
         driver_config["rx_buffer_size"] = rx_buffer_size
 
@@ -169,11 +165,11 @@ def build_grbl_profile(
     if arc_tol is not None:
         driver_config["arc_tolerance"] = arc_tol
 
-    extents: Optional[Tuple[float, float]] = None
+    extents: Optional[tuple[float, float]] = None
     if axis_x is not None and axis_y is not None:
         extents = (float(axis_x), float(axis_y))
 
-    heads: Optional[List[Dict[str, Any]]] = None
+    heads: Optional[list[dict[str, Any]]] = None
     if max_spindle is not None:
         heads = [{"max_power": int(max_spindle)}]
 

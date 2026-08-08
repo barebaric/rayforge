@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass
 from dataclasses import fields as dc_fields
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional
 
 import yaml
 
@@ -44,7 +44,7 @@ class DeviceMeta:
 _DEVICE_META_FIELDS = frozenset(f.name for f in dc_fields(DeviceMeta))
 
 
-def parse_meta(data: Dict, manifest_path: Path) -> DeviceMeta:
+def parse_meta(data: dict, manifest_path: Path) -> DeviceMeta:
     api_version = data.get("api_version", 1)
     if api_version != CURRENT_API_VERSION:
         raise ValueError(
@@ -71,7 +71,7 @@ _TUPLE_FIELDS = frozenset({"axis_extents", "work_margins", "soft_limits"})
 _VALID_ORIGINS = sorted(o.value for o in Origin)
 
 
-def parse_machine_config(data: Dict, manifest_path: Path) -> "MachineConfig":
+def parse_machine_config(data: dict, manifest_path: Path) -> "MachineConfig":
     raw = data.get("machine", {})
     if not isinstance(raw, dict):
         raise ValueError(f"Invalid 'machine' section in {manifest_path}")
@@ -108,7 +108,7 @@ def parse_machine_config(data: Dict, manifest_path: Path) -> "MachineConfig":
     return MachineConfig(**kwargs)
 
 
-def _validate_machine_config(config: Dict[str, Any], manifest_path: Path):
+def _validate_machine_config(config: dict[str, Any], manifest_path: Path):
     for key in config:
         if key not in _MACHINE_CONFIG_KEYS:
             logger.warning(
@@ -213,14 +213,14 @@ def _copy_model_ref(
 @dataclass
 class MachineConfig:
     driver: Optional[str] = None
-    driver_args: Optional[Dict[str, Any]] = None
-    driver_config: Optional[Dict[str, Any]] = None
+    driver_args: Optional[dict[str, Any]] = None
+    driver_config: Optional[dict[str, Any]] = None
     gcode_precision: Optional[int] = None
     supports_arcs: Optional[bool] = None
     supports_curves: Optional[bool] = None
-    axis_extents: Optional[Tuple[float, float]] = None
-    work_margins: Optional[Tuple[float, float, float, float]] = None
-    soft_limits: Optional[Tuple[float, float, float, float]] = None
+    axis_extents: Optional[tuple[float, float]] = None
+    work_margins: Optional[tuple[float, float, float, float]] = None
+    soft_limits: Optional[tuple[float, float, float, float]] = None
     origin: Optional[Origin] = None
     max_travel_speed: Optional[int] = None
     max_cut_speed: Optional[int] = None
@@ -229,15 +229,15 @@ class MachineConfig:
     single_axis_homing_enabled: Optional[bool] = None
     rotary_enabled_default: Optional[bool] = None
     unit_system: Optional[UnitSystem] = None
-    heads: Optional[List[Dict[str, Any]]] = None
-    capabilities: Optional[List[str]] = None
-    hookmacros: Optional[List[Dict[str, Any]]] = None
-    rotary_modules: Optional[List[Dict[str, Any]]] = None
-    nogo_zones: Optional[List[Dict[str, Any]]] = None
-    cameras: Optional[List[Dict[str, Any]]] = None
+    heads: Optional[list[dict[str, Any]]] = None
+    capabilities: Optional[list[str]] = None
+    hookmacros: Optional[list[dict[str, Any]]] = None
+    rotary_modules: Optional[list[dict[str, Any]]] = None
+    nogo_zones: Optional[list[dict[str, Any]]] = None
+    cameras: Optional[list[dict[str, Any]]] = None
 
-    def to_dict(self) -> Dict[str, Any]:
-        result: Dict[str, Any] = {}
+    def to_dict(self) -> dict[str, Any]:
+        result: dict[str, Any] = {}
         for key, value in asdict(self).items():
             if value is None:
                 continue
@@ -336,7 +336,7 @@ _MACHINE_CONFIG_KEYS = frozenset(f.name for f in dc_fields(MachineConfig))
 class DeviceProfile:
     meta: DeviceMeta
     machine_config: MachineConfig
-    dialect_config: Dict[str, Any]
+    dialect_config: dict[str, Any]
     source_dir: Optional[Path] = None
 
     @property
@@ -384,7 +384,7 @@ class DeviceProfile:
             driver_cls = get_driver_cls(machine_config.driver)
             driver_uses_gcode = driver_cls.uses_gcode
 
-        dialect_config: Dict[str, Any] = {}
+        dialect_config: dict[str, Any] = {}
         dialect_path = path / DIALECT_FILENAME
         if dialect_path.exists():
             with open(dialect_path, "r") as f:

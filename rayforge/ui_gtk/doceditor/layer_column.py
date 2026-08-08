@@ -1,7 +1,7 @@
 import json
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional, Set, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 from blinker import Signal
 from gi.repository import Adw, Gdk, Gio, GObject, Gtk, Pango
@@ -115,8 +115,8 @@ class LayerColumn(Gtk.Box):
         self.layer = layer
         self.editor = editor
         self._row_items = {}
-        self._ordered_items: List = []
-        self._selected_uids: Set = set()
+        self._ordered_items: list = []
+        self._selected_uids: set = set()
         self._selection_anchor = None
         self._potential_drop_index = -1
         self._drop_shift_held = False
@@ -330,7 +330,7 @@ class LayerColumn(Gtk.Box):
             self._setup_row_drag_source(row, item_row)
             self.listbox.append(row)
 
-    def update_row_selection(self, selected_uids: Set):
+    def update_row_selection(self, selected_uids: set):
         self._selected_uids = {
             uid
             for uid in selected_uids

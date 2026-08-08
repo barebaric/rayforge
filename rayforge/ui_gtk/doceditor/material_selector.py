@@ -2,7 +2,7 @@
 
 import logging
 from gettext import gettext as _
-from typing import List, Optional
+from typing import Optional
 
 from gi.repository import Adw, Gtk
 
@@ -51,8 +51,8 @@ class MaterialSelectorDialog(Adw.MessageDialog):
         super().__init__(transient_for=parent)
         self.on_select_callback = on_select_callback
         self._current_library: Optional[MaterialLibrary] = None
-        self._all_materials: List[Material] = []
-        self.libraries: List[MaterialLibrary] = []
+        self._all_materials: list[Material] = []
+        self.libraries: list[MaterialLibrary] = []
 
         self.set_heading(_("Select Material"))
         self.set_body(_("Choose a material from the available libraries."))

@@ -1,4 +1,3 @@
-from typing import List
 from unittest.mock import MagicMock
 
 import pytest
@@ -15,7 +14,7 @@ class MockSplitStrategy(SplitStrategy):
     A mock strategy that always returns 2 disjoint fragments for testing.
     """
 
-    def calculate_fragments(self, workpiece: WorkPiece) -> List[Geometry]:
+    def calculate_fragments(self, workpiece: WorkPiece) -> list[Geometry]:
         g1 = Geometry()
         g1.move_to(0, 0)
         g1.line_to(0.2, 0.2)  # Increased size to pass >0.1mm dust filter
@@ -30,7 +29,7 @@ class MockSplitStrategy(SplitStrategy):
 class SingleFragmentStrategy(SplitStrategy):
     """Strategy returning only 1 fragment (no split)."""
 
-    def calculate_fragments(self, workpiece: WorkPiece) -> List[Geometry]:
+    def calculate_fragments(self, workpiece: WorkPiece) -> list[Geometry]:
         # Ensure we return a valid Geometry list, handling potential None
         geo = workpiece.boundaries
         if geo:

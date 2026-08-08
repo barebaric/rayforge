@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 import numpy as np
 from raygeo.cnc.execution.specs import ComputePayload
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 class ShrinkWrapStep(LaserStep):
     TYPELABEL = _("Shrink Wrap")
     ICON = "step-shrinkwrap-symbolic"
-    CAPABILITIES: Tuple[StepCapability, ...] = (CUT, SCORE)
+    CAPABILITIES: tuple[StepCapability, ...] = (CUT, SCORE)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "shrinkwrap"
 
@@ -105,7 +105,7 @@ class ShrinkWrapStep(LaserStep):
         self,
         machine: "Machine",
         workpiece: "WorkPiece",
-    ) -> "Tuple[Part, ComputePayload]":
+    ) -> "tuple[Part, ComputePayload]":
         """Build a :class:`Part` with vector geometry and a boolean
         image, and a :class:`ComputePayload` carrying a
         :class:`ShrinkwrapSpec`."""
@@ -162,7 +162,7 @@ class ShrinkWrapStep(LaserStep):
         return step
 
     @classmethod
-    def get_default_transformers_dicts(cls) -> Tuple[List, List]:
+    def get_default_transformers_dicts(cls) -> tuple[list, list]:
         Smooth = transformer_registry.get("Smooth")
         LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")
         TabOpsTransformer = transformer_registry.get("TabOpsTransformer")

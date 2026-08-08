@@ -4,7 +4,7 @@ import importlib.resources
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 from blinker import Signal
 
@@ -32,10 +32,10 @@ class ModelManager(AddonRegistry):
 
     def __init__(self):
         self.changed = Signal()
-        self._libraries: Dict[str, ModelLibrary] = {}
-        self._library_addons: Dict[str, Optional[str]] = {}
+        self._libraries: dict[str, ModelLibrary] = {}
+        self._library_addons: dict[str, Optional[str]] = {}
 
-    def get_libraries(self) -> List[ModelLibrary]:
+    def get_libraries(self) -> list[ModelLibrary]:
         """Return all registered libraries in registration order."""
         return list(self._libraries.values())
 
@@ -147,7 +147,7 @@ class ModelManager(AddonRegistry):
 
         return None
 
-    def get_models(self, library: ModelLibrary) -> List[Model]:
+    def get_models(self, library: ModelLibrary) -> list[Model]:
         """
         List model files directly in the library root directory.
 
@@ -175,7 +175,7 @@ class ModelManager(AddonRegistry):
             for f in files
         ]
 
-    def get_all_models(self) -> List[Model]:
+    def get_all_models(self) -> list[Model]:
         """
         List all models across all libraries.
 
@@ -185,7 +185,7 @@ class ModelManager(AddonRegistry):
             Sorted list of Model instances.
         """
         seen_filenames: set = set()
-        combined: List[Model] = []
+        combined: list[Model] = []
         for lib in self._libraries.values():
             models = self.get_models(lib)
             for m in models:

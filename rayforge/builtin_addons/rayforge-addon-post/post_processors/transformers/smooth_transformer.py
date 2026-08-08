@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.ops.transform.smooth import SmoothSpec
 
@@ -83,15 +83,15 @@ class Smooth(OpsTransformer):
     def to_spec(
         self,
         workpiece: Optional[WorkPiece],
-        stock_geometries: Optional[List["Geometry"]],
-        settings: Optional[Dict[str, Any]],
+        stock_geometries: Optional[list["Geometry"]],
+        settings: Optional[dict[str, Any]],
     ) -> SmoothSpec:
         return SmoothSpec(
             amount=self.amount,
             corner_angle_threshold=self.corner_angle_threshold,
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the transformer's configuration to a dictionary."""
         data = super().to_dict()
         data.update(
@@ -103,7 +103,7 @@ class Smooth(OpsTransformer):
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Smooth":
+    def from_dict(cls, data: dict[str, Any]) -> "Smooth":
         """Creates a Smooth instance from a dictionary."""
         if data.get("name") != cls.__name__:
             raise ValueError(

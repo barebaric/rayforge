@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Optional, Type
+from typing import Callable, Optional
 
 
 class ExpressionContext:
@@ -11,8 +11,8 @@ class ExpressionContext:
 
     def __init__(
         self,
-        variables: Optional[Dict[str, Type]] = None,
-        functions: Optional[Dict[str, Callable]] = None,
+        variables: Optional[dict[str, type]] = None,
+        functions: Optional[dict[str, Callable]] = None,
     ):
         """
         Args:
@@ -20,8 +20,8 @@ class ExpressionContext:
               types.
             functions: A dictionary mapping function names to their callables.
         """
-        self.variables: Dict[str, Type] = variables or {}
-        self.functions: Dict[str, Callable] = functions or {}
+        self.variables: dict[str, type] = variables or {}
+        self.functions: dict[str, Callable] = functions or {}
 
     def is_variable(self, name: str) -> bool:
         """Checks if a name corresponds to a known variable."""
@@ -31,6 +31,6 @@ class ExpressionContext:
         """Checks if a name corresponds to a known function."""
         return name in self.functions
 
-    def get_variable_type(self, name: str) -> Optional[Type]:
+    def get_variable_type(self, name: str) -> Optional[type]:
         """Returns the type of a known variable."""
         return self.variables.get(name)

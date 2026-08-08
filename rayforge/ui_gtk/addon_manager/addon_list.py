@@ -1,7 +1,7 @@
 import logging
 import threading
 from gettext import gettext as _
-from typing import Callable, Optional, Tuple, cast
+from typing import Callable, Optional, cast
 
 from blinker import Signal
 from gi.repository import Adw, GLib, Gtk
@@ -209,7 +209,7 @@ class AddonListWidget(PreferencesGroupWithButton):
         context = get_context()
         am = context.addon_mgr
 
-        addons: list[Tuple[Addon, str, Optional[str], bool]] = []
+        addons: list[tuple[Addon, str, Optional[str], bool]] = []
 
         for name, addon in am.loaded_addons.items():
             if name in am._pending_unloads:

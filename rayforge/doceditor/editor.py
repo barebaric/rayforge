@@ -5,7 +5,7 @@ import logging
 import threading
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional
 
 from blinker import Signal
 
@@ -236,12 +236,12 @@ class DocEditor:
             new_machine.changed.connect(self._on_machine_changed)
             self._on_machine_changed(self)
 
-    def add_tab_from_context(self, context: Dict[str, Any]):
+    def add_tab_from_context(self, context: dict[str, Any]):
         """
         Public handler for the 'add_tab' action, using context from the UI.
         """
         workpiece: "WorkPiece" = context["workpiece"]
-        location: Dict[str, Any] = context["location"]
+        location: dict[str, Any] = context["location"]
         segment_index = location["segment_index"]
         pos = location["pos"]
 
@@ -249,7 +249,7 @@ class DocEditor:
             workpiece=workpiece, segment_index=segment_index, pos=pos
         )
 
-    def remove_tab_from_context(self, context: Dict[str, Any]):
+    def remove_tab_from_context(self, context: dict[str, Any]):
         """
         Public handler for the 'remove_tab' action, using context from the UI.
         """
@@ -261,7 +261,7 @@ class DocEditor:
         )
 
     @property
-    def machine_dimensions(self) -> Optional[Tuple[float, float]]:
+    def machine_dimensions(self) -> Optional[tuple[float, float]]:
         """Returns the configured machine's axis extents, or None."""
         config = self.context.config
         if config and config.machine:

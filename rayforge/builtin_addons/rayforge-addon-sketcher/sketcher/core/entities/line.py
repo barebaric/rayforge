@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any, Dict, List, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry
 from raygeo.geo.shape.line import (
@@ -28,13 +29,13 @@ class Line(Entity):
         self.p2_idx: EntityID = p2_idx
         self.type = "line"
 
-    def get_point_ids(self) -> List[EntityID]:
+    def get_point_ids(self) -> list[EntityID]:
         return [self.p1_idx, self.p2_idx]
 
-    def get_endpoint_ids(self) -> List[EntityID]:
+    def get_endpoint_ids(self) -> list[EntityID]:
         return [self.p1_idx, self.p2_idx]
 
-    def get_junction_point_ids(self) -> List[EntityID]:
+    def get_junction_point_ids(self) -> list[EntityID]:
         return [self.p1_idx, self.p2_idx]
 
     def hit_test(
@@ -109,14 +110,14 @@ class Line(Entity):
         p = registry.get_point(start_pid)
         return [(p.x, p.y)]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the Line to a dictionary."""
         data = super().to_dict()
         data.update({"p1_idx": self.p1_idx, "p2_idx": self.p2_idx})
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Line":
+    def from_dict(cls, data: dict[str, Any]) -> "Line":
         """Deserializes a dictionary into a Line instance."""
         line = cls(
             id=data["id"],

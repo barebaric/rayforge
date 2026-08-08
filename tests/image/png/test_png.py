@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Tuple, cast
+from typing import cast
 from unittest.mock import Mock
 
 import cairo
@@ -28,7 +28,7 @@ def load_png_data(filename: str) -> bytes:
 
 def get_pixel_bgra(
     surface: cairo.ImageSurface, x: int, y: int
-) -> Tuple[int, int, int, int]:
+) -> tuple[int, int, int, int]:
     """
     Samples a single pixel from a Cairo surface and returns its BGRA values.
     Cairo's FORMAT_ARGB32 is stored in memory as BGRA on little-endian systems.

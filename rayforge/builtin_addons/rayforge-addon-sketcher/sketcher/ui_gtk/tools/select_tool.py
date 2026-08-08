@@ -4,10 +4,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
-    Tuple,
     Union,
     cast,
 )
@@ -80,17 +77,17 @@ class SelectTool(SnapMixin, SketchTool):
         # For dragging control points
         self.dragged_cp_bezier_id: Optional[EntityID] = None
         self.dragged_cp_index: Optional[int] = None
-        self.drag_cp_start_offset: Optional[Tuple[float, float]] = None
+        self.drag_cp_start_offset: Optional[tuple[float, float]] = None
 
         # State for stabilizing drag calculations and undo snapshots
         self.drag_start_wt_inv: Optional[Matrix] = None
         self.drag_start_ct_inv: Optional[Matrix] = None
 
         # Snapshots taken at start of drag
-        self.drag_initial_positions: Dict[EntityID, GeoPoint] = {}
-        self.drag_initial_entity_states: Dict[EntityID, Any] = {}
+        self.drag_initial_positions: dict[EntityID, GeoPoint] = {}
+        self.drag_initial_entity_states: dict[EntityID, Any] = {}
 
-        self.drag_point_distances: Dict[EntityID, int] = {}
+        self.drag_point_distances: dict[EntityID, int] = {}
 
     def is_available(self, target, target_type) -> bool:
         return target is None
@@ -106,7 +103,7 @@ class SelectTool(SnapMixin, SketchTool):
             or self.dragged_cp_bezier_id is not None
         )
 
-    def _get_drag_start_world_pos(self) -> Tuple[float, float]:
+    def _get_drag_start_world_pos(self) -> tuple[float, float]:
         """Returns the world-space start position of the current drag."""
         if self.drag_point_start_pos is not None:
             return self.drag_point_start_pos
@@ -116,7 +113,7 @@ class SelectTool(SnapMixin, SketchTool):
 
     def get_active_shortcuts(
         self,
-    ) -> List[Tuple[Union[str, List[str]], str, Optional[Callable[[], bool]]]]:
+    ) -> list[tuple[Union[str, list[str]], str, Optional[Callable[[], bool]]]]:
         """Returns shortcuts available based on current tool state."""
         return [
             ("Shift", _("Constrain to Axis"), lambda: self._is_dragging()),
@@ -850,7 +847,7 @@ class SelectTool(SnapMixin, SketchTool):
             self.drag_point_distances = {}
             return
 
-        adj: Dict[EntityID, List[EntityID]] = {
+        adj: dict[EntityID, list[EntityID]] = {
             p.id: [] for p in registry.points
         }
         for entity in registry.entities:

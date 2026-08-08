@@ -1,7 +1,7 @@
 """Geometry rendering utilities using Cairo."""
 
 import math
-from typing import Optional, Tuple
+from typing import Optional
 
 import cairo
 from raygeo.geo import Arc, Bezier, Geometry, Line, Move
@@ -67,7 +67,7 @@ def render_geometry_to_png(
     geometry: Geometry,
     size: int,
     line_width: Optional[float] = None,
-    color: Optional[Tuple[float, float, float, float]] = None,
+    color: Optional[tuple[float, float, float, float]] = None,
 ) -> Optional[bytes]:
     """
     Render a geometry to PNG bytes fitting within a square of ``size`` pixels.

@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, Optional, Union
 
 import cairo
 
@@ -37,12 +37,12 @@ class PathTool(SnapMixin, SketchTool):
     def __init__(self, element):
         super().__init__(element)
         self._preview_state: Optional[BezierPreviewState] = None
-        self._press_pos: Optional[Tuple[float, float]] = None
-        self._waypoint_model_pos: Optional[Tuple[float, float]] = None
+        self._press_pos: Optional[tuple[float, float]] = None
+        self._waypoint_model_pos: Optional[tuple[float, float]] = None
         self._snapped_pid: Optional[int] = None
         self._dragging: bool = False
         self._in_press: bool = False
-        self._mirror_cp_offset: Optional[Tuple[float, float]] = None
+        self._mirror_cp_offset: Optional[tuple[float, float]] = None
         self._release_handled: bool = False
         self.hovered_point_id: Optional[int] = None
 
@@ -54,7 +54,7 @@ class PathTool(SnapMixin, SketchTool):
 
     def get_active_shortcuts(
         self,
-    ) -> List[Tuple[Union[str, List[str]], str, Optional[Callable[[], bool]]]]:
+    ) -> list[tuple[Union[str, list[str]], str, Optional[Callable[[], bool]]]]:
         shortcuts = []
         if self._preview_state is not None:
             shortcuts.extend(
@@ -183,7 +183,7 @@ class PathTool(SnapMixin, SketchTool):
         self.element.mark_dirty()
         return False
 
-    def _constrain_to_axis(self, mx: float, my: float) -> Tuple[float, float]:
+    def _constrain_to_axis(self, mx: float, my: float) -> tuple[float, float]:
         """Constrain model position to horizontal or vertical from start."""
         if self._preview_state is None:
             return mx, my

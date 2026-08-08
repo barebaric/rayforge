@@ -10,7 +10,7 @@ import logging
 import tempfile
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from gi.repository import Adw, Gdk, Gio, GLib, GObject, Gtk
 from raygeo.geo import Matrix
@@ -137,7 +137,7 @@ class DragDropCmd:
         return False
 
     def _handle_asset_drop(
-        self, data: str, position_mm: Tuple[float, float]
+        self, data: str, position_mm: tuple[float, float]
     ) -> bool:
         try:
             uids = json.loads(data)
@@ -188,7 +188,7 @@ class DragDropCmd:
         return success
 
     def _create_stock_item_instance(
-        self, asset_uid: str, position_mm: Tuple[float, float]
+        self, asset_uid: str, position_mm: tuple[float, float]
     ):
         """
         Creates a new StockItem instance from a StockAsset.
@@ -228,7 +228,7 @@ class DragDropCmd:
         return stock_item
 
     def _create_source_workpiece_instance(
-        self, asset_uid: str, position_mm: Tuple[float, float]
+        self, asset_uid: str, position_mm: tuple[float, float]
     ):
         """
         Creates a new WorkPiece instance from a SourceAsset by re-running
@@ -350,7 +350,7 @@ class DragDropCmd:
             widget = widget.get_parent()
         return None
 
-    def _extract_files_from_drop_value(self, value) -> List[Gio.File]:
+    def _extract_files_from_drop_value(self, value) -> list[Gio.File]:
         """Extract file list from drop value."""
         files = []
         if isinstance(value, Gdk.FileList):
@@ -367,7 +367,7 @@ class DragDropCmd:
 
         return files
 
-    def _get_file_infos(self, files: List[Gio.File]) -> List[Tuple[Path, str]]:
+    def _get_file_infos(self, files: list[Gio.File]) -> list[tuple[Path, str]]:
         """Get file path and MIME type information for dropped files."""
         editor = self.main_window.doc_editor
         file_infos = []
@@ -407,8 +407,8 @@ class DragDropCmd:
 
     def _import_dropped_files(
         self,
-        file_infos: List[Tuple[Path, str]],
-        position_mm: Tuple[float, float],
+        file_infos: list[tuple[Path, str]],
+        position_mm: tuple[float, float],
     ):
         """
         Import dropped files, routing them to individual or batch import
@@ -419,7 +419,7 @@ class DragDropCmd:
             position_mm: (x, y) tuple in world coordinates
         """
         editor = self.main_window.doc_editor
-        files_for_batch_import: List[Tuple[Path, str]] = []
+        files_for_batch_import: list[tuple[Path, str]] = []
 
         for file_path, mime_type in file_infos:
             action = editor.file.analyze_import_target(file_path, mime_type)

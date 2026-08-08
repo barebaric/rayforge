@@ -13,7 +13,7 @@ GTK is never imported eagerly in headless/worker processes.
 """
 
 import logging
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Optional
 
 from ...core.color import OPS_COLOR_SPEC, ColorSet, hex_to_rgba
 from ...image.util.srgb import create_lut_from_color
@@ -48,8 +48,8 @@ class ThemeColorService:
 
         self._dirty = True
         self._color_set: Optional[ColorSet] = None
-        self._laser_color_sets: Dict[str, ColorSet] = {}
-        self._layer_color_sets: Dict[str, ColorSet] = {}
+        self._laser_color_sets: dict[str, ColorSet] = {}
+        self._layer_color_sets: dict[str, ColorSet] = {}
         self._lut_provider: Optional[ColorLutProvider] = None
 
     def bind(self, widget: "Gtk.Widget"):
@@ -113,13 +113,13 @@ class ThemeColorService:
         return self._color_set
 
     @property
-    def laser_color_sets(self) -> Dict[str, ColorSet]:
+    def laser_color_sets(self) -> dict[str, ColorSet]:
         """Per-laser colour sets keyed by laser UID."""
         self._refresh_if_dirty()
         return self._laser_color_sets
 
     @property
-    def layer_color_sets(self) -> Dict[str, ColorSet]:
+    def layer_color_sets(self) -> dict[str, ColorSet]:
         """Per-layer colour sets keyed by layer UID."""
         self._refresh_if_dirty()
         return self._layer_color_sets
@@ -146,10 +146,10 @@ class ThemeColorService:
         self._layer_color_sets = self._resolve_layer_color_sets()
         self._dirty = False
 
-    def _resolve_laser_color_sets(self) -> Dict[str, ColorSet]:
+    def _resolve_laser_color_sets(self) -> dict[str, ColorSet]:
         if self._color_set is None or self._machine is None:
             return {}
-        laser_color_sets: Dict[str, ColorSet] = {}
+        laser_color_sets: dict[str, ColorSet] = {}
         for laser in self._machine.heads:
             if not isinstance(laser, LaserHead):
                 continue
@@ -157,10 +157,10 @@ class ThemeColorService:
             laser_color_sets[laser.uid] = laser_color_set.to_color_set()
         return laser_color_sets
 
-    def _resolve_layer_color_sets(self) -> Dict[str, ColorSet]:
+    def _resolve_layer_color_sets(self) -> dict[str, ColorSet]:
         if self._color_set is None or self._doc is None:
             return {}
-        layer_color_sets: Dict[str, ColorSet] = {}
+        layer_color_sets: dict[str, ColorSet] = {}
         for layer in self._doc.layers:
             cut_rgba = hex_to_rgba(layer.color)
             cut_lut = create_lut_from_color(cut_rgba)

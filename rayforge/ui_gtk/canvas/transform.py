@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
 from raygeo.geo import Matrix
 
@@ -31,7 +31,7 @@ def calculate_resized_box(
     is_flipped: bool,
     constrain_aspect: bool = False,
     from_center: bool = False,
-    min_size: Tuple[float, float] = (0.0, 0.0),
+    min_size: tuple[float, float] = (0.0, 0.0),
 ) -> Rect:
     """
     Calculates a new bounding box based on a resize operation.

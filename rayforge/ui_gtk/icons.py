@@ -2,7 +2,7 @@ import importlib.resources
 import logging
 import pathlib
 from functools import lru_cache
-from typing import Dict, List, Union
+from typing import Union
 
 from gi.repository import GdkPixbuf, Gio, Gtk
 
@@ -10,11 +10,11 @@ from ..resources import icons  # type: ignore
 
 logger = logging.getLogger(__name__)
 
-_icon_search_paths: List[pathlib.Path] = []
+_icon_search_paths: list[pathlib.Path] = []
 
 # Global cache for loaded icons to avoid repeated expensive operations
 # We cache the Gio.Icon or icon name, not the Gtk.Image widget itself
-_icon_cache: Dict[str, Union[Gio.Icon, str]] = {}
+_icon_cache: dict[str, Union[Gio.Icon, str]] = {}
 
 
 def register_icon_path(path):

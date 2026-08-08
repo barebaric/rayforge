@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 from ....core.varset import FloatVar, IntVar, Var
 from ...shared.pref_rows.base import SpinRow
@@ -16,7 +16,7 @@ class SpinRowAdapter(RowAdapter):
     @classmethod
     def create(
         cls, var: Var, target_property: str
-    ) -> Tuple[SpinRow, "SpinRowAdapter"]:
+    ) -> tuple[SpinRow, "SpinRowAdapter"]:
         min_val = getattr(var, "min_val", None)
         max_val = getattr(var, "max_val", None)
         lower = min_val if min_val is not None else -2147483647

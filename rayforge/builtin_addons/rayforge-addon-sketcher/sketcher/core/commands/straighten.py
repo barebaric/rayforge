@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from ..entities import Bezier, Line
 from ..types import EntityID
@@ -23,13 +23,13 @@ class StraightenBezierCommand(SketchChangeCommand):
         super().__init__(sketch, label)
         self.bezier_id = bezier_id
         self._old_bezier: Optional[
-            Tuple[
+            tuple[
                 EntityID,
                 EntityID,
                 EntityID,
                 bool,
-                Optional[Tuple[float, float]],
-                Optional[Tuple[float, float]],
+                Optional[tuple[float, float]],
+                Optional[tuple[float, float]],
             ]
         ] = None
 

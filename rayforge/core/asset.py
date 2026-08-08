@@ -1,6 +1,6 @@
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, Dict, Optional, Protocol, runtime_checkable
+from typing import Any, ClassVar, Optional, Protocol, runtime_checkable
 
 from blinker import Signal
 
@@ -43,12 +43,12 @@ class IAsset(Protocol):
         """Signal emitted when the asset changes."""
         ...
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the asset to a dictionary."""
         ...
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "IAsset":
+    def from_dict(cls, data: dict[str, Any]) -> "IAsset":
         """Deserializes the asset from a dictionary."""
         ...
 
@@ -81,13 +81,13 @@ class UnknownAsset(IAsset):
     edit_item_action: ClassVar[Optional[str]] = None
 
     _original_type: str = field(init=False)
-    _data: Dict[str, Any] = field(init=False, default_factory=dict)
+    _data: dict[str, Any] = field(init=False, default_factory=dict)
     _uid: str = field(init=False, default_factory=lambda: str(uuid.uuid4()))
     _name: str = field(init=False)
     _updated: Signal = field(init=False, default_factory=Signal)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "UnknownAsset":
+    def from_dict(cls, data: dict[str, Any]) -> "UnknownAsset":
         """Deserializes a dictionary into an UnknownAsset instance."""
         instance = cls.__new__(cls)
         instance._original_type = data.get("type", "unknown")
@@ -117,7 +117,7 @@ class UnknownAsset(IAsset):
         self._name = value
         self._data["name"] = value
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes UnknownAsset to the original dictionary."""
         return self._data
 

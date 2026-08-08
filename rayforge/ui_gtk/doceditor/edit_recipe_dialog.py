@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -77,9 +77,9 @@ class AddEditRecipeDialog(PatchedDialogWindow):
         header_bar.set_title_widget(self.switcher_box)
 
         # Page name -> toggle button (for radio grouping + teardown).
-        self._tab_buttons: Dict[str, Gtk.ToggleButton] = {}
+        self._tab_buttons: dict[str, Gtk.ToggleButton] = {}
         # View-stack name -> settings page (rebuilt dynamically).
-        self._settings_pages: Dict[str, RecipeSettingsPage] = {}
+        self._settings_pages: dict[str, RecipeSettingsPage] = {}
 
         # --- Pages ---
         self.general_page = RecipeGeneralPage(recipe)
@@ -155,7 +155,7 @@ class AddEditRecipeDialog(PatchedDialogWindow):
 
     # --- Settings pages -------------------------------------------------
 
-    def _current_settings_groups(self) -> List[Tuple[str, VarSet]]:
+    def _current_settings_groups(self) -> list[tuple[str, VarSet]]:
         """Resolve the (title, varset) groups for the current selection."""
         step_type = self.applicability_page.get_step_type()
         if step_type:
@@ -216,9 +216,9 @@ class AddEditRecipeDialog(PatchedDialogWindow):
 
     # --- Result ---------------------------------------------------------
 
-    def get_recipe_data(self) -> Dict[str, Any]:
+    def get_recipe_data(self) -> dict[str, Any]:
         # Merge values from all settings pages.
-        settings: Dict[str, Any] = {}
+        settings: dict[str, Any] = {}
         for page in self._settings_pages.values():
             settings.update(page.get_values())
         final_settings = {k: v for k, v in settings.items() if v is not None}

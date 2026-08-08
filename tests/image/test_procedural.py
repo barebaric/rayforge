@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, Tuple, cast
+from typing import cast
 from unittest.mock import Mock
 
 import cairo
@@ -19,12 +19,12 @@ from rayforge.image.procedural.renderer import PROCEDURAL_RENDERER
 MOCK_PARAMS = {"width": 80.0, "height": 40.0, "color": [0.0, 1.0, 0.0]}
 
 
-def mock_size_func(params: Dict) -> Tuple[float, float]:
+def mock_size_func(params: dict) -> tuple[float, float]:
     """A mock function that calculates size based on params."""
     return params.get("width", 10.0), params.get("height", 10.0)
 
 
-def mock_draw_func(ctx: cairo.Context, width: int, height: int, params: Dict):
+def mock_draw_func(ctx: cairo.Context, width: int, height: int, params: dict):
     """A mock function that draws a simple colored rectangle."""
     color = params.get("color", (1.0, 0.0, 0.0))  # Default to red
     ctx.set_source_rgb(*color)

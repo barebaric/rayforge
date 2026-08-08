@@ -1,7 +1,7 @@
 import logging
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from ...core.commands import FilletCommand
 from ...core.entities import Entity, Line, Point
@@ -45,7 +45,7 @@ class FilletTool(SketchTool):
         self._add_fillet()
         self.element.set_tool("select")
 
-    def _get_lines_at_point(self, pid: EntityID) -> List[Line]:
+    def _get_lines_at_point(self, pid: EntityID) -> list[Line]:
         sketch = self.element.sketch
         return [
             e

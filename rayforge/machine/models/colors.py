@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -69,7 +69,7 @@ class OpsColorSet:
         Returns:
             A ColorSet with cut, engrave, travel, and zero_power entries
         """
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "cut": self.cut_lut,
             "engrave": self.engrave_lut,
             "travel": self.travel_rgba,
@@ -77,7 +77,7 @@ class OpsColorSet:
         }
         return ColorSet(_data=data)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize the OpsColorSet to a dictionary."""
         return {
             "laser_uid": self.laser_uid,
@@ -102,7 +102,7 @@ class OpsColorSet:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "OpsColorSet":
+    def from_dict(cls, data: dict[str, Any]) -> "OpsColorSet":
         """Deserialize an OpsColorSet from a dictionary."""
         return cls(
             laser_uid=data["laser_uid"],

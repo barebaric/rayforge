@@ -14,7 +14,7 @@ import logging
 import uuid
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import yaml
 
@@ -40,12 +40,12 @@ class ColorPreset:
     label: str = ""
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the preset to a dictionary suitable for YAML."""
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ColorPreset":
+    def from_dict(cls, data: dict[str, Any]) -> "ColorPreset":
         """Deserializes a preset from a dictionary."""
         return cls(
             color=data.get("color", ""),
@@ -65,7 +65,7 @@ class ColorPresetManager:
 
     def __init__(self, base_dir: Path):
         self.base_dir = base_dir
-        self._presets_by_color: Dict[str, ColorPreset] = {}
+        self._presets_by_color: dict[str, ColorPreset] = {}
         self.load()
 
     @property
@@ -159,7 +159,7 @@ class ColorPresetManager:
             return None
         return self._presets_by_color.get(normalized)
 
-    def all_presets(self) -> List[ColorPreset]:
+    def all_presets(self) -> list[ColorPreset]:
         """Returns a list of all stored presets."""
         return list(self._presets_by_color.values())
 

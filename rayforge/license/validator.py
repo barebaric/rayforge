@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from threading import Thread
-from typing import Callable, Dict, Optional
+from typing import Callable, Optional
 
 from blinker import Signal
 
@@ -25,20 +25,20 @@ class LicenseValidator:
     ):
         self._gumroad: GumroadProvider = GumroadProvider(config_dir)
         self._patreon: Optional[PatreonProvider] = None
-        self._cache: Dict[str, tuple] = {}
+        self._cache: dict[str, tuple] = {}
         self.changed = Signal()
 
         if patreon_client_id:
             self._patreon = PatreonProvider(config_dir, patreon_client_id)
 
     @property
-    def providers(self) -> Dict[str, LicenseProvider]:
-        result: Dict[str, LicenseProvider] = {"gumroad": self._gumroad}
+    def providers(self) -> dict[str, LicenseProvider]:
+        result: dict[str, LicenseProvider] = {"gumroad": self._gumroad}
         if self._patreon:
             result["patreon"] = self._patreon
         return result
 
-    def validate(self, addon_id: str, license_config: Dict) -> LicenseResult:
+    def validate(self, addon_id: str, license_config: dict) -> LicenseResult:
         cached = self._cache.get(addon_id)
         if cached:
             result, timestamp = cached
@@ -81,7 +81,7 @@ class LicenseValidator:
         return result
 
     def check_license(
-        self, addon_id: str, license_config: Dict
+        self, addon_id: str, license_config: dict
     ) -> tuple[bool, str, str]:
         """
         Check if addon requires and has valid license.
@@ -126,7 +126,7 @@ class LicenseValidator:
         self.invalidate_cache()
         self.changed.send(self)
 
-    def get_gumroad_licenses(self) -> Dict[str, str]:
+    def get_gumroad_licenses(self) -> dict[str, str]:
         return self._gumroad.get_licenses()
 
     def is_patreon_linked(self) -> bool:

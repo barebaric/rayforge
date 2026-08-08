@@ -14,12 +14,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
     Protocol,
-    Set,
-    Tuple,
     runtime_checkable,
 )
 from urllib.parse import quote, urlparse
@@ -124,13 +120,13 @@ class AddonManager:
 
     def __init__(
         self,
-        addon_dirs: List[Path],
+        addon_dirs: list[Path],
         install_dir: Path,
         plugin_mgr: pluggy.PluginManager,
         task_mgr: "TaskManager",
         addon_config: Optional[AddonConfig] = None,
         is_job_active_callback: Optional[Callable[[], bool]] = None,
-        registries: Optional[Dict[str, "AddonRegistry"]] = None,
+        registries: Optional[dict[str, "AddonRegistry"]] = None,
         license_validator: Optional[LicenseValidator] = None,
     ):
         """
@@ -158,14 +154,14 @@ class AddonManager:
         self.plugin_mgr = plugin_mgr
         self.addon_config = addon_config
         self.is_job_active_callback = is_job_active_callback
-        self.registries: Dict[str, AddonRegistry] = registries or {}
+        self.registries: dict[str, AddonRegistry] = registries or {}
         self._window: Optional[Any] = None
-        self.loaded_addons: Dict[str, Addon] = {}
-        self.incompatible_addons: Dict[str, Addon] = {}
-        self.disabled_addons: Dict[str, Addon] = {}
-        self.license_required_addons: Dict[str, Addon] = {}
-        self._pending_unloads: Set[str] = set()
-        self._load_errors: Dict[str, str] = {}
+        self.loaded_addons: dict[str, Addon] = {}
+        self.incompatible_addons: dict[str, Addon] = {}
+        self.disabled_addons: dict[str, Addon] = {}
+        self.license_required_addons: dict[str, Addon] = {}
+        self._pending_unloads: set[str] = set()
+        self._load_errors: dict[str, str] = {}
         self._task_mgr = task_mgr
         self.license_validator = license_validator
 
@@ -178,7 +174,7 @@ class AddonManager:
         for addon_name in list(self.license_required_addons.keys()):
             self.recheck_license(addon_name)
 
-    def set_registries(self, registries: Dict[str, AddonRegistry]):
+    def set_registries(self, registries: dict[str, AddonRegistry]):
         """
         Set the registries dict for addon cleanup.
 
@@ -203,8 +199,8 @@ class AddonManager:
         self._window = window
 
     def _parse_registry_dict(
-        self, registry_data: Dict[str, Any]
-    ) -> List[AddonMetadata]:
+        self, registry_data: dict[str, Any]
+    ) -> list[AddonMetadata]:
         """Helper to parse the standard dictionary-based registry format."""
         addons = registry_data.get("addons", {})
         if not isinstance(addons, dict):
@@ -249,7 +245,7 @@ class AddonManager:
             meta.api_version = api_ver
             return
 
-    def fetch_registry(self) -> List[AddonMetadata]:
+    def fetch_registry(self) -> list[AddonMetadata]:
         """
         Fetches and parses the addon registry from the remote repository.
         Returns a list of AddonMetadata objects.
@@ -274,7 +270,7 @@ class AddonManager:
             logger.error(f"Failed to fetch or parse registry: {e}")
             return []
 
-        result: List[AddonMetadata] = []
+        result: list[AddonMetadata] = []
         if isinstance(parsed, list):
             for addon_data in parsed:
                 addon_id = addon_data.get("name")
@@ -322,7 +318,7 @@ class AddonManager:
 
     def check_update_status(
         self, remote_meta: AddonMetadata
-    ) -> Tuple[UpdateStatus, Optional[str]]:
+    ) -> tuple[UpdateStatus, Optional[str]]:
         """
         Checks a remote addon against local installations.
 
@@ -348,7 +344,7 @@ class AddonManager:
             return (UpdateStatus.UPDATE_AVAILABLE, local_version_str)
         return (UpdateStatus.UP_TO_DATE, local_version_str)
 
-    def check_for_updates(self) -> List[Tuple[Addon, AddonMetadata]]:
+    def check_for_updates(self) -> list[tuple[Addon, AddonMetadata]]:
         """
         Compares all installed addons against the remote registry to find
         available updates.
@@ -370,7 +366,7 @@ class AddonManager:
             return []
 
         remote_addons = {addon.name: addon for addon in remote_addons_list}
-        updates_available: List[Tuple[Addon, AddonMetadata]] = []
+        updates_available: list[tuple[Addon, AddonMetadata]] = []
 
         all_installed = list(self.loaded_addons.values()) + list(
             self.disabled_addons.values()
@@ -459,7 +455,7 @@ class AddonManager:
 
     def _discover_addons(
         self,
-    ) -> List[Tuple[Optional[str], Path, List[str]]]:
+    ) -> list[tuple[Optional[str], Path, list[str]]]:
         """
         Scan addon directories, returning ``(name, path, requires)``
         tuples in discovery order.
@@ -469,8 +465,8 @@ class AddonManager:
         parsed are included with ``name=None`` so that
         :meth:`load_addon` can still emit the detailed validation error.
         """
-        discovered: List[Tuple[Optional[str], Path, List[str]]] = []
-        seen_names: Set[str] = set()
+        discovered: list[tuple[Optional[str], Path, list[str]]] = []
+        seen_names: set[str] = set()
         for addon_dir in self.addon_dirs:
             if not addon_dir.exists():
                 if addon_dir == self.install_dir:
@@ -502,8 +498,8 @@ class AddonManager:
 
     def _order_by_requires(
         self,
-        discovered: List[Tuple[Optional[str], Path, List[str]]],
-    ) -> List[Tuple[Optional[str], Path, List[str]]]:
+        discovered: list[tuple[Optional[str], Path, list[str]]],
+    ) -> list[tuple[Optional[str], Path, list[str]]]:
         """
         Topologically sort discovered addons by ``requires``.
 
@@ -519,8 +515,8 @@ class AddonManager:
             for (name, path, requires) in discovered
             if name is not None
         }
-        ordered: List[Tuple[Optional[str], Path, List[str]]] = []
-        state: Dict[str, str] = {}
+        ordered: list[tuple[Optional[str], Path, list[str]]] = []
+        state: dict[str, str] = {}
 
         def visit(name: str) -> bool:
             if name not in by_name:
@@ -699,7 +695,7 @@ class AddonManager:
             return UpdateStatus.UP_TO_DATE
         return UpdateStatus.INCOMPATIBLE
 
-    def _check_license(self, addon: Addon) -> Tuple[bool, str, str]:
+    def _check_license(self, addon: Addon) -> tuple[bool, str, str]:
         """
         Check if addon requires and has valid license.
 
@@ -1146,7 +1142,7 @@ class AddonManager:
     @staticmethod
     def _parse_git_url(
         git_url: str,
-    ) -> Optional[Tuple[str, str, str]]:
+    ) -> Optional[tuple[str, str, str]]:
         """
         Extract (host, owner, repo) from an HTTPS git URL.
 
@@ -1417,7 +1413,7 @@ class AddonManager:
                     f"Unregistered {count} items from {name} for {addon_name}"
                 )
 
-    def complete_pending_unloads(self) -> List[str]:
+    def complete_pending_unloads(self) -> list[str]:
         """
         Complete any pending addon unloads.
 
@@ -1443,7 +1439,7 @@ class AddonManager:
         """Check if there are addons waiting to be unloaded."""
         return len(self._pending_unloads) > 0
 
-    def get_pending_unloads(self) -> Set[str]:
+    def get_pending_unloads(self) -> set[str]:
         """Get the set of addon names pending unload."""
         return self._pending_unloads.copy()
 
@@ -1520,7 +1516,7 @@ class AddonManager:
             logger.error(f"Failed to reload addon '{addon_name}'")
             return False
 
-    def _find_dependents(self, addon_name: str) -> List[str]:
+    def _find_dependents(self, addon_name: str) -> list[str]:
         """
         Find all enabled addons that depend on the given addon.
 
@@ -1536,7 +1532,7 @@ class AddonManager:
                     break
         return dependents
 
-    def can_disable(self, addon_name: str) -> Tuple[bool, str]:
+    def can_disable(self, addon_name: str) -> tuple[bool, str]:
         """
         Check if an addon can be disabled.
 
@@ -1551,7 +1547,7 @@ class AddonManager:
 
     def get_missing_dependencies(
         self, addon_name: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    ) -> list[tuple[str, Optional[str]]]:
         """
         Get missing or disabled dependencies for an addon.
 
@@ -1575,7 +1571,7 @@ class AddonManager:
 
     def enable_addon_with_deps(
         self, addon_name: str
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """
         Enable an addon along with its missing dependencies.
 
@@ -1627,7 +1623,7 @@ class AddonManager:
         """
         return self.license_required_addons.get(addon_name)
 
-    def recheck_license(self, addon_name: str) -> Tuple[bool, str]:
+    def recheck_license(self, addon_name: str) -> tuple[bool, str]:
         """
         Recheck the license for an addon and attempt to load it if valid.
 
@@ -1655,7 +1651,7 @@ class AddonManager:
 
         return False, "Failed to load addon after license validation"
 
-    def get_all_license_required_addons(self) -> Dict[str, Addon]:
+    def get_all_license_required_addons(self) -> dict[str, Addon]:
         """
         Get all addons that require a license.
 
@@ -1664,7 +1660,7 @@ class AddonManager:
         """
         return dict(self.license_required_addons)
 
-    def get_all_addons(self) -> Dict[str, Addon]:
+    def get_all_addons(self) -> dict[str, Addon]:
         """
         Get all addons from all categories.
 

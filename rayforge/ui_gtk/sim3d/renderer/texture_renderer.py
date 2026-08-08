@@ -4,7 +4,7 @@ A renderer for visualizing texture-based artifacts using GPU texture rendering.
 
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import numpy as np
 from OpenGL import GL
@@ -38,7 +38,7 @@ class TextureArtifactRenderer(BaseRenderer):
         self.color_lut_texture: int = 0
         self.is_initialized: bool = False
         self.max_texture_size: int = 0
-        self.instances: List[Dict[str, Any]] = []
+        self.instances: list[dict[str, Any]] = []
         self.cylinder_vao: int = 0
         self.cylinder_vbo: int = 0
         self._num_laser_luts: int = 1
@@ -263,7 +263,7 @@ class TextureArtifactRenderer(BaseRenderer):
     def add_instance_from_texture_layer(
         self,
         tl: TextureLayer,
-        laser_uid_order: Optional[List[str]] = None,
+        laser_uid_order: Optional[list[str]] = None,
     ):
         """Adds a texture instance from a compiled texture layer."""
         laser_index = 0

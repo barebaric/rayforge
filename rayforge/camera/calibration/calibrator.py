@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Optional, Tuple, cast
+from typing import Any, Optional, cast
 
 import cv2
 import numpy as np
@@ -18,10 +18,10 @@ class CameraCalibrator:
 
     def __init__(self, board: CharucoBoard):
         self.board = board
-        self._all_corners: List[List[Tuple[float, float]]] = []
-        self._all_ids: List[List[int]] = []
+        self._all_corners: list[list[tuple[float, float]]] = []
+        self._all_ids: list[list[int]] = []
         self._frame_count = 0
-        self._image_size: Optional[Tuple[int, int]] = None
+        self._image_size: Optional[tuple[int, int]] = None
 
         self.frame_added = Signal()
         self.frame_rejected = Signal()
@@ -39,7 +39,7 @@ class CameraCalibrator:
         return len({c for ids in self._all_ids for c in ids})
 
     @property
-    def corners_per_frame(self) -> List[int]:
+    def corners_per_frame(self) -> list[int]:
         return [len(c) for c in self._all_corners]
 
     def clear(self):
@@ -50,7 +50,7 @@ class CameraCalibrator:
 
     def detect_and_add_frame(
         self, image: np.ndarray
-    ) -> Tuple[bool, int, Optional[List[Tuple[float, float]]]]:
+    ) -> tuple[bool, int, Optional[list[tuple[float, float]]]]:
         detection = self.board.detect(image)
 
         if detection is None:
@@ -88,7 +88,7 @@ class CameraCalibrator:
 
         return total_unique_corners >= self.MIN_UNIQUE_CORNERS
 
-    def get_coverage(self) -> Tuple[float, float, float, float]:
+    def get_coverage(self) -> tuple[float, float, float, float]:
         """
         Get the spatial coverage of detected corners.
 
@@ -117,7 +117,7 @@ class CameraCalibrator:
         )
         return (coverage[0], coverage[1], coverage[2], coverage[3])
 
-    def get_coverage_quality(self) -> Tuple[str, str]:
+    def get_coverage_quality(self) -> tuple[str, str]:
         """
         Assess the quality of spatial coverage.
 
@@ -140,7 +140,7 @@ class CameraCalibrator:
         else:
             return ("good", "Good coverage")
 
-    def calibration_status(self) -> Tuple[bool, str]:
+    def calibration_status(self) -> tuple[bool, str]:
         if self._frame_count < self.MIN_FRAMES:
             return (
                 False,
@@ -169,7 +169,7 @@ class CameraCalibrator:
         return True, "Ready to calibrate"
 
     def calibrate(
-        self, image_size: Tuple[int, int]
+        self, image_size: tuple[int, int]
     ) -> Optional[CalibrationResult]:
         can_calib, reason = self.calibration_status()
         if not can_calib:

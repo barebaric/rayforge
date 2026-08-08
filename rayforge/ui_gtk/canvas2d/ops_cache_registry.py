@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from .elements.workpiece import WorkPieceElement
@@ -17,9 +17,9 @@ class OpsCacheRegistry:
     def __init__(self, max_bytes: int = MAX_CACHE_BYTES):
         self._max_bytes = max_bytes
         self._total_bytes: int = 0
-        self._wp_bytes: Dict[str, int] = {}
-        self._wp_last_draw: Dict[str, float] = {}
-        self._wp_elements: Dict[str, "WorkPieceElement"] = {}
+        self._wp_bytes: dict[str, int] = {}
+        self._wp_last_draw: dict[str, float] = {}
+        self._wp_elements: dict[str, "WorkPieceElement"] = {}
         self._evicting: bool = False
 
     @property

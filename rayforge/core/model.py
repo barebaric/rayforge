@@ -3,7 +3,7 @@
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class Model:
     name: str
     path: Path
     description: str = ""
-    extra: Dict[str, Any] = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_path(cls, path: Path) -> "Model":
@@ -53,7 +53,7 @@ class Model:
         return cls(name=path.stem, path=path)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Model":
+    def from_dict(cls, data: dict[str, Any]) -> "Model":
         """
         Create a Model instance from a dictionary.
 
@@ -75,14 +75,14 @@ class Model:
             extra=extra,
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert the model to a dictionary representation.
 
         Returns:
             Dictionary containing all model data.
         """
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "name": self.name,
             "path": str(self.path),
             "description": self.description,

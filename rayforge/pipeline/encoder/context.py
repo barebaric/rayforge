@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from raygeo.geo.types import Point3D, Rect
 
@@ -106,7 +106,7 @@ class GcodeContext:
     }
 
     @classmethod
-    def get_docs(cls, level: str) -> List[Tuple[str, str]]:
+    def get_docs(cls, level: str) -> list[tuple[str, str]]:
         """
         Gets all variables available up to a certain context level from the
         static documentation dictionary.
@@ -119,7 +119,7 @@ class GcodeContext:
         return sorted(docs, key=lambda item: item[0])
 
     @staticmethod
-    def get_template_variable_docs() -> Dict[str, Set[str]]:
+    def get_template_variable_docs() -> dict[str, set[str]]:
         """
         Returns a dictionary mapping G-code template keys to the set of
         variables they support. This is the single source of truth for

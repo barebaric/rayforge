@@ -11,7 +11,7 @@ from dataclasses import (
     replace,
 )
 from gettext import gettext as _
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from ....core.varset import BoolVar, TextAreaVar, Var, VarSet
 
@@ -58,8 +58,8 @@ class GcodeDialect:
     coolant_mist: str = "M7"
     coolant_off: str = "M9"
 
-    preamble: List[str] = field(default_factory=list)
-    postscript: List[str] = field(default_factory=list)
+    preamble: list[str] = field(default_factory=list)
+    postscript: list[str] = field(default_factory=list)
 
     inject_wcs_after_preamble: bool = True
     can_g0_with_speed: bool = False
@@ -75,11 +75,11 @@ class GcodeDialect:
     parent_uid: Optional[str] = field(
         default=None, metadata={"template_meta": True}
     )
-    extra: Dict[str, Any] = field(
+    extra: dict[str, Any] = field(
         default_factory=dict, metadata={"template_meta": True}
     )
 
-    def get_editor_varsets(self) -> Dict[str, VarSet]:
+    def get_editor_varsets(self) -> dict[str, VarSet]:
         """
         Returns a dictionary of VarSets that define the editable fields for
         this dialect, serving as the single source of truth for the UI.
@@ -222,7 +222,7 @@ class GcodeDialect:
             label=new_label,
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the dialect to a dictionary."""
         result = asdict(self)
         result.update(self.extra)
@@ -231,8 +231,8 @@ class GcodeDialect:
     @classmethod
     def from_dict(
         cls,
-        data: Dict[str, Any],
-        registry: Optional[Dict[str, "GcodeDialect"]] = None,
+        data: dict[str, Any],
+        registry: Optional[dict[str, "GcodeDialect"]] = None,
     ) -> "GcodeDialect":
         """
         Creates a dialect instance from a dictionary, correctly handling
@@ -301,7 +301,7 @@ class GcodeDialect:
             frozenset(required | optional),
         )
 
-    def to_template_dict(self) -> Dict[str, Any]:
+    def to_template_dict(self) -> dict[str, Any]:
         """
         Serialize template fields for device profile export.
 
@@ -309,7 +309,7 @@ class GcodeDialect:
         like ``uid``, ``label``, ``is_custom``, etc.
         """
         meta = self._template_meta_fields()
-        result: Dict[str, Any] = {}
+        result: dict[str, Any] = {}
         for f in fields(self):
             if f.name not in meta:
                 result[f.name] = getattr(self, f.name)
@@ -318,7 +318,7 @@ class GcodeDialect:
     @classmethod
     def validate_template_dict(
         cls,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         source: str = "",
     ):
         """
@@ -342,7 +342,7 @@ class GcodeDialect:
 
     @classmethod
     def from_template_dict(
-        cls, data: Dict[str, Any], **overrides
+        cls, data: dict[str, Any], **overrides
     ) -> "GcodeDialect":
         """
         Create a dialect from a device profile template dict.

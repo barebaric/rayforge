@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Set
+from typing import Optional
 
 from blinker import Signal
 from gi.repository import Gio, Gtk
@@ -41,8 +41,8 @@ class ActionRegistry:
     """
 
     def __init__(self):
-        self._actions: Dict[str, ActionInfo] = {}
-        self._addon_actions: Dict[str, Set[str]] = {}
+        self._actions: dict[str, ActionInfo] = {}
+        self._addon_actions: dict[str, set[str]] = {}
         self._window: Optional[Gtk.ApplicationWindow] = None
         self.changed = Signal()
 
@@ -179,7 +179,7 @@ class ActionRegistry:
         """
         return self._actions.get(action_name)
 
-    def get_menu_items(self, menu_id: str) -> List[ActionInfo]:
+    def get_menu_items(self, menu_id: str) -> list[ActionInfo]:
         """
         Get actions with menu placement for a specific menu, sorted by
         priority.
@@ -197,7 +197,7 @@ class ActionRegistry:
         ]
         return sorted(items, key=lambda x: x.menu.priority if x.menu else 100)
 
-    def get_toolbar_items(self, group: str) -> List[ActionInfo]:
+    def get_toolbar_items(self, group: str) -> list[ActionInfo]:
         """
         Get actions with toolbar placement for a specific group, sorted by
         priority.
@@ -217,7 +217,7 @@ class ActionRegistry:
             items, key=lambda x: x.toolbar.priority if x.toolbar else 100
         )
 
-    def get_all_with_shortcuts(self) -> List[ActionInfo]:
+    def get_all_with_shortcuts(self) -> list[ActionInfo]:
         """
         Get all actions that have keyboard shortcuts defined.
 

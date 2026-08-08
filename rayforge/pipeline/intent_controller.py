@@ -31,8 +31,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
     Protocol,
     runtime_checkable,
@@ -132,9 +130,9 @@ class IntentController:
         # Flat map from node key back to the originating :class:`DocItem`
         # for DOM reattachment.  Rebuilt on every successful
         # ``IntentBuilder.build`` call.
-        self._key_to_item: Dict[str, DocItem] = {}
-        self._workpieces_by_uid: Dict[str, "WorkPiece"] = {}
-        self._steps_by_uid: Dict[str, "Step"] = {}
+        self._key_to_item: dict[str, DocItem] = {}
+        self._workpieces_by_uid: dict[str, "WorkPiece"] = {}
+        self._steps_by_uid: dict[str, "Step"] = {}
 
         # Signals for notifying the UI of generation progress.
         self.workpiece_artifact_ready = Signal()
@@ -497,7 +495,7 @@ class IntentController:
     # Helpers
     # ------------------------------------------------------------------
 
-    def _refresh_key_to_item_map(self, nodes: List[NodeRequest]) -> None:
+    def _refresh_key_to_item_map(self, nodes: list[NodeRequest]) -> None:
         """
         Build a flat ``key -> DocItem`` map from the freshly built
         ``NodeRequest`` list so the ``on_completed`` epoch-filtered
@@ -513,8 +511,8 @@ class IntentController:
         # Index workpieces and steps by uid for fast lookup.  Kept on
         # the instance so :meth:`_reattach` can resolve the owning
         # DocItem for a node key without re-walking the doc.
-        workpieces: Dict[str, WorkPiece] = {}
-        steps: Dict[str, Step] = {}
+        workpieces: dict[str, WorkPiece] = {}
+        steps: dict[str, Step] = {}
         for layer in self._doc.layers:
             for wp in layer.all_workpieces:
                 workpieces[wp.uid] = wp

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
@@ -29,7 +29,7 @@ class StockItem(DocItem):
         super().__init__(name=name)
         self.stock_asset_uid: str = stock_asset_uid
         self.visible: bool = True
-        self.extra: Dict[str, Any] = {}
+        self.extra: dict[str, Any] = {}
 
     def depends_on_asset(self, asset: "IAsset") -> bool:
         """Checks if this stock item is an instance of the given asset."""
@@ -47,7 +47,7 @@ class StockItem(DocItem):
         return None
 
     @property
-    def natural_size(self) -> Tuple[float, float]:
+    def natural_size(self) -> tuple[float, float]:
         """
         Returns the natural size of the stock item, defined by its
         referenced StockAsset's geometry bounding box.
@@ -65,7 +65,7 @@ class StockItem(DocItem):
         """
         return (0.0, 0.0, 1.0, 1.0)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the StockItem to a dictionary."""
         result = {
             "uid": self.uid,
@@ -79,7 +79,7 @@ class StockItem(DocItem):
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "StockItem":
+    def from_dict(cls, data: dict[str, Any]) -> "StockItem":
         """
         Deserializes a dictionary into a StockItem instance.
         Assumes the new format with 'stock_asset_uid'. Legacy file handling
@@ -236,7 +236,7 @@ class StockItem(DocItem):
 
     def get_default_size(
         self, _bounds_width: float = 0, _bounds_height: float = 0
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """Delegates size calculation to the StockAsset."""
         asset = self.stock_asset
         if asset:

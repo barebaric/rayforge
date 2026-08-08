@@ -1,14 +1,12 @@
 import asyncio
 import inspect
 import logging
+from collections.abc import Awaitable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
     Callable,
-    Dict,
-    List,
     Optional,
     Union,
     cast,
@@ -118,7 +116,7 @@ class SmoothieDriver(Driver):
         assert machine.dialect is not None
         return GcodeEncoder(machine.dialect)
 
-    def get_setting_vars(self) -> List["VarSet"]:
+    def get_setting_vars(self) -> list["VarSet"]:
         return [VarSet()]
 
     def _setup_implementation(self, **kwargs: Any) -> None:
@@ -473,7 +471,7 @@ class SmoothieDriver(Driver):
         )
         await self._send_and_wait(cmd.encode("utf-8"))
 
-    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+    async def read_wcs_offsets(self) -> dict[str, Pos]:
         """Reading all WCS offsets is not supported by Smoothie."""
         raise NotImplementedError(
             "Reading all WCS offsets is not reliably supported "

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.geo.types import Point
 
@@ -24,7 +24,7 @@ class PreviewState:
     after calling cleanup_preview().
     """
 
-    def get_preview_point_ids(self) -> Set[int]:
+    def get_preview_point_ids(self) -> set[int]:
         """
         Returns IDs of temporary preview points that shouldn't be snapped to.
 
@@ -38,7 +38,7 @@ class PreviewState:
         """
         return set()
 
-    def get_hidden_point_ids(self) -> Set[int]:
+    def get_hidden_point_ids(self) -> set[int]:
         """
         Returns IDs of points that should be hidden during preview.
 
@@ -53,7 +53,7 @@ class PreviewState:
 
     def get_dimensions(
         self, registry: "EntityRegistry"
-    ) -> List["DimensionData"]:
+    ) -> list["DimensionData"]:
         """
         Returns dimension data for live preview rendering.
 
@@ -80,7 +80,7 @@ class SketchChangeCommand(Command):
         super().__init__(name)
         self.sketch = sketch
         # Stores ( {point_id: (x, y)}, {entity_id: state_dict} )
-        self._snapshot: Optional[tuple[Dict[int, Point], Dict[int, Any]]] = (
+        self._snapshot: Optional[tuple[dict[int, Point], dict[int, Any]]] = (
             None
         )
 

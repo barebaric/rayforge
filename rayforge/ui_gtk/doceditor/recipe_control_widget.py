@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -54,7 +54,7 @@ class RecipeControlWidget(Adw.ActionRow):
         self.step.updated.connect(self._update_ui)
         self._update_ui(self.step)
 
-    def _get_step_settings(self) -> Dict[str, Any]:
+    def _get_step_settings(self) -> dict[str, Any]:
         """Extracts recipe-relevant settings from the step.
 
         Uses the step class's :meth:`~rayforge.core.step.Step.recipe_keys`,

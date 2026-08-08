@@ -7,7 +7,7 @@ fake :class:`TaskManager` so they do not require a running GTK event
 loop.
 """
 
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional
 
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
@@ -73,8 +73,8 @@ class FakeTaskManager:
     """
 
     def __init__(self):
-        self.delayed: List[_ScheduledCall] = []
-        self.main_thread_calls: List[Callable[..., Any]] = []
+        self.delayed: list[_ScheduledCall] = []
+        self.main_thread_calls: list[Callable[..., Any]] = []
 
     def schedule_on_main_thread(
         self,
@@ -255,7 +255,7 @@ def test_run_intent_called(monkeypatch, isolated_machine):
     ctrl = IntentController(doc, tm, machine=isolated_machine)
     ctrl.connect()
 
-    run_calls: List[Any] = []
+    run_calls: list[Any] = []
 
     def _capture_run(
         intent, on_completed=None, on_batch_progress=None, pipeline=None
@@ -282,7 +282,7 @@ def test_run_intent_called(monkeypatch, isolated_machine):
 
 def _make_controller_for_completed_test(
     monkeypatch,
-    idle_calls: Optional[List] = None,
+    idle_calls: Optional[list] = None,
     machine: Optional["Machine"] = None,
 ):
     step = _TestStep(name="s1")
@@ -313,7 +313,7 @@ def _make_controller_for_completed_test(
 def test_on_completed_superseded_generation_discarded(
     monkeypatch, isolated_machine
 ):
-    idle_calls: List = []
+    idle_calls: list = []
     ctrl, wp, step = _make_controller_for_completed_test(
         monkeypatch,
         idle_calls=idle_calls,
@@ -338,7 +338,7 @@ def test_on_completed_superseded_generation_discarded(
 
 
 def test_on_completed_unknown_key_skipped(monkeypatch, isolated_machine):
-    idle_calls: List = []
+    idle_calls: list = []
     ctrl, wp, step = _make_controller_for_completed_test(
         monkeypatch,
         idle_calls=idle_calls,
@@ -353,7 +353,7 @@ def test_on_completed_unknown_key_skipped(monkeypatch, isolated_machine):
 
 
 def test_on_completed_reaches_correct_doc_item(monkeypatch, isolated_machine):
-    idle_calls: List = []
+    idle_calls: list = []
     ctrl, wp, step = _make_controller_for_completed_test(
         monkeypatch,
         idle_calls=idle_calls,
@@ -388,7 +388,7 @@ def test_on_completed_reaches_correct_doc_item(monkeypatch, isolated_machine):
 
 
 def test_reattach_workpiece_emits_signal(monkeypatch, isolated_machine):
-    idle_calls: List = []
+    idle_calls: list = []
     ctrl, wp, step = _make_controller_for_completed_test(
         monkeypatch,
         idle_calls=idle_calls,
@@ -417,7 +417,7 @@ def test_reattach_workpiece_emits_signal(monkeypatch, isolated_machine):
 
 
 def test_reattach_step_emits_signal(monkeypatch, isolated_machine):
-    idle_calls: List = []
+    idle_calls: list = []
     ctrl, wp, step = _make_controller_for_completed_test(
         monkeypatch,
         idle_calls=idle_calls,
@@ -444,7 +444,7 @@ def test_reattach_step_emits_signal(monkeypatch, isolated_machine):
 
 
 def test_reattach_job_emits_aggregate_and_time(monkeypatch, isolated_machine):
-    idle_calls: List = []
+    idle_calls: list = []
     ctrl, wp, step = _make_controller_for_completed_test(
         monkeypatch,
         idle_calls=idle_calls,
@@ -480,7 +480,7 @@ def test_reattach_job_emits_aggregate_and_time(monkeypatch, isolated_machine):
 
 
 def test_reattach_job_encode_emits_finished(monkeypatch, isolated_machine):
-    idle_calls: List = []
+    idle_calls: list = []
     ctrl, wp, step = _make_controller_for_completed_test(
         monkeypatch,
         idle_calls=idle_calls,
@@ -517,7 +517,7 @@ def test_reattach_job_encode_emits_finished(monkeypatch, isolated_machine):
 def test_on_batch_progress_emits_progress_changed(
     monkeypatch, isolated_machine
 ):
-    idle_calls: List = []
+    idle_calls: list = []
     ctrl, wp, step = _make_controller_for_completed_test(
         monkeypatch,
         idle_calls=idle_calls,
@@ -546,7 +546,7 @@ def test_on_batch_progress_emits_progress_changed(
 def test_on_completed_with_warnings_emits_pipeline_warnings(
     monkeypatch, isolated_machine
 ):
-    idle_calls: List = []
+    idle_calls: list = []
     ctrl, wp, step = _make_controller_for_completed_test(
         monkeypatch,
         idle_calls=idle_calls,
@@ -588,7 +588,7 @@ def test_on_completed_with_warnings_emits_pipeline_warnings(
 def test_on_completed_without_warnings_skips_emit(
     monkeypatch, isolated_machine
 ):
-    idle_calls: List = []
+    idle_calls: list = []
     ctrl, wp, step = _make_controller_for_completed_test(
         monkeypatch,
         idle_calls=idle_calls,

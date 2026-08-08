@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from ...pipeline.artifact.handle import create_handle_from_dict
 from ...pipeline.artifact.job import JobArtifact
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def compile_scene_from_job(
     artifact_store: ArtifactStore,
-    job_handle_dict: Dict[str, Any],
+    job_handle_dict: dict[str, Any],
     render_config_dict: dict,
 ) -> Optional[CompiledSceneArtifact]:
     """Compile a 3D scene from a job artifact.

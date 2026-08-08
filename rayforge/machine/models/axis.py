@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from raygeo.ops.axis import Axis
 
@@ -19,14 +19,14 @@ class AxisDirection(Enum):
 class AxisConfig:
     letter: Axis
     axis_type: AxisType
-    extents: Tuple[float, float]
+    extents: tuple[float, float]
     direction: AxisDirection = AxisDirection.NORMAL
     gcode_letter: Optional[str] = None
     resolution: float = 0.01
     rotary_diameter: Optional[float] = None
 
-    def to_dict(self) -> Dict[str, Any]:
-        result: Dict[str, Any] = {
+    def to_dict(self) -> dict[str, Any]:
+        result: dict[str, Any] = {
             "letter": self.letter.name,
             "axis_type": self.axis_type.value,
             "extents": list(self.extents),
@@ -40,7 +40,7 @@ class AxisConfig:
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AxisConfig":
+    def from_dict(cls, data: dict[str, Any]) -> "AxisConfig":
         return cls(
             letter=Axis.from_name(data["letter"]),
             axis_type=AxisType(data["axis_type"]),
@@ -55,7 +55,7 @@ class AxisConfig:
 
 
 class AxisSet:
-    def __init__(self, configs: List[AxisConfig]):
+    def __init__(self, configs: list[AxisConfig]):
         self.configs = configs
         self._rebuild_filters()
 
@@ -81,27 +81,27 @@ class AxisSet:
                 return c
         return None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "configs": [c.to_dict() for c in self.configs],
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AxisSet":
+    def from_dict(cls, data: dict[str, Any]) -> "AxisSet":
         configs = [AxisConfig.from_dict(c) for c in data["configs"]]
         return cls(configs)
 
     @classmethod
     def from_legacy(
         cls,
-        axis_extents: Tuple[float, float],
+        axis_extents: tuple[float, float],
         reverse_x: bool,
         reverse_y: bool,
         reverse_z: bool,
         rotary_modules=None,
     ) -> "AxisSet":
         width, height = axis_extents
-        configs: List[AxisConfig] = [
+        configs: list[AxisConfig] = [
             AxisConfig(
                 letter=Axis.X,
                 axis_type=AxisType.LINEAR,

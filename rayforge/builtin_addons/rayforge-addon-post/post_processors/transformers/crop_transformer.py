@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.geo import Matrix
 from raygeo.ops.transform.clip import CropSpec
@@ -68,8 +68,8 @@ class CropTransformer(OpsTransformer):
     def to_spec(
         self,
         workpiece: Optional[WorkPiece],
-        stock_geometries: Optional[List["Geometry"]],
-        settings: Optional[Dict[str, Any]],
+        stock_geometries: Optional[list["Geometry"]],
+        settings: Optional[dict[str, Any]],
     ) -> CropSpec:
         if not stock_geometries or workpiece is None:
             return CropSpec(
@@ -87,10 +87,10 @@ class CropTransformer(OpsTransformer):
     def _resolve_regions(
         self,
         workpiece: WorkPiece,
-        stock_geometries: List["Geometry"],
-    ) -> List[List[Tuple[float, float]]]:
+        stock_geometries: list["Geometry"],
+    ) -> list[list[tuple[float, float]]]:
         world_to_local = workpiece.get_world_transform().invert()
-        regions: List[List[Tuple[float, float]]] = []
+        regions: list[list[tuple[float, float]]] = []
 
         wp_size = workpiece.size
         scale_x, scale_y = wp_size if wp_size else (1.0, 1.0)
@@ -108,7 +108,7 @@ class CropTransformer(OpsTransformer):
                     regions.append(p)
         return regions
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             **super().to_dict(),
             "tolerance": self.tolerance,
@@ -116,7 +116,7 @@ class CropTransformer(OpsTransformer):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "CropTransformer":
+    def from_dict(cls, data: dict[str, Any]) -> "CropTransformer":
         return cls(
             enabled=data.get("enabled", True),
             tolerance=data.get("tolerance", 0.03),

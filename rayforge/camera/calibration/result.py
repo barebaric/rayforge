@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import cv2
 import numpy as np
@@ -11,9 +11,9 @@ class CalibrationResult:
     camera_matrix: np.ndarray
     distortion_coeffs: np.ndarray
     rms_error: float
-    image_size: Tuple[int, int]
+    image_size: tuple[int, int]
     num_frames_used: int
-    reprojection_errors: List[float] = field(default_factory=list)
+    reprojection_errors: list[float] = field(default_factory=list)
     calibration_date: datetime = field(default_factory=datetime.now)
 
     def __post_init__(self):
@@ -107,8 +107,8 @@ class CalibrationResult:
         )
 
     def get_undistort_maps(
-        self, image_size: Optional[Tuple[int, int]] = None
-    ) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+        self, image_size: Optional[tuple[int, int]] = None
+    ) -> Optional[tuple[np.ndarray, np.ndarray]]:
         size = image_size or self.image_size
         if size[0] <= 0 or size[1] <= 0:
             return None

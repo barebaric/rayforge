@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any
 
 from raygeo.geo.types import Rect
 
@@ -27,7 +27,7 @@ class RuidaGeoCommand:
     """
 
     command_type: str  # e.g., 'Move_Abs', 'Cut_Abs', 'End'
-    params: List[Any] = field(default_factory=list)
+    params: list[Any] = field(default_factory=list)
     # The layer these command parameters belong to.
     color_index: int = 0
 
@@ -41,10 +41,10 @@ class RuidaJob:
     """
 
     # A map of color indexes to their layer parameter definitions.
-    layers: Dict[int, RuidaLayer] = field(default_factory=dict)
+    layers: dict[int, RuidaLayer] = field(default_factory=dict)
 
     # An ordered list of commands to be executed.
-    commands: List[RuidaGeoCommand] = field(default_factory=list)
+    commands: list[RuidaGeoCommand] = field(default_factory=list)
 
     def get_extents(self) -> Rect:
         """

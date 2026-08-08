@@ -8,7 +8,7 @@ widget and command for preview rendering and size calculation.
 
 from enum import Enum
 from gettext import gettext as _
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import cairo
 import numpy as np
@@ -52,8 +52,8 @@ class GridMode(Enum):
 
 
 def get_material_test_proportional_size(
-    params: Dict[str, Any],
-) -> Tuple[float, float]:
+    params: dict[str, Any],
+) -> tuple[float, float]:
     """
     Calculates the natural size in mm for a material test grid.
 
@@ -83,7 +83,7 @@ def draw_preview(
     ctx: cairo.Context,
     width_px: float,
     height_px: float,
-    params: Dict[str, Any],
+    params: dict[str, Any],
 ):
     """
     Draws a visual-only preview of the material test grid.
@@ -137,7 +137,7 @@ def draw_preview(
 
 
 def draw_material_test_preview(
-    ctx: cairo.Context, width: float, height: float, params: Dict[str, Any]
+    ctx: cairo.Context, width: float, height: float, params: dict[str, Any]
 ):
     """Stable entry point for the generic procedural renderer."""
     draw_preview(ctx, width, height, params)

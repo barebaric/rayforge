@@ -2,14 +2,14 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 from blinker import Signal
 
 from .config import LOG_DIR
 
 _ui_formatter_instance: Optional[logging.Formatter] = None
-_ui_log_records: List[logging.LogRecord] = []
+_ui_log_records: list[logging.LogRecord] = []
 
 LOG_FILES_TO_KEEP = 5
 
@@ -139,7 +139,7 @@ def _cleanup_old_logs(log_dir: Path, keep_count: int):
     """
     try:
         # Find all log files that match our session pattern
-        log_files: List[Path] = sorted(
+        log_files: list[Path] = sorted(
             log_dir.glob("session-*.log"),
             key=lambda p: p.stat().st_mtime,  # Sort by modification time
             reverse=True,  # Newest first
@@ -161,7 +161,7 @@ def _cleanup_old_logs(log_dir: Path, keep_count: int):
         logging.error(f"An unexpected error occurred during log cleanup: {e}")
 
 
-def get_ui_log_records() -> List[logging.LogRecord]:
+def get_ui_log_records() -> list[logging.LogRecord]:
     """
     Returns the buffered UI log records.
     Used by the Console widget to populate history.

@@ -1,5 +1,5 @@
 import os
-from typing import TYPE_CHECKING, Any, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Optional
 
 import cairo
 from raygeo.geo.types import Point as GeoPoint
@@ -72,7 +72,7 @@ class SnapMixin:
         element: "SketchElement",
         model_x: float,
         model_y: float,
-        exclude_points: Optional[Set[int]] = None,
+        exclude_points: Optional[set[int]] = None,
     ) -> GeoPoint:
         """Query snap engine for geometry creation.
 
@@ -114,8 +114,8 @@ class SnapMixin:
         element: "SketchElement",
         model_x: float,
         model_y: float,
-        dragged_point_ids: Optional[Set[int]] = None,
-        dragged_entity_ids: Optional[Set[int]] = None,
+        dragged_point_ids: Optional[set[int]] = None,
+        dragged_entity_ids: Optional[set[int]] = None,
         initial_positions: Optional[dict] = None,
     ) -> GeoPoint:
         """Query snap engine during drag operations.
@@ -173,8 +173,8 @@ class SnapMixin:
         *,
         end_pid: Optional[int] = None,
         snapped_to_existing: bool = False,
-        existing_constraints: Optional[List[Any]] = None,
-    ) -> List[Any]:
+        existing_constraints: Optional[list[Any]] = None,
+    ) -> list[Any]:
         """Build constraints from the current snap result.
 
         Call this when finalizing geometry to create persistent constraints
@@ -191,7 +191,7 @@ class SnapMixin:
         Returns:
             List of constraints to add to the sketch
         """
-        constraints: List[Any] = []
+        constraints: list[Any] = []
         result = self.current_snap_result
         if not result:
             return constraints
@@ -248,7 +248,7 @@ class SnapMixin:
         ]
 
     def _build_axis_constraints(self, result, end_pid, existing):
-        constraints: List[Any] = []
+        constraints: list[Any] = []
         seen: set = set()
         for ec in existing or []:
             if isinstance(ec, (HorizontalConstraint, VerticalConstraint)):

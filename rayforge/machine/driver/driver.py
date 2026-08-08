@@ -1,17 +1,14 @@
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable
 from dataclasses import dataclass
 from enum import Enum, auto
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
     Callable,
-    Dict,
-    List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -144,7 +141,7 @@ class DeviceError:
     description: str
 
 
-Pos = Tuple[Optional[float], ...]  # x, y, z[, a] in mm
+Pos = tuple[Optional[float], ...]  # x, y, z[, a] in mm
 
 
 @dataclass
@@ -251,7 +248,7 @@ class Driver(ABC):
         pass
 
     @property
-    def supported_wcs(self) -> List[str]:
+    def supported_wcs(self) -> list[str]:
         """
         Returns the list of supported mutable Work Coordinate Systems.
 
@@ -271,7 +268,7 @@ class Driver(ABC):
         self.probe_status_changed = Signal()
         self.wcs_updated = Signal()
         self.config_changed = Signal()
-        self.config: Dict[str, Any] = {}
+        self.config: dict[str, Any] = {}
         self.did_setup = False
         self.state: DeviceState = DeviceState()
 
@@ -280,7 +277,7 @@ class Driver(ABC):
         assert self._machine.dialect is not None
         return self._machine.dialect
 
-    def _log_extra(self, category: str) -> Dict[str, Optional[str]]:
+    def _log_extra(self, category: str) -> dict[str, Optional[str]]:
         """Helper to create log extra dict with machine_id and category."""
         return {
             "log_category": category,
@@ -396,7 +393,7 @@ class Driver(ABC):
     @classmethod
     async def probe(
         cls, context: "RayforgeContext", **kwargs: Any
-    ) -> Tuple["DeviceProfile", List[str]]:
+    ) -> tuple["DeviceProfile", list[str]]:
         """
         Probe a device at the given connection parameters and return
         an auto-populated ``(DeviceProfile, warnings)`` tuple.
@@ -447,7 +444,7 @@ class Driver(ABC):
         return None
 
     @abstractmethod
-    def get_setting_vars(self) -> List["VarSet"]:
+    def get_setting_vars(self) -> list["VarSet"]:
         """
         Returns a VarSet defining the device's settings.
         The VarSet should define the settings but may have empty values.
@@ -658,7 +655,7 @@ class Driver(ABC):
         pass
 
     @abstractmethod
-    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+    async def read_wcs_offsets(self) -> dict[str, Pos]:
         """
         Sends a command to query all current WCS offsets from the controller.
 

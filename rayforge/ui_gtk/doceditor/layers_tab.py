@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Set
+from typing import TYPE_CHECKING
 
 from blinker import Signal
 from gi.repository import Gdk, GObject, Gtk
@@ -24,7 +24,7 @@ class LayersTab(Gtk.Box):
         self._columns = []
         self._layer_drop_index = -1
         self._pan_offset_x = 0.0
-        self._selected_items: List = []
+        self._selected_items: list = []
 
         self.edit_item_requested = Signal()
         self.select_items_requested = Signal()
@@ -155,16 +155,16 @@ class LayersTab(Gtk.Box):
             items = list(self._selected_items)
         self.editor.layer.move_items_to_layer(items, target_layer)
 
-    def update_row_selection(self, selected_uids: Set):
+    def update_row_selection(self, selected_uids: set):
         all_items = self.get_ordered_items()
         self._selected_items = [i for i in all_items if i.uid in selected_uids]
         for col in self._columns:
             col.update_row_selection(selected_uids)
 
-    def get_selected_items(self) -> List:
+    def get_selected_items(self) -> list:
         return list(self._selected_items)
 
-    def get_ordered_items(self) -> List:
+    def get_ordered_items(self) -> list:
         items = []
         for col in self._columns:
             child = col.listbox.get_first_child()

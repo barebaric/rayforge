@@ -5,7 +5,7 @@ import os
 import threading
 import time
 from gettext import gettext as _
-from typing import List, Optional
+from typing import Optional
 
 import serial
 from serial.tools import list_ports
@@ -27,7 +27,7 @@ class SerialPortPermissionError(Exception):
     pass
 
 
-def safe_list_ports_linux() -> List[str]:
+def safe_list_ports_linux() -> list[str]:
     """
     A non-crashing implementation of list_ports for sandboxed Linux envs.
 
@@ -61,7 +61,7 @@ class SerialTransport(Transport):
     """
 
     @staticmethod
-    def list_ports() -> List[str]:
+    def list_ports() -> list[str]:
         """Lists available serial ports."""
         # If we're on Linux (posix) and running in a Snap, use our
         # safe scanner, as list_ports.comports() fails with permission errors.
@@ -77,7 +77,7 @@ class SerialTransport(Transport):
             return []
 
     @staticmethod
-    def list_usb_ports() -> List[str]:
+    def list_usb_ports() -> list[str]:
         """Like list_ports, but only returns USB serial ports."""
 
         all_ports = SerialTransport.list_ports()
@@ -143,7 +143,7 @@ class SerialTransport(Transport):
             raise SerialPortPermissionError(msg)
 
     @staticmethod
-    def list_baud_rates() -> List[int]:
+    def list_baud_rates() -> list[int]:
         """Returns a list of common serial baud rates."""
         return [
             9600,

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from gettext import gettext as _
-from typing import Dict, List, Optional
+from typing import Optional
 
 from .engine import engine
 
@@ -35,8 +35,8 @@ class Unit:
         return converted_value
 
 
-_UNIT_REGISTRY: Dict[str, Unit] = {}
-_BASE_UNITS: Dict[str, str] = {}
+_UNIT_REGISTRY: dict[str, Unit] = {}
+_BASE_UNITS: dict[str, str] = {}
 
 
 def register_unit(unit: Unit):
@@ -61,7 +61,7 @@ def set_base_unit(quantity: str, unit_name: str):
     _BASE_UNITS[quantity] = unit_name
 
 
-def get_units_for_quantity(quantity: str) -> List[Unit]:
+def get_units_for_quantity(quantity: str) -> list[Unit]:
     """Returns all registered units for a specific physical quantity."""
     units = [u for u in _UNIT_REGISTRY.values() if u.quantity == quantity]
     # Sort by label for consistent UI presentation

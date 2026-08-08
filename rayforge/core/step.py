@@ -5,10 +5,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
-    List,
     Optional,
-    Tuple,
     cast,
 )
 
@@ -45,7 +42,7 @@ _COOLANT_MODE_BY_NAME = {
 }
 
 
-def legacy_producer_params(data: Dict[str, Any]) -> Dict[str, Any]:
+def legacy_producer_params(data: dict[str, Any]) -> dict[str, Any]:
     """Return the legacy ``opsproducer_dict.params`` payload, if any.
 
     Projects saved before the raygeo-pipeline refactor stored each
@@ -73,7 +70,7 @@ class Step(DocItem, ABC):
 
     HIDDEN: bool = False
     ICON: str = ""
-    CAPABILITIES: Tuple[StepCapability, ...] = ()
+    CAPABILITIES: tuple[StepCapability, ...] = ()
     REQUIRED_MACHINE_CAPS: ClassVar[frozenset[MachineCapability]] = frozenset()
     PRODUCER_CLASS: ClassVar[Any] = None
     ASSEMBLER_NAME: ClassVar[str] = ""
@@ -94,10 +91,10 @@ class Step(DocItem, ABC):
         per_wp_defaults, per_sp_defaults = (
             self.get_default_transformers_dicts()
         )
-        self.per_workpiece_transformers_dicts: List[Dict[str, Any]] = list(
+        self.per_workpiece_transformers_dicts: list[dict[str, Any]] = list(
             per_wp_defaults
         )
-        self.per_step_transformers_dicts: List[Dict[str, Any]] = list(
+        self.per_step_transformers_dicts: list[dict[str, Any]] = list(
             per_sp_defaults
         )
 
@@ -117,14 +114,14 @@ class Step(DocItem, ABC):
         self.coolant_method: CoolantMode = CoolantMode.OFF
 
         # Forward compatibility: store unknown attributes
-        self.extra: Dict[str, Any] = {}
+        self.extra: dict[str, Any] = {}
 
         # Set when a step of an unknown type is deserialized, so the
         # original type name can be reported and round-tripped.
         self._original_step_type: Optional[str] = None
 
     @property
-    def capabilities(self) -> Tuple[StepCapability, ...]:
+    def capabilities(self) -> tuple[StepCapability, ...]:
         return type(self).CAPABILITIES
 
     @classmethod
@@ -157,7 +154,7 @@ class Step(DocItem, ABC):
         )
 
     @classmethod
-    def recipe_keys(cls) -> Tuple[str, ...]:
+    def recipe_keys(cls) -> tuple[str, ...]:
         """The step attribute keys eligible for recipe extraction.
 
         Derived from :meth:`recipe_varset` so the editor and the
@@ -168,7 +165,7 @@ class Step(DocItem, ABC):
         return tuple(var.key for var in cls.recipe_varset())
 
     @classmethod
-    def recipe_varset_groups(cls) -> List[Tuple[str, VarSet]]:
+    def recipe_varset_groups(cls) -> list[tuple[str, VarSet]]:
         """Split :meth:`recipe_varset` into named groups for the editor.
 
         Returns a list of ``(title, varset)`` pairs. The base returns a
@@ -199,7 +196,7 @@ class Step(DocItem, ABC):
         self,
         machine: "Machine",
         workpiece: "WorkPiece",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build the kwargs dict for :meth:`~.AssemblerRegistry.assemble`."""
         return {}
 
@@ -207,7 +204,7 @@ class Step(DocItem, ABC):
         self,
         machine: "Machine",
         workpiece: "WorkPiece",
-    ) -> "Tuple[Part, ComputePayload]":
+    ) -> "tuple[Part, ComputePayload]":
         """
         Build the raygeo :class:`Part` and :class:`ComputePayload` for
         a workpiece compute node of the new intent pipeline.
@@ -234,7 +231,7 @@ class Step(DocItem, ABC):
         self,
         machine: "Machine",
         workpiece: "WorkPiece",
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """
         Return a JSON-serialisable dict of the assembler spec
         parameters that this step resolves for *machine*.
@@ -263,7 +260,7 @@ class Step(DocItem, ABC):
         payload.head_uid = head.uid if head else None
         payload.power = 0.0
 
-    def get_cache_params(self) -> Dict[str, Any]:
+    def get_cache_params(self) -> dict[str, Any]:
         """JSON-serialisable step attributes that influence compute output.
 
         UIDs and cosmetic fields are intentionally omitted so the token
@@ -293,7 +290,7 @@ class Step(DocItem, ABC):
             ops.set_coolant(self.coolant_method)
         return ops
 
-    def apply_import_settings(self, settings: Dict[str, Any]) -> None:
+    def apply_import_settings(self, settings: dict[str, Any]) -> None:
         """Apply importer-provided settings that this step owns.
 
         The settings dict uses the step's own attribute names
@@ -305,7 +302,7 @@ class Step(DocItem, ABC):
         if cut_speed is not None:
             self.set_cut_speed(cut_speed)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Serializes the step and its configuration to a dictionary."""
         step_type = (
             self._original_step_type
@@ -374,7 +371,7 @@ class Step(DocItem, ABC):
         )
 
     @classmethod
-    def get_default_transformers_dicts(cls) -> Tuple[List, List]:
+    def get_default_transformers_dicts(cls) -> tuple[list, list]:
         """
         Returns default transformer configurations for this step type.
 
@@ -386,7 +383,7 @@ class Step(DocItem, ABC):
         return [], []
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Step":
+    def from_dict(cls, data: dict[str, Any]) -> "Step":
         """Deserializes a Step instance from a dictionary."""
         extra = {
             k: v for k, v in data.items() if k not in cls._serialized_keys()
@@ -458,8 +455,8 @@ class Step(DocItem, ABC):
 
     @staticmethod
     def _merge_transformer_dicts(
-        loaded: List[Dict[str, Any]], defaults: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        loaded: list[dict[str, Any]], defaults: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """
         Merges loaded transformer dicts with defaults.
 
@@ -587,7 +584,7 @@ class Step(DocItem, ABC):
 
     def get_unsupported_coolant_methods(
         self, machine: "Machine"
-    ) -> Tuple[CoolantMode, ...]:
+    ) -> tuple[CoolantMode, ...]:
         """Coolant methods this step uses that the machine's selected
         head does not support.
 

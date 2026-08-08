@@ -3,7 +3,7 @@ import re
 from copy import copy, deepcopy
 from dataclasses import dataclass, field
 from gettext import gettext as _
-from typing import Callable, Dict, List, Optional, Tuple, cast
+from typing import Callable, Optional, cast
 
 from ....core.varset import Var, VarSet
 from ....shared.units.system import UnitSystem, inches_to_mm
@@ -47,7 +47,7 @@ class CommandRequest:
 
     command: str
     op_index: Optional[int] = None
-    response_lines: List[str] = field(default_factory=list)
+    response_lines: list[str] = field(default_factory=list)
     finished: asyncio.Event = field(default_factory=asyncio.Event)
 
     @property
@@ -517,7 +517,7 @@ def gcode_to_p_number(wcs_slot: str) -> Optional[int]:
 
 
 # GRBL State Parsers
-def parse_ver(line: str) -> Optional[Tuple[str, Optional[str]]]:
+def parse_ver(line: str) -> Optional[tuple[str, Optional[str]]]:
     """
     Parse a ``[VER:...]`` line into ``(version, build_name)``.
 
@@ -541,7 +541,7 @@ def parse_ver(line: str) -> Optional[Tuple[str, Optional[str]]]:
 
 
 def parse_version(
-    response_lines: List[str],
+    response_lines: list[str],
 ) -> Optional[str]:
     """
     Parses '$I' output to extract the GRBL firmware version string.
@@ -560,9 +560,9 @@ def parse_version(
     return None
 
 
-def parse_grbl_settings(lines: List[str]) -> Dict[str, float]:
+def parse_grbl_settings(lines: list[str]) -> dict[str, float]:
     """Parse ``$$`` response lines into a ``{key: value}`` dict."""
-    settings: Dict[str, float] = {}
+    settings: dict[str, float] = {}
     for line in lines:
         match = grbl_setting_re.search(line)
         if match:
@@ -571,7 +571,7 @@ def parse_grbl_settings(lines: List[str]) -> Dict[str, float]:
 
 
 def detect_unit_system_from_settings(
-    settings_lines: List[str],
+    settings_lines: list[str],
 ) -> Optional[UnitSystem]:
     """
     Inspect GRBL ``$$`` response lines and infer the device's unit
@@ -590,7 +590,7 @@ def detect_unit_system_from_settings(
     return UnitSystem.METRIC
 
 
-def is_report_in_inches(settings_lines: List[str]) -> bool:
+def is_report_in_inches(settings_lines: list[str]) -> bool:
     """
     Return True when GRBL's ``$13`` (Report in inches) flag is set.
 
@@ -603,7 +603,7 @@ def is_report_in_inches(settings_lines: List[str]) -> bool:
     return bool(report_inches)
 
 
-def parse_msg(line: str) -> Optional[Tuple[str, str]]:
+def parse_msg(line: str) -> Optional[tuple[str, str]]:
     """
     Parse a ``[MSG:key:value]`` line into ``(key, value)``.
 
@@ -619,7 +619,7 @@ def parse_msg(line: str) -> Optional[Tuple[str, str]]:
     return (key.strip(), value.strip())
 
 
-def extract_device_name(build_info: List[str]) -> str:
+def extract_device_name(build_info: list[str]) -> str:
     """
     Extract a human-readable device name from build info lines.
 
@@ -720,7 +720,7 @@ def parse_opt_info(line: str) -> Optional[int]:
     return None
 
 
-def parse_grbl_parser_state(response_lines: List[str]) -> Optional[str]:
+def parse_grbl_parser_state(response_lines: list[str]) -> Optional[str]:
     """
     Parses the response from a '$G' command to find the active WCS.
     Example response: '[G54 G17 G21 G90 G94 M5 M9 T0 F0 S0]'
@@ -888,16 +888,16 @@ def _recalculate_positions(
         if all(v is not None for v in machine_pos) and all(
             v is not None for v in work_pos
         ):
-            m_float = cast(Tuple[float, ...], machine_pos)
-            w_float = cast(Tuple[float, ...], work_pos)
+            m_float = cast(tuple[float, ...], machine_pos)
+            w_float = cast(tuple[float, ...], work_pos)
             wco = tuple(m_float[i] - w_float[i] for i in range(n))
 
     # 2. Recalculate missing positions based on what we have.
     # If MPos is known, calculate WPos.
     if mpos_found and all(v is not None for v in machine_pos):
         if all(v is not None for v in wco):
-            m_float = cast(Tuple[float, ...], machine_pos)
-            wco_float = cast(Tuple[float, ...], wco)
+            m_float = cast(tuple[float, ...], machine_pos)
+            wco_float = cast(tuple[float, ...], wco)
             return (
                 machine_pos,
                 tuple(m_float[i] - wco_float[i] for i in range(n)),
@@ -907,8 +907,8 @@ def _recalculate_positions(
     # If WPos is known (and MPos isn't), calculate MPos.
     elif wpos_found and all(v is not None for v in work_pos):
         if all(v is not None for v in wco):
-            w_float = cast(Tuple[float, ...], work_pos)
-            wco_float = cast(Tuple[float, ...], wco)
+            w_float = cast(tuple[float, ...], work_pos)
+            wco_float = cast(tuple[float, ...], wco)
             return (
                 tuple(w_float[i] + wco_float[i] for i in range(n)),
                 work_pos,
@@ -1258,7 +1258,7 @@ _AXIS_TRAVEL_VARS = [
 ]
 
 
-def get_grbl_setting_varsets() -> List["VarSet"]:
+def get_grbl_setting_varsets() -> list["VarSet"]:
     """
     Returns a list of VarSet instances populated with the standard GRBL setting
     definitions, grouped into sensible categories.

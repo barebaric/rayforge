@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional, Set
+from typing import TYPE_CHECKING, Optional
 
 from raygeo.geo.shape.arc import get_arc_direction
 from raygeo.geo.shape.circle import project_point_onto_circle
@@ -41,7 +41,7 @@ class ArcPreviewState(PreviewState):
         self.clockwise = False
         self.locked_radius: Optional[float] = None
 
-    def get_preview_point_ids(self) -> Set[EntityID]:
+    def get_preview_point_ids(self) -> set[EntityID]:
         """
         Returns IDs of temp preview points that shouldn't be snapped to.
 
@@ -87,7 +87,7 @@ class ArcPreviewState(PreviewState):
 
     def get_dimensions(
         self, registry: "EntityRegistry"
-    ) -> List[DimensionData]:
+    ) -> list[DimensionData]:
         """
         Returns the arc radius dimension for preview.
 
@@ -443,7 +443,7 @@ class ArcCommand(SketchChangeCommand):
             clockwise=self.clockwise,
         )
 
-        constraints: List = [
+        constraints: list = [
             EqualDistanceConstraint(
                 self.center_id, self.start_id, self.center_id, end_pid
             )
@@ -454,7 +454,7 @@ class ArcCommand(SketchChangeCommand):
                 RadiusConstraint(temp_arc_id, self.fixed_radius)
             )
 
-        points_to_add: List[Point] = [new_point] if new_point else []
+        points_to_add: list[Point] = [new_point] if new_point else []
 
         if self.is_center_temp:
             try:

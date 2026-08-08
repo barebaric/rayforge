@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from .choicevar import ChoiceVar
 
@@ -21,7 +21,7 @@ class LabeledChoiceVar(ChoiceVar):
         self,
         key: str,
         label: str,
-        choices: List[Tuple[str, str]],
+        choices: list[tuple[str, str]],
         description: Optional[str] = None,
         default: Optional[str] = None,
         value: Optional[str] = None,

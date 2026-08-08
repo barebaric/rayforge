@@ -3,7 +3,7 @@ from dataclasses import dataclass, fields
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import yaml
 from blinker import Signal
@@ -41,11 +41,11 @@ class CanvasViewState:
     show_tabs: bool = True
     perspective_mode: bool = False
 
-    def to_dict(self) -> Dict[str, bool]:
+    def to_dict(self) -> dict[str, bool]:
         return {f.name: getattr(self, f.name) for f in fields(self)}
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "CanvasViewState":
+    def from_dict(cls, data: dict[str, Any]) -> "CanvasViewState":
         valid_keys = {f.name for f in fields(cls)}
         filtered = {k: v for k, v in data.items() if k in valid_keys}
         return cls(**filtered)
@@ -57,7 +57,7 @@ class Config:
         self.theme: str = "system"
         # Default user preferences for units. Key is quantity, value is
         # unit name.
-        self.unit_preferences: Dict[str, str] = {
+        self.unit_preferences: dict[str, str] = {
             "length": "mm",
             "speed": "mm/min",
             "acceleration": "mm/s²",
@@ -70,7 +70,7 @@ class Config:
         # Track the last opened project path
         self.last_opened_project: Optional[Path] = None
         # UI visibility states
-        self.bottom_panel: Optional[Dict[str, Any]] = None
+        self.bottom_panel: Optional[dict[str, Any]] = None
         self.right_panel_visible: bool = True
         self.canvas_view: CanvasViewState = CanvasViewState()
         self.auto_pipeline: bool = True
@@ -133,7 +133,7 @@ class Config:
         self.last_opened_project = path
         self.changed.send(self)
 
-    def set_bottom_panel(self, data: Optional[Dict[str, Any]]):
+    def set_bottom_panel(self, data: Optional[dict[str, Any]]):
         if self.bottom_panel == data:
             return
         self.bottom_panel = data
@@ -220,7 +220,7 @@ class Config:
         """Returns True if user has explicitly declined usage tracking."""
         return self.usage_consent_date == ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "machine": self.machine.id if self.machine else None,
             "theme": self.theme,
@@ -249,7 +249,7 @@ class Config:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], get_machine_by_id) -> "Config":
+    def from_dict(cls, data: dict[str, Any], get_machine_by_id) -> "Config":
         config = cls()
         config.theme = data.get("theme", "system")
 

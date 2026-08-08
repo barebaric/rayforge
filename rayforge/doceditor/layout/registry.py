@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Type
+from typing import TYPE_CHECKING, Optional
 
 from blinker import Signal
 
@@ -16,13 +16,13 @@ class LayoutStrategyRegistry:
     """
 
     def __init__(self):
-        self._strategies: Dict[str, Type["LayoutStrategy"]] = {}
-        self._addon_items: Dict[str, Set[str]] = {}
+        self._strategies: dict[str, type["LayoutStrategy"]] = {}
+        self._addon_items: dict[str, set[str]] = {}
         self.changed = Signal()
 
     def register(
         self,
-        strategy_class: Type["LayoutStrategy"],
+        strategy_class: type["LayoutStrategy"],
         name: str,
         addon_name: Optional[str] = None,
     ) -> None:
@@ -94,7 +94,7 @@ class LayoutStrategyRegistry:
             self.changed.send(self)
         return count
 
-    def get(self, name: str) -> Optional[Type["LayoutStrategy"]]:
+    def get(self, name: str) -> Optional[type["LayoutStrategy"]]:
         """
         Look up a strategy class by name.
 
@@ -106,7 +106,7 @@ class LayoutStrategyRegistry:
         """
         return self._strategies.get(name)
 
-    def list_all(self) -> List[Type["LayoutStrategy"]]:
+    def list_all(self) -> list[type["LayoutStrategy"]]:
         """
         Return a list of all registered strategy classes.
 
@@ -115,7 +115,7 @@ class LayoutStrategyRegistry:
         """
         return list(self._strategies.values())
 
-    def list_names(self) -> List[str]:
+    def list_names(self) -> list[str]:
         """
         Return a list of all registered strategy names.
 

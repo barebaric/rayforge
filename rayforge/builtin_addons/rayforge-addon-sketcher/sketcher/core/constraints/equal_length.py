@@ -6,8 +6,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
     Union,
     cast,
@@ -36,7 +34,7 @@ class EqualLengthConstraint(Constraint):
     - Ellipse: Both radii (X and Y)
     """
 
-    def __init__(self, entity_ids: List[EntityID], user_visible: bool = True):
+    def __init__(self, entity_ids: list[EntityID], user_visible: bool = True):
         super().__init__(user_visible=user_visible)
         self.entity_ids = entity_ids
 
@@ -82,7 +80,7 @@ class EqualLengthConstraint(Constraint):
             return entity_id in self.entity_ids
         return False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "EqualLengthConstraint",
             "entity_ids": self.entity_ids,
@@ -90,7 +88,7 @@ class EqualLengthConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "EqualLengthConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> "EqualLengthConstraint":
         return cls(
             entity_ids=data["entity_ids"],
             user_visible=data.get("user_visible", True),
@@ -143,7 +141,7 @@ class EqualLengthConstraint(Constraint):
 
     def error(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> List[float]:
+    ) -> list[float]:
         if len(self.entity_ids) < 2:
             return []
 
@@ -170,7 +168,7 @@ class EqualLengthConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         if len(self.entity_ids) < 2:
             return {}
 

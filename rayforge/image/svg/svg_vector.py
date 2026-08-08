@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional
+from typing import Optional
 
 from raygeo.geo import Geometry
 from raygeo.svg import (
@@ -129,7 +129,7 @@ class SvgVectorImporter(SvgImporterBase):
             else all_layer_ids
         )
 
-        geometries_by_layer: Dict[Optional[str], Geometry] = {}
+        geometries_by_layer: dict[Optional[str], Geometry] = {}
         if spec.layer_source == LayerSource.COLORS:
             # Extract one merged geometry per resolved color.
             buckets_raw = svg_string_to_geometry_by_color(
@@ -164,7 +164,7 @@ class SvgVectorImporter(SvgImporterBase):
             source_parse_result=parse_result,
         )
 
-    def _layer_geometries_by_svg(self, svg_str: str) -> List[LayerGeometry]:
+    def _layer_geometries_by_svg(self, svg_str: str) -> list[LayerGeometry]:
         """Builds LayerGeometry entries from top-level SVG layer groups."""
         layers_raw = svg_string_to_geometry_by_layer(svg_str, 1.0, 1.0)
         assert self.trimmed_data is not None
@@ -173,7 +173,7 @@ class SvgVectorImporter(SvgImporterBase):
             layer["id"]: layer["name"] for layer in layer_manifest
         }
 
-        layer_geometries: List[LayerGeometry] = []
+        layer_geometries: list[LayerGeometry] = []
         for layer_id, geo in layers_raw:
             if not geo.is_empty():
                 layer_name = layer_names_by_id.get(layer_id, layer_id)
@@ -184,12 +184,12 @@ class SvgVectorImporter(SvgImporterBase):
 
     def _layer_geometries_by_color(
         self, svg_str: str, color_attr: ColorAttr
-    ) -> List[LayerGeometry]:
+    ) -> list[LayerGeometry]:
         """Builds LayerGeometry entries from resolved SVG colors."""
         buckets_raw = svg_string_to_geometries_by_color(
             svg_str, 1.0, 1.0, color_attr
         )
-        layer_geometries: List[LayerGeometry] = []
+        layer_geometries: list[LayerGeometry] = []
         for color_key, geos in buckets_raw:
             geo = Geometry()
             for g in geos:

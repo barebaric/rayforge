@@ -12,7 +12,7 @@ add more via machine settings later.
 """
 
 from gettext import gettext as _
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from gi.repository import Adw, Gtk
 
@@ -29,7 +29,7 @@ _HEAD_LASER = 0
 _HEAD_SPINDLE = 1
 
 
-def _is_spindle_head_dict(head: Optional[Dict[str, Any]]) -> bool:
+def _is_spindle_head_dict(head: Optional[dict[str, Any]]) -> bool:
     if not head:
         return False
     cls = (head.get("head_class") or "").lower()
@@ -170,7 +170,7 @@ class HeadPage(WizardPage):
 
     def enter(self, profile: DeviceProfile) -> None:
         heads = profile.machine_config.heads or []
-        head: Dict[str, Any] = heads[0] if heads else {}
+        head: dict[str, Any] = heads[0] if heads else {}
         if _is_spindle_head_dict(head):
             self.head_type_row.set_selected(_HEAD_SPINDLE)
             self.max_rpm_row.set_value(head.get("max_rpm", 20000))
@@ -189,7 +189,7 @@ class HeadPage(WizardPage):
         self.head_name_row.set_text(head.get("name", ""))
 
     def apply_to_profile(self, profile: DeviceProfile) -> bool:
-        head: Dict[str, Any] = {"name": self.head_name_row.get_text() or ""}
+        head: dict[str, Any] = {"name": self.head_name_row.get_text() or ""}
         if self.head_type_row.get_selected() == _HEAD_SPINDLE:
             head["head_class"] = "SpindleHead"
             head["max_rpm"] = int(self.max_rpm_row.get_value())

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -70,7 +70,7 @@ class BezierPreviewState(PreviewState):
 
     def get_dimensions(
         self, registry: "EntityRegistry"
-    ) -> List[DimensionData]:
+    ) -> list[DimensionData]:
         return []
 
 
@@ -92,7 +92,7 @@ class BezierCommand(SketchChangeCommand):
         is_line: bool = True,
         cp1: Optional[GeoPoint] = None,
         cp2: Optional[GeoPoint] = None,
-        constraints: Optional[List] = None,
+        constraints: Optional[list] = None,
     ):
         label = _("Add Line") if is_line else _("Add Bezier")
         super().__init__(sketch, label)
@@ -366,7 +366,7 @@ class BezierCommand(SketchChangeCommand):
             end_pid = temp_id
             new_point = Point(temp_id, final_x, final_y)
 
-        points_to_add: List[Point] = [new_point] if new_point else []
+        points_to_add: list[Point] = [new_point] if new_point else []
 
         if self.is_start_temp:
             try:

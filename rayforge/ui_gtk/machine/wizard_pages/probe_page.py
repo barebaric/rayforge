@@ -17,7 +17,7 @@ The page offers:
 """
 
 from gettext import gettext as _
-from typing import List, Optional, Type
+from typing import Optional
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -41,7 +41,7 @@ class ProbePage(WizardPage):
     # where ``profile`` is the working profile with probed values
     # merged in; warnings is a list of human-readable strings.
     def __init__(self, wizard, **kwargs):
-        self._driver_cls: Optional[Type[Driver]] = None
+        self._driver_cls: Optional[type[Driver]] = None
         # True once probing has been attempted on this page instance,
         # so re-entering via Back does not auto-restart a probe.
         self._probed: bool = False
@@ -84,7 +84,7 @@ class ProbePage(WizardPage):
         # flight via set_ready.
         self.set_ready(True)
 
-    def footer_buttons(self) -> List[Gtk.Button]:
+    def footer_buttons(self) -> list[Gtk.Button]:
         return [self.probe_button]
 
     def enter(self, profile: DeviceProfile) -> None:

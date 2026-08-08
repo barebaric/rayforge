@@ -3,7 +3,7 @@ import multiprocessing as mp
 import sys
 import threading
 import time
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 import cv2
 import numpy as np
@@ -40,7 +40,7 @@ COMMON_RESOLUTIONS = [
 ]
 
 
-def _get_linux_scan_targets() -> List[str]:
+def _get_linux_scan_targets() -> list[str]:
     """Get device identifiers to scan on Linux.
 
     Prefers persistent /dev/v4l/by-id/ paths. Falls back to
@@ -69,7 +69,7 @@ def _probe_camera_device(args):
     return None
 
 
-def _scan_cameras_in_subprocess() -> List[str]:
+def _scan_cameras_in_subprocess() -> list[str]:
     """Scan for cameras in a separate process to isolate crashes."""
     if sys.platform.startswith("linux"):
         backends = [cv2.CAP_V4L2, cv2.CAP_ANY]
@@ -101,7 +101,7 @@ def _scan_cameras_in_subprocess() -> List[str]:
     return devices
 
 
-def _scan_cameras_fallback() -> List[str]:
+def _scan_cameras_fallback() -> list[str]:
     """Fallback camera scan if subprocess fails."""
     devices = []
     if sys.platform.startswith("linux"):
@@ -265,7 +265,7 @@ class CameraController:
 
         # We no longer probe hardware directly because V4L2 and DirectShow
         # drivers often crash or drop buffers when aggressively queried.
-        self._available_resolutions: List[Tuple[int, int]] = COMMON_RESOLUTIONS
+        self._available_resolutions: list[tuple[int, int]] = COMMON_RESOLUTIONS
         self._resolutions_probed: bool = True
 
         # Signals
@@ -286,7 +286,7 @@ class CameraController:
             self._stop_capture_stream()
 
     @staticmethod
-    def list_available_devices() -> List[str]:
+    def list_available_devices() -> list[str]:
         """
         Lists available camera device IDs.
         Returns a list of strings, where each string is a device ID.
@@ -363,14 +363,14 @@ class CameraController:
         return pixbuf
 
     @property
-    def resolution(self) -> Tuple[int, int]:
+    def resolution(self) -> tuple[int, int]:
         if self._image_data is None:
             return 640, 480
         height, width, _ = self._image_data.shape
         return width, height
 
     @property
-    def available_resolutions(self) -> List[Tuple[int, int]]:
+    def available_resolutions(self) -> list[tuple[int, int]]:
         return self._available_resolutions
 
     @property
@@ -437,8 +437,8 @@ class CameraController:
 
     def get_work_surface_image(
         self,
-        output_size: Tuple[int, int],
-        physical_area: Tuple[Pos, Pos],
+        output_size: tuple[int, int],
+        physical_area: tuple[Pos, Pos],
     ) -> Optional[np.ndarray]:
         """
         Get an image aligned to world coordinates.
@@ -485,8 +485,8 @@ class CameraController:
     def _transform_with_homography(
         self,
         image: np.ndarray,
-        output_size: Tuple[int, int],
-        physical_area: Tuple[Pos, Pos],
+        output_size: tuple[int, int],
+        physical_area: tuple[Pos, Pos],
     ) -> Optional[np.ndarray]:
         """
         Transform an image using homography to world coordinates.

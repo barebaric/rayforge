@@ -1,10 +1,11 @@
 import asyncio
 import logging
 import webbrowser
+from collections.abc import Coroutine
 from concurrent.futures import Future
 from gettext import gettext as _
 from pathlib import Path
-from typing import Callable, Coroutine, List, Optional, Tuple
+from typing import Callable, Optional
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from raygeo.ops.axis import Axis
@@ -131,7 +132,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.toast_overlay = Adw.ToastOverlay()
         self.set_content(self.toast_overlay)
         # Track active toasts so they can be cleared programmatically
-        self._active_toasts: List[Adw.Toast] = []
+        self._active_toasts: list[Adw.Toast] = []
 
         # The main content box is now the child of the ToastOverlay
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -562,7 +563,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _get_selection_bounds(
         self,
-    ) -> Optional[Tuple[float, float, float, float]]:
+    ) -> Optional[tuple[float, float, float, float]]:
         """
         Get the bounding box of selected items or workarea bounds.
 
@@ -1437,7 +1438,7 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_selection_changed(
         self,
         sender,
-        elements: List[CanvasElement],
+        elements: list[CanvasElement],
         active_element: Optional[CanvasElement],
     ):
         """Handles the 'selection-changed' signal from the WorkSurface."""
@@ -2174,7 +2175,7 @@ class MainWindow(Adw.ApplicationWindow):
         is_on = percent > 0
         focus_action.set_state(GLib.Variant.new_boolean(is_on))
 
-    def on_elements_deleted(self, sender, elements: List[CanvasElement]):
+    def on_elements_deleted(self, sender, elements: list[CanvasElement]):
         """Handles the deletion signal from the WorkSurface."""
         items_to_delete = [
             elem.data for elem in elements if isinstance(elem.data, DocItem)
@@ -2184,12 +2185,12 @@ class MainWindow(Adw.ApplicationWindow):
                 items_to_delete, "Delete item(s)"
             )
 
-    def on_cut_requested(self, sender, items: List[DocItem]):
+    def on_cut_requested(self, sender, items: list[DocItem]):
         """Handles the 'cut-requested' signal from the WorkSurface."""
         self.doc_editor.edit.cut_items(items)
         self._update_actions_and_ui()
 
-    def on_copy_requested(self, sender, items: List[DocItem]):
+    def on_copy_requested(self, sender, items: list[DocItem]):
         """
         Handles the 'copy-requested' signal from the WorkSurface.
         """
@@ -2218,7 +2219,7 @@ class MainWindow(Adw.ApplicationWindow):
         """
         self.surface.select_all()
 
-    def on_duplicate_requested(self, sender, items: List[DocItem]):
+    def on_duplicate_requested(self, sender, items: list[DocItem]):
         """
         Handles the 'duplicate-requested' signal from the WorkSurface.
         """

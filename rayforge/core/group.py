@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Optional
 
 import cairo
 from raygeo.geo import Matrix
@@ -22,7 +23,7 @@ class GroupingResult:
     """A container for the results of the group creation calculation."""
 
     new_group: "Group"
-    child_matrices: Dict[str, Matrix]
+    child_matrices: dict[str, Matrix]
 
 
 class Group(DocItem):
@@ -35,7 +36,7 @@ class Group(DocItem):
     def __init__(self, name: str = "Group"):
         """Initializes a Group instance."""
         super().__init__(name=name)
-        self.extra: Dict[str, Any] = {}
+        self.extra: dict[str, Any] = {}
 
     @property
     def layer(self) -> Optional["Layer"]:
@@ -46,7 +47,7 @@ class Group(DocItem):
         return ancestor if isinstance(ancestor, Layer) else None
 
     @property
-    def all_workpieces(self) -> List["WorkPiece"]:
+    def all_workpieces(self) -> list["WorkPiece"]:
         """
         Recursively finds and returns a flattened list of all WorkPiece
         objects contained within this layer, including those inside groups.
@@ -54,7 +55,7 @@ class Group(DocItem):
         return self.get_descendants(of_type=WorkPiece)
 
     @property
-    def natural_size(self) -> Tuple[float, float]:
+    def natural_size(self) -> tuple[float, float]:
         if not self.children:
             return (0.0, 0.0)
         bbox = self._calculate_world_bbox(self.children)
@@ -123,7 +124,7 @@ class Group(DocItem):
 
         return surface
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Serializes the Group and its children to a dictionary."""
         result = {
             "uid": self.uid,
@@ -136,7 +137,7 @@ class Group(DocItem):
         return result
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "Group":
+    def from_dict(cls, data: dict) -> "Group":
         """Deserializes a dictionary into a Group instance."""
         known_keys = {"uid", "type", "name", "matrix", "children"}
         extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -191,7 +192,7 @@ class Group(DocItem):
 
     @classmethod
     def create_from_items(
-        cls, items_to_group: List[DocItem], parent: DocItem
+        cls, items_to_group: list[DocItem], parent: DocItem
     ) -> Optional[GroupingResult]:
         """
         Factory method to create a new Group sized and positioned to enclose

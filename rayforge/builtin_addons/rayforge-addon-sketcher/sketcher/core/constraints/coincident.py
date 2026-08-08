@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from raygeo.geo.types import Point
 
@@ -54,7 +54,7 @@ class CoincidentConstraint(Constraint):
             return _("At {}").format(self._format_coord(p1.x, p1.y))
         return ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "type": "CoincidentConstraint",
             "p1": self.p1,
@@ -63,7 +63,7 @@ class CoincidentConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "CoincidentConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> "CoincidentConstraint":
         return cls(
             p1=data["p1"],
             p2=data["p2"],
@@ -79,7 +79,7 @@ class CoincidentConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         return {
             self.p1: [(1.0, 0.0), (0.0, 1.0)],
             self.p2: [(-1.0, 0.0), (0.0, -1.0)],

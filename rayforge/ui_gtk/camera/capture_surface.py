@@ -2,7 +2,7 @@
 
 import logging
 from gettext import gettext as _
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import cv2
 import numpy as np
@@ -49,8 +49,8 @@ class CalibrationCaptureSurface(Gtk.Widget):
         super().__init__(**kwargs)
         self.controller = controller
         self.board = board
-        self._last_corners: Optional[List[Tuple[float, float]]] = None
-        self._last_ids: Optional[List[int]] = None
+        self._last_corners: Optional[list[tuple[float, float]]] = None
+        self._last_ids: Optional[list[int]] = None
 
         self.set_hexpand(True)
         self.set_vexpand(True)
@@ -134,7 +134,7 @@ class CalibrationCaptureSurface(Gtk.Widget):
     @property
     def last_detection(
         self,
-    ) -> Optional[Tuple[List[Tuple[float, float]], List[int]]]:
+    ) -> Optional[tuple[list[tuple[float, float]], list[int]]]:
         if self._last_corners and self._last_ids:
             return self._last_corners, self._last_ids
         return None

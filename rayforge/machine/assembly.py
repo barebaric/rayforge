@@ -4,11 +4,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
-    Dict,
-    List,
     Optional,
-    Set,
-    Tuple,
 )
 
 import numpy as np
@@ -37,7 +33,7 @@ class Link:
     name: str
     parent: Optional[str]
     joint_type: JointType
-    joint_axis: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    joint_axis: tuple[float, float, float] = (0.0, 0.0, 0.0)
     driver_axis: Optional[Axis] = None
     local_transform: np.ndarray = field(
         default_factory=lambda: np.eye(4, dtype=np.float64)
@@ -61,13 +57,13 @@ class Link:
 
 
 class Assembly:
-    def __init__(self, links: List[Link]):
+    def __init__(self, links: list[Link]):
         if not links:
             raise ValueError("Assembly must have at least one link")
         self._links = links
-        self._link_map: Dict[str, Link] = {}
-        self._children: Dict[str, List[str]] = defaultdict(list)
-        self._roots: List[str] = []
+        self._link_map: dict[str, Link] = {}
+        self._children: dict[str, list[str]] = defaultdict(list)
+        self._roots: list[str] = []
 
         for link in links:
             if link.name in self._link_map:
@@ -95,14 +91,14 @@ class Assembly:
 
         self._validate_no_cycles()
 
-        self._roles: Dict[LinkRole, List[str]] = {}
-        self._chuck_diameters: Dict[str, float] = {}
-        self._chuck_axis_offsets: Dict[str, np.ndarray] = {}
+        self._roles: dict[LinkRole, list[str]] = {}
+        self._chuck_diameters: dict[str, float] = {}
+        self._chuck_axis_offsets: dict[str, np.ndarray] = {}
         self._index_roles()
 
     def _validate_no_cycles(self) -> None:
-        visited: Set[str] = set()
-        stack: Set[str] = set()
+        visited: set[str] = set()
+        stack: set[str] = set()
 
         def visit(name: str) -> None:
             if name in stack:
@@ -151,7 +147,7 @@ class Assembly:
             self._chuck_diameters[name] = diameter
 
     @property
-    def chuck_diameters(self) -> Dict[str, float]:
+    def chuck_diameters(self) -> dict[str, float]:
         return dict(self._chuck_diameters)
 
     @property
@@ -168,11 +164,11 @@ class Assembly:
     def get_link(self, name: str) -> Optional[Link]:
         return self._link_map.get(name)
 
-    def get_links_by_role(self, role: LinkRole) -> List[Link]:
+    def get_links_by_role(self, role: LinkRole) -> list[Link]:
         names = self._roles.get(role, [])
         return [self._link_map[n] for n in names]
 
-    def get_model_links(self) -> List[Link]:
+    def get_model_links(self) -> list[Link]:
         """Return all links that have a 3D model assigned."""
         return [link for link in self._links if link.model is not None]
 
@@ -180,7 +176,7 @@ class Assembly:
         self,
         state: "MachineState",
         wcs_offset: Point3D = (0.0, 0.0, 0.0),
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Return a 4x4 world transform for each link with a 3D model.
 
         For prismatic joints, the transform includes the animated axis
@@ -197,7 +193,7 @@ class Assembly:
         """
         fk = self.forward_kinematics(state)
         chuck_names = set(self._roles.get(LinkRole.CHUCK, []))
-        transforms: Dict[str, np.ndarray] = {}
+        transforms: dict[str, np.ndarray] = {}
         for link in self._links:
             if link.model is None:
                 continue
@@ -293,7 +289,7 @@ class Assembly:
         state: "MachineState",
         diameter: float,
         focal_distance: float = 0.0,
-    ) -> Dict[str, np.ndarray]:
+    ) -> dict[str, np.ndarray]:
         """Return head positions above the cylinder surface.
 
         Positions each HEAD link at the top of the cylinder at the
@@ -322,7 +318,7 @@ class Assembly:
 
         fk_heads = self.head_positions(state)
 
-        result: Dict[str, np.ndarray] = {}
+        result: dict[str, np.ndarray] = {}
         for name in head_names:
             if name not in fk_heads:
                 continue
@@ -402,8 +398,8 @@ class Assembly:
 
     def forward_kinematics(
         self, state: "MachineState"
-    ) -> Dict[str, Tuple[Point3D, np.ndarray]]:
-        result: Dict[str, Tuple[Point3D, np.ndarray]] = {}
+    ) -> dict[str, tuple[Point3D, np.ndarray]]:
+        result: dict[str, tuple[Point3D, np.ndarray]] = {}
         root = self._roots[0]
         root_link = self._link_map[root]
         root_transform = root_link.local_transform.copy()
@@ -420,7 +416,7 @@ class Assembly:
         parent_name: str,
         parent_transform: np.ndarray,
         state: "MachineState",
-        result: Dict[str, Tuple[Point3D, np.ndarray]],
+        result: dict[str, tuple[Point3D, np.ndarray]],
     ) -> None:
         for child_name in self._children.get(parent_name, []):
             link = self._link_map[child_name]
@@ -450,7 +446,7 @@ class Assembly:
         self,
         state: "MachineState",
         wcs_offset: Point3D = (0.0, 0.0, 0.0),
-    ) -> Dict[str, Point3D]:
+    ) -> dict[str, Point3D]:
         head_names = self._roles.get(LinkRole.HEAD, [])
         if not head_names:
             raise ValueError("Assembly has no links with role HEAD")
@@ -464,11 +460,11 @@ class Assembly:
             for name in head_names
         }
 
-    def chuck_angles(self, state: "MachineState") -> Dict[str, float]:
+    def chuck_angles(self, state: "MachineState") -> dict[str, float]:
         chuck_names = self._roles.get(LinkRole.CHUCK, [])
         if not chuck_names:
             return {}
-        result: Dict[str, float] = {}
+        result: dict[str, float] = {}
         for name in chuck_names:
             chuck = self._link_map[name]
             assert chuck.driver_axis is not None

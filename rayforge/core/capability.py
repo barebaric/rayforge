@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 from abc import ABC, abstractmethod
 from gettext import gettext as _
-from typing import ClassVar, FrozenSet, List, Optional
+from typing import ClassVar, Optional
 
 from .varset import VarSet, merge_varsets
 
@@ -71,7 +71,7 @@ class StepCapability(ABC):
 
     #: Machine capabilities a machine must have for this capability to
     #: be usable (e.g. a laser capability requires LASER).
-    REQUIRED_MACHINE_CAPS: ClassVar[FrozenSet[MachineCapability]] = frozenset()
+    REQUIRED_MACHINE_CAPS: ClassVar[frozenset[MachineCapability]] = frozenset()
 
     @property
     @abstractmethod
@@ -98,7 +98,7 @@ class StepCapability(ABC):
         """The name of the icon that represents this capability."""
         return f"{self.name.lower()}-symbolic"
 
-    def get_setting_keys(self) -> List[str]:
+    def get_setting_keys(self) -> list[str]:
         """
         Returns a list of keys for the settings defined by this capability.
         """
@@ -140,8 +140,8 @@ class _CombinedCapability(StepCapability):
             )
         return self._merged_varset
 
-    def _flatten(self) -> List[StepCapability]:
-        caps: List[StepCapability] = []
+    def _flatten(self) -> list[StepCapability]:
+        caps: list[StepCapability] = []
         for part in (self._left, self._right):
             if isinstance(part, _CombinedCapability):
                 caps.extend(part._flatten())

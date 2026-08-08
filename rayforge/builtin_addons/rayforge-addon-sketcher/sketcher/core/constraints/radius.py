@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 import cairo
 from raygeo.geo.types import Point
@@ -82,7 +82,7 @@ class RadiusConstraint(Constraint):
     ) -> bool:
         return entity_id is not None and self.entity_id == entity_id
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         data = {
             "type": "RadiusConstraint",
             "entity_id": self.entity_id,
@@ -94,7 +94,7 @@ class RadiusConstraint(Constraint):
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RadiusConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> "RadiusConstraint":
         return cls(
             entity_id=data["entity_id"],
             value=data["value"],
@@ -132,7 +132,7 @@ class RadiusConstraint(Constraint):
 
     def gradient(
         self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Dict[EntityID, List[Point]]:
+    ) -> dict[EntityID, list[Point]]:
         entity = reg.get_entity(self.entity_id)
 
         # Type narrowing for Pylance

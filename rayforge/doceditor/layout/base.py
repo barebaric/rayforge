@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import math
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, Optional, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Optional
 
 from blinker import Signal
 from raygeo.geo import Matrix
@@ -132,7 +133,7 @@ class LayoutStrategy(ABC):
     @abstractmethod
     def calculate_deltas(
         self, context: Optional[ExecutionContext] = None
-    ) -> Dict[DocItem, Matrix]:
+    ) -> dict[DocItem, Matrix]:
         """
         Calculates the required delta transformation matrix for each
         item.
@@ -148,7 +149,7 @@ class LayoutStrategy(ABC):
         self,
         context: Optional[ExecutionContext] = None,
         task_manager: "Optional[TaskManager]" = None,
-    ) -> Dict[DocItem, Matrix]:
+    ) -> dict[DocItem, Matrix]:
         """
         Asynchronous version of calculate_deltas.
 

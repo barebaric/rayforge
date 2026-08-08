@@ -1,16 +1,13 @@
 import asyncio
 import inspect
 import logging
+from collections.abc import Awaitable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
     Callable,
-    Dict,
-    List,
     Optional,
-    Tuple,
     Union,
     cast,
 )
@@ -197,7 +194,7 @@ class GrblSerialDriver(Driver):
     @classmethod
     async def probe(
         cls, context: "RayforgeContext", **kwargs: Any
-    ) -> Tuple["DeviceProfile", List[str]]:
+    ) -> tuple["DeviceProfile", list[str]]:
         return await probe_grbl_device(cls, context, **kwargs)
 
     def _setup_implementation(self, **kwargs: Any) -> None:
@@ -761,9 +758,9 @@ class GrblSerialDriver(Driver):
 
     async def _stream_gcode(
         self,
-        gcode_lines: List[str],
-        machine_code_to_op_map: Optional[Dict[int, int]] = None,
-        command_times: Optional[List[float]] = None,
+        gcode_lines: list[str],
+        machine_code_to_op_map: Optional[dict[int, int]] = None,
+        command_times: Optional[list[float]] = None,
     ):
         """
         The core G-code streaming logic using character-counting protocol.
@@ -996,7 +993,7 @@ class GrblSerialDriver(Driver):
         else:
             raise ConnectionError("Serial transport not initialized")
 
-    async def _execute_command(self, command: str) -> List[str]:
+    async def _execute_command(self, command: str) -> list[str]:
         self._is_cancelled = False
         request = CommandRequest(command)
         await self._command_queue.put(request)
@@ -1017,7 +1014,7 @@ class GrblSerialDriver(Driver):
             raise
         return request.response_lines
 
-    async def execute_interactive_command(self, command: str) -> List[str]:
+    async def execute_interactive_command(self, command: str) -> list[str]:
         """
         Send a command and synchronously await its full response.
 
@@ -1216,7 +1213,7 @@ class GrblSerialDriver(Driver):
         cmd = " ".join(cmd_parts)
         await self._execute_command(cmd)
 
-    def get_setting_vars(self) -> List["VarSet"]:
+    def get_setting_vars(self) -> list["VarSet"]:
         return get_grbl_setting_varsets()
 
     async def detect_unit_system(self) -> Optional[UnitSystem]:
@@ -1307,7 +1304,7 @@ class GrblSerialDriver(Driver):
         )
         await self._execute_command(cmd)
 
-    async def read_wcs_offsets(self) -> Dict[str, Pos]:
+    async def read_wcs_offsets(self) -> dict[str, Pos]:
         response_lines = await self.execute_interactive_command("$#")
         offsets = {}
         for line in response_lines:

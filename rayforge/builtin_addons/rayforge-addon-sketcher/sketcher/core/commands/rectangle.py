@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Optional
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -29,7 +29,7 @@ class RectanglePreviewState(PreviewState):
         start_id: EntityID,
         start_temp: bool,
         p_end_id: EntityID,
-        preview_ids: Dict[str, EntityID],
+        preview_ids: dict[str, EntityID],
     ):
         self.start_id = start_id
         self.start_temp = start_temp
@@ -38,7 +38,7 @@ class RectanglePreviewState(PreviewState):
         self.locked_width: Optional[float] = None
         self.locked_height: Optional[float] = None
 
-    def get_preview_point_ids(self) -> Set[EntityID]:
+    def get_preview_point_ids(self) -> set[EntityID]:
         """
         Returns IDs of temporary preview points that shouldn't be snapped to.
 
@@ -101,7 +101,7 @@ class RectanglePreviewState(PreviewState):
 
     def get_dimensions(
         self, registry: "EntityRegistry"
-    ) -> List["DimensionData"]:
+    ) -> list["DimensionData"]:
         """
         Returns width and height dimensions for preview.
 
@@ -173,7 +173,7 @@ class RectangleCommand(SketchChangeCommand):
         end_pid: Optional[EntityID],
         fixed_width: Optional[float] = None,
         fixed_height: Optional[float] = None,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """Calculates the points, entities, and constraints for a rectangle."""
         if abs(x2 - x1) < 1e-6 or abs(y2 - y1) < 1e-6:
             return None
@@ -201,7 +201,7 @@ class RectangleCommand(SketchChangeCommand):
             Line(next_temp_id(), points["p4"].id, points["p1_id"]),
         ]
 
-        constraints: List[Any] = [
+        constraints: list[Any] = [
             HorizontalConstraint(points["p1_id"], points["p2"].id),
             VerticalConstraint(points["p2"].id, points["p3"].id),
             HorizontalConstraint(points["p4"].id, points["p3"].id),
@@ -246,8 +246,8 @@ class RectangleCommand(SketchChangeCommand):
         registry: EntityRegistry,
         start_pid: EntityID,
         end_pid: EntityID,
-        preview_ids: Optional[Dict[str, EntityID]] = None,
-    ) -> Optional[Dict[str, EntityID]]:
+        preview_ids: Optional[dict[str, EntityID]] = None,
+    ) -> Optional[dict[str, EntityID]]:
         """
         Creates or updates preview geometry in the registry.
 
