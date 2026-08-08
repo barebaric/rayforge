@@ -6,7 +6,7 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -117,7 +117,8 @@ def test_update_theme_and_colors_keeps_gl_derivation(
         (True, _rgba(0.8, 0.8, 0.8, 1.0)),  # view_fg_color
     ]
 
-    resolver.update_theme_and_colors()
+    with patch("rayforge.ui_gtk.sim3d.theme_resolver.GL.glClearColor"):
+        resolver.update_theme_and_colors()
 
     service.set_machine.assert_called_once()
     scene.apply_background_colors.assert_called_once()

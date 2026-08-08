@@ -171,6 +171,9 @@ def test_render_clamps_executed_count_to_vertex_count(renderer, colors):
         patch("OpenGL.GL.glBindVertexArray"),
         patch("OpenGL.GL.glEnable"),
         patch("OpenGL.GL.glBlendFunc"),
+        patch("OpenGL.GL.glActiveTexture"),
+        patch("OpenGL.GL.glBindTexture"),
+        patch("OpenGL.GL.glDepthMask"),
         patch("OpenGL.GL.glDrawArrays"),
         patch("rayforge.ui_gtk.sim3d.renderer.ops_renderer.set_line_width"),
     ):
