@@ -73,7 +73,7 @@ class Shader:
                 shaders.compileShader(fragment_source, GL.GL_FRAGMENT_SHADER),
                 validate=False,
             )
-        except Exception as e:
+        except Exception:
             logger.exception("Shader Compilation Failed")
             raise
 

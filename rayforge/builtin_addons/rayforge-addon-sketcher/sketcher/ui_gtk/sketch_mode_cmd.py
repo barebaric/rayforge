@@ -70,7 +70,7 @@ class SketchModeCmd:
             self._win.menubar.set_menu_model(sketch_studio.menu_model)
             self._win.insert_action_group("sketch", sketch_studio.action_group)
             self._win.add_controller(sketch_studio.shortcut_controller)
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to load sketch for editing")
 
     def exit_sketch_mode(self):
@@ -102,7 +102,7 @@ class SketchModeCmd:
             self._win.menubar.set_menu_model(sketch_studio.menu_model)
             self._win.insert_action_group("sketch", sketch_studio.action_group)
             self._win.add_controller(sketch_studio.shortcut_controller)
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to load sketch definition for editing")
 
     def on_sketch_definition_activated(self, sender, *, sketch: Sketch):

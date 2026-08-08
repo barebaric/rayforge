@@ -190,7 +190,7 @@ class ActionExtensionRegistry:
         for handler in self._setup_handlers:
             try:
                 handler(action_manager)
-            except Exception as e:
+            except Exception:
                 logger.exception(
                     f"Error in action setup handler {handler.__name__}"
                 )
@@ -200,7 +200,7 @@ class ActionExtensionRegistry:
         for handler in self._state_update_handlers:
             try:
                 handler(action_manager)
-            except Exception as e:
+            except Exception:
                 logger.exception(
                     f"Error in action state update handler {handler.__name__}"
                 )

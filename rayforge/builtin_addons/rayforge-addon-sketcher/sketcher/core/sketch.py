@@ -1256,7 +1256,7 @@ class Sketch(IAsset, IGeometryProvider):
             if update_constraint_status:
                 self._update_conflict_status(solver)
 
-        except Exception as e:
+        except Exception:
             import logging
 
             logging.getLogger(__name__).exception("Sketch solve failed")

@@ -244,7 +244,7 @@ class UnifiedWizard(PatchedDialogWindow):
             self._wire_page_signals(page, name)
 
             return page
-        except Exception as exc:
+        except Exception:
             logger.exception("Failed to build page %s", name)
             return None
 

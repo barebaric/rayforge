@@ -828,7 +828,7 @@ class ViewManager:
                 step_uid, workpiece_uid, view_handle
             )
 
-        except Exception as e:
+        except Exception:
             logger.exception(
                 f"[{composite_id}] Failed to allocate live buffer"
             )
