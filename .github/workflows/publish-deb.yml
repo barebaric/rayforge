@@ -166,7 +166,7 @@ jobs:
           fi
 
       - name: Download .deb artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ needs.publish-to-ppa.outputs.deb_filename }}
 
