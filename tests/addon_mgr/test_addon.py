@@ -164,9 +164,11 @@ class TestAddon:
 
     def test_load_missing_metadata(self):
         """Test error when metadata file is missing."""
-        with tempfile.TemporaryDirectory() as tmp:
-            with pytest.raises(FileNotFoundError):
-                Addon.load_from_directory(Path(tmp), version=TEST_VERSION)
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            pytest.raises(FileNotFoundError),
+        ):
+            Addon.load_from_directory(Path(tmp), version=TEST_VERSION)
 
     def test_validate_success_simple(self):
         """Test basic validation passes."""
@@ -359,13 +361,15 @@ class TestGetGitTagVersion:
         """Test raises RuntimeError when GitPython is not installed."""
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp)
-            with patch.dict(sys.modules, {"git": None, "git.Repo": None}):
-                with patch(
+            with (
+                patch.dict(sys.modules, {"git": None, "git.Repo": None}),
+                patch(
                     "rayforge.shared.util.versioning.importlib.import_module",
                     side_effect=ImportError,
-                ):
-                    with pytest.raises(RuntimeError, match="GitPython"):
-                        get_git_tag_version(path)
+                ),
+                pytest.raises(RuntimeError, match="GitPython"),
+            ):
+                get_git_tag_version(path)
 
     def test_raises_when_not_git_repository(self):
         """Test raises RuntimeError when directory is not a git repo."""
@@ -374,9 +378,11 @@ class TestGetGitTagVersion:
             mock_git = MagicMock()
             mock_git.Repo.side_effect = Exception("Not a git repo")
 
-            with patch.dict(sys.modules, {"git": mock_git}):
-                with pytest.raises(RuntimeError, match="Failed to get"):
-                    get_git_tag_version(path)
+            with (
+                patch.dict(sys.modules, {"git": mock_git}),
+                pytest.raises(RuntimeError, match="Failed to get"),
+            ):
+                get_git_tag_version(path)
 
     def test_raises_when_no_tags(self):
         """Test raises RuntimeError when git repo has no tags."""
@@ -387,9 +393,11 @@ class TestGetGitTagVersion:
             mock_git = MagicMock()
             mock_git.Repo.return_value = mock_repo
 
-            with patch.dict(sys.modules, {"git": mock_git}):
-                with pytest.raises(RuntimeError, match="No git tags found"):
-                    get_git_tag_version(path)
+            with (
+                patch.dict(sys.modules, {"git": mock_git}),
+                pytest.raises(RuntimeError, match="No git tags found"),
+            ):
+                get_git_tag_version(path)
 
     def test_returns_latest_tag_name(self):
         """Test returns the name of the latest git tag by commit datetime."""
@@ -453,6 +461,8 @@ class TestGetGitTagVersion:
             mock_git = MagicMock()
             mock_git.Repo.side_effect = Exception("Git error")
 
-            with patch.dict(sys.modules, {"git": mock_git}):
-                with pytest.raises(RuntimeError, match="Git error"):
-                    get_git_tag_version(path)
+            with (
+                patch.dict(sys.modules, {"git": mock_git}),
+                pytest.raises(RuntimeError, match="Git error"),
+            ):
+                get_git_tag_version(path)

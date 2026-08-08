@@ -209,9 +209,11 @@ class GrblNetworkDriver(Driver):
                 "data": f"GET {url}",
             },
         )
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                data = await response.text()
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(url) as response,
+        ):
+            data = await response.text()
         logger.debug(
             f"GET {url} response: {data}",
             extra={
@@ -243,10 +245,12 @@ class GrblNetworkDriver(Driver):
             },
         )
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    response.raise_for_status()  # Check for 4xx/5xx errors
-                    data = await response.text()
+            async with (
+                aiohttp.ClientSession() as session,
+                session.get(url) as response,
+            ):
+                response.raise_for_status()  # Check for 4xx/5xx errors
+                data = await response.text()
             logger.debug(
                 f"GET {url} response: {data}",
                 extra={
@@ -293,10 +297,12 @@ class GrblNetworkDriver(Driver):
                 "data": log_data,
             },
         )
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, data=form) as response:
-                response.raise_for_status()
-                data = await response.text()
+        async with (
+            aiohttp.ClientSession() as session,
+            session.post(url, data=form) as response,
+        ):
+            response.raise_for_status()
+            data = await response.text()
 
         logger.debug(
             f"POST {url} response: {data}",
@@ -318,9 +324,11 @@ class GrblNetworkDriver(Driver):
                 "data": f"GET {url}",
             },
         )
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                data = await response.text()
+        async with (
+            aiohttp.ClientSession() as session,
+            session.get(url) as response,
+        ):
+            data = await response.text()
 
         logger.debug(
             f"GET {url} response: {data}",

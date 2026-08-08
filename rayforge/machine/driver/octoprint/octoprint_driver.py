@@ -217,28 +217,30 @@ class OctoPrintDriver(Driver):
         )
 
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.request(
+            async with (
+                aiohttp.ClientSession() as session,
+                session.request(
                     method, url, headers=headers, **kwargs
-                ) as response:
-                    if response.status == 403:
-                        await self._handle_auth_error()
-                        raise DeviceConnectionError(
-                            _(
-                                "Authentication failed. "
-                                "API key may be invalid or expired."
-                            )
+                ) as response,
+            ):
+                if response.status == 403:
+                    await self._handle_auth_error()
+                    raise DeviceConnectionError(
+                        _(
+                            "Authentication failed. "
+                            "API key may be invalid or expired."
                         )
-                    response.raise_for_status()
+                    )
+                response.raise_for_status()
 
-                    if response.status == 204:
-                        return None
+                if response.status == 204:
+                    return None
 
-                    ct = response.content_type or ""
-                    if "json" in ct:
-                        data = await response.json()
-                    else:
-                        data = await response.text()
+                ct = response.content_type or ""
+                if "json" in ct:
+                    data = await response.json()
+                else:
+                    data = await response.text()
 
             logger.debug(
                 f"Response ({response.status}): {str(data)[:200]}"
@@ -603,24 +605,24 @@ class OctoPrintDriver(Driver):
         )
 
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    url, data=form, headers=headers
-                ) as response:
-                    if response.status == 403:
-                        await self._handle_auth_error()
-                        raise DeviceConnectionError(
-                            _("Authentication failed during upload.")
+            async with (
+                aiohttp.ClientSession() as session,
+                session.post(url, data=form, headers=headers) as response,
+            ):
+                if response.status == 403:
+                    await self._handle_auth_error()
+                    raise DeviceConnectionError(
+                        _("Authentication failed during upload.")
+                    )
+                if response.status == 409:
+                    raise DeviceConnectionError(
+                        _(
+                            "Printer is busy or not operational. "
+                            "Cannot start a new job."
                         )
-                    if response.status == 409:
-                        raise DeviceConnectionError(
-                            _(
-                                "Printer is busy or not operational. "
-                                "Cannot start a new job."
-                            )
-                        )
-                    response.raise_for_status()
-                    data = await response.json()
+                    )
+                response.raise_for_status()
+                data = await response.json()
 
             logger.debug(
                 f"Upload response: {data}",
