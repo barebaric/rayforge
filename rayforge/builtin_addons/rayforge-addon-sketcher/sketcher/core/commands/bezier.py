@@ -183,7 +183,7 @@ class BezierCommand(SketchChangeCommand):
         y: float,
     ) -> None:
         if not isinstance(preview_state, BezierPreviewState):
-            raise AttributeError("Expected BezierPreviewState")
+            raise TypeError("Expected BezierPreviewState")
 
         if preview_state.end_id is None:
             return
@@ -322,7 +322,7 @@ class BezierCommand(SketchChangeCommand):
         registry: EntityRegistry, preview_state: PreviewState
     ) -> None:
         if not isinstance(preview_state, BezierPreviewState):
-            raise AttributeError("Expected BezierPreviewState")
+            raise TypeError("Expected BezierPreviewState")
 
         logger.debug(
             f"cleanup_preview: temp_entity_id={preview_state.temp_entity_id}, "

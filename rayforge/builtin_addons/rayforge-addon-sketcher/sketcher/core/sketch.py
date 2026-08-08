@@ -1259,9 +1259,7 @@ class Sketch(IAsset, IGeometryProvider):
         except Exception as e:
             import logging
 
-            logging.getLogger(__name__).error(
-                f"Sketch solve failed: {e}", exc_info=True
-            )
+            logging.getLogger(__name__).exception("Sketch solve failed")
             success = False
 
         return success
@@ -1305,7 +1303,7 @@ class Sketch(IAsset, IGeometryProvider):
             solve_params.evaluate_all(initial_values=initial_values)
             ctx = solve_params.get_all_values()
             ctx["today"] = lambda: datetime.now(tz=timezone.utc).date()
-            ctx["now"] = lambda: datetime.now()
+            ctx["now"] = lambda: datetime.now(tz=timezone.utc)
             ctx["uuid4"] = lambda: str(uuid.uuid4())[:8]
             expr_map = ExpressionMap(ctx)
             resolved = expr_map.format(entity.content)

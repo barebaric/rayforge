@@ -115,7 +115,7 @@ class TestMaterial:
             file_path = Path(f.name)
 
         try:
-            with pytest.raises(ValueError):
+            with pytest.raises(TypeError):
                 Material.from_file(file_path)
         finally:
             file_path.unlink()

@@ -58,9 +58,7 @@ class ProceduralRenderer(Renderer):
             ImportError,
             AttributeError,
         ) as e:
-            logger.error(
-                f"Failed to load procedural function: {e}", exc_info=True
-            )
+            logger.exception("Failed to load procedural function")
             return None, None, None
 
     def render_preview_image(
@@ -98,10 +96,7 @@ class ProceduralRenderer(Renderer):
         try:
             draw_func(ctx, width, height, params)
         except Exception as e:
-            logger.error(
-                f"Error executing procedural drawing function: {e}",
-                exc_info=True,
-            )
+            logger.exception("Error executing procedural drawing function")
             return None
 
         h, w = surface.get_height(), surface.get_width()

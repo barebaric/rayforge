@@ -119,9 +119,7 @@ class PngImporter(Importer):
                 self.raw_data, access=pyvips.Access.RANDOM
             )
         except pyvips.Error as e:
-            logger.error(
-                f"pyvips failed to load PNG buffer: {e}", exc_info=True
-            )
+            logger.exception("pyvips failed to load PNG buffer")
             self.add_error(_(f"Image load failed: {e}"))
             self._image = None
             return None

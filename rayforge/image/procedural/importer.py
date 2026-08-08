@@ -91,9 +91,7 @@ class ProceduralImporter(Importer):
                 errors=self._errors,
             )
         except (ImportError, AttributeError, ValueError) as e:
-            logger.error(
-                f"Failed to calculate procedural size: {e}", exc_info=True
-            )
+            logger.exception("Failed to calculate procedural size")
             self.add_error(_(f"Failed to calculate parameters: {e}"))
             return ImportManifest(title=self.name, errors=self._errors)
 
@@ -140,9 +138,7 @@ class ProceduralImporter(Importer):
             size_func = getattr(module, func_name)
             width_mm, height_mm = size_func(self.params)
         except (ImportError, AttributeError, ValueError) as e:
-            logger.error(
-                f"Failed to load procedural size function: {e}", exc_info=True
-            )
+            logger.exception("Failed to load procedural size function")
             self.add_error(_(f"Failed to execute generator: {e}"))
             return None
 

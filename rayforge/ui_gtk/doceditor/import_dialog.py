@@ -385,9 +385,7 @@ class ImportDialog(PatchedDialogWindow):
                     self._mode_visible = True
                     self._mode_group.set_visible(True)
         except (AttributeError, KeyError, TypeError):
-            logger.error(
-                f"Failed to read import file {self.file_path}", exc_info=True
-            )
+            logger.exception(f"Failed to read import file {self.file_path}")
             self.close()
 
     def _on_layer_source_changed(self, combo, *args):

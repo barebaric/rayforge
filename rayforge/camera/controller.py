@@ -734,10 +734,7 @@ class CameraController:
             except cv2.error as e:
                 logger.error(f"OpenCV error for {self.config.name}: {e}")
             except Exception as e:
-                logger.error(
-                    f"Unexpected error for {self.config.name}: {e}",
-                    exc_info=True,
-                )
+                logger.exception(f"Unexpected error for {self.config.name}")
 
             if self._running:
                 logger.info(
@@ -807,7 +804,5 @@ class CameraController:
             logger.error(f"OpenCV error capturing image: {e}")
             self._image_data = None
         except Exception as e:
-            logger.error(
-                f"Unexpected error capturing image: {e}", exc_info=True
-            )
+            logger.exception("Unexpected error capturing image")
             self._image_data = None

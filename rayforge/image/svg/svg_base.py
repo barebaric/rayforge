@@ -95,10 +95,8 @@ class SvgImporterBase(Importer):
             logger.warning(f"SVG scan failed for {self.source_file.name}: {e}")
             self.add_error(f"Could not parse SVG. File may be corrupt: {e}")
         except Exception as e:
-            logger.error(
-                f"Unexpected error during SVG scan for "
-                f"{self.source_file.name}: {e}",
-                exc_info=True,
+            logger.exception(
+                f"Unexpected error during SVG scan for {self.source_file.name}"
             )
             self.add_error(f"Unexpected error while scanning SVG: {e}")
 

@@ -196,7 +196,7 @@ class Config:
         """Sets the usage tracking consent preference."""
         new_value = ""
         if consent:
-            new_value = datetime.now().isoformat()
+            new_value = datetime.now(tz=timezone.utc).isoformat()
         if self.usage_consent_date == new_value:
             return
         self.usage_consent_date = new_value

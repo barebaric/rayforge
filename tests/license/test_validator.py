@@ -1,5 +1,5 @@
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -27,7 +27,7 @@ class TestLicenseValidator:
                 status=LicenseStatus.VALID,
                 message="Cached result",
             ),
-            datetime.now(),
+            datetime.now(tz=timezone.utc),
         )
 
         result = validator.validate("test_addon", {"product_ids": ["P1"]})
@@ -37,11 +37,11 @@ class TestLicenseValidator:
     def test_invalidate_cache_specific_addon(self, validator):
         validator._cache["addon1"] = (
             LicenseResult(status=LicenseStatus.VALID),
-            datetime.now(),
+            datetime.now(tz=timezone.utc),
         )
         validator._cache["addon2"] = (
             LicenseResult(status=LicenseStatus.VALID),
-            datetime.now(),
+            datetime.now(tz=timezone.utc),
         )
 
         validator.invalidate_cache("addon1")
@@ -52,11 +52,11 @@ class TestLicenseValidator:
     def test_invalidate_cache_all(self, validator):
         validator._cache["addon1"] = (
             LicenseResult(status=LicenseStatus.VALID),
-            datetime.now(),
+            datetime.now(tz=timezone.utc),
         )
         validator._cache["addon2"] = (
             LicenseResult(status=LicenseStatus.VALID),
-            datetime.now(),
+            datetime.now(tz=timezone.utc),
         )
 
         validator.invalidate_cache()

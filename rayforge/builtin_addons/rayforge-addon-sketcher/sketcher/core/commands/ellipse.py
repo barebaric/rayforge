@@ -143,7 +143,7 @@ class EllipseCommand(SketchChangeCommand):
         constrain_circle: bool = False,
     ) -> None:
         if not isinstance(preview_state, EllipsePreviewState):
-            raise AttributeError("Expected EllipsePreviewState")
+            raise TypeError("Expected EllipsePreviewState")
 
         try:
             start_p = registry.get_point(preview_state.start_id)
@@ -169,7 +169,7 @@ class EllipseCommand(SketchChangeCommand):
         registry: EntityRegistry, preview_state: PreviewState
     ) -> None:
         if not isinstance(preview_state, EllipsePreviewState):
-            raise AttributeError("Expected EllipsePreviewState")
+            raise TypeError("Expected EllipsePreviewState")
 
         if preview_state.entity_id is not None:
             registry.entities = [

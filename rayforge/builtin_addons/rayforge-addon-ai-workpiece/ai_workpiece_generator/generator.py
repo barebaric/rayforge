@@ -99,5 +99,5 @@ async def generate_svg(prompt: str) -> tuple[str | None, str | None]:
         logger.error("AI service error generating SVG: %s", e)
         return None, str(e)
     except Exception as e:
-        logger.error("Error generating SVG: %s", e, exc_info=True)
+        logger.exception("Error generating SVG")
         return None, str(e)

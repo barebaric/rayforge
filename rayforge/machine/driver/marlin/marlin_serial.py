@@ -287,10 +287,7 @@ class MarlinSerialDriver(Driver):
                 logger.info("Connection loop cancelled.")
                 break
             except Exception as e:
-                logger.error(
-                    f"Unexpected error in connection loop: {e}",
-                    exc_info=True,
-                )
+                logger.exception("Unexpected error in connection loop")
                 self._update_connection_status(TransportStatus.ERROR, str(e))
             finally:
                 if self._transport and self._transport.is_connected:

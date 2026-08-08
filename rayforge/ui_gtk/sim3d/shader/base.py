@@ -74,7 +74,7 @@ class Shader:
                 validate=False,
             )
         except Exception as e:
-            logger.error(f"Shader Compilation Failed: {e}", exc_info=True)
+            logger.exception("Shader Compilation Failed")
             raise
 
     def use(self) -> None:

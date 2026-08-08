@@ -191,9 +191,8 @@ class ActionExtensionRegistry:
             try:
                 handler(action_manager)
             except Exception as e:
-                logger.error(
-                    f"Error in action setup handler {handler.__name__}: {e}",
-                    exc_info=True,
+                logger.exception(
+                    f"Error in action setup handler {handler.__name__}"
                 )
 
     def invoke_state_update_handlers(self, action_manager: "ActionManager"):
@@ -202,10 +201,8 @@ class ActionExtensionRegistry:
             try:
                 handler(action_manager)
             except Exception as e:
-                logger.error(
-                    f"Error in action state update handler "
-                    f"{handler.__name__}: {e}",
-                    exc_info=True,
+                logger.exception(
+                    f"Error in action state update handler {handler.__name__}"
                 )
 
 

@@ -520,10 +520,10 @@ class RoundedRectCommand(SketchChangeCommand):
             x, y: The new end point coordinates.
 
         Raises:
-            AttributeError: If preview_state is not a RoundedRectPreviewState.
+            TypeError: If preview_state is not a RoundedRectPreviewState.
         """
         if not isinstance(preview_state, RoundedRectPreviewState):
-            raise AttributeError("Expected RoundedRectPreviewState")
+            raise TypeError("Expected RoundedRectPreviewState")
         try:
             p_end = registry.get_point(preview_state.p_end_id)
             p_start = registry.get_point(preview_state.start_id)
@@ -575,10 +575,10 @@ class RoundedRectCommand(SketchChangeCommand):
             preview_state: The preview state from start_preview.
 
         Raises:
-            AttributeError: If preview_state is not a RoundedRectPreviewState.
+            TypeError: If preview_state is not a RoundedRectPreviewState.
         """
         if not isinstance(preview_state, RoundedRectPreviewState):
-            raise AttributeError("Expected RoundedRectPreviewState")
+            raise TypeError("Expected RoundedRectPreviewState")
         preview_ids = preview_state.preview_ids
         p_end_id = preview_state.p_end_id
 

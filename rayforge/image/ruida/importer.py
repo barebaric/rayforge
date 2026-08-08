@@ -66,10 +66,9 @@ class RuidaImporter(Importer):
                 title=self.source_file.name, errors=self._errors
             )
         except Exception as e:
-            logger.error(
+            logger.exception(
                 f"Unexpected error during Ruida scan for "
-                f"{self.source_file.name}: {e}",
-                exc_info=True,
+                f"{self.source_file.name}"
             )
             self.add_error(
                 _(f"Unexpected error while scanning Ruida file: {e}")

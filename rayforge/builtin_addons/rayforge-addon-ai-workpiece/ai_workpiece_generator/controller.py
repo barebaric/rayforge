@@ -113,7 +113,7 @@ class AISvgGeneratorController:
                 task_mgr.schedule_on_main_thread(on_success, result)
 
             except Exception as e:
-                logger.error("Error in generation task: %s", e, exc_info=True)
+                logger.exception("Error in generation task")
                 if not self._cancelled:
                     task_mgr.schedule_on_main_thread(on_error, str(e))
 

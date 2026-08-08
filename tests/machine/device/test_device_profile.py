@@ -271,7 +271,7 @@ class TestDeviceProfileLoad:
         device_dir = tmp_path / "bad-manifest"
         device_dir.mkdir(parents=True)
         (device_dir / "device.yaml").write_text("just a string")
-        with pytest.raises(ValueError, match="not a mapping"):
+        with pytest.raises(TypeError, match="not a mapping"):
             DeviceProfile.from_path(device_dir)
 
     def test_non_mapping_machine_section_raises(self, tmp_path):
@@ -285,7 +285,7 @@ class TestDeviceProfileLoad:
             },
         )
         _write_grbl_dialect(device_dir)
-        with pytest.raises(ValueError, match="Invalid 'machine'"):
+        with pytest.raises(TypeError, match="Invalid 'machine'"):
             DeviceProfile.from_path(device_dir)
 
     def test_load_with_heads(self, tmp_path):

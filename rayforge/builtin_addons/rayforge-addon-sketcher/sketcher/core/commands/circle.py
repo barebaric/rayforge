@@ -182,10 +182,10 @@ class CircleCommand(SketchChangeCommand):
             x, y: The new cursor coordinates.
 
         Raises:
-            AttributeError: If preview_state is not a CirclePreviewState.
+            TypeError: If preview_state is not a CirclePreviewState.
         """
         if not isinstance(preview_state, CirclePreviewState):
-            raise AttributeError("Expected CirclePreviewState")
+            raise TypeError("Expected CirclePreviewState")
 
         if preview_state.locked_diameter is not None:
             return
@@ -212,10 +212,10 @@ class CircleCommand(SketchChangeCommand):
             preview_state: The preview state from start_preview.
 
         Raises:
-            AttributeError: If preview_state is not a CirclePreviewState.
+            TypeError: If preview_state is not a CirclePreviewState.
         """
         if not isinstance(preview_state, CirclePreviewState):
-            raise AttributeError("Expected CirclePreviewState")
+            raise TypeError("Expected CirclePreviewState")
 
         if preview_state.entity_id is not None:
             registry.entities = [

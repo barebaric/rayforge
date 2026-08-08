@@ -4,7 +4,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from threading import Thread
@@ -156,7 +156,7 @@ class PatreonProvider(LicenseProvider):
                         status=LicenseStatus.VALID,
                         message="Active Patreon supporter",
                         license_type=LicenseType.SUBSCRIPTION,
-                        last_validated=datetime.now(),
+                        last_validated=datetime.now(tz=timezone.utc),
                         metadata={
                             "tier_ids": matched_tiers,
                         },

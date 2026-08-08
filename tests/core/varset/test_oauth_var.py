@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from rayforge.core.varset import Var, VarSet
 from rayforge.core.varset.oauthvar import OAuthFlowVar
@@ -67,7 +67,7 @@ class TestOAuthFlowVar:
             {
                 "access_token": "abc",
                 "expires_at": (
-                    datetime.now() + timedelta(hours=1)
+                    datetime.now(tz=timezone.utc) + timedelta(hours=1)
                 ).isoformat(),
             }
         )
@@ -80,7 +80,7 @@ class TestOAuthFlowVar:
             {
                 "access_token": "abc",
                 "expires_at": (
-                    datetime.now() - timedelta(hours=1)
+                    datetime.now(tz=timezone.utc) - timedelta(hours=1)
                 ).isoformat(),
             }
         )

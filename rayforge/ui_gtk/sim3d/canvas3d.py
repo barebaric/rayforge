@@ -246,7 +246,7 @@ class Canvas3D(Gtk.GLArea):
 
             self._gl_initialized = True
         except Exception as e:
-            logger.error(f"OpenGL Initialization Error: {e}", exc_info=True)
+            logger.exception("OpenGL Initialization Error")
             self._gl_initialized = False
 
     def _get_viewport(self) -> ViewportConfig:
@@ -321,7 +321,7 @@ class Canvas3D(Gtk.GLArea):
             self._scene.render(self._ctx, None)
 
         except Exception as e:
-            logger.error("OpenGL Render Error: %s", e, exc_info=True)
+            logger.exception("OpenGL Render Error")
             return False
 
         t_render_elapsed = (time.perf_counter() - t_render_start) * 1000

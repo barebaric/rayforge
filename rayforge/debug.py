@@ -3,7 +3,7 @@ import logging
 import shutil
 import tempfile
 import zipfile
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -114,7 +114,9 @@ class DebugDumpManager:
                         zf.writestr("project.json", json_bytes)
 
                 # 7. Create ZIP archive
-                timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                timestamp_str = datetime.now(tz=timezone.utc).strftime(
+                    "%Y-%m-%d_%H-%M-%S"
+                )
                 archive_name = f"rayforge_debug_{timestamp_str}"
                 # Use a system-wide temp dir for the final archive to ensure
                 # it survives the 'with' block of the temporary directory.
@@ -128,7 +130,7 @@ class DebugDumpManager:
                 return archive_path
 
         except Exception:
-            logger.error("Failed to create debug dump archive", exc_info=True)
+            logger.exception("Failed to create debug dump archive")
             return None
 
     @staticmethod

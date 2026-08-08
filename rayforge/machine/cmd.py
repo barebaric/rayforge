@@ -159,7 +159,7 @@ class MachineCmd:
     ):
         """The specific machine action for a framing job."""
         if not isinstance(artifact, JobArtifact):
-            raise ValueError("_run_frame_action received a non-JobArtifact")
+            raise TypeError("_run_frame_action received a non-JobArtifact")
         ops = artifact.ops
 
         head = machine.get_default_laser_head()
@@ -228,7 +228,7 @@ class MachineCmd:
     ):
         """The specific machine action for a send job."""
         if not isinstance(artifact, JobArtifact):
-            raise ValueError("_run_send_action received a non-JobArtifact")
+            raise TypeError("_run_send_action received a non-JobArtifact")
 
         await self._execute_monitored_job(
             artifact.ops,
@@ -272,9 +272,7 @@ class MachineCmd:
                 await final_job_action(artifact, machine, on_progress)
 
         except Exception as e:
-            logger.error(
-                f"Failed to assemble or execute {job_name} job", exc_info=True
-            )
+            logger.exception(f"Failed to assemble or execute {job_name} job")
             self._editor.notification_requested.send(
                 self,
                 message=_("{job_name} failed: {error}").format(

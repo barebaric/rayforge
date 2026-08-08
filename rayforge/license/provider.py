@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Any
 
@@ -32,7 +32,7 @@ class LicenseResult:
     def is_expired(self) -> bool:
         if self.expires_at is None:
             return False
-        return datetime.now() >= self.expires_at
+        return datetime.now(tz=timezone.utc) >= self.expires_at
 
     def is_valid_for_offline(self) -> bool:
         if self.status != LicenseStatus.VALID:
@@ -45,7 +45,10 @@ class LicenseResult:
             if not self.last_validated:
                 return False
             grace_period = timedelta(days=30)
-            return datetime.now() - self.last_validated < grace_period
+            return (
+                datetime.now(tz=timezone.utc) - self.last_validated
+                < grace_period
+            )
         return False
 
 
