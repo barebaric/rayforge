@@ -38,6 +38,28 @@ def test_seek_zero():
     assert player.state.power == 0.5
 
 
+def test_time_ops_drive_playback_time():
+    state_ops = _make_ops()
+    time_ops = Ops()
+    time_ops.set_power(0.5)
+    time_ops.set_feed_rate(800)
+    time_ops.move_to(0.0, 0.0, 0.0)
+    time_ops.line_to(1.0, 0.0, 0.0)
+    player = OpPlayer(state_ops, _make_machine(), Doc(), time_ops=time_ops)
+    # Cumulative time reflects the short move of the time ops, not the
+    # long move of the state ops (command index 3 is the first cut).
+    state_cum = state_ops.get_cumulative_time_at(3, 800.0, 3000.0, 1000.0)
+    time_cum = time_ops.get_cumulative_time_at(3, 800.0, 3000.0, 1000.0)
+    assert time_cum < state_cum
+    assert player.get_cumulative_time(3) == pytest.approx(time_cum)
+    # Command lookup at a simulated time also follows the time ops.
+    mid = (time_cum + state_cum) / 2.0
+    assert player.find_index_at_sim_time(mid) == 3
+    # State still advances from the state ops.
+    player.seek(3)
+    assert player.state.axes[Axis.X] == 10.0
+
+
 def test_advance_from_start():
     ops = _make_ops()
     player = OpPlayer(ops, _make_machine(), Doc())

@@ -228,6 +228,7 @@ class ScenePresenter:
 
     def _build_op_player_async(self):
         ops = self._get_ops_for_playback()
+        time_ops = self._get_time_ops_for_playback()
         machine = self._context.machine
         if machine is None:
             return
@@ -253,7 +254,13 @@ class ScenePresenter:
             saved_index = self._op_player.current_index
             reused_snapshots = self._op_player.snapshots
 
-        player = OpPlayer(ops, machine, self.doc, build_snapshots=False)
+        player = OpPlayer(
+            ops,
+            machine,
+            self.doc,
+            build_snapshots=False,
+            time_ops=time_ops,
+        )
         player.set_playback_params(
             machine.max_cut_speed,
             machine.max_travel_speed,
@@ -410,6 +417,22 @@ class ScenePresenter:
             artifact = self._context.artifact_store.get(handle)
             if isinstance(artifact, JobArtifact):
                 return artifact.preview_ops
+        return None
+
+    def _get_time_ops_for_playback(self) -> Optional[Ops]:
+        """Unmapped ops for the playback time model.
+
+        The preview ops of rotary jobs keep endpoint Y at a constant
+        while the real rotation lives in extra axes, which distorts
+        distances and makes arcs degenerate. The raw assembled ops
+        carry the true (unwrapped) path, so durations must come from
+        them; command indices and order match the preview ops 1:1.
+        """
+        handle = self._current_job_handle
+        if handle is not None:
+            artifact = self._context.artifact_store.get(handle)
+            if isinstance(artifact, JobArtifact):
+                return artifact.ops
         return None
 
     def update_scene_from_doc(self):
