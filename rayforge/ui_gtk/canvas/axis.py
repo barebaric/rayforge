@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import cairo
 import numpy as np
@@ -63,7 +63,7 @@ class AxisRenderer:
         self.show_axis: bool = show_axis
         self.label_font_size: float = label_font_size
         self.min_grid_spacing_px = 50.0
-        self.x_axis_y_override: Optional[float] = None
+        self.x_axis_y_override: float | None = None
 
     def get_effective_height(self) -> float:
         """Returns the effective height for layout calculations."""
@@ -553,7 +553,7 @@ class AxisRenderer:
     def set_label_font_size(self, label_font_size: float):
         self.label_font_size = label_font_size
 
-    def set_x_axis_y_override(self, y: Optional[float]):
+    def set_x_axis_y_override(self, y: float | None):
         self.x_axis_y_override = y
 
     def set_coordinate_space(self, space: "CoordinateSpace"):

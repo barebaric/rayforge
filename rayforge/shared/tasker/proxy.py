@@ -20,7 +20,7 @@ import logging
 import time
 from multiprocessing.queues import Queue
 from queue import Full
-from typing import Any, Optional
+from typing import Any
 
 from rayforge.shared.tasker.progress import (
     ThrottledProgressContext,
@@ -54,7 +54,7 @@ class ExecutionContextProxy(ThrottledProgressContext):
         self._task_id = task_id
         self.parent_log_level = parent_log_level
         self._last_progress_report_time = 0.0
-        self._last_reported_progress: Optional[float] = None
+        self._last_reported_progress: float | None = None
         self.task = None
 
     def _report_normalized_progress(self, progress: float):
@@ -86,7 +86,7 @@ class ExecutionContextProxy(ThrottledProgressContext):
         except Full:
             pass
 
-    def send_event(self, name: str, data: Optional[dict] = None):
+    def send_event(self, name: str, data: dict | None = None):
         """Sends a named event with a data payload to the parent."""
         try:
             self._queue.put_nowait(
@@ -158,9 +158,9 @@ class ExecutionContextProxy(ThrottledProgressContext):
     def send_event_and_wait(
         self,
         name: str,
-        data: Optional[dict] = None,
+        data: dict | None = None,
         timeout: float = 5.0,
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
     ) -> bool:
         """
         Sends a named event and waits for adoption acknowledgment.

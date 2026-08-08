@@ -27,11 +27,10 @@ On each debounced rebuild:
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Optional,
     Protocol,
     runtime_checkable,
 )
@@ -91,8 +90,8 @@ class _DelayedScheduler(Protocol):
         self,
         func: Callable[..., Any],
         *args: Any,
-        key: Optional[Any] = None,
-        when_done: Optional[Callable[[Any], None]] = None,
+        key: Any | None = None,
+        when_done: Callable[[Any], None] | None = None,
         **kwargs: Any,
     ) -> Any: ...
 
@@ -108,20 +107,20 @@ class IntentController:
 
     def __init__(
         self,
-        doc: "Optional[Doc]",
-        task_manager: "_DelayedScheduler",
-        machine: "Optional[Machine]" = None,
-        raygeo_pipeline: Optional[RaygeoPipeline] = None,
+        doc: Doc | None,
+        task_manager: _DelayedScheduler,
+        machine: Machine | None = None,
+        raygeo_pipeline: RaygeoPipeline | None = None,
     ):
-        self._doc: Optional[Doc] = doc
+        self._doc: Doc | None = doc
         self._task_manager = task_manager
         self._machine = machine
         self._raygeo_pipeline: RaygeoPipeline = (
             raygeo_pipeline or RaygeoPipeline()
         )
-        self._intent: Optional[Intent] = None
+        self._intent: Intent | None = None
         self._generation_id: int = 0
-        self._rebuild_timer: Optional[Any] = None
+        self._rebuild_timer: Any | None = None
         self._rebuilding: bool = False
         self._rebuild_pending: bool = False
         self._pause_count: int = 0
@@ -131,8 +130,8 @@ class IntentController:
         # for DOM reattachment.  Rebuilt on every successful
         # ``IntentBuilder.build`` call.
         self._key_to_item: dict[str, DocItem] = {}
-        self._workpieces_by_uid: dict[str, "WorkPiece"] = {}
-        self._steps_by_uid: dict[str, "Step"] = {}
+        self._workpieces_by_uid: dict[str, WorkPiece] = {}
+        self._steps_by_uid: dict[str, Step] = {}
 
         # Signals for notifying the UI of generation progress.
         self.workpiece_artifact_ready = Signal()
@@ -156,7 +155,7 @@ class IntentController:
         return self._raygeo_pipeline
 
     @property
-    def intent(self) -> Optional[Intent]:
+    def intent(self) -> Intent | None:
         return self._intent
 
     @property
@@ -239,7 +238,7 @@ class IntentController:
             return
         self._schedule_rebuild()
 
-    def set_doc(self, doc: "Optional[Doc]") -> None:
+    def set_doc(self, doc: Doc | None) -> None:
         """Replace the document and trigger a rebuild.
 
         Preserves the existing :class:`RaygeoPipeline` and
@@ -252,7 +251,7 @@ class IntentController:
             self.connect()
         self.force_rebuild()
 
-    def set_machine(self, machine: "Optional[Machine]") -> None:
+    def set_machine(self, machine: Machine | None) -> None:
         """Replace the machine and trigger a rebuild.
 
         Preserves the existing :class:`RaygeoPipeline` and
@@ -440,7 +439,7 @@ class IntentController:
         """Emit :attr:`progress_changed` on the main thread."""
         self.progress_changed.send(self, fraction=fraction, message=message)
 
-    def _reattach(self, key: str, item: "DocItem", output: Any) -> None:
+    def _reattach(self, key: str, item: DocItem, output: Any) -> None:
         """
         Reattach a completed node's output onto the owning DocItem and
         emit the corresponding signal so the UI can update.
@@ -502,8 +501,6 @@ class IntentController:
         callback can reattach outputs onto the originating WorkPiece or
         Step without needing to re-walk the Doc.
         """
-        from ..core.step import Step
-        from ..core.workpiece import WorkPiece
 
         self._key_to_item = {}
         if self._doc is None:
@@ -545,10 +542,10 @@ class IntentController:
             elif key == "job" or key == "job:encode":
                 self._key_to_item[key] = self._doc
 
-    def _find_workpiece(self, uid: str) -> "Optional[WorkPiece]":
+    def _find_workpiece(self, uid: str) -> WorkPiece | None:
         return self._workpieces_by_uid.get(uid)
 
-    def _find_step(self, uid: str) -> "Optional[Step]":
+    def _find_step(self, uid: str) -> Step | None:
         return self._steps_by_uid.get(uid)
 
     def shutdown(self) -> None:

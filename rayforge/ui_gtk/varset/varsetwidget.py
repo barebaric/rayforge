@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Any, Optional
+from typing import Any
 
 from blinker import Signal
 from gi.repository import Adw, GLib, Gtk
@@ -34,7 +34,7 @@ class _VarSetRowManager:
         self._apply_buttons = []
         self._reset_buttons = []
         self.data_changed = Signal()
-        self._debounce_timer_id: Optional[int] = None
+        self._debounce_timer_id: int | None = None
         self._pending_keys: set = set()
 
     def _add_row(self, row):
@@ -193,7 +193,7 @@ class _VarSetRowManager:
         self,
         row: Adw.PreferencesRow,
         var: Var,
-        adapter: Optional[RowAdapter],
+        adapter: RowAdapter | None,
     ):
         self._add_apply_button_if_needed(row, var.key)
         self._add_reset_button_if_needed(row, var, adapter)

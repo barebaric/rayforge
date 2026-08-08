@@ -1,6 +1,5 @@
 """UI tests for the CameraController interaction logic."""
 
-# flake8: noqa: E402
 import math
 
 import gi

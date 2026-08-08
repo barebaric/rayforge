@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.geo.shape.arc import normalize_angle
 from raygeo.geo.shape.line import get_line_line_intersection
@@ -32,7 +32,7 @@ class AngleConstraintCommand:
         registry: EntityRegistry,
         e1_id: EntityID,
         e2_id: EntityID,
-    ) -> Optional[AngleConstraintParams]:
+    ) -> AngleConstraintParams | None:
         e1 = registry.get_entity(e1_id)
         e2 = registry.get_entity(e2_id)
 

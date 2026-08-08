@@ -1,14 +1,10 @@
 import warnings
-from typing import TYPE_CHECKING, Optional
 
 from ..base_renderer import RasterRenderer
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
-
-if TYPE_CHECKING:
-    pass
 
 
 class PngRenderer(RasterRenderer):
@@ -20,7 +16,7 @@ class PngRenderer(RasterRenderer):
         width: int,
         height: int,
         **kwargs,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         if not data:
             return None
         try:

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
@@ -28,7 +28,7 @@ class FillRenderData:
     geometry: Geometry
     style: FillStyle
     color: ColorRGBA
-    gradient_stops: Optional[list[tuple[float, ColorRGBA]]] = None
+    gradient_stops: list[tuple[float, ColorRGBA]] | None = None
     gradient_angle: float = 0.0
 
 
@@ -50,9 +50,9 @@ class LayerInfo:
 
     id: str
     name: str
-    color: Optional[tuple[float, float, float]] = None
+    color: tuple[float, float, float] | None = None
     default_active: bool = True
-    feature_count: Optional[int] = None
+    feature_count: int | None = None
 
 
 @dataclass
@@ -85,8 +85,8 @@ class ImportManifest:
 
     layers: list[LayerInfo] = field(default_factory=list)
     color_layers: list[LayerInfo] = field(default_factory=list)
-    natural_size_mm: Optional[tuple[float, float]] = None
-    title: Optional[str] = None
+    natural_size_mm: tuple[float, float] | None = None
+    title: str | None = None
     warnings: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     is_unitless: bool = False
@@ -126,7 +126,7 @@ class LayerGeometry:
     layer_id: str
     name: str
     content_bounds: Rect
-    color: Optional[str] = None
+    color: str | None = None
 
 
 @dataclass
@@ -193,7 +193,7 @@ class ParsingResult:
     layers: list[LayerGeometry]
     world_frame_of_reference: Rect
     background_world_transform: Matrix
-    untrimmed_document_bounds: Optional[Rect] = None
+    untrimmed_document_bounds: Rect | None = None
     geometry_is_relative_to_bounds: bool = False
     is_cropped_to_content: bool = False
 
@@ -236,12 +236,12 @@ class VectorizationResult:
     vectorization are collected by the Importer and returned in ImportResult.
     """
 
-    geometries_by_layer: dict[Optional[str], Geometry]
+    geometries_by_layer: dict[str | None, Geometry]
     source_parse_result: ParsingResult
-    fills_by_layer: dict[Optional[str], list[FillRenderData]] = field(
+    fills_by_layer: dict[str | None, list[FillRenderData]] = field(
         default_factory=dict
     )
-    layer_settings: dict[Optional[str], dict[str, Any]] = field(
+    layer_settings: dict[str | None, dict[str, Any]] = field(
         default_factory=dict
     )
 
@@ -289,13 +289,13 @@ class LayoutItem:
                      Used for cropping images or limiting vector scope.
     """
 
-    layer_id: Optional[str]
-    layer_name: Optional[str]
+    layer_id: str | None
+    layer_name: str | None
     world_matrix: Matrix
     normalization_matrix: Matrix
     crop_window: Rect
-    settings: Optional[dict[str, Any]] = None
-    color: Optional[str] = None
+    settings: dict[str, Any] | None = None
+    color: str | None = None
 
 
 @dataclass
@@ -371,8 +371,8 @@ class ImportResult:
     still be available in payload or intermediate results.
     """
 
-    payload: Optional[ImportPayload]
-    parse_result: Optional[ParsingResult]
-    vectorization_result: Optional[VectorizationResult] = None
+    payload: ImportPayload | None
+    parse_result: ParsingResult | None
+    vectorization_result: VectorizationResult | None = None
     warnings: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)

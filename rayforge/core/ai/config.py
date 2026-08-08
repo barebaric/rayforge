@@ -34,7 +34,7 @@ class AIConfigManager:
             with open(self.filepath, "w") as f:
                 yaml.safe_dump(data, f, default_flow_style=False)
             logger.debug(f"Saved AI config to {self.filepath}")
-        except IOError as e:
+        except OSError as e:
             logger.error(f"Failed to save AI config: {e}")
         finally:
             self._saving = False
@@ -51,5 +51,5 @@ class AIConfigManager:
             if data:
                 self.ai_service.load_from_config(data)
                 logger.info(f"Loaded AI config from {self.filepath}")
-        except (yaml.YAMLError, IOError) as e:
+        except (OSError, yaml.YAMLError) as e:
             logger.error(f"Failed to load AI config: {e}")

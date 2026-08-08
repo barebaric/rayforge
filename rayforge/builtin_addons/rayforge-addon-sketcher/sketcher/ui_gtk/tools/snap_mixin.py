@@ -1,5 +1,5 @@
 import os
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point as GeoPoint
@@ -54,7 +54,7 @@ class SnapMixin:
                 self.draw_snap_feedback(ctx, self.element)
     """
 
-    current_snap_result: Optional[SnapResult] = None
+    current_snap_result: SnapResult | None = None
     magnetic_snap_enabled: bool = True
 
     def toggle_magnetic_snap(self) -> None:
@@ -72,7 +72,7 @@ class SnapMixin:
         element: "SketchElement",
         model_x: float,
         model_y: float,
-        exclude_points: Optional[set[int]] = None,
+        exclude_points: set[int] | None = None,
     ) -> GeoPoint:
         """Query snap engine for geometry creation.
 
@@ -114,9 +114,9 @@ class SnapMixin:
         element: "SketchElement",
         model_x: float,
         model_y: float,
-        dragged_point_ids: Optional[set[int]] = None,
-        dragged_entity_ids: Optional[set[int]] = None,
-        initial_positions: Optional[dict] = None,
+        dragged_point_ids: set[int] | None = None,
+        dragged_entity_ids: set[int] | None = None,
+        initial_positions: dict | None = None,
     ) -> GeoPoint:
         """Query snap engine during drag operations.
 
@@ -171,9 +171,9 @@ class SnapMixin:
         self,
         point_id: int,
         *,
-        end_pid: Optional[int] = None,
+        end_pid: int | None = None,
         snapped_to_existing: bool = False,
-        existing_constraints: Optional[list[Any]] = None,
+        existing_constraints: list[Any] | None = None,
     ) -> list[Any]:
         """Build constraints from the current snap result.
 
@@ -283,7 +283,7 @@ class SnapMixin:
 
         return constraints
 
-    def get_snapped_point_id(self) -> Optional[int]:
+    def get_snapped_point_id(self) -> int | None:
         """Get the point ID if snapped to an existing point.
 
         Returns:

@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from gi.repository import Adw, Gtk
 
@@ -58,7 +58,7 @@ class SliderAdapter(RowAdapter):
         row.set_activatable_widget(scale)
         return row, cls(row, scale, min_val, max_val)
 
-    def get_value(self) -> Optional[Any]:
+    def get_value(self) -> Any | None:
         percent = self._scale.get_value() / 100.0
         return self._min_val + percent * (self._max_val - self._min_val)
 

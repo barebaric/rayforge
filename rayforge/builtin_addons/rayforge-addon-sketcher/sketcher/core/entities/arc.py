@@ -1,6 +1,6 @@
 import math
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry
 from raygeo.geo.shape.arc import (
@@ -37,7 +37,7 @@ class Arc(Entity):
         self.clockwise = clockwise
         self.type = "arc"
 
-    def get_state(self) -> Optional[dict[str, Any]]:
+    def get_state(self) -> dict[str, Any] | None:
         state = super().get_state() or {}
         state["clockwise"] = self.clockwise
         return state
@@ -238,7 +238,7 @@ class Arc(Entity):
             construction=data.get("construction", False),
         )
 
-    def get_midpoint(self, registry: "EntityRegistry") -> Optional[Point]:
+    def get_midpoint(self, registry: "EntityRegistry") -> Point | None:
         """
         Calculates the midpoint coordinates along the arc's circumference.
         """

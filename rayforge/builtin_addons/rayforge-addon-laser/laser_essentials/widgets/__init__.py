@@ -19,11 +19,11 @@ ASSEMBLER_WIDGETS = {
 }
 
 __all__ = [
-    "WavefrontStepSettingsPage",
+    "ASSEMBLER_WIDGETS",
     "ContourStepSettingsPage",
-    "RasterSettingsPage",
     "FrameStepSettingsPage",
     "MaterialTestGridSettingsPage",
+    "RasterSettingsPage",
     "ShrinkWrapStepSettingsPage",
-    "ASSEMBLER_WIDGETS",
+    "WavefrontStepSettingsPage",
 ]

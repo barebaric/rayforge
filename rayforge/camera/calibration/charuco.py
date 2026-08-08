@@ -1,6 +1,5 @@
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -89,7 +88,7 @@ class CharucoBoard:
         card_width_mm: float,
         card_height_mm: float,
         camera_resolution: tuple[int, int] = (640, 480),
-        surface_size_mm: Optional[tuple[float, float]] = None,
+        surface_size_mm: tuple[float, float] | None = None,
     ) -> CharucoConfig:
         min_marker_pixels = cls.MIN_MARKER_PIXELS
         min_dim = min(camera_resolution)
@@ -135,7 +134,7 @@ class CharucoBoard:
 
     def generate_image(
         self,
-        output_size: Optional[tuple[int, int]] = None,
+        output_size: tuple[int, int] | None = None,
         margin_px: int = 10,
         border_bits: int = 1,
     ) -> np.ndarray:
@@ -159,7 +158,7 @@ class CharucoBoard:
 
     def detect(
         self, image: np.ndarray
-    ) -> Optional[tuple[list[tuple[float, float]], list[int]]]:
+    ) -> tuple[list[tuple[float, float]], list[int]] | None:
         if len(image.shape) == 3:
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         else:

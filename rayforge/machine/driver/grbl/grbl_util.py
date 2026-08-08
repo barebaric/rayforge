@@ -1,9 +1,10 @@
 import asyncio
 import re
+from collections.abc import Callable
 from copy import copy, deepcopy
 from dataclasses import dataclass, field
 from gettext import gettext as _
-from typing import Callable, Optional, cast
+from typing import cast
 
 from ....core.varset import Var, VarSet
 from ....shared.units.system import UnitSystem, inches_to_mm
@@ -46,7 +47,7 @@ class CommandRequest:
     """A request to send a command and await its full response."""
 
     command: str
-    op_index: Optional[int] = None
+    op_index: int | None = None
     response_lines: list[str] = field(default_factory=list)
     finished: asyncio.Event = field(default_factory=asyncio.Event)
 
@@ -499,7 +500,7 @@ def alarm_code_to_device_error(alarm_code: str) -> DeviceError:
 
 
 # GRBL WCS Helper
-def gcode_to_p_number(wcs_slot: str) -> Optional[int]:
+def gcode_to_p_number(wcs_slot: str) -> int | None:
     """Converts a G-code WCS name (e.g., "G54") to its P-number."""
     try:
         # Check format, e.g. "G54"
@@ -517,7 +518,7 @@ def gcode_to_p_number(wcs_slot: str) -> Optional[int]:
 
 
 # GRBL State Parsers
-def parse_ver(line: str) -> Optional[tuple[str, Optional[str]]]:
+def parse_ver(line: str) -> tuple[str, str | None] | None:
     """
     Parse a ``[VER:...]`` line into ``(version, build_name)``.
 
@@ -542,7 +543,7 @@ def parse_ver(line: str) -> Optional[tuple[str, Optional[str]]]:
 
 def parse_version(
     response_lines: list[str],
-) -> Optional[str]:
+) -> str | None:
     """
     Parses '$I' output to extract the GRBL firmware version string.
 
@@ -572,7 +573,7 @@ def parse_grbl_settings(lines: list[str]) -> dict[str, float]:
 
 def detect_unit_system_from_settings(
     settings_lines: list[str],
-) -> Optional[UnitSystem]:
+) -> UnitSystem | None:
     """
     Inspect GRBL ``$$`` response lines and infer the device's unit
     system from the ``$13`` (Report in inches) setting.
@@ -603,7 +604,7 @@ def is_report_in_inches(settings_lines: list[str]) -> bool:
     return bool(report_inches)
 
 
-def parse_msg(line: str) -> Optional[tuple[str, str]]:
+def parse_msg(line: str) -> tuple[str, str] | None:
     """
     Parse a ``[MSG:key:value]`` line into ``(key, value)``.
 
@@ -664,7 +665,7 @@ def version_supports_single_axis_homing(
     return False
 
 
-def _parse_pos(pos: str) -> Optional[Pos]:
+def _parse_pos(pos: str) -> Pos | None:
     match = pos_re.search(pos)
     if not match:
         return None
@@ -698,7 +699,7 @@ def error_code_to_device_error(error_code: str) -> DeviceError:
         )
 
 
-def parse_opt_info(line: str) -> Optional[int]:
+def parse_opt_info(line: str) -> int | None:
     """
     Extract the RX buffer size from an OPT response line.
 
@@ -720,7 +721,7 @@ def parse_opt_info(line: str) -> Optional[int]:
     return None
 
 
-def parse_grbl_parser_state(response_lines: list[str]) -> Optional[str]:
+def parse_grbl_parser_state(response_lines: list[str]) -> str | None:
     """
     Parses the response from a '$G' command to find the active WCS.
     Example response: '[G54 G17 G21 G90 G94 M5 M9 T0 F0 S0]'
@@ -755,7 +756,7 @@ def _split_status_line(state_str: str) -> tuple[str, list[str]]:
     return status or "", attribs
 
 
-def _parse_status_part(status_part: str) -> tuple[DeviceStatus, Optional[str]]:
+def _parse_status_part(status_part: str) -> tuple[DeviceStatus, str | None]:
     """
     Parse status part into DeviceStatus and optional error code.
 
@@ -785,7 +786,7 @@ def _parse_status_part(status_part: str) -> tuple[DeviceStatus, Optional[str]]:
     return status, error_code
 
 
-def _parse_position_attribute(attrib: str, pos_type: str) -> Optional[Pos]:
+def _parse_position_attribute(attrib: str, pos_type: str) -> Pos | None:
     """
     Parse a position attribute (MPos, WPos, or WCO).
 
@@ -801,7 +802,7 @@ def _parse_position_attribute(attrib: str, pos_type: str) -> Optional[Pos]:
     return _parse_pos(attrib)
 
 
-def _parse_feed_rate(attrib: str) -> Optional[int]:
+def _parse_feed_rate(attrib: str) -> int | None:
     """
     Parse feed rate from FS attribute.
 
@@ -823,7 +824,7 @@ def _parse_feed_rate(attrib: str) -> Optional[int]:
         return None
 
 
-def _parse_buffer_state(attrib: str) -> Optional[tuple[int, int]]:
+def _parse_buffer_state(attrib: str) -> tuple[int, int] | None:
     """
     Parse buffer state from Bf attribute.
 
@@ -921,7 +922,7 @@ def _recalculate_positions(
 def parse_state(
     state_str: str,
     default: DeviceState,
-    logger: Optional[Callable] = None,
+    logger: Callable | None = None,
     report_in_inches: bool = False,
 ) -> DeviceState:
     """

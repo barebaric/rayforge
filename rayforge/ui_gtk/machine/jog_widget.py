@@ -1,5 +1,4 @@
 from gettext import gettext as _
-from typing import Optional
 
 from gi.repository import Gdk, Graphene, Gsk, Gtk
 from raygeo.ops.axis import Axis
@@ -34,8 +33,8 @@ class JogWidget(Gtk.Widget):
         self._action_grid.set_row_homogeneous(True)
         self._action_grid.set_visible(show_actions)
 
-        self.machine: Optional[Machine] = None
-        self.machine_cmd: Optional[MachineCmd] = None
+        self.machine: Machine | None = None
+        self.machine_cmd: MachineCmd | None = None
         self.jog_speed = 1000
         self.jog_distance = 10.0
         self._buttons = []
@@ -197,7 +196,7 @@ class JogWidget(Gtk.Widget):
             self._action_grid.allocate(0, 0, -1, None)
 
     def set_machine(
-        self, machine: Optional[Machine], machine_cmd: Optional[MachineCmd]
+        self, machine: Machine | None, machine_cmd: MachineCmd | None
     ):
         """Set the machine this widget controls."""
         if self.machine:

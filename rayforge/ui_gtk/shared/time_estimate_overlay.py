@@ -1,5 +1,3 @@
-from typing import Optional
-
 from gi.repository import Gtk
 
 from ...shared.util.time_format import format_seconds
@@ -32,7 +30,7 @@ class TimeEstimateOverlay(Gtk.Box):
         self._label.set_visible(False)
         self.append(self._label)
 
-    def set_estimated_time(self, time_seconds: Optional[float]):
+    def set_estimated_time(self, time_seconds: float | None):
         if time_seconds is None or time_seconds <= 0:
             self._label.set_visible(False)
         else:

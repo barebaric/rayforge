@@ -46,7 +46,7 @@ class LightBurnRenderer(Renderer):
         import_result: "ImportResult",
         target_width: int,
         target_height: int,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         if not import_result.payload:
             return None
 
@@ -65,7 +65,7 @@ class LightBurnRenderer(Renderer):
         width: int,
         height: int,
         **kwargs,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         if data and data.startswith(b"<svg"):
             return self._render_svg_image(data, width, height)
 
@@ -94,7 +94,7 @@ class LightBurnRenderer(Renderer):
 
     def _render_svg_image(
         self, svg_data: bytes, width: int, height: int
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         try:
             root = ET.fromstring(svg_data)
         except ET.ParseError:

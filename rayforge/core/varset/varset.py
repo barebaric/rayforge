@@ -1,7 +1,7 @@
 import importlib
 import logging
 from collections.abc import Iterator, KeysView
-from typing import Any, Optional
+from typing import Any
 
 from blinker import Signal
 
@@ -18,9 +18,9 @@ class VarSet:
 
     def __init__(
         self,
-        vars: Optional[list[Var]] = None,
-        title: Optional[str] = None,
-        description: Optional[str] = None,
+        vars: list[Var] | None = None,
+        title: str | None = None,
+        description: str | None = None,
     ):
         """
         Initializes a new VarSet.
@@ -135,7 +135,7 @@ class VarSet:
         logger.debug(f"Emitting signal: var_added for var '{var.key}'")
         self.var_added.send(self, var=var)
 
-    def remove(self, key: str) -> Optional[Var]:
+    def remove(self, key: str) -> Var | None:
         """Removes a Var from the set by its key and returns it."""
         var = self._vars.pop(key, None)
         if var:
@@ -151,7 +151,7 @@ class VarSet:
             self.var_removed.send(self, var=var)
         return var
 
-    def get(self, key: str) -> Optional[Var]:
+    def get(self, key: str) -> Var | None:
         """Gets a Var by its key, or None if not found."""
         return self._vars.get(key)
 
@@ -163,8 +163,7 @@ class VarSet:
             return
 
         # Clamp index
-        if new_index < 0:
-            new_index = 0
+        new_index = max(new_index, 0)
         if new_index >= len(self._order):
             new_index = len(self._order) - 1
 

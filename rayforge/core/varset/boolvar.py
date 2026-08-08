@@ -1,5 +1,4 @@
 from gettext import gettext as _
-from typing import Optional
 
 from .var import Var
 
@@ -13,9 +12,9 @@ class BoolVar(Var[bool]):
         self,
         key: str,
         label: str,
-        description: Optional[str] = None,
-        default: Optional[bool] = None,
-        value: Optional[bool] = None,
+        description: str | None = None,
+        default: bool | None = None,
+        value: bool | None = None,
     ):
         """
         Initializes a new BoolVar instance.

@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import Callable, Optional, Union
 
 import cairo
 
@@ -25,7 +25,7 @@ class RectangleTool(SnapMixin, SketchTool):
 
     def __init__(self, element):
         super().__init__(element)
-        self._preview_state: Optional[RectanglePreviewState] = None
+        self._preview_state: RectanglePreviewState | None = None
         self._dim_input = DimensionInputHandler(
             field_count=2, field_labels=[_("W"), _("H")]
         )
@@ -36,7 +36,7 @@ class RectangleTool(SnapMixin, SketchTool):
     def shortcut_is_active(self) -> bool:
         return True
 
-    def get_preview_state(self) -> Optional[RectanglePreviewState]:
+    def get_preview_state(self) -> RectanglePreviewState | None:
         return self._preview_state
 
     def on_deactivate(self):
@@ -106,9 +106,7 @@ class RectangleTool(SnapMixin, SketchTool):
         if self._preview_state is not None:
             self.draw_snap_feedback(ctx, self.element)
 
-    def _handle_click(
-        self, pid_hit: Optional[int], mx: float, my: float
-    ) -> bool:
+    def _handle_click(self, pid_hit: int | None, mx: float, my: float) -> bool:
         if self._preview_state is None:
             self._preview_state = RectangleCommand.start_preview(
                 self.element.sketch.registry, mx, my, snapped_pid=pid_hit
@@ -252,8 +250,8 @@ class RectangleTool(SnapMixin, SketchTool):
 
     def _finalize_shape(
         self,
-        fixed_width: Optional[float] = None,
-        fixed_height: Optional[float] = None,
+        fixed_width: float | None = None,
+        fixed_height: float | None = None,
     ):
         if self._preview_state is None:
             return
@@ -292,7 +290,7 @@ class RectangleTool(SnapMixin, SketchTool):
 
     def get_active_shortcuts(
         self,
-    ) -> list[tuple[Union[str, list[str]], str, Optional[Callable[[], bool]]]]:
+    ) -> list[tuple[str | list[str], str, Callable[[], bool] | None]]:
         """Returns shortcuts for the status bar."""
         if self._preview_state is not None:
             if self._dim_input.is_active():

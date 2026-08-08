@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from gi.repository import Adw, Gtk
 
@@ -35,7 +35,7 @@ class TextAreaAdapter(RowAdapter):
         row.core_widget = text_view  # type: ignore
         return row, cls(row, text_view)
 
-    def get_value(self) -> Optional[Any]:
+    def get_value(self) -> Any | None:
         buf = self._text_view.get_buffer()
         start, end = buf.get_start_iter(), buf.get_end_iter()
         return buf.get_text(start, end, True)

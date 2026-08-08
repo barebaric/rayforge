@@ -105,7 +105,7 @@ workdir = "."
 
 [tasks]
 pre-commit-install = "pre-commit install"
-lint = { depends-on = ["flake", "pyflakes", "pyright"] }
+lint = { depends-on = ["ruff", "flake", "pyflakes", "pyright"] }
 update-translations = "bash scripts/update_translations.sh"
 compile-translations = "bash scripts/update_translations.sh --compile-only"
 print-untranslated = "bash scripts/print_untranslated.sh"
@@ -123,6 +123,10 @@ cmd = "ruff format rayforge tests scripts && ruff check --select I --fix rayforg
 [tasks.flake]
 depends-on = ["format"]
 cmd = "flake8 --ignore=E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504 --builtins=_ rayforge tests"
+
+[tasks.ruff]
+depends-on = ["format"]
+cmd = "ruff check rayforge tests scripts"
 
 [tasks.pyflakes]
 depends-on = ["format"]

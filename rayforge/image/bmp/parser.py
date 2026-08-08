@@ -1,6 +1,5 @@
 import logging
 import struct
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +16,7 @@ _COMPRESSION_BITFIELDS = 3
 _SUPPORTED_BPP = 1, 8, 24, 32
 
 
-def parse_bmp(data: bytes) -> Optional[tuple[bytes, int, int, float, float]]:
+def parse_bmp(data: bytes) -> tuple[bytes, int, int, float, float] | None:
     """
     Parse a BMP file and extract image data and metadata.
 
@@ -102,7 +101,7 @@ def is_valid_bmp_signature(data: bytes) -> bool:
     return len(data) >= 2 and data[:2] == b"BM"
 
 
-def parse_file_header(data: bytes) -> Optional[int]:
+def parse_file_header(data: bytes) -> int | None:
     """
     Parse the 14-byte BMP file header to find the pixel data offset.
 
@@ -128,7 +127,7 @@ def parse_file_header(data: bytes) -> Optional[int]:
 
 def parse_dib_header(
     data: bytes,
-) -> Optional[tuple[int, int, int, int, float, float, bool]]:
+) -> tuple[int, int, int, int, float, float, bool] | None:
     """
     Parse the DIB (Device-Independent Bitmap) header.
 
@@ -164,7 +163,7 @@ def parse_dib_header(
 
 def _parse_info_header(
     data: bytes,
-) -> Optional[tuple[int, int, int, int, float, float, bool]]:
+) -> tuple[int, int, int, int, float, float, bool] | None:
     """Parse a BITMAPINFOHEADER (40 bytes)."""
     if len(data) < 54:
         logger.error("Incomplete BITMAPINFOHEADER.")
@@ -198,7 +197,7 @@ def _parse_info_header(
 
 def _parse_v5_header(
     data: bytes,
-) -> Optional[tuple[int, int, int, int, float, float, bool]]:
+) -> tuple[int, int, int, int, float, float, bool] | None:
     """
     Parse a BITMAPV5HEADER (124 bytes).
 
@@ -215,7 +214,7 @@ def _parse_v5_header(
 
 def _parse_core_header(
     data: bytes,
-) -> Optional[tuple[int, int, int, int, float, float, bool]]:
+) -> tuple[int, int, int, int, float, float, bool] | None:
     """Parse a BITMAPCOREHEADER (12 bytes)."""
     if len(data) < 26:
         logger.error("Incomplete BITMAPCOREHEADER.")
@@ -260,7 +259,7 @@ def _validate_format(bits_per_pixel: int, compression: int) -> bool:
 
 def _parse_info_palette(
     data: bytes, palette_offset: int, num_colors: int
-) -> Optional[list[tuple[int, int, int, int]]]:
+) -> list[tuple[int, int, int, int]] | None:
     """Parse a BMP palette with 4-byte RGBQUAD entries."""
     palette_size = num_colors * 4
     if len(data) < palette_offset + palette_size:
@@ -280,7 +279,7 @@ def _parse_info_palette(
 
 def _parse_core_palette(
     data: bytes, palette_offset: int, num_colors: int
-) -> Optional[list[tuple[int, int, int, int]]]:
+) -> list[tuple[int, int, int, int]] | None:
     """Parse a BMP palette with 3-byte RGBTRIPLE entries."""
     palette_size = num_colors * 3
     if len(data) < palette_offset + palette_size:
@@ -307,7 +306,7 @@ def _parse_paletted_data(
     is_top_down: bool,
     dib_header_size: int,
     bits_per_pixel: int,
-) -> Optional[bytearray]:
+) -> bytearray | None:
     """Helper for parsing 1-bit and 8-bit paletted data."""
     is_core_header = dib_header_size == _BITMAPCOREHEADER_SIZE
     palette_offset = 14 + dib_header_size
@@ -368,7 +367,7 @@ def _parse_rgb_data(
     bits_per_pixel: int,
     pixel_data_start: int,
     is_top_down: bool,
-) -> Optional[bytearray]:
+) -> bytearray | None:
     """Parse 24-bit or 32-bit RGB(A) BMP data."""
     bytes_per_pixel = bits_per_pixel // 8
     row_size_padded = (width * bytes_per_pixel + 3) & ~3

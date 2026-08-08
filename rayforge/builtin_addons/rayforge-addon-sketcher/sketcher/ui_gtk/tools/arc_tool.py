@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import Callable, Optional, Union
 
 import cairo
 
@@ -22,7 +22,7 @@ class ArcTool(SnapMixin, SketchTool):
 
     def __init__(self, element):
         super().__init__(element)
-        self._preview_state: Optional[ArcPreviewState] = None
+        self._preview_state: ArcPreviewState | None = None
         self._dim_input = DimensionInputHandler()
 
     def is_available(self, target, target_type) -> bool:
@@ -31,7 +31,7 @@ class ArcTool(SnapMixin, SketchTool):
     def shortcut_is_active(self) -> bool:
         return True
 
-    def get_preview_state(self) -> Optional[ArcPreviewState]:
+    def get_preview_state(self) -> ArcPreviewState | None:
         return self._preview_state
 
     def on_deactivate(self):
@@ -271,7 +271,7 @@ class ArcTool(SnapMixin, SketchTool):
         self._finalize_shape(fixed_radius=radius)
         self.element.mark_dirty()
 
-    def _finalize_shape(self, fixed_radius: Optional[float] = None):
+    def _finalize_shape(self, fixed_radius: float | None = None):
         if self._preview_state is None:
             return
         if self._preview_state.start_id is None:
@@ -321,7 +321,7 @@ class ArcTool(SnapMixin, SketchTool):
 
     def get_active_shortcuts(
         self,
-    ) -> list[tuple[Union[str, list[str]], str, Optional[Callable[[], bool]]]]:
+    ) -> list[tuple[str | list[str], str, Callable[[], bool] | None]]:
         """Returns shortcuts for the status bar."""
         if self._preview_state is not None:
             if self._preview_state.has_start_point:

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from raygeo.ops.axis import Axis
 
@@ -21,9 +21,9 @@ class AxisConfig:
     axis_type: AxisType
     extents: tuple[float, float]
     direction: AxisDirection = AxisDirection.NORMAL
-    gcode_letter: Optional[str] = None
+    gcode_letter: str | None = None
     resolution: float = 0.01
-    rotary_diameter: Optional[float] = None
+    rotary_diameter: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         result: dict[str, Any] = {
@@ -75,7 +75,7 @@ class AxisSet:
         self.configs = [c for c in self.configs if c.letter != axis]
         self._rebuild_filters()
 
-    def get(self, axis: Axis) -> Optional[AxisConfig]:
+    def get(self, axis: Axis) -> AxisConfig | None:
         for c in self.configs:
             if c.letter == axis:
                 return c

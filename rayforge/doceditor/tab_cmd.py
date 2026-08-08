@@ -4,7 +4,7 @@ import logging
 from copy import deepcopy
 from dataclasses import replace
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.geo import Geometry
 
@@ -35,7 +35,7 @@ class SetWorkpieceTabsCommand(Command):
         self.new_tabs = new_tabs
         self.old_tabs = deepcopy(workpiece.tabs)
 
-    def _get_workpiece(self) -> Optional[WorkPiece]:
+    def _get_workpiece(self) -> WorkPiece | None:
         """Helper to find the model object from the stored UID."""
         workpiece = self.editor.doc.find_descendant_by_uid(self.workpiece_uid)
         if isinstance(workpiece, WorkPiece):
@@ -59,7 +59,7 @@ class SetWorkpieceTabsCommand(Command):
 class TabCmd:
     """Handles commands related to creating and managing workpiece tabs."""
 
-    def __init__(self, editor: "DocEditor"):
+    def __init__(self, editor: DocEditor):
         self._editor = editor
 
     def _calculate_equidistant_tabs(

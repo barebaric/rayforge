@@ -4,8 +4,6 @@ import math
 from typing import (
     TYPE_CHECKING,
     Any,
-    Optional,
-    Union,
 )
 
 import cairo
@@ -42,7 +40,7 @@ def _get_move_gizmo_pixbuf(size: int = 24):
 
 
 def _handle_colors(
-    base_color: Optional[ColorRGBA],
+    base_color: ColorRGBA | None,
     is_hovered: bool,
 ) -> ColorRGBA:
     if base_color:
@@ -67,7 +65,7 @@ def _draw_quad_handle(
     p3: tuple[float, float],
     p4: tuple[float, float],
     is_hovered: bool,
-    color: Optional[ColorRGBA] = None,
+    color: ColorRGBA | None = None,
 ):
     """Draws a quadrilateral handle given four screen-space points."""
     ctx.set_source_rgba(*_handle_colors(color, is_hovered))
@@ -85,7 +83,7 @@ def _draw_square_handle(
     width: float,
     height: float,
     is_hovered: bool,
-    color: Optional[ColorRGBA] = None,
+    color: ColorRGBA | None = None,
 ):
     """Draws a square handle. Uses the smaller of width/height for size."""
     size = min(width, height)
@@ -101,7 +99,7 @@ def _draw_rectangle_handle(
     width: float,
     height: float,
     is_hovered: bool,
-    color: Optional[ColorRGBA] = None,
+    color: ColorRGBA | None = None,
 ):
     """Draws a rectangular handle, perfect for stretched edge handles."""
     ctx.set_source_rgba(*_handle_colors(color, is_hovered))
@@ -115,7 +113,7 @@ def _draw_arc_handle(
     width: float,
     height: float,
     is_hovered: bool,
-    color: Optional[ColorRGBA] = None,
+    color: ColorRGBA | None = None,
 ):
     """Draws a rotation arc handle. Uses average of width/height for size."""
     size = (width + height) / 2.0
@@ -160,7 +158,7 @@ def _draw_arrow_handle(
     width: float,
     height: float,
     is_hovered: bool,
-    color: Optional[ColorRGBA] = None,
+    color: ColorRGBA | None = None,
 ):
     """Draws a bidirectional arrow. Uses average of width/height for size."""
     size = (width + height) / 2.0
@@ -189,7 +187,7 @@ def _draw_move_gizmo(
     width: float,
     height: float,
     is_hovered: bool,
-    color: Optional[ColorRGBA] = None,
+    color: ColorRGBA | None = None,
 ):
     """Draws a rounded square rotated 45 degrees (diamond) with the
     move-symbolic icon centered on it, axis-aligned."""
@@ -313,7 +311,7 @@ HANDLE_DRAW_INFO.update(
 
 def render_selection_frame(
     ctx: cairo.Context,
-    target: Union[CanvasElement, MultiSelectionGroup],
+    target: CanvasElement | MultiSelectionGroup,
     transform_to_screen: Matrix,
 ):
     """
@@ -348,13 +346,13 @@ def render_selection_frame(
 
 def _render_handles(
     ctx: cairo.Context,
-    target: Union[CanvasElement, MultiSelectionGroup],
+    target: CanvasElement | MultiSelectionGroup,
     transform_to_screen: Matrix,
     regions: list[ElementRegion],
     hovered_region: ElementRegion,
     base_handle_size: float,
     scale_compensation: tuple[float, float],
-    color: Optional[ColorRGBA] = None,
+    color: ColorRGBA | None = None,
 ):
     sx_abs, sy_abs = transform_to_screen.get_abs_scale()
 
@@ -427,13 +425,13 @@ def _render_handles(
 
 def render_selection_handles(
     ctx: cairo.Context,
-    target: Union[CanvasElement, MultiSelectionGroup],
+    target: CanvasElement | MultiSelectionGroup,
     transform_to_screen: Matrix,
     mode: SelectionMode,
     hovered_region: ElementRegion,
     base_handle_size: float,
     with_labels: bool = False,
-    color: Optional[ColorRGBA] = None,
+    color: ColorRGBA | None = None,
 ):
     """
     Renders selection handles for a target based on the current interaction

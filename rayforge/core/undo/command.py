@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from abc import ABC, abstractmethod
-from typing import Callable, Optional
+from collections.abc import Callable
 
 
 class Command(ABC):
@@ -12,8 +12,8 @@ class Command(ABC):
 
     def __init__(
         self,
-        name: Optional[str] = None,
-        on_change_callback: Optional[Callable[[], None]] = None,
+        name: str | None = None,
+        on_change_callback: Callable[[], None] | None = None,
     ):
         self.name = name
         self.on_change_callback = on_change_callback

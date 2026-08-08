@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 from ....core.group import Group
 from ....core.item import DocItem
@@ -87,8 +87,8 @@ class LayerElement(CanvasElement):
     def sync_with_model(
         self,
         sender,
-        origin: Optional[DocItem] = None,
-        parent_of_origin: Optional[DocItem] = None,
+        origin: DocItem | None = None,
+        parent_of_origin: DocItem | None = None,
     ):
         """
         Reconciles all child elements with the state of the Layer model.

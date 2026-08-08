@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from raygeo.geo import Geometry
 from raygeo.svg import (
@@ -44,7 +43,7 @@ class SvgVectorImporter(SvgImporterBase):
         ImporterFeature.COLOR_LAYERS,
     }
 
-    def parse(self) -> Optional[ParsingResult]:
+    def parse(self) -> ParsingResult | None:
         # 1. Use base class to get dimensions, units, and the parsed SVG object
         basics = self._calculate_parsing_basics()
         if not basics:
@@ -129,7 +128,7 @@ class SvgVectorImporter(SvgImporterBase):
             else all_layer_ids
         )
 
-        geometries_by_layer: dict[Optional[str], Geometry] = {}
+        geometries_by_layer: dict[str | None, Geometry] = {}
         if spec.layer_source == LayerSource.COLORS:
             # Extract one merged geometry per resolved color.
             buckets_raw = svg_string_to_geometry_by_color(
@@ -212,7 +211,7 @@ class SvgVectorImporter(SvgImporterBase):
         layer_id: str,
         name: str,
         geo: Geometry,
-        color: Optional[str] = None,
+        color: str | None = None,
     ) -> LayerGeometry:
         min_x, min_y, max_x, max_y = geo.rect()
         w = max_x - min_x

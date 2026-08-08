@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from blinker import Signal
 
@@ -16,7 +16,7 @@ class LayoutStrategyRegistry:
     """
 
     def __init__(self):
-        self._strategies: dict[str, type["LayoutStrategy"]] = {}
+        self._strategies: dict[str, type[LayoutStrategy]] = {}
         self._addon_items: dict[str, set[str]] = {}
         self.changed = Signal()
 
@@ -24,7 +24,7 @@ class LayoutStrategyRegistry:
         self,
         strategy_class: type["LayoutStrategy"],
         name: str,
-        addon_name: Optional[str] = None,
+        addon_name: str | None = None,
     ) -> None:
         """
         Register a layout strategy class.
@@ -94,7 +94,7 @@ class LayoutStrategyRegistry:
             self.changed.send(self)
         return count
 
-    def get(self, name: str) -> Optional[type["LayoutStrategy"]]:
+    def get(self, name: str) -> type["LayoutStrategy"] | None:
         """
         Look up a strategy class by name.
 

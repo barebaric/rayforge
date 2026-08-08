@@ -52,22 +52,22 @@ class RayforgeContext:
         self.exit_pending = False
         self._headless: bool = False
 
-        self._dialect_mgr: Optional["DialectManager"] = None
-        self._plugin_mgr: Optional["pluggy.PluginManager"] = None
-        self._addon_config: Optional["AddonConfig"] = None
-        self._license_validator: Optional["LicenseValidator"] = None
-        self._addon_mgr: Optional["AddonManager"] = None
-        self._ai_service: Optional["AIService"] = None
-        self._ai_config_mgr: Optional["AIConfigManager"] = None
-        self._machine_mgr: Optional["MachineManager"] = None
-        self._config_mgr: Optional["ConfigManager"] = None
-        self._config: Optional["Config"] = None
-        self._camera_mgr: Optional["CameraManager"] = None
-        self._material_mgr: Optional["LibraryManager"] = None
-        self._model_mgr: Optional["ModelManager"] = None
-        self._recipe_mgr: Optional["RecipeManager"] = None
-        self._device_profile_mgr: Optional["DeviceProfileManager"] = None
-        self._color_preset_mgr: Optional["ColorPresetManager"] = None
+        self._dialect_mgr: DialectManager | None = None
+        self._plugin_mgr: pluggy.PluginManager | None = None
+        self._addon_config: AddonConfig | None = None
+        self._license_validator: LicenseValidator | None = None
+        self._addon_mgr: AddonManager | None = None
+        self._ai_service: AIService | None = None
+        self._ai_config_mgr: AIConfigManager | None = None
+        self._machine_mgr: MachineManager | None = None
+        self._config_mgr: ConfigManager | None = None
+        self._config: Config | None = None
+        self._camera_mgr: CameraManager | None = None
+        self._material_mgr: LibraryManager | None = None
+        self._model_mgr: ModelManager | None = None
+        self._recipe_mgr: RecipeManager | None = None
+        self._device_profile_mgr: DeviceProfileManager | None = None
+        self._color_preset_mgr: ColorPresetManager | None = None
         self._theme_service = None
 
     @property
@@ -240,10 +240,8 @@ class RayforgeContext:
             self._config_mgr = CoreConfigManager(CONFIG_FILE, self.machine_mgr)
             self._config = self._config_mgr.config
             if not self._config.machine:
-                machine = list(
-                    sorted(
-                        self.machine_mgr.machines.values(), key=lambda m: m.id
-                    )
+                machine = sorted(
+                    self.machine_mgr.machines.values(), key=lambda m: m.id
                 )[0]
                 self._config.set_machine(machine)
             # Sync the context language with the configured preference.
@@ -391,8 +389,8 @@ class RayforgeContext:
         self._config_mgr = CoreConfigManager(config_file, self._machine_mgr)
         self._config = self._config_mgr.config
         if not self._config.machine:
-            machine = list(
-                sorted(self._machine_mgr.machines.values(), key=lambda m: m.id)
+            machine = sorted(
+                self._machine_mgr.machines.values(), key=lambda m: m.id
             )[0]
             self._config.set_machine(machine)
 

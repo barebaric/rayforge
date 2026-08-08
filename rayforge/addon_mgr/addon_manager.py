@@ -8,13 +8,12 @@ import sys
 import tempfile
 import urllib.request
 import zipfile
+from collections.abc import Callable
 from enum import Enum, auto
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Optional,
     Protocol,
     runtime_checkable,
 )
@@ -124,10 +123,10 @@ class AddonManager:
         install_dir: Path,
         plugin_mgr: pluggy.PluginManager,
         task_mgr: "TaskManager",
-        addon_config: Optional[AddonConfig] = None,
-        is_job_active_callback: Optional[Callable[[], bool]] = None,
-        registries: Optional[dict[str, "AddonRegistry"]] = None,
-        license_validator: Optional[LicenseValidator] = None,
+        addon_config: AddonConfig | None = None,
+        is_job_active_callback: Callable[[], bool] | None = None,
+        registries: dict[str, "AddonRegistry"] | None = None,
+        license_validator: LicenseValidator | None = None,
     ):
         """
         Args:
@@ -155,7 +154,7 @@ class AddonManager:
         self.addon_config = addon_config
         self.is_job_active_callback = is_job_active_callback
         self.registries: dict[str, AddonRegistry] = registries or {}
-        self._window: Optional[Any] = None
+        self._window: Any | None = None
         self.loaded_addons: dict[str, Addon] = {}
         self.incompatible_addons: dict[str, Addon] = {}
         self.disabled_addons: dict[str, Addon] = {}
@@ -302,7 +301,7 @@ class AddonManager:
         )
         return []
 
-    def get_installed_addon(self, addon_id: str) -> Optional[Addon]:
+    def get_installed_addon(self, addon_id: str) -> Addon | None:
         """
         Finds an installed addon by its canonical ID.
 
@@ -318,7 +317,7 @@ class AddonManager:
 
     def check_update_status(
         self, remote_meta: AddonMetadata
-    ) -> tuple[UpdateStatus, Optional[str]]:
+    ) -> tuple[UpdateStatus, str | None]:
         """
         Checks a remote addon against local installations.
 
@@ -333,7 +332,7 @@ class AddonManager:
         if local_version is UnknownVersion:
             return (UpdateStatus.UP_TO_DATE, None)
 
-        local_version_str: Optional[str] = str(local_version)
+        local_version_str: str | None = str(local_version)
         remote_version = remote_meta.version
         if remote_version is UnknownVersion:
             return (UpdateStatus.UP_TO_DATE, local_version_str)
@@ -455,7 +454,7 @@ class AddonManager:
 
     def _discover_addons(
         self,
-    ) -> list[tuple[Optional[str], Path, list[str]]]:
+    ) -> list[tuple[str | None, Path, list[str]]]:
         """
         Scan addon directories, returning ``(name, path, requires)``
         tuples in discovery order.
@@ -465,7 +464,7 @@ class AddonManager:
         parsed are included with ``name=None`` so that
         :meth:`load_addon` can still emit the detailed validation error.
         """
-        discovered: list[tuple[Optional[str], Path, list[str]]] = []
+        discovered: list[tuple[str | None, Path, list[str]]] = []
         seen_names: set[str] = set()
         for addon_dir in self.addon_dirs:
             if not addon_dir.exists():
@@ -498,8 +497,8 @@ class AddonManager:
 
     def _order_by_requires(
         self,
-        discovered: list[tuple[Optional[str], Path, list[str]]],
-    ) -> list[tuple[Optional[str], Path, list[str]]]:
+        discovered: list[tuple[str | None, Path, list[str]]],
+    ) -> list[tuple[str | None, Path, list[str]]]:
         """
         Topologically sort discovered addons by ``requires``.
 
@@ -515,7 +514,7 @@ class AddonManager:
             for (name, path, requires) in discovered
             if name is not None
         }
-        ordered: list[tuple[Optional[str], Path, list[str]]] = []
+        ordered: list[tuple[str | None, Path, list[str]]] = []
         state: dict[str, str] = {}
 
         def visit(name: str) -> bool:
@@ -555,7 +554,7 @@ class AddonManager:
         self,
         addon_path: Path,
         worker_only: bool = False,
-        version: Optional[VersionType] = None,
+        version: VersionType | None = None,
     ):
         """
         Loads a single addon from a directory.
@@ -717,7 +716,7 @@ class AddonManager:
             addon.metadata.name, license_config.to_dict()
         )
 
-    def _import_and_register(self, addon: Addon, entry_point: Optional[str]):
+    def _import_and_register(self, addon: Addon, entry_point: str | None):
         """
         Imports the module specified by entry_point and registers it.
 
@@ -842,7 +841,7 @@ class AddonManager:
 
     def _resolve_entry_point_path(
         self, entry_point: str, root_path: Path
-    ) -> Optional[Path]:
+    ) -> Path | None:
         """
         Resolve a module path to a file path.
 
@@ -933,7 +932,7 @@ class AddonManager:
             return False
 
     def _resolve_addon_version(
-        self, staging_path: Path, git_url: Optional[str] = None
+        self, staging_path: Path, git_url: str | None = None
     ) -> VersionType:
         """
         Determine the version of an addon in a staging directory.
@@ -964,7 +963,6 @@ class AddonManager:
             return version
         except RuntimeError:
             logger.debug("No git tag version found")
-            pass
         version = self._version_from_manifest(staging_path) or UnknownVersion
         logger.info(f"Using manifest version: {version}")
         return version
@@ -973,7 +971,7 @@ class AddonManager:
         self,
         addon: Addon,
         git_url: str,
-        addon_id: Optional[str],
+        addon_id: str | None,
     ) -> Path:
         """
         Copy validated addon from staging to the install directory
@@ -1006,8 +1004,8 @@ class AddonManager:
         return final_path
 
     def install_addon(
-        self, git_url: str, addon_id: Optional[str] = None
-    ) -> Optional[Path]:
+        self, git_url: str, addon_id: str | None = None
+    ) -> Path | None:
         """
         Install an addon from a remote Git repository.
 
@@ -1023,7 +1021,7 @@ class AddonManager:
         logger.info(
             f"install_addon called: git_url={git_url}, addon_id={addon_id}"
         )
-        result: Optional[Path] = None
+        result: Path | None = None
         with tempfile.TemporaryDirectory(
             ignore_cleanup_errors=True
         ) as temp_dir:
@@ -1145,7 +1143,7 @@ class AddonManager:
     @staticmethod
     def _parse_git_url(
         git_url: str,
-    ) -> Optional[tuple[str, str, str]]:
+    ) -> tuple[str, str, str] | None:
         """
         Extract (host, owner, repo) from an HTTPS git URL.
 
@@ -1157,14 +1155,13 @@ class AddonManager:
         if not parsed.hostname:
             return None
         path = parsed.path.rstrip("/")
-        if path.endswith(".git"):
-            path = path[:-4]
+        path = path.removesuffix(".git")
         parts = path.strip("/").split("/")
         if len(parts) < 2:
             return None
         return parsed.hostname, parts[0], parts[1]
 
-    def _get_remote_tag_version(self, git_url: str) -> Optional[str]:
+    def _get_remote_tag_version(self, git_url: str) -> str | None:
         """
         Query the platform REST API for the latest tag.
 
@@ -1196,12 +1193,11 @@ class AddonManager:
         if not tags or not isinstance(tags, list):
             return None
         name = tags[0].get("name", "")
-        if name.startswith("v"):
-            name = name[1:]
+        name = name.removeprefix("v")
         return name or None
 
     @staticmethod
-    def _git_url_to_zip(git_url: str) -> Optional[str]:
+    def _git_url_to_zip(git_url: str) -> str | None:
         """Convert a git repository URL to a downloadable zip URL."""
         parsed = AddonManager._parse_git_url(git_url)
         if parsed is None:
@@ -1214,7 +1210,7 @@ class AddonManager:
         return GITEA_ZIP_URL.format(host=host, owner=owner, repo=repo)
 
     @staticmethod
-    def _version_from_manifest(addon_path: Path) -> Optional[str]:
+    def _version_from_manifest(addon_path: Path) -> str | None:
         """Read the version field from rayforge-addon.yaml."""
         manifest = addon_path / "rayforge-addon.yaml"
         if manifest.exists():
@@ -1227,7 +1223,7 @@ class AddonManager:
         return None
 
     @staticmethod
-    def _fetch_zip_data(zip_url: str) -> Optional[io.BytesIO]:
+    def _fetch_zip_data(zip_url: str) -> io.BytesIO | None:
         """Download a zip archive from a URL. Returns None on failure."""
         try:
             with urllib.request.urlopen(zip_url, timeout=30) as resp:
@@ -1288,8 +1284,7 @@ class AddonManager:
         parsed = urlparse(git_url)
         path = parsed.path
         repo_name = path.rstrip("/").split("/")[-1]
-        if repo_name.endswith(".git"):
-            repo_name = repo_name[:-4]
+        repo_name = repo_name.removesuffix(".git")
         return repo_name
 
     def _cleanup_directory(self, addon_path: Path):
@@ -1471,7 +1466,7 @@ class AddonManager:
             return AddonState.LICENSE_REQUIRED.value
         return AddonState.NOT_INSTALLED.value
 
-    def get_addon_error(self, addon_name: str) -> Optional[str]:
+    def get_addon_error(self, addon_name: str) -> str | None:
         """Get the error message for an addon that failed to load."""
         return self._load_errors.get(addon_name)
 
@@ -1550,7 +1545,7 @@ class AddonManager:
 
     def get_missing_dependencies(
         self, addon_name: str
-    ) -> list[tuple[str, Optional[str]]]:
+    ) -> list[tuple[str, str | None]]:
         """
         Get missing or disabled dependencies for an addon.
 
@@ -1617,7 +1612,7 @@ class AddonManager:
         enabled.append(addon_name)
         return True, enabled
 
-    def get_license_required_addon(self, addon_name: str) -> Optional[Addon]:
+    def get_license_required_addon(self, addon_name: str) -> Addon | None:
         """
         Get an addon that requires a license.
 

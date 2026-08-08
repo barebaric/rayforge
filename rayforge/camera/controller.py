@@ -226,7 +226,7 @@ class VideoCaptureDevice:
             f"Tried: {names}. Last error: {last_error}"
         )
         logger.error(msg)
-        raise IOError(msg)
+        raise OSError(msg)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.cap is None:
@@ -253,12 +253,12 @@ class CameraController:
 
     def __init__(self, config: Camera):
         self.config = config
-        self._image_data: Optional[np.ndarray] = None
-        self._raw_image_data: Optional[np.ndarray] = None
+        self._image_data: np.ndarray | None = None
+        self._raw_image_data: np.ndarray | None = None
         # For Temporal Smoothing
-        self._accumulator: Optional[np.ndarray] = None
+        self._accumulator: np.ndarray | None = None
         self._active_subscribers: int = 0
-        self._capture_thread: Optional[threading.Thread] = None
+        self._capture_thread: threading.Thread | None = None
         self._running: bool = False
         self._settings_dirty: bool = True  # Flag to re-apply settings
         self._consecutive_failures: int = 0
@@ -319,11 +319,11 @@ class CameraController:
         return devices
 
     @property
-    def image_data(self) -> Optional[np.ndarray]:
+    def image_data(self) -> np.ndarray | None:
         return self._image_data
 
     @property
-    def raw_image_data(self) -> Optional[np.ndarray]:
+    def raw_image_data(self) -> np.ndarray | None:
         return self._raw_image_data
 
     @property
@@ -439,7 +439,7 @@ class CameraController:
         self,
         output_size: tuple[int, int],
         physical_area: tuple[Pos, Pos],
-    ) -> Optional[np.ndarray]:
+    ) -> np.ndarray | None:
         """
         Get an image aligned to world coordinates.
 
@@ -487,7 +487,7 @@ class CameraController:
         image: np.ndarray,
         output_size: tuple[int, int],
         physical_area: tuple[Pos, Pos],
-    ) -> Optional[np.ndarray]:
+    ) -> np.ndarray | None:
         """
         Transform an image using homography to world coordinates.
 
@@ -727,9 +727,9 @@ class CameraController:
                 # Open the device ONCE
                 with VideoCaptureDevice(self.config.device_id) as cap:
                     if cap is None:
-                        raise IOError("VideoCapture returned None")
+                        raise OSError("VideoCapture returned None")
                     self._capture_frames_from_device(cap)
-            except IOError as e:
+            except OSError as e:
                 logger.error(f"IO error for {self.config.name}: {e}")
             except cv2.error as e:
                 logger.error(f"OpenCV error for {self.config.name}: {e}")
@@ -800,7 +800,7 @@ class CameraController:
                 # Apply settings before capturing the single frame
                 self._apply_settings(cap)
                 self._read_frame(cap)
-        except IOError as e:
+        except OSError as e:
             logger.error(f"IO error capturing image: {e}")
             self._image_data = None
         except cv2.error as e:

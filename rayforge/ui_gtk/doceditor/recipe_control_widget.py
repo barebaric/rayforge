@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -68,7 +68,7 @@ class RecipeControlWidget(Adw.ActionRow):
                 settings[key] = getattr(self.step, key)
         return settings
 
-    def _get_primary_capability(self) -> Optional[StepCapability]:
+    def _get_primary_capability(self) -> StepCapability | None:
         """
         Determines the most likely capability for the current step config.
         """

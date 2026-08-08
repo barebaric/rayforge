@@ -1,4 +1,3 @@
-# flake8: noqa: E402
 """UI tests for the laser step settings pages."""
 
 from typing import Any

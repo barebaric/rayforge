@@ -2,7 +2,7 @@ import enum
 import io
 import token as py_token
 import tokenize as py_tokenize
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 
 class TokenType(enum.Enum):
@@ -76,9 +76,7 @@ class ExpressionTokenizer:
 
         return tokens
 
-    def _get_token_type(
-        self, tok: py_tokenize.TokenInfo
-    ) -> Optional[TokenType]:
+    def _get_token_type(self, tok: py_tokenize.TokenInfo) -> TokenType | None:
         """Maps a standard library token to our simplified TokenType."""
         # 1. Explicitly filter out all non-content tokens.
         if tok.type in (

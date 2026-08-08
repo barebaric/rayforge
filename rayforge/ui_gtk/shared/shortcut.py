@@ -1,5 +1,3 @@
-from typing import Optional
-
 from gi.repository import Gtk
 
 from ..shared.gtk import apply_css
@@ -16,7 +14,7 @@ class Shortcut(Gtk.Box):
     def __init__(
         self,
         keys: list[str],
-        description: Optional[str] = None,
+        description: str | None = None,
         separator: str = "+",
         **kwargs,
     ):

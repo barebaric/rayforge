@@ -299,7 +299,7 @@ def test_resolution_property():
         camera.resolution = (0, 1080)
 
     with pytest.raises(ValueError):
-        setattr(camera, "resolution", "invalid")
+        camera.resolution = "invalid"
 
 
 def test_resolution_serialization():

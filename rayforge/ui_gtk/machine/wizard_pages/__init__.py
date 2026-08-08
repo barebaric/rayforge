@@ -132,8 +132,8 @@ def empty_profile() -> DeviceProfile:
 
 
 def _makePreferencesGroup(
-    title: Optional[str] = None,
-    description: Optional[str] = None,
+    title: str | None = None,
+    description: str | None = None,
 ) -> Adw.PreferencesGroup:
     """Helper constructor that omits None titles entirely."""
     kwargs: dict[str, Any] = {}
@@ -146,6 +146,6 @@ def _makePreferencesGroup(
 
 __all__ = [
     "WizardPage",
-    "empty_profile",
     "_makePreferencesGroup",
+    "empty_profile",
 ]

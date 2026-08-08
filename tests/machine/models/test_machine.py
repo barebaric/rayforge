@@ -46,8 +46,6 @@ def contour_step_class():
 class OtherDriver(NoDeviceDriver):
     """A second dummy driver class for testing purposes."""
 
-    pass
-
 
 # Register the driver at the module level to ensure it's available
 # as soon as this test file is imported by pytest.

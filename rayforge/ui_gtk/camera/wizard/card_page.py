@@ -3,7 +3,6 @@
 import logging
 import os
 from gettext import gettext as _
-from typing import Optional
 
 import cv2
 
@@ -30,8 +29,8 @@ class CardPage(CameraWizardPage):
 
     def __init__(self, wizard, controller):
         super().__init__(wizard, controller)
-        self._board: Optional[CharucoBoard] = None
-        self._preview_pixbuf: Optional[GdkPixbuf.Pixbuf] = None
+        self._board: CharucoBoard | None = None
+        self._preview_pixbuf: GdkPixbuf.Pixbuf | None = None
 
         machine = get_context().machine
         if machine:
@@ -43,7 +42,7 @@ class CardPage(CameraWizardPage):
             self._card_height = 100.0
 
     @property
-    def board(self) -> Optional[CharucoBoard]:
+    def board(self) -> CharucoBoard | None:
         return self._board
 
     def build(self) -> Gtk.Box:

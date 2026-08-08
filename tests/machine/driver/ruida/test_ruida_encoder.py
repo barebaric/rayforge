@@ -172,7 +172,7 @@ class TestSetCutSpeedCommand:
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
-        speed_um = int(100 * 1000)
+        speed_um = 100 * 1000
         assert binary == b"\xc9\x02" + encode35(speed_um)
         assert "SPEED 100.0" in result.text
 
@@ -183,7 +183,7 @@ class TestSetCutSpeedCommand:
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
-        speed_um = int(50 * 1000)
+        speed_um = 50 * 1000
         assert binary == b"\xc9\x02" + encode35(speed_um)
         assert "SPEED 50.0" in result.text
 
@@ -208,7 +208,7 @@ class TestSetTravelSpeedCommand:
         result = encoder.encode(ops, mock_machine, doc)
 
         binary = result.driver_data["binary"]
-        speed_um = int(500 * 1000)
+        speed_um = 500 * 1000
         assert b"\xc9\x02" + encode35(speed_um) in binary
         assert "TRAVEL_SPEED 500.0" in result.text
 

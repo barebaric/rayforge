@@ -149,10 +149,12 @@ def transform_path(path_data, min_x, min_y, width, height, target_size=24):
                     and isinstance(tokens[i], float)
                     and isinstance(tokens[i + 1], float)
                 ):
-                    if cmd.isupper():
-                        x = tx(tokens[i])
-                        y = ty(tokens[i + 1])
-                    elif at_start and first_pair and cmd.lower() == "m":
+                    if (
+                        cmd.isupper()
+                        or at_start
+                        and first_pair
+                        and cmd.lower() == "m"
+                    ):
                         x = tx(tokens[i])
                         y = ty(tokens[i + 1])
                     else:

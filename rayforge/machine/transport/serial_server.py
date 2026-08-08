@@ -4,7 +4,6 @@ import logging
 import os
 import pty
 import termios
-from typing import Optional
 
 from .transport import Transport, TransportStatus
 
@@ -23,13 +22,13 @@ class SerialServerTransport(Transport):
     def __init__(self, baudrate: int = 115200):
         super().__init__()
         self.baudrate = baudrate
-        self._master_fd: Optional[int] = None
-        self._slave_fd: Optional[int] = None
-        self._slave_path: Optional[str] = None
+        self._master_fd: int | None = None
+        self._slave_fd: int | None = None
+        self._slave_path: str | None = None
         self._running = False
 
     @property
-    def slave_path(self) -> Optional[str]:
+    def slave_path(self) -> str | None:
         """Returns the path clients should connect to."""
         return self._slave_path
 

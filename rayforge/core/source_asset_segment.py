@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, field, replace
-from typing import Any, Optional
+from typing import Any
 
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
@@ -24,16 +24,16 @@ class SourceAssetSegment:
     source_asset_uid: str
     vectorization_spec: VectorizationSpec
     image_modifier_chain: ImageModifierChain = field(default_factory=list)
-    layer_id: Optional[str] = None
+    layer_id: str | None = None
 
     # --- Fields for cropped/traced bitmap rendering ---
-    crop_window_px: Optional[Rect] = None
-    cropped_width_mm: Optional[float] = None
-    cropped_height_mm: Optional[float] = None
+    crop_window_px: Rect | None = None
+    cropped_width_mm: float | None = None
+    cropped_height_mm: float | None = None
 
     # --- Fields for non-destructive vector import ---
-    pristine_geometry: Optional[Geometry] = None
-    normalization_matrix: Optional[Matrix] = None
+    pristine_geometry: Geometry | None = None
+    normalization_matrix: Matrix | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Serializes the configuration to a dictionary."""
@@ -54,7 +54,7 @@ class SourceAssetSegment:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "SourceAssetSegment":
+    def from_dict(cls, data: dict[str, Any]) -> SourceAssetSegment:
         """Deserializes a dictionary into a SourceAssetSegment instance."""
         # Handle tuple conversion for crop_window_px if it's a list from JSON
         crop_window = data.get("crop_window_px")
@@ -89,7 +89,7 @@ class SourceAssetSegment:
 
     def clone_with_geometry(
         self, new_y_down_geometry: Geometry
-    ) -> "SourceAssetSegment":
+    ) -> SourceAssetSegment:
         """
         Creates a deep copy of this segment for use in splitting operations.
 

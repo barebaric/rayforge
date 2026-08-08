@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import Any, Optional
+from typing import Any
 
 from .var import Var
 
@@ -16,11 +16,11 @@ class ChoiceVar(Var[str]):
         key: str,
         label: str,
         choices: list[str],
-        description: Optional[str] = None,
-        default: Optional[str] = None,
-        value: Optional[str] = None,
+        description: str | None = None,
+        default: str | None = None,
+        value: str | None = None,
         allow_none: bool = True,
-        null_label: Optional[str] = None,
+        null_label: str | None = None,
     ):
         """
         Initializes a new ChoiceVar instance.
@@ -50,7 +50,7 @@ class ChoiceVar(Var[str]):
         self.null_label = null_label
 
         # Validator to ensure the value is always one of the allowed choices.
-        def _choice_validator(val: Optional[str]):
+        def _choice_validator(val: str | None):
             if val is not None and val not in self.choices:
                 raise ValueError(
                     f"Value '{val}' is not a valid choice for '{self.key}'"
@@ -63,14 +63,14 @@ class ChoiceVar(Var[str]):
         data.update({"choices": self.choices})
         return data
 
-    def get_display_for_value(self, value: Optional[str]) -> Optional[str]:
+    def get_display_for_value(self, value: str | None) -> str | None:
         """
         For simple ChoiceVar, the display value is the same as the stored
         value. Subclasses can override this for mapping.
         """
         return value
 
-    def get_value_for_display(self, display: Optional[str]) -> Optional[str]:
+    def get_value_for_display(self, display: str | None) -> str | None:
         """
         For simple ChoiceVar, the stored value is the same as the display
         value. Subclasses can override this for mapping.

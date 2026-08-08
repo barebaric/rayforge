@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from ....core.varset import LengthVar, Var
 from ...shared.pref_rows.length_spin_row import LengthSpinRow
@@ -40,7 +40,7 @@ class LengthRowAdapter(RowAdapter):
             row.set_subtitle(var.description)
         return row, cls(row)
 
-    def get_value(self) -> Optional[Any]:
+    def get_value(self) -> Any | None:
         return self._row.get_value_in_base_units()
 
     def set_value(self, value: Any) -> None:

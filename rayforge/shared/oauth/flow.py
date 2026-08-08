@@ -4,11 +4,12 @@ import socket as _socket
 import urllib.parse
 import urllib.request
 import webbrowser
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
-from typing import Any, Callable, Optional
+from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ class OAuthFlowConfig:
     authorize_url: str
     token_url: str
     client_id: str
-    client_secret: Optional[str] = None
+    client_secret: str | None = None
     scopes: list[str] = field(default_factory=list)
     redirect_port: int = 8765
     use_pkce: bool = False
@@ -28,9 +29,9 @@ class OAuthFlowConfig:
 @dataclass
 class OAuthResult:
     access_token: str
-    refresh_token: Optional[str] = None
-    expires_at: Optional[datetime] = None
-    scope: Optional[str] = None
+    refresh_token: str | None = None
+    expires_at: datetime | None = None
+    scope: str | None = None
     raw_response: dict[str, Any] = field(default_factory=dict)
 
 
@@ -116,7 +117,7 @@ class OAuthFlow:
         Start the OAuth flow. Opens the browser and listens for the
         callback on localhost. Calls on_complete or on_error when done.
         """
-        callback_received: dict[str, Optional[str]] = {
+        callback_received: dict[str, str | None] = {
             "code": None,
             "error": None,
         }

@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from blinker import Signal
 
@@ -26,7 +25,7 @@ class CameraManager:
     def __init__(self, context: RayforgeContext):
         self._context = context
         self._controllers: dict[str, CameraController] = {}
-        self._active_machine: Optional[Machine] = None
+        self._active_machine: Machine | None = None
 
         # Signals
         self.controller_added = Signal()

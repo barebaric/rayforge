@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 @pytest.fixture(autouse=True)
 def _zero_debounce(zero_debounce_delay):
     """Apply zero debounce delay to all tests in this file."""
-    pass
 
 
 @pytest.fixture

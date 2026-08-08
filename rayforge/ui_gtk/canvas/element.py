@@ -8,8 +8,6 @@ from copy import deepcopy
 from typing import (
     TYPE_CHECKING,
     Any,
-    Optional,
-    Union,
 )
 
 import cairo
@@ -58,15 +56,15 @@ class CanvasElement:
         selectable: bool = True,
         visible: bool = True,
         background: tuple[float, float, float, float] = (0, 0, 0, 0),
-        canvas: Optional["Canvas"] = None,
-        parent: Optional[Union["Canvas", CanvasElement]] = None,
+        canvas: Canvas | None = None,
+        parent: Canvas | CanvasElement | None = None,
         data: Any = None,
         clip: bool = True,
         buffered: bool = False,
         debounce_ms: int = 50,
         angle: float = 0.0,
         pixel_perfect_hit: bool = False,
-        matrix: Optional[Matrix] = None,
+        matrix: Matrix | None = None,
         hit_distance: float = 0.0,
         is_editable: bool = False,
         draggable: bool = False,
@@ -144,9 +142,9 @@ class CanvasElement:
         self.selected: bool = selected
         self.selectable: bool = selectable
         self.visible: bool = visible
-        self.surface: Optional[cairo.ImageSurface] = None
-        self.canvas: Optional["Canvas"] = canvas
-        self.parent: Optional[Union["Canvas", CanvasElement]] = parent
+        self.surface: cairo.ImageSurface | None = None
+        self.canvas: Canvas | None = canvas
+        self.parent: Canvas | CanvasElement | None = parent
         self.children: list[CanvasElement] = []
         self.background: tuple[float, float, float, float] = background
         self.data: Any = data
@@ -154,8 +152,8 @@ class CanvasElement:
         self.clip: bool = clip
         self.buffered: bool = buffered
         self.debounce_ms: int = debounce_ms
-        self._debounce_timer_id: Optional[int] = None
-        self._update_future: Optional[Future] = None
+        self._debounce_timer_id: int | None = None
+        self._update_future: Future | None = None
         self._update_generation: int = 0
         self.pixel_perfect_hit = pixel_perfect_hit
         self.hit_distance: float = hit_distance
@@ -249,20 +247,18 @@ class CanvasElement:
         if isinstance(self.parent, CanvasElement):
             self.parent.on_child_transform_changed(self)
 
-    def on_child_transform_changed(self, child: "CanvasElement"):
+    def on_child_transform_changed(self, child: CanvasElement):
         """
         Callback triggered by a child when its transform has changed.
         Subclasses can override this to react, e.g., by updating bounds.
         The base implementation does nothing.
         """
-        pass
 
     def on_child_list_changed(self):
         """
         Hook called when the list of children is modified (add/remove).
         Subclasses can override this to react.
         """
-        pass
 
     def on_attached(self):
         """
@@ -270,14 +266,12 @@ class CanvasElement:
         `self.canvas` is guaranteed to be available. Subclasses can
         override this to connect signals or initialize resources.
         """
-        pass
 
     def on_detached(self):
         """
         Lifecycle hook called before the element is removed from a canvas.
         Subclasses can override this to disconnect signals or clean up.
         """
-        pass
 
     def draw_overlay(self, ctx: cairo.Context):
         """
@@ -288,7 +282,6 @@ class CanvasElement:
         Args:
             ctx: The cairo context in world/pixel space.
         """
-        pass
 
     def draw_edit_overlay(self, ctx: cairo.Context):
         """
@@ -298,7 +291,6 @@ class CanvasElement:
         Args:
             ctx: The cairo context in screen/pixel space.
         """
-        pass
 
     def get_world_transform(self) -> Matrix:
         """
@@ -454,9 +446,7 @@ class CanvasElement:
         # Schedule the UI-modifying part to run on the main thread
         GLib.idle_add(self._apply_surface, new_surface)
 
-    def _apply_surface(
-        self, new_surface: Optional[cairo.ImageSurface]
-    ) -> bool:
+    def _apply_surface(self, new_surface: cairo.ImageSurface | None) -> bool:
         """
         Applies the newly rendered surface from the background task.
 
@@ -475,7 +465,7 @@ class CanvasElement:
 
     def render_to_surface(
         self, width: int, height: int
-    ) -> Optional[cairo.ImageSurface]:
+    ) -> cairo.ImageSurface | None:
         """
         Performs rendering to a new surface in a background thread.
 
@@ -505,7 +495,7 @@ class CanvasElement:
         self,
         region: ElementRegion,
         base_handle_size: float,
-        scale_compensation: Union[float, tuple[float, float]] = 1.0,
+        scale_compensation: float | tuple[float, float] = 1.0,
     ) -> Rect:
         """
         Gets the rect (x, y, w, h) for a region in local coordinates.
@@ -530,7 +520,7 @@ class CanvasElement:
         self,
         x_abs: float,
         y_abs: float,
-        candidates: Optional[set[ElementRegion]] = None,
+        candidates: set[ElementRegion] | None = None,
     ) -> ElementRegion:
         """
         Checks which region is hit at an absolute canvas position.
@@ -596,7 +586,7 @@ class CanvasElement:
         """Creates a deep copy of the element."""
         return deepcopy(self)
 
-    def _attach_to_canvas_recursive(self, canvas: Optional["Canvas"]):
+    def _attach_to_canvas_recursive(self, canvas: Canvas | None):
         """
         Recursively sets the canvas for self and all children, and calls
         the on_attached lifecycle hook.
@@ -678,7 +668,7 @@ class CanvasElement:
         if self.canvas:
             self.canvas.queue_draw()
 
-    def find_by_data(self, data: Any) -> Optional[CanvasElement]:
+    def find_by_data(self, data: Any) -> CanvasElement | None:
         """
         Finds the first element (self or descendant) with matching data.
 
@@ -1012,7 +1002,7 @@ class CanvasElement:
 
     def get_elem_hit(
         self, world_x: float, world_y: float, selectable: bool = False
-    ) -> Optional[CanvasElement]:
+    ) -> CanvasElement | None:
         """
         Checks for a hit on this element or its children given world
         coordinates.
@@ -1102,11 +1092,9 @@ class CanvasElement:
 
     def on_edit_mode_enter(self):
         """Called when this element becomes the Canvas's edit_context."""
-        pass
 
     def on_edit_mode_leave(self):
         """Called when this element is no longer the Canvas's edit_context."""
-        pass
 
     def handle_edit_press(
         self, world_x: float, world_y: float, n_press: int = 1
@@ -1132,7 +1120,6 @@ class CanvasElement:
             world_dx: The horizontal drag distance in world coordinates.
             world_dy: The vertical drag distance in world coordinates.
         """
-        pass
 
     def handle_edit_release(self, world_x: float, world_y: float):
         """
@@ -1142,7 +1129,6 @@ class CanvasElement:
             world_x: The x-coordinate of the release in world space.
             world_y: The y-coordinate of the release in world space.
         """
-        pass
 
     def handle_edit_motion(self, world_x: float, world_y: float) -> bool:
         """

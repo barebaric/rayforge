@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point
 
@@ -34,7 +34,7 @@ class ParallelogramConstraint(Constraint):
 
     @classmethod
     def can_apply_to(
-        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+        cls, selection: SketchSelection, sketch: Sketch | None = None
     ) -> bool:
         return len(selection.point_ids) == 4 and not selection.entity_ids
 
@@ -47,7 +47,7 @@ class ParallelogramConstraint(Constraint):
         """Returns a human-readable title for this constraint."""
         return self.get_type_name()
 
-    def get_subtitle(self, registry: "EntityRegistry") -> str:
+    def get_subtitle(self, registry: EntityRegistry) -> str:
         """Returns a human-readable subtitle describing constrained points."""
         p_origin = registry.get_point(self.p_origin)
         if p_origin:
@@ -67,7 +67,7 @@ class ParallelogramConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ParallelogramConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> ParallelogramConstraint:
         return cls(
             p_origin=data["p_origin"],
             p_width=data["p_width"],
@@ -76,9 +76,7 @@ class ParallelogramConstraint(Constraint):
             user_visible=data.get("user_visible", False),
         )
 
-    def error(
-        self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> Point:
+    def error(self, reg: EntityRegistry, params: ParameterContext) -> Point:
         """Returns the difference between vectors (p_width-p_origin) and
         (p4-p_height).
         """
@@ -96,7 +94,7 @@ class ParallelogramConstraint(Constraint):
         return (v1_x - v2_x, v1_y - v2_y)
 
     def gradient(
-        self, reg: "EntityRegistry", params: "ParameterContext"
+        self, reg: EntityRegistry, params: ParameterContext
     ) -> dict[EntityID, list[Point]]:
         """Returns the gradient of the error with respect to each point."""
         return {

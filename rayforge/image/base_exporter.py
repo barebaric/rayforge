@@ -38,7 +38,7 @@ class Exporter(BaseExporter):
     extensions: tuple[str, ...]
     mime_types: tuple[str, ...]
 
-    def __init__(self, doc_item: "DocItem"):
+    def __init__(self, doc_item: DocItem):
         """
         Initializes the exporter with the document item to be exported.
 

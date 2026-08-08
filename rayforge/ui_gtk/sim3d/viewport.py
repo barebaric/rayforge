@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 from raygeo.geo.types import Point3D, Rect
@@ -15,7 +15,7 @@ class ViewportConfig:
     model_matrix: np.ndarray
     wcs_offset_mm: Point3D
     margin_shift: np.ndarray
-    extent_frame: Optional[Rect]
+    extent_frame: Rect | None
     x_right: bool
     y_down: bool
     x_negative: bool
@@ -87,7 +87,7 @@ class ViewportConfig:
         margin_shift[0, 3] = -ml
         margin_shift[1, 3] = -mb
 
-        extent_frame: Optional[Rect] = None
+        extent_frame: Rect | None = None
         if machine.has_custom_work_area():
             extent_frame = machine.get_visual_extent_frame()
 

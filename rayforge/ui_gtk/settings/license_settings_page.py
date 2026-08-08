@@ -1,7 +1,7 @@
 import logging
 import webbrowser
 from gettext import gettext as _
-from typing import Optional, cast
+from typing import cast
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -199,7 +199,7 @@ class LicenseSettingsPage(TrackedPreferencesPage):
     def _on_remove_license(self, btn, product_id):
         dialog = Adw.MessageDialog(
             transient_for=cast(
-                Optional[Gtk.Window], self.get_ancestor(Gtk.Window)
+                Gtk.Window | None, self.get_ancestor(Gtk.Window)
             ),
             modal=True,
             heading=_("Remove License?"),

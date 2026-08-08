@@ -8,7 +8,6 @@ signal (blinker) after any mutation so dependent UI can refresh.
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import yaml
 from blinker import Signal
@@ -80,7 +79,7 @@ class ToolManager:
         self.changed.send(self)
         return True
 
-    def get(self, uid: str) -> Optional[Tool]:
+    def get(self, uid: str) -> Tool | None:
         """Return the tool with this uid, or ``None``."""
         return self.tools.get(uid)
 

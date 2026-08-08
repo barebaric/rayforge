@@ -15,14 +15,9 @@ import logging
 import uuid
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Optional
 
 from .base import BaseArtifact
 from .handle import BaseArtifactHandle
-
-if TYPE_CHECKING:
-    pass
-
 
 logger = logging.getLogger(__name__)
 
@@ -91,8 +86,8 @@ class ArtifactStore:
 
     @contextmanager
     def checkout_handle(
-        self, handle: Optional[BaseArtifactHandle]
-    ) -> Generator[Optional[BaseArtifact], None, None]:
+        self, handle: BaseArtifactHandle | None
+    ) -> Generator[BaseArtifact | None, None, None]:
         """Retain *handle*, yield its artifact, then release it."""
         if handle is None:
             yield None

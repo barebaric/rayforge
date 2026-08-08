@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -76,8 +76,8 @@ class EquidistantLinesProducer(SnapLineProducer):
         self,
         registry: "EntityRegistry",
         drag_context: DragContext,
-        fixed_x: Optional[float] = None,
-        fixed_y: Optional[float] = None,
+        fixed_x: float | None = None,
+        fixed_y: float | None = None,
         threshold: float = 0.0,
     ) -> tuple[list[float], float]:
         coords: list[float] = []

@@ -1,5 +1,4 @@
 import math
-from typing import Optional
 
 import numpy as np
 import pytest
@@ -346,7 +345,7 @@ class TestResolveLayerRotary:
     @staticmethod
     def _expected(
         enabled: bool,
-        module: Optional[RotaryModule],
+        module: RotaryModule | None,
         mode: RotaryMode,
         axis: Axis,
     ) -> RotaryAxisConfig:

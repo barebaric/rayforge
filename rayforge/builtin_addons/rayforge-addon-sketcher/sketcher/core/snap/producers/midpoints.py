@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -54,7 +54,7 @@ class MidpointsProducer(SnapLineProducer):
 
     def _get_midpoint(
         self, entity: object, registry: "EntityRegistry"
-    ) -> Optional[GeoPoint]:
+    ) -> GeoPoint | None:
         if isinstance(entity, Line):
             return self._line_midpoint(entity, registry)
         elif isinstance(entity, Arc):
@@ -63,7 +63,7 @@ class MidpointsProducer(SnapLineProducer):
 
     def _line_midpoint(
         self, line: Line, registry: "EntityRegistry"
-    ) -> Optional[GeoPoint]:
+    ) -> GeoPoint | None:
         p1 = registry.get_point(line.p1_idx)
         p2 = registry.get_point(line.p2_idx)
         if p1 and p2:
@@ -72,7 +72,7 @@ class MidpointsProducer(SnapLineProducer):
 
     def _arc_midpoint(
         self, arc: Arc, registry: "EntityRegistry"
-    ) -> Optional[GeoPoint]:
+    ) -> GeoPoint | None:
         midpoint = arc.get_midpoint(registry)
         if midpoint:
             return (midpoint[0], midpoint[1])

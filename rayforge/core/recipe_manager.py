@@ -86,7 +86,7 @@ class RecipeManager:
                         f"Failed to delete recipe file {recipe_file}: {e}"
                     )
 
-    def get_recipe_by_id(self, recipe_id: str) -> Optional[Recipe]:
+    def get_recipe_by_id(self, recipe_id: str) -> Recipe | None:
         """Retrieves a recipe by its unique identifier."""
         return self.recipes.get(recipe_id)
 
@@ -97,9 +97,9 @@ class RecipeManager:
     def find_recipes(
         self,
         stock_items: list["StockItem"],
-        capabilities: Optional[tuple[StepCapability, ...]] = None,
+        capabilities: tuple[StepCapability, ...] | None = None,
         machine: Optional["Machine"] = None,
-        step_type: Optional[str] = None,
+        step_type: str | None = None,
     ) -> list[Recipe]:
         """
         Finds matching recipes, sorted from most specific to least specific.

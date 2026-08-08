@@ -3,7 +3,7 @@
 import logging
 import uuid
 from gettext import gettext as _
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from blinker import Signal
 from gi.repository import Adw, Gdk, Gtk
@@ -56,8 +56,8 @@ class ColorPresetDialog(Adw.MessageDialog):
 
     def __init__(
         self,
-        parent: Optional[Gtk.Window],
-        preset: Optional[ColorPreset] = None,
+        parent: Gtk.Window | None,
+        preset: ColorPreset | None = None,
         **kwargs,
     ):
         super().__init__(transient_for=parent, modal=True, **kwargs)
@@ -298,7 +298,7 @@ class ColorPresetListWidget(PreferencesGroupWithButton):
         dialog.present()
 
     def _save_from_dialog(
-        self, dialog: ColorPresetDialog, existing: Optional[ColorPreset] = None
+        self, dialog: ColorPresetDialog, existing: ColorPreset | None = None
     ):
         data = dialog.get_preset_data()
         color = normalize_color(data["color"])

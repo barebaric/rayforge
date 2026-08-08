@@ -4,7 +4,6 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Optional,
     Protocol,
     cast,
 )
@@ -100,9 +99,7 @@ class EngraveStep(LaserStep):
             ]
         )
 
-    def __init__(
-        self, name: Optional[str] = None, typelabel: Optional[str] = None
-    ):
+    def __init__(self, name: str | None = None, typelabel: str | None = None):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)
         self.power = 0.2
         self.scan_angle = 0.0
@@ -136,7 +133,7 @@ class EngraveStep(LaserStep):
         except KeyError:
             return None
 
-    def get_operation_color(self, head) -> Optional[str]:
+    def get_operation_color(self, head) -> str | None:
         """The head's raster color, used to represent engraving."""
         if isinstance(head, LaserHead):
             return head.raster_color
@@ -156,8 +153,8 @@ class EngraveStep(LaserStep):
 
     def get_assembler_kwargs(
         self,
-        machine: "Machine",
-        workpiece: "WorkPiece",
+        machine: Machine,
+        workpiece: WorkPiece,
     ) -> dict:
         _spot_x, spot_y = LaserHead.get_spot_size(
             self.get_selected_laser(machine)
@@ -201,9 +198,9 @@ class EngraveStep(LaserStep):
 
     def build_compute_payload(
         self,
-        machine: "Machine",
-        workpiece: "WorkPiece",
-    ) -> "tuple[Part, ComputePayload]":
+        machine: Machine,
+        workpiece: WorkPiece,
+    ) -> tuple[Part, ComputePayload]:
         """Build a :class:`Part` with the preprocessed raster image
         attached as a :class:`WholeImageSource`, and a
         :class:`ComputePayload` carrying a :class:`RasterSpec`.
@@ -255,9 +252,9 @@ class EngraveStep(LaserStep):
 
     def assembler_token_params(
         self,
-        machine: "Machine",
-        workpiece: "WorkPiece",
-    ) -> Optional[dict]:
+        machine: Machine,
+        workpiece: WorkPiece,
+    ) -> dict | None:
         return self.get_assembler_kwargs(machine, workpiece)
 
     def to_dict(self) -> dict:
@@ -289,7 +286,7 @@ class EngraveStep(LaserStep):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict) -> "EngraveStep":
+    def from_dict(cls, data: dict) -> EngraveStep:
         step = cast("EngraveStep", super().from_dict(data))
         legacy = legacy_producer_params(data)
         # Legacy type names implied a depth mode when none was saved.
@@ -436,10 +433,10 @@ class EngraveStep(LaserStep):
     @classmethod
     def create(
         cls,
-        context: "RayforgeContext",
-        name: Optional[str] = None,
+        context: RayforgeContext,
+        name: str | None = None,
         **kwargs,
-    ) -> "EngraveStep":
+    ) -> EngraveStep:
         machine = context.machine
         assert machine is not None
         default_head = machine.get_default_laser_head()
@@ -480,10 +477,10 @@ class EngraveStep(LaserStep):
 
 
 def _build_raster_part(
-    step: "EngraveStep",
-    machine: "Machine",
-    workpiece: "WorkPiece",
-) -> tuple[Part, Optional[np.ndarray]]:
+    step: EngraveStep,
+    machine: Machine,
+    workpiece: WorkPiece,
+) -> tuple[Part, np.ndarray | None]:
     """Render and preprocess the workpiece into a :class:`Part`
     carrying a :class:`WholeImageSource`, and return the alpha
     channel separately so the caller can fold it into the

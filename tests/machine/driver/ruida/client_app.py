@@ -1,4 +1,3 @@
-# flake8: noqa: E402
 """
 Ruida Client App - A GUI client for controlling a Ruida laser controller/simulator.
 
@@ -10,7 +9,6 @@ import asyncio
 import logging
 import threading
 from concurrent.futures import Future
-from typing import Optional
 
 import gi
 
@@ -40,14 +38,14 @@ class RuidaUdpClient:
         self.host = host
         self.port = port
         self.magic = magic
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-        self._thread: Optional[threading.Thread] = None
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self._thread: threading.Thread | None = None
         self._loop_ready = threading.Event()
-        self._udp: Optional[UdpTransport] = None
-        self._transport: Optional[RuidaTransport] = None
-        self._jog_udp: Optional[UdpTransport] = None
-        self._jog_transport: Optional[RuidaTransport] = None
-        self.client: Optional[RuidaClient] = None
+        self._udp: UdpTransport | None = None
+        self._transport: RuidaTransport | None = None
+        self._jog_udp: UdpTransport | None = None
+        self._jog_transport: RuidaTransport | None = None
+        self.client: RuidaClient | None = None
 
     @property
     def is_connected(self) -> bool:
@@ -421,7 +419,7 @@ class ClientApp(Gtk.Application):
     def __init__(self, host: str, port: int, magic: int):
         super().__init__(application_id="com.rayforge.RuidaClient")
         self.client = RuidaUdpClient(host, port, magic)
-        self._window: Optional[ClientWindow] = None
+        self._window: ClientWindow | None = None
 
     def do_activate(self):
         self._window = ClientWindow(self)

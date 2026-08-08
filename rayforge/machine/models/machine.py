@@ -102,18 +102,18 @@ class Machine:
         self.connection_status: TransportStatus = TransportStatus.DISCONNECTED
         self.device_state: DeviceState = DeviceState()
 
-        self.driver_name: Optional[str] = None
+        self.driver_name: str | None = None
         self.driver_args: dict[str, Any] = {}
         self.driver_config: dict[str, Any] = {}
-        self.precheck_error: Optional[str] = None
+        self.precheck_error: str | None = None
 
         self.auto_connect: bool = True
         self.home_on_start: bool = False
         self.clear_alarm_on_connect: bool = False
         self.single_axis_homing_enabled: bool = True
-        self.dialect_uid: Optional[str] = "grbl"
+        self.dialect_uid: str | None = "grbl"
         self.dialect_migrated: bool = False
-        self._hydrated_dialect: Optional[GcodeDialect] = None
+        self._hydrated_dialect: GcodeDialect | None = None
         self.gcode_precision: int = 3
         self.supports_arcs: bool = True
         self.supports_curves: bool = False
@@ -122,9 +122,7 @@ class Machine:
         self.hookmacros: dict[MacroTrigger, Macro] = {}
         self.macros: dict[str, Macro] = {}
         self.heads: list[Head] = []
-        self._explicit_capabilities: Optional[frozenset[MachineCapability]] = (
-            None
-        )
+        self._explicit_capabilities: frozenset[MachineCapability] | None = None
         self.cameras: list[Camera] = []
         self.max_travel_speed: int = 3000  # in mm/min
         self.max_cut_speed: int = 1000  # in mm/min
@@ -154,10 +152,10 @@ class Machine:
             0.0,
             0.0,
         )
-        self._soft_limits: Optional[Rect] = None
+        self._soft_limits: Rect | None = None
         self.origin: Origin = Origin.BOTTOM_LEFT
         self.rotary_enabled_default: bool = False
-        self.default_rotary_module_uid: Optional[str] = None
+        self.default_rotary_module_uid: str | None = None
         self.soft_limits_enabled: bool = True
         self.wcs_origin_is_workarea_origin: bool = False
         self._settings_lock = asyncio.Lock()
@@ -185,7 +183,7 @@ class Machine:
         self.rotary_modules: dict[str, RotaryModule] = {}
         self.nogo_zones: dict[str, Zone] = {}
 
-        self._assembly: Optional["Assembly"] = None
+        self._assembly: Assembly | None = None
         self._assembly_dirty: bool = True
         self._mounted_rotaries: list[RotaryModule] = []
         self._layer_configured: bool = False
@@ -213,7 +211,7 @@ class Machine:
         """Property to access the driver through the controller."""
         return self.controller.driver
 
-    def supports_pwm(self, head: Optional[Head] = None) -> bool:
+    def supports_pwm(self, head: Head | None = None) -> bool:
         """Whether the machine's driver supports PWM for the given head."""
         if head is None:
             if not self.heads:
@@ -221,9 +219,7 @@ class Machine:
             head = self.heads[0]
         return bool(self.driver.supports_pwm(head))
 
-    def get_pwm_params(
-        self, head: Optional[Head] = None
-    ) -> Optional[PWMParams]:
+    def get_pwm_params(self, head: Head | None = None) -> PWMParams | None:
         """
         Returns the driver-reported PWM parameters for the given head, or
         None when the driver reports no PWM support.
@@ -234,9 +230,7 @@ class Machine:
             head = self.heads[0]
         return self.driver.get_pwm_params(head)
 
-    def get_pwm_settings(
-        self, head: Optional[Head] = None
-    ) -> Optional["VarSet"]:
+    def get_pwm_settings(self, head: Head | None = None) -> Optional["VarSet"]:
         """
         Returns the PWM settings VarSet for the given head, or None when
         the driver reports no PWM support.
@@ -249,7 +243,7 @@ class Machine:
     def get_usable_capabilities(
         self,
         step_capabilities: Sequence["StepCapability"],
-        head: Optional[Head] = None,
+        head: Head | None = None,
     ) -> tuple["StepCapability", ...]:
         """
         Filter a step's theoretical capabilities to those this machine
@@ -285,7 +279,7 @@ class Machine:
         return frozenset(caps)
 
     def set_explicit_capabilities(
-        self, capabilities: Optional[frozenset[MachineCapability]]
+        self, capabilities: frozenset[MachineCapability] | None
     ):
         """
         Sets the explicitly declared capabilities. ``None`` means
@@ -317,7 +311,7 @@ class Machine:
     def set_connection_status(self, status: TransportStatus):
         self.connection_status = status
 
-    def set_precheck_error(self, error: Optional[str]):
+    def set_precheck_error(self, error: str | None):
         self.precheck_error = error
 
     def set_unit_system(self, unit_system: UnitSystem) -> None:
@@ -437,7 +431,7 @@ class Machine:
 
     def build_assembly_for_rotary(
         self,
-        rotary_modules: Optional[dict[str, RotaryModule]] = None,
+        rotary_modules: dict[str, RotaryModule] | None = None,
     ) -> Assembly:
         """Build a throwaway assembly for the given rotary modules.
 
@@ -597,7 +591,7 @@ class Machine:
             self.dialect_uid = "grbl"
             self._hydrated_dialect = self.context.dialect_mgr.get("grbl")
 
-    def set_dialect_uid(self, dialect_uid: Optional[str]):
+    def set_dialect_uid(self, dialect_uid: str | None):
         if self.dialect_uid == dialect_uid:
             return
         self.dialect_uid = dialect_uid
@@ -753,7 +747,7 @@ class Machine:
         return (ml, mt, max(1.0, w - ml - mr), max(1.0, h - mt - mb))
 
     @property
-    def soft_limits(self) -> Optional[Rect]:
+    def soft_limits(self) -> Rect | None:
         """
         Configurable safety bounds for jogging (x_min, y_min, x_max, y_max).
         None means use work_area bounds.
@@ -826,7 +820,7 @@ class Machine:
         self.rotary_enabled_default = enabled
         self.changed.send(self)
 
-    def set_default_rotary_module_uid(self, uid: Optional[str]):
+    def set_default_rotary_module_uid(self, uid: str | None):
         if self.default_rotary_module_uid == uid:
             return
         self.default_rotary_module_uid = uid
@@ -999,7 +993,7 @@ class Machine:
         """Check if the machine's driver reports granular progress."""
         return self.controller.reports_granular_progress
 
-    def can_home(self, axis: Optional[Axis] = None) -> bool:
+    def can_home(self, axis: Axis | None = None) -> bool:
         """Check if the machine's driver supports homing for the given axis."""
         return self.controller.can_home(axis)
 
@@ -1021,7 +1015,7 @@ class Machine:
         """Executes a raw G-code string on the machine."""
         await self.controller.run_raw(gcode)
 
-    def can_jog(self, axis: Optional[Axis] = None) -> bool:
+    def can_jog(self, axis: Axis | None = None) -> bool:
         """Check if machine's supports jogging for the given axis."""
         return self.controller.can_jog(axis)
 
@@ -1031,7 +1025,7 @@ class Machine:
         self.invalidate_assembly()
         self.changed.send(self)
 
-    def get_head_by_uid(self, uid: str) -> Optional[Head]:
+    def get_head_by_uid(self, uid: str) -> Head | None:
         for head in self.heads:
             if head.uid == uid:
                 return head
@@ -1043,7 +1037,7 @@ class Machine:
             raise ValueError("Machine has no heads configured.")
         return self.heads[0]
 
-    def get_default_laser_head(self) -> Optional[LaserHead]:
+    def get_default_laser_head(self) -> LaserHead | None:
         """Returns the first laser head, or None if none exist."""
         for head in self.heads:
             if isinstance(head, LaserHead):
@@ -1080,10 +1074,10 @@ class Machine:
         self.invalidate_assembly()
         self.changed.send(self)
 
-    def get_rotary_module_by_uid(self, uid: str) -> Optional[RotaryModule]:
+    def get_rotary_module_by_uid(self, uid: str) -> RotaryModule | None:
         return self.rotary_modules.get(uid)
 
-    def get_default_rotary_module(self) -> Optional[RotaryModule]:
+    def get_default_rotary_module(self) -> RotaryModule | None:
         if self.default_rotary_module_uid:
             return self.get_rotary_module_by_uid(
                 self.default_rotary_module_uid
@@ -1092,7 +1086,7 @@ class Machine:
 
     def get_rotary_module_for_layer(
         self, layer: "Layer"
-    ) -> Optional[RotaryModule]:
+    ) -> RotaryModule | None:
         """Resolve the effective rotary module for *layer*.
 
         Returns the module referenced by
@@ -1115,7 +1109,7 @@ class Machine:
             return next(iter(self.rotary_modules.values()))
         return None
 
-    def get_rotary_axis_for_layer(self, layer: "Layer") -> Optional[Axis]:
+    def get_rotary_axis_for_layer(self, layer: "Layer") -> Axis | None:
         if not layer.rotary_enabled:
             return None
         module = self.get_rotary_module_for_layer(layer)
@@ -1182,7 +1176,7 @@ class Machine:
         zone.changed.connect(self._on_nogo_zone_changed)
         self.changed.send(self)
 
-    def get_nogo_zone_by_uid(self, uid: str) -> Optional[Zone]:
+    def get_nogo_zone_by_uid(self, uid: str) -> Zone | None:
         return self.nogo_zones.get(uid)
 
     def remove_nogo_zone(self, zone: Zone):
@@ -1241,7 +1235,7 @@ class Machine:
             if isinstance(h, LaserHead)
         )
 
-    def validate_driver_setup(self) -> tuple[bool, Optional[str]]:
+    def validate_driver_setup(self) -> tuple[bool, str | None]:
         """
         Validates the machine's driver arguments against the driver's setup
         VarSet. Delegates to the controller.
@@ -1406,7 +1400,7 @@ class Machine:
         await self.controller.switch_active_wcs(wcs)
 
     async def set_work_origin(
-        self, x: float, y: float, z: float, wcs_slot: Optional[str] = None
+        self, x: float, y: float, z: float, wcs_slot: str | None = None
     ):
         """
         Sets the work origin at the specified machine coordinates.
@@ -1420,7 +1414,7 @@ class Machine:
         await self.controller.set_work_origin(x, y, z, wcs_slot)
 
     async def set_work_origin_here(
-        self, axes: Axis, wcs_slot: Optional[str] = None
+        self, axes: Axis, wcs_slot: str | None = None
     ):
         """
         Sets the work origin for the specified axes to the current machine
@@ -1545,10 +1539,10 @@ class Machine:
     @staticmethod
     def _migrate_legacy_hooks_to_dialect(
         hook_data: dict[str, Any],
-        current_dialect_uid: Optional[str],
+        current_dialect_uid: str | None,
         machine_name: str,
         context: RayforgeContext,
-    ) -> tuple[Optional[str], dict[str, Any]]:
+    ) -> tuple[str | None, dict[str, Any]]:
         """
         Checks for legacy JOB_START/JOB_END hooks and migrates them to a
         new custom dialect.
@@ -1605,8 +1599,8 @@ class Machine:
 
     @staticmethod
     def _parse_capabilities(
-        raw: Optional[list[Any]],
-    ) -> Optional[frozenset[MachineCapability]]:
+        raw: list[Any] | None,
+    ) -> frozenset[MachineCapability] | None:
         """
         Parses a list of capability strings into a frozenset of
         MachineCapability. Returns None when the list is absent,

@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import Any, Callable, Optional
+from typing import Any
 
 from .var import ValidationError, Var
 
@@ -13,17 +14,17 @@ class FloatVar(Var[float]):
         self,
         key: str,
         label: str,
-        description: Optional[str] = None,
-        default: Optional[float] = None,
-        value: Optional[float] = None,
-        min_val: Optional[float] = None,
-        max_val: Optional[float] = None,
-        extra_validator: Optional[Callable[[float], None]] = None,
+        description: str | None = None,
+        default: float | None = None,
+        value: float | None = None,
+        min_val: float | None = None,
+        max_val: float | None = None,
+        extra_validator: Callable[[float], None] | None = None,
     ):
         self.min_val = min_val
         self.max_val = max_val
 
-        def validator(v: Optional[float]):
+        def validator(v: float | None):
             # A None value is valid for an unset optional field.
             if v is None:
                 return
@@ -73,14 +74,14 @@ class SliderFloatVar(FloatVar):
         self,
         key: str,
         label: str,
-        description: Optional[str] = None,
-        default: Optional[float] = None,
-        value: Optional[float] = None,
-        min_val: Optional[float] = None,
-        max_val: Optional[float] = None,
-        extra_validator: Optional[Callable[[float], None]] = None,
+        description: str | None = None,
+        default: float | None = None,
+        value: float | None = None,
+        min_val: float | None = None,
+        max_val: float | None = None,
+        extra_validator: Callable[[float], None] | None = None,
         show_value: bool = True,
-        format_suffix: Optional[str] = None,
+        format_suffix: str | None = None,
     ):
         self.show_value = show_value
         self.format_suffix = format_suffix

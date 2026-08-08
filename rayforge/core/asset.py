@@ -1,6 +1,6 @@
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, Optional, Protocol, runtime_checkable
+from typing import Any, ClassVar, Protocol, runtime_checkable
 
 from blinker import Signal
 
@@ -21,9 +21,9 @@ class IAsset(Protocol):
     is_draggable_to_canvas: ClassVar[bool]
     type_display_name: ClassVar[str]
     can_edit: ClassVar[bool]
-    add_action: ClassVar[Optional[str]]
-    activate_action: ClassVar[Optional[str]]
-    edit_item_action: ClassVar[Optional[str]]
+    add_action: ClassVar[str | None]
+    activate_action: ClassVar[str | None]
+    edit_item_action: ClassVar[str | None]
 
     @property
     def uid(self) -> str:
@@ -57,7 +57,7 @@ class IAsset(Protocol):
         """Indicates if this asset should be hidden from UI."""
         return False
 
-    def get_thumbnail(self, size: int) -> Optional[bytes]:
+    def get_thumbnail(self, size: int) -> bytes | None:
         """
         Returns PNG thumbnail bytes at the given max pixel size,
         or None if no thumbnail is available.
@@ -76,9 +76,9 @@ class UnknownAsset(IAsset):
     is_draggable_to_canvas: ClassVar[bool] = False
     type_display_name: ClassVar[str] = "Unknown Asset"
     can_edit: ClassVar[bool] = False
-    add_action: ClassVar[Optional[str]] = None
-    activate_action: ClassVar[Optional[str]] = None
-    edit_item_action: ClassVar[Optional[str]] = None
+    add_action: ClassVar[str | None] = None
+    activate_action: ClassVar[str | None] = None
+    edit_item_action: ClassVar[str | None] = None
 
     _original_type: str = field(init=False)
     _data: dict[str, Any] = field(init=False, default_factory=dict)
@@ -121,6 +121,6 @@ class UnknownAsset(IAsset):
         """Serializes UnknownAsset to the original dictionary."""
         return self._data
 
-    def get_thumbnail(self, size: int) -> Optional[bytes]:
+    def get_thumbnail(self, size: int) -> bytes | None:
         """No thumbnail available for unknown assets."""
         return None

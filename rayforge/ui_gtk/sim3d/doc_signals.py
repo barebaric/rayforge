@@ -7,7 +7,8 @@ the hub to refresh the viewport through callbacks and keeps scene
 compilation out of this module.
 """
 
-from typing import TYPE_CHECKING, Callable, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from ...core.doc import Doc

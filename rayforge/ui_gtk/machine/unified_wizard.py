@@ -14,7 +14,7 @@ pair.
 
 import logging
 from gettext import gettext as _
-from typing import Any, Optional
+from typing import Any
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -95,7 +95,7 @@ class UnifiedWizard(PatchedDialogWindow):
         # Set when the user picks a known profile or import on Step 1;
         # None for "Other / unknown machine". Used to skip the AI
         # lookup steps when the specs are already in the profile.
-        self._source: Optional[dict[str, Any]] = None
+        self._source: dict[str, Any] | None = None
 
         self.toast_overlay = Adw.ToastOverlay()
         self.set_content(self.toast_overlay)
@@ -203,7 +203,7 @@ class UnifiedWizard(PatchedDialogWindow):
 
     # ----- lazy page access ---------------------------------------------
 
-    def _get_page(self, name: str) -> Optional[WizardPage]:
+    def _get_page(self, name: str) -> WizardPage | None:
         # Step 1 traverses the wizard in declared order — only "next",
         # "back", "skip", and the adaptive router call this.
         if name == "profile":
@@ -279,7 +279,7 @@ class UnifiedWizard(PatchedDialogWindow):
             return
         self._update_footer(name, self._get_page(name))
 
-    def _update_footer(self, name: str, page: Optional[WizardPage]) -> None:
+    def _update_footer(self, name: str, page: WizardPage | None) -> None:
         if page is None:
             return
 
@@ -353,7 +353,7 @@ class UnifiedWizard(PatchedDialogWindow):
             return
         self._navigate_to(next_step)
 
-    def _on_back_clicked(self, _btn: Optional[Gtk.Button]) -> None:
+    def _on_back_clicked(self, _btn: Gtk.Button | None) -> None:
         if not self._history:
             return
         prev = self._history.pop()
@@ -395,7 +395,7 @@ class UnifiedWizard(PatchedDialogWindow):
 
     # ----- adaptive routing --------------------------------------------
 
-    def _source_kind(self) -> Optional[str]:
+    def _source_kind(self) -> str | None:
         return self._source.get("kind") if self._source else None
 
     def _ai_entry_step(self) -> str:
@@ -422,7 +422,7 @@ class UnifiedWizard(PatchedDialogWindow):
             return "hardware"
         return "ai_lookup" if is_ai_configured() else "ai_provider"
 
-    def _next_step_after(self, name: str) -> Optional[str]:
+    def _next_step_after(self, name: str) -> str | None:
         """Decides the next step using the adaptive routing rules."""
         mc = self.profile.machine_config
 
@@ -488,9 +488,7 @@ class UnifiedWizard(PatchedDialogWindow):
 
     # ----- page-specific signal handlers --------------------------------
 
-    def _on_controller_selected(
-        self, sender, *, driver: Optional[str]
-    ) -> None:
+    def _on_controller_selected(self, sender, *, driver: str | None) -> None:
         """Step 2: the user picked a controller tile — advance at once."""
         self.profile.machine_config.driver = driver
         next_step = self._next_step_after("controller")
@@ -499,7 +497,7 @@ class UnifiedWizard(PatchedDialogWindow):
         self._navigate_to(next_step)
 
     def _on_profile_source_selected(
-        self, sender, *, kind: str, profile: Optional[DeviceProfile]
+        self, sender, *, kind: str, profile: DeviceProfile | None
     ) -> None:
         """Step 1: the user picked a starting point."""
         if kind == "other":
@@ -691,4 +689,4 @@ def _copy_list_of_containers(value: list) -> list:
     return out
 
 
-__all__ = ["UnifiedWizard", "_STEP_ORDER"]
+__all__ = ["_STEP_ORDER", "UnifiedWizard"]

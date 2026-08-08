@@ -1,7 +1,7 @@
 import logging
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 from blinker import Signal
 
@@ -24,7 +24,7 @@ class ResettableCounter:
     uid: str = field(default_factory=lambda: str(uuid.uuid4()))
     name: str = "Counter"
     value: float = 0.0
-    notify_at: Optional[float] = None
+    notify_at: float | None = None
     notification_sent: bool = False
     extra: dict[str, Any] = field(default_factory=dict)
 
@@ -157,7 +157,7 @@ class MachineHours:
             del self.counters[counter_uid]
             self.changed.send(self)
 
-    def get_counter(self, counter_uid: str) -> Optional[ResettableCounter]:
+    def get_counter(self, counter_uid: str) -> ResettableCounter | None:
         """Get a counter by its UID."""
         return self.counters.get(counter_uid)
 

@@ -14,7 +14,6 @@ from enum import Enum, auto
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
-    Optional,
 )
 
 import numpy as np
@@ -104,7 +103,7 @@ def _trace_surface_to_mm_geometry(
     threshold: float = 0.5,
     auto_threshold: bool = True,
     invert: bool = False,
-) -> Optional[Geometry]:
+) -> Geometry | None:
     """Trace a rendered surface into a single Geometry in mm-space.
 
     The traced contours come back in pixel space (Y-down, origin
@@ -143,12 +142,12 @@ def _trace_surface_to_mm_geometry(
 
 def build_part_vector(
     workpiece: WorkPiece,
-    surface: Optional[cairo.ImageSurface] = None,
+    surface: cairo.ImageSurface | None = None,
     *,
     override_threshold: bool = False,
     threshold: float = 0.5,
     normalize_windings: bool = False,
-) -> Optional[Part]:
+) -> Part | None:
     """Build a ``Part`` carrying vector geometry for an assembler.
 
     This absorbs the Part-construction logic shared by
@@ -284,19 +283,19 @@ def build_part_vector_with_raster_fallback(
 
 
 def preprocess_raster_image(
-    surface: "cairo.ImageSurface",
+    surface: cairo.ImageSurface,
     *,
     mode: DepthMode,
     invert: bool = False,
     auto_levels: bool = True,
-    computed_auto_levels: Optional[tuple[int, int]] = None,
+    computed_auto_levels: tuple[int, int] | None = None,
     black_point: int = 0,
     white_point: int = 255,
     threshold: int = 128,
-    dither_algorithm: Optional[DitherAlgorithm] = None,
+    dither_algorithm: DitherAlgorithm | None = None,
     laser_spot_x_mm: float = 0.1,
     pixels_per_mm_x: float = 1.0,
-) -> tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+) -> tuple[np.ndarray | None, np.ndarray | None]:
     """Convert a Cairo surface into an image array for a raster assembler.
 
     Handles depth-mode preprocessing: grayscale with optional levels,
@@ -375,7 +374,7 @@ def _apply_raster_levels(
     alpha: np.ndarray,
     *,
     auto_levels: bool = True,
-    computed_auto_levels: Optional[tuple[int, int]] = None,
+    computed_auto_levels: tuple[int, int] | None = None,
     black_point: int = 0,
     white_point: int = 255,
 ) -> np.ndarray:
@@ -397,12 +396,12 @@ def _apply_raster_levels(
 
 
 def compute_raster_auto_levels(
-    workpiece: "WorkPiece",
+    workpiece: WorkPiece,
     pixels_per_mm: tuple[float, float],
     *,
     invert: bool = False,
     max_preview_pixels: int = 512,
-) -> Optional[tuple[int, int]]:
+) -> tuple[int, int] | None:
     """Compute auto-levels from a low-resolution preview render.
 
     Renders a small preview of the workpiece, converts it to

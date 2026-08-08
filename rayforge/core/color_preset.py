@@ -14,7 +14,7 @@ import logging
 import uuid
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 
@@ -45,7 +45,7 @@ class ColorPreset:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ColorPreset":
+    def from_dict(cls, data: dict[str, Any]) -> ColorPreset:
         """Deserializes a preset from a dictionary."""
         return cls(
             color=data.get("color", ""),
@@ -144,7 +144,7 @@ class ColorPresetManager:
             return True
         return False
 
-    def get_preset(self, color: str) -> Optional[ColorPreset]:
+    def get_preset(self, color: str) -> ColorPreset | None:
         """
         Returns the preset for a color, or None if none matches.
 
@@ -164,7 +164,7 @@ class ColorPresetManager:
         return list(self._presets_by_color.values())
 
 
-_color_preset_mgr_instance: Optional[ColorPresetManager] = None
+_color_preset_mgr_instance: ColorPresetManager | None = None
 
 
 def get_color_preset_mgr() -> ColorPresetManager:

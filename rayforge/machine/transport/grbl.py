@@ -2,9 +2,9 @@ import asyncio
 import logging
 import re
 import threading
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from enum import Enum, auto
-from typing import Callable, NamedTuple, Optional
+from typing import NamedTuple
 
 from .serial import SerialTransport
 from .transport import Transport
@@ -23,7 +23,7 @@ class BufferStallError(Exception):
 
 class PendingCommand(NamedTuple):
     length: int
-    op_index: Optional[int]
+    op_index: int | None
     command: str = ""
 
 
@@ -36,7 +36,7 @@ class GrblResponseType(Enum):
 class GrblResponse(NamedTuple):
     type: GrblResponseType
     text: str
-    pending: Optional[PendingCommand] = None
+    pending: PendingCommand | None = None
 
 
 class GrblSerialTransport:
@@ -70,7 +70,7 @@ class GrblSerialTransport:
         self._space_available = asyncio.Event()
         self._space_available.set()
         self._status_buffer = bytearray()
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._loop: asyncio.AbstractEventLoop | None = None
 
     @property
     def is_connected(self) -> bool:
@@ -224,7 +224,7 @@ class GrblSerialTransport:
             i += 1
         return None
 
-    def _parse_line(self, line: str) -> Optional[GrblResponse]:
+    def _parse_line(self, line: str) -> GrblResponse | None:
         """
         Parse a single decoded line into a GrblResponse.
         Handles 'ok', 'error:', and returns everything else
@@ -244,7 +244,7 @@ class GrblSerialTransport:
 
     # --- Flow-controlled sending ---
 
-    def _log_tx(self, data: bytes, buf_count: Optional[int] = None):
+    def _log_tx(self, data: bytes, buf_count: int | None = None):
         """Log a RAW_IO TX event with optional buffer info."""
         if buf_count is not None:
             buf_info = f"buf: {buf_count}/{self._rx_buffer_size}"
@@ -275,15 +275,11 @@ class GrblSerialTransport:
     async def send_gcode(
         self,
         data: bytes,
-        op_index: Optional[int] = None,
+        op_index: int | None = None,
         *,
         timeout: float = 10.0,
-        on_stall: Optional[
-            Callable[
-                ["GrblSerialTransport", int],
-                Awaitable[bool],
-            ]
-        ] = None,
+        on_stall: Callable[["GrblSerialTransport", int], Awaitable[bool]]
+        | None = None,
     ) -> int:
         """
         Send G-code with buffer accounting.
@@ -427,7 +423,7 @@ class GrblSerialTransport:
         self._space_available.clear()
         await self._space_available.wait()
 
-    def _ack_ok(self) -> Optional[PendingCommand]:
+    def _ack_ok(self) -> PendingCommand | None:
         """
         Process an ``ok`` or ``error:`` acknowledgement.  Pops the
         corresponding pending command, frees buffer space, and

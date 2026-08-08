@@ -9,7 +9,8 @@ keeps the GL lifecycle and per-frame rendering.
 
 import logging
 import time
-from typing import TYPE_CHECKING, Callable, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from blinker import Signal
@@ -87,11 +88,11 @@ class ScenePresenter:
         self._request_render = request_render
         self._upload_complete = upload_complete
 
-        self._scene_preparation_task: Optional[Task] = None
-        self._compiled_artifact: Optional[CompiledSceneArtifact] = None
-        self._current_job_handle: Optional[BaseArtifactHandle] = None
-        self._op_player: Optional[OpPlayer] = None
-        self._playback_assembly: Optional["Assembly"] = None
+        self._scene_preparation_task: Task | None = None
+        self._compiled_artifact: CompiledSceneArtifact | None = None
+        self._current_job_handle: BaseArtifactHandle | None = None
+        self._op_player: OpPlayer | None = None
+        self._playback_assembly: Assembly | None = None
         self._playback_overlay = None
 
     def connect(self):
@@ -129,7 +130,7 @@ class ScenePresenter:
         return self._doc_editor.doc
 
     @property
-    def op_player(self) -> Optional[OpPlayer]:
+    def op_player(self) -> OpPlayer | None:
         """The current playback player, or None."""
         return self._op_player
 
@@ -139,22 +140,22 @@ class ScenePresenter:
         return self._playback_assembly
 
     @property
-    def compiled_artifact(self) -> Optional[CompiledSceneArtifact]:
+    def compiled_artifact(self) -> CompiledSceneArtifact | None:
         """The last compiled scene artifact, or None."""
         return self._compiled_artifact
 
     @property
-    def scene_preparation_task(self) -> Optional[Task]:
+    def scene_preparation_task(self) -> Task | None:
         """The in-flight scene compilation task, or None."""
         return self._scene_preparation_task
 
     @property
-    def job_handle(self) -> Optional[BaseArtifactHandle]:
+    def job_handle(self) -> BaseArtifactHandle | None:
         """The job artifact handle driving the scene, or None."""
         return self._current_job_handle
 
     @job_handle.setter
-    def job_handle(self, handle: Optional[BaseArtifactHandle]):
+    def job_handle(self, handle: BaseArtifactHandle | None):
         self._current_job_handle = handle
 
     @property
@@ -411,7 +412,7 @@ class ScenePresenter:
 
         self._request_render()
 
-    def _get_ops_for_playback(self) -> Optional[Ops]:
+    def _get_ops_for_playback(self) -> Ops | None:
         handle = self._current_job_handle
         if handle is not None:
             artifact = self._context.artifact_store.get(handle)
@@ -419,7 +420,7 @@ class ScenePresenter:
                 return artifact.preview_ops
         return None
 
-    def _get_time_ops_for_playback(self) -> Optional[Ops]:
+    def _get_time_ops_for_playback(self) -> Ops | None:
         """Unmapped ops for the playback time model.
 
         The preview ops of rotary jobs keep endpoint Y at a constant

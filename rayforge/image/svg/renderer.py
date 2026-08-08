@@ -90,7 +90,7 @@ class SvgRenderer(Renderer):
         import_result: "ImportResult",
         target_width: int,
         target_height: int,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         """Renders the SVG source data at the target preview dimensions."""
         if not import_result.payload:
             return None
@@ -112,10 +112,10 @@ class SvgRenderer(Renderer):
         data: bytes,
         width: int,
         height: int,
-        visible_layer_ids: Optional[list[str]] = None,
-        viewbox: Optional[Rect] = None,
+        visible_layer_ids: list[str] | None = None,
+        viewbox: Rect | None = None,
         **kwargs,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         """
         Renders raw SVG data to a pyvips Image by setting its pixel dimensions.
         Expects data to be pre-trimmed for content.

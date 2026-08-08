@@ -13,7 +13,7 @@ is a self-contained :class:`Adw.PreferencesPage` subclass:
 
 import logging
 from gettext import gettext as _
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 class RecipeGeneralPage(Adw.PreferencesPage):
     """The recipe's name and description."""
 
-    def __init__(self, recipe: Optional[Any] = None, **kwargs):
+    def __init__(self, recipe: Any | None = None, **kwargs):
         super().__init__(**kwargs)
         self.name_changed = Signal()
         self.submit_requested = Signal()
@@ -81,7 +81,7 @@ class RecipeApplicabilityPage(Adw.PreferencesPage):
     settings pages.
     """
 
-    def __init__(self, recipe: Optional[Any] = None, **kwargs):
+    def __init__(self, recipe: Any | None = None, **kwargs):
         super().__init__(**kwargs)
         self.selection_changed = Signal()
 
@@ -89,9 +89,9 @@ class RecipeApplicabilityPage(Adw.PreferencesPage):
         self._ui_capabilities = list(
             step_capability_registry.all_capabilities()
         )
-        self._ui_step_types: list[Optional[str]] = []
-        self._machine_ids: list[Optional[str]] = [None]
-        self._selected_material_uid: Optional[str] = (
+        self._ui_step_types: list[str | None] = []
+        self._machine_ids: list[str | None] = [None]
+        self._selected_material_uid: str | None = (
             recipe.material_uid if recipe else None
         )
 
@@ -212,7 +212,7 @@ class RecipeApplicabilityPage(Adw.PreferencesPage):
     def _on_step_type_changed(self, _combo_row, _pspec):
         self.selection_changed.send(self)
 
-    def _populate_step_type_options(self, cap: Optional[StepCapability]):
+    def _populate_step_type_options(self, cap: StepCapability | None):
         """Rebuild the Step Type dropdown for the given capability.
 
         Index 0 is always "Any Type". When ``cap`` is ``None`` (the
@@ -240,7 +240,7 @@ class RecipeApplicabilityPage(Adw.PreferencesPage):
     def restore_selection(
         self,
         target_capability_name: str,
-        target_step_type: Optional[str],
+        target_step_type: str | None,
     ):
         """Restore the task type and step type from a saved recipe.
 
@@ -263,27 +263,27 @@ class RecipeApplicabilityPage(Adw.PreferencesPage):
 
     # --- Getters --------------------------------------------------------
 
-    def get_capability(self) -> Optional[StepCapability]:
+    def get_capability(self) -> StepCapability | None:
         """The selected capability, or ``None`` for "Any"."""
         idx = self.capability_row.get_selected()
         if idx == 0 or not self._ui_capabilities:
             return None
         return self._ui_capabilities[idx - 1]
 
-    def get_step_type(self) -> Optional[str]:
+    def get_step_type(self) -> str | None:
         idx = self.step_type_row.get_selected()
         return self._ui_step_types[idx] if self._ui_step_types else None
 
-    def get_machine_id(self) -> Optional[str]:
+    def get_machine_id(self) -> str | None:
         return self._machine_ids[self.machine_row.get_selected()]
 
-    def get_material_uid(self) -> Optional[str]:
+    def get_material_uid(self) -> str | None:
         return self._selected_material_uid
 
-    def get_min_thickness(self) -> Optional[float]:
+    def get_min_thickness(self) -> float | None:
         return self.min_thickness_controller.get_value()
 
-    def get_max_thickness(self) -> Optional[float]:
+    def get_max_thickness(self) -> float | None:
         return self.max_thickness_controller.get_value()
 
     def _select_capability_by_name(self, name: str):
@@ -307,7 +307,7 @@ class RecipeApplicabilityPage(Adw.PreferencesPage):
 
     def _on_select_material(self, _button):
         root = self.get_root()
-        parent: Optional[Gtk.Window] = (
+        parent: Gtk.Window | None = (
             root if isinstance(root, Gtk.Window) else None
         )
         dialog = MaterialSelectorDialog(

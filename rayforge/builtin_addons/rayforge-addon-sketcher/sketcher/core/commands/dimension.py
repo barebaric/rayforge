@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from raygeo.geo.types import Point
 
@@ -10,7 +9,7 @@ from raygeo.geo.types import Point
 class DimensionData:
     label: str
     position: Point
-    leader_end: Optional[Point] = None
+    leader_end: Point | None = None
 
     @staticmethod
     def format_length(value: float) -> str:

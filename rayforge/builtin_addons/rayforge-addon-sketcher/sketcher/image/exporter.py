@@ -22,7 +22,7 @@ class SketchExporter(Exporter):
     extensions = (".rfs",)
     mime_types = (const.MIME_TYPE_SKETCH,)
 
-    def __init__(self, doc_item: "WorkPiece"):
+    def __init__(self, doc_item: WorkPiece):
         """
         Initializes the exporter for a specific sketch-based WorkPiece.
 

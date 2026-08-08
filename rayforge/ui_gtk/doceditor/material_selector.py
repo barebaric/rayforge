@@ -2,7 +2,6 @@
 
 import logging
 from gettext import gettext as _
-from typing import Optional
 
 from gi.repository import Adw, Gtk
 
@@ -34,9 +33,7 @@ class MaterialSelectorRow(Adw.ActionRow):
         color_box.set_size_request(24, 24)
         color_box.add_css_class("material-color-selector")
         color_provider = Gtk.CssProvider()
-        color_data = (
-            ".material-color-selector {{ background-color: {}; }}"
-        ).format(self.material.get_display_color())
+        color_data = f".material-color-selector {{ background-color: {self.material.get_display_color()}; }}"
         color_provider.load_from_string(color_data)
         color_box.get_style_context().add_provider(
             color_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
@@ -50,7 +47,7 @@ class MaterialSelectorDialog(Adw.MessageDialog):
     def __init__(self, parent: Gtk.Window, on_select_callback):
         super().__init__(transient_for=parent)
         self.on_select_callback = on_select_callback
-        self._current_library: Optional[MaterialLibrary] = None
+        self._current_library: MaterialLibrary | None = None
         self._all_materials: list[Material] = []
         self.libraries: list[MaterialLibrary] = []
 

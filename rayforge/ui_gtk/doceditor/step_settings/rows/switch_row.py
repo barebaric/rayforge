@@ -1,6 +1,6 @@
 """Generic switch row for a boolean step attribute."""
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from gi.repository import Adw
 
@@ -19,7 +19,7 @@ class SwitchRow(StepRow):
         step: Any,
         attr: str,
         title: str,
-        subtitle: Optional[str] = None,
+        subtitle: str | None = None,
     ):
         self._title = title
         self._subtitle = subtitle

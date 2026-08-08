@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .elements.workpiece import WorkPieceElement
@@ -19,7 +19,7 @@ class OpsCacheRegistry:
         self._total_bytes: int = 0
         self._wp_bytes: dict[str, int] = {}
         self._wp_last_draw: dict[str, float] = {}
-        self._wp_elements: dict[str, "WorkPieceElement"] = {}
+        self._wp_elements: dict[str, WorkPieceElement] = {}
         self._evicting: bool = False
 
     @property
@@ -93,7 +93,7 @@ class OpsCacheRegistry:
         finally:
             self._evicting = False
 
-    def _find_lru(self, protect_uid: str) -> Optional[str]:
+    def _find_lru(self, protect_uid: str) -> str | None:
         lru_uid = None
         lru_time = float("inf")
         for uid, t in self._wp_last_draw.items():

@@ -35,7 +35,6 @@ class SplitStrategy(ABC):
             fragment in the same normalized coordinate space (0-1 box, Y-up)
             as the original workpiece's boundaries.
         """
-        pass
 
 
 class ConnectivitySplitStrategy(SplitStrategy):

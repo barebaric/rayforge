@@ -12,8 +12,9 @@ presenter can build playback after the fresh layer groups exist.
 """
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Optional
 
 from blinker import Signal
 from gi.repository import GLib
@@ -63,8 +64,8 @@ class ChunkedUploadController:
         self._on_luts_required = on_luts_required
 
         self._artifact_gl_dirty = False
-        self._upload_state: Optional[_UploadState] = None
-        self._idle_source_id: Optional[int] = None
+        self._upload_state: _UploadState | None = None
+        self._idle_source_id: int | None = None
 
     def mark_artifact_dirty(self):
         """Mark the compiled artifact as needing a (re)upload."""

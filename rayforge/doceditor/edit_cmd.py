@@ -195,8 +195,8 @@ class EditCmd:
     def add_items(
         self,
         items: list[DocItem],
-        source_assets: Optional[list["SourceAsset"]] = None,
-        assets: Optional[list["IAsset"]] = None,
+        source_assets: list["SourceAsset"] | None = None,
+        assets: list["IAsset"] | None = None,
         name: str = "Add item(s)",
     ) -> list[DocItem]:
         """

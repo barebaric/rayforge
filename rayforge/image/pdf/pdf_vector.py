@@ -5,7 +5,7 @@ import math
 import re
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 try:
     import pymupdf
@@ -50,13 +50,13 @@ class PdfVectorImporter(Importer):
     extensions = ()
     features = {ImporterFeature.DIRECT_VECTOR, ImporterFeature.LAYER_SELECTION}
 
-    def __init__(self, data: bytes, source_file: Optional[Path] = None):
+    def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)
-        self._doc: Optional[pymupdf.Document] = None
-        self._page: Optional[pymupdf.Page] = None
+        self._doc: pymupdf.Document | None = None
+        self._page: pymupdf.Page | None = None
         self._page_width_pt: float = 0.0
         self._page_height_pt: float = 0.0
-        self._geometries_by_layer: dict[Optional[str], Geometry] = {}
+        self._geometries_by_layer: dict[str | None, Geometry] = {}
 
     def scan(self) -> ImportManifest:
         try:
@@ -105,7 +105,7 @@ class PdfVectorImporter(Importer):
                 title=self.source_file.name, errors=self._errors
             )
 
-    def parse(self) -> Optional[ParsingResult]:
+    def parse(self) -> ParsingResult | None:
         try:
             self._doc = pymupdf.open(stream=self.raw_data, filetype="pdf")
             if self._doc.page_count == 0:
@@ -216,11 +216,11 @@ class PdfVectorImporter(Importer):
             if spec.active_layer_ids:
                 active_layers_set = set(spec.active_layer_ids)
 
-        geometries: dict[Optional[str], Geometry] = self._geometries_by_layer
+        geometries: dict[str | None, Geometry] = self._geometries_by_layer
         if not geometries:
             geometries = {None: Geometry()}
 
-        geometries_to_process: dict[Optional[str], Geometry]
+        geometries_to_process: dict[str | None, Geometry]
         if active_layers_set:
             geometries_to_process = {
                 layer_id: geo
@@ -230,7 +230,7 @@ class PdfVectorImporter(Importer):
         else:
             geometries_to_process = geometries
 
-        final_geometries: dict[Optional[str], Geometry]
+        final_geometries: dict[str | None, Geometry]
         if split_layers:
             final_geometries = {}
             for layer_id, geo in geometries_to_process.items():
@@ -277,16 +277,16 @@ class PdfVectorImporter(Importer):
             self._doc = None
             self._page = None
 
-    def _extract_page_geometry(self) -> dict[Optional[str], Geometry]:
+    def _extract_page_geometry(self) -> dict[str | None, Geometry]:
         if self._page is None:
             return {None: Geometry()}
 
-        geometries_by_layer: dict[Optional[str], Geometry] = {}
+        geometries_by_layer: dict[str | None, Geometry] = {}
 
         try:
             drawings = self._page.get_drawings()
             for drawing in drawings:
-                layer_name: Optional[str] = drawing.get("layer")
+                layer_name: str | None = drawing.get("layer")
                 if layer_name not in geometries_by_layer:
                     geometries_by_layer[layer_name] = Geometry()
                 self._add_drawing_to_geometry(
@@ -318,7 +318,7 @@ class PdfVectorImporter(Importer):
             if start_pt is not None:
                 geometry.move_to(float(start_pt.x), float(start_pt.y))
 
-        last_end_pt: Optional[pymupdf.Point] = None
+        last_end_pt: pymupdf.Point | None = None
         for item in items:
             if not isinstance(item, tuple) or len(item) < 1:
                 continue
@@ -378,10 +378,7 @@ class PdfVectorImporter(Importer):
                         self._add_rect_to_geometry(geometry, x, y, w, h)
                         last_end_pt = None
 
-            elif cmd == "q":
-                pass
-
-            elif cmd == "Q":
+            elif cmd == "q" or cmd == "Q":
                 pass
 
     def _points_differ(
@@ -392,7 +389,7 @@ class PdfVectorImporter(Importer):
             or abs(float(p1.y) - float(p2.y)) > tolerance
         )
 
-    def _get_start_point(self, item: tuple) -> Optional[pymupdf.Point]:
+    def _get_start_point(self, item: tuple) -> pymupdf.Point | None:
         cmd = item[0] if item else None
         if (
             cmd == "l"
@@ -491,9 +488,7 @@ class PdfVectorImporter(Importer):
                 dash_pos, pattern_idx = self._advance_dash(
                     length, pattern, dash_pos, pattern_idx
                 )
-            elif cmd == "h":
-                expanded.append(item)
-            elif cmd == "re" and len(item) >= 5:
+            elif cmd == "h" or cmd == "re" and len(item) >= 5:
                 expanded.append(item)
         return expanded
 

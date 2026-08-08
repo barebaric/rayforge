@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Optional, cast
+from typing import cast
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -61,7 +61,7 @@ class RecipeRow(Gtk.Box):
         delete_button.connect("clicked", lambda w: on_delete(recipe))
         suffix_box.append(delete_button)
 
-    def _get_step_type_label(self) -> Optional[str]:
+    def _get_step_type_label(self) -> str | None:
         step_type = self.recipe.target_step_type
         if not step_type:
             return None

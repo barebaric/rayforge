@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly import Assembler
@@ -36,9 +36,7 @@ class MaterialTestStep(LaserStep):
     ASSEMBLER_NAME = "material_test_grid"
     HIDDEN = True
 
-    def __init__(
-        self, name: Optional[str] = None, typelabel: Optional[str] = None
-    ):
+    def __init__(self, name: str | None = None, typelabel: str | None = None):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)
         self.test_type = "Cut"
         self.grid_mode = "Power vs Speed"
@@ -58,8 +56,8 @@ class MaterialTestStep(LaserStep):
 
     def get_assembler_kwargs(
         self,
-        machine: "Machine",
-        workpiece: "WorkPiece",
+        machine: Machine,
+        workpiece: WorkPiece,
     ) -> dict:
         _spot_x, spot_y = LaserHead.get_spot_size(
             self.get_selected_laser(machine)
@@ -94,9 +92,9 @@ class MaterialTestStep(LaserStep):
 
     def build_compute_payload(
         self,
-        machine: "Machine",
-        workpiece: "WorkPiece",
-    ) -> "tuple[Part, ComputePayload]":
+        machine: Machine,
+        workpiece: WorkPiece,
+    ) -> tuple[Part, ComputePayload]:
         """Build a :class:`Part` (empty — the material-test grid
         needs no geometry) and a :class:`ComputePayload` carrying a
         :class:`MaterialTestGridSpec`."""
@@ -130,9 +128,9 @@ class MaterialTestStep(LaserStep):
 
     def assembler_token_params(
         self,
-        machine: "Machine",
-        workpiece: "WorkPiece",
-    ) -> Optional[dict]:
+        machine: Machine,
+        workpiece: WorkPiece,
+    ) -> dict | None:
         return self.get_assembler_kwargs(machine, workpiece)
 
     def to_dict(self) -> dict:
@@ -155,7 +153,7 @@ class MaterialTestStep(LaserStep):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict) -> "MaterialTestStep":
+    def from_dict(cls, data: dict) -> MaterialTestStep:
         step = cast("MaterialTestStep", super().from_dict(data))
         legacy = legacy_producer_params(data)
         step.test_type = data.get("test_type", legacy.get("test_type", "Cut"))
@@ -231,10 +229,10 @@ class MaterialTestStep(LaserStep):
     @classmethod
     def create(
         cls,
-        context: "RayforgeContext",
-        name: Optional[str] = None,
+        context: RayforgeContext,
+        name: str | None = None,
         **kwargs,
-    ) -> "MaterialTestStep":
+    ) -> MaterialTestStep:
         machine = context.machine
         assert machine is not None
 

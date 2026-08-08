@@ -166,7 +166,6 @@ class SketchStudio(Gtk.Box):
 
     def _on_fill_color_changed(self, button):
         """Handle fill color change from the color button."""
-        pass
 
     def _build_ui(self):
         self._build_toolbar()

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.shape.line import get_line_closest_point
@@ -38,7 +39,7 @@ class TangentConstraint(Constraint):
 
     @classmethod
     def can_apply_to(
-        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+        cls, selection: SketchSelection, sketch: Sketch | None = None
     ) -> bool:
         if selection.point_ids or len(selection.entity_ids) != 2:
             return False
@@ -61,7 +62,7 @@ class TangentConstraint(Constraint):
         """Returns a human-readable title for this constraint."""
         return self.get_type_name()
 
-    def get_subtitle(self, registry: "EntityRegistry") -> str:
+    def get_subtitle(self, registry: EntityRegistry) -> str:
         """Returns subtitle describing constrained entities."""
         line = registry.get_entity(self.line_id)
         shape = registry.get_entity(self.shape_id)
@@ -83,16 +84,14 @@ class TangentConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "TangentConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> TangentConstraint:
         return cls(
             line_id=data["line_id"],
             shape_id=data["shape_id"],
             user_visible=data.get("user_visible", True),
         )
 
-    def error(
-        self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> float:
+    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         line = reg.get_entity(self.line_id)
         shape = reg.get_entity(self.shape_id)
 
@@ -125,7 +124,7 @@ class TangentConstraint(Constraint):
         return dist_val - radius
 
     def gradient(
-        self, reg: "EntityRegistry", params: "ParameterContext"
+        self, reg: EntityRegistry, params: ParameterContext
     ) -> dict[EntityID, list[Point]]:
         line = reg.get_entity(self.line_id)
         shape = reg.get_entity(self.shape_id)
@@ -217,7 +216,7 @@ class TangentConstraint(Constraint):
         self,
         sx: float,
         sy: float,
-        reg: "EntityRegistry",
+        reg: EntityRegistry,
         to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
@@ -261,8 +260,8 @@ class TangentConstraint(Constraint):
 
     def draw(
         self,
-        ctx: "cairo.Context",
-        registry: "EntityRegistry",
+        ctx: cairo.Context,
+        registry: EntityRegistry,
         to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,

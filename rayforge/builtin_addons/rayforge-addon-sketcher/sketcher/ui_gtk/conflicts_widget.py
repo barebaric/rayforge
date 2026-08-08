@@ -22,7 +22,7 @@ class ConflictingConstraintsWidget(Adw.PreferencesGroup):
 
     def __init__(self):
         super().__init__()
-        self._sketch_element: Optional["SketchElement"] = None
+        self._sketch_element: SketchElement | None = None
 
         self.set_title(_("Conflicting Constraints"))
         self.set_description(

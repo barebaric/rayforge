@@ -1,5 +1,4 @@
 from gettext import gettext as _
-from typing import Optional
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -25,10 +24,10 @@ class LaserControlWidget(Gtk.Box):
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
 
-        self.machine: Optional[Machine] = None
-        self.machine_cmd: Optional[MachineCmd] = None
+        self.machine: Machine | None = None
+        self.machine_cmd: MachineCmd | None = None
         self._is_on = False
-        self._timer_source_id: Optional[int] = None
+        self._timer_source_id: int | None = None
         self._remaining_ms: int = 0
 
         self._group = Adw.PreferencesGroup()
@@ -135,7 +134,7 @@ class LaserControlWidget(Gtk.Box):
         self._update_pwm_visibility()
 
     def set_machine(
-        self, machine: Optional[Machine], machine_cmd: Optional[MachineCmd]
+        self, machine: Machine | None, machine_cmd: MachineCmd | None
     ):
         if self.machine:
             self.machine.connection_status_changed.disconnect(
@@ -170,7 +169,7 @@ class LaserControlWidget(Gtk.Box):
             self._head_row.set_selected(0)
             self._sync_head_fields(laser_heads[0])
 
-    def _get_selected_head(self) -> Optional[Laser]:
+    def _get_selected_head(self) -> Laser | None:
         if not self.machine:
             return None
         laser_heads = [

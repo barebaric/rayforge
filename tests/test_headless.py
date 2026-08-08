@@ -9,8 +9,9 @@ strategies — all without importing anything from gi.repository.
 import json
 import threading
 import zipfile
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import pytest
 from raygeo.geo import Matrix

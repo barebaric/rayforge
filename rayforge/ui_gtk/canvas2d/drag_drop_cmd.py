@@ -10,7 +10,7 @@ import logging
 import tempfile
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from raygeo.geo import Matrix
@@ -48,9 +48,9 @@ class DragDropCmd:
         """
         self.main_window = main_window
         self.surface = surface
-        self._drop_overlay_label: Optional[Gtk.Label] = None
+        self._drop_overlay_label: Gtk.Label | None = None
 
-        self._drop_target: Optional[Gtk.DropTarget] = None
+        self._drop_target: Gtk.DropTarget | None = None
 
         self._apply_drop_overlay_css()
 
@@ -531,7 +531,7 @@ class DragDropCmd:
         # Start the asynchronous clipboard read.
         clipboard.read_texture_async(None, on_texture_ready)
 
-    def _save_texture_to_temp_file(self, texture) -> Optional[Path]:
+    def _save_texture_to_temp_file(self, texture) -> Path | None:
         """
         Save GdkTexture to a temporary PNG file.
         MUST be called from the main GTK thread.

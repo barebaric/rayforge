@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from functools import lru_cache, wraps
-from typing import Any, Callable
+from typing import Any
 
 
 def lru_cache_unless_forced(maxsize: int = 128):

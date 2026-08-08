@@ -2,7 +2,6 @@ import importlib.resources
 import logging
 import pathlib
 from functools import lru_cache
-from typing import Union
 
 from gi.repository import GdkPixbuf, Gio, Gtk
 
@@ -14,7 +13,7 @@ _icon_search_paths: list[pathlib.Path] = []
 
 # Global cache for loaded icons to avoid repeated expensive operations
 # We cache the Gio.Icon or icon name, not the Gtk.Image widget itself
-_icon_cache: dict[str, Union[Gio.Icon, str]] = {}
+_icon_cache: dict[str, Gio.Icon | str] = {}
 
 
 def register_icon_path(path):
@@ -78,7 +77,7 @@ def get_icon(icon_name: str) -> Gtk.Image:
     return Gtk.Image.new_from_icon_name(icon_name)
 
 
-@lru_cache()
+@lru_cache
 def get_icon_pixbuf(icon_name: str, size: int = 24):
     """
     Retrieve a GdkPixbuf for Cairo rendering, prioritizing a local file

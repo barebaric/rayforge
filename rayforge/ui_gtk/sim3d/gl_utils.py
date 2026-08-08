@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 from OpenGL import GL
@@ -68,7 +68,7 @@ class ShaderSet:
     valid during migration.
     """
 
-    main: Optional["Shader"] = None
-    text: Optional["Shader"] = None
-    texture: Optional["Shader"] = None
-    background: Optional["Shader"] = None
+    main: Shader | None = None
+    text: Shader | None = None
+    texture: Shader | None = None
+    background: Shader | None = None

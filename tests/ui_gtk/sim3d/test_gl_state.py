@@ -44,9 +44,9 @@ def test_gl_state_restores_depth_test_on_exit():
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glPixelStorei"),
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glBindTexture"),
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glActiveTexture"),
+        gl_state(),
     ):
-        with gl_state():
-            pass
+        pass
 
     assert GL.GL_DEPTH_TEST in enabled_calls
 
@@ -77,9 +77,9 @@ def test_gl_state_restores_depth_test_when_disabled_snapshot():
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glPixelStorei"),
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glBindTexture"),
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glActiveTexture"),
+        gl_state(),
     ):
-        with gl_state():
-            pass
+        pass
 
     assert GL.GL_DEPTH_TEST in disabled
 
@@ -146,8 +146,7 @@ def test_gl_state_skip_flags_avoid_queries():
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glPixelStorei"),
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glBindTexture"),
         patch("rayforge.ui_gtk.sim3d.gl_state.GL.glActiveTexture"),
-    ):
-        with gl_state(
+        gl_state(
             save_depth_test=False,
             save_blend=False,
             save_depth_mask=False,
@@ -155,8 +154,9 @@ def test_gl_state_skip_flags_avoid_queries():
             save_line_width=False,
             save_unpack_alignment=False,
             save_texture_bindings=False,
-        ):
-            pass
+        ),
+    ):
+        pass
 
     mock_is_enabled.assert_not_called()
     mock_get_float.assert_not_called()
@@ -176,9 +176,9 @@ def test_shader_context_protocol_snapshots_and_restores():
     with (
         patch.object(shader, "save", return_value=snapshot) as mock_save,
         patch.object(shader, "restore") as mock_restore,
+        shader,
     ):
-        with shader:
-            pass
+        pass
 
     mock_save.assert_called_once()
     mock_restore.assert_called_once_with(snapshot)

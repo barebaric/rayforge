@@ -8,7 +8,7 @@ types in JSON-serialisable dicts.
 """
 
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.ops import Ops
 from raygeo.ops.convert import GcodeDialectSpec
@@ -144,7 +144,7 @@ def _build_macro_table(machine: "Machine") -> dict:
     hooks = machine.hookmacros
     macros = machine.macros  # Dict[str, Macro]
 
-    def _macro_dict(m) -> Optional[dict]:
+    def _macro_dict(m) -> dict | None:
         if m is None:
             return None
         return {"name": m.name, "code": m.code, "enabled": m.enabled}

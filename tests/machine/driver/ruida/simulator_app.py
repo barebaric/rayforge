@@ -1,4 +1,3 @@
-# flake8: noqa: E402
 """
 Ruida Simulator with UI - A graphical application for the Ruida simulator.
 
@@ -8,7 +7,6 @@ Displays a WorldSurface with a laser dot that tracks the simulator's position.
 import argparse
 import logging
 import socket
-from typing import Optional
 
 import gi
 
@@ -29,7 +27,7 @@ class SimpleUdpServer:
         self.host = host
         self.port = port
         self.handler = handler
-        self._socket: Optional[socket.socket] = None
+        self._socket: socket.socket | None = None
         self._timeout_id = 0
 
     def start(self):
@@ -269,7 +267,7 @@ class SimulatorApp(Gtk.Application):
         self.host = host
         self.port = port
         self.jog_port = jog_port
-        self._window: Optional[SimulatorWindow] = None
+        self._window: SimulatorWindow | None = None
 
     def do_activate(self):
         self._window = SimulatorWindow(self, self.simulator, self.codec)

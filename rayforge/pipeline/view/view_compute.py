@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Optional
 
 import numpy as np
 from raygeo.geo.types import Rect
@@ -24,8 +23,8 @@ MAX_TOTAL_PIXELS = CAIRO_MAX_DIMENSION * CAIRO_MAX_DIMENSION
 
 def _resolve_color_set(
     render_context: RenderContext,
-    laser_uid: Optional[str] = None,
-    layer_uid: Optional[str] = None,
+    laser_uid: str | None = None,
+    layer_uid: str | None = None,
 ) -> ColorSet:
     """
     Resolve the appropriate ColorSet based on the ops color mode.
@@ -60,7 +59,7 @@ def _resolve_color_set(
 def _get_content_bbox(
     artifact: WorkPieceArtifact,
     show_travel: bool,
-) -> Optional[Rect]:
+) -> Rect | None:
     """Calculate the union bounding box of all visual content."""
     rect = artifact.ops.rect(include_travel=show_travel)
     has_content = rect != (0.0, 0.0, 0.0, 0.0)
@@ -90,7 +89,7 @@ def _get_content_bbox(
 def calculate_render_dimensions(
     bbox: Rect,
     render_context: RenderContext,
-) -> Optional[tuple[int, int, float, float]]:
+) -> tuple[int, int, float, float] | None:
     """
     Calculates pixel dimensions and effective pixels-per-mm for rendering.
 
@@ -172,9 +171,9 @@ def _expand_bbox_by_px(
 def render_workpiece_view_in_process(
     artifact: WorkPieceArtifact,
     render_context: RenderContext,
-    laser_uid: Optional[str] = None,
-    layer_uid: Optional[str] = None,
-) -> Optional[tuple[np.ndarray, Rect, tuple[float, float]]]:
+    laser_uid: str | None = None,
+    layer_uid: str | None = None,
+) -> tuple[np.ndarray, Rect, tuple[float, float]] | None:
     """
     Render a WorkPieceArtifact into a view bitmap in-process.
 

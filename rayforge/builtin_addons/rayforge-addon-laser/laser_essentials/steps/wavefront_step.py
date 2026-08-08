@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly import Assembler
@@ -56,19 +56,17 @@ class WavefrontStep(LaserStep):
             ]
         )
 
-    def __init__(
-        self, name: Optional[str] = None, typelabel: Optional[str] = None
-    ):
+    def __init__(self, name: str | None = None, typelabel: str | None = None):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)
         self.power = 0.8
-        self.step_over_mm: Optional[float] = None
+        self.step_over_mm: float | None = None
         self.offset_mm = 0.0
         self.area_tolerance = 0.01
 
     def get_assembler_kwargs(
         self,
-        machine: "Machine",
-        workpiece: "WorkPiece",
+        machine: Machine,
+        workpiece: WorkPiece,
     ) -> dict:
         spot_x, _spot_y = LaserHead.get_spot_size(
             self.get_selected_laser(machine)
@@ -86,9 +84,9 @@ class WavefrontStep(LaserStep):
 
     def build_compute_payload(
         self,
-        machine: "Machine",
-        workpiece: "WorkPiece",
-    ) -> "tuple[Part, ComputePayload]":
+        machine: Machine,
+        workpiece: WorkPiece,
+    ) -> tuple[Part, ComputePayload]:
         """Build a :class:`Part` with normalised-winding vector
         geometry and a :class:`ComputePayload` carrying an
         :class:`AdaptiveWavefrontSpec`.
@@ -113,9 +111,9 @@ class WavefrontStep(LaserStep):
 
     def assembler_token_params(
         self,
-        machine: "Machine",
-        workpiece: "WorkPiece",
-    ) -> Optional[dict]:
+        machine: Machine,
+        workpiece: WorkPiece,
+    ) -> dict | None:
         return self.get_assembler_kwargs(machine, workpiece)
 
     def to_dict(self) -> dict:
@@ -126,7 +124,7 @@ class WavefrontStep(LaserStep):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict) -> "WavefrontStep":
+    def from_dict(cls, data: dict) -> WavefrontStep:
         step = cast("WavefrontStep", super().from_dict(data))
         # Projects saved before the raygeo-pipeline refactor stored the
         # producer parameters inside ``opsproducer_dict.params``.  Migrate
@@ -162,10 +160,10 @@ class WavefrontStep(LaserStep):
     @classmethod
     def create(
         cls,
-        context: "RayforgeContext",
-        name: Optional[str] = None,
+        context: RayforgeContext,
+        name: str | None = None,
         **kwargs,
-    ) -> "WavefrontStep":
+    ) -> WavefrontStep:
         machine = context.machine
         assert machine is not None
         default_head = machine.get_default_laser_head()

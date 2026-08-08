@@ -1,5 +1,3 @@
-from typing import Optional
-
 import pytest
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
@@ -43,7 +41,7 @@ def create_vec_result(
         background_world_transform=Matrix.identity(),
     )
     # The engine currently doesn't use the geometry, so we can mock it.
-    geometries: dict[Optional[str], Geometry] = {
+    geometries: dict[str | None, Geometry] = {
         layer.layer_id: Geometry() for layer in parse_result.layers
     }
     return VectorizationResult(

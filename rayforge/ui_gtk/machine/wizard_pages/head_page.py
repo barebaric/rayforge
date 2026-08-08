@@ -12,7 +12,7 @@ add more via machine settings later.
 """
 
 from gettext import gettext as _
-from typing import Any, Optional
+from typing import Any
 
 from gi.repository import Adw, Gtk
 
@@ -29,7 +29,7 @@ _HEAD_LASER = 0
 _HEAD_SPINDLE = 1
 
 
-def _is_spindle_head_dict(head: Optional[dict[str, Any]]) -> bool:
+def _is_spindle_head_dict(head: dict[str, Any] | None) -> bool:
     if not head:
         return False
     cls = (head.get("head_class") or "").lower()

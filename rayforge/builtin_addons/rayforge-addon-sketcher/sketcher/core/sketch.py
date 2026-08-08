@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import date, datetime
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, ClassVar, Optional, Union
+from typing import Any, ClassVar
 
 from blinker import Signal
 from raygeo.geo import (
@@ -106,7 +106,7 @@ class Fill:
         boundary: list[tuple[EntityID, bool]],
         style: FillStyle = FillStyle.SOLID,
         color: ColorRGBA = DEFAULT_FILL_COLOR,
-        gradient_stops: Optional[list[tuple[float, ColorRGBA]]] = None,
+        gradient_stops: list[tuple[float, ColorRGBA]] | None = None,
         gradient_angle: float = 0.0,
     ):
         self.uid = uid
@@ -165,9 +165,9 @@ class Sketch(IAsset, IGeometryProvider):
     is_draggable_to_canvas: ClassVar[bool] = True
     type_display_name: ClassVar[str] = _("Sketch")
     can_edit: ClassVar[bool] = True
-    add_action: ClassVar[Optional[str]] = "add-sketch"
-    activate_action: ClassVar[Optional[str]] = "activate-sketch"
-    edit_item_action: ClassVar[Optional[str]] = "edit-sketch-item"
+    add_action: ClassVar[str | None] = "add-sketch"
+    activate_action: ClassVar[str | None] = "activate-sketch"
+    edit_item_action: ClassVar[str | None] = "edit-sketch-item"
 
     def __init__(self, name: str = "New Sketch") -> None:
         self._uid: str = str(uuid.uuid4())
@@ -183,7 +183,7 @@ class Sketch(IAsset, IGeometryProvider):
         self._updated = Signal()
         self._hidden: bool = False
         self._last_solve_values: dict[str, Any] = {}
-        self._resolved_text_cache: dict[EntityID, Optional[str]] = {}
+        self._resolved_text_cache: dict[EntityID, str | None] = {}
 
         # Initialize the Origin Point (Fixed Anchor)
         self.origin_id: EntityID = self.registry.add_point(
@@ -253,9 +253,9 @@ class Sketch(IAsset, IGeometryProvider):
 
     def get_geometry(
         self,
-        params: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         *,
-        resolved_text_cache: Optional[dict] = None,
+        resolved_text_cache: dict | None = None,
     ) -> tuple[Geometry, list[FillRenderData]]:
         """
         Generate geometry with optional parameter overrides.
@@ -307,7 +307,7 @@ class Sketch(IAsset, IGeometryProvider):
         """Setter method for use with undo commands."""
         self.hidden = value
 
-    def get_thumbnail(self, size: int) -> Optional[bytes]:
+    def get_thumbnail(self, size: int) -> bytes | None:
         """Returns a PNG thumbnail of the sketch geometry."""
         try:
             return render_geometry_to_png(self.to_geometry(), size)
@@ -444,7 +444,7 @@ class Sketch(IAsset, IGeometryProvider):
         return new_sketch
 
     @classmethod
-    def from_file(cls, file_path: Union[str, Path]) -> "Sketch":
+    def from_file(cls, file_path: str | Path) -> "Sketch":
         """Deserializes a sketch from a JSON file (.rfs)."""
         with open(file_path, "r") as f:
             data = json.load(f)
@@ -477,7 +477,7 @@ class Sketch(IAsset, IGeometryProvider):
             return point_map[key]
 
         current_x, current_y = 0.0, 0.0
-        current_pid: Optional[EntityID] = None
+        current_pid: EntityID | None = None
 
         for cmd in geometry.iter_typed_commands():
             end_x, end_y = cmd.end[0], cmd.end[1]
@@ -535,7 +535,7 @@ class Sketch(IAsset, IGeometryProvider):
 
         return sketch
 
-    def set_param(self, name: str, value: Union[str, float]) -> None:
+    def set_param(self, name: str, value: str | float) -> None:
         """Define a parameter like 'width'=100 or 'height'='width/2'."""
         self.params.set(name, value)
 
@@ -567,8 +567,8 @@ class Sketch(IAsset, IGeometryProvider):
         start: EntityID,
         end: EntityID,
         construction: bool = False,
-        cp1: Optional[tuple[float, float]] = None,
-        cp2: Optional[tuple[float, float]] = None,
+        cp1: tuple[float, float] | None = None,
+        cp2: tuple[float, float] | None = None,
     ) -> EntityID:
         """Adds a cubic bezier curve defined by start and end point IDs.
 
@@ -594,7 +594,7 @@ class Sketch(IAsset, IGeometryProvider):
         self.registry.remove_entities_by_id(ids_to_remove)
         self._validate_and_cleanup_fills()
 
-    def remove_point_if_unused(self, pid: Optional[EntityID]) -> bool:
+    def remove_point_if_unused(self, pid: EntityID | None) -> bool:
         """
         Removes a point from the registry if it's not part of any entity.
 
@@ -730,7 +730,7 @@ class Sketch(IAsset, IGeometryProvider):
         incoming_entity_id: EntityID,
         incoming_fwd: bool,
         sorted_adj: dict[EntityID, list[dict[str, Any]]],
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Given an incoming edge to a node, picks the next edge in CCW order
         (left-most turn) to traverse faces.
@@ -964,7 +964,7 @@ class Sketch(IAsset, IGeometryProvider):
 
     def get_loop_at_point(
         self, mx: float, my: float
-    ) -> Optional[list[tuple[EntityID, bool]]]:
+    ) -> list[tuple[EntityID, bool]] | None:
         """
         Finds the smallest closed loop containing the given point.
         Returns None if no loop contains the point.
@@ -1071,7 +1071,7 @@ class Sketch(IAsset, IGeometryProvider):
         return coincident_group
 
     def constrain_distance(
-        self, p1: EntityID, p2: EntityID, dist: Union[str, float]
+        self, p1: EntityID, p2: EntityID, dist: str | float
     ) -> DistanceConstraint:
         constr = DistanceConstraint(p1, p2, dist)
         self.constraints.append(constr)
@@ -1098,14 +1098,14 @@ class Sketch(IAsset, IGeometryProvider):
         self.constraints.append(PointOnLineConstraint(point_id, shape_id))
 
     def constrain_radius(
-        self, entity_id: EntityID, radius: Union[str, float]
+        self, entity_id: EntityID, radius: str | float
     ) -> RadiusConstraint:
         constr = RadiusConstraint(entity_id, radius)
         self.constraints.append(constr)
         return constr
 
     def constrain_diameter(
-        self, circle_id: EntityID, diameter: Union[str, float]
+        self, circle_id: EntityID, diameter: str | float
     ) -> DiameterConstraint:
         constr = DiameterConstraint(circle_id, diameter)
         self.constraints.append(constr)
@@ -1173,9 +1173,9 @@ class Sketch(IAsset, IGeometryProvider):
 
     def solve(
         self,
-        extra_constraints: Optional[list[Constraint]] = None,
+        extra_constraints: list[Constraint] | None = None,
         update_constraint_status: bool = True,
-        variable_overrides: Optional[dict[str, Any]] = None,
+        variable_overrides: dict[str, Any] | None = None,
     ) -> bool:
         """
         Resolves all constraints.
@@ -1280,7 +1280,7 @@ class Sketch(IAsset, IGeometryProvider):
             elif constraint.status == ConstraintStatus.CONFLICTING:
                 constraint.status = ConstraintStatus.VALID
 
-    def _resolve_text_content(self, entity: TextBoxEntity) -> Optional[str]:
+    def _resolve_text_content(self, entity: TextBoxEntity) -> str | None:
         """
         Resolves template expressions in a text box's content using
         the sketch's current parameter values. Returns None if the
@@ -1387,9 +1387,7 @@ class Sketch(IAsset, IGeometryProvider):
         for e in chainable:
             if isinstance(e, Line):
                 u, v = e.p1_idx, e.p2_idx
-            elif isinstance(e, Arc):
-                u, v = e.start_idx, e.end_idx
-            elif isinstance(e, Bezier):
+            elif isinstance(e, Arc) or isinstance(e, Bezier):
                 u, v = e.start_idx, e.end_idx
             else:
                 continue
@@ -1489,7 +1487,7 @@ class Sketch(IAsset, IGeometryProvider):
         return geo
 
     def get_fill_render_data(
-        self, exclude_ids: Optional[set[EntityID]] = None
+        self, exclude_ids: set[EntityID] | None = None
     ) -> list[FillRenderData]:
         """
         Generates FillRenderData objects for all defined fills.
@@ -1548,7 +1546,7 @@ class Sketch(IAsset, IGeometryProvider):
 
     def _create_fill_geometry(
         self, fill: "Fill", exclude_ids: set[EntityID]
-    ) -> Optional[Geometry]:
+    ) -> Geometry | None:
         """Create geometry for a single fill."""
         if len(fill.boundary) == 1:
             eid, _ = fill.boundary[0]

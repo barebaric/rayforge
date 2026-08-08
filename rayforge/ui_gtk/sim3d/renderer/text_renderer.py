@@ -8,7 +8,6 @@ from a specified font for the characters '0'-'9'.
 
 import logging
 import math
-from typing import Optional, Union
 
 import cairo
 import numpy as np
@@ -25,9 +24,7 @@ logger = logging.getLogger(__name__)
 class TextRenderer(BaseRenderer):
     """Renders billboarded text in a 3D scene."""
 
-    def __init__(
-        self, font_family: Optional[str] = None, font_size: int = 128
-    ):
+    def __init__(self, font_family: str | None = None, font_size: int = 128):
         """
         Initializes the text renderer on the CPU.
 
@@ -36,14 +33,14 @@ class TextRenderer(BaseRenderer):
             font_size: The size of the font for the texture atlas.
         """
         super().__init__()
-        self.char_data: dict[str, dict[str, Union[float, int]]] = {}
+        self.char_data: dict[str, dict[str, float | int]] = {}
         self.texture_id: int = 0
         self.atlas_width: int = 0
         self.atlas_height: int = 0
         self.vao: int = 0
         self.vbo: int = 0
         self._font_size_px = font_size
-        self._atlas_buffer: Optional[bytes] = None
+        self._atlas_buffer: bytes | None = None
 
         # This part no longer loads a font object, it just stores the
         # description
@@ -231,7 +228,6 @@ class TextRenderer(BaseRenderer):
 
     def prepare(self, ctx: RenderContext) -> None:
         """No per-frame state to prepare."""
-        pass
 
     def render(
         self,

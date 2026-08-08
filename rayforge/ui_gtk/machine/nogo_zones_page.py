@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import Optional, cast
+from typing import cast
 
 from gi.repository import Adw, Gtk
 
@@ -311,7 +311,7 @@ class NogoZonesPage(TrackedPreferencesPage):
         initial_row = self.zone_list_editor.list_box.get_selected_row()
         self._on_zone_selected(self.zone_list_editor.list_box, initial_row)
 
-    def _get_selected_zone(self) -> Optional[Zone]:
+    def _get_selected_zone(self) -> Zone | None:
         selected_row = self.zone_list_editor.list_box.get_selected_row()
         if not selected_row:
             return None

@@ -1,7 +1,8 @@
 import logging
 import threading
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import Callable, Optional, cast
+from typing import cast
 
 from blinker import Signal
 from gi.repository import Adw, GLib, Gtk
@@ -27,9 +28,9 @@ class AddonRow(Gtk.Box):
         addon: Addon,
         state: str,
         on_delete,
-        on_toggle: Optional[Callable] = None,
-        on_unlock: Optional[Callable] = None,
-        error_message: Optional[str] = None,
+        on_toggle: Callable | None = None,
+        on_unlock: Callable | None = None,
+        error_message: str | None = None,
         is_builtin: bool = False,
     ):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -209,7 +210,7 @@ class AddonListWidget(PreferencesGroupWithButton):
         context = get_context()
         am = context.addon_mgr
 
-        addons: list[tuple[Addon, str, Optional[str], bool]] = []
+        addons: list[tuple[Addon, str, str | None, bool]] = []
 
         for name, addon in am.loaded_addons.items():
             if name in am._pending_unloads:

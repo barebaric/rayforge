@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from blinker import Signal
 from gi.repository import Gtk, Pango
@@ -44,7 +44,7 @@ class GcodeViewer(Gtk.Box):
         self.op_activated = Signal()
         self.line_activated = Signal()
         self.editor = GcodeEditor()
-        self.op_map: Optional[MachineCodeOpMap] = None
+        self.op_map: MachineCodeOpMap | None = None
         self._line_count: int = 0
         self._size_bytes: int = 0
 

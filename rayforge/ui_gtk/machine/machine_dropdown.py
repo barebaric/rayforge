@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Optional, cast
+from typing import cast
 
 from blinker import Signal
 from gi.repository import Gio, GObject, Gtk, Pango
@@ -38,9 +38,10 @@ def _get_connection_icon_name(status: TransportStatus) -> str:
         return "status-connected-symbolic"
     elif status == TransportStatus.ERROR:
         return "error-symbolic"
-    elif status == TransportStatus.CLOSING:
-        return "status-offline-symbolic"
-    elif status == TransportStatus.DISCONNECTED:
+    elif (
+        status == TransportStatus.CLOSING
+        or status == TransportStatus.DISCONNECTED
+    ):
         return "status-offline-symbolic"
     elif status == TransportStatus.SLEEPING:
         return "sleep-symbolic"
@@ -49,7 +50,7 @@ def _get_connection_icon_name(status: TransportStatus) -> str:
 
 
 def _get_status_text(
-    machine: Machine, eta_seconds: Optional[float] = None
+    machine: Machine, eta_seconds: float | None = None
 ) -> str:
     is_nodriver = isinstance(machine.driver, NoDeviceDriver)
     if is_nodriver:
@@ -82,7 +83,7 @@ class MachineDropdown(Gtk.DropDown):
     def __init__(self, **kwargs):
         self.machine_selected = Signal()
         self._model = Gio.ListStore.new(MachineListItem)
-        self._eta_seconds: Optional[float] = None
+        self._eta_seconds: float | None = None
         self._status_label_refs: dict = {}
 
         expression = Gtk.ClosureExpression.new(
@@ -155,7 +156,7 @@ class MachineDropdown(Gtk.DropDown):
         name_label = text_box.get_first_child()
         status_label = name_label.get_next_sibling()
 
-        list_item_obj: Optional[MachineListItem] = list_item.get_item()
+        list_item_obj: MachineListItem | None = list_item.get_item()
         if not list_item_obj:
             return
 
@@ -201,7 +202,7 @@ class MachineDropdown(Gtk.DropDown):
         list_item._signal_refs = refs
 
     def _on_factory_unbind(self, factory, list_item):
-        list_item_obj: Optional[MachineListItem] = list_item.get_item()
+        list_item_obj: MachineListItem | None = list_item.get_item()
         if list_item_obj:
             self._status_label_refs.pop(id(list_item_obj.machine), None)
         for ref in list_item._signal_refs:
@@ -211,13 +212,13 @@ class MachineDropdown(Gtk.DropDown):
                 pass
         list_item._signal_refs = []
 
-    def _get_eta_for_machine(self, machine: Machine) -> Optional[float]:
+    def _get_eta_for_machine(self, machine: Machine) -> float | None:
         context = get_context()
         if context.config.machine and context.config.machine.id == machine.id:
             return self._eta_seconds
         return None
 
-    def update_eta(self, eta_seconds: Optional[float]):
+    def update_eta(self, eta_seconds: float | None):
         """Update the ETA for the active machine's status label."""
         self._eta_seconds = eta_seconds
         context = get_context()
@@ -256,7 +257,7 @@ class MachineDropdown(Gtk.DropDown):
 
     def _on_user_selection_changed(self, dropdown, param):
         selected_list_item = cast(
-            Optional[MachineListItem], self.get_selected_item()
+            MachineListItem | None, self.get_selected_item()
         )
 
         if selected_list_item:

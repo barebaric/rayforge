@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.shape.text import FontConfig
 from raygeo.geo.types import Point as GeoPoint
@@ -35,14 +35,14 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         self.new_content = new_content
         self.new_font_config = new_font_config
         self.old_content = ""
-        self.old_font_config: Optional[FontConfig] = None
+        self.old_font_config: FontConfig | None = None
         self.old_point_positions: dict[EntityID, GeoPoint] = {}
-        self.old_aspect_ratio: Optional[float] = None
-        self.aspect_ratio_constraint_idx: Optional[int] = None
+        self.old_aspect_ratio: float | None = None
+        self.aspect_ratio_constraint_idx: int | None = None
         self._added_constraints: list[Constraint] = []
 
         self._entity_was_removed = False
-        self._removed_entity: Optional[TextBoxEntity] = None
+        self._removed_entity: TextBoxEntity | None = None
         self._removed_points: list[Point] = []
         self._removed_entities: list[Any] = []
         self._removed_constraints: list[Constraint] = []

@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import Optional, cast
+from typing import cast
 
 from gi.repository import Adw, Gtk
 
@@ -168,7 +168,7 @@ class MachineSettingsPage(TrackedPreferencesPage):
         """Shows a confirmation dialog before deleting a machine."""
         dialog = Adw.MessageDialog(
             transient_for=cast(
-                Optional[Gtk.Window], self.get_ancestor(Gtk.Window)
+                Gtk.Window | None, self.get_ancestor(Gtk.Window)
             ),
             modal=True,
             heading=_("Delete ‘{name}’?").format(name=machine.name),
@@ -199,7 +199,7 @@ class MachineSettingsPage(TrackedPreferencesPage):
         """Shows the unified wizard to add a new machine."""
         dialog = UnifiedWizard(
             transient_for=cast(
-                Optional[Gtk.Window], self.get_ancestor(Gtk.Window)
+                Gtk.Window | None, self.get_ancestor(Gtk.Window)
             )
         )
         dialog.profile_created.connect(self._on_profile_selected_for_add)
@@ -210,7 +210,7 @@ class MachineSettingsPage(TrackedPreferencesPage):
         sender,
         *,
         profile: DeviceProfile,
-        machine: Optional[Machine] = None,
+        machine: Machine | None = None,
     ):
         """Creates a machine and opens its settings editor.
 

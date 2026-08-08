@@ -1,5 +1,4 @@
 from bisect import bisect_right
-from typing import Optional
 
 from blinker import Signal
 from raygeo.ops import Ops
@@ -29,7 +28,7 @@ def build_snapshots(
     ops: Ops,
     machine: Machine,
     doc: Doc,
-) -> list[tuple[int, MachineState, Axis, Optional[Axis]]]:
+) -> list[tuple[int, MachineState, Axis, Axis | None]]:
     """Build the seek-acceleration snapshots for *ops*.
 
     Returns a fresh list of ``(target, state, source_axis, rotary_axis)``
@@ -41,7 +40,7 @@ def build_snapshots(
     if n <= _SNAPSHOT_INTERVAL:
         return []
     builder = SnapshotBuilder(ops, machine, doc, create_home_state(machine))
-    snapshots: list[tuple[int, MachineState, Axis, Optional[Axis]]] = []
+    snapshots: list[tuple[int, MachineState, Axis, Axis | None]] = []
     for target in range(_SNAPSHOT_INTERVAL, n, _SNAPSHOT_INTERVAL):
         builder.advance_to(target - 1)
         # reached_textures is only needed for real-time playback,
@@ -66,7 +65,7 @@ class OpPlayer:
         machine: Machine,
         doc: Doc,
         build_snapshots: bool = True,
-        time_ops: Optional[Ops] = None,
+        time_ops: Ops | None = None,
     ):
         if not ops or ops.is_empty():
             raise ValueError("OpPlayer requires a non-empty Ops")
@@ -82,14 +81,12 @@ class OpPlayer:
         self._doc = doc
         self._current_index: int = -1
         self._source_axis: Axis = Axis.Y
-        self._rotary_axis: Optional[Axis] = None
-        self._prev_layer_uid: Optional[str] = None
+        self._rotary_axis: Axis | None = None
+        self._prev_layer_uid: str | None = None
         self.state = self._create_home_state()
         self._home_axes: dict[Axis, float] = dict(self.state.axes)
         self.layer_changed = Signal()
-        self._snapshots: list[
-            tuple[int, MachineState, Axis, Optional[Axis]]
-        ] = []
+        self._snapshots: list[tuple[int, MachineState, Axis, Axis | None]] = []
         # Playback time model: feed/rapid rates in mm/min, accel in
         # mm/s^2. Defaults match the raygeo cumulative-time index.
         self._play_params: tuple[float, float, float] = (
@@ -229,7 +226,7 @@ class OpPlayer:
         return self._source_axis
 
     @property
-    def rotary_axis(self) -> Optional[Axis]:
+    def rotary_axis(self) -> Axis | None:
         return self._rotary_axis
 
     def _create_home_state(self) -> MachineState:
@@ -248,8 +245,7 @@ class OpPlayer:
                 f"Index {index} out of range "
                 f"(ops has {self.ops.len()} commands)"
             )
-        if index < 0:
-            index = 0
+        index = max(index, 0)
 
         snapshot_idx = self._find_snapshot(index)
         if snapshot_idx is not None:
@@ -269,7 +265,7 @@ class OpPlayer:
         self.advance_to(index)
         self._emit_layer_change()
 
-    def _find_snapshot(self, index: int) -> Optional[int]:
+    def _find_snapshot(self, index: int) -> int | None:
         if not self._snapshots:
             return None
         positions = [s[0] for s in self._snapshots]
@@ -297,7 +293,7 @@ class OpPlayer:
             self.state.apply_command(self.ops, i)
         self._current_index = index
 
-    def seek_last_movement(self) -> Optional[int]:
+    def seek_last_movement(self) -> int | None:
         last = None
         for i in range(self.ops.len()):
             if self.ops.category(i) == CommandCategory.MOVING:
@@ -318,7 +314,7 @@ class OpPlayer:
                 return i
         return 0
 
-    def get_current_layer(self, doc: Doc) -> Optional[Layer]:
+    def get_current_layer(self, doc: Doc) -> Layer | None:
         uid = self.state.current_layer_uid
         if uid:
             item = doc.find_descendant_by_uid(uid)
@@ -326,7 +322,7 @@ class OpPlayer:
                 return item
         return None
 
-    def get_effective_layer(self, doc: Doc) -> Optional[Layer]:
+    def get_effective_layer(self, doc: Doc) -> Layer | None:
         """Return the layer that should drive playback configuration.
 
         Falls back to the first layer of the document while the player is
@@ -357,7 +353,7 @@ class SnapshotBuilder:
         self._doc = doc
         self._current_index: int = -1
         self._source_axis: Axis = Axis.Y
-        self._rotary_axis: Optional[Axis] = None
+        self._rotary_axis: Axis | None = None
         self.state = initial_state
 
     def advance_to(self, index: int):

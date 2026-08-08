@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from raygeo.geo.shape.text import FontConfig
 from raygeo.geo.types import Point as GeoPoint
@@ -81,8 +81,8 @@ class EntityRegistry:
         start_idx: EntityID,
         end_idx: EntityID,
         construction: bool = False,
-        cp1: Optional[GeoPoint] = None,
-        cp2: Optional[GeoPoint] = None,
+        cp1: GeoPoint | None = None,
+        cp2: GeoPoint | None = None,
     ) -> EntityID:
         eid = self._id_counter
         entity = Bezier(
@@ -155,7 +155,7 @@ class EntityRegistry:
         width_id: EntityID,
         height_id: EntityID,
         content: str = "",
-        font_config: Optional[FontConfig] = None,
+        font_config: FontConfig | None = None,
     ) -> EntityID:
         eid = self._id_counter
         entity = TextBoxEntity(
@@ -194,7 +194,7 @@ class EntityRegistry:
                 return p
         raise IndexError(f"Point with ID {idx} not found")
 
-    def get_entity(self, idx: EntityID) -> Optional[Entity]:
+    def get_entity(self, idx: EntityID) -> Entity | None:
         """Retrieves a geometric entity (Line/Arc/Circle) by ID in O(1)."""
         return self._entity_map.get(idx)
 

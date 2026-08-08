@@ -3,7 +3,6 @@ from collections.abc import Iterable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
-    Optional,
     TypeVar,
     cast,
 )
@@ -126,7 +125,7 @@ class Doc(DocItem):
                 asset = StockAsset(name=d.get("name", "Stock"))
                 asset.geometry = (
                     Geometry.from_dict(d["geometry"])
-                    if "geometry" in d and d["geometry"]
+                    if d.get("geometry")
                     else Geometry()
                 )
                 asset.thickness = d.get("thickness")
@@ -158,7 +157,7 @@ class Doc(DocItem):
             child for child in self.children if isinstance(child, StockItem)
         ]
 
-    def get_source_asset_by_uid(self, uid: str) -> Optional[SourceAsset]:
+    def get_source_asset_by_uid(self, uid: str) -> SourceAsset | None:
         """
         Retrieves a SourceAsset from the document's registry by its UID.
         """
@@ -175,7 +174,7 @@ class Doc(DocItem):
         }
 
     def add_asset(
-        self, asset: IAsset, index: Optional[int] = None, silent: bool = False
+        self, asset: IAsset, index: int | None = None, silent: bool = False
     ):
         """
         Adds or updates an asset in the document's unified registry and
@@ -210,7 +209,7 @@ class Doc(DocItem):
         """Removes an asset from the document."""
         self.remove_asset_by_uid(asset.uid)
 
-    def get_asset_by_uid(self, uid: str) -> Optional[IAsset]:
+    def get_asset_by_uid(self, uid: str) -> IAsset | None:
         """Retrieves any asset from the document's registry by its UID."""
         return self.assets.get(uid)
 
@@ -334,7 +333,7 @@ class Doc(DocItem):
         """Special-case bubbling for a non-standard signal."""
         self.job_assembly_invalidated.send(self)
 
-    def add_child(self, child: T, index: Optional[int] = None) -> T:
+    def add_child(self, child: T, index: int | None = None) -> T:
         if isinstance(child, Layer):
             child.per_step_transformer_changed.connect(
                 self._on_layer_per_step_transformer_changed
@@ -451,7 +450,7 @@ class Doc(DocItem):
             for step in layer.workflow.steps
         )
 
-    def get_laser_uid_for_step(self, step_uid: str) -> Optional[str]:
+    def get_laser_uid_for_step(self, step_uid: str) -> str | None:
         """
         Look up the laser_uid for a step by its UID.
 
@@ -468,7 +467,7 @@ class Doc(DocItem):
                         return step.selected_head_uid
         return None
 
-    def get_layer_uid_for_step(self, step_uid: str) -> Optional[str]:
+    def get_layer_uid_for_step(self, step_uid: str) -> str | None:
         """
         Look up the layer_uid for a step by its UID.
 

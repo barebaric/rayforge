@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 import cairo
 from raygeo.geo import Matrix
@@ -60,7 +59,7 @@ class StockElement(CanvasElement):
         self.set_visible(self.data.visible)
 
     def _on_transform_changed(
-        self, stock_item: StockItem, *, old_matrix: Optional[Matrix] = None
+        self, stock_item: StockItem, *, old_matrix: Matrix | None = None
     ):
         """Handler for when the stock item's transform changes."""
         if not self.canvas or self.transform == stock_item.matrix:

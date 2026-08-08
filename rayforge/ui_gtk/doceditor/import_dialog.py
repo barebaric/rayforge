@@ -1,7 +1,7 @@
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import cairo
 from blinker import Signal
@@ -49,8 +49,8 @@ class ImportDialog(PatchedDialogWindow):
         file_path: Path,
         mime_type: str,
         features: set[ImporterFeature],
-        source_asset: Optional[SourceAsset] = None,
-        initial_spec: Optional[VectorizationSpec] = None,
+        source_asset: SourceAsset | None = None,
+        initial_spec: VectorizationSpec | None = None,
     ):
         super().__init__(transient_for=parent, modal=True)
         self.editor = editor
@@ -61,13 +61,13 @@ class ImportDialog(PatchedDialogWindow):
         self.response = Signal()
 
         # Internal state
-        self._file_bytes: Optional[bytes] = None
-        self._manifest: Optional[ImportManifest] = None
-        self._preview_result: Optional[PreviewResult] = None
-        self._background_pixbuf: Optional[GdkPixbuf.Pixbuf] = None
+        self._file_bytes: bytes | None = None
+        self._manifest: ImportManifest | None = None
+        self._preview_result: PreviewResult | None = None
+        self._background_pixbuf: GdkPixbuf.Pixbuf | None = None
         self._in_update = False  # Prevent signal recursion
         self._layer_widgets: dict[Gtk.Switch, str] = {}
-        self._layers_expander: Optional[Adw.ExpanderRow] = None
+        self._layers_expander: Adw.ExpanderRow | None = None
 
         self._layer_import_model = Gtk.StringList.new(
             [
@@ -412,7 +412,7 @@ class ImportDialog(PatchedDialogWindow):
         ctx: cairo.Context,
         width: int,
         height: int,
-        rgb: Optional[tuple[float, float, float]],
+        rgb: tuple[float, float, float] | None,
     ):
         if rgb is None:
             return
@@ -421,7 +421,7 @@ class ImportDialog(PatchedDialogWindow):
         ctx.fill()
 
     def _make_color_swatch(
-        self, rgb: Optional[tuple[float, float, float]]
+        self, rgb: tuple[float, float, float] | None
     ) -> Gtk.DrawingArea:
         area = Gtk.DrawingArea()
         area.set_content_width(18)
@@ -490,7 +490,7 @@ class ImportDialog(PatchedDialogWindow):
 
         expander.add_row(self.layer_import_mode_row)
 
-    def _get_active_layer_ids(self) -> Optional[list[str]]:
+    def _get_active_layer_ids(self) -> list[str] | None:
         if not self._layer_widgets:
             return None
         return [
@@ -615,7 +615,7 @@ class ImportDialog(PatchedDialogWindow):
             self._update_ui_with_preview, result
         )
 
-    def _update_ui_with_preview(self, result: Optional[PreviewResult]):
+    def _update_ui_with_preview(self, result: PreviewResult | None):
         """Updates the UI with the result of the preview task."""
         self._preview_result = result
         self._background_pixbuf = None
@@ -771,7 +771,7 @@ class ImportDialog(PatchedDialogWindow):
         constant_line_width = abs(px)
 
         def draw_item(
-            item: DocItem, color: Optional[tuple[float, float, float]] = None
+            item: DocItem, color: tuple[float, float, float] | None = None
         ):
             if isinstance(item, WorkPiece) and item.boundaries:
                 ctx.save()
@@ -802,8 +802,8 @@ class ImportDialog(PatchedDialogWindow):
 
     @staticmethod
     def _hex_to_rgb(
-        color: Optional[str],
-    ) -> Optional[tuple[float, float, float]]:
+        color: str | None,
+    ) -> tuple[float, float, float] | None:
         """Converts a '#rrggbb' hex string to an RGB 0-1 tuple."""
         if not color:
             return None

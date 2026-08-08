@@ -65,7 +65,7 @@ class UsageTracker:
         self._language = _get_language()
         self._os = _get_os_info()
         self._version = __version__ or "unknown"
-        self._cache_token: Optional[str] = None
+        self._cache_token: str | None = None
         self._session_id = str(uuid.uuid4())
 
     def _get_screen_size(self) -> str:
@@ -86,7 +86,7 @@ class UsageTracker:
         else:
             logger.info("Usage tracking disabled")
 
-    def track_page_view(self, url: str, title: Optional[str] = None):
+    def track_page_view(self, url: str, title: str | None = None):
         if not self._enabled:
             return
         if not url.startswith("/"):

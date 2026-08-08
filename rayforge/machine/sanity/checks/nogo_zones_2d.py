@@ -38,9 +38,7 @@ class NoGoZoneCheck2D(BaseCheck):
                             SanityIssue(
                                 category=IssueCategory.NOGO_ZONE,
                                 severity=IssueSeverity.ERROR,
-                                message='No-Go Zone "{}" entered'.format(
-                                    zone.name
-                                ),
+                                message=f'No-Go Zone "{zone.name}" entered',
                                 zone_uid=uid,
                                 zone_name=zone.name,
                             )

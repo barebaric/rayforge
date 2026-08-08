@@ -7,7 +7,8 @@ fake :class:`TaskManager` so they do not require a running GTK event
 loop.
 """
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any, Optional
 
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
@@ -100,8 +101,8 @@ class FakeTaskManager:
         self,
         func: Callable[..., Any],
         *args: Any,
-        key: Optional[Any] = None,
-        when_done: Optional[Callable[..., Any]] = None,
+        key: Any | None = None,
+        when_done: Callable[..., Any] | None = None,
         **kwargs: Any,
     ) -> Any:
         func(*args, **kwargs)
@@ -131,7 +132,7 @@ class _StubNode:
         key: str,
         generation_id: int,
         output: Any = None,
-        error: Optional[str] = None,
+        error: str | None = None,
     ):
         self.key = key
         self.generation_id = generation_id
@@ -282,7 +283,7 @@ def test_run_intent_called(monkeypatch, isolated_machine):
 
 def _make_controller_for_completed_test(
     monkeypatch,
-    idle_calls: Optional[list] = None,
+    idle_calls: list | None = None,
     machine: Optional["Machine"] = None,
 ):
     step = _TestStep(name="s1")

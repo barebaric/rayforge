@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Optional
+from typing import Any
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -35,7 +35,7 @@ class SnapLineType(Enum):
 @dataclass(frozen=True)
 class SnapLineStyle:
     color: ColorRGBA = (0.0, 0.6, 1.0, 0.8)
-    dash: Optional[tuple[float, ...]] = None
+    dash: tuple[float, ...] | None = None
     line_width: float = 1.0
 
 
@@ -83,11 +83,11 @@ class SnapPoint:
     x: float
     y: float
     line_type: SnapLineType
-    source: Optional[Any] = None
-    spacing: Optional[float] = None
+    source: Any | None = None
+    spacing: float | None = None
     is_horizontal: bool = False
-    pattern_coords: Optional[tuple[float, ...]] = None
-    axis_coord: Optional[float] = None
+    pattern_coords: tuple[float, ...] | None = None
+    axis_coord: float | None = None
 
     @property
     def pos(self) -> GeoPoint:
@@ -99,7 +99,7 @@ class SnapLine:
     is_horizontal: bool
     coordinate: float
     line_type: SnapLineType
-    source: Optional[Any] = None
+    source: Any | None = None
 
     @property
     def style(self) -> SnapLineStyle:
@@ -124,8 +124,8 @@ class SnapResult:
     position: GeoPoint = (0.0, 0.0)
     snap_lines: list[SnapLine] = field(default_factory=list)
     snap_points: list[SnapPoint] = field(default_factory=list)
-    primary_snap_line: Optional[SnapLine] = None
-    primary_snap_point: Optional[SnapPoint] = None
+    primary_snap_line: SnapLine | None = None
+    primary_snap_point: SnapPoint | None = None
     distance: float = float("inf")
 
     @classmethod
@@ -153,7 +153,7 @@ class SnapResult:
         cls,
         snap_point: SnapPoint,
         distance: float,
-        snap_lines: Optional[list[SnapLine]] = None,
+        snap_lines: list[SnapLine] | None = None,
     ) -> "SnapResult":
         return cls(
             snapped=True,
@@ -168,9 +168,9 @@ class SnapResult:
 class DragContext:
     def __init__(
         self,
-        dragged_point_ids: Optional[set[EntityID]] = None,
-        dragged_entity_ids: Optional[set[EntityID]] = None,
-        initial_positions: Optional[dict[EntityID, GeoPoint]] = None,
+        dragged_point_ids: set[EntityID] | None = None,
+        dragged_entity_ids: set[EntityID] | None = None,
+        initial_positions: dict[EntityID, GeoPoint] | None = None,
     ):
         self.dragged_point_ids: set[EntityID] = dragged_point_ids or set()
         self.dragged_entity_ids: set[EntityID] = dragged_entity_ids or set()

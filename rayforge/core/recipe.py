@@ -76,11 +76,11 @@ class Recipe:
     # When set, the recipe only matches steps of this class (by class
     # name, as registered in step_registry). When None, it matches by
     # capability as before.
-    target_step_type: Optional[str] = None
-    target_machine_id: Optional[str] = None
-    material_uid: Optional[str] = None
-    min_thickness_mm: Optional[float] = None
-    max_thickness_mm: Optional[float] = None
+    target_step_type: str | None = None
+    target_machine_id: str | None = None
+    material_uid: str | None = None
+    min_thickness_mm: float | None = None
+    max_thickness_mm: float | None = None
 
     # --- Payload ---
     # A single dictionary of settings to be applied.
@@ -136,9 +136,9 @@ class Recipe:
     def matches(
         self,
         stock_items: list["StockItem"],
-        capabilities: Optional[tuple[StepCapability, ...]] = None,
+        capabilities: tuple[StepCapability, ...] | None = None,
         machine: Optional["Machine"] = None,
-        step_type: Optional[str] = None,
+        step_type: str | None = None,
     ) -> bool:
         """
         Checks if this recipe is a valid candidate for the given context.

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -32,7 +32,7 @@ class CirclePreviewState(PreviewState):
         self.center_temp = center_temp
         self.radius_id = radius_id
         self.entity_id = entity_id
-        self.locked_diameter: Optional[float] = None
+        self.locked_diameter: float | None = None
 
     def get_preview_point_ids(self) -> set[EntityID]:
         """
@@ -42,9 +42,7 @@ class CirclePreviewState(PreviewState):
         """
         return {self.radius_id}
 
-    def set_diameter(
-        self, registry: "EntityRegistry", diameter: float
-    ) -> None:
+    def set_diameter(self, registry: EntityRegistry, diameter: float) -> None:
         """
         Sets the circle diameter from numeric input.
 
@@ -73,9 +71,7 @@ class CirclePreviewState(PreviewState):
         radius_pt.x = center.x + dx * scale
         radius_pt.y = center.y + dy * scale
 
-    def get_dimensions(
-        self, registry: "EntityRegistry"
-    ) -> list["DimensionData"]:
+    def get_dimensions(self, registry: EntityRegistry) -> list[DimensionData]:
         """
         Returns the circle diameter dimension for preview.
 
@@ -114,9 +110,9 @@ class CircleCommand(SketchChangeCommand):
         sketch: Sketch,
         center_id: EntityID,
         end_pos: GeoPoint,
-        end_pid: Optional[EntityID] = None,
+        end_pid: EntityID | None = None,
         is_center_temp: bool = False,
-        fixed_diameter: Optional[float] = None,
+        fixed_diameter: float | None = None,
     ):
         super().__init__(sketch, _("Add Circle"))
         self.center_id = center_id
@@ -124,11 +120,11 @@ class CircleCommand(SketchChangeCommand):
         self.end_pid = end_pid
         self.is_center_temp = is_center_temp
         self.fixed_diameter = fixed_diameter
-        self.add_cmd: Optional[AddItemsCommand] = None
-        self._committed_end_id: Optional[EntityID] = None
+        self.add_cmd: AddItemsCommand | None = None
+        self._committed_end_id: EntityID | None = None
 
     @property
-    def committed_end_id(self) -> Optional[EntityID]:
+    def committed_end_id(self) -> EntityID | None:
         """
         The final end point ID after execute(), or None if not applicable.
         """
@@ -139,7 +135,7 @@ class CircleCommand(SketchChangeCommand):
         registry: EntityRegistry,
         x: float,
         y: float,
-        snapped_pid: Optional[EntityID] = None,
+        snapped_pid: EntityID | None = None,
         **kwargs,
     ) -> CirclePreviewState:
         """

@@ -2,7 +2,6 @@
 
 import logging
 from gettext import gettext as _
-from typing import Optional
 
 from ...context import get_context
 from ...core.material_library import MaterialLibrary
@@ -62,7 +61,7 @@ class MaterialManagerPage(TrackedPreferencesPage):
         self.library_list_editor.populate_and_select()
 
     def _on_library_selected(
-        self, sender, library: Optional[MaterialLibrary] = None
+        self, sender, library: MaterialLibrary | None = None
     ):
         """Handle library selection change."""
         logger.debug(

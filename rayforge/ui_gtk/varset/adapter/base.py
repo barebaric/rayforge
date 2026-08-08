@@ -3,9 +3,7 @@ from abc import ABC, abstractmethod
 from gettext import gettext as _
 from typing import (
     Any,
-    Optional,
     TypeVar,
-    Union,
 )
 
 from blinker import Signal
@@ -39,7 +37,7 @@ def escape_title(text: str) -> str:
     return text.replace("&", "&&")
 
 
-def natural_sort_key(s: str) -> list[Union[int, str]]:
+def natural_sort_key(s: str) -> list[int | str]:
     return [
         int(t) if t.isdigit() else t.lower() for t in re.split("([0-9]+)", s)
     ]
@@ -73,7 +71,7 @@ class RowAdapter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_value(self) -> Optional[Any]:
+    def get_value(self) -> Any | None:
         raise NotImplementedError
 
     @abstractmethod

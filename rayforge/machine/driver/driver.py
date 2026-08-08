@@ -1,15 +1,13 @@
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from enum import Enum, auto
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Optional,
-    Union,
 )
 
 from blinker import Signal
@@ -37,19 +35,13 @@ logger = logging.getLogger(__name__)
 class DriverPrecheckError(Exception):
     """Custom exception for non-fatal pre-flight check failures."""
 
-    pass
-
 
 class DriverSetupError(Exception):
     """Custom exception for driver setup failures."""
 
-    pass
-
 
 class DeviceConnectionError(Exception):
     """Custom exception for failures to communicate with a device."""
-
-    pass
 
 
 class ResourceBusyError(DeviceConnectionError):
@@ -141,7 +133,7 @@ class DeviceError:
     description: str
 
 
-Pos = tuple[Optional[float], ...]  # x, y, z[, a] in mm
+Pos = tuple[float | None, ...]  # x, y, z[, a] in mm
 
 
 @dataclass
@@ -149,14 +141,14 @@ class DeviceState:
     """Represents the complete state of a device at a moment in time."""
 
     status: DeviceStatus = DeviceStatus.UNKNOWN
-    error: Optional[DeviceError] = None
+    error: DeviceError | None = None
     machine_pos: Pos = (None, None, None)
     work_pos: Pos = (None, None, None)
     wco: Pos = (0.0, 0.0, 0.0)  # Work Coordinate Offset
-    feed_rate: Optional[int] = None
-    spindle_speed: Optional[int] = None
-    buffer_available: Optional[int] = None
-    buffer_rx_available: Optional[int] = None
+    feed_rate: int | None = None
+    spindle_speed: int | None = None
+    buffer_available: int | None = None
+    buffer_rx_available: int | None = None
 
 
 @dataclass
@@ -236,7 +228,6 @@ class Driver(ABC):
         Returns the machine space coordinate system identifier.
         This is an immutable coordinate system with zero offset.
         """
-        pass
 
     @property
     @abstractmethod
@@ -245,7 +236,6 @@ class Driver(ABC):
         Returns a human-readable display name for the machine space
         coordinate system.
         """
-        pass
 
     @property
     def supported_wcs(self) -> list[str]:
@@ -277,7 +267,7 @@ class Driver(ABC):
         assert self._machine.dialect is not None
         return self._machine.dialect
 
-    def _log_extra(self, category: str) -> dict[str, Optional[str]]:
+    def _log_extra(self, category: str) -> dict[str, str | None]:
         """Helper to create log extra dict with machine_id and category."""
         return {
             "log_category": category,
@@ -320,7 +310,7 @@ class Driver(ABC):
         return value / self._machine.unit_system.scale_from_mm
 
     @property
-    def resource_uri(self) -> Optional[str]:
+    def resource_uri(self) -> str | None:
         """
         Returns a unique identifier for the physical resource used by this
         driver (e.g. 'serial:///dev/ttyUSB0' or 'tcp://192.168.1.50:80').
@@ -339,7 +329,6 @@ class Driver(ABC):
         before driver instantiation. It should raise DriverPrecheckError
         on failure. These failures are considered non-fatal warnings.
         """
-        pass
 
     @abstractmethod
     def _setup_implementation(self, **kwargs: Any) -> None:
@@ -348,7 +337,6 @@ class Driver(ABC):
         this method to perform their setup logic. If setup fails, this
         method should raise DriverSetupError.
         """
-        pass
 
     def setup(self, **kwargs: Any):
         """
@@ -379,7 +367,6 @@ class Driver(ABC):
         Returns a VarSet defining the parameters needed for setup().
         This is used to dynamically generate the user interface.
         """
-        pass
 
     @classmethod
     @abstractmethod
@@ -388,7 +375,6 @@ class Driver(ABC):
         Factory method to return an OpsEncoder instance suitable for this
         driver class and the specific machine configuration.
         """
-        pass
 
     @classmethod
     async def probe(
@@ -420,14 +406,14 @@ class Driver(ABC):
         """
         return False
 
-    def get_pwm_params(self, head: "Head") -> Optional[PWMParams]:
+    def get_pwm_params(self, head: "Head") -> PWMParams | None:
         """
         Returns the PWM parameters reported by the driver for the given
         head, or None when the driver reports no PWM support.
         """
         return None
 
-    async def detect_unit_system(self) -> Optional[UnitSystem]:
+    async def detect_unit_system(self) -> UnitSystem | None:
         """
         Queries the device to detect its native unit system.
 
@@ -449,7 +435,6 @@ class Driver(ABC):
         Returns a VarSet defining the device's settings.
         The VarSet should define the settings but may have empty values.
         """
-        pass
 
     async def connect(self) -> None:
         """
@@ -480,7 +465,6 @@ class Driver(ABC):
         Establishes the connection and maintains it. i.e. auto reconnect.
         On errors or lost connection it should continue trying.
         """
-        pass
 
     @abstractmethod
     async def run(
@@ -488,9 +472,7 @@ class Driver(ABC):
         encoded: "EncodedOutput",
         doc: "Doc",
         ops: "Ops",
-        on_command_done: Optional[
-            Callable[[int], Union[None, Awaitable[None]]]
-        ] = None,
+        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
     ) -> None:
         """
         Executes the given encoded output.
@@ -502,7 +484,6 @@ class Driver(ABC):
             on_command_done: Optional sync or async callback called when each
                            command is done. Called with the op_index.
         """
-        pass
 
     @abstractmethod
     async def run_raw(self, machine_code: str) -> None:
@@ -513,7 +494,6 @@ class Driver(ABC):
         Args:
             machine_code: The raw machine code to execute.
         """
-        pass
 
     @abstractmethod
     async def set_hold(self, hold: bool = True) -> None:
@@ -521,14 +501,12 @@ class Driver(ABC):
         Sends a command to put the currently executing program on hold.
         If hold is False, sends the command to remove the hold.
         """
-        pass
 
     @abstractmethod
     async def cancel(self) -> None:
         """
         Sends a command to cancel the currently executing program.
         """
-        pass
 
     def can_home(self, axis: Optional["Axis"] = None) -> bool:
         """
@@ -554,21 +532,18 @@ class Driver(ABC):
                 homes all axes. Can be a single Axis or multiple axes
                 using binary operators (e.g. Axis.X|Axis.Y)
         """
-        pass
 
     @abstractmethod
     async def move_to(self, pos_x: float, pos_y: float) -> None:
         """
         Moves to the given position. Values are given mm.
         """
-        pass
 
     @abstractmethod
     async def select_tool(self, tool_number: int) -> None:
         """
         Sends a command to select a new tool/laser head by its number.
         """
-        pass
 
     @abstractmethod
     async def read_settings(self) -> None:
@@ -577,21 +552,18 @@ class Driver(ABC):
         Upon completion, it should emit the `settings_read` signal with the
         retrieved settings as a dictionary.
         """
-        pass
 
     @abstractmethod
     async def write_setting(self, key: str, value: Any) -> None:
         """
         Writes a single configuration setting to the device.
         """
-        pass
 
     @abstractmethod
     async def clear_alarm(self) -> None:
         """
         Sends a command to clear any active alarm state.
         """
-        pass
 
     @abstractmethod
     async def set_power(self, head: "Laser", percent: float) -> None:
@@ -602,7 +574,6 @@ class Driver(ABC):
             head: The laser head to control.
             percent: Power percentage (0-1.0). 0 disables power.
         """
-        pass
 
     @abstractmethod
     async def set_focus_power(self, head: "Laser", percent: float) -> None:
@@ -616,7 +587,6 @@ class Driver(ABC):
             head: The laser head to control.
             percent: Power percentage (0-1.0). 0 disables power.
         """
-        pass
 
     def can_jog(self, axis: Optional["Axis"] = None) -> bool:
         """
@@ -642,7 +612,6 @@ class Driver(ABC):
             **deltas: Keyword arguments where the key is the axis name
                       (e.g. 'x', 'y') and the value is the distance in mm.
         """
-        pass
 
     @abstractmethod
     async def set_wcs_offset(
@@ -652,7 +621,6 @@ class Driver(ABC):
         Sends a command to the controller to define the offset for a
         specific WCS slot (e.g. "G54").
         """
-        pass
 
     @abstractmethod
     async def read_wcs_offsets(self) -> dict[str, Pos]:
@@ -663,9 +631,8 @@ class Driver(ABC):
             A dictionary where keys are WCS slot names (e.g., "G54") and
             values are (x, y, z) offset tuples.
         """
-        pass
 
-    async def read_parser_state(self) -> Optional[str]:
+    async def read_parser_state(self) -> str | None:
         """
         Sends a command to query the active G-code modal states, specifically
         to find the active coordinate system (e.g., "G54").
@@ -686,12 +653,11 @@ class Driver(ABC):
         Args:
             wcs: The WCS slot to select (e.g., "G54", "REF0", "MACHINE")
         """
-        pass
 
     @abstractmethod
     async def run_probe_cycle(
         self, axis: Axis, max_travel: float, feed_rate: int
-    ) -> Optional[Pos]:
+    ) -> Pos | None:
         """
         Initiates a single probing move along the specified axis. The move
         is performed in the negative direction if max_travel is negative.
@@ -706,4 +672,3 @@ class Driver(ABC):
             The absolute machine coordinates (x, y, z) of the trigger point,
             or None if the probe failed to trigger.
         """
-        pass

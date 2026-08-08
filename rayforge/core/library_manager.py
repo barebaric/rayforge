@@ -4,7 +4,6 @@ import logging
 import shutil
 import uuid
 from pathlib import Path
-from typing import Optional
 
 from blinker import Signal
 
@@ -53,7 +52,7 @@ class LibraryManager:
 
         logger.info(f"Loaded {len(self._libraries)} material libraries")
 
-    def create_user_library(self, display_name: str) -> Optional[str]:
+    def create_user_library(self, display_name: str) -> str | None:
         """
         Creates a new user library and returns its ID.
 
@@ -121,7 +120,7 @@ class LibraryManager:
         library = self._libraries[library_id]
         return library.save()
 
-    def get_library(self, library_id: str) -> Optional[MaterialLibrary]:
+    def get_library(self, library_id: str) -> MaterialLibrary | None:
         """
         Get a library by ID.
 
@@ -148,7 +147,7 @@ class LibraryManager:
 
         return list(self._libraries.values())
 
-    def get_material(self, uid: str) -> Optional[Material]:
+    def get_material(self, uid: str) -> Material | None:
         """
         Get a material by UID, searching all libraries.
 
@@ -177,7 +176,7 @@ class LibraryManager:
 
         return None
 
-    def get_material_or_none(self, uid: str) -> Optional[Material]:
+    def get_material_or_none(self, uid: str) -> Material | None:
         """
         Get a material by UID with graceful fallback.
 
@@ -196,7 +195,7 @@ class LibraryManager:
             logger.warning(f"Error getting material {uid}: {e}")
             return None
 
-    def resolve_material(self, uid: str) -> Optional[Material]:
+    def resolve_material(self, uid: str) -> Material | None:
         """
         Resolve a material reference with fallback handling.
 
@@ -302,7 +301,7 @@ class LibraryManager:
     def add_library(
         self,
         library: MaterialLibrary,
-        addon_name: Optional[str] = None,
+        addon_name: str | None = None,
         allow_overwrite: bool = False,
     ) -> bool:
         """
@@ -333,8 +332,8 @@ class LibraryManager:
         self,
         path: Path,
         read_only: bool = True,
-        addon_name: Optional[str] = None,
-    ) -> Optional[str]:
+        addon_name: str | None = None,
+    ) -> str | None:
         """
         Create and add a MaterialLibrary from a directory path.
 

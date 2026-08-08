@@ -11,7 +11,7 @@ from rayforge.ui_gtk.doceditor.step_settings.pages.post_processing import (
 )
 
 __all__ = [
-    "StepSettingsPage",
     "GeneralStepSettingsPage",
     "PostProcessingPage",
+    "StepSettingsPage",
 ]

@@ -1,7 +1,7 @@
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 import numpy as np
 
@@ -15,7 +15,7 @@ ColorAtom = Union[
 ]
 ColorSpec = Union[ColorAtom, tuple[ColorAtom, float]]
 GradientSpec = tuple[ColorSpec, ColorSpec]
-ColorSpecDict = dict[str, Union[ColorSpec, GradientSpec]]
+ColorSpecDict = dict[str, ColorSpec | GradientSpec]
 
 OPS_COLOR_SPEC: ColorSpecDict = {
     "cut": ("#ffeeff", "#ff00ff"),
@@ -200,7 +200,7 @@ _RGB_RE = re.compile(
 )
 
 
-def normalize_color(color: Optional[str]) -> Optional[str]:
+def normalize_color(color: str | None) -> str | None:
     """
     Normalize a color string to a canonical lowercase 6-digit hex value.
 

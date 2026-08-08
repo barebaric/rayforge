@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from blinker import Signal
 from gi.repository import Gdk, GLib, Gtk, Pango
@@ -104,7 +103,7 @@ class ExpressionEntry(Gtk.Box):
         self.activated = Signal()
         self.validated = Signal()
 
-        self._context: Optional[ExpressionContext] = None
+        self._context: ExpressionContext | None = None
         self._validator = ExpressionValidator()
         self._tokenizer = ExpressionTokenizer()
 
@@ -249,7 +248,7 @@ class ExpressionEntry(Gtk.Box):
         start = self._buffer.get_iter_at_offset(token.start)
         end = self._buffer.get_iter_at_offset(token.end)
 
-        tag_name: Optional[str] = None
+        tag_name: str | None = None
         if token.type == TokenType.NUMBER:
             tag_name = "number"
         elif token.type == TokenType.STRING:
@@ -417,7 +416,7 @@ class ExpressionEntry(Gtk.Box):
             if self._completion_menu.is_visible():
                 self._completion_menu.popdown()
 
-    def _find_first_visible_row(self) -> Optional[Gtk.ListBoxRow]:
+    def _find_first_visible_row(self) -> Gtk.ListBoxRow | None:
         """Finds the first visible row without selecting it."""
         child = self._completion_menu.list_box.get_first_child()
         while child:
@@ -439,7 +438,7 @@ class ExpressionEntry(Gtk.Box):
         if not selected:
             return
 
-        next_row: Optional[Gtk.Widget] = None
+        next_row: Gtk.Widget | None = None
         if step > 0:
             sibling = selected.get_next_sibling()
             while sibling:
@@ -458,7 +457,7 @@ class ExpressionEntry(Gtk.Box):
         if isinstance(next_row, Gtk.ListBoxRow):
             list_box.select_row(next_row)
 
-    def _on_completion_activated(self, listbox, row: Optional[Gtk.ListBoxRow]):
+    def _on_completion_activated(self, listbox, row: Gtk.ListBoxRow | None):
         """Inserts the selected completion into the text buffer."""
         if not row:
             return

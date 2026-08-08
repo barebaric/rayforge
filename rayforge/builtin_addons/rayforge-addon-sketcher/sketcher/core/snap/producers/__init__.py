@@ -15,6 +15,6 @@ __all__ = [
     "MidpointsProducer",
     "OnEntityProducer",
     "SnapLine",
-    "SnapPoint",
     "SnapLineProducer",
+    "SnapPoint",
 ]

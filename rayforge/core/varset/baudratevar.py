@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import Any, Optional
+from typing import Any
 
 from .intvar import IntVar, ValidationError
 
@@ -17,7 +17,7 @@ STANDARD_BAUD_RATES: list[int] = [
 ]
 
 
-def validate_baud_rate(rate: Optional[int], choices: list[int]):
+def validate_baud_rate(rate: int | None, choices: list[int]):
     """Raises ValidationError if the baud rate is not in the choices list."""
     if rate is None:
         raise ValidationError(_("Baud rate cannot be empty."))
@@ -36,12 +36,12 @@ class BaudrateVar(IntVar):
         self,
         key: str,
         label: str = _("Baud Rate"),
-        description: Optional[str] = _("Connection speed in bits per second"),
-        default: Optional[int] = 115200,
-        value: Optional[int] = None,
-        min_val: Optional[int] = None,
-        max_val: Optional[int] = None,
-        choices: Optional[list[int]] = None,
+        description: str | None = _("Connection speed in bits per second"),
+        default: int | None = 115200,
+        value: int | None = None,
+        min_val: int | None = None,
+        max_val: int | None = None,
+        choices: list[int] | None = None,
     ):
         self.choices: list[int] = (
             choices if choices is not None else list(STANDARD_BAUD_RATES)

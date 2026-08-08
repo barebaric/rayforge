@@ -5,7 +5,7 @@ import logging
 from collections.abc import Iterator
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.geo import Matrix
 
@@ -45,9 +45,9 @@ class SketchImporter(Importer):
     mime_types = (const.MIME_TYPE_SKETCH,)
     features = {ImporterFeature.DIRECT_VECTOR}
 
-    def __init__(self, data: bytes, source_file: Optional[Path] = None):
+    def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)
-        self.parsed_sketch: Optional[Sketch] = None
+        self.parsed_sketch: Sketch | None = None
 
     def scan(self) -> ImportManifest:
         """
@@ -112,7 +112,7 @@ class SketchImporter(Importer):
             height_mm=height,
         )
 
-    def parse(self) -> Optional[ParsingResult]:
+    def parse(self) -> ParsingResult | None:
         """Phase 2: Parse JSON into Sketch model and solve it for bounds."""
         try:
             sketch_dict = json.loads(self.raw_data.decode("utf-8"))

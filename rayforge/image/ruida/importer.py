@@ -1,7 +1,6 @@
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional
 
 from raygeo.geo import Geometry
 
@@ -32,10 +31,10 @@ class RuidaImporter(Importer):
     extensions = (".rd",)
     features = {ImporterFeature.DIRECT_VECTOR}
 
-    def __init__(self, data: bytes, source_file: Optional[Path] = None):
+    def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)
-        self._job: Optional[RuidaJob] = None
-        self._geometries_by_layer: dict[Optional[str], Geometry] = {}
+        self._job: RuidaJob | None = None
+        self._geometries_by_layer: dict[str | None, Geometry] = {}
 
     def scan(self) -> ImportManifest:
         """
@@ -135,7 +134,7 @@ class RuidaImporter(Importer):
         # Key must match the layer_id declared in parse() ("__default__")
         # so that ItemAssembler can find it when layout items request that
         # layer.
-        geometries_for_layout: dict[Optional[str], Geometry] = {
+        geometries_for_layout: dict[str | None, Geometry] = {
             "__default__": merged_geo
         }
 
@@ -144,7 +143,7 @@ class RuidaImporter(Importer):
             source_parse_result=parse_result,
         )
 
-    def parse(self) -> Optional[ParsingResult]:
+    def parse(self) -> ParsingResult | None:
         """Phase 2: Parse Ruida file into geometric facts."""
         try:
             job = self._get_job()
@@ -174,7 +173,7 @@ class RuidaImporter(Importer):
             )
             empty_result.background_world_transform = bg_item.world_matrix
 
-            self._geometries_by_layer: dict[Optional[str], Geometry] = {
+            self._geometries_by_layer: dict[str | None, Geometry] = {
                 "__default__": pristine_geo
             }
             return empty_result

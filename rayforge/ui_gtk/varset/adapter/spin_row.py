@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from ....core.varset import FloatVar, IntVar, Var
 from ...shared.pref_rows.base import SpinRow
@@ -38,7 +38,7 @@ class SpinRowAdapter(RowAdapter):
         )
         return row, cls(row, is_int)
 
-    def get_value(self) -> Optional[Any]:
+    def get_value(self) -> Any | None:
         if self._is_int:
             return self._row.get_int_value()
         return self._row.get_value()

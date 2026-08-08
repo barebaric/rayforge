@@ -1,6 +1,5 @@
 import logging
 from collections.abc import Iterator
-from typing import Optional
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -44,7 +43,7 @@ class SnapEngine:
         self._threshold: float = threshold
         self._index: SnapLineIndex = SnapLineIndex()
         self._cached_points: list[SnapPoint] = []
-        self._last_query_pos: Optional[GeoPoint] = None
+        self._last_query_pos: GeoPoint | None = None
         self._enabled: bool = True
 
     @property
@@ -102,7 +101,7 @@ class SnapEngine:
         self,
         registry: EntityRegistry,
         position: GeoPoint,
-        drag_context: Optional[DragContext] = None,
+        drag_context: DragContext | None = None,
     ) -> SnapResult:
         if not self._enabled:
             return SnapResult.no_snap(position)
@@ -144,10 +143,10 @@ class SnapEngine:
 
     def _find_best_lines_for_both_axes(
         self, x: float, y: float
-    ) -> tuple[Optional[SnapLine], Optional[SnapLine]]:
-        best_h: Optional[SnapLine] = None
+    ) -> tuple[SnapLine | None, SnapLine | None]:
+        best_h: SnapLine | None = None
         best_h_dist: float = self._threshold
-        best_v: Optional[SnapLine] = None
+        best_v: SnapLine | None = None
         best_v_dist: float = self._threshold
 
         for indexed in self._index._horizontal:
@@ -170,8 +169,8 @@ class SnapEngine:
 
     def _find_nearest_snap_point(
         self, x: float, y: float
-    ) -> Optional[tuple[SnapPoint, float]]:
-        best_point: Optional[SnapPoint] = None
+    ) -> tuple[SnapPoint, float] | None:
+        best_point: SnapPoint | None = None
         best_dist: float = self._threshold
         best_priority: int = -1
 
@@ -200,11 +199,13 @@ class SnapEngine:
     ) -> list[SnapLine]:
         crossing: list[SnapLine] = []
         for sl in self._get_all_lines():
-            if sl.is_horizontal and abs(sl.coordinate - snap_point.y) < 1e-6:
-                crossing.append(sl)
-            elif (
-                not sl.is_horizontal
-                and abs(sl.coordinate - snap_point.x) < 1e-6
+            if (
+                sl.is_horizontal
+                and abs(sl.coordinate - snap_point.y) < 1e-6
+                or (
+                    not sl.is_horizontal
+                    and abs(sl.coordinate - snap_point.x) < 1e-6
+                )
             ):
                 crossing.append(sl)
         return crossing
@@ -223,7 +224,7 @@ class SnapEngine:
         self,
         registry: EntityRegistry,
         position: GeoPoint,
-        drag_context: Optional[DragContext] = None,
+        drag_context: DragContext | None = None,
     ) -> list[SnapLine]:
         if not self._enabled:
             return []

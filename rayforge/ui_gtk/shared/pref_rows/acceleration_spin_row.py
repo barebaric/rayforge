@@ -1,5 +1,3 @@
-from typing import Optional
-
 from .unit_spin_row import UnitSpinRow
 
 
@@ -11,7 +9,7 @@ class AccelerationSpinRow(UnitSpinRow):
     def __init__(
         self,
         title: str,
-        subtitle: Optional[str] = None,
+        subtitle: str | None = None,
         *,
         step_increment: float = 10.0,
         **kwargs,

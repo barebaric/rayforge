@@ -1,7 +1,8 @@
 import asyncio
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, Optional, Protocol, cast
+from typing import TYPE_CHECKING, Optional, Protocol, cast
 
 from raygeo.geo import Geometry
 from raygeo.svg import svg_string_to_geometry
@@ -38,9 +39,9 @@ class GenerationResult:
     """Result of AI generation with optional sketch conversion."""
 
     sketch: Optional["IGeometryProvider"] = None
-    svg_content: Optional[str] = None
-    geometry: Optional[Geometry] = None
-    error: Optional[str] = None
+    svg_content: str | None = None
+    geometry: Geometry | None = None
+    error: str | None = None
 
 
 class AISvgGeneratorController:

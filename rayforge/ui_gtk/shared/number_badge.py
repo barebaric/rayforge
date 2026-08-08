@@ -1,5 +1,3 @@
-from typing import Optional
-
 from gi.repository import Graphene, Gtk, Pango, PangoCairo
 
 from .gtk import apply_css
@@ -31,7 +29,7 @@ class NumberBadge(Gtk.Widget):
         apply_css(css)
         self.add_css_class("number-badge")
         self._number: int = number
-        self._color_class: Optional[str] = None
+        self._color_class: str | None = None
 
     def do_measure(self, orientation, for_size):
         return (32, 32, -1, -1)
@@ -72,7 +70,7 @@ class NumberBadge(Gtk.Widget):
     def get_number(self) -> int:
         return self._number
 
-    def set_color(self, hex_color: Optional[str]):
+    def set_color(self, hex_color: str | None):
         if self._color_class:
             self.remove_css_class(self._color_class)
             self._color_class = None

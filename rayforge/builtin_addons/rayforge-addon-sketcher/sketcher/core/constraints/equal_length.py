@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Optional,
-    Union,
     cast,
 )
 
@@ -44,7 +42,7 @@ class EqualLengthConstraint(Constraint):
 
     @classmethod
     def can_apply_to(
-        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+        cls, selection: SketchSelection, sketch: Sketch | None = None
     ) -> bool:
         if selection.point_ids or len(selection.entity_ids) < 2:
             return False
@@ -67,14 +65,14 @@ class EqualLengthConstraint(Constraint):
         """Returns a human-readable title for this constraint."""
         return self.get_type_name()
 
-    def get_subtitle(self, registry: "EntityRegistry") -> str:
+    def get_subtitle(self, registry: EntityRegistry) -> str:
         """Returns subtitle describing constrained entities."""
         if len(self.entity_ids) >= 2:
             return _("{} entities").format(len(self.entity_ids))
         return ""
 
     def targets_segment(
-        self, p1: EntityID, p2: EntityID, entity_id: Optional[EntityID]
+        self, p1: EntityID, p2: EntityID, entity_id: EntityID | None
     ) -> bool:
         if entity_id is not None:
             return entity_id in self.entity_ids
@@ -88,14 +86,14 @@ class EqualLengthConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "EqualLengthConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> EqualLengthConstraint:
         return cls(
             entity_ids=data["entity_ids"],
             user_visible=data.get("user_visible", True),
         )
 
     def constrains_radius(
-        self, registry: "EntityRegistry", entity_id: EntityID
+        self, registry: EntityRegistry, entity_id: EntityID
     ) -> bool:
         return entity_id in self.entity_ids
 
@@ -121,7 +119,7 @@ class EqualLengthConstraint(Constraint):
         pb = reg.get_point(pb_idx)
         return math.hypot(pb.x - pa.x, pb.y - pa.y)
 
-    def _get_length(self, entity, reg: "EntityRegistry") -> float:
+    def _get_length(self, entity, reg: EntityRegistry) -> float:
         if isinstance(entity, Line):
             p1 = reg.get_point(entity.p1_idx)
             p2 = reg.get_point(entity.p2_idx)
@@ -140,7 +138,7 @@ class EqualLengthConstraint(Constraint):
         return 0.0
 
     def error(
-        self, reg: "EntityRegistry", params: "ParameterContext"
+        self, reg: EntityRegistry, params: ParameterContext
     ) -> list[float]:
         if len(self.entity_ids) < 2:
             return []
@@ -167,13 +165,13 @@ class EqualLengthConstraint(Constraint):
         return errors
 
     def gradient(
-        self, reg: "EntityRegistry", params: "ParameterContext"
+        self, reg: EntityRegistry, params: ParameterContext
     ) -> dict[EntityID, list[Point]]:
         if len(self.entity_ids) < 2:
             return {}
 
         entities = [
-            cast(Union[Line, Arc, Circle, Ellipse], reg.get_entity(eid))
+            cast(Line | Arc | Circle | Ellipse, reg.get_entity(eid))
             for eid in self.entity_ids
         ]
         if any(e is None for e in entities):
@@ -237,7 +235,7 @@ class EqualLengthConstraint(Constraint):
     def _get_symbol_pos(
         self,
         entity,
-        reg: "EntityRegistry",
+        reg: EntityRegistry,
         to_screen: Callable[[Point], Point],
     ):
         """Calculates screen pos for an equality symbol on an entity."""
@@ -275,7 +273,7 @@ class EqualLengthConstraint(Constraint):
         self,
         sx: float,
         sy: float,
-        reg: "EntityRegistry",
+        reg: EntityRegistry,
         to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
@@ -293,8 +291,8 @@ class EqualLengthConstraint(Constraint):
 
     def draw(
         self,
-        ctx: "cairo.Context",
-        registry: "EntityRegistry",
+        ctx: cairo.Context,
+        registry: EntityRegistry,
         to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,

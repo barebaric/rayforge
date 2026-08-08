@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import uuid
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from rayforge.core.color import ColorRGBA
 from rayforge.image.structures import FillStyle
@@ -23,16 +23,16 @@ class AddFillCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: "Sketch",
+        sketch: Sketch,
         boundary: list[tuple[int, bool]],
         style: FillStyle = FillStyle.SOLID,
         color: ColorRGBA = DEFAULT_FILL_COLOR,
-        gradient_stops: Optional[list[tuple[float, ColorRGBA]]] = None,
+        gradient_stops: list[tuple[float, ColorRGBA]] | None = None,
         gradient_angle: float = 0.0,
         name: str = _("Add Fill"),
     ):
         super().__init__(sketch, name)
-        self.fill: Optional[Fill] = None
+        self.fill: Fill | None = None
         self._boundary = boundary
         self._style = style
         self._color = color
@@ -61,7 +61,7 @@ class RemoveFillCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: "Sketch",
+        sketch: Sketch,
         fill: Fill,
         name: str = _("Remove Fill"),
     ):
@@ -81,9 +81,9 @@ class SetTextFillCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: "Sketch",
+        sketch: Sketch,
         entity_id: int,
-        fill_color: Optional[ColorRGBA],
+        fill_color: ColorRGBA | None,
         name: str = _("Set Text Fill"),
     ):
         super().__init__(sketch, name)

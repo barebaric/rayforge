@@ -1,5 +1,5 @@
 import json
-from typing import Any, Optional
+from typing import Any
 
 from .var import Var
 
@@ -23,12 +23,12 @@ class AppKeyVar(Var[str]):
         key: str,
         label: str,
         app_name: str,
-        probe_url: Optional[str] = None,
-        request_url: Optional[str] = None,
-        poll_url: Optional[str] = None,
-        description: Optional[str] = None,
-        default: Optional[str] = None,
-        value: Optional[str] = None,
+        probe_url: str | None = None,
+        request_url: str | None = None,
+        poll_url: str | None = None,
+        description: str | None = None,
+        default: str | None = None,
+        value: str | None = None,
     ):
         self.app_name = app_name
         self.probe_url = probe_url
@@ -43,7 +43,7 @@ class AppKeyVar(Var[str]):
             value=value,
         )
 
-    def get_api_key(self) -> Optional[str]:
+    def get_api_key(self) -> str | None:
         val = self.value
         if not val:
             return None
@@ -60,7 +60,7 @@ class AppKeyVar(Var[str]):
 
     def resolve_config(
         self,
-        overrides: Optional[dict[str, str]] = None,
+        overrides: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         sibling_values: dict[str, Any] = {}
         if self._varset is not None:

@@ -3,11 +3,12 @@ import logging
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections.abc import Callable
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from threading import Thread
-from typing import Any, Callable, Optional
+from typing import Any
 
 import yaml
 
@@ -79,7 +80,7 @@ class PatreonProvider(LicenseProvider):
     def __init__(self, licenses_dir: Path, client_id: str):
         self.config_file = licenses_dir / "patreon.yaml"
         self.client_id = client_id
-        self._access_token: Optional[str] = None
+        self._access_token: str | None = None
         self._cache: dict[str, dict[str, Any]] = {}
         self._load_config()
 
@@ -186,13 +187,13 @@ class PatreonProvider(LicenseProvider):
             logger.error(f"Patreon validation failed: {e}")
             return LicenseResult(
                 status=LicenseStatus.ERROR,
-                message=f"Validation failed: {str(e)}",
+                message=f"Validation failed: {e!s}",
             )
 
     def _make_cache_key(self, tier_ids: list[str]) -> str:
         return ",".join(sorted(tier_ids))
 
-    def _get_valid_cache(self, tier_ids: list[str]) -> Optional[dict]:
+    def _get_valid_cache(self, tier_ids: list[str]) -> dict | None:
         cache_key = self._make_cache_key(tier_ids)
         cached = self._cache.get(cache_key)
         if not cached:
@@ -229,7 +230,7 @@ class PatreonProvider(LicenseProvider):
 
     def start_oauth_flow(
         self,
-        on_complete: Callable[[bool, Optional[str]], None],
+        on_complete: Callable[[bool, str | None], None],
     ) -> tuple[int, Thread]:
         """
         Start the OAuth flow by launching a local HTTP server.
@@ -307,7 +308,7 @@ class PatreonProvider(LicenseProvider):
                     data = yaml.safe_load(f) or {}
                     self._access_token = data.get("access_token")
                     self._cache = data.get("cache", {})
-            except (yaml.YAMLError, IOError) as e:
+            except (OSError, yaml.YAMLError) as e:
                 logger.warning(f"Failed to load Patreon config: {e}")
 
     def _save_config(self) -> None:

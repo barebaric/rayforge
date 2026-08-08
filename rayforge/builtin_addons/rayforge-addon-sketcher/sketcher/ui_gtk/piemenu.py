@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Union
 
 from blinker import Signal
 from gi.repository import Gtk
@@ -25,9 +25,9 @@ class SketchPieMenu(PieMenu):
     def __init__(self, parent_widget: Gtk.Widget):
         super().__init__(parent_widget)
 
-        self.sketch_element: Optional["SketchElement"] = None
-        self.target: Optional[Union["Point", "Entity", "Constraint"]] = None
-        self.target_type: Optional[str] = None
+        self.sketch_element: SketchElement | None = None
+        self.target: Point | Entity | Constraint | None = None
+        self.target_type: str | None = None
 
         self.tool_selected = Signal()
 
@@ -41,8 +41,8 @@ class SketchPieMenu(PieMenu):
     def set_context(
         self,
         sketch_element: "SketchElement",
-        target: Optional[Union["Point", "Entity", "Constraint"]],
-        target_type: Optional[str],
+        target: Union["Point", "Entity", "Constraint"] | None,
+        target_type: str | None,
     ):
         self.sketch_element = sketch_element
         self.target = target

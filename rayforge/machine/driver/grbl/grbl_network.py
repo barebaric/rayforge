@@ -1,14 +1,11 @@
 import asyncio
 import inspect
 import logging
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Optional,
-    Union,
     cast,
 )
 from urllib.parse import quote
@@ -87,8 +84,8 @@ class GrblNetworkDriver(Driver):
         self.websocket = None
         self.keep_running = False
         self._is_cancelled = False
-        self._connection_task: Optional[asyncio.Task] = None
-        self._current_request: Optional[CommandRequest] = None
+        self._connection_task: asyncio.Task | None = None
+        self._current_request: CommandRequest | None = None
         self._cmd_lock = asyncio.Lock()
         self._report_in_inches: bool = False
 
@@ -107,7 +104,7 @@ class GrblNetworkDriver(Driver):
         return _("Machine Coordinates (G53)")
 
     @property
-    def resource_uri(self) -> Optional[str]:
+    def resource_uri(self) -> str | None:
         if self.host:
             # We assume port 80 is the control port for locking purposes
             # even if ws_port is different.
@@ -382,9 +379,7 @@ class GrblNetworkDriver(Driver):
         encoded: EncodedOutput,
         doc: "Doc",
         ops: "Ops",
-        on_command_done: Optional[
-            Callable[[int], Union[None, Awaitable[None]]]
-        ] = None,
+        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
     ) -> None:
         if not self.host:
             raise ConnectionError("Driver not configured with a host.")
@@ -483,11 +478,11 @@ class GrblNetworkDriver(Driver):
         await self._send_command("\x18")
         self.job_finished.send(self)
 
-    def can_home(self, axis: Optional[Axis] = None) -> bool:
+    def can_home(self, axis: Axis | None = None) -> bool:
         """GRBL supports homing for all axes."""
         return True
 
-    async def home(self, axes: Optional[Axis] = None) -> None:
+    async def home(self, axes: Axis | None = None) -> None:
         """
         Homes the specified axes or all axes if none specified.
 
@@ -595,7 +590,7 @@ class GrblNetworkDriver(Driver):
                 break
             await asyncio.sleep(0.05)
 
-    def can_jog(self, axis: Optional[Axis] = None) -> bool:
+    def can_jog(self, axis: Axis | None = None) -> bool:
         """GRBL supports jogging for all axes."""
         return True
 
@@ -626,7 +621,7 @@ class GrblNetworkDriver(Driver):
         pass
 
     def on_http_status_changed(
-        self, sender, status: TransportStatus, message: Optional[str] = None
+        self, sender, status: TransportStatus, message: str | None = None
     ):
         self._update_command_status(status, message)
 
@@ -686,14 +681,14 @@ class GrblNetworkDriver(Driver):
                     request.finished.set()
 
     def on_websocket_status_changed(
-        self, sender, status: TransportStatus, message: Optional[str] = None
+        self, sender, status: TransportStatus, message: str | None = None
     ):
         self._update_connection_status(status, message)
 
     def get_setting_vars(self) -> list["VarSet"]:
         return get_grbl_setting_varsets()
 
-    async def detect_unit_system(self) -> Optional[UnitSystem]:
+    async def detect_unit_system(self) -> UnitSystem | None:
         """
         Queries the device's ``$$`` settings and infers the unit
         system from the ``$13`` (Report in inches) flag.
@@ -800,7 +795,7 @@ class GrblNetworkDriver(Driver):
         self.wcs_updated.send(self, offsets=offsets)
         return offsets
 
-    async def read_parser_state(self) -> Optional[str]:
+    async def read_parser_state(self) -> str | None:
         """Reads the $G parser state to determine the active WCS."""
         try:
             response_lines = await self.execute_interactive_command("$G")
@@ -811,7 +806,7 @@ class GrblNetworkDriver(Driver):
 
     async def run_probe_cycle(
         self, axis: Axis, max_travel: float, feed_rate: int
-    ) -> Optional[Pos]:
+    ) -> Pos | None:
         assert axis.name, "Probing requires a single, named axis."
         axis_letter = axis.name.upper()
         dialect = self.dialect
@@ -843,7 +838,7 @@ class GrblNetworkDriver(Driver):
         return None
 
     def _update_command_status(
-        self, status: TransportStatus, message: Optional[str] = None
+        self, status: TransportStatus, message: str | None = None
     ):
         log_data = f"Command status: {status.name}"
         if message:
@@ -852,7 +847,7 @@ class GrblNetworkDriver(Driver):
         self.command_status_changed.send(self, status=status, message=message)
 
     def _update_connection_status(
-        self, status: TransportStatus, message: Optional[str] = None
+        self, status: TransportStatus, message: str | None = None
     ):
         log_data = f"Connection status: {status.name}"
         if message:

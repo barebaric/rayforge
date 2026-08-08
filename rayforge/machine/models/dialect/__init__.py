@@ -20,8 +20,7 @@ BUILTIN_DIALECTS = [
 ]
 
 __all__ = [
-    "GcodeDialect",
-    "replace",
+    "BUILTIN_DIALECTS",
     "GRBL_DIALECT",
     "GRBL_DYNAMIC_DIALECT",
     "GRBL_RASTER_DIALECT",
@@ -29,5 +28,6 @@ __all__ = [
     "MACH4_M67_DIALECT",
     "MARLIN_DIALECT",
     "SMOOTHIEWARE_DIALECT",
-    "BUILTIN_DIALECTS",
+    "GcodeDialect",
+    "replace",
 ]

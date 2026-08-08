@@ -7,7 +7,7 @@ Compilation, uniform setting, and the snapshot/restore pair used by
 """
 
 import logging
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 from OpenGL import GL
@@ -95,7 +95,6 @@ class Shader:
         """Restores the uniform snapshot taken by :meth:`__enter__`."""
         if self._uniform_snapshots:
             self.restore(self._uniform_snapshots.pop())
-        return None
 
     def reset_uniforms(self) -> None:
         """
@@ -105,7 +104,6 @@ class Shader:
         :meth:`restore` have a stable baseline.  Subclasses override to
         set the uniforms their draw path reads.
         """
-        pass
 
     def set_mat4(self, name: str, mat: np.ndarray) -> None:
         """
@@ -141,7 +139,7 @@ class Shader:
             GL.glUniformMatrix3fv(loc, 1, GL.GL_TRUE, mat)
             self._uniform_values[name] = ("mat3", np.array(mat, copy=True))
 
-    def set_vec2(self, name: str, vec: Union[tuple, list, np.ndarray]) -> None:
+    def set_vec2(self, name: str, vec: tuple | list | np.ndarray) -> None:
         """
         Sets a vec2 uniform in the shader.
 
@@ -157,7 +155,7 @@ class Shader:
                 np.asarray(vec, dtype=np.float32).copy(),
             )
 
-    def set_vec3(self, name: str, vec: Union[tuple, list, np.ndarray]) -> None:
+    def set_vec3(self, name: str, vec: tuple | list | np.ndarray) -> None:
         """Sets a vec3 uniform in the shader.
 
         Args:
@@ -172,7 +170,7 @@ class Shader:
                 np.asarray(vec, dtype=np.float32).copy(),
             )
 
-    def set_vec4(self, name: str, vec: Union[tuple, list, np.ndarray]) -> None:
+    def set_vec4(self, name: str, vec: tuple | list | np.ndarray) -> None:
         """Sets a vec4 uniform in the shader.
 
         Args:

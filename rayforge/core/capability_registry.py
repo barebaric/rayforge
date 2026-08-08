@@ -15,11 +15,11 @@ class StepCapabilityRegistry:
     """
 
     def __init__(self):
-        self._capabilities: dict[str, "StepCapability"] = {}
+        self._capabilities: dict[str, StepCapability] = {}
         self._addon_items: dict[str, set[str]] = {}
 
     def register(
-        self, capability: "StepCapability", addon_name: Optional[str] = None
+        self, capability: "StepCapability", addon_name: str | None = None
     ) -> None:
         """
         Register a capability instance.

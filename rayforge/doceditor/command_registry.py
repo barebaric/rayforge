@@ -1,6 +1,3 @@
-from typing import Optional
-
-
 class CommandRegistry:
     """
     Registry for editor command classes.
@@ -18,7 +15,7 @@ class CommandRegistry:
         self,
         command_name: str,
         command_class: type,
-        addon_name: Optional[str] = None,
+        addon_name: str | None = None,
     ) -> None:
         """
         Register a command class.
@@ -71,7 +68,7 @@ class CommandRegistry:
                 count += 1
         return count
 
-    def get(self, command_name: str) -> Optional[type]:
+    def get(self, command_name: str) -> type | None:
         """
         Look up a command class by name.
 

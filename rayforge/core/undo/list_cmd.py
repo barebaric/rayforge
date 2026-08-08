@@ -1,4 +1,5 @@
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from .command import Command
 
@@ -12,8 +13,8 @@ class ListItemCommand(Command):
         item: Any,
         undo_command: str,
         redo_command: str,
-        on_change_callback: Optional[Callable[[], None]] = None,
-        name: Optional[str] = None,
+        on_change_callback: Callable[[], None] | None = None,
+        name: str | None = None,
     ):
         super().__init__(name, on_change_callback)
         self.owner_obj = owner_obj
@@ -42,9 +43,9 @@ class ReorderListCommand(Command):
         target_obj: Any,
         list_property_name: str,
         new_list: list[Any],
-        setter_method_name: Optional[str] = None,
-        on_change_callback: Optional[Callable[[], None]] = None,
-        name: Optional[str] = None,
+        setter_method_name: str | None = None,
+        on_change_callback: Callable[[], None] | None = None,
+        name: str | None = None,
     ):
         super().__init__(name, on_change_callback)
         self.target_obj = target_obj

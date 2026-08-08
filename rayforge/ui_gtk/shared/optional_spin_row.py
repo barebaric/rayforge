@@ -1,5 +1,3 @@
-from typing import Optional
-
 from blinker import Signal
 from gi.repository import Adw, Gtk
 
@@ -85,13 +83,13 @@ class OptionalSpinRowController:
         self._config_handler_id = None
         self._destroy_handler_id = None
 
-    def get_value(self) -> Optional[float]:
+    def get_value(self) -> float | None:
         """Gets the value in base units, or None if disabled."""
         if not self.switch.get_active():
             return None
         return self.get_spin_value_in_base()
 
-    def set_value(self, value_in_base: Optional[float]):
+    def set_value(self, value_in_base: float | None):
         """Sets the value from base units, or disables if None."""
         if value_in_base is None:
             self.switch.set_active(False)

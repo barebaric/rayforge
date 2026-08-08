@@ -17,7 +17,7 @@ def mock_progress_context():
             self.message_calls: list[str] = []
             self._is_cancelled = False
             self._total = 1.0
-            self._sub_contexts: list["_SimpleMockProgressContext"] = []
+            self._sub_contexts: list[_SimpleMockProgressContext] = []
 
         def is_cancelled(self) -> bool:
             return self._is_cancelled

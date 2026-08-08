@@ -4,7 +4,7 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from ..core.vectorization_spec import TraceSpec
 
@@ -29,7 +29,7 @@ class RenderSpecification:
     height: int
     data: bytes
     kwargs: dict[str, Any] = field(default_factory=dict)
-    crop_rect: Optional[tuple[int, int, int, int]] = None
+    crop_rect: tuple[int, int, int, int] | None = None
     apply_mask: bool = True
 
 
@@ -41,10 +41,10 @@ class Renderer(ABC):
 
     def compute_render_spec(
         self,
-        segment: Optional["SourceAssetSegment"],
+        segment: SourceAssetSegment | None,
         target_size: tuple[int, int],
-        source_context: "RenderContext",
-    ) -> "RenderSpecification":
+        source_context: RenderContext,
+    ) -> RenderSpecification:
         """
         Calculates the strategy for rendering. Subclasses will override this.
         The default implementation is a simple pass-through.
@@ -63,7 +63,7 @@ class Renderer(ABC):
         width: int,
         height: int,
         **kwargs,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         """
         Renders raw data into a pyvips Image of the specified dimensions.
         This method performs the raw format conversion (e.g. SVG->Bitmap,
@@ -84,10 +84,10 @@ class Renderer(ABC):
 
     def render_preview_image(
         self,
-        import_result: "ImportResult",
+        import_result: ImportResult,
         target_width: int,
         target_height: int,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         """
         Generates a high-resolution preview image from a full ImportResult.
         This allows a renderer to use context from parsing and vectorization
@@ -128,10 +128,10 @@ class RasterRenderer(Renderer):
 
     def compute_render_spec(
         self,
-        segment: Optional["SourceAssetSegment"],
+        segment: SourceAssetSegment | None,
         target_size: tuple[int, int],
-        source_context: "RenderContext",
-    ) -> "RenderSpecification":
+        source_context: RenderContext,
+    ) -> RenderSpecification:
         """
         Calculates the render specification for a raster source. If the
         source is cropped, it computes the upscaled render dimensions and
@@ -200,10 +200,10 @@ class UnknownRenderer(Renderer):
 
     def compute_render_spec(
         self,
-        segment: Optional["SourceAssetSegment"],
+        segment: SourceAssetSegment | None,
         target_size: tuple[int, int],
-        source_context: "RenderContext",
-    ) -> "RenderSpecification":
+        source_context: RenderContext,
+    ) -> RenderSpecification:
         """
         Always returns minimal render spec to avoid crashes.
         """
@@ -220,7 +220,7 @@ class UnknownRenderer(Renderer):
         width: int,
         height: int,
         **kwargs,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         """
         Always returns None since we can't render without the actual renderer.
         """
@@ -233,10 +233,10 @@ class UnknownRenderer(Renderer):
 
     def render_preview_image(
         self,
-        import_result: "ImportResult",
+        import_result: ImportResult,
         target_width: int,
         target_height: int,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         """
         Always returns None since we can't render without the actual renderer.
         """

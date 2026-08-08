@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import Callable, Optional
 
 from gi.repository import Adw, Gtk, Pango
 
@@ -15,7 +15,7 @@ class SanityCheckDialog(Adw.MessageDialog):
         self,
         parent: Gtk.Window,
         report: SanityReport,
-        on_proceed: Optional[Callable[[], None]] = None,
+        on_proceed: Callable[[], None] | None = None,
         **kwargs,
     ):
         super().__init__(transient_for=parent, **kwargs)

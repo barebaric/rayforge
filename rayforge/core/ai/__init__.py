@@ -10,12 +10,12 @@ from .provider import (
 )
 
 __all__ = [
-    "AIService",
-    "AIServiceError",
     "AIConfigManager",
     "AIProvider",
     "AIProviderConfig",
     "AIProviderType",
+    "AIService",
+    "AIServiceError",
     "ChatMessage",
     "ChatResponse",
 ]

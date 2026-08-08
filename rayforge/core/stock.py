@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
@@ -31,17 +31,17 @@ class StockItem(DocItem):
         self.visible: bool = True
         self.extra: dict[str, Any] = {}
 
-    def depends_on_asset(self, asset: "IAsset") -> bool:
+    def depends_on_asset(self, asset: IAsset) -> bool:
         """Checks if this stock item is an instance of the given asset."""
         return self.stock_asset_uid == asset.uid
 
     @property
-    def stock_asset(self) -> Optional["StockAsset"]:
+    def stock_asset(self) -> StockAsset | None:
         """Retrieves the StockAsset this item is an instance of."""
         doc = self.doc
         if doc:
             return cast(
-                "Optional[StockAsset]",
+                "StockAsset | None",
                 doc.get_asset_by_uid(self.stock_asset_uid),
             )
         return None
@@ -57,7 +57,7 @@ class StockItem(DocItem):
             return asset.get_natural_size()
         return (1.0, 1.0)  # Fallback
 
-    def get_local_bbox(self) -> Optional[Rect]:
+    def get_local_bbox(self) -> Rect | None:
         """
         StockItems are geometrically defined as a unit square (0,0,1,1) that is
         scaled by their matrix, keeping mathematical consistency with
@@ -79,7 +79,7 @@ class StockItem(DocItem):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "StockItem":
+    def from_dict(cls, data: dict[str, Any]) -> StockItem:
         """
         Deserializes a dictionary into a StockItem instance.
         Assumes the new format with 'stock_asset_uid'. Legacy file handling
@@ -106,7 +106,7 @@ class StockItem(DocItem):
 
         return new_item
 
-    def duplicate(self) -> "StockItem":
+    def duplicate(self) -> StockItem:
         """
         Creates a deep copy of this StockItem with a new UID.
 
@@ -145,24 +145,24 @@ class StockItem(DocItem):
     # --- Delegated Properties for backward compatibility and convenience ---
 
     @property
-    def thickness(self) -> Optional[float]:
+    def thickness(self) -> float | None:
         """Delegates thickness access to the StockAsset."""
         asset = self.stock_asset
         return asset.thickness if asset else None
 
     @property
-    def material_uid(self) -> Optional[str]:
+    def material_uid(self) -> str | None:
         """Delegates material_uid access to the StockAsset."""
         asset = self.stock_asset
         return asset.material_uid if asset else None
 
     @property
-    def geometry(self) -> "Geometry":
+    def geometry(self) -> Geometry:
         """Delegates geometry access to the StockAsset."""
         asset = self.stock_asset
         return asset.geometry if asset else Geometry()
 
-    def get_world_geometry(self) -> "Geometry":
+    def get_world_geometry(self) -> Geometry:
         """
         Returns the geometry transformed to world space.
         """
@@ -200,7 +200,7 @@ class StockItem(DocItem):
         )
         return world_geo
 
-    def get_world_rect_geometry(self) -> "Geometry":
+    def get_world_rect_geometry(self) -> Geometry:
         """
         Returns a rectangle in world space based on the stock's dimensions.
 
@@ -244,7 +244,7 @@ class StockItem(DocItem):
         return 1.0, 1.0
 
     @property
-    def material(self) -> Optional["Material"]:
+    def material(self) -> Material | None:
         """
         Gets the Material object for this stock item via its StockAsset.
 
@@ -261,7 +261,7 @@ class StockItem(DocItem):
         self.visible = visible
         self.updated.send(self)
 
-    def get_natural_aspect_ratio(self) -> Optional[float]:
+    def get_natural_aspect_ratio(self) -> float | None:
         """
         Returns the aspect ratio of the stock's geometry bounding box
         from its StockAsset.
@@ -272,7 +272,7 @@ class StockItem(DocItem):
         w, h = asset.get_natural_size()
         return w / h if h > 1e-9 else None
 
-    def get_current_aspect_ratio(self) -> Optional[float]:
+    def get_current_aspect_ratio(self) -> float | None:
         """
         Returns the aspect ratio of the stock's current world-space size.
         """

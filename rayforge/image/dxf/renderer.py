@@ -52,7 +52,7 @@ class DxfRenderer(Renderer):
         import_result: "ImportResult",
         target_width: int,
         target_height: int,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         """Generates a preview by rendering the vectorized geometry."""
         vec_result = import_result.vectorization_result
         if not vec_result:
@@ -83,7 +83,7 @@ class DxfRenderer(Renderer):
         width: int,
         height: int,
         **kwargs,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         boundaries = kwargs.get("boundaries")
         if not boundaries or boundaries.is_empty():
             logger.warning(

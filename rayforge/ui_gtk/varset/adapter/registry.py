@@ -1,6 +1,5 @@
 import logging
 from gettext import gettext as _
-from typing import Optional
 
 from gi.repository import Adw
 
@@ -45,7 +44,7 @@ _FALLBACK_MAP: dict[type, type[RowAdapter]] = {
 
 def create_row_for_var(
     var: Var, target_property: str = "value"
-) -> tuple[Adw.PreferencesRow, Optional[RowAdapter]]:
+) -> tuple[Adw.PreferencesRow, RowAdapter | None]:
     """
     Creates a PreferencesRow and RowAdapter for the given Var.
 
@@ -53,7 +52,7 @@ def create_row_for_var(
     Falls back to var.var_type if no adapter is registered for any
     class in the hierarchy.
     """
-    adapter_cls: Optional[type[RowAdapter]] = None
+    adapter_cls: type[RowAdapter] | None = None
 
     for cls in type(var).__mro__:
         if cls in _ADAPTER_REGISTRY:

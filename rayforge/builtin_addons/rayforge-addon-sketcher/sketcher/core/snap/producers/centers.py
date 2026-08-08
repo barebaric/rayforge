@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -91,7 +91,7 @@ class CentersProducer(SnapLineProducer):
 
     def _get_center(
         self, entity: object, registry: "EntityRegistry"
-    ) -> Optional[GeoPoint]:
+    ) -> GeoPoint | None:
         if isinstance(entity, (Arc, Circle, Ellipse)):
             center = registry.get_point(entity.center_idx)
             if center:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from ..entities import Bezier, Line
 from ..types import EntityID
@@ -18,20 +18,21 @@ class StraightenBezierCommand(SketchChangeCommand):
     Removes control points and replaces the Bezier entity with a Line entity.
     """
 
-    def __init__(self, sketch: "Sketch", bezier_id: EntityID):
+    def __init__(self, sketch: Sketch, bezier_id: EntityID):
         label = _("Straighten")
         super().__init__(sketch, label)
         self.bezier_id = bezier_id
-        self._old_bezier: Optional[
+        self._old_bezier: (
             tuple[
                 EntityID,
                 EntityID,
                 EntityID,
                 bool,
-                Optional[tuple[float, float]],
-                Optional[tuple[float, float]],
+                tuple[float, float] | None,
+                tuple[float, float] | None,
             ]
-        ] = None
+            | None
+        ) = None
 
     def _do_execute(self) -> None:
         registry = self.sketch.registry

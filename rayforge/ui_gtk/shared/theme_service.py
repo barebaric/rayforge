@@ -42,15 +42,15 @@ class ThemeColorService:
     """
 
     def __init__(self):
-        self._widget: Optional["Gtk.Widget"] = None
-        self._machine: Optional["Machine"] = None
-        self._doc: Optional["Doc"] = None
+        self._widget: Gtk.Widget | None = None
+        self._machine: Machine | None = None
+        self._doc: Doc | None = None
 
         self._dirty = True
-        self._color_set: Optional[ColorSet] = None
+        self._color_set: ColorSet | None = None
         self._laser_color_sets: dict[str, ColorSet] = {}
         self._layer_color_sets: dict[str, ColorSet] = {}
-        self._lut_provider: Optional[ColorLutProvider] = None
+        self._lut_provider: ColorLutProvider | None = None
 
     def bind(self, widget: "Gtk.Widget"):
         """
@@ -107,7 +107,7 @@ class ThemeColorService:
         return self._dirty
 
     @property
-    def color_set(self) -> Optional[ColorSet]:
+    def color_set(self) -> ColorSet | None:
         """The resolved base theme ColorSet."""
         self._refresh_if_dirty()
         return self._color_set
@@ -124,7 +124,7 @@ class ThemeColorService:
         self._refresh_if_dirty()
         return self._layer_color_sets
 
-    def color_lut_provider(self) -> Optional[ColorLutProvider]:
+    def color_lut_provider(self) -> ColorLutProvider | None:
         """A provider over the current base + laser colour sets."""
         color_set = self.color_set
         if color_set is None:

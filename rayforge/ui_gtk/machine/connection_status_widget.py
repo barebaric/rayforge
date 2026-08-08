@@ -1,5 +1,4 @@
 from gettext import gettext as _
-from typing import Optional
 
 from gi.repository import Gtk
 
@@ -17,7 +16,7 @@ class ConnectionStatusIconWidget(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
 
         # Placeholder for the image widget
-        self.status_image: Optional[Gtk.Widget] = None
+        self.status_image: Gtk.Widget | None = None
 
         # Set the initial status
         self.set_status(TransportStatus.DISCONNECTED)
@@ -50,9 +49,10 @@ class ConnectionStatusIconWidget(Gtk.Box):
             return "status-connected-symbolic"
         elif status == TransportStatus.ERROR:
             return "error-symbolic"
-        elif status == TransportStatus.CLOSING:
-            return "status-offline-symbolic"
-        elif status == TransportStatus.DISCONNECTED:
+        elif (
+            status == TransportStatus.CLOSING
+            or status == TransportStatus.DISCONNECTED
+        ):
             return "status-offline-symbolic"
         elif status == TransportStatus.SLEEPING:
             return "sleep-symbolic"
@@ -63,7 +63,7 @@ class ConnectionStatusIconWidget(Gtk.Box):
 class ConnectionStatusWidget(Gtk.Box):
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        self.machine: Optional[Machine] = None
+        self.machine: Machine | None = None
 
         self.label = Gtk.Label()
         self.append(self.label)
@@ -73,7 +73,7 @@ class ConnectionStatusWidget(Gtk.Box):
 
         self._update_display(TransportStatus.DISCONNECTED)
 
-    def set_machine(self, machine: Optional[Machine]):
+    def set_machine(self, machine: Machine | None):
         if self.machine:
             try:
                 self.machine.connection_status_changed.disconnect(
@@ -97,11 +97,11 @@ class ConnectionStatusWidget(Gtk.Box):
         self,
         machine: Machine,
         status: TransportStatus,
-        message: Optional[str] = None,
+        message: str | None = None,
     ):
         self._update_display(status)
 
-    def _update_display(self, status: Optional[TransportStatus]):
+    def _update_display(self, status: TransportStatus | None):
         is_nodriver = not self.machine or isinstance(
             self.machine.driver, NoDeviceDriver
         )

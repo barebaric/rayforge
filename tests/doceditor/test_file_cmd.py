@@ -207,23 +207,25 @@ class TestScanImportFile:
         file_path = Path("test.unknown")
         mime_type = "application/octet-stream"
 
-        with patch(
-            "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
-            return_value=None,
-        ):
-            with patch(
+        with (
+            patch(
+                "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+                return_value=None,
+            ),
+            patch(
                 "rayforge.doceditor.file_cmd.importer_registry"
                 ".get_by_extension",
                 return_value=None,
-            ):
-                result = file_cmd.scan_import_file(
-                    some_bytes, file_path, mime_type
-                )
+            ),
+        ):
+            result = file_cmd.scan_import_file(
+                some_bytes, file_path, mime_type
+            )
 
-                assert isinstance(result, ImportManifest)
-                assert result.title == "test.unknown"
-                assert result.warnings == ["Unsupported file type: .unknown"]
-                assert "No importer found" in caplog.text
+            assert isinstance(result, ImportManifest)
+            assert result.title == "test.unknown"
+            assert result.warnings == ["Unsupported file type: .unknown"]
+            assert "No importer found" in caplog.text
 
     def test_scan_importer_raises_exception(self, file_cmd, caplog):
         """
@@ -590,18 +592,20 @@ class TestGeneratePreviewImpl:
     def test_preview_impl_no_workpiece(self, file_cmd, sample_import_result):
         """Test preview when no WorkPiece is found in the payload."""
         sample_import_result.payload.items = []
-        with patch(
-            "rayforge.image.base_importer.Importer.get_doc_items",
-            return_value=sample_import_result,
-        ):
-            with patch.object(
+        with (
+            patch(
+                "rayforge.image.base_importer.Importer.get_doc_items",
+                return_value=sample_import_result,
+            ),
+            patch.object(
                 file_cmd, "_generate_rich_preview_result"
-            ) as mock_gen:
-                file_cmd._generate_preview_impl(
-                    b"data", "test.png", "image/png", TraceSpec(), 256
-                )
-                # Should still call the generator, which can handle empty items
-                mock_gen.assert_called_once()
+            ) as mock_gen,
+        ):
+            file_cmd._generate_preview_impl(
+                b"data", "test.png", "image/png", TraceSpec(), 256
+            )
+            # Should still call the generator, which can handle empty items
+            mock_gen.assert_called_once()
 
 
 class TestLoadFileAsync:
@@ -691,35 +695,39 @@ class TestGetImporterInfo:
         """Test fallback to extension matching."""
         mock_importer = MagicMock()
         mock_importer.features = {ImporterFeature.BITMAP_TRACING}
-        with patch(
-            "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
-            return_value=None,
-        ):
-            with patch(
+        with (
+            patch(
+                "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+                return_value=None,
+            ),
+            patch(
                 "rayforge.doceditor.file_cmd.importer_registry"
                 ".get_by_extension",
                 return_value=mock_importer,
-            ):
-                cls, features = file_cmd.get_importer_info(Path("f.png"), None)
-                assert cls is mock_importer
-                assert features == {ImporterFeature.BITMAP_TRACING}
+            ),
+        ):
+            cls, features = file_cmd.get_importer_info(Path("f.png"), None)
+            assert cls is mock_importer
+            assert features == {ImporterFeature.BITMAP_TRACING}
 
     def test_get_info_not_found(self, file_cmd):
         """Test case where no importer is found."""
-        with patch(
-            "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
-            return_value=None,
-        ):
-            with patch(
+        with (
+            patch(
+                "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+                return_value=None,
+            ),
+            patch(
                 "rayforge.doceditor.file_cmd.importer_registry"
                 ".get_by_extension",
                 return_value=None,
-            ):
-                cls, features = file_cmd.get_importer_info(
-                    Path("f.txt"), "text/plain"
-                )
-                assert cls is None
-                assert features == set()
+            ),
+        ):
+            cls, features = file_cmd.get_importer_info(
+                Path("f.txt"), "text/plain"
+            )
+            assert cls is None
+            assert features == set()
 
 
 class TestAnalyzeImportTarget:
@@ -782,19 +790,21 @@ class TestAnalyzeImportTarget:
         """Test that unknown files return unsupported."""
         path = Path("test.exe")
         # Ensure no importers match
-        with patch(
-            "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
-            return_value=None,
-        ):
-            with patch(
+        with (
+            patch(
+                "rayforge.doceditor.file_cmd.importer_registry.get_by_mime_type",
+                return_value=None,
+            ),
+            patch(
                 "rayforge.doceditor.file_cmd.importer_registry"
                 ".get_by_extension",
                 return_value=None,
-            ):
-                action = file_cmd.analyze_import_target(
-                    path, "application/octet-stream"
-                )
-                assert action == ImportAction.UNSUPPORTED
+            ),
+        ):
+            action = file_cmd.analyze_import_target(
+                path, "application/octet-stream"
+            )
+            assert action == ImportAction.UNSUPPORTED
 
 
 class TestExecuteBatchImport:

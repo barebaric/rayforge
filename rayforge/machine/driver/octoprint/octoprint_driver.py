@@ -2,14 +2,11 @@ import asyncio
 import inspect
 import json
 import logging
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Optional,
-    Union,
     cast,
 )
 
@@ -83,16 +80,16 @@ class OctoPrintDriver(Driver):
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
-        self.host: Optional[str] = None
+        self.host: str | None = None
         self.port: int = 80
-        self._api_key: Optional[str] = None
-        self._base_url: Optional[str] = None
+        self._api_key: str | None = None
+        self._base_url: str | None = None
         self.keep_running: bool = False
-        self._connection_task: Optional[asyncio.Task] = None
+        self._connection_task: asyncio.Task | None = None
         self._job_active: bool = False
         self._job_done_event = asyncio.Event()
-        self._session_key: Optional[str] = None
-        self._user_name: Optional[str] = None
+        self._session_key: str | None = None
+        self._user_name: str | None = None
         self._auth_retried: bool = False
 
     @property
@@ -104,7 +101,7 @@ class OctoPrintDriver(Driver):
         return _("Machine Coordinates (G53)")
 
     @property
-    def resource_uri(self) -> Optional[str]:
+    def resource_uri(self) -> str | None:
         if self.host:
             return f"tcp://{self.host}:{self.port}"
         return None
@@ -158,7 +155,7 @@ class OctoPrintDriver(Driver):
         return GcodeEncoder(machine.dialect)
 
     @staticmethod
-    def _extract_api_key(data: Optional[str]) -> Optional[str]:
+    def _extract_api_key(data: str | None) -> str | None:
         if not data:
             return None
         try:
@@ -512,9 +509,7 @@ class OctoPrintDriver(Driver):
             new_status = DeviceStatus.UNKNOWN
         elif flags.get("printing"):
             new_status = DeviceStatus.RUN
-        elif flags.get("paused"):
-            new_status = DeviceStatus.HOLD
-        elif flags.get("pausing"):
+        elif flags.get("paused") or flags.get("pausing"):
             new_status = DeviceStatus.HOLD
         elif flags.get("cancelling"):
             new_status = DeviceStatus.RUN
@@ -543,9 +538,7 @@ class OctoPrintDriver(Driver):
         encoded: "EncodedOutput",
         doc: "Doc",
         ops: "Ops",
-        on_command_done: Optional[
-            Callable[[int], Union[None, Awaitable[None]]]
-        ] = None,
+        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
     ) -> None:
         if not self.host:
             raise DeviceConnectionError(
@@ -707,10 +700,10 @@ class OctoPrintDriver(Driver):
         self._job_done_event.set()
         self.job_finished.send(self)
 
-    def can_home(self, axis: Optional[Axis] = None) -> bool:
+    def can_home(self, axis: Axis | None = None) -> bool:
         return True
 
-    async def home(self, axes: Optional[Axis] = None) -> None:
+    async def home(self, axes: Axis | None = None) -> None:
         if axes is None:
             axis_list = ["x", "y", "z"]
         else:
@@ -734,7 +727,7 @@ class OctoPrintDriver(Driver):
             },
         )
 
-    def can_jog(self, axis: Optional[Axis] = None) -> bool:
+    def can_jog(self, axis: Axis | None = None) -> bool:
         return True
 
     async def jog(self, speed: int, **deltas: float) -> None:
@@ -831,7 +824,7 @@ class OctoPrintDriver(Driver):
         axis: Axis,
         max_travel: float,
         feed_rate: int,
-    ) -> Optional[Pos]:
+    ) -> Pos | None:
         assert axis.name, "Probing requires a named axis."
         axis_letter = axis.name.upper()
         cmd = (
@@ -859,7 +852,7 @@ class OctoPrintDriver(Driver):
     def _update_command_status(
         self,
         status: TransportStatus,
-        message: Optional[str] = None,
+        message: str | None = None,
     ) -> None:
         log_data = f"Command status: {status.name}"
         if message:
@@ -870,7 +863,7 @@ class OctoPrintDriver(Driver):
     def _update_connection_status(
         self,
         status: TransportStatus,
-        message: Optional[str] = None,
+        message: str | None = None,
     ) -> None:
         log_data = f"Connection status: {status.name}"
         if message:

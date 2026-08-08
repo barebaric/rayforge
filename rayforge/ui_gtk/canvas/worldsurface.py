@@ -124,7 +124,6 @@ class WorldSurface(Canvas):
         Placeholder for handling right-clicks. Subclasses should override this
         to implement context menu logic.
         """
-        pass
 
     def _update_theme_colors(self) -> None:
         """
@@ -501,4 +500,3 @@ class WorldSurface(Canvas):
 
     def on_pan_end(self, gesture: Gtk.GestureDrag, x: float, y: float) -> None:
         logger.debug(f"Pan end at ({x:.2f}, {y:.2f})")
-        pass

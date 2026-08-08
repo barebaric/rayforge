@@ -1,6 +1,5 @@
 import logging
 import math
-from typing import Optional
 
 import cairo
 from gi.repository import Gdk, GLib
@@ -41,9 +40,9 @@ _region_angles = {
 
 def get_tool_cursor(
     icon_name: str,
-    color: Optional[ColorRGBA] = None,
+    color: ColorRGBA | None = None,
     fallback_cursor_name: str = "crosshair",
-) -> Optional[Gdk.Cursor]:
+) -> Gdk.Cursor | None:
     """
     Creates or retrieves from cache a custom cursor with a tool icon.
     The cursor consists of a crosshair with the specified icon at the
@@ -287,7 +286,7 @@ def get_rotated_arc_cursor(angle_deg: float) -> Gdk.Cursor:
 
 def get_cursor_for_region(
     region: ElementRegion, angle: float, absolute: bool = False
-) -> Optional[Gdk.Cursor]:
+) -> Gdk.Cursor | None:
     base_angle = _region_angles.get(region, 0) if not absolute else 0
     if region is None or region == ElementRegion.NONE:
         return Gdk.Cursor.new_from_name("default")

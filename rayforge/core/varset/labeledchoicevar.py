@@ -1,5 +1,4 @@
 from gettext import gettext as _
-from typing import Optional
 
 from .choicevar import ChoiceVar
 
@@ -22,9 +21,9 @@ class LabeledChoiceVar(ChoiceVar):
         key: str,
         label: str,
         choices: list[tuple[str, str]],
-        description: Optional[str] = None,
-        default: Optional[str] = None,
-        value: Optional[str] = None,
+        description: str | None = None,
+        default: str | None = None,
+        value: str | None = None,
         allow_none: bool = True,
     ):
         self._label_to_value = {lbl: val for lbl, val in choices}
@@ -41,7 +40,7 @@ class LabeledChoiceVar(ChoiceVar):
         )
         valid_values = list(self._value_to_label)
 
-        def _labeled_validator(val: Optional[str]):
+        def _labeled_validator(val: str | None):
             if val is not None and val not in valid_values:
                 raise ValueError(
                     f"Value '{val}' is not a valid choice for '{self.key}'"
@@ -49,12 +48,12 @@ class LabeledChoiceVar(ChoiceVar):
 
         self.validator = _labeled_validator
 
-    def get_display_for_value(self, value: Optional[str]) -> Optional[str]:
+    def get_display_for_value(self, value: str | None) -> str | None:
         if value is None:
             return None
         return self._value_to_label.get(value, value)
 
-    def get_value_for_display(self, display: Optional[str]) -> Optional[str]:
+    def get_value_for_display(self, display: str | None) -> str | None:
         if display is None:
             return None
         return self._label_to_value.get(display, display)

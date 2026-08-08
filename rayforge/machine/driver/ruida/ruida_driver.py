@@ -1,15 +1,12 @@
 import asyncio
 import inspect
 import logging
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from dataclasses import replace
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Optional,
-    Union,
 )
 
 from ....context import RayforgeContext
@@ -78,7 +75,7 @@ class RuidaDriver(Driver):
         self._jog_udp_transport = None
         self._client = None
         self._response_received = asyncio.Event()
-        self._connection_task: Optional[asyncio.Task] = None
+        self._connection_task: asyncio.Task | None = None
         self._keep_running = False
         self._is_connected = False
 
@@ -97,7 +94,7 @@ class RuidaDriver(Driver):
         return list(self._client.ref_points)
 
     @property
-    def resource_uri(self) -> Optional[str]:
+    def resource_uri(self) -> str | None:
         if self.host:
             return f"udp://{self.host}:{self.port} (jog: {self.jog_port})"
         return None
@@ -145,7 +142,7 @@ class RuidaDriver(Driver):
             isinstance(head, LaserHead) and head.laser_type != LaserType.DIODE
         )
 
-    def get_pwm_params(self, head: "Head") -> Optional[PWMParams]:
+    def get_pwm_params(self, head: "Head") -> PWMParams | None:
         if not isinstance(head, LaserHead) or not self.supports_pwm(head):
             return None
         return PWMParams(
@@ -394,9 +391,7 @@ class RuidaDriver(Driver):
         encoded: EncodedOutput,
         doc: "Doc",
         ops: "Ops",
-        on_command_done: Optional[
-            Callable[[int], Union[None, Awaitable[None]]]
-        ] = None,
+        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
     ) -> None:
         binary_data = encoded.driver_data.get("binary", b"")
         text_lines = [
@@ -454,10 +449,10 @@ class RuidaDriver(Driver):
         assert self._client
         await self._client.stop_process()
 
-    def can_home(self, axis: Optional[Axis] = None) -> bool:
+    def can_home(self, axis: Axis | None = None) -> bool:
         return True
 
-    async def home(self, axes: Optional[Axis] = None) -> None:
+    async def home(self, axes: Axis | None = None) -> None:
         assert self._client
         if axes is None:
             logger.info("Home All", extra=self._log_extra("MACHINE_EVENT"))
@@ -518,7 +513,7 @@ class RuidaDriver(Driver):
     async def set_focus_power(self, head: "Laser", percent: float) -> None:
         await self.set_power(head, percent)
 
-    def can_jog(self, axis: Optional[Axis] = None) -> bool:
+    def can_jog(self, axis: Axis | None = None) -> bool:
         return True
 
     async def jog(self, speed: int, **deltas: float) -> None:
@@ -580,7 +575,7 @@ class RuidaDriver(Driver):
         self.wcs_updated.send(self, offsets=offsets)
         return offsets
 
-    async def read_parser_state(self) -> Optional[str]:
+    async def read_parser_state(self) -> str | None:
         if not self._client or not self._is_connected:
             return None
         return await self._client.get_ref_point_mode()
@@ -598,7 +593,7 @@ class RuidaDriver(Driver):
 
     async def run_probe_cycle(
         self, axis: Axis, max_travel: float, feed_rate: int
-    ) -> Optional[Pos]:
+    ) -> Pos | None:
         self.probe_status_changed.send(self, message="Probe not supported")
         return None
 

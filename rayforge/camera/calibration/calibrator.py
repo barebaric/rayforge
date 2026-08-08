@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import cv2
 import numpy as np
@@ -21,7 +21,7 @@ class CameraCalibrator:
         self._all_corners: list[list[tuple[float, float]]] = []
         self._all_ids: list[list[int]] = []
         self._frame_count = 0
-        self._image_size: Optional[tuple[int, int]] = None
+        self._image_size: tuple[int, int] | None = None
 
         self.frame_added = Signal()
         self.frame_rejected = Signal()
@@ -50,7 +50,7 @@ class CameraCalibrator:
 
     def detect_and_add_frame(
         self, image: np.ndarray
-    ) -> tuple[bool, int, Optional[list[tuple[float, float]]]]:
+    ) -> tuple[bool, int, list[tuple[float, float]] | None]:
         detection = self.board.detect(image)
 
         if detection is None:
@@ -170,7 +170,7 @@ class CameraCalibrator:
 
     def calibrate(
         self, image_size: tuple[int, int]
-    ) -> Optional[CalibrationResult]:
+    ) -> CalibrationResult | None:
         can_calib, reason = self.calibration_status()
         if not can_calib:
             logger.error(f"Calibration not ready: {reason}")

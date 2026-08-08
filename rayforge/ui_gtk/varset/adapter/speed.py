@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from ....context import get_context
 from ....core.varset import SpeedVar, Var
@@ -49,7 +49,7 @@ class SpeedRowAdapter(RowAdapter):
         )
         return row, cls(row)
 
-    def get_value(self) -> Optional[Any]:
+    def get_value(self) -> Any | None:
         return int(self._row.get_value_in_base_units())
 
     def set_value(self, value: Any) -> None:

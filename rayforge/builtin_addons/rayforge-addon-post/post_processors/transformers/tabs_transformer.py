@@ -5,7 +5,6 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     NamedTuple,
-    Optional,
 )
 
 from raygeo.ops.transform.tabs import TabsSpec
@@ -107,9 +106,9 @@ class TabOpsTransformer(OpsTransformer):
 
     def to_spec(
         self,
-        workpiece: Optional[WorkPiece],
-        stock_geometries: Optional[list["Geometry"]],
-        settings: Optional[dict],
+        workpiece: WorkPiece | None,
+        stock_geometries: list[Geometry] | None,
+        settings: dict | None,
     ) -> TabsSpec:
         tab_power = settings.get("tab_power", 0.0) if settings else 0.0
         original_power = settings.get("power", 1.0) if settings else 1.0
@@ -144,7 +143,7 @@ class TabOpsTransformer(OpsTransformer):
         )
 
     @classmethod
-    def from_dict(cls, data: dict) -> "TabOpsTransformer":
+    def from_dict(cls, data: dict) -> TabOpsTransformer:
         if data.get("name") != cls.__name__:
             raise ValueError(
                 f"Mismatched transformer name: expected {cls.__name__},"

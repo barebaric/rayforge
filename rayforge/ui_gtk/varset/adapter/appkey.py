@@ -3,7 +3,7 @@ import logging
 import urllib.error
 import urllib.request
 from gettext import gettext as _
-from typing import Any, Optional
+from typing import Any
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -43,7 +43,7 @@ class AppKeyAdapter(RowAdapter):
         self._clear_btn = clear_btn
         self._var: AppKeyVar = var
         self._key_value: str = var.value or ""
-        self._poll_source_id: Optional[int] = None
+        self._poll_source_id: int | None = None
 
         self._entry_row.connect("apply", self._on_entry_apply)
         self._request_btn.connect("clicked", self._on_request)
@@ -94,7 +94,7 @@ class AppKeyAdapter(RowAdapter):
         adapter._update_status()
         return row, adapter
 
-    def get_value(self) -> Optional[Any]:
+    def get_value(self) -> Any | None:
         return self._key_value
 
     def set_value(self, value: Any) -> None:
@@ -112,7 +112,7 @@ class AppKeyAdapter(RowAdapter):
         self._key_value = var.value or ""
         self._update_status()
 
-    def _get_key(self) -> Optional[str]:
+    def _get_key(self) -> str | None:
         if not self._key_value:
             return None
         try:
@@ -152,7 +152,7 @@ class AppKeyAdapter(RowAdapter):
         self._update_status()
         self.changed.send(self)
 
-    def _resolve_base_url(self) -> Optional[str]:
+    def _resolve_base_url(self) -> str | None:
         config = self._var.resolve_config()
         request_url = config.get("request_url")
         if not request_url:

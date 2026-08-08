@@ -66,7 +66,7 @@ class MachineController:
         # The WCS that the device has actually confirmed via $G query.
         # Used to guard _sync_wcs_offset_from_wco against stale WCO
         # from status reports after a UI-initiated WCS switch.
-        self._confirmed_active_wcs: Optional[str] = None
+        self._confirmed_active_wcs: str | None = None
 
         # Listen to machine's changed signal to rebuild driver when
         # driver configuration changes
@@ -252,7 +252,7 @@ class MachineController:
         self,
         driver: Driver,
         status: TransportStatus,
-        message: Optional[str] = None,
+        message: str | None = None,
     ):
         """Proxies the connection status signal from the active driver."""
         if self.machine.connection_status != status:
@@ -320,7 +320,7 @@ class MachineController:
         self,
         driver: Driver,
         status: TransportStatus,
-        message: Optional[str] = None,
+        message: str | None = None,
     ):
         """Proxies the command status changed signal from the active driver."""
         self._scheduler(
@@ -448,7 +448,7 @@ class MachineController:
         self.laser_power_changed.send(self, head=head, percent=percent)
 
     async def set_work_origin(
-        self, x: float, y: float, z: float, wcs_slot: Optional[str] = None
+        self, x: float, y: float, z: float, wcs_slot: str | None = None
     ):
         """
         Sets the work origin at the specified machine coordinates.
@@ -491,7 +491,7 @@ class MachineController:
         self.machine.set_active_wcs(wcs)
 
     async def set_work_origin_here(
-        self, axes: Axis, wcs_slot: Optional[str] = None
+        self, axes: Axis, wcs_slot: str | None = None
     ):
         """
         Sets the work origin for the specified axes to the current machine
@@ -609,13 +609,13 @@ class MachineController:
             return False
         return self.driver.reports_granular_progress
 
-    def can_home(self, axis: Optional[Axis] = None) -> bool:
+    def can_home(self, axis: Axis | None = None) -> bool:
         """Check if the machine's driver supports homing for the given axis."""
         if self.driver is None:
             return False
         return self.driver.can_home(axis)
 
-    def can_jog(self, axis: Optional[Axis] = None) -> bool:
+    def can_jog(self, axis: Axis | None = None) -> bool:
         """Check if machine's supports jogging for the given axis."""
         if self.driver is None:
             return False
@@ -711,7 +711,7 @@ class MachineController:
         finally:
             logger.debug(f"write_setting(key={key}): Done.")
 
-    def validate_driver_setup(self) -> tuple[bool, Optional[str]]:
+    def validate_driver_setup(self) -> tuple[bool, str | None]:
         """
         Validates the machine's driver arguments against the driver's setup
         VarSet.

@@ -14,7 +14,6 @@ __all__ = [
     "ArtifactStore",
     "BaseArtifact",
     "BaseArtifactHandle",
-    "create_handle_from_dict",
     "JobArtifact",
     "RenderContext",
     "StepOpsArtifact",
@@ -23,4 +22,5 @@ __all__ = [
     "WorkPieceArtifactHandle",
     "WorkPieceViewArtifact",
     "WorkPieceViewArtifactHandle",
+    "create_handle_from_dict",
 ]

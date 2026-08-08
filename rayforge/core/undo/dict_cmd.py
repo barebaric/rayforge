@@ -2,7 +2,8 @@
 Provides a command for changing a value within a dictionary.
 """
 
-from typing import Any, Callable, Optional, cast
+from collections.abc import Callable
+from typing import Any, cast
 
 from .command import Command
 
@@ -19,7 +20,7 @@ class DictItemCommand(Command):
         key: str,
         new_value: Any,
         name: str,
-        on_change_callback: Optional[Callable[[], Any]] = None,
+        on_change_callback: Callable[[], Any] | None = None,
     ):
         """
         Initializes the command.

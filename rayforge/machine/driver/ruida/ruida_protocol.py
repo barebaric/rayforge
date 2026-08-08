@@ -6,7 +6,6 @@ server and client implementations.
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 from .ruida_maps import DEFAULT_MEMORY_MAP, DYNAMIC_MEMORY_KEYS
 
@@ -34,7 +33,7 @@ class RuidaState:
         self.z_range = 0
         self.u_range = 0
         self.machine_status = 22
-        self.filename: Optional[str] = None
+        self.filename: str | None = None
         self.program_mode = False
         self.file_checksum = 0
         self.file_checksum_accumulator = 0
@@ -85,10 +84,10 @@ class RuidaCommand:
     """
 
     cmd: int
-    subcmd: Optional[int] = None
+    subcmd: int | None = None
     data: bytes = b""
     name: str = ""
-    params: Optional[dict] = None
+    params: dict | None = None
 
     @property
     def length(self) -> int:

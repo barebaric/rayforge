@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from gi.repository import Adw, GLib, GObject, Gtk
@@ -610,22 +610,22 @@ class RasterSettingsPage(LaserStepSettingsPage):
         self._compute_and_update_histogram(invert)
         self._on_param_changed("invert", invert)
 
-    def _on_line_interval_changed(self, value: Optional[float]):
+    def _on_line_interval_changed(self, value: float | None):
         if value is not None and value <= 0:
             value = None
         self._on_param_changed("line_interval_mm", value)
 
-    def _on_sample_interval_changed(self, value: Optional[float]):
+    def _on_sample_interval_changed(self, value: float | None):
         if value is not None and value <= 0:
             value = None
         self._on_param_changed("sample_interval_mm", value)
 
-    def _on_dot_width_correction_changed(self, value: Optional[float]):
+    def _on_dot_width_correction_changed(self, value: float | None):
         # Unlike line/sample interval, 0.0 is a meaningful explicit value
         # here (no correction), not a sentinel for "reset to auto".
         self._on_param_changed("dot_width_correction_mm", value or 0.0)
 
-    def _on_bidir_x_offset_changed(self, value: Optional[float]):
+    def _on_bidir_x_offset_changed(self, value: float | None):
         self._on_param_changed("bidir_x_offset_mm", value or 0.0)
 
     def _on_param_changed(self, key: str, value: Any):

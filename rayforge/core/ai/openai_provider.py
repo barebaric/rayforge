@@ -2,7 +2,6 @@ import json
 import logging
 from collections.abc import AsyncGenerator
 from gettext import gettext as _
-from typing import Optional
 
 import aiohttp
 
@@ -27,7 +26,7 @@ class OpenAICompatibleProvider(AIProvider):
 
     def __init__(self, config: AIProviderConfig):
         self.config = config
-        self._session: Optional[aiohttp.ClientSession] = None
+        self._session: aiohttp.ClientSession | None = None
 
     async def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
@@ -43,7 +42,7 @@ class OpenAICompatibleProvider(AIProvider):
     async def chat(
         self,
         messages: list[ChatMessage],
-        model: Optional[str] = None,
+        model: str | None = None,
         **kwargs,
     ) -> ChatResponse:
         session = await self._get_session()
@@ -76,7 +75,7 @@ class OpenAICompatibleProvider(AIProvider):
     async def chat_stream(
         self,
         messages: list[ChatMessage],
-        model: Optional[str] = None,
+        model: str | None = None,
         **kwargs,
     ) -> AsyncGenerator[str, None]:
         session = await self._get_session()

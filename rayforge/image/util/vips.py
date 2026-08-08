@@ -3,7 +3,7 @@ PyVips image manipulation utilities.
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import cairo
 import numpy
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def resize_linear(
-    image: pyvips.Image, h_scale: float, vscale: Optional[float] = None
+    image: pyvips.Image, h_scale: float, vscale: float | None = None
 ) -> pyvips.Image:
     """
     Resize a pyvips image in linear light for correct interpolation.
@@ -40,7 +40,7 @@ def resize_and_crop_from_full_image(
     target_w: int,
     target_h: int,
     crop_window_px: Rect,
-) -> Optional[pyvips.Image]:
+) -> pyvips.Image | None:
     """
     Scales a full source image up to a high resolution and then crops a
     window from it. This preserves maximum detail in the final cropped image.
@@ -87,7 +87,7 @@ def resize_and_crop_from_full_image(
 
 def safe_crop(
     image: pyvips.Image, x: int, y: int, w: int, h: int
-) -> Optional[pyvips.Image]:
+) -> pyvips.Image | None:
     """
     Crops a pyvips image, safely handling cases where the crop window is
     partially or completely outside the image bounds by calculating the
@@ -176,7 +176,7 @@ def get_physical_size_mm(image: pyvips.Image) -> tuple[float, float]:
     return width_mm, height_mm
 
 
-def normalize_to_rgba(image: pyvips.Image) -> Optional[pyvips.Image]:
+def normalize_to_rgba(image: pyvips.Image) -> pyvips.Image | None:
     """
     Normalizes a pyvips image to a 4-band, 8-bit sRGB format (uchar RGBA).
     """
@@ -246,7 +246,7 @@ def _render_geometry_to_vips_mask(
 
 def apply_mask_to_vips_image(
     full_image: pyvips.Image, mask_geo: Geometry
-) -> Optional[pyvips.Image]:
+) -> pyvips.Image | None:
     """
     Masks a vips image using a geometry mask, making areas outside the
     geometry transparent. Does NOT crop the image.

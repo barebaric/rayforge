@@ -1,5 +1,3 @@
-from typing import Optional
-
 from .base import SpinRow
 
 
@@ -18,7 +16,7 @@ class AngleSpinRow(SpinRow):
     def __init__(
         self,
         title: str,
-        subtitle: Optional[str] = None,
+        subtitle: str | None = None,
         *,
         lower: float = -360.0,
         upper: float = 360.0,

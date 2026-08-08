@@ -64,7 +64,7 @@ class SketchRenderer(Renderer):
         import_result: "ImportResult",
         target_width: int,
         target_height: int,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         """
         Generates a preview by rendering the sketch's vectorized geometry.
         """
@@ -120,7 +120,7 @@ class SketchRenderer(Renderer):
         width: int,
         height: int,
         **kwargs,
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         """
         Renders the sketch's vector data to a pyvips Image.
         It expects 'boundaries' (strokes) and optionally 'fills'
@@ -131,7 +131,7 @@ class SketchRenderer(Renderer):
             f"width={width}, height={height}"
         )
 
-        boundaries: Optional[Geometry] = kwargs.get("boundaries")
+        boundaries: Geometry | None = kwargs.get("boundaries")
         fills = kwargs.get("fills")
 
         if not boundaries and not fills:

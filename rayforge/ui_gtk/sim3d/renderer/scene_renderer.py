@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 
 def match_vertex_layer(
     vertex_layers: list[VertexLayer], is_rotary: bool
-) -> Optional[VertexLayer]:
+) -> VertexLayer | None:
     """Returns the vertex layer matching the given rotary flag."""
     for vl in vertex_layers:
         if vl.is_rotary == is_rotary:
@@ -60,7 +60,7 @@ def match_vertex_layer(
 
 def match_overlay_layer(
     overlay_layers: list[ScanlineOverlayLayer], is_rotary: bool
-) -> Optional[ScanlineOverlayLayer]:
+) -> ScanlineOverlayLayer | None:
     """Returns the overlay layer matching the given rotary flag."""
     for ol in overlay_layers:
         if ol.is_rotary == is_rotary:
@@ -118,19 +118,19 @@ class SceneRenderer(BaseRenderer):
 
     def __init__(self):
         super().__init__()
-        self.main_shader: Optional[Shader] = None
-        self.text_shader: Optional[Shader] = None
-        self.texture_shader: Optional[Shader] = None
-        self.background_shader: Optional[Shader] = None
-        self.shader_set: Optional[ShaderSet] = None
+        self.main_shader: Shader | None = None
+        self.text_shader: Shader | None = None
+        self.texture_shader: Shader | None = None
+        self.background_shader: Shader | None = None
+        self.shader_set: ShaderSet | None = None
 
-        self.axis_renderer: Optional[AxisRenderer3D] = None
-        self.background_renderer: Optional[BackgroundRenderer] = (
+        self.axis_renderer: AxisRenderer3D | None = None
+        self.background_renderer: BackgroundRenderer | None = (
             BackgroundRenderer()
         )
-        self.texture_renderer: Optional[TextureArtifactRenderer] = None
-        self.zone_renderer: Optional[ZoneRenderer] = None
-        self.laser_beam_renderer: Optional[LaserBeamRenderer] = (
+        self.texture_renderer: TextureArtifactRenderer | None = None
+        self.zone_renderer: ZoneRenderer | None = None
+        self.laser_beam_renderer: LaserBeamRenderer | None = (
             LaserBeamRenderer()
         )
 
@@ -141,8 +141,8 @@ class SceneRenderer(BaseRenderer):
         self.had_rotary_layers = False
         self.cylinder_transform = np.eye(4, dtype=np.float64)
 
-        self._viewport: Optional[ViewportConfig] = None
-        self._font_family: Optional[str] = None
+        self._viewport: ViewportConfig | None = None
+        self._font_family: str | None = None
 
         # Ordered list of (renderer, shader_keys) in draw order.  The
         # deferred ring passes come after the texture renderer so rings
@@ -414,7 +414,7 @@ class SceneRenderer(BaseRenderer):
             self.axis_renderer.set_label_color(axis_color)
             self.axis_renderer.set_grid_color(grid_color)
 
-    def update_color_luts(self, provider: Optional[ColorLutProvider]):
+    def update_color_luts(self, provider: ColorLutProvider | None):
         """Fans out the shared colour LUT provider to all consumers."""
         if provider is None:
             return
@@ -545,7 +545,7 @@ class SceneRenderer(BaseRenderer):
     def render(
         self,
         ctx: RenderContext,
-        shaders: Optional[ShaderSet] = None,
+        shaders: ShaderSet | None = None,
         **kwargs,
     ) -> None:
         """

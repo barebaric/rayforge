@@ -1,5 +1,3 @@
-from typing import Optional
-
 from .unit_spin_row import UnitSpinRow
 
 
@@ -8,5 +6,5 @@ class LengthSpinRow(UnitSpinRow):
 
     __gtype_name__ = "RayforgeLengthSpinRow"
 
-    def __init__(self, title: str, subtitle: Optional[str] = None, **kwargs):
+    def __init__(self, title: str, subtitle: str | None = None, **kwargs):
         super().__init__(title, subtitle, quantity="length", **kwargs)

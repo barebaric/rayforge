@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 from raygeo.geo.types import Point3D
@@ -12,8 +12,8 @@ from .models.axis import AxisSet
 if TYPE_CHECKING:
     from ..simulator.machine_state import MachineState
 
-RotarySpec = tuple[Axis, float, np.ndarray, Optional[Model]]
-HeadSpec = tuple[Optional[Model], np.ndarray]
+RotarySpec = tuple[Axis, float, np.ndarray, Model | None]
+HeadSpec = tuple[Model | None, np.ndarray]
 
 
 def _axis_direction(axis_letter: Axis) -> tuple[float, float, float]:
@@ -36,7 +36,7 @@ def _joint_axis_for_rotary(axis_letter: Axis) -> tuple[float, float, float]:
 
 def build_assembly(
     axis_set: AxisSet,
-    head_specs: Optional[list[HeadSpec]] = None,
+    head_specs: list[HeadSpec] | None = None,
     rotary_modules=None,
 ) -> Assembly:
     if head_specs is None:
@@ -189,7 +189,7 @@ class Kinematics:
         return self._assembly.has_rotary
 
     @property
-    def rotary_diameter(self) -> Optional[float]:
+    def rotary_diameter(self) -> float | None:
         return self._assembly.rotary_diameter
 
     @property
@@ -218,7 +218,7 @@ class Kinematics:
 
 def create_kinematics(
     axis_set: AxisSet,
-    head_specs: Optional[list[HeadSpec]] = None,
+    head_specs: list[HeadSpec] | None = None,
     rotary_modules=None,
 ) -> Kinematics:
     return Kinematics(build_assembly(axis_set, head_specs, rotary_modules))

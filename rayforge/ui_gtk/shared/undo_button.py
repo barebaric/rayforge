@@ -1,6 +1,5 @@
 import logging
 from gettext import gettext as _
-from typing import Optional
 
 from gi.repository import Gtk
 
@@ -28,7 +27,7 @@ class _HistoryButton(Gtk.Box):
         # together.
         self.add_css_class("linked")
 
-        self.manager: Optional[HistoryManager] = None
+        self.manager: HistoryManager | None = None
 
         # 1. The main action button
         self.main_button = Gtk.Button(child=get_icon(icon_name))

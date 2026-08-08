@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import Callable, Optional, Union
 
 import cairo
 
@@ -24,7 +24,7 @@ class CircleTool(SnapMixin, SketchTool):
 
     def __init__(self, element):
         super().__init__(element)
-        self._preview_state: Optional[EllipsePreviewState] = None
+        self._preview_state: EllipsePreviewState | None = None
         self._ctrl_held = False
         self._shift_held = False
 
@@ -34,7 +34,7 @@ class CircleTool(SnapMixin, SketchTool):
     def shortcut_is_active(self) -> bool:
         return True
 
-    def get_preview_state(self) -> Optional[EllipsePreviewState]:
+    def get_preview_state(self) -> EllipsePreviewState | None:
         return self._preview_state
 
     def on_deactivate(self):
@@ -185,7 +185,7 @@ class CircleTool(SnapMixin, SketchTool):
 
     def get_active_shortcuts(
         self,
-    ) -> list[tuple[Union[str, list[str]], str, Optional[Callable[[], bool]]]]:
+    ) -> list[tuple[str | list[str], str, Callable[[], bool] | None]]:
         """Returns shortcuts for the status bar."""
         if self._preview_state is not None:
             return [

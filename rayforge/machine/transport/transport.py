@@ -50,21 +50,18 @@ class Transport(ABC):
         """
         Whether the transport is actively connected.
         """
-        pass
 
     @abstractmethod
     async def connect(self) -> None:
         """
         Establish connection and start data flow.
         """
-        pass
 
     @abstractmethod
     async def disconnect(self) -> None:
         """
         Gracefully terminate connection and cleanup resources.
         """
-        pass
 
     @abstractmethod
     async def send(self, data: bytes) -> None:
@@ -74,7 +71,6 @@ class Transport(ABC):
         Raises:
             ConnectionError: If transport is not connected
         """
-        pass
 
     @abstractmethod
     async def purge(self) -> None:
@@ -85,4 +81,3 @@ class Transport(ABC):
         pending data in the receive buffer. It should not affect the
         connection state.
         """
-        pass

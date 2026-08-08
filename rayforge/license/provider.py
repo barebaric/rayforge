@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class LicenseStatus(Enum):
@@ -24,9 +24,9 @@ class LicenseResult:
     status: LicenseStatus
     message: str = ""
     license_type: LicenseType = LicenseType.UNKNOWN
-    expires_at: Optional[datetime] = None
-    customer_email: Optional[str] = None
-    last_validated: Optional[datetime] = None
+    expires_at: datetime | None = None
+    customer_email: str | None = None
+    last_validated: datetime | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def is_expired(self) -> bool:

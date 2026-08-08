@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import uuid
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from blinker import Signal
 from raygeo.geo import Geometry
@@ -33,20 +33,18 @@ class StockAsset(IAsset):
     is_draggable_to_canvas: ClassVar[bool] = True
     type_display_name: ClassVar[str] = _("Stock Material")
     can_edit: ClassVar[bool] = True
-    add_action: ClassVar[Optional[str]] = "add-stock"
-    activate_action: ClassVar[Optional[str]] = "activate-stock"
-    edit_item_action: ClassVar[Optional[str]] = "edit-stock-item"
+    add_action: ClassVar[str | None] = "add-stock"
+    activate_action: ClassVar[str | None] = "activate-stock"
+    edit_item_action: ClassVar[str | None] = "edit-stock-item"
 
-    def __init__(
-        self, name: str = "Stock", geometry: Optional[Geometry] = None
-    ):
+    def __init__(self, name: str = "Stock", geometry: Geometry | None = None):
         self._uid: str = str(uuid.uuid4())
         self._name: str = name
         self.geometry: Geometry = (
             geometry if geometry is not None else Geometry()
         )
-        self.thickness: Optional[float] = None
-        self.material_uid: Optional[str] = None
+        self.thickness: float | None = None
+        self.material_uid: str | None = None
         self._hidden: bool = False
         self._updated = Signal()
         self.extra: dict[str, Any] = {}
@@ -93,7 +91,7 @@ class StockAsset(IAsset):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "StockAsset":
+    def from_dict(cls, data: dict[str, Any]) -> StockAsset:
         """Deserializes a dictionary into a StockAsset instance."""
         known_keys = {
             "uid",
@@ -108,7 +106,7 @@ class StockAsset(IAsset):
 
         geometry = (
             Geometry.from_dict(data["geometry"])
-            if "geometry" in data and data["geometry"]
+            if data.get("geometry")
             else None
         )
         asset = cls(name=data.get("name", "Stock"), geometry=geometry)
@@ -119,14 +117,14 @@ class StockAsset(IAsset):
         asset.extra = extra
         return asset
 
-    def set_thickness(self, value: Optional[float]):
+    def set_thickness(self, value: float | None):
         """Setter method for use with undo commands."""
         if self.thickness != value:
             self.thickness = value
             self._updated.send(self)
 
     @property
-    def material(self) -> Optional["Material"]:
+    def material(self) -> Material | None:
         """
         Gets the Material object for this stock asset.
 
@@ -178,7 +176,7 @@ class StockAsset(IAsset):
         """Setter method for use with undo commands."""
         self.hidden = value
 
-    def get_thumbnail(self, size: int) -> Optional[bytes]:
+    def get_thumbnail(self, size: int) -> bytes | None:
         """Returns a PNG thumbnail of the stock geometry."""
         try:
             return render_geometry_to_png(self.geometry, size)

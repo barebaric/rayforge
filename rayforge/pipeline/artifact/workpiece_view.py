@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 from raygeo.geo.types import Rect
@@ -42,7 +42,7 @@ class RenderContext:
         return d
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "RenderContext":
+    def from_dict(cls, data: dict[str, Any]) -> RenderContext:
         """Deserializes a RenderContext from a dictionary."""
         OpsColorMode = _get_ops_color_mode_enum()
         mode = data.get("ops_color_mode", OpsColorMode.LASER.value)
@@ -99,7 +99,7 @@ class WorkPieceViewArtifactHandle(BaseArtifactHandle):
         handle_class_name: str,
         artifact_type_name: str,
         generation_id: int,
-        array_metadata: Union[dict[str, Any], None] = None,
+        array_metadata: dict[str, Any] | None = None,
         **_kwargs,
     ):
         super().__init__(

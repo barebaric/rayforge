@@ -7,7 +7,7 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import pyvips
 from blinker import Signal
@@ -34,18 +34,18 @@ class SourceAsset(IAsset):
     is_draggable_to_canvas: ClassVar[bool] = True
     type_display_name: ClassVar[str] = _("Source")
     can_edit: ClassVar[bool] = False
-    add_action: ClassVar[Optional[str]] = None
-    activate_action: ClassVar[Optional[str]] = None
-    edit_item_action: ClassVar[Optional[str]] = None
+    add_action: ClassVar[str | None] = None
+    activate_action: ClassVar[str | None] = None
+    edit_item_action: ClassVar[str | None] = None
 
     source_file: Path
     original_data: bytes = field(repr=False)
-    renderer: "Renderer"
-    base_render_data: Optional[bytes] = field(default=None, repr=False)
-    thumbnail_data: Optional[bytes] = field(default=None, repr=False)
+    renderer: Renderer
+    base_render_data: bytes | None = field(default=None, repr=False)
+    thumbnail_data: bytes | None = field(default=None, repr=False)
     metadata: dict[str, Any] = field(default_factory=dict)
-    width_px: Optional[int] = None
-    height_px: Optional[int] = None
+    width_px: int | None = None
+    height_px: int | None = None
     width_mm: float = 0.0
     height_mm: float = 0.0
     _uid: str = field(init=False, default_factory=lambda: str(uuid.uuid4()))
@@ -64,7 +64,7 @@ class SourceAsset(IAsset):
 
     def get_cached_base_image(
         self, data_id: int, width: int, height: int
-    ) -> Optional[pyvips.Image]:
+    ) -> pyvips.Image | None:
         key = (data_id, width, height)
         return self._base_image_cache.get(key)
 
@@ -113,7 +113,7 @@ class SourceAsset(IAsset):
         """Sets the hidden state."""
         self._hidden = value
 
-    def get_thumbnail(self, size: int) -> Optional[bytes]:
+    def get_thumbnail(self, size: int) -> bytes | None:
         """Returns a PNG thumbnail of the rendered image."""
         try:
             if self.thumbnail_data:
@@ -123,7 +123,7 @@ class SourceAsset(IAsset):
             logger.exception("Failed to generate source thumbnail")
             return None
 
-    def _scale_png(self, png_data: bytes, size: int) -> Optional[bytes]:
+    def _scale_png(self, png_data: bytes, size: int) -> bytes | None:
         image = pyvips.Image.pngload_buffer(png_data)
         aspect = image.width / image.height
         if aspect > 1:
@@ -170,7 +170,7 @@ class SourceAsset(IAsset):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "SourceAsset":
+    def from_dict(cls, data: dict[str, Any]) -> SourceAsset:
         """Deserializes a dictionary into a SourceAsset instance."""
         from ..image import renderer_registry
         from ..image.base_renderer import UnknownRenderer

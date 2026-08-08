@@ -1,14 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from blinker import Signal
 from gi.repository import Gdk, GLib, Gtk
 
 from .highlighter import GcodeHighlighter
-
-if TYPE_CHECKING:
-    pass
 
 
 class GcodeEditor(Gtk.Box):

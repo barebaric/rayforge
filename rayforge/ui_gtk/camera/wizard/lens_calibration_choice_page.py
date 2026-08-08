@@ -8,7 +8,6 @@ steps.
 """
 
 from gettext import gettext as _
-from typing import Optional
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -28,10 +27,10 @@ class LensCalibrationChoicePage(CameraWizardPage):
         super().__init__(wizard, controller)
         # Fired with ``branch=...`` when the user picks a branch.
         self.branch_chosen = Signal()
-        self.chosen_branch: Optional[str] = None
-        self._automatic_btn: Optional[Gtk.Button] = None
-        self._manual_btn: Optional[Gtk.Button] = None
-        self._skip_btn: Optional[Gtk.Button] = None
+        self.chosen_branch: str | None = None
+        self._automatic_btn: Gtk.Button | None = None
+        self._manual_btn: Gtk.Button | None = None
+        self._skip_btn: Gtk.Button | None = None
 
     def build(self) -> Gtk.Box:
         self.root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)

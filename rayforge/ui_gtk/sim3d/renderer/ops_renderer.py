@@ -244,8 +244,7 @@ class OpsRenderer(BaseRenderer):
         if p + 1 >= len(offsets):
             p = len(offsets) - 2
             frac = 1.0
-        if p < 0:
-            p = 0
+        p = max(p, 0)
         base = int(offsets[p])
         span = int(offsets[p + 1]) - base
         exec_f = base + frac * span

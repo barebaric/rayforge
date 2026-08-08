@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.ops.transform.optimize import OptimizeSpec
 
@@ -28,7 +28,7 @@ class Optimize(OpsTransformer):
         enabled: bool = True,
         allow_flip: bool = True,
         preserve_first: bool = False,
-        preserve_order: Optional[list[str]] = None,
+        preserve_order: list[str] | None = None,
         **kwargs,
     ):
         super().__init__(enabled=enabled, **kwargs)
@@ -46,9 +46,9 @@ class Optimize(OpsTransformer):
 
     def to_spec(
         self,
-        workpiece: Optional[WorkPiece],
-        stock_geometries: Optional[list["Geometry"]],
-        settings: Optional[dict[str, Any]],
+        workpiece: WorkPiece | None,
+        stock_geometries: list["Geometry"] | None,
+        settings: dict[str, Any] | None,
     ) -> OptimizeSpec:
         return OptimizeSpec(
             allow_flip=self.allow_flip,

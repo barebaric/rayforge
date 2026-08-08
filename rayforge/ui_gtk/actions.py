@@ -1,6 +1,7 @@
 import logging
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Callable, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 from gi.repository import Gio, GLib, Gtk
 
@@ -217,7 +218,7 @@ class ActionManager:
     def __init__(self, win: "MainWindow"):
         self.win = win
         self.actions: dict[str, Gio.SimpleAction] = {}
-        self._shortcut_controller: Optional[Gtk.ShortcutController] = None
+        self._shortcut_controller: Gtk.ShortcutController | None = None
         self._layout_shortcuts: list[Gtk.Shortcut] = []
         # A convenient alias to the central controller
         self.editor = self.win.doc_editor
@@ -852,7 +853,7 @@ class ActionManager:
         self,
         name: str,
         callback: Callable,
-        param: Optional[GLib.VariantType] = None,
+        param: GLib.VariantType | None = None,
     ):
         """Helper to create, register, and store a simple Gio.SimpleAction."""
         action = Gio.SimpleAction.new(name, param)

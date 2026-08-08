@@ -1,6 +1,6 @@
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional, cast
+from typing import cast
 
 from gi.repository import Adw, Gtk
 from raygeo.ops.axis import Axis
@@ -495,7 +495,7 @@ class RotaryModulePage(TrackedPreferencesPage):
         initial_row = self.module_list_editor.list_box.get_selected_row()
         self._on_module_selected(self.module_list_editor.list_box, initial_row)
 
-    def _get_selected_module(self) -> Optional[RotaryModule]:
+    def _get_selected_module(self) -> RotaryModule | None:
         selected_row = self.module_list_editor.list_box.get_selected_row()
         if not selected_row:
             return None

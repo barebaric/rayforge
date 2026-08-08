@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from typing import Optional
 
 import pytest
 import yaml
@@ -25,8 +24,8 @@ ASSETS_DIR = Path(__file__).parent / "assets"
 
 def _make_lbdev(
     path: Path,
-    overrides: Optional[dict] = None,
-    settings_overrides: Optional[dict] = None,
+    overrides: dict | None = None,
+    settings_overrides: dict | None = None,
 ) -> Path:
     """Write a minimal .lbdev file and return its path."""
     device = {

@@ -1,6 +1,5 @@
 import logging
 from gettext import gettext as _
-from typing import Optional
 
 from ....context import get_context
 from ....shared.units.definitions import Unit, get_unit
@@ -30,16 +29,16 @@ class UnitSpinRow(SpinRow):
     def __init__(
         self,
         title: str,
-        subtitle: Optional[str] = None,
+        subtitle: str | None = None,
         *,
         quantity: str = "length",
         lower: float = 0.0,
         upper: float = 1e9,
         step_increment: float = 1.0,
-        page_increment: Optional[float] = None,
+        page_increment: float | None = None,
         digits: int = 2,
         numeric: bool = False,
-        value_in_base: Optional[float] = None,
+        value_in_base: float | None = None,
         debounce_ms: int = 0,
     ):
         super().__init__(
@@ -55,7 +54,7 @@ class UnitSpinRow(SpinRow):
         )
 
         self.quantity = quantity
-        self._unit: Optional[Unit] = None
+        self._unit: Unit | None = None
         self._min_digits = digits
         self._lower = lower
         self._upper = upper
@@ -76,7 +75,7 @@ class UnitSpinRow(SpinRow):
         finally:
             self._is_updating = False
 
-    def _resolve_unit_name(self) -> Optional[str]:
+    def _resolve_unit_name(self) -> str | None:
         """Return the name of the unit to display for this row.
 
         Defaults to the configured preference for :attr:`quantity`;

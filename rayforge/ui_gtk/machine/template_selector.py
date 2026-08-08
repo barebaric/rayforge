@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import Callable, Optional
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -29,9 +29,9 @@ class DialectTemplateSelectorDialog(Adw.MessageDialog):
 
     def __init__(
         self,
-        on_selected: Optional[Callable[[GcodeDialect], None]] = None,
-        title: Optional[str] = None,
-        body: Optional[str] = None,
+        on_selected: Callable[[GcodeDialect], None] | None = None,
+        title: str | None = None,
+        body: str | None = None,
         **kwargs,
     ):
         """Initializes the Dialect Template Selector dialog.

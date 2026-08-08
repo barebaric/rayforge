@@ -330,7 +330,7 @@ class StressTestController:
             f"Chaos phase complete: {invalidation_count} invalidations"
         )
 
-    async def run_settle_phase(self) -> Optional[MetricsSnapshot]:
+    async def run_settle_phase(self) -> MetricsSnapshot | None:
         """
         Wait for pipeline to settle and capture metrics.
 

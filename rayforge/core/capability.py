@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 from abc import ABC, abstractmethod
 from gettext import gettext as _
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from .varset import VarSet, merge_varsets
 
@@ -107,7 +107,7 @@ class StepCapability(ABC):
     def __str__(self) -> str:
         return self.label
 
-    def __or__(self, other: "StepCapability") -> "StepCapability":
+    def __or__(self, other: StepCapability) -> StepCapability:
         if not isinstance(other, StepCapability):
             return NotImplemented
         return _CombinedCapability(self, other)
@@ -122,7 +122,7 @@ class _CombinedCapability(StepCapability):
     def __init__(self, left: StepCapability, right: StepCapability):
         self._left = left
         self._right = right
-        self._merged_varset: Optional[VarSet] = None
+        self._merged_varset: VarSet | None = None
 
     @property
     def name(self) -> str:

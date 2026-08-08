@@ -76,10 +76,10 @@ class VectorEditState:
     def __init__(self, geometry: Geometry):
         self.geometry = geometry
         self.selected_segments: set[int] = set()
-        self.hovered_segment: Optional[int] = None
-        self.frame_start: Optional[tuple[float, float]] = None
-        self.frame_end: Optional[tuple[float, float]] = None
-        self.frame_drag_start_world: Optional[tuple[float, float]] = None
+        self.hovered_segment: int | None = None
+        self.frame_start: tuple[float, float] | None = None
+        self.frame_end: tuple[float, float] | None = None
+        self.frame_drag_start_world: tuple[float, float] | None = None
 
 
 class WorkPieceElement(CanvasElement):
@@ -112,21 +112,21 @@ class WorkPieceElement(CanvasElement):
         self.data: WorkPiece = workpiece
         self.view_manager = view_manager
         self._base_image_visible = True
-        self._surface: Optional[cairo.ImageSurface] = None
+        self._surface: cairo.ImageSurface | None = None
 
         self._ops_visibility: dict[str, bool] = {}
-        self._artifact_cache: dict[str, Optional[WorkPieceArtifact]] = {}
+        self._artifact_cache: dict[str, WorkPieceArtifact | None] = {}
         self._ops_surface_cache: dict[str, cairo.ImageSurface] = {}
         self._ops_surface_data_cache: dict[str, np.ndarray] = {}
         self._ops_metadata_cache: dict[str, tuple] = {}
 
         # Composited ops surface: a single surface that blends all
         # visible step surfaces, rebuilt incrementally.
-        self._composited_surface: Optional[cairo.ImageSurface] = None
-        self._composited_data: Optional[np.ndarray] = None
+        self._composited_surface: cairo.ImageSurface | None = None
+        self._composited_data: np.ndarray | None = None
         self._composited_dirty: bool = True
-        self._composited_bbox_mm: Optional[tuple] = None
-        self._composited_wp_size_mm: Optional[tuple] = None
+        self._composited_bbox_mm: tuple | None = None
+        self._composited_wp_size_mm: tuple | None = None
         self._composited_bytes: int = 0
 
         self._tab_handles: list[TabHandleElement] = []
@@ -163,7 +163,7 @@ class WorkPieceElement(CanvasElement):
 
         self.content_transform = Matrix.translation(0, 1) @ Matrix.scale(1, -1)
 
-        self._edit_state: Optional[VectorEditState] = None
+        self._edit_state: VectorEditState | None = None
 
         self.data.updated.connect(self._on_model_content_changed)
         self.data.transform_changed.connect(self._on_transform_changed)
@@ -273,9 +273,7 @@ class WorkPieceElement(CanvasElement):
         super().trigger_update()  # Re-renders the base image.
         return True
 
-    def _apply_surface(
-        self, new_surface: Optional[cairo.ImageSurface]
-    ) -> bool:
+    def _apply_surface(self, new_surface: cairo.ImageSurface | None) -> bool:
         """
         Applies the newly rendered surface from the background task.
 
@@ -468,10 +466,8 @@ class WorkPieceElement(CanvasElement):
             h_px = surf.get_height()
             step_ppm_x = (w_px - 2 * OPS_MARGIN_PX) / vw if vw > 1e-9 else 0
             step_ppm_y = (h_px - 2 * OPS_MARGIN_PX) / vh if vh > 1e-9 else 0
-            if step_ppm_x > ppm_x:
-                ppm_x = step_ppm_x
-            if step_ppm_y > ppm_y:
-                ppm_y = step_ppm_y
+            ppm_x = max(ppm_x, step_ppm_x)
+            ppm_y = max(ppm_y, step_ppm_y)
             margin_w = OPS_MARGIN_PX / step_ppm_x if step_ppm_x > 0 else 0
             margin_h = OPS_MARGIN_PX / step_ppm_y if step_ppm_y > 0 else 0
             union_x = min(union_x, vx - margin_w)
@@ -653,7 +649,7 @@ class WorkPieceElement(CanvasElement):
 
     def get_closest_point_on_path(
         self, world_x: float, world_y: float, threshold_px: float = 5.0
-    ) -> Optional[dict]:
+    ) -> dict | None:
         """
         Checks if a point in world coordinates is close to the workpiece's
         vector path.
@@ -829,9 +825,7 @@ class WorkPieceElement(CanvasElement):
         ctx.stroke()
         ctx.restore()
 
-    def _hit_test_segment(
-        self, world_x: float, world_y: float
-    ) -> Optional[int]:
+    def _hit_test_segment(self, world_x: float, world_y: float) -> int | None:
         if not self._edit_state or not self.canvas:
             return None
 
@@ -873,7 +867,7 @@ class WorkPieceElement(CanvasElement):
 
     def _world_to_local(
         self, wx: float, wy: float
-    ) -> Optional[tuple[float, float]]:
+    ) -> tuple[float, float] | None:
         try:
             inv = self.get_world_transform().invert()
             return inv.transform_point((wx, wy))
@@ -1163,7 +1157,7 @@ class WorkPieceElement(CanvasElement):
 
     def render_to_surface(
         self, width: int, height: int
-    ) -> Optional[cairo.ImageSurface]:
+    ) -> cairo.ImageSurface | None:
         """Renders the base workpiece content to a new surface."""
         return self.data.render_to_pixels(width=width, height=height)
 

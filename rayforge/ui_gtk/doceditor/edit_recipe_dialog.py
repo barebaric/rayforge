@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Any, Optional
+from typing import Any
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -31,7 +31,7 @@ class AddEditRecipeDialog(PatchedDialogWindow):
     """
 
     def __init__(
-        self, parent: Optional[Gtk.Window], recipe: Optional[Recipe] = None
+        self, parent: Gtk.Window | None, recipe: Recipe | None = None
     ):
         super().__init__(transient_for=parent, modal=True)
         self.response = Signal()

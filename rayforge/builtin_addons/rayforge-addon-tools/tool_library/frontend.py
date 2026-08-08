@@ -10,7 +10,7 @@ list + ``Adw.MessageDialog`` confirmations/edit).
 
 from collections.abc import Callable
 from gettext import gettext as _
-from typing import Optional, cast
+from typing import cast
 
 from gi.repository import Adw, Gtk
 
@@ -115,7 +115,7 @@ class ToolListWidget(PreferencesGroupWithButton):
     def _on_edit(self, tool: Tool) -> None:
         self._open_dialog(tool)
 
-    def _open_dialog(self, tool: Optional[Tool] = None) -> None:
+    def _open_dialog(self, tool: Tool | None = None) -> None:
         root = self.get_root()
         dialog = AddEditToolDialog(
             cast(Gtk.Window, root) if root else None,

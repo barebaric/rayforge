@@ -14,7 +14,6 @@ Offers the user three entry points:
 """
 
 from gettext import gettext as _
-from typing import Optional
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -126,7 +125,7 @@ class ProfilePage(WizardPage):
         open_profile_file(self.wizard, self._on_import_result)
 
     def _on_import_result(
-        self, profile: Optional[DeviceProfile], error: Optional[str]
+        self, profile: DeviceProfile | None, error: str | None
     ) -> None:
         if error is not None or profile is None:
             self.wizard.show_error(_("Import Failed"), error or "")

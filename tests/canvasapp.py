@@ -1,4 +1,3 @@
-# flake8: noqa: E402
 import logging
 import math
 from pathlib import Path
@@ -6,7 +5,6 @@ from pathlib import Path
 import gi
 
 gi.require_version("Gtk", "4.0")
-from typing import Optional
 
 import cairo
 from gi.repository import Gdk, Gtk
@@ -29,9 +27,7 @@ class ExampleElement(CanvasElement):
     if `snap_grid_size` is provided.
     """
 
-    def __init__(
-        self, *args, snap_grid_size: Optional[float] = None, **kwargs
-    ):
+    def __init__(self, *args, snap_grid_size: float | None = None, **kwargs):
         """
         Initializes the ExampleElement.
 
@@ -72,7 +68,7 @@ class ExampleElement(CanvasElement):
 
     def render_to_surface(
         self, width: int, height: int
-    ) -> Optional[cairo.ImageSurface]:
+    ) -> cairo.ImageSurface | None:
         """Overrides surface rendering for buffered elements."""
         surface = super().render_to_surface(width, height)
         if surface:
@@ -120,7 +116,7 @@ class LShapeElement(CanvasElement):
 
     def render_to_surface(
         self, width: int, height: int
-    ) -> Optional[cairo.ImageSurface]:
+    ) -> cairo.ImageSurface | None:
         if width <= 0 or height <= 0:
             return None
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
@@ -160,8 +156,8 @@ class EditableElement(CanvasElement):
             [width * 0.9, height * 0.9],  # Bottom-right
             [width * 0.1, height * 0.9],  # Bottom-left
         ]
-        self._active_vertex_idx: Optional[int] = None
-        self._initial_vertex_pos: Optional[list[float]] = None
+        self._active_vertex_idx: int | None = None
+        self._initial_vertex_pos: list[float] | None = None
 
     def _draw_content(self, ctx: cairo.Context, width: float, height: float):
         """Draws a polygon connecting the vertices."""
@@ -193,7 +189,7 @@ class EditableElement(CanvasElement):
 
     def render_to_surface(
         self, width: int, height: int
-    ) -> Optional[cairo.ImageSurface]:
+    ) -> cairo.ImageSurface | None:
         """Overrides surface rendering for buffered elements."""
         surface = super().render_to_surface(width, height)
         if surface:
@@ -255,7 +251,7 @@ class EditableElement(CanvasElement):
             ctx.stroke()
         ctx.restore()
 
-    def _get_hit_vertex(self, world_x: float, world_y: float) -> Optional[int]:
+    def _get_hit_vertex(self, world_x: float, world_y: float) -> int | None:
         """Checks if a world coordinate point hits any vertex handle."""
         if not self.canvas:
             return None

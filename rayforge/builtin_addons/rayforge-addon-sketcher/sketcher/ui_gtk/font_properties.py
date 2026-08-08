@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gtk, Pango
 from raygeo.geo.shape.text import FontConfig
@@ -28,7 +28,7 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
     def __init__(self, editor: "SketchEditor"):
         super().__init__()
         self.editor = editor
-        self._text_entity_id: Optional[int] = None
+        self._text_entity_id: int | None = None
         self._in_update = False
         self._current_font_family = "sans-serif"
 
@@ -85,7 +85,7 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
         self.italic_switch = italic_switch
         self.add(self.italic_row)
 
-    def set_text_entity(self, entity_id: Optional[int]):
+    def set_text_entity(self, entity_id: int | None):
         """
         Sets the text entity to display font properties for.
         Hides the widget if entity_id is None.

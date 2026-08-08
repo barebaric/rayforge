@@ -2,7 +2,7 @@ import asyncio
 import logging
 from collections import defaultdict
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from raygeo.geo import Matrix
 
@@ -30,13 +30,13 @@ class _CreateGroupCommand(Command):
         items_to_group: list[DocItem],
         pipeline: "Pipeline",
         name: str = "Group Items",
-        precalculated_result: Optional[GroupingResult] = None,
+        precalculated_result: GroupingResult | None = None,
     ):
         super().__init__(name)
         self.layer = layer
         self.items_to_group = list(items_to_group)
         self.pipeline = pipeline
-        self.new_group: Optional[Group] = None
+        self.new_group: Group | None = None
         self._original_parents: dict[str, DocItem] = {
             item.uid: item.parent
             for item in self.items_to_group
@@ -115,7 +115,7 @@ class _UngroupCommand(Command):
         groups_to_ungroup: list[Group],
         pipeline: "Pipeline",
         name: str = "Ungroup Items",
-        precalculated_matrices: Optional[dict[str, dict[str, Matrix]]] = None,
+        precalculated_matrices: dict[str, dict[str, Matrix]] | None = None,
     ):
         super().__init__(name)
         self.groups_to_ungroup = list(groups_to_ungroup)
@@ -260,7 +260,7 @@ class GroupCmd:
                     )
                     return
 
-                result: Optional[GroupingResult] = task.result()
+                result: GroupingResult | None = task.result()
                 if not result:
                     return
 

@@ -1,5 +1,4 @@
 from gettext import gettext as _
-from typing import Optional
 
 from .var import Var
 
@@ -17,9 +16,9 @@ class TextAreaVar(Var[str]):
         self,
         key: str,
         label: str,
-        description: Optional[str] = None,
-        default: Optional[str] = None,
-        value: Optional[str] = None,
+        description: str | None = None,
+        default: str | None = None,
+        value: str | None = None,
     ):
         super().__init__(
             key=key,

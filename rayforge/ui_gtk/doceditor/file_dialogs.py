@@ -1,6 +1,7 @@
 import logging
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Callable, Optional, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from gi.repository import Gio, GLib, Gtk
 
@@ -66,7 +67,7 @@ def show_import_dialog(
 def show_export_gcode_dialog(
     win: "MainWindow",
     callback: Callable,
-    initial_name: Optional[str] = None,
+    initial_name: str | None = None,
 ):
     """
     Shows the save file dialog for exporting G-code.
@@ -152,7 +153,7 @@ def show_export_object_dialog(
 def show_export_document_dialog(
     win: "MainWindow",
     callback: Callable,
-    initial_name: Optional[str] = None,
+    initial_name: str | None = None,
 ):
     """
     Shows the save file dialog for exporting a complete document.
@@ -224,7 +225,7 @@ def show_open_project_dialog(win: "MainWindow", callback: Callable):
 def show_save_project_dialog(
     win: "MainWindow",
     callback: Callable,
-    initial_name: Optional[str] = None,
+    initial_name: str | None = None,
 ):
     """
     Shows save file dialog for saving Rayforge project files.

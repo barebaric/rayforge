@@ -1,6 +1,7 @@
 import logging
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -44,9 +45,9 @@ apply_css(controls_css)
 class BottomPanel(Gtk.Box):
     def __init__(
         self,
-        machine: Optional[Machine],
+        machine: Machine | None,
         doc_editor: "DocEditor",
-        machine_cmd: Optional[MachineCmd] = None,
+        machine_cmd: MachineCmd | None = None,
         **kwargs,
     ):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
@@ -64,9 +65,9 @@ class BottomPanel(Gtk.Box):
         self._click_to_zero_mode = False
         self._updating_wcs_ui = False
         self._active_layer = None
-        self._get_bounds_callback: Optional[
-            Callable[[], Optional[tuple[float, float, float, float]]]
-        ] = None
+        self._get_bounds_callback: (
+            Callable[[], tuple[float, float, float, float] | None] | None
+        ) = None
 
         self.console = Console()
         self.console.set_hexpand(True)
@@ -471,8 +472,8 @@ class BottomPanel(Gtk.Box):
 
     def set_machine(
         self,
-        machine: Optional[Machine],
-        machine_cmd: Optional[MachineCmd] = None,
+        machine: Machine | None,
+        machine_cmd: MachineCmd | None = None,
     ):
         self._disconnect_machine_signals()
 
@@ -518,9 +519,8 @@ class BottomPanel(Gtk.Box):
 
     def set_get_bounds_callback(
         self,
-        callback: Optional[
-            Callable[[], Optional[tuple[float, float, float, float]]]
-        ],
+        callback: Callable[[], tuple[float, float, float, float] | None]
+        | None,
     ):
         self._get_bounds_callback = callback
 

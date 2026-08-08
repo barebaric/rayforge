@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import Optional
 
 
 def get_caller_stack(depth: int = 4) -> str:
@@ -35,7 +34,7 @@ def get_caller_stack(depth: int = 4) -> str:
     return " <- ".join(frames) if frames else "?"
 
 
-def safe_caller_stack(depth: int = 4) -> Optional[str]:
+def safe_caller_stack(depth: int = 4) -> str | None:
     """
     Get caller stack only if DEBUG-level logging is enabled.
 

@@ -6,7 +6,7 @@ for the Ruida laser controller simulator.
 """
 
 import logging
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from .ruida_maps import (
     A7_KEYPRESS_COMMANDS,
@@ -46,8 +46,8 @@ class RuidaServer:
 
     def __init__(
         self,
-        state: Optional[RuidaState] = None,
-        on_command: Optional[Callable[[str, bytes], None]] = None,
+        state: RuidaState | None = None,
+        on_command: Callable[[str, bytes], None] | None = None,
         model: str = "644XG",
     ):
         self.state = state or RuidaState()
@@ -272,9 +272,7 @@ class RuidaServer:
         elif subcmd in range(0x30, 0x38):
             if subcmd in D8_KEYUP_AXIS_MAP:
                 s.jog_active[D8_KEYUP_AXIS_MAP[subcmd]] = 0
-        elif subcmd in range(0x40, 0x48):
-            pass
-        elif subcmd in range(0x48, 0x50):
+        elif subcmd in range(0x40, 0x48) or subcmd in range(0x48, 0x50):
             pass
         elif subcmd == 0x39:
             s.a = 0

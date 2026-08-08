@@ -273,7 +273,7 @@ class TestSerialTransportIntegration:
         """Test that connection failures are handled gracefully."""
         mocker.patch(
             "rayforge.machine.transport.serial.serial.Serial",
-            side_effect=IOError("Connection failed"),
+            side_effect=OSError("Connection failed"),
         )
         transport = SerialTransport(port="/dev/fail", baudrate=9600)
         status_tracker = SignalTracker(transport.status_changed)

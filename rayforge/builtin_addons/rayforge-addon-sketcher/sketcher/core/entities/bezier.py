@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry
 from raygeo.geo.shape.line import (
@@ -25,8 +25,8 @@ class Bezier(Entity):
         start_idx: EntityID,
         end_idx: EntityID,
         construction: bool = False,
-        cp1: Optional[GeoPoint] = None,
-        cp2: Optional[GeoPoint] = None,
+        cp1: GeoPoint | None = None,
+        cp2: GeoPoint | None = None,
     ):
         super().__init__(id, construction)
         self.start_idx: EntityID = start_idx
@@ -37,9 +37,7 @@ class Bezier(Entity):
 
     def get_control_points(
         self, registry: "EntityRegistry"
-    ) -> tuple[
-        Optional[float], Optional[float], Optional[float], Optional[float]
-    ]:
+    ) -> tuple[float | None, float | None, float | None, float | None]:
         cp1_x, cp1_y = None, None
         cp2_x, cp2_y = None, None
         if self.cp1 is not None:
@@ -111,8 +109,7 @@ class Bezier(Entity):
             _, _, dist_sq = get_line_segment_closest_point(
                 points[i], points[i + 1], mx, my
             )
-            if dist_sq < min_dist_sq:
-                min_dist_sq = dist_sq
+            min_dist_sq = min(min_dist_sq, dist_sq)
 
         return min_dist_sq < threshold**2
 

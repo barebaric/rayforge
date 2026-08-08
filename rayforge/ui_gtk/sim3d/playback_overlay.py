@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Any, Optional, Protocol
+from typing import Any, Protocol
 
 from blinker import Signal
 from gi.repository import GLib, Gtk
@@ -130,14 +130,14 @@ class PlaybackOverlay(Gtk.Box):
         self.append(self._speed_button)
 
         self._playing = False
-        self._timer_id: Optional[int] = None
+        self._timer_id: int | None = None
         self._canvas = None
-        self._player: Optional[PlaybackPlayer] = None
+        self._player: PlaybackPlayer | None = None
         self._is_syncing = False
         self._suppress_seek = False
         self._tick_driving_slider = False
         self._sim_time: float = 0.0
-        self._step_timer_id: Optional[int] = None
+        self._step_timer_id: int | None = None
         self._step_animating = False
         self._step_ticks_remaining = 0
         self._step_start_time = 0.0
@@ -158,7 +158,7 @@ class PlaybackOverlay(Gtk.Box):
 
     def set_player(
         self,
-        player: Optional[PlaybackPlayer],
+        player: PlaybackPlayer | None,
         initial_index: int = 0,
     ):
         """Set the OpPlayer backing this overlay's slider and seek calls.

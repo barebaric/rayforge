@@ -4,7 +4,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional, Union, cast
+from typing import Any, Union, cast
 
 import yaml
 
@@ -64,7 +64,7 @@ class Material:
         default_factory=lambda: LocalizedField("")
     )
     appearance: MaterialAppearance = field(default_factory=MaterialAppearance)
-    file_path: Optional[Path] = None
+    file_path: Path | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
@@ -165,7 +165,7 @@ class Material:
         result.update(self.extra)
         return result
 
-    def save_to_file(self, file_path: Optional[Path] = None) -> None:
+    def save_to_file(self, file_path: Path | None = None) -> None:
         """
         Save the material to a YAML file.
 

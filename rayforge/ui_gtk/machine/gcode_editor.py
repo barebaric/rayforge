@@ -1,5 +1,4 @@
 from gettext import gettext as _
-from typing import Optional
 
 from gi.repository import Adw, Gdk, GLib, Gtk
 
@@ -21,7 +20,7 @@ class GcodeEditorDialog(PatchedDialogWindow):
         macro: Macro,
         *,
         allow_name_edit: bool = False,
-        existing_macros: Optional[list[Macro]] = None,
+        existing_macros: list[Macro] | None = None,
         variable_context_level: str = "job",
     ):
         """

@@ -1,7 +1,7 @@
 import uuid
 from enum import Enum
 from gettext import gettext as _
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 from blinker import Signal
@@ -34,7 +34,7 @@ class RotaryModule:
         self.roller_diameter: float = 0.0
         self.reverse_axis: bool = False
         self.axis_position: np.ndarray = np.zeros(3, dtype=np.float64)
-        self.model_path: Optional[str] = None
+        self.model_path: str | None = None
         self.transform: np.ndarray = np.eye(4, dtype=np.float64)
         self.changed = Signal()
         self.extra: dict[str, Any] = {}
@@ -155,13 +155,13 @@ class RotaryModule:
         self.axis_position = new
         self.changed.send(self)
 
-    def set_model_path(self, model_path: Optional[str]):
+    def set_model_path(self, model_path: str | None):
         if self.model_path == model_path:
             return
         self.model_path = model_path
         self.changed.send(self)
 
-    def get_collision_bbox(self) -> Optional[Rect3D]:
+    def get_collision_bbox(self) -> Rect3D | None:
         return None
 
     def to_dict(self) -> dict[str, Any]:

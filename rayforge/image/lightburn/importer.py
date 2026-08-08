@@ -8,7 +8,7 @@ import warnings
 from dataclasses import dataclass
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 from xml.etree import ElementTree as ET
 
 from raygeo.geo import Geometry
@@ -51,7 +51,7 @@ _VERTLIST_RE = re.compile(
     r"(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)"
     r"\s*"
     r"((?:c0[xXyY]-?(?:\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)?"
-    r"|c1[xXyY]-?(?:\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)?)*)"  # noqa: E501
+    r"|c1[xXyY]-?(?:\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)?)*)"
 )
 _CONTROL_PT_RE = re.compile(
     r"(c0[xXyY]|c1[xXyY])(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)"
@@ -237,7 +237,7 @@ def _build_path_from_verts_and_prims(
     return geo
 
 
-def _build_path_text(shape_elem: ET.Element) -> Optional[Geometry]:
+def _build_path_text(shape_elem: ET.Element) -> Geometry | None:
     backup_path = shape_elem.find("BackupPath")
     if backup_path is None:
         return None
@@ -272,8 +272,8 @@ class BitmapInfo:
 def _shape_to_geometry(
     shape_elem: ET.Element,
     cut_settings: dict[int, dict[str, Any]],
-    bitmaps: Optional[list[BitmapInfo]] = None,
-) -> Optional[tuple[int, Geometry]]:
+    bitmaps: list[BitmapInfo] | None = None,
+) -> tuple[int, Geometry] | None:
     shape_type = shape_elem.get("Type")
     cut_index = int(shape_elem.get("CutIndex", "0"))
 
@@ -282,7 +282,7 @@ def _shape_to_geometry(
     if xform_el is not None and xform_el.text:
         xform = _parse_xform(xform_el.text)
 
-    geo: Optional[Geometry] = None
+    geo: Geometry | None = None
 
     if shape_type == "Rect":
         w = float(shape_elem.get("W", "0"))
@@ -362,7 +362,7 @@ def _shape_to_geometry(
 
 def _build_step_config(
     cs: dict[str, Any],
-) -> Optional[dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Translate LightBurn cut settings to generic step configuration."""
     config: dict[str, Any] = {}
     max_power = cs.get("maxPower")
@@ -408,7 +408,7 @@ class LightBurnImporter(Importer):
         ImporterFeature.BITMAP_TRACING,
     }
 
-    def __init__(self, data: bytes, source_file: Optional[Path] = None):
+    def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)
         self._geometries_by_layer: dict[str, Geometry] = {}
         self._cut_settings: dict[int, dict[str, Any]] = {}
@@ -483,7 +483,7 @@ class LightBurnImporter(Importer):
             )
         return cut_settings
 
-    def _render_bitmaps_to_svg(self) -> Optional[bytes]:
+    def _render_bitmaps_to_svg(self) -> bytes | None:
         if not self._bitmaps:
             return None
 
@@ -578,8 +578,8 @@ class LightBurnImporter(Importer):
         self,
         parse_result: ParsingResult,
         spec: TraceSpec,
-    ) -> dict[Optional[str], Geometry]:
-        geometries_by_layer: dict[Optional[str], Geometry] = {}
+    ) -> dict[str | None, Geometry]:
+        geometries_by_layer: dict[str | None, Geometry] = {}
         for bm in self._bitmaps:
             layer_id = str(bm.cut_index)
             try:
@@ -638,7 +638,7 @@ class LightBurnImporter(Importer):
             if spec.active_layer_ids:
                 active_layers_set = set(spec.active_layer_ids)
 
-        geometries: dict[Optional[str], Geometry]
+        geometries: dict[str | None, Geometry]
         if active_layers_set:
             geometries = {
                 layer_id: geo
@@ -646,7 +646,7 @@ class LightBurnImporter(Importer):
                 if layer_id in active_layers_set
             }
         else:
-            g: dict[Optional[str], Geometry] = {}
+            g: dict[str | None, Geometry] = {}
             for k, v in self._geometries_by_layer.items():
                 g[k] = v
             geometries = g
@@ -656,14 +656,14 @@ class LightBurnImporter(Importer):
             merged_geo.extend(geo)
 
         if split_layers:
-            final_geometries: dict[Optional[str], Geometry] = geometries or {
+            final_geometries: dict[str | None, Geometry] = geometries or {
                 None: merged_geo
             }
         else:
             final_geometries = {None: merged_geo}
 
         # Build per-layer settings from cut settings for the assembler.
-        layer_settings: dict[Optional[str], dict[str, Any]] = {}
+        layer_settings: dict[str | None, dict[str, Any]] = {}
         for layer_id in final_geometries:
             if layer_id is None:
                 continue
@@ -692,7 +692,7 @@ class LightBurnImporter(Importer):
             layer_settings=layer_settings,
         )
 
-    def parse(self) -> Optional[ParsingResult]:
+    def parse(self) -> ParsingResult | None:
         try:
             root = ET.fromstring(self.raw_data)
         except ET.ParseError as e:

@@ -65,5 +65,5 @@ class WorkareaCheck2D(BaseCheck):
 def _workarea_msg(axis: str, val: float, limit: float) -> str:
     axis_name = axis[0]
     if axis[1] == "-":
-        return "{}={:.1f} < {:.1f} (work area)".format(axis_name, val, limit)
-    return "{}={:.1f} > {:.1f} (work area)".format(axis_name, val, limit)
+        return f"{axis_name}={val:.1f} < {limit:.1f} (work area)"
+    return f"{axis_name}={val:.1f} > {limit:.1f} (work area)"

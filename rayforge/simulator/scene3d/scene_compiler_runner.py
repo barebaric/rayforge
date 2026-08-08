@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Optional
+from typing import Any
 
 from ...pipeline.artifact.handle import create_handle_from_dict
 from ...pipeline.artifact.job import JobArtifact
@@ -18,7 +18,7 @@ def compile_scene_from_job(
     artifact_store: ArtifactStore,
     job_handle_dict: dict[str, Any],
     render_config_dict: dict,
-) -> Optional[CompiledSceneArtifact]:
+) -> CompiledSceneArtifact | None:
     """Compile a 3D scene from a job artifact.
 
     Runs synchronously on the calling thread; the caller owns threading.

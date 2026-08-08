@@ -1,4 +1,3 @@
-# flake8: noqa: E402
 import logging
 import re
 import threading

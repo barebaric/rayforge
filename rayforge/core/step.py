@@ -79,14 +79,14 @@ class Step(DocItem, ABC):
     def __init__(
         self,
         typelabel: str,
-        name: Optional[str] = None,
+        name: str | None = None,
     ):
         super().__init__(name=name or typelabel)
         self.typelabel = typelabel
         self.visible = True
-        self.selected_head_uid: Optional[str] = None
-        self.generated_workpiece_uid: Optional[str] = None
-        self.applied_recipe_uid: Optional[str] = None
+        self.selected_head_uid: str | None = None
+        self.generated_workpiece_uid: str | None = None
+        self.applied_recipe_uid: str | None = None
 
         per_wp_defaults, per_sp_defaults = (
             self.get_default_transformers_dicts()
@@ -118,7 +118,7 @@ class Step(DocItem, ABC):
 
         # Set when a step of an unknown type is deserialized, so the
         # original type name can be reported and round-tripped.
-        self._original_step_type: Optional[str] = None
+        self._original_step_type: str | None = None
 
     @property
     def capabilities(self) -> tuple[StepCapability, ...]:
@@ -179,7 +179,7 @@ class Step(DocItem, ABC):
     def create(
         cls,
         context: "RayforgeContext",
-        name: Optional[str] = None,
+        name: str | None = None,
         **kwargs,
     ) -> "Step":
         """
@@ -231,7 +231,7 @@ class Step(DocItem, ABC):
         self,
         machine: "Machine",
         workpiece: "WorkPiece",
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Return a JSON-serialisable dict of the assembler spec
         parameters that this step resolves for *machine*.
@@ -490,7 +490,7 @@ class Step(DocItem, ABC):
                 self.per_step_transformers_dicts[i] = per_wp_names[name]
 
     @property
-    def original_step_type(self) -> Optional[str]:
+    def original_step_type(self) -> str | None:
         """
         The step type name stored in the source document.
 
@@ -533,7 +533,7 @@ class Step(DocItem, ABC):
         """
         return True
 
-    def get_selected_head(self, machine: "Machine") -> Optional[Head]:
+    def get_selected_head(self, machine: "Machine") -> Head | None:
         """
         Resolves and returns the selected head for this step, or None
         if the machine has no heads. Falls back to the first head on
@@ -548,7 +548,7 @@ class Step(DocItem, ABC):
             return machine.heads[0]
         return None
 
-    def set_selected_head_uid(self, uid: Optional[str]):
+    def set_selected_head_uid(self, uid: str | None):
         """
         Sets the UID of the head to be used by this step.
         """
@@ -601,10 +601,10 @@ class Step(DocItem, ABC):
             return ()
         return (self.coolant_method,)
 
-    def get_operation_mode_short(self) -> Optional[str]:
+    def get_operation_mode_short(self) -> str | None:
         return None
 
-    def get_operation_color(self, head) -> Optional[str]:
+    def get_operation_color(self, head) -> str | None:
         """Return the color used to represent this step's operation for
         the given head, or None when the step has no color.
 

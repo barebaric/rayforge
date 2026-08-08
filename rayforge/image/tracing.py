@@ -2,7 +2,6 @@ import logging
 import sys
 import threading
 from enum import Enum
-from typing import Optional
 
 import cairo
 import cv2
@@ -87,7 +86,7 @@ def _get_image_from_surface(
 def _get_boolean_image_from_color(
     img: np.ndarray,
     channels: int,
-    vectorization_spec: Optional[VectorizationSpec] = None,
+    vectorization_spec: VectorizationSpec | None = None,
 ) -> np.ndarray:
     """
     Creates a boolean image from color channels, adding a white border and
@@ -133,7 +132,7 @@ def _get_boolean_image_from_color(
 
 def prepare_surface(
     surface: cairo.ImageSurface,
-    vectorization_spec: Optional[VectorizationSpec] = None,
+    vectorization_spec: VectorizationSpec | None = None,
 ) -> np.ndarray:
     """
     Prepares a Cairo surface for tracing.
@@ -487,7 +486,7 @@ def _get_geometries_from_color(
 
 
 def trace_color_image(
-    color_image: Optional[np.ndarray],
+    color_image: np.ndarray | None,
 ) -> list[Geometry]:
     """
     Traces a BGR color image and returns a list of Geometry objects.
@@ -566,7 +565,7 @@ def trace_color_image(
 
 def trace_surface(
     surface: cairo.ImageSurface,
-    vectorization_spec: Optional[VectorizationSpec] = None,
+    vectorization_spec: VectorizationSpec | None = None,
 ) -> list[Geometry]:
     """
     Traces a Cairo surface and returns a list of Geometry objects. It uses

@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from gettext import gettext as _
-from typing import Optional
 
 from raygeo.geo.types import Point
 
@@ -34,11 +33,11 @@ class SanityIssue:
     category: IssueCategory
     severity: IssueSeverity
     message: str
-    zone_uid: Optional[str] = None
-    zone_name: Optional[str] = None
-    segment_start: Optional[Point] = None
-    segment_end: Optional[Point] = None
-    command_index: Optional[int] = None
+    zone_uid: str | None = None
+    zone_name: str | None = None
+    segment_start: Point | None = None
+    segment_end: Point | None = None
+    command_index: int | None = None
 
 
 @dataclass

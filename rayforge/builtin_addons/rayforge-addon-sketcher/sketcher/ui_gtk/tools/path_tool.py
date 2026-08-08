@@ -1,6 +1,6 @@
 import logging
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import Callable, Optional, Union
 
 import cairo
 
@@ -36,15 +36,15 @@ class PathTool(SnapMixin, SketchTool):
 
     def __init__(self, element):
         super().__init__(element)
-        self._preview_state: Optional[BezierPreviewState] = None
-        self._press_pos: Optional[tuple[float, float]] = None
-        self._waypoint_model_pos: Optional[tuple[float, float]] = None
-        self._snapped_pid: Optional[int] = None
+        self._preview_state: BezierPreviewState | None = None
+        self._press_pos: tuple[float, float] | None = None
+        self._waypoint_model_pos: tuple[float, float] | None = None
+        self._snapped_pid: int | None = None
         self._dragging: bool = False
         self._in_press: bool = False
-        self._mirror_cp_offset: Optional[tuple[float, float]] = None
+        self._mirror_cp_offset: tuple[float, float] | None = None
         self._release_handled: bool = False
-        self.hovered_point_id: Optional[int] = None
+        self.hovered_point_id: int | None = None
 
     def is_available(self, target, target_type) -> bool:
         return target is None
@@ -54,7 +54,7 @@ class PathTool(SnapMixin, SketchTool):
 
     def get_active_shortcuts(
         self,
-    ) -> list[tuple[Union[str, list[str]], str, Optional[Callable[[], bool]]]]:
+    ) -> list[tuple[str | list[str], str, Callable[[], bool] | None]]:
         shortcuts = []
         if self._preview_state is not None:
             shortcuts.extend(
@@ -72,7 +72,7 @@ class PathTool(SnapMixin, SketchTool):
         )
         return shortcuts
 
-    def get_preview_state(self) -> Optional[BezierPreviewState]:
+    def get_preview_state(self) -> BezierPreviewState | None:
         return self._preview_state
 
     def on_deactivate(self):

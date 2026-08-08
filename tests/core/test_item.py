@@ -1,5 +1,4 @@
 import math
-from typing import Optional
 
 import pytest
 from blinker import Signal
@@ -17,7 +16,7 @@ class GroupItem(Group):
     but is not a workpiece itself.
     """
 
-    def __init__(self, name: Optional[str] = None):
+    def __init__(self, name: str | None = None):
         super().__init__(name=name or "test")
 
 

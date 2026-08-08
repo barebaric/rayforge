@@ -1,6 +1,5 @@
 import logging
 from gettext import gettext as _
-from typing import Optional
 
 from blinker import Signal
 from gi.repository import Gdk, GLib, Gtk
@@ -50,7 +49,7 @@ class Console(Gtk.Box):
         self._command_history: list[str] = []
         self._history_index = -1
         self._history_max = 1000
-        self._machine: Optional[Machine] = None
+        self._machine: Machine | None = None
         self._max_input_lines = 5
         self._single_line_height = 24
         self._auto_scroll = True
@@ -219,7 +218,7 @@ class Console(Gtk.Box):
         tag_table.add(tag)
         return tag
 
-    def set_machine(self, machine: Optional[Machine]):
+    def set_machine(self, machine: Machine | None):
         self._machine = machine
         self._update_sensitivity()
 
@@ -322,7 +321,7 @@ class Console(Gtk.Box):
             text_buffer.get_iter_at_offset(offset + 1),
         )
 
-    def _append_highlighted(self, message: str, category: Optional[str]):
+    def _append_highlighted(self, message: str, category: str | None):
         text_buffer = self.terminal.get_buffer()
         end_iter = text_buffer.get_end_iter()
 
@@ -382,7 +381,7 @@ class Console(Gtk.Box):
         else:
             text_buffer.insert(end_iter, f"{message}\n", -1)
 
-    def append_to_terminal(self, message: str, category: Optional[str] = None):
+    def append_to_terminal(self, message: str, category: str | None = None):
         self._append_highlighted(message, category)
         if self._auto_scroll:
             self._scroll_to_bottom()
@@ -401,9 +400,9 @@ class Console(Gtk.Box):
     def on_log_received(
         self,
         sender,
-        message: Optional[str] = None,
-        category: Optional[str] = None,
-        machine_id: Optional[str] = None,
+        message: str | None = None,
+        category: str | None = None,
+        machine_id: str | None = None,
     ):
         if not message:
             return

@@ -6,7 +6,6 @@ from collections.abc import Iterable
 from dataclasses import replace
 from gettext import gettext as _
 from pathlib import Path
-from typing import Optional
 
 import ezdxf
 import ezdxf.math
@@ -59,10 +58,10 @@ class DxfImporter(Importer):
     extensions = (".dxf",)
     features = {ImporterFeature.DIRECT_VECTOR, ImporterFeature.LAYER_SELECTION}
 
-    def __init__(self, data: bytes, source_file: Optional[Path] = None):
+    def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)
-        self._dxf_doc: Optional[ezdxf.document.Drawing] = None  # type: ignore
-        self._geometries_by_layer: dict[Optional[str], Geometry] = {}
+        self._dxf_doc: ezdxf.document.Drawing | None = None  # type: ignore
+        self._geometries_by_layer: dict[str | None, Geometry] = {}
 
     def scan(self) -> ImportManifest:
         try:
@@ -126,7 +125,7 @@ class DxfImporter(Importer):
         )
         return source
 
-    def _render_thumbnail(self, size: int = 256) -> Optional[bytes]:
+    def _render_thumbnail(self, size: int = 256) -> bytes | None:
         merged = Geometry()
         for geo in self._geometries_by_layer.values():
             if geo:
@@ -140,7 +139,7 @@ class DxfImporter(Importer):
             color=(0.2, 0.2, 0.2, 1.0),
         )
 
-    def _merged_geometry(self) -> Optional[Geometry]:
+    def _merged_geometry(self) -> Geometry | None:
         if not self._geometries_by_layer:
             return None
         merged = Geometry()
@@ -167,7 +166,7 @@ class DxfImporter(Importer):
                 active_layers_set = set(spec.active_layer_ids)
 
         # Filter geometries based on the active layers in the spec
-        geometries_to_process: dict[Optional[str], Geometry]
+        geometries_to_process: dict[str | None, Geometry]
         if active_layers_set:
             geometries_to_process = {
                 layer_id: geo
@@ -177,7 +176,7 @@ class DxfImporter(Importer):
         else:
             geometries_to_process = self._geometries_by_layer
 
-        final_geometries: dict[Optional[str], Geometry]
+        final_geometries: dict[str | None, Geometry]
         if split_layers:
             # For a "split" strategy, return the dictionary of individual
             # layer geometries.
@@ -218,7 +217,7 @@ class DxfImporter(Importer):
 
     def _calculate_geometry_union(
         self, geometries: Iterable[Geometry]
-    ) -> Optional[Rect]:
+    ) -> Rect | None:
         """Calculates the bounding box of a collection of geometries."""
         min_x, min_y, max_x, max_y = (
             float("inf"),
@@ -232,14 +231,10 @@ class DxfImporter(Importer):
             if not geo or geo.is_empty():
                 continue
             gx1, gy1, gx2, gy2 = geo.rect()
-            if gx1 < min_x:
-                min_x = gx1
-            if gy1 < min_y:
-                min_y = gy1
-            if gx2 > max_x:
-                max_x = gx2
-            if gy2 > max_y:
-                max_y = gy2
+            min_x = min(min_x, gx1)
+            min_y = min(min_y, gy1)
+            max_x = max(max_x, gx2)
+            max_y = max(max_y, gy2)
             has_content = True
 
         if not has_content:
@@ -289,7 +284,7 @@ class DxfImporter(Importer):
             if layer.dxf.name.lower() != "defpoints"
         ]
 
-    def parse(self) -> Optional[ParsingResult]:
+    def parse(self) -> ParsingResult | None:
         try:
             data_str = self.raw_data.decode("utf-8", errors="replace")
             normalized_str = data_str.replace("\r\n", "\n")
@@ -370,7 +365,7 @@ class DxfImporter(Importer):
 
         return result
 
-    def _extract_geometries(self, doc) -> dict[Optional[str], Geometry]:
+    def _extract_geometries(self, doc) -> dict[str | None, Geometry]:
         """
         Recursively extracts, flattens, sorts, and consumes DXF entities.
         Sorting is critical for creating continuous paths from scrambled

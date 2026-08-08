@@ -3,7 +3,7 @@
 import logging
 import uuid
 from gettext import gettext as _
-from typing import Optional, cast
+from typing import cast
 
 from blinker import Signal
 from gi.repository import Adw, Gtk
@@ -47,9 +47,7 @@ class MaterialRow(Gtk.Box):
         color_box.set_valign(Gtk.Align.CENTER)
         color_box.add_css_class("material-color")
         color_provider = Gtk.CssProvider()
-        color_data = (".material-color {{ background-color: {}; }}").format(
-            self.material.get_display_color()
-        )
+        color_data = f".material-color {{ background-color: {self.material.get_display_color()}; }}"
         color_provider.load_from_string(color_data)
         color_box.get_style_context().add_provider(
             color_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
@@ -115,13 +113,13 @@ class MaterialListWidget(PreferencesGroupWithButton):
         self.material_added = Signal()
         self.material_deleted = Signal()
         self._setup_ui()
-        self._current_library: Optional[MaterialLibrary] = None
+        self._current_library: MaterialLibrary | None = None
 
     def _setup_ui(self):
         """Configures the widget's list box."""
         self.list_box.set_show_separators(True)
 
-    def set_library(self, library: Optional[MaterialLibrary]):
+    def set_library(self, library: MaterialLibrary | None):
         """Set the current library and update the materials list."""
         logger.debug(
             f"MaterialListEditor: Setting library to "

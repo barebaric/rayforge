@@ -1,7 +1,7 @@
 import logging
 import math
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry
 from raygeo.geo.shape.line import does_line_segment_intersect_rect
@@ -30,9 +30,9 @@ class TextBoxEntity(Entity):
         width_id: EntityID,
         height_id: EntityID,
         content: str = "",
-        font_config: Optional[FontConfig] = None,
+        font_config: FontConfig | None = None,
         construction: bool = False,
-        construction_line_ids: Optional[list[EntityID]] = None,
+        construction_line_ids: list[EntityID] | None = None,
     ):
         super().__init__(id, construction)
         self.origin_id: EntityID = origin_id
@@ -43,7 +43,7 @@ class TextBoxEntity(Entity):
         self.construction_line_ids: list[EntityID] = (
             construction_line_ids or []
         )
-        self.fill_color: Optional[ColorRGBA] = None
+        self.fill_color: ColorRGBA | None = None
         self.type = "text_box"
 
     def get_point_ids(self) -> list[EntityID]:
@@ -94,7 +94,7 @@ class TextBoxEntity(Entity):
         return self.font_config.get_font_metrics()
 
     def get_natural_size(
-        self, content: Optional[str] = None
+        self, content: str | None = None
     ) -> tuple[float, float]:
         """
         Returns the natural (width, height) of the text content.
@@ -122,7 +122,7 @@ class TextBoxEntity(Entity):
 
     def get_fourth_corner_id(
         self, registry: "EntityRegistry"
-    ) -> Optional[EntityID]:
+    ) -> EntityID | None:
         """Finds the 4th point ID of the text box."""
         for eid in self.construction_line_ids:
             entity = registry.get_entity(eid)
@@ -294,7 +294,7 @@ class TextBoxEntity(Entity):
     def to_geometry(
         self,
         registry: "EntityRegistry",
-        resolved_content: Optional[str] = None,
+        resolved_content: str | None = None,
     ) -> Geometry:
         """Converts the text box to a Geometry object."""
         text = (
@@ -317,8 +317,8 @@ class TextBoxEntity(Entity):
     def create_text_fill_geometry(
         self,
         registry: "EntityRegistry",
-        resolved_content: Optional[str] = None,
-    ) -> Optional[Geometry]:
+        resolved_content: str | None = None,
+    ) -> Geometry | None:
         """Creates a fill geometry for text entities."""
         text = (
             resolved_content if resolved_content is not None else self.content

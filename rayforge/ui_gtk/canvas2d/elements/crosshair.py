@@ -10,7 +10,7 @@ not the bottom‑left corner.
 
 import logging
 import math
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import cairo
 
@@ -34,7 +34,7 @@ class CrosshairElement(CanvasElement):
 
     def __init__(
         self,
-        on_drag: Optional[Callable[[tuple[float, float]], None]] = None,
+        on_drag: Callable[[tuple[float, float]], None] | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -53,7 +53,7 @@ class CrosshairElement(CanvasElement):
             **kwargs,
         )
         self._on_drag = on_drag
-        self._drag_origin: Optional[tuple[float, float]] = None
+        self._drag_origin: tuple[float, float] | None = None
         self._centre_offset = _HIT_SIZE / 2.0
 
     def move_to(self, x: float, y: float) -> None:

@@ -4,7 +4,6 @@ The crop offset (and other length rows) must display and convert in the
 user's length unit via LengthSpinRow.
 """
 
-# flake8: noqa: E402
 import gi
 
 gi.require_version("Gtk", "4.0")

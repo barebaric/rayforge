@@ -7,8 +7,8 @@ from __future__ import annotations
 import asyncio
 import logging
 from asyncio.exceptions import CancelledError
-from collections.abc import Coroutine
-from typing import Any, Callable, Optional
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from blinker import Signal
 
@@ -22,8 +22,8 @@ class Task:
         self,
         coro: Callable[..., Coroutine[Any, Any, Any]],
         *args: Any,
-        key: Optional[Any] = None,
-        when_done: Optional[Callable[["Task"], None]] = None,
+        key: Any | None = None,
+        when_done: Callable[[Task], None] | None = None,
         task_type: str = "asyncio",
         **kwargs: Any,
     ):
@@ -33,20 +33,20 @@ class Task:
         self.key: Any = key if key is not None else id(self)
         self.id = id(self)
         self.task_type = task_type
-        self._task: Optional[asyncio.Task[Any]] = None
+        self._task: asyncio.Task[Any] | None = None
         self._task_result: Any = None
-        self._task_exception: Optional[BaseException] = None
+        self._task_exception: BaseException | None = None
         self._status: str = "pending"
         self._progress: float = 0.0
-        self._message: Optional[str] = None
+        self._message: str | None = None
         self._cancel_requested: bool = False  # Flag for early cancellation
         self._visible: bool = True  # Whether task appears in UI
         self.status_changed: Signal = Signal()
         self.event_received: Signal = Signal()
-        self.when_done_callback: Optional[Callable[["Task"], None]] = when_done
+        self.when_done_callback: Callable[[Task], None] | None = when_done
 
     def update(
-        self, progress: Optional[float] = None, message: Optional[str] = None
+        self, progress: float | None = None, message: str | None = None
     ) -> None:
         """
         Updates task progress and/or message. This method is designed to be
@@ -141,7 +141,7 @@ class Task:
         """Get the current lifecycle status of the task."""
         return self._status
 
-    def get_message(self) -> Optional[str]:
+    def get_message(self) -> str | None:
         """Get the current user-facing message for the task."""
         return self._message
 

@@ -1,7 +1,7 @@
 import logging
 import math
 from gettext import gettext as _
-from typing import Optional, cast
+from typing import cast
 
 from gi.repository import Adw, Gdk, Gtk
 from raygeo.geo import Matrix
@@ -64,7 +64,7 @@ class SketchCanvas(WorldSurface):
 
         # This will hold a reference to the active dialog to prevent it from
         # being garbage-collected prematurely.
-        self._active_dialog: Optional[Adw.MessageDialog] = None
+        self._active_dialog: Adw.MessageDialog | None = None
 
         # The SketchCanvas owns a SketchEditor to manage the session.
         self.sketch_editor = SketchEditor(self.parent_window)

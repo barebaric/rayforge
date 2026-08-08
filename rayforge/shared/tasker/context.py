@@ -9,7 +9,8 @@ and progress updates that are throttled to prevent UI flooding.
 
 import logging
 import threading
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Optional
 
 from .progress import ThrottledProgressContext
 
@@ -30,11 +31,10 @@ class ExecutionContext(ThrottledProgressContext):
 
     def __init__(
         self,
-        update_callback: Optional[
-            Callable[[Optional[float], Optional[str]], None]
-        ] = None,
-        check_cancelled: Optional[Callable[[], bool]] = None,
-        scheduler: Optional[Callable[..., Any]] = None,
+        update_callback: Callable[[float | None, str | None], None]
+        | None = None,
+        check_cancelled: Callable[[], bool] | None = None,
+        scheduler: Callable[..., Any] | None = None,
         debounce_interval_ms: int = 100,
         # Internal args for sub-contexting
         _parent_context: Optional["ExecutionContext"] = None,
@@ -44,7 +44,7 @@ class ExecutionContext(ThrottledProgressContext):
     ):
         super().__init__(_base_progress, _progress_range, _total)
         self._parent_context = _parent_context
-        self.task: Optional["Task"] = None
+        self.task: Task | None = None
 
         if self._parent_context:
             # This is a sub-context. It doesn't own resources.
@@ -67,9 +67,9 @@ class ExecutionContext(ThrottledProgressContext):
             self._scheduler = scheduler
             self._check_cancelled = check_cancelled or (lambda: False)
             self._debounce_interval_sec = debounce_interval_ms / 1000.0
-            self._update_timer: Optional[threading.Timer] = None
-            self._pending_progress: Optional[float] = None
-            self._pending_message: Optional[str] = None
+            self._update_timer: threading.Timer | None = None
+            self._pending_progress: float | None = None
+            self._pending_message: str | None = None
             self._lock = threading.Lock()
 
     def _get_root(self) -> "ExecutionContext":
@@ -109,7 +109,7 @@ class ExecutionContext(ThrottledProgressContext):
             self._update_timer.start()
 
     def _update_root_state(
-        self, progress: Optional[float] = None, message: Optional[str] = None
+        self, progress: float | None = None, message: str | None = None
     ):
         """
         Sets pending state on the root and schedules an update.

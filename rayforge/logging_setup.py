@@ -2,13 +2,12 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 from blinker import Signal
 
 from .config import LOG_DIR
 
-_ui_formatter_instance: Optional[logging.Formatter] = None
+_ui_formatter_instance: logging.Formatter | None = None
 _ui_log_records: list[logging.LogRecord] = []
 
 LOG_FILES_TO_KEEP = 5
@@ -169,7 +168,7 @@ def get_ui_log_records() -> list[logging.LogRecord]:
     return _ui_log_records
 
 
-def get_ui_formatter() -> Optional[logging.Formatter]:
+def get_ui_formatter() -> logging.Formatter | None:
     """
     Returns the global instance of the Formatter used for the UI Log.
     """

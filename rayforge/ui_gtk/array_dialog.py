@@ -10,7 +10,7 @@ are fully independent.
 import logging
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gtk
 
@@ -124,7 +124,7 @@ class _BaseArrayDialog(PatchedDialogWindow):
         """Called on each canvas-drag frame to keep derived values
         (e.g. the circular radius) in sync."""
 
-    def _guide_for(self, params: ArrayParams, bbox) -> Optional[tuple]:
+    def _guide_for(self, params: ArrayParams, bbox) -> tuple | None:
         """Return a ``(center, radius)`` guide circle or ``None``."""
 
     # ------------------------------------------------------------------

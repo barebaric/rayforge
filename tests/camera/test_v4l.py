@@ -82,12 +82,14 @@ class TestScanV4lById:
         not sys.platform.startswith("linux"), reason="Linux only"
     )
     def test_empty_dir(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with mock.patch(
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            mock.patch(
                 "rayforge.camera.v4l.V4L_BY_ID_DIR",
                 Path(tmpdir),
-            ):
-                assert scan_v4l_by_id() == {}
+            ),
+        ):
+            assert scan_v4l_by_id() == {}
 
 
 class TestResolveDeviceId:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from ..entities import Arc, Circle, Line
 from ..types import EntityID
@@ -21,9 +21,9 @@ class TangentConstraintCommand:
     def identify_entities(
         registry: EntityRegistry,
         entity_ids: list[EntityID],
-    ) -> Optional[TangentConstraintParams]:
-        sel_line: Optional[Line] = None
-        sel_shape: Optional[Arc | Circle] = None
+    ) -> TangentConstraintParams | None:
+        sel_line: Line | None = None
+        sel_shape: Arc | Circle | None = None
 
         for eid in entity_ids:
             e = registry.get_entity(eid)

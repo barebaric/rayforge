@@ -5,7 +5,6 @@ MATERIAL_TEST) and the ``LaserHeadVar`` settings var.
 """
 
 from gettext import gettext as _
-from typing import Optional
 
 from rayforge.context import get_context
 from rayforge.core.capability import MachineCapability, StepCapability
@@ -31,9 +30,9 @@ class LaserHeadVar(ChoiceVar):
         self,
         key: str = "selected_head_uid",
         label: str = _("Laser Head"),
-        description: Optional[str] = None,
-        default: Optional[str] = None,
-        value: Optional[str] = None,
+        description: str | None = None,
+        default: str | None = None,
+        value: str | None = None,
     ):
         """
         Initializes a new LaserHeadVar instance.
@@ -75,13 +74,13 @@ class LaserHeadVar(ChoiceVar):
             value=initial_value_uid,
         )
 
-    def get_display_for_value(self, value: Optional[str]) -> Optional[str]:
+    def get_display_for_value(self, value: str | None) -> str | None:
         """Given a UID (value), return the display name."""
         if value is None:
             return None
         return self.uid_to_name_map.get(value, value)
 
-    def get_value_for_display(self, display: Optional[str]) -> Optional[str]:
+    def get_value_for_display(self, display: str | None) -> str | None:
         """Given a display name, return the UID (value)."""
         if display is None:
             return None

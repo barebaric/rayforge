@@ -18,7 +18,7 @@ Based on:
 """
 
 import logging
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from blinker import Signal
 
@@ -51,7 +51,7 @@ class RuidaSimulator:
 
     def __init__(
         self,
-        on_command: Optional[Callable[[str, bytes], None]] = None,
+        on_command: Callable[[str, bytes], None] | None = None,
         model: str = "644XG",
     ):
         self._server = RuidaServer(on_command=on_command, model=model)

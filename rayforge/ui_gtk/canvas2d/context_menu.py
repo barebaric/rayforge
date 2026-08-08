@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Optional
 
 from gi.repository import Gio, Gtk
 
@@ -72,8 +73,8 @@ class ContextMenuExtensionRegistry:
 
     def invoke_all(
         self,
-        surface: "WorkSurface",
-        item: Optional["DocItem"],
+        surface: WorkSurface,
+        item: DocItem | None,
         gesture: Gtk.Gesture,
         menu: Gio.Menu,
     ):
@@ -152,7 +153,7 @@ _MENU_MODELS = {
 
 
 def _show_popover(
-    surface: "WorkSurface", gesture: Gtk.Gesture, menu_model: Gio.Menu
+    surface: WorkSurface, gesture: Gtk.Gesture, menu_model: Gio.Menu
 ):
     """Helper to create and show a popover menu from a model."""
     popover = Gtk.PopoverMenu.new_from_model(menu_model)
@@ -171,9 +172,9 @@ def _show_popover(
 
 
 def show_item_context_menu(
-    surface: "WorkSurface",
+    surface: WorkSurface,
     gesture: Gtk.Gesture,
-    item: Optional["DocItem"] = None,
+    item: DocItem | None = None,
 ):
     """
     Displays the context menu for general items like WorkPieces or Groups.
@@ -196,17 +197,17 @@ def show_item_context_menu(
     _show_popover(surface, gesture, menu)
 
 
-def show_geometry_context_menu(surface: "WorkSurface", gesture: Gtk.Gesture):
+def show_geometry_context_menu(surface: WorkSurface, gesture: Gtk.Gesture):
     """Displays the context menu for adding a tab to a geometry path."""
     _show_popover(surface, gesture, _MENU_MODELS["geometry"])
 
 
-def show_tab_context_menu(surface: "WorkSurface", gesture: Gtk.Gesture):
+def show_tab_context_menu(surface: WorkSurface, gesture: Gtk.Gesture):
     """Displays the context menu for an existing tab."""
     _show_popover(surface, gesture, _MENU_MODELS["tab"])
 
 
-def show_background_context_menu(surface: "WorkSurface", gesture: Gtk.Gesture):
+def show_background_context_menu(surface: WorkSurface, gesture: Gtk.Gesture):
     """Displays the context menu for empty canvas space."""
     menu = Gio.Menu.new()
     menu.append_item(Gio.MenuItem.new(_("New Sketch"), "win.new_sketch"))

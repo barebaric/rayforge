@@ -40,12 +40,10 @@ import hashlib
 import json
 import logging
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Optional,
 )
 
 import numpy as np
@@ -106,7 +104,7 @@ def workpiece_key(wp_uid: str, step_uid: str) -> str:
     return WORKPIECE_KEY_FMT.format(wp_uid=wp_uid, step_uid=step_uid)
 
 
-def parse_workpiece_key(key: str) -> Optional[tuple[str, str]]:
+def parse_workpiece_key(key: str) -> tuple[str, str] | None:
     """Parse a ``workpiece:{wp_uid}:{step_uid}`` key.
 
     Returns ``(wp_uid, step_uid)`` or ``None`` if the key does not
@@ -148,20 +146,20 @@ class IntentBuilder:
 
     def __init__(
         self,
-        machine: "Machine",
+        machine: Machine,
         generation_id: int = 0,
-        loop: "Optional[asyncio.AbstractEventLoop]" = None,
+        loop: asyncio.AbstractEventLoop | None = None,
     ):
         self._machine = machine
         self._generation_id = generation_id
         self._loop = loop
-        self._doc: Optional["Doc"] = None
+        self._doc: Doc | None = None
 
     @property
     def generation_id(self) -> int:
         return self._generation_id
 
-    def build(self, doc: "Doc") -> list[NodeRequest]:
+    def build(self, doc: Doc) -> list[NodeRequest]:
         """
         Walk *doc* and produce one NodeRequest per workpiece-step pair,
         one per step, and one final job aggregate.
@@ -215,8 +213,8 @@ class IntentBuilder:
 
     def _build_workpiece_nodes(
         self,
-        step: "Step",
-        workpieces: "Sequence[WorkPiece]",
+        step: Step,
+        workpieces: Sequence[WorkPiece],
         out: list[NodeRequest],
     ) -> list[tuple[str, int, WorkPiece]]:
         """
@@ -233,7 +231,7 @@ class IntentBuilder:
         # (dithering, grayscale, auto-levels) delegates to
         # raygeo Rust code which releases the GIL, so threads yield
         # real parallelism.
-        stages: "list[StageSpec.Compute]"
+        stages: list[StageSpec.Compute]
         loop = self._loop
         if loop is not None and len(workpieces) > 1:
 
@@ -263,8 +261,8 @@ class IntentBuilder:
 
     def _build_step_node(
         self,
-        step: "Step",
-        layer: "Layer",
+        step: Step,
+        layer: Layer,
         upstream: list[tuple[str, int, WorkPiece]],
         out: list[NodeRequest],
     ) -> None:
@@ -275,7 +273,7 @@ class IntentBuilder:
 
     def _build_job_node(
         self,
-        doc: "Doc",
+        doc: Doc,
         out: list[NodeRequest],
         step_tokens: dict[str, int],
     ) -> None:
@@ -286,7 +284,7 @@ class IntentBuilder:
 
     def _build_machine_transform_node(
         self,
-        doc: "Doc",
+        doc: Doc,
         out: list[NodeRequest],
         step_tokens: dict[str, int],
     ) -> None:
@@ -309,7 +307,7 @@ class IntentBuilder:
 
     def _build_encoder_node(
         self,
-        doc: "Doc",
+        doc: Doc,
         out: list[NodeRequest],
         step_tokens: dict[str, int],
     ) -> None:
@@ -356,7 +354,7 @@ class IntentBuilder:
         return _hash_int({"kind": "stock", "items": payload})
 
     def _compute_token(
-        self, step: "Step", wp: "WorkPiece", pos_sensitive: bool
+        self, step: Step, wp: WorkPiece, pos_sensitive: bool
     ) -> int:
         payload = {
             "kind": "compute",
@@ -386,9 +384,9 @@ class IntentBuilder:
 
     def _aggregate_token(
         self,
-        step: "Step",
-        layer: "Layer",
-        upstream: list[tuple[str, int, "WorkPiece"]],
+        step: Step,
+        layer: Layer,
+        upstream: list[tuple[str, int, WorkPiece]],
     ) -> int:
         # Fold the per-workpiece placement matrix and target dimensions
         # into the token. The aggregate applies the placement matrix
@@ -418,7 +416,7 @@ class IntentBuilder:
             payload["stock_rev"] = self._stock_revision()
         return _hash_int(payload)
 
-    def _job_token(self, doc: "Doc", step_tokens: dict[str, int]) -> int:
+    def _job_token(self, doc: Doc, step_tokens: dict[str, int]) -> int:
         # The job aggregate concatenates the step aggregates' outputs
         # verbatim (identity placement at the job level). Its token
         # therefore folds in the per-step aggregate tokens so that any
@@ -460,7 +458,7 @@ class IntentBuilder:
     # Compute stage construction
     # ------------------------------------------------------------------
 
-    def _wp_stage(self, step: "Step", wp: "WorkPiece") -> StageSpec.Compute:
+    def _wp_stage(self, step: Step, wp: WorkPiece) -> StageSpec.Compute:
         """
         Build a compute :class:`StageSpec.Compute` for the workpiece
         node by delegating to :meth:`Step.build_compute_payload`.
@@ -496,7 +494,7 @@ class IntentBuilder:
                         ]
         return StageSpec.Compute(part=part, params=payload)
 
-    def _assembler_params(self, step: "Step", wp: "WorkPiece") -> Any:
+    def _assembler_params(self, step: Step, wp: WorkPiece) -> Any:
         """
         Return a JSON-serialisable representation of the assembler spec
         parameters that the step resolves for its machine.
@@ -523,7 +521,7 @@ class IntentBuilder:
         self,
         transformer_dicts: list[dict[str, Any]],
         *,
-        workpiece: "Optional[WorkPiece]" = None,
+        workpiece: WorkPiece | None = None,
     ) -> list[Any]:
         """Build typed Rust ``*Spec`` pyclasses from a list of
         serialised transformer dicts.
@@ -567,7 +565,7 @@ class IntentBuilder:
             specs.append(t.to_spec(workpiece, stock, settings))
         return specs
 
-    def _transformer_settings(self) -> Optional[dict[str, Any]]:
+    def _transformer_settings(self) -> dict[str, Any] | None:
         """Return the settings dict forwarded to ``to_spec``.
 
         Currently this carries the ``driver_native_overscan`` flag so
@@ -582,7 +580,7 @@ class IntentBuilder:
             native = False
         return {"driver_native_overscan": native}
 
-    def _resolve_stock_geometries(self) -> Optional[list[Any]]:
+    def _resolve_stock_geometries(self) -> list[Any] | None:
         """Return the world-space stock boundary geometries.
 
         Transformers such as CropTransformer use this to clip
@@ -636,8 +634,8 @@ class IntentBuilder:
 
     def _step_stage(
         self,
-        step: "Step",
-        upstream: list[tuple[str, int, "WorkPiece"]],
+        step: Step,
+        upstream: list[tuple[str, int, WorkPiece]],
     ) -> StageSpec.Aggregate:
         """
         Build an aggregate :class:`StageSpec.Aggregate` for the step
@@ -706,7 +704,7 @@ class IntentBuilder:
     # ------------------------------------------------------------------
 
     def _job_stage(
-        self, doc: "Doc", step_tokens: dict[str, int]
+        self, doc: Doc, step_tokens: dict[str, int]
     ) -> StageSpec.Aggregate:
         """
         Build the final job aggregate :class:`StageSpec.Aggregate`.
@@ -761,7 +759,7 @@ class IntentBuilder:
     # Encoder stage
     # ------------------------------------------------------------------
 
-    def _encode_stage(self, doc: "Doc") -> EncodeSpec:
+    def _encode_stage(self, doc: Doc) -> EncodeSpec:
         """Build the encoder :class:`EncodeSpec` for the job encode
         node.
 
@@ -777,7 +775,7 @@ class IntentBuilder:
             source_key=job_machinexform_key(), encoder=Encoder(encoder)
         )
 
-    def _build_encoder(self, doc: "Doc") -> Any:
+    def _build_encoder(self, doc: Doc) -> Any:
         """Resolve the encoder for the configured machine.
 
         Routes Grbl machines to the native Rust ``GcodeSpec`` and
@@ -798,7 +796,7 @@ class IntentBuilder:
             "driver.encode",
         )
 
-    def _grbl_encoder_spec(self, doc: "Doc") -> GcodeSpec:
+    def _grbl_encoder_spec(self, doc: Doc) -> GcodeSpec:
         """Build a native ``GcodeSpec`` for a Grbl machine.
 
         Receives machine-space ops from the upstream
@@ -821,9 +819,7 @@ class IntentBuilder:
             context_json=json.dumps(context),
         )
 
-    def _build_machine_transform_stage(
-        self, doc: "Doc"
-    ) -> MachineTransformSpec:
+    def _build_machine_transform_stage(self, doc: Doc) -> MachineTransformSpec:
         """Build the :class:`MachineTransformSpec` for the machine-
         transform pipeline node.
 
@@ -874,8 +870,8 @@ class IntentBuilder:
 
     @staticmethod
     def _build_rotary_mappings(
-        doc: "Doc",
-        machine: "Machine",
+        doc: Doc,
+        machine: Machine,
     ) -> list:
         """Build per-layer :class:`RotaryMappingSpec` entries."""
         mappings: list = []
@@ -929,7 +925,7 @@ class IntentBuilder:
         return mappings
 
     def _make_python_encoder_callable(
-        self, machine: "Machine", doc: "Doc"
+        self, machine: Machine, doc: Doc
     ) -> Callable[[Any], Any]:
         """Build a Python callable ``(ops) -> EncodeOutput`` that
         invokes the driver-specific encoder directly on
@@ -969,7 +965,7 @@ class IntentBuilder:
     # Encoder token
     # ------------------------------------------------------------------
 
-    def _encode_token(self, doc: "Doc", step_tokens: dict[str, int]) -> int:
+    def _encode_token(self, doc: Doc, step_tokens: dict[str, int]) -> int:
         """Compute the version token for the job encode node.
 
         Folds in the machine-transform node's token plus the encoder
@@ -984,7 +980,7 @@ class IntentBuilder:
         return _hash_int(payload)
 
     def _machine_transform_token(
-        self, doc: "Doc", step_tokens: dict[str, int]
+        self, doc: Doc, step_tokens: dict[str, int]
     ) -> int:
         """Compute the version token for the machine-transform node.
 
@@ -1008,7 +1004,7 @@ class IntentBuilder:
 # ----------------------------------------------------------------------
 
 
-def _workpiece_placement_matrix(wp: "WorkPiece") -> list[list[float]]:
+def _workpiece_placement_matrix(wp: WorkPiece) -> list[list[float]]:
     """
     Build the 4×4 placement matrix for a workpiece's aggregate input.
 
@@ -1069,12 +1065,12 @@ _IDENTITY_4X4: list[list[float]] = [
 ]
 
 
-def _is_grbl(dialect: "GcodeDialect") -> bool:
+def _is_grbl(dialect: GcodeDialect) -> bool:
     """Return True if *dialect* is the Grbl G-code dialect."""
     return dialect.uid == GRBL_DIALECT.uid
 
 
-def _machine_token_payload(machine: "Optional[Machine]") -> Any:
+def _machine_token_payload(machine: Machine | None) -> Any:
     """Build a JSON-serialisable representation of the machine
     identity for the encode token."""
     if machine is None:
@@ -1094,7 +1090,7 @@ def _machine_token_payload(machine: "Optional[Machine]") -> Any:
 
 
 def _machine_transform_config_payload(
-    machine: "Machine", doc: "Doc"
+    machine: Machine, doc: Doc
 ) -> dict[str, Any]:
     """Build a JSON-serialisable payload of machine transform config
     for the machine-transform token."""
@@ -1121,7 +1117,7 @@ def _machine_transform_config_payload(
     return payload
 
 
-def _approximate_job_ops(doc: "Doc") -> "Ops":
+def _approximate_job_ops(doc: Doc) -> Ops:
     """Build a minimal Ops spanning the estimated job extents.
 
     Used by :meth:`IntentBuilder._grbl_encoder_spec` so that

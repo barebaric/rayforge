@@ -3,7 +3,7 @@ from dataclasses import dataclass, fields
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 from blinker import Signal
@@ -53,7 +53,7 @@ class CanvasViewState:
 
 class Config:
     def __init__(self):
-        self.machine: Optional[Machine] = None
+        self.machine: Machine | None = None
         self.theme: str = "system"
         # Default user preferences for units. Key is quantity, value is
         # unit name.
@@ -66,11 +66,11 @@ class Config:
         self.startup_behavior: str = StartupBehavior.NONE.value
         # Path to the specific project to open on startup (when
         # startup_behavior is SPECIFIC_PROJECT)
-        self.startup_project_path: Optional[Path] = None
+        self.startup_project_path: Path | None = None
         # Track the last opened project path
-        self.last_opened_project: Optional[Path] = None
+        self.last_opened_project: Path | None = None
         # UI visibility states
-        self.bottom_panel: Optional[dict[str, Any]] = None
+        self.bottom_panel: dict[str, Any] | None = None
         self.right_panel_visible: bool = True
         self.canvas_view: CanvasViewState = CanvasViewState()
         self.auto_pipeline: bool = True
@@ -78,16 +78,16 @@ class Config:
         self.check_for_app_updates: bool = True
         # Usage tracking consent date: None = not asked, "" = declined,
         # ISO date string = consent given on that date
-        self.usage_consent_date: Optional[str] = None
+        self.usage_consent_date: str | None = None
         # Default DPI for unitless SVG imports
         self.import_dpi: float = 96.0
         # Cache budget for the raygeo pipeline (default 2 GiB)
         self.cache_budget_bytes: int = 2 * 1024 * 1024 * 1024
         # Language preference: None = system default, or a code like "de"
-        self.language: Optional[str] = None
+        self.language: str | None = None
         self.changed = Signal()
 
-    def set_machine(self, machine: Optional[Machine]):
+    def set_machine(self, machine: Machine | None):
         if self.machine == machine:
             return
         if self.machine:
@@ -119,21 +119,21 @@ class Config:
         self.startup_behavior = behavior_value
         self.changed.send(self)
 
-    def set_startup_project_path(self, path: Optional[Path]):
+    def set_startup_project_path(self, path: Path | None):
         """Sets the specific project path to open on startup."""
         if self.startup_project_path == path:
             return
         self.startup_project_path = path
         self.changed.send(self)
 
-    def set_last_opened_project(self, path: Optional[Path]):
+    def set_last_opened_project(self, path: Path | None):
         """Sets the last opened project path."""
         if self.last_opened_project == path:
             return
         self.last_opened_project = path
         self.changed.send(self)
 
-    def set_bottom_panel(self, data: Optional[dict[str, Any]]):
+    def set_bottom_panel(self, data: dict[str, Any] | None):
         if self.bottom_panel == data:
             return
         self.bottom_panel = data
@@ -181,7 +181,7 @@ class Config:
         self.ops_color_mode = mode
         self.changed.send(self)
 
-    def set_language(self, language: Optional[str]):
+    def set_language(self, language: str | None):
         """Sets the UI language preference.
 
         Args:
@@ -359,10 +359,8 @@ class ConfigManager:
             # If there are other machines available, select the first one
             if self.machine_mgr.machines:
                 # Sort by ID for deterministic selection
-                first_machine = list(
-                    sorted(
-                        self.machine_mgr.machines.values(), key=lambda m: m.id
-                    )
+                first_machine = sorted(
+                    self.machine_mgr.machines.values(), key=lambda m: m.id
                 )[0]
                 self.config.set_machine(first_machine)
                 logger.info(f"Selected new machine {first_machine.id}")
@@ -404,7 +402,7 @@ class ConfigManager:
                         )
                     else:
                         logger.info("Config loaded but no machine set.")
-        except (IOError, yaml.YAMLError) as e:
+        except (OSError, yaml.YAMLError) as e:
             logger.error(
                 f"Failed to load config file: {e}. Creating a default config."
             )

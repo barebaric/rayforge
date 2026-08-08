@@ -1,12 +1,11 @@
 import os
 import subprocess
 import sys
-from typing import Optional
 
 __dir__ = os.path.dirname(__file__)
 
 
-def get_version_from_git() -> Optional[str]:
+def get_version_from_git() -> str | None:
     kwargs = {
         "stderr": subprocess.DEVNULL,
         "cwd": __dir__,
@@ -26,7 +25,7 @@ def get_version_from_git() -> Optional[str]:
     return output.decode("ascii").strip()
 
 
-def get_version_from_pkg() -> Optional[str]:
+def get_version_from_pkg() -> str | None:
     try:
         from importlib.metadata import PackageNotFoundError, version
     except ImportError:
@@ -38,7 +37,7 @@ def get_version_from_pkg() -> Optional[str]:
         return None
 
 
-def get_version_from_file() -> Optional[str]:
+def get_version_from_file() -> str | None:
     version_file = os.path.join(__dir__, "version.txt")
     try:
         with open(version_file, "r") as f:

@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from gi.repository import Adw
 
@@ -28,7 +28,7 @@ class EntryAdapter(RowAdapter):
             row.set_text(str(initial_val))
         return row, cls(row)
 
-    def get_value(self) -> Optional[Any]:
+    def get_value(self) -> Any | None:
         return self._row.get_text()
 
     def set_value(self, value: Any) -> None:

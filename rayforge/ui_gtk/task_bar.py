@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from blinker import Signal
 from gi.repository import Gtk
@@ -30,5 +29,5 @@ class TaskBar(Gtk.Box):
         gesture.connect("pressed", lambda *args: self.log_requested.send(self))
         self.add_controller(gesture)
 
-    def set_machine(self, machine: Optional[Machine]):
+    def set_machine(self, machine: Machine | None):
         pass

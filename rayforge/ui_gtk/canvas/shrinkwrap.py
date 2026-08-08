@@ -40,7 +40,7 @@ class ShrinkWrapGroup(CanvasElement):
             self.canvas.queue_draw()
         return False  # Do not call again
 
-    def on_child_transform_changed(self, child: "CanvasElement"):
+    def on_child_transform_changed(self, child: CanvasElement):
         """Override to handle updates synchronously or via preview."""
         if child._is_under_interactive_transform:
             # While dragging, do NOT update transforms. Just redraw so the

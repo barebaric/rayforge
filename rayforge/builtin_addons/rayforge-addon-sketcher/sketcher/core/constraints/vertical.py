@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point
@@ -32,7 +33,7 @@ class VerticalConstraint(Constraint):
 
     @classmethod
     def can_apply_to(
-        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+        cls, selection: SketchSelection, sketch: Sketch | None = None
     ) -> bool:
         if len(selection.point_ids) == 2 and not selection.entity_ids:
             return True
@@ -57,7 +58,7 @@ class VerticalConstraint(Constraint):
         """Returns a human-readable title for this constraint."""
         return self.get_type_name()
 
-    def get_subtitle(self, registry: "EntityRegistry") -> str:
+    def get_subtitle(self, registry: EntityRegistry) -> str:
         """Returns a subtitle describing the constrained points."""
         p1 = registry.get_point(self.p1)
         p2 = registry.get_point(self.p2)
@@ -77,20 +78,18 @@ class VerticalConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "VerticalConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> VerticalConstraint:
         return cls(
             p1=data["p1"],
             p2=data["p2"],
             user_visible=data.get("user_visible", True),
         )
 
-    def error(
-        self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> float:
+    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         return reg.get_point(self.p1).x - reg.get_point(self.p2).x
 
     def gradient(
-        self, reg: "EntityRegistry", params: "ParameterContext"
+        self, reg: EntityRegistry, params: ParameterContext
     ) -> dict[EntityID, list[Point]]:
         return {
             self.p1: [(1.0, 0.0)],
@@ -101,7 +100,7 @@ class VerticalConstraint(Constraint):
         self,
         sx: float,
         sy: float,
-        reg: "EntityRegistry",
+        reg: EntityRegistry,
         to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
@@ -122,8 +121,8 @@ class VerticalConstraint(Constraint):
 
     def draw(
         self,
-        ctx: "cairo.Context",
-        registry: "EntityRegistry",
+        ctx: cairo.Context,
+        registry: EntityRegistry,
         to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,

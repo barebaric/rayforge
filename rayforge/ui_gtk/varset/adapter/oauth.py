@@ -1,7 +1,7 @@
 import json
 import logging
 from gettext import gettext as _
-from typing import Any, Optional, Union
+from typing import Any
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -33,11 +33,11 @@ class OAuthFlowAdapter(RowAdapter):
 
     def __init__(
         self,
-        row: Union[Adw.ActionRow, Adw.ExpanderRow],
+        row: Adw.ActionRow | Adw.ExpanderRow,
         sign_in_btn: Gtk.Button,
         sign_out_btn: Gtk.Button,
         var: OAuthFlowVar,
-        dynamic_entries: Optional[dict[str, Adw.EntryRow]] = None,
+        dynamic_entries: dict[str, Adw.EntryRow] | None = None,
     ):
         super().__init__()
         self._row = row
@@ -122,7 +122,7 @@ class OAuthFlowAdapter(RowAdapter):
     # RowAdapter interface
     # ------------------------------------------------------------------
 
-    def get_value(self) -> Optional[Any]:
+    def get_value(self) -> Any | None:
         return self._token_value
 
     def set_value(self, value: Any) -> None:
@@ -144,7 +144,7 @@ class OAuthFlowAdapter(RowAdapter):
     # Internal
     # ------------------------------------------------------------------
 
-    def _get_token_data(self) -> Optional[dict[str, Any]]:
+    def _get_token_data(self) -> dict[str, Any] | None:
         if not self._token_value:
             return None
         try:

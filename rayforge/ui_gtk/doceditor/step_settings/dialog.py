@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gtk
 
@@ -52,10 +52,8 @@ class StepSettingsDialog(PatchedDialogWindow):
 
         # --- Main Step Settings + addon-provided extra pages ---
         context = get_context()
-        self.general_view: Optional[StepSettingsPage] = None
-        self._extra_pages: list[
-            tuple[str, StepSettingsPage, Optional[str]]
-        ] = []
+        self.general_view: StepSettingsPage | None = None
+        self._extra_pages: list[tuple[str, StepSettingsPage, str | None]] = []
         if context:
             context.plugin_mgr.hook.step_settings_loaded(
                 dialog=self, step=self.step, producer=None
@@ -154,7 +152,7 @@ class StepSettingsDialog(PatchedDialogWindow):
         self,
         title: str,
         page: StepSettingsPage,
-        icon_name: Optional[str] = None,
+        icon_name: str | None = None,
     ):
         """Provide an additional settings page (called by addon hooks)."""
         self._extra_pages.append((title, page, icon_name))
@@ -164,7 +162,7 @@ class StepSettingsDialog(PatchedDialogWindow):
         cls,
         editor: "DocEditor",
         step: Step,
-        parent_window: Optional[Gtk.Root],
+        parent_window: Gtk.Root | None,
     ) -> "StepSettingsDialog":
         existing = cls._open_dialogs.get(id(step))
         if existing:

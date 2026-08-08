@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from blinker import Signal
 
@@ -14,8 +14,8 @@ class SketchSelection:
     def __init__(self):
         self.point_ids: list[EntityID] = []
         self.entity_ids: list[EntityID] = []
-        self.constraint_idx: Optional[int] = None
-        self.junction_pid: Optional[EntityID] = None
+        self.constraint_idx: int | None = None
+        self.junction_pid: EntityID | None = None
         self.changed = Signal()
 
     def clear(self):

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point
 
@@ -40,7 +41,7 @@ class EqualDistanceConstraint(Constraint):
 
     @classmethod
     def can_apply_to(
-        cls, selection: "SketchSelection", sketch: Optional["Sketch"] = None
+        cls, selection: SketchSelection, sketch: Sketch | None = None
     ) -> bool:
         if selection.point_ids or len(selection.entity_ids) < 2:
             return False
@@ -61,7 +62,7 @@ class EqualDistanceConstraint(Constraint):
         """Returns a human-readable title for this constraint."""
         return self.get_type_name()
 
-    def get_subtitle(self, registry: "EntityRegistry") -> str:
+    def get_subtitle(self, registry: EntityRegistry) -> str:
         """Returns subtitle describing constrained segments."""
         p1 = registry.get_point(self.p1)
         p2 = registry.get_point(self.p2)
@@ -77,7 +78,7 @@ class EqualDistanceConstraint(Constraint):
         return ""
 
     def targets_segment(
-        self, p1: EntityID, p2: EntityID, entity_id: Optional[EntityID]
+        self, p1: EntityID, p2: EntityID, entity_id: EntityID | None
     ) -> bool:
         target = {p1, p2}
         return target == {self.p1, self.p2} or target == {self.p3, self.p4}
@@ -93,7 +94,7 @@ class EqualDistanceConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "EqualDistanceConstraint":
+    def from_dict(cls, data: dict[str, Any]) -> EqualDistanceConstraint:
         return cls(
             p1=data["p1"],
             p2=data["p2"],
@@ -102,9 +103,7 @@ class EqualDistanceConstraint(Constraint):
             user_visible=data.get("user_visible", True),
         )
 
-    def error(
-        self, reg: "EntityRegistry", params: "ParameterContext"
-    ) -> float:
+    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         dist1 = math.hypot(pt2.x - pt1.x, pt2.y - pt1.y)
@@ -116,7 +115,7 @@ class EqualDistanceConstraint(Constraint):
         return dist1 - dist2
 
     def gradient(
-        self, reg: "EntityRegistry", params: "ParameterContext"
+        self, reg: EntityRegistry, params: ParameterContext
     ) -> dict[EntityID, list[Point]]:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
@@ -154,7 +153,7 @@ class EqualDistanceConstraint(Constraint):
 
     def _get_symbol_pos(
         self,
-        reg: "EntityRegistry",
+        reg: EntityRegistry,
         to_screen: Callable[[Point], Point],
     ):
         """Calculates screen position for the equality symbol."""
@@ -193,7 +192,7 @@ class EqualDistanceConstraint(Constraint):
         self,
         sx: float,
         sy: float,
-        reg: "EntityRegistry",
+        reg: EntityRegistry,
         to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
@@ -205,8 +204,8 @@ class EqualDistanceConstraint(Constraint):
 
     def draw(
         self,
-        ctx: "cairo.Context",
-        registry: "EntityRegistry",
+        ctx: cairo.Context,
+        registry: EntityRegistry,
         to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,

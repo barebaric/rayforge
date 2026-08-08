@@ -2,7 +2,7 @@ import json
 import logging
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 from blinker import Signal
@@ -20,7 +20,7 @@ class Camera:
         self._device_id: str = device_id
         self._enabled: bool = False
         # None indicates auto white balance, float for manual Kelvin
-        self._white_balance: Optional[float] = None
+        self._white_balance: float | None = None
         self._contrast: float = 50.0
         self._brightness: float = 0.0  # Default brightness (0 = no change)
         self._transparency: float = 0.2
@@ -31,7 +31,7 @@ class Camera:
 
         self._prefer_yuyv: bool = False
 
-        self._resolution: Optional[tuple[int, int]] = None
+        self._resolution: tuple[int, int] | None = None
 
         # Lens calibration parameters
         # Distortion coefficients: k1, k2, p1, p2, k3 (OpenCV order)
@@ -42,20 +42,20 @@ class Camera:
         self._distortion_k3: float = 0.0
 
         # Camera matrix parameters (needed for proper undistortion)
-        self._camera_matrix_fx: Optional[float] = None
-        self._camera_matrix_fy: Optional[float] = None
-        self._camera_matrix_cx: Optional[float] = None
-        self._camera_matrix_cy: Optional[float] = None
+        self._camera_matrix_fx: float | None = None
+        self._camera_matrix_fy: float | None = None
+        self._camera_matrix_cx: float | None = None
+        self._camera_matrix_cy: float | None = None
 
         # Calibration metadata
-        self._calibration_rms: Optional[float] = None
-        self._calibration_date: Optional[datetime] = None
-        self._calibration_image_size: Optional[tuple[int, int]] = None
-        self._calibration_frames_used: Optional[int] = None
+        self._calibration_rms: float | None = None
+        self._calibration_date: datetime | None = None
+        self._calibration_image_size: tuple[int, int] | None = None
+        self._calibration_frames_used: int | None = None
 
         # Properties for camera alignment points
-        self._image_to_world: Optional[tuple[PointList, PointList]] = None
-        self._alignment_date: Optional[datetime] = None
+        self._image_to_world: tuple[PointList, PointList] | None = None
+        self._alignment_date: datetime | None = None
 
         # Signals
         self.changed = Signal()
@@ -101,11 +101,11 @@ class Camera:
         self.changed.send(self)
 
     @property
-    def white_balance(self) -> Optional[float]:
+    def white_balance(self) -> float | None:
         return self._white_balance
 
     @white_balance.setter
-    def white_balance(self, value: Optional[float]):
+    def white_balance(self, value: float | None):
         if value is not None:
             if not isinstance(value, (int, float)):
                 raise ValueError("White balance must be a number or None.")
@@ -231,11 +231,11 @@ class Camera:
         self.settings_changed.send(self)
 
     @property
-    def resolution(self) -> Optional[tuple[int, int]]:
+    def resolution(self) -> tuple[int, int] | None:
         return self._resolution
 
     @resolution.setter
-    def resolution(self, value: Optional[tuple[int, int]]):
+    def resolution(self, value: tuple[int, int] | None):
         if value is not None:
             if not (
                 isinstance(value, tuple)
@@ -315,41 +315,41 @@ class Camera:
         self.settings_changed.send(self)
 
     @property
-    def camera_matrix_fx(self) -> Optional[float]:
+    def camera_matrix_fx(self) -> float | None:
         return self._camera_matrix_fx
 
     @camera_matrix_fx.setter
-    def camera_matrix_fx(self, value: Optional[float]):
+    def camera_matrix_fx(self, value: float | None):
         self._camera_matrix_fx = value
         self.changed.send(self)
         self.settings_changed.send(self)
 
     @property
-    def camera_matrix_fy(self) -> Optional[float]:
+    def camera_matrix_fy(self) -> float | None:
         return self._camera_matrix_fy
 
     @camera_matrix_fy.setter
-    def camera_matrix_fy(self, value: Optional[float]):
+    def camera_matrix_fy(self, value: float | None):
         self._camera_matrix_fy = value
         self.changed.send(self)
         self.settings_changed.send(self)
 
     @property
-    def camera_matrix_cx(self) -> Optional[float]:
+    def camera_matrix_cx(self) -> float | None:
         return self._camera_matrix_cx
 
     @camera_matrix_cx.setter
-    def camera_matrix_cx(self, value: Optional[float]):
+    def camera_matrix_cx(self, value: float | None):
         self._camera_matrix_cx = value
         self.changed.send(self)
         self.settings_changed.send(self)
 
     @property
-    def camera_matrix_cy(self) -> Optional[float]:
+    def camera_matrix_cy(self) -> float | None:
         return self._camera_matrix_cy
 
     @camera_matrix_cy.setter
-    def camera_matrix_cy(self, value: Optional[float]):
+    def camera_matrix_cy(self, value: float | None):
         self._camera_matrix_cy = value
         self.changed.send(self)
         self.settings_changed.send(self)
@@ -366,7 +366,7 @@ class Camera:
             ]
         )
 
-    def get_camera_matrix(self) -> Optional[np.ndarray]:
+    def get_camera_matrix(self) -> np.ndarray | None:
         if not self.has_calibration:
             return None
         return np.array(
@@ -393,11 +393,11 @@ class Camera:
     # ---------------------------------------------
 
     @property
-    def image_to_world(self) -> Optional[tuple[PointList, PointList]]:
+    def image_to_world(self) -> tuple[PointList, PointList] | None:
         return self._image_to_world
 
     @image_to_world.setter
-    def image_to_world(self, value: Optional[tuple[PointList, PointList]]):
+    def image_to_world(self, value: tuple[PointList, PointList] | None):
         if value is not None:
             if not (isinstance(value, tuple) and len(value) == 2):
                 raise ValueError(
@@ -485,27 +485,27 @@ class Camera:
         self.settings_changed.send(self)
 
     @property
-    def calibration_rms(self) -> Optional[float]:
+    def calibration_rms(self) -> float | None:
         return self._calibration_rms
 
     @property
-    def calibration_date(self) -> Optional[datetime]:
+    def calibration_date(self) -> datetime | None:
         return self._calibration_date
 
     @property
-    def calibration_image_size(self) -> Optional[tuple[int, int]]:
+    def calibration_image_size(self) -> tuple[int, int] | None:
         return self._calibration_image_size
 
     @property
-    def calibration_frames_used(self) -> Optional[int]:
+    def calibration_frames_used(self) -> int | None:
         return self._calibration_frames_used
 
     @property
-    def alignment_date(self) -> Optional[datetime]:
+    def alignment_date(self) -> datetime | None:
         return self._alignment_date
 
     @alignment_date.setter
-    def alignment_date(self, value: Optional[datetime]):
+    def alignment_date(self, value: datetime | None):
         if self._alignment_date == value:
             return
         self._alignment_date = value

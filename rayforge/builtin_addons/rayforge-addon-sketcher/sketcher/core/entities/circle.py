@@ -1,6 +1,6 @@
 import math
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry
 from raygeo.geo.shape.circle import (
@@ -134,7 +134,7 @@ class Circle(Entity):
 
     def create_fill_geometry(
         self, registry: "EntityRegistry"
-    ) -> Optional[Geometry]:
+    ) -> Geometry | None:
         """Creates a fill geometry for a single-entity circle loop."""
         geo = Geometry()
         center = registry.get_point(self.center_idx)
@@ -169,7 +169,7 @@ class Circle(Entity):
             construction=data.get("construction", False),
         )
 
-    def get_midpoint(self, registry: "EntityRegistry") -> Optional[Point]:
+    def get_midpoint(self, registry: "EntityRegistry") -> Point | None:
         """Returns a point on the circumference (the radius point)."""
         radius_pt = registry.get_point(self.radius_pt_idx)
         if not radius_pt:
