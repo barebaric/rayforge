@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 """
 Ruida Simulator with UI - A graphical application for the Ruida simulator.
 

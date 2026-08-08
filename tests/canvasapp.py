@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 import logging
 import math
 from pathlib import Path

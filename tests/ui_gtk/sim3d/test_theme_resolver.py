@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 """UI tests for the ThemeResolver 3D colour derivation."""
 
 import gi

@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 """UI tests for the ComboAdapter, incl. per-var "no selection" labels."""
 
 import gi

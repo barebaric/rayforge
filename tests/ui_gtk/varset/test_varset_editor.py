@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 import os
 import sys
 from unittest.mock import Mock

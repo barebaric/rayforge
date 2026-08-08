@@ -1,3 +1,4 @@
+# flake8: noqa: E402
 """Reproduction: does switching length units mutate the item model?
 
 Switch user units mm -> in and verify a selected item's size/pos don't
