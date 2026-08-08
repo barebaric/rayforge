@@ -28,10 +28,13 @@ jobs:
           pixi update --json | pixi exec pixi-diff-to-markdown >> diff.md
 
       - name: Upgrade dependencies
-        run: pixi upgrade
-
-      - name: Sync pip requirement files
-        run: python3 scripts/sync_requirements.py
+        run: |
+          : > requirements.txt
+          pixi upgrade --pinning-strategy exact-version
+          git restore requirements.txt
+          python3 scripts/sync_requirements.py
+          pixi clean cache -y
+          pixi update
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v8

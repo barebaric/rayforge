@@ -3,7 +3,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from blinker import Signal
-from gi.repository import Gdk, GObject, Gtk
+from gi.repository import Gdk, Gtk
 
 from ...core.doc import Doc
 from ...core.layer import Layer
@@ -53,9 +53,7 @@ class LayersTab(Gtk.Box):
         self._pan_gesture.connect("drag-update", self._on_pan_update)
         self.scrolled.add_controller(self._pan_gesture)
 
-        drop_target = Gtk.DropTarget.new(
-            GObject.TYPE_STRING, Gdk.DragAction.MOVE
-        )
+        drop_target = Gtk.DropTarget.new(str, Gdk.DragAction.MOVE)
         drop_target.connect("accept", self._on_layer_drop_accept)
         drop_target.connect("enter", self._on_layer_drop_enter)
         drop_target.connect("drop", self._on_layer_drop)

@@ -1,7 +1,7 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional
 
-from gi.repository import Gdk, Gio, GObject, Gtk
+from gi.repository import Gdk, Gio, Gtk
 
 from ...context import get_context
 from ...core.step_registry import step_registry
@@ -97,9 +97,7 @@ class WorkflowRow(Gtk.Box):
         self.add_controller(self._drag_source)
 
     def _setup_drop_target(self):
-        self._drop_target = Gtk.DropTarget.new(
-            GObject.TYPE_STRING, Gdk.DragAction.MOVE
-        )
+        self._drop_target = Gtk.DropTarget.new(str, Gdk.DragAction.MOVE)
         self._drop_target.connect("drop", self._on_drop)
         self._drop_target.connect("motion", self._on_drop_motion)
         self._drop_target.connect("leave", self._on_drop_leave)

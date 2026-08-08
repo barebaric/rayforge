@@ -11,6 +11,7 @@ import numpy as np
 import trimesh
 from OpenGL import GL
 from trimesh.visual.color import ColorVisuals
+from trimesh.visual.material import PBRMaterial
 
 from ..gl_utils import ShaderSet
 from ..render_context import RenderContext
@@ -41,8 +42,9 @@ def _extract_color(mesh: trimesh.Trimesh) -> Optional[np.ndarray]:
             return np.array(vc, dtype=np.float32) / 255.0
         return None
     mat = mesh.visual.material
-    base = mat.baseColorFactor
-    if base is None:
+    if isinstance(mat, PBRMaterial):
+        base = mat.baseColorFactor
+    else:
         base = mat.diffuse
     if base is not None:
         c = np.array(base, dtype=np.float32)
@@ -75,6 +77,7 @@ def _load_mesh_data(path: Path) -> Optional[_CachedModelData]:
                 if color is not None:
                     colors.append(color)
             mesh = trimesh.util.concatenate(meshes)
+            assert isinstance(mesh, trimesh.Trimesh)
             has_colors = len(colors) == len(meshes) and sum(
                 c.shape[0] for c in colors
             ) == len(mesh.vertices)
