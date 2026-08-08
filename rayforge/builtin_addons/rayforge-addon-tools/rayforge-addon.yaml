@@ -1,0 +1,13 @@
+name: tool_library
+display_name: "Tool Library"
+description: "Cutting-tool library for CNC machining"
+api_version: 18
+author:
+  name: "Rayforge Team"
+  email: "noreply@rayforge.org"
+provides:
+  worker: "tool_library"
+  frontend: "tool_library.frontend"
+license:
+  name: "MIT"
+default_state: "disabled"
