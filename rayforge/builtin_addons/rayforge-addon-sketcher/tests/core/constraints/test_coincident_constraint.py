@@ -31,7 +31,7 @@ def test_coincident_constraint(setup_env):
 
 
 def test_coincident_constraint_user_visible(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(3, 4)
 
@@ -43,7 +43,7 @@ def test_coincident_constraint_user_visible(setup_env):
 
 
 def test_coincident_targets_segment(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(3, 4)
 
@@ -117,7 +117,7 @@ def test_coincident_constraint_serialization_round_trip(setup_env):
 
 
 def test_coincident_is_hit(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(10, 20)
     p2 = reg.add_point(10, 20)
     c = CoincidentConstraint(p1, p2)
@@ -135,7 +135,7 @@ def test_coincident_is_hit(setup_env):
 
 
 def test_coincident_draw(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(3, 4)
 

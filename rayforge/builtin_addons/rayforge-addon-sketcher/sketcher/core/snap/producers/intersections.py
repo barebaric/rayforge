@@ -75,8 +75,7 @@ class IntersectionsProducer(SnapLineProducer):
 
         for i, e1 in enumerate(entities):
             for e2 in entities[i + 1 :]:
-                for intersection in self._get_intersections(e1, e2, registry):
-                    yield intersection
+                yield from self._get_intersections(e1, e2, registry)
 
     def _get_intersections(
         self, e1: object, e2: object, registry: "EntityRegistry"

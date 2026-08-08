@@ -65,9 +65,7 @@ class OAuthFlowVar(Var[str]):
             return False
         if not tokens.get("access_token"):
             return False
-        if self._is_expired(tokens):
-            return False
-        return True
+        return not self._is_expired(tokens)
 
     def is_expired(self) -> bool:
         tokens = self.get_tokens()

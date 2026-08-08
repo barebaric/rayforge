@@ -253,9 +253,7 @@ class SymmetryConstraint(Constraint):
         ry = my + offset * math.sin(angle)
         if math.hypot(sx - lx, sy - ly) < threshold:
             return True
-        if math.hypot(sx - rx, sy - ry) < threshold:
-            return True
-        return False
+        return math.hypot(sx - rx, sy - ry) < threshold
 
     def draw(
         self,

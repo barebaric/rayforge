@@ -175,7 +175,7 @@ class PdfTraceImporter(Importer):
         document_bounds = (0.0, 0.0, float(render_w_px), float(render_h_px))
         native_unit_to_mm = 1.0 / px_per_mm
 
-        x, y, w, h = document_bounds
+        x, _y, w, h = document_bounds
         world_frame = (
             x * native_unit_to_mm,
             0.0,

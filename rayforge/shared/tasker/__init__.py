@@ -6,11 +6,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .manager import TaskManagerProxy
+from .manager import TaskManager, TaskManagerProxy
 from .task import Task
-
-if TYPE_CHECKING:
-    from .manager import TaskManager
 
 # This is the global, thread-safe, and process-safe singleton.
 # It's a lightweight proxy that will create the real TaskManager on

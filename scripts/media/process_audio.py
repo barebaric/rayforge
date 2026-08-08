@@ -120,8 +120,7 @@ def detect_silence(
 
     result = subprocess.run(
         cmd,
-        stderr=subprocess.PIPE,
-        stdout=subprocess.PIPE,
+        capture_output=True,
         text=True,
     )
 
@@ -199,8 +198,7 @@ def get_video_duration(input_file: str) -> float:
 
     result = subprocess.run(
         cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         text=True,
     )
 
@@ -237,8 +235,7 @@ def has_audio_stream(input_file: str) -> bool:
 
     result = subprocess.run(
         cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         text=True,
     )
 
@@ -278,9 +275,7 @@ def extract_segment(
         output_file,
     ]
 
-    result = subprocess.run(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
+    result = subprocess.run(cmd, capture_output=True)
 
     if result.returncode != 0:
         raise RuntimeError(f"Segment extraction failed: {result.stderr}")
@@ -324,9 +319,7 @@ def concat_segments(
         output_file,
     ]
 
-    result = subprocess.run(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
+    result = subprocess.run(cmd, capture_output=True)
 
     if result.returncode != 0:
         raise RuntimeError(f"Concatenation failed: {result.stderr}")
@@ -464,8 +457,7 @@ def has_video_stream(input_file: str) -> bool:
 
     result = subprocess.run(
         cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         text=True,
     )
 

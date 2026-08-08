@@ -30,7 +30,7 @@ def test_horizontal_constraint(setup_env):
 
 
 def test_horizontal_constraint_user_visible(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 5)
 
@@ -42,7 +42,7 @@ def test_horizontal_constraint_user_visible(setup_env):
 
 
 def test_horizontal_targets_segment(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 5)
 
@@ -110,7 +110,7 @@ def test_horizontal_constraint_serialization_round_trip(setup_env):
 
 
 def test_horizontal_is_hit(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 50)
     p2 = reg.add_point(100, 50)
     c = HorizontalConstraint(p1, p2)
@@ -135,7 +135,7 @@ def test_horizontal_is_hit(setup_env):
 
 
 def test_horizontal_draw(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 5)
 

@@ -625,9 +625,8 @@ class SketchRenderer:
             # Filter specific constraints on text box points to reduce clutter
             if isinstance(
                 constr, (CoincidentConstraint, PointOnLineConstraint)
-            ):
-                if constr.depends_on_points(text_box_point_ids):
-                    continue
+            ) and constr.depends_on_points(text_box_point_ids):
+                continue
 
             # Hide constraints referencing construction geometry when hidden
             if construction_entity_ids or construction_point_ids:

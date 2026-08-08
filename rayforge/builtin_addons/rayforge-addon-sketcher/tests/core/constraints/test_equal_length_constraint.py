@@ -69,7 +69,7 @@ def test_equal_length_constraint(setup_env):
 
 
 def test_equal_length_constraint_user_visible(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     l1 = reg.add_line(p1, p2)
@@ -86,7 +86,7 @@ def test_equal_length_constraint_user_visible(setup_env):
 
 
 def test_equal_length_constrains_radius_method(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     l1 = reg.add_line(p1, p2)
@@ -108,7 +108,7 @@ def test_equal_length_constrains_radius_method(setup_env):
 
 
 def test_equal_length_targets_segment(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     l1 = reg.add_line(p1, p2)
@@ -202,7 +202,7 @@ def test_equal_length_constraint_serialization_round_trip(setup_env):
 
 
 def test_equal_length_is_hit(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(100, 0)
     l1 = reg.add_line(p1, p2)
@@ -249,7 +249,7 @@ def test_equal_length_is_hit(setup_env):
 
 
 def test_equal_length_draw(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     l1 = reg.add_line(p1, p2)

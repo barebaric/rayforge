@@ -293,7 +293,7 @@ class TestPipeline:
         )
 
         # Verify the final state change was to idle
-        last_call_args, last_call_kwargs = (
+        _last_call_args, last_call_kwargs = (
             mock_processing_state_handler.call_args_list[-1]
         )
         assert last_call_kwargs.get("is_processing") is False, (

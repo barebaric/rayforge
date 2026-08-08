@@ -33,7 +33,7 @@ def test_surface_to_grayscale_transparent_surface():
     ctx = cairo.Context(surface)
     ctx.set_source_rgba(0.5, 0.5, 0.5, 0)
     ctx.paint()
-    gray, alpha = grayscale.surface_to_grayscale(surface)
+    _gray, alpha = grayscale.surface_to_grayscale(surface)
     assert np.all(alpha == 0.0)
 
 

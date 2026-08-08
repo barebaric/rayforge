@@ -219,7 +219,7 @@ class TestUdpServerTransport:
 
     async def test_send_to_client(self, udp_server, udp_client):
         """Test sending data to a specific client address."""
-        client, client_addr = udp_client
+        _client, client_addr = udp_client
 
         test_data = b"Hello Client"
         await udp_server.send_to(test_data, client_addr)
@@ -337,7 +337,7 @@ class TestUdpServerTransport:
 
     async def test_empty_datagram(self, udp_server, udp_client):
         """Test receiving an empty datagram."""
-        client, client_addr = udp_client
+        client, _client_addr = udp_client
         received_tracker = SignalTracker(udp_server.received)
         server_addr = ("127.0.0.1", udp_server.port)
 

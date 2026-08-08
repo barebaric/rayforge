@@ -313,10 +313,10 @@ class ColorSet:
         """
         r, g, b, a = self.get_rgba(name)
         return [
-            int(round(b * a * 255)),
-            int(round(g * a * 255)),
-            int(round(r * a * 255)),
-            int(round(a * 255)),
+            round(b * a * 255),
+            round(g * a * 255),
+            round(r * a * 255),
+            round(a * 255),
         ]
 
     def __repr__(self) -> str:

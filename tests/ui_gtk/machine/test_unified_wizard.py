@@ -312,7 +312,7 @@ def test_materialize_machine_emits_profile_created(ui_context_initializer):
     wizard.create_btn.emit("clicked")
 
     created.assert_called_once()
-    args, kwargs = created.call_args
+    _args, kwargs = created.call_args
     assert kwargs["profile"] is wizard.profile
     assert kwargs["machine"] is not None
 

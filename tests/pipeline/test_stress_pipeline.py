@@ -379,7 +379,7 @@ class StressTestController:
             for handle in vm._source_artifact_handles.values():
                 tracked_shms.add(id(handle))
 
-        all_handles = set(id(h) for h in self.artifact_store._handles.values())
+        all_handles = {id(h) for h in self.artifact_store._handles.values()}
         untracked = all_handles - tracked_shms
 
         breakdown["total_shm"] = len(all_handles)

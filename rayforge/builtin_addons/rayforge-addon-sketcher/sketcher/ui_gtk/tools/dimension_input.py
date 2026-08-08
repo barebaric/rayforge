@@ -103,13 +103,11 @@ class DimensionInputHandler:
                 if dot_count + comma_count == 0:
                     return True
             return False
-        if char == " ":
-            if (
-                self.field_count > 1
-                and self.current_field < self.field_count - 1
-            ):
-                self.current_field += 1
-                return True
+        if char == " " and (
+            self.field_count > 1 and self.current_field < self.field_count - 1
+        ):
+            self.current_field += 1
+            return True
         return False
 
     def handle_backspace(self) -> bool:

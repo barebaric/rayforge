@@ -336,7 +336,7 @@ class RuidaEncoder(OpsEncoder):
     ) -> None:
         """Handle ArcToCommand - linearize arc to series of cuts."""
         end = ops.endpoint(idx)
-        i_val, j_val, cw = ops.arc_params(idx)
+        _i_val, _j_val, cw = ops.arc_params(idx)
         text.append(
             f"; ARC to ({end[0]:.3f}, {end[1]:.3f}) {'CW' if cw else 'CCW'}"
         )

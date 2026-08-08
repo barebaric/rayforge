@@ -739,7 +739,7 @@ def open_array_dialog(
         ),
         "circular": (ArrayMode.CIRCULAR, CircularArrayDialog),
     }
-    array_mode, cls = mode_map[mode]
+    _array_mode, cls = mode_map[mode]
 
     def _open():
         items = list(win.surface.get_selected_items())

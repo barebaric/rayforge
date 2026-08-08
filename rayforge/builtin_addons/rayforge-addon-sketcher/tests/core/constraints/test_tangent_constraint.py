@@ -44,7 +44,7 @@ def test_tangent_constraint(setup_env):
 
 
 def test_tangent_constraint_user_visible(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     start = reg.add_point(10, 0)
     end = reg.add_point(0, 10)
     center = reg.add_point(0, 0)
@@ -102,7 +102,7 @@ def test_tangent_constraint_zero_length_line(setup_env):
 
 
 def test_tangent_targets_segment(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     start = reg.add_point(10, 0)
     end = reg.add_point(0, 10)
     center = reg.add_point(0, 0)
@@ -227,7 +227,7 @@ def test_tangent_constraint_serialization_round_trip(setup_env):
 
 
 def test_tangent_is_hit(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     center = reg.add_point(50, 50)
     radius_pt = reg.add_point(50, 60)  # radius=10
     circ_id = reg.add_circle(center, radius_pt)
@@ -257,7 +257,7 @@ def test_tangent_is_hit(setup_env):
 
 
 def test_tangent_draw(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     center = reg.add_point(50, 50)
     radius_pt = reg.add_point(50, 60)
     circ_id = reg.add_circle(center, radius_pt)

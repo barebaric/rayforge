@@ -212,7 +212,7 @@ class SvgTraceImporter(SvgImporterBase):
 
         # Calculate authoritative world frame for the traced image
         t_ref_bounds = trace_untrimmed_bounds or trace_document_bounds
-        t_x, t_y, t_w, t_h = t_ref_bounds
+        t_x, _t_y, t_w, t_h = t_ref_bounds
         t_w_mm = t_w * mm_per_px_x
         t_h_mm = t_h * mm_per_px_x
         t_x_mm = t_x * mm_per_px_x

@@ -129,7 +129,7 @@ def test_parallelogram_constraint_gradient_direct(setup_env):
 
 
 def test_parallelogram_constraint_user_visible_false(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p_origin = reg.add_point(0, 0)
     p_width = reg.add_point(10, 0)
     p_height = reg.add_point(0, 5)
@@ -140,7 +140,7 @@ def test_parallelogram_constraint_user_visible_false(setup_env):
 
 
 def test_parallelogram_constraint_user_visible_true(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p_origin = reg.add_point(0, 0)
     p_width = reg.add_point(10, 0)
     p_height = reg.add_point(0, 5)
@@ -153,7 +153,7 @@ def test_parallelogram_constraint_user_visible_true(setup_env):
 
 
 def test_parallelogram_targets_segment(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     p3 = reg.add_point(0, 5)
@@ -190,7 +190,7 @@ def test_parallelogram_constraint_serialization_round_trip(setup_env):
 def test_parallelogram_constraint_serialization_includes_user_visible(
     setup_env,
 ):
-    reg, params = setup_env
+    reg, _params = setup_env
     p_origin = reg.add_point(0, 0)
     p_width = reg.add_point(10, 0)
     p_height = reg.add_point(0, 5)
@@ -204,7 +204,7 @@ def test_parallelogram_constraint_serialization_includes_user_visible(
 
 
 def test_parallelogram_draw(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p_origin = reg.add_point(0, 0)
     p_width = reg.add_point(10, 0)
     p_height = reg.add_point(0, 5)

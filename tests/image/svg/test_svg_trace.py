@@ -43,7 +43,7 @@ def test_vectorize_enforces_tracespec(trace_importer):
     """Should raise TypeError if we try to vectorize with non-TraceSpec."""
     document_bounds = (0, 0, 10, 10)
     unit_scale = 1.0
-    x, y, w, h = document_bounds
+    x, _y, w, h = document_bounds
     world_frame = (x * unit_scale, 0.0, w * unit_scale, h * unit_scale)
     dummy_parse = ParsingResult(
         document_bounds=document_bounds,

@@ -87,7 +87,7 @@ class HookList(Adw.PreferencesGroup):
 
     def _on_machine_changed(self, sender: Machine, **kwargs):
         """Update all row styles when the machine model changes."""
-        for trigger in self.trigger_widgets.keys():
+        for trigger in self.trigger_widgets:
             self._update_row_state(trigger)
 
     def _on_enable_toggled(self, switch: Gtk.Switch, _, trigger: MacroTrigger):

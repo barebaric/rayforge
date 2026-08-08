@@ -286,9 +286,7 @@ class CameraWizard(PatchedDialogWindow):
         for page in self._pages.values():
             if isinstance(page, CapturePage):
                 page.stop()
-            elif isinstance(page, ImageSettingsPage) or isinstance(
-                page, AlignmentPage
-            ):
+            elif isinstance(page, (ImageSettingsPage, AlignmentPage)):
                 page.leave()
         super().close()
 

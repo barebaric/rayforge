@@ -36,7 +36,7 @@ def test_diameter_constraint(setup_env):
 
 
 def test_diameter_constraint_user_visible(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     center = reg.add_point(0, 0)
     radius_pt = reg.add_point(5, 0)
     circ_id = reg.add_circle(center, radius_pt)
@@ -49,7 +49,7 @@ def test_diameter_constraint_user_visible(setup_env):
 
 
 def test_diameter_constrains_radius_method(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     center = reg.add_point(0, 0)
     radius_pt = reg.add_point(5, 0)
     circ_id = reg.add_circle(center, radius_pt)
@@ -65,7 +65,7 @@ def test_diameter_constrains_radius_method(setup_env):
 
 
 def test_diameter_targets_segment(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     center = reg.add_point(0, 0)
     radius_pt = reg.add_point(5, 0)
     circ_id = reg.add_circle(center, radius_pt)
@@ -163,7 +163,7 @@ def test_diameter_constraint_gradient(setup_env):
 
 
 def test_diameter_is_hit(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     center = reg.add_point(0, 0)
     radius_pt = reg.add_point(100, 0)  # radius=100
     circ_id = reg.add_circle(center, radius_pt)
@@ -196,7 +196,7 @@ def test_diameter_is_hit(setup_env):
 
 
 def test_diameter_draw(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     center = reg.add_point(0, 0)
     radius_pt = reg.add_point(5, 0)
     circ_id = reg.add_circle(center, radius_pt)

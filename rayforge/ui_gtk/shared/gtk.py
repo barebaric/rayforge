@@ -36,7 +36,7 @@ def get_monitor_geometry() -> Gdk.Rectangle | None:
     if not pointer:
         return monitor.get_geometry()
 
-    surface, x, y = pointer.get_surface_at_position()
+    surface, _x, _y = pointer.get_surface_at_position()
     if not surface:
         return monitor.get_geometry()
 

@@ -107,8 +107,8 @@ def calculate_render_dimensions(
     _, _, w_mm, h_mm = bbox
     ppm_x, ppm_y = render_context.pixels_per_mm
 
-    width_px = min(int(round(w_mm * ppm_x)), CAIRO_MAX_DIMENSION)
-    height_px = min(int(round(h_mm * ppm_y)), CAIRO_MAX_DIMENSION)
+    width_px = min(round(w_mm * ppm_x), CAIRO_MAX_DIMENSION)
+    height_px = min(round(h_mm * ppm_y), CAIRO_MAX_DIMENSION)
 
     if width_px * height_px > MAX_TOTAL_PIXELS:
         scale = (MAX_TOTAL_PIXELS / (width_px * height_px)) ** 0.5

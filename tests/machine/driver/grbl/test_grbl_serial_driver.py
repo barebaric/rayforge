@@ -411,7 +411,7 @@ class TestGrblSerialDriver:
             driver.set_wcs_offset("G55", 10.5, -20.0, 0.1)
         )
 
-        done, pending = await asyncio.wait([cmd_task], timeout=0.1)
+        done, _pending = await asyncio.wait([cmd_task], timeout=0.1)
 
         assert cmd_task not in done
 
@@ -648,7 +648,7 @@ class TestGrblSerialDriver:
         driver.job_finished.send = job_finished_mock
 
         long_line = "G1 X0 " + "A" * 120
-        gcode = "\n".join([long_line, "G0 X10", "G0 Y10"])
+        gcode = f"{long_line}\nG0 X10\nG0 Y10"
         run_task = asyncio.create_task(driver.run_raw(gcode))
 
         await asyncio.sleep(0.01)

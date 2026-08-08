@@ -107,7 +107,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         if context:
             context.set_message("Preparing workpiece variants...")
 
-        prepared_items, total_area = self._prepare_variants()
+        prepared_items, _total_area = self._prepare_variants()
         if not prepared_items:
             self.unplaced_items = list(self.items)
             return {}

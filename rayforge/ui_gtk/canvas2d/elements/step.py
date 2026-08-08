@@ -63,7 +63,7 @@ class StepElement(CanvasElement):
         Handles visibility changes from the model. It updates its own state
         and then broadcasts the change to its siblings.
         """
-        if not self.visible == step.visible:
+        if self.visible != step.visible:
             self.set_visible(step.visible)
             self._update_sibling_ops_visibility()
 

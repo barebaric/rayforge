@@ -42,7 +42,7 @@ def test_point_on_line_constraint(setup_env):
 
 
 def test_point_on_line_constraint_user_visible(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     line_id = reg.add_line(p1, p2)
@@ -83,7 +83,7 @@ def test_point_on_line_constrains_radius(setup_env):
     Test that PointOnLineConstraint correctly reports constraining the radius
     when the point on the circle is itself constrained.
     """
-    reg, params = setup_env
+    reg, _params = setup_env
 
     # Setup Circle
     c = reg.add_point(0, 0, fixed=True)
@@ -111,7 +111,7 @@ def test_point_on_line_constrains_radius(setup_env):
 
 
 def test_point_on_line_targets_segment(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     line_id = reg.add_line(p1, p2)
@@ -249,7 +249,7 @@ def test_point_on_line_constraint_serialization_round_trip(setup_env):
 
 
 def test_point_on_line_is_hit(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(10, 20)
     l1 = reg.add_point(0, 0)
     l2 = reg.add_point(100, 100)
@@ -269,7 +269,7 @@ def test_point_on_line_is_hit(setup_env):
 
 
 def test_point_on_line_draw(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     p3 = reg.add_point(5, 5)

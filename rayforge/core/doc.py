@@ -100,15 +100,15 @@ class Doc(DocItem):
 
         # Legacy Asset Loading (from separate dictionaries)
         stock_assets_data = data.get("stock_assets", {})
-        for _uid, sa_data in stock_assets_data.items():
+        for sa_data in stock_assets_data.values():
             doc.add_asset(StockAsset.from_dict(sa_data))
         sketches_data = data.get("sketches", {})
-        for _uid, s_data in sketches_data.items():
+        for s_data in sketches_data.values():
             sketch_cls = asset_type_registry.get("sketch")
             if sketch_cls:
                 doc.add_asset(sketch_cls.from_dict(s_data))
         source_assets_data = data.get("source_assets", {})
-        for _uid, src_data in source_assets_data.items():
+        for src_data in source_assets_data.values():
             doc.add_asset(SourceAsset.from_dict(src_data))
 
         # Load children (Layers and StockItems) from unified list
@@ -342,11 +342,10 @@ class Doc(DocItem):
         return child
 
     def remove_child(self, child: DocItem):
-        if isinstance(child, Layer):
-            if child.workflow:
-                child.per_step_transformer_changed.disconnect(
-                    self._on_layer_per_step_transformer_changed
-                )
+        if isinstance(child, Layer) and child.workflow:
+            child.per_step_transformer_changed.disconnect(
+                self._on_layer_per_step_transformer_changed
+            )
         super().remove_child(child)
 
     def set_children(self, new_children: Iterable[DocItem]):

@@ -30,7 +30,7 @@ def test_vertical_constraint(setup_env):
 
 
 def test_vertical_constraint_user_visible(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(5, 10)
 
@@ -42,7 +42,7 @@ def test_vertical_constraint_user_visible(setup_env):
 
 
 def test_vertical_targets_segment(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(5, 10)
 
@@ -110,7 +110,7 @@ def test_vertical_constraint_serialization_round_trip(setup_env):
 
 
 def test_vertical_is_hit(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(50, 0)
     p2 = reg.add_point(50, 100)
     c = VerticalConstraint(p1, p2)
@@ -135,7 +135,7 @@ def test_vertical_is_hit(setup_env):
 
 
 def test_vertical_draw(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(50, 0)
     p2 = reg.add_point(50, 100)
     c = VerticalConstraint(p1, p2)

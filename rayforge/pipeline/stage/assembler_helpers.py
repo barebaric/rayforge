@@ -347,7 +347,7 @@ def preprocess_raster_image(
     if mode == DepthMode.DITHER:
         min_feature_px = max(
             1,
-            int(round(laser_spot_x_mm * pixels_per_mm_x)),
+            round(laser_spot_x_mm * pixels_per_mm_x),
         )
         algo = dither_algorithm or DitherAlgorithm.FLOYD_STEINBERG
         image = surface_to_dithered_array(

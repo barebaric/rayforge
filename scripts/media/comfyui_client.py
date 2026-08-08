@@ -465,7 +465,7 @@ def main():
         result_text += f"Status: {json.dumps(status, indent=2)}\n"
 
         outputs = prompt_info.get("outputs", {})
-        for node_id, node_output in outputs.items():
+        for node_output in outputs.values():
             if "images" in node_output:
                 for img in node_output["images"]:
                     filename = img["filename"]

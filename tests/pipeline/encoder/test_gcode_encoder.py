@@ -90,19 +90,19 @@ def test_dialect_template_fields_include_spindle_coolant():
 
 def _make_context(**overrides) -> dict:
     """Build a minimal EncodeContext dict."""
-    defaults = dict(
-        gcode_precision=3,
-        max_travel_speed=6000.0,
-        unit_scale=1.0,
-        default_head_uid="default",
-        heads=[{"uid": "default", "tool_number": 0, "max_power": 1000.0}],
-        active_wcs="",
-        layer_wcs={},
-        macros={},
-        path_vars={},
-        layer_path_vars={},
-        workpiece_path_vars={},
-    )
+    defaults = {
+        "gcode_precision": 3,
+        "max_travel_speed": 6000.0,
+        "unit_scale": 1.0,
+        "default_head_uid": "default",
+        "heads": [{"uid": "default", "tool_number": 0, "max_power": 1000.0}],
+        "active_wcs": "",
+        "layer_wcs": {},
+        "macros": {},
+        "path_vars": {},
+        "layer_path_vars": {},
+        "workpiece_path_vars": {},
+    }
     defaults.update(overrides)
     return defaults
 

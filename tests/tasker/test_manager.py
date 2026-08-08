@@ -503,7 +503,7 @@ class TestTaskManagerGlobals:
 
         # Check first call (task added, status pending)
         signal_receiver.assert_called()
-        args, kwargs = signal_receiver.call_args_list[0]
+        _args, kwargs = signal_receiver.call_args_list[0]
         assert kwargs["tasks"][0].key == "sig_test"
         # The task might have already transitioned by the time we inspect
         # the mock argument references

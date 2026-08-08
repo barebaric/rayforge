@@ -321,7 +321,7 @@ class Assembly:
         for name in head_names:
             if name not in fk_heads:
                 continue
-            hx, hy, hz = fk_heads[name]
+            hx, _hy, hz = fk_heads[name]
 
             local = np.array(
                 [

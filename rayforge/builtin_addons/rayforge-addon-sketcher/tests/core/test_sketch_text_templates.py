@@ -213,11 +213,11 @@ def test_uuid4_stable_with_external_cache():
     s.solve()
 
     cache_a: dict = {}
-    geo1, _ = s.get_geometry(resolved_text_cache=cache_a)
+    _geo1, _ = s.get_geometry(resolved_text_cache=cache_a)
     assert len(cache_a) == 1
 
     cache_a_copy = dict(cache_a)
-    geo2, _ = s.get_geometry(resolved_text_cache=cache_a)
+    _geo2, _ = s.get_geometry(resolved_text_cache=cache_a)
     assert cache_a == cache_a_copy
 
 

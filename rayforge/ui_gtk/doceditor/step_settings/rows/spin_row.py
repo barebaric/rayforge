@@ -79,7 +79,7 @@ class SpinRow(DebouncedMixin, StepRow):
         if self.quantity:
             value = self.widget.get_value_in_base_units()
             if self.is_int:
-                value = int(round(value))
+                value = round(value)
         else:
             value = (
                 self.widget.get_int_value()

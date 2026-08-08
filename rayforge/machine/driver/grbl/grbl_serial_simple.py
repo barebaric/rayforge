@@ -388,7 +388,7 @@ class GrblSerialSimpleDriver(Driver):
                 self._pending.set_result(error=line)
             return
 
-        if line.startswith("Grbl ") or line.startswith("grbl "):
+        if line.startswith(("Grbl ", "grbl ")):
             self._handshake_received.set()
             return
 
@@ -659,9 +659,7 @@ class GrblSerialSimpleDriver(Driver):
         self._report_in_inches = is_report_in_inches(response_lines)
         known_varsets = self.get_setting_vars()
         key_to_varset_map = {
-            var_key: varset
-            for varset in known_varsets
-            for var_key in varset.keys()
+            var_key: varset for varset in known_varsets for var_key in varset
         }
         unknown_vars = VarSet(
             title=_("Unknown Settings"),

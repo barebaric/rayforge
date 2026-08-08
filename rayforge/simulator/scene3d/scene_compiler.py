@@ -39,8 +39,8 @@ def _rasterize_scanlines(
         return None
 
     px_per_mm = PX_PER_MM
-    width_px = int(round(w_mm * px_per_mm))
-    height_px = int(round(h_mm * px_per_mm))
+    width_px = round(w_mm * px_per_mm)
+    height_px = round(h_mm * px_per_mm)
 
     if width_px > MAX_TEXTURE_DIMENSION or height_px > MAX_TEXTURE_DIMENSION:
         scale = min(
@@ -48,8 +48,8 @@ def _rasterize_scanlines(
             MAX_TEXTURE_DIMENSION / height_px,
         )
         px_per_mm *= scale
-        width_px = int(round(w_mm * px_per_mm))
-        height_px = int(round(h_mm * px_per_mm))
+        width_px = round(w_mm * px_per_mm)
+        height_px = round(h_mm * px_per_mm)
 
     if width_px <= 0 or height_px <= 0:
         return None
@@ -100,7 +100,7 @@ def _generate_texture_layers(
         if raster_result is None:
             continue
 
-        tex_buf, w_px, h_px, actual_ppm = raster_result
+        tex_buf, w_px, h_px, _actual_ppm = raster_result
         x0, y0, bw, bh = bbox
 
         diameter = li.diameter

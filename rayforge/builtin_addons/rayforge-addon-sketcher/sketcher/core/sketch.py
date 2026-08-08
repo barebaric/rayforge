@@ -1387,7 +1387,7 @@ class Sketch(IAsset, IGeometryProvider):
         for e in chainable:
             if isinstance(e, Line):
                 u, v = e.p1_idx, e.p2_idx
-            elif isinstance(e, Arc) or isinstance(e, Bezier):
+            elif isinstance(e, (Arc, Bezier)):
                 u, v = e.start_idx, e.end_idx
             else:
                 continue

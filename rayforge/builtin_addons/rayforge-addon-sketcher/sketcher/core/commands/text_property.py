@@ -170,10 +170,9 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
 
         # If the AR constraint exists, update its ratio. The solver will handle
         # the height automatically. If not, the height remains unconstrained.
-        if active_ar_constraint:
-            if natural_height > 1e-9:
-                new_ratio = natural_width / natural_height
-                active_ar_constraint.ratio = new_ratio
+        if active_ar_constraint and natural_height > 1e-9:
+            new_ratio = natural_width / natural_height
+            active_ar_constraint.ratio = new_ratio
 
     def _remove_text_entity(self, text_entity: TextBoxEntity) -> None:
         """Removes the text entity and its associated points/constraints."""
@@ -313,13 +312,10 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         if (
             self.aspect_ratio_constraint_idx is not None
             and self.old_aspect_ratio is not None
-        ):
-            if self.aspect_ratio_constraint_idx < len(self.sketch.constraints):
-                constr = self.sketch.constraints[
-                    self.aspect_ratio_constraint_idx
-                ]
-                if isinstance(constr, AspectRatioConstraint):
-                    constr.ratio = self.old_aspect_ratio
+        ) and self.aspect_ratio_constraint_idx < len(self.sketch.constraints):
+            constr = self.sketch.constraints[self.aspect_ratio_constraint_idx]
+            if isinstance(constr, AspectRatioConstraint):
+                constr.ratio = self.old_aspect_ratio
 
         # Remove constraints added by this command
         for c in self._added_constraints:

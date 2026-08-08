@@ -138,8 +138,10 @@ class SketchRenderer(Renderer):
             return None
 
         svg_parts = [
-            f'<svg width="{width}" height="{height}" '
-            'xmlns="http://www.w3.org/2000/svg">'
+            (
+                f'<svg width="{width}" height="{height}" '
+                'xmlns="http://www.w3.org/2000/svg">'
+            )
         ]
 
         if fills:

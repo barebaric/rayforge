@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from raygeo.geo import Matrix
+
 from .base import LayoutStrategy
 
 if TYPE_CHECKING:
-    from raygeo.geo import Matrix
-
     from ...core.item import DocItem
     from ...shared.tasker.context import ExecutionContext
 

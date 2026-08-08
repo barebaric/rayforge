@@ -83,7 +83,7 @@ class CameraAlignmentSurface(WorldSurface):
         widget_w, widget_h = self.get_width(), self.get_height()
         if widget_w <= 0 or widget_h <= 0:
             return -1
-        content_x, content_y, content_w, content_h = (
+        _content_x, _content_y, content_w, _content_h = (
             self._axis_renderer.get_content_layout(widget_w, widget_h)
         )
         scale_x = content_w / self.width_mm if self.width_mm > 0 else 1
@@ -423,9 +423,7 @@ class CameraAlignment(Gtk.Box):
         focus_widget = (
             root.get_focus() if isinstance(root, Gtk.Window) else None
         )
-        is_typing = isinstance(focus_widget, Gtk.Text) or isinstance(
-            focus_widget, Gtk.SpinButton
-        )
+        is_typing = isinstance(focus_widget, (Gtk.Text, Gtk.SpinButton))
         if not is_typing and self.active_point_index >= 0:
             dx, dy = 0.0, 0.0
             step = 5.0 if (state & Gdk.ModifierType.SHIFT_MASK) else 0.5

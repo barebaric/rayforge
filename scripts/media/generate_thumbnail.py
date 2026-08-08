@@ -83,26 +83,36 @@ def generate_ai_background(version, seed=None):
         seed = random.randint(1, 1000000)
 
     prompts = [
-        "laser cutting workspace, professional CNC machine, "
-        "modern dark theme, version {v} software interface, "
-        "high contrast, cinematic lighting, 1920x1080, "
-        "8k quality, sharp focus",
-        "abstract laser beam patterns, geometric shapes, "
-        "glowing blue and orange lines, dark background, "
-        "version {v} overlay style, futuristic tech, "
-        "cinematic, high contrast",
-        "precision engineering workspace, CAD software "
-        "interface, blueprints, technical drawings, dark "
-        "mode, version {v} branding, professional, "
-        "clean design, 8k",
-        "laser engraving close-up, sparks flying, metal "
-        "texture, dark industrial setting, version {v} "
-        "watermark, dramatic lighting, high detail, "
-        "1920x1080",
-        "modern software interface, dark theme, blue accent "
-        "colors, geometric patterns, version {v} hero image, "
-        "minimalist design, clean background, "
-        "professional software",
+        (
+            "laser cutting workspace, professional CNC machine, "
+            "modern dark theme, version {v} software interface, "
+            "high contrast, cinematic lighting, 1920x1080, "
+            "8k quality, sharp focus"
+        ),
+        (
+            "abstract laser beam patterns, geometric shapes, "
+            "glowing blue and orange lines, dark background, "
+            "version {v} overlay style, futuristic tech, "
+            "cinematic, high contrast"
+        ),
+        (
+            "precision engineering workspace, CAD software "
+            "interface, blueprints, technical drawings, dark "
+            "mode, version {v} branding, professional, "
+            "clean design, 8k"
+        ),
+        (
+            "laser engraving close-up, sparks flying, metal "
+            "texture, dark industrial setting, version {v} "
+            "watermark, dramatic lighting, high detail, "
+            "1920x1080"
+        ),
+        (
+            "modern software interface, dark theme, blue accent "
+            "colors, geometric patterns, version {v} hero image, "
+            "minimalist design, clean background, "
+            "professional software"
+        ),
     ]
 
     prompt = random.choice(prompts).format(v=version)

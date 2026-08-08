@@ -34,7 +34,7 @@ def test_distance_constraint(setup_env):
 
 
 def test_distance_constraint_user_visible(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
 
@@ -46,7 +46,7 @@ def test_distance_constraint_user_visible(setup_env):
 
 
 def test_distance_constrains_radius_method(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     c = DistanceConstraint(p1, p2, 10.0)
@@ -57,7 +57,7 @@ def test_distance_constrains_radius_method(setup_env):
 
 
 def test_distance_targets_segment(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(10, 0)
     p3 = reg.add_point(5, 5)
@@ -179,7 +179,7 @@ def test_distance_constraint_serialization_round_trip_with_expression(
 
 
 def test_distance_is_hit(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(100, 0)
     c = DistanceConstraint(p1, p2, 100)
@@ -204,7 +204,7 @@ def test_distance_is_hit(setup_env):
 
 
 def test_distance_draw(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(100, 0)
     c = DistanceConstraint(p1, p2, 100)

@@ -281,7 +281,7 @@ class TestJpgRenderer:
         """Test natural size calculation on the renderer."""
         size = color_workpiece.natural_size
         assert size is not None
-        width_mm, height_mm = size
+        width_mm, _height_mm = size
         expected_width_mm = 259 * (25.4 / 96.0)
         assert width_mm == pytest.approx(expected_width_mm, 5)
 
@@ -300,7 +300,7 @@ class TestJpgRenderer:
         surface = color_workpiece.render_to_pixels(width=259, height=194)
         assert surface is not None
         # Sample a known blue pixel from the test image
-        b, g, r, a = get_pixel_bgra(surface, x=150, y=50)
+        b, g, r, _a = get_pixel_bgra(surface, x=150, y=50)
         # JPEG compression is lossy, so check for approximate values
         assert r == pytest.approx(107, abs=5)
         assert g == pytest.approx(180, abs=5)

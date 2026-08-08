@@ -482,12 +482,8 @@ class WorkPieceElement(CanvasElement):
 
         composite_w_mm = union_r - union_x
         composite_h_mm = union_t - union_y
-        comp_w_px = min(
-            int(round(composite_w_mm * ppm_x)), CAIRO_MAX_DIMENSION
-        )
-        comp_h_px = min(
-            int(round(composite_h_mm * ppm_y)), CAIRO_MAX_DIMENSION
-        )
+        comp_w_px = min(round(composite_w_mm * ppm_x), CAIRO_MAX_DIMENSION)
+        comp_h_px = min(round(composite_h_mm * ppm_y), CAIRO_MAX_DIMENSION)
 
         if comp_w_px <= 0 or comp_h_px <= 0:
             self._dispose_composited()

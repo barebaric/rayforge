@@ -13,7 +13,7 @@ class TestMemoryWrite:
     def test_write_overrides_default(self):
         state = RuidaState()
         server = RuidaServer(state=state)
-        default_name, default_val = state.mem_lookup(0x0026)
+        _default_name, default_val = state.mem_lookup(0x0026)
         write_val = encode35(default_val + 1000) + encode35(0)
         cmd = b"\xda\x01\x00\x26" + write_val
         server._process_single_command(cmd)

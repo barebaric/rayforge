@@ -108,7 +108,7 @@ class SpinRow(Adw.ActionRow):
 
     def get_int_value(self) -> int:
         """Return the current value as an int, clamped to the range."""
-        return int(round(self._get_display_value()))
+        return round(self._get_display_value())
 
     def set_value(self, value: float) -> None:
         """

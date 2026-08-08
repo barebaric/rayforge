@@ -19,7 +19,7 @@ class MissingFeaturesDialog(Adw.MessageDialog):
         if len(missing_types) == 1:
             msg = _(
                 "This document uses a feature that is not available: {}"
-            ).format(list(missing_types)[0])
+            ).format(next(iter(missing_types)))
         else:
             types_list = ", ".join(sorted(missing_types))
             msg = _(

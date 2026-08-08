@@ -42,7 +42,7 @@ def create_margin_offset(
 
     This matches the logic in Canvas3D.update_scene_from_doc().
     """
-    ml, mt, mr, mb = margins
+    ml, _mt, _mr, mb = margins
     margin_offset = np.identity(4, dtype=np.float32)
     margin_offset[0, 3] = -ml
     margin_offset[1, 3] = -mb

@@ -161,7 +161,7 @@ class TestWavefrontComputePayload:
         assert wp.boundaries is None
 
         with patch.object(WorkPiece, "render_to_pixels", side_effect=_render):
-            part, payload = step.build_compute_payload(machine, wp)
+            part, _payload = step.build_compute_payload(machine, wp)
 
         assert part is not None
         assert part.has_geometry()

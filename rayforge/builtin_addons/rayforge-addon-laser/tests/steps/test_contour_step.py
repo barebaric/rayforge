@@ -335,7 +335,7 @@ class TestContourComputePayload:
         step.offset_mm = 0.5
         step.overcut = 0.2
 
-        part, payload = step.build_compute_payload(machine, self._wp())
+        _part, payload = step.build_compute_payload(machine, self._wp())
         assert isinstance(payload, ComputePayload)
         assert isinstance(payload.assembler, Assembler)
         spec = payload.assembler.spec

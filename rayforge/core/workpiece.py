@@ -124,12 +124,10 @@ class WorkPiece(DocItem):
             and self.geometry_provider_uid == asset.uid
         ):
             return True
-        if (
+        return bool(
             self.source_segment
             and self.source_segment.source_asset_uid == asset.uid
-        ):
-            return True
-        return False
+        )
 
     @classmethod
     def from_geometry_provider(cls, provider: IGeometryProvider) -> WorkPiece:
@@ -687,15 +685,18 @@ class WorkPiece(DocItem):
 
         # 3. Source Pixel Dimensions
         source_px_dims = self._transient_source_px_dims
-        if not source_px_dims and self.source:
-            if (
+        if (
+            not source_px_dims
+            and self.source
+            and (
                 self.source.width_px is not None
                 and self.source.height_px is not None
-            ):
-                source_px_dims = (
-                    self.source.width_px,
-                    self.source.height_px,
-                )
+            )
+        ):
+            source_px_dims = (
+                self.source.width_px,
+                self.source.height_px,
+            )
 
         # 4. Original Data (for cropping)
         original_data = self.original_data
@@ -785,15 +786,18 @@ class WorkPiece(DocItem):
 
         # 4. Final Resize Check
         if (
-            processed_image.width != target_w
-            or processed_image.height != target_h
+            (
+                processed_image.width != target_w
+                or processed_image.height != target_h
+            )
+            and processed_image.width > 0
+            and processed_image.height > 0
         ):
-            if processed_image.width > 0 and processed_image.height > 0:
-                h_scale = target_w / processed_image.width
-                v_scale = target_h / processed_image.height
-                processed_image = util.resize_linear(
-                    processed_image, h_scale, vscale=v_scale
-                )
+            h_scale = target_w / processed_image.width
+            v_scale = target_h / processed_image.height
+            processed_image = util.resize_linear(
+                processed_image, h_scale, vscale=v_scale
+            )
 
         return processed_image
 

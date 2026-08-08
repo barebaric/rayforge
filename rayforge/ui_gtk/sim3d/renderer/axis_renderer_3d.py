@@ -458,7 +458,7 @@ class AxisRenderer3D(BaseRenderer):
             # delta is defined in the flipped local space.
             label_val = -delta if x_negative else delta
             label_val = label_val / self.grid_unit_factor
-            label_text = str(int(round(label_val)))
+            label_text = str(round(label_val))
 
             self.text_renderer.render(
                 ctx,
@@ -494,7 +494,7 @@ class AxisRenderer3D(BaseRenderer):
             # Label value logic: same as X
             label_val = -delta if y_negative else delta
             label_val = label_val / self.grid_unit_factor
-            label_text = str(int(round(label_val)))
+            label_text = str(round(label_val))
 
             self.text_renderer.render(
                 ctx,

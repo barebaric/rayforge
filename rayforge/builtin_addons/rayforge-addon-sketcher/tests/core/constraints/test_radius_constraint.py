@@ -37,7 +37,7 @@ def test_radius_constraint(setup_env):
 
 
 def test_radius_constraint_user_visible(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     center = reg.add_point(0, 0)
     radius_pt = reg.add_point(10, 0)
     circ_id = reg.add_circle(center, radius_pt)
@@ -65,7 +65,7 @@ def test_radius_constraint_on_circle(setup_env):
 
 
 def test_radius_constrains_radius_method(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     start = reg.add_point(10, 0)
     end = reg.add_point(0, 10)
     center = reg.add_point(0, 0)
@@ -82,7 +82,7 @@ def test_radius_constrains_radius_method(setup_env):
 
 
 def test_radius_targets_segment(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     start = reg.add_point(10, 0)
     end = reg.add_point(0, 10)
     center = reg.add_point(0, 0)
@@ -183,7 +183,7 @@ def test_radius_constraint_with_expression(setup_env):
 
 
 def test_radius_is_hit(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     start = reg.add_point(100, 0)
     end = reg.add_point(0, 100)
     center = reg.add_point(0, 0)
@@ -220,7 +220,7 @@ def test_radius_is_hit(setup_env):
 
 
 def test_radius_draw(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     center = reg.add_point(0, 0)
     radius_pt = reg.add_point(5, 0)
     circ_id = reg.add_circle(center, radius_pt)

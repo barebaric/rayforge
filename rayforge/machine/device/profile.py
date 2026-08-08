@@ -151,9 +151,8 @@ def _validate_machine_config(config: dict[str, Any], manifest_path: Path):
                 f"in {manifest_path}"
             )
 
-    if "heads" in config:
-        if not isinstance(config["heads"], list):
-            raise ValueError(f"'heads' must be a list in {manifest_path}")
+    if "heads" in config and not isinstance(config["heads"], list):
+        raise ValueError(f"'heads' must be a list in {manifest_path}")
 
     if "hookmacros" in config:
         if not isinstance(config["hookmacros"], list):
@@ -169,9 +168,8 @@ def _validate_machine_config(config: dict[str, Any], manifest_path: Path):
         if not isinstance(config["nogo_zones"], list):
             raise ValueError(f"'nogo_zones' must be a list in {manifest_path}")
 
-    if "cameras" in config:
-        if not isinstance(config["cameras"], list):
-            raise ValueError(f"'cameras' must be a list in {manifest_path}")
+    if "cameras" in config and not isinstance(config["cameras"], list):
+        raise ValueError(f"'cameras' must be a list in {manifest_path}")
 
 
 def _resolve_and_copy_models(
@@ -243,7 +241,7 @@ class MachineConfig:
                 continue
             if isinstance(value, tuple):
                 result[key] = list(value)
-            elif isinstance(value, Origin) or isinstance(value, UnitSystem):
+            elif isinstance(value, (Origin, UnitSystem)):
                 result[key] = value.value
             else:
                 result[key] = value

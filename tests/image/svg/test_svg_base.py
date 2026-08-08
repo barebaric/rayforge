@@ -84,7 +84,7 @@ def test_scan_no_layers_structure():
     manifest = importer.scan()
 
     assert manifest.natural_size_mm is not None
-    w, h = manifest.natural_size_mm
+    w, _h = manifest.natural_size_mm
     assert w == pytest.approx(13.23, 0.1)
     assert len(manifest.layers) == 0
 
@@ -124,7 +124,7 @@ def test_calculate_parsing_basics_success():
         document_bounds_units,
         unit_to_mm,
         untrimmed_bounds,
-        world_frame,
+        _world_frame,
     ) = result
 
     assert unit_to_mm == pytest.approx(1.0, 0.01)
@@ -138,7 +138,7 @@ def test_calculate_parsing_basics_success():
     assert ph == pytest.approx(61.2)
 
     assert untrimmed_bounds is not None
-    upx, upy, upw, uph = untrimmed_bounds
+    _upx, _upy, upw, uph = untrimmed_bounds
     assert upw == pytest.approx(100.0)
     assert uph == pytest.approx(100.0)
 
@@ -154,7 +154,7 @@ def test_calculate_parsing_basics_world_frame():
     assert untrimmed_bounds is not None
     # The world frame should be based on the untrimmed bounds.
     # untrimmed_bounds is in native units, which are mm for this SVG.
-    ux, uy, uw, uh = untrimmed_bounds
+    ux, _uy, uw, uh = untrimmed_bounds
     assert uw == pytest.approx(100.0)
     assert uh == pytest.approx(100.0)
 

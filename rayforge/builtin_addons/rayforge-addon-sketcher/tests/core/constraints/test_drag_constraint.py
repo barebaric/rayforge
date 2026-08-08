@@ -31,7 +31,7 @@ def test_drag_constraint(setup_env):
 
 
 def test_drag_constraint_user_visible(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
 
     c = DragConstraint(p1, 100.0, 0.0, weight=0.1, user_visible=False)
@@ -42,7 +42,7 @@ def test_drag_constraint_user_visible(setup_env):
 
 
 def test_drag_targets_segment(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
 
     c = DragConstraint(p1, 100.0, 0.0)
@@ -95,7 +95,7 @@ def test_drag_constraint_gradient(setup_env):
 
 
 def test_drag_constraint_serialization_round_trip(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
 
     # Create original constraint
@@ -110,7 +110,7 @@ def test_drag_constraint_serialization_round_trip(setup_env):
 
 
 def test_drag_draw(setup_env):
-    reg, params = setup_env
+    reg, _params = setup_env
     p1 = reg.add_point(0, 0)
 
     c = DragConstraint(p1, 100.0, 0.0, weight=0.1)

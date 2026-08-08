@@ -30,7 +30,7 @@ def create_vec_result(
         LayerGeometry(layer_id=lid, name=lid, content_bounds=bounds)
         for lid, bounds in layers
     ]
-    x, y, w, h = document_bounds
+    x, _y, w, h = document_bounds
     world_frame = (x * unit_scale, 0.0, w * unit_scale, h * unit_scale)
     parse_result = ParsingResult(
         document_bounds=document_bounds,

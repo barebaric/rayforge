@@ -100,14 +100,16 @@ class DebugLogDialog(Adw.MessageDialog):
                         self._on_saved(destination_path.name)
                     return
             except GLib.Error as e:
-                if not e.matches(
-                    Gio.io_error_quark(),
-                    Gio.IOErrorEnum.CANCELLED,
+                if (
+                    not e.matches(
+                        Gio.io_error_quark(),
+                        Gio.IOErrorEnum.CANCELLED,
+                    )
+                    and self._on_error
                 ):
-                    if self._on_error:
-                        self._on_error(
-                            _("Error saving file: {msg}").format(msg=e.message)
-                        )
+                    self._on_error(
+                        _("Error saving file: {msg}").format(msg=e.message)
+                    )
             except Exception as e:
                 if self._on_error:
                     self._on_error(

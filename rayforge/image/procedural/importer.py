@@ -149,7 +149,7 @@ class ProceduralImporter(Importer):
         # Define the native coordinate system as 1 unit = 1 mm.
         # This preserves the aspect ratio in the parsing result.
         document_bounds = (0.0, 0.0, float(width_mm), float(height_mm))
-        x, y, w, h = document_bounds
+        x, _y, w, h = document_bounds
 
         # World frame is Y-Up and already in mm.
         world_frame = (x, 0.0, w, h)

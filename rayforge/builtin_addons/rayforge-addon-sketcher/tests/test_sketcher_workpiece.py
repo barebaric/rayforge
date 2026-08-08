@@ -72,7 +72,7 @@ class TestWorkPieceWithSketch:
         """
         Test serialization of geometry_provider_uid and params with Sketch.
         """
-        doc, wp, source = doc_with_workpiece
+        doc, wp, _source = doc_with_workpiece
 
         sketch = make_sketch_with_geometry(100, 50)
         doc.add_asset(sketch)

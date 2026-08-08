@@ -43,7 +43,7 @@ class CommandRegistry:
         """
         if command_name in self._command_classes:
             del self._command_classes[command_name]
-            for addon_name, items in self._addon_items.items():
+            for items in self._addon_items.values():
                 items.discard(command_name)
             return True
         return False

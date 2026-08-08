@@ -309,7 +309,7 @@ class AssetBrowser(Gtk.Box):
         self._cards[asset.uid] = [card, asset.updated, handler]
 
     def _disconnect_all_asset_signals(self):
-        for uid, (card, signal, handler) in self._cards.items():
+        for card, signal, handler in self._cards.values():
             signal.disconnect(handler)
         self._cards.clear()
 

@@ -865,7 +865,7 @@ def test_sketch_find_all_closed_loops():
 
     def get_loop_ids(loops):
         """Helper to get sets of entity IDs for easy comparison."""
-        return [set(item[0] for item in loop) for loop in loops]
+        return [{item[0] for item in loop} for loop in loops]
 
     # --- Test Case 1: Simple Square ---
     s1 = Sketch()
@@ -1013,7 +1013,7 @@ def test_find_all_closed_loops_with_circle_hole():
     loops = s._find_all_closed_loops()
     assert len(loops) == 2
 
-    loop_sets = [set(item[0] for item in loop) for loop in loops]
+    loop_sets = [{item[0] for item in loop} for loop in loops]
     assert {l1, l2, l3, l4} in loop_sets
     assert {c1} in loop_sets
 

@@ -258,7 +258,7 @@ class SelectTool(SnapMixin, SketchTool):
             return False
 
         if hit_type in ("control_point_in", "control_point_out"):
-            point_id, bezier_id, cp_index = hit_obj
+            _point_id, bezier_id, cp_index = hit_obj
             self._prepare_control_point_drag(bezier_id, cp_index)
             self.element.mark_dirty()
             return False

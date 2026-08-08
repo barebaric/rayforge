@@ -82,15 +82,19 @@ def get_dependency_info() -> dict:
     ui_deps = [
         (
             "GTK",
-            f"{Gtk.get_major_version()}."
-            f"{Gtk.get_minor_version()}."
-            f"{Gtk.get_micro_version()}",
+            (
+                f"{Gtk.get_major_version()}."
+                f"{Gtk.get_minor_version()}."
+                f"{Gtk.get_micro_version()}"
+            ),
         ),
         (
             "LibAdwaita",
-            f"{Adw.get_major_version()}."
-            f"{Adw.get_minor_version()}."
-            f"{Adw.get_micro_version()}",
+            (
+                f"{Adw.get_major_version()}."
+                f"{Adw.get_minor_version()}."
+                f"{Adw.get_micro_version()}"
+            ),
         ),
     ]
     if pygobject_ver != _not_found_str:

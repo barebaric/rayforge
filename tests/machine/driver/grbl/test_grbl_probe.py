@@ -181,7 +181,7 @@ class TestBuildGrblProfile:
         assert warnings == []
 
     def test_minimal_profile(self):
-        profile, warnings = build_grbl_profile([], [])
+        profile, _warnings = build_grbl_profile([], [])
         assert profile.meta.name == "Unknown Grbl Device"
         assert profile.machine_config.axis_extents is None
         assert profile.machine_config.max_travel_speed is None
@@ -189,7 +189,7 @@ class TestBuildGrblProfile:
         assert profile.machine_config.home_on_start is None
 
     def test_laser_mode_disabled_warning(self):
-        profile, warnings = build_grbl_profile([], ["$32=0.0", "$13=0.0"])
+        _profile, warnings = build_grbl_profile([], ["$32=0.0", "$13=0.0"])
         assert len(warnings) == 1
         assert "laser mode" in warnings[0].lower()
 
@@ -208,7 +208,7 @@ class TestBuildGrblProfile:
         assert profile.machine_config.unit_system == UnitSystem.METRIC
 
     def test_different_speeds_per_axis(self):
-        profile, warnings = build_grbl_profile(
+        profile, _warnings = build_grbl_profile(
             [],
             [
                 "$110=5000.0",
@@ -295,7 +295,7 @@ class TestDriverProbe:
         mock_cleanup = AsyncMock()
         mocker.patch.object(GrblSerialDriver, "cleanup", mock_cleanup)
 
-        profile, warnings = await GrblSerialDriver.probe(
+        profile, _warnings = await GrblSerialDriver.probe(
             context_initializer,
             port="/dev/ttyUSB0",
             baudrate=115200,

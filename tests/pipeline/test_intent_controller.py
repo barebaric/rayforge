@@ -333,14 +333,14 @@ def test_on_completed_superseded_generation_discarded(
     )
     ctrl._on_completed(current)
     assert len(idle_calls) == 1
-    fn, args = idle_calls[0]
+    _fn, args = idle_calls[0]
     assert isinstance(args, tuple) and len(args) == 3
     ctrl.shutdown()
 
 
 def test_on_completed_unknown_key_skipped(monkeypatch, isolated_machine):
     idle_calls: list = []
-    ctrl, wp, step = _make_controller_for_completed_test(
+    ctrl, _wp, _step = _make_controller_for_completed_test(
         monkeypatch,
         idle_calls=idle_calls,
         machine=isolated_machine,
@@ -375,7 +375,7 @@ def test_on_completed_reaches_correct_doc_item(monkeypatch, isolated_machine):
     node = _StubNode(key=wpk, generation_id=ctrl.generation_id, output="ok")
     ctrl._on_completed(node)
     assert len(idle_calls) == 1
-    fn, args = idle_calls[0]
+    _fn, args = idle_calls[0]
     key, item, output = args
     assert key == wpk
     assert item is wp
@@ -419,7 +419,7 @@ def test_reattach_workpiece_emits_signal(monkeypatch, isolated_machine):
 
 def test_reattach_step_emits_signal(monkeypatch, isolated_machine):
     idle_calls: list = []
-    ctrl, wp, step = _make_controller_for_completed_test(
+    ctrl, _wp, step = _make_controller_for_completed_test(
         monkeypatch,
         idle_calls=idle_calls,
         machine=isolated_machine,
@@ -446,7 +446,7 @@ def test_reattach_step_emits_signal(monkeypatch, isolated_machine):
 
 def test_reattach_job_emits_aggregate_and_time(monkeypatch, isolated_machine):
     idle_calls: list = []
-    ctrl, wp, step = _make_controller_for_completed_test(
+    ctrl, _wp, _step = _make_controller_for_completed_test(
         monkeypatch,
         idle_calls=idle_calls,
         machine=isolated_machine,
@@ -482,7 +482,7 @@ def test_reattach_job_emits_aggregate_and_time(monkeypatch, isolated_machine):
 
 def test_reattach_job_encode_emits_finished(monkeypatch, isolated_machine):
     idle_calls: list = []
-    ctrl, wp, step = _make_controller_for_completed_test(
+    ctrl, _wp, _step = _make_controller_for_completed_test(
         monkeypatch,
         idle_calls=idle_calls,
         machine=isolated_machine,
@@ -519,7 +519,7 @@ def test_on_batch_progress_emits_progress_changed(
     monkeypatch, isolated_machine
 ):
     idle_calls: list = []
-    ctrl, wp, step = _make_controller_for_completed_test(
+    ctrl, _wp, _step = _make_controller_for_completed_test(
         monkeypatch,
         idle_calls=idle_calls,
         machine=isolated_machine,

@@ -399,14 +399,15 @@ class ScenePresenter:
         self._theme_resolver.update_renderer_color_luts()
 
         logger.debug(
-            "[CANVAS3D] Scanline overlay uploaded. Groups: %s"
-            % ", ".join(
-                "%s:%d"
-                % (
-                    "rot" if r.is_rotary else "flat",
-                    r.vertex_count,
+            "[CANVAS3D] Scanline overlay uploaded. Groups: {}".format(
+                ", ".join(
+                    "%s:%d"
+                    % (
+                        "rot" if r.is_rotary else "flat",
+                        r.vertex_count,
+                    )
+                    for r in self._scene.ring_renderers
                 )
-                for r in self._scene.ring_renderers
             )
         )
 

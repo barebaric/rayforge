@@ -144,16 +144,16 @@ class TestAxisRendererLayout:
         """Test that the content area is calculated correctly."""
         # For a 400x300 world in an 800x600 widget, the aspect ratios match.
         # We expect the content area to fill the available space minus padding.
-        x, y, w, h = renderer.get_content_layout(WIDGET_W, WIDGET_H)
+        _x, _y, w, h = renderer.get_content_layout(WIDGET_W, WIDGET_H)
         assert w > 0 and h > 0
         # Aspect ratio should be preserved
         assert np.isclose(w / h, WORLD_W / WORLD_H)
 
     def test_font_size_affects_layout(self, renderer):
         """Test that changing font size affects the layout calculations."""
-        x1, y1, w1, h1 = renderer.get_content_layout(WIDGET_W, WIDGET_H)
+        _x1, _y1, w1, h1 = renderer.get_content_layout(WIDGET_W, WIDGET_H)
         renderer.set_label_font_size(20.0)
-        x2, y2, w2, h2 = renderer.get_content_layout(WIDGET_W, WIDGET_H)
+        _x2, _y2, w2, h2 = renderer.get_content_layout(WIDGET_W, WIDGET_H)
         # Larger font should result in smaller content area
         assert w2 < w1
         assert h2 < h1
