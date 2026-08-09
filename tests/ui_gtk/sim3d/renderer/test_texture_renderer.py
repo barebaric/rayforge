@@ -76,14 +76,21 @@ def test_render_writes_depth_for_texture_quad():
     renderer.prepare(_make_ctx())
 
     power_texture = np.full((4, 4), 128, dtype=np.uint8)
-    renderer.add_instance(
-        TextureData(
-            power_texture_data=power_texture,
-            dimensions_mm=(10.0, 10.0),
-            position_mm=(0.0, 0.0),
-        ),
-        np.eye(4, dtype=np.float32),
-    )
+    with (
+        patch("OpenGL.GL.glGenTextures", return_value=1),
+        patch("OpenGL.GL.glBindTexture"),
+        patch("OpenGL.GL.glTexParameteri"),
+        patch("OpenGL.GL.glPixelStorei"),
+        patch("OpenGL.GL.glTexImage2D"),
+    ):
+        renderer.add_instance(
+            TextureData(
+                power_texture_data=power_texture,
+                dimensions_mm=(10.0, 10.0),
+                position_mm=(0.0, 0.0),
+            ),
+            np.eye(4, dtype=np.float32),
+        )
 
     shader = MagicMock()
     with (
