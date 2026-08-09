@@ -264,6 +264,9 @@ class KinematicMapping:
                 encoding.
         """
 
+        if not machine.rotary_modules or not doc.has_rotary_layer:
+            return
+
         def _on_layer(layer_uid: str, layer_ops: Ops) -> None:
             layer = _resolve_rotary_layer_by_uid(layer_uid, doc)
             if layer is None:

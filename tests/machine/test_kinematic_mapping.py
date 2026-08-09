@@ -472,3 +472,107 @@ class TestBuildLayerAssembly:
         assembly = build_layer_assembly(machine, None)
         assert not assembly.has_rotary
         assert not machine._layer_configured
+
+
+class TestApplyToJobOps:
+    @staticmethod
+    def _make_machine() -> Machine:
+        return Machine(RayforgeContext())
+
+    @staticmethod
+    def _make_ops(layer_uid: str) -> Ops:
+        ops = Ops()
+        ops.move_to(0, 0, 0)
+        ops.layer_start(layer_uid)
+        ops.line_to(10, 20, 0)
+        return ops
+
+    @staticmethod
+    def _spy_transform_layers(monkeypatch) -> list:
+        calls: list = []
+        monkeypatch.setattr(
+            Ops,
+            "transform_layers",
+            lambda self_ops, callback: calls.append(callback),
+        )
+        return calls
+
+    def test_flat_job_skips_transform_layers(self, monkeypatch):
+        machine = self._make_machine()
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+        rm.set_axis(Axis.A)
+        machine.add_rotary_module(rm)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.uid = "test"
+
+        ops = self._make_ops(layer.uid)
+        calls = self._spy_transform_layers(monkeypatch)
+
+        KinematicMapping.apply_to_job_ops(ops, doc, machine)
+
+        assert calls == []
+
+    def test_no_rotary_modules_skips(self, monkeypatch):
+        machine = self._make_machine()
+        doc = Doc()
+        layer = doc.active_layer
+        layer.uid = "test"
+        layer.set_rotary_enabled(True)
+
+        ops = self._make_ops(layer.uid)
+        calls = self._spy_transform_layers(monkeypatch)
+
+        KinematicMapping.apply_to_job_ops(ops, doc, machine)
+
+        assert calls == []
+
+    def test_rotary_job_calls_transform_layers(self, monkeypatch):
+        machine = self._make_machine()
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+        rm.set_axis(Axis.A)
+        machine.add_rotary_module(rm)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.uid = "test"
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_module_uid(rm.uid)
+
+        ops = self._make_ops(layer.uid)
+        calls = self._spy_transform_layers(monkeypatch)
+
+        KinematicMapping.apply_to_job_ops(ops, doc, machine)
+
+        assert len(calls) == 1
+
+    def test_rotary_job_applies_mapping(self):
+        diameter = 25.0
+        machine = self._make_machine()
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+        rm.set_axis(Axis.A)
+        machine.add_rotary_module(rm)
+
+        doc = Doc()
+        layer = doc.active_layer
+        layer.uid = "test"
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_module_uid(rm.uid)
+        layer.set_rotary_diameter(diameter)
+
+        ops = Ops()
+        ops.move_to(0, 0, 0)
+        ops.layer_start(layer.uid)
+        ops.line_to(10, 50, 0)
+
+        KinematicMapping.apply_to_job_ops(ops, doc, machine)
+
+        line_idx = ops.indices_of(CommandType.LINE_TO)[0]
+        ea = ops.extra_axes(line_idx)
+        assert ea is not None
+        expected = (50.0 / (diameter * math.pi)) * 360.0
+        assert ea[Axis.A] == pytest.approx(expected)
