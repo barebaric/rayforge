@@ -122,7 +122,7 @@ def _load_mesh_data(path: Path) -> _CachedModelData | None:
         )
         _model_cache[path] = data
         return data
-    except (OSError, ValueError) as e:
+    except Exception as e:  # noqa: BLE001 - trimesh library boundary
         logger.error("Failed to load model %s: %s", path, e)
         return None
 
