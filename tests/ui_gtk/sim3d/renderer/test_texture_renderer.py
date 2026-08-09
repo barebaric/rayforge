@@ -94,6 +94,7 @@ def test_render_writes_depth_for_texture_quad():
 
     shader = MagicMock()
     with (
+        patch("OpenGL.GL.glBindVertexArray"),
         patch("OpenGL.GL.glEnable"),
         patch("OpenGL.GL.glBlendFunc"),
         patch("OpenGL.GL.glDepthMask") as mock_depth_mask,
