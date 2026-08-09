@@ -564,6 +564,59 @@ class TestTaskManagerGlobals:
         assert last_call_kwargs["progress"] == 1.0
 
 
+class TestRunOnMainThread:
+    """Tests for the run_on_main_thread method."""
+
+    @pytest.mark.asyncio
+    async def test_returns_result(self, manager: TaskManager):
+        """Verify the callable's return value is awaited and returned."""
+        result = await manager.run_on_main_thread(lambda: 42)
+        assert result == 42
+
+    @pytest.mark.asyncio
+    async def test_passes_args_and_kwargs(self, manager: TaskManager):
+        """Verify args and kwargs are forwarded to the callable."""
+
+        def combine(a, b, c=0):
+            return a + b + c
+
+        result = await manager.run_on_main_thread(combine, 1, 2, c=3)
+        assert result == 6
+
+    @pytest.mark.asyncio
+    async def test_reraises_exception(self, manager: TaskManager):
+        """Verify exceptions raised on the main thread are propagated."""
+
+        def boom():
+            raise ValueError("boom")
+
+        with pytest.raises(ValueError, match="boom"):
+            await manager.run_on_main_thread(boom)
+
+    @pytest.mark.asyncio
+    async def test_awaits_scheduler_execution(self):
+        """Verify the coroutine blocks until the scheduler runs the
+        callable, even when the scheduler defers to another thread."""
+        scheduler_calls = []
+        order = []
+
+        def scheduler(callback, *args, **kwargs):
+            scheduler_calls.append(callback)
+            threading.Thread(
+                target=lambda: callback(*args, **kwargs), daemon=True
+            ).start()
+
+        tm = TaskManager(main_thread_scheduler=scheduler)
+        try:
+            order.append("start")
+            await tm.run_on_main_thread(lambda: order.append("main-thread"))
+            order.append("done")
+            assert order == ["start", "main-thread", "done"]
+            assert len(scheduler_calls) == 1
+        finally:
+            tm.shutdown()
+
+
 class TestWaitUntilSettled:
     """Tests for the wait_until_settled method."""
 

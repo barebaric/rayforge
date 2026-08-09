@@ -235,6 +235,34 @@ class TaskManager:
         """
         self._main_thread_scheduler(callback, *args, **kwargs)
 
+    async def run_on_main_thread(
+        self, func: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Any:
+        """
+        Runs a synchronous callable on the main thread and awaits completion.
+
+        This is for background coroutines that must perform main-thread-only
+        work (e.g., GTK widget updates) and need to wait for it to finish
+        before continuing. Returns the callable's return value and re-raises
+        any exception it raises.
+
+        Raises:
+            RuntimeError: If called outside a running event loop.
+            Exception: If *func* raised while running on the main thread.
+        """
+        loop = asyncio.get_running_loop()
+        done = loop.create_future()
+
+        def _invoke_on_main_thread():
+            try:
+                result = func(*args, **kwargs)
+                loop.call_soon_threadsafe(done.set_result, result)
+            except Exception as e:  # noqa: BLE001 - boundary for main thread
+                loop.call_soon_threadsafe(done.set_exception, e)
+
+        self._main_thread_scheduler(_invoke_on_main_thread)
+        return await done
+
     def schedule_delayed_on_main_thread(
         self,
         delay_ms: int,
