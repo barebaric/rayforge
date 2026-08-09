@@ -11,16 +11,20 @@ class MachineCodeOpMap:
     A container for a bidirectional mapping between Ops command indices and
     Machine language (e.g. G-code) line numbers.
 
+    Both fields are flat lists rather than dicts: op indices and line
+    numbers are dense integer ranges, so indexing replaces hashing.
+
     Attributes:
-        op_to_machine_code: Maps an Ops command index to a list of G-code line
-                     numbers it generated. An empty list means the command
+        op_to_machine_code: One ``(start_line, line_count)`` span per Ops
+                     command index. An empty span means the command
                      produced no G-code.
-        machine_code_to_op: Maps a G-code line number back to the Ops command
-                     index that generated it.
+        machine_code_to_op: Maps a G-code line number back to the Ops
+                     command index that generated it; ``-1`` means the
+                     line has no owning op.
     """
 
-    op_to_machine_code: dict[int, list[int]] = field(default_factory=dict)
-    machine_code_to_op: dict[int, int] = field(default_factory=dict)
+    op_to_machine_code: list[tuple[int, int]] = field(default_factory=list)
+    machine_code_to_op: list[int] = field(default_factory=list)
 
 
 @dataclass

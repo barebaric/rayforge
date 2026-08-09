@@ -367,7 +367,7 @@ class MarlinSerialDriver(Driver):
     async def _stream_gcode(
         self,
         gcode_lines: list[str],
-        machine_code_to_op_map: dict[int, int] | None = None,
+        machine_code_to_op_map: list[int] | None = None,
     ):
         logger.debug(
             f"Starting Marlin streaming job with {len(gcode_lines)} lines."
@@ -382,11 +382,13 @@ class MarlinSerialDriver(Driver):
                 if not line:
                     continue
 
-                op_index = (
-                    machine_code_to_op_map.get(line_idx)
-                    if machine_code_to_op_map
-                    else None
-                )
+                op_index = None
+                if machine_code_to_op_map is not None and 0 <= line_idx < len(
+                    machine_code_to_op_map
+                ):
+                    mapped_op = machine_code_to_op_map[line_idx]
+                    if mapped_op != -1:
+                        op_index = mapped_op
 
                 await self._send_and_wait(line)
 

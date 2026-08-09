@@ -440,7 +440,7 @@ class GrblSerialSimpleDriver(Driver):
     async def _stream_gcode_ping_pong(
         self,
         gcode_lines: list[str],
-        op_map: dict[int, int] | None = None,
+        op_map: list[int] | None = None,
     ) -> None:
         """
         Stream G-code using strict ping-pong: send one line,
@@ -463,7 +463,11 @@ class GrblSerialSimpleDriver(Driver):
                 if not stripped:
                     continue
 
-                new_op = op_map.get(line_idx) if op_map else None
+                new_op = None
+                if op_map is not None and 0 <= line_idx < len(op_map):
+                    mapped_op = op_map[line_idx]
+                    if mapped_op != -1:
+                        new_op = mapped_op
                 if new_op is not None and new_op != self._current_op_index:
                     self._current_op_index = new_op
                     if self._on_command_done:

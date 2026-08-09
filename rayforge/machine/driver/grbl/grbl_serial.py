@@ -750,7 +750,7 @@ class GrblSerialDriver(Driver):
     async def _stream_gcode(
         self,
         gcode_lines: list[str],
-        machine_code_to_op_map: dict[int, int] | None = None,
+        machine_code_to_op_map: list[int] | None = None,
         command_times: list[float] | None = None,
     ):
         """
@@ -792,11 +792,13 @@ class GrblSerialDriver(Driver):
                 if not line:
                     continue
 
-                op_index = (
-                    machine_code_to_op_map.get(line_idx)
-                    if machine_code_to_op_map
-                    else None
-                )
+                op_index = None
+                if machine_code_to_op_map is not None and 0 <= line_idx < len(
+                    machine_code_to_op_map
+                ):
+                    mapped_op = machine_code_to_op_map[line_idx]
+                    if mapped_op != -1:
+                        op_index = mapped_op
                 command_bytes = (line + "\n").encode("utf-8")
 
                 if (

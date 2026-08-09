@@ -554,7 +554,7 @@ class OctoPrintDriver(Driver):
                 op_map = encoded.op_map
                 num_ops = 0
                 if op_map and op_map.op_to_machine_code:
-                    num_ops = max(op_map.op_to_machine_code.keys()) + 1
+                    num_ops = len(op_map.op_to_machine_code)
                 for i in range(num_ops):
                     result = on_command_done(i)
                     if inspect.isawaitable(result):

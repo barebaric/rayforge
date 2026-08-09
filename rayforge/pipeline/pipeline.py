@@ -371,13 +371,13 @@ class Pipeline:
             return
 
         text = handle.text or ""
-        op_to_mc = handle.op_to_machine_code or {}
-        mc_to_op = handle.machine_code_to_op or {}
+        op_to_mc = handle.op_to_machine_code or []
+        mc_to_op = handle.machine_code_to_op or []
         encoded = EncodedOutput(
             text=text,
             op_map=MachineCodeOpMap(
-                op_to_machine_code=dict(op_to_mc),
-                machine_code_to_op=dict(mc_to_op),
+                op_to_machine_code=op_to_mc,
+                machine_code_to_op=mc_to_op,
             ),
         )
 
