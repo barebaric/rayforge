@@ -26,13 +26,42 @@ logger = logging.getLogger(__name__)
 MAX_TEXTURE_DIMENSION = 8192
 PX_PER_MM = 50.0
 
+# Fallback laser dot width (mm) when no laser head info is available,
+# matching the minimum sane spot size used elsewhere in the codebase.
+DEFAULT_DOT_WIDTH_MM = 0.1
+
 
 # ── Texture generation ─────────────────────────
+
+
+def _dilate_lines(
+    buffer: np.ndarray,
+    dot_width_mm: float,
+    px_per_mm: float,
+) -> np.ndarray:
+    """Thicken rasterized scanlines to the laser dot width.
+
+    Scanlines are rasterized as single-pixel paths; each one is
+    expanded to ``dot_width_mm`` in texture space so the 3D preview
+    matches the physical laser spot width.
+    """
+    dot_width_px = dot_width_mm * px_per_mm
+    radius = max(0, int((dot_width_px - 1) / 2))
+    if radius == 0:
+        return buffer
+
+    dilated = np.zeros_like(buffer)
+    for dy in range(-radius, radius + 1):
+        for dx in range(-radius, radius + 1):
+            shifted = np.roll(np.roll(buffer, dy, axis=0), dx, axis=1)
+            np.maximum(dilated, shifted, out=dilated)
+    return dilated
 
 
 def _rasterize_scanlines(
     ops: Ops,
     bbox: tuple[float, float, float, float],
+    dot_width_mm: float,
 ) -> tuple[np.ndarray, int, int, float] | None:
     x0, y0, w_mm, h_mm = bbox
     if w_mm <= 0 or h_mm <= 0:
@@ -64,12 +93,7 @@ def _rasterize_scanlines(
     if not np.any(buffer):
         return None
 
-    dilated = np.zeros_like(buffer)
-    for dy in range(-1, 2):
-        for dx in range(-1, 2):
-            shifted = np.roll(np.roll(buffer, dy, axis=0), dx, axis=1)
-            np.maximum(dilated, shifted, out=dilated)
-    buffer = dilated
+    buffer = _dilate_lines(buffer, dot_width_mm, px_per_mm)
 
     return buffer, width_px, height_px, px_per_mm
 
@@ -80,6 +104,7 @@ def _generate_texture_layers(
     config: RenderConfig3D,
 ) -> list[TextureLayer]:
     texture_layers: list[TextureLayer] = []
+    dot_widths = config.laser_dot_widths_mm or {}
 
     for li in layer_infos:
         if not li.has_scanlines:
@@ -96,7 +121,10 @@ def _generate_texture_layers(
         if bbox is None:
             continue
 
-        raster_result = _rasterize_scanlines(layer_ops, bbox)
+        dot_width_mm = dot_widths.get(li.scanline_laser)
+        if dot_width_mm is None:
+            dot_width_mm = DEFAULT_DOT_WIDTH_MM
+        raster_result = _rasterize_scanlines(layer_ops, bbox, dot_width_mm)
         if raster_result is None:
             continue
 

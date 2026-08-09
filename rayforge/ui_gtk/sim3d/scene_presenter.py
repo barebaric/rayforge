@@ -22,6 +22,7 @@ from ...machine.kinematic_mapping import (
     build_layer_assembly,
     resolve_layer_rotary,
 )
+from ...machine.models.laser import LaserHead
 from ...pipeline.artifact.handle import BaseArtifactHandle
 from ...pipeline.artifact.job import JobArtifact
 from ...shared.tasker import Task, task_mgr
@@ -488,6 +489,13 @@ class ScenePresenter:
             else:
                 self._scene.set_cylinder_transform(np.eye(4, dtype=np.float64))
 
+        laser_dot_widths_mm: dict[str, float] = {}
+        if machine:
+            for head in machine.heads:
+                if isinstance(head, LaserHead):
+                    spot_x, _spot_y = LaserHead.get_spot_size(head)
+                    laser_dot_widths_mm[head.uid] = spot_x
+
         layer_configs: dict[str, LayerRenderConfig] = {}
         for layer in self.doc.layers:
             axis_position = 0.0
@@ -523,6 +531,7 @@ class ScenePresenter:
             world_to_visual=world_to_visual,
             world_to_cyl_local=world_to_cyl_local,
             layer_configs=layer_configs,
+            laser_dot_widths_mm=laser_dot_widths_mm,
         )
 
         self._schedule_scene_preparation(render_config.to_dict())

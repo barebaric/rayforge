@@ -12,10 +12,12 @@ import pytest
 from blinker import Signal
 from raygeo.ops.axis import Axis
 
+from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
 from rayforge.simulator.scene3d import CompiledSceneArtifact
 from rayforge.ui_gtk.sim3d.scene_presenter import ScenePresenter
+from rayforge.ui_gtk.sim3d.viewport import ViewportConfig
 
 
 def _make_presenter(**overrides):
@@ -93,6 +95,55 @@ def test_update_scene_from_doc_schedules_compilation(ui_context_initializer):
     config = presenter._schedule_scene_preparation.call_args.args[0]
     assert "world_to_visual" in config
     assert "world_to_cyl_local" in config
+
+
+@pytest.mark.ui
+def test_update_scene_from_doc_populates_laser_dot_widths(
+    ui_context_initializer,
+):
+    """Laser head spot sizes reach the render config so the 3D raster
+    preview can draw scanlines at the physical dot width."""
+    head1 = LaserHead()
+    head1.spot_size_mm = (0.1, 0.2)
+    head2 = LaserHead()
+    head2.spot_size_mm = (0.3, 0.4)
+
+    machine = MagicMock()
+    machine.heads = [head1, head2]
+    machine.assembly = MagicMock()
+    machine.assembly.has_rotary = False
+
+    doc_editor = MagicMock()
+    doc_editor.doc.layers = []
+    presenter, _, _ = _make_presenter(
+        context=MagicMock(machine=machine),
+        doc_editor=doc_editor,
+        get_viewport=lambda: ViewportConfig.default(),
+    )
+    presenter._schedule_scene_preparation = MagicMock()
+
+    presenter.update_scene_from_doc()
+
+    config = presenter._schedule_scene_preparation.call_args.args[0]
+    assert config["laser_dot_widths_mm"] == {
+        head1.uid: 0.1,
+        head2.uid: 0.3,
+    }
+
+
+@pytest.mark.ui
+def test_update_scene_from_doc_dot_widths_empty_without_machine(
+    ui_context_initializer,
+):
+    doc_editor = MagicMock()
+    doc_editor.doc.layers = []
+    presenter, _, _ = _make_presenter(doc_editor=doc_editor)
+    presenter._schedule_scene_preparation = MagicMock()
+
+    presenter.update_scene_from_doc()
+
+    config = presenter._schedule_scene_preparation.call_args.args[0]
+    assert config.get("laser_dot_widths_mm") is None
 
 
 @pytest.mark.ui
