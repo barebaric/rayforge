@@ -363,8 +363,6 @@ class StressTestController:
         # Tracked by pipeline handle dicts
         for handle in self.pipeline._wp_handles.values():
             tracked_shms.add(id(handle))
-        for handle in self.pipeline._step_handles.values():
-            tracked_shms.add(id(handle))
         if self.pipeline._last_job_handle is not None:
             tracked_shms.add(id(self.pipeline._last_job_handle))
 
