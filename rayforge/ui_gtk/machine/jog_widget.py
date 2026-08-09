@@ -253,7 +253,7 @@ class JogWidget(Gtk.Widget):
         machine: Machine = self.machine  # type: ignore
 
         def can_jog_direction(direction):
-            deltas = machine.calculate_visual_jog(direction, 1.0)
+            deltas = machine.workspace.calculate_jog(direction, 1.0)
             return bool(deltas) and all(machine.can_jog(a) for a in deltas)
 
         # Jog buttons
@@ -325,20 +325,22 @@ class JogWidget(Gtk.Widget):
 
         # Get the signed coordinate deltas for each visual direction from the
         # model
-        east = machine.calculate_visual_jog(
+        east = machine.workspace.calculate_jog(
             JogDirection.EAST, self.jog_distance
         )
-        west = machine.calculate_visual_jog(
+        west = machine.workspace.calculate_jog(
             JogDirection.WEST, self.jog_distance
         )
-        north = machine.calculate_visual_jog(
+        north = machine.workspace.calculate_jog(
             JogDirection.NORTH, self.jog_distance
         )
-        south = machine.calculate_visual_jog(
+        south = machine.workspace.calculate_jog(
             JogDirection.SOUTH, self.jog_distance
         )
-        up = machine.calculate_visual_jog(JogDirection.UP, self.jog_distance)
-        down = machine.calculate_visual_jog(
+        up = machine.workspace.calculate_jog(
+            JogDirection.UP, self.jog_distance
+        )
+        down = machine.workspace.calculate_jog(
             JogDirection.DOWN, self.jog_distance
         )
 
@@ -403,7 +405,7 @@ class JogWidget(Gtk.Widget):
             return
         deltas = {}
         for direction in directions:
-            for axis, delta in self.machine.calculate_visual_jog(
+            for axis, delta in self.machine.workspace.calculate_jog(
                 direction, self.jog_distance
             ).items():
                 deltas[axis] = deltas.get(axis, 0.0) + delta

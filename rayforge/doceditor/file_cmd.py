@@ -810,7 +810,7 @@ class FileCmd:
             return 1.0
 
         bbox_x, bbox_y, bbox_w, bbox_h = bbox
-        area_x, area_y, area_w, area_h = config.machine.workspace_work_area
+        area_x, area_y, area_w, area_h = config.machine.workspace.work_area
         logger.debug(
             f"_fit_and_position_at_reference_origin: bbox=({bbox_x:.2f}, "
             f"{bbox_y:.2f}, {bbox_w:.2f}, {bbox_h:.2f}), "

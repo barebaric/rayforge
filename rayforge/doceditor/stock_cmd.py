@@ -132,7 +132,7 @@ class StockCmd:
         doc = self._editor.doc
         machine = self._editor.context.config.machine
         if machine:
-            __, __, wa_w, wa_h = machine.workspace_work_area
+            __, __, wa_w, wa_h = machine.workspace.work_area
             ref_x, ref_y = machine.get_reference_position_world()
             stock_x = ref_x
             stock_y = ref_y

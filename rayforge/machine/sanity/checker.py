@@ -59,11 +59,11 @@ class SanityChecker:
         return SanityContext(
             ops=ops,
             machine=self._machine,
-            work_area=self._machine.workspace_work_area,
-            axis_extents=self._machine.workspace_extents,
+            work_area=self._machine.workspace.work_area,
+            axis_extents=self._machine.workspace.extents,
             enabled_zones={
                 k: v
-                for k, v in self._machine.workspace_nogo_zones.items()
+                for k, v in self._machine.workspace.nogo_zones.items()
                 if v.enabled
             },
         )

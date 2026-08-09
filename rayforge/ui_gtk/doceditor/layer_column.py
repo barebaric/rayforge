@@ -717,7 +717,7 @@ class LayerColumn(Gtk.Box):
     def _get_center_position(self) -> tuple:
         machine = get_context().machine
         if machine:
-            work_area = machine.workspace_work_area
+            work_area = machine.workspace.work_area
             wa_w, wa_h = work_area[2], work_area[3]
             origin_x, origin_y = machine.get_reference_position_world()
             space = machine.get_coordinate_space()

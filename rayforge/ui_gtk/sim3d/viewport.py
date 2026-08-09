@@ -51,16 +51,15 @@ class ViewportConfig:
     def from_machine_with_wcs(
         cls, machine: "Machine", wcs_offset: tuple
     ) -> "ViewportConfig":
-        area = machine.workspace_work_area
+        area = machine.workspace.work_area
         width_mm = float(area[2])
         depth_mm = float(area[3])
         space = machine.get_coordinate_space()
         native_to_workspace = space.get_native_to_workspace_matrix().astype(
             np.float32
         )
-        origin = space.workspace_origin
-        x_right = origin.value.endswith("right")
-        y_down = origin.value.startswith("top")
+        x_right = space.workspace_x_right
+        y_down = space.workspace_y_down
 
         translate_mat = np.identity(4, dtype=np.float32)
         scale_mat = np.identity(4, dtype=np.float32)
@@ -76,7 +75,7 @@ class ViewportConfig:
             wcs_offset_mm: Point3D = (0.0, 0.0, 0.0)
         else:
             wcs_x, wcs_y, wcs_z = wcs_offset
-            ml, mt, mr, mb = machine.workspace_margins
+            ml, mt, mr, mb = machine.workspace.margins
             machine_x = -mr if x_right else -ml
             machine_y = -mt if y_down else -mb
             workspace_wcs = space.get_axis_label_origin(wcs_offset)
@@ -94,13 +93,13 @@ class ViewportConfig:
             wcs_offset_mm = (local_x, local_y, wcs_z)
 
         margin_shift = np.identity(4, dtype=np.float32)
-        ml, _, _, mb = machine.workspace_margins
+        ml, _, _, mb = machine.workspace.margins
         margin_shift[0, 3] = -ml
         margin_shift[1, 3] = -mb
 
         extent_frame: Rect | None = None
         if machine.has_custom_work_area():
-            extent_frame = machine.get_visual_extent_frame()
+            extent_frame = machine.workspace.extent_frame
 
         return cls(
             width_mm=width_mm,

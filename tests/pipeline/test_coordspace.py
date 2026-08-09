@@ -264,9 +264,13 @@ class TestMachineSpace:
 
         assert left.workspace_margins == (20.0, 30.0, 40.0, 10.0)
         assert left.workspace_origin == OriginCorner.BOTTOM_LEFT
+        assert left.workspace_x_right is False
+        assert left.workspace_y_down is False
         assert left.get_workarea_world_rect() == (20.0, 10.0, 740.0, 360.0)
         assert right.workspace_margins == (40.0, 10.0, 20.0, 30.0)
         assert right.workspace_origin == OriginCorner.TOP_RIGHT
+        assert right.workspace_x_right is True
+        assert right.workspace_y_down is True
         assert right.get_workarea_world_rect() == (40.0, 30.0, 740.0, 360.0)
 
     @pytest.mark.parametrize(
@@ -337,6 +341,60 @@ class TestMachineSpace:
         assert space.machine_item_to_world(
             machine_pos, item_size
         ) == pytest.approx(world_pos)
+
+    @pytest.mark.parametrize("orientation", list(WorkspaceOrientation))
+    @pytest.mark.parametrize("origin", list(OriginCorner))
+    @pytest.mark.parametrize("reverse_x", [False, True])
+    @pytest.mark.parametrize("reverse_y", [False, True])
+    def test_scalar_and_matrix_paths_agree(
+        self, orientation, origin, reverse_x, reverse_y
+    ):
+        """The two world→machine implementations must not drift apart.
+
+        `world_point_to_machine` applies the origin/reversal rules as
+        scalar branches (used by the UI), while the encoding pipeline
+        consumes `get_world_to_machine_matrix`. They are separate code
+        paths describing the same transform, so a change to one that is
+        not mirrored in the other would silently desynchronise what the
+        canvas shows from what the machine is told to do.
+        """
+        x_direction = (
+            AxisDirection.POSITIVE_LEFT
+            if origin in (OriginCorner.TOP_RIGHT, OriginCorner.BOTTOM_RIGHT)
+            else AxisDirection.POSITIVE_RIGHT
+        )
+        y_direction = (
+            AxisDirection.POSITIVE_DOWN
+            if origin in (OriginCorner.TOP_LEFT, OriginCorner.TOP_RIGHT)
+            else AxisDirection.POSITIVE_UP
+        )
+        space = MachineSpace(
+            origin=origin,
+            x_positive_direction=x_direction,
+            y_positive_direction=y_direction,
+            extents=(400.0, 800.0),
+            reverse_x=reverse_x,
+            reverse_y=reverse_y,
+            workspace_orientation=orientation,
+        )
+        matrix = space.get_world_to_machine_matrix()
+        workspace_width, workspace_height = space.workspace_extents
+
+        # Includes both bed corners and asymmetric interior points, so a
+        # missing translation term cannot pass by symmetry. Deriving the
+        # probes from workspace extents keeps every point on the presented
+        # bed in both native and rotated orientations.
+        for world_x, world_y in (
+            (0.0, 0.0),
+            (workspace_width, workspace_height),
+            (workspace_width * 0.31, workspace_height * 0.17),
+            (workspace_width * 0.73, workspace_height * 0.61),
+        ):
+            scalar = space.world_point_to_machine(world_x, world_y)
+            transformed = matrix @ np.array([world_x, world_y, 0.0, 1.0])
+            assert scalar == pytest.approx((transformed[0], transformed[1])), (
+                f"paths disagree at ({world_x}, {world_y})"
+            )
 
     @pytest.mark.parametrize("origin", list(OriginCorner))
     @pytest.mark.parametrize("reverse_x", [False, True])

@@ -73,26 +73,34 @@ def test_rotated_zone_violation_reported_at_workspace_location(
     assert zone.params == {"x": 10, "y": 20, "w": 30, "h": 40}
 
 
-def test_rotated_zone_projection_is_cached_and_invalidated(
+def test_zone_projection_is_detached_and_always_reflects_native_state(
     isolated_machine, make_rect_zone
 ):
     isolated_machine.set_axis_extents(100, 200)
     zone = make_rect_zone(10, 20, 30, 40, "Clamp")
     isolated_machine.add_nogo_zone(zone)
+
+    native = isolated_machine.workspace.nogo_zones
+    assert native[zone.uid] is not zone
+    assert native[zone.uid].params == zone.params
+
     isolated_machine.set_workspace_orientation(
         WorkspaceOrientation.ROTATED_RIGHT
     )
 
-    first = isolated_machine.workspace_nogo_zones
-    assert isolated_machine.workspace_nogo_zones is first
+    first = isolated_machine.workspace.nogo_zones
+    assert first[zone.uid] is not zone
+    assert isolated_machine.workspace.nogo_zones is not first
 
     zone.set_param("x", 20)
-    second = isolated_machine.workspace_nogo_zones
+    second = isolated_machine.workspace.nogo_zones
     assert second is not first
     assert second[zone.uid].params["y"] == pytest.approx(50)
 
     isolated_machine.set_axis_extents(200, 200)
-    assert isolated_machine.workspace_nogo_zones is not second
+    third = isolated_machine.workspace.nogo_zones
+    assert third is not second
+    assert third[zone.uid].params["y"] == pytest.approx(150)
 
 
 def test_workarea_violation_reported(isolated_machine, make_line_ops):

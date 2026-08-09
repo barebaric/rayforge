@@ -79,7 +79,7 @@ def _on_config_changed(sender, **kwargs):
 
     config = get_context().config
     if config.machine:
-        width_mm, height_mm = config.machine.workspace_extents
+        width_mm, height_mm = config.machine.workspace.extents
         _sketch_studio.set_world_size(width_mm, height_mm)
 
 
@@ -105,7 +105,7 @@ def setup_sketch_page(main_window: "MainWindow") -> "SketchStudio":
 
     config = get_context().config
     if config.machine:
-        width_mm, height_mm = config.machine.workspace_extents
+        width_mm, height_mm = config.machine.workspace.extents
     else:
         width_mm, height_mm = 100.0, 100.0
 

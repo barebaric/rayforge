@@ -34,7 +34,7 @@ class CardPage(CameraWizardPage):
 
         machine = get_context().machine
         if machine:
-            _unused_x, _unused_y, wa_w, wa_h = machine.workspace_work_area
+            _unused_x, _unused_y, wa_w, wa_h = machine.workspace.work_area
             self._card_width = min(100.0, wa_w * self.DEFAULT_CARD_RATIO)
             self._card_height = min(140.0, wa_h * self.DEFAULT_CARD_RATIO)
         else:

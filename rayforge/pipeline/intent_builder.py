@@ -74,7 +74,7 @@ from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.kinematic_math import KinematicMath
 from ..machine.models.dialect import GRBL_DIALECT
 from ..machine.models.rotary_module import RotaryMode, RotaryType
-from .coordspace import MachineSpace, WorkspaceOrientation
+from .coordspace import MachineSpace
 from .encoder.base import EncodedOutput
 from .encoder.rust_helpers import build_encode_context, dialect_to_spec
 from .transformer import OpsTransformer
@@ -112,7 +112,7 @@ class UnsupportedRotaryWorkspaceOrientationError(ValueError):
 
 def validate_workspace_configuration(machine: Machine, doc: Doc) -> None:
     """Reject combinations whose coordinate semantics are ambiguous."""
-    if machine.workspace_orientation is WorkspaceOrientation.NATIVE:
+    if machine.supports_rotary_workspace():
         return
     if not any(layer.rotary_enabled for layer in doc.layers):
         return

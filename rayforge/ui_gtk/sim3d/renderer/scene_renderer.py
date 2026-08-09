@@ -353,7 +353,7 @@ class SceneRenderer(BaseRenderer):
             return
         if not machine:
             return
-        zones = list(machine.workspace_nogo_zones.values())
+        zones = list(machine.workspace.nogo_zones.values())
         self.zone_renderer.update_zones(zones)
 
     def clear_models(self):

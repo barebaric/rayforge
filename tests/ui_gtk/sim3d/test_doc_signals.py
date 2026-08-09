@@ -43,8 +43,8 @@ def _machine():
     machine.changed = Signal()
     machine.work_area = (100.0, 100.0, 100.0, 100.0)
     machine.work_margins = (0.0, 0.0, 0.0, 0.0)
-    machine.workspace_work_area = (100.0, 100.0, 100.0, 100.0)
-    machine.workspace_margins = (0.0, 0.0, 0.0, 0.0)
+    machine.workspace.work_area = (100.0, 100.0, 100.0, 100.0)
+    machine.workspace.margins = (0.0, 0.0, 0.0, 0.0)
     machine.y_axis_down = False
     machine.x_axis_right = False
     machine.reverse_x_axis = False

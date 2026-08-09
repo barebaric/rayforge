@@ -5,7 +5,6 @@ from gi.repository import Adw, Gdk, Gtk
 
 from ...context import get_context
 from ...core.layer import Layer
-from ...pipeline.coordspace import WorkspaceOrientation
 from ..icons import get_icon
 from ..machine.wcs_dialog import WcsDialog
 from ..shared.patched_dialog_window import PatchedDialogWindow
@@ -111,8 +110,7 @@ class LayerSettingsDialog(PatchedDialogWindow):
 
         machine = get_context().machine
         self._rotary_orientation_supported = (
-            machine is None
-            or machine.workspace_orientation is WorkspaceOrientation.NATIVE
+            machine is None or machine.supports_rotary_workspace()
         )
 
         self.rotary_enabled_row = Adw.SwitchRow()
