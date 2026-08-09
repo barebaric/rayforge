@@ -8,7 +8,10 @@ from compile_scene_helper import (
 )
 from raygeo.ops import Ops
 
-from rayforge.simulator.scene3d.scene_compiler import compile_scene
+from rayforge.simulator.scene3d.scene_compiler import (
+    _dilate_lines,
+    compile_scene,
+)
 
 
 def _flat_config():
@@ -168,6 +171,74 @@ class TestCompileEmpty:
         artifact = compile_scene(assembled, config)
         assert len(artifact.vertex_layers) == 0
         assert len(artifact.overlay_layers) == 0
+
+
+class TestLineDilation:
+    """The 3D raster preview thickens lines to the laser dot width."""
+
+    def _buffer_with_line(self, size=100):
+        buffer = np.zeros((size, size), dtype=np.uint8)
+        buffer[size // 2, size // 4 : 3 * size // 4] = 255
+        return buffer
+
+    def test_no_dilation_when_zero_width(self):
+        buffer = self._buffer_with_line()
+        out = _dilate_lines(buffer, 0.0, 50.0)
+        np.testing.assert_array_equal(out, buffer)
+
+    def test_line_thickness_matches_dot_width(self):
+        buffer = self._buffer_with_line()
+        for dot_mm, expected_px in [(0.1, 5), (0.3, 15), (0.5, 25)]:
+            out = _dilate_lines(buffer, dot_mm, 50.0)
+            rows = np.where(out.any(axis=1))[0]
+            thickness = rows.max() - rows.min() + 1
+            assert thickness == expected_px, (
+                f"dot {dot_mm}mm gave {thickness}px, expected {expected_px}px"
+            )
+
+    def test_thicker_dot_gives_thicker_lines(self):
+        thin = _dilate_lines(self._buffer_with_line(), 0.1, 50.0)
+        thick = _dilate_lines(self._buffer_with_line(), 0.3, 50.0)
+        assert thick.sum() > thin.sum()
+
+
+class TestTextureLineWidth:
+    """End-to-end: the generated texture scales with the laser dot width."""
+
+    def _scanline_ops(self, head_uid="head1"):
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start("layer1")
+        ops.set_head(head_uid)
+        for y in range(0, 30, 5):
+            ops.move_to(0.0, y, 0.0)
+            ops.scan_to(20.0, y, 0.0, bytearray([255] * 20))
+        ops.layer_end("layer1")
+        ops.job_end()
+        return ops
+
+    def _compile(self, dot_width=None, head_uid="head1"):
+        config = make_test_config(
+            layer_configs={"layer1": make_flat_layer_config()},
+        )
+        if dot_width is not None:
+            config.laser_dot_widths_mm = {head_uid: dot_width}
+        return compile_scene(self._scanline_ops(head_uid), config)
+
+    @staticmethod
+    def _interior_thickness(texture):
+        tex = np.asarray(texture)
+        col = np.argwhere(tex[:, 0].astype(bool))
+        runs = np.split(col[:, 0], np.where(np.diff(col[:, 0]) > 1)[0] + 1)
+        return max(len(run) for run in runs)
+
+    def test_texture_line_width_uses_default_without_config(self):
+        artifact = self._compile()
+        assert len(artifact.texture_layers) == 1
+        assert (
+            self._interior_thickness(artifact.texture_layers[0].power_texture)
+            > 1
+        )
 
 
 class TestCompileMultiLayer:
