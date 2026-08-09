@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+from raygeo.compressed_array import CompressedArray
 
 from rayforge.simulator.scene3d import CompiledSceneArtifact, TextureLayer
 from rayforge.ui_gtk.sim3d.renderer.texture_renderer import (
@@ -40,7 +41,9 @@ def renderer():
 
 def _make_texture_layer(laser_uid=""):
     return TextureLayer(
-        power_texture=np.zeros((2, 2), dtype=np.uint8),
+        power_texture=CompressedArray.from_uint8_2d(
+            np.zeros((2, 2), dtype=np.uint8)
+        ),
         width_px=2,
         height_px=2,
         model_matrix=np.eye(4, dtype=np.float32),

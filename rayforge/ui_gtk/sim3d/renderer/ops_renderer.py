@@ -83,20 +83,25 @@ class OpsRenderer(BaseRenderer):
         self, vl: VertexLayer, show_travel_moves: bool
     ):
         """Uploads a compiled vertex layer into the renderer's buffers."""
+        powered_verts = vl.powered_verts.to_numpy()
+        powered_attrib = vl.powered_attrib.to_numpy()
+        travel_verts = vl.travel_verts.to_numpy()
+        zero_power_verts = vl.zero_power_verts.to_numpy()
+
         if show_travel_moves:
-            pv_final = np.concatenate((vl.powered_verts, vl.zero_power_verts))
-            zero_count = vl.zero_power_verts.size // 3
+            pv_final = np.concatenate((powered_verts, zero_power_verts))
+            zero_count = zero_power_verts.size // 3
             zero_attrib = np.zeros(zero_count * 4, dtype=np.float32)
             zero_attrib[3::4] = 1.0
-            attrib = np.concatenate((vl.powered_attrib.ravel(), zero_attrib))
-            tv_final = vl.travel_verts
+            attrib = np.concatenate((powered_attrib.ravel(), zero_attrib))
+            tv_final = travel_verts
         else:
-            pv_final = vl.powered_verts
-            attrib = vl.powered_attrib
+            pv_final = powered_verts
+            attrib = powered_attrib
             tv_final = np.array([], dtype=np.float32)
 
-        powered_count = vl.powered_verts.size // 3
-        zero_count = vl.zero_power_verts.size // 3
+        powered_count = powered_verts.size // 3
+        zero_count = zero_power_verts.size // 3
         logger.debug(
             f"[UPLOAD] is_rotary={vl.is_rotary} "
             f"powered={powered_count} "
