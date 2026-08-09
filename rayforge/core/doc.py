@@ -281,6 +281,17 @@ class Doc(DocItem):
         return [child for child in self.children if isinstance(child, Layer)]
 
     @property
+    def has_rotary_layer(self) -> bool:
+        """Whether any layer has rotary mode enabled.
+
+        Doc-level fact used to skip the per-layer kinematic walk in
+        :meth:`KinematicMapping.apply_to_job_ops` for flat jobs, since
+        that walk forces a copy-on-write clone of the command array for
+        every layer even when the callback does nothing.
+        """
+        return any(layer.rotary_enabled for layer in self.layers)
+
+    @property
     def all_workpieces(self) -> list[WorkPiece]:
         """
         Recursively finds and returns a flattened list of all WorkPiece

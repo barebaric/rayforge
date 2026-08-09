@@ -37,6 +37,17 @@ def test_doc_initialization(doc):
     assert doc.get_assets_by_type("sketch") == {}
 
 
+def test_has_rotary_layer_reflects_layer_flags(doc):
+    """has_rotary_layer tracks whether any layer enables rotary."""
+    assert doc.has_rotary_layer is False
+
+    doc.active_layer.set_rotary_enabled(True)
+    assert doc.has_rotary_layer is True
+
+    doc.active_layer.set_rotary_enabled(False)
+    assert doc.has_rotary_layer is False
+
+
 @pytest.mark.parametrize(
     "asset_factory, get_compatibility_dict",
     [
