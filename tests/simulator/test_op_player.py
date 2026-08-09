@@ -3,10 +3,14 @@ import math
 import pytest
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
+from raygeo.ops.types import CommandType
 
 from rayforge.context import RayforgeContext
 from rayforge.core.doc import Doc
-from rayforge.machine.kinematic_mapping import build_layer_assembly
+from rayforge.machine.kinematic_mapping import (
+    KinematicMapping,
+    build_layer_assembly,
+)
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
 from rayforge.simulator.machine_state import MachineState
@@ -567,6 +571,100 @@ def test_render_state_laser_off_during_travel():
     player.set_sim_time(1.75)  # midway through the final move_to travel
     state = player.render_state()
     assert state.laser_on is False
+
+
+def _make_replacement_player():
+    """Player over AXIS_REPLACEMENT mapped ops with a rotation move.
+
+    The mapped ops keep endpoint Y at the cylinder position while the
+    real rotation lives in extra_axes[Y]; the pure-X travel back to
+    zero rotation afterwards exercises the extra-axis interpolation.
+    """
+    machine = _make_machine()
+    rm = RotaryModule()
+    rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
+    rm.set_axis(Axis.Y)
+    machine.add_rotary_module(rm)
+
+    ops = Ops()
+    ops.set_feed_rate(600)  # 10 mm/s
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.layer_start("test")
+    ops.line_to(10.0, 10.0, 0.0)  # 10 mm of circumference -> 90 deg
+    ops.move_to(20.0, 0.0, 0.0)  # pure-X travel back to 0 deg
+    ops.layer_end("test")
+
+    diameter = 40.0
+    mapping = KinematicMapping.from_rotary_module(rm, diameter)
+    assert mapping is not None
+    mapping.apply(ops)
+
+    doc = Doc()
+    doc.active_layer.uid = "test"
+    doc.active_layer.set_rotary_enabled(True)
+    doc.active_layer.set_rotary_diameter(diameter)
+    doc.active_layer.set_rotary_module_uid(rm.uid)
+
+    player = OpPlayer(ops, machine, doc)
+    player.set_playback_params(600.0, 1200.0, 0.0)
+    return player, diameter
+
+
+def _rotation_command_index(player):
+    """Command index of the 90-degree rotation move (line_to)."""
+    for i in range(player.ops.len()):
+        if player.ops.command_type(i) == CommandType.LINE_TO:
+            return i
+    raise AssertionError("expected a line_to command")
+
+
+def test_render_state_interpolates_rotary_axis_linearly():
+    """The rotary axis must interpolate linearly between commands.
+
+    Regression test: in AXIS_REPLACEMENT mode the rotary axis is Y, which
+    also receives the endpoint-Y interpolation. Interpolating the extra
+    axis from the partially-interpolated value produced a quadratic curve
+    (the cylinder "arced" between correct endpoints). The rotation must
+    instead be blended from the pre-command state.
+    """
+    player, diameter = _make_replacement_player()
+    rot = _rotation_command_index(player)
+    player.seek(rot)  # state now holds the 90 deg rotation
+    expected_deg = (10.0 / (diameter * math.pi)) * 360.0
+    assert player.state.axes[Axis.Y] == pytest.approx(expected_deg)
+
+    travel = rot + 1
+    t0 = player.get_cumulative_time(rot)
+    t1 = player.get_cumulative_time(travel)
+    player.set_sim_time(t0 + 0.5 * (t1 - t0))
+    p, frac = player.playback_progress()
+    assert p == travel
+    assert frac == pytest.approx(0.5)
+    state = player.render_state()
+    assert state.axes[Axis.X] == pytest.approx(15.0)
+    assert state.axes[Axis.Y] == pytest.approx(expected_deg * 0.5)
+
+
+def test_render_state_keeps_rotary_axis_constant_for_pure_x():
+    """A pure-X move must not spin the cylinder during the glide.
+
+    Regression test: when the rotary axis (Y) collides with a non-zero
+    endpoint Y (cylinder position), the old interpolation blended the two
+    and made the cylinder rotate out-and-back during a pure-X line.
+    """
+    player, diameter = _make_replacement_player()
+    rot = _rotation_command_index(player)
+    player.seek(rot)
+    travel = rot + 1
+    t0 = player.get_cumulative_time(rot)
+    t1 = player.get_cumulative_time(travel)
+    player.set_sim_time(t0 + 0.25 * (t1 - t0))
+    p, frac = player.playback_progress()
+    assert p == travel
+    assert frac == pytest.approx(0.25)
+    state = player.render_state()
+    expected_deg = (10.0 / (diameter * math.pi)) * 360.0
+    assert state.axes[Axis.Y] == pytest.approx(expected_deg * 0.75)
 
 
 def test_render_state_laser_on_for_whole_cut():
