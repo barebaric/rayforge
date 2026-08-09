@@ -47,6 +47,8 @@ class CameraController:
         self._is_orbiting = False
         self._is_z_rotating = False
         self._last_pan_offset: Point | None = None
+        self._pan_anchor: np.ndarray | None = None
+        self._pan_start_screen: tuple[float, float] | None = None
         self._rotation_pivot: np.ndarray | None = None
         self._last_orbit_pos: Point | None = None
         self._last_z_rotate_screen_pos: Point | None = None
@@ -172,6 +174,8 @@ class CameraController:
         self._is_orbiting = False
         self._is_z_rotating = False
         self._last_pan_offset = None
+        self._pan_anchor = None
+        self._pan_start_screen = None
         self._rotation_pivot = None
         self._last_orbit_pos = None
         self._last_z_rotate_screen_pos = None
@@ -205,6 +209,8 @@ class CameraController:
             self._last_orbit_pos = None
             self._is_orbiting = True
         else:
+            self._pan_anchor = self.get_world_coords_on_plane(x, y)
+            self._pan_start_screen = x, y
             self._last_pan_offset = 0.0, 0.0
             self._is_orbiting = False
 
@@ -228,7 +234,24 @@ class CameraController:
             self._request_render()
 
     def _update_pan(self, camera: Camera, offset_x: float, offset_y: float):
-        """Applies a pan step from the current drag offset."""
+        """Pans so the floor-plane point under the cursor tracks the mouse.
+
+        The world point on the XY plane that was grabbed at drag start is
+        kept pinned under the cursor, so the plane moves 1:1 with the mouse
+        in every view.  Falls back to pixel-based panning when the ray to
+        the cursor does not hit the plane.
+        """
+        if self._pan_anchor is not None and self._pan_start_screen is not None:
+            start_x, start_y = self._pan_start_screen
+            current = self.get_world_coords_on_plane(
+                start_x + offset_x, start_y + offset_y
+            )
+            if current is not None:
+                shift = self._pan_anchor - current
+                camera.position += shift
+                camera.target += shift
+                return
+
         if self._last_pan_offset is None:
             self._last_pan_offset = 0.0, 0.0
         dx = offset_x - self._last_pan_offset[0]
