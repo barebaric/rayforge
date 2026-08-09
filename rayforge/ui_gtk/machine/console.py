@@ -1,4 +1,5 @@
 import logging
+import warnings
 from gettext import gettext as _
 
 from blinker import Signal
@@ -142,8 +143,18 @@ class Console(Gtk.Box):
 
     def _setup_tags(self):
         tag_table = self.terminal.get_buffer().get_tag_table()
-        style_context = self.terminal.get_style_context()
+        # GTK deprecates get_style_context()/lookup_color() in 4.10, but the
+        # replacement (gtk_widget_lookup_color) is not exposed by PyGObject.
+        # The GTK authors clarified that these warnings only mean the code
+        # breaks on GTK 5 which does not even exist yet, so they are safe
+        # to ignore for now.
+        # https://gitlab.gnome.org/GNOME/gtk/-/work_items/5262#note_1575295
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            style_context = self.terminal.get_style_context()
+            self._create_tags(tag_table, style_context)
 
+    def _create_tags(self, tag_table, style_context):
         self._create_tag(
             tag_table,
             "timestamp",
