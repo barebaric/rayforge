@@ -200,14 +200,14 @@ class OpPlayer:
             (Axis.Y, end[1]),
             (Axis.Z, end[2]),
         ):
-            axes[axis] = axes.get(axis, 0.0) + frac * (
-                value - axes.get(axis, 0.0)
+            axes[axis] = start_axes.get(axis, 0.0) + frac * (
+                value - start_axes.get(axis, 0.0)
             )
         ea = self.ops.extra_axes(p)
         if ea:
             for axis, value in ea.items():
-                axes[axis] = axes.get(axis, 0.0) + frac * (
-                    value - axes.get(axis, 0.0)
+                axes[axis] = start_axes.get(axis, 0.0) + frac * (
+                    value - start_axes.get(axis, 0.0)
                 )
         st = MachineState(axis_letters=axes.keys())
         st.axes = axes
