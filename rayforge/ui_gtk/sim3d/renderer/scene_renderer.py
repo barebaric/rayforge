@@ -153,20 +153,26 @@ class SceneRenderer(BaseRenderer):
     def _rebuild_registry(self) -> None:
         """Rebuilds the render registry from the current children."""
         registry: list[tuple[BaseRenderer, tuple[str, ...]]] = []
+
+        # Draw the world first.
         if self.background_renderer is not None:
             registry.append((self.background_renderer, ("background",)))
         if self.axis_renderer is not None:
             registry.append((self.axis_renderer, ("main", "text")))
+
+        # Draw the hardware.
         if self.zone_renderer is not None:
             registry.append((self.zone_renderer, ("main",)))
         for renderer in self.model_renderers:
             registry.append((renderer, ("main",)))
-        for renderer in self.ops_renderers:
-            registry.append((renderer, ("main",)))
         for renderer in self.cylinder_renderers.values():
             registry.append((renderer, ("main",)))
+
+        # Draw the ops and textures.
         if self.texture_renderer is not None:
             registry.append((self.texture_renderer, ("texture",)))
+        for renderer in self.ops_renderers:
+            registry.append((renderer, ("main",)))
         for renderer in self.ring_renderers:
             registry.append((renderer, ("main",)))
         if self.laser_beam_renderer is not None:

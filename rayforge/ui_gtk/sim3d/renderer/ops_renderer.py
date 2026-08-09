@@ -308,7 +308,12 @@ class OpsRenderer(BaseRenderer):
         shader.use()
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
+        # The toolpath draws on top of the raster texture; never cull it
+        # by the surface depth (which would split lines on a cylinder's
+        # curved face).  Depth writes stay off so the trail/ring drawn
+        # afterwards is unaffected.
         GL.glDepthMask(GL.GL_FALSE)
+        GL.glDepthFunc(GL.GL_ALWAYS)
         shader.set_mat4("uMVP", mvp)
         shader.set_float("uHasNormals", 0.0)
 
