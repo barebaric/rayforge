@@ -6,7 +6,7 @@ from gettext import gettext as _
 from typing import cast
 
 from blinker import Signal
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, Gdk, Gtk
 
 from ...context import get_context
 from ...core.material import Material, MaterialAppearance
@@ -45,16 +45,19 @@ class MaterialRow(Gtk.Box):
         color_box = Gtk.Box()
         color_box.set_size_request(24, 24)
         color_box.set_valign(Gtk.Align.CENTER)
-        color_box.add_css_class("material-color")
+        color_class = f"material-color-{self.material.uid}"
+        color_box.add_css_class(color_class)
         color_provider = Gtk.CssProvider()
         display_color = self.material.get_display_color()
-        color_data = (
-            f".material-color {{ background-color: {display_color}; }}"
-        )
+        color_data = f".{color_class} {{ background-color: {display_color}; }}"
         color_provider.load_from_string(color_data)
-        color_box.get_style_context().add_provider(
-            color_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
+        display = Gdk.Display.get_default()
+        if display:
+            Gtk.StyleContext.add_provider_for_display(
+                display,
+                color_provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+            )
         self.prepend(color_box)
 
         labels_box = Gtk.Box(
