@@ -17,12 +17,7 @@ from ..core.capability import MachineCapability
 from ..core.doc import Doc
 from ..core.workpiece import WorkPiece
 from ..machine.kinematic_mapping import KinematicMapping
-from .artifact import (
-    BaseArtifactHandle,
-    JobArtifact,
-    StepOpsArtifact,
-    WorkPieceArtifact,
-)
+from .artifact import BaseArtifactHandle, JobArtifact, WorkPieceArtifact
 from .artifact.store import ArtifactStore
 from .encoder.base import EncodedOutput, MachineCodeOpMap
 from .intent_controller import IntentController
@@ -73,7 +68,6 @@ class Pipeline:
         self._last_known_busy = False
 
         self._wp_handles: dict[tuple[str, str], BaseArtifactHandle] = {}
-        self._step_handles: dict[str, BaseArtifactHandle] = {}
         self._last_aggregate_output: Any = None
         self._last_job_handle: BaseArtifactHandle | None = None
 
@@ -138,7 +132,6 @@ class Pipeline:
     def _connect_ctl_signals(self) -> None:
         ctl = self._intent_ctl
         ctl.workpiece_artifact_ready.connect(self._on_wp_output)
-        ctl.step_artifact_ready.connect(self._on_step_output)
         ctl.job_aggregate_ready.connect(self._on_job_aggregate)
         ctl.job_generation_finished.connect(self._on_job_encoded)
         ctl.job_time_updated.connect(self._job_time_relay)
@@ -162,7 +155,6 @@ class Pipeline:
             return
         self._doc = new_doc
         self._wp_handles.clear()
-        self._step_handles.clear()
         self._last_job_handle = None
         self._last_aggregate_output = None
         self._intent_ctl.set_doc(new_doc)
@@ -262,7 +254,6 @@ class Pipeline:
             self._machine.changed.disconnect(self._on_machine_changed)
         self._intent_ctl.shutdown()
         self._wp_handles.clear()
-        self._step_handles.clear()
         self._last_job_handle = None
         self._last_aggregate_output = None
 
@@ -335,19 +326,6 @@ class Pipeline:
             handle=handle,
             generation_id=generation_id,
         )
-
-    def _on_step_output(self, sender, *, step, output, generation_id) -> None:
-        if self._is_shutting_down or output is None:
-            return
-        artifact = StepOpsArtifact(
-            ops=output.ops,
-            generation_id=generation_id,
-        )
-        old = self._step_handles.pop(step.uid, None)
-        if old is not None:
-            self._store.release(old)
-        handle = self._store.put(artifact, "step")
-        self._step_handles[step.uid] = handle
 
     def _on_job_aggregate(self, sender, *, output, generation_id) -> None:
         if self._is_shutting_down:
@@ -426,11 +404,6 @@ class Pipeline:
         self, step_uid: str, workpiece_uid: str
     ) -> BaseArtifactHandle | None:
         return self._wp_handles.get((workpiece_uid, step_uid))
-
-    def get_step_ops_artifact_handle(
-        self, step_uid: str
-    ) -> BaseArtifactHandle | None:
-        return self._step_handles.get(step_uid)
 
     def get_artifact(self, step: Step, workpiece: WorkPiece) -> Any:
         handle = self._wp_handles.get((workpiece.uid, step.uid))

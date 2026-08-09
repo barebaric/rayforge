@@ -269,7 +269,11 @@ class IntentBuilder:
         key = step_key(step.uid)
         token = self._aggregate_token(step, layer, upstream)
         stage = self._step_stage(step, upstream)
-        out.append(self._make_request(key, token, stage))
+        # The step aggregate output is only consumed by the job
+        # aggregate during a single run, so it is not worth caching:
+        # caching would retain a full extra copy of the step's command
+        # buffer between builds.
+        out.append(self._make_request(key, token, stage, cacheable=False))
 
     def _build_job_node(
         self,
@@ -303,7 +307,11 @@ class IntentBuilder:
         key = job_machinexform_key()
         token = self._machine_transform_token(doc, step_tokens)
         stage = self._build_machine_transform_stage(doc)
-        out.append(self._make_request(key, token, stage))
+        # The machine-space ops are consumed solely by the encoder
+        # during the same run, so they are not cached: caching would
+        # retain a full extra copy of the job's command buffer between
+        # builds.
+        out.append(self._make_request(key, token, stage, cacheable=False))
 
     def _build_encoder_node(
         self,
@@ -446,12 +454,15 @@ class IntentBuilder:
     # Node construction
     # ------------------------------------------------------------------
 
-    def _make_request(self, key: str, token: int, stage: Any) -> NodeRequest:
+    def _make_request(
+        self, key: str, token: int, stage: Any, cacheable: bool = True
+    ) -> NodeRequest:
         return NodeRequest(
             key=key,
             generation_id=self._generation_id,
             stage=stage,
             version_token=token,
+            cacheable=cacheable,
         )
 
     # ------------------------------------------------------------------
