@@ -85,8 +85,13 @@ class GcodeViewer(Gtk.Box):
 
     def _on_line_activated(self, sender, *, line_number: int):
         self.line_activated.send(self, line_number=line_number)
-        if self.op_map and line_number in self.op_map.machine_code_to_op:
-            op_index = self.op_map.machine_code_to_op[line_number]
+        mc_to_op = self.op_map.machine_code_to_op if self.op_map else None
+        if (
+            mc_to_op
+            and 0 <= line_number < len(mc_to_op)
+            and mc_to_op[line_number] != -1
+        ):
+            op_index = mc_to_op[line_number]
             self.op_activated.send(self, op_index=op_index)
 
     def set_gcode(self, gcode: str):
@@ -131,14 +136,19 @@ class GcodeViewer(Gtk.Box):
         self.editor.highlight_line(line_number, use_align)
 
     def highlight_op(self, op_index: int):
-        if not self.op_map or op_index not in self.op_map.op_to_machine_code:
+        if not self.op_map:
             self.clear_highlight()
             return
 
-        line_numbers = self.op_map.op_to_machine_code[op_index]
-        if line_numbers:
+        ranges = self.op_map.op_to_machine_code
+        if op_index >= len(ranges):
+            self.clear_highlight()
+            return
+
+        start_line, line_count = ranges[op_index]
+        if line_count:
             # Highlight the first line associated with this op
-            self.editor.highlight_line(line_numbers[0])
+            self.editor.highlight_line(start_line)
         else:
             # Op produced no g-code, so clear any existing highlight
             self.clear_highlight()
