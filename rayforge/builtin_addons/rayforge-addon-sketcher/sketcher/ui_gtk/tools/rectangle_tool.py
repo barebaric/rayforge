@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from gettext import gettext as _
+from typing import ClassVar
 
 import cairo
 
@@ -20,7 +21,7 @@ class RectangleTool(SnapMixin, SketchTool):
 
     ICON = "sketch-rect-symbolic"
     LABEL = _("Rectangle")
-    SHORTCUTS = ["gr"]
+    SHORTCUTS: ClassVar[list[str]] = ["gr"]
     CURSOR_ICON = "sketch-rect-symbolic"
 
     def __init__(self, element):

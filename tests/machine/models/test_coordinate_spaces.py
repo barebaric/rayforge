@@ -13,6 +13,7 @@ Coordinate Spaces:
 """
 
 import gc
+from typing import ClassVar
 
 import pytest
 
@@ -78,7 +79,9 @@ class TestCoordinateSpaces:
 
     # -- World-to-machine --
 
-    WORLD_TO_MACHINE_SCENARIOS = [
+    WORLD_TO_MACHINE_SCENARIOS: ClassVar[
+        list[tuple[Origin, bool, bool, float, float]]
+    ] = [
         # (origin, reverse_x, reverse_y, expected_mx, expected_my)
         # BOTTOM_LEFT: x_axis_right=False, y_axis_down=False
         (Origin.BOTTOM_LEFT, False, False, 10.0, 20.0),

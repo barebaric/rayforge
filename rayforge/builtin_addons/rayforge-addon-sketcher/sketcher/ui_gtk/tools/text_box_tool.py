@@ -2,7 +2,7 @@ import logging
 import math
 from enum import Enum, auto
 from gettext import gettext as _
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, ClassVar, cast
 
 import cairo
 from blinker import Signal
@@ -40,9 +40,9 @@ class TextBoxState(Enum):
 class TextBoxTool(SketchTool):
     ICON = "sketch-text-symbolic"
     LABEL = _("Text Box")
-    SHORTCUTS = ["gt"]
+    SHORTCUTS: ClassVar[list[str]] = ["gt"]
     CURSOR_ICON = "sketch-text-symbolic"
-    EDITING_SHORTCUTS = []
+    EDITING_SHORTCUTS: ClassVar[list[str]] = []
 
     def __init__(self, element):
         super().__init__(element)

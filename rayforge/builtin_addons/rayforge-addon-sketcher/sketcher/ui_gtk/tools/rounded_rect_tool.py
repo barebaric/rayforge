@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from gettext import gettext as _
+from typing import ClassVar
 
 from ...core.commands import (
     RoundedRectCommand,
@@ -14,7 +15,7 @@ class RoundedRectTool(SketchTool):
 
     ICON = "sketch-rounded-rect-symbolic"
     LABEL = _("Rounded Rectangle")
-    SHORTCUTS = ["go"]
+    SHORTCUTS: ClassVar[list[str]] = ["go"]
     CURSOR_ICON = "sketch-rounded-rect-symbolic"
     DEFAULT_RADIUS = 10.0
 

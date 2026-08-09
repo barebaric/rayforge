@@ -1,6 +1,7 @@
 import logging
 from gettext import gettext as _
 from pathlib import Path
+from typing import ClassVar
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -42,27 +43,27 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
     key = "general"
 
     # Map for converting between UI index and config string
-    THEME_MAP = ["system", "light", "dark"]
-    THEME_LABELS = [_("System"), _("Light"), _("Dark")]
+    THEME_MAP: ClassVar[list[str]] = ["system", "light", "dark"]
+    THEME_LABELS: ClassVar[list[str]] = [_("System"), _("Light"), _("Dark")]
 
     # Map for startup behavior options
-    STARTUP_BEHAVIOR_MAP = [
+    STARTUP_BEHAVIOR_MAP: ClassVar[list[str]] = [
         StartupBehavior.NONE.value,
         StartupBehavior.LAST_PROJECT.value,
         StartupBehavior.SPECIFIC_PROJECT.value,
     ]
-    STARTUP_BEHAVIOR_LABELS = [
+    STARTUP_BEHAVIOR_LABELS: ClassVar[list[str]] = [
         _("Open nothing"),
         _("Open last project"),
         _("Open specific project"),
     ]
 
     # Map for ops color mode options
-    OPS_COLOR_MODE_MAP = [
+    OPS_COLOR_MODE_MAP: ClassVar[list[str]] = [
         OpsColorMode.LASER.value,
         OpsColorMode.LAYER.value,
     ]
-    OPS_COLOR_MODE_LABELS = [
+    OPS_COLOR_MODE_LABELS: ClassVar[list[str]] = [
         _("Laser Color"),
         _("Layer Color"),
     ]

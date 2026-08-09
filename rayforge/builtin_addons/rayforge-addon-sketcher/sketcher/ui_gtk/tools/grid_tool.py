@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union, cast
+from typing import TYPE_CHECKING, ClassVar, Union, cast
 
 from gi.repository import Adw, Gtk
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class GridTool(SketchTool):
     ICON = "sketch-grid-symbolic"
     LABEL = _("Grid")
-    SHORTCUTS = ["gg"]
+    SHORTCUTS: ClassVar[list[str]] = ["gg"]
 
     def is_available(
         self,

@@ -1,4 +1,5 @@
 from gettext import gettext as _
+from typing import ClassVar
 
 import cairo
 
@@ -17,7 +18,7 @@ class FillTool(SketchTool):
 
     ICON = "sketch-fill-symbolic"
     LABEL = _("Fill")
-    SHORTCUTS = ["gf"]
+    SHORTCUTS: ClassVar[list[str]] = ["gf"]
     CURSOR_ICON = "sketch-fill-symbolic"
 
     _current_color: ColorRGBA = DEFAULT_FILL_COLOR

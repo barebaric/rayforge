@@ -5,7 +5,7 @@ import math
 import re
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 try:
     import pymupdf
@@ -48,7 +48,10 @@ class PdfVectorImporter(Importer):
     label = "PDF (Vector Strategy)"
     mime_types = ()
     extensions = ()
-    features = {ImporterFeature.DIRECT_VECTOR, ImporterFeature.LAYER_SELECTION}
+    features: ClassVar[set[ImporterFeature]] = {
+        ImporterFeature.DIRECT_VECTOR,
+        ImporterFeature.LAYER_SELECTION,
+    }
 
     def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)

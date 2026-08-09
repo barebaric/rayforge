@@ -3,6 +3,7 @@ import logging
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import ClassVar
 
 from blinker import Signal
 
@@ -35,7 +36,7 @@ class UILogFilter(logging.Filter):
     VERBOSE_CATEGORIES: Shown only when verbose mode is enabled
     """
 
-    UI_CATEGORIES = {
+    UI_CATEGORIES: ClassVar[set[str]] = {
         "MACHINE_EVENT",
         "ERROR",
         "WARNING",
@@ -43,7 +44,10 @@ class UILogFilter(logging.Filter):
         "USER_COMMAND",
     }
 
-    VERBOSE_CATEGORIES = {"STATUS_POLL", "MACHINE_RESPONSE"}
+    VERBOSE_CATEGORIES: ClassVar[set[str]] = {
+        "STATUS_POLL",
+        "MACHINE_RESPONSE",
+    }
 
     def filter(self, record: logging.LogRecord) -> bool:
         category = record.__dict__.get("log_category")

@@ -5,7 +5,7 @@ import logging
 from collections.abc import Iterator
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from raygeo.geo import Matrix
 
@@ -43,7 +43,7 @@ class SketchImporter(Importer):
     label = _("{app_name} Sketch").format(app_name=const.APP_NAME)
     extensions = (".rfs",)
     mime_types = (const.MIME_TYPE_SKETCH,)
-    features = {ImporterFeature.DIRECT_VECTOR}
+    features: ClassVar[set[ImporterFeature]] = {ImporterFeature.DIRECT_VECTOR}
 
     def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)

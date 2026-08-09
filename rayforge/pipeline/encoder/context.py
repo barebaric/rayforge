@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, ClassVar, Optional
 
 from raygeo.geo.types import Point3D, Rect
 
@@ -45,7 +45,7 @@ class GcodeContext:
         return self.machine.active_wcs
 
     # --- Static Variable Documentation ---
-    _DOCS = {
+    _DOCS: ClassVar[dict[str, list[tuple[str, str]]]] = {
         "job": [
             (
                 "machine.active_wcs",

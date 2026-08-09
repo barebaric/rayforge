@@ -3,6 +3,7 @@ import logging
 import warnings
 from gettext import gettext as _
 from pathlib import Path
+from typing import ClassVar
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
@@ -43,7 +44,7 @@ class PdfTraceImporter(Importer):
     label = "PDF (Trace Strategy)"
     mime_types = ()
     extensions = ()
-    features = {ImporterFeature.BITMAP_TRACING}
+    features: ClassVar[set[ImporterFeature]] = {ImporterFeature.BITMAP_TRACING}
     _TRACE_PPM = 24.0
     _MAX_RENDER_DIM = 16384
 

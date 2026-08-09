@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from typing import ClassVar
 
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
@@ -32,7 +33,7 @@ class PdfImporter(Importer):
     label = "PDF files"
     mime_types = ("application/pdf",)
     extensions = (".pdf",)
-    features = {
+    features: ClassVar[set[ImporterFeature]] = {
         ImporterFeature.DIRECT_VECTOR,
         ImporterFeature.BITMAP_TRACING,
     }

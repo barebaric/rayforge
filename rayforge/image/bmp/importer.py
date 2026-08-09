@@ -3,6 +3,7 @@ import struct
 import warnings
 from gettext import gettext as _
 from pathlib import Path
+from typing import ClassVar
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -38,7 +39,7 @@ class BmpImporter(Importer):
     label = "BMP files"
     mime_types = ("image/bmp",)
     extensions = (".bmp",)
-    features = {ImporterFeature.BITMAP_TRACING}
+    features: ClassVar[set[ImporterFeature]] = {ImporterFeature.BITMAP_TRACING}
 
     def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)

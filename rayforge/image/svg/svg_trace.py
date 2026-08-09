@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import math
 from gettext import gettext as _
-from typing import Any
+from typing import Any, ClassVar
 
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
@@ -35,7 +35,7 @@ class SvgTraceImporter(SvgImporterBase):
     label = "SVG (Trace Strategy)"
     mime_types = ()
     extensions = ()
-    features = {ImporterFeature.BITMAP_TRACING}
+    features: ClassVar[set[ImporterFeature]] = {ImporterFeature.BITMAP_TRACING}
 
     def __init__(self, data: bytes, source_file: Any | None = None):
         super().__init__(data, source_file)

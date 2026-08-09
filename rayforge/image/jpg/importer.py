@@ -2,6 +2,7 @@ import logging
 import warnings
 from gettext import gettext as _
 from pathlib import Path
+from typing import ClassVar
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -33,7 +34,7 @@ class JpgImporter(Importer):
     label = "JPEG files"
     mime_types = ("image/jpeg",)
     extensions = (".jpg", ".jpeg")
-    features = {ImporterFeature.BITMAP_TRACING}
+    features: ClassVar[set[ImporterFeature]] = {ImporterFeature.BITMAP_TRACING}
 
     def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)

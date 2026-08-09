@@ -4,6 +4,7 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     cast,
 )
 
@@ -48,7 +49,7 @@ class SelectTool(SnapMixin, SketchTool):
 
     ICON = "sketch-select-symbolic"
     LABEL = _("Select")
-    SHORTCUTS = [" "]
+    SHORTCUTS: ClassVar[list[str]] = [" "]
 
     def __init__(self, element):
         super().__init__(element)

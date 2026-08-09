@@ -1,4 +1,5 @@
 from gettext import gettext as _
+from typing import ClassVar
 
 from gi.repository import Adw, Gtk
 
@@ -24,7 +25,7 @@ class SettingsWindow(PatchedDialogWindow):
     """
 
     # Mapping of built-in page names to indices
-    PAGE_INDICES = {
+    PAGE_INDICES: ClassVar[dict[str, int]] = {
         "general": 0,
         "machines": 1,
         "materials": 2,

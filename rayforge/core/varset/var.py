@@ -3,6 +3,7 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Generic,
     TypeVar,
 )
@@ -26,7 +27,7 @@ class Var(Generic[T]):
     validation, and data handling.
     """
 
-    _registry: dict[str, type["Var"]] = {}
+    _registry: ClassVar[dict[str, type["Var"]]] = {}
 
     display_name: str | None = None
 

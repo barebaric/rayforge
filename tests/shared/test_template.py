@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, ClassVar, cast
 
 import pytest
 
@@ -22,7 +22,7 @@ class TestTemplateFormatter:
         class MockMachine:
             name = "MyLaser"
             axis_extents = (200, 150)
-            macros = {
+            macros: ClassVar[dict[str, MockMacro]] = {
                 "macro1_uid": MockMacro(
                     name="First Macro", code=["G0 X10 Y10"]
                 ),

@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Callable
 from gettext import gettext as _
+from typing import ClassVar
 
 import cairo
 
@@ -31,7 +32,7 @@ class PathTool(SnapMixin, SketchTool):
 
     ICON = "sketch-bezier-symbolic"
     LABEL = _("Path")
-    SHORTCUTS = ["gp", "gl"]
+    SHORTCUTS: ClassVar[list[str]] = ["gp", "gl"]
     CURSOR_ICON = "sketch-line-symbolic"
 
     def __init__(self, element):

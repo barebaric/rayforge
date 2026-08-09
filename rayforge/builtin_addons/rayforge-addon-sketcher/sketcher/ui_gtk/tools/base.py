@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import Enum, auto
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import cairo
 
@@ -39,7 +39,7 @@ class SketchTool(ABC):
 
     ICON: str | None = None
     LABEL: str | None = None
-    SHORTCUTS: list[str] = []
+    SHORTCUTS: ClassVar[list[str]] = []
     CURSOR_ICON: str | None = None
 
     def __init__(self, element: SketchElement):

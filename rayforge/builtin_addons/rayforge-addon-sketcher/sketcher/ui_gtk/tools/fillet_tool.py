@@ -1,7 +1,7 @@
 import logging
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, ClassVar, Union
 
 from ...core.commands import FilletCommand
 from ...core.entities import Entity, Line, Point
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class FilletTool(SketchTool):
     ICON = "sketch-fillet-symbolic"
     LABEL = _("Fillet")
-    SHORTCUTS = ["cf"]
+    SHORTCUTS: ClassVar[list[str]] = ["cf"]
     DEFAULT_RADIUS_RATIO = 0.15
 
     def is_available(

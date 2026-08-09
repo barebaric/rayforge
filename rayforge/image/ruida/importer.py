@@ -1,6 +1,7 @@
 import logging
 from gettext import gettext as _
 from pathlib import Path
+from typing import ClassVar
 
 from raygeo.geo import Geometry
 
@@ -29,7 +30,7 @@ class RuidaImporter(Importer):
     label = "Ruida files"
     mime_types = ("application/x-rd-file", "application/octet-stream")
     extensions = (".rd",)
-    features = {ImporterFeature.DIRECT_VECTOR}
+    features: ClassVar[set[ImporterFeature]] = {ImporterFeature.DIRECT_VECTOR}
 
     def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)

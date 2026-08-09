@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from gettext import gettext as _
+from typing import ClassVar
 
 import cairo
 
@@ -19,7 +20,7 @@ class CircleTool(SnapMixin, SketchTool):
 
     ICON = "sketch-circle-symbolic"
     LABEL = _("Ellipse")
-    SHORTCUTS = ["gc"]
+    SHORTCUTS: ClassVar[list[str]] = ["gc"]
     CURSOR_ICON = "sketch-circle-symbolic"
 
     def __init__(self, element):
