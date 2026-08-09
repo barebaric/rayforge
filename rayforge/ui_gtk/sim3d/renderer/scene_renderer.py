@@ -159,6 +159,8 @@ class SceneRenderer(BaseRenderer):
             registry.append((self.axis_renderer, ("main", "text")))
         if self.zone_renderer is not None:
             registry.append((self.zone_renderer, ("main",)))
+        for renderer in self.model_renderers:
+            registry.append((renderer, ("main",)))
         for renderer in self.ops_renderers:
             registry.append((renderer, ("main",)))
         for renderer in self.cylinder_renderers.values():
@@ -169,8 +171,6 @@ class SceneRenderer(BaseRenderer):
             registry.append((renderer, ("main",)))
         if self.laser_beam_renderer is not None:
             registry.append((self.laser_beam_renderer, ("main",)))
-        for renderer in self.model_renderers:
-            registry.append((renderer, ("main",)))
         self.render_registry = registry
 
     def set_cylinder_transform(self, transform: np.ndarray):
