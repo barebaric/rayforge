@@ -17,7 +17,7 @@ def initialize_worker(shared_state=None):
     # Install a fallback gettext translator. This ensures the '_'
     # function exists during the module import phase.
     if not hasattr(builtins, "_"):
-        builtins._ = lambda s: s
+        builtins._ = lambda s: s  # type: ignore[attr-defined]
 
     if hasattr(sys, "_MEIPASS") and sys.platform == "darwin":
         # macOS PyInstaller bundles require specific environment variables

@@ -715,7 +715,7 @@ class GrblNetworkDriver(Driver):
 
         # For efficient lookup, map each setting key to its parent VarSet
         key_to_varset_map = {
-            var_key: varset for varset in known_varsets for var_key in varset
+            var.key: varset for varset in known_varsets for var in varset
         }
 
         unknown_vars = VarSet(

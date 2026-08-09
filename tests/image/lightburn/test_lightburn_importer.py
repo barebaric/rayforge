@@ -2,12 +2,15 @@
 
 import math
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from raygeo.geo import Matrix
 
 from rayforge.core.layer import Layer
+from rayforge.core.step_registry import step_registry
 from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.image.assembler import ItemAssembler
 from rayforge.image.lightburn.importer import (
     LightBurnImporter,
     _apply_xform_to_geo,
@@ -19,6 +22,7 @@ from rayforge.image.lightburn.importer import (
     _parse_verts,
     _parse_xform,
 )
+from rayforge.image.registry import importer_registry
 from rayforge.image.structures import (
     ImportManifest,
     ParsingResult,
@@ -376,7 +380,6 @@ class TestLightBurnImporter:
         importer = self._import("rect.lbrn2")
         parse_result = importer.parse()
         assert parse_result is not None
-        from rayforge.core.vectorization_spec import PassthroughSpec
 
         vec_result = importer.vectorize(parse_result, PassthroughSpec())
         assert isinstance(vec_result, VectorizationResult)
@@ -421,8 +424,6 @@ class TestLightBurnImporter:
         assert len(result.payload.items) > 0
 
     def test_extension_registration(self):
-        from rayforge.image.registry import importer_registry
-
         importer_cls = importer_registry.get_by_extension(".lbrn2")
         assert importer_cls is not None
         assert importer_cls is LightBurnImporter
@@ -488,8 +489,6 @@ class TestLightBurnImporter:
         assert lb_settings["C02"]["index"] == 1
 
     def test_vectorization_passes_layer_settings_for_rect(self):
-        from rayforge.core.vectorization_spec import PassthroughSpec
-
         importer = self._import("rect.lbrn2")
         parse_result = importer.parse()
         assert parse_result is not None
@@ -500,8 +499,6 @@ class TestLightBurnImporter:
         assert s["cut_speed"] == 500
 
     def test_vectorization_layer_settings_for_fence(self):
-        from rayforge.core.vectorization_spec import PassthroughSpec
-
         importer = self._import("fence.lbrn2")
         parse_result = importer.parse()
         assert parse_result is not None
@@ -551,7 +548,7 @@ class TestLightBurnImporter:
                 # workflow empty and add_default_steps_for_layers will
                 # create a default step later.
                 if wf and wf.has_steps():
-                    step = wf.steps[0]
+                    step: Any = wf.steps[0]
                     assert abs(step.power - 0.2) < 1e-6
                     assert step.cut_speed == 500
                 found = True
@@ -568,7 +565,7 @@ class TestLightBurnImporter:
             if isinstance(item, Layer):
                 wf = item.workflow
                 if wf and wf.has_steps():
-                    step = wf.steps[0]
+                    step: Any = wf.steps[0]
                     assert abs(step.power - 0.7) < 1e-6
                     assert step.cut_speed == 400
                     assert abs(step.offset_mm - 0.03) < 1e-6
@@ -594,8 +591,6 @@ class TestLightBurnImporter:
         applied. This is the test that catches the silent-fallback-to-
         contour regression.
         """
-        from rayforge.core.step_registry import step_registry
-
         engrave_cls = step_registry.get("EngraveStep")
         if engrave_cls is None:
             pytest.skip("EngraveStep not registered")
@@ -619,11 +614,12 @@ class TestLightBurnImporter:
             "Image layer ended up with no step — _apply_settings "
             "likely swallowed an EngraveStep construction error."
         )
-        step = wf.steps[0]
+        step: Any = wf.steps[0]
         assert isinstance(step, engrave_cls), (
             f"Expected EngraveStep for CutSetting_Img, got "
             f"{type(step).__name__} — dispatch fell back to contour."
         )
+        step = cast(Any, step)
         # All raster settings from the fixture should be applied.
         assert step.dot_width_correction_mm == 0.04
         assert step.line_interval_mm == 0.04
@@ -641,8 +637,6 @@ class TestApplySettingsDispatch:
 
     @staticmethod
     def _step_classes():
-        from rayforge.core.step_registry import step_registry
-
         contour_cls = step_registry.get("ContourStep")
         engrave_cls = step_registry.get("EngraveStep")
         assert contour_cls is not None, "ContourStep not registered"
@@ -651,7 +645,6 @@ class TestApplySettingsDispatch:
 
     def test_image_layer_creates_engrave_step(self):
         contour_cls, engrave_cls = self._step_classes()
-        from rayforge.image.assembler import ItemAssembler
 
         layer = Layer(name="img")
         ItemAssembler._apply_settings(
@@ -669,9 +662,10 @@ class TestApplySettingsDispatch:
         )
         wf = layer.workflow
         assert wf is not None and wf.has_steps()
-        step = wf.steps[0]
+        step: Any = wf.steps[0]
         assert isinstance(step, engrave_cls)
         assert not isinstance(step, contour_cls)
+        step = cast(Any, step)
         # EngraveStep-specific raster settings must all be applied.
         assert step.dot_width_correction_mm == 0.04
         assert step.line_interval_mm == 0.04
@@ -682,7 +676,6 @@ class TestApplySettingsDispatch:
 
     def test_vector_layer_creates_contour_step(self):
         contour_cls, engrave_cls = self._step_classes()
-        from rayforge.image.assembler import ItemAssembler
 
         layer = Layer(name="cut")
         ItemAssembler._apply_settings(
@@ -691,9 +684,10 @@ class TestApplySettingsDispatch:
         )
         wf = layer.workflow
         assert wf is not None and wf.has_steps()
-        step = wf.steps[0]
+        step: Any = wf.steps[0]
         assert isinstance(step, contour_cls)
         assert not isinstance(step, engrave_cls)
+        step = cast(Any, step)
         # ContourStep has no dot_width_correction_mm attribute.
         assert not hasattr(step, "dot_width_correction_mm")
         assert step.offset_mm == 0.03
@@ -705,7 +699,6 @@ class TestApplySettingsDispatch:
         # still route to EngraveStep. offset is a vector concept but should
         # be tolerated on image layers without crashing.
         _contour_cls, engrave_cls = self._step_classes()
-        from rayforge.image.assembler import ItemAssembler
 
         layer = Layer(name="img")
         ItemAssembler._apply_settings(

@@ -85,7 +85,7 @@ def _worker_main_loop(
     )
     # Set up a null translator for gettext in the subprocess.
     if not hasattr(builtins, "_"):
-        builtins._ = lambda s: s
+        builtins._ = lambda s: s  # type: ignore[attr-defined]
 
     # Force reconfiguration of logging for this new process.
     root_logger = logging.getLogger()
