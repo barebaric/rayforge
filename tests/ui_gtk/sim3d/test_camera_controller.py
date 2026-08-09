@@ -208,6 +208,30 @@ def test_drag_update_pans_with_shift(ui_context_initializer):
     assert not np.array_equal(cam.position, before)
 
 
+@pytest.mark.ui
+def test_pan_tracks_cursor_point_1_to_1(ui_context_initializer):
+    ctrl = _make_ctrl()
+    ctrl.create_camera(640, 480)
+    cam = ctrl.camera
+    assert cam is not None
+    cam.set_view(ViewDirection.TOP, 100.0, 100.0)
+
+    start = (400.0, 200.0)
+    grabbed = ctrl.get_world_coords_on_plane(*start)
+    assert grabbed is not None
+
+    ctrl.on_drag_begin(_FakeGesture(shift=True), *start)
+
+    end = (450.0, 260.0)
+    ctrl.on_drag_update(
+        _FakeGesture(shift=True), end[0] - start[0], end[1] - start[1]
+    )
+
+    after = ctrl.get_world_coords_on_plane(*end)
+    assert after is not None
+    assert np.allclose(after, grabbed, atol=1e-6)
+
+
 class _FakeGesture:
     """Minimal GestureDrag stand-in for the drag handlers."""
 
