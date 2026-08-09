@@ -72,7 +72,6 @@ class Step(DocItem, ABC):
     ICON: str = ""
     CAPABILITIES: tuple[StepCapability, ...] = ()
     REQUIRED_MACHINE_CAPS: ClassVar[frozenset[MachineCapability]] = frozenset()
-    PRODUCER_CLASS: ClassVar[Any] = None
     ASSEMBLER_NAME: ClassVar[str] = ""
     uses_global_state: ClassVar[bool] = False
 
