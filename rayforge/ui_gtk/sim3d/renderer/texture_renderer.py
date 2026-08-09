@@ -172,6 +172,33 @@ class TextureArtifactRenderer(BaseRenderer):
         x_coords = (np.arange(new_width) * x_step).astype(int)
         return data[y_coords][:, x_coords].astype(np.uint8)
 
+    @staticmethod
+    def _max_reduce(data: np.ndarray) -> np.ndarray:
+        """Halves a power map taking the 2x2 block maximum."""
+        h, w = data.shape
+        nh, nw = (h + 1) // 2, (w + 1) // 2
+        if h % 2 == 1:
+            data = np.pad(data, ((0, 1), (0, 0)), mode="edge")
+        if w % 2 == 1:
+            data = np.pad(data, ((0, 0), (0, 1)), mode="edge")
+        return data.reshape(nh, 2, nw, 2).max(axis=(1, 3))
+
+    @classmethod
+    def _build_mipmaps(cls, data: np.ndarray) -> list[np.ndarray]:
+        """Builds a max-reduction mip pyramid of a power map.
+
+        Down-sampling with the maximum (rather than the average) keeps
+        the scanline structure intact at every zoom level, so the shader
+        can pick a mip level that matches its texel footprint instead of
+        aliasing between rows when the texture is minified.
+        """
+        mips = [data]
+        level = data
+        while min(level.shape) > 1:
+            level = cls._max_reduce(level)
+            mips.append(level)
+        return mips
+
     def clear(self):
         """Clears all instances and their associated textures."""
         if not self.is_initialized:
@@ -199,8 +226,13 @@ class TextureArtifactRenderer(BaseRenderer):
 
         texture_id = GL.glGenTextures(1)
         GL.glBindTexture(GL.GL_TEXTURE_2D, texture_id)
+        # NEAREST_MIPMAP_NEAREST keeps the texture mipmap complete so
+        # texelFetch() can read the explicit LOD the shader computes
+        # from the texel footprint (fixes minification moire banding).
         GL.glTexParameteri(
-            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST
+            GL.GL_TEXTURE_2D,
+            GL.GL_TEXTURE_MIN_FILTER,
+            GL.GL_NEAREST_MIPMAP_NEAREST,
         )
         GL.glTexParameteri(
             GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST
@@ -233,18 +265,22 @@ class TextureArtifactRenderer(BaseRenderer):
         else:
             power_data = texture_data.power_texture_data
 
+        mips = self._build_mipmaps(power_data)
+
         GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
-        GL.glTexImage2D(
-            GL.GL_TEXTURE_2D,
-            0,
-            GL.GL_R8,
-            width,
-            height,
-            0,
-            GL.GL_RED,
-            GL.GL_UNSIGNED_BYTE,
-            power_data,
-        )
+        for level, mip in enumerate(mips):
+            mh, mw = mip.shape
+            GL.glTexImage2D(
+                GL.GL_TEXTURE_2D,
+                level,
+                GL.GL_R8,
+                mw,
+                mh,
+                0,
+                GL.GL_RED,
+                GL.GL_UNSIGNED_BYTE,
+                mip,
+            )
         GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 4)
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
 
@@ -254,6 +290,7 @@ class TextureArtifactRenderer(BaseRenderer):
             "rotary_enabled": rotary_enabled,
             "rotary_diameter": rotary_diameter,
             "laser_index": laser_index,
+            "max_mip": len(mips) - 1,
         }
 
         if rotary_enabled and cylinder_vertices is not None:
@@ -358,6 +395,10 @@ class TextureArtifactRenderer(BaseRenderer):
 
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
+        # Fill depth across the whole raster quad (including the
+        # zero-power gaps) so occluders behind it cannot show through.
+        GL.glDepthMask(GL.GL_TRUE)
+        GL.glDepthFunc(GL.GL_LEQUAL)
         shader.use()
 
         GL.glActiveTexture(GL.GL_TEXTURE0)
@@ -372,6 +413,7 @@ class TextureArtifactRenderer(BaseRenderer):
                 continue
 
             shader.set_float("uAlpha", pending_alpha)
+            shader.set_float("uMaxMip", float(instance.get("max_mip", 0)))
 
             shader.set_int("uLaserIndex", instance.get("laser_index", 0))
 
@@ -398,6 +440,8 @@ class TextureArtifactRenderer(BaseRenderer):
 
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
+        GL.glDepthMask(GL.GL_TRUE)
+        GL.glDepthFunc(GL.GL_LEQUAL)
         shader.use()
 
         GL.glActiveTexture(GL.GL_TEXTURE0)
@@ -414,6 +458,7 @@ class TextureArtifactRenderer(BaseRenderer):
             num_rotary += 1
 
             shader.set_float("uAlpha", pending_alpha)
+            shader.set_float("uMaxMip", float(instance.get("max_mip", 0)))
 
             shader.set_int("uLaserIndex", instance.get("laser_index", 0))
 

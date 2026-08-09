@@ -2,15 +2,103 @@
 Tests for the TextureArtifactRenderer class.
 """
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from OpenGL import GL
 
+from rayforge.core.color import ColorSet
 from rayforge.pipeline.artifact.base import TextureData
+from rayforge.ui_gtk.sim3d.gl_utils import ShaderSet
+from rayforge.ui_gtk.sim3d.render_context import (
+    CameraContext,
+    KinematicsContext,
+    RenderContext,
+)
 from rayforge.ui_gtk.sim3d.renderer.texture_renderer import (
     TextureArtifactRenderer,
 )
+
+
+def _make_ctx():
+    return RenderContext(
+        camera=CameraContext(color_set=ColorSet()),
+        kinematics=KinematicsContext(mvp_ui=np.eye(4, dtype=np.float32)),
+    )
+
+
+def _init_renderer(renderer):
+    with (
+        patch.object(renderer, "_create_vbo", return_value=1),
+        patch.object(renderer, "_create_vao", return_value=1),
+        patch.object(renderer, "_create_texture", return_value=1),
+        patch("OpenGL.GL.glBindBuffer"),
+        patch("OpenGL.GL.glBufferData"),
+        patch("OpenGL.GL.glBindVertexArray"),
+        patch("OpenGL.GL.glVertexAttribPointer"),
+        patch("OpenGL.GL.glEnableVertexAttribArray"),
+        patch("OpenGL.GL.glTexParameteri"),
+        patch("OpenGL.GL.glPixelStorei"),
+        patch("OpenGL.GL.glTexImage2D"),
+        patch("OpenGL.GL.glBindTexture"),
+        patch("OpenGL.GL.glGenTextures", side_effect=[1, 2]),
+        patch(
+            "OpenGL.GL.glGetIntegerv",
+            side_effect=lambda name, out: setattr(out, "value", 8192),
+        ),
+    ):
+        renderer.init_gl()
+    return renderer
+
+
+@pytest.mark.ui
+def test_build_mipmaps_max_reduces():
+    """The power-map mip pyramid must down-sample with the 2x2 maximum
+    so scanline rows survive minification instead of aliasing away."""
+    data = np.arange(25, dtype=np.uint8).reshape(5, 5) % 7
+    mips = TextureArtifactRenderer._build_mipmaps(data)
+    assert [m.shape for m in mips] == [(5, 5), (3, 3), (2, 2), (1, 1)]
+    for level in range(1, len(mips)):
+        prev = mips[level - 1]
+        cur = mips[level]
+        for i in range(cur.shape[0]):
+            for j in range(cur.shape[1]):
+                block = prev[2 * i : 2 * i + 2, 2 * j : 2 * j + 2]
+                assert cur[i, j] == block.max()
+
+
+@pytest.mark.ui
+def test_render_writes_depth_for_texture_quad():
+    """The texture must write depth across its whole quad (including
+    zero-power gaps) so occluders behind it cannot band the preview."""
+    renderer = _init_renderer(TextureArtifactRenderer())
+    renderer.prepare(_make_ctx())
+
+    power_texture = np.full((4, 4), 128, dtype=np.uint8)
+    renderer.add_instance(
+        TextureData(
+            power_texture_data=power_texture,
+            dimensions_mm=(10.0, 10.0),
+            position_mm=(0.0, 0.0),
+        ),
+        np.eye(4, dtype=np.float32),
+    )
+
+    shader = MagicMock()
+    with (
+        patch("OpenGL.GL.glEnable"),
+        patch("OpenGL.GL.glBlendFunc"),
+        patch("OpenGL.GL.glDepthMask") as mock_depth_mask,
+        patch("OpenGL.GL.glDepthFunc") as mock_depth_func,
+        patch("OpenGL.GL.glActiveTexture"),
+        patch("OpenGL.GL.glBindTexture"),
+        patch("OpenGL.GL.glDrawArrays"),
+    ):
+        renderer.render(_make_ctx(), ShaderSet(texture=shader))
+
+    assert GL.GL_TRUE in [c.args[0] for c in mock_depth_mask.call_args_list]
+    assert GL.GL_LEQUAL in [c.args[0] for c in mock_depth_func.call_args_list]
 
 
 @pytest.mark.ui
