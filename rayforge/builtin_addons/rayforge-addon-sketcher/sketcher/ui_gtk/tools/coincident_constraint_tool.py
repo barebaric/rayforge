@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, ClassVar, Union
 
 from ...core.commands import AddItemsCommand
 from ...core.constraints import (
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class CoincidentConstraintTool(SketchTool):
     ICON = "sketch-constrain-point-symbolic"
     LABEL = _("Coincident")
-    SHORTCUTS = ["o", "c"]
+    SHORTCUTS: ClassVar[list[str]] = ["o", "c"]
 
     def is_available(
         self,

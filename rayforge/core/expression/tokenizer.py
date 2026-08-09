@@ -2,7 +2,7 @@ import enum
 import io
 import token as py_token
 import tokenize as py_tokenize
-from typing import NamedTuple
+from typing import ClassVar, NamedTuple
 
 
 class TokenType(enum.Enum):
@@ -32,7 +32,7 @@ class ExpressionTokenizer:
     syntax highlighting.
     """
 
-    _TYPE_MAP = {
+    _TYPE_MAP: ClassVar[dict[int, TokenType]] = {
         py_token.NAME: TokenType.NAME,
         py_token.NUMBER: TokenType.NUMBER,
         py_token.STRING: TokenType.STRING,

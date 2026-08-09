@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, ClassVar, Union
 
 from ...core.commands import (
     AddItemsCommand,
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class TangentConstraintTool(SketchTool):
     ICON = "sketch-constrain-tangential-symbolic"
     LABEL = _("Tangent")
-    SHORTCUTS = ["t"]
+    SHORTCUTS: ClassVar[list[str]] = ["t"]
 
     def is_available(
         self,

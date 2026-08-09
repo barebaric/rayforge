@@ -9,7 +9,7 @@ import warnings
 from dataclasses import dataclass
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 from xml.etree import ElementTree as ET
 
 from raygeo.geo import Geometry
@@ -403,7 +403,7 @@ class LightBurnImporter(Importer):
     label = "LightBurn project files"
     mime_types = ("application/x-lightburn",)
     extensions = (".lbrn", ".lbrn2")
-    features = {
+    features: ClassVar[set[ImporterFeature]] = {
         ImporterFeature.DIRECT_VECTOR,
         ImporterFeature.LAYER_SELECTION,
         ImporterFeature.BITMAP_TRACING,

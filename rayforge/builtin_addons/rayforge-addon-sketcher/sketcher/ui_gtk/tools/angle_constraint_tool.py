@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, ClassVar, Union
 
 from ...core.commands import (
     AddItemsCommand,
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class AngleConstraintTool(SketchTool):
     ICON = "sketch-constrain-angle-symbolic"
     LABEL = _("Angle")
-    SHORTCUTS = ["ka"]
+    SHORTCUTS: ClassVar[list[str]] = ["ka"]
 
     def is_available(
         self,

@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, ClassVar, Union
 
 from ...core.commands import (
     AddItemsCommand,
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class EqualConstraintTool(SketchTool):
     ICON = "sketch-constrain-equal-symbolic"
     LABEL = _("Equal")
-    SHORTCUTS = ["e"]
+    SHORTCUTS: ClassVar[list[str]] = ["e"]
 
     def is_available(
         self,

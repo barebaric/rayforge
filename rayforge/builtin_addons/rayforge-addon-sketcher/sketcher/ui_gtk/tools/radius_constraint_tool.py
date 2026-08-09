@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, ClassVar, Union
 
 from ...core.commands import (
     AddItemsCommand,
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class RadiusConstraintTool(SketchTool):
     ICON = "sketch-radius-symbolic"
     LABEL = _("Radius")
-    SHORTCUTS = ["kr"]
+    SHORTCUTS: ClassVar[list[str]] = ["kr"]
 
     def is_available(
         self,

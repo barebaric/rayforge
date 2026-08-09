@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, ClassVar, Union
 
 from ...core.commands import AddItemsCommand
 from ...core.constraints import HorizontalConstraint
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class HorizontalConstraintTool(SketchTool):
     ICON = "sketch-constrain-horizontal-symbolic"
     LABEL = _("Horizontal")
-    SHORTCUTS = ["h"]
+    SHORTCUTS: ClassVar[list[str]] = ["h"]
 
     def is_available(
         self,

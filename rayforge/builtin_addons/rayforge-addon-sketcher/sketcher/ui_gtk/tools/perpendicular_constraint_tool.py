@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, ClassVar, Union
 
 from ...core.commands import AddItemsCommand
 from ...core.constraints import PerpendicularConstraint
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class PerpendicularConstraintTool(SketchTool):
     ICON = "sketch-constrain-perpendicular-symbolic"
     LABEL = _("Perpendicular")
-    SHORTCUTS = ["n"]
+    SHORTCUTS: ClassVar[list[str]] = ["n"]
 
     def is_available(
         self,

@@ -1,4 +1,5 @@
 import logging
+from typing import ClassVar
 
 from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import (
@@ -36,7 +37,7 @@ class SvgImporter(Importer):
     label = "SVG files"
     mime_types = ("image/svg+xml",)
     extensions = (".svg",)
-    features = {
+    features: ClassVar[set[ImporterFeature]] = {
         ImporterFeature.DIRECT_VECTOR,
         ImporterFeature.BITMAP_TRACING,
         ImporterFeature.LAYER_SELECTION,

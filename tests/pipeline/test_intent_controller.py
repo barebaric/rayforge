@@ -8,7 +8,7 @@ loop.
 """
 
 from collections.abc import Callable
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
@@ -563,7 +563,7 @@ def test_on_completed_with_warnings_emits_pipeline_warnings(
     ctrl.pipeline_warnings.connect(_on_warnings)
 
     class _OutputWithWarnings:
-        warnings = ["warn1", "warn2"]
+        warnings: ClassVar[list[str]] = ["warn1", "warn2"]
 
     node = _StubNode(
         key=wpk,

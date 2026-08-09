@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from dataclasses import replace
 from gettext import gettext as _
 from pathlib import Path
+from typing import ClassVar
 
 import ezdxf
 import ezdxf.math
@@ -56,7 +57,10 @@ class DxfImporter(Importer):
     label = "DXF files (2D)"
     mime_types = ("image/vnd.dxf",)
     extensions = (".dxf",)
-    features = {ImporterFeature.DIRECT_VECTOR, ImporterFeature.LAYER_SELECTION}
+    features: ClassVar[set[ImporterFeature]] = {
+        ImporterFeature.DIRECT_VECTOR,
+        ImporterFeature.LAYER_SELECTION,
+    }
 
     def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)

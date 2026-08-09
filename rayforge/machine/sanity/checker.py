@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from raygeo.geo.types import Rect
 from raygeo.ops import Ops
@@ -27,12 +27,12 @@ class SanityContext:
 
 
 class SanityChecker:
-    FAST_CHECKS = [
+    FAST_CHECKS: ClassVar[list[type]] = [
         WorkareaCheck2D,
         ExtentCheck2D,
         NoGoZoneCheck2D,
     ]
-    COMPLETE_CHECKS = [
+    COMPLETE_CHECKS: ClassVar[list[type]] = [
         WorkareaCheck2D,
         ExtentCheck2D,
         NoGoZoneCheck2D,

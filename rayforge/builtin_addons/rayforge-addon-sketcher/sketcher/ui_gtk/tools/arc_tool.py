@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from gettext import gettext as _
+from typing import ClassVar
 
 import cairo
 
@@ -17,7 +18,7 @@ class ArcTool(SnapMixin, SketchTool):
 
     ICON = "sketch-arc-symbolic"
     LABEL = _("Arc")
-    SHORTCUTS = ["ga"]
+    SHORTCUTS: ClassVar[list[str]] = ["ga"]
     CURSOR_ICON = "sketch-arc-symbolic"
 
     def __init__(self, element):

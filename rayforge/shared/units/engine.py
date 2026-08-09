@@ -1,4 +1,5 @@
 import re
+from typing import ClassVar
 
 METERS_TO_INCH = 39.37007874
 METERS_TO_FEET = 3.280839895
@@ -7,7 +8,7 @@ MM_PER_INCH = 25.4
 
 
 class ConversionEngine:
-    _symbols = {
+    _symbols: ClassVar[dict[str, str]] = {
         # SI units.
         "nanometer": "nm",
         "nanometers": "nm",
@@ -43,7 +44,7 @@ class ConversionEngine:
         "miles": "mi",
     }
 
-    _base_conversions = {
+    _base_conversions: ClassVar[dict[tuple[str, str], float]] = {
         ("m", "in"): METERS_TO_INCH,
         ("m", "ft"): METERS_TO_FEET,
         ("kW", "HP"): KW_TO_HP,
@@ -52,7 +53,7 @@ class ConversionEngine:
         ("hr", "min"): 60,
     }
 
-    _si_prefixes = {
+    _si_prefixes: ClassVar[dict[str, float]] = {
         "n": 1e-9,
         "μ": 1e-6,
         "m": 1e-3,
@@ -62,9 +63,9 @@ class ConversionEngine:
         "k": 1e3,
     }
 
-    _length_units = {"m", "in", "ft", "yd", "mi"}
-    _time_units = {"s", "min", "hr"}
-    _time_squared_units = {"s²", "min²", "hr²"}
+    _length_units: ClassVar[set[str]] = {"m", "in", "ft", "yd", "mi"}
+    _time_units: ClassVar[set[str]] = {"s", "min", "hr"}
+    _time_squared_units: ClassVar[set[str]] = {"s²", "min²", "hr²"}
 
     def __init__(self):
         self.unitmap: dict[tuple[str, str], float] = {}

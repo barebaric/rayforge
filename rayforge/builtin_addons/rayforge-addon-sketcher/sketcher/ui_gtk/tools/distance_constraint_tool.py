@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, ClassVar, Union
 
 from ...core.commands import (
     AddItemsCommand,
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class DistanceConstraintTool(SketchTool):
     ICON = "sketch-distance-symbolic"
     LABEL = _("Distance")
-    SHORTCUTS = ["kd"]
+    SHORTCUTS: ClassVar[list[str]] = ["kd"]
 
     def is_available(
         self,

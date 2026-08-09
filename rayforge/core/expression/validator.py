@@ -1,4 +1,5 @@
 import ast
+from typing import ClassVar
 
 from .context import ExpressionContext
 from .errors import (
@@ -91,7 +92,7 @@ class _TypeCheckVisitor(ast.NodeVisitor):
     """An AST visitor to perform basic type inference and checking."""
 
     # Map AST operators to their string representation
-    _OP_MAP = {
+    _OP_MAP: ClassVar[dict[type[ast.AST], str]] = {
         ast.Add: "+",
         ast.Sub: "-",
         ast.Mult: "*",

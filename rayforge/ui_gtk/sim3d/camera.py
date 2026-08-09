@@ -4,6 +4,7 @@ Defines the Camera class for managing 3D perspective and navigation.
 
 import enum
 import math
+from typing import ClassVar
 
 import numpy as np
 
@@ -232,7 +233,9 @@ class Camera:
         self.target = pivot + rot_matrix @ (self.target - pivot)
         self.up = rot_matrix @ self.up
 
-    _VIEW_CONFIGS = {
+    _VIEW_CONFIGS: ClassVar[
+        dict[ViewDirection, tuple[list[float], list[float], float]]
+    ] = {
         ViewDirection.TOP: ([0.0, 0.0, 1.0], [0.0, 1.0, 0.0], 1.5),
         ViewDirection.FRONT: ([0.0, -1.0, 0.0], [0.0, 0.0, 1.0], 1.7),
         ViewDirection.RIGHT: ([-1.0, 0.0, 0.0], [0.0, 0.0, 1.0], 1.7),

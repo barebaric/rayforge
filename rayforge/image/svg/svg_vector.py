@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 from raygeo.geo import Geometry
 from raygeo.svg import (
@@ -37,7 +38,7 @@ class SvgVectorImporter(SvgImporterBase):
     label = "SVG (Vector Strategy)"
     mime_types = ()
     extensions = ()
-    features = {
+    features: ClassVar[set[ImporterFeature]] = {
         ImporterFeature.DIRECT_VECTOR,
         ImporterFeature.LAYER_SELECTION,
         ImporterFeature.COLOR_LAYERS,

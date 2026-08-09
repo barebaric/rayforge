@@ -3,6 +3,7 @@ import json
 import logging
 from gettext import gettext as _
 from pathlib import Path
+from typing import ClassVar
 
 from raygeo.geo import Geometry
 
@@ -35,7 +36,9 @@ class ProceduralImporter(Importer):
     It generates the SourceAsset and WorkPiece on the fly.
     """
 
-    features = {ImporterFeature.PROCEDURAL_GENERATION}
+    features: ClassVar[set[ImporterFeature]] = {
+        ImporterFeature.PROCEDURAL_GENERATION
+    }
     label = "Procedural"
     mime_types: tuple[str, ...] = ()
     extensions: tuple[str, ...] = ()

@@ -1,7 +1,7 @@
 import logging
 import math
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, ClassVar, Union
 
 from ...core.commands import ChamferCommand
 from ...core.entities import Entity, Line, Point
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class ChamferTool(SketchTool):
     ICON = "sketch-chamfer-symbolic"
     LABEL = _("Chamfer")
-    SHORTCUTS = ["ch"]
+    SHORTCUTS: ClassVar[list[str]] = ["ch"]
     DEFAULT_DISTANCE_RATIO = 0.15
 
     def is_available(

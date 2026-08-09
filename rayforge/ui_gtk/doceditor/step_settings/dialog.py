@@ -1,5 +1,5 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from gi.repository import Adw, Gtk
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class StepSettingsDialog(PatchedDialogWindow):
-    _open_dialogs: dict[int, "StepSettingsDialog"] = {}
+    _open_dialogs: ClassVar[dict[int, "StepSettingsDialog"]] = {}
 
     def __init__(
         self,

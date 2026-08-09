@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 from raygeo.ops import Ops
@@ -194,7 +194,7 @@ class KinematicMapping:
             reverse=self.reverse,
         )
 
-    _AXIS_TO_INDEX: dict[Axis, int] = {
+    _AXIS_TO_INDEX: ClassVar[dict[Axis, int]] = {
         Axis.X: 0,
         Axis.Y: 1,
         Axis.Z: 2,

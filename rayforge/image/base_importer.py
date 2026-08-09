@@ -4,7 +4,7 @@ import enum
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import pyvips
 
@@ -146,7 +146,7 @@ class Importer(ABC):
     extensions: tuple[str, ...]
 
     # The base set of features is empty. Subclasses MUST override this.
-    features: set[ImporterFeature] = set()
+    features: ClassVar[set[ImporterFeature]] = set()
 
     def __init__(self, data: bytes, source_file: Path | None = None):
         """
