@@ -18,6 +18,7 @@ from ...machine.models.machine import Machine, Origin
 from ...machine.models.macro import Macro, MacroTrigger
 from ...machine.models.rotary_module import RotaryModule
 from ...machine.models.zone import Zone
+from ...pipeline.coordspace import WorkspaceOrientation
 from ...shared.units.system import UnitSystem
 
 if TYPE_CHECKING:
@@ -100,6 +101,14 @@ def parse_machine_config(data: dict, manifest_path: Path) -> "MachineConfig":
                     f"Invalid unit_system '{raw['unit_system']}' in "
                     f"{manifest_path}. Must be one of: "
                     f"{sorted(u.value for u in UnitSystem)}"
+                )
+        elif key == "workspace_orientation":
+            try:
+                value = WorkspaceOrientation(value)
+            except ValueError:
+                raise ValueError(
+                    f"Invalid workspace_orientation "
+                    f"'{raw['workspace_orientation']}' in {manifest_path}"
                 )
         elif key in _TUPLE_FIELDS:
             value = tuple(value)
@@ -217,6 +226,7 @@ class MachineConfig:
     work_margins: tuple[float, float, float, float] | None = None
     soft_limits: tuple[float, float, float, float] | None = None
     origin: Origin | None = None
+    workspace_orientation: WorkspaceOrientation | None = None
     max_travel_speed: int | None = None
     max_cut_speed: int | None = None
     home_on_start: bool | None = None
@@ -238,7 +248,7 @@ class MachineConfig:
                 continue
             if isinstance(value, tuple):
                 result[key] = list(value)
-            elif isinstance(value, (Origin, UnitSystem)):
+            elif isinstance(value, (Origin, WorkspaceOrientation, UnitSystem)):
                 result[key] = value.value
             else:
                 result[key] = value
@@ -297,6 +307,7 @@ class MachineConfig:
             work_margins=work_margins,
             soft_limits=machine.soft_limits,
             origin=machine.origin,
+            workspace_orientation=machine.workspace_orientation,
             max_travel_speed=machine.max_travel_speed,
             max_cut_speed=machine.max_cut_speed,
             home_on_start=machine.home_on_start,
@@ -444,6 +455,10 @@ class DeviceProfile:
             m.set_soft_limits(*cfg.soft_limits)
         if cfg.origin is not None:
             m.origin = cfg.origin
+        if cfg.workspace_orientation is not None:
+            # Profile cameras replace the machine's cameras below and their
+            # saved alignment already uses the profile's orientation.
+            m.workspace_orientation = cfg.workspace_orientation
         if cfg.max_travel_speed is not None:
             m.max_travel_speed = cfg.max_travel_speed
         if cfg.max_cut_speed is not None:

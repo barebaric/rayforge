@@ -638,6 +638,7 @@ def _clone_machine_config(src) -> Any:
         "work_margins",
         "soft_limits",
         "origin",
+        "workspace_orientation",
         "max_travel_speed",
         "max_cut_speed",
         "home_on_start",

@@ -314,7 +314,7 @@ class SceneRenderer(BaseRenderer):
                 if layer.rotary_enabled and layer.rotary_diameter > 0:
                     desired_diameters[layer.rotary_diameter] = True
 
-        max_length = viewport.width_mm
+        max_length = machine.axis_extents[0] if machine else viewport.width_mm
         if machine:
             default_rm = machine.get_default_rotary_module()
             if default_rm:
@@ -353,7 +353,7 @@ class SceneRenderer(BaseRenderer):
             return
         if not machine:
             return
-        zones = list(machine.nogo_zones.values())
+        zones = list(machine.workspace_nogo_zones.values())
         self.zone_renderer.update_zones(zones)
 
     def clear_models(self):

@@ -293,7 +293,7 @@ class TransformPropertyProvider(PropertyProvider):
             if isinstance(item, (WorkPiece, StockItem)):
                 machine = get_context().machine
                 if machine:
-                    __, __, wa_w, wa_h = machine.work_area
+                    __, __, wa_w, wa_h = machine.workspace_work_area
                     bounds = (wa_w, wa_h)
                 else:
                     bounds = default_dim

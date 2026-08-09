@@ -1,8 +1,11 @@
+import pytest
+
 from rayforge.machine.sanity import (
     CheckMode,
     IssueCategory,
     SanityChecker,
 )
+from rayforge.pipeline.coordspace import WorkspaceOrientation
 
 
 def test_clean_job(isolated_machine, make_line_ops):
@@ -35,6 +38,61 @@ def test_zone_violation_reported(
         i for i in report.issues if i.category == IssueCategory.NOGO_ZONE
     ]
     assert len(zone_issues) == 1
+
+
+@pytest.mark.parametrize(
+    "orientation, points",
+    [
+        (
+            WorkspaceOrientation.ROTATED_LEFT,
+            [(130, 25, False), (190, 25, True)],
+        ),
+        (
+            WorkspaceOrientation.ROTATED_RIGHT,
+            [(10, 75, False), (70, 75, True)],
+        ),
+    ],
+)
+def test_rotated_zone_violation_reported_at_workspace_location(
+    isolated_machine, make_line_ops, make_rect_zone, orientation, points
+):
+    """Safety checks project physical no-go zones with the workspace."""
+    isolated_machine.set_axis_extents(100, 200)
+    zone = make_rect_zone(10, 20, 30, 40, "Clamp")
+    isolated_machine.add_nogo_zone(zone)
+    isolated_machine.set_workspace_orientation(orientation)
+
+    report = SanityChecker(isolated_machine).check(make_line_ops(points))
+
+    zone_issues = [
+        issue
+        for issue in report.issues
+        if issue.category == IssueCategory.NOGO_ZONE
+    ]
+    assert len(zone_issues) == 1
+    assert zone.params == {"x": 10, "y": 20, "w": 30, "h": 40}
+
+
+def test_rotated_zone_projection_is_cached_and_invalidated(
+    isolated_machine, make_rect_zone
+):
+    isolated_machine.set_axis_extents(100, 200)
+    zone = make_rect_zone(10, 20, 30, 40, "Clamp")
+    isolated_machine.add_nogo_zone(zone)
+    isolated_machine.set_workspace_orientation(
+        WorkspaceOrientation.ROTATED_RIGHT
+    )
+
+    first = isolated_machine.workspace_nogo_zones
+    assert isolated_machine.workspace_nogo_zones is first
+
+    zone.set_param("x", 20)
+    second = isolated_machine.workspace_nogo_zones
+    assert second is not first
+    assert second[zone.uid].params["y"] == pytest.approx(50)
+
+    isolated_machine.set_axis_extents(200, 200)
+    assert isolated_machine.workspace_nogo_zones is not second
 
 
 def test_workarea_violation_reported(isolated_machine, make_line_ops):

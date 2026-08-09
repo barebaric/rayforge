@@ -13,6 +13,10 @@ from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
 from rayforge.pipeline.artifact import WorkPieceArtifactHandle
+from rayforge.pipeline.coordspace import WorkspaceOrientation
+from rayforge.pipeline.intent_builder import (
+    UnsupportedRotaryWorkspaceOrientationError,
+)
 from rayforge.pipeline.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
@@ -120,6 +124,48 @@ class TestPipeline:
                 context_initializer.artifact_store,
                 None,  # type: ignore
             )
+
+    def test_configuration_error_releases_stale_job(self):
+        """An invalid machine configuration must not leave old G-code
+        available to export or send."""
+        pipeline = Pipeline.__new__(Pipeline)
+        stale_handle = MagicMock()
+        pipeline._store = MagicMock()
+        pipeline._last_job_handle = stale_handle
+        pipeline._last_aggregate_output = object()
+        pipeline.pipeline_error = MagicMock()
+
+        pipeline._on_pipeline_error(None, message="invalid configuration")
+
+        pipeline._store.release.assert_called_once_with(stale_handle)
+        assert pipeline._last_job_handle is None
+        assert pipeline._last_aggregate_output is None
+        pipeline.pipeline_error.send.assert_called_once_with(
+            pipeline, message="invalid configuration"
+        )
+
+    def test_generate_job_reports_rotary_workspace_error(
+        self, doc, mock_task_mgr, context_initializer
+    ):
+        machine = context_initializer.machine
+        machine.set_workspace_orientation(WorkspaceOrientation.ROTATED_RIGHT)
+        doc.active_layer.set_rotary_enabled(True)
+        pipeline = Pipeline(
+            doc,
+            mock_task_mgr,
+            context_initializer.artifact_store,
+            machine,
+        )
+        results = []
+
+        pipeline.generate_job_artifact(
+            when_done=lambda handle, error: results.append((handle, error))
+        )
+
+        assert len(results) == 1
+        handle, error = results[0]
+        assert handle is None
+        assert isinstance(error, UnsupportedRotaryWorkspaceOrientationError)
 
     @pytest.mark.asyncio
     async def test_generate_job_artifact_no_doc(

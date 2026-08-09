@@ -154,6 +154,45 @@ class TestModelRenderer:
         assert renderer._point_light_pos is not None
         np.testing.assert_allclose(renderer._point_light_pos, [1.0, 2.0, 3.0])
 
+    def test_prepare_projects_native_model_into_workspace(self, tmp_path):
+        renderer = ModelRenderer(tmp_path / "test.glb", link_name="gantry")
+        module_transform = np.eye(4, dtype=np.float32)
+        module_transform[0, 3] = 10.0
+        native_to_workspace = np.array(
+            [
+                [0.0, 1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0, 100.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+            dtype=np.float32,
+        )
+        kinematics = KinematicsContext(
+            mvp_ui=np.eye(4, dtype=np.float32),
+            model_world_transforms={"gantry": module_transform},
+        )
+        ctx = RenderContext(
+            camera=CameraContext(
+                mvp_ui=np.eye(4, dtype=np.float32),
+                viewport_height=800,
+                camera_position=np.zeros(3),
+                color_set=ColorSet(),
+            ),
+            viewport=ViewportContext(
+                native_to_workspace=native_to_workspace,
+                margin_shift=np.eye(4, dtype=np.float32),
+            ),
+            kinematics=kinematics,
+        )
+
+        renderer.prepare(ctx)
+
+        expected = native_to_workspace @ module_transform
+        assert renderer._model_matrix is not None
+        assert renderer._mvp_matrix is not None
+        np.testing.assert_allclose(renderer._model_matrix, expected)
+        np.testing.assert_allclose(renderer._mvp_matrix, expected)
+
     def test_prepare_noop_without_kinematics(self, tmp_path):
         renderer = ModelRenderer(tmp_path / "test.glb", link_name="gantry")
         mvp = np.eye(4, dtype=np.float32)

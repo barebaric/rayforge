@@ -169,7 +169,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             wa_w, wa_h = 200.0, 200.0  # Fallback
             machine = get_context().machine
             if machine:
-                work_area = machine.work_area
+                work_area = machine.workspace_work_area
                 wa_w, wa_h = work_area[2], work_area[3]
                 ref_x, ref_y = machine.get_reference_position_world()
                 space = machine.get_coordinate_space()

@@ -566,13 +566,14 @@ class AxisRenderer:
         Args:
             space: The coordinate space to use for axis orientation.
         """
-        self.y_axis_down = space.origin in (
+        origin = space.workspace_origin
+        self.y_axis_down = origin in (
             OriginCorner.TOP_LEFT,
             OriginCorner.TOP_RIGHT,
         )
-        self.x_axis_right = space.origin in (
+        self.x_axis_right = origin in (
             OriginCorner.TOP_RIGHT,
             OriginCorner.BOTTOM_RIGHT,
         )
-        self.x_axis_negative = space.reverse_x
-        self.y_axis_negative = space.reverse_y
+        self.x_axis_negative = space.workspace_x_negative
+        self.y_axis_negative = space.workspace_y_negative

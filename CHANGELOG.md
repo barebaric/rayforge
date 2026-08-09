@@ -5,6 +5,20 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- Workspace orientation setting (Machine → Hardware, and the machine
+  wizard): rotate the displayed machine bed 90° left or right, similar
+  to LightBurn's "swap X/Y". The canvas, axis labels, jog buttons,
+  no-go zones, camera alignment, and 3D preview follow the rotated
+  view, while G-code output is transformed back to the machine's
+  native axes. A true 90° rotation preserves design handedness, unlike a
+  bare X/Y coordinate swap. Device profiles can preset it via
+  `workspace_orientation: native | rotated_left | rotated_right`. Rotary
+  layers use their own cylindrical workspace and require Native orientation.
+
 ## 1.9.0-beta4
 
 ### Added

@@ -6,6 +6,7 @@ from raygeo.ops.axis import Axis
 from rayforge.machine.driver.driver import DeviceState
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.transport import TransportStatus
+from rayforge.pipeline.coordspace import WorkspaceOrientation
 
 # Jog distance and speed for testing
 JOG_DISTANCE = 10.0
@@ -126,6 +127,56 @@ def test_jog_button_direction(
     # 5. Verify the jog command was called with expected distance
     mock_jog.assert_called_once_with(
         machine, {expected_axis: expectation}, JOG_SPEED
+    )
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize(
+    "orientation,button_name,expected_deltas",
+    [
+        (
+            WorkspaceOrientation.ROTATED_RIGHT,
+            "east",
+            {Axis.Y: JOG_DISTANCE},
+        ),
+        (
+            WorkspaceOrientation.ROTATED_RIGHT,
+            "north",
+            {Axis.X: -JOG_DISTANCE},
+        ),
+        (
+            WorkspaceOrientation.ROTATED_LEFT,
+            "east",
+            {Axis.Y: -JOG_DISTANCE},
+        ),
+        (
+            WorkspaceOrientation.ROTATED_LEFT,
+            "north",
+            {Axis.X: JOG_DISTANCE},
+        ),
+    ],
+)
+def test_jog_button_direction_with_rotated_workspace(
+    ui_context_initializer, orientation, button_name, expected_deltas
+):
+    """Cardinal buttons follow visual directions after swapping X/Y."""
+    from rayforge.ui_gtk.machine.jog_widget import JogWidget
+
+    machine = Machine(ui_context_initializer)
+    machine.set_axis_extents(400, 800)
+    machine.set_workspace_orientation(orientation)
+    ui_context_initializer.machine_mgr.add_machine(machine)
+
+    machine_cmd = MagicMock()
+    jog_widget = JogWidget()
+    jog_widget.set_machine(machine, machine_cmd)
+    jog_widget.jog_distance = JOG_DISTANCE
+    jog_widget.jog_speed = JOG_SPEED
+
+    getattr(jog_widget, f"{button_name}_btn").emit("clicked")
+
+    machine_cmd.jog.assert_called_once_with(
+        machine, expected_deltas, JOG_SPEED
     )
 
 

@@ -64,6 +64,12 @@ single project, or when you have different rotary settings for different parts o
 When rotary mode is active on a layer, a small rotary icon appears next to that layer in
 the layer list so you can tell at a glance which layers will run in rotary mode.
 
+:::note
+Rotary mode uses its own unrolled-cylinder coordinate system. If you use the
+flat-bed **Workspace Orientation** setting, change it to **Native** in
+**Machine Settings → Hardware** before enabling a rotary layer.
+:::
+
 ## 3D Preview in Rotary Mode
 
 When rotary mode is active, the [3D view](../ui/3d-preview.md) shows your toolpath wrapped

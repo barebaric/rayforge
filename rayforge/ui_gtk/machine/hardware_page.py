@@ -5,8 +5,11 @@ from gi.repository import Adw, Gtk
 from raygeo.ops.axis import Axis
 
 from ...machine.models.machine import Machine, Origin
+from ...pipeline.coordspace import WorkspaceOrientation
 from ..shared.pref_rows.length_spin_row import LengthSpinRow
 from ..shared.preferences_page import TrackedPreferencesPage
+
+_WORKSPACE_ORIENTATIONS = tuple(WorkspaceOrientation)
 
 
 class HardwarePage(TrackedPreferencesPage):
@@ -82,6 +85,27 @@ class HardwarePage(TrackedPreferencesPage):
         origin_combo_row.connect("notify::selected", self.on_origin_changed)
         self.origin_combo_row = origin_combo_row
         axes_group.add(origin_combo_row)
+
+        orientation_labels = [
+            _("Native"),
+            _("Rotate Left"),
+            _("Rotate Right"),
+        ]
+        self.workspace_orientation_row = Adw.ComboRow(
+            title=_("Workspace Orientation"),
+            subtitle=_(
+                "Rotate the flat workspace and remap output to the "
+                "machine; rotary layers require Native"
+            ),
+            model=Gtk.StringList.new(orientation_labels),
+        )
+        self.workspace_orientation_row.set_selected(
+            _WORKSPACE_ORIENTATIONS.index(self.machine.workspace_orientation)
+        )
+        self.workspace_orientation_row.connect(
+            "notify::selected", self.on_workspace_orientation_changed
+        )
+        axes_group.add(self.workspace_orientation_row)
 
         self.reverse_x_axis_row = Adw.SwitchRow()
         self.reverse_x_axis_row.set_title(_("Reverse X-Axis Direction"))
@@ -252,6 +276,13 @@ class HardwarePage(TrackedPreferencesPage):
         self._update_z_axis_state()
         self._update_axis_extents_ui()
         self._update_soft_limits_ui()
+        self._update_workspace_orientation_ui()
+
+    def _update_workspace_orientation_ui(self):
+        selected = _WORKSPACE_ORIENTATIONS.index(
+            self.machine.workspace_orientation
+        )
+        self.workspace_orientation_row.set_selected(selected)
 
     def _update_axis_extents_ui(self):
         self.x_extent_row.set_value_in_base_units(self.machine.axis_extents[0])
@@ -282,6 +313,13 @@ class HardwarePage(TrackedPreferencesPage):
         }
         origin = origin_map.get(selected_index, Origin.BOTTOM_LEFT)
         self.machine.set_origin(origin)
+
+    def on_workspace_orientation_changed(self, row, _):
+        selected = row.get_selected()
+        if selected >= len(_WORKSPACE_ORIENTATIONS):
+            return
+        orientation = _WORKSPACE_ORIENTATIONS[selected]
+        self.machine.set_workspace_orientation(orientation)
 
     def on_reverse_x_changed(self, row, _):
         self.machine.set_reverse_x_axis(row.get_active())

@@ -39,6 +39,26 @@ Select where your machine's coordinate origin (0,0) is located. This determines 
 The coordinate origin setting affects how G-code is generated. Make sure it matches your firmware's homing configuration.
 :::
 
+### Workspace Orientation
+
+Use **Workspace Orientation** to show a portrait machine bed in landscape
+orientation without changing the machine's physical configuration:
+
+- **Native**: Show the bed using the machine's physical X and Y axes.
+- **Rotate Left**: Rotate the workspace 90° counterclockwise.
+- **Rotate Right**: Rotate the workspace 90° clockwise.
+
+Rayforge rotates the canvas, camera alignment, no-go zones, jog controls, and
+3D preview together. Generated G-code is transformed back to the machine's
+native axes, so the physical machine configuration remains unchanged. This is
+a true 90° rotation rather than a bare X/Y coordinate swap, which would mirror
+the design and reverse its handedness.
+
+:::note
+Workspace orientation applies to the flat machine bed. Rotary layers use a
+separate cylindrical workspace and require **Native** orientation.
+:::
+
 ### Axis Direction
 
 Reverse the direction of any axis if needed:

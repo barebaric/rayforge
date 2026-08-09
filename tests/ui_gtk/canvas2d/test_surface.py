@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from rayforge.machine.models.machine import Machine, Origin
-from rayforge.pipeline.coordspace import MachineSpace
+from rayforge.pipeline.coordspace import MachineSpace, WorkspaceOrientation
 
 
 @pytest.fixture
@@ -123,6 +123,7 @@ def test_wcs_visual_marker_location(surface, scenario):
     machine.origin = scenario["origin"]
     machine.reverse_x_axis = scenario["reverse_x"]
     machine.reverse_y_axis = scenario["reverse_y"]
+    machine.workspace_orientation = WorkspaceOrientation.NATIVE
     machine.wcs_origin_is_workarea_origin = False
     machine.work_margins = (0.0, 0.0, 0.0, 0.0)
 

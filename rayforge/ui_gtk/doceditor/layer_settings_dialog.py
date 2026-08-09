@@ -5,6 +5,7 @@ from gi.repository import Adw, Gdk, Gtk
 
 from ...context import get_context
 from ...core.layer import Layer
+from ...pipeline.coordspace import WorkspaceOrientation
 from ..icons import get_icon
 from ..machine.wcs_dialog import WcsDialog
 from ..shared.patched_dialog_window import PatchedDialogWindow
@@ -108,12 +109,26 @@ class LayerSettingsDialog(PatchedDialogWindow):
         )
         content.add(rotary_group)
 
+        machine = get_context().machine
+        self._rotary_orientation_supported = (
+            machine is None
+            or machine.workspace_orientation is WorkspaceOrientation.NATIVE
+        )
+
         self.rotary_enabled_row = Adw.SwitchRow()
         self.rotary_enabled_row.set_title(_("Enable Rotary Mode"))
-        self.rotary_enabled_row.set_subtitle(
-            _("Convert Y-axis to rotary axis")
-        )
+        if self._rotary_orientation_supported:
+            self.rotary_enabled_row.set_subtitle(
+                _("Convert Y-axis to rotary axis")
+            )
+        else:
+            self.rotary_enabled_row.set_subtitle(
+                _("Requires Native workspace orientation in Machine settings")
+            )
         self.rotary_enabled_row.set_active(layer.rotary_enabled)
+        self.rotary_enabled_row.set_sensitive(
+            self._rotary_orientation_supported
+        )
         self.rotary_enabled_row.connect(
             "notify::active", self._on_rotary_enabled_changed
         )
@@ -127,7 +142,9 @@ class LayerSettingsDialog(PatchedDialogWindow):
         )
         self._select_current_module()
         self.module_row.connect("notify::selected", self._on_module_changed)
-        self.module_row.set_sensitive(layer.rotary_enabled)
+        self.module_row.set_sensitive(
+            layer.rotary_enabled and self._rotary_orientation_supported
+        )
         rotary_group.add(self.module_row)
 
         self.rotary_diameter_row = LengthSpinRow(
@@ -140,7 +157,9 @@ class LayerSettingsDialog(PatchedDialogWindow):
         self.rotary_diameter_row.value_changed.connect(
             self._on_rotary_diameter_changed
         )
-        self.rotary_diameter_row.set_sensitive(layer.rotary_enabled)
+        self.rotary_diameter_row.set_sensitive(
+            layer.rotary_enabled and self._rotary_orientation_supported
+        )
         rotary_group.add(self.rotary_diameter_row)
 
         self._is_initializing = False
@@ -225,6 +244,7 @@ class LayerSettingsDialog(PatchedDialogWindow):
         if self._is_initializing:
             return
         enabled = row.get_active()
+        enabled = enabled and self._rotary_orientation_supported
         self.module_row.set_sensitive(enabled)
         self.rotary_diameter_row.set_sensitive(enabled)
         self.layer.set_rotary_enabled(enabled)

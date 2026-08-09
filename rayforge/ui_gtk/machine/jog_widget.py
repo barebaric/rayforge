@@ -252,11 +252,15 @@ class JogWidget(Gtk.Widget):
         # Type assertion to help Pylance understand machine is not None
         machine: Machine = self.machine  # type: ignore
 
+        def can_jog_direction(direction):
+            deltas = machine.calculate_visual_jog(direction, 1.0)
+            return bool(deltas) and all(machine.can_jog(a) for a in deltas)
+
         # Jog buttons
-        self.east_btn.set_sensitive(machine.can_jog(Axis.X))
-        self.west_btn.set_sensitive(machine.can_jog(Axis.X))
-        self.north_btn.set_sensitive(machine.can_jog(Axis.Y))
-        self.south_btn.set_sensitive(machine.can_jog(Axis.Y))
+        self.east_btn.set_sensitive(can_jog_direction(JogDirection.EAST))
+        self.west_btn.set_sensitive(can_jog_direction(JogDirection.WEST))
+        self.north_btn.set_sensitive(can_jog_direction(JogDirection.NORTH))
+        self.south_btn.set_sensitive(can_jog_direction(JogDirection.SOUTH))
 
         # Diagonal buttons - need both X and Y axis support
         can_jog_xy = machine.can_jog(Axis.X) and machine.can_jog(Axis.Y)
@@ -321,20 +325,36 @@ class JogWidget(Gtk.Widget):
 
         # Get the signed coordinate deltas for each visual direction from the
         # model
-        x_east = machine.calculate_jog(JogDirection.EAST, self.jog_distance)
-        x_west = machine.calculate_jog(JogDirection.WEST, self.jog_distance)
-        y_north = machine.calculate_jog(JogDirection.NORTH, self.jog_distance)
-        y_south = machine.calculate_jog(JogDirection.SOUTH, self.jog_distance)
-        z_up = machine.calculate_jog(JogDirection.UP, self.jog_distance)
-        z_down = machine.calculate_jog(JogDirection.DOWN, self.jog_distance)
+        east = machine.calculate_visual_jog(
+            JogDirection.EAST, self.jog_distance
+        )
+        west = machine.calculate_visual_jog(
+            JogDirection.WEST, self.jog_distance
+        )
+        north = machine.calculate_visual_jog(
+            JogDirection.NORTH, self.jog_distance
+        )
+        south = machine.calculate_visual_jog(
+            JogDirection.SOUTH, self.jog_distance
+        )
+        up = machine.calculate_visual_jog(JogDirection.UP, self.jog_distance)
+        down = machine.calculate_visual_jog(
+            JogDirection.DOWN, self.jog_distance
+        )
+
+        def exceeds(deltas):
+            return any(
+                machine.would_jog_exceed_limits(axis, delta)
+                for axis, delta in deltas.items()
+            )
 
         # Check limits using the final signed delta that will be commanded
-        exceeds_east = machine.would_jog_exceed_limits(Axis.X, x_east)
-        exceeds_west = machine.would_jog_exceed_limits(Axis.X, x_west)
-        exceeds_north = machine.would_jog_exceed_limits(Axis.Y, y_north)
-        exceeds_south = machine.would_jog_exceed_limits(Axis.Y, y_south)
-        exceeds_up = machine.would_jog_exceed_limits(Axis.Z, z_up)
-        exceeds_down = machine.would_jog_exceed_limits(Axis.Z, z_down)
+        exceeds_east = exceeds(east)
+        exceeds_west = exceeds(west)
+        exceeds_north = exceeds(north)
+        exceeds_south = exceeds(south)
+        exceeds_up = exceeds(up)
+        exceeds_down = exceeds(down)
 
         if exceeds_east:
             self.east_btn.add_css_class("warning")
@@ -367,7 +387,7 @@ class JogWidget(Gtk.Widget):
         """Handle connection status changes to update button sensitivity."""
         self._update_button_sensitivity()
 
-    def _perform_jog(self, x: float = 0.0, y: float = 0.0, z: float = 0.0):
+    def _perform_jog(self, deltas: dict[Axis, float]):
         """
         Helper to jog multiple axes simultaneously by sending a single
         command dictionary.
@@ -375,108 +395,59 @@ class JogWidget(Gtk.Widget):
         if not self.machine or not self.machine_cmd:
             return
 
-        deltas = {}
-        if x != 0:
-            deltas[Axis.X] = x
-        if y != 0:
-            deltas[Axis.Y] = y
-        if z != 0:
-            deltas[Axis.Z] = z
-
         if deltas:
             self.machine_cmd.jog(self.machine, deltas, self.jog_speed)
 
+    def _perform_visual_jog(self, *directions: JogDirection):
+        if not self.machine:
+            return
+        deltas = {}
+        for direction in directions:
+            for axis, delta in self.machine.calculate_visual_jog(
+                direction, self.jog_distance
+            ).items():
+                deltas[axis] = deltas.get(axis, 0.0) + delta
+        self._perform_jog(deltas)
+
     def _on_x_plus_clicked(self, button):
         """Handle Right (East) button click."""
-        if self.machine:
-            x_dist = self.machine.calculate_jog(
-                JogDirection.EAST, self.jog_distance
-            )
-            self._perform_jog(x=x_dist)
+        self._perform_visual_jog(JogDirection.EAST)
 
     def _on_x_minus_clicked(self, button):
         """Handle Left (West) button click."""
-        if self.machine:
-            x_dist = self.machine.calculate_jog(
-                JogDirection.WEST, self.jog_distance
-            )
-            self._perform_jog(x=x_dist)
+        self._perform_visual_jog(JogDirection.WEST)
 
     def _on_y_plus_clicked(self, button):
         """Handle Away (North) button click."""
-        if self.machine:
-            y_dist = self.machine.calculate_jog(
-                JogDirection.NORTH, self.jog_distance
-            )
-            self._perform_jog(y=y_dist)
+        self._perform_visual_jog(JogDirection.NORTH)
 
     def _on_y_minus_clicked(self, button):
         """Handle Toward (South) button click."""
-        if self.machine:
-            y_dist = self.machine.calculate_jog(
-                JogDirection.SOUTH, self.jog_distance
-            )
-            self._perform_jog(y=y_dist)
+        self._perform_visual_jog(JogDirection.SOUTH)
 
     def _on_z_plus_clicked(self, button):
         """Handle Up button click."""
-        if self.machine:
-            z_dist = self.machine.calculate_jog(
-                JogDirection.UP, self.jog_distance
-            )
-            self._perform_jog(z=z_dist)
+        self._perform_visual_jog(JogDirection.UP)
 
     def _on_z_minus_clicked(self, button):
         """Handle Down button click."""
-        if self.machine:
-            z_dist = self.machine.calculate_jog(
-                JogDirection.DOWN, self.jog_distance
-            )
-            self._perform_jog(z=z_dist)
+        self._perform_visual_jog(JogDirection.DOWN)
 
     def _on_x_plus_y_plus_clicked(self, button):
         """Handle Right-Away diagonal button click."""
-        if self.machine:
-            x_dist = self.machine.calculate_jog(
-                JogDirection.EAST, self.jog_distance
-            )
-            y_dist = self.machine.calculate_jog(
-                JogDirection.NORTH, self.jog_distance
-            )
-            self._perform_jog(x=x_dist, y=y_dist)
+        self._perform_visual_jog(JogDirection.EAST, JogDirection.NORTH)
 
     def _on_x_minus_y_plus_clicked(self, button):
         """Handle Left-Away diagonal button click."""
-        if self.machine:
-            x_dist = self.machine.calculate_jog(
-                JogDirection.WEST, self.jog_distance
-            )
-            y_dist = self.machine.calculate_jog(
-                JogDirection.NORTH, self.jog_distance
-            )
-            self._perform_jog(x=x_dist, y=y_dist)
+        self._perform_visual_jog(JogDirection.WEST, JogDirection.NORTH)
 
     def _on_x_plus_y_minus_clicked(self, button):
         """Handle Right-Toward diagonal button click."""
-        if self.machine:
-            x_dist = self.machine.calculate_jog(
-                JogDirection.EAST, self.jog_distance
-            )
-            y_dist = self.machine.calculate_jog(
-                JogDirection.SOUTH, self.jog_distance
-            )
-            self._perform_jog(x=x_dist, y=y_dist)
+        self._perform_visual_jog(JogDirection.EAST, JogDirection.SOUTH)
 
     def _on_x_minus_y_minus_clicked(self, button):
         """Handle Left-Toward diagonal button click."""
-        if self.machine:
-            x_dist = self.machine.calculate_jog(
-                JogDirection.WEST, self.jog_distance
-            )
-            y_dist = self.machine.calculate_jog(
-                JogDirection.SOUTH, self.jog_distance
-            )
-            self._perform_jog(x=x_dist, y=y_dist)
+        self._perform_visual_jog(JogDirection.WEST, JogDirection.SOUTH)
 
     def _on_home_all_clicked(self, button):
         """Handle Home All button click."""

@@ -12,6 +12,7 @@ from typing import (
     Optional,
 )
 
+import numpy as np
 from blinker import Signal
 from raygeo.geo.types import Point3D, Rect
 from raygeo.ops.axis import Axis
@@ -22,7 +23,11 @@ from ...context import RayforgeContext, get_context
 from ...core.capability import MachineCapability
 from ...core.layer import Layer
 from ...core.model import Model
-from ...pipeline.coordspace import MachineSpace
+from ...pipeline.coordspace import (
+    MachineSpace,
+    OriginCorner,
+    WorkspaceOrientation,
+)
 from ...shared.tasker import task_mgr
 from ...shared.units.system import UnitSystem
 from ..assembly import Assembly
@@ -37,7 +42,7 @@ from .laser import Laser, LaserHead
 from .machine_hours import MachineHours
 from .macro import Macro, MacroTrigger
 from .rotary_module import RotaryMode, RotaryModule
-from .zone import Zone
+from .zone import Zone, ZoneShape
 
 if TYPE_CHECKING:
     from ...core.capability import StepCapability
@@ -154,6 +159,9 @@ class Machine:
         )
         self._soft_limits: Rect | None = None
         self.origin: Origin = Origin.BOTTOM_LEFT
+        self.workspace_orientation: WorkspaceOrientation = (
+            WorkspaceOrientation.NATIVE
+        )
         self.rotary_enabled_default: bool = False
         self.default_rotary_module_uid: str | None = None
         self.soft_limits_enabled: bool = True
@@ -182,6 +190,7 @@ class Machine:
 
         self.rotary_modules: dict[str, RotaryModule] = {}
         self.nogo_zones: dict[str, Zone] = {}
+        self._workspace_nogo_zones_cache: dict[str, Zone] | None = None
 
         self._assembly: Assembly | None = None
         self._assembly_dirty: bool = True
@@ -667,6 +676,21 @@ class Machine:
         )
 
     @property
+    def workspace_extents(self) -> tuple[float, float]:
+        """Dimensions of the machine bed as presented in the editor."""
+        return self.get_coordinate_space().workspace_extents
+
+    @property
+    def workspace_margins(self) -> Rect:
+        """Native work margins rotated into workspace edge order."""
+        return self.get_coordinate_space().workspace_margins
+
+    @property
+    def workspace_work_area(self) -> Rect:
+        """Usable work area in workspace coordinates."""
+        return self.get_coordinate_space().get_workarea_world_rect()
+
+    @property
     def reverse_x_axis(self) -> bool:
         cfg = self.axes.get(Axis.X)
         return cfg.direction == AxisDirection.REVERSED if cfg else False
@@ -701,6 +725,7 @@ class Machine:
     def set_axis_extents(self, width: float, height: float):
         if self.axis_extents == (width, height):
             return
+        old_space = self.get_coordinate_space()
         x_cfg = self.axes.get(Axis.X)
         y_cfg = self.axes.get(Axis.Y)
         if x_cfg:
@@ -714,6 +739,10 @@ class Machine:
         mb = min(mb, height - mt - 1)
         self._work_margins = (ml, mt, mr, mb)
         self._clamp_soft_limits()
+        self._workspace_nogo_zones_cache = None
+        self._reproject_camera_alignments(
+            old_space, self.get_coordinate_space()
+        )
         self.changed.send(self)
 
     @property
@@ -778,6 +807,60 @@ class Machine:
             return
         self.origin = origin
         self.changed.send(self)
+
+    def set_workspace_orientation(
+        self, orientation: WorkspaceOrientation
+    ) -> None:
+        """Set how the native machine bed is presented in the workspace.
+
+        All interactive changes of the orientation MUST go through this
+        setter rather than assigning `workspace_orientation` directly.
+
+        Unlike no-go zones (which are stored in native-bed coordinates and
+        projected on read, see `workspace_nogo_zones`), camera calibration
+        (`camera.image_to_world`) is stored in workspace coordinates because
+        the camera pipeline consumes it directly in that space. Any setting
+        that changes the native-bed presentation therefore re-projects the
+        stored calibration points through the old and new spaces so an
+        existing physical alignment stays valid. This includes both this
+        setter and :meth:`set_axis_extents`, because a rotated presentation's
+        translation depends on the native bed dimensions.
+        The rotation matrices contain only 0/±1 entries and exact
+        translations, so repeated re-projection does not accumulate
+        floating-point error.
+
+        Deserialization (`from_dict`) assigns the attribute directly instead,
+        because persisted camera calibration was already saved in the
+        matching workspace orientation.
+        """
+        if self.workspace_orientation == orientation:
+            return
+        old_space = self.get_coordinate_space()
+        self.workspace_orientation = orientation
+        self._workspace_nogo_zones_cache = None
+        new_space = self.get_coordinate_space()
+        self._reproject_camera_alignments(old_space, new_space)
+        self.changed.send(self)
+
+    def _reproject_camera_alignments(
+        self, old_space: MachineSpace, new_space: MachineSpace
+    ) -> None:
+        """Preserve physical camera calibration across presentation changes."""
+        for camera in self.cameras:
+            if camera.image_to_world is None:
+                continue
+            image_points, world_points = camera.image_to_world
+            projected_points = []
+            for world_x, world_y in world_points:
+                native_point = old_space.workspace_point_to_native_bed(
+                    world_x, world_y
+                )
+                projected_points.append(
+                    new_space.native_bed_point_to_workspace(*native_point)
+                )
+            alignment_date = camera.alignment_date
+            camera.image_to_world = (image_points, projected_points)
+            camera.alignment_date = alignment_date
 
     def set_reverse_x_axis(self, is_reversed: bool):
         """Sets if the X-axis coordinate display is inverted."""
@@ -887,6 +970,29 @@ class Machine:
         if direction == JogDirection.DOWN:
             return distance if self.reverse_z_axis else -distance
         return 0.0
+
+    def calculate_visual_jog(
+        self, direction: JogDirection, distance: float
+    ) -> dict[Axis, float]:
+        """Map a visual jog direction to native controller axis deltas."""
+        if direction in (JogDirection.UP, JogDirection.DOWN):
+            return {Axis.Z: self.calculate_jog(direction, distance)}
+
+        world_deltas = {
+            JogDirection.EAST: (distance, 0.0),
+            JogDirection.WEST: (-distance, 0.0),
+            JogDirection.NORTH: (0.0, distance),
+            JogDirection.SOUTH: (0.0, -distance),
+        }
+        dx, dy = world_deltas.get(direction, (0.0, 0.0))
+        matrix = self.get_coordinate_space().get_world_to_machine_matrix()
+        machine_delta = matrix @ np.array([dx, dy, 0.0, 0.0])
+        result = {}
+        if abs(machine_delta[0]) > 1e-9:
+            result[Axis.X] = float(machine_delta[0])
+        if abs(machine_delta[1]) > 1e-9:
+            result[Axis.Y] = float(machine_delta[1])
+        return result
 
     def set_soft_limits_enabled(self, enabled: bool):
         """Enable or disable soft limits for jog operations."""
@@ -1171,18 +1277,61 @@ class Machine:
 
     def add_nogo_zone(self, zone: Zone):
         self.nogo_zones[zone.uid] = zone
+        self._workspace_nogo_zones_cache = None
         zone.changed.connect(self._on_nogo_zone_changed)
         self.changed.send(self)
 
     def get_nogo_zone_by_uid(self, uid: str) -> Zone | None:
         return self.nogo_zones.get(uid)
 
+    @property
+    def workspace_nogo_zones(self) -> dict[str, Zone]:
+        """Return physical no-go zones projected into workspace space.
+
+        Profiles retain native-bed coordinates so changing the presentation
+        orientation never rewrites machine configuration.
+
+        When rotated, the returned zones are cached, READ-ONLY projections
+        for display and sanity checks. Mutating them does not affect the
+        stored zones, and their `changed` signals are not connected. Edit
+        zones via `nogo_zones` in native-bed coordinates only. Canvas zone
+        elements are neither selectable nor draggable.
+        """
+        if self.workspace_orientation == WorkspaceOrientation.NATIVE:
+            return self.nogo_zones
+        if self._workspace_nogo_zones_cache is not None:
+            return self._workspace_nogo_zones_cache
+
+        space = self.get_coordinate_space()
+        projected: dict[str, Zone] = {}
+        for uid, zone in self.nogo_zones.items():
+            workspace_zone = Zone.from_dict(zone.to_dict())
+            params = workspace_zone.params
+            x = params.get("x", 0.0)
+            y = params.get("y", 0.0)
+            if workspace_zone.shape == ZoneShape.CYLINDER:
+                params["x"], params["y"] = space.native_bed_point_to_workspace(
+                    x, y
+                )
+            else:
+                pos, size = space.native_bed_item_to_workspace(
+                    (x, y),
+                    (params.get("w", 10.0), params.get("h", 10.0)),
+                )
+                params["x"], params["y"] = pos
+                params["w"], params["h"] = size
+            projected[uid] = workspace_zone
+        self._workspace_nogo_zones_cache = projected
+        return self._workspace_nogo_zones_cache
+
     def remove_nogo_zone(self, zone: Zone):
         zone.changed.disconnect(self._on_nogo_zone_changed)
         del self.nogo_zones[zone.uid]
+        self._workspace_nogo_zones_cache = None
         self.changed.send(self)
 
     def _on_nogo_zone_changed(self, zone, *args):
+        self._workspace_nogo_zones_cache = None
         self.changed.send(self)
 
     def _on_machine_hours_changed(self, machine_hours, *args):
@@ -1289,14 +1438,16 @@ class Machine:
         Returns:
             Tuple of (x, y) in WORLD space.
         """
-        ml, mt, mr, mb = self._work_margins
-        width, height = self.axis_extents
+        space = self.get_coordinate_space()
+        ml, mt, mr, mb = space.workspace_margins
+        width, height = space.workspace_extents
+        origin = space.workspace_origin
 
-        if self.origin == Origin.BOTTOM_LEFT:
+        if origin == OriginCorner.BOTTOM_LEFT:
             return (ml, mb)
-        elif self.origin == Origin.TOP_LEFT:
+        elif origin == OriginCorner.TOP_LEFT:
             return (ml, height - mt)
-        elif self.origin == Origin.BOTTOM_RIGHT:
+        elif origin == OriginCorner.BOTTOM_RIGHT:
             return (width - mr, mb)
         else:  # TOP_RIGHT
             return (width - mr, height - mt)
@@ -1329,6 +1480,8 @@ class Machine:
             Tuple of (x, y) in WORLD space.
         """
         offset_x, offset_y, _ = self.get_reference_offset()
+        if self.wcs_origin_is_workarea_origin:
+            return offset_x, offset_y
         machine_space = MachineSpace.from_machine(self)
         return machine_space.machine_point_to_world(offset_x, offset_y)
 
@@ -1364,8 +1517,8 @@ class Machine:
             Tuple of (x, y, width, height) where x,y is the frame position
             relative to the work area origin (0,0).
         """
-        ml, mb = self._work_margins[0], self._work_margins[3]
-        extent_w, extent_h = self.axis_extents
+        ml, mb = self.workspace_margins[0], self.workspace_margins[3]
+        extent_w, extent_h = self.workspace_extents
         return (float(-ml), float(-mb), float(extent_w), float(extent_h))
 
     def has_custom_work_area(self) -> bool:
@@ -1483,6 +1636,7 @@ class Machine:
                 if self._soft_limits
                 else None,
                 "origin": self.origin.value,
+                "workspace_orientation": self.workspace_orientation.value,
                 "reverse_x_axis": self.reverse_x_axis,
                 "reverse_y_axis": self.reverse_y_axis,
                 "reverse_z_axis": self.reverse_z_axis,
@@ -1718,6 +1872,21 @@ class Machine:
                 if ma_data.get("y_axis_down", False) is False
                 else Origin.TOP_LEFT
             )
+
+        orientation_value = ma_data.get(
+            "workspace_orientation", WorkspaceOrientation.NATIVE.value
+        )
+        try:
+            # Direct assignment (not set_workspace_orientation): persisted
+            # camera calibration was saved in this orientation already, so
+            # it must not be re-projected here.
+            ma.workspace_orientation = WorkspaceOrientation(orientation_value)
+        except ValueError:
+            logger.warning(
+                "Unknown workspace orientation '%s'; using native",
+                orientation_value,
+            )
+            ma.workspace_orientation = WorkspaceOrientation.NATIVE
 
         ma.rotary_enabled_default = ma_data.get(
             "rotary_enabled_default", False

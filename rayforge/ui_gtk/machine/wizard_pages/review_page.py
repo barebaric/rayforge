@@ -15,6 +15,7 @@ from gi.repository import Adw
 from ....machine.device.profile import DeviceProfile
 from ....machine.driver import get_driver_cls
 from ....machine.models.machine import Origin
+from ....pipeline.coordspace import WorkspaceOrientation
 from ....shared.units.system import UnitSystem
 from . import WizardPage, _makePreferencesGroup
 
@@ -156,6 +157,12 @@ class ReviewPage(WizardPage):
 
         origin = mc.origin if mc.origin is not None else Origin.BOTTOM_LEFT
         origin_label = _ORIGIN_LABELS[origin]
+        orientation = mc.workspace_orientation or WorkspaceOrientation.NATIVE
+        orientation_label = {
+            WorkspaceOrientation.NATIVE: _("Native"),
+            WorkspaceOrientation.ROTATED_LEFT: _("Rotate Left"),
+            WorkspaceOrientation.ROTATED_RIGHT: _("Rotate Right"),
+        }[orientation]
         unit_system = mc.unit_system or UnitSystem.METRIC
         unit_system_label = _UNIT_SYSTEM_LABELS[unit_system]
         rows_data = [
@@ -163,6 +170,7 @@ class ReviewPage(WizardPage):
             (_("Connection"), _format_connection(mc)),
             (_("Work Area X×Y"), _format_tuple(mc.axis_extents)),
             (_("Origin"), origin_label),
+            (_("Workspace Orientation"), orientation_label),
             (_("Unit System"), unit_system_label),
             (_("Max Travel Speed"), _format(mc.max_travel_speed)),
             (_("Max Cut Speed"), _format(mc.max_cut_speed)),

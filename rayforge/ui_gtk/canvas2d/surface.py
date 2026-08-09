@@ -20,6 +20,7 @@ from ...core.stock_asset import StockAsset
 from ...core.workpiece import WorkPiece
 from ...machine.models.machine import Machine
 from ...pipeline.artifact import RenderContext
+from ...pipeline.coordspace import WorkspaceOrientation
 from ...shared.units.formatter import get_preferred_unit_factor
 from ..canvas import Canvas, CanvasElement, WorldSurface
 from ..shared.keyboard import is_primary_modifier
@@ -69,11 +70,11 @@ class WorkSurface(WorldSurface):
         self._tracked_axis_extents: tuple[float, float] = (0.0, 0.0)
         coordinate_space = None
         if machine:
-            self._tracked_axis_extents = machine.axis_extents
+            self._tracked_axis_extents = machine.workspace_extents
             # Canvas shows full machine bed, not just workarea
             width_mm, height_mm = (
-                float(machine.axis_extents[0]),
-                float(machine.axis_extents[1]),
+                float(machine.workspace_extents[0]),
+                float(machine.workspace_extents[1]),
             )
             coordinate_space = machine.get_coordinate_space()
         else:
@@ -290,17 +291,12 @@ class WorkSurface(WorldSurface):
         """
         Convert machine-reported coordinates to canvas world coordinates.
 
-        Machine-reported coordinates come from the controller and may be
-        negated based on reverse_x/reverse_y settings. We undo this sign
-        flip before transforming to world coordinates.
+        Machine-reported coordinates come from the controller's native
+        coordinate system and are transformed into workspace coordinates.
         """
         if self.machine:
             space = self.machine.get_coordinate_space()
-            if space.reverse_x:
-                m_x = -m_x
-            if space.reverse_y:
-                m_y = -m_y
-            return space.transform_point_to_world(m_x, m_y, space.extents)
+            return space.machine_point_to_world(m_x, m_y)
         return m_x, m_y
 
     def get_global_tab_visibility(self) -> bool:
@@ -702,7 +698,10 @@ class WorkSurface(WorldSurface):
 
         space = machine.get_coordinate_space()
         if machine.wcs_origin_is_workarea_origin:
-            canvas_x, canvas_y = space.get_workarea_origin_in_machine()
+            machine_x, machine_y = space.get_workarea_origin_in_machine()
+            canvas_x, canvas_y = space.machine_point_to_world(
+                machine_x, machine_y
+            )
         else:
             wcs_x, wcs_y, _ = self._get_active_layer_wcs_offset()
             canvas_x, canvas_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
@@ -1155,24 +1154,26 @@ class WorkSurface(WorldSurface):
             self._sync_camera_elements()
             return
 
-        extent_w, extent_h = machine.axis_extents
+        extent_w, extent_h = machine.workspace_extents
         extent_changed = (extent_w, extent_h) != self._tracked_axis_extents
-        y_axis_changed = machine.y_axis_down != self._axis_renderer.y_axis_down
-        x_axis_changed = (
-            machine.x_axis_right != self._axis_renderer.x_axis_right
-        )
+        space = machine.get_coordinate_space()
+        workspace_origin = space.workspace_origin
+        y_axis_down = workspace_origin.value.startswith("top")
+        x_axis_right = workspace_origin.value.endswith("right")
+        y_axis_changed = y_axis_down != self._axis_renderer.y_axis_down
+        x_axis_changed = x_axis_right != self._axis_renderer.x_axis_right
         x_reverse_changed = (
-            machine.reverse_x_axis != self._axis_renderer.x_axis_negative
+            space.workspace_x_negative != self._axis_renderer.x_axis_negative
         )
         y_reverse_changed = (
-            machine.reverse_y_axis != self._axis_renderer.y_axis_negative
+            space.workspace_y_negative != self._axis_renderer.y_axis_negative
         )
 
         logger.debug(
             f"_on_machine_changed: extent_changed={extent_changed}, "
             f"extents=({extent_w}, {extent_h}), "
             f"tracked={self._tracked_axis_extents}, "
-            f"margins={machine.work_margins}"
+            f"margins={machine.workspace_margins}"
         )
 
         if (
@@ -1210,37 +1211,45 @@ class WorkSurface(WorldSurface):
             return
 
         # Canvas shows full machine bed
-        width_mm, height_mm = self.machine.axis_extents
+        width_mm, height_mm = self.machine.workspace_extents
+        space = self.machine.get_coordinate_space()
+        workspace_origin = space.workspace_origin
+        x_axis_right = workspace_origin.value.endswith("right")
+        y_axis_down = workspace_origin.value.startswith("top")
 
         logger.debug(
             f"Resetting view for machine '{self.machine.name}' "
             f"with axis_extents=({width_mm}, {height_mm}), "
-            f"x_right={self.machine.x_axis_right}, "
-            f"y_down={self.machine.y_axis_down}, "
+            f"x_right={x_axis_right}, "
+            f"y_down={y_axis_down}, "
             f"reverse_x={self.machine.reverse_x_axis}, "
             f"reverse_y={self.machine.reverse_y_axis}"
         )
-        self._tracked_axis_extents = self.machine.axis_extents
+        self._tracked_axis_extents = self.machine.workspace_extents
         self.set_size(float(width_mm), float(height_mm))
-        ml, mt, mr, mb = self.machine.work_margins
+        ml, mt, mr, mb = self.machine.workspace_margins
         self._axis_renderer.set_width_mm(float(width_mm))
         self._axis_renderer.set_height_mm(float(height_mm))
         self._axis_renderer.set_margins_mm(
             float(ml), float(mt), float(mr), float(mb)
         )
-        self._axis_renderer.set_x_axis_right(self.machine.x_axis_right)
-        self._axis_renderer.set_y_axis_down(self.machine.y_axis_down)
-        self._axis_renderer.set_x_axis_negative(self.machine.reverse_x_axis)
-        self._axis_renderer.set_y_axis_negative(self.machine.reverse_y_axis)
+        self._axis_renderer.set_x_axis_right(x_axis_right)
+        self._axis_renderer.set_y_axis_down(y_axis_down)
+        self._axis_renderer.set_x_axis_negative(space.workspace_x_negative)
+        self._axis_renderer.set_y_axis_negative(space.workspace_y_negative)
 
-        space = self.machine.get_coordinate_space()
         self._work_origin_element.set_coordinate_space(space)
 
         self._update_extent_frame()
 
         super().reset_view()
 
-        if self.doc.active_layer.rotary_enabled and self.machine:
+        if (
+            self.doc.active_layer.rotary_enabled
+            and self.machine
+            and self.machine.workspace_orientation
+            is WorkspaceOrientation.NATIVE
+        ):
             self._center_on_rotary_axis()
 
         new_ratio = width_mm / height_mm if height_mm > 0 else 1.0
@@ -1276,8 +1285,8 @@ class WorkSurface(WorldSurface):
     def _update_extent_frame_flat(self):
         """Updates extent frame and workarea for flat (non-rotary) mode."""
         assert self.machine
-        extent_w, extent_h = self.machine.axis_extents
-        ml, mt, mr, mb = self.machine.work_margins
+        extent_w, extent_h = self.machine.workspace_extents
+        ml, mt, mr, mb = self.machine.workspace_margins
 
         logger.debug(
             f"_update_extent_frame_flat: extents=({extent_w}, "
@@ -1307,6 +1316,17 @@ class WorkSurface(WorldSurface):
     def _update_extent_frame_rotary(self):
         """Updates extent frame and workarea for rotary mode."""
         assert self.machine
+        if (
+            self.machine.workspace_orientation
+            is not WorkspaceOrientation.NATIVE
+        ):
+            self._axis_renderer.set_x_axis_y_override(None)
+            self._extent_frame_element.set_visible(False)
+            self._workarea_bg_element.set_visible(False)
+            logger.warning(
+                "Rotary canvas unavailable with a rotated workspace"
+            )
+            return
         active_layer = self.doc.active_layer
         diameter = active_layer.rotary_diameter
         circumference = math.pi * diameter
@@ -1314,7 +1334,7 @@ class WorkSurface(WorldSurface):
 
         origin_x, origin_y = self._machine_coords_to_canvas(0.0, 0.0)
 
-        bed_width = self.machine.axis_extents[0]
+        bed_width = self.machine.workspace_extents[0]
         max_length = bed_width
         default_rm = self.machine.get_default_rotary_module()
         if default_rm:
@@ -1368,15 +1388,17 @@ class WorkSurface(WorldSurface):
             self._nogo_zone_elements.clear()
             return
 
-        current_uids = set(self.machine.nogo_zones.keys())
+        workspace_zones = self.machine.workspace_nogo_zones
+        current_uids = set(workspace_zones.keys())
         existing_uids = set(self._nogo_zone_elements.keys())
 
         for uid in existing_uids - current_uids:
             self._nogo_zone_elements.pop(uid).remove()
 
-        for uid, zone in self.machine.nogo_zones.items():
+        for uid, zone in workspace_zones.items():
             if uid in self._nogo_zone_elements:
                 elem = self._nogo_zone_elements[uid]
+                elem.data = zone
                 elem._update_from_zone()
                 elem.set_visible(self._nogo_zones_visible and zone.enabled)
             else:

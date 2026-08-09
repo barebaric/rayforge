@@ -172,7 +172,7 @@ class _BaseArrayDialog(PatchedDialogWindow):
         machine = get_context().machine
         if not machine:
             return (0.0, 0.0)
-        wa = machine.work_area
+        wa = machine.workspace_work_area
         wa_w, wa_h = float(wa[2]), float(wa[3])
         ref_x, ref_y = machine.get_reference_position_world()
         space = machine.get_coordinate_space()

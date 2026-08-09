@@ -15,6 +15,7 @@ Coordinate Spaces:
 from abc import ABC
 from dataclasses import dataclass
 from enum import Enum, auto
+from functools import cached_property
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -42,6 +43,14 @@ class AxisDirection(Enum):
     POSITIVE_DOWN = auto()
 
 
+class WorkspaceOrientation(Enum):
+    """How the native machine bed is presented in the workspace."""
+
+    NATIVE = "native"
+    ROTATED_LEFT = "rotated_left"
+    ROTATED_RIGHT = "rotated_right"
+
+
 @dataclass(frozen=True)
 class CoordinateSpace(ABC):
     """
@@ -66,6 +75,26 @@ class CoordinateSpace(ABC):
     def y_reversed(self) -> bool:
         """True if Y axis positive direction is down."""
         return self.y_positive_direction == AxisDirection.POSITIVE_DOWN
+
+    @property
+    def workspace_origin(self) -> OriginCorner:
+        """The origin corner as presented in the workspace.
+
+        The base implementation is the identity: spaces without a
+        presentation rotation show their native origin. MachineSpace
+        overrides this to account for workspace_orientation.
+        """
+        return self.origin
+
+    @property
+    def workspace_x_negative(self) -> bool:
+        """Whether displayed workspace X maps to a reversed axis."""
+        return self.reverse_x
+
+    @property
+    def workspace_y_negative(self) -> bool:
+        """Whether displayed workspace Y maps to a reversed axis."""
+        return self.reverse_y
 
     def get_transform_to_world(
         self, extents: tuple[float, float]
@@ -157,10 +186,12 @@ class MachineSpace(CoordinateSpace):
     Attributes:
         extents: The (width, height) of the machine bed in mm.
         margins: The (left, top, right, bottom) margins in mm.
+        workspace_orientation: How the native bed is rotated in the editor.
     """
 
     extents: tuple[float, float] = (200.0, 200.0)
     margins: Rect = (0.0, 0.0, 0.0, 0.0)
+    workspace_orientation: WorkspaceOrientation = WorkspaceOrientation.NATIVE
 
     @classmethod
     def from_machine(cls, machine: "Machine") -> "MachineSpace":
@@ -190,8 +221,8 @@ class MachineSpace(CoordinateSpace):
         x_right = machine.origin in (Origin.TOP_RIGHT, Origin.BOTTOM_RIGHT)
 
         # Axis direction is based on origin position only.
-        # reverse_x/reverse_y are stored separately for controller
-        # sign flip handling in _machine_coords_to_canvas() and encoder.
+        # reverse_x/reverse_y are stored separately for controller coordinate
+        # conversion and encoding.
         x_dir = (
             AxisDirection.POSITIVE_LEFT
             if x_right
@@ -212,35 +243,153 @@ class MachineSpace(CoordinateSpace):
             margins=machine.work_margins,
             reverse_x=machine.reverse_x_axis,
             reverse_y=machine.reverse_y_axis,
+            workspace_orientation=machine.workspace_orientation,
         )
+
+    @property
+    def workspace_extents(self) -> tuple[float, float]:
+        """Returns the dimensions presented in world/workspace space."""
+        if self.workspace_orientation == WorkspaceOrientation.NATIVE:
+            return self.extents
+        return self.extents[1], self.extents[0]
+
+    @property
+    def workspace_margins(self) -> Rect:
+        """Returns native edge margins rotated into workspace order."""
+        left, top, right, bottom = self.margins
+        if self.workspace_orientation == WorkspaceOrientation.ROTATED_LEFT:
+            return top, right, bottom, left
+        if self.workspace_orientation == WorkspaceOrientation.ROTATED_RIGHT:
+            return bottom, left, top, right
+        return self.margins
+
+    @property
+    def workspace_origin(self) -> OriginCorner:
+        """Returns the native machine origin's visible workspace corner."""
+        if self.workspace_orientation == WorkspaceOrientation.NATIVE:
+            return self.origin
+        if self.workspace_orientation == WorkspaceOrientation.ROTATED_LEFT:
+            return {
+                OriginCorner.BOTTOM_LEFT: OriginCorner.BOTTOM_RIGHT,
+                OriginCorner.TOP_LEFT: OriginCorner.BOTTOM_LEFT,
+                OriginCorner.TOP_RIGHT: OriginCorner.TOP_LEFT,
+                OriginCorner.BOTTOM_RIGHT: OriginCorner.TOP_RIGHT,
+            }[self.origin]
+        return {
+            OriginCorner.BOTTOM_LEFT: OriginCorner.TOP_LEFT,
+            OriginCorner.TOP_LEFT: OriginCorner.TOP_RIGHT,
+            OriginCorner.TOP_RIGHT: OriginCorner.BOTTOM_RIGHT,
+            OriginCorner.BOTTOM_RIGHT: OriginCorner.BOTTOM_LEFT,
+        }[self.origin]
+
+    @property
+    def workspace_x_negative(self) -> bool:
+        """Whether displayed workspace X maps to a reversed native axis."""
+        if self.workspace_orientation == WorkspaceOrientation.NATIVE:
+            return self.reverse_x
+        return self.reverse_y
+
+    @property
+    def workspace_y_negative(self) -> bool:
+        """Whether displayed workspace Y maps to a reversed native axis."""
+        if self.workspace_orientation == WorkspaceOrientation.NATIVE:
+            return self.reverse_y
+        return self.reverse_x
+
+    @cached_property
+    def _workspace_to_native_matrix(self) -> np.ndarray:
+        """Cached rigid transform from workspace to native bed space.
+
+        Safe to cache because the dataclass is frozen. Do not mutate the
+        returned array; public callers get a copy via
+        :meth:`get_workspace_to_native_matrix`.
+        """
+        width, height = self.extents
+        matrix = np.identity(4, dtype=np.float64)
+        if self.workspace_orientation == WorkspaceOrientation.ROTATED_LEFT:
+            matrix[0, 0] = 0.0
+            matrix[0, 1] = 1.0
+            matrix[1, 0] = -1.0
+            matrix[1, 1] = 0.0
+            matrix[1, 3] = height
+        elif self.workspace_orientation == WorkspaceOrientation.ROTATED_RIGHT:
+            matrix[0, 0] = 0.0
+            matrix[0, 1] = -1.0
+            matrix[0, 3] = width
+            matrix[1, 0] = 1.0
+            matrix[1, 1] = 0.0
+        return matrix
+
+    @cached_property
+    def _native_to_workspace_matrix(self) -> np.ndarray:
+        """Cached inverse of the workspace-to-native transform."""
+        return np.linalg.inv(self._workspace_to_native_matrix)
+
+    def get_workspace_to_native_matrix(self) -> np.ndarray:
+        """Return the rigid transform from workspace to native bed space."""
+        return self._workspace_to_native_matrix.copy()
+
+    def get_native_to_workspace_matrix(self) -> np.ndarray:
+        """Return the rigid transform from native bed to workspace space."""
+        return self._native_to_workspace_matrix.copy()
+
+    def native_bed_point_to_workspace(self, x: float, y: float) -> Point:
+        """Project a physical native-bed point into the workspace.
+
+        Unlike :meth:`machine_point_to_world`, this applies only the
+        presentation rotation. It is intended for physical bed geometry such
+        as no-go zones, whose stored positions do not depend on the configured
+        controller origin or axis direction.
+        """
+        point = np.array([x, y, 0.0, 1.0], dtype=np.float64)
+        result = self._native_to_workspace_matrix @ point
+        return float(result[0]), float(result[1])
+
+    def workspace_point_to_native_bed(self, x: float, y: float) -> Point:
+        """Project a workspace point into canonical physical-bed space."""
+        point = np.array([x, y, 0.0, 1.0], dtype=np.float64)
+        result = self._workspace_to_native_matrix @ point
+        return float(result[0]), float(result[1])
+
+    def native_bed_item_to_workspace(
+        self,
+        pos: Point,
+        size: tuple[float, float],
+    ) -> tuple[Point, tuple[float, float]]:
+        """Project an axis-aligned native-bed rectangle into the workspace."""
+        x, y = pos
+        width, height = size
+        corners = (
+            self.native_bed_point_to_workspace(x, y),
+            self.native_bed_point_to_workspace(x + width, y),
+            self.native_bed_point_to_workspace(x, y + height),
+            self.native_bed_point_to_workspace(x + width, y + height),
+        )
+        xs = [point[0] for point in corners]
+        ys = [point[1] for point in corners]
+        min_x, min_y = min(xs), min(ys)
+        return (min_x, min_y), (max(xs) - min_x, max(ys) - min_y)
 
     def get_transform_from_world(self) -> np.ndarray:
         """
-        Returns the inverse transformation matrix (world → machine).
+        Returns the inverse origin transformation matrix (world → machine).
 
-        This is the inverse of get_transform_to_world(), used to convert
-        coordinates from world space to machine space.
-
-        Note: This matrix handles origin corner transformation only.
-        The reverse_x/reverse_y sign flips are applied separately in
-        world_point_to_machine().
+        Full machine output conversion, including workspace orientation and
+        controller axis reversals, is provided by
+        :meth:`get_world_to_machine_matrix`.
 
         Returns:
             A 4x4 numpy array representing the inverse transformation matrix.
         """
-        return np.linalg.inv(self.get_transform_to_world(self.extents))
+        return np.linalg.inv(super().get_transform_to_world(self.extents))
 
-    def get_world_to_machine_matrix(self) -> np.ndarray:
-        """
-        Returns the full 4x4 transformation matrix to convert from world space
-        to machine space for the encoding pipeline.
-
-        This combines the origin corner transformation with the axis
-        reversal sign flips.
-        """
-        # The reflection matrix to apply origin shift works identically in both
-        # directions (to_world / from_world) because it is its own inverse.
-        matrix = self.get_transform_to_world(self.extents)
+    @cached_property
+    def _world_to_machine_matrix(self) -> np.ndarray:
+        """Cached full world-to-machine transform. Do not mutate."""
+        native_world_to_machine = np.linalg.inv(
+            super().get_transform_to_world(self.extents)
+        )
+        matrix = native_world_to_machine @ self._workspace_to_native_matrix
 
         if self.reverse_x or self.reverse_y:
             sign_flip = np.identity(4, dtype=np.float64)
@@ -251,6 +400,25 @@ class MachineSpace(CoordinateSpace):
             matrix = sign_flip @ matrix
 
         return matrix
+
+    @cached_property
+    def _machine_to_world_matrix(self) -> np.ndarray:
+        """Cached inverse of the world-to-machine transform."""
+        return np.linalg.inv(self._world_to_machine_matrix)
+
+    def get_world_to_machine_matrix(self) -> np.ndarray:
+        """
+        Returns the full 4x4 transformation matrix to convert from world space
+        to machine space for the encoding pipeline.
+
+        This combines workspace rotation, the origin corner transformation,
+        and the axis reversal sign flips.
+        """
+        return self._world_to_machine_matrix.copy()
+
+    def get_machine_to_world_matrix(self) -> np.ndarray:
+        """Return the full inverse native-machine to workspace transform."""
+        return self._machine_to_world_matrix.copy()
 
     def get_command_offset(
         self,
@@ -289,19 +457,29 @@ class MachineSpace(CoordinateSpace):
 
     @property
     def workarea_size(self) -> tuple[float, float]:
-        """Returns the (width, height) of the workarea in mm."""
-        ml, mt, mr, mb = self.margins
-        width, height = self.extents
-        return width - ml - mr, height - mt - mb
+        """Returns the workspace (width, height) of the workarea in mm.
+
+        Each side is clamped to a minimum of 1mm, mirroring
+        `Machine.work_area`. This property backs `workspace_work_area`,
+        which replaced `Machine.work_area` at its call sites, so the two
+        must agree: margins can reach or exceed the extents (device
+        profiles pass YAML margins through unvalidated), and downstream
+        layout and 3D viewport code assumes a positive work area.
+        """
+        ml, mt, mr, mb = self.workspace_margins
+        width, height = self.workspace_extents
+        return (
+            max(1.0, width - ml - mr),
+            max(1.0, height - mt - mb),
+        )
 
     def get_workarea_world_rect(self) -> Rect:
         """
         Returns the work area boundary as a Rect in world space.
         """
-        pos = self.get_workarea_origin_in_machine()
+        ml, _, _, mb = self.workspace_margins
         w, h = self.workarea_size
-        wx, wy = self.machine_item_to_world(pos, (w, h))
-        return (wx, wy, w, h)
+        return float(ml), float(mb), float(w), float(h)
 
     def world_position_from_origin(
         self, ref_x: float, ref_y: float, size: tuple[float, float]
@@ -324,11 +502,12 @@ class MachineSpace(CoordinateSpace):
         """
         width, height = size
 
-        if self.origin == OriginCorner.BOTTOM_LEFT:
+        origin = self.workspace_origin
+        if origin == OriginCorner.BOTTOM_LEFT:
             return ref_x, ref_y
-        elif self.origin == OriginCorner.TOP_LEFT:
+        elif origin == OriginCorner.TOP_LEFT:
             return ref_x, ref_y - height
-        elif self.origin == OriginCorner.BOTTOM_RIGHT:
+        elif origin == OriginCorner.BOTTOM_RIGHT:
             return ref_x - width, ref_y
         else:  # TOP_RIGHT
             return ref_x - width, ref_y - height
@@ -386,36 +565,28 @@ class MachineSpace(CoordinateSpace):
             Tuple of (x, y, z) origin offset for axis labels.
         """
         if wcs_is_workarea_origin:
-            ml, mt, mr, mb = self.margins
-            _width, _height = self.extents
-
-            origin_is_right = self.origin in (
-                OriginCorner.TOP_RIGHT,
-                OriginCorner.BOTTOM_RIGHT,
-            )
-            origin_is_top = self.origin in (
-                OriginCorner.TOP_LEFT,
-                OriginCorner.TOP_RIGHT,
-            )
-
-            if origin_is_right:
-                origin_x = mr
-            else:
-                origin_x = ml
-
-            if origin_is_top:
-                origin_y = mt
-            else:
-                origin_y = mb
-
-            if self.reverse_x:
-                origin_x = -origin_x
-            if self.reverse_y:
-                origin_y = -origin_y
-
-            return (origin_x, origin_y, 0.0)
+            machine_x, machine_y = self.get_workarea_origin_in_machine()
         else:
-            return wcs_offset
+            machine_x, machine_y = wcs_offset[0], wcs_offset[1]
+
+        world_x, world_y = self.machine_point_to_world(machine_x, machine_y)
+        width, height = self.workspace_extents
+        origin = self.workspace_origin
+        origin_is_right = origin in (
+            OriginCorner.TOP_RIGHT,
+            OriginCorner.BOTTOM_RIGHT,
+        )
+        origin_is_top = origin in (
+            OriginCorner.TOP_LEFT,
+            OriginCorner.TOP_RIGHT,
+        )
+        offset_x = width - world_x if origin_is_right else world_x
+        offset_y = height - world_y if origin_is_top else world_y
+        if self.workspace_x_negative:
+            offset_x = -offset_x
+        if self.workspace_y_negative:
+            offset_y = -offset_y
+        return float(offset_x), float(offset_y), 0.0
 
     def world_point_to_machine(self, x: float, y: float) -> Point:
         """
@@ -425,8 +596,9 @@ class MachineSpace(CoordinateSpace):
         MACHINE space: Based on origin corner and axis reversal settings.
 
         This applies:
-        1. Origin corner transformation (via inverse matrix)
-        2. Axis reversal sign flip (reverse_x/reverse_y)
+        1. Workspace-to-native bed rotation
+        2. Native origin corner transformation
+        3. Axis reversal sign flip (reverse_x/reverse_y)
 
         Args:
             x: X coordinate in world space.
@@ -435,33 +607,9 @@ class MachineSpace(CoordinateSpace):
         Returns:
             Tuple of (x, y) in machine space.
         """
-        width, height = self.extents
-
-        origin_is_right = self.origin in (
-            OriginCorner.TOP_RIGHT,
-            OriginCorner.BOTTOM_RIGHT,
-        )
-        origin_is_top = self.origin in (
-            OriginCorner.TOP_LEFT,
-            OriginCorner.TOP_RIGHT,
-        )
-
-        if origin_is_right:
-            mx = width - x
-        else:
-            mx = x
-
-        if origin_is_top:
-            my = height - y
-        else:
-            my = y
-
-        if self.reverse_x:
-            mx = -mx
-        if self.reverse_y:
-            my = -my
-
-        return mx, my
+        point = np.array([x, y, 0.0, 1.0], dtype=np.float64)
+        result = self._world_to_machine_matrix @ point
+        return float(result[0]), float(result[1])
 
     def machine_point_to_world(self, x: float, y: float) -> Point:
         """
@@ -469,9 +617,8 @@ class MachineSpace(CoordinateSpace):
 
         Inverse of world_point_to_machine().
 
-        This applies:
-        1. Axis reversal sign flip (reverse_x/reverse_y)
-        2. Origin corner transformation (via matrix)
+        This reverses the axis sign, native origin, and workspace rotation
+        transformations applied by world_point_to_machine().
 
         Args:
             x: X coordinate in machine space.
@@ -480,35 +627,9 @@ class MachineSpace(CoordinateSpace):
         Returns:
             Tuple of (x, y) in world space.
         """
-        mx, my = x, y
-
-        if self.reverse_x:
-            mx = -mx
-        if self.reverse_y:
-            my = -my
-
-        width, height = self.extents
-
-        origin_is_right = self.origin in (
-            OriginCorner.TOP_RIGHT,
-            OriginCorner.BOTTOM_RIGHT,
-        )
-        origin_is_top = self.origin in (
-            OriginCorner.TOP_LEFT,
-            OriginCorner.TOP_RIGHT,
-        )
-
-        if origin_is_right:
-            wx = width - mx
-        else:
-            wx = mx
-
-        if origin_is_top:
-            wy = height - my
-        else:
-            wy = my
-
-        return wx, wy
+        point = np.array([x, y, 0.0, 1.0], dtype=np.float64)
+        result = self._machine_to_world_matrix @ point
+        return float(result[0]), float(result[1])
 
     def world_item_to_machine(
         self,
@@ -530,32 +651,16 @@ class MachineSpace(CoordinateSpace):
         """
         wx, wy = pos
         w, h = size
-        width, height = self.extents
-
-        origin_is_right = self.origin in (
-            OriginCorner.TOP_RIGHT,
-            OriginCorner.BOTTOM_RIGHT,
+        corners = (
+            self.world_point_to_machine(wx, wy),
+            self.world_point_to_machine(wx + w, wy),
+            self.world_point_to_machine(wx, wy + h),
+            self.world_point_to_machine(wx + w, wy + h),
         )
-        origin_is_top = self.origin in (
-            OriginCorner.TOP_LEFT,
-            OriginCorner.TOP_RIGHT,
-        )
-
-        if origin_is_right:
-            mx = width - wx - w
-        else:
-            mx = wx
-
-        if origin_is_top:
-            my = height - wy - h
-        else:
-            my = wy
-
-        if self.reverse_x:
-            mx = -mx
-        if self.reverse_y:
-            my = -my
-
+        xs = [point[0] for point in corners]
+        ys = [point[1] for point in corners]
+        mx = max(xs) if self.reverse_x else min(xs)
+        my = max(ys) if self.reverse_y else min(ys)
         return mx, my
 
     def machine_item_to_world(
@@ -569,39 +674,38 @@ class MachineSpace(CoordinateSpace):
         This handles the item's bounding box - for origins at right/bottom,
         the position refers to the top-left corner, which needs adjustment.
 
+        NOTE on spaces: `pos` is in MACHINE coordinates, but `size` is the
+        item's (width, height) in WORLD/workspace space. With a rotated
+        workspace orientation the two differ (width and height swap), so
+        callers must not pass a machine-space size here.
+
         Args:
             pos: (x, y) position in machine coordinates.
-            size: (width, height) of the item.
+            size: (width, height) of the item in world/workspace space.
 
         Returns:
             (x, y) position in world coordinates.
         """
         mx, my = pos
         w, h = size
-        width, height = self.extents
+        if self.workspace_orientation == WorkspaceOrientation.NATIVE:
+            machine_w, machine_h = w, h
+        else:
+            machine_w, machine_h = h, w
 
         if self.reverse_x:
-            mx = -mx
+            x_min, x_max = mx - machine_w, mx
+        else:
+            x_min, x_max = mx, mx + machine_w
         if self.reverse_y:
-            my = -my
-
-        origin_is_right = self.origin in (
-            OriginCorner.TOP_RIGHT,
-            OriginCorner.BOTTOM_RIGHT,
-        )
-        origin_is_top = self.origin in (
-            OriginCorner.TOP_LEFT,
-            OriginCorner.TOP_RIGHT,
-        )
-
-        if origin_is_right:
-            wx = width - mx - w
+            y_min, y_max = my - machine_h, my
         else:
-            wx = mx
+            y_min, y_max = my, my + machine_h
 
-        if origin_is_top:
-            wy = height - my - h
-        else:
-            wy = my
-
-        return wx, wy
+        corners = (
+            self.machine_point_to_world(x_min, y_min),
+            self.machine_point_to_world(x_max, y_min),
+            self.machine_point_to_world(x_min, y_max),
+            self.machine_point_to_world(x_max, y_max),
+        )
+        return min(p[0] for p in corners), min(p[1] for p in corners)

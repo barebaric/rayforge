@@ -39,11 +39,12 @@ class WorkOriginElement(CanvasElement):
         Configures the direction of the arrows based on the coordinate space.
         """
 
-        x_axis_right = space.origin in (
+        origin = space.workspace_origin
+        x_axis_right = origin in (
             OriginCorner.TOP_RIGHT,
             OriginCorner.BOTTOM_RIGHT,
         )
-        y_axis_down = space.origin in (
+        y_axis_down = origin in (
             OriginCorner.TOP_LEFT,
             OriginCorner.TOP_RIGHT,
         )

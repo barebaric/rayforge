@@ -265,7 +265,7 @@ class DocEditor:
         """Returns the configured machine's axis extents, or None."""
         config = self.context.config
         if config and config.machine:
-            return config.machine.axis_extents
+            return config.machine.workspace_extents
         return None
 
     @property

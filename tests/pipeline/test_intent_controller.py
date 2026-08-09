@@ -14,6 +14,7 @@ from rayforge.core.doc import Doc
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.machine import Machine
+from rayforge.pipeline.coordspace import WorkspaceOrientation
 from rayforge.pipeline.intent_builder import (
     job_encode_key,
     job_key,
@@ -122,6 +123,20 @@ class FakeTaskManager:
         call = self.delayed.pop()
         call.fire()
         self.main_thread_calls.clear()
+
+
+class ImmediateMainThreadTaskManager(FakeTaskManager):
+    """Fake scheduler that executes main-thread callbacks immediately."""
+
+    def schedule_on_main_thread(
+        self,
+        callback: Callable[..., Any],
+        *args: Any,
+        **kwargs: Any,
+    ) -> FakeCancelHandle:
+        self.main_thread_calls.append(callback)
+        callback(*args, **kwargs)
+        return FakeCancelHandle()
 
 
 class _StubNode:
@@ -273,6 +288,31 @@ def test_run_intent_called(monkeypatch, isolated_machine):
     assert intent is ctrl.intent
     assert on_completed == ctrl._on_completed
     assert pipeline is ctrl.raygeo_pipeline
+    ctrl.shutdown()
+
+
+def test_rotary_workspace_error_is_reported(isolated_machine):
+    doc = _make_doc(_TestStep(name="s1"), WorkPiece(name="wp"))
+    doc.active_layer.set_rotary_enabled(True)
+    isolated_machine.set_workspace_orientation(
+        WorkspaceOrientation.ROTATED_LEFT
+    )
+    tm = ImmediateMainThreadTaskManager()
+    ctrl = IntentController(doc, tm, machine=isolated_machine)
+    messages: list[str] = []
+    ctrl.pipeline_error.connect(
+        lambda _sender, *, message: messages.append(message), weak=False
+    )
+
+    ctrl.force_rebuild()
+
+    assert messages == [
+        (
+            "Rotary layers require the Native workspace orientation. "
+            "Set Machine → Hardware → Workspace Orientation to Native."
+        )
+    ]
+    assert ctrl.intent is not None
     ctrl.shutdown()
 
 

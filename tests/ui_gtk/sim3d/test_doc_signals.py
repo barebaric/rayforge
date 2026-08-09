@@ -11,6 +11,11 @@ from unittest.mock import MagicMock
 import pytest
 from blinker import Signal
 
+from rayforge.pipeline.coordspace import (
+    AxisDirection,
+    MachineSpace,
+    OriginCorner,
+)
 from rayforge.ui_gtk.sim3d.doc_signals import DocSignalHub
 
 
@@ -38,6 +43,8 @@ def _machine():
     machine.changed = Signal()
     machine.work_area = (100.0, 100.0, 100.0, 100.0)
     machine.work_margins = (0.0, 0.0, 0.0, 0.0)
+    machine.workspace_work_area = (100.0, 100.0, 100.0, 100.0)
+    machine.workspace_margins = (0.0, 0.0, 0.0, 0.0)
     machine.y_axis_down = False
     machine.x_axis_right = False
     machine.reverse_x_axis = False
@@ -45,6 +52,11 @@ def _machine():
     machine.wcs_origin_is_workarea_origin = True
     machine.has_custom_work_area.return_value = False
     machine.get_active_wcs_offset.return_value = (0.0, 0.0, 0.0)
+    machine.get_coordinate_space.return_value = MachineSpace(
+        origin=OriginCorner.BOTTOM_LEFT,
+        x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+        y_positive_direction=AxisDirection.POSITIVE_UP,
+    )
     return machine
 
 

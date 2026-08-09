@@ -3,11 +3,14 @@ from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import numpy as np
 import pytest
 from raygeo.geo import Geometry, Matrix
 from raygeo.ops.axis import Axis
 
 import rayforge.machine.driver as driver_module
+from rayforge.camera.controller import CameraController
+from rayforge.camera.models.camera import Camera
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
@@ -32,6 +35,7 @@ from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import JogDirection, Machine, Origin
 from rayforge.machine.models.macro import MacroTrigger
 from rayforge.machine.transport import TransportStatus
+from rayforge.pipeline.coordspace import WorkspaceOrientation
 from rayforge.pipeline.encoder.base import EncodedOutput
 from rayforge.shared.tasker.manager import TaskManager
 
@@ -421,6 +425,130 @@ class TestMachine:
         assert new_machine.reverse_x_axis is True
         assert new_machine.reverse_y_axis is True
         assert new_machine.reverse_z_axis is True
+
+    @pytest.mark.asyncio
+    async def test_workspace_orientation_serialization(
+        self, machine: Machine, task_mgr: TaskManager, lite_context
+    ):
+        """Workspace rotation is persisted and defaults to native."""
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.set_workspace_orientation(WorkspaceOrientation.ROTATED_RIGHT)
+
+        data = machine.to_dict()
+        assert data["machine"]["workspace_orientation"] == "rotated_right"
+
+        restored = Machine.from_dict(data, context=lite_context)
+        await wait_for_tasks_to_finish(task_mgr)
+        assert (
+            restored.workspace_orientation
+            == WorkspaceOrientation.ROTATED_RIGHT
+        )
+
+        data["machine"].pop("workspace_orientation")
+        legacy = Machine.from_dict(data, context=lite_context)
+        await wait_for_tasks_to_finish(task_mgr)
+        assert legacy.workspace_orientation == WorkspaceOrientation.NATIVE
+
+    @pytest.mark.parametrize(
+        "orientation, expected",
+        [
+            (WorkspaceOrientation.NATIVE, (10.0, 40.0)),
+            (WorkspaceOrientation.ROTATED_LEFT, (160.0, 10.0)),
+            (WorkspaceOrientation.ROTATED_RIGHT, (40.0, 90.0)),
+        ],
+    )
+    def test_workarea_reference_origin_uses_workspace_coordinates(
+        self, isolated_machine, orientation, expected
+    ):
+        """The physical workarea origin follows the displayed bed."""
+        isolated_machine.set_axis_extents(100.0, 200.0)
+        isolated_machine.set_work_margins(10.0, 20.0, 30.0, 40.0)
+        isolated_machine.set_origin(Origin.BOTTOM_LEFT)
+        isolated_machine.set_workspace_orientation(orientation)
+        isolated_machine.wcs_origin_is_workarea_origin = True
+
+        assert isolated_machine.get_reference_position_world() == expected
+
+    def test_workspace_orientation_projects_camera_alignment(
+        self, isolated_machine
+    ):
+        """Existing physical camera alignment follows the rotated bed."""
+        isolated_machine.set_axis_extents(100.0, 200.0)
+        camera = Camera(name="Test Camera", device_id="test-camera")
+        image_points = [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)]
+        world_points = [
+            (10.0, 20.0),
+            (40.0, 20.0),
+            (40.0, 60.0),
+            (10.0, 60.0),
+        ]
+        camera.image_to_world = (image_points, world_points)
+        alignment_date = camera.alignment_date
+        isolated_machine.add_camera(camera)
+
+        isolated_machine.set_workspace_orientation(
+            WorkspaceOrientation.ROTATED_RIGHT
+        )
+
+        assert camera.image_to_world is not None
+        assert camera.image_to_world[1] == pytest.approx(
+            [(20.0, 90.0), (20.0, 60.0), (60.0, 60.0), (60.0, 90.0)]
+        )
+        assert camera.alignment_date == alignment_date
+
+        isolated_machine.set_workspace_orientation(WorkspaceOrientation.NATIVE)
+        assert camera.image_to_world[1] == pytest.approx(world_points)
+
+    def test_axis_extents_reproject_rotated_camera_alignment(
+        self, isolated_machine
+    ):
+        """Changing rotated bed dimensions preserves physical alignment."""
+        isolated_machine.set_axis_extents(100.0, 200.0)
+        isolated_machine.set_workspace_orientation(
+            WorkspaceOrientation.ROTATED_RIGHT
+        )
+        camera = Camera(name="Test Camera", device_id="test-camera")
+        image_points = [(0.0, 0.0)] * 4
+        camera.image_to_world = (image_points, [(20.0, 90.0)] * 4)
+        alignment_date = camera.alignment_date
+        isolated_machine.add_camera(camera)
+
+        isolated_machine.set_axis_extents(200.0, 200.0)
+
+        assert camera.image_to_world is not None
+        assert camera.image_to_world[1] == pytest.approx([(20.0, 190.0)] * 4)
+        assert camera.alignment_date == alignment_date
+
+    def test_rotated_camera_alignment_renders_at_workspace_position(
+        self, isolated_machine
+    ):
+        isolated_machine.set_axis_extents(100.0, 200.0)
+        camera = Camera(name="Test Camera", device_id="test-camera")
+        camera.image_to_world = (
+            [(0.0, 0.0), (99.0, 0.0), (99.0, 199.0), (0.0, 199.0)],
+            [(0.0, 200.0), (100.0, 200.0), (100.0, 0.0), (0.0, 0.0)],
+        )
+        isolated_machine.add_camera(camera)
+        image = np.zeros((200, 100, 3), dtype=np.uint8)
+        image[:100, :50, 0] = 10
+        image[:100, 50:, 0] = 20
+        image[100:, :50, 0] = 30
+        image[100:, 50:, 0] = 40
+        controller = CameraController(camera)
+        controller._image_data = image
+
+        isolated_machine.set_workspace_orientation(
+            WorkspaceOrientation.ROTATED_RIGHT
+        )
+        rendered = controller.get_work_surface_image(
+            (200, 100), ((0.0, 0.0), (200.0, 100.0))
+        )
+
+        assert rendered is not None
+        assert rendered[25, 50, 0] == 10
+        assert rendered[25, 150, 0] == 30
+        assert rendered[75, 50, 0] == 20
+        assert rendered[75, 150, 0] == 40
 
     @pytest.mark.asyncio
     async def test_serialization_migration_from_negative_to_reverse(
@@ -1512,6 +1640,39 @@ class TestJogDelegation:
             MachineController(m, isolated_context, MagicMock())
         )
         yield m
+
+    @pytest.mark.parametrize(
+        "orientation, direction, expected",
+        [
+            (
+                WorkspaceOrientation.ROTATED_RIGHT,
+                JogDirection.EAST,
+                {Axis.Y: 10.0},
+            ),
+            (
+                WorkspaceOrientation.ROTATED_RIGHT,
+                JogDirection.NORTH,
+                {Axis.X: -10.0},
+            ),
+            (
+                WorkspaceOrientation.ROTATED_LEFT,
+                JogDirection.EAST,
+                {Axis.Y: -10.0},
+            ),
+            (
+                WorkspaceOrientation.ROTATED_LEFT,
+                JogDirection.NORTH,
+                {Axis.X: 10.0},
+            ),
+        ],
+    )
+    def test_visual_jog_uses_rotated_native_axis(
+        self, jog_machine, orientation, direction, expected
+    ):
+        """Workspace-relative jogging follows the rotated canvas."""
+        jog_machine.set_workspace_orientation(orientation)
+
+        assert jog_machine.calculate_visual_jog(direction, 10.0) == expected
 
     @pytest.mark.parametrize(
         "direction, origin, reverse, distance, expected_delta",

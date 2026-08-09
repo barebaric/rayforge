@@ -3,6 +3,7 @@ import pytest
 
 from rayforge.context import RayforgeContext
 from rayforge.machine.models.machine import Machine, Origin
+from rayforge.pipeline.coordspace import WorkspaceOrientation
 from rayforge.ui_gtk.sim3d.viewport import ViewportConfig
 
 
@@ -45,6 +46,28 @@ class TestViewportConfigDefaults:
 
 
 class TestViewportConfigAxisOrientation:
+    def test_rotated_right_swaps_viewport_dimensions(self):
+        m = _make_machine()
+        m.set_axis_extents(300.0, 600.0)
+        m.set_workspace_orientation(WorkspaceOrientation.ROTATED_RIGHT)
+
+        vp = ViewportConfig.from_machine(m)
+
+        assert vp.width_mm == 600.0
+        assert vp.depth_mm == 300.0
+        assert vp.x_right is False
+        assert vp.y_down is True
+        expected = np.array(
+            [
+                [0.0, 1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0, 300.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+            dtype=np.float32,
+        )
+        np.testing.assert_array_equal(vp.native_to_workspace, expected)
+
     def test_y_axis_down_flips_y(self):
         m = _make_machine()
         m.origin = Origin.TOP_LEFT
@@ -155,6 +178,24 @@ class TestViewportConfigExtentFrame:
 
 
 class TestViewportConfigWcsOffset:
+    @pytest.mark.parametrize(
+        "orientation,expected_origin",
+        [
+            (WorkspaceOrientation.ROTATED_LEFT, (20.0, 40.0, 0.0)),
+            (WorkspaceOrientation.ROTATED_RIGHT, (20.0, 40.0, 0.0)),
+        ],
+    )
+    def test_rotated_workspace_wcs_offset(self, orientation, expected_origin):
+        m = _make_machine()
+        m.set_axis_extents(300.0, 600.0)
+        m.set_work_margins(10.0, 20.0, 30.0, 40.0)
+        m.set_workspace_orientation(orientation)
+        m.update_wcs_offset("G54", (50.0, 60.0, 0.0))
+
+        vp = ViewportConfig.from_machine(m)
+
+        assert vp.wcs_offset_mm == pytest.approx(expected_origin)
+
     def test_wcs_origin_is_workarea_origin(self):
         m = _make_machine()
         m.wcs_origin_is_workarea_origin = True
