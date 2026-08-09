@@ -46,6 +46,7 @@ def _check_svg_load_capability() -> bool:
     except Exception:
         logger.debug("SVG load capability probe failed", exc_info=True)
         return False
+    return False
 
 
 SVG_LOAD_AVAILABLE = _check_svg_load_capability()

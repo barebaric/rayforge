@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 import numpy as np
 from raygeo.cnc.execution.specs import ComputePayload
@@ -32,6 +32,12 @@ if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
     from rayforge.core.workpiece import WorkPiece
     from rayforge.machine.models.machine import Machine
+
+    class LeadInOutTransformerType(Protocol):
+        @staticmethod
+        def calculate_auto_distance(
+            step_speed: int, max_acceleration: int
+        ) -> float: ...
 
 
 class ShrinkWrapStep(LaserStep):
@@ -223,7 +229,10 @@ class ShrinkWrapStep(LaserStep):
             step.frequency = params.frequency
             step.pulse_width = params.pulse_width
 
-        LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")
+        LeadInOutTransformer = cast(
+            "LeadInOutTransformerType",
+            transformer_registry.get("LeadInOutTransformer"),
+        )
         if LeadInOutTransformer:
             calc = LeadInOutTransformer.calculate_auto_distance
             auto_distance = calc(step.cut_speed, machine.acceleration)

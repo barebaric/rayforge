@@ -179,7 +179,9 @@ class DialectEditorDialog(PatchedDialogWindow):
                     row, (Adw.ActionRow, Adw.ExpanderRow, Adw.EntryRow)
                 ):
                     row.add_suffix(error_widget)
-                row._error_icon_widget = error_widget
+                row._error_icon_widget = (  # type: ignore[attr-defined]
+                    error_widget
+                )
             row.add_css_class("error")
             error_widget.set_tooltip_text(error_msg)
             error_widget.set_visible(True)
