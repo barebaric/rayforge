@@ -34,30 +34,6 @@ DEFAULT_DOT_WIDTH_MM = 0.1
 # ── Texture generation ─────────────────────────
 
 
-def _dilate_lines(
-    buffer: np.ndarray,
-    dot_width_mm: float,
-    px_per_mm: float,
-) -> np.ndarray:
-    """Thicken rasterized scanlines to the laser dot width.
-
-    Scanlines are rasterized as single-pixel paths; each one is
-    expanded to ``dot_width_mm`` in texture space so the 3D preview
-    matches the physical laser spot width.
-    """
-    dot_width_px = dot_width_mm * px_per_mm
-    radius = max(0, int((dot_width_px - 1) / 2))
-    if radius == 0:
-        return buffer
-
-    dilated = np.zeros_like(buffer)
-    for dy in range(-radius, radius + 1):
-        for dx in range(-radius, radius + 1):
-            shifted = np.roll(np.roll(buffer, dy, axis=0), dx, axis=1)
-            np.maximum(dilated, shifted, out=dilated)
-    return dilated
-
-
 def _rasterize_scanlines(
     ops: Ops,
     bbox: tuple[float, float, float, float],
@@ -83,17 +59,19 @@ def _rasterize_scanlines(
     if width_px <= 0 or height_px <= 0:
         return None
 
+    dot_width_px = dot_width_mm * px_per_mm
+    radius_px = max(0, int((dot_width_px - 1) / 2))
+
     buffer = rasterize_scanlines(
         ops,
         width_px,
         height_px,
         (px_per_mm, px_per_mm),
         origin_mm=(x0, y0),
+        radius_px=radius_px,
     )
     if not np.any(buffer):
         return None
-
-    buffer = _dilate_lines(buffer, dot_width_mm, px_per_mm)
 
     return buffer, width_px, height_px, px_per_mm
 

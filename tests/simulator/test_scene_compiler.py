@@ -8,10 +8,7 @@ from compile_scene_helper import (
 )
 from raygeo.ops import Ops
 
-from rayforge.simulator.scene3d.scene_compiler import (
-    _dilate_lines,
-    compile_scene,
-)
+from rayforge.simulator.scene3d.scene_compiler import compile_scene
 
 
 def _flat_config():
@@ -171,35 +168,6 @@ class TestCompileEmpty:
         artifact = compile_scene(assembled, config)
         assert len(artifact.vertex_layers) == 0
         assert len(artifact.overlay_layers) == 0
-
-
-class TestLineDilation:
-    """The 3D raster preview thickens lines to the laser dot width."""
-
-    def _buffer_with_line(self, size=100):
-        buffer = np.zeros((size, size), dtype=np.uint8)
-        buffer[size // 2, size // 4 : 3 * size // 4] = 255
-        return buffer
-
-    def test_no_dilation_when_zero_width(self):
-        buffer = self._buffer_with_line()
-        out = _dilate_lines(buffer, 0.0, 50.0)
-        np.testing.assert_array_equal(out, buffer)
-
-    def test_line_thickness_matches_dot_width(self):
-        buffer = self._buffer_with_line()
-        for dot_mm, expected_px in [(0.1, 5), (0.3, 15), (0.5, 25)]:
-            out = _dilate_lines(buffer, dot_mm, 50.0)
-            rows = np.where(out.any(axis=1))[0]
-            thickness = rows.max() - rows.min() + 1
-            assert thickness == expected_px, (
-                f"dot {dot_mm}mm gave {thickness}px, expected {expected_px}px"
-            )
-
-    def test_thicker_dot_gives_thicker_lines(self):
-        thin = _dilate_lines(self._buffer_with_line(), 0.1, 50.0)
-        thick = _dilate_lines(self._buffer_with_line(), 0.3, 50.0)
-        assert thick.sum() > thin.sum()
 
 
 class TestTextureLineWidth:
