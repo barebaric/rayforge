@@ -5,7 +5,8 @@ import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
 import styles from './index.module.css';
 import Icon from '@mdi/react';
-import { mdiRocketLaunch, mdiViewDashboard, mdiFeatureSearch, mdiShareVariant } from '@mdi/js';
+import { mdiRocketLaunch, mdiViewDashboard, mdiFeatureSearch, mdiShareVariant, mdiPlayCircleOutline, mdiYoutube } from '@mdi/js';
+import { tutorials } from '../data/tutorials';
 
 function detectOs() {
   if (typeof window === 'undefined') {
@@ -178,6 +179,67 @@ function FeatureSection({
   );
 }
 
+function TutorialSpotlight() {
+  return (
+    <section className={styles.spotlightSection}>
+      <div className={styles.spotlightInner}>
+        <div className={styles.spotlightHeader}>
+          <div className={styles.spotlightBadge}>Community Tutorials</div>
+          <h2 className={styles.spotlightTitle}>The Tutorial Spotlight</h2>
+          <p className={styles.spotlightSubtitle}>
+            Learn from videos made by real users. Your tutorial could be up
+            here next.
+          </p>
+        </div>
+
+        {tutorials.length > 0 ? (
+          <div className={styles.spotlightGrid}>
+            {tutorials.map((tutorial) => (
+              <a
+                key={tutorial.id}
+                href={`https://www.youtube.com/watch?v=${tutorial.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.spotlightCard}
+              >
+                <div className={styles.spotlightThumb}>
+                  <img
+                    src={`https://img.youtube.com/vi/${tutorial.id}/hqdefault.jpg`}
+                    alt={tutorial.title}
+                    loading="lazy"
+                  />
+                  <span className={styles.spotlightPlay}>
+                    <Icon path={mdiPlayCircleOutline} size={1.4} />
+                  </span>
+                </div>
+                <h3 className={styles.spotlightVideoTitle}>{tutorial.title}</h3>
+                <span className={styles.spotlightCreator}>
+                  {tutorial.creator}
+                </span>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.spotlightEmpty}>
+            <div className={styles.spotlightEmptyIcon}>
+              <Icon path={mdiYoutube} size={1.7} />
+            </div>
+            <h3>This spotlight is empty — be its first star.</h3>
+            <p>
+              Make a Rayforge tutorial, and we will feature it right here on
+              the homepage with your name and a link to your channel.
+            </p>
+            <Link to="/contributing" className={styles.spotlightCta}>
+              <Icon path={mdiPlayCircleOutline} size={0.9} />
+              <span>Make the first tutorial</span>
+            </Link>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function CommunitySection() {
   return (
     <section className={styles.communitySection}>
@@ -299,6 +361,8 @@ export default function Home() {
             reverse
           />
         </div>
+
+        <TutorialSpotlight />
 
         <CommunitySection />
 

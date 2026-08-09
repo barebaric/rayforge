@@ -210,6 +210,10 @@
   background: linear-gradient(145deg, #fb923c, #ef4444);
 }
 
+.iconRed {
+  background: linear-gradient(145deg, #ee5253, #eb4b4b);
+}
+
 .cardBody {
   min-width: 0;
 }
@@ -224,6 +228,184 @@
   color: var(--ifm-color-emphasis-700);
   font-size: 0.95rem;
   line-height: 1.35;
+}
+
+.featuredCard {
+  grid-column: 1 / -1;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  padding: 1.15rem 1.35rem;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(
+        var(--ifm-background-surface-color),
+        var(--ifm-background-surface-color)
+      )
+      padding-box,
+    linear-gradient(
+        90deg,
+        rgba(238, 82, 83, 0.55),
+        rgba(255, 159, 67, 0.5),
+        rgba(94, 234, 212, 0.45)
+      )
+      border-box;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.07);
+}
+
+.featuredCardCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.15rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(90deg, #ee5253, #fb923c);
+  white-space: nowrap;
+}
+
+.impactGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+.impactCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  overflow: hidden;
+}
+
+.impactTutorial {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(
+        var(--ifm-background-surface-color),
+        var(--ifm-background-surface-color)
+      )
+      padding-box,
+    linear-gradient(
+        135deg,
+        rgba(238, 82, 83, 0.55),
+        rgba(255, 159, 67, 0.4),
+        rgba(94, 234, 212, 0.35)
+      )
+      border-box;
+  scroll-margin-top: 5.5rem;
+}
+
+.impactTutorial::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    500px 220px at 85% 0%,
+    rgba(238, 82, 83, 0.12),
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+.impactBadge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: fit-content;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.impactBadgeTutorial {
+  background: rgba(238, 82, 83, 0.12);
+  color: #ee5253;
+}
+
+.impactBadgeSupport {
+  background: rgba(95, 39, 205, 0.1);
+  color: #5f27cd;
+}
+
+.impactCardHeader {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.impactCardTitle {
+  position: relative;
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.impactCardBody {
+  position: relative;
+  margin: 0;
+  color: var(--ifm-color-emphasis-700);
+  line-height: 1.55;
+}
+
+.impactLinks {
+  position: relative;
+  display: grid;
+  gap: 0.75rem;
+  margin-top: auto;
+}
+
+.impactCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-decoration: none;
+}
+
+.impactCta:hover {
+  text-decoration: none;
+}
+
+.wishlist {
+  position: relative;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.wishlistTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.wishlistChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.wishlistChip {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ifm-color-emphasis-800);
+  background: rgba(238, 82, 83, 0.1);
+  border: 1px solid rgba(238, 82, 83, 0.28);
 }
 
 .twoCol {
@@ -363,10 +545,22 @@
   .twoCol {
     grid-template-columns: 1fr;
   }
+
+  .impactGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 520px) {
   .cardGrid {
     grid-template-columns: 1fr;
+  }
+
+  .featuredCard {
+    grid-template-columns: 1fr;
+  }
+
+  .featuredCardCta {
+    justify-content: center;
   }
 }

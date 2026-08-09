@@ -9,8 +9,22 @@ import {
   mdiBookOpenPageVariantOutline,
   mdiHandCoinOutline,
   mdiGithub,
+  mdiYoutube,
+  mdiVideoOutline,
+  mdiPlayCircleOutline,
+  mdiStarOutline,
+  mdiFire,
 } from '@mdi/js';
 import styles from './contributing.module.css';
+
+const wishlistTopics = [
+  'Your first engraving',
+  'Rotary engraving setup',
+  'AI Workpiece Generator',
+  'Camera calibration',
+  'Print & Cut workflow',
+  'Material testing',
+];
 
 const quickActions = [
   {
@@ -41,13 +55,22 @@ const quickActions = [
     icon: mdiBookOpenPageVariantOutline,
     iconClass: styles.iconCyan,
   },
+  {
+    title: 'Create Video Tutorials',
+    description:
+      'Teach Rayforge to the world — finished tutorials get featured on the homepage.',
+    href: '#video-tutorials',
+    icon: mdiVideoOutline,
+    iconClass: styles.iconRed,
+    featured: true,
+  },
 ];
 
 export default function Contributing() {
   return (
     <Layout
       title="Contributing"
-      description="Learn how to contribute to Rayforge — report bugs, suggest features, submit code, improve docs, or support the project financially."
+      description="Learn how to contribute to Rayforge — report bugs, suggest features, submit code, create video tutorials, improve docs, or support the project financially."
     >
       <main className={styles.pageWrapper}>
         <section className={styles.hero}>
@@ -59,7 +82,8 @@ export default function Contributing() {
               </h1>
               <p className={styles.heroSubtitle}>
                 Help improve Rayforge: report bugs, suggest features, submit
-                code, refine docs, or support the project financially.
+                code, refine docs, create tutorials, or support the project
+                financially.
               </p>
               <div className={styles.heroCtas}>
                 <a
@@ -130,6 +154,133 @@ export default function Contributing() {
 
         <section className={styles.section}>
           <div className={styles.sectionInner}>
+            <h2 className={styles.sectionTitle}>Make the Biggest Impact</h2>
+            <p className={styles.lead}>
+              Some contributions move the needle more than others. Right now,
+              nothing helps Rayforge grow like video tutorials — and your
+              generosity keeps the project alive.
+            </p>
+
+            <div className={styles.impactGrid}>
+              <div
+                className={`${styles.impactCard} ${styles.impactTutorial}`}
+                id="video-tutorials"
+              >
+                <div
+                  className={`${styles.impactBadge} ${styles.impactBadgeTutorial}`}
+                >
+                  <Icon path={mdiStarOutline} size={0.8} />
+                  <span>Most Wanted</span>
+                </div>
+                <div className={styles.impactCardHeader}>
+                  <div className={`${styles.blockIcon} ${styles.iconRed}`}>
+                    <Icon path={mdiYoutube} size={1.1} />
+                  </div>
+                  <h3 className={styles.impactCardTitle}>
+                    Create Video Tutorials
+                  </h3>
+                </div>
+                <p className={styles.impactCardBody}>
+                  Videos are how most people discover Rayforge — and finished
+                  tutorials get featured on the homepage with your name and
+                  channel link.
+                </p>
+                <ol className={styles.steps}>
+                  <li className={styles.step}>
+                    Pick a topic below — or choose your own.
+                  </li>
+                  <li className={styles.step}>
+                    Record a short screen capture with a voiceover, upload it
+                    to YouTube, and share the link on{' '}
+                    <a
+                      href="https://discord.gg/sTHNdTtpQJ"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Discord
+                    </a>{' '}
+                    or in{' '}
+                    <a
+                      href="https://github.com/barebaric/rayforge/discussions"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      GitHub Discussions
+                    </a>{' '}
+                    to claim your spot.
+                  </li>
+                </ol>
+                <div className={styles.wishlist}>
+                  <div className={styles.wishlistTitle}>
+                    <Icon path={mdiFire} size={0.85} />
+                    <span>Wishlist — claim a topic</span>
+                  </div>
+                  <div className={styles.wishlistChips}>
+                    {wishlistTopics.map((topic) => (
+                      <span className={styles.wishlistChip} key={topic}>
+                        {topic}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <a
+                  href="https://discord.gg/sTHNdTtpQJ"
+                  className={`rfButton rfButtonOrange ${styles.impactCta}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Icon path={mdiPlayCircleOutline} size={0.9} />
+                  <span>Share Your Tutorial</span>
+                </a>
+              </div>
+
+              <div
+                className={`${styles.impactCard} ${styles.impactSupport}`}
+              >
+                <div
+                  className={`${styles.impactBadge} ${styles.impactBadgeSupport}`}
+                >
+                  <Icon path={mdiHandCoinOutline} size={0.8} />
+                  <span>Keeps the Project Alive</span>
+                </div>
+                <div className={styles.impactCardHeader}>
+                  <div className={`${styles.blockIcon} ${styles.iconPurple}`}>
+                    <Icon path={mdiHandCoinOutline} size={1.1} />
+                  </div>
+                  <h3 className={styles.impactCardTitle}>
+                    Support Financially
+                  </h3>
+                </div>
+                <p className={styles.impactCardBody}>
+                  Rayforge is free, and it will stay free. Patreon and
+                  sponsorship money pays for servers, test hardware, and
+                  development time — it keeps the project moving forward.
+                </p>
+                <div className={styles.impactLinks}>
+                  <a
+                    href="https://www.patreon.com/c/knipknap"
+                    className={`rfButton rfButtonOrange ${styles.impactCta}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Icon path={mdiHandCoinOutline} size={0.9} />
+                    <span>Support on Patreon</span>
+                  </a>
+                  <Link
+                    to="/sponsor"
+                    className={`rfButton rfButtonPurple ${styles.impactCta}`}
+                  >
+                    <Icon path={mdiStarOutline} size={0.9} />
+                    <span>Become a Sponsor</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionInner}>
             <h2 className={styles.sectionTitle}>Quick Actions</h2>
             <div className={styles.cardGrid}>
               {quickActions.map((action) => {
@@ -146,6 +297,22 @@ export default function Contributing() {
                     </div>
                   </>
                 );
+
+                if (action.featured) {
+                  return (
+                    <a
+                      key={action.title}
+                      href={action.href}
+                      className={`${styles.card} ${styles.featuredCard}`}
+                    >
+                      {cardInner}
+                      <span className={styles.featuredCardCta}>
+                        <Icon path={mdiPlayCircleOutline} size={0.85} />
+                        <span>Get Featured</span>
+                      </span>
+                    </a>
+                  );
+                }
 
                 if (action.to) {
                   return (
