@@ -89,6 +89,8 @@ asyncio_default_fixture_loop_scope = "function"
 filterwarnings = [
     # Ignore Swig related deprecation warnings from importlib
     "ignore::DeprecationWarning:importlib._bootstrap",
+    # PyGObject pulls a removed-asyncio-policy deprecation on Python 3.14+
+    "ignore::DeprecationWarning:gi.events",
 ]
 testpaths = [
     "tests",
