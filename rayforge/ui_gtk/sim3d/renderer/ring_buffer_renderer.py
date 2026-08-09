@@ -255,7 +255,11 @@ class RingBufferRenderer(BaseRenderer):
         GL.glBindTexture(GL.GL_TEXTURE_2D, self._color_lut_texture)
         shader.set_int("uColorLUT", 1)
 
-        GL.glDepthFunc(GL.GL_LEQUAL)
+        # The scanline trail must always draw on top of the toolpath and
+        # the raster texture; never cull it by surface depth (which would
+        # let travel lines or the texture's depth split the trail on a
+        # cylinder).  Depth writes stay off so later geometry is unaffected.
+        GL.glDepthFunc(GL.GL_ALWAYS)
         GL.glDepthMask(GL.GL_FALSE)
         set_line_width(line_width)
         GL.glBindVertexArray(self.vao)
