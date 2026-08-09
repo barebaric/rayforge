@@ -192,7 +192,7 @@ class OpsRenderer(BaseRenderer):
         self._partial_travel_end = np.zeros(3, dtype=np.float32)
         op_player = ctx.playback.op_player
         if op_player:
-            p, frac = self._playback_progress(op_player)
+            p, frac = op_player.playback_progress()
             (
                 exec_powered,
                 self._partial_powered_id,
@@ -213,18 +213,6 @@ class OpsRenderer(BaseRenderer):
             )
         self._exec_powered = exec_powered
         self._exec_travel = exec_travel
-
-    @staticmethod
-    def _playback_progress(op_player):
-        """Return ``(in_progress_command, fraction)`` from the player.
-
-        Falls back to the next command with no fraction for minimal
-        player stubs used in tests.
-        """
-        prog = getattr(op_player, "playback_progress", None)
-        if prog is not None:
-            return prog()
-        return op_player.current_index + 1, 0.0
 
     @staticmethod
     def _fractional_exec_count(

@@ -22,6 +22,9 @@ class _FakePlayer:
     def __init__(self, current_index):
         self.current_index = current_index
 
+    def playback_progress(self):
+        return (self.current_index + 1, 0.0)
+
 
 @pytest.fixture
 def renderer():
