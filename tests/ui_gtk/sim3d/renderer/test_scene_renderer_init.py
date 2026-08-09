@@ -165,5 +165,9 @@ def test_render_registry_orders_rings_after_texture():
     assert ops in renderers
     ring_index = renderers.index(ring)
     texture_index = renderers.index(scene.texture_renderer)
+    ops_index = renderers.index(ops)
+    # The ring trail always draws on top of the toolpath and the raster.
     assert ring_index > texture_index
-    assert renderers.index(ops) < texture_index
+    # The toolpath draws above the raster texture but below the trail.
+    assert ops_index > texture_index
+    assert ops_index < ring_index
