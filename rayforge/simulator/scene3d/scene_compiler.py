@@ -9,6 +9,7 @@ import logging
 from collections.abc import Callable
 
 import numpy as np
+from raygeo.compressed_array import CompressedArray
 from raygeo.image import rasterize_scanlines
 from raygeo.ops import LayerInfo, Ops
 
@@ -38,7 +39,7 @@ def _rasterize_scanlines(
     ops: Ops,
     bbox: tuple[float, float, float, float],
     dot_width_mm: float,
-) -> tuple[np.ndarray, int, int, float] | None:
+) -> tuple[CompressedArray, int, int, float] | None:
     x0, y0, w_mm, h_mm = bbox
     if w_mm <= 0 or h_mm <= 0:
         return None
@@ -70,7 +71,7 @@ def _rasterize_scanlines(
         origin_mm=(x0, y0),
         radius_px=radius_px,
     )
-    if not np.any(buffer):
+    if not isinstance(buffer, CompressedArray):
         return None
 
     return buffer, width_px, height_px, px_per_mm

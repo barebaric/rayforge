@@ -4,17 +4,24 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+from raygeo.compressed_array import CompressedArray
 
 from rayforge.simulator.scene3d import VertexLayer
 from rayforge.ui_gtk.sim3d.renderer.ops_renderer import OpsRenderer
 
 
+def _ca_f32(data):
+    return CompressedArray.from_float32(
+        np.asarray(data, dtype=np.float32).ravel()
+    )
+
+
 def _make_vertex_layer(powered_count=2, zero_power_count=3, travel_count=4):
     return VertexLayer(
-        powered_verts=np.zeros(powered_count * 3, dtype=np.float32),
-        powered_attrib=np.zeros((powered_count, 4), dtype=np.float32),
-        travel_verts=np.zeros(travel_count * 3, dtype=np.float32),
-        zero_power_verts=np.zeros(zero_power_count * 3, dtype=np.float32),
+        powered_verts=_ca_f32(np.zeros(powered_count * 3)),
+        powered_attrib=_ca_f32(np.zeros((powered_count, 4))),
+        travel_verts=_ca_f32(np.zeros(travel_count * 3)),
+        zero_power_verts=_ca_f32(np.zeros(zero_power_count * 3)),
         powered_cmd_offsets=np.array([0, 1], dtype=np.int32),
         travel_cmd_offsets=np.array([2, 3], dtype=np.int32),
         is_rotary=False,

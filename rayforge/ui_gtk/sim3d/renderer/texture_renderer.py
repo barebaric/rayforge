@@ -312,7 +312,7 @@ class TextureArtifactRenderer(BaseRenderer):
         ):
             laser_index = laser_uid_order.index(tl.laser_uid)
         tex_data = TextureData(
-            power_texture_data=tl.power_texture,
+            power_texture_data=tl.power_texture.to_numpy(),
             dimensions_mm=(0.0, 0.0),
             position_mm=(0.0, 0.0),
         )
