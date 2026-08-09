@@ -146,8 +146,11 @@ class MachineManager:
                 # Add a small delay for the OS to release the port
                 await asyncio.sleep(0.2)
 
-            # 2. Update the global config. This triggers UI updates.
-            context.config.set_machine(new_machine)
+            # 2. Update the global config. This triggers UI updates, so it
+            #    must run on the main thread (GTK is not thread-safe).
+            await task_mgr.run_on_main_thread(
+                context.config.set_machine, new_machine
+            )
 
             # 3. Connect the new machine if it's set to auto-connect
             if new_machine.auto_connect:
