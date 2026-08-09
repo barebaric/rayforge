@@ -167,12 +167,7 @@ class RingBufferRenderer(BaseRenderer):
         self._partial_ring_end = np.zeros(3, dtype=np.float32)
         op_player = ctx.playback.op_player
         if op_player:
-            prog = getattr(op_player, "playback_progress", None)
-            if prog is not None:
-                p, frac = prog()
-            else:
-                p = op_player.current_index + 1
-                frac = 0.0
+            p, frac = op_player.playback_progress()
             exec_ring, self._partial_ring_id, self._partial_ring_end = (
                 self._fractional_exec_count(
                     self.ring_offsets, self._positions, p, frac
