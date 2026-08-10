@@ -409,6 +409,7 @@ class AxisRenderer3D(BaseRenderer):
         """Helper method to render text labels along the axes."""
         if not self.text_renderer:
             return
+        self.text_renderer.begin_batch()
         model_matrix = ctx.viewport.model_matrix
         label_height_mm = 2.5
         x_axis_label_y_offset = label_height_mm * 1.2
@@ -505,3 +506,5 @@ class AxisRenderer3D(BaseRenderer):
                 color=self.label_color,
                 align=y_label_align,
             )
+
+        self.text_renderer.end_batch()

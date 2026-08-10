@@ -39,6 +39,7 @@ class Shader:
         self.program = None
         self._uniform_values: dict[str, Any] = {}
         self._uniform_snapshots: list[dict[str, Any]] = []
+        self._uniform_location_cache: dict[str, int] = {}
         # Determine the correct GLSL header for the current context.
         version_str = GL.glGetString(GL.GL_VERSION)
         is_es = version_str is not None and b"OpenGL ES" in version_str
@@ -119,7 +120,7 @@ class Shader:
             name: The name of the uniform variable in the shader.
             mat: A 4x4 NumPy array, row-major.
         """
-        loc = GL.glGetUniformLocation(self.program, name)
+        loc = self.get_uniform_location(name)
         if loc != -1:
             GL.glUniformMatrix4fv(loc, 1, GL.GL_TRUE, mat)
             self._uniform_values[name] = ("mat4", np.array(mat, copy=True))
@@ -136,7 +137,7 @@ class Shader:
             name: The name of the uniform variable in the shader.
             mat: A 3x3 NumPy array, row-major.
         """
-        loc = GL.glGetUniformLocation(self.program, name)
+        loc = self.get_uniform_location(name)
         if loc != -1:
             GL.glUniformMatrix3fv(loc, 1, GL.GL_TRUE, mat)
             self._uniform_values[name] = ("mat3", np.array(mat, copy=True))
@@ -149,7 +150,7 @@ class Shader:
             name: The name of the uniform variable in the shader.
             vec: A sequence (tuple, list, or array) of 2 floats.
         """
-        loc = GL.glGetUniformLocation(self.program, name)
+        loc = self.get_uniform_location(name)
         if loc != -1:
             GL.glUniform2fv(loc, 1, np.asarray(vec, dtype=np.float32))
             self._uniform_values[name] = (
@@ -164,7 +165,7 @@ class Shader:
             name: The name of the uniform variable in the shader.
             vec: A sequence (tuple, list, or array) of 3 floats.
         """
-        loc = GL.glGetUniformLocation(self.program, name)
+        loc = self.get_uniform_location(name)
         if loc != -1:
             GL.glUniform3fv(loc, 1, np.asarray(vec, dtype=np.float32))
             self._uniform_values[name] = (
@@ -179,7 +180,7 @@ class Shader:
             name: The name of the uniform variable in the shader.
             vec: A sequence (tuple, list, or array) of 4 floats.
         """
-        loc = GL.glGetUniformLocation(self.program, name)
+        loc = self.get_uniform_location(name)
         if loc != -1:
             GL.glUniform4fv(loc, 1, np.asarray(vec, dtype=np.float32))
             self._uniform_values[name] = (
@@ -205,37 +206,62 @@ class Shader:
         Replays a uniform snapshot produced by :meth:`save`.
 
         Binds this program first (uniforms are stored per-program) and
-        re-issues the same ``set_*`` call for each entry, so values are
-        restored even if a renderer clobbered them mid-frame or left a
-        different program active.  Unknown uniform locations are
-        silently skipped (as ``set_*`` is).
+        re-issues the same ``set_*`` call for each entry whose current
+        value differs from the snapshot, so values are restored even if a
+        renderer clobbered them mid-frame or left a different program
+        active.  Uniforms the renderer did not touch are skipped to avoid
+        redundant GL round-trips.  Unknown uniform locations are silently
+        skipped (as ``set_*`` is).
         """
         self.use()
         for name, (kind, val) in snapshot.items():
-            if kind == "mat4":
-                self.set_mat4(name, val)
-            elif kind == "mat3":
-                self.set_mat3(name, val)
-            elif kind == "vec2":
-                self.set_vec2(name, val)
-            elif kind == "vec3":
-                self.set_vec3(name, val)
-            elif kind == "vec4":
-                self.set_vec4(name, val)
-            elif kind == "float":
-                self.set_float(name, val)
-            elif kind == "int":
-                self.set_int(name, val)
+            current = self._uniform_values.get(name)
+            if current is None:
+                continue
+            current_kind, current_val = current
+            if current_kind != kind or not self._uniforms_equal(
+                kind, current_val, val
+            ):
+                self._restore_one(name, kind, val)
+
+    @staticmethod
+    def _uniforms_equal(kind: str, a: Any, b: Any) -> bool:
+        """True if two stored uniform values are equal."""
+        if kind in ("float", "int"):
+            return a == b
+        return bool(np.array_equal(np.asarray(a), np.asarray(b)))
+
+    def _restore_one(self, name: str, kind: str, val: Any) -> None:
+        """Re-issues one uniform value via the matching ``set_*``."""
+        if kind == "mat4":
+            self.set_mat4(name, val)
+        elif kind == "mat3":
+            self.set_mat3(name, val)
+        elif kind == "vec2":
+            self.set_vec2(name, val)
+        elif kind == "vec3":
+            self.set_vec3(name, val)
+        elif kind == "vec4":
+            self.set_vec4(name, val)
+        elif kind == "float":
+            self.set_float(name, val)
+        elif kind == "int":
+            self.set_int(name, val)
 
     def cleanup(self) -> None:
         """Deletes the shader program from GPU context to free resources."""
         if self.program:
             GL.glDeleteProgram(self.program)
             self.program = None
+            self._uniform_location_cache.clear()
 
     def get_uniform_location(self, name: str) -> int:
-        """Gets the location of a uniform variable."""
-        return GL.glGetUniformLocation(self.program, name)
+        """Gets the location of a uniform variable, cached per program."""
+        loc = self._uniform_location_cache.get(name)
+        if loc is None:
+            loc = GL.glGetUniformLocation(self.program, name)
+            self._uniform_location_cache[name] = loc
+        return loc
 
     def set_float(self, name: str, value: float) -> None:
         """Sets a float uniform."""

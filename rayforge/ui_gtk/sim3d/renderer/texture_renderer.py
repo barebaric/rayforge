@@ -4,6 +4,7 @@ A renderer for visualizing texture-based artifacts using GPU texture rendering.
 
 import logging
 import time
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -18,6 +19,77 @@ from ..render_context import RenderContext
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class PreparedTextureLayer:
+    """Texture data ready for GL upload, built off the main thread."""
+
+    mips: list[np.ndarray]
+    model_matrix: np.ndarray
+    rotary_enabled: bool = False
+    rotary_diameter: float = 0.0
+    cylinder_vertices: np.ndarray | None = None
+    laser_index: int = 0
+
+
+def _downsample_texture(
+    data: np.ndarray, new_height: int, new_width: int
+) -> np.ndarray:
+    """Downsamples texture data using nearest-neighbor sampling."""
+    h, w = data.shape
+    y_step = h / new_height
+    x_step = w / new_width
+    y_coords = (np.arange(new_height) * y_step).astype(int)
+    x_coords = (np.arange(new_width) * x_step).astype(int)
+    return data[y_coords][:, x_coords].astype(np.uint8)
+
+
+def _build_mipmap_levels(
+    power_data: np.ndarray, max_texture_size: int
+) -> list[np.ndarray]:
+    """Downsamples if needed and builds the mip pyramid."""
+    height, width = power_data.shape
+    if width > max_texture_size or height > max_texture_size:
+        scale = min(
+            max_texture_size / width,
+            max_texture_size / height,
+        )
+        new_width = int(width * scale)
+        new_height = int(height * scale)
+        logger.warning(
+            f"Texture size {width}x{height} exceeds max "
+            f"{max_texture_size}, downsampling to "
+            f"{new_width}x{new_height}"
+        )
+        power_data = _downsample_texture(power_data, new_height, new_width)
+    return TextureArtifactRenderer._build_mipmaps(power_data)
+
+
+def prepare_texture_layer(
+    tl: "TextureLayer",
+    laser_uid_order: list[str] | None,
+    max_texture_size: int,
+) -> PreparedTextureLayer:
+    """Decompresses and mip-maps a texture layer without touching GL.
+
+    Runs in a worker thread; the result is uploaded with GL calls on
+    the main thread.
+    """
+    laser_index = 0
+    if tl.laser_uid and laser_uid_order and tl.laser_uid in laser_uid_order:
+        laser_index = laser_uid_order.index(tl.laser_uid)
+
+    power_data = tl.power_texture.to_numpy()
+    mips = _build_mipmap_levels(power_data, max_texture_size)
+    return PreparedTextureLayer(
+        mips=mips,
+        model_matrix=tl.model_matrix,
+        rotary_enabled=tl.rotary_enabled,
+        rotary_diameter=tl.rotary_diameter,
+        cylinder_vertices=tl.cylinder_vertices,
+        laser_index=laser_index,
+    )
 
 
 class TextureArtifactRenderer(BaseRenderer):
@@ -161,17 +233,6 @@ class TextureArtifactRenderer(BaseRenderer):
         except GLError as e:
             logger.warning(f"TextureArtifactRenderer cleanup warning: {e}")
 
-    def _downsample_texture(
-        self, data: np.ndarray, new_height: int, new_width: int
-    ) -> np.ndarray:
-        """Downsamples texture data using nearest-neighbor sampling."""
-        h, w = data.shape
-        y_step = h / new_height
-        x_step = w / new_width
-        y_coords = (np.arange(new_height) * y_step).astype(int)
-        x_coords = (np.arange(new_width) * x_step).astype(int)
-        return data[y_coords][:, x_coords].astype(np.uint8)
-
     @staticmethod
     def _max_reduce(data: np.ndarray) -> np.ndarray:
         """Halves a power map taking the 2x2 block maximum."""
@@ -220,10 +281,32 @@ class TextureArtifactRenderer(BaseRenderer):
         cylinder_vertices: np.ndarray | None = None,
         laser_index: int = 0,
     ):
-        """Adds a texture artifact to be rendered in the next frame."""
+        """Adds a texture artifact to be rendered in the next frame.
+
+        Prepares the mip pyramid and uploads synchronously.  The chunked
+        upload path prepares in a worker thread and calls
+        ``upload_prepared`` from the main thread instead.
+        """
         if not self.is_initialized:
             return
 
+        mips = _build_mipmap_levels(
+            texture_data.power_texture_data, self.max_texture_size
+        )
+        prepared = PreparedTextureLayer(
+            mips=mips,
+            model_matrix=final_model_matrix,
+            rotary_enabled=rotary_enabled,
+            rotary_diameter=rotary_diameter,
+            cylinder_vertices=cylinder_vertices,
+            laser_index=laser_index,
+        )
+        self._upload_prepared_instance(prepared)
+
+    def _upload_prepared_instance(
+        self, prepared: PreparedTextureLayer
+    ) -> None:
+        """Uploads one prepared texture layer's mips into a GL texture."""
         texture_id = GL.glGenTextures(1)
         GL.glBindTexture(GL.GL_TEXTURE_2D, texture_id)
         # NEAREST_MIPMAP_NEAREST keeps the texture mipmap complete so
@@ -244,31 +327,8 @@ class TextureArtifactRenderer(BaseRenderer):
             GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE
         )
 
-        height, width = texture_data.power_texture_data.shape
-
-        if width > self.max_texture_size or height > self.max_texture_size:
-            scale = min(
-                self.max_texture_size / width,
-                self.max_texture_size / height,
-            )
-            new_width = int(width * scale)
-            new_height = int(height * scale)
-            logger.warning(
-                f"Texture size {width}x{height} exceeds max "
-                f"{self.max_texture_size}, downsampling to "
-                f"{new_width}x{new_height}"
-            )
-            power_data = self._downsample_texture(
-                texture_data.power_texture_data, new_height, new_width
-            )
-            height, width = new_height, new_width
-        else:
-            power_data = texture_data.power_texture_data
-
-        mips = self._build_mipmaps(power_data)
-
         GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
-        for level, mip in enumerate(mips):
+        for level, mip in enumerate(prepared.mips):
             mh, mw = mip.shape
             GL.glTexImage2D(
                 GL.GL_TEXTURE_2D,
@@ -286,17 +346,25 @@ class TextureArtifactRenderer(BaseRenderer):
 
         instance_data = {
             "texture_id": texture_id,
-            "model_matrix": final_model_matrix,
-            "rotary_enabled": rotary_enabled,
-            "rotary_diameter": rotary_diameter,
-            "laser_index": laser_index,
-            "max_mip": len(mips) - 1,
+            "model_matrix": prepared.model_matrix,
+            "rotary_enabled": prepared.rotary_enabled,
+            "rotary_diameter": prepared.rotary_diameter,
+            "laser_index": prepared.laser_index,
+            "max_mip": len(prepared.mips) - 1,
         }
 
-        if rotary_enabled and cylinder_vertices is not None:
-            instance_data["cylinder_vertices"] = cylinder_vertices
+        if prepared.rotary_enabled and prepared.cylinder_vertices is not None:
+            instance_data["cylinder_vertices"] = prepared.cylinder_vertices
 
         self.instances.append(instance_data)
+
+    def upload_prepared(
+        self, prepared_layers: list[PreparedTextureLayer]
+    ) -> None:
+        """Uploads prepared texture layers, clearing existing instances."""
+        self.clear()
+        for prepared in prepared_layers:
+            self._upload_prepared_instance(prepared)
 
     def add_instance_from_texture_layer(
         self,
@@ -311,8 +379,9 @@ class TextureArtifactRenderer(BaseRenderer):
             and tl.laser_uid in laser_uid_order
         ):
             laser_index = laser_uid_order.index(tl.laser_uid)
+        power_data = tl.power_texture.to_numpy()
         tex_data = TextureData(
-            power_texture_data=tl.power_texture.to_numpy(),
+            power_texture_data=power_data,
             dimensions_mm=(0.0, 0.0),
             position_mm=(0.0, 0.0),
         )

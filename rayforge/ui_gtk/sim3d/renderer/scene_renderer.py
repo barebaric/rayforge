@@ -43,7 +43,11 @@ from .laser_beam_renderer import LaserBeamRenderer
 from .model_renderer import ModelRenderer
 from .ops_renderer import OpsRenderer, OpsUploadPayload, prepare_vertex_layer
 from .ring_buffer_renderer import RingBufferRenderer
-from .texture_renderer import TextureArtifactRenderer
+from .texture_renderer import (
+    PreparedTextureLayer,
+    TextureArtifactRenderer,
+    prepare_texture_layer,
+)
 from .zone_renderer import ZoneRenderer
 
 logger = logging.getLogger(__name__)
@@ -67,6 +71,17 @@ def match_overlay_layer(
         if ol.is_rotary == is_rotary:
             return ol
     return None
+
+
+def _ring_capacity_for(
+    artifact: "CompiledSceneArtifact", is_rotary: bool
+) -> int:
+    """Returns the ring buffer capacity needed for an overlay layer."""
+    ol = match_overlay_layer(artifact.overlay_layers, is_rotary)
+    if ol is None:
+        return 0
+    # Float32, 3 components per vertex.
+    return ol.positions.uncompressed_size // (3 * 4)
 
 
 class UploadItem(Protocol):
@@ -121,12 +136,23 @@ class OverlayLayerUploadItem:
 
     renderer: "RingBufferRenderer"
     overlay_layer: ScanlineOverlayLayer
+    _positions: np.ndarray | None = field(default=None, init=False, repr=False)
+    _attrib: np.ndarray | None = field(default=None, init=False, repr=False)
 
     def prepare(self) -> None:
-        """No CPU-bound prep yet; uploads run synchronously."""
+        """Decompresses overlay arrays off the main thread."""
+        self._positions = self.overlay_layer.positions.to_numpy()
+        self._attrib = self.overlay_layer.overlay_attrib.to_numpy()
 
     def upload(self) -> None:
-        self.renderer.update_from_overlay_layer(self.overlay_layer)
+        positions = self._positions
+        attrib = self._attrib
+        if positions is None or attrib is None:
+            self.prepare()
+            positions = self._positions
+            attrib = self._attrib
+        assert positions is not None and attrib is not None
+        self.renderer.update_from_overlay_layer_payload(positions, attrib)
 
 
 @dataclass
@@ -135,13 +161,33 @@ class TextureUploadItem:
 
     renderer: Optional["TextureArtifactRenderer"]
     artifact: CompiledSceneArtifact
+    _prepared_layers: list[PreparedTextureLayer] | None = field(
+        default=None, init=False, repr=False
+    )
 
     def prepare(self) -> None:
-        """No CPU-bound prep yet; uploads run synchronously."""
+        """Decompresses/mip-maps texture layers off the main thread."""
+        if self.renderer is None:
+            return
+        prepared = [
+            prepare_texture_layer(
+                tl,
+                self.artifact.laser_uid_order,
+                self.renderer.max_texture_size,
+            )
+            for tl in self.artifact.texture_layers
+        ]
+        self._prepared_layers = prepared
 
     def upload(self) -> None:
-        if self.renderer is not None:
-            self.renderer.update_from_artifact(self.artifact)
+        if self.renderer is None:
+            return
+        prepared = self._prepared_layers
+        if prepared is None:
+            self.prepare()
+            prepared = self._prepared_layers
+        assert prepared is not None
+        self.renderer.upload_prepared(prepared)
 
 
 class SceneRenderer(BaseRenderer):
@@ -521,7 +567,10 @@ class SceneRenderer(BaseRenderer):
             self.ops_renderers.append(ops)
             upload_items.append(OpsLayerUploadItem(ops, vl, show_travel_moves))
 
-            ring = RingBufferRenderer(is_rotary=vl.is_rotary)
+            ring = RingBufferRenderer(
+                capacity_vertices=_ring_capacity_for(artifact, vl.is_rotary),
+                is_rotary=vl.is_rotary,
+            )
             ring.init_gl()
             self.ring_renderers.append(ring)
 

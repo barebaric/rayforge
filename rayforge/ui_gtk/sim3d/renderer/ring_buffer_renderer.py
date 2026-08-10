@@ -107,6 +107,12 @@ class RingBufferRenderer(BaseRenderer):
         """Uploads a compiled scanline overlay layer into the ring buffer."""
         positions = ol.positions.to_numpy()
         attrib = ol.overlay_attrib.to_numpy()
+        self.update_from_overlay_layer_payload(positions, attrib)
+
+    def update_from_overlay_layer_payload(
+        self, positions: np.ndarray, attrib: np.ndarray
+    ):
+        """Uploads pre-decompressed overlay arrays into the ring buffer."""
         self.upload(positions.ravel(), attrib)
 
     def update_color_lut(self, lut_data: np.ndarray, num_lasers: int = 1):
