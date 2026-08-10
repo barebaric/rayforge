@@ -4,12 +4,22 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 16
-PLUGIN_API_VERSION = 19
+PLUGIN_API_VERSION = 20
 
 
 """
 API Changelog
 =============
+
+Version 20
+----------
+Removed the ``transformer_settings_loaded`` hook. Transformer settings
+widgets are now registered ahead of time via the new
+``register_transformer_widgets`` hook and the global
+``transformer_widget_registry``
+(``rayforge.ui_gtk.doceditor.post_processor.registry``); pages look up
+widget classes from the registry when building the post-processing UI
+instead of constructing them through the hook at page-build time.
 
 Version 19
 ----------
@@ -217,6 +227,19 @@ class RayforgeSpecs:
         """
 
     @hookspec
+    def register_transformer_widgets(self, transformer_widget_registry):
+        """
+        Called to allow addons to register settings widget classes for
+        post-processor transformers.
+
+        .. versionadded:: 20
+
+        Args:
+            transformer_widget_registry: The global
+                TransformerWidgetRegistry instance.
+        """
+
+    @hookspec
     def register_asset_types(self, asset_type_registry):
         """
         Called to allow addons to register custom asset types.
@@ -243,20 +266,6 @@ class RayforgeSpecs:
             dialog: The StepSettingsDialog being built.
             step: The Step instance being configured.
             producer: The OpsProducer instance, or None if not available.
-        """
-
-    @hookspec
-    def transformer_settings_loaded(self, dialog, step, transformer):
-        """
-        Called when post-processing settings are being populated.
-        Addons can add custom widgets for their transformers.
-
-        .. versionadded:: 5
-
-        Args:
-            dialog: The PostProcessingSettingsView instance to add widgets to.
-            step: The Step instance being configured.
-            transformer: The OpsTransformer instance.
         """
 
     @hookspec

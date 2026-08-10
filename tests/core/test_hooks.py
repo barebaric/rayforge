@@ -147,6 +147,32 @@ class TestRegistryHooks:
         assert len(received_registry) == 1
         assert received_registry[0] is step_registry
 
+    def test_register_transformer_widgets_hook(self):
+        """Test that register_transformer_widgets receives the registry."""
+        received_registry = []
+
+        class TransformerWidgetPlugin:
+            @hookimpl
+            def register_transformer_widgets(
+                self, transformer_widget_registry
+            ):
+                received_registry.append(transformer_widget_registry)
+
+        context = RayforgeContext()
+        plugin = TransformerWidgetPlugin()
+        context.plugin_mgr.register(plugin)
+
+        from rayforge.ui_gtk.doceditor.post_processor.registry import (
+            transformer_widget_registry,
+        )
+
+        context.plugin_mgr.hook.register_transformer_widgets(
+            transformer_widget_registry=transformer_widget_registry
+        )
+
+        assert len(received_registry) == 1
+        assert received_registry[0] is transformer_widget_registry
+
     def test_step_settings_loaded_hook(self):
         """Test step_settings_loaded hook receives step and producer."""
         received_data = []
@@ -169,26 +195,3 @@ class TestRegistryHooks:
 
         assert len(received_data) == 1
         assert received_data[0] == (mock_step, mock_producer)
-
-    def test_transformer_settings_loaded_hook(self):
-        """Test transformer_settings_loaded hook receives data."""
-        received_data = []
-
-        class TransformerSettingsPlugin:
-            @hookimpl
-            def transformer_settings_loaded(self, step, transformer):
-                received_data.append((step, transformer))
-
-        context = RayforgeContext()
-        plugin = TransformerSettingsPlugin()
-        context.plugin_mgr.register(plugin)
-
-        mock_step = {"id": "test-step"}
-        mock_transformer = {"name": "TestTransformer"}
-
-        context.plugin_mgr.hook.transformer_settings_loaded(
-            dialog=None, step=mock_step, transformer=mock_transformer
-        )
-
-        assert len(received_data) == 1
-        assert received_data[0] == (mock_step, mock_transformer)
