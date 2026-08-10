@@ -1,11 +1,11 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw, Gtk
+from gi.repository import Gtk
 
-from rayforge.core.undo import DictItemCommand
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.groups import (
+    ExpanderHost,
     TransformerSettingsGroup,
 )
 from rayforge.ui_gtk.shared.pref_rows import AngleSpinRow
@@ -15,7 +15,6 @@ from ..transformers import Smooth
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
-    from rayforge.doceditor.editor import DocEditor
 
 
 class SmoothSettingsGroup(DebounceMixin, TransformerSettingsGroup):
@@ -23,22 +22,14 @@ class SmoothSettingsGroup(DebounceMixin, TransformerSettingsGroup):
 
     def __init__(
         self,
-        editor: "DocEditor",
         title: str,
         transformer: Smooth,
-        page: Adw.PreferencesPage,
-        step: "Step",
+        page: ExpanderHost,
+        *,
+        step: "Step | None" = None,
         **kwargs,
     ):
-        super().__init__(
-            editor,
-            title,
-            component=transformer,
-            page=page,
-            step=step,
-            description=transformer.description,
-            **kwargs,
-        )
+        super().__init__(title, transformer, page, step=step, **kwargs)
 
         amount_adj = Gtk.Adjustment(
             lower=0, upper=100, step_increment=1, page_increment=10
@@ -71,24 +62,17 @@ class SmoothSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             )
         )
 
-    def _on_amount_changed(self, scale):
+    def _on_amount_changed(self, scale: Gtk.Scale) -> None:
         new_value = int(scale.get_value())
-        command = DictItemCommand(
-            target_dict=self.target_dict,
-            key="amount",
-            new_value=new_value,
-            name=_("Change smoothness"),
-            on_change_callback=lambda: self.step.updated.send(self.step),
+        self.param_changed.send(
+            self, key="amount", value=new_value, name=_("Change smoothness")
         )
-        self.history_manager.execute(command)
 
-    def _on_corner_angle_changed(self, spin_row):
+    def _on_corner_angle_changed(self, spin_row: AngleSpinRow) -> None:
         new_value = spin_row.get_int_value()
-        command = DictItemCommand(
-            target_dict=self.target_dict,
+        self.param_changed.send(
+            self,
             key="corner_angle_threshold",
-            new_value=new_value,
+            value=new_value,
             name=_("Change corner angle"),
-            on_change_callback=lambda: self.step.updated.send(self.step),
         )
-        self.history_manager.execute(command)

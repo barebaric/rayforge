@@ -1,11 +1,9 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw
-
-from rayforge.core.undo import DictItemCommand
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.groups import (
+    ExpanderHost,
     TransformerSettingsGroup,
 )
 from rayforge.ui_gtk.shared.pref_rows import LengthSpinRow
@@ -14,7 +12,6 @@ from ..transformers import MergeLinesTransformer
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
-    from rayforge.doceditor.editor import DocEditor
 
 
 class MergeLinesSettingsGroup(DebounceMixin, TransformerSettingsGroup):
@@ -22,22 +19,14 @@ class MergeLinesSettingsGroup(DebounceMixin, TransformerSettingsGroup):
 
     def __init__(
         self,
-        editor: "DocEditor",
         title: str,
         transformer: MergeLinesTransformer,
-        page: Adw.PreferencesPage,
-        step: "Step",
+        page: ExpanderHost,
+        *,
+        step: "Step | None" = None,
         **kwargs,
     ):
-        super().__init__(
-            editor,
-            title,
-            component=transformer,
-            page=page,
-            step=step,
-            description=transformer.description,
-            **kwargs,
-        )
+        super().__init__(title, transformer, page, step=step, **kwargs)
 
         self.tolerance_row = LengthSpinRow(
             _("Tolerance"),
@@ -51,13 +40,11 @@ class MergeLinesSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         )
         self.add(self.tolerance_row)
 
-    def _on_tolerance_changed(self, row):
+    def _on_tolerance_changed(self, row: LengthSpinRow) -> None:
         new_value = row.get_value_in_base_units()
-        command = DictItemCommand(
-            target_dict=self.target_dict,
+        self.param_changed.send(
+            self,
             key="tolerance",
-            new_value=new_value,
+            value=new_value,
             name=_("Change merge tolerance"),
-            on_change_callback=self.step.per_step_transformer_changed.send,
         )
-        self.history_manager.execute(command)

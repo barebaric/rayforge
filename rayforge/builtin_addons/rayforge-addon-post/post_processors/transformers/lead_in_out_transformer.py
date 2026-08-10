@@ -69,7 +69,7 @@ class LeadInOutTransformer(OpsTransformer):
         distance_mm = (speed_mm_per_sec**2) / (
             2 * max_acceleration * safety_factor
         )
-        return max(0.5, distance_mm)
+        return distance_mm
 
     @property
     def lead_in_mm(self) -> float:

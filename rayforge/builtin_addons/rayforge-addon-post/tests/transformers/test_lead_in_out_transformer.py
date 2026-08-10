@@ -303,8 +303,8 @@ def test_auto_distance_minimum():
     distance = LeadInOutTransformer.calculate_auto_distance(
         step_speed=100, max_acceleration=5000
     )
-    # speed = 1.667 mm/s, very small, should return minimum 0.5
-    assert distance == 0.5
+    # speed = 1.667 mm/s, d = 2.78 / 20000 = 0.000139
+    assert distance == pytest.approx(0.000139, abs=1e-6)
 
 
 def test_with_z_height(transformer: LeadInOutTransformer):

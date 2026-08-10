@@ -1,11 +1,12 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw
+from gi.repository import Adw, GObject
 
 from rayforge.context import get_context
 from rayforge.shared.util.glib import DebounceMixin
 from rayforge.ui_gtk.doceditor.step_settings.groups import (
+    ExpanderHost,
     TransformerSettingsGroup,
 )
 from rayforge.ui_gtk.shared.pref_rows import LengthSpinRow
@@ -14,7 +15,6 @@ from ..transformers import OverscanTransformer
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
-    from rayforge.doceditor.editor import DocEditor
 
 
 class OverscanSettingsGroup(DebounceMixin, TransformerSettingsGroup):
@@ -22,30 +22,23 @@ class OverscanSettingsGroup(DebounceMixin, TransformerSettingsGroup):
 
     def __init__(
         self,
-        editor: "DocEditor",
         title: str,
         transformer: OverscanTransformer,
-        page: Adw.PreferencesPage,
-        step: "Step",
+        page: ExpanderHost,
+        *,
+        step: "Step | None" = None,
         **kwargs,
     ):
-        super().__init__(
-            editor,
-            title,
-            component=transformer,
-            page=page,
-            step=step,
-            description=transformer.description,
-            **kwargs,
-        )
+        super().__init__(title, transformer, page, step=step, **kwargs)
 
-        self._previous_cut_speed = step.cut_speed
-        step.updated.connect(self._on_step_updated)
+        self._auto = transformer.auto
+        self._previous_cut_speed = step.cut_speed if step is not None else None
+        if step is not None:
+            step.updated.connect(self._on_step_updated)
 
-        # Listen to machine changes to catch acceleration updates immediately
-        machine = get_context().machine
-        if machine:
-            machine.changed.connect(self._on_machine_changed)
+            machine = get_context().machine
+            if machine:
+                machine.changed.connect(self._on_machine_changed)
 
         # Banner shown when the driver applies overscan itself.
         self.native_banner = Adw.Banner(
@@ -101,17 +94,7 @@ class OverscanSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             return False
         return self._is_native_overscan()
 
-    def _set_step_param(self, key, new_value, name):
-        """Helper method to set a step parameter with standard callback."""
-        self.editor.step.set_step_param(
-            target_dict=self.target_dict,
-            key=key,
-            new_value=new_value,
-            name=name,
-            on_change_callback=lambda: self.step.updated.send(self.step),
-        )
-
-    def _update_sensitivity(self):
+    def _update_sensitivity(self) -> None:
         """Update the sensitivity of UI elements based on current state."""
         assert self.enable_switch is not None
         enabled = self.enable_switch.get_active()
@@ -125,20 +108,27 @@ class OverscanSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         self.auto_row.set_sensitive(enabled and not native)
         self.distance_row.set_sensitive(enabled and not auto and not native)
 
-    def _on_auto_toggled(self, row, pspec):
-        new_value = row.get_active()
-        self._set_step_param("auto", new_value, _("Toggle Auto Overscan"))
+    def _on_auto_toggled(
+        self, row: Adw.SwitchRow, _pspec: GObject.ParamSpec
+    ) -> None:
+        self._auto = row.get_active()
+        self.param_changed.send(
+            self,
+            key="auto",
+            value=self._auto,
+            name=_("Toggle Auto Overscan"),
+        )
 
         # If auto is enabled, recalculate the distance
-        if new_value:
+        if self._auto:
             self._recalculate_distance()
 
         self._update_sensitivity()
 
-    def _recalculate_distance(self):
+    def _recalculate_distance(self) -> None:
         """Recalculate the overscan distance based on current step settings."""
         machine = get_context().machine
-        if not machine:
+        if not machine or self.step is None:
             return
 
         # Calculate new distance
@@ -147,22 +137,23 @@ class OverscanSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         )
 
         # Update the distance
-        self._set_step_param(
-            "distance_mm", new_distance, _("Auto Calculate Overscan Distance")
+        self.param_changed.send(
+            self,
+            key="distance_mm",
+            value=new_distance,
+            name=_("Auto Calculate Overscan Distance"),
         )
 
         # Update the UI
         self.distance_row.set_value_in_base_units(new_distance)
 
-    def _on_step_updated(self, step: "Step"):
+    def _on_step_updated(self, step: "Step") -> None:
         """Handle step updates to recalculate overscan distance if needed."""
-        if self.target_dict.get("auto", True) and (
-            step.cut_speed != self._previous_cut_speed
-        ):
+        if self._auto and step.cut_speed != self._previous_cut_speed:
             self._previous_cut_speed = step.cut_speed
             self._recalculate_distance()
 
-    def _on_machine_changed(self, machine):
+    def _on_machine_changed(self, machine) -> None:
         """
         Handle machine updates (e.g. acceleration) to recalculate overscan.
         """
@@ -170,18 +161,27 @@ class OverscanSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             self._update_sensitivity()
             return
         self._update_sensitivity()
-        if self.target_dict.get("auto", True):
+        if self._auto:
             self._recalculate_distance()
 
-    def _on_distance_changed(self, spin_row):
+    def _on_distance_changed(self, spin_row: LengthSpinRow) -> None:
         # Get the value in base units directly from the row
         new_value = self.distance_row.get_value_in_base_units()
 
         # If auto is currently enabled, disable it when user manually changes
         # the distance (via +/- buttons or typing)
-        if self.target_dict.get("auto", True):
-            self._set_step_param("auto", False, _("Disable Auto Overscan"))
+        if self._auto:
+            self._auto = False
+            self.param_changed.send(
+                self,
+                key="auto",
+                value=False,
+                name=_("Disable Auto Overscan"),
+            )
 
-        self._set_step_param(
-            "distance_mm", new_value, _("Change Overscan Distance")
+        self.param_changed.send(
+            self,
+            key="distance_mm",
+            value=new_value,
+            name=_("Change Overscan Distance"),
         )
