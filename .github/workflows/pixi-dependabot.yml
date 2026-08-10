@@ -30,6 +30,7 @@ jobs:
       - name: Upgrade dependencies
         run: |
           : > requirements.txt
+          pixi clean cache -y
           pixi upgrade --pinning-strategy exact-version
           git restore requirements.txt
           python3 scripts/sync_requirements.py
