@@ -4,13 +4,16 @@ from pathlib import Path
 
 import pytest
 from raygeo.geo import Geometry
+from raygeo.ops.axis import Axis
 
+from rayforge.core.capability import MachineCapability
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image import SVG_RENDERER
+from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
 from rayforge.pipeline.artifact import JobArtifact
 from rayforge.pipeline.pipeline import Pipeline
 
@@ -363,5 +366,86 @@ class TestPipelineGeneration:
             assert isinstance(artifact, JobArtifact)
             assert artifact.encoded_output is not None
             assert artifact.ops is not None
+
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+    @pytest.mark.asyncio
+    async def test_flat_job_on_rotary_machine_has_no_mapped_ops(
+        self,
+        doc,
+        real_workpiece,
+        task_mgr,
+        context_initializer,
+        contour_step_class,
+    ):
+        """A rotary-capable machine must not produce mapped_ops for a
+        flat job: the early-out checks the actual layers, not just the
+        machine capability."""
+        machine = context_initializer.machine
+        machine.add_rotary_module(RotaryModule())
+
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        assert layer.workflow is not None
+        step = contour_step_class.create(context_initializer)
+        layer.workflow.add_step(step)
+
+        pipeline = Pipeline(
+            doc,
+            task_mgr,
+            context_initializer.artifact_store,
+            machine,
+        )
+
+        handle = await asyncio.wait_for(
+            pipeline.generate_job_artifact_async(), timeout=10
+        )
+        assert handle is not None
+
+        with pipeline.artifact_store.checkout_handle(handle) as artifact:
+            assert isinstance(artifact, JobArtifact)
+            assert MachineCapability.ROTARY in machine.get_capabilities()
+            assert artifact.mapped_ops is None
+
+        await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
+
+    @pytest.mark.asyncio
+    async def test_rotary_job_has_mapped_ops(
+        self,
+        doc,
+        real_workpiece,
+        task_mgr,
+        context_initializer,
+        contour_step_class,
+    ):
+        """Rotary jobs still get mapped_ops for preview and playback."""
+        machine = context_initializer.machine
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+        rm.set_axis(Axis.A)
+        machine.add_rotary_module(rm)
+
+        layer = self._setup_doc_with_workpiece(doc, real_workpiece)
+        layer.set_rotary_enabled(True)
+        layer.set_rotary_module_uid(rm.uid)
+        layer.set_rotary_diameter(25.0)
+        assert layer.workflow is not None
+        step = contour_step_class.create(context_initializer)
+        layer.workflow.add_step(step)
+
+        pipeline = Pipeline(
+            doc,
+            task_mgr,
+            context_initializer.artifact_store,
+            machine,
+        )
+
+        handle = await asyncio.wait_for(
+            pipeline.generate_job_artifact_async(), timeout=10
+        )
+        assert handle is not None
+
+        with pipeline.artifact_store.checkout_handle(handle) as artifact:
+            assert isinstance(artifact, JobArtifact)
+            assert artifact.mapped_ops is not None
 
         await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
