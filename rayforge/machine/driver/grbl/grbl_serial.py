@@ -19,7 +19,11 @@ from ....core.varset import (
     Var,
     VarSet,
 )
-from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
+from ....pipeline.encoder.base import (
+    EncodedOutput,
+    MachineCodeOpMap,
+    OpsEncoder,
+)
 from ....pipeline.encoder.gcode import GcodeEncoder
 from ....shared.units.system import UnitSystem, inches_to_mm
 from ...transport import SerialTransport, TransportStatus
@@ -750,7 +754,7 @@ class GrblSerialDriver(Driver):
     async def _stream_gcode(
         self,
         gcode_lines: list[str],
-        machine_code_to_op_map: list[int] | None = None,
+        op_map: MachineCodeOpMap | None = None,
         command_times: list[float] | None = None,
     ):
         """
@@ -792,13 +796,7 @@ class GrblSerialDriver(Driver):
                 if not line:
                     continue
 
-                op_index = None
-                if machine_code_to_op_map is not None and 0 <= line_idx < len(
-                    machine_code_to_op_map
-                ):
-                    mapped_op = machine_code_to_op_map[line_idx]
-                    if mapped_op != -1:
-                        op_index = mapped_op
+                op_index = op_map.op_for_line(line_idx) if op_map else None
                 command_bytes = (line + "\n").encode("utf-8")
 
                 if (
@@ -905,7 +903,7 @@ class GrblSerialDriver(Driver):
     ) -> None:
         self._start_job(on_command_done)
 
-        mapping = encoded.op_map.machine_code_to_op if encoded.op_map else None
+        mapping = encoded.op_map
         gcode_lines = encoded.text.splitlines()
 
         command_times = ops.estimate_command_times(
