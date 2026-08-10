@@ -400,9 +400,7 @@ class RuidaDriver(Driver):
         op_map = encoded.op_map
 
         if on_command_done is not None:
-            num_ops = 0
-            if op_map and op_map.op_to_machine_code:
-                num_ops = len(op_map.op_to_machine_code)
+            num_ops = op_map.op_count if op_map else 0
 
             for op_index in range(num_ops):
                 result = on_command_done(op_index)

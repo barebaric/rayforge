@@ -71,7 +71,6 @@ class RuidaEncoder(OpsEncoder):
 
         binary_chunks: list[bytes] = []
         text_lines: list[str] = []
-        op_map = MachineCodeOpMap()
         line_spans: list[tuple[int, int]] = []
 
         for i in range(ops.len()):
@@ -90,8 +89,7 @@ class RuidaEncoder(OpsEncoder):
             for line_num in range(start_line, start_line + line_count):
                 if line_num < len(machine_code_to_op):
                     machine_code_to_op[line_num] = i
-        op_map.op_to_machine_code = line_spans
-        op_map.machine_code_to_op = machine_code_to_op
+        op_map = MachineCodeOpMap.from_lists(line_spans, machine_code_to_op)
 
         return EncodedOutput(
             text="\n".join(text_lines),
