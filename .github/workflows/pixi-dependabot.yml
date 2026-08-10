@@ -40,6 +40,7 @@ jobs:
       - name: Create pull request
         uses: peter-evans/create-pull-request@v8
         with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
           commit-message: "deps: update pixi dependencies"
           title: "deps: update pixi dependencies"
           body-path: diff.md
