@@ -206,21 +206,6 @@ class RayforgeSpecs:
         """
 
     @hookspec
-    def register_step_capabilities(self, step_capability_registry):
-        """
-        Called to allow addons to register step capabilities for recipe
-        matching.
-
-        Addons call
-        ``step_capability_registry.register(capability)`` for each
-        capability they provide.
-
-        Args:
-            step_capability_registry: The global StepCapabilityRegistry
-              instance.
-        """
-
-    @hookspec
     def register_transformers(self, transformer_registry):
         """
         Called to allow addons to register custom ops transformers.

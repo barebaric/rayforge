@@ -21,7 +21,7 @@ from raygeo.ops.state import CoolantMode
 from ..machine.models.head import Head
 from ..machine.models.spindle import SpindleHead
 from ..pipeline.transformer.registry import transformer_registry
-from .capability import MachineCapability, StepCapability
+from .capability import MachineCapability
 from .item import DocItem
 from .step_registry import step_registry
 from .varset import SpeedVar, VarSet
@@ -70,7 +70,6 @@ class Step(DocItem, ABC):
 
     HIDDEN: bool = False
     ICON: str = ""
-    CAPABILITIES: tuple[StepCapability, ...] = ()
     REQUIRED_MACHINE_CAPS: ClassVar[frozenset[MachineCapability]] = frozenset()
     TYPELABEL: ClassVar[str] = ""
     ASSEMBLER_NAME: ClassVar[str] = ""
@@ -119,10 +118,6 @@ class Step(DocItem, ABC):
         # Set when a step of an unknown type is deserialized, so the
         # original type name can be reported and round-tripped.
         self._original_step_type: str | None = None
-
-    @property
-    def capabilities(self) -> tuple[StepCapability, ...]:
-        return type(self).CAPABILITIES
 
     @classmethod
     def recipe_varset(cls) -> VarSet:
@@ -174,6 +169,40 @@ class Step(DocItem, ABC):
         "Step Settings").
         """
         return [(_("Settings"), cls.recipe_varset())]
+
+    @classmethod
+    def common_recipe_varset_groups(
+        cls, step_classes: list[type["Step"]]
+    ) -> list[tuple[str, VarSet]]:
+        """Settings groups common to all the given step types.
+
+        Used by the recipe editor when a recipe targets more than one
+        step type: only settings shared by every selected type are
+        offered. The group structure (titles) of the first given type is
+        reused, with each group filtered down to the keys present in
+        every type's :meth:`recipe_varset`. Falls back to the base
+        :meth:`recipe_varset_groups` when nothing is shared.
+        """
+        if not step_classes:
+            return cls.recipe_varset_groups()
+
+        common_keys: set[str] | None = None
+        for step_cls in step_classes:
+            keys = {var.key for var in step_cls.recipe_varset()}
+            common_keys = keys if common_keys is None else common_keys & keys
+            if not common_keys:
+                break
+
+        if not common_keys:
+            return cls.recipe_varset_groups()
+
+        reference = step_classes[0]
+        groups: list[tuple[str, VarSet]] = []
+        for title, varset in reference.recipe_varset_groups():
+            filtered = [v for v in varset if v.key in common_keys]
+            if filtered:
+                groups.append((title, VarSet(vars=filtered)))
+        return groups or cls.recipe_varset_groups()
 
     @classmethod
     def create(

@@ -8,7 +8,7 @@ from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.frame import FrameSpec
 from raygeo.ops.part import Part
 
-from rayforge.core.capability import MachineCapability, StepCapability
+from rayforge.core.capability import MachineCapability
 from rayforge.core.cut_side import CutSide
 from rayforge.core.step import legacy_producer_params
 from rayforge.core.varset import LabeledChoiceVar, LengthVar, VarSet
@@ -17,7 +17,6 @@ from rayforge.pipeline.stage.assembler_helpers import (
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 
-from ..capabilities import CUT, SCORE
 from .laser_step import LaserStep
 
 if TYPE_CHECKING:
@@ -35,7 +34,6 @@ if TYPE_CHECKING:
 class FrameStep(LaserStep):
     TYPELABEL = _("Frame")
     ICON = "step-frame-symbolic"
-    CAPABILITIES: tuple[StepCapability, ...] = (CUT, SCORE)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "frame"
 

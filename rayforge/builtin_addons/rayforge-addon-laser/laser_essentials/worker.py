@@ -6,7 +6,6 @@ Registers steps with the main application.
 
 from rayforge.core.hooks import hookimpl
 
-from .capabilities import CUT, ENGRAVE, MATERIAL_TEST, SCORE
 from .steps import (
     ContourStep,
     EngraveStep,
@@ -17,15 +16,6 @@ from .steps import (
 )
 
 ADDON_NAME = "laser_essentials"
-
-STEP_CAPABILITIES = (CUT, SCORE, ENGRAVE, MATERIAL_TEST)
-
-
-@hookimpl
-def register_step_capabilities(step_capability_registry):
-    """Register step capabilities for recipe matching."""
-    for cap in STEP_CAPABILITIES:
-        step_capability_registry.register(cap, addon_name=ADDON_NAME)
 
 
 @hookimpl

@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-from laser_essentials.capabilities import ENGRAVE
 from laser_essentials.steps import EngraveStep
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly import Assembler
@@ -31,7 +30,6 @@ class TestEngraveStep:
     def test_instantiation(self):
         step = EngraveStep(name="Test")
         assert step.typelabel == "Engrave"
-        assert step.capabilities == (ENGRAVE,)
 
     def test_create(self, mock_context):
         step = EngraveStep.create(mock_context, name="Created")

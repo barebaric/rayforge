@@ -5,8 +5,8 @@ Each tab of
 is a self-contained :class:`Adw.PreferencesPage` subclass:
 
 * :class:`RecipeGeneralPage` — name and description.
-* :class:`RecipeApplicabilityPage` — machine, task type, step type,
-  material, and thickness criteria.
+* :class:`RecipeApplicabilityPage` — machine, step types, material,
+  and thickness criteria.
 * :class:`RecipeSettingsPage` — one group of process settings (e.g.
   "Laser", "Step Settings"), wrapping a :class:`VarSetWidget`.
 """
@@ -19,14 +19,13 @@ from blinker import Signal
 from gi.repository import Adw, Gtk
 
 from ...context import get_context
-from ...core.capability import StepCapability
-from ...core.capability_registry import step_capability_registry
 from ...core.step_registry import step_registry
 from ...core.varset import VarSet
 from ..icons import get_icon
 from ..shared.optional_spin_row import OptionalSpinRowController
 from ..varset.varsetwidget import VarSetWidget
 from .material_selector import MaterialSelectorDialog
+from .step_type_selection_dialog import StepTypeSelectionDialog
 
 logger = logging.getLogger(__name__)
 
@@ -76,9 +75,8 @@ class RecipeGeneralPage(Adw.PreferencesPage):
 class RecipeApplicabilityPage(Adw.PreferencesPage):
     """The applicability criteria: when a recipe should be suggested.
 
-    Emits :attr:`selection_changed` whenever the task type (capability)
-    or step type selection changes, so the dialog can rebuild the
-    settings pages.
+    Emits :attr:`selection_changed` whenever the step type selection
+    changes, so the dialog can rebuild the settings pages.
     """
 
     def __init__(self, recipe: Any | None = None, **kwargs):
@@ -86,11 +84,10 @@ class RecipeApplicabilityPage(Adw.PreferencesPage):
         self.selection_changed = Signal()
 
         self._recipe = recipe
-        self._ui_capabilities = list(
-            step_capability_registry.all_capabilities()
-        )
-        self._ui_step_types: list[str | None] = []
         self._machine_ids: list[str | None] = [None]
+        self._selected_step_types: list[str] = list(
+            recipe.target_step_types if recipe else []
+        )
         self._selected_material_uid: str | None = (
             recipe.material_uid if recipe else None
         )
@@ -105,15 +102,9 @@ class RecipeApplicabilityPage(Adw.PreferencesPage):
         self.add(group)
 
         self._build_machine_row(group)
-        self._build_capability_row(group)
-        self._build_step_type_row(group)
+        self._build_step_types_row(group)
         self._build_material_row(group)
         self._build_thickness_rows(group)
-
-        # Populate the step-type list for the default ("Any") selection.
-        # The capability handler only fires on a real change, so the
-        # initial population must be explicit.
-        self._populate_step_type_options(self.get_capability())
 
     # --- Builders -------------------------------------------------------
 
@@ -136,31 +127,22 @@ class RecipeApplicabilityPage(Adw.PreferencesPage):
                 logger.warning("Recipe machine ID '%s' not found.", target)
             self.machine_row.set_selected(0)
 
-    def _build_capability_row(self, group):
-        cap_labels = [_("Any")] + [c.label for c in self._ui_capabilities]
-        self.capability_row = Adw.ComboRow(
-            title=_("Task Type"),
+    def _build_step_types_row(self, group):
+        self.step_types_row = Adw.ActionRow(
+            title=_("Step Types"),
             subtitle=_(
-                "The operation category this recipe applies to. "
-                "Use 'Any' to apply it to all task types"
+                "The step types this recipe applies to. Leave empty to "
+                "match any step type."
             ),
-            model=Gtk.StringList.new(cap_labels),
+            activatable=True,
         )
-        self.capability_row.connect(
-            "notify::selected", self._on_capability_changed
-        )
-        group.add(self.capability_row)
-
-    def _build_step_type_row(self, group):
-        self.step_type_row = Adw.ComboRow(
-            title=_("Step Type"),
-            subtitle=_("Restrict this recipe to a specific operation type"),
-            model=Gtk.StringList.new([]),
-        )
-        self.step_type_row.connect(
-            "notify::selected", self._on_step_type_changed
-        )
-        group.add(self.step_type_row)
+        self.step_types_row.connect("activated", self._on_step_types_clicked)
+        select_btn = Gtk.Button(label=_("Select..."))
+        select_btn.set_valign(Gtk.Align.CENTER)
+        select_btn.connect("clicked", self._on_step_types_clicked)
+        self.step_types_row.add_suffix(select_btn)
+        group.add(self.step_types_row)
+        self._update_step_types_display()
 
     def _build_material_row(self, group):
         self.material_row = Adw.ActionRow(title=_("Material"))
@@ -205,74 +187,34 @@ class RecipeApplicabilityPage(Adw.PreferencesPage):
 
     # --- Selection handling --------------------------------------------
 
-    def _on_capability_changed(self, _combo_row, _pspec):
-        self._populate_step_type_options(self.get_capability())
+    def _on_step_types_clicked(self, _widget):
+        root = self.get_root()
+        parent: Gtk.Window | None = (
+            root if isinstance(root, Gtk.Window) else None
+        )
+        dialog = StepTypeSelectionDialog(
+            parent=cast(Gtk.Window, parent),
+            selected=set(self._selected_step_types),
+            on_select_callback=self._on_step_types_selected,
+        )
+        dialog.present()
+
+    def _on_step_types_selected(self, step_types: list[str]):
+        if step_types == self._selected_step_types:
+            return
+        self._selected_step_types = step_types
+        self._update_step_types_display()
         self.selection_changed.send(self)
 
-    def _on_step_type_changed(self, _combo_row, _pspec):
-        self.selection_changed.send(self)
-
-    def _populate_step_type_options(self, cap: StepCapability | None):
-        """Rebuild the Step Type dropdown for the given capability.
-
-        Index 0 is always "Any Type". When ``cap`` is ``None`` (the
-        "Any" task type), all registered, non-hidden step classes are
-        listed; otherwise the list is filtered to those whose
-        ``CAPABILITIES`` include ``cap``.
-        """
-        step_classes = []
-        for cls in step_registry.all_steps().values():
-            if cls.HIDDEN:
-                continue
-            if cap is None or cap in cls.CAPABILITIES:
-                step_classes.append(cls)
-        step_classes.sort(key=lambda c: getattr(c, "TYPELABEL", c.__name__))
-
-        labels = [_("Any")]
-        self._ui_step_types = [None]
-        for cls in step_classes:
-            labels.append(getattr(cls, "TYPELABEL", cls.__name__))
-            self._ui_step_types.append(cls.__name__)
-
-        self.step_type_row.set_model(Gtk.StringList.new(labels))
-        self.step_type_row.set_selected(0)
-
-    def restore_selection(
-        self,
-        target_capability_name: str,
-        target_step_type: str | None,
-    ):
-        """Restore the task type and step type from a saved recipe.
-
-        Must be called after construction (so the capability row's
-        ``changed`` handler is wired). Selecting the capability
-        populates the step-type options; the step type is then restored
-        if still valid.
-        """
-        if target_capability_name:
-            self._select_capability_by_name(target_capability_name)
-        else:
-            self.capability_row.set_selected(0)
-
-        if target_step_type:
-            try:
-                idx = self._ui_step_types.index(target_step_type)
-                self.step_type_row.set_selected(idx)
-            except ValueError:
-                pass  # No longer valid for this capability.
+    def restore_selection(self, target_step_types: list[str]):
+        """Restore the step type selection from a saved recipe."""
+        self._selected_step_types = list(target_step_types)
+        self._update_step_types_display()
 
     # --- Getters --------------------------------------------------------
 
-    def get_capability(self) -> StepCapability | None:
-        """The selected capability, or ``None`` for "Any"."""
-        idx = self.capability_row.get_selected()
-        if idx == 0 or not self._ui_capabilities:
-            return None
-        return self._ui_capabilities[idx - 1]
-
-    def get_step_type(self) -> str | None:
-        idx = self.step_type_row.get_selected()
-        return self._ui_step_types[idx] if self._ui_step_types else None
+    def get_step_types(self) -> list[str]:
+        return list(self._selected_step_types)
 
     def get_machine_id(self) -> str | None:
         return self._machine_ids[self.machine_row.get_selected()]
@@ -286,12 +228,21 @@ class RecipeApplicabilityPage(Adw.PreferencesPage):
     def get_max_thickness(self) -> float | None:
         return self.max_thickness_controller.get_value()
 
-    def _select_capability_by_name(self, name: str):
-        for i, cap in enumerate(self._ui_capabilities):
-            if cap.name == name:
-                self.capability_row.set_selected(i + 1)
-                return
-        self.capability_row.set_selected(0)
+    def _update_step_types_display(self):
+        if not self._selected_step_types:
+            self.step_types_row.set_subtitle(_("Any"))
+            return
+        labels = []
+        for name in self._selected_step_types:
+            step_class = step_registry.get(name)
+            if step_class is not None:
+                labels.append(step_class.TYPELABEL)
+            else:
+                labels.append(name)
+        text = ", ".join(labels)
+        if len(text) > 120:
+            text = text[:120].rstrip() + _("…")
+        self.step_types_row.set_subtitle(text)
 
     # --- Material / thickness handlers ---------------------------------
 

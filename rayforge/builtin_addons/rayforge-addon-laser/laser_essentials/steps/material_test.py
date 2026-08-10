@@ -8,12 +8,11 @@ from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.material_test_grid import MaterialTestGridSpec
 from raygeo.ops.part import Part
 
-from rayforge.core.capability import MachineCapability, StepCapability
+from rayforge.core.capability import MachineCapability
 from rayforge.core.step import legacy_producer_params
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.transformer.registry import transformer_registry
 
-from ..capabilities import MATERIAL_TEST
 from .laser_step import LaserStep
 
 if TYPE_CHECKING:
@@ -31,7 +30,6 @@ if TYPE_CHECKING:
 class MaterialTestStep(LaserStep):
     TYPELABEL = _("Material Test Grid")
     ICON = "test-symbolic"
-    CAPABILITIES: tuple[StepCapability, ...] = (MATERIAL_TEST,)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "material_test_grid"
     HIDDEN = True

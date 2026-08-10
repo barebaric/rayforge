@@ -34,14 +34,6 @@ REGISTRY_TABLE = [
         needs_window=False,
     ),
     RegistryEntry(
-        "register_step_capabilities",
-        "step_capability_registry",
-        "rayforge.core.capability_registry",
-        "step_capability_registry",
-        worker_ok=True,
-        needs_window=False,
-    ),
-    RegistryEntry(
         "register_transformers",
         "transformer_registry",
         "rayforge.pipeline.transformer.registry",
