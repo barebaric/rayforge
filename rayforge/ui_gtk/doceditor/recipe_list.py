@@ -3,11 +3,10 @@ from gettext import gettext as _
 from typing import cast
 
 from blinker import Signal
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, Gtk, Pango
 
 from ...context import get_context
 from ...core.recipe import Recipe
-from ...core.step_registry import step_registry
 from ...shared.units.formatter import format_value
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
@@ -28,7 +27,7 @@ class RecipeRow(Gtk.Box):
         self.set_margin_start(12)
         self.set_margin_end(6)
 
-        icon = get_icon(recipe.capability.icon_name)
+        icon = get_icon(recipe.get_icon_name())
         icon.set_valign(Gtk.Align.CENTER)
         self.append(icon)
 
@@ -38,6 +37,7 @@ class RecipeRow(Gtk.Box):
         self.append(labels_box)
 
         title = Gtk.Label(label=recipe.name, halign=Gtk.Align.START, xalign=0)
+        title.set_ellipsize(Pango.EllipsizeMode.END)
         labels_box.append(title)
 
         subtitle = Gtk.Label(
@@ -45,6 +45,7 @@ class RecipeRow(Gtk.Box):
             halign=Gtk.Align.START,
             xalign=0,
         )
+        subtitle.set_ellipsize(Pango.EllipsizeMode.END)
         subtitle.add_css_class("dim-label")
         labels_box.append(subtitle)
 
@@ -61,15 +62,6 @@ class RecipeRow(Gtk.Box):
         delete_button.connect("clicked", lambda w: on_delete(recipe))
         suffix_box.append(delete_button)
 
-    def _get_step_type_label(self) -> str | None:
-        step_type = self.recipe.target_step_type
-        if not step_type:
-            return None
-        step_class = step_registry.get(step_type)
-        if step_class is None:
-            return step_type
-        return getattr(step_class, "TYPELABEL", step_type)
-
     def _get_subtitle(self) -> str:
         parts = []
         context = get_context()
@@ -81,12 +73,10 @@ class RecipeRow(Gtk.Box):
             )
             parts.append(machine.name if machine else _("Unknown Machine"))
 
-        # 2. Capability / Step type
-        step_type_label = self._get_step_type_label()
-        if step_type_label:
-            parts.append(step_type_label)
-        else:
-            parts.append(self.recipe.capability.label)
+        # 2. Step types
+        step_types_label = self.recipe.get_step_type_label()
+        if step_types_label:
+            parts.append(step_types_label)
 
         # 3. Material
         if self.recipe.material_uid:
@@ -108,6 +98,8 @@ class RecipeRow(Gtk.Box):
                 )
                 parts.append(f"{min_formatted} - {max_formatted}")
 
+        if not parts:
+            return _("Any")
         return " · ".join(parts)
 
 
@@ -154,8 +146,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
                     new_recipe = Recipe(
                         name=data["name"],
                         description=data["description"],
-                        target_capability_name=data["target_capability_name"],
-                        target_step_type=data["target_step_type"],
+                        target_step_types=data["target_step_types"],
                         target_machine_id=data["target_machine_id"],
                         material_uid=data["material_uid"],
                         min_thickness_mm=data["min_thickness_mm"],
@@ -183,10 +174,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
                 if data["name"]:
                     recipe.name = data["name"]
                     recipe.description = data["description"]
-                    recipe.target_capability_name = data[
-                        "target_capability_name"
-                    ]
-                    recipe.target_step_type = data["target_step_type"]
+                    recipe.target_step_types = data["target_step_types"]
                     recipe.target_machine_id = data["target_machine_id"]
                     recipe.material_uid = data["material_uid"]
                     recipe.min_thickness_mm = data["min_thickness_mm"]

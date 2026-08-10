@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock
 
 import pytest
-from laser_essentials.capabilities import CUT, SCORE
 from laser_essentials.steps import FrameStep
 
 from rayforge.core.workpiece import WorkPiece
@@ -26,7 +25,6 @@ class TestFrameStep:
     def test_instantiation(self):
         step = FrameStep(name="Test")
         assert step.typelabel == "Frame"
-        assert step.capabilities == (CUT, SCORE)
 
     def test_create(self, mock_context):
         step = FrameStep.create(mock_context)

@@ -104,8 +104,7 @@ class AddEditRecipeDialog(PatchedDialogWindow):
 
         # --- Initial selection + settings ---
         self.applicability_page.restore_selection(
-            recipe.target_capability_name if recipe else "",
-            recipe.target_step_type if recipe else None,
+            list(recipe.target_step_types) if recipe else []
         )
         self._rebuild_settings()
         self._update_save_sensitivity()
@@ -156,17 +155,21 @@ class AddEditRecipeDialog(PatchedDialogWindow):
     # --- Settings pages -------------------------------------------------
 
     def _current_settings_groups(self) -> list[tuple[str, VarSet]]:
-        """Resolve the (title, varset) groups for the current selection."""
-        step_type = self.applicability_page.get_step_type()
-        if step_type:
-            step_class = step_registry.get(step_type)
-            if step_class is not None:
-                return step_class.recipe_varset_groups()
+        """Resolve the (title, varset) groups for the current selection.
 
-        cap = self.applicability_page.get_capability()
-        if cap and len(cap.varset) > 0:
-            return [(_("Settings"), cap.varset)]
+        With exactly one step type targeted, that step's full groups are
+        shown. With several, only the settings common to all of them are
+        offered (:meth:`Step.common_recipe_varset_groups`). With none,
+        the base ``Step`` groups (universal motion settings) are used.
+        """
+        step_types = self.applicability_page.get_step_types()
+        classes = [step_registry.get(name) for name in step_types]
+        classes = [c for c in classes if c is not None]
 
+        if len(classes) == 1:
+            return classes[0].recipe_varset_groups()
+        if classes:
+            return Step.common_recipe_varset_groups(classes)
         return Step.recipe_varset_groups()
 
     def _rebuild_settings(self, *_args):
@@ -223,15 +226,13 @@ class AddEditRecipeDialog(PatchedDialogWindow):
             settings.update(page.get_values())
         final_settings = {k: v for k, v in settings.items() if v is not None}
 
-        cap = self.applicability_page.get_capability()
         return {
             "name": self.general_page.get_name(),
             "description": self.general_page.get_description(),
             "target_machine_id": self.applicability_page.get_machine_id(),
-            "target_step_type": self.applicability_page.get_step_type(),
+            "target_step_types": self.applicability_page.get_step_types(),
             "material_uid": self.applicability_page.get_material_uid(),
             "min_thickness_mm": self.applicability_page.get_min_thickness(),
             "max_thickness_mm": self.applicability_page.get_max_thickness(),
-            "target_capability_name": cap.name if cap else "",
             "settings": final_settings,
         }

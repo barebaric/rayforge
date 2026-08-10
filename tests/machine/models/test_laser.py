@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock
 
-from rayforge.core.capability import MachineCapability, StepCapability
-from rayforge.core.varset import VarSet
+from rayforge.core.capability import MachineCapability
 from rayforge.machine.driver.driver import PWMParams
 from rayforge.machine.models.laser import Laser, LaserHead, LaserType
 
@@ -452,90 +451,6 @@ def test_get_pwm_settings_none_without_pwm(isolated_machine):
     mock_driver.get_pwm_params = MagicMock(return_value=None)
 
     assert isolated_machine.get_pwm_settings(head) is None
-
-
-def test_get_usable_capabilities_filters_by_machine_capability(
-    isolated_machine,
-):
-    """A step capability is usable only when the machine has the machine
-    capabilities it requires."""
-
-    class LaserOp(StepCapability):
-        REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
-
-        @property
-        def name(self):
-            return "LASER_OP"
-
-        @property
-        def label(self):
-            return "Laser Op"
-
-        @property
-        def varset(self):
-            return VarSet(vars=[])
-
-    class MillOp(StepCapability):
-        REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.MILL})
-
-        @property
-        def name(self):
-            return "MILL_OP"
-
-        @property
-        def label(self):
-            return "Mill Op"
-
-        @property
-        def varset(self):
-            return VarSet(vars=[])
-
-    laser_op = LaserOp()
-    mill_op = MillOp()
-    isolated_machine.set_explicit_capabilities({MachineCapability.LASER})
-
-    usable = isolated_machine.get_usable_capabilities((laser_op, mill_op))
-
-    assert usable == (laser_op,)
-
-
-def test_get_usable_capabilities_filters_by_pwm_machine_capability(
-    isolated_machine,
-):
-    """A capability requiring the PWM machine capability is usable only
-    when the machine's driver supports PWM."""
-
-    class PwmOp(StepCapability):
-        REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.PWM})
-
-        @property
-        def name(self):
-            return "PWM_OP"
-
-        @property
-        def label(self):
-            return "PWM Op"
-
-        @property
-        def varset(self):
-            return VarSet(vars=[])
-
-    pwm_op = PwmOp()
-    head = LaserHead()
-    isolated_machine.heads = [head]
-    mock_driver = isolated_machine.driver
-    mock_driver.supports_pwm = MagicMock(return_value=False)
-
-    assert isolated_machine.get_usable_capabilities((pwm_op,), head) == ()
-
-    mock_driver.supports_pwm = MagicMock(return_value=True)
-    assert isolated_machine.get_usable_capabilities((pwm_op,), head) == (
-        pwm_op,
-    )
-
-
-def test_get_usable_capabilities_empty(isolated_machine):
-    assert isolated_machine.get_usable_capabilities(()) == ()
 
 
 def test_laser_type_default():

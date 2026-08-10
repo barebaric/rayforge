@@ -20,7 +20,7 @@ from rayforge.core.varset import (
 from rayforge.machine.models.laser import LaserHead
 from rayforge.shared.units.formatter import format_value
 
-from ..capabilities import LaserHeadVar
+from ..laser_head_var import LaserHeadVar
 
 if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine

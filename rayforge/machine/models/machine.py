@@ -2,7 +2,6 @@ import asyncio
 import logging
 import multiprocessing
 import uuid
-from collections.abc import Sequence
 from enum import Enum
 from gettext import gettext as _
 from pathlib import Path
@@ -40,7 +39,6 @@ from .rotary_module import RotaryMode, RotaryModule
 from .zone import Zone
 
 if TYPE_CHECKING:
-    from ...core.capability import StepCapability
     from ...core.varset import VarSet
     from ..driver.driver import Driver
     from .controller import MachineController
@@ -239,26 +237,6 @@ class Machine:
         if params is None:
             return None
         return pwm_varset(params)
-
-    def get_usable_capabilities(
-        self,
-        step_capabilities: Sequence["StepCapability"],
-        head: Head | None = None,
-    ) -> tuple["StepCapability", ...]:
-        """
-        Filter a step's theoretical capabilities to those this machine
-        actually supports.
-
-        A capability is usable when the machine has the machine
-        capabilities it requires (e.g. a laser capability requires the
-        LASER machine capability).
-        """
-        machine_caps = self.get_capabilities()
-        return tuple(
-            cap
-            for cap in step_capabilities
-            if cap.REQUIRED_MACHINE_CAPS <= machine_caps
-        )
 
     def get_capabilities(self) -> frozenset[MachineCapability]:
         """

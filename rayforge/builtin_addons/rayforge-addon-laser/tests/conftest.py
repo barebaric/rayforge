@@ -9,12 +9,6 @@ from unittest.mock import MagicMock
 
 import pluggy
 import pytest
-from laser_essentials.capabilities import (
-    CUT,
-    ENGRAVE,
-    MATERIAL_TEST,
-    SCORE,
-)
 from laser_essentials.steps import (
     ContourStep,
     EngraveStep,
@@ -25,7 +19,6 @@ from laser_essentials.steps import (
 
 from rayforge.addon_mgr.addon_manager import AddonManager
 from rayforge.config import BUILTIN_ADDONS_DIR
-from rayforge.core.capability_registry import step_capability_registry
 from rayforge.core.hooks import RayforgeSpecs
 from rayforge.core.step_registry import step_registry
 from rayforge.machine.models.laser import LaserHead
@@ -57,12 +50,6 @@ def _register_steps():
     step_registry.register(ShrinkWrapStep, addon_name="laser_essentials")
 
 
-def _register_step_capabilities():
-    """Register the step capabilities for recipe matching."""
-    for cap in (CUT, SCORE, ENGRAVE, MATERIAL_TEST):
-        step_capability_registry.register(cap, addon_name="laser_essentials")
-
-
 @pytest.fixture(scope="session", autouse=True)
 def register_laser_essentials():
     """
@@ -84,5 +71,4 @@ def register_laser_essentials():
     mgr.load_addon_by_name("post_processors", worker_only=True)
 
     _register_steps()
-    _register_step_capabilities()
     yield

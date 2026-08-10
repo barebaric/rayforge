@@ -31,15 +31,6 @@ def laser_machine(ui_context_initializer):
     return machine
 
 
-def _capability_index(dialog, cap_name):
-    # Capabilities are offset by 1 in the row because index 0 is "Any".
-    page = dialog.applicability_page
-    for i, cap in enumerate(page._ui_capabilities):
-        if cap.name == cap_name:
-            return i + 1
-    raise AssertionError(f"Capability {cap_name} not found")
-
-
 def _settings_keys(dialog):
     """Collect widget keys across all settings pages."""
     keys = []
@@ -48,45 +39,13 @@ def _settings_keys(dialog):
     return keys
 
 
-def test_default_task_type_is_any_shows_all_steps(laser_machine):
-    """Opening the editor defaults to 'Any' task type, listing all steps."""
+def test_default_selection_is_generic(laser_machine):
+    """Opening the editor with no recipe defaults to a generic (any step)
+    selection and base Step settings."""
     dialog = AddEditRecipeDialog(parent=None, recipe=None)
     page = dialog.applicability_page
 
-    # Default task type is "Any" (index 0).
-    assert page.capability_row.get_selected() == 0
-    assert page.get_capability() is None
-
-    # All non-hidden step types are visible, including EngraveStep.
-    step_types = page._ui_step_types
-    assert step_types[0] is None  # "Any Type"
-    assert "EngraveStep" in step_types
-    assert "ContourStep" in step_types
-
-    dialog.close()
-
-
-def test_step_type_dropdown_filters_by_capability(laser_machine):
-    """Selecting a specific task type filters the step list to it."""
-    dialog = AddEditRecipeDialog(parent=None, recipe=None)
-    page = dialog.applicability_page
-
-    page.capability_row.set_selected(_capability_index(dialog, "CUT"))
-
-    step_types = page._ui_step_types
-    assert step_types[0] is None  # "Any Type"
-    assert "ContourStep" in step_types
-    assert "FrameStep" in step_types
-    # EngraveStep is ENGRAVE-only, so not under CUT.
-    assert "EngraveStep" not in step_types
-
-    dialog.close()
-
-
-def test_any_task_type_shows_base_step_settings(laser_machine):
-    """With 'Any' task type and no step type, base Step settings appear."""
-    recipe = Recipe(name="Generic", target_capability_name="")
-    dialog = AddEditRecipeDialog(parent=None, recipe=recipe)
+    assert page.get_step_types() == []
 
     keys = _settings_keys(dialog)
     assert "cut_speed" in keys
@@ -95,35 +54,16 @@ def test_any_task_type_shows_base_step_settings(laser_machine):
     assert "cut_side" not in keys
 
     data = dialog.get_recipe_data()
-    assert data["target_step_type"] is None
-    assert data["target_capability_name"] == ""
+    assert data["target_step_types"] == []
 
     dialog.close()
 
 
-def test_capability_task_type_uses_capability_varset(laser_machine):
-    """A specific task type with no step type uses the capability varset."""
-    recipe = Recipe(name="Generic Cut", target_capability_name="CUT")
-    dialog = AddEditRecipeDialog(parent=None, recipe=recipe)
-
-    keys = _settings_keys(dialog)
-    # The capability varset has no step-specific keys like cut_side.
-    assert "cut_side" not in keys
-    assert "power" in keys
-
-    data = dialog.get_recipe_data()
-    assert data["target_step_type"] is None
-    assert data["target_capability_name"] == "CUT"
-
-    dialog.close()
-
-
-def test_step_type_splits_into_laser_and_step_pages(laser_machine):
-    """Selecting ContourStep splits settings into Laser + Step Settings."""
+def test_single_step_type_shows_step_specific_settings(laser_machine):
+    """Selecting one step type shows that step's full settings groups."""
     recipe = Recipe(
         name="Contour Recipe",
-        target_capability_name="CUT",
-        target_step_type="ContourStep",
+        target_step_types=["ContourStep"],
         settings={"power": 0.8, "cut_side": "OUTSIDE"},
     )
     dialog = AddEditRecipeDialog(parent=None, recipe=recipe)
@@ -133,34 +73,70 @@ def test_step_type_splits_into_laser_and_step_pages(laser_machine):
     assert any("Laser" in t for t in titles)
     assert any("Step Settings" in t for t in titles)
 
-    # cut_side lives on the Step Settings page; power on the Laser page.
     all_keys = set(_settings_keys(dialog))
     assert "cut_side" in all_keys
     assert "cut_order" in all_keys
     assert "power" in all_keys
 
     data = dialog.get_recipe_data()
-    assert data["target_step_type"] == "ContourStep"
+    assert data["target_step_types"] == ["ContourStep"]
     assert data["settings"]["power"] == 0.8
     assert data["settings"]["cut_side"] == "OUTSIDE"
 
     dialog.close()
 
 
-def test_changing_capability_resets_step_type(laser_machine):
-    """Changing capability resets the step type to 'Any Type'."""
+def test_multi_step_types_show_common_settings(laser_machine):
+    """Multiple step types show only the settings common to all of them.
+
+    ContourStep and EngraveStep only share the inherited Laser group;
+    their step-specific settings (cut_side / scan_angle) are excluded.
+    """
     recipe = Recipe(
-        name="Contour Recipe",
-        target_capability_name="CUT",
-        target_step_type="ContourStep",
+        name="Multi",
+        target_step_types=["ContourStep", "EngraveStep"],
     )
     dialog = AddEditRecipeDialog(parent=None, recipe=recipe)
-    page = dialog.applicability_page
-    assert page.step_type_row.get_selected() != 0  # a step type selected
 
-    # Switch to ENGRAVE capability.
-    page.capability_row.set_selected(_capability_index(dialog, "ENGRAVE"))
-    # Step type should reset to "Any Type" (index 0).
-    assert page.step_type_row.get_selected() == 0
+    keys = _settings_keys(dialog)
+    assert "cut_speed" in keys
+    assert "travel_speed" in keys
+    assert "power" in keys
+    assert "cut_side" not in keys  # ContourStep-specific
+    assert "scan_angle" not in keys  # EngraveStep-specific
+
+    data = dialog.get_recipe_data()
+    assert data["target_step_types"] == ["ContourStep", "EngraveStep"]
+
+    dialog.close()
+
+
+def test_selecting_single_step_type_rebuilds_settings(laser_machine):
+    """Changing the selection to a single step type rebuilds the settings."""
+    dialog = AddEditRecipeDialog(parent=None, recipe=None)
+    page = dialog.applicability_page
+
+    # Simulate the StepTypeSelectionDialog callback.
+    page._on_step_types_selected(["ContourStep"])
+
+    assert page.get_step_types() == ["ContourStep"]
+    all_keys = set(_settings_keys(dialog))
+    assert "cut_side" in all_keys
+    assert "power" in all_keys
+
+    dialog.close()
+
+
+def test_selecting_multi_step_types_shows_common(laser_machine):
+    """Changing to multiple step types shows the common settings only."""
+    dialog = AddEditRecipeDialog(parent=None, recipe=None)
+    page = dialog.applicability_page
+
+    page._on_step_types_selected(["ContourStep", "EngraveStep"])
+
+    keys = _settings_keys(dialog)
+    assert "power" in keys  # shared laser setting
+    assert "cut_side" not in keys
+    assert "scan_angle" not in keys
 
     dialog.close()

@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock
 
 import pytest
-from laser_essentials.capabilities import CUT, SCORE
 from laser_essentials.steps import ContourStep
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.geo import Matrix
@@ -33,7 +32,6 @@ class TestContourStep:
         step = ContourStep(name="Test")
         assert step.typelabel == "Contour"
         assert step.name == "Test"
-        assert step.capabilities == (CUT, SCORE)
 
     def test_create(self, mock_context):
         step = ContourStep.create(mock_context, name="Created")

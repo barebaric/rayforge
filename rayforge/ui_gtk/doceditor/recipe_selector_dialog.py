@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 from gi.repository import Adw, Gtk
 
 from ...context import get_context
-from ...core.capability import StepCapability
 from ...core.recipe import Recipe
 from ..icons import get_icon
 from ..shared.gtk import apply_css
@@ -39,20 +38,18 @@ class RecipeSelectorDialog(Adw.MessageDialog):
             self.recipe: Recipe = recipe
 
             # Add icon as a prefix
-            icon = get_icon(recipe.capability.icon_name)
+            icon = get_icon(recipe.get_icon_name())
             self.add_prefix(icon)
 
     def __init__(
         self,
         parent: Gtk.Window,
         editor: "DocEditor",
-        capabilities: tuple[StepCapability, ...],
         on_select_callback: Callable[[Recipe], None],
         step_type: str | None = None,
     ):
         super().__init__(transient_for=parent)
         self.editor = editor
-        self.capabilities = capabilities
         self.step_type = step_type
         self.on_select_callback = on_select_callback
         self._all_recipes: list[Recipe] = []
@@ -134,7 +131,6 @@ class RecipeSelectorDialog(Adw.MessageDialog):
             # Filter by compatibility
             if show_compatible_only and not recipe.matches(
                 stock_items,
-                self.capabilities,
                 machine,
                 step_type=self.step_type,
             ):
@@ -143,7 +139,7 @@ class RecipeSelectorDialog(Adw.MessageDialog):
             row = self._RecipeRow(
                 recipe=recipe,
                 title=recipe.name,
-                subtitle=recipe.capability.label,
+                subtitle=recipe.get_step_type_label() or _("Any"),
                 activatable=True,
             )
             self.recipe_list.append(row)

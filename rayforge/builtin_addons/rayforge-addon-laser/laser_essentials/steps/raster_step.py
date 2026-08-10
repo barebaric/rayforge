@@ -15,7 +15,7 @@ from raygeo.ops.assembly.raster import RasterSpec
 from raygeo.ops.part import Part
 from raygeo.ops.part.image_source import WholeImageSource
 
-from rayforge.core.capability import MachineCapability, StepCapability
+from rayforge.core.capability import MachineCapability
 from rayforge.core.step import legacy_producer_params
 from rayforge.core.varset import (
     BoolVar,
@@ -33,7 +33,6 @@ from rayforge.pipeline.stage.assembler_helpers import (
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 
-from ..capabilities import ENGRAVE
 from .laser_step import LaserStep
 
 if TYPE_CHECKING:
@@ -51,7 +50,6 @@ if TYPE_CHECKING:
 class EngraveStep(LaserStep):
     TYPELABEL = _("Engrave")
     ICON = "step-raster-symbolic"
-    CAPABILITIES: tuple[StepCapability, ...] = (ENGRAVE,)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "raster"
 

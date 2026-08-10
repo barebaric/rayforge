@@ -8,7 +8,7 @@ from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.part import Part
 
-from rayforge.core.capability import MachineCapability, StepCapability
+from rayforge.core.capability import MachineCapability
 from rayforge.core.cut_side import CutOrder, CutSide
 from rayforge.core.step import legacy_producer_params
 from rayforge.core.varset import (
@@ -22,7 +22,6 @@ from rayforge.pipeline.stage.assembler_helpers import (
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 
-from ..capabilities import CUT, SCORE
 from .laser_step import LaserStep
 
 if TYPE_CHECKING:
@@ -40,7 +39,6 @@ if TYPE_CHECKING:
 class ContourStep(LaserStep):
     TYPELABEL = _("Contour")
     ICON = "step-contour-symbolic"
-    CAPABILITIES: tuple[StepCapability, ...] = (CUT, SCORE)
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "contour"
 

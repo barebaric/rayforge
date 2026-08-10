@@ -4,31 +4,10 @@ import pytest
 from raygeo.geo import Matrix
 from raygeo.ops.state import CoolantMode
 
-from rayforge.core.capability import StepCapability
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
-from rayforge.core.varset import VarSet
 from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.spindle import SpindleHead
-
-
-class _StubCapability(StepCapability):
-    """A minimal capability for testing the step capabilities property."""
-
-    @property
-    def name(self) -> str:
-        return "CUT"
-
-    @property
-    def label(self) -> str:
-        return "Cut"
-
-    @property
-    def varset(self) -> VarSet:
-        return VarSet(vars=[])
-
-
-CUT = _StubCapability()
 
 
 @pytest.fixture
@@ -407,14 +386,72 @@ def test_deserialization_with_missing_step_class():
     assert data["step_type"] == "NonExistentStepClass"
 
 
-def test_capabilities_property_returns_class_caps():
-    """capabilities exposes the class-level CAPABILITIES."""
+def test_common_recipe_varset_groups_intersects_keys():
+    """common_recipe_varset_groups keeps only keys shared by all types."""
+    from rayforge.core.varset import BoolVar, SpeedVar, VarSet
 
-    class CutStep(Step):
-        CAPABILITIES = (CUT,)
+    class StepA(Step):
+        @classmethod
+        def recipe_varset(cls):
+            return VarSet(
+                vars=[
+                    SpeedVar(
+                        key="cut_speed",
+                        label="Cut",
+                        default=1,
+                        min_val=1,
+                        role="cut",
+                    ),
+                    SpeedVar(
+                        key="travel_speed",
+                        label="Travel",
+                        default=1,
+                        min_val=1,
+                        role="travel",
+                    ),
+                    BoolVar(key="only_a", label="A", default=False),
+                ]
+            )
 
-    cs = CutStep(typelabel="Test")
-    assert cs.capabilities == (CUT,)
+    class StepB(Step):
+        @classmethod
+        def recipe_varset(cls):
+            return VarSet(
+                vars=[
+                    SpeedVar(
+                        key="cut_speed",
+                        label="Cut",
+                        default=1,
+                        min_val=1,
+                        role="cut",
+                    ),
+                    SpeedVar(
+                        key="travel_speed",
+                        label="Travel",
+                        default=1,
+                        min_val=1,
+                        role="travel",
+                    ),
+                    BoolVar(key="only_b", label="B", default=False),
+                ]
+            )
+
+    common = Step.common_recipe_varset_groups([StepA, StepB])
+    keys = {var.key for _, varset in common for var in varset}
+    assert keys == {"cut_speed", "travel_speed"}
+
+    # A single class returns its own groups unchanged.
+    single = Step.common_recipe_varset_groups([StepA])
+    single_keys = {var.key for _, varset in single for var in varset}
+    assert "only_a" in single_keys
+
+    # No classes -> base Step groups.
+    empty = Step.common_recipe_varset_groups([])
+    base = Step.recipe_varset_groups()
+    assert [title for title, _ in empty] == [title for title, _ in base]
+    assert {var.key for _, varset in empty for var in varset} == {
+        var.key for _, varset in base for var in varset
+    }
 
 
 def test_base_step_has_no_operation_color(step):

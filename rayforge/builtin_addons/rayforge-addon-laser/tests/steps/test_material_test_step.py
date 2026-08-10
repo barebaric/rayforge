@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, Protocol, cast
 from unittest.mock import MagicMock
 
 import pytest
-from laser_essentials.capabilities import MATERIAL_TEST
 from laser_essentials.steps import MaterialTestStep
 
 from rayforge.core.workpiece import WorkPiece
@@ -35,7 +34,6 @@ class TestMaterialTestStep:
     def test_instantiation(self):
         step = MaterialTestStep(name="Test")
         assert step.typelabel == "Material Test Grid"
-        assert step.capabilities == (MATERIAL_TEST,)
 
     def test_create(self, mock_context):
         step = MaterialTestStep.create(mock_context)

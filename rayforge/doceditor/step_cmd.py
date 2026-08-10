@@ -76,14 +76,12 @@ class StepCmd:
         stock_items = self._doc.stock_items
         machine = self._context.machine
 
-        # Query the RecipeManager for the best match for ANY supported
-        # capability
-        matching_recipes = []
-        if step.capabilities:
-            recipe_mgr = self._context.recipe_mgr
+        # Query the RecipeManager for the best match for this step type.
+        matching_recipes: list = []
+        recipe_mgr = self._context.recipe_mgr
+        if recipe_mgr is not None:
             matching_recipes = recipe_mgr.find_recipes(
                 stock_items=stock_items,
-                capabilities=step.capabilities,
                 machine=machine,
                 step_type=type(step).__name__,
             )

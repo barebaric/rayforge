@@ -6,7 +6,6 @@ from blinker import Signal
 from gi.repository import Adw, Gtk
 
 from ...context import get_context
-from ...core.capability import StepCapability
 from ...core.recipe import Recipe
 from ...core.step import Step
 from ...core.undo.property_cmd import ChangePropertyCommand
@@ -68,20 +67,6 @@ class RecipeControlWidget(Adw.ActionRow):
                 settings[key] = getattr(self.step, key)
         return settings
 
-    def _get_primary_capability(self) -> StepCapability | None:
-        """
-        Determines the most likely capability for the current step config.
-        """
-        recipe_mgr = get_context().recipe_mgr
-        if self.step.applied_recipe_uid:
-            recipe = recipe_mgr.get_recipe_by_id(self.step.applied_recipe_uid)
-            if recipe:
-                return recipe.capability
-        # Fallback to the first capability in the step's supported set
-        if self.step.capabilities:
-            return next(iter(self.step.capabilities), None)
-        return None
-
     def _update_ui(self, sender, **kwargs):
         """Updates the subtitle and button visibility."""
         recipe_mgr = get_context().recipe_mgr
@@ -107,15 +92,10 @@ class RecipeControlWidget(Adw.ActionRow):
 
     def _on_choose_clicked(self, button: Gtk.Button):
         """Opens the recipe selector dialog."""
-        if not self.step.capabilities:
-            logger.warning("Step has no capabilities, cannot choose recipe.")
-            return
-
         parent_window = cast(Gtk.Window, self.get_root())
         dialog = RecipeSelectorDialog(
             parent=parent_window,
             editor=self.editor,
-            capabilities=self.step.capabilities,
             on_select_callback=self._apply_recipe,
             step_type=type(self.step).__name__,
         )
@@ -163,15 +143,15 @@ class RecipeControlWidget(Adw.ActionRow):
         # 1. Gather context - get first stock item from document
         stock_items = self.editor.doc.stock_items
         stock_item = stock_items[0] if stock_items else None
-        capability = self._get_primary_capability()
+        step_class = type(self.step)
 
         # 2. Create a template Recipe object to pre-fill the dialog
         template_recipe = Recipe(
-            name=_("New {cap} Recipe").format(
-                cap=capability.label if capability else "Step"
+            name=_("New {label} Recipe").format(
+                label=step_class.TYPELABEL or step_class.__name__
             ),
             settings=self._get_step_settings(),
-            target_capability_name=capability.name if capability else "",
+            target_step_types=[step_class.__name__],
             target_machine_id=self.editor.context.machine.id
             if self.editor.context.machine
             else None,
