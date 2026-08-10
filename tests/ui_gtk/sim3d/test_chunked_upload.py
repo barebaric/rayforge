@@ -6,7 +6,7 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -101,17 +101,59 @@ def test_cancel_clears_state(ui_context_initializer):
 
 
 @pytest.mark.ui
-def test_step_uploads_items(ui_context_initializer):
-    controller, scene, _, _, uploads, _ = _make_controller(
+@patch("rayforge.ui_gtk.sim3d.chunked_upload.task_mgr")
+def test_step_schedules_worker_prepare(mock_task_mgr, ui_context_initializer):
+    controller, scene, _, _, _, _ = _make_controller(artifact=MagicMock())
+    item = MagicMock()
+    state = _UploadState(items=[item], index=0)
+    controller._upload_state = state
+    assert controller._step() is False
+    assert state.index == 1
+    mock_task_mgr.run_thread.assert_called_once()
+    scene.upload_chunk.assert_not_called()
+    assert controller._upload_state is state
+
+
+@pytest.mark.ui
+def test_on_item_prepared_uploads_item(ui_context_initializer):
+    controller, scene, _, _, _, made_current = _make_controller(
         artifact=MagicMock()
     )
     item = MagicMock()
-    controller._upload_state = _UploadState(items=[item], index=0)
-    controller._step()
-    controller._step()
+    state = _UploadState(items=[item], index=1)
+    controller._upload_state = state
+    task = MagicMock()
+    task.get_status.return_value = "completed"
+    controller._on_item_prepared(state, task)
     scene.upload_chunk.assert_called_once_with(item)
-    assert uploads == [True]
+    assert made_current == [True]
+    assert controller._idle_source_id is not None
+    assert controller._upload_state is state
+
+
+@pytest.mark.ui
+def test_on_item_prepared_failed_task_aborts(ui_context_initializer):
+    controller, scene, _, _, _, _ = _make_controller(artifact=MagicMock())
+    item = MagicMock()
+    state = _UploadState(items=[item], index=1)
+    controller._upload_state = state
+    task = MagicMock()
+    task.get_status.return_value = "failed"
+    controller._on_item_prepared(state, task)
+    scene.upload_chunk.assert_not_called()
     assert controller._upload_state is None
+
+
+@pytest.mark.ui
+def test_on_item_prepared_stale_state_ignored(ui_context_initializer):
+    controller, scene, _, _, _, _ = _make_controller(artifact=MagicMock())
+    item = MagicMock()
+    state = _UploadState(items=[item], index=1)
+    controller._upload_state = None
+    task = MagicMock()
+    task.get_status.return_value = "completed"
+    controller._on_item_prepared(state, task)
+    scene.upload_chunk.assert_not_called()
 
 
 @pytest.mark.ui

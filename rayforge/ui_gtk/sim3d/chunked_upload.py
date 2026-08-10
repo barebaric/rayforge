@@ -1,11 +1,13 @@
 """
 Chunked artifact upload controller for the 3D canvas.
 
-Owns the chunked-upload idle state machine: when the compiled scene
-artifact becomes GL-dirty, the controller prepares the per-layer upload
-items and steps through them one per idle callback so a frame is never
-blocked uploading a whole artifact.  It also tracks the pending idle
-source so it can be cancelled on teardown.
+Owns the chunked-upload state machine: when the compiled scene artifact
+becomes GL-dirty, the controller prepares the per-layer upload items and
+steps through them one at a time so a frame is never blocked uploading a
+whole artifact.  CPU-bound item preparation (vertex decompression and
+concatenation) runs in a worker thread; only the actual GL uploads run
+on the main thread.  It also tracks the pending idle source so it can be
+cancelled on teardown.
 
 Emits ``upload_complete`` once every item has been processed, so the
 presenter can build playback after the fresh layer groups exist.
@@ -18,6 +20,8 @@ from typing import TYPE_CHECKING, Optional
 
 from blinker import Signal
 from gi.repository import GLib
+
+from ...shared.tasker import Task, task_mgr
 
 if TYPE_CHECKING:
     from ...simulator.scene3d import CompiledSceneArtifact
@@ -131,12 +135,31 @@ class ChunkedUploadController:
         item = state.items[state.index]
         state.index += 1
 
+        # Decompress/concat the vertex data in a worker thread; the GL
+        # upload runs on the main thread via the when_done callback (the
+        # GL context is only current there).
+        task_mgr.run_thread(
+            item.prepare,
+            key=(id(self), "prepare-chunk-upload", state.index),
+            when_done=lambda task: self._on_item_prepared(state, task),
+        )
+        return False
+
+    def _on_item_prepared(self, state: _UploadState, task: Task) -> None:
+        """Uploads an item after its worker-thread preparation finished."""
+        if self._upload_state is not state:
+            return
+        if task.get_status() != "completed":
+            self._upload_state = None
+            return
+
+        item = state.items[state.index - 1]
         try:
+            self._make_current()
             self._scene.upload_chunk(item)
         except Exception:
             logger.exception("[CANVAS3D] Error during chunked upload")
             self._upload_state = None
-            return False
+            return
 
         self._idle_source_id = GLib.idle_add(self._step)
-        return False

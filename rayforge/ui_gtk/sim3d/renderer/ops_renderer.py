@@ -3,6 +3,7 @@ A renderer for visualizing toolpath operations (Ops) in 3D.
 """
 
 import logging
+from dataclasses import dataclass
 
 import numpy as np
 from OpenGL import GL
@@ -14,6 +15,60 @@ from ..render_context import RenderContext
 from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class OpsUploadPayload:
+    """Pre-built vertex arrays ready for GL upload.
+
+    Constructed off the main thread by ``prepare_vertex_layer`` so the
+    main thread only performs the actual ``glBufferData`` uploads.
+    """
+
+    powered_vertices: np.ndarray
+    powered_attrib: np.ndarray
+    travel_vertices: np.ndarray
+
+
+def prepare_vertex_layer(
+    vl: VertexLayer, show_travel_moves: bool
+) -> OpsUploadPayload:
+    """Decompresses and concatenates a vertex layer without touching GL.
+
+    Runs in a worker thread; the returned payload is uploaded with GL
+    calls on the main thread.
+    """
+    powered_verts = vl.powered_verts.to_numpy()
+    powered_attrib = vl.powered_attrib.to_numpy()
+    travel_verts = vl.travel_verts.to_numpy()
+    zero_power_verts = vl.zero_power_verts.to_numpy()
+
+    if show_travel_moves:
+        pv_final = np.concatenate((powered_verts, zero_power_verts))
+        zero_count = zero_power_verts.size // 3
+        zero_attrib = np.zeros(zero_count * 4, dtype=np.float32)
+        zero_attrib[3::4] = 1.0
+        attrib = np.concatenate((powered_attrib.ravel(), zero_attrib))
+        tv_final = travel_verts
+    else:
+        pv_final = powered_verts
+        attrib = powered_attrib
+        tv_final = np.array([], dtype=np.float32)
+
+    logger.debug(
+        f"[UPLOAD] is_rotary={vl.is_rotary} "
+        f"powered={powered_verts.size // 3} "
+        f"zero_power={zero_power_verts.size // 3} "
+        f"total={pv_final.size // 3} "
+        f"travel={tv_final.size // 3} "
+        f"show_travel={show_travel_moves}"
+    )
+
+    return OpsUploadPayload(
+        powered_vertices=np.ascontiguousarray(pv_final, dtype=np.float32),
+        powered_attrib=np.ascontiguousarray(attrib, dtype=np.float32),
+        travel_vertices=np.ascontiguousarray(tv_final, dtype=np.float32),
+    )
 
 
 class OpsRenderer(BaseRenderer):
@@ -82,36 +137,18 @@ class OpsRenderer(BaseRenderer):
     def update_from_vertex_layer(
         self, vl: VertexLayer, show_travel_moves: bool
     ):
-        """Uploads a compiled vertex layer into the renderer's buffers."""
-        powered_verts = vl.powered_verts.to_numpy()
-        powered_attrib = vl.powered_attrib.to_numpy()
-        travel_verts = vl.travel_verts.to_numpy()
-        zero_power_verts = vl.zero_power_verts.to_numpy()
+        """Uploads a compiled vertex layer into the renderer's buffers.
 
-        if show_travel_moves:
-            pv_final = np.concatenate((powered_verts, zero_power_verts))
-            zero_count = zero_power_verts.size // 3
-            zero_attrib = np.zeros(zero_count * 4, dtype=np.float32)
-            zero_attrib[3::4] = 1.0
-            attrib = np.concatenate((powered_attrib.ravel(), zero_attrib))
-            tv_final = travel_verts
-        else:
-            pv_final = powered_verts
-            attrib = powered_attrib
-            tv_final = np.array([], dtype=np.float32)
-
-        powered_count = powered_verts.size // 3
-        zero_count = zero_power_verts.size // 3
-        logger.debug(
-            f"[UPLOAD] is_rotary={vl.is_rotary} "
-            f"powered={powered_count} "
-            f"zero_power={zero_count} "
-            f"total={pv_final.size // 3} "
-            f"travel={tv_final.size // 3} "
-            f"show_travel={show_travel_moves}"
+        Prepares and uploads synchronously.  The chunked upload path
+        prepares the payload in a worker thread and only calls
+        ``update_from_vertex_data`` from the main thread.
+        """
+        payload = prepare_vertex_layer(vl, show_travel_moves)
+        self.update_from_vertex_data(
+            payload.powered_vertices,
+            payload.powered_attrib,
+            payload.travel_vertices,
         )
-
-        self.update_from_vertex_data(pv_final, attrib, tv_final)
 
     def update_from_vertex_data(
         self,
