@@ -125,9 +125,7 @@ class NoDeviceDriver(Driver):
         """
         op_map = encoded.op_map
         # We assume ops are indexed 0..N-1.
-        num_ops = 0
-        if op_map and op_map.op_to_machine_code:
-            num_ops = len(op_map.op_to_machine_code)
+        num_ops = op_map.op_count if op_map else 0
 
         # Simulate command execution with delays
         for op_index in range(num_ops):

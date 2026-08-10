@@ -820,18 +820,13 @@ class MainWindow(Adw.ApplicationWindow):
 
         # 2. If 3D playback is active, sync the slider.
         op_map = self.bottom_panel.gcode_viewer.op_map
-        if op_map:
-            mc_to_op = op_map.machine_code_to_op
-            if (
-                0 <= line_number < len(mc_to_op)
-                and mc_to_op[line_number] != -1
-            ):
-                op_index = mc_to_op[line_number]
-                self._is_syncing_3d = True
-                self._canvas3d_playback.set_playback_position(op_index)
-                if self.canvas3d:
-                    self.canvas3d.queue_render()
-                self._is_syncing_3d = False
+        op_index = op_map.op_for_line(line_number) if op_map else None
+        if op_index is not None:
+            self._is_syncing_3d = True
+            self._canvas3d_playback.set_playback_position(op_index)
+            if self.canvas3d:
+                self.canvas3d.queue_render()
+            self._is_syncing_3d = False
 
     def _on_3d_playback_step_changed(self, sender, *, ops_index: int):
         """

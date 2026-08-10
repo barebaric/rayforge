@@ -349,8 +349,8 @@ class Pipeline:
             return
 
         text = handle.text or ""
-        op_to_mc = handle.op_to_machine_code or []
-        mc_to_op = handle.machine_code_to_op or []
+        op_to_mc = handle.op_to_machine_code
+        mc_to_op = handle.machine_code_to_op
         encoded = EncodedOutput(
             text=text,
             op_map=MachineCodeOpMap(

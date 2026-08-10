@@ -966,8 +966,8 @@ class IntentBuilder:
                 )
             return EncodeOutput.MachineCode(
                 text=encoded.text,
-                op_to_machine_code=encoded.op_map.op_to_machine_code,
-                machine_code_to_op=encoded.op_map.machine_code_to_op,
+                op_to_machine_code=encoded.op_map.op_to_machine_code_bytes,
+                machine_code_to_op=encoded.op_map.machine_code_to_op_bytes,
             )
 
         return encode

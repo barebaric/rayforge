@@ -73,8 +73,8 @@ class TestRuidaEncoderBasics:
 
         assert result.driver_data["binary"] == b""
         assert result.text == ""
-        assert result.op_map.op_to_machine_code == []
-        assert result.op_map.machine_code_to_op == []
+        assert result.op_map.op_count == 0
+        assert result.op_map.line_count == 0
 
     def test_binary_in_driver_data(self, encoder, mock_machine, doc):
         """Binary output should be stored in driver_data['binary']."""
@@ -101,7 +101,7 @@ class TestRuidaEncoderBasics:
         result2 = encoder.encode(ops2, mock_machine, doc)
 
         assert encoder.power == 0.8
-        assert result2.op_map.op_to_machine_code == [(0, 1)]
+        assert result2.op_map.span_for_op(0) == (0, 1)
 
 
 class TestSetPowerCommand:
@@ -529,8 +529,8 @@ class TestOpMapGeneration:
         ops.set_power(0.5)
         result = encoder.encode(ops, mock_machine, doc)
 
-        assert result.op_map.op_to_machine_code[0] == (0, 1)
-        assert result.op_map.machine_code_to_op[0] == 0
+        assert result.op_map.span_for_op(0) == (0, 1)
+        assert result.op_map.op_for_line(0) == 0
 
     def test_multi_line_command_mapping(self, encoder, mock_machine, doc):
         """Command producing multiple lines should map correctly."""
@@ -539,9 +539,9 @@ class TestOpMapGeneration:
         ops.arc_to(10.0, 0.0, 5.0, 0.0, clockwise=True)
         result = encoder.encode(ops, mock_machine, doc)
 
-        assert len(result.op_map.op_to_machine_code) == 2
-        assert result.op_map.op_to_machine_code[0][1] >= 1
-        assert result.op_map.op_to_machine_code[1][1] >= 1
+        assert result.op_map.op_count == 2
+        assert result.op_map.span_for_op(0)[1] >= 1
+        assert result.op_map.span_for_op(1)[1] >= 1
 
     def test_marker_command_has_text_mapping(self, encoder, mock_machine, doc):
         """Marker commands with text output should map to line."""
@@ -550,7 +550,7 @@ class TestOpMapGeneration:
         result = encoder.encode(ops, mock_machine, doc)
 
         # Job start produces a text line, so op_map should have (0, 1)
-        assert result.op_map.op_to_machine_code[0] == (0, 1)
+        assert result.op_map.span_for_op(0) == (0, 1)
 
     def test_sequential_commands_mapping(self, encoder, mock_machine, doc):
         """Sequential commands should have sequential line numbers."""
@@ -560,12 +560,12 @@ class TestOpMapGeneration:
         ops.move_to(0.0, 0.0, 0.0)
         result = encoder.encode(ops, mock_machine, doc)
 
-        assert result.op_map.op_to_machine_code[0] == (0, 1)
-        assert result.op_map.op_to_machine_code[1] == (1, 1)
-        assert result.op_map.op_to_machine_code[2] == (2, 1)
+        assert result.op_map.span_for_op(0) == (0, 1)
+        assert result.op_map.span_for_op(1) == (1, 1)
+        assert result.op_map.span_for_op(2) == (2, 1)
 
         for line_num in range(3):
-            assert result.op_map.machine_code_to_op[line_num] == line_num
+            assert result.op_map.op_for_line(line_num) == line_num
 
 
 class TestComplexJobs:
