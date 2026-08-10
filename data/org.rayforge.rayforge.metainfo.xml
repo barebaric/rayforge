@@ -66,6 +66,49 @@
   </screenshots>
 
   <releases>
+    <release version="1.9.0" date="2026-08-10">
+      <description>
+        <p>Faster playback speeds, improved 3D preview, and memory
+        improvements</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Playback speeds up to x64 in simulated playback</li>
+          <li>3D preview renders raster scanlines at the physical laser
+          dot width for a more accurate preview</li>
+          <li>Addon-contributed settings pages now update live when the
+          settings dialog is open</li>
+          <li>Addon manifests support a default enabled/disabled
+          state</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Upgrade raygeo to 1.37.0</li>
+          <li>Memory improvements in the pipeline: op data now uses a
+          compressed array, assembly intermediates are released between
+          builds, the final job ops are no longer cached, and a
+          kinematic mapping is only computed when a rotary module is
+          present</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>3D canvas panning now follows the mouse 1:1</li>
+          <li>Cylinder angle interpolation during rotary animation could
+          be incorrect</li>
+          <li>3D models could obscure ops in the 3D view</li>
+          <li>Raster preview artifacts when zooming out (moire) fixed
+          with max-reduction mipmaps</li>
+          <li>Toolpath and scanline trail drawn above the raster
+          texture</li>
+          <li>3D canvas not grabbing keyboard focus when clicked</li>
+          <li>Right panel could obscure the canvas overlays</li>
+          <li>3D model loading errors no longer crash the app</li>
+          <li>Machine switch config update now runs on the main
+          thread</li>
+          <li>--exit watcher is only armed after the uiscript has
+          run</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.9.0-beta4" date="2026-08-08">
       <description>
         <p>Smooth simulated playback, refined 3D interaction, and

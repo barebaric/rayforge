@@ -5,6 +5,45 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.0
+
+### Added
+
+- Playback speeds up to x64 in simulated playback
+- 3D preview renders raster scanlines at the physical laser dot
+  width for a more accurate preview
+- Addon-contributed settings pages now update live when the settings
+  dialog is open
+- Addon manifests support a default enabled/disabled state
+
+### Changed
+
+- Upgrade raygeo to 1.37.0
+- Memory improvements in the pipeline: op data now uses a compressed
+  array, assembly intermediates are released between builds, the
+  final job ops are no longer cached, and a kinematic mapping is only
+  computed when a rotary module is present
+
+### Fixed
+
+- 3D canvas panning now follows the mouse 1:1
+- Cylinder angle interpolation during rotary animation could be
+  incorrect
+- 3D models could obscure ops in the 3D view
+- Raster preview artifacts when zooming out (moire) fixed with
+  max-reduction mipmaps
+- Toolpath and scanline trail drawn above the raster texture
+- 3D canvas not grabbing keyboard focus when clicked
+- Right panel could obscure the canvas overlays
+- 3D model loading errors no longer crash the app
+- Machine switch config update now runs on the main thread
+- `--exit` watcher is only armed after the uiscript has run
+
+### Performance
+
+- 3D canvas vertex uploads are prepared in a worker thread, reducing
+  main-thread stalls during pipeline finishes
+
 ## 1.9.0-beta4
 
 ### Added
