@@ -8,7 +8,7 @@ resource creation, rebuilds and theme/colour application to this class.
 """
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, Protocol
 
 import numpy as np
@@ -41,7 +41,7 @@ from .base import BaseRenderer
 from .cylinder_renderer import CylinderRenderer
 from .laser_beam_renderer import LaserBeamRenderer
 from .model_renderer import ModelRenderer
-from .ops_renderer import OpsRenderer
+from .ops_renderer import OpsRenderer, OpsUploadPayload, prepare_vertex_layer
 from .ring_buffer_renderer import RingBufferRenderer
 from .texture_renderer import TextureArtifactRenderer
 from .zone_renderer import ZoneRenderer
@@ -72,6 +72,10 @@ def match_overlay_layer(
 class UploadItem(Protocol):
     """A single unit of work in a chunked scene upload."""
 
+    def prepare(self) -> "OpsUploadPayload | None":
+        """Prepares this item's data off the main thread."""
+        raise NotImplementedError
+
     def upload(self) -> None:
         """Uploads this item's data into its renderer."""
         raise NotImplementedError
@@ -84,10 +88,30 @@ class OpsLayerUploadItem:
     renderer: "OpsRenderer"
     vertex_layer: VertexLayer
     show_travel_moves: bool
+    _payload: OpsUploadPayload | None = field(
+        default=None, init=False, repr=False
+    )
+
+    def prepare(self) -> OpsUploadPayload:
+        """Decompresses/concat vertex arrays off the main thread.
+
+        Stores the built payload on the item so the main-thread
+        ``upload`` only performs the GL buffer uploads.
+        """
+        payload = prepare_vertex_layer(
+            self.vertex_layer, self.show_travel_moves
+        )
+        self._payload = payload
+        return payload
 
     def upload(self) -> None:
-        self.renderer.update_from_vertex_layer(
-            self.vertex_layer, self.show_travel_moves
+        payload = self._payload
+        if payload is None:
+            payload = self.prepare()
+        self.renderer.update_from_vertex_data(
+            payload.powered_vertices,
+            payload.powered_attrib,
+            payload.travel_vertices,
         )
 
 
@@ -97,6 +121,9 @@ class OverlayLayerUploadItem:
 
     renderer: "RingBufferRenderer"
     overlay_layer: ScanlineOverlayLayer
+
+    def prepare(self) -> None:
+        """No CPU-bound prep yet; uploads run synchronously."""
 
     def upload(self) -> None:
         self.renderer.update_from_overlay_layer(self.overlay_layer)
@@ -108,6 +135,9 @@ class TextureUploadItem:
 
     renderer: Optional["TextureArtifactRenderer"]
     artifact: CompiledSceneArtifact
+
+    def prepare(self) -> None:
+        """No CPU-bound prep yet; uploads run synchronously."""
 
     def upload(self) -> None:
         if self.renderer is not None:
