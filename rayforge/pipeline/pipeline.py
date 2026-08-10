@@ -367,6 +367,7 @@ class Pipeline:
             ops
             and self._doc
             and self._machine
+            and self._doc.has_rotary_layer
             and MachineCapability.ROTARY in self._machine.get_capabilities()
         ):
             mapped_ops = ops.copy()
