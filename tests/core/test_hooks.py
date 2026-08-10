@@ -173,25 +173,28 @@ class TestRegistryHooks:
         assert len(received_registry) == 1
         assert received_registry[0] is transformer_widget_registry
 
-    def test_step_settings_loaded_hook(self):
-        """Test step_settings_loaded hook receives step and producer."""
-        received_data = []
+    def test_register_step_settings_pages_hook(self):
+        """Test that register_step_settings_pages receives the registry."""
+        received_registry = []
 
-        class StepSettingsPlugin:
+        class StepSettingsPagePlugin:
             @hookimpl
-            def step_settings_loaded(self, step, producer):
-                received_data.append((step, producer))
+            def register_step_settings_pages(
+                self, step_settings_page_registry
+            ):
+                received_registry.append(step_settings_page_registry)
 
         context = RayforgeContext()
-        plugin = StepSettingsPlugin()
+        plugin = StepSettingsPagePlugin()
         context.plugin_mgr.register(plugin)
 
-        mock_step = {"id": "test-step"}
-        mock_producer = {"name": "TestProducer"}
-
-        context.plugin_mgr.hook.step_settings_loaded(
-            dialog=None, step=mock_step, producer=mock_producer
+        from rayforge.ui_gtk.doceditor.step_settings.page_registry import (
+            step_settings_page_registry,
         )
 
-        assert len(received_data) == 1
-        assert received_data[0] == (mock_step, mock_producer)
+        context.plugin_mgr.hook.register_step_settings_pages(
+            step_settings_page_registry=step_settings_page_registry
+        )
+
+        assert len(received_registry) == 1
+        assert received_registry[0] is step_settings_page_registry

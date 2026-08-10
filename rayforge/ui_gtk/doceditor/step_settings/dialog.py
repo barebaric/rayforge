@@ -5,6 +5,9 @@ from gi.repository import Adw, Gtk
 
 from rayforge.context import get_context
 from rayforge.core.step import Step
+from rayforge.ui_gtk.doceditor.step_settings.page_registry import (
+    step_settings_page_registry,
+)
 from rayforge.ui_gtk.doceditor.step_settings.pages import (
     GeneralStepSettingsPage,
     PostProcessingPage,
@@ -55,9 +58,18 @@ class StepSettingsDialog(PatchedDialogWindow):
         self.general_view: StepSettingsPage | None = None
         self._extra_pages: list[tuple[str, StepSettingsPage, str | None]] = []
         if context:
-            context.plugin_mgr.hook.step_settings_loaded(
-                dialog=self, step=self.step, producer=None
+            page_cls = step_settings_page_registry.get(
+                self.step.ASSEMBLER_NAME
             )
+            if page_cls:
+                page = page_cls(self.editor, self.step)
+                self.general_view = page
+                for method_name, title, icon_name in page.extra_pages:
+                    self.add_settings_page(
+                        title,
+                        getattr(page, method_name)(),
+                        icon_name,
+                    )
         if self.general_view is None:
             self.general_view = GeneralStepSettingsPage(self.editor, self.step)
         scrolled_page1 = Gtk.ScrolledWindow(
@@ -145,7 +157,7 @@ class StepSettingsDialog(PatchedDialogWindow):
             self.general_view._sync_widgets_to_model()
 
     def set_step_settings_page(self, page: StepSettingsPage):
-        """Provide the step's settings page (called by addon hooks)."""
+        """Set the step's main settings page."""
         self.general_view = page
 
     def add_settings_page(
@@ -154,7 +166,7 @@ class StepSettingsDialog(PatchedDialogWindow):
         page: StepSettingsPage,
         icon_name: str | None = None,
     ):
-        """Provide an additional settings page (called by addon hooks)."""
+        """Add an additional settings page tab."""
         self._extra_pages.append((title, page, icon_name))
 
     @classmethod

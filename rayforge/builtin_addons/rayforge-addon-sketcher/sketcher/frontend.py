@@ -14,11 +14,6 @@ ADDON_NAME = "sketcher"
 
 
 @hookimpl
-def step_settings_loaded(dialog, step, producer):
-    """Add step settings widgets based on producer type."""
-
-
-@hookimpl
 def register_commands(command_registry):
     """Register SketchCmd with the command registry."""
     from .ui_gtk.sketch_cmd import SketchCmd
