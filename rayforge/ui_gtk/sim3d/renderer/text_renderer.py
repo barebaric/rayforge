@@ -39,8 +39,16 @@ class TextRenderer(BaseRenderer):
         self.atlas_height: int = 0
         self.vao: int = 0
         self.vbo: int = 0
+        self._max_vertices: int = 0
         self._font_size_px = font_size
         self._atlas_buffer: bytes | None = None
+        self._cached_billboard: np.ndarray | None = None
+        self._cached_view: np.ndarray | None = None
+        self._batch_vertices: list[np.ndarray] = []
+        self._batch_shader = None
+        self._batch_color: tuple[float, float, float, float] | None = None
+        self._batch_mvp: np.ndarray | None = None
+        self._batch_billboard: np.ndarray | None = None
 
         # This part no longer loads a font object, it just stores the
         # description
@@ -179,11 +187,28 @@ class TextRenderer(BaseRenderer):
         self.vao = self._create_vao()
         self.vbo = self._create_vbo()
 
+        # Capacity for 1024 chars * 6 vertices; grown on demand.
+        self._max_vertices = 1024 * 6
+        stride = 10 * 4
+
         GL.glBindVertexArray(self.vao)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.vbo)
-        GL.glBufferData(GL.GL_ARRAY_BUFFER, 16 * 4, None, GL.GL_DYNAMIC_DRAW)
+        GL.glBufferData(
+            GL.GL_ARRAY_BUFFER,
+            self._max_vertices * stride,
+            None,
+            GL.GL_DYNAMIC_DRAW,
+        )
         GL.glEnableVertexAttribArray(0)
-        GL.glVertexAttribPointer(0, 4, GL.GL_FLOAT, GL.GL_FALSE, 16, None)
+        GL.glVertexAttribPointer(0, 4, GL.GL_FLOAT, GL.GL_FALSE, stride, None)
+        GL.glEnableVertexAttribArray(1)
+        GL.glVertexAttribPointer(
+            1, 3, GL.GL_FLOAT, GL.GL_FALSE, stride, GL.GLvoidp(16)
+        )
+        GL.glEnableVertexAttribArray(2)
+        GL.glVertexAttribPointer(
+            2, 3, GL.GL_FLOAT, GL.GL_FALSE, stride, GL.GLvoidp(28)
+        )
         GL.glBindVertexArray(0)
 
     def _upload_atlas_to_gpu(self) -> None:
@@ -261,45 +286,19 @@ class TextRenderer(BaseRenderer):
         if shader is None:
             return
 
-        mvp_matrix = ctx.camera.mvp_ui
+        chars = [c for c in text if c in self.char_data]
+        if not chars:
+            return
 
-        shader.use()
-        GL.glActiveTexture(GL.GL_TEXTURE0)
-        GL.glBindTexture(GL.GL_TEXTURE_2D, self.texture_id)
-        GL.glBindVertexArray(self.vao)
+        # Frame-constant state; the last label's values are used by
+        # ``end_batch`` (all labels share camera and label color).
+        self._batch_shader = shader
+        self._batch_color = color
+        self._batch_mvp = ctx.camera.mvp_ui
+        self._batch_billboard = self._get_billboard(ctx)
 
-        # --- UNIFORMS CONSTANT FOR THE ENTIRE STRING ---
-        shader.set_vec4("uTextColor", color)
-        shader.set_mat4("uMVP", mvp_matrix)
-
-        # Pass the string's anchor position. This is the pivot for the
-        # billboard.
-        shader.set_vec3("uTextWorldPos", position)
-
-        # Get the camera's rotation matrix to billboard the text.
-        try:
-            inv_view = np.linalg.inv(ctx.camera.view_matrix)
-            camera_rotation_matrix_row_major = inv_view[:3, :3]
-            u = camera_rotation_matrix_row_major[:, 0]
-            u /= np.linalg.norm(u)
-            v = camera_rotation_matrix_row_major[:, 1]
-            v -= np.dot(v, u) * u
-            v /= np.linalg.norm(v)
-            w = np.cross(u, v)
-            camera_rotation_matrix_row_major = np.column_stack((u, v, w))
-        except np.linalg.LinAlgError:
-            logger.warning(
-                "View matrix inversion failed, using identity for billboard."
-            )
-            camera_rotation_matrix_row_major = np.identity(3)
-
-        shader.set_mat3("uBillboard", camera_rotation_matrix_row_major)
-
-        # --- CALCULATE LAYOUT AND RENDER CHARACTERS ---
         pixel_to_world_scale = height_in_world_units / self.atlas_height
-        total_text_width_px = sum(
-            self.char_data[c]["width_px"] for c in text if c in self.char_data
-        )
+        total_text_width_px = sum(self.char_data[c]["width_px"] for c in chars)
         total_text_width_world = total_text_width_px * pixel_to_world_scale
 
         if align == "right":
@@ -309,51 +308,162 @@ class TextRenderer(BaseRenderer):
         else:  # 'center'
             current_x_local = -total_text_width_world / 2.0
 
-        for char in text:
-            if char not in self.char_data:
-                continue
+        ax, ay, az = (float(v) for v in position[:3])
 
+        for char in chars:
             char_info = self.char_data[char]
             char_width_world = char_info["width_px"] * pixel_to_world_scale
             char_height_world = char_info["height_px"] * pixel_to_world_scale
-
-            # Send the character's size and its offset from the string's
-            # anchor.
-            shader.set_vec2("uQuadSize", (char_width_world, char_height_world))
-            GL.glUniform1f(
-                shader.get_uniform_location("uCharOffsetX"), current_x_local
-            )
-
-            # The vertex data is the same for every character (a unit quad).
-            # The shader now does all the work of positioning it.
             u0, v0 = char_info["u0"], char_info["v0"]
             u1, v1 = char_info["u1"], char_info["v1"]
-            vertices = np.array(
+
+            # Two triangles: (TL, BL, TR), (BL, BR, TR).  Each vertex is
+            # (x, y, u, v, offsetX, quadSizeX, quadHeight, ax, ay, az).
+            block = np.array(
                 [
                     -0.5,
                     0.5,
                     u0,
-                    v0,  # Top-left
+                    v0,
+                    current_x_local,
+                    char_width_world,
+                    char_height_world,
+                    ax,
+                    ay,
+                    az,
                     -0.5,
                     -0.5,
                     u0,
-                    v1,  # Bottom-left
+                    v1,
+                    current_x_local,
+                    char_width_world,
+                    char_height_world,
+                    ax,
+                    ay,
+                    az,
                     0.5,
                     0.5,
                     u1,
-                    v0,  # Top-right
+                    v0,
+                    current_x_local,
+                    char_width_world,
+                    char_height_world,
+                    ax,
+                    ay,
+                    az,
+                    -0.5,
+                    -0.5,
+                    u0,
+                    v1,
+                    current_x_local,
+                    char_width_world,
+                    char_height_world,
+                    ax,
+                    ay,
+                    az,
                     0.5,
                     -0.5,
                     u1,
-                    v1,  # Bottom-right
+                    v1,
+                    current_x_local,
+                    char_width_world,
+                    char_height_world,
+                    ax,
+                    ay,
+                    az,
+                    0.5,
+                    0.5,
+                    u1,
+                    v0,
+                    current_x_local,
+                    char_width_world,
+                    char_height_world,
+                    ax,
+                    ay,
+                    az,
                 ],
                 dtype=np.float32,
             )
-
-            GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.vbo)
-            GL.glBufferSubData(
-                GL.GL_ARRAY_BUFFER, 0, vertices.nbytes, vertices
-            )
-            GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4)
-
+            self._batch_vertices.append(block)
             current_x_local += char_width_world
+
+    def begin_batch(self) -> None:
+        """Starts a frame's text batch; call once before any ``render``."""
+        self._batch_vertices = []
+        self._batch_shader = None
+        self._batch_color = None
+        self._batch_mvp = None
+        self._batch_billboard = None
+
+    def end_batch(self) -> None:
+        """Uploads and draws everything queued since ``begin_batch``."""
+        if not self._batch_vertices:
+            return
+        shader = self._batch_shader
+        color = self._batch_color
+        mvp = self._batch_mvp
+        billboard = self._batch_billboard
+        if shader is None or color is None or mvp is None:
+            return
+        if billboard is None:
+            billboard = np.identity(3)
+
+        buf = np.concatenate(self._batch_vertices)
+        n_verts = buf.size // 10
+        self._batch_vertices = []
+
+        if n_verts > self._max_vertices:
+            self._max_vertices = n_verts
+            GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.vbo)
+            GL.glBufferData(
+                GL.GL_ARRAY_BUFFER,
+                n_verts * 10 * 4,
+                None,
+                GL.GL_DYNAMIC_DRAW,
+            )
+
+        shader.use()
+        GL.glActiveTexture(GL.GL_TEXTURE0)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, self.texture_id)
+        GL.glBindVertexArray(self.vao)
+        shader.set_vec4("uTextColor", color)
+        shader.set_mat4("uMVP", mvp)
+        shader.set_mat3("uBillboard", billboard)
+
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.vbo)
+        GL.glBufferSubData(GL.GL_ARRAY_BUFFER, 0, buf.nbytes, buf)
+        GL.glDrawArrays(GL.GL_TRIANGLES, 0, n_verts)
+
+    def _get_billboard(self, ctx) -> np.ndarray:
+        """Returns the camera billboard matrix, recomputed only on change.
+
+        The billboard only depends on the camera view matrix, so it is
+        cached across labels (and frames) while the camera is static.
+        """
+        view = ctx.camera.view_matrix
+        if self._cached_view is None or not np.array_equal(
+            view, self._cached_view
+        ):
+            self._cached_view = view.copy()
+            self._cached_billboard = self._compute_billboard(ctx)
+        billboard = self._cached_billboard
+        assert billboard is not None
+        return billboard
+
+    def _compute_billboard(self, ctx) -> np.ndarray:
+        """Builds the 3x3 billboard rotation from the camera view."""
+        try:
+            inv_view = np.linalg.inv(ctx.camera.view_matrix)
+            camera_rotation_matrix_row_major = inv_view[:3, :3]
+            u = camera_rotation_matrix_row_major[:, 0]
+            u /= np.linalg.norm(u)
+            v = camera_rotation_matrix_row_major[:, 1]
+            v -= np.dot(v, u) * u
+            v /= np.linalg.norm(v)
+            w = np.cross(u, v)
+            return np.column_stack((u, v, w))
+        except np.linalg.LinAlgError:
+            logger.warning(
+                "View matrix inversion failed, using identity for billboard."
+            )
+            return np.identity(3)

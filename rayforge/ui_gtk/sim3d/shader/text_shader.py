@@ -8,13 +8,12 @@ from .base import Shader
 # anchor, ensuring the whole label billboards as one unit.
 TEXT_VERTEX_SHADER = """
 layout (location = 0) in vec4 aVertex; // In: x, y ([-0.5, 0.5]), u, v
+layout (location = 1) in vec3 aCharInfo; // In: offsetX, quadSizeX, quadHeight
+layout (location = 2) in vec3 aAnchor;   // In: string anchor world position
 
 // Uniforms
 uniform mat4 uMVP;           // Model-View-Projection Matrix
 uniform mat3 uBillboard;     // Camera's rotation matrix to billboard the plane
-uniform vec3 uTextWorldPos;  // World position of the STRING'S anchor
-uniform vec2 uQuadSize;      // Size (width, height) of the CURRENT char quad
-uniform float uCharOffsetX;  // Local X-offset of the char from the anchor
 
 // Outputs
 out vec2 vTexCoord;
@@ -26,8 +25,8 @@ void main() {
     //    This places the character quad correctly along the local
     //    X-axis.  The Y-position is centered on the axis.
     vec3 vertex_pos_local = vec3(
-        uCharOffsetX + (aVertex.x + 0.5) * uQuadSize.x,
-        aVertex.y * uQuadSize.y,
+        aCharInfo.x + (aVertex.x + 0.5) * aCharInfo.y,
+        aVertex.y * aCharInfo.z,
         0.0
     );
 
@@ -37,7 +36,7 @@ void main() {
 
     // 3. Add the final rotated offset to the string's world anchor
     //    position.
-    gl_Position = uMVP * vec4(uTextWorldPos + rotated_offset, 1.0);
+    gl_Position = uMVP * vec4(aAnchor + rotated_offset, 1.0);
 
     // 4. Pass texture coordinates to the fragment shader.
     vTexCoord = aVertex.zw;

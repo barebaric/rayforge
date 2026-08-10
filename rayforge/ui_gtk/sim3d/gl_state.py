@@ -151,7 +151,7 @@ def render_pass(*shaders: Shader | None) -> Generator[None, None, None]:
         with render_pass(self.main_shader, self.text_shader):
             self.axis_renderer.render(ctx, self.shader_set)
     """
-    with gl_state():
+    with gl_state(save_texture_bindings=False, save_line_width=False):
         if not shaders:
             yield
             return

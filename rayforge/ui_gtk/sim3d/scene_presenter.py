@@ -92,6 +92,7 @@ class ScenePresenter:
         self._scene_preparation_task: Task | None = None
         self._compiled_artifact: CompiledSceneArtifact | None = None
         self._current_job_handle: BaseArtifactHandle | None = None
+        self._compiled_job_generation: int | None = None
         self._op_player: OpPlayer | None = None
         self._playback_assembly: Assembly | None = None
         self._playback_overlay = None
@@ -195,12 +196,22 @@ class ScenePresenter:
                     "Pipeline settled with stale job. Clearing 3D scene."
                 )
                 self._current_job_handle = None
+                self._compiled_job_generation = None
                 self._compiled_artifact = None
                 self._mark_artifact_dirty()
                 self._request_render()
             else:
-                logger.debug("Pipeline has settled. Updating 3D scene.")
-                self.update_scene_from_doc()
+                if (
+                    self._current_job_handle.generation_id
+                    == self._compiled_job_generation
+                ):
+                    logger.debug(
+                        "[CANVAS3D] Scene already compiled for this "
+                        "generation; skipping duplicate update."
+                    )
+                else:
+                    logger.debug("Pipeline has settled. Updating 3D scene.")
+                    self.update_scene_from_doc()
 
     def _on_job_generation_finished(self, sender, **kwargs):
         task_status = kwargs.get("task_status")
@@ -219,6 +230,7 @@ class ScenePresenter:
                     "[CANVAS3D] Job completed with no output. Clearing scene."
                 )
                 self._current_job_handle = None
+                self._compiled_job_generation = None
                 self._compiled_artifact = None
                 self._mark_artifact_dirty()
                 self._request_render()
@@ -568,6 +580,7 @@ class ScenePresenter:
             )
 
         logger.debug("[CANVAS3D] Scheduling scene compilation task.")
+        self._compiled_job_generation = job_handle.generation_id
         assert render_config_dict is not None
         self._scene_preparation_task = task_mgr.run_thread(
             compile_scene_from_job,

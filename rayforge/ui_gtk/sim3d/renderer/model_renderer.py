@@ -61,8 +61,6 @@ def _load_mesh_data(path: Path) -> _CachedModelData | None:
         return cached
 
     try:
-        import trimesh
-
         loaded = trimesh.load(str(path), file_type="glb")
         if isinstance(loaded, trimesh.Scene):
             meshes = []

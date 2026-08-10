@@ -42,6 +42,11 @@ class Canvas3D(Gtk.GLArea):
         **kwargs,
     ):
         super().__init__(**kwargs)
+        # Render only on demand (queue_render), not continuously: GTK 4.22
+        # defaults auto_render to True, which renders every frame clock
+        # tick and starves lower-priority idle callbacks (task when_done
+        # handlers) while wasting GPU work.
+        self.set_auto_render(False)
         self._context = context
         self._doc_editor = doc_editor
         self._viewport = viewport
