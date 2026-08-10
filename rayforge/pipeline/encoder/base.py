@@ -26,6 +26,15 @@ class MachineCodeOpMap:
     op_to_machine_code: list[tuple[int, int]] = field(default_factory=list)
     machine_code_to_op: list[int] = field(default_factory=list)
 
+    def op_for_line(self, line_idx: int) -> int | None:
+        """Op index for a machine-code line, or ``None`` if the line is
+        out of range or has no owning op."""
+        if 0 <= line_idx < len(self.machine_code_to_op):
+            mapped = self.machine_code_to_op[line_idx]
+            if mapped != -1:
+                return mapped
+        return None
+
 
 @dataclass
 class EncodedOutput:
