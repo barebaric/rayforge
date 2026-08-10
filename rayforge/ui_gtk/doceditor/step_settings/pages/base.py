@@ -1,7 +1,7 @@
 """Base class for a step's settings page."""
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from gi.repository import Adw, GLib, Gtk
 
@@ -37,6 +37,11 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
     """
 
     show_identity = True
+
+    #: Declares extra settings pages as ``(method_name, title,
+    #: icon_name)`` tuples. Each method returns a :class:`StepSettingsPage`
+    #: that the step settings dialog adds as an additional tab.
+    extra_pages: ClassVar[tuple[tuple[str, str, str], ...]] = ()
 
     def __init__(self, editor: "DocEditor", step: Any):
         super().__init__()

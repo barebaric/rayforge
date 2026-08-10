@@ -21,6 +21,16 @@ widgets are now registered ahead of time via the new
 widget classes from the registry when building the post-processing UI
 instead of constructing them through the hook at page-build time.
 
+Removed the ``step_settings_loaded`` hook. Step settings page classes
+are now registered ahead of time via the new
+``register_step_settings_pages`` hook and the global
+``step_settings_page_registry``
+(``rayforge.ui_gtk.doceditor.step_settings.page_registry``). The step
+settings dialog looks up the page class by the step's assembler name
+and builds extra pages from the page class's ``extra_pages`` producer
+methods instead of constructing them through the hook at dialog-build
+time.
+
 Version 19
 ----------
 The ``rayforge.ui_gtk.shared.unit_spin_row`` module was split into a
@@ -251,21 +261,21 @@ class RayforgeSpecs:
         """
 
     @hookspec
-    def step_settings_loaded(self, dialog, step, producer):
+    def register_step_settings_pages(self, step_settings_page_registry):
         """
-        Build the settings page for a step.
+        Called to allow addons to register step settings page classes.
 
-        Called when a step settings dialog is being built. Addons
-        provide the step's settings page (a ``StepSettingsPage``)
-        based on the step's assembler name by calling
-        ``dialog.set_step_settings_page(page)``.
+        Page classes are keyed by the step's assembler name
+        (``step.ASSEMBLER_NAME``). A registered page class may declare
+        extra page producers via its ``extra_pages`` class attribute;
+        the dialog calls each producer method to build additional
+        settings pages.
 
-        .. versionadded:: 5
+        .. versionadded:: 20
 
         Args:
-            dialog: The StepSettingsDialog being built.
-            step: The Step instance being configured.
-            producer: The OpsProducer instance, or None if not available.
+            step_settings_page_registry: The global
+                StepSettingsPageRegistry instance.
         """
 
     @hookspec

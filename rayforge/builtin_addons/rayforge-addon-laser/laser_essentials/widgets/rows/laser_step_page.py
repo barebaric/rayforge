@@ -126,6 +126,8 @@ class LaserStepSettingsPage(StepSettingsPage):
     include_process = True
     cut_speed_title = _("Cut Speed")
 
+    extra_pages = (("laser_page", _("Laser"), "laser-on-symbolic"),)
+
     def __init__(self, editor: "DocEditor", step: Any):
         super().__init__(editor, step)
         self._add_step_sections()
