@@ -105,6 +105,14 @@ REGISTRY_TABLE = [
         worker_ok=False,
         needs_window=False,
     ),
+    RegistryEntry(
+        "register_transformer_widgets",
+        "transformer_widget_registry",
+        "rayforge.ui_gtk.doceditor.post_processor.registry",
+        "transformer_widget_registry",
+        worker_ok=False,
+        needs_window=False,
+    ),
 ]
 
 LAZY_MANAGERS = {

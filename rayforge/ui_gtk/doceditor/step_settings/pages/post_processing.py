@@ -9,6 +9,9 @@ from rayforge.context import get_context
 from rayforge.core.step import Step
 from rayforge.pipeline.transformer import OpsTransformer
 from rayforge.pipeline.transformer.placeholder import PlaceholderTransformer
+from rayforge.ui_gtk.doceditor.post_processor.registry import (
+    transformer_widget_registry,
+)
 from rayforge.ui_gtk.doceditor.step_settings.groups import (
     PlaceholderSettingsGroup,
     TransformerSettingsGroup,
@@ -55,11 +58,18 @@ class PostProcessingPage(TrackedPreferencesPage):
         if context:
             for t_dict in unique_transformer_dicts:
                 transformer = OpsTransformer.from_dict(t_dict)
-                context.plugin_mgr.hook.transformer_settings_loaded(
-                    dialog=self, step=step, transformer=transformer
-                )
-                # Add placeholder widget if transformer is not available
-                if isinstance(transformer, PlaceholderTransformer):
+                widget_cls = transformer_widget_registry.get(type(transformer))
+                if widget_cls:
+                    self.add(
+                        widget_cls(
+                            editor,
+                            transformer.label,
+                            transformer,
+                            self,
+                            step,
+                        )
+                    )
+                elif isinstance(transformer, PlaceholderTransformer):
                     self.add(
                         PlaceholderSettingsGroup(
                             editor,

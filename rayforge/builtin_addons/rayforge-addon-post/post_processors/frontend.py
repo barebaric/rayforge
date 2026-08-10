@@ -12,16 +12,9 @@ ADDON_NAME = "post_processors"
 
 
 @hookimpl
-def transformer_settings_loaded(dialog, step, transformer):
-    """Add transformer settings widgets based on transformer type."""
-    widget_cls = TRANSFORMER_WIDGETS.get(type(transformer))
-    if widget_cls:
-        dialog.add(
-            widget_cls(
-                dialog.editor,
-                transformer.label,
-                transformer,
-                dialog,
-                step,
-            )
+def register_transformer_widgets(transformer_widget_registry):
+    """Register transformer settings widget classes."""
+    for transformer_cls, widget_cls in TRANSFORMER_WIDGETS.items():
+        transformer_widget_registry.register(
+            transformer_cls, widget_cls, ADDON_NAME
         )
