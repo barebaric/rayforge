@@ -7,7 +7,7 @@ GitPython==3.1.58
 numpy==2.5.2
 opencv_python
 platformdirs==4.11.1
-pluggy
+pluggy==1.6.0
 pycairo==1.29.0
 PyGObject==3.56.3
 PyMuPDF==1.28.2
