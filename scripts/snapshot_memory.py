@@ -251,6 +251,18 @@ def _measure_artifact_store(store: ArtifactStore) -> OwnerReport:
         # Ops fields — deduplicate by id()
         if isinstance(art, JobArtifact):
             _claim_ops(r, label, "ops", art.ops, seen_ops)
+            r.bytes += 1
+            r.items.append(
+                (
+                    (
+                        f"{label}.ops.commands "
+                        f"(cutting={art.ops.count_cutting()}, "
+                        f"travel={art.ops.count_travel()}, "
+                        f"scanline={art.ops.count_scanline()})"
+                    ),
+                    1,
+                )
+            )
             if art.mapped_ops is not None:
                 _claim_ops(r, label, "mapped_ops", art.mapped_ops, seen_ops)
             _measure_encoded_output(r, label, art.encoded_output)
