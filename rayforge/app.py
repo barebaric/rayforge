@@ -369,11 +369,22 @@ def main():
                     vectorization_spec=vectorization_spec,
                 )
 
-            if self.args.exit:
-                get_context().exit_after_settle = True
-                editor.document_settled.connect(self._on_document_settled_exit)
+            if self.args.exit and not self.args.uiscript:
+                self._setup_exit_watch()
 
             return GLib.SOURCE_REMOVE
+
+        def _setup_exit_watch(self):
+            """
+            Arms the --exit watcher so the app quits once the editor
+            settles. Deferred until after the uiscript has started so the
+            script gets a chance to kick off the pipeline.
+            """
+            get_context().exit_after_settle = True
+            assert self.win is not None
+            self.win.doc_editor.document_settled.connect(
+                self._on_document_settled_exit
+            )
 
         def _on_document_settled_exit(self, sender):
             ctx = get_context()
@@ -396,6 +407,10 @@ def main():
             from rayforge.uiscript import run_script
 
             run_script(Path(self.args.uiscript), self, self.win)
+
+            if self.args.exit:
+                self._setup_exit_watch()
+
             return GLib.SOURCE_REMOVE
 
         def _load_startup_files(self, widget):
@@ -431,11 +446,8 @@ def main():
                     f"Startup project path {project_path} does not exist"
                 )
 
-            if self.args.exit:
-                get_context().exit_after_settle = True
-                self.win.doc_editor.document_settled.connect(
-                    self._on_document_settled_exit
-                )
+            if self.args.exit and not self.args.uiscript:
+                self._setup_exit_watch()
 
             return GLib.SOURCE_REMOVE
 
