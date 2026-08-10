@@ -438,7 +438,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.16.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - pypi: ./
-      - pypi: https://files.pythonhosted.org/packages/00/8b/d2bb85fb3d41a9c2f5acdd0a9c72c050d024942fa77770f63ad13c7532a2/raygeo-1.36.1.tar.gz
       - pypi: https://files.pythonhosted.org/packages/02/08/9c41fb51ab5b43eb21674aff13df270e8ba6c4b29c8624e328dc7a9482af/distlib-0.4.3-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/03/e2/08a497ef684b88559c9cc5f4ad53a37e7b99e727094a86d6ea32536d5d3c/pytest_asyncio-1.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl
@@ -448,6 +447,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/0d/fe/6bea5c9162869c5beba5d9c8abbed835ec85bf1ec1fba05a3822325c45f3/build-1.5.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/10/bd/c038d7cc38edc1aa5bf91ab8068b63d4308c66c4c8bb3cbba7dfbc049f9c/pyparsing-3.3.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/10/cb/f2ad4230dc2eb1a74edf38f1a38b9b52277f75bef262d8908e60d957e13c/blinker-1.9.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/12/56/7c4a3ba1c7bde65dd39e953c7a02fcca43f25208301b646aa2a6e304487c/raygeo-1.37.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/17/fe/77f4a24264e728fd95542e53f026a91249b51d1611087b8c82d3a033ea97/asyncudp-0.11.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/19/03/8c63e8cf52958534ef688625965ab04c269a6cadd8caef16758b380a821a/msgpack-1.2.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/1e/5e/d4e9f1a599fb8e573b7b87160658329fbf28d19eac2718f51fc3def3aa5a/idna-3.18-py3-none-any.whl
@@ -669,7 +669,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/02/08/9c41fb51ab5b43eb21674aff13df270e8ba6c4b29c8624e328dc7a9482af/distlib-0.4.3-py2.py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/02/87/146caef7071c0f395dc82d19b611c75a4913a6ad7c10a438a111198c3980/raygeo-1.36.1-cp311-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/03/e2/08a497ef684b88559c9cc5f4ad53a37e7b99e727094a86d6ea32536d5d3c/pytest_asyncio-1.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl
@@ -683,6 +682,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/18/a9/a07f76f3c44e02b25cc743af5ef93eef27f7013eadca770451b6a6ccb5db/yarl-1.24.5-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/1e/5e/d4e9f1a599fb8e573b7b87160658329fbf28d19eac2718f51fc3def3aa5a/idna-3.18-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/21/0e/8459ca4413e1a21a06c97d134bfaf18adfd27cea068813dc0faae06cbf00/cssselect2-0.9.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/24/42/03faec5a779224102f00d014149d01325f272f91d2af308f4d93b07c175e/raygeo-1.37.0-cp311-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/27/1a/1f68f9ba0c207934b35b86a8ca3aad8395a3d6dd7921c0686e23853ff5a9/mccabe-0.7.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/27/d2/23d25e3f247b328be58d04a4c9f894178a0d1eda7d42867cfb388adaf416/fonttools-4.63.0-cp314-cp314-macosx_10_15_universal2.whl
       - pypi: https://files.pythonhosted.org/packages/2d/6a/282936de9faac6addf6bc8792c18e006489d0023ffd8856b8643f54d0558/pyvips-3.1.1.tar.gz
@@ -8841,7 +8841,7 @@ packages:
 - pypi: ./
   name: rayforge
   requires_dist:
-  - raygeo==1.36.1
+  - raygeo==1.37.0
   - aiohttp==3.14.3
   - asyncudp==0.11.0
   - blinker==1.9.0
@@ -8872,50 +8872,10 @@ packages:
   - pytest-cov ; extra == 'test'
   - pygobject-stubs ; extra == 'test'
   requires_python: '>=3.10'
-- pypi: https://files.pythonhosted.org/packages/00/8b/d2bb85fb3d41a9c2f5acdd0a9c72c050d024942fa77770f63ad13c7532a2/raygeo-1.36.1.tar.gz
-  name: raygeo
-  version: 1.36.1
-  sha256: b0e6512a45ebefd87dd52908ead6c65b4a559321b0a065098e35e30b66b44c1e
-  requires_dist:
-  - msgpack
-  - numpy>=1.20.0
-  - pycairo ; extra == 'test'
-  - pytest ; extra == 'test'
-  - pytest-mock ; extra == 'test'
-  - streamlit ; extra == 'test'
-  - streamlit ; extra == 'visual'
-  - matplotlib ; extra == 'visual'
-  - matplotlib ; extra == 'docs'
-  - mdformat ; extra == 'docs'
-  - mdformat-frontmatter ; extra == 'docs'
-  - mdformat-tables ; extra == 'docs'
-  - pillow ; extra == 'docs'
-  - matplotlib ; extra == 'cli'
-  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/02/08/9c41fb51ab5b43eb21674aff13df270e8ba6c4b29c8624e328dc7a9482af/distlib-0.4.3-py2.py3-none-any.whl
   name: distlib
   version: 0.4.3
   sha256: 4b0ce306c966eb73bc3a7b6abad017c556dadd92c44701562cd528ac7fde4d5b
-- pypi: https://files.pythonhosted.org/packages/02/87/146caef7071c0f395dc82d19b611c75a4913a6ad7c10a438a111198c3980/raygeo-1.36.1-cp311-abi3-macosx_11_0_arm64.whl
-  name: raygeo
-  version: 1.36.1
-  sha256: cb073f7e6c08234fea96b061e655d17a007c100e8c4d99c2389944333e057ee3
-  requires_dist:
-  - msgpack
-  - numpy>=1.20.0
-  - matplotlib ; extra == 'cli'
-  - matplotlib ; extra == 'docs'
-  - mdformat ; extra == 'docs'
-  - mdformat-frontmatter ; extra == 'docs'
-  - mdformat-tables ; extra == 'docs'
-  - pillow ; extra == 'docs'
-  - pycairo ; extra == 'test'
-  - pytest ; extra == 'test'
-  - pytest-mock ; extra == 'test'
-  - streamlit ; extra == 'test'
-  - streamlit ; extra == 'visual'
-  - matplotlib ; extra == 'visual'
-  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/03/e2/08a497ef684b88559c9cc5f4ad53a37e7b99e727094a86d6ea32536d5d3c/pytest_asyncio-1.4.0-py3-none-any.whl
   name: pytest-asyncio
   version: 1.4.0
@@ -8993,6 +8953,26 @@ packages:
   version: 1.9.0
   sha256: ba0efaa9080b619ff2f3459d1d500c57bddea4a6b424b60a91141db6fd2f08bc
   requires_python: '>=3.9'
+- pypi: https://files.pythonhosted.org/packages/12/56/7c4a3ba1c7bde65dd39e953c7a02fcca43f25208301b646aa2a6e304487c/raygeo-1.37.0.tar.gz
+  name: raygeo
+  version: 1.37.0
+  sha256: a1ea4fcca1129be67abaf9d3ede0642806a875c15b9be2d788cfbea82108699d
+  requires_dist:
+  - msgpack
+  - numpy>=1.20.0
+  - pycairo ; extra == 'test'
+  - pytest ; extra == 'test'
+  - pytest-mock ; extra == 'test'
+  - streamlit ; extra == 'test'
+  - streamlit ; extra == 'visual'
+  - matplotlib ; extra == 'visual'
+  - matplotlib ; extra == 'docs'
+  - mdformat ; extra == 'docs'
+  - mdformat-frontmatter ; extra == 'docs'
+  - mdformat-tables ; extra == 'docs'
+  - pillow ; extra == 'docs'
+  - matplotlib ; extra == 'cli'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/17/fe/77f4a24264e728fd95542e53f026a91249b51d1611087b8c82d3a033ea97/asyncudp-0.11.0-py3-none-any.whl
   name: asyncudp
   version: 0.11.0
@@ -9031,6 +9011,26 @@ packages:
   - furo ; extra == 'doc'
   - pytest ; extra == 'test'
   - ruff ; extra == 'test'
+  requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/24/42/03faec5a779224102f00d014149d01325f272f91d2af308f4d93b07c175e/raygeo-1.37.0-cp311-abi3-macosx_11_0_arm64.whl
+  name: raygeo
+  version: 1.37.0
+  sha256: 47567b2435f123b61e18f476aef1339b4dea7b29fb516c743024efedc9fe1086
+  requires_dist:
+  - msgpack
+  - numpy>=1.20.0
+  - matplotlib ; extra == 'cli'
+  - matplotlib ; extra == 'docs'
+  - mdformat ; extra == 'docs'
+  - mdformat-frontmatter ; extra == 'docs'
+  - mdformat-tables ; extra == 'docs'
+  - pillow ; extra == 'docs'
+  - pycairo ; extra == 'test'
+  - pytest ; extra == 'test'
+  - pytest-mock ; extra == 'test'
+  - streamlit ; extra == 'test'
+  - streamlit ; extra == 'visual'
+  - matplotlib ; extra == 'visual'
   requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/27/1a/1f68f9ba0c207934b35b86a8ca3aad8395a3d6dd7921c0686e23853ff5a9/mccabe-0.7.0-py2.py3-none-any.whl
   name: mccabe
