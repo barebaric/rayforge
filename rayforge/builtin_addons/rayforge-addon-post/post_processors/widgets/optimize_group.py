@@ -1,10 +1,10 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw
+from gi.repository import Adw, GObject
 
-from rayforge.core.undo import DictItemCommand
 from rayforge.ui_gtk.doceditor.step_settings.groups import (
+    ExpanderHost,
     TransformerSettingsGroup,
 )
 
@@ -12,7 +12,6 @@ from ..transformers import Optimize
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
-    from rayforge.doceditor.editor import DocEditor
 
 
 class OptimizeSettingsGroup(TransformerSettingsGroup):
@@ -20,22 +19,14 @@ class OptimizeSettingsGroup(TransformerSettingsGroup):
 
     def __init__(
         self,
-        editor: "DocEditor",
         title: str,
         transformer: Optimize,
-        page: Adw.PreferencesPage,
-        step: "Step",
+        page: ExpanderHost,
+        *,
+        step: "Step | None" = None,
         **kwargs,
     ):
-        super().__init__(
-            editor,
-            title,
-            component=transformer,
-            page=page,
-            step=step,
-            description=transformer.description,
-            **kwargs,
-        )
+        super().__init__(title, transformer, page, step=step, **kwargs)
 
         self.flip_row = Adw.SwitchRow(
             title=_("Allow Flipping"),
@@ -55,30 +46,22 @@ class OptimizeSettingsGroup(TransformerSettingsGroup):
             "notify::active", self._on_preserve_first_toggled
         )
 
-    def _on_flip_toggled(self, row, pspec):
-        new_value = row.get_active()
-        if new_value == self.target_dict.get("allow_flip"):
-            return
-
-        command = DictItemCommand(
-            target_dict=self.target_dict,
+    def _on_flip_toggled(
+        self, row: Adw.SwitchRow, _pspec: GObject.ParamSpec
+    ) -> None:
+        self.param_changed.send(
+            self,
             key="allow_flip",
-            new_value=new_value,
+            value=row.get_active(),
             name=_("Toggle Flipping"),
-            on_change_callback=lambda: self.step.updated.send(self.step),
         )
-        self.history_manager.execute(command)
 
-    def _on_preserve_first_toggled(self, row, pspec):
-        new_value = row.get_active()
-        if new_value == self.target_dict.get("preserve_first"):
-            return
-
-        command = DictItemCommand(
-            target_dict=self.target_dict,
+    def _on_preserve_first_toggled(
+        self, row: Adw.SwitchRow, _pspec: GObject.ParamSpec
+    ) -> None:
+        self.param_changed.send(
+            self,
             key="preserve_first",
-            new_value=new_value,
+            value=row.get_active(),
             name=_("Toggle Preserve First Workpiece"),
-            on_change_callback=lambda: self.step.updated.send(self.step),
         )
-        self.history_manager.execute(command)

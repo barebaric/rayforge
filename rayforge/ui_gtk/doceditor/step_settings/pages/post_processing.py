@@ -1,9 +1,9 @@
 """Post-processing transformers settings page."""
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, GObject, Gtk
 
 from rayforge.context import get_context
 from rayforge.core.step import Step
@@ -24,7 +24,12 @@ if TYPE_CHECKING:
 
 
 class PostProcessingPage(TrackedPreferencesPage):
-    """A page for the post-processing transformers of a Step."""
+    """A page for the post-processing transformers of a Step.
+
+    The transformer widgets are pure UI: they announce parameter
+    changes via ``param_changed`` and the page persists them through
+    the editor's undoable command path (``editor.step.set_step_param``).
+    """
 
     use_expanders = True
 
@@ -40,14 +45,15 @@ class PostProcessingPage(TrackedPreferencesPage):
         self._main_group = Adw.PreferencesGroup()
         super().add(self._main_group)
         self._has_expanders = False
+        self._group_dicts: dict[TransformerSettingsGroup, dict] = {}
 
         all_transformer_dicts = (
             step.per_workpiece_transformers_dicts or []
         ) + (step.per_step_transformers_dicts or [])
 
         # Deduplicate by object identity (same dict can be in both lists)
-        seen_ids = set()
-        unique_transformer_dicts = []
+        seen_ids: set[int] = set()
+        unique_transformer_dicts: list[dict] = []
         for t_dict in all_transformer_dicts:
             dict_id = id(t_dict)
             if dict_id not in seen_ids:
@@ -60,25 +66,23 @@ class PostProcessingPage(TrackedPreferencesPage):
                 transformer = OpsTransformer.from_dict(t_dict)
                 widget_cls = transformer_widget_registry.get(type(transformer))
                 if widget_cls:
-                    self.add(
-                        widget_cls(
-                            editor,
-                            transformer.label,
-                            transformer,
-                            self,
-                            step,
-                        )
+                    group = widget_cls(
+                        transformer.label,
+                        transformer,
+                        self,
+                        step=step,
                     )
                 elif isinstance(transformer, PlaceholderTransformer):
-                    self.add(
-                        PlaceholderSettingsGroup(
-                            editor,
-                            transformer.label,
-                            transformer,
-                            self,
-                            step,
-                        )
+                    group = PlaceholderSettingsGroup(
+                        transformer.label,
+                        transformer,
+                        self,
+                        step=step,
                     )
+                else:
+                    continue
+                self._group_dicts[group] = t_dict
+                self._add_group(group)
 
         if not self._has_expanders:
             placeholder_label = Gtk.Label(
@@ -91,14 +95,12 @@ class PostProcessingPage(TrackedPreferencesPage):
             placeholder_label.add_css_class("dim-label")
             self._main_group.add(placeholder_label)
 
-    def add(self, group):
-        rows = getattr(group, "_rows", None)
-        if rows is None:
-            super().add(group)
-            return
+    def _add_group(self, group: TransformerSettingsGroup) -> None:
+        group.param_changed.connect(self._on_param_changed)
 
         title = group.get_title()
         subtitle = group.get_description()
+        rows = group._rows
 
         expander = Adw.ExpanderRow(title=title or "")
         if subtitle:
@@ -109,14 +111,13 @@ class PostProcessingPage(TrackedPreferencesPage):
         warning_icon.set_valign(Gtk.Align.CENTER)
         expander.add_prefix(warning_icon)
 
-        def _update_warning_icon(grp=group, ico=warning_icon):
-            unsupported = (
-                isinstance(grp, TransformerSettingsGroup)
-                and grp.is_unsupported()
-            )
-            ico.set_visible(unsupported)
+        def _update_warning_icon(
+            grp: TransformerSettingsGroup = group,
+            ico: Gtk.Image = warning_icon,
+        ) -> None:
+            ico.set_visible(grp.is_unsupported())
 
-        enable_switch_row = None
+        enable_switch_row: Adw.SwitchRow | None = None
         for row in rows:
             if isinstance(row, Adw.SwitchRow) and enable_switch_row is None:
                 enable_switch_row = row
@@ -125,13 +126,21 @@ class PostProcessingPage(TrackedPreferencesPage):
                 switch.set_valign(Gtk.Align.CENTER)
                 expander.add_suffix(switch)
 
-                def _on_header_toggled(sw, pspec, orig=row):
+                def _on_header_toggled(
+                    sw: Gtk.Switch,
+                    _pspec: GObject.ParamSpec,
+                    orig: Adw.SwitchRow = row,
+                ) -> None:
                     if orig.get_active() != sw.get_active():
                         orig.set_active(sw.get_active())
 
                 switch.connect("notify::active", _on_header_toggled)
 
-                def _on_orig_toggled(r, pspec, sw=switch):
+                def _on_orig_toggled(
+                    r: Adw.SwitchRow,
+                    _pspec: GObject.ParamSpec,
+                    sw: Gtk.Switch = switch,
+                ) -> None:
                     if sw.get_active() != r.get_active():
                         sw.set_active(r.get_active())
 
@@ -150,3 +159,28 @@ class PostProcessingPage(TrackedPreferencesPage):
         _update_warning_icon()
         self._main_group.add(expander)
         self._has_expanders = True
+
+    def _on_param_changed(
+        self,
+        group: TransformerSettingsGroup,
+        *,
+        key: str,
+        value: Any,
+        name: str,
+    ) -> None:
+        """Persist a widget's announced change via the editor."""
+        t_dict = self._group_dicts[group]
+        if t_dict in self.step.per_step_transformers_dicts:
+            callback = self.step.per_step_transformer_changed.send
+        else:
+            callback = self._send_step_updated
+        self.editor.step.set_step_param(
+            target_dict=t_dict,
+            key=key,
+            new_value=value,
+            name=name,
+            on_change_callback=callback,
+        )
+
+    def _send_step_updated(self) -> None:
+        self.step.updated.send(self.step)

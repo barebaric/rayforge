@@ -7,11 +7,13 @@ from gi.repository import Adw
 
 from rayforge.pipeline.transformer.base import OpsTransformer
 
-from .transformer_settings_group import TransformerSettingsGroup
+from .transformer_settings_group import (
+    ExpanderHost,
+    TransformerSettingsGroup,
+)
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
-    from rayforge.doceditor.editor import DocEditor
 
 
 class PlaceholderSettingsGroup(TransformerSettingsGroup):
@@ -23,30 +25,23 @@ class PlaceholderSettingsGroup(TransformerSettingsGroup):
 
     def __init__(
         self,
-        editor: "DocEditor",
         title: str,
-        component: OpsTransformer,
-        page: Adw.PreferencesPage,
-        step: "Step",
+        transformer: OpsTransformer,
+        page: ExpanderHost,
+        *,
+        step: "Step | None" = None,
         **kwargs,
     ):
-        super().__init__(
-            editor=editor,
-            title=title,
-            component=component,
-            page=page,
-            step=step,
-            **kwargs,
-        )
+        super().__init__(title, transformer, page, step=step, **kwargs)
 
-        component_type = type(component).__name__
+        transformer_type = type(transformer).__name__
 
         error_row = Adw.ActionRow(
             title=_("This feature is not available."),
             subtitle=_(
                 "The required component '{}' could not be found. "
                 "The document can still be saved."
-            ).format(component_type),
+            ).format(transformer_type),
         )
         error_row.add_css_class("error")
         self.add(error_row)

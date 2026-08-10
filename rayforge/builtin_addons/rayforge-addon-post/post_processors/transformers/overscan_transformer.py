@@ -69,8 +69,7 @@ class OverscanTransformer(OpsTransformer):
             2 * max_acceleration * safety_factor
         )
 
-        # Ensure minimum distance for practical purposes
-        return max(0.5, distance_mm)
+        return distance_mm
 
     @property
     def distance_mm(self) -> float:
