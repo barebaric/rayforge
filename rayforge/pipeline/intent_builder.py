@@ -284,7 +284,10 @@ class IntentBuilder:
         key = job_key()
         token = self._job_token(doc, step_tokens)
         stage = self._job_stage(doc, step_tokens)
-        out.append(self._make_request(key, token, stage))
+        # The job ops are the final pipeline output: the caller holds
+        # them in the JobArtifact, so a cached copy would only retain
+        # a duplicate of the job's command buffer between builds.
+        out.append(self._make_request(key, token, stage, cacheable=False))
 
     def _build_machine_transform_node(
         self,
