@@ -87,6 +87,19 @@ class FakeCanvas:
 
 
 @pytest.mark.ui
+def test_controls_do_not_grab_focus_on_click(ui_context_initializer):
+    overlay = PlaybackOverlay()
+    for widget in (
+        overlay._play_button,
+        overlay._step_back_button,
+        overlay._step_fwd_button,
+        overlay._speed_button,
+        overlay._slider,
+    ):
+        assert not widget.get_focus_on_click()
+
+
+@pytest.mark.ui
 def test_command_count_no_player(ui_context_initializer):
     overlay = PlaybackOverlay()
     assert overlay.command_count == 0
