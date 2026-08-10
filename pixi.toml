@@ -37,7 +37,7 @@ rust = "==1.97.1"
 patchelf = "==0.18.0|==0.17.2"
 
 [feature.app.pypi-dependencies]
-raygeo = "==1.37.0"
+raygeo = "==1.38.0"
 rayforge = { editable = true, path = "." }
 aiohttp = "==3.14.3"
 asyncudp = "==0.11.0"

@@ -31,6 +31,8 @@ class TabOpsTransformer(OpsTransformer):
     transformations and avoids clipping unrelated paths that may be nearby.
     """
 
+    SPEC_NAME = "tabs"
+
     def __init__(self, enabled: bool = True):
         super().__init__(enabled=enabled)
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from blinker import Signal
 
@@ -21,6 +21,10 @@ class OpsTransformer(ABC):
     """
 
     POSITION_SENSITIVE: bool = False
+
+    #: The raygeo transformer spec ``name()`` this transformer produces
+    #: (e.g. ``"overscan"``), used to label batch progress details.
+    SPEC_NAME: ClassVar[str] = ""
 
     def __init__(self, enabled: bool = True, **kwargs):
         self._enabled = enabled

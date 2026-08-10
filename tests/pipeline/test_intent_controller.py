@@ -532,7 +532,7 @@ def test_on_batch_progress_emits_progress_changed(
 
     ctrl.progress_changed.connect(_on_progress)
 
-    ctrl._on_batch_progress(0.5, "halfway")
+    ctrl._on_batch_progress(0.5, "job:encode")
     # _on_batch_progress marshals onto the main thread via
     # schedule_on_main_thread, which the fake captures.
     assert len(idle_calls) == 1
@@ -540,7 +540,118 @@ def test_on_batch_progress_emits_progress_changed(
     fn(*args)
     assert len(received) == 1
     assert received[0]["fraction"] == 0.5
-    assert received[0]["message"] == "halfway"
+    assert received[0]["message"] == "job:encode"
+    ctrl.shutdown()
+
+
+def test_on_batch_progress_updates_rebuild_task(monkeypatch, isolated_machine):
+    idle_calls: list = []
+    ctrl, _wp, _step = _make_controller_for_completed_test(
+        monkeypatch,
+        idle_calls=idle_calls,
+        machine=isolated_machine,
+    )
+
+    class _FakeTask:
+        def __init__(self):
+            self.updates: list[tuple] = []
+
+        def update(self, progress=None, message=None):
+            self.updates.append((progress, message))
+
+    fake_task = _FakeTask()
+    ctrl._rebuild_task = fake_task
+
+    ctrl._on_batch_progress(0.5, "job:encode")
+    fn, args = idle_calls[0]
+    fn(*args)
+    assert fake_task.updates == [(0.5, "Generating machine code")]
+    ctrl.shutdown()
+
+
+def test_batch_progress_shows_parallel_tasks(monkeypatch, isolated_machine):
+    idle_calls: list = []
+    ctrl, _wp, _step = _make_controller_for_completed_test(
+        monkeypatch,
+        idle_calls=idle_calls,
+        machine=isolated_machine,
+    )
+
+    class _FakeTask:
+        def __init__(self):
+            self.updates: list[tuple] = []
+
+        def update(self, progress=None, message=None):
+            self.updates.append((progress, message))
+
+    fake_task = _FakeTask()
+    ctrl._rebuild_task = fake_task
+
+    ctrl._on_batch_progress(0.4, "job")
+    ctrl._on_batch_progress(0.5, "job:encode")
+    while idle_calls:
+        fn, args = idle_calls.pop(0)
+        fn(*args)
+    assert fake_task.updates[-1] == (
+        0.5,
+        "Aggregating job\nGenerating machine code",
+    )
+    ctrl.shutdown()
+
+
+def test_batch_progress_completion_removes_node(monkeypatch, isolated_machine):
+    idle_calls: list = []
+    ctrl, _wp, _step = _make_controller_for_completed_test(
+        monkeypatch,
+        idle_calls=idle_calls,
+        machine=isolated_machine,
+    )
+
+    class _FakeTask:
+        def __init__(self):
+            self.updates: list[tuple] = []
+
+        def update(self, progress=None, message=None):
+            self.updates.append((progress, message))
+
+    fake_task = _FakeTask()
+    ctrl._rebuild_task = fake_task
+
+    ctrl._on_batch_progress(0.4, "job")
+    ctrl._on_batch_progress(0.5, "\tjob")
+    while idle_calls:
+        fn, args = idle_calls.pop(0)
+        fn(*args)
+    assert fake_task.updates[-1] == (0.5, "")
+    ctrl.shutdown()
+
+
+def test_batch_progress_final_tick_clears_window(
+    monkeypatch, isolated_machine
+):
+    idle_calls: list = []
+    ctrl, _wp, _step = _make_controller_for_completed_test(
+        monkeypatch,
+        idle_calls=idle_calls,
+        machine=isolated_machine,
+    )
+
+    class _FakeTask:
+        def __init__(self):
+            self.updates: list[tuple] = []
+
+        def update(self, progress=None, message=None):
+            self.updates.append((progress, message))
+
+    fake_task = _FakeTask()
+    ctrl._rebuild_task = fake_task
+
+    ctrl._on_batch_progress(0.4, "job")
+    ctrl._on_batch_progress(1.0, "")
+    while idle_calls:
+        fn, args = idle_calls.pop(0)
+        fn(*args)
+    assert fake_task.updates[-1] == (1.0, "")
     ctrl.shutdown()
 
 

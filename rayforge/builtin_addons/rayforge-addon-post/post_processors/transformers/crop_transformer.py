@@ -24,6 +24,7 @@ class CropTransformer(OpsTransformer):
     keeping only the parts that lie inside the stock boundary.
     """
 
+    SPEC_NAME = "crop"
     POSITION_SENSITIVE = True
 
     def __init__(

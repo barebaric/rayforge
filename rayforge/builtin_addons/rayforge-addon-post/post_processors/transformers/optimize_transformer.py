@@ -23,6 +23,8 @@ class Optimize(OpsTransformer):
     2. Segment-level k-d tree nearest-neighbor + 2-opt refinement.
     """
 
+    SPEC_NAME = "optimize"
+
     def __init__(
         self,
         enabled: bool = True,

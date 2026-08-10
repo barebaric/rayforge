@@ -30,6 +30,8 @@ class LeadInOutTransformer(OpsTransformer):
     improving cut quality at start/end points.
     """
 
+    SPEC_NAME = "lead_in_out"
+
     def __init__(
         self,
         enabled: bool = True,

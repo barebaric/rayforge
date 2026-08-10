@@ -27,6 +27,8 @@ class Smooth(OpsTransformer):
         final, high-quality path.
     """
 
+    SPEC_NAME = "smooth"
+
     def __init__(
         self, enabled: bool = True, amount=20, corner_angle_threshold=45
     ):

@@ -73,5 +73,25 @@ class TransformerRegistry:
         """
         return self._transformers.get(name)
 
+    def progress_label(self, spec_name: str) -> str | None:
+        """
+        Look up the UI label for a raygeo transformer spec ``name()``.
+
+        The label comes from the registered transformer whose
+        ``SPEC_NAME`` matches, via its :attr:`label` property.
+
+        Args:
+            spec_name: A raygeo transformer spec ``name()`` (e.g.
+                ``"overscan"``).
+
+        Returns:
+            The UI label, or None when no registered transformer
+            declares that spec name.
+        """
+        for transformer_class in self._transformers.values():
+            if transformer_class.SPEC_NAME == spec_name:
+                return transformer_class().label
+        return None
+
 
 transformer_registry = TransformerRegistry()

@@ -23,6 +23,8 @@ class MultiPassTransformer(OpsTransformer):
     which is useful for cutting through thick materials.
     """
 
+    SPEC_NAME = "multipass"
+
     def __init__(
         self, enabled: bool = True, passes: int = 1, z_step_down: float = 0.0
     ):
