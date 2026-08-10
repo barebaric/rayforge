@@ -32,7 +32,7 @@ class PlaybackPlayer(Protocol):
     def playback_progress(self) -> tuple[int, float]: ...
 
 
-SPEED_OPTIONS = [1, 2, 4, 8, 16]
+SPEED_OPTIONS = [1, 2, 4, 8, 16, 32, 64]
 
 # Wall-clock interval between playback ticks (~60 fps, matching the
 # display frame rate). The simulated clock advances by this amount per
@@ -95,6 +95,7 @@ class PlaybackOverlay(Gtk.Box):
         self._play_button.set_child(self._play_icon)
         self._play_button.set_tooltip_text(_("Play simulation"))
         self._play_button.set_sensitive(False)
+        self._play_button.set_focus_on_click(False)
         self._play_button.connect("clicked", self._on_play_clicked)
         self.append(self._play_button)
 
@@ -102,6 +103,7 @@ class PlaybackOverlay(Gtk.Box):
         self._step_back_button.set_child(get_icon("skip-previous-symbolic"))
         self._step_back_button.set_tooltip_text(_("Step backward"))
         self._step_back_button.set_sensitive(False)
+        self._step_back_button.set_focus_on_click(False)
         self._step_back_button.connect("clicked", self._on_step_back)
         self.append(self._step_back_button)
 
@@ -109,6 +111,7 @@ class PlaybackOverlay(Gtk.Box):
         self._step_fwd_button.set_child(get_icon("skip-forward-symbolic"))
         self._step_fwd_button.set_tooltip_text(_("Step forward"))
         self._step_fwd_button.set_sensitive(False)
+        self._step_fwd_button.set_focus_on_click(False)
         self._step_fwd_button.connect("clicked", self._on_step_fwd)
         self.append(self._step_fwd_button)
 
@@ -119,6 +122,7 @@ class PlaybackOverlay(Gtk.Box):
         self._slider.set_hexpand(True)
         self._slider.set_size_request(300, -1)
         self._slider.set_sensitive(False)
+        self._slider.set_focus_on_click(False)
         self._slider.connect("value-changed", self._on_slider_changed)
         self.append(self._slider)
 
@@ -126,6 +130,7 @@ class PlaybackOverlay(Gtk.Box):
         self._speed_button = Gtk.Button(label=f"{SPEED_OPTIONS[0]}x")
         self._speed_button.add_css_class("speed-button")
         self._speed_button.set_tooltip_text(_("Playback speed"))
+        self._speed_button.set_focus_on_click(False)
         self._speed_button.connect("clicked", self._on_speed_clicked)
         self.append(self._speed_button)
 
