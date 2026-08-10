@@ -26,6 +26,8 @@ class BidirScanOffsetTransformer(OpsTransformer):
     lead-out already baked into the pass is shifted along with it.
     """
 
+    SPEC_NAME = "bidir_scan_offset"
+
     def __init__(self, enabled: bool = True):
         super().__init__(enabled=enabled)
 

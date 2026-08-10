@@ -87,6 +87,28 @@ class StepRegistry:
         """
         return self._steps.get(name)
 
+    def progress_label(self, assembler_name: str) -> str | None:
+        """
+        Look up the UI label for a raygeo assembler progress name.
+
+        The label is the ``TYPELABEL`` of the registered step whose
+        ``ASSEMBLER_NAME`` matches.
+
+        Args:
+            assembler_name: A raygeo assembler name (the prefix of the
+                ``"{name}: assemble"`` batch progress message).
+
+        Returns:
+            The UI label, or None when no registered step declares that
+            assembler name.
+        """
+        for step_class in self._steps.values():
+            if step_class.ASSEMBLER_NAME != assembler_name:
+                continue
+            if step_class.TYPELABEL:
+                return step_class.TYPELABEL
+        return None
+
     def get_by_typelabel(self, typelabel: str) -> type["Step"] | None:
         """
         Look up a step class by its TYPELABEL attribute.

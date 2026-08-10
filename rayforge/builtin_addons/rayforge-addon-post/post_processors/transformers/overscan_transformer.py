@@ -29,6 +29,8 @@ class OverscanTransformer(OpsTransformer):
     lead-out moves at zero power.
     """
 
+    SPEC_NAME = "overscan"
+
     def __init__(
         self, enabled: bool = True, distance_mm: float = 2.0, auto: bool = True
     ):

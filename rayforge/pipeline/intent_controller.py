@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
+from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -45,6 +46,7 @@ from raygeo.pipeline.execute import Pipeline as RaygeoPipeline
 from raygeo.pipeline.request import NodeRequest
 
 from .intent_builder import IntentBuilder, parse_workpiece_key
+from .status_messages import status_message_for_key
 
 if TYPE_CHECKING:
     from ..core.doc import Doc
@@ -60,6 +62,12 @@ logger = logging.getLogger(__name__)
 
 # Debounce window for signal-driven intent rebuilds (milliseconds).
 REBUILD_DEBOUNCE_MS = 200
+
+# Upper bound on node keys kept in the active-progress window.
+MAX_ACTIVE_PROGRESS_KEYS = 8
+
+# How many active statuses are shown before collapsing into (+N more).
+ACTIVE_PROGRESS_DISPLAY_LIMIT = 3
 
 
 @runtime_checkable
@@ -123,9 +131,15 @@ class IntentController:
         self._rebuild_timer: Any | None = None
         self._rebuilding: bool = False
         self._rebuild_pending: bool = False
+        self._rebuild_task: Any | None = None
         self._pause_count: int = 0
         self._auto_rebuild: bool = True
         self._data_stale_flag: bool = False
+        # Node keys currently reported as active by ``on_batch_progress``
+        # mapped to their translated status message, in first-seen order.
+        # Completed nodes are removed via the ``\t{key}`` completion
+        # payload so a few parallel tasks can be shown at once.
+        self._active_progress: dict[str, str] = {}
         # Flat map from node key back to the originating :class:`DocItem`
         # for DOM reattachment.  Rebuilt on every successful
         # ``IntentBuilder.build`` call.
@@ -308,6 +322,7 @@ class IntentController:
         self._rebuild_timer = None
         self._generation_id += 1
         self._rebuilding = True
+        self._active_progress = {}
         gen = self._generation_id
         self.rebuild_started.send(self)
 
@@ -338,6 +353,7 @@ class IntentController:
                     logger.debug("run_intent failed: %s", exc)
 
         def _on_done(_task: Any) -> None:
+            self._rebuild_task = None
             self._rebuilding = False
             if self._rebuild_pending:
                 self._rebuild_pending = False
@@ -347,7 +363,7 @@ class IntentController:
                     self._emit_rebuild_finished
                 )
 
-        self._task_manager.run_thread(
+        self._rebuild_task = self._task_manager.run_thread(
             _worker, when_done=_on_done, key="intent-rebuild"
         )
 
@@ -426,18 +442,71 @@ class IntentController:
         """raygeo ``on_batch_progress`` callback.
 
         Invoked on a rayon worker thread with the GIL held.  Relays
-        the aggregate progress fraction and status message to
-        listeners via :attr:`progress_changed` (marshalled onto the
-        application main thread so signal handlers never run on a
-        worker).
+        the aggregate progress fraction and node key to the main
+        thread, where the key is translated into a user-facing status
+        message.
         """
         self._task_manager.schedule_on_main_thread(
-            self._emit_progress, fraction, message
+            self._update_rebuild_progress, fraction, message
         )
 
-    def _emit_progress(self, fraction: float, message: str) -> None:
-        """Emit :attr:`progress_changed` on the main thread."""
-        self.progress_changed.send(self, fraction=fraction, message=message)
+    def _update_rebuild_progress(self, fraction: float, key: str) -> None:
+        """Update the ``intent-rebuild`` task with progress and status.
+
+        Runs on the application main thread.  The batch progress
+        payload is folded into a small window of currently-active node
+        keys so that a few parallel tasks can be shown at once:
+
+        * ``{key}`` or ``{key}\\t{activity}`` marks a node as active;
+        * ``\\t{key}`` (a completion marker) removes that node;
+        * ``""`` (the final tick) clears the whole window.
+
+        Each key is translated into a translatable status message and
+        pushed into the rebuild :class:`Task` so the UI can display it.
+        The :attr:`progress_changed` signal is still emitted with the
+        bare node key for backward compatibility with existing
+        listeners.
+        """
+        task = self._rebuild_task
+        if not key:
+            self._active_progress.clear()
+            node_key = ""
+        elif key.startswith("\t"):
+            self._active_progress.pop(key[1:], None)
+            node_key = ""
+        else:
+            node_key, _sep, _detail = key.partition("\t")
+            if node_key:
+                self._active_progress[node_key] = status_message_for_key(
+                    key, self._workpieces_by_uid, self._steps_by_uid
+                )
+                if len(self._active_progress) > MAX_ACTIVE_PROGRESS_KEYS:
+                    self._active_progress.pop(
+                        next(iter(self._active_progress))
+                    )
+        if task is not None:
+            task.update(
+                progress=fraction,
+                message=self._format_active_progress(),
+            )
+        self.progress_changed.send(self, fraction=fraction, message=node_key)
+
+    def _format_active_progress(self) -> str:
+        """Join the currently-active node statuses for the progress bar.
+
+        At most three statuses are shown on separate lines; further
+        active nodes are summarised as a ``(+N more)`` suffix so the
+        overlay stays compact while still hinting at parallel work.
+        """
+        items = list(self._active_progress.values())
+        if not items:
+            return ""
+        text = "\n".join(items[:ACTIVE_PROGRESS_DISPLAY_LIMIT])
+        if len(items) > ACTIVE_PROGRESS_DISPLAY_LIMIT:
+            text += "\n" + _("(+{n} more)").format(
+                n=len(items) - ACTIVE_PROGRESS_DISPLAY_LIMIT
+            )
+        return text
 
     def _reattach(self, key: str, item: DocItem, output: Any) -> None:
         """
