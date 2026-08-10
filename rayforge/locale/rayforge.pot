@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-07 04:07+0200\n"
+"POT-Creation-Date: 2026-08-10 15:06+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -59,6 +59,10 @@ msgstr ""
 
 #: rayforge/core/layer.py rayforge/core/capability.py
 msgid "Rotary"
+msgstr ""
+
+#: rayforge/core/doc.py
+msgid "Layer {}"
 msgstr ""
 
 #: rayforge/core/stock.py
@@ -2632,6 +2636,10 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/asset_browser.py
 #: rayforge/ui_gtk/doceditor/layer_column.py
 msgid "Paste"
+msgstr ""
+
+#: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py rayforge/doceditor/edit_cmd.py
+msgid "Add {} Instance"
 msgstr ""
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
@@ -8165,8 +8173,16 @@ msgstr ""
 msgid "Auto Layout"
 msgstr ""
 
+#: rayforge/image/png/importer.py
+msgid "Failed to scan PNG file: {}"
+msgstr ""
+
 #: rayforge/image/png/importer.py rayforge/image/jpg/importer.py
 msgid "Failed to process image data."
+msgstr ""
+
+#: rayforge/image/png/importer.py rayforge/image/jpg/importer.py
+msgid "Image load failed: {}"
 msgstr ""
 
 #: rayforge/image/svg/svg_base.py
@@ -8201,8 +8217,20 @@ msgstr ""
 msgid "PDF file contains no pages."
 msgstr ""
 
+#: rayforge/image/pdf/pdf_trace.py rayforge/image/pdf/pdf_vector.py
+msgid "Could not read PDF: {}"
+msgstr ""
+
+#: rayforge/image/pdf/pdf_trace.py
+msgid "Unexpected error while scanning PDF: {}"
+msgstr ""
+
 #: rayforge/image/pdf/pdf_trace.py
 msgid "Failed to process PDF image data."
+msgstr ""
+
+#: rayforge/image/pdf/pdf_trace.py
+msgid "Failed to read PDF page dimensions: {}"
 msgstr ""
 
 #: rayforge/image/pdf/pdf_trace.py rayforge/image/pdf/pdf_vector.py
@@ -8217,12 +8245,72 @@ msgstr ""
 msgid "PDF contains no vector geometry."
 msgstr ""
 
+#: rayforge/image/pdf/pdf_vector.py
+msgid "Failed to parse PDF: {}"
+msgstr ""
+
+#: rayforge/image/lightburn/importer.py
+msgid "LightBurn file is invalid XML: {}"
+msgstr ""
+
+#: rayforge/image/lightburn/importer.py
+msgid "LightBurn file is corrupt or invalid: {}"
+msgstr ""
+
+#: rayforge/image/bmp/importer.py
+msgid "Could not parse BMP header in {}"
+msgstr ""
+
+#: rayforge/image/bmp/importer.py
+msgid "Failed to scan BMP file: {}"
+msgstr ""
+
 #: rayforge/image/bmp/importer.py
 msgid "Invalid or unsupported BMP data."
 msgstr ""
 
+#: rayforge/image/bmp/importer.py
+msgid "Image processing failed: {}"
+msgstr ""
+
 #: rayforge/image/ruida/importer.py
 msgid "File contains no vector commands."
+msgstr ""
+
+#: rayforge/image/ruida/importer.py
+msgid "Ruida file is invalid: {}"
+msgstr ""
+
+#: rayforge/image/ruida/importer.py
+msgid "Unexpected error while scanning Ruida file: {}"
+msgstr ""
+
+#: rayforge/image/ruida/importer.py
+msgid "Failed to parse Ruida commands: {}"
+msgstr ""
+
+#: rayforge/image/dxf/importer.py
+msgid "DXF file structure is invalid: {}"
+msgstr ""
+
+#: rayforge/image/dxf/importer.py
+msgid "Unexpected error while scanning DXF: {}"
+msgstr ""
+
+#: rayforge/image/dxf/importer.py
+msgid "DXF file is corrupt or invalid: {}"
+msgstr ""
+
+#: rayforge/image/procedural/importer.py
+msgid "Failed to calculate parameters: {}"
+msgstr ""
+
+#: rayforge/image/procedural/importer.py
+msgid "Failed to execute generator: {}"
+msgstr ""
+
+#: rayforge/image/jpg/importer.py
+msgid "Failed to scan JPEG file: {}"
 msgstr ""
 
 #: rayforge/image/dither.py

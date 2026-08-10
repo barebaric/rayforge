@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-08 23:36+0200\n"
+"POT-Creation-Date: 2026-08-09 02:18+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -671,3 +671,11 @@ msgstr "OK"
 #, python-brace-format
 msgid "{app_name} Sketch"
 msgstr "{app_name}-Skizze"
+
+#: sketcher/image/importer.py
+msgid "Sketch file is invalid JSON: {}"
+msgstr "Skizzen-Datei ist ungültiges JSON: {}"
+
+#: sketcher/image/importer.py
+msgid "Failed to load sketch structure: {}"
+msgstr "Fehler beim Laden der Skizzenstruktur: {}"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-07 04:07+0200\n"
+"POT-Creation-Date: 2026-08-10 15:06+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -60,6 +60,10 @@ msgstr "Роторний · {name}"
 #: rayforge/core/layer.py rayforge/core/capability.py
 msgid "Rotary"
 msgstr "Поворотний"
+
+#: rayforge/core/doc.py
+msgid "Layer {}"
+msgstr "Шар {}"
 
 #: rayforge/core/stock.py
 #, python-brace-format
@@ -2807,6 +2811,10 @@ msgstr "Імпортувати файл…"
 #: rayforge/ui_gtk/doceditor/layer_column.py
 msgid "Paste"
 msgstr "Вставити"
+
+#: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py rayforge/doceditor/edit_cmd.py
+msgid "Add {} Instance"
+msgstr "Додати екземпляр {}"
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py
 msgid "Drop files to import"
@@ -8548,9 +8556,17 @@ msgstr "Позиціювати в точці"
 msgid "Auto Layout"
 msgstr "Автоматичне компонування"
 
+#: rayforge/image/png/importer.py
+msgid "Failed to scan PNG file: {}"
+msgstr "Не вдалося сканувати файл PNG: {}"
+
 #: rayforge/image/png/importer.py rayforge/image/jpg/importer.py
 msgid "Failed to process image data."
 msgstr "Не вдалося обробити дані зображення."
+
+#: rayforge/image/png/importer.py rayforge/image/jpg/importer.py
+msgid "Image load failed: {}"
+msgstr "Не вдалося завантажити зображення: {}"
 
 #: rayforge/image/svg/svg_base.py
 msgid "Could not calculate SVG metadata."
@@ -8584,9 +8600,21 @@ msgstr "Не вдалося нормалізувати дані зображен
 msgid "PDF file contains no pages."
 msgstr "PDF-файл не містить сторінок."
 
+#: rayforge/image/pdf/pdf_trace.py rayforge/image/pdf/pdf_vector.py
+msgid "Could not read PDF: {}"
+msgstr "Не вдалося прочитати PDF: {}"
+
+#: rayforge/image/pdf/pdf_trace.py
+msgid "Unexpected error while scanning PDF: {}"
+msgstr "Неочікувана помилка під час сканування PDF: {}"
+
 #: rayforge/image/pdf/pdf_trace.py
 msgid "Failed to process PDF image data."
 msgstr "Не вдалося обробити дані зображення PDF."
+
+#: rayforge/image/pdf/pdf_trace.py
+msgid "Failed to read PDF page dimensions: {}"
+msgstr "Не вдалося прочитати розміри сторінок PDF: {}"
 
 #: rayforge/image/pdf/pdf_trace.py rayforge/image/pdf/pdf_vector.py
 msgid "PDF page has zero dimensions"
@@ -8600,13 +8628,73 @@ msgstr "Не вдалося растеризувати PDF"
 msgid "PDF contains no vector geometry."
 msgstr "PDF не містить векторної геометрії."
 
+#: rayforge/image/pdf/pdf_vector.py
+msgid "Failed to parse PDF: {}"
+msgstr "Не вдалося розібрати PDF: {}"
+
+#: rayforge/image/lightburn/importer.py
+msgid "LightBurn file is invalid XML: {}"
+msgstr "Файл LightBurn містить недійсний XML: {}"
+
+#: rayforge/image/lightburn/importer.py
+msgid "LightBurn file is corrupt or invalid: {}"
+msgstr "Файл LightBurn пошкоджено або він недійсний: {}"
+
+#: rayforge/image/bmp/importer.py
+msgid "Could not parse BMP header in {}"
+msgstr "Не вдалося розібрати заголовок BMP у {}"
+
+#: rayforge/image/bmp/importer.py
+msgid "Failed to scan BMP file: {}"
+msgstr "Не вдалося сканувати файл BMP: {}"
+
 #: rayforge/image/bmp/importer.py
 msgid "Invalid or unsupported BMP data."
 msgstr "Неприпустимі або непідтримувані дані BMP."
 
+#: rayforge/image/bmp/importer.py
+msgid "Image processing failed: {}"
+msgstr "Не вдалося обробити зображення: {}"
+
 #: rayforge/image/ruida/importer.py
 msgid "File contains no vector commands."
 msgstr "Файл не містить векторних команд."
+
+#: rayforge/image/ruida/importer.py
+msgid "Ruida file is invalid: {}"
+msgstr "Файл Ruida недійсний: {}"
+
+#: rayforge/image/ruida/importer.py
+msgid "Unexpected error while scanning Ruida file: {}"
+msgstr "Неочікувана помилка під час сканування файлу Ruida: {}"
+
+#: rayforge/image/ruida/importer.py
+msgid "Failed to parse Ruida commands: {}"
+msgstr "Не вдалося розібрати команди Ruida: {}"
+
+#: rayforge/image/dxf/importer.py
+msgid "DXF file structure is invalid: {}"
+msgstr "Структура файлу DXF недійсна: {}"
+
+#: rayforge/image/dxf/importer.py
+msgid "Unexpected error while scanning DXF: {}"
+msgstr "Неочікувана помилка під час сканування DXF: {}"
+
+#: rayforge/image/dxf/importer.py
+msgid "DXF file is corrupt or invalid: {}"
+msgstr "Файл DXF пошкоджено або він недійсний: {}"
+
+#: rayforge/image/procedural/importer.py
+msgid "Failed to calculate parameters: {}"
+msgstr "Не вдалося розрахувати параметри: {}"
+
+#: rayforge/image/procedural/importer.py
+msgid "Failed to execute generator: {}"
+msgstr "Не вдалося виконати генератор: {}"
+
+#: rayforge/image/jpg/importer.py
+msgid "Failed to scan JPEG file: {}"
+msgstr "Не вдалося сканувати файл JPEG: {}"
 
 #: rayforge/image/dither.py
 msgid "Floyd Steinberg"
