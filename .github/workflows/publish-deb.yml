@@ -133,7 +133,7 @@ jobs:
           echo "changes_file_path=$CHANGES_FILE" >> $GITHUB_OUTPUT
 
       - name: Upload Binary Artifact for Release
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.build_test_packages.outputs.deb_filename }}
           path: ${{ steps.build_test_packages.outputs.deb_file_path }}

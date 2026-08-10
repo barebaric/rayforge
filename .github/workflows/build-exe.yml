@@ -124,13 +124,13 @@ jobs:
           zip -r9 "${ZIP_FILE}" "${BUNDLE_DIR}"
 
       - name: Upload PyInstaller bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rayforge-v${{ steps.set-version.outputs.version }}-windows-bundle
           path: dist/rayforge-v${{ steps.set-version.outputs.version }}-windows-bundle.zip
 
       - name: Upload Installer Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rayforge-v${{ steps.set-version.outputs.version }}-installer.zip
           path: dist/rayforge-v${{ steps.set-version.outputs.version }}-installer.exe

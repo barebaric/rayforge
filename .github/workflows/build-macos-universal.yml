@@ -100,7 +100,7 @@ jobs:
           ditto -c -k --keepParent "$APP_PATH" "$ZIP_NAME"
 
       - name: Upload Intel app artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rayforge-${{ env.VERSION }}-macos-intel-app.zip
           path: rayforge-${{ env.VERSION }}-macos-intel-app.zip
@@ -154,7 +154,7 @@ jobs:
           ditto -c -k --keepParent "$APP_PATH" "$ZIP_NAME"
 
       - name: Upload ARM app artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rayforge-${{ env.VERSION }}-macos-arm-app.zip
           path: rayforge-${{ env.VERSION }}-macos-arm-app.zip
@@ -294,14 +294,14 @@ jobs:
           done
 
       - name: Upload universal app artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rayforge-${{ env.VERSION }}-macos-universal-app.zip
           path: rayforge-${{ env.VERSION }}-macos-universal-app.zip
           compression-level: 9
 
       - name: Upload universal DMG artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rayforge-${{ env.VERSION }}-macos-universal-dmg
           path: rayforge-${{ env.VERSION }}-macos-universal.dmg
