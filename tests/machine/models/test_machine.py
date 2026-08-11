@@ -1451,44 +1451,6 @@ class TestMachine:
         assert limits == expected_limits
 
     @pytest.mark.parametrize(
-        "reverse_x, reverse_y, wcs_offset, expected_offset",
-        [
-            # No reverse axes
-            (False, False, (0.0, 0.0, 0.0), (0.0, 0.0)),
-            (False, False, (10.0, 20.0, 0.0), (10.0, 20.0)),
-            # Reverse X only
-            (True, False, (0.0, 0.0, 0.0), (0.0, 0.0)),
-            (True, False, (10.0, 20.0, 0.0), (-10.0, 20.0)),
-            # Reverse Y only
-            (False, True, (0.0, 0.0, 0.0), (0.0, 0.0)),
-            (False, True, (10.0, 20.0, 0.0), (10.0, -20.0)),
-            # Both reversed
-            (True, True, (0.0, 0.0, 0.0), (0.0, 0.0)),
-            (True, True, (10.0, 20.0, 0.0), (-10.0, -20.0)),
-        ],
-    )
-    def test_get_visual_wcs_offset(
-        self,
-        isolated_machine: Machine,
-        reverse_x,
-        reverse_y,
-        wcs_offset,
-        expected_offset,
-    ):
-        """
-        Tests that get_visual_wcs_offset returns the WCS offset with
-        axis reversal applied.
-        """
-        isolated_machine.set_axis_extents(100, 100)
-        isolated_machine.set_reverse_x_axis(reverse_x)
-        isolated_machine.set_reverse_y_axis(reverse_y)
-        isolated_machine.set_active_wcs("G54")
-        isolated_machine.update_wcs_offset("G54", wcs_offset)
-
-        offset = isolated_machine.get_visual_wcs_offset()
-        assert offset == pytest.approx(expected_offset)
-
-    @pytest.mark.parametrize(
         "wcs_is_workarea_origin, origin, reverse_x, reverse_y, expected",
         [
             # Active WCS offset (25, 35), checked against legacy

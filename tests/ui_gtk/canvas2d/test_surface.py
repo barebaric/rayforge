@@ -137,10 +137,6 @@ def test_wcs_visual_marker_location(surface, scenario):
     )
 
     machine.get_active_wcs_offset.return_value = scenario["wcs"]
-    machine.get_visual_wcs_offset.return_value = (
-        -scenario["wcs"][0] if scenario["reverse_x"] else scenario["wcs"][0],
-        -scenario["wcs"][1] if scenario["reverse_y"] else scenario["wcs"][1],
-    )
 
     # Create a real MachineSpace from the mock machine
     space = MachineSpace.from_machine(machine)
