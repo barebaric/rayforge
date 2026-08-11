@@ -7,7 +7,7 @@ from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.stock_cmd import StockCmd
-from rayforge.pipeline.coordspace import (
+from rayforge.machine.models.coordspace import (
     AxisDirection,
     MachineSpace,
     OriginCorner,

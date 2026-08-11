@@ -12,13 +12,13 @@ from raygeo.ops import Ops
 from ..context import get_context
 from ..pipeline.artifact import JobArtifact
 from ..pipeline.artifact.handle import BaseArtifactHandle
-from ..pipeline.coordspace import MachineSpace
 from ..pipeline.encoder.base import EncodedOutput
 from ..pipeline.encoder.context import GcodeContext, JobInfo
 from ..shared.util.template import TemplateFormatter
 from .driver import get_driver_cls
 from .driver.dummy import NoDeviceDriver
 from .job_monitor import JobMonitor
+from .models.coordspace import MachineSpace
 
 if TYPE_CHECKING:
     from raygeo.ops.axis import Axis

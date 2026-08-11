@@ -72,9 +72,9 @@ from raygeo.pipeline.stage import StageSpec
 from ..machine.driver import get_driver_cls
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.kinematic_math import KinematicMath
+from ..machine.models.coordspace import MachineSpace
 from ..machine.models.dialect import GRBL_DIALECT
 from ..machine.models.rotary_module import RotaryMode, RotaryType
-from .coordspace import MachineSpace
 from .encoder.base import EncodedOutput
 from .encoder.rust_helpers import build_encode_context, dialect_to_spec
 from .transformer import OpsTransformer

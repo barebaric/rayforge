@@ -21,7 +21,6 @@ from ...context import RayforgeContext, get_context
 from ...core.capability import MachineCapability
 from ...core.layer import Layer
 from ...core.model import Model
-from ...pipeline.coordspace import MachineSpace
 from ...shared.tasker import task_mgr
 from ...shared.units.system import UnitSystem
 from ..assembly import Assembly
@@ -30,6 +29,7 @@ from ..driver.driver import DeviceState, Pos, PWMParams, pwm_varset
 from ..kinematics import HeadSpec, Kinematics, build_assembly
 from ..models.axis import AxisConfig, AxisDirection, AxisSet, AxisType
 from ..transport import TransportStatus
+from .coordspace import MachineSpace
 from .dialect import GcodeDialect
 from .head import Head, head_from_dict
 from .laser import Laser, LaserHead

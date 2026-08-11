@@ -4,11 +4,11 @@ from typing import TYPE_CHECKING
 
 import cairo
 
-from ....pipeline.coordspace import OriginCorner
+from ....machine.models.coordspace import OriginCorner
 from ...canvas import CanvasElement
 
 if TYPE_CHECKING:
-    from ....pipeline.coordspace import CoordinateSpace
+    from ....machine.models.coordspace import CoordinateSpace
 
 
 class WorkOriginElement(CanvasElement):

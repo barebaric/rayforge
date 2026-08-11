@@ -29,13 +29,13 @@ from rayforge.image import (
     ParsingResult,
 )
 from rayforge.image.svg.renderer import SVG_RENDERER
-from rayforge.machine.models.machine import Machine
-from rayforge.machine.models.spindle import SpindleHead
-from rayforge.pipeline.coordspace import (
+from rayforge.machine.models.coordspace import (
     AxisDirection,
     MachineSpace,
     OriginCorner,
 )
+from rayforge.machine.models.machine import Machine
+from rayforge.machine.models.spindle import SpindleHead
 from rayforge.shared.tasker.manager import TaskManager
 
 
