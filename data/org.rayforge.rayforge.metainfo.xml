@@ -20,6 +20,8 @@
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
 
+  <translation type="gettext" source_locale="en">rayforge</translation>
+
   <description>
     <p>
       Rayforge is a desktop application for laser cutting and engraving.
