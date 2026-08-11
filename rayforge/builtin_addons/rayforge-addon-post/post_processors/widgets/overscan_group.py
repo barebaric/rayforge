@@ -5,7 +5,7 @@ from gi.repository import Adw, GObject
 
 from rayforge.context import get_context
 from rayforge.shared.util.glib import DebounceMixin
-from rayforge.ui_gtk.doceditor.step_settings.groups import (
+from rayforge.ui_gtk.doceditor.post_processor.groups import (
     ExpanderHost,
     TransformerSettingsGroup,
 )

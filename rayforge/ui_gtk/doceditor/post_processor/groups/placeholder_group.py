@@ -5,9 +5,8 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw
 
-from rayforge.pipeline.transformer.base import OpsTransformer
-
-from .transformer_settings_group import (
+from .....pipeline.transformer.base import OpsTransformer
+from .transformer_group import (
     ExpanderHost,
     TransformerSettingsGroup,
 )

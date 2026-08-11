@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING, Protocol
 from blinker import Signal
 from gi.repository import Adw, GObject, Gtk
 
-from rayforge.pipeline.transformer.base import OpsTransformer
+from .....pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
-    from rayforge.core.step import Step
+    from .....core.step import Step
 
 
 class ExpanderHost(Protocol):
