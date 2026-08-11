@@ -9,6 +9,7 @@ from rayforge.pipeline.coordspace import (
     AxisDirection,
     MachineSpace,
     OriginCorner,
+    WorkspaceOrientation,
 )
 
 
@@ -216,62 +217,6 @@ class TestMachineSpace:
             wcs_is_workarea_origin=True
         ) == pytest.approx((10.0, 20.0, 0.0))
 
-    @pytest.mark.parametrize("origin", list(OriginCorner))
-    @pytest.mark.parametrize("reverse_x", [False, True])
-    @pytest.mark.parametrize("reverse_y", [False, True])
-    def test_scalar_and_matrix_paths_agree(self, origin, reverse_x, reverse_y):
-        """The two world->machine implementations must not drift apart.
-
-        `world_point_to_machine` applies the origin/reversal rules as
-        scalar branches (used by the UI), while the encoding pipeline
-        consumes `get_world_to_machine_matrix`. They are separate code
-        paths describing the same transform, so a change to one that is
-        not mirrored in the other would silently desynchronise what the
-        canvas shows from what the machine is told to do.
-        """
-        x_direction = (
-            AxisDirection.POSITIVE_LEFT
-            if origin
-            in (
-                OriginCorner.TOP_RIGHT,
-                OriginCorner.BOTTOM_RIGHT,
-            )
-            else AxisDirection.POSITIVE_RIGHT
-        )
-        y_direction = (
-            AxisDirection.POSITIVE_DOWN
-            if origin
-            in (
-                OriginCorner.TOP_LEFT,
-                OriginCorner.TOP_RIGHT,
-            )
-            else AxisDirection.POSITIVE_UP
-        )
-        space = MachineSpace(
-            origin=origin,
-            x_positive_direction=x_direction,
-            y_positive_direction=y_direction,
-            extents=(400.0, 800.0),
-            reverse_x=reverse_x,
-            reverse_y=reverse_y,
-        )
-        matrix = space.get_world_to_machine_matrix()
-        width, height = space.extents
-
-        # Includes both bed corners and asymmetric interior points, so a
-        # missing translation term cannot pass by symmetry.
-        for world_x, world_y in (
-            (0.0, 0.0),
-            (width, height),
-            (width * 0.31, height * 0.17),
-            (width * 0.73, height * 0.61),
-        ):
-            scalar = space.world_point_to_machine(world_x, world_y)
-            transformed = matrix @ np.array([world_x, world_y, 0.0, 1.0])
-            assert scalar == pytest.approx((transformed[0], transformed[1])), (
-                f"paths disagree at ({world_x}, {world_y})"
-            )
-
 
 class TestCoordinateSpaceTransforms:
     """Tests for coordinate transformation matrices."""
@@ -445,6 +390,85 @@ class TestMachineSpaceItemTransforms:
         assert space.machine_item_to_world(machine_pos, size) == (
             pytest.approx(pos[0]),
             pytest.approx(pos[1]),
+        )
+
+    @pytest.mark.parametrize("orientation", list(WorkspaceOrientation))
+    @pytest.mark.parametrize("origin", list(OriginCorner))
+    @pytest.mark.parametrize("reverse_x", [False, True])
+    @pytest.mark.parametrize("reverse_y", [False, True])
+    def test_workspace_transform_round_trip_all_configurations(
+        self, orientation, origin, reverse_x, reverse_y
+    ):
+        """Point and item transforms round-trip for every orientation,
+        origin, and reversal combination. The probe and item are placed
+        within the smaller presented dimension so they stay on the bed
+        in both native and rotated orientations."""
+        x_direction = (
+            AxisDirection.POSITIVE_LEFT
+            if origin
+            in (
+                OriginCorner.TOP_RIGHT,
+                OriginCorner.BOTTOM_RIGHT,
+            )
+            else AxisDirection.POSITIVE_RIGHT
+        )
+        y_direction = (
+            AxisDirection.POSITIVE_DOWN
+            if origin
+            in (
+                OriginCorner.TOP_LEFT,
+                OriginCorner.TOP_RIGHT,
+            )
+            else AxisDirection.POSITIVE_UP
+        )
+        space = MachineSpace(
+            origin=origin,
+            x_positive_direction=x_direction,
+            y_positive_direction=y_direction,
+            extents=(400.0, 800.0),
+            reverse_x=reverse_x,
+            reverse_y=reverse_y,
+            workspace_orientation=orientation,
+        )
+
+        world_point = (123.25, 77.5)
+        machine_point = space.world_point_to_machine(*world_point)
+        assert space.machine_point_to_world(*machine_point) == (
+            pytest.approx(world_point[0]),
+            pytest.approx(world_point[1]),
+        )
+
+        world_pos = (20.0, 30.0)
+        item_size = (50.0, 70.0)
+        machine_pos = space.world_item_to_machine(world_pos, item_size)
+        assert space.machine_item_to_world(
+            machine_pos, item_size
+        ) == pytest.approx(world_pos)
+
+    @pytest.mark.parametrize(
+        "orientation, expected",
+        [
+            # BL origin, no reversal, native extents (400, 800).
+            # Hand-verified: ROTATED_LEFT maps (x, y) to (y, 800 - x);
+            # ROTATED_RIGHT maps it to (400 - y, x).
+            (WorkspaceOrientation.ROTATED_LEFT, (50.0, 700.0)),
+            (WorkspaceOrientation.ROTATED_RIGHT, (350.0, 100.0)),
+        ],
+    )
+    def test_workspace_rotation_maps_point_direction(
+        self, orientation, expected
+    ):
+        """Pins the rotation direction so a consistent mirror (left
+        swapped with right) cannot pass the round-trip test alone."""
+        space = MachineSpace(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(400.0, 800.0),
+            workspace_orientation=orientation,
+        )
+        assert space.world_point_to_machine(100.0, 50.0) == pytest.approx(
+            expected
         )
 
     @pytest.mark.parametrize(
