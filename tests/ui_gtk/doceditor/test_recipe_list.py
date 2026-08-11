@@ -3,7 +3,7 @@
 import pytest
 
 from rayforge.core.recipe import Recipe
-from rayforge.ui_gtk.doceditor.recipe_list import RecipeRow
+from rayforge.ui_gtk.doceditor.recipes.recipe_list import RecipeRow
 
 pytestmark = pytest.mark.ui
 

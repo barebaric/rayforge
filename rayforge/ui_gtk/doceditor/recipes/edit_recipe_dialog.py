@@ -5,18 +5,16 @@ from typing import Any
 from blinker import Signal
 from gi.repository import Adw, Gtk
 
-from ...core.recipe import Recipe
-from ...core.step import Step
-from ...core.step_registry import step_registry
-from ...core.varset import VarSet
-from ..icons import get_icon
-from ..shared.patched_dialog_window import PatchedDialogWindow
-from .post_processor.recipe_page import RecipePostProcessingPage
-from .recipe_pages import (
-    RecipeApplicabilityPage,
-    RecipeGeneralPage,
-    RecipeSettingsPage,
-)
+from ....core.recipe import Recipe
+from ....core.step import Step
+from ....core.step_registry import step_registry
+from ....core.varset import VarSet
+from ...icons import get_icon
+from ...shared.patched_dialog_window import PatchedDialogWindow
+from .pages.applicability import RecipeApplicabilityPage
+from .pages.general import RecipeGeneralPage
+from .pages.post_processing import RecipePostProcessingPage
+from .pages.settings import RecipeSettingsPage
 
 logger = logging.getLogger(__name__)
 

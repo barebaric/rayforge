@@ -5,18 +5,15 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from gi.repository import Adw, GLib, Gtk
 
-from rayforge.core.undo.property_cmd import ChangePropertyCommand
-from rayforge.machine.models.spindle import SpindleHead
-from rayforge.shared.util.glib import DebounceMixin
-from rayforge.ui_gtk.doceditor.recipe_control_widget import RecipeControlWidget
-from rayforge.ui_gtk.doceditor.step_settings.rows import (
-    CoolantRow,
-    StepRow,
-)
-from rayforge.ui_gtk.shared.preferences_page import TrackedPreferencesPage
+from .....core.undo.property_cmd import ChangePropertyCommand
+from .....machine.models.spindle import SpindleHead
+from .....shared.util.glib import DebounceMixin
+from ....shared.preferences_page import TrackedPreferencesPage
+from ..recipe_control_widget import RecipeControlWidget
+from ..rows import CoolantRow, StepRow
 
 if TYPE_CHECKING:
-    from rayforge.doceditor.editor import DocEditor
+    from .....doceditor.editor import DocEditor
 
 
 def _to_widget(item: Any, editor: "DocEditor", step: Any) -> Gtk.Widget:

@@ -5,13 +5,13 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gtk
 
-from ...context import get_context
-from ...core.recipe import Recipe
-from ..icons import get_icon
-from ..shared.gtk import apply_css
+from ....context import get_context
+from ....core.recipe import Recipe
+from ...icons import get_icon
+from ...shared.gtk import apply_css
 
 if TYPE_CHECKING:
-    from ...doceditor.editor import DocEditor
+    from ....doceditor.editor import DocEditor
 
 logger = logging.getLogger(__name__)
 
