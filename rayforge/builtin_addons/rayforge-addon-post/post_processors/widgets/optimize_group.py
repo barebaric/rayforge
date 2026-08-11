@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw, GObject
 
-from rayforge.ui_gtk.doceditor.step_settings.groups import (
+from rayforge.ui_gtk.doceditor.post_processor.groups import (
     ExpanderHost,
     TransformerSettingsGroup,
 )

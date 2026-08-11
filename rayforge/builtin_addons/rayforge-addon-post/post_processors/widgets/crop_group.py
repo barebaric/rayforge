@@ -2,7 +2,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from rayforge.shared.util.glib import DebounceMixin
-from rayforge.ui_gtk.doceditor.step_settings.groups import (
+from rayforge.ui_gtk.doceditor.post_processor.groups import (
     ExpanderHost,
     TransformerSettingsGroup,
 )
