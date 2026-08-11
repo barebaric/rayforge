@@ -1310,25 +1310,6 @@ class Machine:
         machine_space = MachineSpace.from_machine(self)
         return machine_space.machine_point_to_world(offset_x, offset_y)
 
-    def get_visual_wcs_offset(self) -> tuple[float, float]:
-        """
-        Returns the WCS offset transformed to visual coordinates.
-
-        Applies axis reversal to the WCS offset. The caller (UI layer)
-        handles origin corner transformation based on canvas dimensions.
-
-        Returns:
-            Tuple of (x, y) with axis reversal applied.
-        """
-        wcs_x, wcs_y, _ = self.get_active_wcs_offset()
-
-        if self.reverse_x_axis:
-            wcs_x = -wcs_x
-        if self.reverse_y_axis:
-            wcs_y = -wcs_y
-
-        return (wcs_x, wcs_y)
-
     def get_visual_extent_frame(self) -> Rect:
         """
         Returns the extent frame rectangle (x, y, width, height) in visual
