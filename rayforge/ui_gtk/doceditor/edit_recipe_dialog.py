@@ -11,6 +11,7 @@ from ...core.step_registry import step_registry
 from ...core.varset import VarSet
 from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
+from .post_processor.recipe_page import RecipePostProcessingPage
 from .recipe_pages import (
     RecipeApplicabilityPage,
     RecipeGeneralPage,
@@ -40,7 +41,7 @@ class AddEditRecipeDialog(PatchedDialogWindow):
         is_editing = recipe is not None
         title = _("Edit Recipe") if is_editing else _("Add New Recipe")
         self.set_title(title)
-        self.set_default_size(750, 700)
+        self.set_default_size(850, 700)
 
         # Store the intended response ID for the positive action
         self._positive_response_id = "save" if is_editing else "add"
@@ -80,6 +81,10 @@ class AddEditRecipeDialog(PatchedDialogWindow):
         self._tab_buttons: dict[str, Gtk.ToggleButton] = {}
         # View-stack name -> settings page (rebuilt dynamically).
         self._settings_pages: dict[str, RecipeSettingsPage] = {}
+        # The post-processing page (rebuilt dynamically).
+        self._post_processing_page: RecipePostProcessingPage | None = None
+        # Stable name used for the post-processing view-stack page.
+        self._pp_tab_name = "post-processing"
 
         # --- Pages ---
         self.general_page = RecipeGeneralPage(recipe)
@@ -154,6 +159,15 @@ class AddEditRecipeDialog(PatchedDialogWindow):
 
     # --- Settings pages -------------------------------------------------
 
+    def _current_step_classes(self) -> list[type[Step]]:
+        """Resolve the step classes for the current step-type selection.
+
+        Returns an empty list for the generic (Any) selection.
+        """
+        step_types = self.applicability_page.get_step_types()
+        classes = [step_registry.get(name) for name in step_types]
+        return [c for c in classes if c is not None]
+
     def _current_settings_groups(self) -> list[tuple[str, VarSet]]:
         """Resolve the (title, varset) groups for the current selection.
 
@@ -162,15 +176,48 @@ class AddEditRecipeDialog(PatchedDialogWindow):
         offered (:meth:`Step.common_recipe_varset_groups`). With none,
         the base ``Step`` groups (universal motion settings) are used.
         """
-        step_types = self.applicability_page.get_step_types()
-        classes = [step_registry.get(name) for name in step_types]
-        classes = [c for c in classes if c is not None]
+        classes = self._current_step_classes()
 
         if len(classes) == 1:
             return classes[0].recipe_varset_groups()
         if classes:
             return Step.common_recipe_varset_groups(classes)
         return Step.recipe_varset_groups()
+
+    def _current_transformer_dicts(self) -> list[dict[str, Any]]:
+        """Resolve the transformer dicts for the current selection.
+
+        The common transformers across the selected step types are
+        overlaid with the recipe's stored values (matched by name). When
+        the recipe carries a dict for a transformer that is no longer
+        common, the stored dict is dropped. Dicts for transformers that
+        appear in the common set but not in the recipe are taken from the
+        step type defaults.
+        """
+        classes = self._current_step_classes()
+        common_dicts = Step.common_transformer_dicts(classes)
+        if not common_dicts:
+            return []
+
+        recipe_dicts = self.recipe.transformer_dicts if self.recipe else []
+        recipe_by_name = {
+            d.get("name"): d for d in recipe_dicts if d.get("name")
+        }
+
+        result: list[dict[str, Any]] = []
+        for common_dict in common_dicts:
+            name = common_dict.get("name")
+            stored = recipe_by_name.get(name) if name else None
+            # Keep stored params but use the structural common
+            # dict as the base to guarantee key consistency.
+            merged = dict(common_dict)
+            if stored is not None:
+                merged.update(stored)
+            # Every dict carries an explicit apply state; defaults to
+            # "Leave unchanged".
+            merged.setdefault("recipe_apply", False)
+            result.append(merged)
+        return result
 
     def _rebuild_settings(self, *_args):
         """Rebuild the dynamic settings tabs from the current selection.
@@ -179,13 +226,22 @@ class AddEditRecipeDialog(PatchedDialogWindow):
         settings) and a "Step Settings" page (step-specific attributes).
         A capability-only selection yields a single "Settings" page;
         "Any"/"Any" yields the base Step settings.
+
+        The post-processing tab is added (or rebuilt) when the current
+        selection shares common transformers, and torn down otherwise.
         """
         groups = self._current_settings_groups()
 
-        # Keep the user on a settings page if one was visible.
+        # Keep the user on a settings or post-processing page if one was
+        # visible.
+        post_processing_was_visible = (
+            self._pp_tab_name in self._tab_buttons
+            and self._tab_buttons[self._pp_tab_name].get_active()
+        )
         settings_was_visible = not (
             self._tab_buttons["general"].get_active()
             or self._tab_buttons["applicability"].get_active()
+            or post_processing_was_visible
         )
 
         # Tear down existing settings pages.
@@ -213,9 +269,46 @@ class AddEditRecipeDialog(PatchedDialogWindow):
             self._add_page(page, name, group_title, icon_name)
             self._settings_pages[name] = page
 
+        # Rebuild the post-processing tab.
+        self._rebuild_post_processing()
+
         if settings_was_visible and self._settings_pages:
             first_name = next(iter(self._settings_pages))
             self._tab_buttons[first_name].set_active(True)
+        elif (
+            post_processing_was_visible
+            and self._post_processing_page is not None
+        ):
+            self._tab_buttons[self._pp_tab_name].set_active(True)
+
+    def _rebuild_post_processing(self) -> None:
+        """Build or tear down the post-processing tab from the selection.
+
+        When the selected step types share common transformers, a tab is
+        added (or rebuilt) with a :class:`RecipePostProcessingPage`.
+        When there are no common transformers, the existing tab (if any)
+        is removed.
+        """
+        transformer_dicts = self._current_transformer_dicts()
+
+        # Tear down any existing post-processing page first.
+        if self._post_processing_page is not None:
+            self.switcher_box.remove(self._tab_buttons[self._pp_tab_name])
+            self.view_stack.remove(self._post_processing_page)
+            del self._tab_buttons[self._pp_tab_name]
+            self._post_processing_page = None
+
+        if not transformer_dicts:
+            return
+
+        page = RecipePostProcessingPage(transformer_dicts)
+        self._add_page(
+            page,
+            self._pp_tab_name,
+            _("Post Processing"),
+            "step-settings-symbolic",
+        )
+        self._post_processing_page = page
 
     # --- Result ---------------------------------------------------------
 
@@ -226,6 +319,12 @@ class AddEditRecipeDialog(PatchedDialogWindow):
             settings.update(page.get_values())
         final_settings = {k: v for k, v in settings.items() if v is not None}
 
+        transformer_dicts = (
+            self._post_processing_page.get_transformer_dicts()
+            if self._post_processing_page is not None
+            else []
+        )
+
         return {
             "name": self.general_page.get_name(),
             "description": self.general_page.get_description(),
@@ -235,4 +334,5 @@ class AddEditRecipeDialog(PatchedDialogWindow):
             "min_thickness_mm": self.applicability_page.get_min_thickness(),
             "max_thickness_mm": self.applicability_page.get_max_thickness(),
             "settings": final_settings,
+            "transformer_dicts": transformer_dicts,
         }

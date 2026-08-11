@@ -1,3 +1,4 @@
+import copy
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, cast
@@ -67,6 +68,29 @@ class RecipeControlWidget(Adw.ActionRow):
                 settings[key] = getattr(self.step, key)
         return settings
 
+    def _get_step_transformers(self) -> list[dict[str, Any]]:
+        """Deep-copy the step's transformer dicts, deduped by name.
+
+        Returns a list of fresh dict copies combining the step's
+        ``per_workpiece_transformers_dicts`` and
+        ``per_step_transformers_dicts`` (a single dict can appear in
+        both lists and is shared by reference, so dedup is by name
+        keeping the first occurrence). Each copy is given a
+        ``recipe_apply=True`` default so the recipe will stamp the
+        transformer when applied.
+        """
+        by_name: dict[str, dict[str, Any]] = {}
+        for d in list(self.step.per_workpiece_transformers_dicts) + list(
+            self.step.per_step_transformers_dicts
+        ):
+            name = d.get("name")
+            if not name or name in by_name:
+                continue
+            copy_d = copy.deepcopy(d)
+            copy_d.setdefault("recipe_apply", True)
+            by_name[name] = copy_d
+        return list(by_name.values())
+
     def _update_ui(self, sender, **kwargs):
         """Updates the subtitle and button visibility."""
         recipe_mgr = get_context().recipe_mgr
@@ -84,6 +108,8 @@ class RecipeControlWidget(Adw.ActionRow):
             # Check if settings have diverged from the recipe by asking
             # the recipe to compare itself against the step.
             if not current_recipe.matches_step_settings(self.step):
+                is_modified = True
+            if not current_recipe.matches_step_transformers(self.step):
                 is_modified = True
         else:
             self.set_subtitle(_("Manual Settings"))
@@ -134,9 +160,63 @@ class RecipeControlWidget(Adw.ActionRow):
                         ),
                     )
                 )
+            # Apply transformer settings: for each recipe transformer with
+            # recipe_apply=True, find the step's matching dict by name and
+            # overwrite its params with undoable commands.
+            self._apply_recipe_transformers(t, recipe.transformer_dicts)
         # Signal to the parent dialog that its widgets need to be synced
         self.recipe_applied.send(self)
         self._update_ui(self.step)
+
+    def _apply_recipe_transformers(
+        self, transaction: Any, transformer_dicts: list[dict[str, Any]]
+    ) -> None:
+        """Apply recipe transformer settings to the step's transformers.
+
+        For each recipe dict with ``recipe_apply=True``, find the
+        matching step dict by ``name`` (searching
+        ``per_step_transformers_dicts`` first, then
+        ``per_workpiece_transformers_dicts``). For each param key
+        (except ``name`` and ``recipe_apply``), emit an undoable
+        ``set_step_param`` command. The appropriate step callback
+        matches the step-mode post-processing page's logic.
+        """
+        step_dicts_by_name: dict[str, dict[str, Any]] = {}
+        for d in list(self.step.per_step_transformers_dicts) + list(
+            self.step.per_workpiece_transformers_dicts
+        ):
+            name = d.get("name")
+            if name and name not in step_dicts_by_name:
+                step_dicts_by_name[name] = d
+
+        for recipe_dict in transformer_dicts or []:
+            if not recipe_dict.get("recipe_apply", True):
+                continue
+            name = recipe_dict.get("name")
+            if not name:
+                continue
+            step_dict = step_dicts_by_name.get(name)
+            if step_dict is None:
+                continue
+            is_per_step = step_dict in (self.step.per_step_transformers_dicts)
+            callback = (
+                self.step.per_step_transformer_changed.send
+                if is_per_step
+                else self._send_step_updated
+            )
+            for key, value in recipe_dict.items():
+                if key in ("name", "recipe_apply"):
+                    continue
+                self.editor.step.set_step_param(
+                    target_dict=step_dict,
+                    key=key,
+                    new_value=value,
+                    name=_("Apply Recipe Transformer"),
+                    on_change_callback=callback,
+                )
+
+    def _send_step_updated(self) -> None:
+        self.step.updated.send(self.step)
 
     def _on_save_as_clicked(self, button: Gtk.Button):
         """Saves the current step settings as a new recipe."""
@@ -151,6 +231,7 @@ class RecipeControlWidget(Adw.ActionRow):
                 label=step_class.TYPELABEL or step_class.__name__
             ),
             settings=self._get_step_settings(),
+            transformer_dicts=self._get_step_transformers(),
             target_step_types=[step_class.__name__],
             target_machine_id=self.editor.context.machine.id
             if self.editor.context.machine
@@ -221,6 +302,7 @@ class RecipeControlWidget(Adw.ActionRow):
     ):
         if response_id == "update":
             recipe.settings = self._get_step_settings()
+            recipe.transformer_dicts = self._get_step_transformers()
             get_context().recipe_mgr.save_recipe(recipe)
             # Manually trigger a UI update, as the step model itself didn't
             # change

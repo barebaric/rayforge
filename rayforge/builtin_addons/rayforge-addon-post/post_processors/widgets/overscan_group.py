@@ -96,15 +96,15 @@ class OverscanSettingsGroup(DebounceMixin, TransformerSettingsGroup):
 
     def _update_sensitivity(self) -> None:
         """Update the sensitivity of UI elements based on current state."""
-        assert self.enable_switch is not None
-        enabled = self.enable_switch.get_active()
+        enabled = self._is_enabled()
         auto = self.auto_row.get_active()
 
         native = self._is_native_overscan()
         self.native_banner.set_revealed(native)
 
         # Use the stored references to the rows
-        self.enable_switch.set_sensitive(not native)
+        if self.enable_switch is not None:
+            self.enable_switch.set_sensitive(not native)
         self.auto_row.set_sensitive(enabled and not native)
         self.distance_row.set_sensitive(enabled and not auto and not native)
 

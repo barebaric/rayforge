@@ -454,6 +454,75 @@ def test_common_recipe_varset_groups_intersects_keys():
     }
 
 
+def test_common_transformer_dicts_intersects_names():
+    """common_transformer_dicts keeps only transformers shared by all types."""
+
+    class StepA(Step):
+        @classmethod
+        def get_default_transformers_dicts(cls):
+            return (
+                [
+                    {
+                        "name": "Optimize",
+                        "enabled": True,
+                        "amount": 5,
+                    },
+                    {"name": "OnlyA", "enabled": True, "param": 1},
+                ],
+                [{"name": "PerStepOnly", "enabled": True}],
+            )
+
+    class StepB(Step):
+        @classmethod
+        def get_default_transformers_dicts(cls):
+            return (
+                [
+                    {"name": "Optimize", "enabled": True, "amount": 9},
+                    {"name": "OnlyB", "enabled": True},
+                ],
+                [{"name": "PerStepOnly", "enabled": True}],
+            )
+
+    common = Step.common_transformer_dicts([StepA, StepB])
+    names = [d["name"] for d in common]
+    assert names == ["Optimize", "PerStepOnly"]
+
+    # Structural reference is the first type's dicts (copied).
+    optimize = next(d for d in common if d["name"] == "Optimize")
+    assert optimize["amount"] == 5
+
+    # Copies are independent of the source dicts.
+    optimize["amount"] = 42
+    step_a_defaults, _ = StepA.get_default_transformers_dicts()
+    assert step_a_defaults[0]["amount"] == 5
+
+    # A single class returns its own transformer dicts.
+    single = Step.common_transformer_dicts([StepA])
+    single_names = {d["name"] for d in single}
+    assert single_names == {"Optimize", "OnlyA", "PerStepOnly"}
+
+    # No classes -> empty list.
+    assert Step.common_transformer_dicts([]) == []
+
+    # No shared transformers -> empty list.
+    class StepC(Step):
+        @classmethod
+        def get_default_transformers_dicts(cls):
+            return ([{"name": "OnlyC", "enabled": True}], [])
+
+    assert Step.common_transformer_dicts([StepC, StepB]) == []
+
+
+def test_dedupe_transformer_dicts_by_name_keeps_first():
+    """_dedupe_transformer_dicts_by_name keeps the first dict per name."""
+    first = {"name": "Optimize", "enabled": True, "amount": 1}
+    second = {"name": "Optimize", "enabled": False, "amount": 2}
+    other = {"name": "Smooth", "enabled": True}
+    result = Step._dedupe_transformer_dicts_by_name([first, second, other])
+    assert result["Optimize"] is first
+    assert result["Smooth"] is other
+
+
 def test_base_step_has_no_operation_color(step):
     """The generic step reports no operation color."""
     assert step.get_operation_color(None) is None

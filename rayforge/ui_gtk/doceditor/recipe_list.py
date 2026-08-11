@@ -152,6 +152,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
                         min_thickness_mm=data["min_thickness_mm"],
                         max_thickness_mm=data["max_thickness_mm"],
                         settings=data["settings"],
+                        transformer_dicts=data["transformer_dicts"],
                     )
                     get_context().recipe_mgr.add_recipe(new_recipe)
                     self.populate_recipes()
@@ -180,6 +181,7 @@ class RecipeListWidget(PreferencesGroupWithButton):
                     recipe.min_thickness_mm = data["min_thickness_mm"]
                     recipe.max_thickness_mm = data["max_thickness_mm"]
                     recipe.settings = data["settings"]
+                    recipe.transformer_dicts = data["transformer_dicts"]
                     get_context().recipe_mgr.save_recipe(recipe)
                     self.populate_recipes()
                     self.recipes_changed.send(self)

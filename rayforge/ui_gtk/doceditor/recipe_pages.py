@@ -141,6 +141,11 @@ class RecipeApplicabilityPage(Adw.PreferencesPage):
         select_btn.set_valign(Gtk.Align.CENTER)
         select_btn.connect("clicked", self._on_step_types_clicked)
         self.step_types_row.add_suffix(select_btn)
+        clear_btn = Gtk.Button(child=get_icon("clear-symbolic"))
+        clear_btn.set_valign(Gtk.Align.CENTER)
+        clear_btn.set_tooltip_text(_("Clear Step Types Selection"))
+        clear_btn.connect("clicked", self._on_clear_step_types)
+        self.step_types_row.add_suffix(clear_btn)
         group.add(self.step_types_row)
         self._update_step_types_display()
 
@@ -203,6 +208,13 @@ class RecipeApplicabilityPage(Adw.PreferencesPage):
         if step_types == self._selected_step_types:
             return
         self._selected_step_types = step_types
+        self._update_step_types_display()
+        self.selection_changed.send(self)
+
+    def _on_clear_step_types(self, _button):
+        if not self._selected_step_types:
+            return
+        self._selected_step_types = []
         self._update_step_types_display()
         self.selection_changed.send(self)
 
@@ -300,7 +312,11 @@ class RecipeSettingsPage(Adw.PreferencesPage):
         self.group_title = title
         self._widget = VarSetWidget(
             title=title,
-            description=_("The settings that will be applied by this recipe."),
+            description=_(
+                "The settings that will be applied by this recipe. "
+                "When multiple step types are selected, only settings "
+                "common to all of them are shown."
+            ),
         )
         self.add(self._widget)
 
