@@ -458,8 +458,11 @@ class MachineSpace(CoordinateSpace):
         """
         Convert item position from world space to machine space.
 
-        This handles the item's bounding box - for origins at right/bottom,
-        the position refers to the top-left corner, which needs adjustment.
+        Transforms the item's four bounding-box corners through
+        world_point_to_machine and selects the corner nearest the machine
+        origin (min, or max when the axis is reversed). Only this corner
+        selection depends on the bounding box; the point transform itself
+        delegates to the single matrix path.
 
         Args:
             pos: (x, y) position in world coordinates (top-left corner).
@@ -470,32 +473,16 @@ class MachineSpace(CoordinateSpace):
         """
         wx, wy = pos
         w, h = size
-        width, height = self.extents
-
-        origin_is_right = self.origin in (
-            OriginCorner.TOP_RIGHT,
-            OriginCorner.BOTTOM_RIGHT,
+        corners = (
+            self.world_point_to_machine(wx, wy),
+            self.world_point_to_machine(wx + w, wy),
+            self.world_point_to_machine(wx, wy + h),
+            self.world_point_to_machine(wx + w, wy + h),
         )
-        origin_is_top = self.origin in (
-            OriginCorner.TOP_LEFT,
-            OriginCorner.TOP_RIGHT,
-        )
-
-        if origin_is_right:
-            mx = width - wx - w
-        else:
-            mx = wx
-
-        if origin_is_top:
-            my = height - wy - h
-        else:
-            my = wy
-
-        if self.reverse_x:
-            mx = -mx
-        if self.reverse_y:
-            my = -my
-
+        xs = [c[0] for c in corners]
+        ys = [c[1] for c in corners]
+        mx = max(xs) if self.reverse_x else min(xs)
+        my = max(ys) if self.reverse_y else min(ys)
         return mx, my
 
     def machine_item_to_world(
@@ -506,8 +493,11 @@ class MachineSpace(CoordinateSpace):
         """
         Convert item position from machine space to world space.
 
-        This handles the item's bounding box - for origins at right/bottom,
-        the position refers to the top-left corner, which needs adjustment.
+        The machine position refers to the corner nearest the machine
+        origin; the opposite corner is reached by adding (or, when the
+        axis is reversed, subtracting) the item size. All four bounding-
+        box corners are then transformed through machine_point_to_world,
+        and the world-space top-left is the per-axis minimum.
 
         Args:
             pos: (x, y) position in machine coordinates.
@@ -518,30 +508,18 @@ class MachineSpace(CoordinateSpace):
         """
         mx, my = pos
         w, h = size
-        width, height = self.extents
-
         if self.reverse_x:
-            mx = -mx
+            x_min, x_max = mx - w, mx
+        else:
+            x_min, x_max = mx, mx + w
         if self.reverse_y:
-            my = -my
-
-        origin_is_right = self.origin in (
-            OriginCorner.TOP_RIGHT,
-            OriginCorner.BOTTOM_RIGHT,
-        )
-        origin_is_top = self.origin in (
-            OriginCorner.TOP_LEFT,
-            OriginCorner.TOP_RIGHT,
-        )
-
-        if origin_is_right:
-            wx = width - mx - w
+            y_min, y_max = my - h, my
         else:
-            wx = mx
-
-        if origin_is_top:
-            wy = height - my - h
-        else:
-            wy = my
-
-        return wx, wy
+            y_min, y_max = my, my + h
+        corners = (
+            self.machine_point_to_world(x_min, y_min),
+            self.machine_point_to_world(x_max, y_min),
+            self.machine_point_to_world(x_min, y_max),
+            self.machine_point_to_world(x_max, y_max),
+        )
+        return min(c[0] for c in corners), min(c[1] for c in corners)

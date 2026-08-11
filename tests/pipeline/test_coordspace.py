@@ -404,6 +404,152 @@ class TestMachineSpaceItemTransforms:
         res = space.world_item_to_machine((10, 10), item_size)
         assert res == (10, -10)
 
+    @pytest.mark.parametrize("origin", list(OriginCorner))
+    @pytest.mark.parametrize("reverse_x", [False, True])
+    @pytest.mark.parametrize("reverse_y", [False, True])
+    def test_item_round_trip_all_native_configurations(
+        self, origin, reverse_x, reverse_y
+    ):
+        """world_item_to_machine and machine_item_to_world must be
+        exact inverses across every native origin/reversal combo, for
+        nonzero (asymmetric) item sizes."""
+        x_direction = (
+            AxisDirection.POSITIVE_LEFT
+            if origin
+            in (
+                OriginCorner.TOP_RIGHT,
+                OriginCorner.BOTTOM_RIGHT,
+            )
+            else AxisDirection.POSITIVE_RIGHT
+        )
+        y_direction = (
+            AxisDirection.POSITIVE_DOWN
+            if origin
+            in (
+                OriginCorner.TOP_LEFT,
+                OriginCorner.TOP_RIGHT,
+            )
+            else AxisDirection.POSITIVE_UP
+        )
+        space = MachineSpace(
+            origin=origin,
+            x_positive_direction=x_direction,
+            y_positive_direction=y_direction,
+            extents=(400.0, 800.0),
+            reverse_x=reverse_x,
+            reverse_y=reverse_y,
+        )
+        pos = (20.0, 30.0)
+        size = (50.0, 70.0)
+        machine_pos = space.world_item_to_machine(pos, size)
+        assert space.machine_item_to_world(machine_pos, size) == (
+            pytest.approx(pos[0]),
+            pytest.approx(pos[1]),
+        )
+
+    @pytest.mark.parametrize(
+        "origin, reverse_x, reverse_y, pos, expected",
+        [
+            # extents=(100, 100), size=(10, 10); hand-verified against
+            # the scalar origin/size-corner formula.
+            (OriginCorner.TOP_RIGHT, True, False, (10, 10), (-80, 80)),
+            (
+                OriginCorner.BOTTOM_RIGHT,
+                True,
+                False,
+                (10, 10),
+                (-80, 10),
+            ),
+            (OriginCorner.TOP_LEFT, False, True, (10, 10), (10, -80)),
+        ],
+    )
+    def test_world_item_to_machine_origin_with_reversal(
+        self, origin, reverse_x, reverse_y, pos, expected
+    ):
+        """Forward pin: non-bottom-left origins combined with axis
+        reversal (configs the per-origin and per-reversal tests above
+        do not cover together)."""
+        x_direction = (
+            AxisDirection.POSITIVE_LEFT
+            if origin
+            in (
+                OriginCorner.TOP_RIGHT,
+                OriginCorner.BOTTOM_RIGHT,
+            )
+            else AxisDirection.POSITIVE_RIGHT
+        )
+        y_direction = (
+            AxisDirection.POSITIVE_DOWN
+            if origin
+            in (
+                OriginCorner.TOP_LEFT,
+                OriginCorner.TOP_RIGHT,
+            )
+            else AxisDirection.POSITIVE_UP
+        )
+        space = MachineSpace(
+            origin=origin,
+            x_positive_direction=x_direction,
+            y_positive_direction=y_direction,
+            extents=(100.0, 100.0),
+            reverse_x=reverse_x,
+            reverse_y=reverse_y,
+        )
+        assert space.world_item_to_machine(pos, (10, 10)) == expected
+
+    @pytest.mark.parametrize(
+        "origin, reverse_x, reverse_y, pos, expected",
+        [
+            # extents=(100, 100), size=(10, 10); hand-verified.
+            (
+                OriginCorner.BOTTOM_RIGHT,
+                False,
+                False,
+                (80, 10),
+                (10, 10),
+            ),
+            (
+                OriginCorner.BOTTOM_LEFT,
+                True,
+                False,
+                (-10, 10),
+                (10, 10),
+            ),
+        ],
+    )
+    def test_machine_item_to_world_beyond_top_right(
+        self, origin, reverse_x, reverse_y, pos, expected
+    ):
+        """Forward pin for machine_item_to_world across origins/reversals
+        beyond the single TOP_RIGHT case covered above."""
+        x_direction = (
+            AxisDirection.POSITIVE_LEFT
+            if origin
+            in (
+                OriginCorner.TOP_RIGHT,
+                OriginCorner.BOTTOM_RIGHT,
+            )
+            else AxisDirection.POSITIVE_RIGHT
+        )
+        y_direction = (
+            AxisDirection.POSITIVE_DOWN
+            if origin
+            in (
+                OriginCorner.TOP_LEFT,
+                OriginCorner.TOP_RIGHT,
+            )
+            else AxisDirection.POSITIVE_UP
+        )
+        space = MachineSpace(
+            origin=origin,
+            x_positive_direction=x_direction,
+            y_positive_direction=y_direction,
+            extents=(100.0, 100.0),
+            reverse_x=reverse_x,
+            reverse_y=reverse_y,
+        )
+        assert space.machine_item_to_world(pos, (10, 10)) == expected
+
     def test_bottom_right_origin_x_left(self):
         """BR origin with X-left should flip and translate X."""
         space = MachineSpace(
