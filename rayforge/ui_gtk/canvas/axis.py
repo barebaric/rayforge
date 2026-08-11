@@ -6,12 +6,8 @@ import cairo
 import numpy as np
 from raygeo.geo import Matrix
 
-from ...pipeline.coordspace import OriginCorner
-
 if TYPE_CHECKING:
     from raygeo.geo.types import Point3D
-
-    from ...pipeline.coordspace import CoordinateSpace
 
 
 logger = logging.getLogger(__name__)
@@ -555,24 +551,3 @@ class AxisRenderer:
 
     def set_x_axis_y_override(self, y: float | None):
         self.x_axis_y_override = y
-
-    def set_coordinate_space(self, space: "CoordinateSpace"):
-        """
-        Set axis orientation from a CoordinateSpace.
-
-        This is a convenience method that sets all axis flags at once
-        from a coordinate space configuration.
-
-        Args:
-            space: The coordinate space to use for axis orientation.
-        """
-        self.y_axis_down = space.origin in (
-            OriginCorner.TOP_LEFT,
-            OriginCorner.TOP_RIGHT,
-        )
-        self.x_axis_right = space.origin in (
-            OriginCorner.TOP_RIGHT,
-            OriginCorner.BOTTOM_RIGHT,
-        )
-        self.x_axis_negative = space.reverse_x
-        self.y_axis_negative = space.reverse_y

@@ -67,7 +67,10 @@ class WorkSurface(WorldSurface):
         self._show_travel_moves = False
         self._workpieces_visible = True
         self._tracked_axis_extents: tuple[float, float] = (0.0, 0.0)
-        coordinate_space = None
+        x_axis_right = False
+        y_axis_down = False
+        reverse_x_axis = False
+        reverse_y_axis = False
         if machine:
             self._tracked_axis_extents = machine.axis_extents
             # Canvas shows full machine bed, not just workarea
@@ -75,7 +78,10 @@ class WorkSurface(WorldSurface):
                 float(machine.axis_extents[0]),
                 float(machine.axis_extents[1]),
             )
-            coordinate_space = machine.get_coordinate_space()
+            x_axis_right = machine.x_axis_right
+            y_axis_down = machine.y_axis_down
+            reverse_x_axis = machine.reverse_x_axis
+            reverse_y_axis = machine.reverse_y_axis
         else:
             width_mm, height_mm = 100.0, 100.0
 
@@ -100,7 +106,10 @@ class WorkSurface(WorldSurface):
         super().__init__(
             width_mm=width_mm,
             height_mm=height_mm,
-            coordinate_space=coordinate_space,
+            x_axis_right=x_axis_right,
+            y_axis_down=y_axis_down,
+            reverse_x_axis=reverse_x_axis,
+            reverse_y_axis=reverse_y_axis,
             **kwargs,
         )
 

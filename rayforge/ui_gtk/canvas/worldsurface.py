@@ -1,15 +1,10 @@
 import logging
-from typing import TYPE_CHECKING
 
 from gi.repository import Gdk, Graphene, Gtk
 from raygeo.geo import Matrix
 
 from .axis import AxisRenderer
 from .canvas import Canvas
-
-if TYPE_CHECKING:
-    from ...pipeline.coordspace import CoordinateSpace
-
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +34,6 @@ class WorldSurface(Canvas):
         reverse_y_axis: bool = False,
         show_grid: bool = True,
         show_axis: bool = True,
-        coordinate_space: "CoordinateSpace | None" = None,
         **kwargs,
     ):
         logger.debug("WorldSurface.__init__ called")
@@ -67,8 +61,6 @@ class WorldSurface(Canvas):
             show_grid=show_grid,
             show_axis=show_axis,
         )
-        if coordinate_space is not None:
-            self._axis_renderer.set_coordinate_space(coordinate_space)
         self.root.background = 0.8, 0.8, 0.8, 0.1
 
         # Set theme colors for axis and grid.
