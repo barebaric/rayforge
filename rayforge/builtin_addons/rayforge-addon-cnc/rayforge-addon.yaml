@@ -1,0 +1,15 @@
+name: cnc_essentials
+display_name: "CNC Essentials"
+description: "CNC machining operations: adaptive clearing, profiling, slotting"
+api_version: 20
+requires:
+  - post_processors
+author:
+  name: "Rayforge Team"
+  email: "noreply@rayforge.org"
+provides:
+  worker: "cnc_essentials.worker"
+  frontend: "cnc_essentials.frontend"
+license:
+  name: "MIT"
+default_state: "disabled"

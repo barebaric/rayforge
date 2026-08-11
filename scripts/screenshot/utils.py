@@ -24,16 +24,19 @@ import numpy as np
 from gi.repository import Adw, GLib
 from PIL import Image
 from PIL.PngImagePlugin import PngInfo
+from rayforge.ui_gtk.doceditor.edit_recipe_dialog import (
+    AddEditRecipeDialog,
+)
+
+from rayforge.core.recipe import Recipe
+from rayforge.core.step_registry import step_registry
+from rayforge.ui_gtk.doceditor.step_settings.dialog import (
+    StepSettingsDialog,
+)
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
     from rayforge.ui_gtk.array_dialog import _BaseArrayDialog
-    from rayforge.ui_gtk.doceditor.edit_recipe_dialog import (
-        AddEditRecipeDialog,
-    )
-    from rayforge.ui_gtk.doceditor.step_settings.dialog import (
-        StepSettingsDialog,
-    )
     from rayforge.ui_gtk.machine.settings_dialog import MachineSettingsDialog
     from rayforge.ui_gtk.mainwindow import MainWindow
     from rayforge.ui_gtk.settings.settings_dialog import SettingsWindow
@@ -664,10 +667,6 @@ def open_recipe_editor(
         settings_page: Index into the dynamic settings pages to activate
             when ``page`` is "settings".
     """
-    from rayforge.core.recipe import Recipe
-    from rayforge.ui_gtk.doceditor.edit_recipe_dialog import (
-        AddEditRecipeDialog,
-    )
 
     settings_dialog = open_app_settings(win, "recipes")
     time.sleep(0.5)
@@ -702,10 +701,6 @@ def open_recipe_editor(
 
 def open_material_test(win: "MainWindow") -> "StepSettingsDialog":
     """Open material test grid dialog."""
-    from rayforge.core.step_registry import step_registry
-    from rayforge.ui_gtk.doceditor.step_settings.dialog import (
-        StepSettingsDialog,
-    )
 
     def _open() -> "StepSettingsDialog":
         step_cls = step_registry.get("MaterialTestStep")
