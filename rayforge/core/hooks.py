@@ -4,12 +4,20 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 16
-PLUGIN_API_VERSION = 20
+PLUGIN_API_VERSION = 21
 
 
 """
 API Changelog
 =============
+
+Version 21
+----------
+Renamed ``WorkOriginElement.set_coordinate_space(space)`` to
+``set_axis_direction(x_axis_right, y_axis_down)``. The element no longer
+accepts a MachineSpace; it consumes the two display-facing booleans
+exposed by ``MachineView``. Addons that configure the work-origin symbol
+must pass those booleans instead of a coordinate space.
 
 Version 20
 ----------

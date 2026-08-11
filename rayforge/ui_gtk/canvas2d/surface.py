@@ -19,6 +19,7 @@ from ...core.stock import StockItem
 from ...core.stock_asset import StockAsset
 from ...core.workpiece import WorkPiece
 from ...machine.models.machine import Machine
+from ...machine.models.machine_view import MachineView
 from ...pipeline.artifact import RenderContext
 from ...shared.units.formatter import get_preferred_unit_factor
 from ..canvas import Canvas, CanvasElement, WorldSurface
@@ -78,10 +79,11 @@ class WorkSurface(WorldSurface):
                 float(machine.axis_extents[0]),
                 float(machine.axis_extents[1]),
             )
-            x_axis_right = machine.x_axis_right
-            y_axis_down = machine.y_axis_down
-            reverse_x_axis = machine.reverse_x_axis
-            reverse_y_axis = machine.reverse_y_axis
+            view = MachineView(machine.get_coordinate_space())
+            x_axis_right = view.x_axis_right
+            y_axis_down = view.y_axis_down
+            reverse_x_axis = view.x_axis_negative
+            reverse_y_axis = view.y_axis_negative
         else:
             width_mm, height_mm = 100.0, 100.0
 
@@ -1152,6 +1154,13 @@ class WorkSurface(WorldSurface):
             camera_elem.set_visible(visible and camera_elem.camera.enabled)
         self.queue_draw()
 
+    @property
+    def _machine_view(self) -> MachineView:
+        """Display-facing projection of the current machine's coordinate
+        space. Callers must ensure ``self.machine`` is set."""
+        assert self.machine
+        return MachineView(self.machine.get_coordinate_space())
+
     def _on_machine_changed(self, machine: Machine | None):
         """
         Handles incremental updates from the currently-assigned machine model.
@@ -1166,15 +1175,14 @@ class WorkSurface(WorldSurface):
 
         extent_w, extent_h = machine.axis_extents
         extent_changed = (extent_w, extent_h) != self._tracked_axis_extents
-        y_axis_changed = machine.y_axis_down != self._axis_renderer.y_axis_down
-        x_axis_changed = (
-            machine.x_axis_right != self._axis_renderer.x_axis_right
-        )
+        view = self._machine_view
+        y_axis_changed = view.y_axis_down != self._axis_renderer.y_axis_down
+        x_axis_changed = view.x_axis_right != self._axis_renderer.x_axis_right
         x_reverse_changed = (
-            machine.reverse_x_axis != self._axis_renderer.x_axis_negative
+            view.x_axis_negative != self._axis_renderer.x_axis_negative
         )
         y_reverse_changed = (
-            machine.reverse_y_axis != self._axis_renderer.y_axis_negative
+            view.y_axis_negative != self._axis_renderer.y_axis_negative
         )
 
         logger.debug(
@@ -1221,13 +1229,14 @@ class WorkSurface(WorldSurface):
         # Canvas shows full machine bed
         width_mm, height_mm = self.machine.axis_extents
 
+        view = self._machine_view
         logger.debug(
             f"Resetting view for machine '{self.machine.name}' "
             f"with axis_extents=({width_mm}, {height_mm}), "
-            f"x_right={self.machine.x_axis_right}, "
-            f"y_down={self.machine.y_axis_down}, "
-            f"reverse_x={self.machine.reverse_x_axis}, "
-            f"reverse_y={self.machine.reverse_y_axis}"
+            f"x_right={view.x_axis_right}, "
+            f"y_down={view.y_axis_down}, "
+            f"x_negative={view.x_axis_negative}, "
+            f"y_negative={view.y_axis_negative}"
         )
         self._tracked_axis_extents = self.machine.axis_extents
         self.set_size(float(width_mm), float(height_mm))
@@ -1237,13 +1246,14 @@ class WorkSurface(WorldSurface):
         self._axis_renderer.set_margins_mm(
             float(ml), float(mt), float(mr), float(mb)
         )
-        self._axis_renderer.set_x_axis_right(self.machine.x_axis_right)
-        self._axis_renderer.set_y_axis_down(self.machine.y_axis_down)
-        self._axis_renderer.set_x_axis_negative(self.machine.reverse_x_axis)
-        self._axis_renderer.set_y_axis_negative(self.machine.reverse_y_axis)
+        self._axis_renderer.set_x_axis_right(view.x_axis_right)
+        self._axis_renderer.set_y_axis_down(view.y_axis_down)
+        self._axis_renderer.set_x_axis_negative(view.x_axis_negative)
+        self._axis_renderer.set_y_axis_negative(view.y_axis_negative)
 
-        space = self.machine.get_coordinate_space()
-        self._work_origin_element.set_coordinate_space(space)
+        self._work_origin_element.set_axis_direction(
+            view.x_axis_right, view.y_axis_down
+        )
 
         self._update_extent_frame()
 
@@ -1329,7 +1339,7 @@ class WorkSurface(WorldSurface):
         if default_rm:
             max_length = min(max_length, default_rm.max_workpiece_length)
 
-        if self.machine.x_axis_right:
+        if self._machine_view.x_axis_right:
             width = min(origin_x, max_length)
             x = origin_x - width
         else:
