@@ -205,6 +205,69 @@ class Step(DocItem, ABC):
         return groups or cls.recipe_varset_groups()
 
     @classmethod
+    def common_transformer_dicts(
+        cls, step_classes: list[type["Step"]]
+    ) -> list[dict[str, Any]]:
+        """Transformer dicts common to all the given step types.
+
+        Analogous to :meth:`common_recipe_varset_groups`: when a recipe
+        targets more than one step type, only transformers present in
+        every type's :meth:`get_default_transformers_dicts` are
+        offered. Returns a deduplicated list of copies using the first
+        type's dicts as the structural reference. Empty when no classes
+        are given.
+        """
+        if not step_classes:
+            return []
+
+        common_names: set[str] | None = None
+        for step_cls in step_classes:
+            per_wp, per_step = step_cls.get_default_transformers_dicts()
+            names = {
+                d.get("name")
+                for d in list(per_wp) + list(per_step)
+                if d.get("name")
+            }
+            common_names = (
+                names if common_names is None else common_names & names
+            )
+            if not common_names:
+                break
+
+        if not common_names:
+            return []
+
+        reference_wp, reference_step = step_classes[
+            0
+        ].get_default_transformers_dicts()
+        result: list[dict[str, Any]] = []
+        for t_dict in list(reference_wp) + list(reference_step):
+            name = t_dict.get("name")
+            if not name or name not in common_names:
+                continue
+            if any(d.get("name") == name for d in result):
+                continue
+            result.append(dict(t_dict))
+        return result
+
+    @staticmethod
+    def _dedupe_transformer_dicts_by_name(
+        dicts: list[dict[str, Any]],
+    ) -> dict[str, dict[str, Any]]:
+        """Return a ``name -> dict`` map, keeping the first occurrence.
+
+        Used to deduplicate a step's combined per-workpiece + per-step
+        transformer dicts (a single dict can appear in both lists and is
+        shared by reference).
+        """
+        out: dict[str, dict[str, Any]] = {}
+        for t_dict in dicts:
+            name = t_dict.get("name")
+            if name and name not in out:
+                out[name] = t_dict
+        return out
+
+    @classmethod
     def create(
         cls,
         context: "RayforgeContext",

@@ -4,11 +4,11 @@ import uuid
 from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any, Optional
 
+from .step import Step
 from .step_registry import step_registry
 
 if TYPE_CHECKING:
     from ..machine.models.machine import Machine
-    from .step import Step
     from .stock import StockItem
 
 logger = logging.getLogger(__name__)
@@ -57,6 +57,11 @@ class Recipe:
     # A single dictionary of settings to be applied.
     settings: dict[str, Any] = field(default_factory=dict)
 
+    # Post-processor (transformer) settings captured by this recipe.
+    # Each dict carries ``name``, ``enabled``, ``recipe_apply`` (False =
+    # "Leave unchanged"), plus the transformer's own params.
+    transformer_dicts: list[dict[str, Any]] = field(default_factory=list)
+
     # Forward compatibility: store unknown attributes
     extra: dict[str, Any] = field(default_factory=dict)
 
@@ -82,6 +87,58 @@ class Recipe:
                     return False
             elif step_val != recipe_val:
                 return False
+        return True
+
+    def matches_step_transformers(
+        self,
+        step: "Step",
+        tolerance: float = 1e-6,
+    ) -> bool:
+        """Compare recipe's ``recipe_apply=True`` transformers to the
+        step's transformers by name + params.
+
+        Only transformer dicts with ``recipe_apply=True`` are checked.
+        Each is matched against the step's
+        ``per_workpiece_transformers_dicts`` +
+        ``per_step_transformers_dicts`` (deduplicated by name). For
+        each matching transformer name, every key present in the recipe
+        dict (except ``recipe_apply``) is compared against the step's
+        dict. Floats use ``math.isclose`` with ``tolerance``.
+
+        Returns ``True`` if the step has a matching transformer for
+        every recipe entry with ``recipe_apply=True``.
+        """
+        apply_dicts = [
+            d for d in self.transformer_dicts if d.get("recipe_apply", True)
+        ]
+        if not apply_dicts:
+            return True
+        step_dicts = Step._dedupe_transformer_dicts_by_name(
+            list(step.per_workpiece_transformers_dicts)
+            + list(step.per_step_transformers_dicts)
+        )
+        for recipe_dict in apply_dicts:
+            name = recipe_dict.get("name")
+            if not name:
+                return False
+            match = step_dicts.get(name)
+            if match is None:
+                return False
+            for key, recipe_val in recipe_dict.items():
+                if key == "recipe_apply":
+                    continue
+                if key not in match:
+                    return False
+                step_val = match[key]
+                if isinstance(step_val, float) and isinstance(
+                    recipe_val, float
+                ):
+                    if not math.isclose(
+                        step_val, recipe_val, rel_tol=0, abs_tol=tolerance
+                    ):
+                        return False
+                elif step_val != recipe_val:
+                    return False
         return True
 
     def matches(
@@ -280,6 +337,7 @@ class Recipe:
             "min_thickness_mm",
             "max_thickness_mm",
             "settings",
+            "transformer_dicts",
             # Legacy targeting keys, consumed by the migration below.
             "target_capability_name",
             "target_step_type",
@@ -298,6 +356,13 @@ class Recipe:
 
         target_step_types = cls._migrate_target_step_types(data)
 
+        transformer_dicts = data.get("transformer_dicts") or []
+        if transformer_dicts and not isinstance(transformer_dicts, list):
+            transformer_dicts = []
+        transformer_dicts = [
+            dict(d) for d in transformer_dicts if isinstance(d, dict)
+        ]
+
         return cls(
             uid=data.get("uid", str(uuid.uuid4())),
             name=data.get("name", "Unnamed Recipe"),
@@ -308,6 +373,7 @@ class Recipe:
             min_thickness_mm=data.get("min_thickness_mm"),
             max_thickness_mm=data.get("max_thickness_mm"),
             settings=settings,
+            transformer_dicts=transformer_dicts,
             extra=extra,
         )
 

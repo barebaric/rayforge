@@ -81,8 +81,7 @@ class LeadInOutSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         self._update_sensitivity()
 
     def _update_sensitivity(self) -> None:
-        assert self.enable_switch is not None
-        enabled = self.enable_switch.get_active()
+        enabled = self._is_enabled()
         auto = self.auto_row.get_active()
 
         self.auto_row.set_sensitive(enabled)

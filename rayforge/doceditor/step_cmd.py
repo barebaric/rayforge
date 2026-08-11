@@ -10,6 +10,7 @@ from ..core.undo import ChangePropertyCommand, DictItemCommand
 from ..core.vectorization_spec import LayerSource, PassthroughSpec
 
 if TYPE_CHECKING:
+    from ..core.recipe import Recipe
     from ..core.step import Step
     from .editor import DocEditor
 
@@ -97,8 +98,44 @@ class StepCmd:
                 if hasattr(step, key):
                     setattr(step, key, value)
 
+            # Apply transformer settings directly to the freshly-created
+            # step. Per-workpiece and per-step dicts are mutated in place.
+            self._apply_recipe_transformers_to_step(step, best_recipe)
+
             # Store a reference to the applied recipe
             step.applied_recipe_uid = best_recipe.uid
+
+    @staticmethod
+    def _apply_recipe_transformers_to_step(step: Step, recipe: Recipe) -> None:
+        """Apply a recipe's transformer settings to a fresh step.
+
+        Direct mutation of the step's per-workpiece and per-step
+        transformer dicts, used by the auto-apply path. For each recipe
+        transformer dict with ``recipe_apply=True``, update the step's
+        matching dict (by name) with ``enabled`` and the transformer's
+        params.
+        """
+        step_dicts_by_name: dict[str, dict] = {}
+        for d in list(step.per_workpiece_transformers_dicts) + list(
+            step.per_step_transformers_dicts
+        ):
+            name = d.get("name")
+            if name and name not in step_dicts_by_name:
+                step_dicts_by_name[name] = d
+
+        for recipe_dict in recipe.transformer_dicts or []:
+            if not recipe_dict.get("recipe_apply", True):
+                continue
+            name = recipe_dict.get("name")
+            if not name:
+                continue
+            step_dict = step_dicts_by_name.get(name)
+            if step_dict is None:
+                continue
+            for key, value in recipe_dict.items():
+                if key in ("name", "recipe_apply"):
+                    continue
+                step_dict[key] = value
 
     def rename_step(self, step: Step, new_name: str):
         """Renames a step with an undoable command."""

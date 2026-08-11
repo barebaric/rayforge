@@ -6,6 +6,7 @@ import pytest
 
 from rayforge.core.doc import Doc
 from rayforge.core.recipe import Recipe
+from rayforge.core.step import Step
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 
@@ -444,6 +445,176 @@ class TestRecipe:
         mock_step_bad_type.offset_mm = 0.15
         mock_step_bad_type.air_assist = True
         assert recipe.matches_step_settings(mock_step_bad_type) is False
+
+    # --- TRANSFORMER SETTINGS TESTS ---
+
+    def _step_with_transformers(
+        self,
+        per_wp: list[dict] | None = None,
+        per_step: list[dict] | None = None,
+    ) -> Step:
+        """A plain Step carrying the given transformer dicts."""
+        step = Step(typelabel="Test", name="Test")
+        step.per_workpiece_transformers_dicts = list(per_wp or [])
+        step.per_step_transformers_dicts = list(per_step or [])
+        return step
+
+    def test_transformer_dicts_round_trip(self):
+        """transformer_dicts survives to_dict/from_dict."""
+        recipe = Recipe(
+            name="With Transformers",
+            transformer_dicts=[
+                {
+                    "name": "CropTransformer",
+                    "enabled": True,
+                    "recipe_apply": True,
+                    "offset": 1.5,
+                },
+                {
+                    "name": "Optimize",
+                    "enabled": False,
+                    "recipe_apply": False,
+                },
+            ],
+        )
+        data = recipe.to_dict()
+        assert len(data["transformer_dicts"]) == 2
+
+        restored = Recipe.from_dict(data)
+        assert restored.transformer_dicts == recipe.transformer_dicts
+
+    def test_from_dict_missing_transformer_dicts_defaults_empty(self):
+        """Old recipe files without transformer_dicts load as empty."""
+        recipe = Recipe.from_dict({"name": "Old Recipe"})
+        assert recipe.transformer_dicts == []
+
+    def test_from_dict_non_list_transformer_dicts_ignored(self):
+        """A malformed transformer_dicts value is treated as empty."""
+        recipe = Recipe.from_dict({"name": "Bad", "transformer_dicts": "nope"})
+        assert recipe.transformer_dicts == []
+
+    def test_matches_step_transformers(self):
+        """matches_step_transformers compares only recipe_apply entries."""
+        recipe = Recipe(
+            transformer_dicts=[
+                {
+                    "name": "CropTransformer",
+                    "enabled": True,
+                    "recipe_apply": True,
+                    "offset": 0.5,
+                }
+            ]
+        )
+        step = self._step_with_transformers(
+            per_wp=[
+                {
+                    "name": "CropTransformer",
+                    "enabled": True,
+                    "offset": 0.5,
+                }
+            ]
+        )
+        assert recipe.matches_step_transformers(step) is True
+
+    def test_matches_step_transformers_tolerance(self):
+        """Float params are compared with math.isclose tolerance."""
+        recipe = Recipe(
+            transformer_dicts=[
+                {
+                    "name": "CropTransformer",
+                    "recipe_apply": True,
+                    "offset": 0.5,
+                }
+            ]
+        )
+        step = self._step_with_transformers(
+            per_wp=[
+                {
+                    "name": "CropTransformer",
+                    "enabled": True,
+                    "offset": 0.50000001,
+                }
+            ]
+        )
+        assert recipe.matches_step_transformers(step) is True
+
+        step.per_workpiece_transformers_dicts[0]["offset"] = 0.6
+        assert recipe.matches_step_transformers(step) is False
+
+    def test_matches_step_transformers_missing_transformer(self):
+        """A recipe_apply entry with no matching step transformer fails."""
+        recipe = Recipe(
+            transformer_dicts=[
+                {
+                    "name": "MissingTransformer",
+                    "recipe_apply": True,
+                    "enabled": True,
+                }
+            ]
+        )
+        step = self._step_with_transformers(
+            per_wp=[{"name": "CropTransformer", "enabled": True}]
+        )
+        assert recipe.matches_step_transformers(step) is False
+
+    def test_matches_step_transformers_skips_leave_unchanged(self):
+        """recipe_apply=False entries are ignored entirely."""
+        recipe = Recipe(
+            transformer_dicts=[
+                {
+                    "name": "MissingTransformer",
+                    "recipe_apply": False,
+                    "enabled": True,
+                }
+            ]
+        )
+        step = self._step_with_transformers(
+            per_wp=[{"name": "CropTransformer", "enabled": True}]
+        )
+        assert recipe.matches_step_transformers(step) is True
+
+    def test_matches_step_transformers_disabled_param(self):
+        """A disabled transformer is matched by its enabled flag."""
+        recipe = Recipe(
+            transformer_dicts=[
+                {
+                    "name": "Optimize",
+                    "recipe_apply": True,
+                    "enabled": False,
+                }
+            ]
+        )
+        step = self._step_with_transformers(
+            per_step=[{"name": "Optimize", "enabled": False}]
+        )
+        assert recipe.matches_step_transformers(step) is True
+
+        step.per_step_transformers_dicts[0]["enabled"] = True
+        assert recipe.matches_step_transformers(step) is False
+
+    def test_matches_step_transformers_per_step_match(self):
+        """A transformer found in per_step dicts matches too."""
+        recipe = Recipe(
+            transformer_dicts=[
+                {
+                    "name": "Optimize",
+                    "recipe_apply": True,
+                    "enabled": True,
+                }
+            ]
+        )
+        step = self._step_with_transformers(
+            per_step=[{"name": "Optimize", "enabled": True}]
+        )
+        assert recipe.matches_step_transformers(step) is True
+
+    def test_matches_step_transformers_empty_recipe(self):
+        """A recipe with no transformer_dicts always matches."""
+        recipe = Recipe()
+        step = self._step_with_transformers(
+            per_wp=[{"name": "CropTransformer", "enabled": True}]
+        )
+        assert recipe.matches_step_transformers(step) is True
 
     # --- STEP TYPE TARGETING TESTS ---
 

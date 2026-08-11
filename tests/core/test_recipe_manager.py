@@ -108,6 +108,34 @@ class TestRecipeManager:
             data = yaml.safe_load(f)
         assert data["name"] == "New Recipe"
 
+    def test_save_load_transformer_dicts_round_trip(self, recipes_dir: Path):
+        """transformer_dicts survive a save + reload through the manager."""
+        manager = RecipeManager(recipes_dir)
+        recipe = Recipe(
+            uid="with-transformers",
+            name="Transformer Recipe",
+            transformer_dicts=[
+                {
+                    "name": "CropTransformer",
+                    "enabled": True,
+                    "recipe_apply": True,
+                    "offset": 1.25,
+                },
+                {
+                    "name": "Optimize",
+                    "enabled": False,
+                    "recipe_apply": False,
+                },
+            ],
+        )
+
+        manager.add_recipe(recipe)
+
+        reloaded = RecipeManager(recipes_dir)
+        restored = reloaded.get_recipe_by_id("with-transformers")
+        assert restored is not None
+        assert restored.transformer_dicts == recipe.transformer_dicts
+
     def test_add_recipe(self, recipes_dir: Path):
         """Test adding a recipe, which should also save it."""
         manager = RecipeManager(recipes_dir)

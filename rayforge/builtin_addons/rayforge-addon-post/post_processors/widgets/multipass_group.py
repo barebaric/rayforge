@@ -62,8 +62,7 @@ class MultiPassSettingsGroup(DebounceMixin, TransformerSettingsGroup):
             self.z_step_row.set_sensitive(False)
 
     def _update_sensitivity(self) -> None:
-        assert self.enable_switch is not None
-        enabled = self.enable_switch.get_active()
+        enabled = self._is_enabled()
         self.passes_row.set_sensitive(enabled)
         self.z_step_row.set_sensitive(
             enabled and self.passes_row.get_value() > 1
