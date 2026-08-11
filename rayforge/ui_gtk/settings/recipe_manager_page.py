@@ -1,7 +1,7 @@
 import logging
 from gettext import gettext as _
 
-from ..doceditor.recipe_list import RecipeListWidget
+from ..doceditor.recipes.recipe_list import RecipeListWidget
 from ..shared.preferences_page import TrackedPreferencesPage
 
 logger = logging.getLogger(__name__)

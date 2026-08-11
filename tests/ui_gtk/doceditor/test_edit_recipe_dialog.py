@@ -13,7 +13,9 @@ from gi.repository import Gtk
 from rayforge.core.recipe import Recipe
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine
-from rayforge.ui_gtk.doceditor.edit_recipe_dialog import AddEditRecipeDialog
+from rayforge.ui_gtk.doceditor.recipes.edit_recipe_dialog import (
+    AddEditRecipeDialog,
+)
 
 pytestmark = pytest.mark.ui
 

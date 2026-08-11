@@ -6,15 +6,15 @@ from typing import TYPE_CHECKING, Any, cast
 from blinker import Signal
 from gi.repository import Adw, Gtk
 
-from ...context import get_context
-from ...core.recipe import Recipe
-from ...core.step import Step
-from ...core.undo.property_cmd import ChangePropertyCommand
-from .edit_recipe_dialog import AddEditRecipeDialog
-from .recipe_selector_dialog import RecipeSelectorDialog
+from ....context import get_context
+from ....core.recipe import Recipe
+from ....core.step import Step
+from ....core.undo.property_cmd import ChangePropertyCommand
+from ..recipes.edit_recipe_dialog import AddEditRecipeDialog
+from ..recipes.recipe_selector_dialog import RecipeSelectorDialog
 
 if TYPE_CHECKING:
-    from ...doceditor.editor import DocEditor
+    from ....doceditor.editor import DocEditor
 
 logger = logging.getLogger(__name__)
 

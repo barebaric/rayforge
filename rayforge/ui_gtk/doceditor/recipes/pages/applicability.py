@@ -1,15 +1,4 @@
-"""Dedicated page widgets for the recipe editor dialog.
-
-Each tab of
-:class:`~rayforge.ui_gtk.doceditor.edit_recipe_dialog.AddEditRecipeDialog`
-is a self-contained :class:`Adw.PreferencesPage` subclass:
-
-* :class:`RecipeGeneralPage` — name and description.
-* :class:`RecipeApplicabilityPage` — machine, step types, material,
-  and thickness criteria.
-* :class:`RecipeSettingsPage` — one group of process settings (e.g.
-  "Laser", "Step Settings"), wrapping a :class:`VarSetWidget`.
-"""
+"""The recipe editor's applicability page: when a recipe matches."""
 
 import logging
 from gettext import gettext as _
@@ -18,58 +7,14 @@ from typing import Any, cast
 from blinker import Signal
 from gi.repository import Adw, Gtk
 
-from ...context import get_context
-from ...core.step_registry import step_registry
-from ...core.varset import VarSet
-from ..icons import get_icon
-from ..shared.optional_spin_row import OptionalSpinRowController
-from ..varset.varsetwidget import VarSetWidget
-from .material_selector import MaterialSelectorDialog
-from .step_type_selection_dialog import StepTypeSelectionDialog
+from .....context import get_context
+from .....core.step_registry import step_registry
+from ....icons import get_icon
+from ....shared.optional_spin_row import OptionalSpinRowController
+from ...material_selector import MaterialSelectorDialog
+from ...step_type_selection_dialog import StepTypeSelectionDialog
 
 logger = logging.getLogger(__name__)
-
-
-class RecipeGeneralPage(Adw.PreferencesPage):
-    """The recipe's name and description."""
-
-    def __init__(self, recipe: Any | None = None, **kwargs):
-        super().__init__(**kwargs)
-        self.name_changed = Signal()
-        self.submit_requested = Signal()
-
-        group = Adw.PreferencesGroup(
-            title=_("Recipe"),
-            description=_(
-                "A named preset of settings that can be "
-                "automatically applied later."
-            ),
-        )
-        self.add(group)
-
-        self.name_row = Adw.EntryRow(title=_("Name"))
-        if recipe:
-            self.name_row.set_text(recipe.name)
-        self.name_row.connect("notify::text", self._on_name_changed)
-        self.name_row.connect("activate", self._on_name_activated)
-        group.add(self.name_row)
-
-        self.desc_row = Adw.EntryRow(title=_("Description"))
-        if recipe:
-            self.desc_row.set_text(recipe.description)
-        group.add(self.desc_row)
-
-    def _on_name_changed(self, entry_row, _pspec):
-        self.name_changed.send(self)
-
-    def _on_name_activated(self, _entry_row):
-        self.submit_requested.send(self)
-
-    def get_name(self) -> str:
-        return self.name_row.get_text().strip()
-
-    def get_description(self) -> str:
-        return self.desc_row.get_text().strip()
 
 
 class RecipeApplicabilityPage(Adw.PreferencesPage):
@@ -297,39 +242,3 @@ class RecipeApplicabilityPage(Adw.PreferencesPage):
             )
         else:
             self.material_row.set_subtitle(_("Any"))
-
-
-class RecipeSettingsPage(Adw.PreferencesPage):
-    """One group of recipe process settings.
-
-    Wraps a :class:`VarSetWidget` titled ``title`` (e.g. "Laser",
-    "Step Settings"). The dialog creates one instance per
-    :meth:`~rayforge.core.step.Step.recipe_varset_groups` entry.
-    """
-
-    def __init__(self, title: str, **kwargs):
-        super().__init__(**kwargs)
-        self.group_title = title
-        self._widget = VarSetWidget(
-            title=title,
-            description=_(
-                "The settings that will be applied by this recipe. "
-                "When multiple step types are selected, only settings "
-                "common to all of them are shown."
-            ),
-        )
-        self.add(self._widget)
-
-    def populate(self, varset: VarSet):
-        self._widget.populate(varset)
-
-    def set_values(self, values: dict[str, Any]):
-        self._widget.set_values(values)
-
-    def get_values(self) -> dict[str, Any]:
-        return self._widget.get_values()
-
-    @property
-    def keys(self):
-        """The setting keys rendered on this page."""
-        return list(self._widget.widget_map.keys())

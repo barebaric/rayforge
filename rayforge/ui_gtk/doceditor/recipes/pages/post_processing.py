@@ -7,14 +7,14 @@ from typing import Any
 
 from gi.repository import Adw, Gtk
 
-from ....pipeline.transformer import OpsTransformer
-from ....pipeline.transformer.placeholder import PlaceholderTransformer
-from ...shared.preferences_page import TrackedPreferencesPage
-from .groups import (
+from .....pipeline.transformer import OpsTransformer
+from .....pipeline.transformer.placeholder import PlaceholderTransformer
+from ....shared.preferences_page import TrackedPreferencesPage
+from ...post_processor.groups import (
     PlaceholderSettingsGroup,
     TransformerSettingsGroup,
 )
-from .registry import transformer_widget_registry
+from ...post_processor.registry import transformer_widget_registry
 
 
 class RecipePostProcessingPage(TrackedPreferencesPage):

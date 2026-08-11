@@ -5,11 +5,11 @@ from typing import cast
 from blinker import Signal
 from gi.repository import Adw, Gtk, Pango
 
-from ...context import get_context
-from ...core.recipe import Recipe
-from ...shared.units.formatter import format_value
-from ..icons import get_icon
-from ..shared.preferences_group import PreferencesGroupWithButton
+from ....context import get_context
+from ....core.recipe import Recipe
+from ....shared.units.formatter import format_value
+from ...icons import get_icon
+from ...shared.preferences_group import PreferencesGroupWithButton
 from .edit_recipe_dialog import AddEditRecipeDialog
 
 logger = logging.getLogger(__name__)
