@@ -63,7 +63,10 @@ echo "Building application directory with PyInstaller..."
 WIN_MSYS2_PATH=$(cygpath -w "$MSYS2_PATH")
 echo "Using Windows MSYS2 Path for PyInstaller assets: $WIN_MSYS2_PATH"
 
-pyinstaller --onedir --hide-console hide-early \
+# PyInstaller 6.22.0 writes "hide_console=''hide-early''" into the
+# generated spec file, which is a syntax error. In that case, fix the
+# offending line and rebuild from the spec file.
+if ! pyinstaller --onedir --hide-console hide-early \
   --log-level INFO \
   --name "${BUNDLE_NAME}" \
   --icon="rayforge.ico" \
@@ -87,7 +90,11 @@ pyinstaller --onedir --hide-console hide-early \
   --hidden-import "rayforge.core.expression.tokenizer" \
   --hidden-import "rayforge.core.expression.validator" \
   --additional-hooks-dir "hooks" \
-  rayforge/app.py
+  rayforge/app.py; then
+    sed -i "s/hide_console=''hide-early''/hide_console='hide-early'/" \
+        "${BUNDLE_NAME}.spec"
+    pyinstaller --noconfirm "${BUNDLE_NAME}.spec"
+fi
 
 echo "✅ PyInstaller build complete: dist/${BUNDLE_NAME}/"
 
