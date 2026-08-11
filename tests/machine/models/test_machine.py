@@ -1488,6 +1488,74 @@ class TestMachine:
         offset = isolated_machine.get_visual_wcs_offset()
         assert offset == pytest.approx(expected_offset)
 
+    @pytest.mark.parametrize(
+        "wcs_is_workarea_origin, origin, reverse_x, reverse_y, expected",
+        [
+            # Active WCS offset (25, 35), checked against legacy
+            # native-mode behavior for every origin and reversal
+            # combination.
+            (False, Origin.BOTTOM_LEFT, False, False, (25.0, 35.0)),
+            (False, Origin.BOTTOM_LEFT, True, False, (-25.0, 35.0)),
+            (False, Origin.BOTTOM_LEFT, False, True, (25.0, -35.0)),
+            (False, Origin.BOTTOM_LEFT, True, True, (-25.0, -35.0)),
+            (False, Origin.TOP_LEFT, False, False, (25.0, 165.0)),
+            (False, Origin.TOP_LEFT, True, False, (-25.0, 165.0)),
+            (False, Origin.TOP_LEFT, False, True, (25.0, 235.0)),
+            (False, Origin.TOP_LEFT, True, True, (-25.0, 235.0)),
+            (False, Origin.BOTTOM_RIGHT, False, False, (75.0, 35.0)),
+            (False, Origin.BOTTOM_RIGHT, True, False, (125.0, 35.0)),
+            (False, Origin.BOTTOM_RIGHT, False, True, (75.0, -35.0)),
+            (False, Origin.BOTTOM_RIGHT, True, True, (125.0, -35.0)),
+            (False, Origin.TOP_RIGHT, False, False, (75.0, 165.0)),
+            (False, Origin.TOP_RIGHT, True, False, (125.0, 165.0)),
+            (False, Origin.TOP_RIGHT, False, True, (75.0, 235.0)),
+            (False, Origin.TOP_RIGHT, True, True, (125.0, 235.0)),
+            # Work-area reference offset with margins (10, 20, 30, 40).
+            # These values intentionally preserve the pre-feature
+            # transform through machine_point_to_world for non-bottom-
+            # left origins.
+            (True, Origin.BOTTOM_LEFT, False, False, (10.0, 40.0)),
+            (True, Origin.BOTTOM_LEFT, True, False, (-10.0, 40.0)),
+            (True, Origin.BOTTOM_LEFT, False, True, (10.0, -40.0)),
+            (True, Origin.BOTTOM_LEFT, True, True, (-10.0, -40.0)),
+            (True, Origin.TOP_LEFT, False, False, (10.0, 20.0)),
+            (True, Origin.TOP_LEFT, True, False, (-10.0, 20.0)),
+            (True, Origin.TOP_LEFT, False, True, (10.0, 380.0)),
+            (True, Origin.TOP_LEFT, True, True, (-10.0, 380.0)),
+            (True, Origin.BOTTOM_RIGHT, False, False, (30.0, 40.0)),
+            (True, Origin.BOTTOM_RIGHT, True, False, (170.0, 40.0)),
+            (True, Origin.BOTTOM_RIGHT, False, True, (30.0, -40.0)),
+            (True, Origin.BOTTOM_RIGHT, True, True, (170.0, -40.0)),
+            (True, Origin.TOP_RIGHT, False, False, (30.0, 20.0)),
+            (True, Origin.TOP_RIGHT, True, False, (170.0, 20.0)),
+            (True, Origin.TOP_RIGHT, False, True, (30.0, 380.0)),
+            (True, Origin.TOP_RIGHT, True, True, (170.0, 380.0)),
+        ],
+    )
+    def test_reference_position_world_native_regression_matrix(
+        self,
+        isolated_machine: Machine,
+        wcs_is_workarea_origin,
+        origin,
+        reverse_x,
+        reverse_y,
+        expected,
+    ):
+        """Native mode preserves all pre-orientation reference
+        transforms."""
+        isolated_machine.set_axis_extents(100.0, 200.0)
+        isolated_machine.set_work_margins(10.0, 20.0, 30.0, 40.0)
+        isolated_machine.set_origin(origin)
+        isolated_machine.set_reverse_x_axis(reverse_x)
+        isolated_machine.set_reverse_y_axis(reverse_y)
+        isolated_machine.set_active_wcs("G54")
+        isolated_machine.update_wcs_offset("G54", (25.0, 35.0, 0.0))
+        isolated_machine.set_wcs_origin_is_workarea_origin(
+            wcs_is_workarea_origin
+        )
+
+        assert isolated_machine.get_reference_position_world() == expected
+
 
 class TestJogDelegation:
     """

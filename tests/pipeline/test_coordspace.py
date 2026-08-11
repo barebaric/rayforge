@@ -3,6 +3,7 @@ Unit tests for coordinate space classes.
 """
 
 import numpy as np
+import pytest
 
 from rayforge.pipeline.coordspace import (
     AxisDirection,
@@ -160,6 +161,116 @@ class TestMachineSpace:
         expected = np.identity(4, dtype=np.float64)
         expected[1, 1] = -1.0
         np.testing.assert_array_almost_equal(matrix, expected)
+
+    @pytest.mark.parametrize("origin", list(OriginCorner))
+    @pytest.mark.parametrize("reverse_x", [False, True])
+    @pytest.mark.parametrize("reverse_y", [False, True])
+    def test_axis_label_origin_native_matches_raw_wcs_offset(
+        self, origin, reverse_x, reverse_y
+    ):
+        """Regression: in the native orientation, the WCS branch of
+        get_axis_label_origin must return the raw offset unchanged,
+        exactly as it did before workspace rotation existed."""
+        x_direction = (
+            AxisDirection.POSITIVE_LEFT
+            if origin
+            in (
+                OriginCorner.TOP_RIGHT,
+                OriginCorner.BOTTOM_RIGHT,
+            )
+            else AxisDirection.POSITIVE_RIGHT
+        )
+        y_direction = (
+            AxisDirection.POSITIVE_DOWN
+            if origin
+            in (
+                OriginCorner.TOP_LEFT,
+                OriginCorner.TOP_RIGHT,
+            )
+            else AxisDirection.POSITIVE_UP
+        )
+        space = MachineSpace(
+            origin=origin,
+            x_positive_direction=x_direction,
+            y_positive_direction=y_direction,
+            extents=(400.0, 800.0),
+            reverse_x=reverse_x,
+            reverse_y=reverse_y,
+        )
+
+        assert space.get_axis_label_origin(
+            wcs_offset=(50.0, 60.0, 0.0)
+        ) == pytest.approx((50.0, 60.0, 0.0))
+
+    def test_axis_label_origin_native_workarea_matches_margins(self):
+        """Regression: native workarea-origin labels come from margins."""
+        space = MachineSpace(
+            origin=OriginCorner.TOP_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_DOWN,
+            extents=(400.0, 800.0),
+            margins=(10.0, 20.0, 30.0, 40.0),
+        )
+
+        assert space.get_axis_label_origin(
+            wcs_is_workarea_origin=True
+        ) == pytest.approx((10.0, 20.0, 0.0))
+
+    @pytest.mark.parametrize("origin", list(OriginCorner))
+    @pytest.mark.parametrize("reverse_x", [False, True])
+    @pytest.mark.parametrize("reverse_y", [False, True])
+    def test_scalar_and_matrix_paths_agree(self, origin, reverse_x, reverse_y):
+        """The two world->machine implementations must not drift apart.
+
+        `world_point_to_machine` applies the origin/reversal rules as
+        scalar branches (used by the UI), while the encoding pipeline
+        consumes `get_world_to_machine_matrix`. They are separate code
+        paths describing the same transform, so a change to one that is
+        not mirrored in the other would silently desynchronise what the
+        canvas shows from what the machine is told to do.
+        """
+        x_direction = (
+            AxisDirection.POSITIVE_LEFT
+            if origin
+            in (
+                OriginCorner.TOP_RIGHT,
+                OriginCorner.BOTTOM_RIGHT,
+            )
+            else AxisDirection.POSITIVE_RIGHT
+        )
+        y_direction = (
+            AxisDirection.POSITIVE_DOWN
+            if origin
+            in (
+                OriginCorner.TOP_LEFT,
+                OriginCorner.TOP_RIGHT,
+            )
+            else AxisDirection.POSITIVE_UP
+        )
+        space = MachineSpace(
+            origin=origin,
+            x_positive_direction=x_direction,
+            y_positive_direction=y_direction,
+            extents=(400.0, 800.0),
+            reverse_x=reverse_x,
+            reverse_y=reverse_y,
+        )
+        matrix = space.get_world_to_machine_matrix()
+        width, height = space.extents
+
+        # Includes both bed corners and asymmetric interior points, so a
+        # missing translation term cannot pass by symmetry.
+        for world_x, world_y in (
+            (0.0, 0.0),
+            (width, height),
+            (width * 0.31, height * 0.17),
+            (width * 0.73, height * 0.61),
+        ):
+            scalar = space.world_point_to_machine(world_x, world_y)
+            transformed = matrix @ np.array([world_x, world_y, 0.0, 1.0])
+            assert scalar == pytest.approx((transformed[0], transformed[1])), (
+                f"paths disagree at ({world_x}, {world_y})"
+            )
 
 
 class TestCoordinateSpaceTransforms:
