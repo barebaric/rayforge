@@ -214,22 +214,6 @@ class MachineSpace(CoordinateSpace):
             reverse_y=machine.reverse_y_axis,
         )
 
-    def get_transform_from_world(self) -> np.ndarray:
-        """
-        Returns the inverse transformation matrix (world → machine).
-
-        This is the inverse of get_transform_to_world(), used to convert
-        coordinates from world space to machine space.
-
-        Note: This matrix handles origin corner transformation only.
-        The reverse_x/reverse_y sign flips are applied separately in
-        world_point_to_machine().
-
-        Returns:
-            A 4x4 numpy array representing the inverse transformation matrix.
-        """
-        return np.linalg.inv(self.get_transform_to_world(self.extents))
-
     def get_world_to_machine_matrix(self) -> np.ndarray:
         """
         Returns the full 4x4 transformation matrix to convert from world space
@@ -251,6 +235,14 @@ class MachineSpace(CoordinateSpace):
             matrix = sign_flip @ matrix
 
         return matrix
+
+    def get_machine_to_world_matrix(self) -> np.ndarray:
+        """
+        Returns the inverse of get_world_to_machine_matrix().
+
+        Used to convert points from machine space back to world space.
+        """
+        return np.linalg.inv(self.get_world_to_machine_matrix())
 
     def get_command_offset(
         self,
@@ -424,9 +416,8 @@ class MachineSpace(CoordinateSpace):
         WORLD space: Bottom-Left (0,0), Y-up, X-right
         MACHINE space: Based on origin corner and axis reversal settings.
 
-        This applies:
-        1. Origin corner transformation (via inverse matrix)
-        2. Axis reversal sign flip (reverse_x/reverse_y)
+        Delegates to get_world_to_machine_matrix() so the scalar UI path
+        and the matrix encoder path share a single source of truth.
 
         Args:
             x: X coordinate in world space.
@@ -435,33 +426,9 @@ class MachineSpace(CoordinateSpace):
         Returns:
             Tuple of (x, y) in machine space.
         """
-        width, height = self.extents
-
-        origin_is_right = self.origin in (
-            OriginCorner.TOP_RIGHT,
-            OriginCorner.BOTTOM_RIGHT,
-        )
-        origin_is_top = self.origin in (
-            OriginCorner.TOP_LEFT,
-            OriginCorner.TOP_RIGHT,
-        )
-
-        if origin_is_right:
-            mx = width - x
-        else:
-            mx = x
-
-        if origin_is_top:
-            my = height - y
-        else:
-            my = y
-
-        if self.reverse_x:
-            mx = -mx
-        if self.reverse_y:
-            my = -my
-
-        return mx, my
+        matrix = self.get_world_to_machine_matrix()
+        result = matrix @ np.array([x, y, 0.0, 1.0])
+        return float(result[0]), float(result[1])
 
     def machine_point_to_world(self, x: float, y: float) -> Point:
         """
@@ -469,9 +436,8 @@ class MachineSpace(CoordinateSpace):
 
         Inverse of world_point_to_machine().
 
-        This applies:
-        1. Axis reversal sign flip (reverse_x/reverse_y)
-        2. Origin corner transformation (via matrix)
+        Delegates to get_machine_to_world_matrix() so the scalar UI path
+        and the matrix encoder path share a single source of truth.
 
         Args:
             x: X coordinate in machine space.
@@ -480,35 +446,9 @@ class MachineSpace(CoordinateSpace):
         Returns:
             Tuple of (x, y) in world space.
         """
-        mx, my = x, y
-
-        if self.reverse_x:
-            mx = -mx
-        if self.reverse_y:
-            my = -my
-
-        width, height = self.extents
-
-        origin_is_right = self.origin in (
-            OriginCorner.TOP_RIGHT,
-            OriginCorner.BOTTOM_RIGHT,
-        )
-        origin_is_top = self.origin in (
-            OriginCorner.TOP_LEFT,
-            OriginCorner.TOP_RIGHT,
-        )
-
-        if origin_is_right:
-            wx = width - mx
-        else:
-            wx = mx
-
-        if origin_is_top:
-            wy = height - my
-        else:
-            wy = my
-
-        return wx, wy
+        matrix = self.get_machine_to_world_matrix()
+        result = matrix @ np.array([x, y, 0.0, 1.0])
+        return float(result[0]), float(result[1])
 
     def world_item_to_machine(
         self,
