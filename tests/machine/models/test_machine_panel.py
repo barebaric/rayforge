@@ -34,6 +34,10 @@ class _StubMachine:
     def axis_extents(self) -> tuple[float, float]:
         return self._space.extents
 
+    def has_custom_work_area(self) -> bool:
+        ml, mt, mr, mb = self._space.margins
+        return ml != 0 or mt != 0 or mr != 0 or mb != 0
+
 
 def _panel(**space_kwargs) -> MachinePanel:
     orientation = space_kwargs.pop("orientation", PanelOrientation.NATIVE)
@@ -418,6 +422,49 @@ class TestMachinePanelComposedTransforms:
         assert native == pytest.approx(expected_native)
         presented = panel.get_axis_label_origin(wcs_offset=(50.0, 60.0, 0.0))
         assert presented == pytest.approx(expected_presented)
+
+    @pytest.mark.parametrize(
+        "orientation, expected",
+        [
+            (PanelOrientation.NATIVE, (-10.0, -40.0, 400.0, 800.0)),
+            (
+                PanelOrientation.ROTATED_LEFT,
+                (-20.0, -10.0, 800.0, 400.0),
+            ),
+            (
+                PanelOrientation.ROTATED_RIGHT,
+                (-40.0, -30.0, 800.0, 400.0),
+            ),
+        ],
+    )
+    def test_extent_frame_rotates(self, orientation, expected):
+        """The extent frame follows presented margins and extents."""
+        panel = _panel(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(400.0, 800.0),
+            margins=(10.0, 20.0, 30.0, 40.0),
+            orientation=orientation,
+        )
+        assert panel.extent_frame == pytest.approx(expected)
+
+    def test_has_custom_work_area_false_without_margins(self):
+        panel = _panel(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+        )
+        assert panel.has_custom_work_area is False
+
+    def test_has_custom_work_area_true_with_margins(self):
+        panel = _panel(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            margins=(10.0, 0.0, 0.0, 0.0),
+        )
+        assert panel.has_custom_work_area is True
 
 
 class TestMachinePanelOrientationState:

@@ -299,16 +299,11 @@ class WorkSurface(WorldSurface):
         Convert machine-reported coordinates to canvas world coordinates.
 
         Machine-reported coordinates come from the controller and may be
-        negated based on reverse_x/reverse_y settings. We undo this sign
-        flip before transforming to world coordinates.
+        negated based on reverse_x/reverse_y settings. The panel's
+        machine->world transform undoes this sign flip.
         """
         if self.machine:
-            space = self.machine.get_coordinate_space()
-            if space.reverse_x:
-                m_x = -m_x
-            if space.reverse_y:
-                m_y = -m_y
-            return space.transform_point_to_world(m_x, m_y, space.extents)
+            return self.machine.panel.machine_point_to_world(m_x, m_y)
         return m_x, m_y
 
     def get_global_tab_visibility(self) -> bool:
@@ -1290,8 +1285,10 @@ class WorkSurface(WorldSurface):
     def _update_extent_frame_flat(self):
         """Updates extent frame and workarea for flat (non-rotary) mode."""
         assert self.machine
-        extent_w, extent_h = self.machine.axis_extents
-        ml, mt, mr, mb = self.machine.work_margins
+        panel = self.machine.panel
+        extent_w, extent_h = panel.extents
+        ml, mt, mr, mb = panel.margins
+        workarea_w, workarea_h = panel.workarea_size
 
         logger.debug(
             f"_update_extent_frame_flat: extents=({extent_w}, "
@@ -1310,8 +1307,6 @@ class WorkSurface(WorldSurface):
         self._extent_frame_element.set_pos(0.0, 0.0)
         self._extent_frame_element.set_visible(True)
 
-        workarea_w = extent_w - ml - mr
-        workarea_h = extent_h - mt - mb
         self._workarea_bg_element.set_size(
             float(workarea_w), float(workarea_h)
         )
