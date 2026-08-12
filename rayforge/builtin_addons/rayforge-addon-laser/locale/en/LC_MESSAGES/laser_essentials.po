@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 01:04+0200\n"
+"POT-Creation-Date: 2026-08-11 00:30+0200\n"
 "PO-Revision-Date: 2026-03-01 19:25+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -17,13 +17,13 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: laser_essentials/material_test_helpers.py laser_essentials/capabilities.py
+#: laser_essentials/material_test_helpers.py
 msgid "Cut"
 msgstr ""
 
 #: laser_essentials/material_test_helpers.py
 #: laser_essentials/widgets/raster_page.py
-#: laser_essentials/steps/raster_step.py laser_essentials/capabilities.py
+#: laser_essentials/steps/raster_step.py
 msgid "Engrave"
 msgstr "Engrave"
 
@@ -152,12 +152,11 @@ msgid "Cut a frame around the selected content."
 msgstr ""
 
 #: laser_essentials/widgets/rows/laser_step_page.py
-#: laser_essentials/capabilities.py
 msgid "Cut Speed"
 msgstr ""
 
 #: laser_essentials/widgets/rows/laser_step_page.py
-#: laser_essentials/steps/laser_step.py laser_essentials/frontend.py
+#: laser_essentials/steps/laser_step.py
 msgid "Laser"
 msgstr ""
 
@@ -184,7 +183,7 @@ msgid ""
 msgstr ""
 
 #: laser_essentials/widgets/rows/tab_power_row.py
-#: laser_essentials/steps/laser_step.py laser_essentials/capabilities.py
+#: laser_essentials/steps/laser_step.py
 msgid "Tab Power"
 msgstr ""
 
@@ -193,7 +192,7 @@ msgid "Laser power at tab positions as a percentage"
 msgstr ""
 
 #: laser_essentials/widgets/rows/air_assist_row.py
-#: laser_essentials/steps/laser_step.py laser_essentials/capabilities.py
+#: laser_essentials/steps/laser_step.py
 msgid "Air Assist"
 msgstr ""
 
@@ -225,7 +224,6 @@ msgstr ""
 
 #: laser_essentials/widgets/rows/power_row.py
 #: laser_essentials/widgets/raster_page.py laser_essentials/steps/laser_step.py
-#: laser_essentials/capabilities.py
 msgid "Power"
 msgstr ""
 
@@ -473,7 +471,7 @@ msgstr ""
 msgid "Number of offset variations"
 msgstr ""
 
-#: laser_essentials/widgets/raster_page.py laser_essentials/capabilities.py
+#: laser_essentials/widgets/raster_page.py
 msgid "Engrave Speed"
 msgstr ""
 
@@ -666,11 +664,11 @@ msgstr "Min Power (White)"
 msgid "Max Power (Black)"
 msgstr "Max Power (Black)"
 
-#: laser_essentials/steps/laser_step.py laser_essentials/capabilities.py
+#: laser_essentials/steps/laser_step.py
 msgid "Optionally force a specific laser head"
 msgstr ""
 
-#: laser_essentials/steps/laser_step.py laser_essentials/capabilities.py
+#: laser_essentials/steps/laser_step.py
 #, python-format
 msgid "Laser power at tab positions (% of cut power)"
 msgstr ""
@@ -737,29 +735,13 @@ msgstr ""
 msgid "Material Test Grid"
 msgstr "Material Test Grid"
 
-#: laser_essentials/capabilities.py
-msgid "Laser Head"
-msgstr ""
-
-#: laser_essentials/capabilities.py
-msgid "Travel Speed"
-msgstr ""
-
-#: laser_essentials/capabilities.py
-msgid "Score"
-msgstr ""
-
-#: laser_essentials/capabilities.py
-msgid "Score Speed"
-msgstr ""
-
-#: laser_essentials/capabilities.py
-msgid "Material Test"
-msgstr ""
-
 #: laser_essentials/frontend.py
 msgid "Create Material Test Grid"
 msgstr "Create Material Test Grid"
+
+#: laser_essentials/laser_head_var.py
+msgid "Laser Head"
+msgstr ""
 
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"

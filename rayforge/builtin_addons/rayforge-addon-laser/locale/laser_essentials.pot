@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 01:04+0200\n"
+"POT-Creation-Date: 2026-08-11 00:30+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,14 +18,12 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: laser_essentials/material_test_helpers.py
-#: laser_essentials/capabilities.py
 msgid "Cut"
 msgstr ""
 
 #: laser_essentials/material_test_helpers.py
 #: laser_essentials/widgets/raster_page.py
 #: laser_essentials/steps/raster_step.py
-#: laser_essentials/capabilities.py
 msgid "Engrave"
 msgstr ""
 
@@ -155,13 +153,11 @@ msgid "Cut a frame around the selected content."
 msgstr ""
 
 #: laser_essentials/widgets/rows/laser_step_page.py
-#: laser_essentials/capabilities.py
 msgid "Cut Speed"
 msgstr ""
 
 #: laser_essentials/widgets/rows/laser_step_page.py
 #: laser_essentials/steps/laser_step.py
-#: laser_essentials/frontend.py
 msgid "Laser"
 msgstr ""
 
@@ -189,7 +185,6 @@ msgstr ""
 
 #: laser_essentials/widgets/rows/tab_power_row.py
 #: laser_essentials/steps/laser_step.py
-#: laser_essentials/capabilities.py
 msgid "Tab Power"
 msgstr ""
 
@@ -199,7 +194,6 @@ msgstr ""
 
 #: laser_essentials/widgets/rows/air_assist_row.py
 #: laser_essentials/steps/laser_step.py
-#: laser_essentials/capabilities.py
 msgid "Air Assist"
 msgstr ""
 
@@ -233,7 +227,6 @@ msgstr ""
 #: laser_essentials/widgets/rows/power_row.py
 #: laser_essentials/widgets/raster_page.py
 #: laser_essentials/steps/laser_step.py
-#: laser_essentials/capabilities.py
 msgid "Power"
 msgstr ""
 
@@ -480,7 +473,6 @@ msgid "Number of offset variations"
 msgstr ""
 
 #: laser_essentials/widgets/raster_page.py
-#: laser_essentials/capabilities.py
 msgid "Engrave Speed"
 msgstr ""
 
@@ -674,12 +666,10 @@ msgid "Max Power (Black)"
 msgstr ""
 
 #: laser_essentials/steps/laser_step.py
-#: laser_essentials/capabilities.py
 msgid "Optionally force a specific laser head"
 msgstr ""
 
 #: laser_essentials/steps/laser_step.py
-#: laser_essentials/capabilities.py
 #, python-format
 msgid "Laser power at tab positions (% of cut power)"
 msgstr ""
@@ -746,28 +736,12 @@ msgstr ""
 msgid "Material Test Grid"
 msgstr ""
 
-#: laser_essentials/capabilities.py
-msgid "Laser Head"
-msgstr ""
-
-#: laser_essentials/capabilities.py
-msgid "Travel Speed"
-msgstr ""
-
-#: laser_essentials/capabilities.py
-msgid "Score"
-msgstr ""
-
-#: laser_essentials/capabilities.py
-msgid "Score Speed"
-msgstr ""
-
-#: laser_essentials/capabilities.py
-msgid "Material Test"
-msgstr ""
-
 #: laser_essentials/frontend.py
 msgid "Create Material Test Grid"
+msgstr ""
+
+#: laser_essentials/laser_head_var.py
+msgid "Laser Head"
 msgstr ""
 
 #: laser_essentials/commands/material_test_cmd.py

@@ -5,6 +5,34 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.1
+
+### Added
+
+- New "CNC Essentials" addon with Experimental CNC machining operations:
+  adaptive clearing, flat spiral, helix plunge, inner and outer profiling,
+  ramp entry, slotting, and toroidal clearing (disabled by default; enable
+  it in the addon manager)
+- Pipeline progress now shows the currently running operation with a
+  friendly, translatable status label instead of an internal name
+
+### Changed
+
+- Recipes now target one or more step types instead of a single
+  capability; the recipe editor gained a searchable step-type selector,
+  and existing recipes are migrated automatically
+- Post-processor settings (lead-in/out, multipass, overscan) can now be
+  stored per recipe and applied to the targeted steps
+- Show a confirmation dialog when enabling experimental addons
+- Upgrade raygeo to 1.38.3
+
+### Fixed
+
+- Generated G-code could be wrong when axis reversal or a non-bottom-left
+  origin was combined with a WCS offset
+- Air assist settings in laser steps were not emitted to the G-code
+  (M8/M9)
+
 ## 1.9.0
 
 ### Added
