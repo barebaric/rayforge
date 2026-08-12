@@ -79,6 +79,36 @@ def test_set_visible_fires_signals(step):
     visibility_handler.assert_called_once_with(step)
 
 
+def test_set_name_fires_updated(step):
+    """Tests that set_name fires the 'updated' signal (issue #343)."""
+    handler = MagicMock()
+    step.updated.connect(handler)
+
+    step.set_name("Renamed Step")
+    assert step.name == "Renamed Step"
+    handler.assert_called_with(step)
+
+
+def test_set_name_no_signal_when_unchanged(step):
+    """set_name must not fire when the name is identical."""
+    handler = MagicMock()
+    step.updated.connect(handler)
+
+    step.set_name(step.name)
+    handler.assert_not_called()
+
+
+def test_set_name_propagates_to_workflow(step_in_doc):
+    """Renaming a step bubbles 'descendant_updated' to the workflow."""
+    _doc, _layer, workflow, step = step_in_doc
+    handler = MagicMock()
+    workflow.descendant_updated.connect(handler)
+
+    step.set_name("New Workflow Name")
+    assert step.name == "New Workflow Name"
+    handler.assert_called()
+
+
 def test_hierarchy_properties(step_in_doc):
     """Tests the .workflow and .layer properties."""
     _doc, layer, workflow, step = step_in_doc

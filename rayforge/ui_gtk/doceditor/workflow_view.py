@@ -56,6 +56,9 @@ class WorkflowView(ExpanderWithButton):
                 self.workflow.descendant_removed.disconnect(
                     self.on_workflow_changed
                 )
+                self.workflow.descendant_updated.disconnect(
+                    self.on_workflow_changed
+                )
             except (TypeError, ValueError):
                 pass
 
@@ -68,6 +71,7 @@ class WorkflowView(ExpanderWithButton):
             self.workflow.updated.connect(self.on_workflow_changed)
             self.workflow.descendant_added.connect(self.on_workflow_changed)
             self.workflow.descendant_removed.connect(self.on_workflow_changed)
+            self.workflow.descendant_updated.connect(self.on_workflow_changed)
             # Trigger initial full population and metadata update
             self.on_workflow_changed(self.workflow)
 
