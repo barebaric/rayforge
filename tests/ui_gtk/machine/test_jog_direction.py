@@ -5,6 +5,7 @@ from raygeo.ops.axis import Axis
 
 from rayforge.machine.driver.driver import DeviceState
 from rayforge.machine.models.machine import Machine, Origin
+from rayforge.machine.models.machine_panel import PanelOrientation
 from rayforge.machine.transport import TransportStatus
 
 # Jog distance and speed for testing
@@ -127,6 +128,63 @@ def test_jog_button_direction(
     mock_jog.assert_called_once_with(
         machine, {expected_axis: expectation}, JOG_SPEED
     )
+
+
+# (orientation, button_name, expected_native_deltas)
+ROTATED_JOG_SCENARIOS = [
+    (PanelOrientation.ROTATED_RIGHT, "east", {Axis.Y: JOG_DISTANCE}),
+    (PanelOrientation.ROTATED_RIGHT, "west", {Axis.Y: -JOG_DISTANCE}),
+    (PanelOrientation.ROTATED_RIGHT, "north", {Axis.X: -JOG_DISTANCE}),
+    (PanelOrientation.ROTATED_RIGHT, "south", {Axis.X: JOG_DISTANCE}),
+    (PanelOrientation.ROTATED_LEFT, "east", {Axis.Y: -JOG_DISTANCE}),
+    (PanelOrientation.ROTATED_LEFT, "west", {Axis.Y: JOG_DISTANCE}),
+    (PanelOrientation.ROTATED_LEFT, "north", {Axis.X: JOG_DISTANCE}),
+    (PanelOrientation.ROTATED_LEFT, "south", {Axis.X: -JOG_DISTANCE}),
+]
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize(
+    "orientation, button_name, expected_deltas",
+    ROTATED_JOG_SCENARIOS,
+)
+def test_jog_button_direction_with_rotated_workspace(
+    ui_context_initializer,
+    orientation,
+    button_name,
+    expected_deltas,
+):
+    """
+    Verifies that jog buttons send the correct native axis deltas when
+    the workspace is presented rotated. A visual cardinal jog maps to
+    the orthogonal native axis.
+    """
+    from rayforge.ui_gtk.machine.jog_widget import JogWidget
+
+    # 1. Configure the Machine
+    machine = Machine(ui_context_initializer)
+    machine.set_axis_extents(200, 200)
+    machine.set_panel_orientation(orientation)
+    # Register the machine with the manager so controller can be accessed
+    ui_context_initializer.machine_mgr.add_machine(machine)
+
+    # 2. Mock MachineCmd
+    mock_machine_cmd = MagicMock()
+    mock_jog = MagicMock()
+    mock_machine_cmd.jog = mock_jog
+
+    # 3. Create JogWidget
+    jog_widget = JogWidget()
+    jog_widget.set_machine(machine, mock_machine_cmd)
+    jog_widget.jog_distance = JOG_DISTANCE
+    jog_widget.jog_speed = JOG_SPEED
+
+    # 4. Get the button by name and click it
+    button = getattr(jog_widget, f"{button_name}_btn")
+    button.emit("clicked")
+
+    # 5. Verify the jog command was called with the rotated deltas
+    mock_jog.assert_called_once_with(machine, expected_deltas, JOG_SPEED)
 
 
 LIMIT_SCENARIOS = [

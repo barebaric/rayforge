@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from raygeo.geo.types import Point, Point3D, Rect
+from raygeo.ops.axis import Axis
 
 from .coordspace import (
     MachineSpace,
@@ -20,7 +21,9 @@ from .coordspace import (
 )
 
 if TYPE_CHECKING:
-    from .machine import Machine
+    from .machine import JogDirection, Machine
+
+_DELTA_EPSILON = 1e-9  # mm — filter near-zero jog deltas
 
 
 class PanelOrientation(Enum):
@@ -342,6 +345,40 @@ class MachinePanel:
             self.machine_point_to_world(x_max, y_max),
         )
         return min(c[0] for c in corners), min(c[1] for c in corners)
+
+    def calculate_jog(
+        self, direction: "JogDirection", distance: float
+    ) -> dict[Axis, float]:
+        """Translate a visual jog direction into native axis deltas.
+
+        Visual directions are expressed in presented (rotated)
+        coordinates, so the composed world-to-machine matrix rotates the
+        delta vector: on a ROTATED_RIGHT bed a visual east jog drives
+        the native Y axis. UP/DOWN are pinned to Axis.Z and delegated to
+        the machine, which has no rotation knowledge.
+        """
+        # Local import: machine.py imports this module before JogDirection
+        # is defined, so a module-level import would be circular.
+        from .machine import JogDirection
+
+        if direction in (JogDirection.UP, JogDirection.DOWN):
+            return {Axis.Z: self._machine.calculate_jog(direction, distance)}
+        workspace_deltas = {
+            JogDirection.EAST: (distance, 0.0),
+            JogDirection.WEST: (-distance, 0.0),
+            JogDirection.NORTH: (0.0, distance),
+            JogDirection.SOUTH: (0.0, -distance),
+        }
+        dx, dy = workspace_deltas[direction]
+        machine_delta = self.get_world_to_machine_matrix() @ np.array(
+            [dx, dy, 0.0, 0.0]
+        )
+        result: dict[Axis, float] = {}
+        if abs(machine_delta[0]) > _DELTA_EPSILON:
+            result[Axis.X] = float(machine_delta[0])
+        if abs(machine_delta[1]) > _DELTA_EPSILON:
+            result[Axis.Y] = float(machine_delta[1])
+        return result
 
     # -- Rect / position / label helpers ------------------------------
 
