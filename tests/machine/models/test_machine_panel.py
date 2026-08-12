@@ -20,6 +20,7 @@ from rayforge.machine.models.machine_panel import (
     MachinePanel,
     PanelOrientation,
 )
+from rayforge.machine.models.zone import Zone, ZoneShape
 
 
 class _StubMachine:
@@ -29,6 +30,7 @@ class _StubMachine:
         self._space = space
         self.reverse_z = reverse_z
         self.changed = Signal()
+        self.nogo_zones: dict[str, Zone] = {}
 
     def get_coordinate_space(self) -> MachineSpace:
         return self._space
@@ -798,3 +800,149 @@ class TestMachinePanelCalculateJog:
         )
         assert panel.calculate_jog(JogDirection.UP, 10.0) == {Axis.Z: -10.0}
         assert panel.calculate_jog(JogDirection.DOWN, 10.0) == {Axis.Z: 10.0}
+
+
+def _make_rect_zone(x, y, w, h, name="Zone"):
+    zone = Zone()
+    zone.set_name(name)
+    zone.params["x"] = x
+    zone.params["y"] = y
+    zone.params["w"] = w
+    zone.params["h"] = h
+    return zone
+
+
+def _make_cylinder_zone(x, y, name="Cylinder"):
+    zone = Zone()
+    zone.set_name(name)
+    zone.set_shape(ZoneShape.CYLINDER)
+    zone.params["x"] = x
+    zone.params["y"] = y
+    return zone
+
+
+class TestMachinePanelMachineToPanel:
+    """Tests for the 90-degree bed rotation from MACHINE to panel."""
+
+    @staticmethod
+    def _panel(orientation):
+        return _panel(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(100.0, 200.0),
+            orientation=orientation,
+        )
+
+    def test_native_is_identity(self):
+        panel = self._panel(PanelOrientation.NATIVE)
+        assert panel.machine_to_panel == pytest.approx(np.identity(4))
+
+    @pytest.mark.parametrize(
+        "orientation, expected",
+        [
+            (
+                PanelOrientation.ROTATED_RIGHT,
+                np.array([[0.0, 1.0, 0.0, 0.0], [-1.0, 0.0, 0.0, 100.0]]),
+            ),
+            (
+                PanelOrientation.ROTATED_LEFT,
+                np.array([[0.0, -1.0, 0.0, 200.0], [1.0, 0.0, 0.0, 0.0]]),
+            ),
+        ],
+    )
+    def test_rotation_maps_machine_to_panel(self, orientation, expected):
+        """The matrix rotates MACHINE-bed geometry into the panel
+        presentation."""
+        panel = self._panel(orientation)
+        matrix = panel.machine_to_panel
+        assert matrix[:2, :4] == pytest.approx(expected)
+
+    def test_machine_to_panel_round_trips_with_panel_to_native(self):
+        panel = self._panel(PanelOrientation.ROTATED_LEFT)
+        product = panel.machine_to_panel @ panel._panel_to_native_matrix
+        assert product == pytest.approx(np.identity(4))
+
+
+class TestMachinePanelNogoZones:
+    """Tests for rotation-projected no-go-zone copies."""
+
+    @staticmethod
+    def _panel(orientation=PanelOrientation.NATIVE):
+        return _panel(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(100.0, 200.0),
+            orientation=orientation,
+        )
+
+    def test_native_returns_detached_copy(self):
+        panel = self._panel()
+        zone = _make_rect_zone(10, 20, 30, 40)
+        panel.machine.nogo_zones[zone.uid] = zone
+
+        projected = panel.nogo_zones
+        assert projected[zone.uid] is not zone
+        assert projected[zone.uid].params == zone.params
+
+    @pytest.mark.parametrize(
+        "orientation, expected",
+        [
+            (
+                PanelOrientation.ROTATED_RIGHT,
+                {"x": 20, "y": 60, "w": 40, "h": 30},
+            ),
+            (
+                PanelOrientation.ROTATED_LEFT,
+                {"x": 140, "y": 10, "w": 40, "h": 30},
+            ),
+        ],
+    )
+    def test_rect_projection_rotates(self, orientation, expected):
+        panel = self._panel(orientation)
+        zone = _make_rect_zone(10, 20, 30, 40)
+        panel.machine.nogo_zones[zone.uid] = zone
+
+        params = panel.nogo_zones[zone.uid].params
+        assert params["x"] == pytest.approx(expected["x"])
+        assert params["y"] == pytest.approx(expected["y"])
+        assert params["w"] == pytest.approx(expected["w"])
+        assert params["h"] == pytest.approx(expected["h"])
+
+    def test_cylinder_projection_rotates_center(self):
+        panel = self._panel(PanelOrientation.ROTATED_RIGHT)
+        zone = _make_cylinder_zone(10, 20)
+        panel.machine.nogo_zones[zone.uid] = zone
+
+        params = panel.nogo_zones[zone.uid].params
+        assert params["x"] == pytest.approx(20)
+        assert params["y"] == pytest.approx(90)
+
+    def test_projection_reflects_machine_state_changes(self):
+        panel = self._panel()
+        zone = _make_rect_zone(10, 20, 30, 40)
+        panel.machine.nogo_zones[zone.uid] = zone
+
+        first = panel.nogo_zones
+        assert first[zone.uid].params["x"] == 10
+
+        zone.set_param("x", 50)
+        second = panel.nogo_zones
+        assert second is not first
+        assert second[zone.uid].params["x"] == 50
+
+        panel._orientation = PanelOrientation.ROTATED_RIGHT
+        third = panel.nogo_zones
+        assert third is not second
+        assert third[zone.uid].params["x"] == pytest.approx(20)
+        assert third[zone.uid].params["y"] == pytest.approx(20)
+
+    def test_zones_are_not_modified_by_projection(self):
+        panel = self._panel(PanelOrientation.ROTATED_RIGHT)
+        zone = _make_rect_zone(10, 20, 30, 40)
+        panel.machine.nogo_zones[zone.uid] = zone
+
+        projected = panel.nogo_zones
+        assert projected[zone.uid] is not zone
+        assert zone.params == {"x": 10, "y": 20, "w": 30, "h": 40}

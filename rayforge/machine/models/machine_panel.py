@@ -19,6 +19,7 @@ from .coordspace import (
     MachineSpace,
     OriginCorner,
 )
+from .zone import Zone, ZoneShape
 
 if TYPE_CHECKING:
     from .machine import JogDirection, Machine
@@ -174,6 +175,47 @@ class MachinePanel:
     def _panel_to_native_matrix(self) -> np.ndarray:
         return self._compute_p2n(self._orientation, self.space.extents)
 
+    @property
+    def machine_to_panel(self) -> np.ndarray:
+        """The 90-degree bed rotation from MACHINE-bed geometry to the
+        panel presentation.
+
+        Inverse of the panel-to-native rotation. Origin-corner and
+        axis-reversal sign flips are not included; the 3D pipeline
+        applies those separately via its model matrix and axis flags.
+        """
+        return np.linalg.inv(self._panel_to_native_matrix)
+
+    def _machine_point_to_panel(self, x: float, y: float) -> Point:
+        """Project a MACHINE-bed point into panel coordinates.
+
+        Applies only the presentation rotation; the point is physical
+        bed geometry that does not depend on the configured origin or
+        axis direction.
+        """
+        result = self.machine_to_panel @ np.array([x, y, 0.0, 1.0])
+        return float(result[0]), float(result[1])
+
+    def _machine_item_to_panel(
+        self,
+        pos: Point,
+        size: tuple[float, float],
+    ) -> tuple[Point, tuple[float, float]]:
+        """Project an axis-aligned MACHINE-bed rectangle into panel
+        coordinates."""
+        x, y = pos
+        width, height = size
+        corners = (
+            self._machine_point_to_panel(x, y),
+            self._machine_point_to_panel(x + width, y),
+            self._machine_point_to_panel(x, y + height),
+            self._machine_point_to_panel(x + width, y + height),
+        )
+        xs = [point[0] for point in corners]
+        ys = [point[1] for point in corners]
+        min_x, min_y = min(xs), min(ys)
+        return (min_x, min_y), (max(xs) - min_x, max(ys) - min_y)
+
     # -- Display properties -------------------------------------------
 
     @property
@@ -275,6 +317,33 @@ class MachinePanel:
         """True when any edge margin is non-zero (rotation invariant)."""
         return self._machine.has_custom_work_area()
 
+    @property
+    def nogo_zones(self) -> dict[str, Zone]:
+        """Read-only no-go-zone projections in panel coordinates.
+
+        A detached copy is returned for every orientation, including
+        NATIVE, so callers never receive an object whose mutation
+        behavior changes when the panel rotates. Edits must go through
+        ``machine.nogo_zones`` in MACHINE-bed coordinates.
+        """
+        projected: dict[str, Zone] = {}
+        for uid, zone in self._machine.nogo_zones.items():
+            panel_zone = Zone.from_dict(zone.to_dict())
+            params = panel_zone.params
+            x = params.get("x", 0.0)
+            y = params.get("y", 0.0)
+            if panel_zone.shape == ZoneShape.CYLINDER:
+                params["x"], params["y"] = self._machine_point_to_panel(x, y)
+            else:
+                pos, size = self._machine_item_to_panel(
+                    (x, y),
+                    (params.get("w", 10.0), params.get("h", 10.0)),
+                )
+                params["x"], params["y"] = pos
+                params["w"], params["h"] = size
+            projected[uid] = panel_zone
+        return projected
+
     # -- Composed transforms ------------------------------------------
 
     def get_world_to_machine_matrix(self) -> np.ndarray:
@@ -363,13 +432,13 @@ class MachinePanel:
 
         if direction in (JogDirection.UP, JogDirection.DOWN):
             return {Axis.Z: self._machine.calculate_jog(direction, distance)}
-        workspace_deltas = {
+        presented_deltas = {
             JogDirection.EAST: (distance, 0.0),
             JogDirection.WEST: (-distance, 0.0),
             JogDirection.NORTH: (0.0, distance),
             JogDirection.SOUTH: (0.0, -distance),
         }
-        dx, dy = workspace_deltas[direction]
+        dx, dy = presented_deltas[direction]
         machine_delta = self.get_world_to_machine_matrix() @ np.array(
             [dx, dy, 0.0, 0.0]
         )
