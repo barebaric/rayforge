@@ -411,3 +411,16 @@ class MachinePanel:
         """
         offset_x, offset_y, _ = self._machine.get_reference_offset()
         return self.machine_point_to_world(offset_x, offset_y)
+
+    def work_area_center(self) -> Point:
+        """Center of the work-area-sized box anchored at the reference
+        origin, in world coordinates.
+
+        When the WCS is not the workarea origin, the reference anchor is
+        the active WCS position; the returned point is the center of a
+        work-area-sized box placed with its origin corner there.
+        """
+        ref_x, ref_y = self.reference_position_world
+        w, h = self.workarea_size
+        ox, oy = self.world_position_from_origin(ref_x, ref_y, (w, h))
+        return (ox + w / 2.0, oy + h / 2.0)

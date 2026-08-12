@@ -575,16 +575,7 @@ class DragDropCmd:
         try:
             machine = get_context().machine
             if machine:
-                work_area = machine.work_area
-                wa_w, wa_h = work_area[2], work_area[3]
-                origin_x, origin_y = machine.panel.reference_position_world
-                bottom_left_x, bottom_left_y = (
-                    machine.panel.world_position_from_origin(
-                        origin_x, origin_y, (wa_w, wa_h)
-                    )
-                )
-                center_x = bottom_left_x + wa_w / 2
-                center_y = bottom_left_y + wa_h / 2
+                center_x, center_y = machine.panel.work_area_center()
             else:
                 center_x, center_y = 50.0, 50.0  # Fallback
 
