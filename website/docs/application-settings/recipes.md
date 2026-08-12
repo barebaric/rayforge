@@ -61,16 +61,13 @@ everything:
 
 #### 4. Configure Settings
 
-**Settings Tab** - Adjust power, speed, and other parameters:
+**Settings Tab** - Adjust power, speed, and other parameters. When the
+recipe targets a specific **step type**, the editor shows two settings
+pages: a "Laser" page with the shared process settings (power, air
+assist, etc.) and a "Step Settings" page with the attributes specific to
+that step type (e.g. cut side, cut order):
 
-![Recipe Editor - Settings Tab](/screenshots/recipe-editor-settings.png)
-
-The settings tabs adapt to the selection made on the Applicability tab:
-
-- When the recipe targets a specific **step type**, the editor shows
-  two settings pages: a "Laser" page with the shared process settings
-  (power, air assist, etc.) and a "Step Settings" page with the
-  attributes specific to that step type (e.g. cut side, cut order)
+![Recipe Editor - Laser Tab](/screenshots/recipe-editor-laser.png)
 
 ![Recipe Editor - Step Settings Tab](/screenshots/recipe-editor-step-settings.png)
 
@@ -78,6 +75,23 @@ The settings tabs adapt to the selection made on the Applicability tab:
   shows a single "Settings" page with the process settings for that task
 - Leaving both at "Any" shows only the base motion settings (cut speed
   and travel speed) that are shared by all steps
+
+**Post Processing Tab** - Store post-processor settings (lead-in/out,
+multipass, overscan, and other transformers) on the recipe so they are
+applied to the steps it targets:
+
+![Recipe Editor - Post Processing Tab](/screenshots/recipe-editor-post-processing.png)
+
+Each transformer is shown with a tri-state button:
+
+- **Leave Unchanged**: the recipe does not touch this transformer when
+  applied
+- **Enabled**: the recipe turns the transformer on and stamps its
+  parameters onto the step
+- **Disabled**: the recipe explicitly turns the transformer off
+
+When the recipe targets multiple step types, only the transformers
+common to all of them are shown.
 
 ### Recipe Matching System
 

@@ -55,16 +55,14 @@ Alle Kriterien sind optional - lasse jedes Feld auf seinem Wert "Beliebig", um a
 
 #### 4. Einstellungen konfigurieren
 
-**Register "Einstellungen"** - Leistung, Geschwindigkeit und andere Parameter anpassen:
+**Register "Einstellungen"** - Leistung, Geschwindigkeit und andere
+Parameter anpassen. Wenn das Rezept auf einen bestimmten **Schritt-Typ**
+abzielt, zeigt der Editor zwei Einstellungsseiten: eine Seite "Laser"
+mit den gemeinsamen Prozesseinstellungen (Leistung, Air-Assist, usw.)
+und eine Seite "Schritt-Einstellungen" mit den Attributen, die für
+diesen Schritt-Typ spezifisch sind (z.B. Schnittseite, Schnittreihenfolge):
 
-![Rezept-Editor - Register Einstellungen](/screenshots/recipe-editor-settings.png)
-
-Die Einstellungs-Register passen sich der Auswahl auf dem Register "Anwendbarkeit" an:
-
-- Wenn das Rezept auf einen bestimmten **Schritt-Typ** abzielt, zeigt der Editor
-  zwei Einstellungsseiten: eine Seite "Laser" mit den gemeinsamen Prozesseinstellungen
-  (Leistung, Air-Assist, usw.) und eine Seite "Schritt-Einstellungen" mit den
-  Attributen, die für diesen Schritt-Typ spezifisch sind (z.B. Schnittseite, Schnittreihenfolge)
+![Rezept-Editor - Register Laser](/screenshots/recipe-editor-laser.png)
 
 ![Rezept-Editor - Register Schritt-Einstellungen](/screenshots/recipe-editor-step-settings.png)
 
@@ -72,6 +70,24 @@ Die Einstellungs-Register passen sich der Auswahl auf dem Register "Anwendbarkei
   wird eine einzelne Seite "Einstellungen" mit den Prozesseinstellungen für diese Aufgabe angezeigt
 - Bei "Beliebig" für beide werden nur die Basis-Bewegungseinstellungen (Schnittgeschwindigkeit
   und Fahrgeschwindigkeit) angezeigt, die allen Schritten gemeinsam sind
+
+**Register "Nachbearbeitung"** - Speichern Sie
+Nachbearbeitungseinstellungen (Ein-/Ausfahrwege, Mehrfachdurchgänge,
+Overscan und andere Transformationen) im Rezept, damit sie auf die
+Schritte angewendet werden, die das Rezept anvisiert:
+
+![Rezept-Editor - Register Nachbearbeitung](/screenshots/recipe-editor-post-processing.png)
+
+Jede Transformation wird mit einer Drei-Zustands-Schaltfläche angezeigt:
+
+- **Unverändert lassen**: Das Rezept berührt diese Transformation bei
+  der Anwendung nicht
+- **Aktiviert**: Das Rezept aktiviert die Transformation und überträgt
+  ihre Parameter auf den Schritt
+- **Deaktiviert**: Das Rezept schaltet die Transformation explizit aus
+
+Wenn das Rezept mehrere Schritt-Typen anvisiert, werden nur die
+Transformationen angezeigt, die allen gemeinsam sind.
 
 ### Rezept-Matching-System
 

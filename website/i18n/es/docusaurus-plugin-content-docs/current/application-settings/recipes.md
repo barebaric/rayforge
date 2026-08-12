@@ -62,18 +62,14 @@ Todos los criterios son opcionales - deja cualquier campo en su valor
 
 #### 4. Configurar Ajustes
 
-**Pestaña de Ajustes** - Ajusta potencia, velocidad y otros parámetros:
+**Pestaña de Ajustes** - Ajusta potencia, velocidad y otros parámetros.
+Cuando la receta se dirige a un **tipo de paso** específico, el editor
+muestra dos páginas de ajustes: una página "Laser" con los ajustes de
+proceso compartidos (potencia, asistencia de aire, etc.) y una página
+"Ajustes de Paso" con los atributos específicos de ese tipo de paso
+(ej., lado de corte, orden de corte):
 
-![Editor de Recetas - Pestaña Ajustes](/screenshots/recipe-editor-settings.png)
-
-Las pestañas de ajustes se adaptan a la selección realizada en la pestaña
-de Aplicabilidad:
-
-- Cuando la receta se dirige a un **tipo de paso** específico, el editor
-  muestra dos páginas de ajustes: una página "Laser" con los ajustes de
-  proceso compartidos (potencia, asistencia de aire, etc.) y una página
-  "Ajustes de Paso" con los atributos específicos de ese tipo de paso
-  (ej., lado de corte, orden de corte)
+![Editor de Recetas - Pestaña Laser](/screenshots/recipe-editor-laser.png)
 
 ![Editor de Recetas - Pestaña Ajustes de Paso](/screenshots/recipe-editor-step-settings.png)
 
@@ -82,6 +78,22 @@ de Aplicabilidad:
   para esa tarea
 - Dejar ambos en "Any" muestra solo los ajustes de movimiento base
   (velocidad de corte y velocidad de viaje) que comparten todos los pasos
+
+**Pestaña de Post-Procesamiento** - Almacena ajustes de post-procesamiento
+(entrada/salida, multipase, overscan y otros transformadores) en la
+receta para que se apliquen a los pasos que esta tiene como objetivo:
+
+![Editor de Recetas - Pestaña Post-Procesamiento](/screenshots/recipe-editor-post-processing.png)
+
+Cada transformador se muestra con un botón de tres estados:
+
+- **Dejar sin cambios**: la receta no toca este transformador al aplicarse
+- **Habilitado**: la receta activa el transformador y aplica sus
+  parámetros al paso
+- **Deshabilitado**: la receta desactiva explícitamente el transformador
+
+Cuando la receta tiene como objetivo varios tipos de paso, solo se
+muestran los transformadores comunes a todos ellos.
 
 ### Sistema de Coincidencia de Recetas
 
