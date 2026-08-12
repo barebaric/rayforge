@@ -237,8 +237,7 @@ class TransformCmd:
                 size_world = item.size
 
                 if machine:
-                    space = machine.get_coordinate_space()
-                    x_world, y_world = space.machine_item_to_world(
+                    x_world, y_world = machine.panel.machine_item_to_world(
                         (x, y), size_world
                     )
                 else:
@@ -409,8 +408,9 @@ class TransformCmd:
 
         machine = get_context().machine
         if machine:
-            space = machine.get_coordinate_space()
-            target_world = space.machine_item_to_world((x, y), group_size)
+            target_world = machine.panel.machine_item_to_world(
+                (x, y), group_size
+            )
         else:
             target_world = (x, y)
 
@@ -641,8 +641,9 @@ class TransformCmd:
         min_x, min_y, max_x, max_y = cls.group_bbox_world(items)
         gw, gh = max_x - min_x, max_y - min_y
         if machine:
-            space = machine.get_coordinate_space()
-            return space.world_item_to_machine((min_x, min_y), (gw, gh))
+            return machine.panel.world_item_to_machine(
+                (min_x, min_y), (gw, gh)
+            )
         return (min_x, min_y)
 
     @classmethod

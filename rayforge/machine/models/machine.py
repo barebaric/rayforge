@@ -34,6 +34,7 @@ from .dialect import GcodeDialect
 from .head import Head, head_from_dict
 from .laser import Laser, LaserHead
 from .machine_hours import MachineHours
+from .machine_panel import MachinePanel
 from .macro import Macro, MacroTrigger
 from .rotary_module import RotaryMode, RotaryModule
 from .zone import Zone
@@ -152,6 +153,7 @@ class Machine:
         )
         self._soft_limits: Rect | None = None
         self.origin: Origin = Origin.BOTTOM_LEFT
+        self.panel = MachinePanel(self)
         self.rotary_enabled_default: bool = False
         self.default_rotary_module_uid: str | None = None
         self.soft_limits_enabled: bool = True
@@ -1295,20 +1297,6 @@ class Machine:
             return (x, y, 0.0)
         else:
             return self.get_active_wcs_offset()
-
-    def get_reference_position_world(self) -> tuple[float, float]:
-        """
-        Returns the reference origin position in WORLD coordinates.
-
-        This is used for positioning items in world space at the reference
-        origin (either workarea origin or WCS origin, depending on settings).
-
-        Returns:
-            Tuple of (x, y) in WORLD space.
-        """
-        offset_x, offset_y, _ = self.get_reference_offset()
-        machine_space = MachineSpace.from_machine(self)
-        return machine_space.machine_point_to_world(offset_x, offset_y)
 
     def get_visual_extent_frame(self) -> Rect:
         """

@@ -669,9 +669,10 @@ class PrintAndCutWizard(PatchedDialogWindow):
         )
 
     def _machine_to_world(self, wx: float, wy: float) -> tuple[float, float]:
-        space = self._machine.get_coordinate_space()
         wcs_x, wcs_y, _wcs_z = self._machine.get_active_wcs_offset()
-        return space.machine_point_to_world(wx + wcs_x, wy + wcs_y)
+        return self._machine.panel.machine_point_to_world(
+            wx + wcs_x, wy + wcs_y
+        )
 
     def _get_world_design_points(self):
         assert self._design_point1 is not None

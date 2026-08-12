@@ -561,10 +561,10 @@ class BottomPanel(Gtk.Box):
         else:
             return
 
-        space = self.machine.get_coordinate_space()
-        machine_x, machine_y = space.world_point_to_machine(world_x, world_y)
+        panel = self.machine.panel
+        machine_x, machine_y = panel.world_point_to_machine(world_x, world_y)
         wcs_offset = self.machine.get_active_wcs_offset()
-        x_off, y_off, _ = space.get_command_offset(
+        x_off, y_off, _ = panel.get_command_offset(
             wcs_offset=wcs_offset,
             wcs_is_workarea_origin=self.machine.wcs_origin_is_workarea_origin,
         )

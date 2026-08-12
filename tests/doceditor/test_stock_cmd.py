@@ -19,7 +19,8 @@ def stock_cmd(doc_editor, context_initializer):
     mock_machine = MagicMock()
     mock_machine.axis_extents = (200.0, 200.0)
     mock_machine.work_area = (0.0, 0.0, 200.0, 200.0)
-    mock_machine.get_reference_position_world.return_value = (0.0, 0.0)
+    mock_machine.panel.reference_position_world = (0.0, 0.0)
+    mock_machine.panel.world_position_from_origin.return_value = (0.0, 0.0)
     mock_machine.get_coordinate_space.return_value = MachineSpace(
         origin=OriginCorner.BOTTOM_LEFT,
         x_positive_direction=AxisDirection.POSITIVE_RIGHT,

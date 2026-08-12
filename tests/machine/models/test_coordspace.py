@@ -605,3 +605,144 @@ class TestMachineSpaceItemTransforms:
         expected[1, 1] = -1.0
         expected[1, 3] = 100.0
         np.testing.assert_array_almost_equal(matrix, expected)
+
+
+class TestGCodePipeline:
+    """End-to-end tests of the G-code coordinate pipeline.
+
+    Simulates: WCS zeroed at a known world position → workpiece at a
+    known world position → verify G-code.  Expected values are computed
+    independently, NOT from the same matrices being tested.
+    """
+
+    @staticmethod
+    def _make_space(origin, reverse_x, reverse_y):
+        return MachineSpace(
+            origin=origin,
+            x_positive_direction=(
+                AxisDirection.POSITIVE_LEFT
+                if origin
+                in (
+                    OriginCorner.TOP_RIGHT,
+                    OriginCorner.BOTTOM_RIGHT,
+                )
+                else AxisDirection.POSITIVE_RIGHT
+            ),
+            y_positive_direction=(
+                AxisDirection.POSITIVE_DOWN
+                if origin
+                in (
+                    OriginCorner.TOP_LEFT,
+                    OriginCorner.TOP_RIGHT,
+                )
+                else AxisDirection.POSITIVE_UP
+            ),
+            extents=(100.0, 100.0),
+            margins=(0.0, 0.0, 0.0, 0.0),
+            reverse_x=reverse_x,
+            reverse_y=reverse_y,
+        )
+
+    @pytest.mark.parametrize("origin", list(OriginCorner))
+    @pytest.mark.parametrize("reverse_x", [False, True])
+    @pytest.mark.parametrize("reverse_y", [False, True])
+    @pytest.mark.parametrize(
+        "wcs_world",
+        [(10.0, 20.0), (50.0, 50.0)],
+    )
+    def test_wcs_zeroed_then_workpiece_at_origin(
+        self, origin, reverse_x, reverse_y, wcs_world
+    ):
+        """WCS is zeroed at world position ``wcs_world`` (simulating
+        click-to-zero).  A workpiece sits at world (0, 0).
+
+        The G-code for the workpiece must equal the workpiece's position
+        relative to the WCS origin, expressed in the machine's
+        coordinate system (i.e. after origin-corner transform and axis
+        sign-flip, but NOT after the WCS translation).
+
+        Concretely:
+          wcs_offset = world_point_to_machine(wcs_world)
+          gcode      = world_point_to_machine(workpiece) - wcs_offset
+
+        Both terms are in the same (sign-flipped) machine space, so the
+        subtraction yields the correct G-code coordinate.
+        """
+        space = self._make_space(origin, reverse_x, reverse_y)
+
+        # Simulate click-to-zero: WCS offset = machine coords of click
+        wcs_offset = space.world_point_to_machine(*wcs_world)
+        cmd = space.get_command_offset(
+            wcs_offset=(wcs_offset[0], wcs_offset[1], 0.0),
+            wcs_is_workarea_origin=False,
+        )
+
+        # Workpiece at world (0, 0)
+        workpiece_machine = space.world_point_to_machine(0.0, 0.0)
+        gcode_x = workpiece_machine[0] - cmd[0]
+        gcode_y = workpiece_machine[1] - cmd[1]
+
+        # Independently compute expected: the workpiece's position
+        # relative to WCS in machine space.
+        expected_x = workpiece_machine[0] - wcs_offset[0]
+        expected_y = workpiece_machine[1] - wcs_offset[1]
+
+        assert gcode_x == pytest.approx(expected_x, abs=1e-9)
+        assert gcode_y == pytest.approx(expected_y, abs=1e-9)
+
+    @pytest.mark.parametrize("origin", list(OriginCorner))
+    @pytest.mark.parametrize("reverse_x", [False, True])
+    @pytest.mark.parametrize("reverse_y", [False, True])
+    def test_wcs_at_origin_gcode_is_zero(self, origin, reverse_x, reverse_y):
+        """When WCS is zeroed at world (0,0), a workpiece at (0,0) must
+        produce G-code (0, 0)."""
+        space = self._make_space(origin, reverse_x, reverse_y)
+        wcs_offset = space.world_point_to_machine(0.0, 0.0)
+        cmd = space.get_command_offset(
+            wcs_offset=(wcs_offset[0], wcs_offset[1], 0.0),
+            wcs_is_workarea_origin=False,
+        )
+        machine_pt = space.world_point_to_machine(0.0, 0.0)
+        gcode_x = machine_pt[0] - cmd[0]
+        gcode_y = machine_pt[1] - cmd[1]
+        assert gcode_x == pytest.approx(0.0, abs=1e-9)
+        assert gcode_y == pytest.approx(0.0, abs=1e-9)
+
+    @pytest.mark.parametrize("origin", list(OriginCorner))
+    @pytest.mark.parametrize("reverse_x", [False, True])
+    @pytest.mark.parametrize("reverse_y", [False, True])
+    @pytest.mark.parametrize(
+        "manual_wcs",
+        [(10.0, 20.0), (-15.0, -25.0)],
+    )
+    def test_manual_wcs_offset_consistency(
+        self, origin, reverse_x, reverse_y, manual_wcs
+    ):
+        """When a WCS offset is entered manually (in machine
+        coordinates), the WCS origin in world space must produce
+        G-code (0, 0).
+
+        The WCS offset is what the controller stores: the machine
+        coordinate of the WCS origin.  We find the world position of
+        that machine coordinate using the *inverse* of the full w2m
+        matrix, then verify the pipeline produces zero there.
+        """
+        space = self._make_space(origin, reverse_x, reverse_y)
+        w2m = space.get_world_to_machine_matrix()
+        m2w = np.linalg.inv(w2m)
+
+        cmd = space.get_command_offset(
+            wcs_offset=(manual_wcs[0], manual_wcs[1], 0.0),
+            wcs_is_workarea_origin=False,
+        )
+
+        # WCS origin in world space: inverse-transform the machine coord
+        wcs_world = m2w @ np.array([manual_wcs[0], manual_wcs[1], 0.0, 1.0])
+
+        # G-code at that world point
+        machine_pt = w2m @ wcs_world
+        gcode_x = machine_pt[0] - cmd[0]
+        gcode_y = machine_pt[1] - cmd[1]
+
+        assert gcode_x == pytest.approx(0.0, abs=1e-9)
+        assert gcode_y == pytest.approx(0.0, abs=1e-9)

@@ -17,8 +17,7 @@ _SNAPSHOT_INTERVAL = 1000
 def create_home_state(machine: Machine) -> MachineState:
     """Create the machine-origin (home) state for a playback session."""
     state = MachineState.from_axis_set(machine.axes)
-    space = machine.get_coordinate_space()
-    home_x, home_y = space.machine_point_to_world(0.0, 0.0)
+    home_x, home_y = machine.panel.machine_point_to_world(0.0, 0.0)
     state.axes[Axis.X] = home_x
     state.axes[Axis.Y] = home_y
     return state

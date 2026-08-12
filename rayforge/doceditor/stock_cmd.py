@@ -133,13 +133,12 @@ class StockCmd:
         machine = self._editor.context.config.machine
         if machine:
             __, __, wa_w, wa_h = machine.work_area
-            ref_x, ref_y = machine.get_reference_position_world()
+            ref_x, ref_y = machine.panel.reference_position_world
             stock_x = ref_x
             stock_y = ref_y
             stock_w = wa_w * 0.8
             stock_h = wa_h * 0.8
-            space = machine.get_coordinate_space()
-            stock_x, stock_y = space.world_position_from_origin(
+            stock_x, stock_y = machine.panel.world_position_from_origin(
                 ref_x, ref_y, (stock_w, stock_h)
             )
             logger.debug(

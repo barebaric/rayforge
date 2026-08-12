@@ -577,10 +577,9 @@ class DragDropCmd:
             if machine:
                 work_area = machine.work_area
                 wa_w, wa_h = work_area[2], work_area[3]
-                origin_x, origin_y = machine.get_reference_position_world()
-                space = machine.get_coordinate_space()
+                origin_x, origin_y = machine.panel.reference_position_world
                 bottom_left_x, bottom_left_y = (
-                    space.world_position_from_origin(
+                    machine.panel.world_position_from_origin(
                         origin_x, origin_y, (wa_w, wa_h)
                     )
                 )

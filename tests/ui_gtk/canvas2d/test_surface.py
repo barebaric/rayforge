@@ -142,6 +142,11 @@ def test_wcs_visual_marker_location(surface, scenario):
     space = MachineSpace.from_machine(machine)
     machine.get_coordinate_space.return_value = space
 
+    # Wire the panel to delegate to the real space
+    from rayforge.machine.models.machine_panel import MachinePanel
+
+    machine.panel = MachinePanel(machine)
+
     # Attach machine to surface
     surface.machine = machine
 

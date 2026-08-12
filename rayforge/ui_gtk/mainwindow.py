@@ -617,10 +617,10 @@ class MainWindow(Adw.ApplicationWindow):
         if not machine:
             return None
 
-        space = machine.get_coordinate_space()
-        workarea_origin_machine = space.get_workarea_origin_in_machine()
-        min_x, min_y = space.machine_point_to_world(*workarea_origin_machine)
-        workarea_w, workarea_h = space.workarea_size
+        panel = machine.panel
+        workarea_origin_machine = panel.get_workarea_origin_in_machine()
+        min_x, min_y = panel.machine_point_to_world(*workarea_origin_machine)
+        workarea_w, workarea_h = panel.workarea_size
         max_x = min_x + workarea_w
         max_y = min_y + workarea_h
 
