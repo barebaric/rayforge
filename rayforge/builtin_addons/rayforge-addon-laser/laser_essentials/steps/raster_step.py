@@ -288,7 +288,7 @@ class EngraveStep(LaserStep):
         step = cast("EngraveStep", super().from_dict(data))
         legacy = legacy_producer_params(data)
         # Legacy type names implied a depth mode when none was saved.
-        old_type = data.get("opsproducer_dict", {}).get("type")
+        old_type = (data.get("opsproducer_dict") or {}).get("type")
         if old_type == "Rasterizer" and "depth_mode" not in legacy:
             legacy["depth_mode"] = "CONSTANT_POWER"
             if "direction_degrees" in legacy:

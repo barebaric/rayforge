@@ -62,17 +62,14 @@ para corresponder a tudo:
 
 #### 4. Configure as Definições
 
-**Aba Configurações** - Ajuste potência, velocidade e outros parâmetros:
+**Aba Configurações** - Ajuste potência, velocidade e outros parâmetros.
+Quando a receita tem como alvo um **tipo de etapa** específico, o editor
+mostra duas páginas de configurações: uma página "Laser" com as
+configurações de processo compartilhadas (potência, assistência de ar, etc.)
+e uma página "Configurações de Etapa" com os atributos específicos daquele
+tipo de etapa (ex. lado de corte, ordem de corte):
 
-![Editor de Receitas - Aba Configurações](/screenshots/recipe-editor-settings.png)
-
-As abas de configurações se adaptam à seleção feita na aba Aplicabilidade:
-
-- Quando a receita tem como alvo um **tipo de etapa** específico, o editor
-  mostra duas páginas de configurações: uma página "Laser" com as
-  configurações de processo compartilhadas (potência, assistência de ar, etc.)
-  e uma página "Configurações de Etapa" com os atributos específicos daquele
-  tipo de etapa (ex. lado de corte, ordem de corte)
+![Editor de Receitas - Aba Laser](/screenshots/recipe-editor-laser.png)
 
 ![Editor de Receitas - Aba Configurações de Etapa](/screenshots/recipe-editor-step-settings.png)
 
@@ -82,6 +79,23 @@ As abas de configurações se adaptam à seleção feita na aba Aplicabilidade:
 - Deixar ambos como "Qualquer" mostra apenas as configurações básicas de
   movimento (velocidade de corte e velocidade de deslocamento) que são
   compartilhadas por todas as etapas
+
+**Aba Pós-Processamento** - Armazene configurações de pós-processamento
+(entrada/saída, multipasse, overscan e outros transformadores) na receita
+para que sejam aplicadas às etapas que ela tem como alvo:
+
+![Editor de Receitas - Aba Pós-Processamento](/screenshots/recipe-editor-post-processing.png)
+
+Cada transformador é mostrado com um botão de três estados:
+
+- **Deixar inalterado**: a receita não toca neste transformador ao ser
+  aplicada
+- **Habilitado**: a receita ativa o transformador e aplica seus parâmetros
+  à etapa
+- **Desabilitado**: a receita desativa explicitamente o transformador
+
+Quando a receita tem como alvo vários tipos de etapa, apenas os
+transformadores comuns a todos são mostrados.
 
 ### Sistema de Correspondência de Receitas
 

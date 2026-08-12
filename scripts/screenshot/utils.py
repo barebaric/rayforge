@@ -27,7 +27,7 @@ from PIL.PngImagePlugin import PngInfo
 
 from rayforge.core.recipe import Recipe
 from rayforge.core.step_registry import step_registry
-from rayforge.ui_gtk.doceditor.recipes.edit_recipe_dialog import (
+from rayforge.ui_gtk.doceditor.recipes import (
     AddEditRecipeDialog,
 )
 from rayforge.ui_gtk.doceditor.step_settings.dialog import (
@@ -658,12 +658,14 @@ def open_recipe_editor(
     """Open recipe editor dialog from app settings.
 
     Args:
-        page: Which tab to activate ("general", "applicability", or
-            "settings"). For "settings", ``settings_page`` selects which
-            of the dynamic settings pages to show.
+        page: Which tab to activate ("general", "applicability",
+            "settings", or "post-processing"). For "settings",
+            ``settings_page`` selects which of the dynamic settings
+            pages to show. "post-processing" requires ``step_type`` so
+            the tab exists.
         step_type: Optional step class name to target. Selecting a step
             type (e.g. a laser step) splits the settings into inherited
-            and step-specific pages.
+            and step-specific pages and enables the post-processing tab.
         settings_page: Index into the dynamic settings pages to activate
             when ``page`` is "settings".
     """
@@ -674,7 +676,7 @@ def open_recipe_editor(
     recipe = Recipe(name="3mm Plywood Cut")
     recipe.description = "A recipe for cutting 3mm plywood with a diode laser"
     if step_type:
-        recipe.target_step_type = step_type
+        recipe.target_step_types = [step_type]
 
     def _open() -> "AddEditRecipeDialog":
         dialog = AddEditRecipeDialog(
@@ -692,6 +694,10 @@ def open_recipe_editor(
             names = list(dialog._settings_pages)
             index = min(settings_page, len(names) - 1)
             dialog._tab_buttons[names[index]].set_active(True)
+        elif page == "post-processing":
+            button = dialog._tab_buttons.get("post-processing")
+            if button is not None:
+                button.set_active(True)
         return dialog
 
     dialog = run_on_main_thread(_open)

@@ -649,8 +649,10 @@ class Step(DocItem, ABC):
             self.updated.send(self)
 
     def set_name(self, name: str):
+        """Sets the step name and notifies listeners of the change."""
         if self.name != name:
             self.name = name
+            self.updated.send(self)
 
     def set_visible(self, visible: bool):
         if self.visible != visible:

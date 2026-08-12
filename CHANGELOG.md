@@ -5,6 +5,16 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.2
+
+### Fixed
+
+- Loading projects that store a null ``opsproducer_dict`` no longer
+  crashes (e.g. when an engrave step has no legacy producer
+  parameters)
+- Renaming a step now updates the step list in the main window's right
+  pane immediately
+
 ## 1.9.1
 
 ### Added
