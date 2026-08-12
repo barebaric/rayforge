@@ -209,8 +209,8 @@ class TestViewportConfigWcsOffset:
     @pytest.mark.parametrize(
         "orientation,expected_origin",
         [
-            (PanelOrientation.ROTATED_LEFT, (20.0, 40.0, 0.0)),
-            (PanelOrientation.ROTATED_RIGHT, (20.0, 40.0, 0.0)),
+            (PanelOrientation.ROTATED_LEFT, (10.0, 50.0, 0.0)),
+            (PanelOrientation.ROTATED_RIGHT, (10.0, 50.0, 0.0)),
         ],
     )
     def test_rotated_panel_wcs_offset(self, orientation, expected_origin):
