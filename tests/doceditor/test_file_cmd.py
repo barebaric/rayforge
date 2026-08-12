@@ -11,7 +11,11 @@ from rayforge.core.layer import Layer
 from rayforge.core.source_asset import SourceAsset
 from rayforge.core.step import Step
 from rayforge.core.stock_asset import StockAsset
-from rayforge.core.vectorization_spec import TraceSpec
+from rayforge.core.vectorization_spec import (
+    LayerImportMode,
+    PassthroughSpec,
+    TraceSpec,
+)
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
 from rayforge.doceditor.file_cmd import (
@@ -503,6 +507,105 @@ class TestCommitItemsToDocument:
 
         assert source in file_cmd._editor.doc.get_all_assets()
         assert sample_layer in file_cmd._editor.doc.children
+
+    @staticmethod
+    def _imported_layer(name: str) -> tuple[Layer, WorkPiece]:
+        wp = WorkPiece(name=name)
+        layer = Layer(name=name)
+        layer.add_child(wp)
+        return layer, wp
+
+    def test_commit_maps_to_default_layer_and_renames(self, file_cmd):
+        """Map to Existing renames a default-named layer to the imported
+        layer name."""
+        source = SourceAsset(
+            source_file=Path("chaveiros.svg"),
+            original_data=b"<svg></svg>",
+            renderer=SVG_RENDERER,
+        )
+        imported, wp = self._imported_layer("chaveiro")
+        spec = PassthroughSpec(
+            layer_import_mode=LayerImportMode.MAP_TO_EXISTING
+        )
+
+        file_cmd._commit_items_to_document(
+            [imported],
+            source,
+            Path("chaveiros.svg"),
+            vectorization_spec=spec,
+        )
+
+        doc = file_cmd._editor.doc
+        assert doc.layers[0].name == "chaveiro"
+        assert doc.layers[0].workflow is not None
+        assert doc.layers[0].workflow.name == "chaveiro Workflow"
+        assert wp in doc.layers[0].children
+
+    def test_commit_preserves_manually_named_layer(self, file_cmd):
+        """Map to Existing keeps the name of a manually renamed layer."""
+        doc = file_cmd._editor.doc
+        doc.layers[0].set_name("My Custom Layer")
+
+        source = SourceAsset(
+            source_file=Path("chaveiros.svg"),
+            original_data=b"<svg></svg>",
+            renderer=SVG_RENDERER,
+        )
+        imported, wp = self._imported_layer("chaveiro")
+        spec = PassthroughSpec(
+            layer_import_mode=LayerImportMode.MAP_TO_EXISTING
+        )
+
+        file_cmd._commit_items_to_document(
+            [imported],
+            source,
+            Path("chaveiros.svg"),
+            vectorization_spec=spec,
+        )
+
+        assert doc.layers[0].name == "My Custom Layer"
+        assert wp in doc.layers[0].children
+
+    def test_commit_rename_is_undoable(self, file_cmd):
+        """Undoing the import restores the previous layer name."""
+        source = SourceAsset(
+            source_file=Path("chaveiros.svg"),
+            original_data=b"<svg></svg>",
+            renderer=SVG_RENDERER,
+        )
+        imported, wp = self._imported_layer("chaveiro")
+        spec = PassthroughSpec(
+            layer_import_mode=LayerImportMode.MAP_TO_EXISTING
+        )
+
+        file_cmd._commit_items_to_document(
+            [imported],
+            source,
+            Path("chaveiros.svg"),
+            vectorization_spec=spec,
+        )
+
+        doc = file_cmd._editor.doc
+        assert doc.layers[0].name == "chaveiro"
+        file_cmd._editor.history_manager.undo()
+        assert doc.layers[0].name == "Layer 1"
+        assert wp not in doc.layers[0].children
+
+    def test_commit_new_layers_keeps_existing_names(self, file_cmd):
+        """New Layers mode does not rename existing document layers."""
+        doc = file_cmd._editor.doc
+        imported, _wp = self._imported_layer("chaveiro")
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+
+        file_cmd._commit_items_to_document(
+            [imported],
+            None,
+            Path("chaveiros.svg"),
+            vectorization_spec=spec,
+        )
+
+        assert doc.layers[0].name == "Layer 1"
+        assert imported in doc.children
 
 
 class TestFinalizeImportOnMainThread:

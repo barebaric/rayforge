@@ -48,6 +48,17 @@ def test_has_rotary_layer_reflects_layer_flags(doc):
     assert doc.has_rotary_layer is False
 
 
+def test_is_default_layer_name():
+    """Auto-generated names match the doc's layer naming scheme."""
+    assert Doc.is_default_layer_name("Layer")
+    assert Doc.is_default_layer_name("Layer 1")
+    assert Doc.is_default_layer_name("Layer 42")
+
+    assert not Doc.is_default_layer_name("My Layer")
+    assert not Doc.is_default_layer_name("Layer Alpha")
+    assert not Doc.is_default_layer_name("Layer-1")
+
+
 @pytest.mark.parametrize(
     "asset_factory, get_compatibility_dict",
     [
