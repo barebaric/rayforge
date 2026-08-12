@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+from blinker import Signal
 
 from rayforge.machine.models.coordspace import MachineSpace
 from rayforge.machine.models.machine import Machine, Origin
@@ -119,6 +120,7 @@ def test_wcs_visual_marker_location(surface, scenario):
     (0,0) at the Bottom-Left.
     """
     machine = MagicMock(spec=Machine)
+    machine.changed = Signal()
     machine.axis_extents = (100.0, 100.0)
     machine.origin = scenario["origin"]
     machine.reverse_x_axis = scenario["reverse_x"]
