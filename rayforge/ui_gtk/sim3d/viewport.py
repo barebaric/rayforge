@@ -13,6 +13,7 @@ class ViewportConfig:
     width_mm: float
     depth_mm: float
     model_matrix: np.ndarray
+    world_to_panel: np.ndarray
     wcs_offset_mm: Point3D
     margin_shift: np.ndarray
     extent_frame: Rect | None
@@ -30,6 +31,7 @@ class ViewportConfig:
             width_mm=width_mm,
             depth_mm=depth_mm,
             model_matrix=identity,
+            world_to_panel=identity,
             wcs_offset_mm=(0.0, 0.0, 0.0),
             margin_shift=identity,
             extent_frame=None,
@@ -52,6 +54,8 @@ class ViewportConfig:
         panel = machine.panel
         width_mm = float(panel.workarea_size[0])
         depth_mm = float(panel.workarea_size[1])
+
+        world_to_panel = panel.world_to_panel.astype(np.float32)
 
         translate_mat = np.identity(4, dtype=np.float32)
         scale_mat = np.identity(4, dtype=np.float32)
@@ -95,6 +99,7 @@ class ViewportConfig:
             width_mm=width_mm,
             depth_mm=depth_mm,
             model_matrix=model_matrix,
+            world_to_panel=world_to_panel,
             wcs_offset_mm=wcs_offset_mm,
             margin_shift=margin_shift,
             extent_frame=extent_frame,

@@ -24,12 +24,12 @@ import numpy as np
 from gi.repository import Adw, GLib
 from PIL import Image
 from PIL.PngImagePlugin import PngInfo
-from rayforge.ui_gtk.doceditor.edit_recipe_dialog import (
-    AddEditRecipeDialog,
-)
 
 from rayforge.core.recipe import Recipe
 from rayforge.core.step_registry import step_registry
+from rayforge.ui_gtk.doceditor.recipes.edit_recipe_dialog import (
+    AddEditRecipeDialog,
+)
 from rayforge.ui_gtk.doceditor.step_settings.dialog import (
     StepSettingsDialog,
 )

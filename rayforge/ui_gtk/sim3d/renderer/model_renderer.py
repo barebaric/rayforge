@@ -170,11 +170,12 @@ class ModelRenderer(BaseRenderer):
                 pos = focused[self.link_name]
                 module_transform[:3, 3] = pos.astype(np.float32)
 
-        combined = (
-            ctx.camera.mvp_ui @ ctx.viewport.margin_shift @ module_transform
+        physical_to_visual = (
+            ctx.viewport.margin_shift @ ctx.viewport.world_to_panel
         )
+        combined = ctx.camera.mvp_ui @ physical_to_visual @ module_transform
         self._mvp_matrix = combined
-        self._model_matrix = ctx.viewport.margin_shift @ module_transform
+        self._model_matrix = physical_to_visual @ module_transform
         self._point_light_pos = kinematics.laser_light_pos
 
     def _load_mesh(self) -> bool:

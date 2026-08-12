@@ -10,6 +10,9 @@ Coordinate Spaces:
 - WORKAREA: Usable area within machine bed (defined by margins)
 - PIXEL: Raster images (top-left origin, Y-down)
 - COMMAND: G-code output (relative to active WCS or workarea origin)
+- PANEL: Presented view of the canvas (WORLD rotated by the panel
+  orientation). The document model only knows WORLD; the canvas
+  presents PANEL.
 """
 
 from abc import ABC

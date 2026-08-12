@@ -352,7 +352,10 @@ class ZoneRenderer(BaseRenderer):
         if shader is None:
             return
 
-        mvp = ctx.camera.mvp_ui @ ctx.viewport.margin_shift
+        physical_to_visual = (
+            ctx.viewport.margin_shift @ ctx.viewport.world_to_panel
+        )
+        mvp = ctx.camera.mvp_ui @ physical_to_visual
 
         shader.use()
         GL.glEnable(GL.GL_BLEND)
