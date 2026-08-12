@@ -116,6 +116,14 @@ Die Versionsnummer deines Addons. Diese wird normalerweise automatisch aus Git-T
 version: 1.0.0
 ```
 
+### `maturity`
+
+Der Reifegrad deines Addons. Verwende `experimental` für Addons, die noch nicht fertiggestellt sind und möglicherweise ungelöste Probleme haben. Experimentelle Addons werden im Addon-Manager mit einem eigenen Symbol angezeigt. Der Standardwert ist `stable`; für stabile Addons kannst du das Feld weglassen.
+
+```yaml
+maturity: experimental
+```
+
 ## Einstiegspunkte
 
 Der Abschnitt `provides` definiert, was dein Addon zu Rayforge beisteuert.

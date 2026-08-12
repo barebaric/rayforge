@@ -116,6 +116,14 @@ Le numéro de version de votre extension. Il est généralement déterminé auto
 version: 1.0.0
 ```
 
+### `maturity`
+
+Le niveau de maturité de votre extension. Utilisez `experimental` pour les extensions pas encore terminées pouvant présenter des problèmes non résolus. Les extensions expérimentales sont affichées avec une icône dédiée dans le gestionnaire d'extensions. La valeur par défaut est `stable` ; omettez le champ pour les extensions stables.
+
+```yaml
+maturity: experimental
+```
+
 ## Points d'entrée
 
 La section `provides` définit ce que votre extension apporte à Rayforge.
