@@ -1765,6 +1765,7 @@ class MainWindow(Adw.ApplicationWindow):
         )
         am.get_action("select_all").set_enabled(doc.has_workpiece())
         am.get_action("duplicate").set_enabled(has_selection)
+        am.get_action("rename-item").set_enabled(has_selection)
         am.get_action("remove").set_enabled(has_selection)
         am.get_action("clear").set_enabled(doc.has_workpiece())
 
@@ -2223,6 +2224,20 @@ class MainWindow(Adw.ApplicationWindow):
                 list(selection)
             )
             self.surface.select_items(newly_duplicated)
+
+    def on_menu_rename(self, action, param):
+        selection = self.surface.get_selected_items()
+        if not selection:
+            return
+        item = selection[0]
+        if not isinstance(item, DocItem):
+            return
+        # Make sure the user can see the rename editor.
+        self.bottom_panel.set_visible(True)
+        area = self.bottom_panel.dock_layout.find_item_area("layers")
+        if area:
+            area.set_active_item("layers")
+        self.bottom_panel.layers_tab.start_item_rename(item)
 
     def on_menu_remove(self, action, param):
         items = self.surface.get_selected_items()
