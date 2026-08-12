@@ -42,20 +42,6 @@ class AxisDirection(Enum):
     POSITIVE_DOWN = auto()
 
 
-class WorkspaceOrientation(Enum):
-    """How the native machine bed is presented in world space.
-
-    The machine always reads and writes native coordinates; this only
-    controls whether the bed is rotated 90 degrees when projected into
-    world space (e.g. so a physically portrait bed can be edited in
-    landscape). NATIVE leaves the mapping untouched.
-    """
-
-    NATIVE = "native"
-    ROTATED_LEFT = "rotated_left"
-    ROTATED_RIGHT = "rotated_right"
-
-
 @dataclass(frozen=True)
 class CoordinateSpace(ABC):
     """
@@ -171,13 +157,10 @@ class MachineSpace(CoordinateSpace):
     Attributes:
         extents: The (width, height) of the machine bed in mm.
         margins: The (left, top, right, bottom) margins in mm.
-        workspace_orientation: How the native bed is rotated when
-            projected into world space (defaults to NATIVE).
     """
 
     extents: tuple[float, float] = (200.0, 200.0)
     margins: Rect = (0.0, 0.0, 0.0, 0.0)
-    workspace_orientation: WorkspaceOrientation = WorkspaceOrientation.NATIVE
 
     @classmethod
     def from_machine(cls, machine: "Machine") -> "MachineSpace":
@@ -231,49 +214,15 @@ class MachineSpace(CoordinateSpace):
             reverse_y=machine.reverse_y_axis,
         )
 
-    @property
-    def _workspace_to_native_matrix(self) -> np.ndarray:
-        """Rigid 90-degree rotation from the presented world-space bed to
-        the native machine bed.
-
-        Identity for NATIVE. ROTATED_LEFT maps workspace (x, y) to native
-        (y, height - x); ROTATED_RIGHT maps it to native (width - y, x).
-        Entries are only 0 / +/-1 plus exact translations, so repeated
-        application does not accumulate floating-point error.
-        """
-        width, height = self.extents
-        matrix = np.identity(4, dtype=np.float64)
-        if self.workspace_orientation == WorkspaceOrientation.ROTATED_LEFT:
-            matrix[0, 0] = 0.0
-            matrix[0, 1] = 1.0
-            matrix[1, 0] = -1.0
-            matrix[1, 1] = 0.0
-            matrix[1, 3] = height
-        elif self.workspace_orientation == WorkspaceOrientation.ROTATED_RIGHT:
-            matrix[0, 0] = 0.0
-            matrix[0, 1] = -1.0
-            matrix[0, 3] = width
-            matrix[1, 0] = 1.0
-            matrix[1, 1] = 0.0
-        return matrix
-
     def get_world_to_machine_matrix(self) -> np.ndarray:
         """
-        Returns the full 4x4 transformation matrix to convert from world space
+        Returns the 4x4 transformation matrix to convert from world space
         to machine space for the encoding pipeline.
 
-        This composes the workspace rotation, the origin corner
-        transformation, and the axis reversal sign flips. Composing the
-        rotation here propagates it to every point/item transform that
-        delegates to this matrix.
+        This composes the origin corner transformation and the axis
+        reversal sign flips.
         """
-        # The reflection matrix to apply origin shift works identically in
-        # both directions (to_world / from_world) because it is its own
-        # inverse.
-        matrix = (
-            self.get_transform_to_world(self.extents)
-            @ self._workspace_to_native_matrix
-        )
+        matrix = self.get_transform_to_world(self.extents)
 
         if self.reverse_x or self.reverse_y:
             sign_flip = np.identity(4, dtype=np.float64)
@@ -550,17 +499,13 @@ class MachineSpace(CoordinateSpace):
 
         Args:
             pos: (x, y) position in machine coordinates.
-            size: (width, height) of the item in world/workspace space.
+            size: (width, height) of the item in world space.
 
         Returns:
             (x, y) position in world coordinates.
         """
         mx, my = pos
         w, h = size
-        # A rotated workspace swaps which world axis maps to which native
-        # machine axis, so the item's machine-space extents swap too.
-        if self.workspace_orientation != WorkspaceOrientation.NATIVE:
-            w, h = h, w
         if self.reverse_x:
             x_min, x_max = mx - w, mx
         else:
