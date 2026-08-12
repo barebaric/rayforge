@@ -52,18 +52,31 @@ Tous les critères sont optionnels - laissez n'importe quel champ à sa valeur "
 
 #### 4. Configurer les Paramètres
 
-**Onglet Paramètres** - Ajuster la puissance, vitesse et autres paramètres :
+**Onglet Paramètres** - Ajuster la puissance, vitesse et autres paramètres. Lorsque la recette cible un **type d'étape** spécifique, l'éditeur affiche deux pages de paramètres : une page "Laser" avec les paramètres de processus partagés (puissance, assistance d'air, etc.) et une page "Paramètres d'Étape" avec les attributs spécifiques à ce type d'étape (ex : côté de coupe, ordre de coupe) :
 
-![Éditeur de Recettes - Onglet Paramètres](/screenshots/recipe-editor-settings.png)
-
-Les onglets de paramètres s'adaptent à la sélection effectuée sur l'onglet Applicabilité :
-
-- Lorsque la recette cible un **type d'étape** spécifique, l'éditeur affiche deux pages de paramètres : une page "Laser" avec les paramètres de processus partagés (puissance, assistance d'air, etc.) et une page "Paramètres d'Étape" avec les attributs spécifiques à ce type d'étape (ex : côté de coupe, ordre de coupe)
+![Éditeur de Recettes - Onglet Laser](/screenshots/recipe-editor-laser.png)
 
 ![Éditeur de Recettes - Onglet Paramètres d'Étape](/screenshots/recipe-editor-step-settings.png)
 
 - Sélectionner uniquement un **type de tâche** (avec "Tout Type" comme type d'étape) affiche une seule page "Paramètres" avec les paramètres de processus pour cette tâche
 - Laisser les deux à "Tout" affiche uniquement les paramètres de mouvement de base (vitesse de coupe et vitesse de déplacement) partagés par toutes les étapes
+
+**Onglet Post-Traitement** - Stockez les paramètres de post-traitement
+(entrée/sortie, passes multiples, overscan et autres transformateurs) sur
+la recette afin qu'ils soient appliqués aux étapes ciblées :
+
+![Éditeur de Recettes - Onglet Post-Traitement](/screenshots/recipe-editor-post-processing.png)
+
+Chaque transformateur est affiché avec un bouton à trois états :
+
+- **Laisser inchangé** : la recette ne touche pas à ce transformateur
+  lorsqu'elle est appliquée
+- **Activé** : la recette active le transformateur et applique ses
+  paramètres à l'étape
+- **Désactivé** : la recette désactive explicitement le transformateur
+
+Lorsque la recette cible plusieurs types d'étape, seuls les transformateurs
+communs à tous sont affichés.
 
 ### Système de Correspondance des Recettes
 

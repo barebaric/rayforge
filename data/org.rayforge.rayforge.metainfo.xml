@@ -68,6 +68,18 @@
   </screenshots>
 
   <releases>
+    <release version="1.9.2" date="2026-08-12">
+      <description>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Loading projects that store a null opsproducer_dict no
+          longer crashes (e.g. when an engrave step has no legacy
+          producer parameters)</li>
+          <li>Renaming a step now updates the step list in the main
+          window's right pane immediately</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.9.1" date="2026-08-12">
       <description>
         <p>Experimental CNC machining operations, more flexible recipes, and
