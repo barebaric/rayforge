@@ -2,19 +2,20 @@
 Unit tests for the MachinePanel display-facing facade.
 """
 
-from typing import cast
+from typing import ClassVar, cast
 
 import numpy as np
 import pytest
 from blinker import Signal
 from raygeo.geo.types import Point3D
+from raygeo.ops.axis import Axis
 
 from rayforge.machine.models.coordspace import (
     AxisDirection,
     MachineSpace,
     OriginCorner,
 )
-from rayforge.machine.models.machine import Machine
+from rayforge.machine.models.machine import JogDirection, Machine
 from rayforge.machine.models.machine_panel import (
     MachinePanel,
     PanelOrientation,
@@ -24,8 +25,9 @@ from rayforge.machine.models.machine_panel import (
 class _StubMachine:
     """Minimal machine stand-in for panel unit tests."""
 
-    def __init__(self, space: MachineSpace):
+    def __init__(self, space: MachineSpace, reverse_z: bool = False):
         self._space = space
+        self.reverse_z = reverse_z
         self.changed = Signal()
 
     def get_coordinate_space(self) -> MachineSpace:
@@ -43,11 +45,41 @@ class _StubMachine:
         x, y = self._space.get_workarea_origin_in_machine()
         return (x, y, 0.0)
 
+    def calculate_jog(self, direction: JogDirection, distance: float) -> float:
+        """Mirror Machine.calculate_jog for panel equivalence tests."""
+        origin = self._space.origin
+        x_axis_right = origin in (
+            OriginCorner.TOP_RIGHT,
+            OriginCorner.BOTTOM_RIGHT,
+        )
+        y_axis_down = origin in (
+            OriginCorner.TOP_LEFT,
+            OriginCorner.TOP_RIGHT,
+        )
+        if direction == JogDirection.EAST:
+            delta = -distance if x_axis_right else distance
+            return -delta if self._space.reverse_x else delta
+        if direction == JogDirection.WEST:
+            delta = distance if x_axis_right else -distance
+            return -delta if self._space.reverse_x else delta
+        if direction == JogDirection.NORTH:
+            delta = -distance if y_axis_down else distance
+            return -delta if self._space.reverse_y else delta
+        if direction == JogDirection.SOUTH:
+            delta = distance if y_axis_down else -distance
+            return -delta if self._space.reverse_y else delta
+        if direction == JogDirection.UP:
+            return -distance if self.reverse_z else distance
+        if direction == JogDirection.DOWN:
+            return distance if self.reverse_z else -distance
+        return 0.0
+
 
 def _panel(**space_kwargs) -> MachinePanel:
     orientation = space_kwargs.pop("orientation", PanelOrientation.NATIVE)
+    reverse_z = space_kwargs.pop("reverse_z", False)
     space = MachineSpace(**space_kwargs)
-    panel = MachinePanel(cast(Machine, _StubMachine(space)))
+    panel = MachinePanel(cast(Machine, _StubMachine(space, reverse_z)))
     panel._orientation = orientation
     return panel
 
@@ -582,3 +614,187 @@ class TestMachinePanelOrientationState:
         machine, _ = test_machine_and_config
         data = machine.to_dict()
         assert data["machine"]["panel_orientation"] == "native"
+
+
+class TestMachinePanelCalculateJog:
+    """Tests for rotation-aware visual jog direction mapping."""
+
+    AXIS_FOR_DIRECTION: ClassVar[dict[JogDirection, Axis]] = {
+        JogDirection.EAST: Axis.X,
+        JogDirection.WEST: Axis.X,
+        JogDirection.NORTH: Axis.Y,
+        JogDirection.SOUTH: Axis.Y,
+        JogDirection.UP: Axis.Z,
+        JogDirection.DOWN: Axis.Z,
+    }
+
+    @staticmethod
+    def _directions_for(origin):
+        x_direction = (
+            AxisDirection.POSITIVE_LEFT
+            if origin in (OriginCorner.TOP_RIGHT, OriginCorner.BOTTOM_RIGHT)
+            else AxisDirection.POSITIVE_RIGHT
+        )
+        y_direction = (
+            AxisDirection.POSITIVE_DOWN
+            if origin in (OriginCorner.TOP_LEFT, OriginCorner.TOP_RIGHT)
+            else AxisDirection.POSITIVE_UP
+        )
+        return x_direction, y_direction
+
+    @pytest.mark.parametrize("origin", list(OriginCorner))
+    @pytest.mark.parametrize("reverse_x", [False, True])
+    @pytest.mark.parametrize("reverse_y", [False, True])
+    def test_native_matches_machine_calculate_jog(
+        self, origin, reverse_x, reverse_y
+    ):
+        """NATIVE orientation reproduces the machine's per-axis jog
+        calculation exactly."""
+        x_dir, y_dir = self._directions_for(origin)
+        panel = _panel(
+            origin=origin,
+            x_positive_direction=x_dir,
+            y_positive_direction=y_dir,
+            reverse_x=reverse_x,
+            reverse_y=reverse_y,
+        )
+        for direction, axis in self.AXIS_FOR_DIRECTION.items():
+            expected = panel.machine.calculate_jog(direction, 10.0)
+            assert panel.calculate_jog(direction, 10.0) == {axis: expected}
+
+    @pytest.mark.parametrize(
+        "orientation, direction, expected",
+        [
+            (
+                PanelOrientation.ROTATED_RIGHT,
+                JogDirection.EAST,
+                {Axis.Y: 10.0},
+            ),
+            (
+                PanelOrientation.ROTATED_RIGHT,
+                JogDirection.WEST,
+                {Axis.Y: -10.0},
+            ),
+            (
+                PanelOrientation.ROTATED_RIGHT,
+                JogDirection.NORTH,
+                {Axis.X: -10.0},
+            ),
+            (
+                PanelOrientation.ROTATED_RIGHT,
+                JogDirection.SOUTH,
+                {Axis.X: 10.0},
+            ),
+            (
+                PanelOrientation.ROTATED_LEFT,
+                JogDirection.EAST,
+                {Axis.Y: -10.0},
+            ),
+            (
+                PanelOrientation.ROTATED_LEFT,
+                JogDirection.WEST,
+                {Axis.Y: 10.0},
+            ),
+            (
+                PanelOrientation.ROTATED_LEFT,
+                JogDirection.NORTH,
+                {Axis.X: 10.0},
+            ),
+            (
+                PanelOrientation.ROTATED_LEFT,
+                JogDirection.SOUTH,
+                {Axis.X: -10.0},
+            ),
+            (
+                PanelOrientation.ROTATED_RIGHT,
+                JogDirection.UP,
+                {Axis.Z: 10.0},
+            ),
+            (
+                PanelOrientation.ROTATED_RIGHT,
+                JogDirection.DOWN,
+                {Axis.Z: -10.0},
+            ),
+            (
+                PanelOrientation.ROTATED_LEFT,
+                JogDirection.UP,
+                {Axis.Z: 10.0},
+            ),
+            (
+                PanelOrientation.ROTATED_LEFT,
+                JogDirection.DOWN,
+                {Axis.Z: -10.0},
+            ),
+        ],
+    )
+    def test_rotated_direction_maps_to_orthogonal_axis(
+        self, orientation, direction, expected
+    ):
+        """Under rotation, visual cardinals drive the orthogonal native
+        axis; Z is unaffected."""
+        panel = _panel(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            orientation=orientation,
+        )
+        assert panel.calculate_jog(direction, 10.0) == expected
+
+    @pytest.mark.parametrize(
+        "orientation, origin, direction, expected",
+        [
+            (
+                PanelOrientation.ROTATED_RIGHT,
+                OriginCorner.TOP_LEFT,
+                JogDirection.EAST,
+                {Axis.Y: -10.0},
+            ),
+            (
+                PanelOrientation.ROTATED_RIGHT,
+                OriginCorner.TOP_LEFT,
+                JogDirection.NORTH,
+                {Axis.X: -10.0},
+            ),
+            (
+                PanelOrientation.ROTATED_RIGHT,
+                OriginCorner.TOP_RIGHT,
+                JogDirection.EAST,
+                {Axis.Y: -10.0},
+            ),
+            (
+                PanelOrientation.ROTATED_RIGHT,
+                OriginCorner.BOTTOM_RIGHT,
+                JogDirection.NORTH,
+                {Axis.X: 10.0},
+            ),
+            (
+                PanelOrientation.ROTATED_LEFT,
+                OriginCorner.TOP_RIGHT,
+                JogDirection.NORTH,
+                {Axis.X: -10.0},
+            ),
+        ],
+    )
+    def test_rotated_origin_flips_compose_with_rotation(
+        self, orientation, origin, direction, expected
+    ):
+        """Origin corner flips compose with the rotation matrix."""
+        x_dir, y_dir = self._directions_for(origin)
+        panel = _panel(
+            origin=origin,
+            x_positive_direction=x_dir,
+            y_positive_direction=y_dir,
+            orientation=orientation,
+        )
+        assert panel.calculate_jog(direction, 10.0) == expected
+
+    def test_z_direction_honors_machine_reversal(self):
+        """UP/DOWN delegate to the machine's rotation-unaware jog."""
+        panel = _panel(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            reverse_z=True,
+        )
+        assert panel.calculate_jog(JogDirection.UP, 10.0) == {Axis.Z: -10.0}
+        assert panel.calculate_jog(JogDirection.DOWN, 10.0) == {Axis.Z: 10.0}
