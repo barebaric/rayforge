@@ -68,6 +68,41 @@
   </screenshots>
 
   <releases>
+    <release version="1.9.1" date="2026-08-12">
+      <description>
+        <p>Experimental CNC machining operations, more flexible recipes, and
+        G-code fixes</p>
+        <p>New Features:</p>
+        <ul>
+          <li>New "CNC Essentials" addon with CNC machining operations:
+          adaptive clearing, flat spiral, helix plunge, inner and outer
+          profiling, ramp entry, slotting, and toroidal clearing
+          (disabled by default; enable it in the addon manager)</li>
+          <li>Pipeline progress now shows the currently running operation
+          with a friendly, translatable status label instead of an
+          internal name</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Recipes now target one or more step types instead of a
+          single capability; the recipe editor gained a searchable
+          step-type selector, and existing recipes are migrated
+          automatically</li>
+          <li>Post-processor settings (lead-in/out, multipass, overscan)
+          can now be stored per recipe and applied to the targeted
+          steps</li>
+          <li>Show a confirmation dialog when enabling experimental addons</li>
+          <li>Upgrade raygeo to 1.38.3</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Generated G-code could be wrong when axis reversal or a
+          non-bottom-left origin was combined with a WCS offset</li>
+          <li>Air assist settings in laser steps were not emitted to the
+          G-code (M8/M9)</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.9.0" date="2026-08-10">
       <description>
         <p>Faster playback speeds, improved 3D preview, and memory

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 01:04+0200\n"
+"POT-Creation-Date: 2026-08-11 00:30+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -17,13 +17,13 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: laser_essentials/material_test_helpers.py laser_essentials/capabilities.py
+#: laser_essentials/material_test_helpers.py
 msgid "Cut"
 msgstr "切割"
 
 #: laser_essentials/material_test_helpers.py
 #: laser_essentials/widgets/raster_page.py
-#: laser_essentials/steps/raster_step.py laser_essentials/capabilities.py
+#: laser_essentials/steps/raster_step.py
 msgid "Engrave"
 msgstr "雕刻"
 
@@ -152,12 +152,11 @@ msgid "Cut a frame around the selected content."
 msgstr "在所选内容周围切割一个边框。"
 
 #: laser_essentials/widgets/rows/laser_step_page.py
-#: laser_essentials/capabilities.py
 msgid "Cut Speed"
 msgstr "切割速度"
 
 #: laser_essentials/widgets/rows/laser_step_page.py
-#: laser_essentials/steps/laser_step.py laser_essentials/frontend.py
+#: laser_essentials/steps/laser_step.py
 msgid "Laser"
 msgstr "激光"
 
@@ -185,7 +184,7 @@ msgstr ""
 "根据切割侧向内/向外偏移路径（中心线时无偏移）。默认根据机头进行切缝补偿"
 
 #: laser_essentials/widgets/rows/tab_power_row.py
-#: laser_essentials/steps/laser_step.py laser_essentials/capabilities.py
+#: laser_essentials/steps/laser_step.py
 msgid "Tab Power"
 msgstr "定位片功率"
 
@@ -194,7 +193,7 @@ msgid "Laser power at tab positions as a percentage"
 msgstr "定位片位置的激光功率（百分比）"
 
 #: laser_essentials/widgets/rows/air_assist_row.py
-#: laser_essentials/steps/laser_step.py laser_essentials/capabilities.py
+#: laser_essentials/steps/laser_step.py
 msgid "Air Assist"
 msgstr "空气辅助"
 
@@ -226,7 +225,6 @@ msgstr "激光 PWM 脉冲宽度（ns）"
 
 #: laser_essentials/widgets/rows/power_row.py
 #: laser_essentials/widgets/raster_page.py laser_essentials/steps/laser_step.py
-#: laser_essentials/capabilities.py
 msgid "Power"
 msgstr "功率"
 
@@ -472,7 +470,7 @@ msgstr "行（偏移步数）"
 msgid "Number of offset variations"
 msgstr "偏移变化次数"
 
-#: laser_essentials/widgets/raster_page.py laser_essentials/capabilities.py
+#: laser_essentials/widgets/raster_page.py
 msgid "Engrave Speed"
 msgstr "雕刻速度"
 
@@ -665,11 +663,11 @@ msgstr "最小功率 (白)"
 msgid "Max Power (Black)"
 msgstr "最大功率 (黑)"
 
-#: laser_essentials/steps/laser_step.py laser_essentials/capabilities.py
+#: laser_essentials/steps/laser_step.py
 msgid "Optionally force a specific laser head"
 msgstr "可选：强制使用特定的激光头"
 
-#: laser_essentials/steps/laser_step.py laser_essentials/capabilities.py
+#: laser_essentials/steps/laser_step.py
 #, python-format
 msgid "Laser power at tab positions (% of cut power)"
 msgstr "定位片位置的激光功率（切割功率的 %）"
@@ -739,29 +737,13 @@ msgstr ""
 msgid "Material Test Grid"
 msgstr "材料测试网格"
 
-#: laser_essentials/capabilities.py
-msgid "Laser Head"
-msgstr "激光头"
-
-#: laser_essentials/capabilities.py
-msgid "Travel Speed"
-msgstr "移动速度"
-
-#: laser_essentials/capabilities.py
-msgid "Score"
-msgstr "划线"
-
-#: laser_essentials/capabilities.py
-msgid "Score Speed"
-msgstr "划线速度"
-
-#: laser_essentials/capabilities.py
-msgid "Material Test"
-msgstr "材料测试"
-
 #: laser_essentials/frontend.py
 msgid "Create Material Test Grid"
 msgstr "创建材料测试网格"
+
+#: laser_essentials/laser_head_var.py
+msgid "Laser Head"
+msgstr "激光头"
 
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
