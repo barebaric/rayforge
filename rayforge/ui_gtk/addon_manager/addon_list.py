@@ -8,7 +8,7 @@ from blinker import Signal
 from gi.repository import Adw, GLib, Gtk
 
 from ... import __version__
-from ...addon_mgr.addon import Addon, AddonMetadata
+from ...addon_mgr.addon import Addon, AddonMaturity, AddonMetadata
 from ...addon_mgr.addon_manager import AddonState
 from ...context import get_context
 from ...shared.util.versioning import UnknownVersion
@@ -76,6 +76,16 @@ class AddonRow(Gtk.Box):
                 _(
                     "This addon is incompatible with the current "
                     "version of Rayforge"
+                )
+            )
+            self.append(icon)
+        elif addon.metadata.maturity == AddonMaturity.EXPERIMENTAL:
+            icon = get_icon("experimental-symbolic")
+            icon.set_valign(Gtk.Align.CENTER)
+            icon.set_tooltip_text(
+                _(
+                    "This addon is experimental and may have "
+                    "unresolved issues. Use it with caution."
                 )
             )
             self.append(icon)

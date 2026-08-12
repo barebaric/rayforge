@@ -1,6 +1,7 @@
 import logging
 import re
 from dataclasses import asdict, dataclass, field
+from enum import Enum, auto
 from pathlib import Path
 from typing import Any, Optional
 
@@ -19,6 +20,34 @@ class AddonValidationError(Exception):
     """
     Raised when an addon fails validation checks.
     """
+
+
+class AddonMaturity(Enum):
+    """Represents the maturity level of an addon."""
+
+    STABLE = auto()
+    UNTESTED = auto()
+    EXPERIMENTAL = auto()
+    KNOWN_BUGGY = auto()
+
+
+def parse_maturity(value: Any) -> AddonMaturity:
+    """
+    Parses a maturity value from a manifest or registry entry.
+
+    Unknown or missing values fall back to AddonMaturity.STABLE.
+    """
+    if isinstance(value, AddonMaturity):
+        return value
+    if not isinstance(value, str):
+        return AddonMaturity.STABLE
+    try:
+        return AddonMaturity[value.strip().upper()]
+    except KeyError:
+        logger.warning(
+            f"Unknown addon maturity '{value}', falling back to stable"
+        )
+        return AddonMaturity.STABLE
 
 
 @dataclass
@@ -139,6 +168,7 @@ class AddonMetadata:
     license: AddonLicense | None = None
     version_entries: list[dict[str, Any]] = field(default_factory=list)
     default_state: str = "enabled"
+    maturity: AddonMaturity = AddonMaturity.STABLE
 
     @property
     def license_name(self) -> str:
@@ -152,6 +182,8 @@ class AddonMetadata:
             result["version"] = None
         if self.license:
             result["license"] = self.license.to_dict()
+        if isinstance(self.maturity, AddonMaturity):
+            result["maturity"] = self.maturity.name.lower()
         return result
 
     @classmethod
@@ -207,6 +239,7 @@ class AddonMetadata:
             license=AddonLicense.from_dict(data.get("license")),
             version_entries=version_entries,
             default_state=data.get("default_state", "enabled"),
+            maturity=parse_maturity(data.get("maturity")),
         )
 
 
@@ -353,6 +386,7 @@ class Addon:
                 requires=requires,
                 license=AddonLicense.from_dict(data.get("license")),
                 default_state=default_state,
+                maturity=parse_maturity(data.get("maturity")),
             )
 
             return cls(path=addon_dir, metadata=metadata)

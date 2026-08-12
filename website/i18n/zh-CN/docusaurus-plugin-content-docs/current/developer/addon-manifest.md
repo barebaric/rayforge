@@ -116,6 +116,14 @@ requires:
 version: 1.0.0
 ```
 
+### `maturity`
+
+您的插件的成熟度级别。对于尚未完成且可能存在未解决问题风险的插件，请使用 `experimental`。实验性插件会在插件管理器中显示专用图标。默认值为 `stable`；对于稳定插件，请省略此字段。
+
+```yaml
+maturity: experimental
+```
+
 ## 入口点
 
 `provides` 部分定义您的插件为 Rayforge 提供的内容。
