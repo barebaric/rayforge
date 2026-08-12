@@ -43,4 +43,4 @@ external/
 
 # macOS icon build artifacts
 Assets.car
-rayforge.icns
+rayforge.icns.hermes_last_pull
