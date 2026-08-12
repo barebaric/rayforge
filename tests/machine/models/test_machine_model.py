@@ -11,6 +11,7 @@ MachineController, so this module focuses on the data model aspects.
 """
 
 import gc
+import logging
 
 import pytest
 from raygeo.ops.axis import Axis
@@ -169,14 +170,22 @@ class TestMachineModel:
         machine.set_axis_extents(300, 400)
         assert machine.work_margins == (0, 0, 0, 0)
 
-    def test_work_area_size_clamped_to_positive(self, lite_context):
-        """Test that work_area size is always positive."""
+    def test_work_area_clamps_overlarge_margins(self, lite_context):
+        """Over-large margins are clamped so the work area stays positive."""
         machine = Machine(lite_context)
         machine.set_axis_extents(100, 100)
         machine.set_work_margins(99, 99, 99, 99)
         _, _, w, h = machine.work_area
-        assert w >= 1
-        assert h >= 1
+        assert w > 0
+        assert h > 0
+
+    def test_set_work_margins_warns_on_clamp(self, lite_context, caplog):
+        """A warning is logged when margins are clamped."""
+        machine = Machine(lite_context)
+        machine.set_axis_extents(100, 100)
+        with caplog.at_level(logging.WARNING):
+            machine.set_work_margins(80, 80, 80, 80)
+        assert any("clamped" in r.message.lower() for r in caplog.records)
 
     # -- Soft limits --
 

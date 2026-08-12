@@ -68,6 +68,19 @@ logger = logging.getLogger(__name__)
 
 MACHINE_SPACE_WCS = "MACHINE"
 
+_MARGIN_EPSILON = 0.1  # mm — minimum work-area dimension after clamping
+
+
+def _clamp_margins(margins: Rect, extents: tuple[float, float]) -> Rect:
+    """Clamp margins so work-area dimensions stay >= _MARGIN_EPSILON."""
+    ml, mt, mr, mb = margins
+    w, h = extents
+    ml = min(ml, w - _MARGIN_EPSILON)
+    mr = min(mr, w - ml - _MARGIN_EPSILON)
+    mt = min(mt, h - _MARGIN_EPSILON)
+    mb = min(mb, h - mt - _MARGIN_EPSILON)
+    return (ml, mt, mr, mb)
+
 
 def _raise_error(*args, **kwargs):
     raise RuntimeError("Cannot schedule from worker process")
@@ -687,12 +700,14 @@ class Machine:
             x_cfg.extents = (0, width)
         if y_cfg:
             y_cfg.extents = (0, height)
-        ml, mt, mr, mb = self._work_margins
-        ml = min(ml, width - 1)
-        mr = min(mr, width - ml - 1)
-        mt = min(mt, height - 1)
-        mb = min(mb, height - mt - 1)
-        self._work_margins = (ml, mt, mr, mb)
+        clamped = _clamp_margins(self._work_margins, (width, height))
+        if clamped != self._work_margins:
+            logger.warning(
+                "Work margins exceed new bed extents (%.0f x %.0f); clamped.",
+                width,
+                height,
+            )
+            self._work_margins = clamped
         self._clamp_soft_limits()
         self.changed.send(self)
 
@@ -710,7 +725,18 @@ class Machine:
         new_margins = (left, top, right, bottom)
         if self._work_margins == new_margins:
             return
-        self._work_margins = new_margins
+        clamped = _clamp_margins(new_margins, self.axis_extents)
+        if clamped != new_margins:
+            logger.warning(
+                "Work margins (%.1f, %.1f, %.1f, %.1f) exceed bed "
+                "extents (%.0f x %.0f); clamped.",
+                left,
+                top,
+                right,
+                bottom,
+                *self.axis_extents,
+            )
+        self._work_margins = clamped
         self._soft_limits = None
         self.changed.send(self)
 
@@ -722,7 +748,7 @@ class Machine:
         """
         ml, mt, mr, mb = self._work_margins
         w, h = self.axis_extents
-        return (ml, mt, max(1.0, w - ml - mr), max(1.0, h - mt - mb))
+        return (ml, mt, w - ml - mr, h - mt - mb)
 
     @property
     def soft_limits(self) -> Rect | None:
