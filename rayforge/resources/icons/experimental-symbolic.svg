@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="24px"
+   viewBox="0 0 24 24"
+   width="24px"
+   fill="#000000"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="experimental-symbolic.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="36.916667"
+     inkscape:cx="11.986456"
+     inkscape:cy="12.013544"
+     inkscape:window-width="2663"
+     inkscape:window-height="1387"
+     inkscape:window-x="150"
+     inkscape:window-y="182"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg1" />
+  <path
+     d="M 5,21 Q 3.725,21 3.1875,19.8625 2.65,18.725 3.45,17.75 L 9,11 V 5 H 8 Q 7.575,5 7.2875,4.7125 7,4.425 7,4 7,3.575 7.2875,3.2875 7.575,3 8,3 h 8 Q 16.425,3 16.7125,3.2875 17,3.575 17,4 17,4.425 16.7125,4.7125 16.425,5 16,5 h -1 v 6 l 5.55,6.75 q 0.8,0.975 0.2625,2.1125 Q 20.275,21 19,21 Z M 5,19 H 19 L 13,11.7 V 5 h -2 v 6.7 z m 7,-7 z"
+     id="path1"
+     style="stroke-width:0.025" />
+</svg>

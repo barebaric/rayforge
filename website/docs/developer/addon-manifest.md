@@ -120,6 +120,14 @@ Your addon's version number. This is typically determined automatically from git
 version: 1.0.0
 ```
 
+### `maturity`
+
+The maturity level of your addon. Use `experimental` for addons that are not yet finished and may have unresolved issues. Experimental addons are shown with a dedicated icon in the addon manager. The default is `stable`; omit the field for stable addons.
+
+```yaml
+maturity: experimental
+```
+
 ## Entry Points
 
 The `provides` section defines what your addon contributes to Rayforge.
