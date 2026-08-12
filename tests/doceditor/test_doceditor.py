@@ -174,6 +174,60 @@ async def test_import_svg_export_gcode(
             assert gen_parts[key] == pytest.approx(exp_parts[key], abs=0.1)
 
 
+@pytest.mark.asyncio
+async def test_import_svg_export_gcode_with_air_assist(
+    context_initializer,
+    doc_editor,
+    tmp_path,
+    assets_path,
+    contour_step_class,
+):
+    """
+    End-to-end: an air assist enabled step emits M8 in the exported
+    G-code.
+
+    Regression test for the 1.9.0 pipeline rewrite, where the step's
+    air assist setting no longer reached the ops stream.
+    """
+    machine = get_context().machine
+    assert machine is not None, "Machine should be initialized in context"
+    machine.set_dialect_uid("grbl")
+
+    # --- 1. ARRANGE ---
+    step = contour_step_class.create(
+        context_initializer, name="Vectorize", optimize=False
+    )
+    step.set_power(0.5)
+    step.set_cut_speed(3000)
+    step.set_air_assist(True)
+    step.visible = True
+
+    workflow = doc_editor.doc.active_layer.workflow
+    assert workflow is not None, (
+        "Active layer must have a workflow for this test"
+    )
+    workflow.add_step(step)
+
+    svg_path = assets_path / "10x10_square.svg"
+    output_gcode_path = tmp_path / "output_air_assist.gcode"
+
+    # --- 2. ACT ---
+    await doc_editor.import_file_from_path(
+        svg_path, mime_type="image/svg+xml", vectorization_spec=TraceSpec()
+    )
+    await doc_editor.wait_until_settled()
+    await doc_editor.export_gcode_to_path(output_gcode_path)
+
+    # --- 3. ASSERT ---
+    assert output_gcode_path.exists()
+    text = output_gcode_path.read_text(encoding="utf-8")
+    assert "M8" in text, f"M8 missing from G-code:\n{text}"
+    assert "M9" in text, f"M9 missing from G-code:\n{text}"
+    assert text.index("M8") < text.index("M4"), (
+        "Air assist must turn on before the laser:\n" + text
+    )
+
+
 def test_saved_state_with_undo_redo(doc_editor):
     """
     Test that saved state correctly tracks undo/redo operations.

@@ -108,6 +108,9 @@ class LaserStep(Step):
     def populate_payload(self, payload, machine: "Machine"):
         super().populate_payload(payload, machine)
         payload.power = self.power
+        payload.air_assist = (
+            AirAssistMode.ON if self.air_assist else AirAssistMode.OFF
+        )
 
     def get_settings(self) -> dict[str, Any]:
         """
