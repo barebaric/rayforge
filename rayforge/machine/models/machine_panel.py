@@ -255,6 +255,23 @@ class MachinePanel:
         width, height = self.extents
         return width - ml - mr, height - mt - mb
 
+    @property
+    def extent_frame(self) -> Rect:
+        """The full bed extent frame in presented coordinates.
+
+        Positioned at (-margin_left, -margin_bottom) relative to the
+        work-area origin, using the presented (rotated) margins and
+        extents.
+        """
+        ml, mb = self.margins[0], self.margins[3]
+        extent_w, extent_h = self.extents
+        return (float(-ml), float(-mb), float(extent_w), float(extent_h))
+
+    @property
+    def has_custom_work_area(self) -> bool:
+        """True when any edge margin is non-zero (rotation invariant)."""
+        return self._machine.has_custom_work_area()
+
     # -- Composed transforms ------------------------------------------
 
     def get_world_to_machine_matrix(self) -> np.ndarray:

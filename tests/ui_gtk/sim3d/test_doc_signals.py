@@ -38,13 +38,17 @@ def _machine():
     machine.changed = Signal()
     machine.work_area = (100.0, 100.0, 100.0, 100.0)
     machine.work_margins = (0.0, 0.0, 0.0, 0.0)
-    machine.y_axis_down = False
-    machine.x_axis_right = False
-    machine.reverse_x_axis = False
-    machine.reverse_y_axis = False
     machine.wcs_origin_is_workarea_origin = True
-    machine.has_custom_work_area.return_value = False
     machine.get_active_wcs_offset.return_value = (0.0, 0.0, 0.0)
+    panel = MagicMock()
+    panel.workarea_size = (100.0, 100.0)
+    panel.margins = (0.0, 0.0, 0.0, 0.0)
+    panel.x_axis_right = False
+    panel.y_axis_down = False
+    panel.x_axis_negative = False
+    panel.y_axis_negative = False
+    panel.has_custom_work_area = False
+    machine.panel = panel
     return machine
 
 
