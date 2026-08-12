@@ -16,7 +16,7 @@ Version 21
 Renamed ``WorkOriginElement.set_coordinate_space(space)`` to
 ``set_axis_direction(x_axis_right, y_axis_down)``. The element no longer
 accepts a MachineSpace; it consumes the two display-facing booleans
-exposed by ``MachineView``. Addons that configure the work-origin symbol
+exposed by ``MachinePanel``. Addons that configure the work-origin symbol
 must pass those booleans instead of a coordinate space.
 
 Version 20

@@ -1,10 +1,7 @@
 import logging
 import math
 from collections.abc import Sequence
-from typing import (
-    TYPE_CHECKING,
-    cast,
-)
+from typing import TYPE_CHECKING, cast
 
 from blinker import Signal
 from gi.repository import Gdk, GLib, Graphene, Gtk
@@ -19,7 +16,7 @@ from ...core.stock import StockItem
 from ...core.stock_asset import StockAsset
 from ...core.workpiece import WorkPiece
 from ...machine.models.machine import Machine
-from ...machine.models.machine_view import MachineView
+from ...machine.models.machine_panel import MachinePanel
 from ...pipeline.artifact import RenderContext
 from ...shared.units.formatter import get_preferred_unit_factor
 from ..canvas import Canvas, CanvasElement, WorldSurface
@@ -79,7 +76,7 @@ class WorkSurface(WorldSurface):
                 float(machine.axis_extents[0]),
                 float(machine.axis_extents[1]),
             )
-            view = MachineView(machine.get_coordinate_space())
+            view = MachinePanel(machine)
             x_axis_right = view.x_axis_right
             y_axis_down = view.y_axis_down
             reverse_x_axis = view.x_axis_negative
@@ -1155,11 +1152,11 @@ class WorkSurface(WorldSurface):
         self.queue_draw()
 
     @property
-    def _machine_view(self) -> MachineView:
+    def _machine_view(self) -> MachinePanel:
         """Display-facing projection of the current machine's coordinate
         space. Callers must ensure ``self.machine`` is set."""
         assert self.machine
-        return MachineView(self.machine.get_coordinate_space())
+        return MachinePanel(self.machine)
 
     def _on_machine_changed(self, machine: Machine | None):
         """
