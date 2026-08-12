@@ -94,8 +94,9 @@ class LaserBeamRenderer(BaseRenderer):
             return
 
         ra = kinematics.rotary_axis
-        margin_shift = ctx.viewport.margin_shift
-        vis_mat = margin_shift.astype(np.float32)
+        vis_mat = (
+            ctx.viewport.margin_shift @ ctx.viewport.world_to_panel
+        ).astype(np.float32)
         for name, (hx, hy, hz) in kinematics.head_positions.items():
             head_pos = vis_mat @ np.array([hx, hy, hz, 1.0], dtype=np.float32)
             cfg = kinematics.head_configs.get(name)

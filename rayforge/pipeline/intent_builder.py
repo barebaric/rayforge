@@ -100,6 +100,28 @@ JOB_ENCODE_KEY = "job:encode"
 JOB_MACHINEXFORM_KEY = "job:machinexform"
 
 
+class UnsupportedRotaryPanelOrientationError(ValueError):
+    """Raised when rotary output is requested from a rotated panel.
+
+    Raygeo's rotary stage maps the unrolled cylinder's Y coordinate
+    before the world-to-machine transform. A rotated flat panel
+    therefore cannot be composed with rotary mapping without changing
+    which coordinate is treated as the circumference.
+    """
+
+
+def validate_panel_configuration(machine: Machine, doc: Doc) -> None:
+    """Reject combinations whose coordinate semantics are ambiguous."""
+    if machine.panel.supports_rotary:
+        return
+    if not any(layer.rotary_enabled for layer in doc.layers):
+        return
+    raise UnsupportedRotaryPanelOrientationError(
+        "Rotary layers require the Native panel orientation. "
+        "Set Machine → Hardware → Panel Orientation to Native."
+    )
+
+
 def workpiece_key(wp_uid: str, step_uid: str) -> str:
     return WORKPIECE_KEY_FMT.format(wp_uid=wp_uid, step_uid=step_uid)
 
@@ -164,6 +186,7 @@ class IntentBuilder:
         Walk *doc* and produce one NodeRequest per workpiece-step pair,
         one per step, and one final job aggregate.
         """
+        validate_panel_configuration(self._machine, doc)
         self._doc = doc
         nodes: list[NodeRequest] = []
         # Map each step's key to the list of upstream workpiece compute
@@ -847,7 +870,9 @@ class IntentBuilder:
 
         space = MachineSpace.from_machine(machine)
 
-        # World→machine 4x4 matrix.
+        # World→machine 4x4 matrix. The document lives in WORLD space,
+        # so the matrix is native (the panel rotation is a display
+        # concern and never reaches the encoder).
         w2m = space.get_world_to_machine_matrix()
 
         # Default WCS command offset.
@@ -989,7 +1014,7 @@ class IntentBuilder:
         payload = {
             "kind": "encode",
             "mxform_token": self._machine_transform_token(doc, step_tokens),
-            "machine": _machine_token_payload(self._machine),
+            "machine": _machine_token_payload(self._machine, doc),
         }
         return _hash_int(payload)
 
@@ -1005,7 +1030,7 @@ class IntentBuilder:
         payload = {
             "kind": "machine_transform",
             "job_token": self._job_token(doc, step_tokens),
-            "machine": _machine_token_payload(self._machine),
+            "machine": _machine_token_payload(self._machine, doc),
         }
         if self._machine is not None:
             cfg = _machine_transform_config_payload(self._machine, doc)
@@ -1084,9 +1109,17 @@ def _is_grbl(dialect: GcodeDialect) -> bool:
     return dialect.uid == GRBL_DIALECT.uid
 
 
-def _machine_token_payload(machine: Machine | None) -> Any:
+def _machine_token_payload(machine: Machine | None, doc: Doc) -> Any:
     """Build a JSON-serialisable representation of the machine
-    identity for the encode token."""
+    identity for the encode token.
+
+    Every field below is an input to `_build_machine_transform_stage`
+    (via the world→machine matrix or the per-layer command offsets), so
+    changing any of them must invalidate cached machine-space output.
+    WCS offsets are scoped to the effective coordinate system of each
+    layer, avoiding invalidation when an unrelated coordinate system is
+    edited.
+    """
     if machine is None:
         return None
     return {
@@ -1100,6 +1133,19 @@ def _machine_token_payload(machine: Machine | None) -> Any:
         "max_travel_speed": machine.max_travel_speed,
         "acceleration": machine.acceleration,
         "axis_extents": list(machine.axis_extents),
+        "work_margins": list(machine.work_margins),
+        "origin": machine.origin.value,
+        "reverse_x_axis": machine.reverse_x_axis,
+        "reverse_y_axis": machine.reverse_y_axis,
+        "wcs_origin_is_workarea_origin": (
+            machine.wcs_origin_is_workarea_origin
+        ),
+        "layer_wcs_offsets": {
+            layer.uid: list(
+                machine.get_wcs_offset(layer.get_effective_wcs(machine))
+            )
+            for layer in doc.layers
+        },
     }
 
 

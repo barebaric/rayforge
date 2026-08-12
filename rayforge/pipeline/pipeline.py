@@ -20,6 +20,10 @@ from ..machine.kinematic_mapping import KinematicMapping
 from .artifact import BaseArtifactHandle, JobArtifact, WorkPieceArtifact
 from .artifact.store import ArtifactStore
 from .encoder.base import EncodedOutput, MachineCodeOpMap
+from .intent_builder import (
+    UnsupportedRotaryPanelOrientationError,
+    validate_panel_configuration,
+)
 from .intent_controller import IntentController
 
 if TYPE_CHECKING:
@@ -275,16 +279,33 @@ class Pipeline:
     def _on_data_stale(self, sender) -> None:
         self.data_stale.send(self)
 
-    def _on_pipeline_error(self, sender, *, error_kind) -> None:
-        if error_kind == ErrorKind.CACHE_BUDGET_EXCEEDED:
+    def _on_pipeline_error(
+        self,
+        sender,
+        *,
+        error_kind: ErrorKind | None = None,
+        message: str | None = None,
+    ) -> None:
+        if message is not None:
+            self._clear_last_job_output()
+        elif error_kind == ErrorKind.CACHE_BUDGET_EXCEEDED:
             message = (
                 "Scene too complex for the current cache budget. "
                 "Reduce the number of layers or increase the cache budget."
             )
         else:
-            message = f"Pipeline error: {error_kind.value}"
+            detail = error_kind.value if error_kind is not None else "unknown"
+            message = f"Pipeline error: {detail}"
         logger.error("Pipeline execution error: %s", message)
         self.pipeline_error.send(self, message=message)
+
+    def _clear_last_job_output(self) -> None:
+        """Discard machine output that no longer matches the
+        configuration."""
+        if self._last_job_handle is not None:
+            self._store.release(self._last_job_handle)
+            self._last_job_handle = None
+        self._last_aggregate_output = None
 
     def _on_pipeline_warnings(self, sender, *, warnings) -> None:
         """Forward assembler warnings to the UI for translation."""
@@ -434,6 +455,13 @@ class Pipeline:
     ):
         if not self._doc:
             when_done(None, RuntimeError("No document is loaded."))
+            return
+
+        try:
+            validate_panel_configuration(self._machine, self._doc)
+        except UnsupportedRotaryPanelOrientationError as exc:
+            self._clear_last_job_output()
+            when_done(None, exc)
             return
 
         if self._last_job_handle is not None:

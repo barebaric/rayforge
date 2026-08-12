@@ -16,6 +16,7 @@ from gi.repository import Adw, Gtk
 
 from ....machine.device.profile import DeviceProfile
 from ....machine.models.machine import Origin
+from ....machine.models.machine_panel import PanelOrientation
 from ...shared.pref_rows.acceleration_spin_row import AccelerationSpinRow
 from ...shared.pref_rows.length_spin_row import LengthSpinRow
 from ...shared.pref_rows.speed_spin_row import SpeedSpinRow
@@ -28,6 +29,7 @@ _ORIGIN_INDEX_TO_ENUM = {
     3: Origin.BOTTOM_RIGHT,
 }
 _ORIGIN_ENUM_TO_INDEX = {v: k for k, v in _ORIGIN_INDEX_TO_ENUM.items()}
+_PANEL_ORIENTATIONS = tuple(PanelOrientation)
 
 # Sensible starting points surfaced when a profile carries no values;
 # they mirror the Machine model defaults (machine.py).
@@ -86,6 +88,16 @@ class HardwarePage(WizardPage):
             model=origin_store,
         )
         axes_group.add(self.origin_row)
+
+        self.panel_orientation_row = Adw.ComboRow(
+            title=_("Panel Orientation"),
+            subtitle=_(
+                "Rotate the flat workspace and remap output to the "
+                "machine; rotary layers require Native"
+            ),
+            model=Gtk.StringList.new([o.label for o in _PANEL_ORIENTATIONS]),
+        )
+        axes_group.add(self.panel_orientation_row)
 
         # Direction reversals.
         self.reverse_x_row = Adw.SwitchRow(
@@ -286,6 +298,11 @@ class HardwarePage(WizardPage):
         origin = mc.origin or Origin.BOTTOM_LEFT
         self.origin_row.set_selected(_ORIGIN_ENUM_TO_INDEX.get(origin, 0))
 
+        orientation = mc.panel_orientation or PanelOrientation.NATIVE
+        self.panel_orientation_row.set_selected(
+            _PANEL_ORIENTATIONS.index(orientation)
+        )
+
         # directional reversal flags aren't on MachineConfig; they live
         # on Machine directly. We treat them as ephemeral session state
         # via wizard.aux_state, defaulting to False.
@@ -350,6 +367,9 @@ class HardwarePage(WizardPage):
         mc.origin = _ORIGIN_INDEX_TO_ENUM.get(
             self.origin_row.get_selected(), Origin.BOTTOM_LEFT
         )
+        orientation_index = self.panel_orientation_row.get_selected()
+        if orientation_index < len(_PANEL_ORIENTATIONS):
+            mc.panel_orientation = _PANEL_ORIENTATIONS[orientation_index]
 
         # stash reversals to aux_state (defers to Machine during
         # create_machine); the orchestrator applies them post-creation.

@@ -296,14 +296,15 @@ class WorkSurface(WorldSurface):
         self, m_x: float, m_y: float
     ) -> tuple[float, float]:
         """
-        Convert machine-reported coordinates to canvas world coordinates.
+        Convert machine-reported coordinates to canvas PANEL coordinates.
 
         Machine-reported coordinates come from the controller and may be
         negated based on reverse_x/reverse_y settings. The panel's
-        machine->world transform undoes this sign flip.
+        machine->panel transform undoes this sign flip and applies the
+        presentation rotation.
         """
         if self.machine:
-            return self.machine.panel.machine_point_to_world(m_x, m_y)
+            return self.machine.panel.machine_point_to_panel(m_x, m_y)
         return m_x, m_y
 
     def get_global_tab_visibility(self) -> bool:
@@ -591,7 +592,7 @@ class WorkSurface(WorldSurface):
             world_x, world_y = self._get_world_coords(x, y)
             if self.machine:
                 machine_x, machine_y = (
-                    self.machine.panel.world_point_to_machine(world_x, world_y)
+                    self.machine.panel.panel_point_to_machine(world_x, world_y)
                 )
             else:
                 machine_x, machine_y = world_x, world_y
@@ -704,7 +705,9 @@ class WorkSurface(WorldSurface):
 
         panel = machine.panel
         if machine.wcs_origin_is_workarea_origin:
-            canvas_x, canvas_y = panel.get_workarea_origin_in_machine()
+            canvas_x, canvas_y = panel.machine_point_to_panel(
+                *panel.get_workarea_origin_in_machine()
+            )
         else:
             wcs_x, wcs_y, _ = self._get_active_layer_wcs_offset()
             canvas_x, canvas_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
@@ -960,6 +963,18 @@ class WorkSurface(WorldSurface):
         logger.debug(f"Adding new LayerElement for '{layer.name}'")
         layer_elem = LayerElement(layer=layer, canvas=self)
         self.root.add(layer_elem)
+        self._apply_layer_panel_transform(layer_elem)
+
+    def _apply_layer_panel_transform(self, layer_elem: CanvasElement) -> None:
+        """Rotate a layer's document (WORLD) content into PANEL space."""
+        if not self.machine:
+            return
+        layer_elem.set_transform(self.machine.panel.get_world_to_panel_2d())
+
+    def _sync_layer_transforms(self) -> None:
+        """Re-apply the PANEL rotation to every layer element."""
+        for layer_elem in self.find_by_type(LayerElement):
+            self._apply_layer_panel_transform(layer_elem)
 
     def _create_and_add_stock_element(self, stock_item: StockItem):
         """Creates a new StockElement and adds it to the canvas root."""
@@ -1145,11 +1160,11 @@ class WorkSurface(WorldSurface):
         self.queue_draw()
 
     @property
-    def _machine_view(self) -> MachinePanel:
-        """Display-facing projection of the current machine's coordinate
-        space. Callers must ensure ``self.machine`` is set."""
+    def _machine_panel(self) -> MachinePanel:
+        """The machine's live panel, carrying the current orientation.
+        Callers must ensure ``self.machine`` is set."""
         assert self.machine
-        return MachinePanel(self.machine)
+        return self.machine.panel
 
     def _on_machine_changed(self, machine: Machine | None):
         """
@@ -1165,7 +1180,7 @@ class WorkSurface(WorldSurface):
 
         extent_w, extent_h = machine.axis_extents
         extent_changed = (extent_w, extent_h) != self._tracked_axis_extents
-        view = self._machine_view
+        view = self._machine_panel
         y_axis_changed = view.y_axis_down != self._axis_renderer.y_axis_down
         x_axis_changed = view.x_axis_right != self._axis_renderer.x_axis_right
         x_reverse_changed = (
@@ -1191,6 +1206,7 @@ class WorkSurface(WorldSurface):
         ):
             self.reset_view()
         else:
+            self._sync_layer_transforms()
             self._update_extent_frame()
             self._sync_camera_elements()
             self._sync_nogo_zone_elements()
@@ -1216,10 +1232,10 @@ class WorkSurface(WorldSurface):
             self._sync_camera_elements()
             return
 
-        # Canvas shows full machine bed
-        width_mm, height_mm = self.machine.axis_extents
+        # Canvas shows full machine bed in PANEL presentation
+        view = self._machine_panel
+        width_mm, height_mm = view.extents
 
-        view = self._machine_view
         logger.debug(
             f"Resetting view for machine '{self.machine.name}' "
             f"with axis_extents=({width_mm}, {height_mm}), "
@@ -1230,7 +1246,7 @@ class WorkSurface(WorldSurface):
         )
         self._tracked_axis_extents = self.machine.axis_extents
         self.set_size(float(width_mm), float(height_mm))
-        ml, mt, mr, mb = self.machine.work_margins
+        ml, mt, mr, mb = view.margins
         self._axis_renderer.set_width_mm(float(width_mm))
         self._axis_renderer.set_height_mm(float(height_mm))
         self._axis_renderer.set_margins_mm(
@@ -1244,6 +1260,8 @@ class WorkSurface(WorldSurface):
         self._work_origin_element.set_axis_direction(
             view.x_axis_right, view.y_axis_down
         )
+
+        self._sync_layer_transforms()
 
         self._update_extent_frame()
 
@@ -1329,7 +1347,7 @@ class WorkSurface(WorldSurface):
         if default_rm:
             max_length = min(max_length, default_rm.max_workpiece_length)
 
-        if self._machine_view.x_axis_right:
+        if self._machine_panel.x_axis_right:
             width = min(origin_x, max_length)
             x = origin_x - width
         else:
@@ -1377,15 +1395,17 @@ class WorkSurface(WorldSurface):
             self._nogo_zone_elements.clear()
             return
 
-        current_uids = set(self.machine.nogo_zones.keys())
+        zones = self.machine.panel.nogo_zones
+        current_uids = set(zones.keys())
         existing_uids = set(self._nogo_zone_elements.keys())
 
         for uid in existing_uids - current_uids:
             self._nogo_zone_elements.pop(uid).remove()
 
-        for uid, zone in self.machine.nogo_zones.items():
+        for uid, zone in zones.items():
             if uid in self._nogo_zone_elements:
                 elem = self._nogo_zone_elements[uid]
+                elem.data = zone
                 elem._update_from_zone()
                 elem.set_visible(self._nogo_zones_visible and zone.enabled)
             else:

@@ -41,10 +41,12 @@ from rayforge.core.stock_asset import StockAsset
 from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.dialect.grbl import GRBL_DIALECT
 from rayforge.machine.models.machine import Machine, Origin
+from rayforge.machine.models.machine_panel import PanelOrientation
 from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
 from rayforge.pipeline.encoder.rust_helpers import dialect_to_spec
 from rayforge.pipeline.intent_builder import (
     IntentBuilder,
+    UnsupportedRotaryPanelOrientationError,
     job_encode_key,
     job_key,
     job_machinexform_key,
@@ -111,6 +113,20 @@ def test_keys_are_stable_across_rebuilds(isolated_machine):
     n1 = IntentBuilder(machine=isolated_machine).build(doc)
     n2 = IntentBuilder(machine=isolated_machine).build(doc)
     assert [n.key for n in n1] == [n.key for n in n2]
+
+
+def test_rotary_layer_rejects_rotated_panel(isolated_machine):
+    """Rotary uses its own cylindrical coordinate space, not the
+    rotated flat-bed presentation."""
+    doc = _make_doc(_TestStep(name="s1"), WorkPiece(name="wp"))
+    doc.active_layer.set_rotary_enabled(True)
+    isolated_machine.set_panel_orientation(PanelOrientation.ROTATED_RIGHT)
+
+    with pytest.raises(
+        UnsupportedRotaryPanelOrientationError,
+        match="Rotary layers require the Native panel orientation",
+    ):
+        IntentBuilder(machine=isolated_machine).build(doc)
 
 
 # ----------------------------------------------------------------------
@@ -664,6 +680,41 @@ def test_job_encode_token_changes_on_machine_swap(
     assert before_t != after_t
 
 
+def test_machine_token_ignores_unused_wcs_offset(isolated_machine):
+    step = _TestStep(name="s1")
+    doc = _make_doc(step, WorkPiece(name="wp"))
+    before = IntentBuilder(machine=isolated_machine).build(doc)
+
+    isolated_machine.update_wcs_offset("G55", (10.0, 20.0, 0.0))
+    after = IntentBuilder(machine=isolated_machine).build(doc)
+
+    before_t = next(
+        n.version_token for n in before if n.key == job_machinexform_key()
+    )
+    after_t = next(
+        n.version_token for n in after if n.key == job_machinexform_key()
+    )
+    assert after_t == before_t
+
+
+def test_machine_token_tracks_effective_layer_wcs_offset(isolated_machine):
+    step = _TestStep(name="s1")
+    doc = _make_doc(step, WorkPiece(name="wp"))
+    doc.active_layer.set_wcs("G55")
+    before = IntentBuilder(machine=isolated_machine).build(doc)
+
+    isolated_machine.update_wcs_offset("G55", (10.0, 20.0, 0.0))
+    after = IntentBuilder(machine=isolated_machine).build(doc)
+
+    before_t = next(
+        n.version_token for n in before if n.key == job_machinexform_key()
+    )
+    after_t = next(
+        n.version_token for n in after if n.key == job_machinexform_key()
+    )
+    assert after_t != before_t
+
+
 def test_contour_job_encodes_through_raygeo(
     contour_step_class, test_machine_and_config
 ):
@@ -721,6 +772,53 @@ def test_machine_transform_node_present(
     mx_idx = keys.index(job_machinexform_key())
     enc_idx = keys.index(job_encode_key())
     assert job_idx < mx_idx < enc_idx
+
+
+def test_machine_transform_ignores_panel_rotation(isolated_machine):
+    """The output stage is native: the panel rotation never reaches the
+    encoder, because the document lives in WORLD space."""
+    isolated_machine.set_axis_extents(400.0, 800.0)
+    isolated_machine.set_panel_orientation(PanelOrientation.ROTATED_RIGHT)
+    doc = _make_doc(_TestStep())
+
+    spec = IntentBuilder(
+        machine=isolated_machine
+    )._build_machine_transform_stage(doc)
+
+    assert spec.world_to_machine == [
+        [1.0, 0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0],
+    ]
+
+
+def test_panel_rotation_keeps_machine_transform_token(
+    contour_step_class, test_machine_and_config
+):
+    """Changing the panel orientation does not invalidate cached
+    machine-space output."""
+    machine, context = test_machine_and_config
+    doc = _make_doc(
+        contour_step_class.create(context, name="cut"),
+        WorkPiece(name="wp"),
+    )
+    before = IntentBuilder(machine=machine).build(doc)
+
+    machine.set_panel_orientation(PanelOrientation.ROTATED_LEFT)
+    after = IntentBuilder(machine=machine).build(doc)
+
+    before_token = next(
+        node.version_token
+        for node in before
+        if node.key == job_machinexform_key()
+    )
+    after_token = next(
+        node.version_token
+        for node in after
+        if node.key == job_machinexform_key()
+    )
+    assert before_token == after_token
 
 
 def test_machine_transform_linearizes_curves(
@@ -1444,3 +1542,30 @@ def test_machine_transform_wcs_with_axis_reversal(
 
     assert coords[0][0] == pytest.approx(expected_x, abs=0.5)
     assert coords[0][1] == pytest.approx(expected_y, abs=0.5)
+
+
+@pytest.mark.parametrize(
+    "orientation",
+    [
+        PanelOrientation.ROTATED_RIGHT,
+        PanelOrientation.ROTATED_LEFT,
+    ],
+)
+def test_panel_rotation_does_not_change_gcode(
+    contour_step_class,
+    test_machine_and_config,
+    orientation,
+):
+    """The panel rotation is display-only: it never reaches G-code."""
+    machine, context = test_machine_and_config
+    machine.set_origin(Origin.BOTTOM_LEFT)
+
+    native_gcode = _run_full_pipeline(machine, context, contour_step_class)
+    native_coords = _extract_cut_coords(native_gcode)
+
+    machine.set_panel_orientation(orientation)
+    rotated_gcode = _run_full_pipeline(machine, context, contour_step_class)
+    rotated_coords = _extract_cut_coords(rotated_gcode)
+
+    assert len(native_coords) >= 4
+    assert rotated_coords == native_coords
