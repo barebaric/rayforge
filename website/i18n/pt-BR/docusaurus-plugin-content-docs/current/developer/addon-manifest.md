@@ -116,6 +116,14 @@ O número de versão do seu addon. Isso é tipicamente determinado automaticamen
 version: 1.0.0
 ```
 
+### `maturity`
+
+O nível de maturidade do seu addon. Use `experimental` para addons que ainda não estão concluídos e podem ter problemas não resolvidos. Addons experimentais são exibidos com um ícone dedicado no gerenciador de addons. O padrão é `stable`; omita o campo para addons estáveis.
+
+```yaml
+maturity: experimental
+```
+
 ## Pontos de Entrada
 
 A seção `provides` define o que seu addon contribui para o Rayforge.

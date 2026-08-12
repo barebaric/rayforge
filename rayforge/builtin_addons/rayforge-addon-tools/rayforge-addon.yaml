@@ -11,3 +11,4 @@ provides:
 license:
   name: "MIT"
 default_state: "disabled"
+maturity: experimental
