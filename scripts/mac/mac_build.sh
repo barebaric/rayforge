@@ -7,8 +7,6 @@ DO_DMG=0
 DO_RUN_APP=0
 VERSION_OVERRIDE=""
 MACOS_MIN_VERSION="12.0"
-MACOS_NUMPY_VERSION="1.26.4"
-MACOS_SCIPY_VERSION="1.11.4"
 GREEN="\033[0;32m"
 NC="\033[0m"
 
@@ -104,8 +102,8 @@ echo ""
 
 VENV_PATH=${VENV_PATH:-.venv}
 PYTHON_BOOTSTRAP=python3
-if command -v python3.11 >/dev/null 2>&1; then
-    PYTHON_BOOTSTRAP=python3.11
+if command -v python3.13 >/dev/null 2>&1; then
+    PYTHON_BOOTSTRAP=python3.13
 fi
 if [ ! -d "$VENV_PATH" ]; then
     "$PYTHON_BOOTSTRAP" -m venv "$VENV_PATH"
@@ -115,37 +113,9 @@ VENV_PY="$VENV_PATH/bin/python"
 "$VENV_PY" -m pip install --upgrade pip
 "$VENV_PY" -m pip install --upgrade build pyinstaller
 TMP_REQUIREMENTS=$(mktemp)
-trap 'rm -f "$TMP_REQUIREMENTS" "$TMP_REQUIREMENTS.patched"' EXIT
+trap 'rm -f "$TMP_REQUIREMENTS"' EXIT
 grep -Evi '^(PyOpenGL_accelerate|opencv[_-]python)' \
     requirements.txt > "$TMP_REQUIREMENTS"
-
-if [ "$(uname -s)" = "Darwin" ]; then
-    awk \
-        -v numpy_version="$MACOS_NUMPY_VERSION" \
-        -v scipy_version="$MACOS_SCIPY_VERSION" '
-        BEGIN { done_numpy = 0; done_scipy = 0 }
-        /^numpy[=~><!]/ {
-            print "numpy==" numpy_version
-            done_numpy = 1
-            next
-        }
-        /^scipy[=~><!]/ {
-            print "scipy==" scipy_version
-            done_scipy = 1
-            next
-        }
-        { print }
-        END {
-            if (done_numpy == 0) {
-                print "numpy==" numpy_version
-            }
-            if (done_scipy == 0) {
-                print "scipy==" scipy_version
-            }
-        }
-    ' "$TMP_REQUIREMENTS" > "$TMP_REQUIREMENTS.patched"
-    mv "$TMP_REQUIREMENTS.patched" "$TMP_REQUIREMENTS"
-fi
 
 if [ "$(uname -s)" = "Darwin" ]; then
     echo "Installing pinned OpenCV wheel for macOS..."
@@ -154,30 +124,18 @@ if [ "$(uname -s)" = "Darwin" ]; then
 fi
 
 "$VENV_PY" -m pip install -r "$TMP_REQUIREMENTS"
-if [ "$(uname -s)" = "Darwin" ]; then
-    "$VENV_PY" -m pip install --upgrade --force-reinstall \
-        --only-binary=:all: \
-        "numpy==$MACOS_NUMPY_VERSION" "scipy==$MACOS_SCIPY_VERSION"
-fi
 rm -f "$TMP_REQUIREMENTS"
 trap - EXIT
 "$VENV_PY" -m pip install PyOpenGL_accelerate==3.1.10 || \
     echo "PyOpenGL_accelerate install failed; continuing."
 
 if [ "$(uname -s)" = "Darwin" ]; then
-    "$VENV_PY" - "$MACOS_NUMPY_VERSION" \
-        "$MACOS_SCIPY_VERSION" <<'PY'
-import sys
-
-import numpy
-import scipy
+    "$VENV_PY" - <<'PY'
 from scipy.linalg import null_space
 from scipy.ndimage import binary_dilation
 from scipy.optimize import least_squares
 from scipy.signal import fftconvolve
 
-assert numpy.__version__ == sys.argv[1]
-assert scipy.__version__ == sys.argv[2]
 assert all((null_space, binary_dilation, least_squares, fftconvolve))
 print("Verified SciPy modules used by Rayforge.")
 PY
