@@ -9,7 +9,6 @@ from rayforge.machine.models.coordspace import (
     AxisDirection,
     MachineSpace,
     OriginCorner,
-    WorkspaceOrientation,
 )
 
 
@@ -171,7 +170,7 @@ class TestMachineSpace:
     ):
         """Regression: in the native orientation, the WCS branch of
         get_axis_label_origin must return the raw offset unchanged,
-        exactly as it did before workspace rotation existed."""
+        exactly as it did before panel rotation existed."""
         x_direction = (
             AxisDirection.POSITIVE_LEFT
             if origin
@@ -390,85 +389,6 @@ class TestMachineSpaceItemTransforms:
         assert space.machine_item_to_world(machine_pos, size) == (
             pytest.approx(pos[0]),
             pytest.approx(pos[1]),
-        )
-
-    @pytest.mark.parametrize("orientation", list(WorkspaceOrientation))
-    @pytest.mark.parametrize("origin", list(OriginCorner))
-    @pytest.mark.parametrize("reverse_x", [False, True])
-    @pytest.mark.parametrize("reverse_y", [False, True])
-    def test_workspace_transform_round_trip_all_configurations(
-        self, orientation, origin, reverse_x, reverse_y
-    ):
-        """Point and item transforms round-trip for every orientation,
-        origin, and reversal combination. The probe and item are placed
-        within the smaller presented dimension so they stay on the bed
-        in both native and rotated orientations."""
-        x_direction = (
-            AxisDirection.POSITIVE_LEFT
-            if origin
-            in (
-                OriginCorner.TOP_RIGHT,
-                OriginCorner.BOTTOM_RIGHT,
-            )
-            else AxisDirection.POSITIVE_RIGHT
-        )
-        y_direction = (
-            AxisDirection.POSITIVE_DOWN
-            if origin
-            in (
-                OriginCorner.TOP_LEFT,
-                OriginCorner.TOP_RIGHT,
-            )
-            else AxisDirection.POSITIVE_UP
-        )
-        space = MachineSpace(
-            origin=origin,
-            x_positive_direction=x_direction,
-            y_positive_direction=y_direction,
-            extents=(400.0, 800.0),
-            reverse_x=reverse_x,
-            reverse_y=reverse_y,
-            workspace_orientation=orientation,
-        )
-
-        world_point = (123.25, 77.5)
-        machine_point = space.world_point_to_machine(*world_point)
-        assert space.machine_point_to_world(*machine_point) == (
-            pytest.approx(world_point[0]),
-            pytest.approx(world_point[1]),
-        )
-
-        world_pos = (20.0, 30.0)
-        item_size = (50.0, 70.0)
-        machine_pos = space.world_item_to_machine(world_pos, item_size)
-        assert space.machine_item_to_world(
-            machine_pos, item_size
-        ) == pytest.approx(world_pos)
-
-    @pytest.mark.parametrize(
-        "orientation, expected",
-        [
-            # BL origin, no reversal, native extents (400, 800).
-            # Hand-verified: ROTATED_LEFT maps (x, y) to (y, 800 - x);
-            # ROTATED_RIGHT maps it to (400 - y, x).
-            (WorkspaceOrientation.ROTATED_LEFT, (50.0, 700.0)),
-            (WorkspaceOrientation.ROTATED_RIGHT, (350.0, 100.0)),
-        ],
-    )
-    def test_workspace_rotation_maps_point_direction(
-        self, orientation, expected
-    ):
-        """Pins the rotation direction so a consistent mirror (left
-        swapped with right) cannot pass the round-trip test alone."""
-        space = MachineSpace(
-            origin=OriginCorner.BOTTOM_LEFT,
-            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
-            y_positive_direction=AxisDirection.POSITIVE_UP,
-            extents=(400.0, 800.0),
-            workspace_orientation=orientation,
-        )
-        assert space.world_point_to_machine(100.0, 50.0) == pytest.approx(
-            expected
         )
 
     @pytest.mark.parametrize(

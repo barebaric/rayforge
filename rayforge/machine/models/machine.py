@@ -34,7 +34,7 @@ from .dialect import GcodeDialect
 from .head import Head, head_from_dict
 from .laser import Laser, LaserHead
 from .machine_hours import MachineHours
-from .machine_panel import MachinePanel
+from .machine_panel import MachinePanel, PanelOrientation
 from .macro import Macro, MacroTrigger
 from .rotary_module import RotaryMode, RotaryModule
 from .zone import Zone
@@ -759,6 +759,18 @@ class Machine:
         self.origin = origin
         self.changed.send(self)
 
+    @property
+    def panel_orientation(self) -> PanelOrientation:
+        """How the native bed is presented on screen."""
+        return self.panel.orientation
+
+    def set_panel_orientation(self, orientation: PanelOrientation) -> None:
+        """Set how the native bed is presented on screen.
+
+        See :meth:`MachinePanel.set_orientation` for details.
+        """
+        self.panel.set_orientation(orientation)
+
     def set_reverse_x_axis(self, is_reversed: bool):
         """Sets if the X-axis coordinate display is inverted."""
         if self.reverse_x_axis == is_reversed:
@@ -1430,6 +1442,7 @@ class Machine:
                 if self._soft_limits
                 else None,
                 "origin": self.origin.value,
+                "panel_orientation": self.panel.orientation.value,
                 "reverse_x_axis": self.reverse_x_axis,
                 "reverse_y_axis": self.reverse_y_axis,
                 "reverse_z_axis": self.reverse_z_axis,
@@ -1670,6 +1683,18 @@ class Machine:
             "rotary_enabled_default", False
         )
         ma.default_rotary_module_uid = ma_data.get("default_rotary_module_uid")
+
+        orientation_value = ma_data.get(
+            "panel_orientation", PanelOrientation.NATIVE.value
+        )
+        try:
+            ma.panel._orientation = PanelOrientation(orientation_value)
+        except ValueError:
+            logger.warning(
+                "Unknown panel orientation '%s'; using native",
+                orientation_value,
+            )
+            ma.panel._orientation = PanelOrientation.NATIVE
 
         ma.soft_limits_enabled = ma_data.get(
             "soft_limits_enabled", ma.soft_limits_enabled
