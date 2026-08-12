@@ -174,9 +174,10 @@ class _BaseArrayDialog(PatchedDialogWindow):
             return (0.0, 0.0)
         wa = machine.work_area
         wa_w, wa_h = float(wa[2]), float(wa[3])
-        ref_x, ref_y = machine.get_reference_position_world()
-        space = machine.get_coordinate_space()
-        origin = space.world_position_from_origin(ref_x, ref_y, (wa_w, wa_h))
+        ref_x, ref_y = machine.panel.reference_position_world
+        origin = machine.panel.world_position_from_origin(
+            ref_x, ref_y, (wa_w, wa_h)
+        )
         return (origin[0] + wa_w / 2.0, origin[1] + wa_h / 2.0)
 
     # ------------------------------------------------------------------

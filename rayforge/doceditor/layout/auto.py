@@ -171,9 +171,8 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
             if machine:
                 work_area = machine.work_area
                 wa_w, wa_h = work_area[2], work_area[3]
-                ref_x, ref_y = machine.get_reference_position_world()
-                space = machine.get_coordinate_space()
-                canvas_origin_world = space.world_position_from_origin(
+                ref_x, ref_y = machine.panel.reference_position_world
+                canvas_origin_world = machine.panel.world_position_from_origin(
                     ref_x, ref_y, (wa_w, wa_h)
                 )
             else:

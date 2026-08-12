@@ -4,6 +4,7 @@ Unit tests for the MachinePanel display-facing facade.
 
 from typing import cast
 
+import numpy as np
 import pytest
 
 from rayforge.machine.models.coordspace import (
@@ -171,3 +172,73 @@ class TestMachinePanel:
         else:
             assert view.x_axis_negative is False
             assert view.y_axis_negative is True
+
+    @pytest.mark.parametrize("orientation", list(WorkspaceOrientation))
+    def test_proxy_methods_match_space(self, orientation):
+        """Every composed proxy on MachinePanel must return the same
+        result as the underlying MachineSpace for all orientations."""
+        space = MachineSpace(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(400.0, 800.0),
+            margins=(10.0, 20.0, 30.0, 40.0),
+            reverse_x=True,
+            reverse_y=False,
+            workspace_orientation=orientation,
+        )
+        panel = MachinePanel(cast(Machine, _StubMachine(space)))
+
+        # Matrix proxies
+        assert np.allclose(
+            panel.get_world_to_machine_matrix(),
+            space.get_world_to_machine_matrix(),
+        )
+        assert np.allclose(
+            panel.get_machine_to_world_matrix(),
+            space.get_machine_to_world_matrix(),
+        )
+
+        # Point proxies
+        assert panel.world_point_to_machine(50.0, 60.0) == (
+            space.world_point_to_machine(50.0, 60.0)
+        )
+        assert panel.machine_point_to_world(10.0, 20.0) == (
+            space.machine_point_to_world(10.0, 20.0)
+        )
+
+        # Item proxies
+        assert panel.world_item_to_machine((10.0, 20.0), (30.0, 40.0)) == (
+            space.world_item_to_machine((10.0, 20.0), (30.0, 40.0))
+        )
+        assert panel.machine_item_to_world((5.0, 15.0), (25.0, 35.0)) == (
+            space.machine_item_to_world((5.0, 15.0), (25.0, 35.0))
+        )
+
+        # Rect / size / position proxies
+        assert panel.get_workarea_world_rect() == (
+            space.get_workarea_world_rect()
+        )
+        assert panel.workarea_size == space.workarea_size
+        assert panel.world_position_from_origin(
+            10.0, 20.0, (30.0, 40.0)
+        ) == space.world_position_from_origin(10.0, 20.0, (30.0, 40.0))
+
+        # Axis label origin
+        assert panel.get_axis_label_origin(
+            (1.0, 2.0, 0.0), False
+        ) == space.get_axis_label_origin((1.0, 2.0, 0.0), False)
+        assert panel.get_axis_label_origin(
+            (0.0, 0.0, 0.0), True
+        ) == space.get_axis_label_origin((0.0, 0.0, 0.0), True)
+
+        # Workarea origin / command offset
+        assert panel.get_workarea_origin_in_machine() == (
+            space.get_workarea_origin_in_machine()
+        )
+        assert panel.get_command_offset(
+            (1.0, 2.0, 0.0), False
+        ) == space.get_command_offset((1.0, 2.0, 0.0), False)
+        assert panel.get_command_offset(
+            (0.0, 0.0, 0.0), True
+        ) == space.get_command_offset((0.0, 0.0, 0.0), True)

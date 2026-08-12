@@ -869,12 +869,10 @@ class FileCmd:
         machine = config.machine
         # Position at reference origin
         # The reference origin is where the user expects (0,0) to be.
-        # get_reference_position_world returns WORLD coords of the reference
-        # origin. We use world_position_from_origin to handle origin corner
-        # adjustment.
-        ref_x, ref_y = machine.get_reference_position_world()
-        space = machine.get_coordinate_space()
-        target_x, target_y = space.world_position_from_origin(
+        # The panel gives us the reference origin in world coords; we use
+        # world_position_from_origin to handle origin corner adjustment.
+        ref_x, ref_y = machine.panel.reference_position_world
+        target_x, target_y = machine.panel.world_position_from_origin(
             ref_x, ref_y, (bbox_w, bbox_h)
         )
 

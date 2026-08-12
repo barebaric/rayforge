@@ -55,12 +55,12 @@ class TransformPropertyProvider(PropertyProvider):
         # box (the same corner the machine origin refers to), so the spin
         # rows show where the group as a whole sits.
         if machine:
-            space = machine.get_coordinate_space()
+            panel = machine.panel
 
             if is_multi:
                 pos_machine = TransformCmd.get_position_group(items)
             else:
-                pos_machine = space.world_item_to_machine(
+                pos_machine = panel.world_item_to_machine(
                     items[0].pos, items[0].size
                 )
 
@@ -73,7 +73,7 @@ class TransformPropertyProvider(PropertyProvider):
                 #   MACHINE
                 if machine.wcs_origin_is_workarea_origin:
                     offset_world = machine.get_reference_offset()
-                    offset_machine = space.world_point_to_machine(
+                    offset_machine = panel.world_point_to_machine(
                         offset_world[0], offset_world[1]
                     )
                 else:
@@ -404,11 +404,10 @@ class TransformPropertyProvider(PropertyProvider):
             # Convert reference coordinates to machine coordinates
             machine = get_context().machine
             if machine:
-                space = machine.get_coordinate_space()
                 if machine.wcs_origin_is_workarea_origin:
                     # Workarea mode: offset is in WORLD space, transform it
                     offset_world = machine.get_reference_offset()
-                    offset_machine = space.world_point_to_machine(
+                    offset_machine = machine.panel.world_point_to_machine(
                         offset_world[0], offset_world[1]
                     )
                 else:
@@ -447,11 +446,10 @@ class TransformPropertyProvider(PropertyProvider):
             # Convert reference coordinates to machine coordinates
             machine = get_context().machine
             if machine:
-                space = machine.get_coordinate_space()
                 if machine.wcs_origin_is_workarea_origin:
                     # Workarea mode: offset is in WORLD space, transform it
                     offset_world = machine.get_reference_offset()
-                    offset_machine = space.world_point_to_machine(
+                    offset_machine = machine.panel.world_point_to_machine(
                         offset_world[0], offset_world[1]
                     )
                 else:
@@ -622,11 +620,10 @@ class TransformPropertyProvider(PropertyProvider):
         # Reset to coordinate origin (X=0 in reference coordinates)
         machine = get_context().machine
         if machine:
-            space = machine.get_coordinate_space()
             if machine.wcs_origin_is_workarea_origin:
                 # Workarea mode: offset is in WORLD space, transform it
                 offset_world = machine.get_reference_offset()
-                offset_machine = space.world_point_to_machine(
+                offset_machine = machine.panel.world_point_to_machine(
                     offset_world[0], offset_world[1]
                 )
             else:
@@ -660,11 +657,10 @@ class TransformPropertyProvider(PropertyProvider):
         # Reset to coordinate origin (Y=0 in reference coordinates)
         machine = get_context().machine
         if machine:
-            space = machine.get_coordinate_space()
             if machine.wcs_origin_is_workarea_origin:
                 # Workarea mode: offset is in WORLD space, transform it
                 offset_world = machine.get_reference_offset()
-                offset_machine = space.world_point_to_machine(
+                offset_machine = machine.panel.world_point_to_machine(
                     offset_world[0], offset_world[1]
                 )
             else:

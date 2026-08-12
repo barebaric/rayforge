@@ -595,9 +595,8 @@ class WorkSurface(WorldSurface):
         ):
             world_x, world_y = self._get_world_coords(x, y)
             if self.machine:
-                space = self.machine.get_coordinate_space()
-                machine_x, machine_y = space.world_point_to_machine(
-                    world_x, world_y
+                machine_x, machine_y = (
+                    self.machine.panel.world_point_to_machine(world_x, world_y)
                 )
             else:
                 machine_x, machine_y = world_x, world_y
@@ -708,9 +707,9 @@ class WorkSurface(WorldSurface):
             self.queue_draw()
             return
 
-        space = machine.get_coordinate_space()
+        panel = machine.panel
         if machine.wcs_origin_is_workarea_origin:
-            canvas_x, canvas_y = space.get_workarea_origin_in_machine()
+            canvas_x, canvas_y = panel.get_workarea_origin_in_machine()
         else:
             wcs_x, wcs_y, _ = self._get_active_layer_wcs_offset()
             canvas_x, canvas_y = self._machine_coords_to_canvas(wcs_x, wcs_y)
@@ -787,10 +786,9 @@ class WorkSurface(WorldSurface):
 
         # Get offset for axis labels (where 0,0 should appear)
         if self.machine:
-            space = self.machine.get_coordinate_space()
             wcs_offset = self._get_active_layer_wcs_offset()
             wcs_is_workarea = self.machine.wcs_origin_is_workarea_origin
-            origin_offset_mm = space.get_axis_label_origin(
+            origin_offset_mm = self.machine.panel.get_axis_label_origin(
                 wcs_offset=wcs_offset,
                 wcs_is_workarea_origin=wcs_is_workarea,
             )

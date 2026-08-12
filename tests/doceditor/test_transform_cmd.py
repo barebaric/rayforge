@@ -69,6 +69,9 @@ def test_set_position_with_y_axis_down(transform_cmd, sample_items):
             100 - pos[1] - size[1],
         )
         mock_machine.get_coordinate_space.return_value = mock_space
+        mock_machine.panel.machine_item_to_world.side_effect = (
+            mock_space.machine_item_to_world.side_effect
+        )
 
         mock_get_context.return_value.machine = mock_machine
         hm = transform_cmd._editor.history_manager
@@ -108,6 +111,9 @@ def test_set_position_with_x_axis_right(transform_cmd, sample_items):
             pos[1],
         )
         mock_machine.get_coordinate_space.return_value = mock_space
+        mock_machine.panel.machine_item_to_world.side_effect = (
+            mock_space.machine_item_to_world.side_effect
+        )
 
         mock_get_context.return_value.machine = mock_machine
 
@@ -184,6 +190,8 @@ def test_set_position_group_all_machine_origins(doc_editor):
         mock_space.world_item_to_machine.side_effect = w2m
         mock_machine = MagicMock()
         mock_machine.get_coordinate_space.return_value = mock_space
+        mock_machine.panel.machine_item_to_world.side_effect = m2w
+        mock_machine.panel.world_item_to_machine.side_effect = w2m
         with patch("rayforge.doceditor.transform_cmd.get_context") as m:
             m.return_value.machine = mock_machine
             TransformCmd(doc_editor).set_position_group([a, b], 0.0, 0.0)

@@ -1516,7 +1516,7 @@ class TestMachine:
             wcs_is_workarea_origin
         )
 
-        assert isolated_machine.get_reference_position_world() == expected
+        assert isolated_machine.panel.reference_position_world == expected
 
 
 class TestJogDelegation:
