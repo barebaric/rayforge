@@ -5,8 +5,6 @@ Renders a preview visualization of a material test grid for display on the
 canvas. The actual ops generation is handled by MaterialTestGridProducer.
 """
 
-from __future__ import annotations
-
 import json
 import logging
 import warnings

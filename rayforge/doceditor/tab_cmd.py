@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from copy import deepcopy
 from dataclasses import replace
@@ -24,7 +22,7 @@ class SetWorkpieceTabsCommand(Command):
 
     def __init__(
         self,
-        editor: DocEditor,
+        editor: "DocEditor",
         workpiece: WorkPiece,
         new_tabs: list[Tab],
         name: str = "Set Tabs",
@@ -59,7 +57,7 @@ class SetWorkpieceTabsCommand(Command):
 class TabCmd:
     """Handles commands related to creating and managing workpiece tabs."""
 
-    def __init__(self, editor: DocEditor):
+    def __init__(self, editor: "DocEditor"):
         self._editor = editor
 
     def _calculate_equidistant_tabs(

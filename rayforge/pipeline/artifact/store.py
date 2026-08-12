@@ -9,8 +9,6 @@ Lifecycle is managed through reference counting via
 :meth:`retain` / :meth:`release`.
 """
 
-from __future__ import annotations
-
 import logging
 import uuid
 from collections.abc import Generator

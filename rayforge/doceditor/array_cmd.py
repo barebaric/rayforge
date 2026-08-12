@@ -6,8 +6,6 @@ regular pattern. Each duplicate is placed on the same layer as its
 source item, preserving the document's layer structure.
 """
 
-from __future__ import annotations
-
 import logging
 import math
 from collections.abc import Sequence
@@ -34,7 +32,7 @@ logger = logging.getLogger(__name__)
 class ArrayCmd:
     """Handles undoable creation of item arrays."""
 
-    def __init__(self, editor: DocEditor):
+    def __init__(self, editor: "DocEditor"):
         self._editor = editor
 
     # ------------------------------------------------------------------

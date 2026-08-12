@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import math
 from collections.abc import Callable
 from gettext import gettext as _
@@ -55,7 +53,7 @@ class DistanceConstraint(Constraint):
 
     @classmethod
     def can_apply_to(
-        cls, selection: SketchSelection, sketch: Sketch | None = None
+        cls, selection: "SketchSelection", sketch: "Sketch | None" = None
     ) -> bool:
         if len(selection.point_ids) == 2 and not selection.entity_ids:
             return True
@@ -81,7 +79,7 @@ class DistanceConstraint(Constraint):
         """Returns a human-readable title for this constraint."""
         return f"{self.get_type_name()} {self._format_value()}"
 
-    def get_subtitle(self, registry: EntityRegistry) -> str:
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
         """Returns a subtitle describing the constrained points."""
         p1 = registry.get_point(self.p1)
         p2 = registry.get_point(self.p2)
@@ -110,7 +108,7 @@ class DistanceConstraint(Constraint):
         return data
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> DistanceConstraint:
+    def from_dict(cls, data: dict[str, Any]) -> "DistanceConstraint":
         return cls(
             p1=data["p1"],
             p2=data["p2"],
@@ -119,7 +117,9 @@ class DistanceConstraint(Constraint):
             user_visible=data.get("user_visible", True),
         )
 
-    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
+    def error(
+        self, reg: "EntityRegistry", params: "ParameterContext"
+    ) -> float:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         # We use self.value which is cached/updated via update_from_context
@@ -128,7 +128,7 @@ class DistanceConstraint(Constraint):
         return dist - target
 
     def gradient(
-        self, reg: EntityRegistry, params: ParameterContext
+        self, reg: "EntityRegistry", params: "ParameterContext"
     ) -> dict[EntityID, list[Point]]:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
@@ -148,7 +148,7 @@ class DistanceConstraint(Constraint):
 
     def get_label_pos(
         self,
-        reg: EntityRegistry,
+        reg: "EntityRegistry",
         to_screen: Callable[[Point], Point],
         element: Any,
     ):
@@ -169,7 +169,7 @@ class DistanceConstraint(Constraint):
         self,
         sx: float,
         sy: float,
-        reg: EntityRegistry,
+        reg: "EntityRegistry",
         to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
@@ -219,8 +219,8 @@ class DistanceConstraint(Constraint):
 
     def draw(
         self,
-        ctx: cairo.Context,
-        registry: EntityRegistry,
+        ctx: "cairo.Context",
+        registry: "EntityRegistry",
         to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,

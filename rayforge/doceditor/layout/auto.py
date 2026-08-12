@@ -2,8 +2,6 @@
 Implements a pixel-based layout strategy for dense packing of workpieces.
 """
 
-from __future__ import annotations
-
 import logging
 import math
 from collections.abc import Sequence
@@ -92,7 +90,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         self.allow_rotation = allow_rotation
 
     def calculate_deltas(
-        self, context: ExecutionContext | None = None
+        self, context: "ExecutionContext | None" = None
     ) -> dict[DocItem, Matrix]:
         """
         Calculates the transform for each workpiece for a dense layout. The
@@ -412,7 +410,7 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         self,
         item_groups: list[list[WorkpieceVariant]],
         canvas: np.ndarray,
-        context: ExecutionContext | None = None,
+        context: "ExecutionContext | None" = None,
     ) -> tuple[list[PlacedItem], list[DocItem]]:
         """
         Places workpiece variants onto the canvas greedily.

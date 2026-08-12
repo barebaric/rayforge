@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Protocol, cast
 
@@ -75,8 +73,8 @@ class FrameStep(LaserStep):
 
     def get_assembler_kwargs(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> dict:
         kwargs: dict = {}
         kwargs["cut_side"] = str(self.cut_side).lower()
@@ -85,8 +83,8 @@ class FrameStep(LaserStep):
 
     def build_compute_payload(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> tuple[Part, ComputePayload]:
         """Build a :class:`Part` (from the workpiece's vector
         geometry) and a :class:`ComputePayload` carrying a
@@ -107,8 +105,8 @@ class FrameStep(LaserStep):
 
     def assembler_token_params(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> dict | None:
         return self.get_assembler_kwargs(machine, workpiece)
 
@@ -126,7 +124,7 @@ class FrameStep(LaserStep):
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> FrameStep:
+    def from_dict(cls, data: dict) -> "FrameStep":
         step = cast("FrameStep", super().from_dict(data))
         legacy = legacy_producer_params(data)
         step.cut_side = data.get(
@@ -176,10 +174,10 @@ class FrameStep(LaserStep):
     @classmethod
     def create(
         cls,
-        context: RayforgeContext,
+        context: "RayforgeContext",
         name: str | None = None,
         **kwargs,
-    ) -> FrameStep:
+    ) -> "FrameStep":
         machine = context.machine
         assert machine is not None
         default_head = machine.get_default_laser_head()

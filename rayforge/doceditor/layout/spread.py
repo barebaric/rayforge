@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from raygeo.geo import Matrix
@@ -15,8 +13,8 @@ class SpreadHorizontallyStrategy(LayoutStrategy):
     """Distributes items evenly in the horizontal direction."""
 
     def calculate_deltas(
-        self, context: ExecutionContext | None = None
-    ) -> dict[DocItem, Matrix]:
+        self, context: "ExecutionContext | None" = None
+    ) -> "dict[DocItem, Matrix]":
         if len(self.items) < 3:
             return {}
 
@@ -60,8 +58,8 @@ class SpreadVerticallyStrategy(LayoutStrategy):
     """Distributes items evenly in the vertical direction."""
 
     def calculate_deltas(
-        self, context: ExecutionContext | None = None
-    ) -> dict[DocItem, Matrix]:
+        self, context: "ExecutionContext | None" = None
+    ) -> "dict[DocItem, Matrix]":
         if len(self.items) < 3:
             return {}
 

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -44,8 +42,8 @@ class BidirScanOffsetTransformer(OpsTransformer):
 
     def to_spec(
         self,
-        workpiece: WorkPiece | None,
-        stock_geometries: list[Geometry] | None,
+        workpiece: "WorkPiece | None",
+        stock_geometries: "list[Geometry] | None",
         settings: dict[str, Any] | None,
     ) -> BidirScanOffsetSpec:
         offset = settings.get("bidir_x_offset_mm", 0.0) if settings else 0.0
@@ -55,5 +53,5 @@ class BidirScanOffsetTransformer(OpsTransformer):
         return {**super().to_dict()}
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> BidirScanOffsetTransformer:
+    def from_dict(cls, data: dict[str, Any]) -> "BidirScanOffsetTransformer":
         return cls(enabled=data.get("enabled", True))

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import uuid
 from dataclasses import (
@@ -209,7 +207,7 @@ class GcodeDialect:
             "scripts": scripts_vs,
         }
 
-    def copy_as_custom(self, new_label: str) -> GcodeDialect:
+    def copy_as_custom(self, new_label: str) -> "GcodeDialect":
         """
         Creates a new, custom dialect instance from this one, generating a
         new UID.
@@ -232,8 +230,8 @@ class GcodeDialect:
     def from_dict(
         cls,
         data: dict[str, Any],
-        registry: dict[str, GcodeDialect] | None = None,
-    ) -> GcodeDialect:
+        registry: "dict[str, GcodeDialect] | None" = None,
+    ) -> "GcodeDialect":
         """
         Creates a dialect instance from a dictionary, correctly handling
         missing fields by inheriting from parent dialect.
@@ -343,7 +341,7 @@ class GcodeDialect:
     @classmethod
     def from_template_dict(
         cls, data: dict[str, Any], **overrides
-    ) -> GcodeDialect:
+    ) -> "GcodeDialect":
         """
         Create a dialect from a device profile template dict.
 

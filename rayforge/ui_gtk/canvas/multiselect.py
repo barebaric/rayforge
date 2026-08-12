@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import math
 from typing import (
@@ -23,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class MultiSelectionGroup:
-    def __init__(self, elements: list[CanvasElement], canvas: Canvas):
+    def __init__(self, elements: "list[CanvasElement]", canvas: "Canvas"):
         if not elements:
             raise ValueError(
                 "MultiSelectionGroup cannot be initialized with an "
@@ -60,7 +58,7 @@ class MultiSelectionGroup:
         return self._bounding_box[3]
 
     @property
-    def center(self) -> Point:
+    def center(self) -> "Point":
         return self._center
 
     def _calculate_bounding_box(self):
@@ -143,7 +141,7 @@ class MultiSelectionGroup:
         region: ElementRegion,
         base_handle_size: float,
         scale_compensation: float | tuple[float, float] = 1.0,
-    ) -> Rect:
+    ) -> "Rect":
         return get_region_rect(
             region,
             self.width,
@@ -189,8 +187,8 @@ class MultiSelectionGroup:
 
     def apply_resize(
         self,
-        new_box: Rect,
-        original_box: Rect,
+        new_box: "Rect",
+        original_box: "Rect",
     ):
         """
         Calculates a scale/translate transform that maps the original
@@ -217,7 +215,7 @@ class MultiSelectionGroup:
         )
         self._update_element_transforms()
 
-    def apply_rotate(self, angle_delta: float, center: Point | None = None):
+    def apply_rotate(self, angle_delta: float, center: "Point | None" = None):
         """
         Sets the group transform to a rotation around the group's initial
         center and updates elements.
@@ -232,7 +230,7 @@ class MultiSelectionGroup:
         active_region: ElementRegion,
         offset_x: float,
         offset_y: float,
-        active_origin: Rect,
+        active_origin: "Rect",
         ctrl_pressed: bool,
         shift_pressed: bool,
     ):
@@ -267,7 +265,7 @@ class MultiSelectionGroup:
         self,
         current_x: float,
         current_y: float,
-        rotation_pivot: Point,
+        rotation_pivot: "Point",
         drag_start_angle: float,
     ):
         """
@@ -290,7 +288,7 @@ class MultiSelectionGroup:
         active_region: ElementRegion,
         world_dx: float,
         world_dy: float,
-        active_origin: Rect,
+        active_origin: "Rect",
     ):
         """Shears the entire selection group."""
         shx, shy = 0.0, 0.0

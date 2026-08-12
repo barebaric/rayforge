@@ -3,8 +3,6 @@ Defines the WorkerPoolManager, a class for managing a pool of long-lived
 worker processes to execute tasks efficiently.
 """
 
-from __future__ import annotations
-
 import builtins
 import logging
 import os
@@ -65,8 +63,8 @@ def _worker_main_loop(
     log_level: int,
     initializer: Callable[..., None] | None,
     initargs: tuple[Any, ...],
-    adoption_signals: DictProxy[str, bool],
-    shared_state: DictProxy[str, Any],
+    adoption_signals: "DictProxy[str, bool]",
+    shared_state: "DictProxy[str, Any]",
 ):
     """
     The main function for a worker process.
@@ -256,7 +254,7 @@ class WorkerPoolManager:
         num_workers: int | None = None,
         initializer: Callable[..., None] | None = None,
         initargs: tuple[Any, ...] = (),
-        shared_state: DictProxy[str, Any] | None = None,
+        shared_state: "DictProxy[str, Any] | None" = None,
     ):
         if num_workers is None:
             env_max = os.environ.get("RAYFORGE_MAX_WORKERS")

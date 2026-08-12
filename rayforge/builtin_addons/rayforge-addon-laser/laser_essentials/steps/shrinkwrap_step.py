@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Protocol, cast
 
@@ -91,8 +89,8 @@ class ShrinkWrapStep(LaserStep):
 
     def get_assembler_kwargs(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> dict:
         kwargs: dict = {}
         kwargs["cut_side"] = self.cut_side.lower()
@@ -105,8 +103,8 @@ class ShrinkWrapStep(LaserStep):
 
     def build_compute_payload(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> tuple[Part, ComputePayload]:
         """Build a :class:`Part` with vector geometry and a boolean
         image, and a :class:`ComputePayload` carrying a
@@ -125,8 +123,8 @@ class ShrinkWrapStep(LaserStep):
 
     def assembler_token_params(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> dict | None:
         return self.get_assembler_kwargs(machine, workpiece)
 
@@ -145,7 +143,7 @@ class ShrinkWrapStep(LaserStep):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict) -> ShrinkWrapStep:
+    def from_dict(cls, data: dict) -> "ShrinkWrapStep":
         step = cast("ShrinkWrapStep", super().from_dict(data))
         legacy = legacy_producer_params(data)
         step.gravity = data.get("gravity", legacy.get("gravity", 0.0))
@@ -199,10 +197,10 @@ class ShrinkWrapStep(LaserStep):
     @classmethod
     def create(
         cls,
-        context: RayforgeContext,
+        context: "RayforgeContext",
         name: str | None = None,
         **kwargs,
-    ) -> ShrinkWrapStep:
+    ) -> "ShrinkWrapStep":
         machine = context.machine
         assert machine is not None
         default_head = machine.get_default_laser_head()
@@ -242,7 +240,7 @@ class ShrinkWrapStep(LaserStep):
         return step
 
 
-def _build_shrinkwrap_part(workpiece: WorkPiece) -> Part:
+def _build_shrinkwrap_part(workpiece: "WorkPiece") -> Part:
     """Build a :class:`Part` for the shrinkwrap assembler.
 
     The shrinkwrap assembler needs both vector geometry (for the

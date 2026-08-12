@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import uuid
 from gettext import gettext as _
@@ -91,7 +89,7 @@ class StockAsset(IAsset):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> StockAsset:
+    def from_dict(cls, data: dict[str, Any]) -> "StockAsset":
         """Deserializes a dictionary into a StockAsset instance."""
         known_keys = {
             "uid",
@@ -124,7 +122,7 @@ class StockAsset(IAsset):
             self._updated.send(self)
 
     @property
-    def material(self) -> Material | None:
+    def material(self) -> "Material | None":
         """
         Gets the Material object for this stock asset.
 

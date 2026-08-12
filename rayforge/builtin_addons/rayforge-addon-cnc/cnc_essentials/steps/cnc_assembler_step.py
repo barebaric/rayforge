@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
@@ -47,10 +45,10 @@ class CncAssemblerStep(Step):
     @classmethod
     def create(
         cls,
-        context: RayforgeContext,
+        context: "RayforgeContext",
         name=None,
         **kwargs,
-    ) -> CncAssemblerStep:
+    ) -> "CncAssemblerStep":
         machine = context.machine
         step = cls(name=name)
         step.per_workpiece_transformers_dicts = []
@@ -109,7 +107,7 @@ class CncAssemblerStep(Step):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> CncAssemblerStep:
+    def from_dict(cls, data: dict[str, Any]) -> "CncAssemblerStep":
         step = cast("CncAssemblerStep", super().from_dict(data))
         step.tool_diameter = data.get("tool_diameter", step.tool_diameter)
         step.spindle_rpm = data.get("spindle_rpm", step.spindle_rpm)
@@ -195,21 +193,21 @@ class CncAssemblerStep(Step):
             groups.append((_("Step Settings"), VarSet(vars=step_vars)))
         return groups or [(_("CNC"), VarSet(vars=cnc_vars))]
 
-    def build_spec(self, workpiece: WorkPiece) -> object:
+    def build_spec(self, workpiece: "WorkPiece") -> object:
         """Return the raygeo assembler spec for this step.
 
         Subclasses must override.
         """
         raise NotImplementedError
 
-    def populate_payload(self, payload, machine: Machine):
+    def populate_payload(self, payload, machine: "Machine"):
         super().populate_payload(payload, machine)
         # The renderer colours ops by power and treats zero as a "no cut"
         # state. Express the spindle's power level as the fraction of its
         # max RPM so a running spindle renders as a cut at the right intensity.
         payload.power = self._spindle_power_fraction(machine)
 
-    def _spindle_power_fraction(self, machine: Machine) -> float:
+    def _spindle_power_fraction(self, machine: "Machine") -> float:
         """CNC power level in ``[0, 1]`` from the spindle's RPM ratio."""
         head = self.get_selected_head(machine)
         if isinstance(head, SpindleHead):
@@ -218,8 +216,8 @@ class CncAssemblerStep(Step):
 
     def build_compute_payload(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> tuple[Part, ComputePayload]:
         part = workpiece.to_part()
         if part is None:
@@ -232,8 +230,8 @@ class CncAssemblerStep(Step):
 
     def assembler_token_params(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> dict[str, Any]:
         """Return a JSON-serialisable view of ``build_spec``'s params.
 

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
@@ -16,7 +14,7 @@ logger = logging.getLogger(__name__)
 class SketchCmd:
     """Handles commands related to sketch-based workpieces."""
 
-    def __init__(self, editor: DocEditor):
+    def __init__(self, editor: "DocEditor"):
         self._editor = editor
 
     def set_workpiece_parameters(

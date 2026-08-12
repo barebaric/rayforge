@@ -1,7 +1,5 @@
 """Recipe-mode post-processing transformers settings page."""
 
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import Any
 

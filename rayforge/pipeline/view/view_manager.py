@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import threading
 import uuid
@@ -79,9 +77,9 @@ class ViewManager:
 
     def __init__(
         self,
-        pipeline: Pipeline,
-        artifact_store: ArtifactStore,
-        machine: Machine | None,
+        pipeline: "Pipeline",
+        artifact_store: "ArtifactStore",
+        machine: "Machine | None",
     ):
         self._pipeline = pipeline
         self._store = artifact_store
@@ -226,7 +224,7 @@ class ViewManager:
         return self._view_generation_id
 
     @property
-    def store(self) -> ArtifactStore:
+    def store(self) -> "ArtifactStore":
         """Returns the artifact store."""
         return self._store
 
@@ -392,8 +390,8 @@ class ViewManager:
         self,
         sender,
         *,
-        step: Step,
-        workpiece: WorkPiece,
+        step: "Step",
+        workpiece: "WorkPiece",
         handle: BaseArtifactHandle,
         **kwargs,
     ) -> None:
@@ -623,7 +621,7 @@ class ViewManager:
         # pure computation — no store access.
         artifact = self._store.get(source_handle)
 
-        def when_done_callback(task: Task):
+        def when_done_callback(task: "Task"):
             logger.debug(
                 f"[{key}] when_done_callback called, "
                 f"task_status={task.get_status()}"
@@ -747,7 +745,7 @@ class ViewManager:
 
     def _on_render_complete(
         self,
-        task: Task,
+        task: "Task",
         key: str,
         view_id: int,
         workpiece_uid: str,
@@ -770,7 +768,7 @@ class ViewManager:
 
     def allocate_live_buffer(
         self,
-        workpiece: WorkPiece,
+        workpiece: "WorkPiece",
         step_uid: str,
         view_id: int,
         generation_id: int,
@@ -837,8 +835,8 @@ class ViewManager:
         self,
         sender,
         *,
-        step: Step,
-        workpiece: WorkPiece,
+        step: "Step",
+        workpiece: "WorkPiece",
         generation_id: int,
     ):
         """

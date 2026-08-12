@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -32,7 +30,7 @@ class CollinearConstraint(Constraint):
 
     @classmethod
     def can_apply_to(
-        cls, selection: SketchSelection, sketch: Sketch | None = None
+        cls, selection: "SketchSelection", sketch: "Sketch | None" = None
     ) -> bool:
         return len(selection.point_ids) == 3 and not selection.entity_ids
 
@@ -45,7 +43,7 @@ class CollinearConstraint(Constraint):
         """Returns a human-readable title for this constraint."""
         return self.get_type_name()
 
-    def get_subtitle(self, registry: EntityRegistry) -> str:
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
         """Returns a human-readable subtitle describing constrained points."""
         p1 = registry.get_point(self.p1)
         p2 = registry.get_point(self.p2)
@@ -68,7 +66,7 @@ class CollinearConstraint(Constraint):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> CollinearConstraint:
+    def from_dict(cls, data: dict[str, Any]) -> "CollinearConstraint":
         return cls(
             p1=data["p1"],
             p2=data["p2"],
@@ -76,7 +74,9 @@ class CollinearConstraint(Constraint):
             user_visible=data.get("user_visible", True),
         )
 
-    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
+    def error(
+        self, reg: "EntityRegistry", params: "ParameterContext"
+    ) -> float:
         pt1 = reg.get_point(self.p1)
         pt2 = reg.get_point(self.p2)
         pt3 = reg.get_point(self.p3)
@@ -86,7 +86,7 @@ class CollinearConstraint(Constraint):
         )
 
     def gradient(
-        self, reg: EntityRegistry, params: ParameterContext
+        self, reg: "EntityRegistry", params: "ParameterContext"
     ) -> dict[EntityID, list[Point]]:
         p1 = reg.get_point(self.p1)
         p2 = reg.get_point(self.p2)

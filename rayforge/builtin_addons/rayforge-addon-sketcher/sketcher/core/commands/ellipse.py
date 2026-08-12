@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
@@ -51,7 +49,7 @@ class EllipseCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         start_id: EntityID,
         end_pos: GeoPoint,
         end_pid: EntityID | None = None,
@@ -106,7 +104,7 @@ class EllipseCommand(SketchChangeCommand):
 
     @staticmethod
     def start_preview(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         x: float,
         y: float,
         snapped_pid: EntityID | None = None,
@@ -135,7 +133,7 @@ class EllipseCommand(SketchChangeCommand):
 
     @staticmethod
     def update_preview(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         preview_state: PreviewState,
         x: float,
         y: float,
@@ -166,7 +164,7 @@ class EllipseCommand(SketchChangeCommand):
 
     @staticmethod
     def cleanup_preview(
-        registry: EntityRegistry, preview_state: PreviewState
+        registry: "EntityRegistry", preview_state: PreviewState
     ) -> None:
         if not isinstance(preview_state, EllipsePreviewState):
             raise TypeError("Expected EllipsePreviewState")

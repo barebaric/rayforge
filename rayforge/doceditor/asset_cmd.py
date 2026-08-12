@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
@@ -27,7 +25,7 @@ class UpdateAssetCommand(Command):
 
     def __init__(
         self,
-        doc: Doc,
+        doc: "Doc",
         asset_uid: str,
         new_data: dict[str, Any],
         name: str = _("Update Asset"),
@@ -71,7 +69,7 @@ class UpdateAssetCommand(Command):
         self.doc.updated.send(self.doc)
 
     def _update_dependent_workpieces(
-        self, provider: IGeometryProvider
+        self, provider: "IGeometryProvider"
     ) -> None:
         """Update all workpieces that depend on this geometry provider."""
         for workpiece in self.doc.all_workpieces:
@@ -125,7 +123,7 @@ class UpdateAssetCommand(Command):
 class AssetCmd:
     """Handles commands related to document assets."""
 
-    def __init__(self, editor: DocEditor):
+    def __init__(self, editor: "DocEditor"):
         self._editor = editor
 
     @property

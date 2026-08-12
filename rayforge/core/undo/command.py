@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -27,7 +25,7 @@ class Command(ABC):
     def undo(self) -> None:
         raise NotImplementedError
 
-    def can_coalesce_with(self, next_command: Command) -> bool:
+    def can_coalesce_with(self, next_command: "Command") -> bool:
         """
         Checks if the 'next_command' can be merged into this one without
         modifying the state of either command.
@@ -39,7 +37,7 @@ class Command(ABC):
         """
         return False
 
-    def coalesce_with(self, next_command: Command) -> bool:
+    def coalesce_with(self, next_command: "Command") -> bool:
         """
         Attempts to merge the 'next_command' into this one. If successful,
         this command's state is updated with the newer command's state,

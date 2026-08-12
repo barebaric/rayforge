@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -60,7 +58,7 @@ class RoundedRectPreviewState(PreviewState):
 
     def set_dimensions(
         self,
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         width: float | None = None,
         height: float | None = None,
         radius: float | None = None,
@@ -112,7 +110,9 @@ class RoundedRectPreviewState(PreviewState):
             preview_ids=self.preview_ids,
         )
 
-    def get_dimensions(self, registry: EntityRegistry) -> list[DimensionData]:
+    def get_dimensions(
+        self, registry: "EntityRegistry"
+    ) -> list[DimensionData]:
         """
         Returns width, height and radius dimensions for preview.
 
@@ -165,7 +165,7 @@ class RoundedRectCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         start_pid: EntityID,
         end_pos: GeoPoint,
         radius: float,
@@ -347,7 +347,7 @@ class RoundedRectCommand(SketchChangeCommand):
 
     @staticmethod
     def create_preview(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         start_pid: EntityID,
         end_pid: EntityID,
         radius: float,
@@ -462,7 +462,7 @@ class RoundedRectCommand(SketchChangeCommand):
 
     @staticmethod
     def start_preview(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         x: float,
         y: float,
         snapped_pid: EntityID | None = None,
@@ -506,7 +506,7 @@ class RoundedRectCommand(SketchChangeCommand):
 
     @staticmethod
     def update_preview(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         preview_state: PreviewState,
         x: float,
         y: float,
@@ -565,7 +565,7 @@ class RoundedRectCommand(SketchChangeCommand):
 
     @staticmethod
     def cleanup_preview(
-        registry: EntityRegistry, preview_state: PreviewState
+        registry: "EntityRegistry", preview_state: PreviewState
     ) -> None:
         """
         Removes all preview entities and points from the registry.

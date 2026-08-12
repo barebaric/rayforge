@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 import logging
 from collections.abc import Iterator
@@ -172,7 +170,7 @@ class SketchImporter(Importer):
         )
 
     def vectorize(
-        self, parse_result: ParsingResult, spec: VectorizationSpec
+        self, parse_result: ParsingResult, spec: "VectorizationSpec"
     ) -> VectorizationResult:
         """Phase 3: Extract geometry from the solved sketch."""
         if not self.parsed_sketch:

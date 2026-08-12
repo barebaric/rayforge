@@ -8,8 +8,6 @@ returned list is always the identity matrix, representing the original
 selection that stays in place.
 """
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 
 from raygeo.geo import Matrix

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any
 
 from .base import BaseArtifact
@@ -36,7 +34,7 @@ class StepOpsArtifact(BaseArtifact):
 
     def __init__(
         self,
-        ops: Ops,
+        ops: "Ops",
         generation_id: int,
     ):
         super().__init__()

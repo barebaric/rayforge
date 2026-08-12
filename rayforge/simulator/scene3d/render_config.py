@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Any
 
@@ -29,7 +27,7 @@ class LayerRenderConfig:
         return d
 
     @classmethod
-    def from_dict(cls, data: dict) -> LayerRenderConfig:
+    def from_dict(cls, data: dict) -> "LayerRenderConfig":
         ap3d = data.get("axis_position_3d")
         if ap3d is not None:
             ap3d = tuple(ap3d)
@@ -71,7 +69,7 @@ class RenderConfig3D:
         return d
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> RenderConfig3D:
+    def from_dict(cls, data: dict[str, Any]) -> "RenderConfig3D":
         w2v = (
             np.frombuffer(data["world_to_visual"], dtype=np.float32)
             .reshape(4, 4)

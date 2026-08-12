@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from blinker import Signal
 from gi.repository import Gdk, GLib, Gtk
 

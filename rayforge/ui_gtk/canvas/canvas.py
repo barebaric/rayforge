@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import math
 from collections.abc import Generator
@@ -168,7 +166,7 @@ class Canvas(Gtk.DrawingArea):
         """Gets the (width, height) of the canvas."""
         return self.root.size()
 
-    def _get_world_coords(self, widget_x: float, widget_y: float) -> Point:
+    def _get_world_coords(self, widget_x: float, widget_y: float) -> "Point":
         """
         Converts widget pixel coordinates to canvas world coordinates using
         the active view_transform.

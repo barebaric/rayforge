@@ -2,8 +2,6 @@
 A simple renderer for a 2D plane in 3D space.
 """
 
-from __future__ import annotations
-
 import logging
 
 import numpy as np

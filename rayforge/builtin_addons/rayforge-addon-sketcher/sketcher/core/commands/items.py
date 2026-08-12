@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
@@ -20,11 +18,11 @@ class AddItemsCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         name: str,
-        points: Sequence[Point] | None = None,
-        entities: Sequence[Entity] | None = None,
-        constraints: Sequence[Constraint] | None = None,
+        points: "Sequence[Point] | None" = None,
+        entities: "Sequence[Entity] | None" = None,
+        constraints: "Sequence[Constraint] | None" = None,
     ):
         super().__init__(sketch, name)
         self.points = list(points) if points else []
@@ -102,11 +100,11 @@ class RemoveItemsCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         name: str,
-        points: list[Point] | None = None,
-        entities: Sequence[Entity] | None = None,
-        constraints: list[Constraint] | None = None,
+        points: "list[Point] | None" = None,
+        entities: "Sequence[Entity] | None" = None,
+        constraints: "list[Constraint] | None" = None,
     ):
         super().__init__(sketch, name)
         self.points = points or []
@@ -115,8 +113,8 @@ class RemoveItemsCommand(SketchChangeCommand):
 
     @staticmethod
     def calculate_dependencies(
-        sketch: Sketch, selection
-    ) -> tuple[list[Point], list[Entity], list[Constraint]]:
+        sketch: "Sketch", selection
+    ) -> "tuple[list[Point], list[Entity], list[Constraint]]":
         """
         Calculates the full set of items to be deleted based on the current
         selection, including dependent items.

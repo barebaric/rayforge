@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
@@ -69,7 +67,7 @@ class CropTransformer(OpsTransformer):
     def to_spec(
         self,
         workpiece: WorkPiece | None,
-        stock_geometries: list[Geometry] | None,
+        stock_geometries: "list[Geometry] | None",
         settings: dict[str, Any] | None,
     ) -> CropSpec:
         if not stock_geometries or workpiece is None:
@@ -88,7 +86,7 @@ class CropTransformer(OpsTransformer):
     def _resolve_regions(
         self,
         workpiece: WorkPiece,
-        stock_geometries: list[Geometry],
+        stock_geometries: "list[Geometry]",
     ) -> list[list[tuple[float, float]]]:
         world_to_local = workpiece.get_world_transform().invert()
         regions: list[list[tuple[float, float]]] = []
@@ -117,7 +115,7 @@ class CropTransformer(OpsTransformer):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> CropTransformer:
+    def from_dict(cls, data: dict[str, Any]) -> "CropTransformer":
         return cls(
             enabled=data.get("enabled", True),
             tolerance=data.get("tolerance", 0.03),

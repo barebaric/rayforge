@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING
@@ -42,7 +40,7 @@ class LinePreviewState(PreviewState):
         """
         return {self.end_id}
 
-    def set_length(self, registry: EntityRegistry, length: float) -> None:
+    def set_length(self, registry: "EntityRegistry", length: float) -> None:
         """
         Sets the line length from numeric input.
 
@@ -70,7 +68,9 @@ class LinePreviewState(PreviewState):
         end_p.x = start_p.x + dx * scale
         end_p.y = start_p.y + dy * scale
 
-    def get_dimensions(self, registry: EntityRegistry) -> list[DimensionData]:
+    def get_dimensions(
+        self, registry: "EntityRegistry"
+    ) -> list[DimensionData]:
         """
         Returns the line length dimension for preview.
 
@@ -101,7 +101,7 @@ class LineCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         start_id: EntityID,
         end_pos: GeoPoint,
         end_pid: EntityID | None = None,
@@ -126,7 +126,7 @@ class LineCommand(SketchChangeCommand):
 
     @staticmethod
     def start_preview(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         x: float,
         y: float,
         snapped_pid: EntityID | None = None,
@@ -162,7 +162,7 @@ class LineCommand(SketchChangeCommand):
 
     @staticmethod
     def update_preview(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         preview_state: PreviewState,
         x: float,
         y: float,
@@ -193,7 +193,7 @@ class LineCommand(SketchChangeCommand):
 
     @staticmethod
     def cleanup_preview(
-        registry: EntityRegistry, preview_state: PreviewState
+        registry: "EntityRegistry", preview_state: PreviewState
     ) -> None:
         """
         Removes preview entities from the registry.

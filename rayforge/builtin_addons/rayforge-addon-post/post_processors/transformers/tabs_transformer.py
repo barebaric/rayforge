@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from typing import (
@@ -109,7 +107,7 @@ class TabOpsTransformer(OpsTransformer):
     def to_spec(
         self,
         workpiece: WorkPiece | None,
-        stock_geometries: list[Geometry] | None,
+        stock_geometries: "list[Geometry] | None",
         settings: dict | None,
     ) -> TabsSpec:
         tab_power = settings.get("tab_power", 0.0) if settings else 0.0
@@ -145,7 +143,7 @@ class TabOpsTransformer(OpsTransformer):
         )
 
     @classmethod
-    def from_dict(cls, data: dict) -> TabOpsTransformer:
+    def from_dict(cls, data: dict) -> "TabOpsTransformer":
         if data.get("name") != cls.__name__:
             raise ValueError(
                 f"Mismatched transformer name: expected {cls.__name__},"

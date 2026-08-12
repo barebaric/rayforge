@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -23,7 +21,7 @@ class _TransactionContextProxy:
     within the current transaction.
     """
 
-    def __init__(self, manager: HistoryManager):
+    def __init__(self, manager: "HistoryManager"):
         self._manager = manager
 
     def set_label(self, name: str) -> None:

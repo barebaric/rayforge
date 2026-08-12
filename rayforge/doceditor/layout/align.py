@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -16,8 +14,8 @@ class BboxAlignLeftStrategy(LayoutStrategy):
     """Aligns the left edges of the selection's bounding boxes."""
 
     def calculate_deltas(
-        self, context: ExecutionContext | None = None
-    ) -> dict[DocItem, Matrix]:
+        self, context: "ExecutionContext | None" = None
+    ) -> "dict[DocItem, Matrix]":
         target_x: float
         if len(self.items) == 1:
             # For a single item, align to the world origin's left edge.
@@ -44,15 +42,15 @@ class BboxAlignCenterStrategy(LayoutStrategy):
 
     def __init__(
         self,
-        items: Sequence[DocItem],
+        items: "Sequence[DocItem]",
         surface_width_mm: float | None = None,
     ):
         super().__init__(items)
         self.surface_width_mm = surface_width_mm
 
     def calculate_deltas(
-        self, context: ExecutionContext | None = None
-    ) -> dict[DocItem, Matrix]:
+        self, context: "ExecutionContext | None" = None
+    ) -> "dict[DocItem, Matrix]":
         target_center_x: float
         if len(self.items) == 1 and self.surface_width_mm is not None:
             target_center_x = self.surface_width_mm / 2
@@ -79,15 +77,15 @@ class BboxAlignRightStrategy(LayoutStrategy):
 
     def __init__(
         self,
-        items: Sequence[DocItem],
+        items: "Sequence[DocItem]",
         surface_width_mm: float | None = None,
     ):
         super().__init__(items)
         self.surface_width_mm = surface_width_mm
 
     def calculate_deltas(
-        self, context: ExecutionContext | None = None
-    ) -> dict[DocItem, Matrix]:
+        self, context: "ExecutionContext | None" = None
+    ) -> "dict[DocItem, Matrix]":
         target_x: float
         if len(self.items) == 1 and self.surface_width_mm is not None:
             target_x = self.surface_width_mm
@@ -113,15 +111,15 @@ class BboxAlignTopStrategy(LayoutStrategy):
 
     def __init__(
         self,
-        items: Sequence[DocItem],
+        items: "Sequence[DocItem]",
         surface_height_mm: float | None = None,
     ):
         super().__init__(items)
         self.surface_height_mm = surface_height_mm
 
     def calculate_deltas(
-        self, context: ExecutionContext | None = None
-    ) -> dict[DocItem, Matrix]:
+        self, context: "ExecutionContext | None" = None
+    ) -> "dict[DocItem, Matrix]":
         target_y: float
         if len(self.items) == 1 and self.surface_height_mm is not None:
             target_y = self.surface_height_mm
@@ -147,15 +145,15 @@ class BboxAlignMiddleStrategy(LayoutStrategy):
 
     def __init__(
         self,
-        items: Sequence[DocItem],
+        items: "Sequence[DocItem]",
         surface_height_mm: float | None = None,
     ):
         super().__init__(items)
         self.surface_height_mm = surface_height_mm
 
     def calculate_deltas(
-        self, context: ExecutionContext | None = None
-    ) -> dict[DocItem, Matrix]:
+        self, context: "ExecutionContext | None" = None
+    ) -> "dict[DocItem, Matrix]":
         target_center_y: float
         if len(self.items) == 1 and self.surface_height_mm is not None:
             target_center_y = self.surface_height_mm / 2
@@ -181,8 +179,8 @@ class BboxAlignBottomStrategy(LayoutStrategy):
     """Aligns the bottom edges of the selection's bounding boxes."""
 
     def calculate_deltas(
-        self, context: ExecutionContext | None = None
-    ) -> dict[DocItem, Matrix]:
+        self, context: "ExecutionContext | None" = None
+    ) -> "dict[DocItem, Matrix]":
         target_y: float
         if len(self.items) == 1:
             target_y = 0.0
@@ -210,15 +208,15 @@ class PositionAtStrategy(LayoutStrategy):
 
     def __init__(
         self,
-        items: Sequence[DocItem],
+        items: "Sequence[DocItem]",
         position_mm: tuple[float, float],
     ):
         super().__init__(items)
         self.position_mm = position_mm
 
     def calculate_deltas(
-        self, context: ExecutionContext | None = None
-    ) -> dict[DocItem, Matrix]:
+        self, context: "ExecutionContext | None" = None
+    ) -> "dict[DocItem, Matrix]":
         bbox = self._get_selection_world_bbox()
         if not bbox:
             return {}

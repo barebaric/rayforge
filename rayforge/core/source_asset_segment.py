@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from copy import deepcopy
 from dataclasses import dataclass, field, replace
 from typing import Any
@@ -54,7 +52,7 @@ class SourceAssetSegment:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> SourceAssetSegment:
+    def from_dict(cls, data: dict[str, Any]) -> "SourceAssetSegment":
         """Deserializes a dictionary into a SourceAssetSegment instance."""
         # Handle tuple conversion for crop_window_px if it's a list from JSON
         crop_window = data.get("crop_window_px")
@@ -89,7 +87,7 @@ class SourceAssetSegment:
 
     def clone_with_geometry(
         self, new_y_down_geometry: Geometry
-    ) -> SourceAssetSegment:
+    ) -> "SourceAssetSegment":
         """
         Creates a deep copy of this segment for use in splitting operations.
 

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import time
 from collections import deque
@@ -25,7 +23,7 @@ class JobMonitor:
     with detailed metrics whenever the progress changes.
     """
 
-    def __init__(self, ops: Ops):
+    def __init__(self, ops: "Ops"):
         """
         Initializes the JobMonitor.
 

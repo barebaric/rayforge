@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -47,7 +45,7 @@ class WorkPieceArtifact(BaseArtifact):
 
     def __init__(
         self,
-        ops: Ops,
+        ops: "Ops",
         is_scalable: bool,
         generation_size: tuple[float, float],
         generation_id: int,

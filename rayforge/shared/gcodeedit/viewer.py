@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
@@ -125,7 +123,7 @@ class GcodeViewer(Gtk.Box):
         self.clear_highlight()
         self._update_status_bar()
 
-    def set_op_map(self, op_map: MachineCodeOpMap):
+    def set_op_map(self, op_map: "MachineCodeOpMap"):
         self.op_map = op_map
 
     def highlight_line(self, line_number: int, use_align: bool = True):

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
@@ -37,7 +35,7 @@ class MachineState:
         self.current_layer_uid: str | None = None
 
     @classmethod
-    def from_axis_set(cls, axis_set: AxisSet) -> MachineState:
+    def from_axis_set(cls, axis_set: "AxisSet") -> "MachineState":
         axes = (cfg.letter for cfg in axis_set.configs)
         return cls(axis_letters=axes)
 
@@ -75,7 +73,7 @@ class MachineState:
         elif ct == CommandType.LAYER_START:
             self.current_layer_uid = ops.layer_uid(idx)
 
-    def copy(self) -> MachineState:
+    def copy(self) -> "MachineState":
         new = MachineState.__new__(MachineState)
         new.power = self.power
         new.air_assist = self.air_assist

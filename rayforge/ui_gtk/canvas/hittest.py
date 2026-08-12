@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 import cairo
@@ -11,7 +9,7 @@ if TYPE_CHECKING:
 
 def check_pixel_hit(
     surface: cairo.ImageSurface,
-    content_transform: Matrix,
+    content_transform: "Matrix",
     element_width: float,
     element_height: float,
     hit_distance: float,

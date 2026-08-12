@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from collections.abc import Callable, Coroutine
 from gettext import gettext as _
@@ -34,7 +32,7 @@ logger = logging.getLogger(__name__)
 class MachineCmd:
     """Handles commands sent to the machine driver."""
 
-    def __init__(self, editor: DocEditor):
+    def __init__(self, editor: "DocEditor"):
         self._editor = editor
         self._scheduler = editor.task_manager.schedule_on_main_thread
         self.job_started = Signal()
@@ -46,7 +44,7 @@ class MachineCmd:
         """Returns True if a monitored job is currently running."""
         return self._current_monitor is not None
 
-    def select_tool(self, machine: Machine, head_index: int):
+    def select_tool(self, machine: "Machine", head_index: int):
         """Adds a 'select_head' task to the task manager."""
         if not (0 <= head_index < len(machine.heads)):
             logger.error(f"Invalid head index {head_index} for tool selection")
@@ -68,7 +66,7 @@ class MachineCmd:
     async def _execute_monitored_job(
         self,
         ops: Ops,
-        machine: Machine,
+        machine: "Machine",
         on_progress: Callable[[dict], None] | None = None,
         encoded: EncodedOutput | None = None,
     ):
@@ -154,7 +152,7 @@ class MachineCmd:
     async def _run_frame_action(
         self,
         artifact: JobArtifact,
-        machine: Machine,
+        machine: "Machine",
         on_progress: Callable[[dict], None] | None,
     ):
         """The specific machine action for a framing job."""
@@ -223,7 +221,7 @@ class MachineCmd:
     async def _run_send_action(
         self,
         artifact: JobArtifact,
-        machine: Machine,
+        machine: "Machine",
         on_progress: Callable[[dict], None] | None,
     ):
         """The specific machine action for a send job."""
@@ -239,7 +237,7 @@ class MachineCmd:
 
     async def _start_job(
         self,
-        machine: Machine,
+        machine: "Machine",
         job_name: str,
         final_job_action: Callable[..., Coroutine],
         on_progress: Callable[[dict], None] | None = None,
@@ -286,7 +284,7 @@ class MachineCmd:
 
     async def frame_job(
         self,
-        machine: Machine,
+        machine: "Machine",
         on_progress: Callable[[dict], None] | None = None,
     ):
         """
@@ -302,7 +300,7 @@ class MachineCmd:
 
     async def send_job(
         self,
-        machine: Machine,
+        machine: "Machine",
         on_progress: Callable[[dict], None] | None = None,
     ):
         """
@@ -316,7 +314,7 @@ class MachineCmd:
             on_progress=on_progress,
         )
 
-    def run_send_job(self, machine: Machine):
+    def run_send_job(self, machine: "Machine"):
         """
         Schedules the send_job coroutine to run via the task manager.
         """
@@ -330,7 +328,7 @@ class MachineCmd:
             key="send-job",
         )
 
-    def set_hold(self, machine: Machine, is_requesting_hold: bool):
+    def set_hold(self, machine: "Machine", is_requesting_hold: bool):
         """
         Adds a task to set the machine's hold state (pause/resume).
         """
@@ -339,21 +337,21 @@ class MachineCmd:
             lambda ctx: driver.set_hold(is_requesting_hold), key="set-hold"
         )
 
-    def cancel_job(self, machine: Machine):
+    def cancel_job(self, machine: "Machine"):
         """Adds a task to cancel the currently running job on the machine."""
         driver = machine.driver
         self._editor.task_manager.add_coroutine(
             lambda ctx: driver.cancel(), key="cancel-job"
         )
 
-    def clear_alarm(self, machine: Machine):
+    def clear_alarm(self, machine: "Machine"):
         """Adds a task to clear any active alarm on the machine."""
         driver = machine.driver
         self._editor.task_manager.add_coroutine(
             lambda ctx: driver.clear_alarm(), key="clear-alarm"
         )
 
-    def jog(self, machine: Machine, deltas: dict[Axis, float], speed: int):
+    def jog(self, machine: "Machine", deltas: "dict[Axis, float]", speed: int):
         """
         Adds a task to jog the machine along specific axes.
         """
@@ -361,7 +359,7 @@ class MachineCmd:
             lambda ctx: machine.jog(deltas, speed)
         )
 
-    def execute_macro_by_uid(self, machine: Machine, macro_uid: str):
+    def execute_macro_by_uid(self, machine: "Machine", macro_uid: str):
         """Finds a macro by UID, expands it, and runs it on the machine."""
         macro = machine.macros.get(macro_uid)
         if not macro or not macro.enabled:
@@ -390,9 +388,9 @@ class MachineCmd:
 
     def set_power(
         self,
-        head: Laser,
+        head: "Laser",
         percent: float,
-        machine: Machine | None = None,
+        machine: "Machine | None" = None,
     ):
         """
         Adds a task to set the laser power to a specific percentage.
@@ -411,9 +409,9 @@ class MachineCmd:
 
     def set_focus_power(
         self,
-        head: Laser,
+        head: "Laser",
         percent: float,
-        machine: Machine | None = None,
+        machine: "Machine | None" = None,
     ):
         """
         Adds a task to set the laser power for focus mode.
@@ -430,11 +428,11 @@ class MachineCmd:
                 lambda ctx: machine.set_focus_power(head, percent)
             )
 
-    def home(self, machine: Machine, axis: Axis | None = None):
+    def home(self, machine: "Machine", axis: "Axis | None" = None):
         """Adds a task to home a specific axis."""
         self._editor.task_manager.add_coroutine(lambda ctx: machine.home(axis))
 
-    def move_to(self, machine: Machine, x: float, y: float):
+    def move_to(self, machine: "Machine", x: float, y: float):
         """Adds a task to move to an absolute position."""
         driver = machine.driver
         if driver:
@@ -443,7 +441,7 @@ class MachineCmd:
             )
 
 
-def _create_driver_encoder(machine: Machine):
+def _create_driver_encoder(machine: "Machine"):
     """Instantiate the machine's driver encoder."""
     if machine.driver_name:
         try:

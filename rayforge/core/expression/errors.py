@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import enum
 from gettext import gettext as _
 
@@ -80,11 +78,11 @@ class ValidationResult:
         return self.status == ValidationStatus.OK
 
     @classmethod
-    def success(cls) -> ValidationResult:
+    def success(cls) -> "ValidationResult":
         """Factory method for a successful result."""
         return cls(ValidationStatus.OK)
 
     @classmethod
-    def failure(cls, error_info: ErrorInfo) -> ValidationResult:
+    def failure(cls, error_info: ErrorInfo) -> "ValidationResult":
         """Factory method for a failed result."""
         return cls(ValidationStatus.ERROR, error_info)

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Protocol, cast
 
@@ -102,8 +100,8 @@ class ContourStep(LaserStep):
 
     def get_assembler_kwargs(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> dict:
         kwargs: dict = {}
         kwargs["cut_side"] = str(self.cut_side).lower()
@@ -118,8 +116,8 @@ class ContourStep(LaserStep):
 
     def build_compute_payload(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> tuple[Part, ComputePayload]:
         """Build a :class:`Part` (from the workpiece's vector
         geometry) and a :class:`ComputePayload` carrying a
@@ -151,8 +149,8 @@ class ContourStep(LaserStep):
 
     def assembler_token_params(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> dict | None:
         """Expose the resolved assembler kwargs for the compute token."""
         return self.get_assembler_kwargs(machine, workpiece)
@@ -176,7 +174,7 @@ class ContourStep(LaserStep):
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> ContourStep:
+    def from_dict(cls, data: dict) -> "ContourStep":
         step = cast("ContourStep", super().from_dict(data))
         legacy = legacy_producer_params(data)
         step.cut_side = data.get(
@@ -241,11 +239,11 @@ class ContourStep(LaserStep):
     @classmethod
     def create(
         cls,
-        context: RayforgeContext,
+        context: "RayforgeContext",
         name: str | None = None,
         optimize: bool = True,
         **kwargs,
-    ) -> ContourStep:
+    ) -> "ContourStep":
         machine = context.machine
         assert machine is not None
         default_head = machine.get_default_laser_head()

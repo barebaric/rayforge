@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import math
 from collections.abc import Callable
@@ -80,7 +78,7 @@ class AngleConstraint(Constraint):
 
     @classmethod
     def can_apply_to(
-        cls, selection: SketchSelection, sketch: Sketch | None = None
+        cls, selection: "SketchSelection", sketch: "Sketch | None" = None
     ) -> bool:
         if selection.point_ids or len(selection.entity_ids) != 2:
             return False
@@ -98,7 +96,7 @@ class AngleConstraint(Constraint):
         """Returns a human-readable title for this constraint."""
         return f"{self.get_type_name()} {self._format_value()}°"
 
-    def get_subtitle(self, registry: EntityRegistry) -> str:
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
         """Returns subtitle describing constrained entities."""
         e1 = registry.get_entity(self.e1_id)
         e2 = registry.get_entity(self.e2_id)
@@ -121,7 +119,7 @@ class AngleConstraint(Constraint):
         return data
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> AngleConstraint:
+    def from_dict(cls, data: dict[str, Any]) -> "AngleConstraint":
         return cls(
             e1_id=data["e1_id"],
             e2_id=data["e2_id"],
@@ -133,7 +131,7 @@ class AngleConstraint(Constraint):
         )
 
     def _get_line_params(
-        self, reg: EntityRegistry
+        self, reg: "EntityRegistry"
     ) -> tuple[Line, Line, Any, Any, Any, Any] | None:
         e1 = reg.get_entity(self.e1_id)
         e2 = reg.get_entity(self.e2_id)
@@ -169,7 +167,9 @@ class AngleConstraint(Constraint):
 
         return far1, far2
 
-    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
+    def error(
+        self, reg: "EntityRegistry", params: "ParameterContext"
+    ) -> float:
         result = self._get_line_params(reg)
         if result is None:
             logger.warning("_get_line_params returned None")
@@ -219,7 +219,7 @@ class AngleConstraint(Constraint):
         return diff * ANGLE_WEIGHT
 
     def gradient(
-        self, reg: EntityRegistry, params: ParameterContext
+        self, reg: "EntityRegistry", params: "ParameterContext"
     ) -> dict[EntityID, list[Point]]:
         result = self._get_line_params(reg)
         if result is None:
@@ -324,7 +324,7 @@ class AngleConstraint(Constraint):
 
     def get_visuals(
         self,
-        reg: EntityRegistry,
+        reg: "EntityRegistry",
         to_screen: Callable[[Point], Point],
     ):
         result = self._get_line_params(reg)
@@ -359,7 +359,7 @@ class AngleConstraint(Constraint):
 
     def get_label_pos(
         self,
-        reg: EntityRegistry,
+        reg: "EntityRegistry",
         to_screen: Callable[[Point], Point],
         element: Any,
     ):
@@ -382,7 +382,7 @@ class AngleConstraint(Constraint):
         self,
         sx: float,
         sy: float,
-        reg: EntityRegistry,
+        reg: "EntityRegistry",
         to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
@@ -407,8 +407,8 @@ class AngleConstraint(Constraint):
 
     def draw(
         self,
-        ctx: cairo.Context,
-        registry: EntityRegistry,
+        ctx: "cairo.Context",
+        registry: "EntityRegistry",
         to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,

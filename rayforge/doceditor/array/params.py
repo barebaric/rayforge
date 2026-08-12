@@ -12,8 +12,6 @@ pattern. Three arrangements are supported:
 Each duplicate preserves the layer membership of its source item.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -61,7 +59,7 @@ class GridArrayParams:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> GridArrayParams:
+    def from_dict(cls, data: dict[str, Any]) -> "GridArrayParams":
         try:
             spacing = SpacingMode(data.get("spacing_mode", "gap"))
         except ValueError:
@@ -93,7 +91,7 @@ class PointRotationParams:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> PointRotationParams:
+    def from_dict(cls, data: dict[str, Any]) -> "PointRotationParams":
         return cls(
             count=int(data.get("count", 6)),
             total_angle_deg=float(data.get("total_angle_deg", 360.0)),
@@ -127,7 +125,7 @@ class CircularArrayParams:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> CircularArrayParams:
+    def from_dict(cls, data: dict[str, Any]) -> "CircularArrayParams":
         center = data.get("center_mm", [0.0, 0.0])
         return cls(
             count=int(data.get("count", 6)),
@@ -158,7 +156,7 @@ class ArrayParams:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any] | None) -> ArrayParams:
+    def from_dict(cls, data: dict[str, Any] | None) -> "ArrayParams":
         if not data:
             return cls()
         try:

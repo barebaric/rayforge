@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, cast
@@ -31,12 +29,12 @@ class StockItem(DocItem):
         self.visible: bool = True
         self.extra: dict[str, Any] = {}
 
-    def depends_on_asset(self, asset: IAsset) -> bool:
+    def depends_on_asset(self, asset: "IAsset") -> bool:
         """Checks if this stock item is an instance of the given asset."""
         return self.stock_asset_uid == asset.uid
 
     @property
-    def stock_asset(self) -> StockAsset | None:
+    def stock_asset(self) -> "StockAsset | None":
         """Retrieves the StockAsset this item is an instance of."""
         doc = self.doc
         if doc:
@@ -79,7 +77,7 @@ class StockItem(DocItem):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> StockItem:
+    def from_dict(cls, data: dict[str, Any]) -> "StockItem":
         """
         Deserializes a dictionary into a StockItem instance.
         Assumes the new format with 'stock_asset_uid'. Legacy file handling
@@ -106,7 +104,7 @@ class StockItem(DocItem):
 
         return new_item
 
-    def duplicate(self) -> StockItem:
+    def duplicate(self) -> "StockItem":
         """
         Creates a deep copy of this StockItem with a new UID.
 
@@ -244,7 +242,7 @@ class StockItem(DocItem):
         return 1.0, 1.0
 
     @property
-    def material(self) -> Material | None:
+    def material(self) -> "Material | None":
         """
         Gets the Material object for this stock item via its StockAsset.
 

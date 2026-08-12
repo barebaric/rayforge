@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING
@@ -42,7 +40,9 @@ class CirclePreviewState(PreviewState):
         """
         return {self.radius_id}
 
-    def set_diameter(self, registry: EntityRegistry, diameter: float) -> None:
+    def set_diameter(
+        self, registry: "EntityRegistry", diameter: float
+    ) -> None:
         """
         Sets the circle diameter from numeric input.
 
@@ -71,7 +71,9 @@ class CirclePreviewState(PreviewState):
         radius_pt.x = center.x + dx * scale
         radius_pt.y = center.y + dy * scale
 
-    def get_dimensions(self, registry: EntityRegistry) -> list[DimensionData]:
+    def get_dimensions(
+        self, registry: "EntityRegistry"
+    ) -> list[DimensionData]:
         """
         Returns the circle diameter dimension for preview.
 
@@ -107,7 +109,7 @@ class CircleCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         center_id: EntityID,
         end_pos: GeoPoint,
         end_pid: EntityID | None = None,
@@ -132,7 +134,7 @@ class CircleCommand(SketchChangeCommand):
 
     @staticmethod
     def start_preview(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         x: float,
         y: float,
         snapped_pid: EntityID | None = None,
@@ -168,7 +170,7 @@ class CircleCommand(SketchChangeCommand):
 
     @staticmethod
     def update_preview(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         preview_state: PreviewState,
         x: float,
         y: float,
@@ -199,7 +201,7 @@ class CircleCommand(SketchChangeCommand):
 
     @staticmethod
     def cleanup_preview(
-        registry: EntityRegistry, preview_state: PreviewState
+        registry: "EntityRegistry", preview_state: PreviewState
     ) -> None:
         """
         Removes preview entities from the registry.

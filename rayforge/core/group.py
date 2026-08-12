@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -22,7 +20,7 @@ logger = logging.getLogger(__name__)
 class GroupingResult:
     """A container for the results of the group creation calculation."""
 
-    new_group: Group
+    new_group: "Group"
     child_matrices: dict[str, Matrix]
 
 
@@ -39,7 +37,7 @@ class Group(DocItem):
         self.extra: dict[str, Any] = {}
 
     @property
-    def layer(self) -> Layer | None:
+    def layer(self) -> "Layer | None":
         """Traverses the hierarchy to find the parent Layer."""
         from .layer import Layer  # Local import to avoid circular dependency
 
@@ -137,7 +135,7 @@ class Group(DocItem):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict) -> Group:
+    def from_dict(cls, data: dict) -> "Group":
         """Deserializes a dictionary into a Group instance."""
         known_keys = {"uid", "type", "name", "matrix", "children"}
         extra = {k: v for k, v in data.items() if k not in known_keys}

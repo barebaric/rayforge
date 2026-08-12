@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import uuid
 from gettext import gettext as _
@@ -23,7 +21,7 @@ class AddFillCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         boundary: list[tuple[int, bool]],
         style: FillStyle = FillStyle.SOLID,
         color: ColorRGBA = DEFAULT_FILL_COLOR,
@@ -61,7 +59,7 @@ class RemoveFillCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         fill: Fill,
         name: str = _("Remove Fill"),
     ):
@@ -81,7 +79,7 @@ class SetTextFillCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         entity_id: int,
         fill_color: ColorRGBA | None,
         name: str = _("Set Text Fill"),

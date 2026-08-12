@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import math
 from dataclasses import dataclass
@@ -29,7 +27,7 @@ class AngleConstraintParams:
 class AngleConstraintCommand:
     @staticmethod
     def calculate_constraint_params(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         e1_id: EntityID,
         e2_id: EntityID,
     ) -> AngleConstraintParams | None:

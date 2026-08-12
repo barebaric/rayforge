@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import os
 from collections.abc import Generator
@@ -56,8 +54,8 @@ class CanvasElement:
         selectable: bool = True,
         visible: bool = True,
         background: tuple[float, float, float, float] = (0, 0, 0, 0),
-        canvas: Canvas | None = None,
-        parent: Canvas | CanvasElement | None = None,
+        canvas: "Canvas | None" = None,
+        parent: "Canvas | CanvasElement | None" = None,
         data: Any = None,
         clip: bool = True,
         buffered: bool = False,
@@ -247,7 +245,7 @@ class CanvasElement:
         if isinstance(self.parent, CanvasElement):
             self.parent.on_child_transform_changed(self)
 
-    def on_child_transform_changed(self, child: CanvasElement):
+    def on_child_transform_changed(self, child: "CanvasElement"):
         """
         Callback triggered by a child when its transform has changed.
         Subclasses can override this to react, e.g., by updating bounds.
@@ -313,7 +311,7 @@ class CanvasElement:
         self._transform_dirty = False
         return self._world_transform
 
-    def get_world_bounding_box(self) -> Rect:
+    def get_world_bounding_box(self) -> "Rect":
         """
         Calculates the element's axis-aligned bounding box in world
         coordinates.
@@ -496,7 +494,7 @@ class CanvasElement:
         region: ElementRegion,
         base_handle_size: float,
         scale_compensation: float | tuple[float, float] = 1.0,
-    ) -> Rect:
+    ) -> "Rect":
         """
         Gets the rect (x, y, w, h) for a region in local coordinates.
 
@@ -582,11 +580,11 @@ class CanvasElement:
             for child in self.children:
                 child.mark_dirty(ancestors=False, recursive=True)
 
-    def copy(self) -> CanvasElement:
+    def copy(self) -> "CanvasElement":
         """Creates a deep copy of the element."""
         return deepcopy(self)
 
-    def _attach_to_canvas_recursive(self, canvas: Canvas | None):
+    def _attach_to_canvas_recursive(self, canvas: "Canvas | None"):
         """
         Recursively sets the canvas for self and all children, and calls
         the on_attached lifecycle hook.
@@ -606,7 +604,7 @@ class CanvasElement:
             child._detach_from_canvas_recursive()
         self.canvas = None
 
-    def _reparent(self, elem: CanvasElement):
+    def _reparent(self, elem: "CanvasElement"):
         """Removes an element from its current parent before adding it here."""
         if elem.parent:
             # Check parent type to call the correct removal method.
@@ -617,7 +615,7 @@ class CanvasElement:
             ):
                 elem.parent.remove(elem)
 
-    def add(self, elem: CanvasElement):
+    def add(self, elem: "CanvasElement"):
         """
         Adds a child element.
 
@@ -640,7 +638,7 @@ class CanvasElement:
         if self.canvas:
             self.canvas.queue_draw()
 
-    def insert(self, index: int, elem: CanvasElement):
+    def insert(self, index: int, elem: "CanvasElement"):
         """
         Inserts a child element at a specific index.
 
@@ -668,7 +666,7 @@ class CanvasElement:
         if self.canvas:
             self.canvas.queue_draw()
 
-    def find_by_data(self, data: Any) -> CanvasElement | None:
+    def find_by_data(self, data: Any) -> "CanvasElement | None":
         """
         Finds the first element (self or descendant) with matching data.
 
@@ -688,7 +686,7 @@ class CanvasElement:
 
     def find_by_type(
         self, thetype: Any
-    ) -> Generator[CanvasElement, None, None]:
+    ) -> "Generator[CanvasElement, None, None]":
         """
         Finds all elements (self or descendant) of a given type.
 
@@ -718,7 +716,7 @@ class CanvasElement:
 
     def get_all_children_recursive(
         self,
-    ) -> Generator[CanvasElement, None, None]:
+    ) -> "Generator[CanvasElement, None, None]":
         """
         Recursively yields all descendant elements.
         """
@@ -748,7 +746,7 @@ class CanvasElement:
         elif self.canvas and isinstance(self.parent, self.canvas.__class__):
             self.parent.remove(self)
 
-    def remove_child(self, elem: CanvasElement):
+    def remove_child(self, elem: "CanvasElement"):
         """
         Removes a direct child element. This is not recursive.
 
@@ -764,7 +762,7 @@ class CanvasElement:
             self.mark_dirty()
             self.on_child_list_changed()
 
-    def get_selected(self) -> Generator[CanvasElement, None, None]:
+    def get_selected(self) -> "Generator[CanvasElement, None, None]":
         """Recursively finds and yields all selected elements."""
         if self.selected:
             yield self
@@ -801,7 +799,7 @@ class CanvasElement:
         new_transform = self.transform.set_translation(x, y)
         self.set_transform(new_transform)
 
-    def pos_abs(self) -> Point:
+    def pos_abs(self) -> "Point":
         """
         Gets the absolute position on the canvas.
 
@@ -832,14 +830,14 @@ class CanvasElement:
             # Use set_transform to apply the change and notify parent
             self.set_transform(self.transform)
 
-    def rect(self) -> Rect:
+    def rect(self) -> "Rect":
         """
         Gets the local rect (x, y, width, height).
         """
         x, y = self.transform.get_translation()
         return x, y, self.width, self.height
 
-    def rect_abs(self) -> Rect:
+    def rect_abs(self) -> "Rect":
         """
         Gets the absolute rect (x, y, width, height).
 
@@ -866,7 +864,7 @@ class CanvasElement:
         world_transform = self.get_world_transform()
         return world_transform.get_rotation()
 
-    def get_world_center(self) -> Point:
+    def get_world_center(self) -> "Point":
         """
         Calculates the element's center point in world coordinates.
         """
@@ -1002,7 +1000,7 @@ class CanvasElement:
 
     def get_elem_hit(
         self, world_x: float, world_y: float, selectable: bool = False
-    ) -> CanvasElement | None:
+    ) -> "CanvasElement | None":
         """
         Checks for a hit on this element or its children given world
         coordinates.
@@ -1167,7 +1165,7 @@ class CanvasElement:
         """
         return False
 
-    def handle_drag_move(self, world_dx: float, world_dy: float) -> Point:
+    def handle_drag_move(self, world_dx: float, world_dy: float) -> "Point":
         """
         Intercepts a drag move to apply constraints. Subclasses can
         override this to customize drag behavior.

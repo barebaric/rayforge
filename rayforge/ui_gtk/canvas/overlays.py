@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import math
 from typing import (
     TYPE_CHECKING,
@@ -311,7 +309,7 @@ HANDLE_DRAW_INFO.update(
 
 def render_selection_frame(
     ctx: cairo.Context,
-    target: CanvasElement | MultiSelectionGroup,
+    target: "CanvasElement | MultiSelectionGroup",
     transform_to_screen: Matrix,
 ):
     """
@@ -346,7 +344,7 @@ def render_selection_frame(
 
 def _render_handles(
     ctx: cairo.Context,
-    target: CanvasElement | MultiSelectionGroup,
+    target: "CanvasElement | MultiSelectionGroup",
     transform_to_screen: Matrix,
     regions: list[ElementRegion],
     hovered_region: ElementRegion,
@@ -425,9 +423,9 @@ def _render_handles(
 
 def render_selection_handles(
     ctx: cairo.Context,
-    target: CanvasElement | MultiSelectionGroup,
+    target: "CanvasElement | MultiSelectionGroup",
     transform_to_screen: Matrix,
-    mode: SelectionMode,
+    mode: "SelectionMode",
     hovered_region: ElementRegion,
     base_handle_size: float,
     with_labels: bool = False,

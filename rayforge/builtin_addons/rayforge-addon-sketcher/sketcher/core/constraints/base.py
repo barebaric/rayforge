@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from collections.abc import Callable
 from enum import Enum, auto
 from locale import format_string
@@ -46,7 +44,7 @@ class Constraint:
 
     @classmethod
     def can_apply_to(
-        cls, selection: SketchSelection, sketch: Sketch | None = None
+        cls, selection: "SketchSelection", sketch: "Sketch | None" = None
     ) -> bool:
         """
         Returns True if this constraint can be applied to the current
@@ -78,13 +76,13 @@ class Constraint:
         return False
 
     def error(
-        self, reg: EntityRegistry, params: ParameterContext
+        self, reg: "EntityRegistry", params: "ParameterContext"
     ) -> float | tuple[float, ...] | list[float]:
         """Calculates the error of the constraint."""
         return 0.0
 
     def gradient(
-        self, reg: EntityRegistry, params: ParameterContext
+        self, reg: "EntityRegistry", params: "ParameterContext"
     ) -> dict[EntityID, list[Point]]:
         """
         Calculates the partial derivatives (Jacobian entries) of the error.
@@ -95,7 +93,7 @@ class Constraint:
         return {}
 
     def constrains_radius(
-        self, registry: EntityRegistry, entity_id: EntityID
+        self, registry: "EntityRegistry", entity_id: EntityID
     ) -> bool:
         """
         Returns True if this constraint explicitly defines or links the
@@ -113,7 +111,7 @@ class Constraint:
         self,
         sx: float,
         sy: float,
-        reg: EntityRegistry,
+        reg: "EntityRegistry",
         to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
@@ -121,7 +119,7 @@ class Constraint:
         """Checks if the constraint's visual representation is hit."""
         return False
 
-    def _set_color(self, ctx: cairo.Context, is_hovered: bool) -> None:
+    def _set_color(self, ctx: "cairo.Context", is_hovered: bool) -> None:
         """
         Sets the standard drawing color for constraints based on hover and
         status.
@@ -138,7 +136,7 @@ class Constraint:
             ctx.set_source_rgb(0.0, 0.6, 0.0)  # Green for valid
 
     def _draw_selection_underlay(
-        self, ctx: cairo.Context, width_scale: float = 3.0
+        self, ctx: "cairo.Context", width_scale: float = 3.0
     ) -> None:
         """Draws a semi-transparent blue underlay for the current path."""
         ctx.save()
@@ -148,7 +146,7 @@ class Constraint:
         ctx.restore()
 
     def _draw_conflict_underlay(
-        self, ctx: cairo.Context, width_scale: float = 3.5
+        self, ctx: "cairo.Context", width_scale: float = 3.5
     ) -> None:
         """Draws a semi-transparent red underlay for conflicting items."""
         ctx.save()
@@ -168,7 +166,7 @@ class Constraint:
         """
         return self.get_type_name()
 
-    def get_subtitle(self, registry: EntityRegistry) -> str:
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
         """
         Returns a human-readable subtitle describing the constrained entities.
         Subclasses should override to provide meaningful descriptions.
@@ -181,8 +179,8 @@ class Constraint:
 
     def draw(
         self,
-        ctx: cairo.Context,
-        registry: EntityRegistry,
+        ctx: "cairo.Context",
+        registry: "EntityRegistry",
         to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,

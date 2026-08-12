@@ -3,8 +3,6 @@ Scene compiler: thin wrapper that delegates vertex compilation to
 raygeo's Rust ``compile_scene_3d`` and handles texture generation.
 """
 
-from __future__ import annotations
-
 import logging
 from collections.abc import Callable
 

@@ -1,7 +1,5 @@
 """Circular array strategy."""
 
-from __future__ import annotations
-
 import math
 
 from raygeo.geo import Matrix

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
@@ -59,7 +57,7 @@ class BezierPreviewState(PreviewState):
         return result
 
     def get_virtual_cp_absolute(
-        self, registry: EntityRegistry
+        self, registry: "EntityRegistry"
     ) -> GeoPoint | None:
         if self.virtual_cp is None or self.end_id is None:
             return None
@@ -68,7 +66,9 @@ class BezierPreviewState(PreviewState):
             return None
         return (end_pt.x + self.virtual_cp[0], end_pt.y + self.virtual_cp[1])
 
-    def get_dimensions(self, registry: EntityRegistry) -> list[DimensionData]:
+    def get_dimensions(
+        self, registry: "EntityRegistry"
+    ) -> list[DimensionData]:
         return []
 
 
@@ -82,7 +82,7 @@ class BezierCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         start_id: EntityID,
         end_pos: GeoPoint,
         end_pid: EntityID | None = None,
@@ -111,7 +111,7 @@ class BezierCommand(SketchChangeCommand):
 
     @staticmethod
     def start_preview(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         x: float,
         y: float,
         snapped_pid: int | None = None,
@@ -179,7 +179,7 @@ class BezierCommand(SketchChangeCommand):
 
     @staticmethod
     def update_preview(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         preview_state: PreviewState,
         x: float,
         y: float,
@@ -200,7 +200,7 @@ class BezierCommand(SketchChangeCommand):
 
     @staticmethod
     def convert_to_bezier(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         preview_state: BezierPreviewState,
         waypoint_x: float,
         waypoint_y: float,
@@ -295,7 +295,7 @@ class BezierCommand(SketchChangeCommand):
 
     @staticmethod
     def update_control_point(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         preview_state: BezierPreviewState,
         x: float,
         y: float,
@@ -323,7 +323,7 @@ class BezierCommand(SketchChangeCommand):
 
     @staticmethod
     def cleanup_preview(
-        registry: EntityRegistry, preview_state: PreviewState
+        registry: "EntityRegistry", preview_state: PreviewState
     ) -> None:
         if not isinstance(preview_state, BezierPreviewState):
             raise TypeError("Expected BezierPreviewState")

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
@@ -19,7 +17,7 @@ logger = logging.getLogger(__name__)
 class TransformCmd:
     """Handles undoable transformations of document items."""
 
-    def __init__(self, editor: DocEditor):
+    def __init__(self, editor: "DocEditor"):
         self._editor = editor
 
     def create_transform_transaction(

@@ -3,8 +3,6 @@ Defines the Layer class, a central component for organizing and processing
 workpieces within a document.
 """
 
-from __future__ import annotations
-
 import logging
 import math
 from collections.abc import Iterable
@@ -85,7 +83,7 @@ class Layer(DocItem):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Layer:
+    def from_dict(cls, data: dict[str, Any]) -> "Layer":
         """Deserializes a dictionary into a Layer instance."""
         known_keys = {
             "uid",

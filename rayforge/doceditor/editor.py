@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import logging
 import threading
@@ -54,8 +52,8 @@ class DocEditor:
 
     def __init__(
         self,
-        task_manager: TaskManager,
-        context: RayforgeContext,
+        task_manager: "TaskManager",
+        context: "RayforgeContext",
         doc: Doc | None = None,
     ):
         """

@@ -24,8 +24,6 @@ On each debounced rebuild:
    application main thread via the shared task manager.
 """
 
-from __future__ import annotations
-
 import logging
 from collections.abc import Callable
 from gettext import gettext as _
@@ -115,9 +113,9 @@ class IntentController:
 
     def __init__(
         self,
-        doc: Doc | None,
+        doc: "Doc | None",
         task_manager: _DelayedScheduler,
-        machine: Machine | None = None,
+        machine: "Machine | None" = None,
         raygeo_pipeline: RaygeoPipeline | None = None,
     ):
         self._doc: Doc | None = doc
@@ -252,7 +250,7 @@ class IntentController:
             return
         self._schedule_rebuild()
 
-    def set_doc(self, doc: Doc | None) -> None:
+    def set_doc(self, doc: "Doc | None") -> None:
         """Replace the document and trigger a rebuild.
 
         Preserves the existing :class:`RaygeoPipeline` and
@@ -265,7 +263,7 @@ class IntentController:
             self.connect()
         self.force_rebuild()
 
-    def set_machine(self, machine: Machine | None) -> None:
+    def set_machine(self, machine: "Machine | None") -> None:
         """Replace the machine and trigger a rebuild.
 
         Preserves the existing :class:`RaygeoPipeline` and
@@ -508,7 +506,7 @@ class IntentController:
             )
         return text
 
-    def _reattach(self, key: str, item: DocItem, output: Any) -> None:
+    def _reattach(self, key: str, item: "DocItem", output: Any) -> None:
         """
         Reattach a completed node's output onto the owning DocItem and
         emit the corresponding signal so the UI can update.
@@ -611,10 +609,10 @@ class IntentController:
             elif key == "job" or key == "job:encode":
                 self._key_to_item[key] = self._doc
 
-    def _find_workpiece(self, uid: str) -> WorkPiece | None:
+    def _find_workpiece(self, uid: str) -> "WorkPiece | None":
         return self._workpieces_by_uid.get(uid)
 
-    def _find_step(self, uid: str) -> Step | None:
+    def _find_step(self, uid: str) -> "Step | None":
         return self._steps_by_uid.get(uid)
 
     def shutdown(self) -> None:

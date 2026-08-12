@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, cast
 
@@ -82,8 +80,8 @@ class AdaptiveClearStep(CncAssemblerStep):
 
     def build_compute_payload(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> tuple[Part, ComputePayload]:
         # Multi-pocket handling is done on the Rust side:
         # Part.from_geometry_multi_face exposes each pocket as a face,
@@ -119,7 +117,7 @@ class AdaptiveClearStep(CncAssemblerStep):
         return result
 
     @classmethod
-    def from_dict(cls, data) -> AdaptiveClearStep:
+    def from_dict(cls, data) -> "AdaptiveClearStep":
         step = cast("AdaptiveClearStep", super().from_dict(data))
         step.step_over = data.get("step_over", step.step_over)
         step.step_length = data.get("step_length", step.step_length)

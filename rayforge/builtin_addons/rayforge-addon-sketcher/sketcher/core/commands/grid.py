@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -17,7 +15,7 @@ class GridCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         rows: int,
         cols: int,
         origin: tuple[float, float] = (0, 0),

@@ -1,9 +1,7 @@
-from __future__ import annotations
-
 from abc import ABC
 from typing import Any
 
-_handle_registry: dict[str, type[BaseArtifactHandle]] = {}
+_handle_registry: "dict[str, type[BaseArtifactHandle]]" = {}
 
 
 class BaseArtifactHandle(ABC):
@@ -56,7 +54,9 @@ class BaseArtifactHandle(ABC):
         return hash(self.key)
 
     @classmethod
-    def from_dict(cls: type[Any], data: dict[str, Any]) -> BaseArtifactHandle:
+    def from_dict(
+        cls: type[Any], data: dict[str, Any]
+    ) -> "BaseArtifactHandle":
         # This simple deserialization works for direct instantiation, but the
         # factory function below should be used for polymorphic
         # deserialization.

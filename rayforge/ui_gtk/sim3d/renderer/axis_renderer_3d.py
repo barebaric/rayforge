@@ -6,8 +6,6 @@ creating and drawing a grid on the XY plane, along with labeled X and Y
 axes. It uses a composed PlaneRenderer for the background.
 """
 
-from __future__ import annotations
-
 import logging
 import math
 

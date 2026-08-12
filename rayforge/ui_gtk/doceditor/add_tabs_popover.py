@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
@@ -19,8 +17,8 @@ logger = logging.getLogger(__name__)
 class AddTabsPopover(Gtk.Popover):
     def __init__(
         self,
-        editor: DocEditor,
-        workpieces: list[WorkPiece],
+        editor: "DocEditor",
+        workpieces: "list[WorkPiece]",
     ):
         super().__init__()
         self.editor = editor

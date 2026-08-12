@@ -2,8 +2,6 @@
 Tasker package for managing tasks, contexts, and execution.
 """
 
-from __future__ import annotations
-
 from .manager import TaskManager, TaskManagerProxy
 from .task import Task
 

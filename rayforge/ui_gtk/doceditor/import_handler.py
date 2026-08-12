@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from pathlib import Path
@@ -23,8 +21,8 @@ logger = logging.getLogger(__name__)
 
 
 def _start_interactive_import(
-    win: MainWindow,
-    editor: DocEditor,
+    win: "MainWindow",
+    editor: "DocEditor",
     file_path: Path,
     mime_type: str,
     position_mm: tuple[float, float] | None = None,
@@ -65,8 +63,8 @@ def _on_import_dialog_response(
     dialog,
     response_id: str,
     spec: VectorizationSpec,
-    win: MainWindow,
-    editor: DocEditor,
+    win: "MainWindow",
+    editor: "DocEditor",
     file_path: Path,
     mime_type: str,
     position_mm: tuple[float, float] | None = None,
@@ -124,7 +122,7 @@ def _on_file_selected(dialog, result, user_data):
         logger.exception("Error opening file")
 
 
-def start_interactive_import(win: MainWindow, editor: DocEditor):
+def start_interactive_import(win: "MainWindow", editor: "DocEditor"):
     """
     Initiates the full interactive file import process, starting with a
     file chooser dialog.
@@ -136,8 +134,8 @@ def start_interactive_import(win: MainWindow, editor: DocEditor):
 
 
 def import_file_at_position(
-    win: MainWindow,
-    editor: DocEditor,
+    win: "MainWindow",
+    editor: "DocEditor",
     file_path: Path,
     mime_type: str,
     position_mm: tuple[float, float] | None = None,
@@ -172,10 +170,10 @@ def import_file_at_position(
 def _on_batch_trace_response(
     dialog,
     response_id: str,
-    editor: DocEditor,
+    editor: "DocEditor",
     file_list: list[tuple[Path, str]],
     position_mm: tuple[float, float],
-    win: MainWindow,
+    win: "MainWindow",
 ):
     """
     Handles the user's choice from the batch tracing configuration dialog.
@@ -194,8 +192,8 @@ def _on_batch_trace_response(
 
 
 def import_multiple_files_at_position(
-    win: MainWindow,
-    editor: DocEditor,
+    win: "MainWindow",
+    editor: "DocEditor",
     file_list: list[tuple[Path, str]],
     position_mm: tuple[float, float],
 ):
@@ -270,8 +268,8 @@ def import_multiple_files_at_position(
 
 
 def start_reimport(
-    win: MainWindow,
-    editor: DocEditor,
+    win: "MainWindow",
+    editor: "DocEditor",
     source_asset: SourceAsset,
     position_mm: tuple[float, float] | None = None,
     target_layer: Layer | None = None,

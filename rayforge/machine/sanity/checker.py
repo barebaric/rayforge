@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar
 
@@ -20,7 +18,7 @@ from .checks.workarea_2d import WorkareaCheck2D
 @dataclass
 class SanityContext:
     ops: Ops
-    machine: Machine
+    machine: "Machine"
     work_area: Rect
     axis_extents: tuple[float, float]
     enabled_zones: dict[str, Zone]
@@ -38,7 +36,7 @@ class SanityChecker:
         NoGoZoneCheck2D,
     ]
 
-    def __init__(self, machine: Machine):
+    def __init__(self, machine: "Machine"):
         self._machine = machine
 
     def check(

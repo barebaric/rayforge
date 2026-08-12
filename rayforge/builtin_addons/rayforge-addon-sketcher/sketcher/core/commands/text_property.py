@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -25,7 +23,7 @@ if TYPE_CHECKING:
 class ModifyTextPropertyCommand(SketchChangeCommand):
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         text_entity_id: EntityID,
         new_content: str,
         new_font_config: FontConfig,

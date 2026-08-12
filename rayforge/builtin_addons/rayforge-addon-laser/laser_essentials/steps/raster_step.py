@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
@@ -151,8 +149,8 @@ class EngraveStep(LaserStep):
 
     def get_assembler_kwargs(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> dict:
         _spot_x, spot_y = LaserHead.get_spot_size(
             self.get_selected_laser(machine)
@@ -196,8 +194,8 @@ class EngraveStep(LaserStep):
 
     def build_compute_payload(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> tuple[Part, ComputePayload]:
         """Build a :class:`Part` with the preprocessed raster image
         attached as a :class:`WholeImageSource`, and a
@@ -250,8 +248,8 @@ class EngraveStep(LaserStep):
 
     def assembler_token_params(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> dict | None:
         return self.get_assembler_kwargs(machine, workpiece)
 
@@ -284,7 +282,7 @@ class EngraveStep(LaserStep):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict) -> EngraveStep:
+    def from_dict(cls, data: dict) -> "EngraveStep":
         step = cast("EngraveStep", super().from_dict(data))
         legacy = legacy_producer_params(data)
         # Legacy type names implied a depth mode when none was saved.
@@ -431,10 +429,10 @@ class EngraveStep(LaserStep):
     @classmethod
     def create(
         cls,
-        context: RayforgeContext,
+        context: "RayforgeContext",
         name: str | None = None,
         **kwargs,
-    ) -> EngraveStep:
+    ) -> "EngraveStep":
         machine = context.machine
         assert machine is not None
         default_head = machine.get_default_laser_head()
@@ -476,8 +474,8 @@ class EngraveStep(LaserStep):
 
 def _build_raster_part(
     step: EngraveStep,
-    machine: Machine,
-    workpiece: WorkPiece,
+    machine: "Machine",
+    workpiece: "WorkPiece",
 ) -> tuple[Part, np.ndarray | None]:
     """Render and preprocess the workpiece into a :class:`Part`
     carrying a :class:`WholeImageSource`, and return the alpha

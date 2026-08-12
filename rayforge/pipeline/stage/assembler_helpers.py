@@ -7,8 +7,6 @@ and result-wrapping logic that currently lives inside each producer's
 directly without needing producer class instances.
 """
 
-from __future__ import annotations
-
 import logging
 from enum import Enum, auto
 from gettext import gettext as _
@@ -98,8 +96,8 @@ class DepthMode(Enum):
 
 
 def _trace_surface_to_mm_geometry(
-    surface: cairo.ImageSurface,
-    workpiece: WorkPiece,
+    surface: "cairo.ImageSurface",
+    workpiece: "WorkPiece",
     threshold: float = 0.5,
     auto_threshold: bool = True,
     invert: bool = False,
@@ -141,8 +139,8 @@ def _trace_surface_to_mm_geometry(
 
 
 def build_part_vector(
-    workpiece: WorkPiece,
-    surface: cairo.ImageSurface | None = None,
+    workpiece: "WorkPiece",
+    surface: "cairo.ImageSurface | None" = None,
     *,
     override_threshold: bool = False,
     threshold: float = 0.5,
@@ -220,7 +218,7 @@ MAX_VECTOR_TRACE_PIXELS = 16 * 1024 * 1024
 
 
 def build_part_vector_with_raster_fallback(
-    workpiece: WorkPiece,
+    workpiece: "WorkPiece",
     pixels_per_mm: tuple[float, float],
     *,
     override_threshold: bool = False,
@@ -283,7 +281,7 @@ def build_part_vector_with_raster_fallback(
 
 
 def preprocess_raster_image(
-    surface: cairo.ImageSurface,
+    surface: "cairo.ImageSurface",
     *,
     mode: DepthMode,
     invert: bool = False,
@@ -396,7 +394,7 @@ def _apply_raster_levels(
 
 
 def compute_raster_auto_levels(
-    workpiece: WorkPiece,
+    workpiece: "WorkPiece",
     pixels_per_mm: tuple[float, float],
     *,
     invert: bool = False,

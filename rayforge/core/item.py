@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import uuid
 import weakref
@@ -46,7 +44,7 @@ class _RevisionSignal(Signal):
     def __init__(
         self,
         owner_ref: weakref.ref,
-        bump: Callable[[DocItem], None],
+        bump: "Callable[[DocItem], None]",
     ):
         super().__init__()
         self._owner_ref = owner_ref
@@ -153,7 +151,7 @@ class DocItem(ABC):
             self._name = new_name
             self.updated.send(self)
 
-    def depends_on_asset(self, asset: IAsset) -> bool:
+    def depends_on_asset(self, asset: "IAsset") -> bool:
         """
         Checks if this item has a direct dependency on the given asset.
         Subclasses should override this to check their specific asset links.
@@ -177,12 +175,12 @@ class DocItem(ABC):
 
     @classmethod
     @abstractmethod
-    def from_dict(cls, data: dict) -> DocItem:
+    def from_dict(cls, data: dict) -> "DocItem":
         """Deserializes the item from a dictionary."""
         raise NotImplementedError
 
     @staticmethod
-    def create_from_dict(data: dict) -> DocItem:
+    def create_from_dict(data: dict) -> "DocItem":
         """
         Factory method that deserializes a dictionary into the appropriate
         DocItem subclass based on the 'type' field.
@@ -204,7 +202,7 @@ class DocItem(ABC):
         else:
             raise ValueError(f"Unknown item type: {item_type}")
 
-    def duplicate(self) -> DocItem:
+    def duplicate(self) -> "DocItem":
         """
         Creates a deep copy of this item with new UIDs.
 
@@ -215,7 +213,7 @@ class DocItem(ABC):
         item_dict = self.to_dict()
         new_item = self.__class__.from_dict(item_dict)
 
-        def assign_new_uids(item: DocItem):
+        def assign_new_uids(item: "DocItem"):
             item.uid = str(uuid.uuid4())
             for child in item.children:
                 assign_new_uids(child)
@@ -230,12 +228,12 @@ class DocItem(ABC):
         return iter(self.children)
 
     @property
-    def parent(self) -> DocItem | None:
+    def parent(self) -> "DocItem | None":
         """The parent DocItem in the hierarchy."""
         return self._parent
 
     @parent.setter
-    def parent(self, new_parent: DocItem | None):
+    def parent(self, new_parent: "DocItem | None"):
         """
         Sets the parent of this item. This is typically managed by the
         parent's add/remove_child methods and should not be set directly.
@@ -243,7 +241,7 @@ class DocItem(ABC):
         self._parent = new_parent
 
     @property
-    def doc(self) -> Doc | None:
+    def doc(self) -> "Doc | None":
         """The root Doc object, accessed via the parent hierarchy."""
         if self.parent:
             return self.parent.doc
@@ -587,7 +585,7 @@ class DocItem(ABC):
         self.descendant_added.send(self, origin=child, parent_of_origin=self)
         return child
 
-    def remove_child(self, child: DocItem):
+    def remove_child(self, child: "DocItem"):
         if child not in self.children:
             return
 
@@ -598,7 +596,7 @@ class DocItem(ABC):
         self._recalculate_natural_size()
 
     def add_children(
-        self, children_to_add: Iterable[DocItem], index: int | None = None
+        self, children_to_add: "Iterable[DocItem]", index: int | None = None
     ):
         """
         Adds multiple children in a bulk operation to improve performance,
@@ -640,7 +638,7 @@ class DocItem(ABC):
         self._recalculate_natural_size()
         self.updated.send(self)
 
-    def remove_children(self, children_to_remove: Iterable[DocItem]):
+    def remove_children(self, children_to_remove: "Iterable[DocItem]"):
         """
         Removes multiple children in a bulk operation to improve performance,
         sending a single `updated` signal after all are removed.
@@ -667,7 +665,7 @@ class DocItem(ABC):
         self._recalculate_natural_size()
         self.updated.send(self)
 
-    def set_children(self, new_children: Iterable[DocItem]):
+    def set_children(self, new_children: "Iterable[DocItem]"):
         """
         Correctly updates the list of children by mutating state first,
         then sending notifications.
@@ -724,7 +722,7 @@ class DocItem(ABC):
         return depth
 
     @overload
-    def get_descendants(self) -> list[DocItem]: ...
+    def get_descendants(self) -> "list[DocItem]": ...
 
     @overload
     def get_descendants(self, of_type: type[T_Desc]) -> list[T_Desc]: ...
@@ -748,7 +746,7 @@ class DocItem(ABC):
 
         return all_descendants
 
-    def get_child_by_uid(self, uid: str) -> DocItem | None:
+    def get_child_by_uid(self, uid: str) -> "DocItem | None":
         """
         Finds a direct child of this item by its unique identifier.
 
@@ -763,7 +761,7 @@ class DocItem(ABC):
                 return child
         return None
 
-    def find_descendant_by_uid(self, uid: str) -> DocItem | None:
+    def find_descendant_by_uid(self, uid: str) -> "DocItem | None":
         """
         Recursively searches the subtree for a descendant with a matching UID.
 
@@ -781,7 +779,7 @@ class DocItem(ABC):
                 return found
         return None
 
-    def _connect_child_signals(self, child: DocItem):
+    def _connect_child_signals(self, child: "DocItem"):
         child.updated.connect(self._on_child_updated)
         child.transform_changed.connect(self._on_child_transform_changed)
         child.descendant_added.connect(self._on_descendant_added)
@@ -791,7 +789,7 @@ class DocItem(ABC):
             self._on_descendant_transform_changed
         )
 
-    def _disconnect_child_signals(self, child: DocItem):
+    def _disconnect_child_signals(self, child: "DocItem"):
         child.updated.disconnect(self._on_child_updated)
         child.transform_changed.disconnect(self._on_child_transform_changed)
         child.descendant_added.disconnect(self._on_descendant_added)
@@ -801,34 +799,46 @@ class DocItem(ABC):
             self._on_descendant_transform_changed
         )
 
-    def _on_child_updated(self, sender: DocItem):
+    def _on_child_updated(self, sender: "DocItem"):
         self.descendant_updated.send(
             self, origin=sender, parent_of_origin=self
         )
 
     def _on_child_transform_changed(
-        self, sender: DocItem, *, old_matrix: Matrix | None = None
+        self, sender: "DocItem", *, old_matrix: Matrix | None = None
     ):
         self.descendant_transform_changed.send(
             self, origin=sender, parent_of_origin=self, old_matrix=old_matrix
         )
 
     def _on_descendant_added(
-        self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
+        self,
+        sender: "DocItem",
+        *,
+        origin: "DocItem",
+        parent_of_origin: "DocItem",
     ):
         self.descendant_added.send(
             self, origin=origin, parent_of_origin=parent_of_origin
         )
 
     def _on_descendant_removed(
-        self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
+        self,
+        sender: "DocItem",
+        *,
+        origin: "DocItem",
+        parent_of_origin: "DocItem",
     ):
         self.descendant_removed.send(
             self, origin=origin, parent_of_origin=parent_of_origin
         )
 
     def _on_descendant_updated(
-        self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
+        self,
+        sender: "DocItem",
+        *,
+        origin: "DocItem",
+        parent_of_origin: "DocItem",
     ):
         self.descendant_updated.send(
             self, origin=origin, parent_of_origin=parent_of_origin
@@ -836,10 +846,10 @@ class DocItem(ABC):
 
     def _on_descendant_transform_changed(
         self,
-        sender: DocItem,
+        sender: "DocItem",
         *,
-        origin: DocItem,
-        parent_of_origin: DocItem,
+        origin: "DocItem",
+        parent_of_origin: "DocItem",
         old_matrix: Matrix | None = None,
     ):
         self.descendant_transform_changed.send(
@@ -873,7 +883,7 @@ class DocItem(ABC):
             return parent_transform @ self.matrix
         return self.matrix
 
-    def get_ancestor_by_type(self, ancestor_type: type) -> DocItem | None:
+    def get_ancestor_by_type(self, ancestor_type: type) -> "DocItem | None":
         """
         Traverses the parent hierarchy to find the first ancestor of the
         specified type.

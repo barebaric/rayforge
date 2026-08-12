@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Protocol, cast
 
@@ -54,8 +52,8 @@ class MaterialTestStep(LaserStep):
 
     def get_assembler_kwargs(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> dict:
         _spot_x, spot_y = LaserHead.get_spot_size(
             self.get_selected_laser(machine)
@@ -90,8 +88,8 @@ class MaterialTestStep(LaserStep):
 
     def build_compute_payload(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> tuple[Part, ComputePayload]:
         """Build a :class:`Part` (empty — the material-test grid
         needs no geometry) and a :class:`ComputePayload` carrying a
@@ -126,8 +124,8 @@ class MaterialTestStep(LaserStep):
 
     def assembler_token_params(
         self,
-        machine: Machine,
-        workpiece: WorkPiece,
+        machine: "Machine",
+        workpiece: "WorkPiece",
     ) -> dict | None:
         return self.get_assembler_kwargs(machine, workpiece)
 
@@ -151,7 +149,7 @@ class MaterialTestStep(LaserStep):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict) -> MaterialTestStep:
+    def from_dict(cls, data: dict) -> "MaterialTestStep":
         step = cast("MaterialTestStep", super().from_dict(data))
         legacy = legacy_producer_params(data)
         step.test_type = data.get("test_type", legacy.get("test_type", "Cut"))
@@ -227,10 +225,10 @@ class MaterialTestStep(LaserStep):
     @classmethod
     def create(
         cls,
-        context: RayforgeContext,
+        context: "RayforgeContext",
         name: str | None = None,
         **kwargs,
-    ) -> MaterialTestStep:
+    ) -> "MaterialTestStep":
         machine = context.machine
         assert machine is not None
 

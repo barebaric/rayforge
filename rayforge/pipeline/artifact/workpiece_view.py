@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
@@ -42,7 +40,7 @@ class RenderContext:
         return d
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> RenderContext:
+    def from_dict(cls, data: dict[str, Any]) -> "RenderContext":
         """Deserializes a RenderContext from a dictionary."""
         OpsColorMode = _get_ops_color_mode_enum()
         mode = data.get("ops_color_mode", OpsColorMode.LASER.value)

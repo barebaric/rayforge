@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
@@ -96,7 +94,7 @@ class AddLayerAndSetActiveCommand(Command):
 
     def __init__(
         self,
-        editor: DocEditor,
+        editor: "DocEditor",
         new_layer: Layer | None = None,
         name: str = "Add layer",
     ):
@@ -160,7 +158,7 @@ class AddLayerAndSetActiveCommand(Command):
 class LayerCmd:
     """Handles commands related to layer manipulation."""
 
-    def __init__(self, editor: DocEditor):
+    def __init__(self, editor: "DocEditor"):
         self._editor = editor
 
     def move_workpieces_to_layer(
@@ -184,7 +182,7 @@ class LayerCmd:
         self._editor.history_manager.execute(cmd)
 
     def move_selected_to_adjacent_layer(
-        self, surface: WorkSurface, direction: int
+        self, surface: "WorkSurface", direction: int
     ):
         """
         Creates an undoable command to move selected workpieces to the

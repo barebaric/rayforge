@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import warnings
 from abc import ABC, abstractmethod
@@ -41,9 +39,9 @@ class Renderer(ABC):
 
     def compute_render_spec(
         self,
-        segment: SourceAssetSegment | None,
+        segment: "SourceAssetSegment | None",
         target_size: tuple[int, int],
-        source_context: RenderContext,
+        source_context: "RenderContext",
     ) -> RenderSpecification:
         """
         Calculates the strategy for rendering. Subclasses will override this.
@@ -84,7 +82,7 @@ class Renderer(ABC):
 
     def render_preview_image(
         self,
-        import_result: ImportResult,
+        import_result: "ImportResult",
         target_width: int,
         target_height: int,
     ) -> pyvips.Image | None:
@@ -128,9 +126,9 @@ class RasterRenderer(Renderer):
 
     def compute_render_spec(
         self,
-        segment: SourceAssetSegment | None,
+        segment: "SourceAssetSegment | None",
         target_size: tuple[int, int],
-        source_context: RenderContext,
+        source_context: "RenderContext",
     ) -> RenderSpecification:
         """
         Calculates the render specification for a raster source. If the
@@ -200,9 +198,9 @@ class UnknownRenderer(Renderer):
 
     def compute_render_spec(
         self,
-        segment: SourceAssetSegment | None,
+        segment: "SourceAssetSegment | None",
         target_size: tuple[int, int],
-        source_context: RenderContext,
+        source_context: "RenderContext",
     ) -> RenderSpecification:
         """
         Always returns minimal render spec to avoid crashes.
@@ -233,7 +231,7 @@ class UnknownRenderer(Renderer):
 
     def render_preview_image(
         self,
-        import_result: ImportResult,
+        import_result: "ImportResult",
         target_width: int,
         target_height: int,
     ) -> pyvips.Image | None:

@@ -2,8 +2,6 @@
 Defines the Workflow class, which holds an ordered sequence of Steps.
 """
 
-from __future__ import annotations
-
 import logging
 from collections.abc import Iterable
 from typing import Any, TypeVar
@@ -56,7 +54,7 @@ class Workflow(DocItem):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Workflow:
+    def from_dict(cls, data: dict[str, Any]) -> "Workflow":
         """Deserializes a dictionary into a Workflow instance."""
         known_keys = {
             "uid",

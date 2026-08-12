@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import math
 from gettext import gettext as _
@@ -102,8 +100,8 @@ class OverscanTransformer(OpsTransformer):
 
     def to_spec(
         self,
-        workpiece: WorkPiece | None,
-        stock_geometries: list[Geometry] | None,
+        workpiece: "WorkPiece | None",
+        stock_geometries: "list[Geometry] | None",
         settings: dict[str, Any] | None,
     ) -> OverscanSpec:
         if settings and settings.get("driver_native_overscan"):
@@ -118,7 +116,7 @@ class OverscanTransformer(OpsTransformer):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> OverscanTransformer:
+    def from_dict(cls, data: dict[str, Any]) -> "OverscanTransformer":
         return cls(
             enabled=data.get("enabled", True),
             distance_mm=data.get("distance_mm", 2.0),

@@ -23,8 +23,6 @@ should be roughly attributable to the reported owners.  Discrepancies
 point to untracked holders.
 """
 
-from __future__ import annotations
-
 import gc
 import logging
 import os
@@ -215,7 +213,7 @@ def _claim_ops(
 
 
 def _measure_encoded_output(
-    r: OwnerReport, label: str, encoded: EncodedOutput | None
+    r: OwnerReport, label: str, encoded: "EncodedOutput | None"
 ) -> None:
     """Record the encoded G-code text and op-map payloads."""
     if encoded is None:
@@ -239,7 +237,7 @@ def _measure_encoded_output(
     r.items.append((label2, lines_sz))
 
 
-def _measure_artifact_store(store: ArtifactStore) -> OwnerReport:
+def _measure_artifact_store(store: "ArtifactStore") -> OwnerReport:
     r = OwnerReport(name="ArtifactStore")
     seen_ops: set[int] = set()
     for key, art in store._artifacts.items():
@@ -271,7 +269,7 @@ def _measure_artifact_store(store: ArtifactStore) -> OwnerReport:
     return r
 
 
-def _measure_view_manager(vm: ViewManager) -> OwnerReport:
+def _measure_view_manager(vm: "ViewManager") -> OwnerReport:
     r = OwnerReport(name="ViewManager")
     for composite_id, entry in vm._view_entries.items():
         label = f"ViewEntry{composite_id}"
@@ -282,7 +280,7 @@ def _measure_view_manager(vm: ViewManager) -> OwnerReport:
     return r
 
 
-def _measure_scene_presenter(presenter: ScenePresenter) -> OwnerReport:
+def _measure_scene_presenter(presenter: "ScenePresenter") -> OwnerReport:
     r = OwnerReport(name="ScenePresenter")
     art = presenter._compiled_artifact
     if art is None:
@@ -312,7 +310,7 @@ def _measure_scene_presenter(presenter: ScenePresenter) -> OwnerReport:
     return r
 
 
-def _measure_pipeline(pipeline: Pipeline) -> OwnerReport:
+def _measure_pipeline(pipeline: "Pipeline") -> OwnerReport:
     r = OwnerReport(name="Pipeline")
     # raygeo cache
     cache_bytes = pipeline._raygeo_pipeline.cache_used_bytes
@@ -330,7 +328,7 @@ def _measure_pipeline(pipeline: Pipeline) -> OwnerReport:
     return r
 
 
-def _measure_source_assets(doc: Doc) -> OwnerReport:
+def _measure_source_assets(doc: "Doc") -> OwnerReport:
     r = OwnerReport(name="SourceAssets")
     for layer in doc.layers:
         for wp in layer.all_workpieces:
@@ -538,12 +536,12 @@ class AppProtocol(Protocol):
     def quit_idle(self) -> None: ...
 
 
-def _find_scene_presenter(win: MainWindow) -> ScenePresenter | None:
+def _find_scene_presenter(win: "MainWindow") -> "ScenePresenter | None":
     """Locate the ScenePresenter on the 3D canvas, if it exists."""
     try:
         from rayforge.ui_gtk.sim3d.canvas3d import Canvas3D
 
-        def search(widget: Gtk.Widget) -> ScenePresenter | None:
+        def search(widget: "Gtk.Widget") -> "ScenePresenter | None":
             if isinstance(widget, Canvas3D):
                 return widget._presenter
             child = widget.get_first_child()
@@ -560,7 +558,7 @@ def _find_scene_presenter(win: MainWindow) -> ScenePresenter | None:
 
 
 def _wait_for_settle(
-    editor: DocEditor, quiet_seconds: float = 2.0, timeout: float = 300.0
+    editor: "DocEditor", quiet_seconds: float = 2.0, timeout: float = 300.0
 ) -> bool:
     """Block until ``editor.is_processing`` has been False for
     *quiet_seconds* consecutive seconds, or *timeout* elapses."""
@@ -588,7 +586,7 @@ def _wait_for_settle(
     return False
 
 
-def _switch_to_3d_view(win: MainWindow) -> None:
+def _switch_to_3d_view(win: "MainWindow") -> None:
     """Switch the view stack to the 3D page so the GLArea realizes."""
     try:
         win.view_stack.set_visible_child_name("3d")
@@ -597,7 +595,7 @@ def _switch_to_3d_view(win: MainWindow) -> None:
         logger.warning("snapshot_memory: failed to switch to 3D: %s", e)
 
 
-def _wait_for_gl(win: MainWindow, timeout: float = 30.0) -> None:
+def _wait_for_gl(win: "MainWindow", timeout: float = 30.0) -> None:
     """Wait for the 3D canvas GL to initialize and scene to compile."""
     canvas = win.canvas3d
     if canvas is None:
@@ -614,7 +612,9 @@ def _wait_for_gl(win: MainWindow, timeout: float = 30.0) -> None:
     )
 
 
-def _wait_for_scene_compiled(win: MainWindow, timeout: float = 120.0) -> None:
+def _wait_for_scene_compiled(
+    win: "MainWindow", timeout: float = 120.0
+) -> None:
     """Wait for the ScenePresenter to have a compiled artifact."""
     canvas = win.canvas3d
     if canvas is None:
@@ -631,7 +631,7 @@ def _wait_for_scene_compiled(win: MainWindow, timeout: float = 120.0) -> None:
     )
 
 
-def run_snapshot(app: AppProtocol, win: MainWindow) -> None:
+def run_snapshot(app: AppProtocol, win: "MainWindow") -> None:
     """Entry point — called from the UI script thread."""
     logger.info("snapshot_memory: waiting for document to settle...")
     editor = win.doc_editor
@@ -693,7 +693,7 @@ def run_snapshot(app: AppProtocol, win: MainWindow) -> None:
 # When run via --uiscript, the globals `app` and `win` are injected
 # by rayforge.uiscript._set_context().
 _app: AppProtocol | None = None
-_win: MainWindow | None = None
+_win: "MainWindow | None" = None
 try:
     from rayforge import uiscript as _ui
 

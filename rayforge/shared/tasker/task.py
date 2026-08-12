@@ -2,8 +2,6 @@
 Task module for managing individual tasks.
 """
 
-from __future__ import annotations
-
 import asyncio
 import logging
 from asyncio.exceptions import CancelledError
@@ -23,7 +21,7 @@ class Task:
         coro: Callable[..., Coroutine[Any, Any, Any]],
         *args: Any,
         key: Any | None = None,
-        when_done: Callable[[Task], None] | None = None,
+        when_done: "Callable[[Task], None] | None" = None,
         task_type: str = "asyncio",
         **kwargs: Any,
     ):

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -19,7 +17,7 @@ class TangentConstraintParams:
 class TangentConstraintCommand:
     @staticmethod
     def identify_entities(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         entity_ids: list[EntityID],
     ) -> TangentConstraintParams | None:
         sel_line: Line | None = None

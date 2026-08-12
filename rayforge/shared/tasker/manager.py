@@ -2,8 +2,6 @@
 TaskManager module for managing task execution.
 """
 
-from __future__ import annotations
-
 import asyncio
 import logging
 import threading
@@ -36,7 +34,7 @@ class TaskManager:
         main_thread_scheduler: Callable,
         worker_initializer: Callable[..., None] | None = None,
         worker_initargs: tuple = (),
-        shared_state: DictProxy[str, Any] | None = None,
+        shared_state: "DictProxy[str, Any] | None" = None,
     ) -> None:
         logger.debug("Initializing TaskManager")
         self._tasks: dict[Any, Task] = {}
@@ -570,7 +568,7 @@ class TaskManager:
         task_id,
         event_name,
         data,
-        adoption_signals: DictProxy[str, bool],
+        adoption_signals: "DictProxy[str, bool]",
     ):
         signal_key = f"{task_id}:{event_name}"
         logger.debug(
@@ -658,7 +656,7 @@ class TaskManager:
         task_id: int,
         event_name: str,
         data: dict,
-        adoption_signals: DictProxy[str, Any],
+        adoption_signals: "DictProxy[str, Any]",
     ):
         """Dispatches a task event from the main thread."""
         with self._lock:

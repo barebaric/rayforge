@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING
@@ -28,7 +26,7 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         entity: Entity,
         name: str = _("Add Constraint"),
     ):
@@ -40,9 +38,9 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
 
     @staticmethod
     def get_constraint_for_entity(
-        sketch: Sketch,
+        sketch: "Sketch",
         entity: Entity,
-    ) -> Constraint | None:
+    ) -> "Constraint | None":
         """
         Returns existing constraint for entity, or None.
 
@@ -84,10 +82,10 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
 
     @staticmethod
     def create_constraint_for_entity(
-        sketch: Sketch,
+        sketch: "Sketch",
         entity: Entity,
         initial_value: float | None = None,
-    ) -> Constraint | None:
+    ) -> "Constraint | None":
         """
         Creates and returns a new constraint for the entity.
 
@@ -134,7 +132,7 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
         return None
 
     @property
-    def constraint(self) -> Constraint | None:
+    def constraint(self) -> "Constraint | None":
         """
         Returns the constraint involved in this operation.
 
@@ -184,5 +182,5 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
         if self._add_cmd is not None:
             self._add_cmd._do_undo()
 
-    def _get_command_label(self, constraint: Constraint) -> str:
+    def _get_command_label(self, constraint: "Constraint") -> str:
         return _("Add {}").format(constraint.get_type_name())

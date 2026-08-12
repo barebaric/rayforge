@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import logging
 from collections.abc import Callable, Generator
@@ -52,9 +50,9 @@ class Pipeline:
     def __init__(
         self,
         doc: Doc | None,
-        task_manager: TaskManager,
+        task_manager: "TaskManager",
         artifact_store: ArtifactStore,
-        machine: Machine | None,
+        machine: "Machine | None",
         cache_budget_bytes: int = 2 * 1024 * 1024 * 1024,
     ):
         if machine is None:
@@ -160,11 +158,11 @@ class Pipeline:
         self._intent_ctl.set_doc(new_doc)
 
     @property
-    def machine(self) -> Machine | None:
+    def machine(self) -> "Machine | None":
         return self._machine
 
     @property
-    def task_manager(self) -> TaskManager:
+    def task_manager(self) -> "TaskManager":
         return self._task_manager
 
     @property
@@ -224,7 +222,7 @@ class Pipeline:
     # Machine
     # ------------------------------------------------------------------
 
-    def set_machine(self, machine: Machine) -> None:
+    def set_machine(self, machine: "Machine") -> None:
         if self._machine is machine:
             return
         if self._machine is not None:
@@ -406,7 +404,7 @@ class Pipeline:
     ) -> BaseArtifactHandle | None:
         return self._wp_handles.get((workpiece_uid, step_uid))
 
-    def get_artifact(self, step: Step, workpiece: WorkPiece) -> Any:
+    def get_artifact(self, step: "Step", workpiece: WorkPiece) -> Any:
         handle = self._wp_handles.get((workpiece.uid, step.uid))
         if handle is None:
             return None

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -14,10 +12,10 @@ if TYPE_CHECKING:
 
 @dataclass
 class VertexLayer:
-    powered_verts: CompressedArray
-    powered_attrib: CompressedArray
-    travel_verts: CompressedArray
-    zero_power_verts: CompressedArray
+    powered_verts: "CompressedArray"
+    powered_attrib: "CompressedArray"
+    travel_verts: "CompressedArray"
+    zero_power_verts: "CompressedArray"
     powered_cmd_offsets: np.ndarray = field(
         default_factory=lambda: np.array([], dtype=np.int32)
     )
@@ -29,7 +27,7 @@ class VertexLayer:
 
 @dataclass
 class TextureLayer:
-    power_texture: CompressedArray
+    power_texture: "CompressedArray"
     width_px: int
     height_px: int
     model_matrix: np.ndarray
@@ -42,8 +40,8 @@ class TextureLayer:
 
 @dataclass
 class ScanlineOverlayLayer:
-    positions: CompressedArray
-    overlay_attrib: CompressedArray
+    positions: "CompressedArray"
+    overlay_attrib: "CompressedArray"
     cmd_offsets: np.ndarray
     is_rotary: bool = False
 

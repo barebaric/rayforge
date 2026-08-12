@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -60,7 +58,7 @@ class OpsTransformer(ABC):
     def to_spec(
         self,
         workpiece: WorkPiece | None,
-        stock_geometries: list[Geometry] | None,
+        stock_geometries: "list[Geometry] | None",
         settings: dict[str, Any] | None,
     ) -> Any:
         """Return the typed Rust spec for this transformer.
@@ -81,7 +79,7 @@ class OpsTransformer(ABC):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> OpsTransformer:
+    def from_dict(cls, data: dict[str, Any]) -> "OpsTransformer":
         """
         Acts as a factory to create a transformer instance from a dictionary.
         This method should be called on the base class, e.g.,

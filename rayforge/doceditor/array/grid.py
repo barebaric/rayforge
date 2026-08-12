@@ -1,7 +1,5 @@
 """Grid (rows x columns) array strategy."""
 
-from __future__ import annotations
-
 from raygeo.geo import Matrix
 
 from .base import ArrayStrategy

@@ -8,8 +8,6 @@ layer is given the corresponding step type, after which the regular
 recipe matching applies its settings.
 """
 
-from __future__ import annotations
-
 import logging
 import uuid
 from dataclasses import asdict, dataclass, field
@@ -45,7 +43,7 @@ class ColorPreset:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> ColorPreset:
+    def from_dict(cls, data: dict[str, Any]) -> "ColorPreset":
         """Deserializes a preset from a dictionary."""
         return cls(
             color=data.get("color", ""),

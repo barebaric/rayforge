@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import math
 from typing import TYPE_CHECKING
 
@@ -25,14 +23,14 @@ RESIZE_BEHAVIORS = {
 
 
 def calculate_resized_box(
-    original_box: Rect,
+    original_box: "Rect",
     active_region: ElementRegion,
-    drag_delta: Point,
+    drag_delta: "Point",
     is_flipped: bool,
     constrain_aspect: bool = False,
     from_center: bool = False,
     min_size: tuple[float, float] = (0.0, 0.0),
-) -> Rect:
+) -> "Rect":
     """
     Calculates a new bounding box based on a resize operation.
     This is the central, data-driven logic for all resizing, and it
@@ -199,7 +197,7 @@ def rotate_element(
     world_x: float,
     world_y: float,
     initial_world_transform: Matrix,
-    rotation_pivot: Point,
+    rotation_pivot: "Point",
     drag_start_angle: float,
 ):
     """

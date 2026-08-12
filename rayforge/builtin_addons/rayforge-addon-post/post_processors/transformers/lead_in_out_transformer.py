@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import math
 from gettext import gettext as _
@@ -115,8 +113,8 @@ class LeadInOutTransformer(OpsTransformer):
 
     def to_spec(
         self,
-        workpiece: WorkPiece | None,
-        stock_geometries: list[Geometry] | None,
+        workpiece: "WorkPiece | None",
+        stock_geometries: "list[Geometry] | None",
         settings: dict[str, Any] | None,
     ) -> LeadInOutSpec:
         return LeadInOutSpec(
@@ -132,7 +130,7 @@ class LeadInOutTransformer(OpsTransformer):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> LeadInOutTransformer:
+    def from_dict(cls, data: dict[str, Any]) -> "LeadInOutTransformer":
         return cls(
             enabled=data.get("enabled", True),
             lead_in_mm=data.get("lead_in_mm", 2.0),

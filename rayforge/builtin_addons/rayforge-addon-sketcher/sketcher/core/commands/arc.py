@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING
@@ -57,7 +55,7 @@ class ArcPreviewState(PreviewState):
         """Returns True if start point has been set."""
         return self.start_id is not None
 
-    def set_radius(self, registry: EntityRegistry, radius: float) -> None:
+    def set_radius(self, registry: "EntityRegistry", radius: float) -> None:
         """
         Sets the arc radius from numeric input.
 
@@ -85,7 +83,9 @@ class ArcPreviewState(PreviewState):
         end.x = center.x + radius * math.cos(end_angle)
         end.y = center.y + radius * math.sin(end_angle)
 
-    def get_dimensions(self, registry: EntityRegistry) -> list[DimensionData]:
+    def get_dimensions(
+        self, registry: "EntityRegistry"
+    ) -> list[DimensionData]:
         """
         Returns the arc radius dimension for preview.
 
@@ -135,7 +135,7 @@ class ArcCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         center_id: EntityID,
         start_id: EntityID,
         end_pos: GeoPoint,
@@ -164,7 +164,7 @@ class ArcCommand(SketchChangeCommand):
 
     @staticmethod
     def start_center_preview(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         x: float,
         y: float,
         snapped_pid: EntityID | None = None,
@@ -195,7 +195,7 @@ class ArcCommand(SketchChangeCommand):
 
     @staticmethod
     def set_start_point(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         preview_state: PreviewState,
         x: float,
         y: float,
@@ -235,7 +235,7 @@ class ArcCommand(SketchChangeCommand):
 
     @staticmethod
     def start_preview(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         x: float,
         y: float,
         snapped_pid: EntityID | None = None,
@@ -277,7 +277,7 @@ class ArcCommand(SketchChangeCommand):
 
     @staticmethod
     def update_preview(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         preview_state: PreviewState,
         x: float,
         y: float,
@@ -335,7 +335,7 @@ class ArcCommand(SketchChangeCommand):
 
     @staticmethod
     def cleanup_preview(
-        registry: EntityRegistry, preview_state: PreviewState
+        registry: "EntityRegistry", preview_state: PreviewState
     ) -> None:
         """
         Removes preview entities from the registry.
@@ -375,7 +375,7 @@ class ArcCommand(SketchChangeCommand):
 
     @staticmethod
     def cleanup_center_preview(
-        registry: EntityRegistry, preview_state: PreviewState
+        registry: "EntityRegistry", preview_state: PreviewState
     ) -> None:
         """
         Removes center point preview (when only center is set).

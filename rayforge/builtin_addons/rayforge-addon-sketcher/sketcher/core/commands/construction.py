@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from typing import TYPE_CHECKING
 
@@ -14,7 +12,7 @@ logger = logging.getLogger(__name__)
 class ToggleConstructionCommand(SketchChangeCommand):
     """Command to toggle the construction state of multiple entities."""
 
-    def __init__(self, sketch: Sketch, name: str, entity_ids: list[int]):
+    def __init__(self, sketch: "Sketch", name: str, entity_ids: list[int]):
         super().__init__(sketch, name)
         self.entity_ids = entity_ids
         self.original_states: dict[int, bool] = {}

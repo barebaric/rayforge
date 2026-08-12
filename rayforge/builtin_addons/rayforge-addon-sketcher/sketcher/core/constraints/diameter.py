@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import math
 from collections.abc import Callable
 from gettext import gettext as _
@@ -50,7 +48,7 @@ class DiameterConstraint(Constraint):
 
     @classmethod
     def can_apply_to(
-        cls, selection: SketchSelection, sketch: Sketch | None = None
+        cls, selection: "SketchSelection", sketch: "Sketch | None" = None
     ) -> bool:
         if selection.point_ids or len(selection.entity_ids) != 1:
             return False
@@ -68,7 +66,7 @@ class DiameterConstraint(Constraint):
         """Returns a human-readable title for this constraint."""
         return f"{self.get_type_name()} {self._format_value()}"
 
-    def get_subtitle(self, registry: EntityRegistry) -> str:
+    def get_subtitle(self, registry: "EntityRegistry") -> str:
         """Returns a human-readable subtitle describing constrained entity."""
         entity = registry.get_entity(self.circle_id)
         if isinstance(entity, Circle):
@@ -96,7 +94,7 @@ class DiameterConstraint(Constraint):
         return data
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> DiameterConstraint:
+    def from_dict(cls, data: dict[str, Any]) -> "DiameterConstraint":
         return cls(
             circle_id=data["circle_id"],
             value=data["value"],
@@ -105,11 +103,13 @@ class DiameterConstraint(Constraint):
         )
 
     def constrains_radius(
-        self, registry: EntityRegistry, entity_id: EntityID
+        self, registry: "EntityRegistry", entity_id: EntityID
     ) -> bool:
         return self.circle_id == entity_id
 
-    def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
+    def error(
+        self, reg: "EntityRegistry", params: "ParameterContext"
+    ) -> float:
         circle_entity = reg.get_entity(self.circle_id)
 
         if not isinstance(circle_entity, Circle):
@@ -123,7 +123,7 @@ class DiameterConstraint(Constraint):
         return 2 * curr_r - target_diameter
 
     def gradient(
-        self, reg: EntityRegistry, params: ParameterContext
+        self, reg: "EntityRegistry", params: "ParameterContext"
     ) -> dict[EntityID, list[Point]]:
         entity = reg.get_entity(self.circle_id)
         if isinstance(entity, Circle):
@@ -145,7 +145,7 @@ class DiameterConstraint(Constraint):
 
     def get_label_pos(
         self,
-        reg: EntityRegistry,
+        reg: "EntityRegistry",
         to_screen: Callable[[Point], Point],
         element: Any,
     ):
@@ -157,7 +157,7 @@ class DiameterConstraint(Constraint):
         self,
         sx: float,
         sy: float,
-        reg: EntityRegistry,
+        reg: "EntityRegistry",
         to_screen: Callable[[Point], Point],
         element: Any,
         threshold: float,
@@ -185,8 +185,8 @@ class DiameterConstraint(Constraint):
 
     def draw(
         self,
-        ctx: cairo.Context,
-        registry: EntityRegistry,
+        ctx: "cairo.Context",
+        registry: "EntityRegistry",
         to_screen: Callable[[Point], Point],
         is_selected: bool = False,
         is_hovered: bool = False,

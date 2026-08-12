@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any
 
 from raygeo.ops import Ops
@@ -57,7 +55,7 @@ class JobArtifact(BaseArtifact):
         generation_id: int,
         time_estimate: float | None = None,
         mapped_ops: Ops | None = None,
-        encoded_output: EncodedOutput | None = None,
+        encoded_output: "EncodedOutput | None" = None,
     ):
         super().__init__()
         self.ops = ops
@@ -86,7 +84,7 @@ class JobArtifact(BaseArtifact):
         return encoded.text if encoded else None
 
     @property
-    def op_map(self) -> MachineCodeOpMap | None:
+    def op_map(self) -> "MachineCodeOpMap | None":
         """
         Lazily decodes and caches the MachineCodeOpMap from encoded_output.
         """
@@ -94,7 +92,7 @@ class JobArtifact(BaseArtifact):
         return encoded.op_map if encoded else None
 
     @property
-    def encoded_output(self) -> EncodedOutput | None:
+    def encoded_output(self) -> "EncodedOutput | None":
         """Returns the cached EncodedOutput, if any."""
         return self._encoded_output
 
@@ -111,7 +109,7 @@ class JobArtifact(BaseArtifact):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> JobArtifact:
+    def from_dict(cls, data: dict[str, Any]) -> "JobArtifact":
         """Creates an artifact from a dictionary."""
         ops = Ops.from_dict(data["ops"])
         common_args = {

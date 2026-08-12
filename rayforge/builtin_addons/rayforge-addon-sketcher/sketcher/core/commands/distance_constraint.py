@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -22,7 +20,7 @@ class DistanceConstraintParams:
 class DistanceConstraintCommand:
     @staticmethod
     def calculate_distance(
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         point_ids: list[EntityID],
         entity_ids: list[EntityID],
     ) -> DistanceConstraintParams | None:
@@ -55,7 +53,7 @@ class DistanceConstraintCommand:
 
     @staticmethod
     def calculate_distance_from_points(
-        p1: Point,
-        p2: Point,
+        p1: "Point",
+        p2: "Point",
     ) -> float:
         return math.hypot(p1.x - p2.x, p1.y - p2.y)

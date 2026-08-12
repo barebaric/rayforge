@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
@@ -32,7 +30,7 @@ logger = logging.getLogger(__name__)
 class LayoutCmd:
     """Handles alignment, distribution, and automatic layout of items."""
 
-    def __init__(self, editor: DocEditor, task_manager: TaskManager):
+    def __init__(self, editor: "DocEditor", task_manager: "TaskManager"):
         self._editor = editor
         self._task_manager = task_manager
 
@@ -74,7 +72,7 @@ class LayoutCmd:
         # Connect the handler before running the task.
         strategy.error_reported.connect(on_error_reported)
 
-        def when_done(task: Task):
+        def when_done(task: "Task"):
             """
             This callback runs on the main thread after the task finishes.
             It disconnects the signal handler and safely applies the

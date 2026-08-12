@@ -33,8 +33,6 @@ representation of the inputs that affect a node's output:
   transformer_params + position_sensitive())``.
 """
 
-from __future__ import annotations
-
 import asyncio
 import hashlib
 import json
@@ -146,7 +144,7 @@ class IntentBuilder:
 
     def __init__(
         self,
-        machine: Machine,
+        machine: "Machine",
         generation_id: int = 0,
         loop: asyncio.AbstractEventLoop | None = None,
     ):
@@ -159,7 +157,7 @@ class IntentBuilder:
     def generation_id(self) -> int:
         return self._generation_id
 
-    def build(self, doc: Doc) -> list[NodeRequest]:
+    def build(self, doc: "Doc") -> list[NodeRequest]:
         """
         Walk *doc* and produce one NodeRequest per workpiece-step pair,
         one per step, and one final job aggregate.
@@ -213,10 +211,10 @@ class IntentBuilder:
 
     def _build_workpiece_nodes(
         self,
-        step: Step,
-        workpieces: Sequence[WorkPiece],
+        step: "Step",
+        workpieces: "Sequence[WorkPiece]",
         out: list[NodeRequest],
-    ) -> list[tuple[str, int, WorkPiece]]:
+    ) -> "list[tuple[str, int, WorkPiece]]":
         """
         Append one compute NodeRequest per workpiece for *step* and
         return the list of ``(node_key, version_token, workpiece)``
@@ -261,9 +259,9 @@ class IntentBuilder:
 
     def _build_step_node(
         self,
-        step: Step,
-        layer: Layer,
-        upstream: list[tuple[str, int, WorkPiece]],
+        step: "Step",
+        layer: "Layer",
+        upstream: "list[tuple[str, int, WorkPiece]]",
         out: list[NodeRequest],
     ) -> None:
         key = step_key(step.uid)
@@ -277,7 +275,7 @@ class IntentBuilder:
 
     def _build_job_node(
         self,
-        doc: Doc,
+        doc: "Doc",
         out: list[NodeRequest],
         step_tokens: dict[str, int],
     ) -> None:
@@ -291,7 +289,7 @@ class IntentBuilder:
 
     def _build_machine_transform_node(
         self,
-        doc: Doc,
+        doc: "Doc",
         out: list[NodeRequest],
         step_tokens: dict[str, int],
     ) -> None:
@@ -318,7 +316,7 @@ class IntentBuilder:
 
     def _build_encoder_node(
         self,
-        doc: Doc,
+        doc: "Doc",
         out: list[NodeRequest],
         step_tokens: dict[str, int],
     ) -> None:
@@ -365,7 +363,7 @@ class IntentBuilder:
         return _hash_int({"kind": "stock", "items": payload})
 
     def _compute_token(
-        self, step: Step, wp: WorkPiece, pos_sensitive: bool
+        self, step: "Step", wp: "WorkPiece", pos_sensitive: bool
     ) -> int:
         payload = {
             "kind": "compute",
@@ -395,9 +393,9 @@ class IntentBuilder:
 
     def _aggregate_token(
         self,
-        step: Step,
-        layer: Layer,
-        upstream: list[tuple[str, int, WorkPiece]],
+        step: "Step",
+        layer: "Layer",
+        upstream: "list[tuple[str, int, WorkPiece]]",
     ) -> int:
         # Fold the per-workpiece placement matrix and target dimensions
         # into the token. The aggregate applies the placement matrix
@@ -427,7 +425,7 @@ class IntentBuilder:
             payload["stock_rev"] = self._stock_revision()
         return _hash_int(payload)
 
-    def _job_token(self, doc: Doc, step_tokens: dict[str, int]) -> int:
+    def _job_token(self, doc: "Doc", step_tokens: dict[str, int]) -> int:
         # The job aggregate concatenates the step aggregates' outputs
         # verbatim (identity placement at the job level). Its token
         # therefore folds in the per-step aggregate tokens so that any
@@ -472,7 +470,7 @@ class IntentBuilder:
     # Compute stage construction
     # ------------------------------------------------------------------
 
-    def _wp_stage(self, step: Step, wp: WorkPiece) -> StageSpec.Compute:
+    def _wp_stage(self, step: "Step", wp: "WorkPiece") -> StageSpec.Compute:
         """
         Build a compute :class:`StageSpec.Compute` for the workpiece
         node by delegating to :meth:`Step.build_compute_payload`.
@@ -508,7 +506,7 @@ class IntentBuilder:
                         ]
         return StageSpec.Compute(part=part, params=payload)
 
-    def _assembler_params(self, step: Step, wp: WorkPiece) -> Any:
+    def _assembler_params(self, step: "Step", wp: "WorkPiece") -> Any:
         """
         Return a JSON-serialisable representation of the assembler spec
         parameters that the step resolves for its machine.
@@ -535,7 +533,7 @@ class IntentBuilder:
         self,
         transformer_dicts: list[dict[str, Any]],
         *,
-        workpiece: WorkPiece | None = None,
+        workpiece: "WorkPiece | None" = None,
     ) -> list[Any]:
         """Build typed Rust ``*Spec`` pyclasses from a list of
         serialised transformer dicts.
@@ -648,8 +646,8 @@ class IntentBuilder:
 
     def _step_stage(
         self,
-        step: Step,
-        upstream: list[tuple[str, int, WorkPiece]],
+        step: "Step",
+        upstream: "list[tuple[str, int, WorkPiece]]",
     ) -> StageSpec.Aggregate:
         """
         Build an aggregate :class:`StageSpec.Aggregate` for the step
@@ -718,7 +716,7 @@ class IntentBuilder:
     # ------------------------------------------------------------------
 
     def _job_stage(
-        self, doc: Doc, step_tokens: dict[str, int]
+        self, doc: "Doc", step_tokens: dict[str, int]
     ) -> StageSpec.Aggregate:
         """
         Build the final job aggregate :class:`StageSpec.Aggregate`.
@@ -773,7 +771,7 @@ class IntentBuilder:
     # Encoder stage
     # ------------------------------------------------------------------
 
-    def _encode_stage(self, doc: Doc) -> EncodeSpec:
+    def _encode_stage(self, doc: "Doc") -> EncodeSpec:
         """Build the encoder :class:`EncodeSpec` for the job encode
         node.
 
@@ -789,7 +787,7 @@ class IntentBuilder:
             source_key=job_machinexform_key(), encoder=Encoder(encoder)
         )
 
-    def _build_encoder(self, doc: Doc) -> Any:
+    def _build_encoder(self, doc: "Doc") -> Any:
         """Resolve the encoder for the configured machine.
 
         Routes Grbl machines to the native Rust ``GcodeSpec`` and
@@ -810,7 +808,7 @@ class IntentBuilder:
             "driver.encode",
         )
 
-    def _grbl_encoder_spec(self, doc: Doc) -> GcodeSpec:
+    def _grbl_encoder_spec(self, doc: "Doc") -> GcodeSpec:
         """Build a native ``GcodeSpec`` for a Grbl machine.
 
         Receives machine-space ops from the upstream
@@ -833,7 +831,9 @@ class IntentBuilder:
             context_json=json.dumps(context),
         )
 
-    def _build_machine_transform_stage(self, doc: Doc) -> MachineTransformSpec:
+    def _build_machine_transform_stage(
+        self, doc: "Doc"
+    ) -> MachineTransformSpec:
         """Build the :class:`MachineTransformSpec` for the machine-
         transform pipeline node.
 
@@ -884,8 +884,8 @@ class IntentBuilder:
 
     @staticmethod
     def _build_rotary_mappings(
-        doc: Doc,
-        machine: Machine,
+        doc: "Doc",
+        machine: "Machine",
     ) -> list:
         """Build per-layer :class:`RotaryMappingSpec` entries."""
         mappings: list = []
@@ -939,7 +939,7 @@ class IntentBuilder:
         return mappings
 
     def _make_python_encoder_callable(
-        self, machine: Machine, doc: Doc
+        self, machine: "Machine", doc: "Doc"
     ) -> Callable[[Any], Any]:
         """Build a Python callable ``(ops) -> EncodeOutput`` that
         invokes the driver-specific encoder directly on
@@ -979,7 +979,7 @@ class IntentBuilder:
     # Encoder token
     # ------------------------------------------------------------------
 
-    def _encode_token(self, doc: Doc, step_tokens: dict[str, int]) -> int:
+    def _encode_token(self, doc: "Doc", step_tokens: dict[str, int]) -> int:
         """Compute the version token for the job encode node.
 
         Folds in the machine-transform node's token plus the encoder
@@ -994,7 +994,7 @@ class IntentBuilder:
         return _hash_int(payload)
 
     def _machine_transform_token(
-        self, doc: Doc, step_tokens: dict[str, int]
+        self, doc: "Doc", step_tokens: dict[str, int]
     ) -> int:
         """Compute the version token for the machine-transform node.
 
@@ -1018,7 +1018,7 @@ class IntentBuilder:
 # ----------------------------------------------------------------------
 
 
-def _workpiece_placement_matrix(wp: WorkPiece) -> list[list[float]]:
+def _workpiece_placement_matrix(wp: "WorkPiece") -> list[list[float]]:
     """
     Build the 4×4 placement matrix for a workpiece's aggregate input.
 
@@ -1079,12 +1079,12 @@ _IDENTITY_4X4: list[list[float]] = [
 ]
 
 
-def _is_grbl(dialect: GcodeDialect) -> bool:
+def _is_grbl(dialect: "GcodeDialect") -> bool:
     """Return True if *dialect* is the Grbl G-code dialect."""
     return dialect.uid == GRBL_DIALECT.uid
 
 
-def _machine_token_payload(machine: Machine | None) -> Any:
+def _machine_token_payload(machine: "Machine | None") -> Any:
     """Build a JSON-serialisable representation of the machine
     identity for the encode token."""
     if machine is None:
@@ -1104,7 +1104,7 @@ def _machine_token_payload(machine: Machine | None) -> Any:
 
 
 def _machine_transform_config_payload(
-    machine: Machine, doc: Doc
+    machine: "Machine", doc: "Doc"
 ) -> dict[str, Any]:
     """Build a JSON-serialisable payload of machine transform config
     for the machine-transform token."""
@@ -1131,7 +1131,7 @@ def _machine_transform_config_payload(
     return payload
 
 
-def _approximate_job_ops(doc: Doc) -> Ops:
+def _approximate_job_ops(doc: "Doc") -> Ops:
     """Build a minimal Ops spanning the estimated job extents.
 
     Used by :meth:`IntentBuilder._grbl_encoder_spec` so that

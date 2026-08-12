@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import Enum, auto
@@ -42,7 +40,7 @@ class SketchTool(ABC):
     SHORTCUTS: ClassVar[list[str]] = []
     CURSOR_ICON: str | None = None
 
-    def __init__(self, element: SketchElement):
+    def __init__(self, element: "SketchElement"):
         self.element = element
 
     @abstractmethod
@@ -86,7 +84,7 @@ class SketchTool(ABC):
         transient UI (like selection boxes) in screen space.
         """
 
-    def get_preview_state(self) -> PreviewState | None:
+    def get_preview_state(self) -> "PreviewState | None":
         """
         Returns the current preview state for tools that support live preview.
         Override in subclasses that have a _preview_state attribute.
@@ -121,7 +119,7 @@ class SketchTool(ABC):
 
     def is_available(
         self,
-        target: Point | Entity | Constraint | None,
+        target: "Point | Entity | Constraint | None",
         target_type: str | None,
     ) -> bool:
         """

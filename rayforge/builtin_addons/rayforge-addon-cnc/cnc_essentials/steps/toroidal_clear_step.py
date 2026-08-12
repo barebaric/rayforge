@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from gettext import gettext as _
 from typing import Any, cast
 
@@ -66,7 +64,7 @@ class ToroidalClearStep(CncAssemblerStep):
         return result
 
     @classmethod
-    def from_dict(cls, data) -> ToroidalClearStep:
+    def from_dict(cls, data) -> "ToroidalClearStep":
         step = cast("ToroidalClearStep", super().from_dict(data))
         step.step_over = data.get("step_over", step.step_over)
         return step

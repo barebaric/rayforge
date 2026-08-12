@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import math
 import warnings
@@ -51,11 +49,11 @@ class RenderContext(NamedTuple):
 
     data: bytes | Any
     original_data: bytes | None
-    renderer: Renderer
+    renderer: "Renderer"
     source_pixel_dims: tuple[int, int] | None
     metadata: dict[str, Any]
     boundaries: Geometry | None
-    fills: list[FillRenderData] | None
+    fills: "list[FillRenderData] | None"
 
 
 class WorkPiece(DocItem):
@@ -114,7 +112,7 @@ class WorkPiece(DocItem):
         # Forward compatibility: store unknown attributes
         self.extra: dict[str, Any] = {}
 
-    def depends_on_asset(self, asset: IAsset) -> bool:
+    def depends_on_asset(self, asset: "IAsset") -> bool:
         """
         Checks if this workpiece depends on the given asset, either through
         its geometry provider or its source file.
@@ -130,7 +128,9 @@ class WorkPiece(DocItem):
         )
 
     @classmethod
-    def from_geometry_provider(cls, provider: IGeometryProvider) -> WorkPiece:
+    def from_geometry_provider(
+        cls, provider: IGeometryProvider
+    ) -> "WorkPiece":
         """
         Factory method to create a WorkPiece from an IGeometryProvider.
 
@@ -246,7 +246,7 @@ class WorkPiece(DocItem):
         self._fills_cache = None
 
     @property
-    def source(self) -> SourceAsset | None:
+    def source(self) -> "SourceAsset | None":
         """
         Convenience property to retrieve the full SourceAsset object from the
         document's central registry.
@@ -314,7 +314,7 @@ class WorkPiece(DocItem):
         return None
 
     @property
-    def _active_renderer(self) -> Renderer | None:
+    def _active_renderer(self) -> "Renderer | None":
         """Retrieves the renderer (internal use)."""
         if self._renderer is not None:
             return self._renderer
@@ -446,7 +446,7 @@ class WorkPiece(DocItem):
         return None
 
     @property
-    def fills(self) -> list[FillRenderData] | None:
+    def fills(self) -> "list[FillRenderData] | None":
         """
         The fill geometry data for this workpiece, if any.
 
@@ -544,14 +544,14 @@ class WorkPiece(DocItem):
             self.updated.send(self)
 
     @property
-    def layer(self) -> Layer | None:
+    def layer(self) -> "Layer | None":
         """Traverses the hierarchy to find the parent Layer."""
         from .layer import Layer  # Local import to avoid circular dependency
 
         ancestor = self.get_ancestor_by_type(Layer)
         return ancestor if isinstance(ancestor, Layer) else None
 
-    def in_world(self) -> WorkPiece:
+    def in_world(self) -> "WorkPiece":
         """
         Returns a new, unparented WorkPiece instance whose local
         transformation matrix is the world transformation matrix of this one.
@@ -717,7 +717,7 @@ class WorkPiece(DocItem):
     def _process_rendered_image_from_spec(
         self,
         image: pyvips.Image,
-        spec: RenderSpecification,
+        spec: "RenderSpecification",
         target_size: tuple[int, int],
         source_px_dims: tuple[int, int] | None,
     ) -> pyvips.Image | None:
@@ -913,7 +913,7 @@ class WorkPiece(DocItem):
         return state
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> WorkPiece:
+    def from_dict(cls, data: dict[str, Any]) -> "WorkPiece":
         """
         Restores a WorkPiece instance from a dictionary.
         """
@@ -1383,7 +1383,7 @@ class WorkPiece(DocItem):
 
         self.pos = (model_x, model_y)
 
-    def apply_split(self, fragments: list[Geometry]) -> list[WorkPiece]:
+    def apply_split(self, fragments: list[Geometry]) -> "list[WorkPiece]":
         """
         Creates new WorkPiece instances from a list of normalized geometry
         fragments. Each fragment represents a subset of this workpiece's

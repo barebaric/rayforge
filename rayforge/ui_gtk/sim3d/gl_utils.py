@@ -3,8 +3,6 @@ A collection of utility classes and functions for simplifying common
 PyOpenGL tasks, such as shader compilation and buffer management.
 """
 
-from __future__ import annotations
-
 import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -68,7 +66,7 @@ class ShaderSet:
     valid during migration.
     """
 
-    main: Shader | None = None
-    text: Shader | None = None
-    texture: Shader | None = None
-    background: Shader | None = None
+    main: "Shader | None" = None
+    text: "Shader | None" = None
+    texture: "Shader | None" = None
+    background: "Shader | None" = None

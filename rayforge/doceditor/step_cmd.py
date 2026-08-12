@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
@@ -21,7 +19,7 @@ logger = logging.getLogger(__name__)
 class StepCmd:
     """Handles commands related to step settings."""
 
-    def __init__(self, editor: DocEditor):
+    def __init__(self, editor: "DocEditor"):
         self._editor = editor
         self._doc = editor.doc
         self._context = editor.context
@@ -66,7 +64,7 @@ class StepCmd:
         )
         self._editor.history_manager.execute(command)
 
-    def apply_best_recipe_to_step(self, step: Step):
+    def apply_best_recipe_to_step(self, step: "Step"):
         """
         Finds the best matching recipe for a given step and applies its
         settings. This modifies the step object directly and is not undoable
@@ -106,7 +104,9 @@ class StepCmd:
             step.applied_recipe_uid = best_recipe.uid
 
     @staticmethod
-    def _apply_recipe_transformers_to_step(step: Step, recipe: Recipe) -> None:
+    def _apply_recipe_transformers_to_step(
+        step: "Step", recipe: "Recipe"
+    ) -> None:
         """Apply a recipe's transformer settings to a fresh step.
 
         Direct mutation of the step's per-workpiece and per-step
@@ -137,7 +137,7 @@ class StepCmd:
                     continue
                 step_dict[key] = value
 
-    def rename_step(self, step: Step, new_name: str):
+    def rename_step(self, step: "Step", new_name: str):
         """Renames a step with an undoable command."""
         if new_name == step.name:
             return
@@ -227,7 +227,7 @@ class StepCmd:
                     f"layer '{layer.name}' (has fills)."
                 )
 
-    def _step_class_from_color_rule(self, layer) -> type[Step] | None:
+    def _step_class_from_color_rule(self, layer) -> "type[Step] | None":
         """
         Resolve the step class a color rule maps to for a layer.
 

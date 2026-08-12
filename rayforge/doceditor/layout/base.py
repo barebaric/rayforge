@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import math
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
@@ -130,7 +128,7 @@ class LayoutStrategy(ABC):
 
     @abstractmethod
     def calculate_deltas(
-        self, context: ExecutionContext | None = None
+        self, context: "ExecutionContext | None" = None
     ) -> dict[DocItem, Matrix]:
         """
         Calculates the required delta transformation matrix for each
@@ -144,8 +142,8 @@ class LayoutStrategy(ABC):
 
     async def calculate_deltas_async(
         self,
-        context: ExecutionContext | None = None,
-        task_manager: TaskManager | None = None,
+        context: "ExecutionContext | None" = None,
+        task_manager: "TaskManager | None" = None,
     ) -> dict[DocItem, Matrix]:
         """
         Asynchronous version of calculate_deltas.

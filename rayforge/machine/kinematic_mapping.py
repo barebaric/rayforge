@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar
 
@@ -54,11 +52,11 @@ class RotaryAxisConfig:
 
     source_axis: Axis
     rotary_axis: Axis | None
-    module: RotaryModule | None = None
+    module: "RotaryModule | None" = None
 
 
 def resolve_layer_rotary(
-    layer: Layer | None, machine: Machine
+    layer: Layer | None, machine: "Machine"
 ) -> RotaryAxisConfig:
     """Resolve the rotary axis configuration for *layer*.
 
@@ -82,9 +80,9 @@ def resolve_layer_rotary(
 
 
 def build_layer_assembly(
-    machine: Machine,
+    machine: "Machine",
     layer: Layer | None = None,
-) -> Assembly:
+) -> "Assembly":
     """Build a throwaway assembly for *layer*'s rotary config.
 
     Reads only: it resolves the layer's rotary module via
@@ -140,10 +138,10 @@ class KinematicMapping:
     @classmethod
     def from_rotary_module(
         cls,
-        module: RotaryModule,
+        module: "RotaryModule",
         diameter: float,
         apply_gear_ratio: bool = True,
-    ) -> KinematicMapping | None:
+    ) -> "KinematicMapping | None":
         if module.mode == RotaryMode.TRUE_4TH_AXIS:
             rotary_axis = module.axis
             replaced_axis = None
@@ -227,8 +225,8 @@ class KinematicMapping:
     @staticmethod
     def apply_to_job_ops(
         ops: Ops,
-        doc: Doc,
-        machine: Machine,
+        doc: "Doc",
+        machine: "Machine",
         apply_scaled_mu: bool = False,
         apply_gear_ratio: bool = True,
     ) -> None:

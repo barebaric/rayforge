@@ -111,8 +111,6 @@ Top sources (memray --native, stock raygeo):
   needs float32; do not "compress" it.
 """
 
-from __future__ import annotations
-
 import argparse
 import ctypes
 import gc

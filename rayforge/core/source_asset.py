@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import base64
 import logging
 import uuid
@@ -40,7 +38,7 @@ class SourceAsset(IAsset):
 
     source_file: Path
     original_data: bytes = field(repr=False)
-    renderer: Renderer
+    renderer: "Renderer"
     base_render_data: bytes | None = field(default=None, repr=False)
     thumbnail_data: bytes | None = field(default=None, repr=False)
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -170,7 +168,7 @@ class SourceAsset(IAsset):
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> SourceAsset:
+    def from_dict(cls, data: dict[str, Any]) -> "SourceAsset":
         """Deserializes a dictionary into a SourceAsset instance."""
         from ..image import renderer_registry
         from ..image.base_renderer import UnknownRenderer

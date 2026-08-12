@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import math
 from gettext import gettext as _
@@ -27,7 +25,7 @@ class FilletCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         corner_pid: EntityID,
         line1_id: EntityID,
         line2_id: EntityID,
@@ -46,7 +44,7 @@ class FilletCommand(SketchChangeCommand):
 
     @staticmethod
     def calculate_geometry(
-        reg: EntityRegistry,
+        reg: "EntityRegistry",
         corner_pid: EntityID,
         line1_id: EntityID,
         line2_id: EntityID,

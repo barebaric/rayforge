@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
@@ -24,14 +22,14 @@ class MovePointCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         point_id: EntityID,
         start_pos: GeoPoint,
         end_pos: GeoPoint,
         # snapshot is: (points_dict, entities_dict)
         snapshot: tuple[dict[EntityID, GeoPoint], dict[EntityID, Any]]
         | None = None,
-        snap_constraints: list[Constraint] | None = None,
+        snap_constraints: "list[Constraint] | None" = None,
     ):
         super().__init__(sketch, _("Move Point"))
         self.point_id = point_id
@@ -82,13 +80,13 @@ class MovePointCommand(SketchChangeCommand):
                 self.sketch.constraints.remove(constraint)
         self._created_constraints.clear()
 
-    def can_coalesce_with(self, next_command: Command) -> bool:
+    def can_coalesce_with(self, next_command: "Command") -> bool:
         return (
             isinstance(next_command, MovePointCommand)
             and self.point_id == next_command.point_id
         )
 
-    def coalesce_with(self, next_command: Command) -> bool:
+    def coalesce_with(self, next_command: "Command") -> bool:
         if not self.can_coalesce_with(next_command):
             return False
 
@@ -105,7 +103,7 @@ class MoveControlPointCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         bezier_id: EntityID,
         cp_index: int,
         start_offset: GeoPoint | None,
@@ -144,7 +142,7 @@ class MoveControlPointCommand(SketchChangeCommand):
 class UnstickJunctionCommand(SketchChangeCommand):
     """Command to separate entities at a shared point."""
 
-    def __init__(self, sketch: Sketch, junction_pid: EntityID):
+    def __init__(self, sketch: "Sketch", junction_pid: EntityID):
         super().__init__(sketch, _("Unstick Junction"))
         self.junction_pid = junction_pid
         self.new_point: Point | None = None

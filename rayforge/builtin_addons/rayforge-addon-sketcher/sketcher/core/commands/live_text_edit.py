@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import time
 from gettext import gettext as _
 from typing import TYPE_CHECKING
@@ -17,7 +15,7 @@ if TYPE_CHECKING:
 class LiveTextEditCommand(Command):
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         text_entity_id: EntityID,
     ):
         super().__init__(_("Edit Text"))

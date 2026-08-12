@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import math
 from gettext import gettext as _
@@ -37,7 +35,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
 
     def __init__(
         self,
-        sketch: Sketch,
+        sketch: "Sketch",
         waypoint_id: EntityID,
         new_type: WaypointType,
     ):
@@ -53,7 +51,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         self._added_bezier_ids: list[int] | None = None
 
     def _get_segment_directions(
-        self, registry: EntityRegistry, waypoint: Point
+        self, registry: "EntityRegistry", waypoint: "Point"
     ) -> tuple[GeoPoint | None, GeoPoint | None]:
         """
         Get the incoming and outgoing direction vectors at this waypoint.
@@ -127,7 +125,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         return incoming_dir, outgoing_dir
 
     def _find_connected_lines(
-        self, registry: EntityRegistry, waypoint_id: EntityID
+        self, registry: "EntityRegistry", waypoint_id: EntityID
     ) -> list[tuple[EntityID, EntityID, EntityID]]:
         """Find Line entities connected to this waypoint.
 
@@ -146,7 +144,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
 
     def _convert_lines_to_beziers(
         self,
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         lines: list[tuple[EntityID, EntityID, EntityID]],
     ) -> list[EntityID]:
         """Remove Line entities and add Bezier entities in their place."""
@@ -162,7 +160,7 @@ class SetWaypointTypeCommand(SketchChangeCommand):
 
     def _restore_lines(
         self,
-        registry: EntityRegistry,
+        registry: "EntityRegistry",
         lines: list[tuple[EntityID, EntityID, EntityID]],
         bezier_ids: list[EntityID],
     ):

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
@@ -27,7 +25,7 @@ class _AddStockCommand(Command):
 
     def __init__(
         self,
-        doc: Doc,
+        doc: "Doc",
         name: str,
         geometry: Geometry,
         pos: tuple[float, float],
@@ -56,7 +54,7 @@ class _AddStockCommand(Command):
 class RemoveStockAssetCommand(Command):
     """Command to remove a StockAsset from the document."""
 
-    def __init__(self, doc: Doc, asset_uid: str):
+    def __init__(self, doc: "Doc", asset_uid: str):
         super().__init__(name=_("Remove Stock Asset"))
         self.doc = doc
         self.asset_uid = asset_uid
@@ -77,7 +75,7 @@ class ConvertToStockCommand(Command):
     Command to convert a WorkPiece to a StockItem with its own StockAsset.
     """
 
-    def __init__(self, doc: Doc, workpiece: WorkPiece):
+    def __init__(self, doc: "Doc", workpiece: WorkPiece):
         super().__init__(name=_("Convert to Stock"))
         self.doc = doc
         self.workpiece = workpiece
@@ -121,7 +119,7 @@ class ConvertToStockCommand(Command):
 class StockCmd:
     """Handles commands related to stock material."""
 
-    def __init__(self, editor: DocEditor):
+    def __init__(self, editor: "DocEditor"):
         self._editor = editor
 
     def add_stock(self):

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
@@ -58,7 +56,7 @@ class Macro:
         return result
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Macro:
+    def from_dict(cls, data: dict[str, Any]) -> "Macro":
         """Creates a macro instance from a dictionary."""
         known_keys = {"uid", "name", "code", "enabled"}
         extra = {k: v for k, v in data.items() if k not in known_keys}
