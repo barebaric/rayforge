@@ -46,6 +46,7 @@ SHORTCUTS = {
     "win.paste": f"{PRIMARY_ACCEL}v",
     "win.select_all": f"{PRIMARY_ACCEL}a",
     "win.duplicate": f"{PRIMARY_ACCEL}d",
+    "win.rename-item": "F2",
     "win.remove": "Delete",
     "win.clear": f"{PRIMARY_ACCEL}<Shift>Delete",
     "win.settings": f"{PRIMARY_ACCEL}comma",
@@ -336,6 +337,7 @@ class ActionManager:
         self._add_action("paste", self.win.on_paste_requested)
         self._add_action("select_all", self.win.on_select_all)
         self._add_action("duplicate", self.win.on_menu_duplicate)
+        self._add_action("rename-item", self.win.on_menu_rename)
         self._add_action("remove", self.win.on_menu_remove)
         self._add_action("clear", self.win.on_clear_clicked)
 

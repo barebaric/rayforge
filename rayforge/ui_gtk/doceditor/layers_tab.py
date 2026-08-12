@@ -6,6 +6,7 @@ from blinker import Signal
 from gi.repository import Gdk, Gtk
 
 from ...core.doc import Doc
+from ...core.item import DocItem
 from ...core.layer import Layer
 from ..icons import get_icon
 from .layer_column import _LAYER_UID_PREFIX, LayerColumn
@@ -173,6 +174,13 @@ class LayersTab(Gtk.Box):
                         items.append(item)
                 child = child.get_next_sibling()
         return items
+
+    def start_item_rename(self, item: DocItem) -> bool:
+        """Starts in-place renaming of the given item in its layer column."""
+        for col in self._columns:
+            if col.start_item_rename(item):
+                return True
+        return False
 
     def _on_add_clicked(self, button):
         self.editor.layer.add_layer_and_set_active()
