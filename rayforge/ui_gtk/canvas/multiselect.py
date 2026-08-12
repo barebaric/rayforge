@@ -64,21 +64,13 @@ class MultiSelectionGroup:
         return self._center
 
     def _calculate_bounding_box(self):
-        min_x, max_x = float("inf"), float("-inf")
-        min_y, max_y = float("inf"), float("-inf")
+        min_x, min_y = float("inf"), float("inf")
+        max_x, max_y = float("-inf"), float("-inf")
 
         for elem in self.elements:
-            # We need the full world transform to correctly find the corners
-            world_transform = elem.get_world_transform()
-            w, h = elem.width, elem.height
-
-            # The corners of the element in its own local space
-            local_corners = [(0, 0), (w, 0), (w, h), (0, h)]
-
-            for lx, ly in local_corners:
-                wx, wy = world_transform.transform_point((lx, ly))
-                min_x, min_y = min(min_x, wx), min(min_y, wy)
-                max_x, max_y = max(max_x, wx), max(max_y, wy)
+            x, y, w, h = elem.get_world_bounding_box()
+            min_x, min_y = min(min_x, x), min(min_y, y)
+            max_x, max_y = max(max_x, x + w), max(max_y, y + h)
 
         self._bounding_box = (min_x, min_y, max_x - min_x, max_y - min_y)
         self._center = (min_x + self.width / 2, min_y + self.height / 2)

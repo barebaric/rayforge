@@ -7,6 +7,7 @@ from typing import cast
 import numpy as np
 import pytest
 from blinker import Signal
+from raygeo.geo.types import Point3D
 
 from rayforge.machine.models.coordspace import (
     AxisDirection,
@@ -37,6 +38,10 @@ class _StubMachine:
     def has_custom_work_area(self) -> bool:
         ml, mt, mr, mb = self._space.margins
         return ml != 0 or mt != 0 or mr != 0 or mb != 0
+
+    def get_reference_offset(self) -> Point3D:
+        x, y = self._space.get_workarea_origin_in_machine()
+        return (x, y, 0.0)
 
 
 def _panel(**space_kwargs) -> MachinePanel:
@@ -465,6 +470,66 @@ class TestMachinePanelComposedTransforms:
             margins=(10.0, 0.0, 0.0, 0.0),
         )
         assert panel.has_custom_work_area is True
+
+    @pytest.mark.parametrize(
+        "origin, extents, margins, expected",
+        [
+            (
+                OriginCorner.BOTTOM_LEFT,
+                (400.0, 800.0),
+                (10.0, 20.0, 30.0, 40.0),
+                (190.0, 410.0),
+            ),
+            (
+                OriginCorner.TOP_LEFT,
+                (400.0, 800.0),
+                (10.0, 20.0, 30.0, 40.0),
+                (190.0, 410.0),
+            ),
+            (
+                OriginCorner.TOP_RIGHT,
+                (400.0, 800.0),
+                (10.0, 20.0, 30.0, 40.0),
+                (190.0, 410.0),
+            ),
+        ],
+    )
+    def test_work_area_center(self, origin, extents, margins, expected):
+        """The work-area center lands at the workarea origin plus half
+        the work-area size, regardless of origin corner."""
+        panel = _panel(
+            origin=origin,
+            x_positive_direction=(
+                AxisDirection.POSITIVE_LEFT
+                if origin
+                in (OriginCorner.TOP_RIGHT, OriginCorner.BOTTOM_RIGHT)
+                else AxisDirection.POSITIVE_RIGHT
+            ),
+            y_positive_direction=(
+                AxisDirection.POSITIVE_DOWN
+                if origin in (OriginCorner.TOP_LEFT, OriginCorner.TOP_RIGHT)
+                else AxisDirection.POSITIVE_UP
+            ),
+            extents=extents,
+            margins=margins,
+        )
+        assert panel.work_area_center() == pytest.approx(expected)
+
+    @pytest.mark.parametrize("orientation", list(PanelOrientation))
+    def test_work_area_center_matches_workarea_world_rect(self, orientation):
+        """The center equals the center of get_workarea_world_rect."""
+        panel = _panel(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(400.0, 800.0),
+            margins=(10.0, 20.0, 30.0, 40.0),
+            orientation=orientation,
+        )
+        wx, wy, w, h = panel.get_workarea_world_rect()
+        assert panel.work_area_center() == pytest.approx(
+            (wx + w / 2, wy + h / 2)
+        )
 
 
 class TestMachinePanelOrientationState:

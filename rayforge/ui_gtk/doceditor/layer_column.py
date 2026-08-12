@@ -717,13 +717,7 @@ class LayerColumn(Gtk.Box):
     def _get_center_position(self) -> tuple:
         machine = get_context().machine
         if machine:
-            work_area = machine.work_area
-            wa_w, wa_h = work_area[2], work_area[3]
-            origin_x, origin_y = machine.panel.reference_position_world
-            bl_x, bl_y = machine.panel.world_position_from_origin(
-                origin_x, origin_y, (wa_w, wa_h)
-            )
-            return (bl_x + wa_w / 2, bl_y + wa_h / 2)
+            return machine.panel.work_area_center()
         return (50.0, 50.0)
 
     def _on_drop_accept(self, drop_target, drop):

@@ -1523,6 +1523,46 @@ class WorkSurface(WorldSurface):
         # Return a unique list
         return list(dict.fromkeys(all_wps))
 
+    def get_selection_bounds(
+        self,
+    ) -> tuple[float, float, float, float] | None:
+        """
+        Get the bounding box of selected items or workarea bounds.
+
+        Returns:
+            A tuple (min_x, min_y, max_x, max_y) in world coordinates,
+            or None if there is no machine configured.
+        """
+        selected_elements = self.get_selected_elements()
+
+        if selected_elements:
+            workpieces = []
+            for elem in selected_elements:
+                if isinstance(elem.data, WorkPiece):
+                    workpieces.append(elem.data)
+                elif isinstance(elem.data, Group):
+                    workpieces.extend(elem.data.get_descendants(WorkPiece))
+
+            bboxes = []
+            for wp in workpieces:
+                bbox = wp.get_geometry_world_bbox()
+                if bbox is not None:
+                    bboxes.append(bbox)
+
+            if bboxes:
+                min_x = min(b[0] for b in bboxes)
+                min_y = min(b[1] for b in bboxes)
+                max_x = max(b[2] for b in bboxes)
+                max_y = max(b[3] for b in bboxes)
+                return (min_x, min_y, max_x, max_y)
+
+        machine = get_context().machine
+        if not machine:
+            return None
+
+        wx, wy, w, h = machine.panel.get_workarea_world_rect()
+        return (wx, wy, wx + w, wy + h)
+
     def get_selected_items(self) -> Sequence[DocItem]:
         return [
             elem.data

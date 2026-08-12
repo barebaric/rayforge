@@ -17,7 +17,6 @@ from ..core.group import Group
 from ..core.item import DocItem
 from ..core.registration import call_registration_hooks
 from ..core.undo import Command, HistoryManager
-from ..core.workpiece import WorkPiece
 from ..doceditor.editor import DocEditor
 from ..machine.cmd import MachineCmd
 from ..machine.driver.driver import DeviceState, DeviceStatus
@@ -488,7 +487,9 @@ class MainWindow(Adw.ApplicationWindow):
             self.on_asset_activated
         )
 
-        self.bottom_panel.set_get_bounds_callback(self._get_selection_bounds)
+        self.bottom_panel.set_get_bounds_callback(
+            self.surface.get_selection_bounds
+        )
 
         self.view_stack.connect(
             "notify::visible-child-name", self._on_view_stack_changed
@@ -578,53 +579,6 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_click_to_zero_cancelled(self, sender):
         """Handle click-to-zero mode cancellation."""
         self.bottom_panel.set_click_to_zero_mode(False)
-
-    def _get_selection_bounds(
-        self,
-    ) -> tuple[float, float, float, float] | None:
-        """
-        Get the bounding box of selected items or workarea bounds.
-
-        Returns:
-            A tuple (min_x, min_y, max_x, max_y) in world coordinates,
-            or None if there is no machine configured.
-        """
-        selected_elements = self.surface.get_selected_elements()
-
-        if selected_elements:
-            workpieces = []
-            for elem in selected_elements:
-                if isinstance(elem.data, WorkPiece):
-                    workpieces.append(elem.data)
-                elif isinstance(elem.data, Group):
-                    workpieces.extend(elem.data.get_descendants(WorkPiece))
-
-            bboxes = []
-            for wp in workpieces:
-                bbox = wp.get_geometry_world_bbox()
-                if bbox is not None:
-                    bboxes.append(bbox)
-
-            if bboxes:
-                min_x = min(b[0] for b in bboxes)
-                min_y = min(b[1] for b in bboxes)
-                max_x = max(b[2] for b in bboxes)
-                max_y = max(b[3] for b in bboxes)
-                return (min_x, min_y, max_x, max_y)
-
-        config = get_context().config
-        machine = config.machine
-        if not machine:
-            return None
-
-        panel = machine.panel
-        workarea_origin_machine = panel.get_workarea_origin_in_machine()
-        min_x, min_y = panel.machine_point_to_world(*workarea_origin_machine)
-        workarea_w, workarea_h = panel.workarea_size
-        max_x = min_x + workarea_w
-        max_y = min_y + workarea_h
-
-        return (min_x, min_y, max_x, max_y)
 
     def _apply_saved_visibility_state(self):
         """

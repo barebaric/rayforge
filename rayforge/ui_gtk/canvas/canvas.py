@@ -1263,15 +1263,6 @@ class Canvas(Gtk.DrawingArea):
         if len(selected) > 0:
             self._selection_mode = SelectionMode.RESIZE
 
-    def _get_element_world_corners(self, elem: CanvasElement) -> list[Point]:
-        """
-        Calculates the four corners of an element in world coordinates.
-        """
-        world_transform = elem.get_world_transform()
-        w, h = elem.width, elem.height
-        local_corners = [(0, 0), (w, 0), (w, h), (0, h)]
-        return [world_transform.transform_point(p) for p in local_corners]
-
     def _update_framing_selection(self):
         """
         Updates element selection based on the rubber-band frame.
@@ -1298,7 +1289,13 @@ class Canvas(Gtk.DrawingArea):
 
         for elem in self.root.get_all_children_recursive():
             if elem.selectable:
-                elem_corners = self._get_element_world_corners(elem)
+                x, y, w, h = elem.get_world_bounding_box()
+                elem_corners = [
+                    (x, y),
+                    (x + w, y),
+                    (x + w, y + h),
+                    (x, y + h),
+                ]
                 intersects = obb_intersects_aabb(elem_corners, selection_rect)
 
                 # Select if it intersects or was part of the initial set
