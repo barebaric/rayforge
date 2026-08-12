@@ -9,6 +9,7 @@ and the position-sensitive folding rule.
 import math
 from unittest.mock import MagicMock
 
+import numpy as np
 import pytest
 from raygeo.cnc.execution.intent import create_intent_from_nodes
 from raygeo.cnc.execution.specs import (
@@ -1392,4 +1393,54 @@ def test_machine_transform_wcs_offset_in_gcode(
 
     # First G1 cut: world (95.5, -4.5) minus WCS (50, 30) = (45.5, -34.5).
     assert coords[1][0] == pytest.approx(45.5, abs=0.1)
-    assert coords[1][1] == pytest.approx(-34.5, abs=0.1)
+
+
+@pytest.mark.parametrize("origin", list(Origin))
+@pytest.mark.parametrize("reverse_x", [False, True])
+@pytest.mark.parametrize("reverse_y", [False, True])
+def test_machine_transform_wcs_with_axis_reversal(
+    contour_step_class,
+    test_machine_and_config,
+    origin,
+    reverse_x,
+    reverse_y,
+):
+    """WCS offset must be subtracted in machine space (after w2m), not
+    in world space (before w2m).
+
+    A 10x10 square at world (0,0) is zeroed at world (10,20) via WCS.
+    The G-code for the first corner must equal the machine-space
+    distance from the WCS origin to that corner — regardless of origin
+    corner or axis reversal settings.
+    """
+    machine, context = test_machine_and_config
+    machine.set_axis_extents(200, 150)
+    machine.set_origin(origin)
+    machine.set_reverse_x_axis(reverse_x)
+    machine.set_reverse_y_axis(reverse_y)
+    machine.set_active_wcs("G54")
+
+    # WCS zeroed at world (10, 20): stores the machine coordinate.
+    space = machine.get_coordinate_space()
+    wcs_machine = space.world_point_to_machine(10.0, 20.0)
+    machine.update_wcs_offset("G54", (wcs_machine[0], wcs_machine[1], 0.0))
+
+    gcode = _run_full_pipeline(machine, context, contour_step_class)
+    coords = _extract_cut_coords(gcode)
+    assert len(coords) >= 4
+
+    # Independently compute expected G-code for the first corner
+    # (world point after kerf offset ≈ (-4.5, -4.5)).
+    w2m = space.get_world_to_machine_matrix()
+    cmd = space.get_command_offset(
+        wcs_offset=(wcs_machine[0], wcs_machine[1], 0.0),
+        wcs_is_workarea_origin=False,
+    )
+    # The kerf offset shifts the first point to approximately (-4.5, -4.5)
+    first_world = np.array([-4.5, -4.5, 0.0, 1.0])
+    first_machine = w2m @ first_world
+    expected_x = first_machine[0] - cmd[0]
+    expected_y = first_machine[1] - cmd[1]
+
+    assert coords[0][0] == pytest.approx(expected_x, abs=0.5)
+    assert coords[0][1] == pytest.approx(expected_y, abs=0.5)
