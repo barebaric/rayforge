@@ -80,6 +80,16 @@ class RowAdapter(ABC):
     ) -> tuple[Adw.PreferencesRow, "RowAdapter"]:
         raise NotImplementedError
 
+    def extra_rows(self) -> list[Adw.PreferencesRow]:
+        """Additional rows appended after the primary row.
+
+        Composite adapters that render more than one row (e.g. a
+        min/max range as two rows) return the extra rows here. The
+        manager adds them to the group and cleans them up with the
+        primary row. The default returns nothing.
+        """
+        return []
+
     @abstractmethod
     def get_value(self) -> Any | None:
         raise NotImplementedError

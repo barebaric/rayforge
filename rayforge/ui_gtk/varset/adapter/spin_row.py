@@ -17,19 +17,22 @@ class SpinRowAdapter(RowAdapter):
     def create(
         cls, var: Var, target_property: str
     ) -> tuple[SpinRow, "SpinRowAdapter"]:
-        min_val = getattr(var, "min_val", None)
-        max_val = getattr(var, "max_val", None)
-        lower = min_val if min_val is not None else -2147483647
-        upper = max_val if max_val is not None else 2147483647
+        assert isinstance(var, (IntVar, FloatVar))
+        min_val = var.min_val if var.min_val is not None else -2147483647
+        max_val = var.max_val if var.max_val is not None else 2147483647
         initial_val = getattr(var, target_property)
-        is_int = var.var_type is int
+        is_int = isinstance(var, IntVar)
+        if is_int:
+            digits = 0
+        else:
+            digits = var.digits if var.digits is not None else 3
 
         row = SpinRow(
             escape_title(var.label),
             var.description or None,
-            lower=lower,
-            upper=upper,
-            digits=0 if is_int else 3,
+            lower=min_val,
+            upper=max_val,
+            digits=digits,
             value=(
                 (int(initial_val) if is_int else float(initial_val))
                 if initial_val is not None
@@ -47,14 +50,11 @@ class SpinRowAdapter(RowAdapter):
         self._row.set_value(float(value))
 
     def update_from_var(self, var: Var):
+        assert isinstance(var, (IntVar, FloatVar))
         if var.label:
             self._row.set_title(escape_title(var.label))
         if var.description:
             self._row.set_subtitle(var.description)
-        min_val = getattr(var, "min_val", None)
-        max_val = getattr(var, "max_val", None)
-        if min_val is not None or max_val is not None:
-            self._row.set_range(
-                min_val if min_val is not None else -2147483647,
-                max_val if max_val is not None else 2147483647,
-            )
+        min_val = var.min_val if var.min_val is not None else -2147483647
+        max_val = var.max_val if var.max_val is not None else 2147483647
+        self._row.set_range(min_val, max_val)

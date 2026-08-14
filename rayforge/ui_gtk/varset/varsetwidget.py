@@ -109,10 +109,12 @@ class _VarSetRowManager:
 
         for key in existing_keys:
             if key not in new_keys:
-                row, _ = self.widget_map.pop(key)
+                row, var = self.widget_map.pop(key)
                 self._remove_row(row)
                 if row in self._created_rows:
                     self._created_rows.remove(row)
+                self._remove_extra_rows(key, var)
+                self._adapters.pop(key, None)
 
         for var in var_set:
             if var.key in self._related_keys:
@@ -131,6 +133,8 @@ class _VarSetRowManager:
                     if row in self._created_rows:
                         self._created_rows.remove(row)
                     del self.widget_map[var.key]
+                    self._remove_extra_rows(var.key, old_var)
+                    self._adapters.pop(var.key, None)
                 else:
                     self.widget_map[var.key] = (row, var)
                     adapter = self._adapters.get(var.key)
@@ -144,6 +148,7 @@ class _VarSetRowManager:
                 self._wire_up_row(row, var, adapter)
                 self._add_row(row)
                 self._created_rows.append(row)
+                self._add_extra_rows(var, adapter)
                 if adapter is not None:
                     self._adapters[var.key] = adapter
                     if adapter.related_keys:
@@ -152,6 +157,24 @@ class _VarSetRowManager:
                             self._related_to_primary[rk] = var.key
 
         self._update_visibility()
+
+    def _add_extra_rows(self, var, adapter):
+        if adapter is None:
+            return
+        for extra in adapter.extra_rows():
+            self._add_row(extra)
+            self._created_rows.append(extra)
+
+    def _remove_extra_rows(self, key, var):
+        """Remove rows that a composite adapter appended after its
+        primary row (e.g. the second half of a min/max pair)."""
+        adapter = self._adapters.get(key)
+        if adapter is None:
+            return
+        for extra in adapter.extra_rows():
+            self._remove_row(extra)
+            if extra in self._created_rows:
+                self._created_rows.remove(extra)
 
     def get_values(self) -> dict[str, Any]:
         values = {}
@@ -285,6 +308,19 @@ class _VarSetRowManager:
                 row.set_sensitive(var.sensitive_when(values))
         for adapter in set(self._adapters.values()):
             adapter.update_from_values(values)
+        # Composite adapters may render extra rows that must follow
+        # the primary row's predicates.
+        for key, adapter in self._adapters.items():
+            if not adapter.extra_rows():
+                continue
+            var = self.widget_map[key][1]
+            if var.visible_when is None and var.sensitive_when is None:
+                continue
+            for extra in adapter.extra_rows():
+                if var.visible_when is not None:
+                    extra.set_visible(var.visible_when(values))
+                if var.sensitive_when is not None:
+                    extra.set_sensitive(var.sensitive_when(values))
 
     def set_context_values(self, values: dict[str, Any]):
         """Provide values for keys that have no row in this widget.

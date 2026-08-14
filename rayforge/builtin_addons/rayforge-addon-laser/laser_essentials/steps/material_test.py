@@ -17,6 +17,7 @@ from rayforge.core.varset import (
     IntVar,
     LengthVar,
     SliderFloatVar,
+    TupleVar,
     VarSet,
 )
 from rayforge.machine.models.laser import LaserHead
@@ -45,12 +46,49 @@ class MaterialTestStep(LaserStep):
 
     @classmethod
     def recipe_varset(cls) -> VarSet:
+        def is_power_vs_speed(v):
+            return v.get("grid_mode") == "Power vs Speed"
+
+        def is_power_vs_passes(v):
+            return v.get("grid_mode") == "Power vs Passes"
+
+        def is_speed_vs_passes(v):
+            return v.get("grid_mode") == "Speed vs Passes"
+
+        def is_speed_vs_offset(v):
+            return v.get("grid_mode") == "Speed vs Offset"
+
+        def uses_power_range(v):
+            return is_power_vs_speed(v) or is_power_vs_passes(v)
+
+        def uses_speed_range(v):
+            return (
+                is_power_vs_speed(v)
+                or is_speed_vs_passes(v)
+                or is_speed_vs_offset(v)
+            )
+
+        def uses_passes_range(v):
+            return is_power_vs_passes(v) or is_speed_vs_passes(v)
+
+        def uses_fixed_speed(v):
+            return is_power_vs_passes(v)
+
+        def uses_fixed_power(v):
+            return is_speed_vs_passes(v) or is_speed_vs_offset(v)
+
+        def labels_active(v):
+            return bool(v.get("include_labels", False))
+
         return VarSet(
             vars=[
                 *LaserStep.recipe_varset().vars,
                 ChoiceVar(
                     key="test_type",
                     label=_("Test Type"),
+                    description=_(
+                        "Cut: outlines; Engrave: fills with raster lines"
+                    ),
                     choices=["Cut", "Engrave"],
                     default="Cut",
                     allow_none=False,
@@ -58,6 +96,7 @@ class MaterialTestStep(LaserStep):
                 ChoiceVar(
                     key="grid_mode",
                     label=_("Grid Mode"),
+                    description=_("Choose which parameters to vary on axes"),
                     choices=[
                         "Power vs Speed",
                         "Power vs Passes",
@@ -67,59 +106,143 @@ class MaterialTestStep(LaserStep):
                     default="Power vs Speed",
                     allow_none=False,
                 ),
-                FloatVar(
+                TupleVar(
+                    key="grid_dimensions",
+                    label=_("Grid Dimensions"),
+                    item_labels=(_("Columns"), _("Rows")),
+                    item_subtitles=(
+                        _("Number of power variations"),
+                        _("Number of speed variations"),
+                    ),
+                    default=(5, 5),
+                    min_val=2,
+                    max_val=20,
+                ),
+                LengthVar(
                     key="shape_size",
                     label=_("Shape Size"),
+                    description=_("Size of each test square"),
                     default=10.0,
                     min_val=0.1,
                 ),
-                FloatVar(
+                LengthVar(
                     key="spacing",
                     label=_("Spacing"),
+                    description=_("Gap between test squares"),
                     default=2.0,
                     min_val=0.0,
                 ),
                 LengthVar(
                     key="line_interval_mm",
                     label=_("Line Interval"),
-                    description=_("Distance between scan lines (0 = auto)"),
+                    description=_(
+                        "Distance between scan lines in machine units "
+                        "(for Engrave mode). Leave at 0 to use laser "
+                        "spot size."
+                    ),
                     default=0.0,
                     min_val=0.0,
                 ),
                 BoolVar(
                     key="include_labels",
                     label=_("Include Labels"),
+                    description=_("Add speed/power annotations to the grid"),
                     default=True,
                 ),
                 SliderFloatVar(
                     key="label_power_percent",
-                    label=_("Label Power"),
+                    label=_("Label Engrave Power (%)"),
                     default=10.0,
                     min_val=0.0,
                     max_val=100.0,
                     show_value=True,
                     format_suffix="%",
+                    sensitive_when=labels_active,
                 ),
                 IntVar(
                     key="label_speed",
-                    label=_("Label Speed"),
+                    label=_("Label Engrave Speed"),
+                    description=_("Speed for engraving labels (mm/min)"),
                     default=1000,
                     min_val=1,
+                    sensitive_when=labels_active,
                 ),
                 FloatVar(
                     key="fixed_speed",
                     label=_("Fixed Speed"),
+                    description=_("Constant speed for all cells (mm/min)"),
                     default=1000.0,
                     min_val=1.0,
+                    digits=0,
+                    visible_when=uses_fixed_speed,
                 ),
                 SliderFloatVar(
                     key="fixed_power",
-                    label=_("Fixed Power"),
+                    label=_("Fixed Power (%)"),
+                    description=_("Constant power for all cells"),
                     default=50.0,
                     min_val=0.0,
                     max_val=100.0,
                     show_value=True,
                     format_suffix="%",
+                    visible_when=uses_fixed_power,
+                ),
+                TupleVar(
+                    key="power_range",
+                    label=_("Power Range"),
+                    item_labels=(
+                        _("Minimum Power (%)"),
+                        _("Maximum Power (%)"),
+                    ),
+                    item_subtitles=(
+                        _("For first column"),
+                        _("For last column"),
+                    ),
+                    default=(10.0, 100.0),
+                    min_val=1.0,
+                    max_val=100.0,
+                    digits=1,
+                    visible_when=uses_power_range,
+                ),
+                TupleVar(
+                    key="speed_range",
+                    label=_("Speed Range"),
+                    item_labels=(_("Minimum Speed"), _("Maximum Speed")),
+                    item_subtitles=(
+                        _("Starting speed (mm/min)"),
+                        _("Ending speed (mm/min)"),
+                    ),
+                    default=(100.0, 500.0),
+                    min_val=1.0,
+                    digits=0,
+                    visible_when=uses_speed_range,
+                ),
+                TupleVar(
+                    key="passes_range",
+                    label=_("Passes Range"),
+                    item_labels=(_("Minimum Passes"), _("Maximum Passes")),
+                    item_subtitles=(
+                        _("Starting number of passes"),
+                        _("Ending number of passes"),
+                    ),
+                    default=(1, 5),
+                    min_val=1,
+                    max_val=50,
+                    visible_when=uses_passes_range,
+                ),
+                TupleVar(
+                    key="offset_range",
+                    label=_("Offset Range"),
+                    item_labels=(_("Minimum Offset"), _("Maximum Offset")),
+                    item_subtitles=(
+                        _("Bidir scan X-offset for first row (mm)"),
+                        _("Bidir scan X-offset for last row (mm)"),
+                    ),
+                    default=(-0.5, 0.5),
+                    min_val=-10.0,
+                    max_val=10.0,
+                    digits=2,
+                    visible_when=is_speed_vs_offset,
                 ),
             ]
         )
