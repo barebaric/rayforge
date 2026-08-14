@@ -51,6 +51,9 @@ class RecipePostProcessingPage(TrackedPreferencesPage):
         )
         self.add(self._main_group)
         self._group_dicts: dict[TransformerSettingsGroup, dict] = {}
+        self._group_expanders: dict[
+            TransformerSettingsGroup, Adw.ExpanderRow
+        ] = {}
         self._has_expanders = False
         self.populate(transformer_dicts or [])
 
@@ -129,7 +132,24 @@ class RecipePostProcessingPage(TrackedPreferencesPage):
         group.apply_changed.connect(self._on_apply_changed)
 
         self._main_group.add(expander)
+        self._group_expanders[group] = expander
         self._has_expanders = True
+        self._update_expander_visual(group)
+
+    def _update_expander_visual(
+        self,
+        group: TransformerSettingsGroup,
+    ) -> None:
+        """Dim the expander while the group's apply toggle is off.
+
+        The group itself is not in the widget tree (its rows are
+        reparented into the expander), so the opacity must be applied
+        to the expander row.
+        """
+        expander = self._group_expanders.get(group)
+        if expander is None:
+            return
+        expander.set_opacity(1.0 if group.get_apply_state() else 0.5)
 
     def _show_empty_state(self) -> None:
         """Render the empty-state message when no groups were added."""
@@ -162,8 +182,10 @@ class RecipePostProcessingPage(TrackedPreferencesPage):
     def _on_apply_changed(
         self, group: TransformerSettingsGroup, *, state: bool
     ) -> None:
-        """Persist the apply toggle onto the backing dict."""
+        """Persist the apply toggle onto the backing dict and dim the
+        expander accordingly."""
         t_dict = self._group_dicts.get(group)
         if t_dict is None:
             return
         t_dict["recipe_apply"] = bool(state)
+        self._update_expander_visual(group)

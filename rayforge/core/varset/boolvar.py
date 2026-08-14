@@ -1,4 +1,6 @@
+from collections.abc import Callable
 from gettext import gettext as _
+from typing import Any
 
 from .var import Var
 
@@ -15,6 +17,9 @@ class BoolVar(Var[bool]):
         description: str | None = None,
         default: bool | None = None,
         value: bool | None = None,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
+        sensitive_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         """
         Initializes a new BoolVar instance.
@@ -25,6 +30,12 @@ class BoolVar(Var[bool]):
             description: A longer, human-readable description.
             default: The default value.
             value: The initial value. If provided, it overrides the default.
+            visible_when: Optional callable that receives a dict of all
+                          current var values in the widget and returns True
+                          when this var's row should be visible.
+            sensitive_when: Optional callable that receives a dict of all
+                            current var values in the widget and returns
+                            True when this var's row should be interactive.
         """
         super().__init__(
             key=key,
@@ -33,4 +44,6 @@ class BoolVar(Var[bool]):
             description=description,
             default=default,
             value=value,
+            visible_when=visible_when,
+            sensitive_when=sensitive_when,
         )

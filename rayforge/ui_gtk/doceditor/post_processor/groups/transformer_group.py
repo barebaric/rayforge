@@ -132,9 +132,6 @@ class TransformerSettingsGroup(Adw.PreferencesGroup):
         toggle = Gtk.ToggleButton()
         toggle.add_css_class("flat")
         toggle.set_valign(Gtk.Align.CENTER)
-        icon = get_icon("check-symbolic")
-        icon.set_valign(Gtk.Align.CENTER)
-        toggle.set_child(icon)
         toggle.set_active(initial_apply)
         toggle.set_tooltip_text(_("Apply this setting to the step"))
         toggle.connect("toggled", self._on_apply_toggled)
@@ -162,10 +159,17 @@ class TransformerSettingsGroup(Adw.PreferencesGroup):
 
     def _update_apply_visual(self) -> None:
         if self.apply_toggle is not None:
-            # Dim the group while the toggle is off so users see that
+            # Swap the icon while the toggle is off so users see that
             # the recipe will not apply it. The rows stay interactive,
-            # matching the recipe settings rows.
-            self.set_opacity(1.0 if self.get_apply_state() else 0.5)
+            # matching the recipe settings rows. Dimming is applied by
+            # the host page (the group is wrapped in an expander row).
+            icon = get_icon(
+                "check-symbolic"
+                if self.get_apply_state()
+                else "disabled-symbolic"
+            )
+            icon.set_valign(Gtk.Align.CENTER)
+            self.apply_toggle.set_child(icon)
 
     def _is_enabled(self) -> bool:
         """Whether the rows are currently editable.

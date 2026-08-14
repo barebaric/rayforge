@@ -1,4 +1,6 @@
+from collections.abc import Callable
 from gettext import gettext as _
+from typing import Any
 
 from .intvar import IntVar, ValidationError
 
@@ -23,8 +25,10 @@ class PortVar(IntVar):
         description: str | None = None,
         default: int | None = None,
         value: int | None = None,
-        min_val: int | None = None,
-        max_val: int | None = None,
+        min_val: int | None = 1,
+        max_val: int | None = 65535,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         super().__init__(
             key=key,
@@ -32,7 +36,8 @@ class PortVar(IntVar):
             description=description,
             default=default,
             value=value,
-            min_val=1,
-            max_val=65535,
+            min_val=min_val,
+            max_val=max_val,
             validator=port_validator,
+            visible_when=visible_when,
         )

@@ -1,4 +1,6 @@
+from collections.abc import Callable
 from gettext import gettext as _
+from typing import Any
 
 from .choicevar import ChoiceVar
 
@@ -25,6 +27,9 @@ class LabeledChoiceVar(ChoiceVar):
         default: str | None = None,
         value: str | None = None,
         allow_none: bool = True,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
+        sensitive_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         self._label_to_value = {lbl: val for lbl, val in choices}
         self._value_to_label = {val: lbl for lbl, val in choices}
@@ -37,6 +42,8 @@ class LabeledChoiceVar(ChoiceVar):
             default=default,
             value=value,
             allow_none=allow_none,
+            visible_when=visible_when,
+            sensitive_when=sensitive_when,
         )
         valid_values = list(self._value_to_label)
 

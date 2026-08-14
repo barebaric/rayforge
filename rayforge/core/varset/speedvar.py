@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import Any
 
 from .intvar import IntVar
 
@@ -21,6 +22,9 @@ class SpeedVar(IntVar):
         max_val: int | None = None,
         role: str = "cut",
         validator: Callable[[int | None], None] | None = None,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
+        sensitive_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         self.role = role
         super().__init__(
@@ -32,4 +36,6 @@ class SpeedVar(IntVar):
             min_val=min_val,
             max_val=max_val,
             validator=validator,
+            visible_when=visible_when,
+            sensitive_when=sensitive_when,
         )

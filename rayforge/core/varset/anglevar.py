@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import Any
 
 from .floatvar import FloatVar
 
@@ -20,6 +21,9 @@ class AngleVar(FloatVar):
         min_val: float | None = -360.0,
         max_val: float | None = 360.0,
         extra_validator: Callable[[float], None] | None = None,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
+        sensitive_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         super().__init__(
             key=key,
@@ -30,4 +34,6 @@ class AngleVar(FloatVar):
             min_val=min_val,
             max_val=max_val,
             extra_validator=extra_validator,
+            visible_when=visible_when,
+            sensitive_when=sensitive_when,
         )

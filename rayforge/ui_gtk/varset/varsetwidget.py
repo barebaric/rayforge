@@ -1,4 +1,3 @@
-import logging
 from gettext import gettext as _
 from typing import Any
 
@@ -8,8 +7,6 @@ from gi.repository import Adw, GLib, Gtk
 from ...core.varset import Var, VarSet
 from ..icons import get_icon
 from .adapter import RowAdapter, create_row_for_var, escape_title
-
-logger = logging.getLogger(__name__)
 
 _DEBOUNCE_DELAY_MS = 300
 
@@ -145,6 +142,8 @@ class _VarSetRowManager:
                             self._related_keys.add(rk)
                             self._related_to_primary[rk] = var.key
 
+        self._update_visibility()
+
     def get_values(self) -> dict[str, Any]:
         values = {}
         for key in self.widget_map:
@@ -180,6 +179,7 @@ class _VarSetRowManager:
 
     def _on_data_changed(self, key: str):
         if not self._should_emit_data_changed(key):
+            self._update_visibility()
             return
         self._emit_data_changed(key)
         adapter = self._adapters.get(key)
@@ -187,6 +187,7 @@ class _VarSetRowManager:
             for rk in adapter.related_keys:
                 if self._should_emit_data_changed(rk):
                     self._emit_data_changed(rk)
+        self._update_visibility()
 
     def _emit_data_changed(self, key: str):
         if self.debounce_ms > 0:
@@ -194,6 +195,23 @@ class _VarSetRowManager:
             self._schedule_debounce()
         else:
             self.data_changed.send(self, key=key)
+
+    def _update_visibility(self):
+        """Re-evaluate ``visible_when``/``sensitive_when`` callbacks
+        and adapter value dependencies.
+
+        Called after populate and after each immediate (non-debounced)
+        data_changed emission. Debounced emissions trigger it via
+        ``_flush_debounce``.
+        """
+        values = self.get_values()
+        for row, var in self.widget_map.values():
+            if var.visible_when is not None:
+                row.set_visible(var.visible_when(values))
+            if var.sensitive_when is not None:
+                row.set_sensitive(var.sensitive_when(values))
+        for adapter in set(self._adapters.values()):
+            adapter.update_from_values(values)
 
     def _schedule_debounce(self):
         if self._debounce_timer_id is not None:
@@ -214,6 +232,7 @@ class _VarSetRowManager:
         self._pending_keys.clear()
         for key in keys:
             self.data_changed.send(self, key=key)
+        self._update_visibility()
 
     def _add_apply_button_if_needed(self, row, key):
         if not self.explicit_apply:

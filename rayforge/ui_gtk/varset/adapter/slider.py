@@ -2,12 +2,18 @@ from typing import Any
 
 from gi.repository import Adw, Gtk
 
-from ....core.varset import FloatVar, SliderFloatVar, Var
+from ....core.varset import (
+    FloatVar,
+    IntVar,
+    SliderFloatVar,
+    SliderIntVar,
+    Var,
+)
 from ...shared.slider import create_slider_row
 from .base import RowAdapter, escape_title, register_adapter
 
 
-@register_adapter(SliderFloatVar)
+@register_adapter(SliderFloatVar, SliderIntVar)
 class SliderAdapter(RowAdapter):
     def __init__(
         self,
@@ -15,19 +21,22 @@ class SliderAdapter(RowAdapter):
         scale: Gtk.Scale,
         min_val: float,
         max_val: float,
+        is_int: bool,
     ) -> None:
         super().__init__()
         self._row = row
         self._scale = scale
         self._min_val = min_val
         self._max_val = max_val
+        self._is_int = is_int
         self._scale.connect("value-changed", lambda s: self.changed.send(self))
 
     @classmethod
     def create(
         cls, var: Var, target_property: str
     ) -> tuple[Adw.PreferencesRow, "SliderAdapter"]:
-        assert isinstance(var, SliderFloatVar)
+        assert isinstance(var, (SliderFloatVar, SliderIntVar))
+        is_int = isinstance(var, SliderIntVar)
         min_val = var.min_val if var.min_val is not None else 0.0
         max_val = var.max_val if var.max_val is not None else 1.0
         val = getattr(var, target_property)
@@ -51,16 +60,17 @@ class SliderAdapter(RowAdapter):
             title=escape_title(var.label),
             subtitle=var.description if var.description else None,
             adjustment=adj,
-            digits=1,
+            digits=0 if is_int else 1,
             draw_value=var.show_value,
             format_suffix=suffix,
         )
         row.set_activatable_widget(scale)
-        return row, cls(row, scale, min_val, max_val)
+        return row, cls(row, scale, min_val, max_val, is_int)
 
     def get_value(self) -> Any | None:
         percent = self._scale.get_value() / 100.0
-        return self._min_val + percent * (self._max_val - self._min_val)
+        val = self._min_val + percent * (self._max_val - self._min_val)
+        return round(val) if self._is_int else val
 
     def set_value(self, value: Any) -> None:
         range_size = self._max_val - self._min_val
@@ -70,7 +80,7 @@ class SliderAdapter(RowAdapter):
         self._scale.set_value(percent)
 
     def update_from_var(self, var: Var):
-        assert isinstance(var, FloatVar)
+        assert isinstance(var, (FloatVar, IntVar))
         if var.label:
             self._row.set_title(escape_title(var.label))
         if var.description:

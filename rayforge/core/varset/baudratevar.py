@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from gettext import gettext as _
 from typing import Any
 
@@ -42,6 +43,8 @@ class BaudrateVar(IntVar):
         min_val: int | None = None,
         max_val: int | None = None,
         choices: list[int] | None = None,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         self.choices: list[int] = (
             choices if choices is not None else list(STANDARD_BAUD_RATES)
@@ -56,6 +59,7 @@ class BaudrateVar(IntVar):
             min_val=300,
             max_val=4000000,
             validator=lambda v: validate_baud_rate(v, self.choices),
+            visible_when=visible_when,
         )
 
     def to_dict(self, include_value: bool = False) -> dict[str, Any]:

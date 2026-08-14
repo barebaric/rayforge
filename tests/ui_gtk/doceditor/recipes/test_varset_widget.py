@@ -350,3 +350,59 @@ def test_varset_description_displayed(ui_context_initializer):
     widget = VarSetWidget()
     widget.populate(vs)
     assert widget.get_description() == "Some description text."
+
+
+def _make_sensitive_varset() -> VarSet:
+    return VarSet(
+        vars=[
+            BoolVar(key="enabled", label="Enabled", default=True),
+            IntVar(
+                key="offset",
+                label="Offset",
+                default=5,
+                sensitive_when=lambda v: v.get("enabled", False),
+            ),
+        ]
+    )
+
+
+def test_sensitive_when_applied_on_populate(ui_context_initializer):
+    """sensitive_when controls the row's interactivity after populate."""
+    vs = _make_sensitive_varset()
+    widget = VarSetWidget()
+    widget.populate(vs)
+
+    row, _ = widget.widget_map["offset"]
+    assert row.get_sensitive() is True
+
+    widget.set_values({"enabled": False})
+    assert row.get_sensitive() is False
+
+    widget.set_values({"enabled": True})
+    assert row.get_sensitive() is True
+
+
+def test_sensitive_when_updates_on_data_changed(ui_context_initializer):
+    """A sibling change re-evaluates sensitive_when."""
+    vs = _make_sensitive_varset()
+    widget = VarSetWidget()
+    widget.populate(vs)
+
+    row, _ = widget.widget_map["offset"]
+    assert row.get_sensitive() is True
+
+    # Toggle the enabled switch off; the offset row must go insensitive.
+    switch_row = widget.widget_map["enabled"][0]
+    assert isinstance(switch_row, Adw.SwitchRow)
+    switch_row.set_active(False)
+    assert row.get_sensitive() is False
+
+
+def test_no_sensitive_when_stays_sensitive(ui_context_initializer):
+    """Vars without sensitive_when are always sensitive."""
+    vs = _make_varset()
+    widget = VarSetWidget()
+    widget.populate(vs)
+
+    row, _ = widget.widget_map["speed"]
+    assert row.get_sensitive() is True

@@ -14,6 +14,7 @@ from raygeo.ops.state import AirAssistMode
 from rayforge.core.step import Step
 from rayforge.core.varset import (
     BoolVar,
+    IntVar,
     SliderFloatVar,
     VarSet,
 )
@@ -55,6 +56,11 @@ class LaserStep(Step):
                     format_suffix="%",
                 ),
                 *Step.recipe_varset().vars,
+                BoolVar(
+                    key="air_assist",
+                    label=_("Air Assist"),
+                    default=False,
+                ),
                 SliderFloatVar(
                     key="tab_power",
                     label=_("Tab Power"),
@@ -67,10 +73,25 @@ class LaserStep(Step):
                     show_value=True,
                     format_suffix="%",
                 ),
-                BoolVar(
-                    key="air_assist",
-                    label=_("Air Assist"),
-                    default=False,
+                IntVar(
+                    key="frequency",
+                    label=_("Frequency"),
+                    description=_(
+                        "Laser pulse frequency in Hz (0 = head default)"
+                    ),
+                    default=0,
+                    min_val=0,
+                    max_val=100000,
+                ),
+                IntVar(
+                    key="pulse_width",
+                    label=_("Pulse Width"),
+                    description=_(
+                        "Laser pulse width in ns (0 = head default)"
+                    ),
+                    default=0,
+                    min_val=0,
+                    max_val=100000,
                 ),
             ]
         )

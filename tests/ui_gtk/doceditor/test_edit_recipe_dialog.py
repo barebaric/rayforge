@@ -1,13 +1,20 @@
 # flake8: noqa: E402
 """Integration tests for AddEditRecipeDialog step-type targeting."""
 
+from gettext import gettext as _
+
 import gi
 import pytest
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
+from gi.repository import Gio, Gtk
+
 from rayforge.core.recipe import Recipe
+from rayforge.core.step import Step
+from rayforge.core.step_registry import step_registry
+from rayforge.core.varset import IntVar, VarSet
 from rayforge.machine.models.laser import Laser
 from rayforge.machine.models.machine import Machine
 from rayforge.ui_gtk.doceditor.recipes.edit_recipe_dialog import (
@@ -143,6 +150,50 @@ def test_selecting_single_step_type_rebuilds_settings(laser_machine):
     dialog.close()
 
 
+def test_mixed_laser_and_cnc_shows_neutral_settings(laser_machine):
+    """A laser + CNC selection must show only the base "Settings" group,
+    never a "CNC" or "Laser" domain tab."""
+
+    # The CNC addon may not be loaded in tests, so register a minimal
+    # local stand-in with the same varset structure.
+    class FakeCncStep(Step):
+        @classmethod
+        def recipe_varset(cls) -> VarSet:
+            return VarSet(
+                vars=[
+                    *Step.recipe_varset().vars,
+                    IntVar(
+                        key="spindle_rpm", label="Spindle RPM", default=100
+                    ),
+                ]
+            )
+
+        @classmethod
+        def recipe_varset_groups(cls):
+            return [
+                (_("CNC"), VarSet(vars=list(cls.recipe_varset()))),
+            ]
+
+    step_registry.register(FakeCncStep, addon_name="_test")
+    try:
+        dialog = AddEditRecipeDialog(parent=None, recipe=None)
+        page = dialog.applicability_page
+        page._on_step_types_selected(["ContourStep", "FakeCncStep"])
+
+        titles = [p.group_title for p in dialog._settings_pages.values()]
+        assert titles == ["Settings"], f"got group titles {titles}"
+
+        keys = _settings_keys(dialog)
+        assert "cut_speed" in keys
+        assert "travel_speed" in keys
+        assert "power" not in keys  # LaserStep-specific
+        assert "spindle_rpm" not in keys  # CncAssemblerStep-specific
+
+        dialog.close()
+    finally:
+        step_registry.unregister("FakeCncStep")
+
+
 def test_selecting_multi_step_types_shows_common(laser_machine):
     """Changing to multiple step types shows the common settings only."""
     dialog = AddEditRecipeDialog(parent=None, recipe=None)
@@ -253,6 +304,50 @@ def test_apply_toggle_and_enable_switch_update_dict(laser_machine):
     # Flip the apply toggle off again.
     _set_apply_toggle(group, False)
     assert optimize_dict["recipe_apply"] is False
+
+    dialog.close()
+
+
+def test_apply_toggle_icon_and_dim_state(laser_machine):
+    """The apply toggle shows check-symbolic when on and
+    disabled-symbolic (plus a dimmed expander) when off."""
+    recipe = Recipe(name="Contour", target_step_types=["ContourStep"])
+    dialog = AddEditRecipeDialog(parent=None, recipe=recipe)
+    assert dialog._post_processing_page is not None
+    page = dialog._post_processing_page
+
+    group = _group_for_transformer(page, "Optimize")
+    toggle = group.apply_toggle
+    assert toggle is not None
+    expander = page._group_expanders[group]
+
+    def _icon_name():
+        child = toggle.get_child()
+        assert isinstance(child, Gtk.Image)
+        # Local resource icons are loaded from a Gio.FileIcon; theme
+        # icons via icon name.
+        name = child.get_icon_name()
+        if name:
+            return name
+        gicon = child.get_gicon()
+        assert isinstance(gicon, Gio.FileIcon)
+        basename = gicon.get_file().get_basename()
+        assert basename is not None
+        return basename.removesuffix(".svg")
+
+    # Default off: disabled icon + dimmed expander.
+    assert _icon_name() == "disabled-symbolic"
+    assert expander.get_opacity() == pytest.approx(0.5, abs=0.01)
+
+    # On: check icon + full opacity.
+    _set_apply_toggle(group, True)
+    assert _icon_name() == "check-symbolic"
+    assert expander.get_opacity() == pytest.approx(1.0)
+
+    # Off again.
+    _set_apply_toggle(group, False)
+    assert _icon_name() == "disabled-symbolic"
+    assert expander.get_opacity() == pytest.approx(0.5, abs=0.01)
 
     dialog.close()
 

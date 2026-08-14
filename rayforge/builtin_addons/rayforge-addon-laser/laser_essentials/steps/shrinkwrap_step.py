@@ -51,11 +51,17 @@ class ShrinkWrapStep(LaserStep):
         return VarSet(
             vars=[
                 *LaserStep.recipe_varset().vars,
+                FloatVar(
+                    key="gravity",
+                    label=_("Gravity"),
+                    default=0.0,
+                ),
                 LabeledChoiceVar(
                     key="cut_side",
                     label=_("Cut Side"),
                     choices=[(cs.label(), cs.name) for cs in CutSide],
                     default="CENTERLINE",
+                    allow_none=False,
                 ),
                 LengthVar(
                     key="offset_mm",
@@ -66,11 +72,7 @@ class ShrinkWrapStep(LaserStep):
                         "compensation for the head"
                     ),
                     default=0.0,
-                ),
-                FloatVar(
-                    key="gravity",
-                    label=_("Gravity"),
-                    default=0.0,
+                    sensitive_when=lambda v: v.get("cut_side") != "CENTERLINE",
                 ),
             ]
         )

@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from gettext import gettext as _
 from typing import Any
 
@@ -21,6 +22,9 @@ class ChoiceVar(Var[str]):
         value: str | None = None,
         allow_none: bool = True,
         null_label: str | None = None,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
+        sensitive_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         """
         Initializes a new ChoiceVar instance.
@@ -36,6 +40,12 @@ class ChoiceVar(Var[str]):
             null_label: Overrides the default "None Selected" option label
                 (e.g. "Standard" for a protocol variant whose unset value
                 means "use the standard/default option").
+            visible_when: Optional callable that receives a dict of all
+                          current var values in the widget and returns True
+                          when this var's row should be visible.
+            sensitive_when: Optional callable that receives a dict of all
+                            current var values in the widget and returns
+                            True when this var's row should be interactive.
         """
         super().__init__(
             key=key,
@@ -44,6 +54,8 @@ class ChoiceVar(Var[str]):
             description=description,
             default=default,
             value=value,
+            visible_when=visible_when,
+            sensitive_when=sensitive_when,
         )
         self.choices = choices
         self.allow_none = allow_none

@@ -1,4 +1,6 @@
+from collections.abc import Callable
 from gettext import gettext as _
+from typing import Any
 
 from .var import Var
 
@@ -19,6 +21,8 @@ class TextAreaVar(Var[str]):
         description: str | None = None,
         default: str | None = None,
         value: str | None = None,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         super().__init__(
             key=key,
@@ -27,4 +31,5 @@ class TextAreaVar(Var[str]):
             description=description,
             default=default,
             value=value,
+            visible_when=visible_when,
         )

@@ -1,10 +1,5 @@
 # flake8: noqa: E402
-"""Verify that existing var types render correctly via their adapters.
-
-These are the mappings the migration relies on: SliderFloatVar renders
-as a percent slider, LaserHeadVar renders as a combo row, and
-LabeledChoiceVar renders as a combo with display/value mapping.
-"""
+"""UI tests for the SliderAdapter (SliderFloatVar and SliderIntVar)."""
 
 import os
 import sys
@@ -24,13 +19,11 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-from gi.repository import Adw
-
 from rayforge.core.varset import (
     SliderFloatVar,
+    SliderIntVar,
     VarSet,
 )
-from rayforge.core.varset.labeledchoicevar import LabeledChoiceVar
 from rayforge.ui_gtk.varset.adapter import create_row_for_var
 from rayforge.ui_gtk.varset.varsetwidget import VarSetWidget
 
@@ -81,23 +74,41 @@ def test_slider_float_var_in_varset_widget(ui_context_initializer):
     assert widget.get_values()["power"] == 0.5
 
 
-def test_labeled_choice_var_creates_combo_row(ui_context_initializer):
-    """LabeledChoiceVar renders as an Adw.ComboRow with display labels."""
-    var = LabeledChoiceVar(
-        key="cut_side",
-        label="Cut Side",
-        choices=[
-            ("Inside", "INSIDE"),
-            ("Outside", "OUTSIDE"),
-            ("Centerline", "CENTERLINE"),
-        ],
-        default="OUTSIDE",
+def test_slider_int_var_renders_int_slider(ui_context_initializer):
+    """SliderIntVar renders as a slider returning integer values."""
+    var = SliderIntVar(
+        key="threshold",
+        label="Threshold",
+        default=128,
+        min_val=0,
+        max_val=255,
+        show_value=True,
     )
     row, adapter = create_row_for_var(var, "value")
-    assert isinstance(row, Adw.ComboRow)
+    assert row is not None
     assert adapter is not None
 
-    # The stored value is the internal name, not the display label.
-    assert adapter.get_value() == "OUTSIDE"
-    adapter.set_value("INSIDE")
-    assert adapter.get_value() == "INSIDE"
+    assert adapter.get_value() == 128
+    adapter.set_value(200)
+    assert adapter.get_value() == 200
+    assert isinstance(adapter.get_value(), int)
+
+
+def test_slider_int_var_round_trip_through_widget(ui_context_initializer):
+    """SliderIntVar values round-trip through a VarSetWidget."""
+    vs = VarSet(
+        vars=[
+            SliderIntVar(
+                key="threshold",
+                label="Threshold",
+                default=128,
+                min_val=0,
+                max_val=255,
+            ),
+        ]
+    )
+    widget = VarSetWidget()
+    widget.populate(vs)
+
+    widget.set_values({"threshold": 200})
+    assert widget.get_values()["threshold"] == 200
