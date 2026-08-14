@@ -82,13 +82,14 @@ applied to the steps it targets:
 
 ![Recipe Editor - Post Processing Tab](/screenshots/recipe-editor-post-processing.png)
 
-Each transformer is shown with a tri-state button:
+Each transformer carries an apply toggle (a check button next to its
+row):
 
-- **Leave Unchanged**: the recipe does not touch this transformer when
+- **Toggle on**: the recipe stamps the transformer's parameters onto
+  the step (its own enable switch decides whether it is turned on or
+  off)
+- **Toggle off**: the recipe does not touch this transformer when
   applied
-- **Enabled**: the recipe turns the transformer on and stamps its
-  parameters onto the step
-- **Disabled**: the recipe explicitly turns the transformer off
 
 When the recipe targets multiple step types, only the transformers
 common to all of them are shown.

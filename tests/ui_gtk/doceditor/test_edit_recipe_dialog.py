@@ -1,14 +1,11 @@
 # flake8: noqa: E402
 """Integration tests for AddEditRecipeDialog step-type targeting."""
 
-from gettext import gettext as _
-
 import gi
 import pytest
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk
 
 from rayforge.core.recipe import Recipe
 from rayforge.machine.models.laser import Laser
@@ -179,7 +176,7 @@ def test_post_processing_tab_appears_for_contour(laser_machine):
     assert "Optimize" in names
     assert "CropTransformer" in names
 
-    # All dicts default to "Leave Unchanged" (recipe_apply=False).
+    # All dicts default to "Toggle off" (recipe_apply=False).
     assert all(
         not d.get("recipe_apply")
         for d in dialog._post_processing_page.get_transformer_dicts()
@@ -210,7 +207,7 @@ def test_post_processing_tab_restores_recipe_values(laser_machine):
     }
     assert dicts["Optimize"]["recipe_apply"] is True
     assert dicts["Optimize"]["enabled"] is False
-    # Other transformers default to Leave Unchanged.
+    # Other transformers default to Toggle off.
     assert dicts["CropTransformer"]["recipe_apply"] is False
 
     data = dialog.get_recipe_data()
@@ -221,8 +218,9 @@ def test_post_processing_tab_restores_recipe_values(laser_machine):
     dialog.close()
 
 
-def test_tri_state_selection_updates_dict(laser_machine):
-    """Selecting a tri-state option writes recipe_apply/enabled."""
+def test_apply_toggle_and_enable_switch_update_dict(laser_machine):
+    """Flipping the apply toggle writes recipe_apply; the group's native
+    enable switch writes enabled."""
     recipe = Recipe(name="Contour", target_step_types=["ContourStep"])
     dialog = AddEditRecipeDialog(parent=None, recipe=recipe)
     assert dialog._post_processing_page is not None
@@ -233,18 +231,18 @@ def test_tri_state_selection_updates_dict(laser_machine):
     optimize_dict = dicts["Optimize"]
     assert optimize_dict["recipe_apply"] is False
 
-    # Select "Enabled" in the group's tri-state popover.
-    _click_tri_state(page, group, _("Enabled"))
+    # Flip the apply toggle on.
+    _set_apply_toggle(group, True)
     assert optimize_dict["recipe_apply"] is True
-    assert optimize_dict["enabled"] is True
 
-    # Select "Disabled".
-    _click_tri_state(page, group, _("Disabled"))
-    assert optimize_dict["recipe_apply"] is True
+    # Flip the group's native enable switch off.
+    enable_switch = group.enable_switch
+    assert enable_switch is not None
+    enable_switch.set_active(False)
     assert optimize_dict["enabled"] is False
 
-    # Select "Leave Unchanged".
-    _click_tri_state(page, group, _("Leave Unchanged"))
+    # Flip the apply toggle off again.
+    _set_apply_toggle(group, False)
     assert optimize_dict["recipe_apply"] is False
 
     dialog.close()
@@ -275,16 +273,8 @@ def _group_for_transformer(page, name):
     raise AssertionError(f"No group for transformer '{name}'")
 
 
-def _click_tri_state(page, group, label):
-    """Select a tri-state popover entry by label, mirroring a click."""
-    button = group.tri_state_button
-    assert button is not None
-    list_box = button.get_popover().get_child()
-    row = list_box.get_first_child()
-    while row is not None:
-        child = row.get_child()
-        if isinstance(child, Gtk.Button) and child.get_label() == label:
-            child.emit("clicked")
-            return
-        row = row.get_next_sibling()
-    raise AssertionError(f"No tri-state entry '{label}'")
+def _set_apply_toggle(group, active):
+    """Flip the group's apply toggle, mirroring a click."""
+    toggle = group.apply_toggle
+    assert toggle is not None
+    toggle.set_active(active)
