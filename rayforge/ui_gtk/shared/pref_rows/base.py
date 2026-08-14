@@ -3,7 +3,7 @@ import logging
 from blinker import ANY, Signal
 from gi.repository import Adw, GLib, Gtk
 
-from ..adwfix import ensure_spinrow_min_width
+from ..adwfix import ensure_row_min_width
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +100,7 @@ class SpinRow(Adw.ActionRow):
         self.value_changed = _StrongSignal()
         self._destroy_handler_id = self.connect("destroy", self._on_destroy)
 
-        ensure_spinrow_min_width(self)
+        ensure_row_min_width(self)
 
     def get_value(self) -> float:
         """Return the current value (display units), text-aware."""

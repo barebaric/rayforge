@@ -8,6 +8,7 @@ before tests run, mirroring the laser_essentials addon conftest.
 from unittest.mock import MagicMock
 
 import pytest
+from cnc_essentials.frontend import register_step_settings_pages
 from cnc_essentials.steps import (
     AdaptiveClearStep,
     FlatSpiralStep,
@@ -21,6 +22,9 @@ from cnc_essentials.steps import (
 
 from rayforge.core.step_registry import step_registry
 from rayforge.machine.models.spindle import SpindleHead
+from rayforge.ui_gtk.doceditor.step_settings.page_registry import (
+    step_settings_page_registry,
+)
 
 
 @pytest.fixture
@@ -46,8 +50,9 @@ def _register_steps():
 @pytest.fixture(scope="session", autouse=True)
 def register_cnc_essentials():
     """
-    Automatically register cnc_essentials steps for all tests in this
-    addon.
+    Automatically register cnc_essentials steps and settings pages
+    for all tests in this addon.
     """
     _register_steps()
+    register_step_settings_pages(step_settings_page_registry)
     yield
