@@ -1,3 +1,4 @@
+from .anglevar import AngleVar
 from .appkeyvar import AppKeyVar
 from .baudratevar import BaudrateVar
 from .boolvar import BoolVar
@@ -17,6 +18,7 @@ from .var import ValidationError, Var, get_editable_var_types
 from .varset import VarSet, merge_varsets
 
 __all__ = [
+    "AngleVar",
     "AppKeyVar",
     "BaudrateVar",
     "BoolVar",
