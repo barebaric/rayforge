@@ -160,6 +160,53 @@ class Step(DocItem, ABC):
         return tuple(var.key for var in cls.recipe_varset())
 
     @classmethod
+    def recipe_value(cls, key: str, value: Any) -> Any:
+        """Serialize a step attribute value for recipe storage and
+        comparison.
+
+        The base serializes enum-backed attributes (e.g.
+        ``coolant_method``) to their string names so recipes stay
+        YAML-safe. Other values pass through unchanged. Domain bases
+        extend this via ``super()`` composition.
+        """
+        if key == "coolant_method" and isinstance(value, CoolantMode):
+            return value.name
+        return value
+
+    def get_recipe_setter_name(self, key: str) -> str | None:
+        """The ``set_{key}`` setter name for a recipe key, if any.
+
+        Only keys the step type owns via :meth:`recipe_keys` are
+        considered; any other key yields ``None``. Callers use this to
+        apply a recipe setting through the step's own setter (which
+        keeps invariants and emits update signals) instead of raw
+        attribute assignment.
+        """
+        if key not in self.recipe_keys():
+            return None
+        name = f"set_{key}"
+        return name if hasattr(type(self), name) else None
+
+    def set_recipe_value(self, key: str, value: Any) -> None:
+        """Apply a recipe value to this step.
+
+        Only keys the step type owns via :meth:`recipe_keys` are
+        applied; anything else is ignored. Recipe files are
+        user-provided, so this must never reach arbitrary step
+        attributes. Prefers the ``set_{key}`` setter when this step
+        type provides one, falling back to plain attribute assignment.
+        Domain bases override this to deserialize stored values (e.g.
+        enum names) before applying them.
+        """
+        if key not in self.recipe_keys():
+            return
+        setter_name = self.get_recipe_setter_name(key)
+        if setter_name is not None:
+            getattr(self, setter_name)(value)
+        else:
+            setattr(self, key, value)
+
+    @classmethod
     def recipe_varset_groups(cls) -> list[tuple[str, VarSet]]:
         """Split :meth:`recipe_varset` into named groups for the editor.
 

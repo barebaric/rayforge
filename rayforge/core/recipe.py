@@ -54,8 +54,10 @@ class Recipe:
     max_thickness_mm: float | None = None
 
     # --- Payload ---
-    # A single dictionary of settings to be applied.
-    settings: dict[str, Any] = field(default_factory=dict)
+    # Setting entries captured by this recipe. Each dict carries
+    # ``name``, ``value`` and ``recipe_apply`` (False = "Leave
+    # unchanged"), structurally identical to ``transformer_dicts``.
+    setting_dicts: list[dict[str, Any]] = field(default_factory=list)
 
     # Post-processor (transformer) settings captured by this recipe.
     # Each dict carries ``name``, ``enabled``, ``recipe_apply`` (False =
@@ -65,20 +67,48 @@ class Recipe:
     # Forward compatibility: store unknown attributes
     extra: dict[str, Any] = field(default_factory=dict)
 
+    def get_applied_settings(self) -> dict[str, Any]:
+        """Flat dict of the recipe's settings with ``recipe_apply=True``.
+
+        Entries without an explicit ``recipe_apply`` count as applied.
+        """
+        return {
+            d["name"]: d["value"]
+            for d in self.setting_dicts
+            if d.get("name") is not None and d.get("recipe_apply", True)
+        }
+
+    def get_settings_for_step(self, step: "Step") -> dict[str, Any]:
+        """The recipe's applied settings the given step actually owns.
+
+        Setting names are gated through the step type's
+        :meth:`~rayforge.core.step.Step.recipe_keys` allowlist;
+        everything else is dropped. Recipe files are user-provided, so
+        they must never be able to reach arbitrary step attributes.
+        """
+        allowed = type(step).recipe_keys()
+        return {
+            name: value
+            for name, value in self.get_applied_settings().items()
+            if name in allowed
+        }
+
     def matches_step_settings(
         self,
         step: "Step",
         tolerance=1e-6,
     ) -> bool:
         """
-        Compares this recipe's settings against a Step object's current
-        settings. Only keys present in the recipe are checked.
+        Compares this recipe's applied settings against a Step object's
+        current settings. Only keys the recipe carries and the step type
+        owns are checked; enum-backed attributes are compared through
+        the step's ``recipe_value`` serialization.
         """
-        for key, recipe_val in self.settings.items():
+        for key, recipe_val in self.get_settings_for_step(step).items():
             if not hasattr(step, key):
                 return False  # Step is missing an attribute the recipe defines
 
-            step_val = getattr(step, key)
+            step_val = type(step).recipe_value(key, getattr(step, key))
 
             if isinstance(step_val, float) and isinstance(recipe_val, float):
                 if not math.isclose(
@@ -102,8 +132,9 @@ class Recipe:
         ``per_workpiece_transformers_dicts`` +
         ``per_step_transformers_dicts`` (deduplicated by name). For
         each matching transformer name, every key present in the recipe
-        dict (except ``recipe_apply``) is compared against the step's
-        dict. Floats use ``math.isclose`` with ``tolerance``.
+        dict (except ``recipe_apply``) that the step's dict also
+        declares is compared against it. Floats use ``math.isclose``
+        with ``tolerance``.
 
         Returns ``True`` if the step has a matching transformer for
         every recipe entry with ``recipe_apply=True``.
@@ -128,7 +159,7 @@ class Recipe:
                 if key == "recipe_apply":
                     continue
                 if key not in match:
-                    return False
+                    continue
                 step_val = match[key]
                 if isinstance(step_val, float) and isinstance(
                     recipe_val, float
@@ -182,7 +213,7 @@ class Recipe:
         # secondary constraints like laser head.
 
         # 3. Check head compatibility (if specified in settings)
-        target_head_uid = self.settings.get("selected_head_uid")
+        target_head_uid = self.get_applied_settings().get("selected_head_uid")
         if target_head_uid and (
             not machine
             or not any(head.uid == target_head_uid for head in machine.heads)
@@ -260,7 +291,9 @@ class Recipe:
         """
         # Score 0 for specific, 1 for generic (None or not present)
         machine_score = 0 if self.target_machine_id is not None else 1
-        head_score = 0 if "selected_head_uid" in self.settings else 1
+        head_score = (
+            0 if "selected_head_uid" in self.get_applied_settings() else 1
+        )
         material_score = 0 if self.material_uid is not None else 1
         thickness_score = (
             0
@@ -336,23 +369,16 @@ class Recipe:
             "material_uid",
             "min_thickness_mm",
             "max_thickness_mm",
-            "settings",
+            "setting_dicts",
             "transformer_dicts",
-            # Legacy targeting keys, consumed by the migration below.
+            # Legacy keys, consumed by the migration below.
+            "settings",
             "target_capability_name",
             "target_step_type",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
-        settings = data.get("settings", {})
-        # Legacy alias: old recipe files keyed head selection as
-        # "selected_laser_uid".
-        if (
-            "selected_laser_uid" in settings
-            and "selected_head_uid" not in settings
-        ):
-            settings = dict(settings)
-            settings["selected_head_uid"] = settings.pop("selected_laser_uid")
+        setting_dicts = cls._migrate_setting_dicts(data)
 
         target_step_types = cls._migrate_target_step_types(data)
 
@@ -372,10 +398,43 @@ class Recipe:
             material_uid=data.get("material_uid"),
             min_thickness_mm=data.get("min_thickness_mm"),
             max_thickness_mm=data.get("max_thickness_mm"),
-            settings=settings,
+            setting_dicts=setting_dicts,
             transformer_dicts=transformer_dicts,
             extra=extra,
         )
+
+    @classmethod
+    def _migrate_setting_dicts(
+        cls, data: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        """Resolve ``setting_dicts`` from new and legacy keys.
+
+        New files store ``setting_dicts`` (a list of ``name``/``value``/
+        ``recipe_apply`` dicts). Legacy files store a flat ``settings``
+        dict whose entries all count as applied. The legacy
+        ``selected_laser_uid`` head key is renamed to
+        ``selected_head_uid`` in both forms.
+        """
+        raw = data.get("setting_dicts")
+        if raw is None:
+            legacy = data.get("settings") or {}
+            entries = [
+                {"name": k, "value": v, "recipe_apply": True}
+                for k, v in legacy.items()
+            ]
+        else:
+            entries = [dict(d) for d in raw if isinstance(d, dict)]
+
+        has_head = any(d.get("name") == "selected_head_uid" for d in entries)
+        migrated: list[dict[str, Any]] = []
+        for d in entries:
+            name = d.get("name")
+            if name == "selected_laser_uid":
+                if has_head:
+                    continue
+                name = "selected_head_uid"
+            migrated.append({**d, "name": name})
+        return migrated
 
     @staticmethod
     def _migrate_target_step_types(data: dict[str, Any]) -> list[str]:
