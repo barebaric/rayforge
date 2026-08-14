@@ -6,10 +6,17 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.part import Part
+from raygeo.ops.state import CoolantMode
 
 from rayforge.core.capability import MachineCapability
 from rayforge.core.step import Step
-from rayforge.core.varset import IntVar, LengthVar, SpeedVar, VarSet
+from rayforge.core.varset import (
+    IntVar,
+    LabeledChoiceVar,
+    LengthVar,
+    SpeedVar,
+    VarSet,
+)
 from rayforge.machine.models.spindle import SpindleHead
 
 if TYPE_CHECKING:
@@ -136,12 +143,19 @@ class CncAssemblerStep(Step):
     def recipe_varset(cls) -> VarSet:
         return VarSet(
             vars=[
-                LengthVar(
-                    key="tool_diameter",
-                    label=_("Tool Diameter"),
-                    default=6.0,
-                    min_val=0.1,
-                    max_val=50.0,
+                LabeledChoiceVar(
+                    key="coolant_method",
+                    label=_("Cooling"),
+                    choices=[
+                        (_("Off"), CoolantMode.OFF.name),
+                        (_("Flood"), CoolantMode.FLOOD.name),
+                        (_("Mist"), CoolantMode.MIST.name),
+                    ],
+                    default=CoolantMode.OFF.name,
+                    description=_(
+                        "Coolant delivered to the workpiece while cutting"
+                    ),
+                    allow_none=False,
                 ),
                 IntVar(
                     key="spindle_rpm",
@@ -150,13 +164,12 @@ class CncAssemblerStep(Step):
                     min_val=100,
                     max_val=60000,
                 ),
-                *Step.recipe_varset().vars,
-                SpeedVar(
-                    key="plunge_speed",
-                    label=_("Plunge Rate"),
-                    default=200,
-                    min_val=1,
-                    role="cut",
+                LengthVar(
+                    key="tool_diameter",
+                    label=_("Tool Diameter"),
+                    default=6.0,
+                    min_val=0.1,
+                    max_val=50.0,
                 ),
                 LengthVar(
                     key="target_depth",
@@ -178,6 +191,14 @@ class CncAssemblerStep(Step):
                     default=2.0,
                     min_val=0.0,
                     max_val=50.0,
+                ),
+                *Step.recipe_varset().vars,
+                SpeedVar(
+                    key="plunge_speed",
+                    label=_("Plunge Rate"),
+                    default=200,
+                    min_val=1,
+                    role="cut",
                 ),
             ]
         )

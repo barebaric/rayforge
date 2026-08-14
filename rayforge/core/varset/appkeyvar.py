@@ -1,4 +1,5 @@
 import json
+from collections.abc import Callable
 from typing import Any
 
 from .var import Var
@@ -29,6 +30,8 @@ class AppKeyVar(Var[str]):
         description: str | None = None,
         default: str | None = None,
         value: str | None = None,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         self.app_name = app_name
         self.probe_url = probe_url
@@ -41,6 +44,7 @@ class AppKeyVar(Var[str]):
             description=description,
             default=default or "",
             value=value,
+            visible_when=visible_when,
         )
 
     def get_api_key(self) -> str | None:

@@ -10,6 +10,15 @@ from raygeo.ops.part import Part
 
 from rayforge.core.capability import MachineCapability
 from rayforge.core.step import legacy_producer_params
+from rayforge.core.varset import (
+    BoolVar,
+    ChoiceVar,
+    FloatVar,
+    IntVar,
+    LengthVar,
+    SliderFloatVar,
+    VarSet,
+)
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.transformer.registry import transformer_registry
 
@@ -33,6 +42,87 @@ class MaterialTestStep(LaserStep):
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "material_test_grid"
     HIDDEN = True
+
+    @classmethod
+    def recipe_varset(cls) -> VarSet:
+        return VarSet(
+            vars=[
+                *LaserStep.recipe_varset().vars,
+                ChoiceVar(
+                    key="test_type",
+                    label=_("Test Type"),
+                    choices=["Cut", "Engrave"],
+                    default="Cut",
+                    allow_none=False,
+                ),
+                ChoiceVar(
+                    key="grid_mode",
+                    label=_("Grid Mode"),
+                    choices=[
+                        "Power vs Speed",
+                        "Power vs Passes",
+                        "Speed vs Passes",
+                        "Speed vs Offset",
+                    ],
+                    default="Power vs Speed",
+                    allow_none=False,
+                ),
+                FloatVar(
+                    key="shape_size",
+                    label=_("Shape Size"),
+                    default=10.0,
+                    min_val=0.1,
+                ),
+                FloatVar(
+                    key="spacing",
+                    label=_("Spacing"),
+                    default=2.0,
+                    min_val=0.0,
+                ),
+                LengthVar(
+                    key="line_interval_mm",
+                    label=_("Line Interval"),
+                    description=_("Distance between scan lines (0 = auto)"),
+                    default=0.0,
+                    min_val=0.0,
+                ),
+                BoolVar(
+                    key="include_labels",
+                    label=_("Include Labels"),
+                    default=True,
+                ),
+                SliderFloatVar(
+                    key="label_power_percent",
+                    label=_("Label Power"),
+                    default=10.0,
+                    min_val=0.0,
+                    max_val=100.0,
+                    show_value=True,
+                    format_suffix="%",
+                ),
+                IntVar(
+                    key="label_speed",
+                    label=_("Label Speed"),
+                    default=1000,
+                    min_val=1,
+                ),
+                FloatVar(
+                    key="fixed_speed",
+                    label=_("Fixed Speed"),
+                    default=1000.0,
+                    min_val=1.0,
+                ),
+                SliderFloatVar(
+                    key="fixed_power",
+                    label=_("Fixed Power"),
+                    default=50.0,
+                    min_val=0.0,
+                    max_val=100.0,
+                    show_value=True,
+                    format_suffix="%",
+                ),
+            ]
+        )
 
     def __init__(self, name: str | None = None, typelabel: str | None = None):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)

@@ -112,3 +112,13 @@ class RowAdapter(ABC):
 
     def update_from_var(self, var: Var):
         pass
+
+    def update_from_values(self, values: dict[str, Any]) -> None:
+        """Refresh the row from the widget's current sibling values.
+
+        Called by the row manager after every ``data_changed``
+        emission (and after populate) with a dict of all current
+        values keyed by var key. Adapters whose row depends on other
+        vars (e.g. a preview driven by a sibling switch) override
+        this. The default does nothing.
+        """

@@ -93,9 +93,6 @@ class RecipeVarSetWidget(VarSetWidget):
         toggle = Gtk.ToggleButton()
         toggle.add_css_class("flat")
         toggle.set_valign(Gtk.Align.CENTER)
-        icon = get_icon("check-symbolic")
-        icon.set_valign(Gtk.Align.CENTER)
-        toggle.set_child(icon)
         toggle.set_active(initial_apply)
         toggle.set_tooltip_text(_("Apply this setting to the step"))
         toggle.connect("toggled", self._on_apply_toggled, key)
@@ -117,13 +114,17 @@ class RecipeVarSetWidget(VarSetWidget):
                     self._on_data_changed(rk)
 
     def _update_apply_visual(self, key: str):
-        """Dim the row while the apply toggle is off."""
+        """Dim the row while the apply toggle is off and swap the icon."""
         toggle = self._apply_toggles.get(key)
         if toggle is None:
             return
+        applied = toggle.get_active()
+        icon = get_icon("check-symbolic" if applied else "disabled-symbolic")
+        icon.set_valign(Gtk.Align.CENTER)
+        toggle.set_child(icon)
         row, _ = self.widget_map.get(key, (None, None))
         if row is not None:
-            row.set_opacity(1.0 if toggle.get_active() else 0.5)
+            row.set_opacity(1.0 if applied else 0.5)
 
     # --- setting_dicts I/O -----------------------------------------
 

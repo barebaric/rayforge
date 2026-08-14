@@ -20,6 +20,9 @@ class FloatVar(Var[float]):
         min_val: float | None = None,
         max_val: float | None = None,
         extra_validator: Callable[[float], None] | None = None,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
+        sensitive_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         self.min_val = min_val
         self.max_val = max_val
@@ -52,6 +55,8 @@ class FloatVar(Var[float]):
             default=default,
             value=value,
             validator=validator,
+            visible_when=visible_when,
+            sensitive_when=sensitive_when,
         )
 
     def to_dict(self, include_value: bool = False) -> dict[str, Any]:
@@ -82,6 +87,9 @@ class SliderFloatVar(FloatVar):
         extra_validator: Callable[[float], None] | None = None,
         show_value: bool = True,
         format_suffix: str | None = None,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
+        sensitive_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         self.show_value = show_value
         self.format_suffix = format_suffix
@@ -94,6 +102,8 @@ class SliderFloatVar(FloatVar):
             min_val=min_val,
             max_val=max_val,
             extra_validator=extra_validator,
+            visible_when=visible_when,
+            sensitive_when=sensitive_when,
         )
 
     def to_dict(self, include_value: bool = False) -> dict[str, Any]:

@@ -225,10 +225,13 @@ class Step(DocItem, ABC):
 
         Used by the recipe editor when a recipe targets more than one
         step type: only settings shared by every selected type are
-        offered. The group structure (titles) of the first given type is
-        reused, with each group filtered down to the keys present in
-        every type's :meth:`recipe_varset`. Falls back to the base
-        :meth:`recipe_varset_groups` when nothing is shared.
+        offered. The group structure (titles) of the lowest common
+        ancestor of the selected types is reused, with each group
+        filtered down to the keys present in every type's
+        :meth:`recipe_varset`. Mixing laser and CNC steps therefore
+        yields the base "Settings" group rather than a domain tab.
+        Falls back to the base :meth:`recipe_varset_groups` when
+        nothing is shared.
         """
         if not step_classes:
             return cls.recipe_varset_groups()
@@ -243,7 +246,7 @@ class Step(DocItem, ABC):
         if not common_keys:
             return cls.recipe_varset_groups()
 
-        reference = step_classes[0]
+        reference = cls._common_base(step_classes)
         groups: list[tuple[str, VarSet]] = []
         for title, varset in reference.recipe_varset_groups():
             filtered = [v for v in varset if v.key in common_keys]
@@ -255,6 +258,24 @@ class Step(DocItem, ABC):
                     )
                 )
         return groups or cls.recipe_varset_groups()
+
+    @staticmethod
+    def _common_base(
+        step_classes: list[type["Step"]],
+    ) -> type["Step"]:
+        """The most-derived step class that all given classes inherit.
+
+        Walks the first class's MRO and returns the first candidate
+        that every given class is a subclass of. This is the class
+        whose :meth:`recipe_varset_groups` structure applies to the
+        whole selection (e.g. ``Step`` for a laser + CNC mix, so the
+        editor shows the neutral "Settings" group instead of a domain
+        tab).
+        """
+        for candidate in step_classes[0].__mro__:
+            if all(issubclass(cls, candidate) for cls in step_classes):
+                return candidate
+        return Step
 
     @classmethod
     def common_transformer_dicts(
