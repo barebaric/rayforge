@@ -7,6 +7,7 @@ from ....core.varset import Var
 
 # Trigger @register_adapter decorators. Every adapter module must be
 # imported here so that its class registers itself in _ADAPTER_REGISTRY.
+from .angle import AngleRowAdapter
 from .appkey import AppKeyAdapter
 from .base import _ADAPTER_REGISTRY, RowAdapter, escape_title
 from .combo import BaudRateAdapter, ComboAdapter, SerialPortAdapter
@@ -20,6 +21,7 @@ from .switch import SwitchAdapter
 from .textarea import TextAreaAdapter
 
 _ALL_ADAPTERS = (
+    AngleRowAdapter,
     AppKeyAdapter,
     BaudRateAdapter,
     ComboAdapter,

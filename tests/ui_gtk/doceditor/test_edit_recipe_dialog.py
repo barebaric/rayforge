@@ -287,3 +287,68 @@ def _set_apply_toggle(group, active):
     toggle = group.apply_toggle
     assert toggle is not None
     toggle.set_active(active)
+
+
+def _setting_dicts_by_name(dialog):
+    """Collect setting_dicts from get_recipe_data, keyed by name."""
+    data = dialog.get_recipe_data()
+    return {d["name"]: d for d in data["setting_dicts"]}
+
+
+def test_setting_apply_state_preserved_from_existing_recipe(laser_machine):
+    """Existing recipe entries with recipe_apply=True keep their toggles
+    on when loaded into the editor."""
+    recipe = Recipe(
+        name="Contour Recipe",
+        target_step_types=["ContourStep"],
+        setting_dicts=[
+            {"name": "power", "value": 0.8, "recipe_apply": True},
+            {"name": "cut_speed", "value": 300, "recipe_apply": False},
+        ],
+    )
+    dialog = AddEditRecipeDialog(parent=None, recipe=recipe)
+
+    by_name = _setting_dicts_by_name(dialog)
+    assert by_name["power"]["recipe_apply"] is True
+    assert by_name["power"]["value"] == 0.8
+    assert by_name["cut_speed"]["recipe_apply"] is False
+    assert by_name["cut_speed"]["value"] == 300
+
+    dialog.close()
+
+
+def test_new_recipe_defaults_settings_to_not_applied(laser_machine):
+    """A new recipe (no existing setting_dicts) has all toggles off."""
+    dialog = AddEditRecipeDialog(parent=None, recipe=None)
+    dialog.applicability_page._on_step_types_selected(["ContourStep"])
+
+    by_name = _setting_dicts_by_name(dialog)
+    # Every setting should default to recipe_apply=False.
+    for name, d in by_name.items():
+        assert d["recipe_apply"] is False, f"{name} should default to off"
+
+    dialog.close()
+
+
+def test_flipping_apply_toggle_changes_recipe_apply(laser_machine):
+    """Toggling a setting's apply toggle updates recipe_apply in the
+    collected data."""
+    recipe = Recipe(
+        name="Contour Recipe",
+        target_step_types=["ContourStep"],
+        setting_dicts=[
+            {"name": "power", "value": 0.8, "recipe_apply": False},
+        ],
+    )
+    dialog = AddEditRecipeDialog(parent=None, recipe=recipe)
+
+    # Find the page containing "power" and flip its toggle on.
+    for page in dialog._settings_pages.values():
+        if "power" in page.keys:
+            page._widget.set_apply_state("power", True)
+            break
+
+    by_name = _setting_dicts_by_name(dialog)
+    assert by_name["power"]["recipe_apply"] is True
+
+    dialog.close()

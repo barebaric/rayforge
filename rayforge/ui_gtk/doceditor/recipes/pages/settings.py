@@ -33,12 +33,6 @@ class RecipeSettingsPage(Adw.PreferencesPage):
     def populate(self, varset: VarSet):
         self._widget.populate(varset)
 
-    def set_values(self, values: dict[str, Any]):
-        self._widget.set_values(values)
-
-    def get_values(self) -> dict[str, Any]:
-        return self._widget.get_values()
-
     def set_setting_dicts(self, setting_dicts: list[dict[str, Any]]):
         self._widget.set_setting_dicts(setting_dicts)
 
