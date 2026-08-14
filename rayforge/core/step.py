@@ -248,7 +248,12 @@ class Step(DocItem, ABC):
         for title, varset in reference.recipe_varset_groups():
             filtered = [v for v in varset if v.key in common_keys]
             if filtered:
-                groups.append((title, VarSet(vars=filtered)))
+                groups.append(
+                    (
+                        title,
+                        VarSet(vars=filtered, description=varset.description),
+                    )
+                )
         return groups or cls.recipe_varset_groups()
 
     @classmethod

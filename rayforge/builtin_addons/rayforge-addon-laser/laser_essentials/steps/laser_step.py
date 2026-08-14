@@ -83,12 +83,14 @@ class LaserStep(Step):
         base_keys = {v.key for v in LaserStep.recipe_varset()}
         laser_vars = [v for v in full if v.key in base_keys]
         step_vars = [v for v in full if v.key not in base_keys]
-        groups: list[tuple[str, VarSet]] = []
-        if laser_vars:
-            groups.append((_("Laser"), VarSet(vars=laser_vars)))
+        laser_description = _(
+            "Laser power, speed, and head selection for this operation."
+        )
+        laser_vs = VarSet(vars=laser_vars, description=laser_description)
+        groups: list[tuple[str, VarSet]] = [(_("Laser"), laser_vs)]
         if step_vars:
             groups.append((_("Step Settings"), VarSet(vars=step_vars)))
-        return groups or [(_("Laser"), VarSet(vars=laser_vars))]
+        return groups
 
     def create_initial_ops(self) -> Ops:
         """Build the initial Ops object with step-wide machine settings."""

@@ -36,6 +36,12 @@ class _VarSetRowManager:
         self.data_changed = Signal()
         self._debounce_timer_id: int | None = None
         self._pending_keys: set = set()
+        #: Keys managed by a composite adapter, not the primary var.
+        #: Skipped during row creation so only one row is built per
+        #: composite group, but included in get/set_values.
+        self._related_keys: set[str] = set()
+        #: Reverse map: related key -> primary key (for dispatch).
+        self._related_to_primary: dict[str, str] = {}
 
     def _add_row(self, row):
         raise NotImplementedError
@@ -49,6 +55,25 @@ class _VarSetRowManager:
     def _set_group_description(self, desc):
         pass
 
+    def _should_emit_data_changed(self, key: str) -> bool:
+        """Return False to suppress a ``data_changed`` emission.
+
+        The base always emits. Subclasses override this to gate
+        emissions on external state (e.g. an apply toggle).
+        """
+        return True
+
+    def _on_row_created(
+        self,
+        row: Adw.PreferencesRow,
+        var: Var,
+        adapter: RowAdapter | None,
+    ) -> None:
+        """Called after a row is created and registered in widget_map.
+
+        Subclasses override this to attach per-row decorations.
+        """
+
     def clear_dynamic_rows(self):
         """Removes only the rows dynamically created by populate()."""
         self._cancel_debounce()
@@ -59,6 +84,8 @@ class _VarSetRowManager:
         self._reset_buttons.clear()
         self.widget_map.clear()
         self._adapters.clear()
+        self._related_keys.clear()
+        self._related_to_primary.clear()
 
     def populate(self, var_set: VarSet):
         """
@@ -82,6 +109,9 @@ class _VarSetRowManager:
                     self._created_rows.remove(row)
 
         for var in var_set:
+            if var.key in self._related_keys:
+                continue
+
             if var.key in self.widget_map:
                 row, old_var = self.widget_map[var.key]
                 adapter = self._adapters.get(var.key)
@@ -104,32 +134,61 @@ class _VarSetRowManager:
 
             row, adapter = create_row_for_var(var, "value")
             if row:
+                self.widget_map[var.key] = (row, var)
                 self._wire_up_row(row, var, adapter)
                 self._add_row(row)
                 self._created_rows.append(row)
-                self.widget_map[var.key] = (row, var)
                 if adapter is not None:
                     self._adapters[var.key] = adapter
+                    if adapter.related_keys:
+                        for rk in adapter.related_keys:
+                            self._related_keys.add(rk)
+                            self._related_to_primary[rk] = var.key
 
     def get_values(self) -> dict[str, Any]:
         values = {}
         for key in self.widget_map:
             adapter = self._adapters.get(key)
             if adapter is not None:
-                values[key] = adapter.get_value()
+                values[key] = adapter.get_value_for_key(key)
             else:
                 values[key] = None
+        for key in self._related_keys:
+            primary = self._related_to_primary.get(key)
+            if primary is None:
+                continue
+            adapter = self._adapters.get(primary)
+            if adapter is not None:
+                values[key] = adapter.get_value_for_key(key)
         return values
 
     def set_values(self, values: dict[str, Any]):
         for key, value in values.items():
-            if key not in self.widget_map or value is None:
+            if value is None:
                 continue
-            adapter = self._adapters.get(key)
-            if adapter is not None:
-                adapter.set_value(value)
+            if key in self._related_keys:
+                primary = self._related_to_primary.get(key)
+                if primary is None:
+                    continue
+                adapter = self._adapters.get(primary)
+                if adapter is not None:
+                    adapter.set_value_for_key(key, value)
+            elif key in self.widget_map:
+                adapter = self._adapters.get(key)
+                if adapter is not None:
+                    adapter.set_value(value)
 
     def _on_data_changed(self, key: str):
+        if not self._should_emit_data_changed(key):
+            return
+        self._emit_data_changed(key)
+        adapter = self._adapters.get(key)
+        if adapter is not None:
+            for rk in adapter.related_keys:
+                if self._should_emit_data_changed(rk):
+                    self._emit_data_changed(rk)
+
+    def _emit_data_changed(self, key: str):
         if self.debounce_ms > 0:
             self._pending_keys.add(key)
             self._schedule_debounce()
@@ -204,6 +263,7 @@ class _VarSetRowManager:
                 lambda sender: self._on_data_changed(var.key),
                 weak=False,
             )
+        self._on_row_created(row, var, adapter)
 
     def set_apply_buttons_sensitive(self, sensitive: bool):
         for button in self._apply_buttons:

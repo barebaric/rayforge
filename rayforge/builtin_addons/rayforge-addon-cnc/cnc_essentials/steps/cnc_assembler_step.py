@@ -188,12 +188,15 @@ class CncAssemblerStep(Step):
         base_keys = {v.key for v in CncAssemblerStep.recipe_varset()}
         cnc_vars = [v for v in full if v.key in base_keys]
         step_vars = [v for v in full if v.key not in base_keys]
-        groups: list[tuple[str, VarSet]] = []
-        if cnc_vars:
-            groups.append((_("CNC"), VarSet(vars=cnc_vars)))
+        cnc_description = _(
+            "Spindle speed, tool geometry, depth, and feed rates for "
+            "this operation."
+        )
+        cnc_vs = VarSet(vars=cnc_vars, description=cnc_description)
+        groups: list[tuple[str, VarSet]] = [(_("CNC"), cnc_vs)]
         if step_vars:
             groups.append((_("Step Settings"), VarSet(vars=step_vars)))
-        return groups or [(_("CNC"), VarSet(vars=cnc_vars))]
+        return groups
 
     def build_spec(self, workpiece: WorkPiece) -> object:
         """Return the raygeo assembler spec for this step.
