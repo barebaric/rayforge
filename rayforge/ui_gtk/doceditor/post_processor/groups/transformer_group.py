@@ -136,7 +136,7 @@ class TransformerSettingsGroup(Adw.PreferencesGroup):
         icon.set_valign(Gtk.Align.CENTER)
         toggle.set_child(icon)
         toggle.set_active(initial_apply)
-        toggle.set_tooltip_text(_("Apply this transformer to the step"))
+        toggle.set_tooltip_text(_("Apply this setting to the step"))
         toggle.connect("toggled", self._on_apply_toggled)
         self.apply_toggle = toggle
         self._update_apply_visual()

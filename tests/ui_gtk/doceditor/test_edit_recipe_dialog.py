@@ -71,7 +71,10 @@ def test_single_step_type_shows_step_specific_settings(laser_machine):
     recipe = Recipe(
         name="Contour Recipe",
         target_step_types=["ContourStep"],
-        settings={"power": 0.8, "cut_side": "OUTSIDE"},
+        setting_dicts=[
+            {"name": "power", "value": 0.8, "recipe_apply": True},
+            {"name": "cut_side", "value": "OUTSIDE", "recipe_apply": True},
+        ],
     )
     dialog = AddEditRecipeDialog(parent=None, recipe=recipe)
 
@@ -87,8 +90,14 @@ def test_single_step_type_shows_step_specific_settings(laser_machine):
 
     data = dialog.get_recipe_data()
     assert data["target_step_types"] == ["ContourStep"]
-    assert data["settings"]["power"] == 0.8
-    assert data["settings"]["cut_side"] == "OUTSIDE"
+    assert any(
+        d["name"] == "power" and d["value"] == 0.8
+        for d in data["setting_dicts"]
+    )
+    assert any(
+        d["name"] == "cut_side" and d["value"] == "OUTSIDE"
+        for d in data["setting_dicts"]
+    )
 
     dialog.close()
 

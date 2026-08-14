@@ -93,10 +93,12 @@ class StepCmd:
             logger.info(
                 f"Applying best recipe '{best_recipe.name}' to new step."
             )
-            # Apply the settings to the step object
-            for key, value in best_recipe.settings.items():
-                if hasattr(step, key):
-                    setattr(step, key, value)
+            # Apply the settings to the step object. Names are gated
+            # through the step type's recipe_keys allowlist; the step
+            # itself decides how to apply each value (setter when
+            # available, plain assignment otherwise).
+            for key, value in best_recipe.get_settings_for_step(step).items():
+                step.set_recipe_value(key, value)
 
             # Apply transformer settings directly to the freshly-created
             # step. Per-workpiece and per-step dicts are mutated in place.
@@ -113,7 +115,8 @@ class StepCmd:
         transformer dicts, used by the auto-apply path. For each recipe
         transformer dict with ``recipe_apply=True``, update the step's
         matching dict (by name) with ``enabled`` and the transformer's
-        params.
+        params. Only param keys the step's dict already declares are
+        written (recipe files are user-provided).
         """
         step_dicts_by_name: dict[str, dict] = {}
         for d in list(step.per_workpiece_transformers_dicts) + list(
@@ -134,6 +137,8 @@ class StepCmd:
                 continue
             for key, value in recipe_dict.items():
                 if key in ("name", "recipe_apply"):
+                    continue
+                if key not in step_dict:
                     continue
                 step_dict[key] = value
 

@@ -54,19 +54,30 @@ class RecipeControlWidget(Adw.ActionRow):
         self.step.updated.connect(self._update_ui)
         self._update_ui(self.step)
 
-    def _get_step_settings(self) -> dict[str, Any]:
+    def _get_step_settings(self) -> list[dict[str, Any]]:
         """Extracts recipe-relevant settings from the step.
 
         Uses the step class's :meth:`~rayforge.core.step.Step.recipe_keys`,
         which derives the canonical list of recipe-eligible attributes
-        from the step's recipe varset (replacing the older
-        capability-key lookup).
+        from the step's recipe varset. Each entry is a
+        ``{"name", "value", "recipe_apply"}`` dict matching the
+        recipe's ``setting_dicts`` format; enum-backed values are
+        serialized via the step class's ``recipe_value``.
         """
-        settings = {}
-        for key in type(self.step).recipe_keys():
+        step_cls = type(self.step)
+        setting_dicts = []
+        for key in step_cls.recipe_keys():
             if hasattr(self.step, key):
-                settings[key] = getattr(self.step, key)
-        return settings
+                setting_dicts.append(
+                    {
+                        "name": key,
+                        "value": step_cls.recipe_value(
+                            key, getattr(self.step, key)
+                        ),
+                        "recipe_apply": True,
+                    }
+                )
+        return setting_dicts
 
     def _get_step_transformers(self) -> list[dict[str, Any]]:
         """Deep-copy the step's transformer dicts, deduped by name.
@@ -143,16 +154,19 @@ class RecipeControlWidget(Adw.ActionRow):
                     ),
                 )
             )
-            # Set each setting the recipe carries; skip keys this step
-            # does not own.
-            for key, value in recipe.settings.items():
-                if not hasattr(self.step, key):
-                    continue
+            # Set each applied setting the recipe carries; the recipe
+            # gates names through the step type's recipe_keys
+            # allowlist, and the step's own setter is used by the undo
+            # command when one exists.
+            for key, value in recipe.get_settings_for_step(self.step).items():
                 t.execute(
                     ChangePropertyCommand(
                         target=self.step,
                         property_name=key,
                         new_value=value,
+                        setter_method_name=self.step.get_recipe_setter_name(
+                            key
+                        ),
                         on_change_callback=(
                             lambda: (self.step.updated.send(self.step), None)[
                                 1
@@ -176,10 +190,11 @@ class RecipeControlWidget(Adw.ActionRow):
         For each recipe dict with ``recipe_apply=True``, find the
         matching step dict by ``name`` (searching
         ``per_step_transformers_dicts`` first, then
-        ``per_workpiece_transformers_dicts``). For each param key
-        (except ``name`` and ``recipe_apply``), emit an undoable
-        ``set_step_param`` command. The appropriate step callback
-        matches the step-mode post-processing page's logic.
+        ``per_workpiece_transformers_dicts``). For each param key the
+        step dict already declares (except ``name`` and
+        ``recipe_apply``), emit an undoable ``set_step_param``
+        command. The appropriate step callback matches the step-mode
+        post-processing page's logic.
         """
         step_dicts_by_name: dict[str, dict[str, Any]] = {}
         for d in list(self.step.per_step_transformers_dicts) + list(
@@ -207,6 +222,8 @@ class RecipeControlWidget(Adw.ActionRow):
             for key, value in recipe_dict.items():
                 if key in ("name", "recipe_apply"):
                     continue
+                if key not in step_dict:
+                    continue
                 self.editor.step.set_step_param(
                     target_dict=step_dict,
                     key=key,
@@ -230,7 +247,7 @@ class RecipeControlWidget(Adw.ActionRow):
             name=_("New {label} Recipe").format(
                 label=step_class.TYPELABEL or step_class.__name__
             ),
-            settings=self._get_step_settings(),
+            setting_dicts=self._get_step_settings(),
             transformer_dicts=self._get_step_transformers(),
             target_step_types=[step_class.__name__],
             target_machine_id=self.editor.context.machine.id
@@ -301,7 +318,7 @@ class RecipeControlWidget(Adw.ActionRow):
         self, dialog: Adw.MessageDialog, response_id: str, recipe: Recipe
     ):
         if response_id == "update":
-            recipe.settings = self._get_step_settings()
+            recipe.setting_dicts = self._get_step_settings()
             recipe.transformer_dicts = self._get_step_transformers()
             get_context().recipe_mgr.save_recipe(recipe)
             # Manually trigger a UI update, as the step model itself didn't

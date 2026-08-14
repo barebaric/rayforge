@@ -25,7 +25,10 @@ def test_applying_recipe_updates_page_widgets(editor, step):
 
     recipe = Recipe(
         name="Test Recipe",
-        settings={"count": 9, "power": 0.8},
+        setting_dicts=[
+            {"name": "count", "value": 9, "recipe_apply": True},
+            {"name": "power", "value": 0.8, "recipe_apply": True},
+        ],
     )
 
     updated = []
@@ -45,7 +48,7 @@ def test_applying_recipe_uses_setters(editor, step):
     page = StepSettingsPage(editor, step)
     recipe = Recipe(
         name="Setter Recipe",
-        settings={"count": 5},
+        setting_dicts=[{"name": "count", "value": 5, "recipe_apply": True}],
     )
 
     page.recipe_control._apply_recipe(recipe)
