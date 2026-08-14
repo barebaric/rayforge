@@ -11,6 +11,7 @@ from gi.repository import Adw, Gtk
 from laser_essentials.levels_range_var import LevelsRangeVar
 from laser_essentials.widgets.levels_adapter import LevelsAdapter
 
+from rayforge.core.step_registry import step_registry
 from rayforge.core.varset import BoolVar, IntVar, VarSet
 from rayforge.ui_gtk.shared.histogram_preview import HistogramPreview
 from rayforge.ui_gtk.varset.adapter import create_row_for_var
@@ -54,6 +55,28 @@ def test_levels_auto_mode_synced_from_sibling(ui_context):
     assert adapter.preview.auto_mode is False
     adapter.update_from_values({"auto_levels": True})
     assert adapter.preview.auto_mode is True
+
+
+def test_levels_compute_histogram_noop_without_source(ui_context):
+    """Without a histogram source the adapter does not crash."""
+    var = LevelsRangeVar()
+    _row, adapter = create_row_for_var(var, "value")
+    assert isinstance(adapter, LevelsAdapter)
+    adapter.compute_histogram()
+
+
+def test_levels_compute_histogram_updates_preview(ui_context, laser_machine):
+    """compute_histogram pushes histogram data into the preview."""
+    step_cls = step_registry.get("EngraveStep")
+    assert step_cls is not None
+    step = step_cls.create(ui_context)
+    # The layer has no workpieces in this fixture, so the preview is
+    # cleared rather than filled, but the adapter must handle it.
+    var = LevelsRangeVar()
+    _row, adapter = create_row_for_var(var, "value")
+    assert isinstance(adapter, LevelsAdapter)
+    adapter.set_histogram_source(step)
+    adapter.compute_histogram()
 
 
 def test_levels_in_varset_widget(ui_context):

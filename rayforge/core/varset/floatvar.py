@@ -87,12 +87,14 @@ class SliderFloatVar(FloatVar):
         extra_validator: Callable[[float], None] | None = None,
         show_value: bool = True,
         format_suffix: str | None = None,
+        digits: int | None = None,
         *,
         visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
         sensitive_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         self.show_value = show_value
         self.format_suffix = format_suffix
+        self.digits = digits
         super().__init__(
             key=key,
             label=label,
@@ -112,6 +114,7 @@ class SliderFloatVar(FloatVar):
             {
                 "show_value": self.show_value,
                 "format_suffix": self.format_suffix,
+                "digits": self.digits,
             }
         )
         return data

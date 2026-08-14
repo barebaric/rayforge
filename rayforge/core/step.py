@@ -134,6 +134,7 @@ class Step(DocItem, ABC):
                 SpeedVar(
                     key="cut_speed",
                     label=_("Cut Speed"),
+                    description=_("Speed of the cutting operation"),
                     default=500,
                     min_val=1,
                     role="cut",
@@ -141,6 +142,7 @@ class Step(DocItem, ABC):
                 SpeedVar(
                     key="travel_speed",
                     label=_("Travel Speed"),
+                    description=_("Speed of rapid positioning moves"),
                     default=5000,
                     min_val=1,
                     role="travel",
@@ -743,8 +745,14 @@ class Step(DocItem, ABC):
             self.travel_speed = int(speed)
             self.updated.send(self)
 
-    def set_coolant_method(self, mode: CoolantMode):
-        """Sets the coolant method used while this step runs."""
+    def set_coolant_method(self, mode: CoolantMode | str):
+        """Sets the coolant method used while this step runs.
+
+        Accepts the enum or its ``name`` string (as stored in varsets
+        and recipes).
+        """
+        if isinstance(mode, str):
+            mode = _COOLANT_MODE_BY_NAME.get(mode, CoolantMode.OFF)
         if self.coolant_method is not mode:
             self.coolant_method = mode
             self.updated.send(self)

@@ -20,7 +20,11 @@ class _VarSetRowManager:
     """
 
     def _init_varset(
-        self, explicit_apply=False, debounce_ms=0, show_reset=False
+        self,
+        explicit_apply=False,
+        debounce_ms=0,
+        show_reset=False,
+        context_values=None,
     ):
         self.explicit_apply = explicit_apply
         self.debounce_ms = debounce_ms
@@ -31,8 +35,13 @@ class _VarSetRowManager:
         self._apply_buttons = []
         self._reset_buttons = []
         self.data_changed = Signal()
+        self._syncing = False
         self._debounce_timer_id: int | None = None
         self._pending_keys: set = set()
+        #: Extra values visible to visible_when/sensitive_when that
+        #: have no row in this widget (e.g. a key whose row lives in a
+        #: sibling widget). Host pages push them via set_context_values.
+        self._context_values: dict[str, Any] = dict(context_values or {})
         #: Keys managed by a composite adapter, not the primary var.
         #: Skipped during row creation so only one row is built per
         #: composite group, but included in get/set_values.
@@ -162,22 +171,83 @@ class _VarSetRowManager:
         return values
 
     def set_values(self, values: dict[str, Any]):
-        for key, value in values.items():
-            if value is None:
-                continue
-            if key in self._related_keys:
-                primary = self._related_to_primary.get(key)
-                if primary is None:
+        """Push values into the rows without emitting ``data_changed``.
+
+        Programmatic value updates must not look like user edits, so
+        the whole batch is applied under a syncing guard (mirroring
+        ``StepRow._syncing``). Visibility is re-evaluated afterwards
+        because predicates may depend on the pushed values.
+        """
+        self._syncing = True
+        try:
+            for key, value in values.items():
+                if value is None:
                     continue
-                adapter = self._adapters.get(primary)
-                if adapter is not None:
-                    adapter.set_value_for_key(key, value)
-            elif key in self.widget_map:
-                adapter = self._adapters.get(key)
-                if adapter is not None:
-                    adapter.set_value(value)
+                if key in self._related_keys:
+                    primary = self._related_to_primary.get(key)
+                    if primary is None:
+                        continue
+                    adapter = self._adapters.get(primary)
+                    if adapter is not None:
+                        adapter.set_value_for_key(key, value)
+                elif key in self.widget_map:
+                    adapter = self._adapters.get(key)
+                    if adapter is not None:
+                        adapter.set_value(value)
+        finally:
+            self._syncing = False
+        self._update_visibility()
+
+    def sync_from_model(self, values: dict[str, Any]):
+        """Update rows from the model, skipping keys with pending
+        (debounced) user edits, then re-evaluate visibility.
+
+        Used by host pages to resync the widget when the underlying
+        object changes externally (e.g. undo, recipe application).
+        """
+        pending = set(self._pending_keys)
+        filtered = {k: v for k, v in values.items() if k not in pending}
+        self.set_values(filtered)
+
+    def refresh(self):
+        """Re-evaluate visibility and adapter value dependencies."""
+        self._update_visibility()
+
+    def row_for(self, key: str) -> Adw.PreferencesRow | None:
+        """The row widget managing the given key, if any."""
+        primary = self._related_to_primary.get(key, key)
+        entry = self.widget_map.get(primary)
+        if entry is None:
+            return None
+        return entry[0]
+
+    def adapter_for(self, key: str) -> RowAdapter | None:
+        """The adapter managing the given key, if any."""
+        primary = self._related_to_primary.get(key, key)
+        return self._adapters.get(primary)
+
+    def keys(self) -> list[str]:
+        """All keys managed by this widget, in insertion order."""
+        keys = list(self.widget_map.keys())
+        for key in self._related_keys:
+            if key not in keys:
+                keys.append(key)
+        return keys
+
+    def cancel_pending(self):
+        """Cancel any scheduled debounced emissions without committing."""
+        self._cancel_debounce()
+
+    def flush_pending(self):
+        """Immediately emit any pending (debounced) changes."""
+        if self._debounce_timer_id is not None:
+            GLib.source_remove(self._debounce_timer_id)
+            self._debounce_timer_id = None
+        self._flush_debounce()
 
     def _on_data_changed(self, key: str):
+        if self._syncing:
+            return
         if not self._should_emit_data_changed(key):
             self._update_visibility()
             return
@@ -202,9 +272,12 @@ class _VarSetRowManager:
 
         Called after populate and after each immediate (non-debounced)
         data_changed emission. Debounced emissions trigger it via
-        ``_flush_debounce``.
+        ``_flush_debounce``. Context values (keys without a row here)
+        are merged into the values dict.
         """
         values = self.get_values()
+        if self._context_values:
+            values = {**values, **self._context_values}
         for row, var in self.widget_map.values():
             if var.visible_when is not None:
                 row.set_visible(var.visible_when(values))
@@ -212,6 +285,17 @@ class _VarSetRowManager:
                 row.set_sensitive(var.sensitive_when(values))
         for adapter in set(self._adapters.values()):
             adapter.update_from_values(values)
+
+    def set_context_values(self, values: dict[str, Any]):
+        """Provide values for keys that have no row in this widget.
+
+        Host pages use this when a ``visible_when``/``sensitive_when``
+        predicate depends on a key whose row lives in a sibling widget
+        (e.g. the raster mode row controlling the power section).
+        Visibility is re-evaluated immediately.
+        """
+        self._context_values.update(values)
+        self._update_visibility()
 
     def _schedule_debounce(self):
         if self._debounce_timer_id is not None:
@@ -297,10 +381,17 @@ class VarSetWidget(Adw.PreferencesGroup, _VarSetRowManager):
     """
 
     def __init__(
-        self, explicit_apply=False, debounce_ms=0, show_reset=False, **kwargs
+        self,
+        explicit_apply=False,
+        debounce_ms=0,
+        show_reset=False,
+        context_values=None,
+        **kwargs,
     ):
         Adw.PreferencesGroup.__init__(self, **kwargs)
-        self._init_varset(explicit_apply, debounce_ms, show_reset)
+        self._init_varset(
+            explicit_apply, debounce_ms, show_reset, context_values
+        )
 
     def _add_row(self, row):
         self.add(row)
@@ -323,11 +414,18 @@ class VarSetRowList(Gtk.ListBox, _VarSetRowManager):
     """
 
     def __init__(
-        self, explicit_apply=False, debounce_ms=0, show_reset=False, **kwargs
+        self,
+        explicit_apply=False,
+        debounce_ms=0,
+        show_reset=False,
+        context_values=None,
+        **kwargs,
     ):
         Gtk.ListBox.__init__(self, **kwargs)
         self.set_selection_mode(Gtk.SelectionMode.NONE)
-        self._init_varset(explicit_apply, debounce_ms, show_reset)
+        self._init_varset(
+            explicit_apply, debounce_ms, show_reset, context_values
+        )
 
     def _add_row(self, row):
         self.append(row)

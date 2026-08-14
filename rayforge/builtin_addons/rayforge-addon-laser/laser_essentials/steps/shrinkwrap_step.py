@@ -15,9 +15,9 @@ from rayforge.core.capability import MachineCapability
 from rayforge.core.cut_side import CutSide
 from rayforge.core.step import legacy_producer_params
 from rayforge.core.varset import (
-    FloatVar,
     LabeledChoiceVar,
     LengthVar,
+    SliderFloatVar,
     VarSet,
 )
 from rayforge.image.tracing import prepare_surface
@@ -51,10 +51,16 @@ class ShrinkWrapStep(LaserStep):
         return VarSet(
             vars=[
                 *LaserStep.recipe_varset().vars,
-                FloatVar(
+                SliderFloatVar(
                     key="gravity",
                     label=_("Gravity"),
+                    description=_(
+                        "Pulls the hull inward. 0.0 is a standard convex hull"
+                    ),
                     default=0.0,
+                    min_val=0.0,
+                    max_val=1.0,
+                    digits=2,
                 ),
                 LabeledChoiceVar(
                     key="cut_side",

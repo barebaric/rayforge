@@ -1,22 +1,20 @@
 """Frame step settings page."""
 
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any
 
-from .rows import CutSideRow, LaserStepSettingsPage, OffsetRow
-
-if TYPE_CHECKING:
-    from rayforge.doceditor.editor import DocEditor
+from .laser_step_page import LaserStepSettingsPage
 
 
 class FrameStepSettingsPage(LaserStepSettingsPage):
     """Settings page for the FrameStep."""
 
-    def __init__(self, editor: "DocEditor", step: Any):
-        super().__init__(editor, step)
-        self.add_section(
+    def _add_step_sections(self):
+        groups = self.step.recipe_varset_groups()
+        step_vars = groups[-1][1] if len(groups) > 1 else None
+        if step_vars is None:
+            return
+        self.add_varset_section(
             _("Geometry"),
-            CutSideRow,
-            OffsetRow,
+            step_vars,
             description=_("Cut a frame around the selected content."),
         )

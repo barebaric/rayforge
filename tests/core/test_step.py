@@ -572,6 +572,19 @@ def test_set_coolant_method_fires_updated(step):
     handler.assert_called_once_with(step)
 
 
+def test_set_coolant_method_accepts_name_string(step):
+    """set_coolant_method resolves varset/recipe name strings."""
+    step.set_coolant_method("MIST")
+    assert step.coolant_method is CoolantMode.MIST
+
+    step.set_coolant_method("FLOOD")
+    assert step.coolant_method is CoolantMode.FLOOD
+
+    # Unknown names fall back to OFF.
+    step.set_coolant_method("BOGUS")
+    assert step.coolant_method is CoolantMode.OFF
+
+
 def test_coolant_method_serialization_round_trip(step):
     """coolant_method survives a to_dict/from_dict round trip."""
     step.set_coolant_method(CoolantMode.MIST)

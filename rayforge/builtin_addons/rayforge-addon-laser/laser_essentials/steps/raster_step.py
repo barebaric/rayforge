@@ -58,6 +58,10 @@ class EngraveStep(LaserStep):
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "raster"
 
+    line_interval_mm: float | None
+    sample_interval_mm: float | None
+    dot_width_correction_mm: float | None
+
     @classmethod
     def recipe_varset(cls) -> VarSet:
         def is_power(v):
@@ -125,7 +129,7 @@ class EngraveStep(LaserStep):
                     description=_(
                         "Segmented: moves between content regions. "
                         "Full Sweep: scans full width with laser "
-                        "toggling."
+                        "toggling"
                     ),
                     allow_none=False,
                 ),
@@ -135,6 +139,7 @@ class EngraveStep(LaserStep):
                     description=_("Distance between scan lines"),
                     default=0.0,
                     min_val=0.0,
+                    digits=3,
                 ),
                 LengthVar(
                     key="sample_interval_mm",
@@ -142,11 +147,12 @@ class EngraveStep(LaserStep):
                     description=_(
                         "Distance between power samples along scan "
                         "line. Lower values improve accuracy, but "
-                        "increase output size."
+                        "increase output size"
                     ),
                     default=0.0,
                     min_val=0.0,
                     visible_when=is_power,
+                    digits=3,
                 ),
                 LengthVar(
                     key="dot_width_correction_mm",
@@ -157,6 +163,7 @@ class EngraveStep(LaserStep):
                     ),
                     default=0.0,
                     min_val=0.0,
+                    digits=3,
                 ),
                 LengthVar(
                     key="bidir_x_offset_mm",
@@ -168,6 +175,7 @@ class EngraveStep(LaserStep):
                     default=0.0,
                     min_val=-5.0,
                     max_val=5.0,
+                    digits=3,
                 ),
                 BoolVar(
                     key="invert",
@@ -295,6 +303,15 @@ class EngraveStep(LaserStep):
         self.angle_increment = 0.0
         self.dither_algorithm = None
         self.bidir_x_offset_mm = 0.0
+
+    def set_dither_algorithm(self, algorithm: DitherAlgorithm | str | None):
+        """Sets the dither algorithm, accepting the enum or its name
+        (as stored in varsets and recipes). ``None`` means auto."""
+        if isinstance(algorithm, str):
+            algorithm = DitherAlgorithm[algorithm] if algorithm else None
+        if self.dither_algorithm != algorithm:
+            self.dither_algorithm = algorithm
+            self.updated.send(self)
 
     def get_operation_mode_short(self):
         if not self.depth_mode:
