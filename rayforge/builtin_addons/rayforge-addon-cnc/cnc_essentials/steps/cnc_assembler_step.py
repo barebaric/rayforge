@@ -19,6 +19,8 @@ from rayforge.core.varset import (
 )
 from rayforge.machine.models.spindle import SpindleHead
 
+from ..spindle_head_var import SpindleHeadVar
+
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
     from rayforge.core.workpiece import WorkPiece
@@ -143,6 +145,12 @@ class CncAssemblerStep(Step):
     def recipe_varset(cls) -> VarSet:
         return VarSet(
             vars=[
+                SpindleHeadVar(
+                    description=_(
+                        "Spindle head used for this step; the machine's "
+                        "first spindle is used when unset"
+                    )
+                ),
                 LabeledChoiceVar(
                     key="coolant_method",
                     label=_("Cooling"),
@@ -217,8 +225,8 @@ class CncAssemblerStep(Step):
         cnc_vars = [v for v in full if v.key in base_keys]
         step_vars = [v for v in full if v.key not in base_keys]
         cnc_description = _(
-            "Spindle speed, tool geometry, depth, and feed rates for "
-            "this operation."
+            "Spindle head, spindle speed, tool geometry, depth, and "
+            "feed rates for this operation."
         )
         cnc_vs = VarSet(vars=cnc_vars, description=cnc_description)
         groups: list[tuple[str, VarSet]] = [(_("CNC"), cnc_vs)]

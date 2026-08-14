@@ -81,6 +81,13 @@ class LaserSettingsPage(StepSettingsPage):
         supported = bool(machine and head and machine.get_pwm_params(head))
         self.machine_widget.set_visible(supported)
 
+    def _on_machine_changed(self):
+        """Update head row and PWM section after a machine switch."""
+        head_row = self.laser_widget.row_for("selected_head_uid")
+        if head_row is not None:
+            head_row.set_visible(self.get_machine() is not None)
+        self._update_machine_section_visibility()
+
     def _on_varset_data_changed(self, widget, key):
         if key == "selected_head_uid":
             self._on_head_changed(widget.get_values().get("selected_head_uid"))

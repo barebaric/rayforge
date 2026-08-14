@@ -15,8 +15,9 @@ class _VarSetRowManager:
     """
     Mixin providing all VarSet row management logic (populate, get/set
     values, debouncing, apply buttons). Subclasses must implement
-    ``_add_row`` and ``_remove_row``, and may override
-    ``_set_group_title`` and ``_set_group_description``.
+    ``_add_row``, ``_remove_row``, ``_row_index``, and
+    ``_insert_row_at``, and may override ``_set_group_title`` and
+    ``_set_group_description``.
     """
 
     def _init_varset(
@@ -53,6 +54,12 @@ class _VarSetRowManager:
         raise NotImplementedError
 
     def _remove_row(self, row):
+        raise NotImplementedError
+
+    def _row_index(self, row):
+        raise NotImplementedError
+
+    def _insert_row_at(self, row, index):
         raise NotImplementedError
 
     def _set_group_title(self, title):
@@ -129,6 +136,10 @@ class _VarSetRowManager:
                     needs_rebuild = adapter.needs_rebuild(old_var, var)
 
                 if needs_rebuild:
+                    # Remember the row's position so the rebuilt row
+                    # can be inserted at the same spot instead of being
+                    # appended at the end.
+                    insert_index = self._row_index(row)
                     self._remove_row(row)
                     if row in self._created_rows:
                         self._created_rows.remove(row)
@@ -141,12 +152,17 @@ class _VarSetRowManager:
                     if adapter is not None:
                         adapter.update_from_var(var)
                     continue
+            else:
+                insert_index = None
 
             row, adapter = create_row_for_var(var, "value")
             if row:
                 self.widget_map[var.key] = (row, var)
                 self._wire_up_row(row, var, adapter)
-                self._add_row(row)
+                if insert_index is not None:
+                    self._insert_row_at(row, insert_index)
+                else:
+                    self._add_row(row)
                 self._created_rows.append(row)
                 self._add_extra_rows(var, adapter)
                 if adapter is not None:
@@ -437,6 +453,31 @@ class VarSetWidget(Adw.PreferencesGroup, _VarSetRowManager):
     def _remove_row(self, row):
         self.remove(row)
 
+    def _row_index(self, row):
+        return row.get_index()
+
+    def _insert_row_at(self, row, index):
+        # Adw.PreferencesGroup nests rows inside an internal Gtk.ListBox
+        # that is not exposed as a direct child. Find it by searching
+        # descendants and insert there.
+        list_box = self._find_list_box(self)
+        if list_box is not None:
+            list_box.insert(row, index)
+        else:
+            self.add(row)
+
+    @staticmethod
+    def _find_list_box(widget):
+        if isinstance(widget, Gtk.ListBox):
+            return widget
+        child = widget.get_first_child()
+        while child is not None:
+            result = VarSetWidget._find_list_box(child)
+            if result is not None:
+                return result
+            child = child.get_next_sibling()
+        return None
+
     def _set_group_title(self, title):
         self.set_title(title)
 
@@ -470,3 +511,9 @@ class VarSetRowList(Gtk.ListBox, _VarSetRowManager):
 
     def _remove_row(self, row):
         self.remove(row)
+
+    def _row_index(self, row):
+        return row.get_index()
+
+    def _insert_row_at(self, row, index):
+        self.insert(row, index)

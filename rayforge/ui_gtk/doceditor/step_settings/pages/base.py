@@ -54,6 +54,10 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         # Keep varset rows in sync with the model (undo, recipe apply,
         # external edits).
         self.step.updated.connect(self._sync_widgets_to_model)
+        # Rebuild machine-dependent rows (head dropdowns, speed
+        # bounds) when the active machine changes.
+        config = editor.context.config
+        config.changed.connect(self._on_config_changed)
 
     def _add_identity_section(self):
         name_row = Adw.EntryRow(title=_("Name"))
@@ -172,8 +176,19 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         self._varset_widgets.append((widget, var_set))
         return widget
 
-    def _varset_for_keys(self, var_set: VarSet, keys: set[str]) -> VarSet:
-        """Subset of a varset holding only the given keys."""
+    def _varset_for_keys(
+        self, var_set: VarSet, keys: set[str] | list[str]
+    ) -> VarSet:
+        """Subset of a varset holding only the given keys.
+
+        When ``keys`` is a list, the returned vars preserve that order;
+        when it is a set, the original varset order is kept.
+        """
+        if isinstance(keys, list):
+            key_to_var = {var.key: var for var in var_set}
+            return VarSet(
+                vars=[key_to_var[k] for k in keys if k in key_to_var]
+            )
         return VarSet(vars=[var for var in var_set if var.key in keys])
 
     def _on_varset_data_changed(self, widget: VarSetWidget, key: str):
@@ -192,6 +207,48 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
                 var.key: getattr(self.step, var.key, None) for var in var_set
             }
             widget.sync_from_model(values)
+        self._update_machine_bounds()
+
+    def _on_config_changed(self, *args):
+        """React to config changes (including active machine switches).
+
+        Rebuilds every varset section so machine-dependent vars (e.g.
+        head-selection dropdowns) pick up the new machine's heads, then
+        calls :meth:`_on_machine_changed` for subclass-specific
+        updates.
+        """
+        for i, (widget, old_var_set) in enumerate(self._varset_widgets):
+            keys = {var.key for var in old_var_set}
+            new_var_set = self._rebuild_varset(keys)
+            if new_var_set is None:
+                continue
+            widget.populate(new_var_set)
+            widget.set_values(
+                {
+                    var.key: getattr(self.step, var.key, None)
+                    for var in new_var_set
+                }
+            )
+            self._varset_widgets[i] = (widget, new_var_set)
+        self._on_machine_changed()
+
+    def _rebuild_varset(self, keys: set[str]) -> VarSet | None:
+        """Re-derive a varset subset from the step's current recipe.
+
+        Returns a :class:`VarSet` holding only the given ``keys``,
+        re-instantiated from ``step.recipe_varset()`` so
+        machine-dependent vars (head selection) reflect the active
+        machine. Returns ``None`` when the step has no recipe varset.
+        """
+        full = self.step.recipe_varset()
+        return VarSet(vars=[v for v in full if v.key in keys])
+
+    def _on_machine_changed(self):
+        """Hook called after the active machine changes.
+
+        Subclasses override this to update machine-dependent visibility
+        and derived state. The base re-syncs speed-row bounds.
+        """
         self._update_machine_bounds()
 
     def _update_machine_bounds(self):
@@ -220,3 +277,5 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
             self._debounce_timer = 0
         for widget, _var_set in self._varset_widgets:
             widget.cancel_pending()
+        config = self.editor.context.config
+        config.changed.disconnect(self._on_config_changed)

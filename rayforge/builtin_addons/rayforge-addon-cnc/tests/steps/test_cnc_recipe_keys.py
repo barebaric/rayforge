@@ -88,8 +88,8 @@ class TestRecipeKeys:
 class TestRecipeVarsetKeys:
     """recipe_varset() keys are consistent with recipe_keys().
 
-    The CNC domain varset covers all process keys but not
-    ``selected_head_uid`` (same as the base Step pattern).
+    The CNC domain varset covers all process keys including
+    ``selected_head_uid`` for spindle selection.
     """
 
     def test_cnc_step_varset(self):
