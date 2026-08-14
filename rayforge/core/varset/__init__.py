@@ -13,6 +13,7 @@ from .portvar import PortVar
 from .serialportvar import SerialPortVar
 from .speedvar import SpeedVar
 from .textareavar import TextAreaVar
+from .tuplevar import TupleVar
 from .urlvar import UrlVar, WebsocketUrlVar
 from .var import ValidationError, Var, get_editable_var_types
 from .varset import VarSet, merge_varsets
@@ -35,6 +36,7 @@ __all__ = [
     "SliderIntVar",
     "SpeedVar",
     "TextAreaVar",
+    "TupleVar",
     "UrlVar",
     "ValidationError",
     "Var",

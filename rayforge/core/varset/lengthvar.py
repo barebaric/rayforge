@@ -27,7 +27,6 @@ class LengthVar(FloatVar):
         visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
         sensitive_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
-        self.digits = digits
         super().__init__(
             key=key,
             label=label,
@@ -37,12 +36,7 @@ class LengthVar(FloatVar):
             min_val=min_val,
             max_val=max_val,
             extra_validator=extra_validator,
+            digits=digits,
             visible_when=visible_when,
             sensitive_when=sensitive_when,
         )
-
-    def to_dict(self, include_value: bool = False) -> dict[str, Any]:
-        data = super().to_dict(include_value=include_value)
-        if self.digits is not None:
-            data["digits"] = self.digits
-        return data

@@ -145,6 +145,117 @@ def test_material_test_page_builds(editor, laser_machine, ui_context):
 
 
 @pytest.mark.ui
+def test_material_test_tuple_rows_round_trip(
+    editor, laser_machine, ui_context
+):
+    """Tuple rows (ranges, grid dimensions) read and write tuples."""
+    from laser_essentials.steps.material_test import MaterialTestStep
+
+    step = MaterialTestStep()
+    page = MaterialTestGridSettingsPage(editor, step)
+
+    for key in ("power_range", "speed_range", "passes_range", "offset_range"):
+        row = _row(page, key)
+        assert row is not None, f"{key} row missing"
+    _row(page, "grid_dimensions")
+
+    # Programmatic push lands in the widgets.
+    page.params_widget.set_values(
+        {
+            "power_range": (20.0, 80.0),
+            "speed_range": (200.0, 900.0),
+        }
+    )
+    values = page.params_widget.get_values()
+    assert values["power_range"] == (20.0, 80.0)
+    assert values["speed_range"] == (200.0, 900.0)
+
+
+@pytest.mark.ui
+def test_material_test_grid_mode_visibility(editor, laser_machine, ui_context):
+    """Parameters rows follow the grid-mode visible_when predicates."""
+    from laser_essentials.steps.material_test import MaterialTestStep
+
+    step = MaterialTestStep()
+    page = MaterialTestGridSettingsPage(editor, step)
+
+    power = _row(page, "power_range")
+    speed = _row(page, "speed_range")
+    passes = _row(page, "passes_range")
+    offset = _row(page, "offset_range")
+    fixed_speed = _row(page, "fixed_speed")
+    fixed_power = _row(page, "fixed_power")
+
+    assert power.get_visible() is True  # Power vs Speed default
+    assert speed.get_visible() is True
+    assert passes.get_visible() is False
+    assert offset.get_visible() is False
+
+    step.grid_mode = "Speed vs Offset"
+    step.updated.send(step)
+    assert power.get_visible() is False
+    assert speed.get_visible() is True
+    assert passes.get_visible() is False
+    assert offset.get_visible() is True
+    assert fixed_speed.get_visible() is False
+    assert fixed_power.get_visible() is True
+
+
+@pytest.mark.ui
+def test_material_test_labels_sensitivity(editor, laser_machine, ui_context):
+    """Label rows are insensitive while labels are disabled."""
+    from laser_essentials.steps.material_test import MaterialTestStep
+
+    step = MaterialTestStep()
+    page = MaterialTestGridSettingsPage(editor, step)
+
+    label_power = _row(page, "label_power_percent")
+    label_speed = _row(page, "label_speed")
+    assert label_power.get_sensitive() is True
+
+    step.include_labels = False
+    step.updated.send(step)
+    assert label_power.get_sensitive() is False
+    assert label_speed.get_sensitive() is False
+
+
+@pytest.mark.ui
+def test_material_test_preset_applies_values(
+    editor, laser_machine, ui_context
+):
+    """Selecting a preset commits speed/power ranges and test type."""
+    from laser_essentials.steps.material_test import MaterialTestStep
+
+    step = MaterialTestStep()
+    page = MaterialTestGridSettingsPage(editor, step)
+    page.preset_row.set_selected(2)  # Diode Cut
+
+    assert step.test_type == "Cut"
+    assert step.power_range == (50.0, 100.0)
+    assert step.speed_range[0] >= 100.0
+
+
+@pytest.mark.ui
+def test_material_test_speed_vs_offset_defaults(
+    editor, laser_machine, ui_context
+):
+    """Switching to Speed vs Offset applies engrave defaults."""
+    from laser_essentials.steps.material_test import MaterialTestStep
+
+    step = MaterialTestStep()
+    page = MaterialTestGridSettingsPage(editor, step)
+
+    mode_adapter = page.grid_widget.adapter_for("grid_mode")
+    assert mode_adapter is not None
+    mode_adapter.set_value("Speed vs Offset")
+    page._sync_grid_context()
+    page._apply_speed_vs_offset_defaults()
+
+    assert step.test_type == "Engrave"
+    assert step.line_interval_mm == 0.5
+
+
+@pytest.mark.ui
 def test_raster_page_builds(editor, laser_machine, ui_context):
     step_cls = step_registry.get("EngraveStep")
     assert step_cls is not None

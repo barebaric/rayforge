@@ -9,6 +9,7 @@ from .material_test_grid_page import MaterialTestGridSettingsPage
 from .raster_page import RasterSettingsPage
 from .scan_angle_adapter import ScanAngleAdapter
 from .shrinkwrap_page import ShrinkWrapStepSettingsPage
+from .tuple_adapter import TupleAdapter
 from .wavefront_page import WavefrontStepSettingsPage
 
 ASSEMBLER_WIDGETS = {
@@ -29,5 +30,6 @@ __all__ = [
     "RasterSettingsPage",
     "ScanAngleAdapter",
     "ShrinkWrapStepSettingsPage",
+    "TupleAdapter",
     "WavefrontStepSettingsPage",
 ]
