@@ -11,6 +11,7 @@ from .cnc_assembler_step import CncAssemblerStep
 class ProfileInnerStep(CncAssemblerStep):
     ASSEMBLER_NAME = "profile_inner"
     TYPELABEL = _("Profile Inner")
+    ICON = "step-profile-symbolic"
     uses_global_state = True
 
     @classmethod
