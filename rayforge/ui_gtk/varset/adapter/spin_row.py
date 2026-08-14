@@ -17,15 +17,26 @@ class SpinRowAdapter(RowAdapter):
     def create(
         cls, var: Var, target_property: str
     ) -> tuple[SpinRow, "SpinRowAdapter"]:
-        assert isinstance(var, (IntVar, FloatVar))
-        min_val = var.min_val if var.min_val is not None else -2147483647
-        max_val = var.max_val if var.max_val is not None else 2147483647
+        min_val = (
+            var.min_val
+            if isinstance(var, (IntVar, FloatVar)) and var.min_val is not None
+            else -2147483647
+        )
+        max_val = (
+            var.max_val
+            if isinstance(var, (IntVar, FloatVar)) and var.max_val is not None
+            else 2147483647
+        )
         initial_val = getattr(var, target_property)
-        is_int = isinstance(var, IntVar)
+        is_int = var.var_type is int
         if is_int:
             digits = 0
         else:
-            digits = var.digits if var.digits is not None else 3
+            digits = (
+                var.digits
+                if isinstance(var, FloatVar) and var.digits is not None
+                else 3
+            )
 
         row = SpinRow(
             escape_title(var.label),
@@ -50,11 +61,18 @@ class SpinRowAdapter(RowAdapter):
         self._row.set_value(float(value))
 
     def update_from_var(self, var: Var):
-        assert isinstance(var, (IntVar, FloatVar))
         if var.label:
             self._row.set_title(escape_title(var.label))
         if var.description:
             self._row.set_subtitle(var.description)
-        min_val = var.min_val if var.min_val is not None else -2147483647
-        max_val = var.max_val if var.max_val is not None else 2147483647
+        min_val = (
+            var.min_val
+            if isinstance(var, (IntVar, FloatVar)) and var.min_val is not None
+            else -2147483647
+        )
+        max_val = (
+            var.max_val
+            if isinstance(var, (IntVar, FloatVar)) and var.max_val is not None
+            else 2147483647
+        )
         self._row.set_range(min_val, max_val)

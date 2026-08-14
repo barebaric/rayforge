@@ -71,6 +71,14 @@ diesen Schritt-Typ spezifisch sind (z.B. Schnittseite, Schnittreihenfolge):
 - Bei "Beliebig" für beide werden nur die Basis-Bewegungseinstellungen (Schnittgeschwindigkeit
   und Fahrgeschwindigkeit) angezeigt, die allen Schritten gemeinsam sind
 
+Jede Einstellungszeile besitzt eine Anwenden-Schaltfläche (ein Häkchen
+neben der Zeile):
+
+- **Aktiviert**: Das Rezept überträgt diese Einstellung beim Anwenden
+  auf den Schritt
+- **Deaktiviert**: Das Rezept lässt diese Einstellung am Schritt
+  unverändert
+
 **Register "Nachbearbeitung"** - Speichern Sie
 Nachbearbeitungseinstellungen (Ein-/Ausfahrwege, Mehrfachdurchgänge,
 Overscan und andere Transformationen) im Rezept, damit sie auf die
@@ -78,13 +86,14 @@ Schritte angewendet werden, die das Rezept anvisiert:
 
 ![Rezept-Editor - Register Nachbearbeitung](/screenshots/recipe-editor-post-processing.png)
 
-Jede Transformation wird mit einer Drei-Zustands-Schaltfläche angezeigt:
+Jede Transformation besitzt eine Anwenden-Schaltfläche (ein Häkchen
+neben der Zeile):
 
-- **Unverändert lassen**: Das Rezept berührt diese Transformation bei
-  der Anwendung nicht
-- **Aktiviert**: Das Rezept aktiviert die Transformation und überträgt
-  ihre Parameter auf den Schritt
-- **Deaktiviert**: Das Rezept schaltet die Transformation explizit aus
+- **Aktiviert**: Das Rezept überträgt die Parameter der Transformation
+  auf den Schritt (der eigene Aktivierungs-Schalter entscheidet, ob sie
+  ein- oder ausgeschaltet wird)
+- **Deaktiviert**: Das Rezept berührt diese Transformation bei der
+  Anwendung nicht
 
 Wenn das Rezept mehrere Schritt-Typen anvisiert, werden nur die
 Transformationen angezeigt, die allen gemeinsam sind.
