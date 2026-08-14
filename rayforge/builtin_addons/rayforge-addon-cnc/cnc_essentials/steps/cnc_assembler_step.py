@@ -167,6 +167,7 @@ class CncAssemblerStep(Step):
                 LengthVar(
                     key="tool_diameter",
                     label=_("Tool Diameter"),
+                    description=_("Diameter of the cutting tool"),
                     default=6.0,
                     min_val=0.1,
                     max_val=50.0,
@@ -174,6 +175,9 @@ class CncAssemblerStep(Step):
                 LengthVar(
                     key="target_depth",
                     label=_("Target Depth"),
+                    description=_(
+                        "Final depth of the cut (negative is downward)"
+                    ),
                     default=-5.0,
                     min_val=-50.0,
                     max_val=0.0,
@@ -181,6 +185,7 @@ class CncAssemblerStep(Step):
                 LengthVar(
                     key="depth_per_pass",
                     label=_("Depth per Pass"),
+                    description=_("Depth removed by each pass"),
                     default=1.0,
                     min_val=0.1,
                     max_val=10.0,
@@ -188,6 +193,7 @@ class CncAssemblerStep(Step):
                 LengthVar(
                     key="safe_z",
                     label=_("Safe Z Height"),
+                    description=_("Height to retract between moves"),
                     default=2.0,
                     min_val=0.0,
                     max_val=50.0,
@@ -196,6 +202,7 @@ class CncAssemblerStep(Step):
                 SpeedVar(
                     key="plunge_speed",
                     label=_("Plunge Rate"),
+                    description=_("Vertical feed rate"),
                     default=200,
                     min_val=1,
                     role="cut",

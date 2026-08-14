@@ -18,6 +18,8 @@ from cnc_essentials.widgets.rows import (
 )
 
 from rayforge.core.step_registry import step_registry
+from rayforge.machine.models.laser import Laser
+from rayforge.machine.models.machine import Machine
 from rayforge.ui_gtk.doceditor.step_settings.pages import StepSettingsPage
 from rayforge.ui_gtk.doceditor.step_settings.rows import (
     CutSpeedRow,
@@ -51,6 +53,41 @@ def test_profile_outer_page_composes_common_sections(
     rows = list(page._rows)
     assert any(isinstance(row, CutSpeedRow) for row in rows)
     assert any(isinstance(row, TravelSpeedRow) for row in rows)
+
+
+@pytest.mark.ui
+def test_cooling_section_visible_for_spindle_head(
+    editor, cnc_machine, ui_context
+):
+    """CNC pages show the coolant section for a spindle head."""
+    step_cls = step_registry.get("ProfileOuterStep")
+    assert step_cls is not None
+    step = cast(CncAssemblerStep, step_cls.create(ui_context))
+
+    page = ProfileOuterPage(editor, step)
+    assert page.coolant_section.get_visible() is True
+
+
+@pytest.mark.ui
+def test_cooling_section_hidden_for_laser_head(editor, ui_context):
+    """CNC pages hide the coolant section for a laser head."""
+    machine = Machine(ui_context)
+    machine.set_axis_extents(200, 150)
+    head = Laser()
+    head.name = "Laser 1"
+    head.spot_size_mm = (0.1, 0.2)
+    machine.heads.clear()
+    machine.add_head(head)
+    ui_context.machine_mgr.machines.clear()
+    ui_context.machine_mgr.add_machine(machine)
+    ui_context.config.set_machine(machine)
+
+    step_cls = step_registry.get("ProfileOuterStep")
+    assert step_cls is not None
+    step = cast(CncAssemblerStep, step_cls.create(ui_context))
+
+    page = ProfileOuterPage(editor, step)
+    assert page.coolant_section.get_visible() is False
 
 
 @pytest.mark.ui

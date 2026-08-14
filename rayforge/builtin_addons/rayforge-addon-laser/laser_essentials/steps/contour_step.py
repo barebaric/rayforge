@@ -69,6 +69,7 @@ class ContourStep(LaserStep):
                 LabeledChoiceVar(
                     key="cut_order",
                     label=_("Cut Order"),
+                    description=_("Processing order for nested paths"),
                     choices=[(co.label(), co.name) for co in CutOrder],
                     default="INSIDE_OUTSIDE",
                     allow_none=False,
@@ -76,17 +77,28 @@ class ContourStep(LaserStep):
                 BoolVar(
                     key="remove_inner_paths",
                     label=_("Remove Inner Paths"),
+                    description=_(
+                        "If enabled, only trace the outer outline of shapes"
+                    ),
                     default=False,
                 ),
                 LengthVar(
                     key="overcut",
                     label=_("Overcut"),
+                    description=_(
+                        "Extend closed contours past their start point "
+                        "so the cut overlaps itself"
+                    ),
                     default=0.0,
                     min_val=0.0,
+                    max_val=100.0,
                 ),
                 FloatVar(
                     key="threshold",
                     label=_("Threshold"),
+                    description=_(
+                        "Brightness level (0.0-1.0) to define edges"
+                    ),
                     default=0.5,
                     min_val=0.0,
                     max_val=1.0,
@@ -94,10 +106,10 @@ class ContourStep(LaserStep):
                 ),
                 BoolVar(
                     key="override_threshold",
-                    label=_("Override Threshold"),
+                    label=_("Rescan Content"),
                     description=_(
-                        "Use a custom threshold instead of the "
-                        "auto-detected value"
+                        "Ignore source geometry and re-trace within "
+                        "the workpiece"
                     ),
                     default=False,
                 ),

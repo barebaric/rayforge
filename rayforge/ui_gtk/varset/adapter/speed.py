@@ -41,11 +41,15 @@ class SpeedRowAdapter(RowAdapter):
         initial_val = getattr(var, target_property)
         min_val = var.min_val or 0
 
+        # Speed values are integers in mm/min; the row must not show
+        # fractional digits (UnitSpinRow defaults to 2).
         row = SpeedSpinRow(
             escape_title(var.label),
+            var.description or None,
             lower=min_val,
             upper=max_speed,
             value_in_base=(int(initial_val) if initial_val is not None else 0),
+            digits=0,
         )
         return row, cls(row)
 
@@ -59,4 +63,6 @@ class SpeedRowAdapter(RowAdapter):
         assert isinstance(var, SpeedVar)
         if var.label:
             self._row.set_title(escape_title(var.label))
+        if var.description:
+            self._row.set_subtitle(var.description)
         self._row.set_range(var.min_val or 0, _resolve_max_speed(var))

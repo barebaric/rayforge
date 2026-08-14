@@ -3,6 +3,8 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
+from rayforge.core.varset import VarSet
+from rayforge.machine.models.spindle import SpindleHead
 from rayforge.ui_gtk.doceditor.step_settings.pages import StepSettingsPage
 from rayforge.ui_gtk.doceditor.step_settings.rows import (
     CutSpeedRow,
@@ -25,12 +27,13 @@ if TYPE_CHECKING:
 class CncStepSettingsPage(StepSettingsPage):
     """Base page for CNC step settings.
 
-    Adds the common CNC sections (spindle, depth, feed). Subclasses
-    add their step-specific sections.
+    Adds the common CNC sections (cooling, spindle, depth, feed).
+    Subclasses add their step-specific sections.
     """
 
     def __init__(self, editor: "DocEditor", step: "CncAssemblerStep"):
         super().__init__(editor, step)
+        self._add_cooling_section()
         self.add_section(
             _("Spindle"),
             SpindleRpmRow,
@@ -50,4 +53,29 @@ class CncStepSettingsPage(StepSettingsPage):
             TravelSpeedRow,
             PlungeSpeedRow,
             description=_("Cutting, plunging, and travel feed rates."),
+        )
+
+    def _add_cooling_section(self):
+        """Add the coolant section, hidden unless a spindle head is used."""
+        coolant_var = next(
+            (
+                var
+                for var in self.step.recipe_varset()
+                if var.key == "coolant_method"
+            ),
+            None,
+        )
+        if coolant_var is None:
+            return
+        self.coolant_section = self.add_varset_section(
+            _("Cooling"),
+            VarSet(vars=[coolant_var]),
+            description=_("Coolant used while this operation runs."),
+        )
+        self.step.updated.connect(self._update_cooling_section_visibility)
+        self._update_cooling_section_visibility()
+
+    def _update_cooling_section_visibility(self, *args):
+        self.coolant_section.set_visible(
+            isinstance(self.get_selected_head(), SpindleHead)
         )

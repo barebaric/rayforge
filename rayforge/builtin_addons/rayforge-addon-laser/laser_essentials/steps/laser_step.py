@@ -44,34 +44,41 @@ class LaserStep(Step):
         return VarSet(
             vars=[
                 LaserHeadVar(
-                    description=_("Optionally force a specific laser head")
+                    description=_(
+                        "Laser head used for this step; the machine's "
+                        "first head is used when unset"
+                    )
                 ),
                 SliderFloatVar(
                     key="power",
                     label=_("Power"),
+                    description=_("Laser power as a percentage"),
                     default=0.8,
                     min_val=0.0,
                     max_val=1.0,
                     show_value=True,
                     format_suffix="%",
+                    digits=0,
                 ),
                 *Step.recipe_varset().vars,
                 BoolVar(
                     key="air_assist",
                     label=_("Air Assist"),
+                    description=_("Blow air over the cut to clear debris"),
                     default=False,
                 ),
                 SliderFloatVar(
                     key="tab_power",
                     label=_("Tab Power"),
                     description=_(
-                        "Laser power at tab positions (% of cut power)"
+                        "Laser power at tab positions as a percentage"
                     ),
                     default=0.0,
                     min_val=0.0,
                     max_val=1.0,
                     show_value=True,
                     format_suffix="%",
+                    digits=0,
                 ),
                 IntVar(
                     key="frequency",

@@ -29,18 +29,23 @@ class AdaptiveClearStep(CncAssemblerStep):
                 LengthVar(
                     key="step_over",
                     label=_("Step Over"),
+                    description=_("Lateral step-over between passes"),
                     default=2.0,
                     min_val=0.1,
                 ),
                 LengthVar(
                     key="step_length",
                     label=_("Step Length"),
+                    description=_("Forward step length"),
                     default=0.6,
                     min_val=0.1,
                 ),
                 FloatVar(
                     key="max_deflection_deg",
                     label=_("Max Deflection"),
+                    description=_(
+                        "Max steering deflection per step (degrees)"
+                    ),
                     default=30.0,
                     min_val=0.0,
                     max_val=90.0,
@@ -48,12 +53,14 @@ class AdaptiveClearStep(CncAssemblerStep):
                 LengthVar(
                     key="wall_margin",
                     label=_("Wall Margin"),
+                    description=_("Extra clearance from the pocket wall"),
                     default=0.0,
                     min_val=0.0,
                 ),
                 FloatVar(
                     key="area_tolerance",
                     label=_("Area Tolerance"),
+                    description=_("Stopping tolerance in mm²"),
                     default=1.0,
                     min_val=0.0,
                 ),

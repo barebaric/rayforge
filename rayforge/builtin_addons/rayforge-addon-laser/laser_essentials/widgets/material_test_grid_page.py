@@ -15,7 +15,7 @@ from rayforge.ui_gtk.shared.pref_rows import SpinRow
 from rayforge.ui_gtk.shared.slider import create_slider_row
 
 from ..material_test_helpers import GridMode
-from .rows import LaserStepSettingsPage
+from .laser_step_page import LaserStepSettingsPage
 
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor

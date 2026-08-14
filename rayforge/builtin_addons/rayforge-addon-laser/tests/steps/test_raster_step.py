@@ -9,6 +9,7 @@ from raygeo.ops.part import Part
 
 from rayforge.core.step_registry import step_registry
 from rayforge.core.workpiece import WorkPiece
+from rayforge.image.dither import DitherAlgorithm
 
 
 @pytest.fixture
@@ -227,3 +228,19 @@ class TestEngraveComputePayload:
         token = step.assembler_token_params(machine, wp)
         kwargs = step.get_assembler_kwargs(machine, wp)
         assert token == kwargs
+
+    def test_set_dither_algorithm_accepts_name_and_enum(self):
+        step = EngraveStep(name="engrave")
+        step.set_dither_algorithm("BAYER4")
+        assert step.dither_algorithm is DitherAlgorithm.BAYER4
+
+        step.set_dither_algorithm(DitherAlgorithm.FLOYD_STEINBERG)
+        assert step.dither_algorithm is DitherAlgorithm.FLOYD_STEINBERG
+
+        step.set_dither_algorithm(None)
+        assert step.dither_algorithm is None
+
+    def test_set_dither_algorithm_empty_name_means_auto(self):
+        step = EngraveStep(name="engrave")
+        step.set_dither_algorithm("")
+        assert step.dither_algorithm is None
