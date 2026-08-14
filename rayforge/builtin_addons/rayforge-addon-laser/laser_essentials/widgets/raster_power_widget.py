@@ -34,10 +34,11 @@ class RasterPowerWidget(VarSetWidget):
     def _update_power_labels(self, invert: bool):
         """Update min/max power labels based on invert setting."""
         lightest_subtitle = _(
-            "Power for lightest areas, as a % of the step's main power"
+            "Power for lightest areas, as a percentage of the step's "
+            "main power"
         )
         darkest_subtitle = _(
-            "Power for darkest areas, as a % of the step's main power"
+            "Power for darkest areas, as a percentage of the step's main power"
         )
 
         if invert:

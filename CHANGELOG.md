@@ -5,6 +5,33 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.9.3
+
+### Added
+
+- The recipe editor now shows all step settings (laser, raster,
+  contour, frame, shrinkwrap, wavefront, material test, and CNC),
+  matching the step settings dialog
+- Layer items can now be renamed inline by double-clicking, using the
+  context menu, or pressing F2
+- When importing with "Map to Existing" layers, layers that still
+  carry auto-generated names (e.g. "Layer 1") are renamed to the
+  imported layer's name; manually renamed layers are left untouched
+
+### Changed
+
+- Recipe post-processing settings now use an apply toggle instead of
+  the tri-state menu
+- Upgrade raygeo to 1.39.1
+
+### Fixed
+
+- Shrinkwrap no longer runs once per face when the workpiece has
+  multiple faces
+- In the 3D preview, the toolpath and scanline trail are now
+  depth-tested against the models, so they no longer draw on top of
+  the laser head
+
 ## 1.9.2
 
 ### Fixed

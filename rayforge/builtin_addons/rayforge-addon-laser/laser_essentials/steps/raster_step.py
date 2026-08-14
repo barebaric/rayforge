@@ -232,8 +232,8 @@ class EngraveStep(LaserStep):
                     key="min_power_level",
                     label=_("Min Power"),
                     description=_(
-                        "Power for lightest areas, as a % of the "
-                        "step's main power"
+                        "Power for lightest areas, as a percentage of "
+                        "the step's main power"
                     ),
                     default=0.0,
                     min_val=0.0,
@@ -246,8 +246,8 @@ class EngraveStep(LaserStep):
                     key="max_power_level",
                     label=_("Max Power"),
                     description=_(
-                        "Power for darkest areas, as a % of the "
-                        "step's main power"
+                        "Power for darkest areas, as a percentage of "
+                        "the step's main power"
                     ),
                     default=1.0,
                     min_val=0.0,
