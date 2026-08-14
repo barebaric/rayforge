@@ -171,3 +171,24 @@ def test_render_registry_orders_rings_after_texture():
     # The toolpath draws above the raster texture but below the trail.
     assert ops_index > texture_index
     assert ops_index < ring_index
+
+
+def test_prepare_runs_laser_beam_before_models():
+    """The laser beam publishes the point-light position that the model
+    renderers consume, so its prepare phase must run first even though
+    it draws last."""
+    scene = SceneRenderer()
+    laser = MagicMock()
+    scene.laser_beam_renderer = laser
+    model = MagicMock()
+    scene.model_renderers = [model]
+    scene.ring_renderers = [MagicMock()]
+    scene._rebuild_registry()
+
+    prepare_order = []
+    laser.prepare.side_effect = lambda *a, **k: prepare_order.append("laser")
+    model.prepare.side_effect = lambda *a, **k: prepare_order.append("model")
+
+    scene.prepare(MagicMock())
+
+    assert prepare_order == ["laser", "model"]

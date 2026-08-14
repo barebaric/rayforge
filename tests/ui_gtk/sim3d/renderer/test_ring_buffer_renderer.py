@@ -75,7 +75,7 @@ def test_render_publishes_ring_exec_count():
         patch("OpenGL.GL.glBindVertexArray"),
         patch("OpenGL.GL.glBindTexture"),
         patch("OpenGL.GL.glActiveTexture"),
-        patch("OpenGL.GL.glDepthFunc"),
+        patch("OpenGL.GL.glDepthFunc") as mock_depth_func,
         patch("OpenGL.GL.glDepthMask"),
         patch("OpenGL.GL.glDrawArrays"),
         patch(_SET_LINE_WIDTH),
@@ -83,6 +83,11 @@ def test_render_publishes_ring_exec_count():
         ring.render(ctx, ShaderSet(main=shader))
 
     assert ctx.playback.executed_vertex_count == 1
+    # The trail must depth-test against the laser head model instead of
+    # always drawing on top; a small bias keeps it above the coplanar
+    # raster texture.  0x0203 is GL.GL_LEQUAL (no GL import in tests).
+    assert mock_depth_func.call_args[0][0] == 0x0203
+    shader.set_float.assert_any_call("uDepthBias", 2.0)
 
 
 @pytest.mark.ui

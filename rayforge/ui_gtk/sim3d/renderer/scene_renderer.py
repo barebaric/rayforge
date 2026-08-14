@@ -625,7 +625,14 @@ class SceneRenderer(BaseRenderer):
         that frame-level cross-dependencies (e.g. the laser point light
         feeding the model renderers) resolve before any draw.
         """
+        # The laser beam publishes the point-light position that the
+        # model renderers consume, so it must be prepared first even
+        # though it draws last.
+        if self.laser_beam_renderer is not None:
+            self.laser_beam_renderer.prepare(ctx)
         for renderer, _ in self.render_registry:
+            if renderer is self.laser_beam_renderer:
+                continue
             renderer.prepare(ctx)
 
     def render(
