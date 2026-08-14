@@ -197,9 +197,9 @@ class _VarSetRowManager:
         """Push values into the rows without emitting ``data_changed``.
 
         Programmatic value updates must not look like user edits, so
-        the whole batch is applied under a syncing guard (mirroring
-        ``StepRow._syncing``). Visibility is re-evaluated afterwards
-        because predicates may depend on the pushed values.
+        the whole batch is applied under a syncing guard. Visibility is
+        re-evaluated afterwards because predicates may depend on the
+        pushed values.
         """
         self._syncing = True
         try:
@@ -226,7 +226,9 @@ class _VarSetRowManager:
         (debounced) user edits, then re-evaluate visibility.
 
         Used by host pages to resync the widget when the underlying
-        object changes externally (e.g. undo, recipe application).
+        object changes externally (e.g. undo). For an authoritative
+        resync that overrides pending edits (e.g. recipe apply), call
+        :meth:`cancel_pending` first and then :meth:`set_values`.
         """
         pending = set(self._pending_keys)
         filtered = {k: v for k, v in values.items() if k not in pending}

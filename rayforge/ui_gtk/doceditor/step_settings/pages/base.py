@@ -13,18 +13,9 @@ from ....shared.preferences_page import TrackedPreferencesPage
 from ....varset.adapter import escape_title
 from ....varset.varsetwidget import VarSetWidget
 from ..recipe_control_widget import RecipeControlWidget
-from ..rows import StepRow
 
 if TYPE_CHECKING:
     from .....doceditor.editor import DocEditor
-
-
-def _to_widget(item: Any, editor: "DocEditor", step: Any) -> Gtk.Widget:
-    if isinstance(item, type):
-        item = item(editor, step)
-    if isinstance(item, StepRow):
-        return item.widget
-    return item
 
 
 class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
@@ -84,7 +75,15 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         self.editor.step.rename_step(self.step, new_name)
 
     def _on_recipe_applied(self, *args):
-        self._sync_widgets_to_model()
+        # A recipe apply is authoritative: cancel pending (debounced)
+        # edits and push the applied values into the rows.
+        for widget, var_set in self._varset_widgets:
+            widget.cancel_pending()
+            values = {
+                var.key: getattr(self.step, var.key, None) for var in var_set
+            }
+            widget.set_values(values)
+        self._update_machine_bounds()
 
     def get_machine(self):
         return getattr(self.editor.context, "machine", None)
@@ -123,7 +122,7 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
     def add_section(
         self,
         title: str | None,
-        *rows: Any,
+        *widgets: Gtk.Widget,
         description: str | None = None,
     ) -> Adw.PreferencesGroup:
         group = Adw.PreferencesGroup()
@@ -131,20 +130,12 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
             group.set_title(title)
         if description:
             group.set_description(description)
-        for item in rows:
-            if isinstance(item, type):
-                item = item(self.editor, self.step)
-            self._rows.append(item)
-            group.add(_to_widget(item, self.editor, self.step))
+        for widget in widgets:
+            self._rows.append(widget)
+            group.add(widget)
         self.add(group)
         self._sections.append(group)
         return group
-
-    def add_row(self, row: Any):
-        if not self._sections:
-            self.add_section(None)
-        self._rows.append(row)
-        self._sections[-1].add(_to_widget(row, self.editor, self.step))
 
     def add_group(self, group: Adw.PreferencesGroup):
         self.add(group)
@@ -190,10 +181,12 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         self.set_step_property(key, value)
 
     def _sync_widgets_to_model(self, *args):
-        for row in self._rows:
-            resync = getattr(row, "resync", None)
-            if callable(resync):
-                resync()
+        """Resync rows from the model, preserving in-progress edits.
+
+        Called on ``step.updated`` (undo, external edits). Recipe
+        application overrides pending edits instead; see
+        :meth:`_on_recipe_applied`.
+        """
         for widget, var_set in self._varset_widgets:
             values = {
                 var.key: getattr(self.step, var.key, None) for var in var_set
@@ -225,9 +218,5 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         if self._debounce_timer > 0:
             GLib.source_remove(self._debounce_timer)
             self._debounce_timer = 0
-        for row in self._rows:
-            cleanup = getattr(row, "cleanup", None)
-            if callable(cleanup):
-                cleanup()
         for widget, _var_set in self._varset_widgets:
             widget.cancel_pending()

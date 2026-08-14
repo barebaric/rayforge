@@ -76,6 +76,13 @@ that step type (e.g. cut side, cut order):
 - Leaving both at "Any" shows only the base motion settings (cut speed
   and travel speed) that are shared by all steps
 
+Each setting row carries an apply toggle (a check button next to the
+row):
+
+- **Toggle on**: the recipe stamps this setting onto the step when it
+  is applied
+- **Toggle off**: the recipe leaves this setting on the step untouched
+
 **Post Processing Tab** - Store post-processor settings (lead-in/out,
 multipass, overscan, and other transformers) on the recipe so they are
 applied to the steps it targets:

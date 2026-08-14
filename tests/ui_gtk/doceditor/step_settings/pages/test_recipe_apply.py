@@ -8,20 +8,33 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 from rayforge.core.recipe import Recipe
+from rayforge.core.varset import FloatVar, IntVar, VarSet
 from rayforge.ui_gtk.doceditor.step_settings.pages import StepSettingsPage
-from rayforge.ui_gtk.doceditor.step_settings.rows import SliderRow, SpinRow
+from rayforge.ui_gtk.varset.varsetwidget import VarSetWidget
+
+
+def _make_page(editor, step) -> tuple[StepSettingsPage, VarSetWidget]:
+    page = StepSettingsPage(editor, step)
+    var_set = VarSet(
+        vars=[
+            IntVar(key="count", label="Count", default=3, min_val=1),
+            FloatVar(
+                key="power",
+                label="Power",
+                default=0.5,
+                min_val=0.0,
+                max_val=1.0,
+                digits=2,
+            ),
+        ]
+    )
+    widget = page.add_varset_section("Params", var_set)
+    return page, widget
 
 
 @pytest.mark.ui
 def test_applying_recipe_updates_page_widgets(editor, step):
-    page = StepSettingsPage(editor, step)
-    count_row = SpinRow(
-        editor, step, "count", "Count", None, 1, 10, 1, 0, is_int=True
-    )
-    power_row = SliderRow(
-        editor, step, "power", "Power", None, 0.0, 1.0, 0.01, 2
-    )
-    page.add_section("Params", count_row, power_row)
+    page, widget = _make_page(editor, step)
 
     recipe = Recipe(
         name="Test Recipe",
@@ -39,13 +52,13 @@ def test_applying_recipe_updates_page_widgets(editor, step):
     assert step.count == 9
     assert step.power == pytest.approx(0.8)
     assert updated, "applying a recipe must emit step.updated"
-    assert count_row.widget.get_value() == 9
-    assert power_row._adj.get_value() == pytest.approx(0.8)
+    assert widget.get_values()["count"] == 9
+    assert widget.get_values()["power"] == pytest.approx(0.8)
 
 
 @pytest.mark.ui
 def test_applying_recipe_uses_setters(editor, step):
-    page = StepSettingsPage(editor, step)
+    page, _widget = _make_page(editor, step)
     recipe = Recipe(
         name="Setter Recipe",
         setting_dicts=[{"name": "count", "value": 5, "recipe_apply": True}],
@@ -58,14 +71,35 @@ def test_applying_recipe_uses_setters(editor, step):
 
 @pytest.mark.ui
 def test_resync_overrides_pending_edit(editor, step):
-    row = SpinRow(
-        editor, step, "count", "Count", None, 1, 10, 1, 0, is_int=True
+    """Applying a recipe overrides a pending (debounced) user edit."""
+    page, widget = _make_page(editor, step)
+
+    count_adapter = widget.adapter_for("count")
+    assert count_adapter is not None
+    count_adapter.set_value(9)
+    widget._on_data_changed("count")
+    assert widget._pending_keys
+
+    recipe = Recipe(
+        name="Override Recipe",
+        setting_dicts=[{"name": "count", "value": 4, "recipe_apply": True}],
     )
-    row.widget.get_adjustment().set_value(9)
-    assert row._debounce_timer != 0
+    page.recipe_control._apply_recipe(recipe)
 
-    step.count = 4
-    row.resync()
+    assert widget.get_values()["count"] == 4
+    assert not widget._pending_keys
 
-    assert row.widget.get_value() == 4
-    assert row._debounce_timer == 0
+
+def test_sync_from_model_preserves_pending_edit(editor, step):
+    """A model resync skips keys with pending (debounced) edits."""
+    _page, widget = _make_page(editor, step)
+
+    count_adapter = widget.adapter_for("count")
+    assert count_adapter is not None
+    count_adapter.set_value(9)
+    widget._on_data_changed("count")
+
+    widget.sync_from_model({"count": 4, "power": 0.5})
+
+    assert widget.get_values()["count"] == 9
+    assert widget.get_values()["power"] == pytest.approx(0.5)

@@ -7,8 +7,9 @@ import pytest
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
+from gi.repository import Gtk
+
 from rayforge.ui_gtk.doceditor.step_settings.pages import StepSettingsPage
-from rayforge.ui_gtk.doceditor.step_settings.rows import CutSpeedRow, SpinRow
 
 
 @pytest.mark.ui
@@ -19,14 +20,12 @@ def test_page_starts_with_identity_section(editor, step):
 
 
 @pytest.mark.ui
-def test_add_section_accepts_row_class_and_instance(editor, step):
+def test_add_section_accepts_plain_widgets(editor, step):
     page = StepSettingsPage(editor, step)
-    page.add_section(
-        "Cutting",
-        CutSpeedRow,
-        SpinRow(editor, step, "count", "Count", None, 1, 10, 1, 0),
-    )
+    label = Gtk.Label(label="hello")
+    page.add_section("Cutting", label)
     assert len(page._sections) == 2
+    assert page._rows[-1] is label
 
 
 @pytest.mark.ui
