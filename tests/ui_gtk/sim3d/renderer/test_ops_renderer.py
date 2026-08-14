@@ -211,7 +211,7 @@ def test_render_draws_powered_and_travel(renderer, colors):
         patch("OpenGL.GL.glBlendFunc"),
         patch("OpenGL.GL.glActiveTexture"),
         patch("OpenGL.GL.glBindTexture"),
-        patch("OpenGL.GL.glDepthFunc"),
+        patch("OpenGL.GL.glDepthFunc") as mock_depth_func,
         patch("OpenGL.GL.glDepthMask"),
         patch("OpenGL.GL.glDrawArrays") as mock_draw,
         patch("rayforge.ui_gtk.sim3d.renderer.ops_renderer.set_line_width"),
@@ -221,6 +221,12 @@ def test_render_draws_powered_and_travel(renderer, colors):
     assert mock_draw.call_count == 2
     shader.use.assert_called_once()
     shader.set_mat4.assert_called_once_with("uMVP", mvp)
+    # The toolpath must depth-test against the laser head model instead
+    # of always drawing on top; a small bias keeps it above the
+    # coplanar raster texture.  0x0203 is GL.GL_LEQUAL (no GL import
+    # in tests).
+    assert mock_depth_func.call_args[0][0] == 0x0203
+    shader.set_float.assert_any_call("uDepthBias", 2.0)
 
 
 @pytest.mark.ui

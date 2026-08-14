@@ -11,6 +11,7 @@ layout (location = 2) in vec3 aNormal;
 uniform mat4 uMVP;
 uniform vec3 uPartialEnd;
 uniform int uPartialVertexID;
+uniform float uDepthBias;
 out vec4 vColor;
 out vec3 vNormal;
 out vec3 vPos;
@@ -21,6 +22,7 @@ void main() {
         pos = uPartialEnd;
     }
     gl_Position = uMVP * vec4(pos, 1.0);
+    gl_Position.z += uDepthBias;
     vColor = aColor;
     vNormal = aNormal;
     vPos = pos;
@@ -131,3 +133,4 @@ class SimpleShader(Shader):
         self.set_vec4("uZeroPowerColor", (0.0, 0.0, 0.0, 1.0))
         self.set_float("uPointLightOn", 0.0)
         self.set_vec3("uPointLightPos", (0.0, 0.0, 0.0))
+        self.set_float("uDepthBias", 0.0)

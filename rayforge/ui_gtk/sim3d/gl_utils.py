@@ -57,6 +57,26 @@ def set_line_width(requested: float) -> None:
     GL.glLineWidth(clamped)
 
 
+# Toolpath and scanline-trail lines lie exactly on the workpiece
+# surface, so a plain depth test would z-fight with the raster texture
+# (and the faceted cylinder mesh).  We bias the lines' depth a couple
+# of millimetres toward the camera instead: large enough to always win
+# against the coplanar surface, small enough that the laser head model
+# (which sits well above the surface) still occludes them.
+LINE_DEPTH_BIAS_MM = 2.0
+
+
+def line_depth_bias(proj_matrix: np.ndarray) -> float:
+    """Returns the clip-space z bias for surface-coplanar lines.
+
+    The projection's [2][2] entry maps view-space z to clip-space z
+    linearly, so multiplying it by the desired view-space bias gives
+    the exact clip-space offset for both perspective and orthographic
+    projections.
+    """
+    return float(proj_matrix[2, 2]) * LINE_DEPTH_BIAS_MM
+
+
 @dataclass
 class ShaderSet:
     """
