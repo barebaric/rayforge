@@ -7,7 +7,7 @@ from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly.adaptive import AdaptiveClearingSpec
 from raygeo.ops.part import Part
 
-from rayforge.core.varset import FloatVar, LengthVar, VarSet
+from rayforge.core.varset import AngleVar, FloatVar, LengthVar, VarSet
 
 from .cnc_assembler_step import CncAssemblerStep
 
@@ -40,7 +40,7 @@ class AdaptiveClearStep(CncAssemblerStep):
                     default=0.6,
                     min_val=0.1,
                 ),
-                FloatVar(
+                AngleVar(
                     key="max_deflection_deg",
                     label=_("Max Deflection"),
                     description=_(

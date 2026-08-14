@@ -6,64 +6,64 @@ from typing import TYPE_CHECKING
 from rayforge.core.varset import VarSet
 from rayforge.machine.models.spindle import SpindleHead
 from rayforge.ui_gtk.doceditor.step_settings.pages import StepSettingsPage
-from rayforge.ui_gtk.doceditor.step_settings.rows import (
-    CutSpeedRow,
-    TravelSpeedRow,
-)
-
-from ..rows.depth_per_pass_row import DepthPerPassRow
-from ..rows.plunge_speed_row import PlungeSpeedRow
-from ..rows.safe_z_row import SafeZRow
-from ..rows.spindle_rpm_row import SpindleRpmRow
-from ..rows.target_depth_row import TargetDepthRow
-from ..rows.tool_diameter_row import ToolDiameterRow
 
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
 
     from ...steps.cnc_assembler_step import CncAssemblerStep
 
+_SPINDLE_KEYS = {"spindle_rpm", "tool_diameter"}
+_DEPTH_KEYS = {"target_depth", "depth_per_pass", "safe_z"}
+_FEED_KEYS = {"cut_speed", "travel_speed", "plunge_speed"}
+
 
 class CncStepSettingsPage(StepSettingsPage):
     """Base page for CNC step settings.
 
-    Adds the common CNC sections (cooling, spindle, depth, feed).
-    Subclasses add their step-specific sections.
+    Renders the common CNC sections (cooling, spindle, depth, feed)
+    from the step's recipe varset. Subclasses add their step-specific
+    sections.
     """
 
     def __init__(self, editor: "DocEditor", step: "CncAssemblerStep"):
         super().__init__(editor, step)
         self._add_cooling_section()
-        self.add_section(
+        cnc_group = self._cnc_group()
+        if cnc_group is None:
+            return
+        self.add_varset_section(
             _("Spindle"),
-            SpindleRpmRow,
-            ToolDiameterRow,
+            self._varset_for_keys(cnc_group, _SPINDLE_KEYS),
             description=_("Spindle speed and tool geometry."),
         )
-        self.add_section(
+        self.add_varset_section(
             _("Depth"),
-            TargetDepthRow,
-            DepthPerPassRow,
-            SafeZRow,
+            self._varset_for_keys(cnc_group, _DEPTH_KEYS),
             description=_("Cut depth, depth per pass, and safe height."),
         )
-        self.add_section(
+        self.add_varset_section(
             _("Feed"),
-            CutSpeedRow(editor, step, title=_("Feed Rate")),
-            TravelSpeedRow,
-            PlungeSpeedRow,
+            self._varset_for_keys(cnc_group, _FEED_KEYS),
             description=_("Cutting, plunging, and travel feed rates."),
         )
 
+    def _cnc_group(self) -> VarSet | None:
+        """The domain varset group holding the common CNC settings."""
+        groups = self.step.recipe_varset_groups()
+        return groups[0][1] if groups else None
+
+    def _step_specific_group(self) -> VarSet | None:
+        """The concrete step's own settings group, if any."""
+        groups = self.step.recipe_varset_groups()
+        return groups[-1][1] if len(groups) > 1 else None
+
     def _add_cooling_section(self):
         """Add the coolant section, hidden unless a spindle head is used."""
+        cnc_group = self._cnc_group()
+        if cnc_group is None:
+            return
         coolant_var = next(
-            (
-                var
-                for var in self.step.recipe_varset()
-                if var.key == "coolant_method"
-            ),
-            None,
+            (var for var in cnc_group if var.key == "coolant_method"), None
         )
         if coolant_var is None:
             return

@@ -3,13 +3,6 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from ..rows import (
-    AreaToleranceRow,
-    MaxDeflectionRow,
-    StepLengthRow,
-    StepOverRow,
-    WallMarginRow,
-)
 from .cnc_step_page import CncStepSettingsPage
 
 if TYPE_CHECKING:
@@ -23,12 +16,11 @@ class AdaptiveClearPage(CncStepSettingsPage):
 
     def __init__(self, editor: "DocEditor", step: "CncAssemblerStep"):
         super().__init__(editor, step)
-        self.add_section(
+        step_vars = self._step_specific_group()
+        if step_vars is None:
+            return
+        self.add_varset_section(
             _("Adaptive Clearing"),
-            StepOverRow,
-            StepLengthRow,
-            MaxDeflectionRow,
-            WallMarginRow,
-            AreaToleranceRow,
+            step_vars,
             description=_("Rough out a pocket with adaptive passes."),
         )
