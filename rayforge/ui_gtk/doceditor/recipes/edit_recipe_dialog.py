@@ -263,7 +263,7 @@ class AddEditRecipeDialog(PatchedDialogWindow):
             page = RecipeSettingsPage(group_title)
             page.populate(varset)
             if self.recipe:
-                page.set_values(self.recipe.get_applied_settings())
+                page.set_setting_dicts(self.recipe.setting_dicts)
             self._add_page(page, name, group_title, icon_name)
             self._settings_pages[name] = page
 
@@ -311,15 +311,10 @@ class AddEditRecipeDialog(PatchedDialogWindow):
     # --- Result ---------------------------------------------------------
 
     def get_recipe_data(self) -> dict[str, Any]:
-        # Merge values from all settings pages.
-        settings: dict[str, Any] = {}
+        # Collect setting_dicts (with apply states) from all pages.
+        setting_dicts: list[dict[str, Any]] = []
         for page in self._settings_pages.values():
-            settings.update(page.get_values())
-        final_settings = {k: v for k, v in settings.items() if v is not None}
-        setting_dicts = [
-            {"name": k, "value": v, "recipe_apply": True}
-            for k, v in final_settings.items()
-        ]
+            setting_dicts.extend(page.get_setting_dicts())
 
         transformer_dicts = (
             self._post_processing_page.get_transformer_dicts()

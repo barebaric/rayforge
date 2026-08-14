@@ -56,10 +56,20 @@ class RowAdapter(ABC):
 
     Convention: adapters store their row as self._row so that
     update_from_var can operate on it.
+
+    Composite (multi-key) adapters declare ``related_keys`` for the
+    additional step attributes their row edits alongside the primary
+    var key. The manager maps all those keys to the same adapter, skips
+    creating separate rows for them, and emits ``data_changed`` for
+    every key when the adapter fires.
     """
 
     changed: Signal
     has_natural_commit = False
+
+    #: Additional keys (besides the primary var key) that this
+    #: adapter's row reads or writes. Empty for single-key adapters.
+    related_keys: tuple[str, ...] = ()
 
     def __init__(self):
         self.changed = Signal()
@@ -77,6 +87,24 @@ class RowAdapter(ABC):
     @abstractmethod
     def set_value(self, value: Any) -> None:
         raise NotImplementedError
+
+    def get_value_for_key(self, key: str) -> Any | None:
+        """The value for a specific key this adapter manages.
+
+        Single-key adapters only manage the primary key and delegate
+        to :meth:`get_value`. Composite adapters override this to
+        dispatch per key.
+        """
+        return self.get_value()
+
+    def set_value_for_key(self, key: str, value: Any) -> None:
+        """Set the value for a specific key this adapter manages.
+
+        Single-key adapters only manage the primary key and delegate
+        to :meth:`set_value`. Composite adapters override this to
+        dispatch per key.
+        """
+        self.set_value(value)
 
     def needs_rebuild(self, old_var: Var, new_var: Var) -> bool:
         """Return True if the row must be recreated for the new var."""
