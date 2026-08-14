@@ -4,11 +4,17 @@ Frontend entry point for cnc-essentials addon.
 Registers UI widgets with the main application.
 """
 
+from pathlib import Path
+
 from rayforge.core.hooks import hookimpl
+from rayforge.ui_gtk.icons import register_icon_path
 
 from .widgets import ASSEMBLER_WIDGETS
 
 ADDON_NAME = "cnc_essentials"
+_ICONS_DIR = Path(__file__).parent / "resources" / "icons"
+
+register_icon_path(_ICONS_DIR)
 
 
 @hookimpl

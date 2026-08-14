@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 class AdaptiveClearStep(CncAssemblerStep):
     ASSEMBLER_NAME = "adaptive_clearing"  # matches PlanStep.kind
     TYPELABEL = _("Adaptive Clear")
+    ICON = "step-adaptive-symbolic"
     uses_global_state = True  # consumes predecessor cleared-area
 
     @classmethod
