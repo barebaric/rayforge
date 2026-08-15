@@ -113,6 +113,7 @@ update-supporters = "python3 scripts/media/update_supporters.py"
 fetch-stats = "python3 scripts/fetch_download_stats.py"
 normalize-icons = "python3 scripts/normalize_icons.py"
 gen-affiliate = "python3 scripts/generate_affiliate_link.py"
+optimize-textures = "python3 scripts/optimize_material_textures.py"
 
 [tasks.clean]
 cmd = "bash scripts/clean.sh"

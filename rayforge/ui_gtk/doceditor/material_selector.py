@@ -9,6 +9,7 @@ from ...context import get_context
 from ...core.material import Material
 from ...core.material_library import MaterialLibrary
 from ..shared.gtk import apply_css
+from ..shared.texture_loader import create_material_swatch
 
 logger = logging.getLogger(__name__)
 
@@ -27,22 +28,8 @@ class MaterialSelectorRow(Adw.ActionRow):
         super().__init__(title=material.name, activatable=True)
         self.material = material
 
-        # Color indicator
-        color_box = Gtk.Box()
-        color_box.set_valign(Gtk.Align.CENTER)
-        color_box.set_size_request(24, 24)
-        color_box.add_css_class("material-color-selector")
-        color_provider = Gtk.CssProvider()
-        display_color = self.material.get_display_color()
-        color_data = (
-            f".material-color-selector "
-            f"{{ background-color: {display_color}; }}"
-        )
-        color_provider.load_from_string(color_data)
-        color_box.get_style_context().add_provider(
-            color_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-        )
-        self.add_prefix(color_box)
+        self.swatch = create_material_swatch(self.material)
+        self.add_prefix(self.swatch)
 
 
 class MaterialSelectorDialog(Adw.MessageDialog):

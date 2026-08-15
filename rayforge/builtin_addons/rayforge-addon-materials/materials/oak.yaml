@@ -26,3 +26,7 @@ category:
 appearance:
   color: "#A0522D"
   pattern: wood_grain
+  texture: oak.webp
+  texture_size_mm: 300
+  roughness: 0.55
+  metallic: 0.0

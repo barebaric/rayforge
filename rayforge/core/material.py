@@ -4,7 +4,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import yaml
 
@@ -13,7 +13,22 @@ from ..shared.util.localized import LocalizedField
 # Accept both plain strings and LocalizedField as input
 LocalizedInput = str | LocalizedField
 
+# Only WebP textures are supported
+TEXTURE_EXTENSION = ".webp"
+
 logger = logging.getLogger(__name__)
+
+
+def _coerce_localized(value: LocalizedInput) -> LocalizedField:
+    """
+    Convert a plain string or dict into a LocalizedField.
+
+    LocalizedField instances are passed through unchanged so their
+    translations survive.
+    """
+    if isinstance(value, LocalizedField):
+        return value
+    return LocalizedField.from_yaml(value)
 
 
 @dataclass
@@ -22,23 +37,47 @@ class MaterialAppearance:
 
     color: str = "#f0f0f0"
     pattern: str = "solid"
+    texture: str | None = None
+    texture_size_mm: float = 300.0
+    roughness: float = 0.8
+    metallic: float = 0.0
     extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "MaterialAppearance":
         """Create an instance from a dictionary."""
-        known_keys = {"color", "pattern"}
+        known_keys = {
+            "color",
+            "pattern",
+            "texture",
+            "texture_size_mm",
+            "roughness",
+            "metallic",
+        }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
         return cls(
             color=data.get("color", cls.color),
-            pattern=data.get("pattern", "solid"),
+            pattern=data.get("pattern", cls.pattern),
+            texture=data.get("texture", cls.texture),
+            texture_size_mm=data.get("texture_size_mm", cls.texture_size_mm),
+            roughness=data.get("roughness", cls.roughness),
+            metallic=data.get("metallic", cls.metallic),
             extra=extra,
         )
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the appearance to a dictionary."""
-        result = {"color": self.color, "pattern": self.pattern}
+        result: dict[str, Any] = {"color": self.color, "pattern": self.pattern}
+        if self.texture is not None:
+            result["texture"] = self.texture
+        result.update(
+            {
+                "texture_size_mm": self.texture_size_mm,
+                "roughness": self.roughness,
+                "metallic": self.metallic,
+            }
+        )
         result.update(self.extra)
         return result
 
@@ -157,9 +196,9 @@ class Material:
         """
         result = {
             "uid": self.uid,
-            "name": cast(LocalizedField, self.name).to_yaml(),
-            "description": cast(LocalizedField, self.description).to_yaml(),
-            "category": cast(LocalizedField, self.category).to_yaml(),
+            "name": _coerce_localized(self.name).to_yaml(),
+            "description": _coerce_localized(self.description).to_yaml(),
+            "category": _coerce_localized(self.category).to_yaml(),
             "appearance": self.appearance.to_dict(),
         }
         result.update(self.extra)
@@ -227,6 +266,48 @@ class Material:
         """
         return self.appearance.pattern
 
+    def get_texture_path(self) -> Path | None:
+        """
+        Get the path to the material's WebP texture.
+
+        Uses the appearance texture field when set, otherwise falls
+        back to "<uid>.webp" next to the material's YAML file. Only
+        WebP files are supported; the fallback is only returned when
+        the file actually exists.
+
+        Returns:
+            Path to the texture file, or None if the material has no
+            usable texture
+        """
+        if not self.file_path:
+            return None
+        directory = self.file_path.parent
+
+        texture = self.appearance.texture
+        if texture:
+            if not self._is_safe_texture_name(texture):
+                logger.warning(
+                    "Ignoring unsupported texture '%s' for material "
+                    "'%s' (only relative WebP paths are supported)",
+                    texture,
+                    self.uid,
+                )
+                return None
+            return directory / texture
+
+        candidate = directory / f"{self.uid}{TEXTURE_EXTENSION}"
+        return candidate if candidate.is_file() else None
+
+    @staticmethod
+    def _is_safe_texture_name(name: str) -> bool:
+        """Check that a texture name is a relative WebP path."""
+        path = Path(name)
+        return (
+            not path.is_absolute()
+            and path.suffix.lower() == TEXTURE_EXTENSION
+            and ".." not in path.parts
+        )
+
     def matches_search(self, query: str) -> bool:
         """
         Check if the material matches a search query in any language.
@@ -239,9 +320,9 @@ class Material:
             language
         """
         return (
-            cast(LocalizedField, self.name).matches(query)
-            or cast(LocalizedField, self.description).matches(query)
-            or cast(LocalizedField, self.category).matches(query)
+            _coerce_localized(self.name).matches(query)
+            or _coerce_localized(self.description).matches(query)
+            or _coerce_localized(self.category).matches(query)
         )
 
     def __str__(self) -> str:

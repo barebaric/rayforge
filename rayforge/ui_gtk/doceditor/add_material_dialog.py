@@ -2,13 +2,31 @@
 
 import logging
 from gettext import gettext as _
+from pathlib import Path
 from typing import Any
 
-from gi.repository import Adw, Gdk, Gtk
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from ...core.material import Material
+from ..icons import get_icon
+from ..shared.pref_rows.length_spin_row import LengthSpinRow
+from ..shared.slider import create_slider_row
 
 logger = logging.getLogger(__name__)
+
+
+def _make_pbr_slider_row(
+    title: str, subtitle: str, value: float
+) -> tuple[Adw.ActionRow, Gtk.Scale]:
+    """Create an ActionRow with a 0..1 slider for a PBR parameter."""
+    adjustment = Gtk.Adjustment(
+        value=value,
+        lower=0.0,
+        upper=1.0,
+        step_increment=0.05,
+        page_increment=0.1,
+    )
+    return create_slider_row(title, adjustment, subtitle=subtitle, digits=2)
 
 
 class AddMaterialDialog(Adw.MessageDialog):
@@ -42,20 +60,65 @@ class AddMaterialDialog(Adw.MessageDialog):
         self.name_entry = Adw.EntryRow(title=_("Name"))
         self.category_entry = Adw.EntryRow(title=_("Category"))
 
-        self.color_button = Gtk.ColorButton(margin_bottom=0)
+        self._texture_path: Path | None = None
+        self.texture_row = Adw.ActionRow(title=_("Texture"))
+        self.texture_row.set_subtitle(_("None"))
+        self._choose_texture_button = Gtk.Button(label=_("Choose..."))
+        self._choose_texture_button.set_valign(Gtk.Align.CENTER)
+        self._choose_texture_button.connect("clicked", self._on_choose_texture)
+        self.texture_row.add_suffix(self._choose_texture_button)
+        self._clear_texture_button = Gtk.Button(
+            child=get_icon("clear-symbolic")
+        )
+        self._clear_texture_button.add_css_class("flat")
+        self._clear_texture_button.set_valign(Gtk.Align.CENTER)
+        self._clear_texture_button.connect("clicked", self._on_clear_texture)
+        self._clear_texture_button.set_visible(False)
+        self.texture_row.add_suffix(self._clear_texture_button)
+
+        color_dialog = Gtk.ColorDialog()
+        color_dialog.set_with_alpha(False)
+        self.color_button = Gtk.ColorDialogButton(dialog=color_dialog)
         self.color_button.set_size_request(32, 32)
         self.color_row = Adw.ActionRow(
             title=_("Color"), activatable_widget=self.color_button
         )
         self.color_row.add_suffix(self.color_button)
 
+        self.texture_scale_row = LengthSpinRow(
+            _("Texture Scale"),
+            _("Size one texture tile covers on the material"),
+            lower=1.0,
+            upper=2000.0,
+            value_in_base=300.0,
+        )
+        self.texture_scale_row.set_sensitive(False)
+
+        self.roughness_row, self.roughness_scale = _make_pbr_slider_row(
+            _("Roughness"),
+            _("How rough or polished the surface appears"),
+            0.8,
+        )
+        self.metallic_row, self.metallic_scale = _make_pbr_slider_row(
+            _("Metallic"),
+            _("Whether the surface reflects light like a metal"),
+            0.0,
+        )
+
         # Use a preferences group for a clean layout
         group = Adw.PreferencesGroup()
         group.add(self.name_entry)
         group.add(self.category_entry)
+        group.add(self.texture_row)
+        group.add(self.texture_scale_row)
         group.add(self.color_row)
+        group.add(self.roughness_row)
+        group.add(self.metallic_row)
 
         self.set_extra_child(group)
+        group.set_margin_start(24)
+        group.set_margin_end(24)
+        group.set_margin_bottom(24)
 
         # If editing, populate the fields with existing data
         if self.is_edit_mode:
@@ -63,6 +126,10 @@ class AddMaterialDialog(Adw.MessageDialog):
 
         # Set initial focus on the name entry
         self.name_entry.grab_focus()
+
+        # Widen the dialog: libadwaita dialogs are presented at their
+        # minimum preferred width, so add the extra width to that.
+        self.set_default_size(600, -1)
 
         # Connect Enter key handler to entries
         # Adw.EntryRow has an internal entry widget we need to access
@@ -92,6 +159,59 @@ class AddMaterialDialog(Adw.MessageDialog):
         b = int(rgba.blue * 255)
         return f"#{r:02x}{g:02x}{b:02x}"
 
+    def _on_choose_texture(self, button: Gtk.Button):
+        """Open a file chooser for a WebP texture image."""
+        dialog = Gtk.FileDialog()
+        dialog.set_title(_("Choose Texture Image"))
+        file_filter = Gtk.FileFilter()
+        file_filter.set_name(_("WebP images"))
+        file_filter.add_suffix("webp")
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(file_filter)
+        dialog.set_filters(filters)
+        dialog.open(self, None, self._on_file_dialog_finished)
+
+    def _on_file_dialog_finished(self, dialog: Gtk.FileDialog, result):
+        """Handle the file chooser result."""
+        try:
+            file = dialog.open_finish(result)
+        except GLib.Error:
+            return
+        if file is None:
+            return
+
+        raw_path = file.get_path()
+        if raw_path is None:
+            return
+        path = Path(raw_path)
+        if path.suffix.lower() != ".webp":
+            self._show_error(_("Only WebP texture images are supported."))
+            return
+
+        self._texture_path = path
+        self.texture_row.set_subtitle(path.name)
+        self._clear_texture_button.set_visible(True)
+        self.color_row.set_sensitive(False)
+        self.texture_scale_row.set_sensitive(True)
+
+    def _on_clear_texture(self, button: Gtk.Button):
+        """Clear the chosen texture."""
+        self._texture_path = None
+        self.texture_row.set_subtitle(_("None"))
+        self._clear_texture_button.set_visible(False)
+        self.color_row.set_sensitive(True)
+        self.texture_scale_row.set_sensitive(False)
+
+    def _show_error(self, message: str):
+        """Show an error dialog."""
+        err_dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading=_("Error"),
+            body=message,
+        )
+        err_dialog.add_response("ok", _("OK"))
+        err_dialog.present()
+
     def _populate_fields(self):
         """Populate the dialog fields with existing material data."""
         if not self.material:
@@ -108,10 +228,31 @@ class AddMaterialDialog(Adw.MessageDialog):
             if rgba.parse(color_hex):
                 self.color_button.set_rgba(rgba)
 
+        self.roughness_scale.set_value(self.material.appearance.roughness)
+        self.metallic_scale.set_value(self.material.appearance.metallic)
+
+        texture_path = self.material.get_texture_path()
+        if texture_path is not None:
+            self._texture_path = texture_path
+            self.texture_row.set_subtitle(texture_path.name)
+            self._clear_texture_button.set_visible(True)
+            self.color_row.set_sensitive(False)
+            self.texture_scale_row.set_sensitive(True)
+
+        self.texture_scale_row.set_value_in_base_units(
+            self.material.appearance.texture_size_mm
+        )
+
     def get_material_data(self) -> dict[str, Any]:
         """Returns a dictionary with the entered material data."""
         return {
             "name": self.get_name().strip(),
             "category": self.get_category().strip() or _("Custom"),
             "color": self.get_color_hex(),
+            "roughness": self.roughness_scale.get_value(),
+            "metallic": self.metallic_scale.get_value(),
+            "texture_size_mm": (
+                self.texture_scale_row.get_value_in_base_units()
+            ),
+            "texture": self._texture_path,
         }
