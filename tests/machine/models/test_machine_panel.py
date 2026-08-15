@@ -296,7 +296,7 @@ class TestMachinePanelComposedTransforms:
             extents=(400.0, 800.0),
             orientation=orientation,
         )
-        assert panel.world_point_to_machine(100.0, 50.0) == pytest.approx(
+        assert panel.panel_point_to_machine(100.0, 50.0) == pytest.approx(
             expected
         )
 
@@ -336,8 +336,8 @@ class TestMachinePanelComposedTransforms:
         )
 
         world_point = (123.25, 77.5)
-        machine_point = panel.world_point_to_machine(*world_point)
-        result = panel.machine_point_to_world(*machine_point)
+        machine_point = panel.panel_point_to_machine(*world_point)
+        result = panel.machine_point_to_panel(*machine_point)
         assert result == (
             pytest.approx(world_point[0]),
             pytest.approx(world_point[1]),
@@ -380,8 +380,8 @@ class TestMachinePanelComposedTransforms:
 
         world_pos = (20.0, 30.0)
         item_size = (50.0, 70.0)
-        machine_pos = panel.world_item_to_machine(world_pos, item_size)
-        result = panel.machine_item_to_world(machine_pos, item_size)
+        machine_pos = panel.panel_item_to_machine(world_pos, item_size)
+        result = panel.machine_item_to_panel(machine_pos, item_size)
         assert result == pytest.approx(world_pos)
 
     @pytest.mark.parametrize(
@@ -821,8 +821,8 @@ def _make_cylinder_zone(x, y, name="Cylinder"):
     return zone
 
 
-class TestMachinePanelMachineToPanel:
-    """Tests for the 90-degree bed rotation from MACHINE to panel."""
+class TestMachinePanelWorldToPanel:
+    """Tests for the 90-degree bed rotation from WORLD to panel."""
 
     @staticmethod
     def _panel(orientation):
@@ -836,7 +836,7 @@ class TestMachinePanelMachineToPanel:
 
     def test_native_is_identity(self):
         panel = self._panel(PanelOrientation.NATIVE)
-        assert panel.machine_to_panel == pytest.approx(np.identity(4))
+        assert panel.world_to_panel == pytest.approx(np.identity(4))
 
     @pytest.mark.parametrize(
         "orientation, expected",
@@ -851,17 +851,156 @@ class TestMachinePanelMachineToPanel:
             ),
         ],
     )
-    def test_rotation_maps_machine_to_panel(self, orientation, expected):
-        """The matrix rotates MACHINE-bed geometry into the panel
+    def test_rotation_maps_world_to_panel(self, orientation, expected):
+        """The matrix rotates WORLD geometry into the panel
         presentation."""
         panel = self._panel(orientation)
-        matrix = panel.machine_to_panel
+        matrix = panel.world_to_panel
         assert matrix[:2, :4] == pytest.approx(expected)
 
-    def test_machine_to_panel_round_trips_with_panel_to_native(self):
+    def test_world_to_panel_round_trips_with_panel_to_world(self):
         panel = self._panel(PanelOrientation.ROTATED_LEFT)
-        product = panel.machine_to_panel @ panel._panel_to_native_matrix
+        product = panel.world_to_panel @ panel._panel_to_world_matrix
         assert product == pytest.approx(np.identity(4))
+
+    def test_2d_matrix_matches_rotation(self):
+        """The 2D affine accessor used by the canvas agrees with the
+        4x4 matrix."""
+        panel = self._panel(PanelOrientation.ROTATED_RIGHT)
+        matrix = panel.get_world_to_panel_2d()
+        assert matrix.transform_point((0.0, 0.0)) == (0.0, 100.0)
+        assert matrix.transform_point((10.0, 20.0)) == (20.0, 90.0)
+
+    def test_2d_matrix_identity_for_native(self):
+        panel = self._panel(PanelOrientation.NATIVE)
+        assert panel.get_world_to_panel_2d().is_identity()
+
+    @pytest.mark.parametrize(
+        "orientation, expected",
+        [
+            (PanelOrientation.NATIVE, (10.0, 20.0, 20.0, 40.0)),
+            (PanelOrientation.ROTATED_RIGHT, (20.0, 80.0, 40.0, 90.0)),
+            (PanelOrientation.ROTATED_LEFT, (160.0, 10.0, 180.0, 20.0)),
+        ],
+    )
+    def test_world_bbox_to_panel(self, orientation, expected):
+        """A WORLD rectangle projects into the panel presentation."""
+        panel = self._panel(orientation)
+        bbox = panel.world_bbox_to_panel((10.0, 20.0, 20.0, 40.0))
+        assert bbox == pytest.approx(expected)
+
+    @pytest.mark.parametrize("orientation", list(PanelOrientation))
+    def test_world_bbox_matches_2d_projection(self, orientation):
+        """world_bbox_to_panel agrees with projecting the corners through
+        the canvas's 2D matrix."""
+        panel = self._panel(orientation)
+        matrix = panel.get_world_to_panel_2d()
+        bbox = (10.0, 20.0, 20.0, 40.0)
+        projected = panel.world_bbox_to_panel(bbox)
+        corners = [
+            matrix.transform_point(point)
+            for point in ((10, 20), (20, 20), (20, 40), (10, 40))
+        ]
+        xs = [point[0] for point in corners]
+        ys = [point[1] for point in corners]
+        assert projected == pytest.approx((min(xs), min(ys), max(xs), max(ys)))
+
+    @pytest.mark.parametrize(
+        "orientation, delta, expected",
+        [
+            (PanelOrientation.NATIVE, (10.0, -5.0), (10.0, -5.0)),
+            (PanelOrientation.ROTATED_RIGHT, (10.0, -5.0), (5.0, 10.0)),
+            (PanelOrientation.ROTATED_LEFT, (10.0, -5.0), (-5.0, -10.0)),
+        ],
+    )
+    def test_panel_delta_to_world(self, orientation, delta, expected):
+        """A presented movement vector un-rotates into WORLD space."""
+        panel = self._panel(orientation)
+        dx, dy = delta
+        assert panel.panel_delta_to_world(dx, dy) == pytest.approx(expected)
+
+    @pytest.mark.parametrize(
+        "orientation",
+        [
+            PanelOrientation.NATIVE,
+            PanelOrientation.ROTATED_LEFT,
+            PanelOrientation.ROTATED_RIGHT,
+        ],
+    )
+    def test_panel_delta_round_trip_via_2d(self, orientation):
+        """panel_delta_to_world inverts the canvas world→panel matrix."""
+        panel = self._panel(orientation)
+        dx, dy = panel.panel_delta_to_world(3.0, 7.0)
+        rotated = panel.get_world_to_panel_2d().transform_vector((dx, dy))
+        assert rotated == pytest.approx((3.0, 7.0))
+
+
+class TestMachinePanelSpaceSplit:
+    """WORLD (native) vs PANEL (rotated) API split."""
+
+    @staticmethod
+    def _panel(orientation):
+        return _panel(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(100.0, 200.0),
+            orientation=orientation,
+        )
+
+    def test_world_methods_are_native(self):
+        """The world-named methods delegate to the native space."""
+        for orientation in (
+            PanelOrientation.NATIVE,
+            PanelOrientation.ROTATED_LEFT,
+            PanelOrientation.ROTATED_RIGHT,
+        ):
+            panel = self._panel(orientation)
+            assert panel.get_world_to_machine_matrix() == pytest.approx(
+                panel.space.get_world_to_machine_matrix()
+            )
+            assert panel.machine_point_to_world(10.0, 20.0) == pytest.approx(
+                panel.space.machine_point_to_world(10.0, 20.0)
+            )
+            assert panel.world_point_to_machine(10.0, 20.0) == pytest.approx(
+                panel.space.world_point_to_machine(10.0, 20.0)
+            )
+            assert panel.get_workarea_world_rect() == pytest.approx(
+                panel.space.get_workarea_world_rect()
+            )
+
+    def test_panel_methods_rotate(self):
+        """The panel-named methods apply the presentation rotation."""
+        panel = self._panel(PanelOrientation.ROTATED_RIGHT)
+        assert panel.machine_point_to_panel(10.0, 20.0) == pytest.approx(
+            (20.0, 90.0)
+        )
+        assert panel.panel_point_to_machine(20.0, 90.0) == pytest.approx(
+            (10.0, 20.0)
+        )
+
+    def test_native_matches_world(self):
+        """Under NATIVE, panel methods agree with the world methods."""
+        panel = self._panel(PanelOrientation.NATIVE)
+        assert panel.machine_point_to_panel(10.0, 20.0) == pytest.approx(
+            panel.machine_point_to_world(10.0, 20.0)
+        )
+        assert panel.get_workarea_panel_rect() == pytest.approx(
+            panel.get_workarea_world_rect()
+        )
+        assert panel.work_area_center_panel() == pytest.approx(
+            panel.work_area_center()
+        )
+        assert panel.reference_position_panel == pytest.approx(
+            panel.reference_position_world
+        )
+
+    def test_panel_rect_matches_rotated_workarea(self):
+        """The PANEL workarea rect has presented (swapped) dimensions."""
+        panel = self._panel(PanelOrientation.ROTATED_RIGHT)
+        _wx, _wy, w, h = panel.get_workarea_panel_rect()
+        assert w == pytest.approx(200.0)
+        assert h == pytest.approx(100.0)
 
 
 class TestMachinePanelNogoZones:

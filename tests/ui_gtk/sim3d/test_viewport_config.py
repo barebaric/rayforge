@@ -3,6 +3,7 @@ import pytest
 
 from rayforge.context import RayforgeContext
 from rayforge.machine.models.machine import Machine, Origin
+from rayforge.machine.models.machine_panel import PanelOrientation
 from rayforge.ui_gtk.sim3d.viewport import ViewportConfig
 
 
@@ -37,6 +38,12 @@ class TestViewportConfigDefaults:
         vp = ViewportConfig.from_machine(m)
         assert vp.wcs_offset_mm == (0.0, 0.0, 0.0)
 
+    def test_default_world_to_panel_is_identity(self):
+        m = _make_machine()
+        vp = ViewportConfig.from_machine(m)
+        expected = np.identity(4, dtype=np.float32)
+        np.testing.assert_array_equal(vp.world_to_panel, expected)
+
     def test_default_margin_shift_is_identity(self):
         m = _make_machine()
         vp = ViewportConfig.from_machine(m)
@@ -45,6 +52,50 @@ class TestViewportConfigDefaults:
 
 
 class TestViewportConfigAxisOrientation:
+    def test_rotated_right_swaps_viewport_dimensions(self):
+        m = _make_machine()
+        m.set_axis_extents(300.0, 600.0)
+        m.set_panel_orientation(PanelOrientation.ROTATED_RIGHT)
+
+        vp = ViewportConfig.from_machine(m)
+
+        assert vp.width_mm == 600.0
+        assert vp.depth_mm == 300.0
+        assert vp.x_right is False
+        assert vp.y_down is True
+        expected = np.array(
+            [
+                [0.0, 1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0, 300.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+            dtype=np.float32,
+        )
+        np.testing.assert_array_equal(vp.world_to_panel, expected)
+
+    def test_rotated_left_swaps_viewport_dimensions(self):
+        m = _make_machine()
+        m.set_axis_extents(300.0, 600.0)
+        m.set_panel_orientation(PanelOrientation.ROTATED_LEFT)
+
+        vp = ViewportConfig.from_machine(m)
+
+        assert vp.width_mm == 600.0
+        assert vp.depth_mm == 300.0
+        assert vp.x_right is True
+        assert vp.y_down is False
+        expected = np.array(
+            [
+                [0.0, -1.0, 0.0, 600.0],
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+            dtype=np.float32,
+        )
+        np.testing.assert_array_equal(vp.world_to_panel, expected)
+
     def test_y_axis_down_flips_y(self):
         m = _make_machine()
         m.origin = Origin.TOP_LEFT
@@ -155,6 +206,52 @@ class TestViewportConfigExtentFrame:
 
 
 class TestViewportConfigWcsOffset:
+    @pytest.mark.parametrize(
+        "orientation,expected_origin",
+        [
+            (PanelOrientation.ROTATED_LEFT, (20.0, 40.0, 0.0)),
+            (PanelOrientation.ROTATED_RIGHT, (20.0, 40.0, 0.0)),
+        ],
+    )
+    def test_rotated_panel_wcs_offset(self, orientation, expected_origin):
+        m = _make_machine()
+        m.set_axis_extents(300.0, 600.0)
+        m.set_work_margins(10.0, 20.0, 30.0, 40.0)
+        m.set_panel_orientation(orientation)
+        m.update_wcs_offset("G54", (50.0, 60.0, 0.0))
+
+        vp = ViewportConfig.from_machine(m)
+
+        assert vp.wcs_offset_mm == pytest.approx(expected_origin)
+
+    @pytest.mark.parametrize(
+        "orientation",
+        [
+            PanelOrientation.NATIVE,
+            PanelOrientation.ROTATED_LEFT,
+            PanelOrientation.ROTATED_RIGHT,
+        ],
+    )
+    def test_wcs_marker_matches_panel_ground_truth(self, orientation):
+        """The WCS marker drawn from wcs_offset_mm lands on the same
+        visual position as the panel-presented machine WCS point."""
+        m = _make_machine()
+        m.set_axis_extents(300.0, 600.0)
+        m.set_work_margins(10.0, 20.0, 30.0, 40.0)
+        m.set_panel_orientation(orientation)
+        m.update_wcs_offset("G54", (50.0, 60.0, 0.0))
+
+        vp = ViewportConfig.from_machine(m)
+
+        panel_x, panel_y = m.panel.machine_point_to_panel(50.0, 60.0)
+        ground_truth = vp.margin_shift @ np.array(
+            [panel_x, panel_y, 0.0, 1.0], dtype=np.float32
+        )
+        marker = vp.model_matrix @ np.array(
+            [*vp.wcs_offset_mm[:2], 0.0, 1.0], dtype=np.float32
+        )
+        np.testing.assert_allclose(marker[:2], ground_truth[:2], atol=1e-5)
+
     def test_wcs_origin_is_workarea_origin(self):
         m = _make_machine()
         m.wcs_origin_is_workarea_origin = True

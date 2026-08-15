@@ -12,6 +12,19 @@ Pos = tuple[float, float]
 PointList = Sequence[Pos]
 
 
+def _as_utc(dt: datetime | None) -> datetime | None:
+    """Interpret a possibly naive datetime as UTC.
+
+    Older stored calibration/alignment dates were written without a
+    timezone offset. The model stores fresh timestamps as UTC-aware, so
+    naive values are assumed to be UTC as well, making the two
+    comparable.
+    """
+    if dt is None or dt.tzinfo is not None:
+        return dt
+    return dt.replace(tzinfo=timezone.utc)
+
+
 class Camera:
     """A pure data model representing the configuration of a camera."""
 
@@ -474,7 +487,7 @@ class Camera:
         self._distortion_k3 = float(dist[4]) if len(dist) > 4 else 0.0
 
         self._calibration_rms = result.rms_error
-        self._calibration_date = result.calibration_date
+        self._calibration_date = _as_utc(result.calibration_date)
         self._calibration_image_size = result.image_size
         self._calibration_frames_used = result.num_frames_used
 
@@ -520,11 +533,13 @@ class Camera:
     def alignment_valid(self) -> bool:
         if not self.has_alignment:
             return False
-        if self._calibration_date is None:
+        calibration = _as_utc(self._calibration_date)
+        alignment = _as_utc(self._alignment_date)
+        if calibration is None:
             return True
-        if self._alignment_date is None:
+        if alignment is None:
             return False
-        return self._alignment_date >= self._calibration_date
+        return alignment >= calibration
 
     def to_dict(self) -> dict[str, Any]:
         data = {
@@ -653,8 +668,8 @@ class Camera:
             camera.image_to_world = None
 
         if data.get("alignment_date"):
-            camera._alignment_date = datetime.fromisoformat(
-                data["alignment_date"]
+            camera._alignment_date = _as_utc(
+                datetime.fromisoformat(data["alignment_date"])
             )
         elif camera._image_to_world is not None:
             camera._alignment_date = datetime.now(tz=timezone.utc)
@@ -665,8 +680,8 @@ class Camera:
         camera._camera_matrix_cy = data.get("camera_matrix_cy")
         camera._calibration_rms = data.get("calibration_rms")
         if data.get("calibration_date"):
-            camera._calibration_date = datetime.fromisoformat(
-                data["calibration_date"]
+            camera._calibration_date = _as_utc(
+                datetime.fromisoformat(data["calibration_date"])
             )
         elif any(
             v != 0.0

@@ -548,8 +548,8 @@ class ScenePresenter:
         if machine:
             ms = viewport.margin_shift
             wcs = viewport.wcs_offset_mm
-            world_to_visual[0, 3] = ms[0, 3]
-            world_to_visual[1, 3] = ms[1, 3]
+            physical_to_visual = ms @ viewport.world_to_panel
+            world_to_visual[:3, :] = physical_to_visual[:3, :]
             world_to_visual[2, 3] = wcs[2]
 
             asm = machine.assembly

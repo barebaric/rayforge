@@ -140,3 +140,39 @@ def test_compile_stock_layers_invalid_color_falls_back():
     }
     layer = compile_stock_layers([spec], _identity())[0]
     assert layer.fallback_rgba == (1.0, 1.0, 1.0, 1.0)
+
+
+def test_compile_stock_layers_preserves_panel_transform(
+    lite_context, sync_machine
+):
+    """Stock inherits the panel presentation rotation from world_to_visual.
+
+    The scene presenter builds world_to_visual as
+    ``margin_shift @ world_to_panel`` so the stock prism lands in the
+    same presented space as the ops, models and zones.
+    """
+    from rayforge.machine.models.machine_panel import PanelOrientation
+    from rayforge.ui_gtk.sim3d.viewport import ViewportConfig
+
+    sync_machine.set_axis_extents(400.0, 300.0)
+    sync_machine.set_panel_orientation(PanelOrientation.ROTATED_RIGHT)
+    vp = ViewportConfig.from_machine(sync_machine)
+
+    w2v = np.identity(4, dtype=np.float32)
+    w2v[:3, :] = (vp.margin_shift @ vp.world_to_panel)[:3, :]
+    w2v[2, 3] = vp.wcs_offset_mm[2]
+
+    spec = {
+        "name": "oak",
+        "thickness": 18.0,
+        "outers": [
+            [(100.0, 50.0), (120.0, 50.0), (120.0, 60.0), (100.0, 60.0)]
+        ],
+        "holes": [],
+    }
+    layer = compile_stock_layers([spec], w2v)[0]
+    np.testing.assert_array_equal(layer.transform, w2v)
+
+    corner = layer.transform @ np.array([100.0, 50.0, 0.0, 1.0])
+    # ROTATED_RIGHT presents world (100, 50) at panel (50, 300).
+    assert corner[:2] == pytest.approx([50.0, 300.0])

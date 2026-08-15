@@ -2,16 +2,19 @@
 Display-facing projection of a machine's coordinate space.
 
 MachineSpace (in rayforge.machine.models.coordspace) describes the
-machine in native coordinates -- how the machine "speaks".
-MachinePanel describes how the bed is *shown* after an optional
+machine in native coordinates -- how the machine "speaks". The
+document model lives in WORLD space (canonical, Y-up). MachinePanel
+describes the PANEL space: how the bed is *shown* after an optional
 90-degree rotation. Keeping these view-facing properties here avoids
 mixing presentation concerns into the coordinate model itself.
 """
 
 from enum import Enum
+from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 import numpy as np
+from raygeo.geo import Matrix
 from raygeo.geo.types import Point, Point3D, Rect
 from raygeo.ops.axis import Axis
 
@@ -39,6 +42,15 @@ class PanelOrientation(Enum):
     NATIVE = "native"
     ROTATED_LEFT = "rotated_left"
     ROTATED_RIGHT = "rotated_right"
+
+    @property
+    def label(self) -> str:
+        """Translated display label for the orientation."""
+        if self is PanelOrientation.NATIVE:
+            return _("Native")
+        if self is PanelOrientation.ROTATED_LEFT:
+            return _("Rotate Left")
+        return _("Rotate Right")
 
 
 class MachinePanel:
@@ -93,9 +105,9 @@ class MachinePanel:
         """
         if self._orientation == orientation:
             return
-        old_matrix = self._panel_to_native_matrix
+        old_matrix = self._panel_to_world_matrix
         self._orientation = orientation
-        new_inverse = np.linalg.inv(self._panel_to_native_matrix)
+        new_inverse = np.linalg.inv(self._panel_to_world_matrix)
         self._reproject_cameras(old_matrix, new_inverse)
         self._machine.changed.send(self._machine)
 
@@ -116,15 +128,15 @@ class MachinePanel:
         current = self._machine.axis_extents
         if current == self._cached_extents:
             return
-        old_p2n = self._compute_p2n(self._orientation, self._cached_extents)
-        new_n2p = np.linalg.inv(self._panel_to_native_matrix)
+        old_p2w = self._compute_p2w(self._orientation, self._cached_extents)
+        new_w2p = np.linalg.inv(self._panel_to_world_matrix)
         self._cached_extents = current
-        self._reproject_cameras(old_p2n, new_n2p)
+        self._reproject_cameras(old_p2w, new_w2p)
 
     def _reproject_cameras(
         self,
-        old_p2n: np.ndarray,
-        new_n2p: np.ndarray,
+        old_p2w: np.ndarray,
+        new_w2p: np.ndarray,
     ) -> None:
         """Preserve physical camera calibration across orientation changes."""
         for camera in self._machine.cameras:
@@ -133,9 +145,9 @@ class MachinePanel:
             image_points, world_points = camera.image_to_world
             reprojected = []
             for wx, wy in world_points:
-                native = old_p2n @ np.array([wx, wy, 0.0, 1.0])
-                new_world = new_n2p @ native
-                reprojected.append((float(new_world[0]), float(new_world[1])))
+                world = old_p2w @ np.array([wx, wy, 0.0, 1.0])
+                new_panel = new_w2p @ world
+                reprojected.append((float(new_panel[0]), float(new_panel[1])))
             alignment_date = camera.alignment_date
             camera.image_to_world = (image_points, reprojected)
             camera.alignment_date = alignment_date
@@ -143,17 +155,15 @@ class MachinePanel:
     # -- Rotation matrix ----------------------------------------------
 
     @staticmethod
-    def _compute_p2n(
+    def _compute_p2w(
         orientation: PanelOrientation,
         extents: tuple[float, float],
     ) -> np.ndarray:
-        """Rigid 90-degree rotation from the presented bed to the native
-        machine bed.
+        """Rigid 90-degree rotation from the PANEL presentation to WORLD.
 
-        Identity for NATIVE. ROTATED_LEFT maps presented (x, y) to
-        native (y, height - x); ROTATED_RIGHT maps it to native
-        (width - y, x). Entries are only 0 / +/-1 plus exact
-        translations.
+        Identity for NATIVE. ROTATED_LEFT maps panel (x, y) to WORLD
+        (y, height - x); ROTATED_RIGHT maps it to WORLD (width - y, x).
+        Entries are only 0 / +/-1 plus exact translations.
         """
         width, height = extents
         matrix = np.identity(4, dtype=np.float64)
@@ -172,44 +182,92 @@ class MachinePanel:
         return matrix
 
     @property
-    def _panel_to_native_matrix(self) -> np.ndarray:
-        return self._compute_p2n(self._orientation, self.space.extents)
+    def _panel_to_world_matrix(self) -> np.ndarray:
+        """Rigid rotation from PANEL coordinates to canonical WORLD."""
+        return self._compute_p2w(self._orientation, self.space.extents)
 
     @property
-    def machine_to_panel(self) -> np.ndarray:
-        """The 90-degree bed rotation from MACHINE-bed geometry to the
-        panel presentation.
+    def world_to_panel(self) -> np.ndarray:
+        """The 90-degree bed rotation from WORLD geometry to the panel
+        presentation.
 
-        Inverse of the panel-to-native rotation. Origin-corner and
+        Inverse of the panel-to-world rotation. Origin-corner and
         axis-reversal sign flips are not included; the 3D pipeline
         applies those separately via its model matrix and axis flags.
         """
-        return np.linalg.inv(self._panel_to_native_matrix)
+        return np.linalg.inv(self._panel_to_world_matrix)
 
-    def _machine_point_to_panel(self, x: float, y: float) -> Point:
-        """Project a MACHINE-bed point into panel coordinates.
+    def get_world_to_panel_2d(self) -> Matrix:
+        """The WORLD→PANEL rotation as a 2D affine matrix.
+
+        Used by the 2D canvas to present document (WORLD) content in
+        PANEL space.
+        """
+        width, height = self.space.extents
+        if self._orientation == PanelOrientation.ROTATED_RIGHT:
+            return Matrix(
+                [[0.0, 1.0, 0.0], [-1.0, 0.0, width], [0.0, 0.0, 1.0]]
+            )
+        if self._orientation == PanelOrientation.ROTATED_LEFT:
+            return Matrix(
+                [[0.0, -1.0, height], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
+            )
+        return Matrix.identity()
+
+    def panel_delta_to_world(self, dx: float, dy: float) -> Point:
+        """Rotate a PANEL-space movement vector into WORLD space.
+
+        The 2D canvas presents document (WORLD) content rotated into
+        PANEL space, so interaction deltas arrive in the on-screen
+        (PANEL) direction. Operations that write to an item's canonical
+        WORLD matrix (e.g. arrow-key nudging) must un-rotate the delta
+        through the presentation first.
+        """
+        result = self._panel_to_world_matrix @ np.array([dx, dy, 0.0, 0.0])
+        return float(result[0]), float(result[1])
+
+    def _world_point_to_panel(self, x: float, y: float) -> Point:
+        """Project a WORLD point into panel coordinates.
 
         Applies only the presentation rotation; the point is physical
         bed geometry that does not depend on the configured origin or
         axis direction.
         """
-        result = self.machine_to_panel @ np.array([x, y, 0.0, 1.0])
+        result = self.world_to_panel @ np.array([x, y, 0.0, 1.0])
         return float(result[0]), float(result[1])
 
-    def _machine_item_to_panel(
+    def world_bbox_to_panel(self, bbox: Rect) -> Rect:
+        """Project an axis-aligned WORLD rectangle into PANEL coordinates.
+
+        The result is the axis-aligned bounding box of the projected
+        corners; the 90-degree presentation rotation keeps it
+        axis-aligned.
+        """
+        min_x, min_y, max_x, max_y = bbox
+        corners = (
+            self._world_point_to_panel(min_x, min_y),
+            self._world_point_to_panel(max_x, min_y),
+            self._world_point_to_panel(min_x, max_y),
+            self._world_point_to_panel(max_x, max_y),
+        )
+        xs = [point[0] for point in corners]
+        ys = [point[1] for point in corners]
+        return (min(xs), min(ys), max(xs), max(ys))
+
+    def _world_item_to_panel(
         self,
         pos: Point,
         size: tuple[float, float],
     ) -> tuple[Point, tuple[float, float]]:
-        """Project an axis-aligned MACHINE-bed rectangle into panel
+        """Project an axis-aligned WORLD rectangle into panel
         coordinates."""
         x, y = pos
         width, height = size
         corners = (
-            self._machine_point_to_panel(x, y),
-            self._machine_point_to_panel(x + width, y),
-            self._machine_point_to_panel(x, y + height),
-            self._machine_point_to_panel(x + width, y + height),
+            self._world_point_to_panel(x, y),
+            self._world_point_to_panel(x + width, y),
+            self._world_point_to_panel(x, y + height),
+            self._world_point_to_panel(x + width, y + height),
         )
         xs = [point[0] for point in corners]
         ys = [point[1] for point in corners]
@@ -324,7 +382,7 @@ class MachinePanel:
         A detached copy is returned for every orientation, including
         NATIVE, so callers never receive an object whose mutation
         behavior changes when the panel rotates. Edits must go through
-        ``machine.nogo_zones`` in MACHINE-bed coordinates.
+        ``machine.nogo_zones`` in WORLD coordinates.
         """
         projected: dict[str, Zone] = {}
         for uid, zone in self._machine.nogo_zones.items():
@@ -333,9 +391,9 @@ class MachinePanel:
             x = params.get("x", 0.0)
             y = params.get("y", 0.0)
             if panel_zone.shape == ZoneShape.CYLINDER:
-                params["x"], params["y"] = self._machine_point_to_panel(x, y)
+                params["x"], params["y"] = self._world_point_to_panel(x, y)
             else:
-                pos, size = self._machine_item_to_panel(
+                pos, size = self._world_item_to_panel(
                     (x, y),
                     (params.get("w", 10.0), params.get("h", 10.0)),
                 )
@@ -347,41 +405,77 @@ class MachinePanel:
     # -- Composed transforms ------------------------------------------
 
     def get_world_to_machine_matrix(self) -> np.ndarray:
-        """Full world-to-machine matrix, including panel rotation."""
-        return (
-            self.space.get_world_to_machine_matrix()
-            @ self._panel_to_native_matrix
-        )
+        """Full WORLD-to-MACHINE matrix (native, no panel rotation).
+
+        The document model lives in WORLD space, so the encoder uses
+        this matrix directly.
+        """
+        return self.space.get_world_to_machine_matrix()
 
     def get_machine_to_world_matrix(self) -> np.ndarray:
         """Inverse of get_world_to_machine_matrix()."""
-        return np.linalg.inv(self.get_world_to_machine_matrix())
+        return self.space.get_machine_to_world_matrix()
 
     def world_point_to_machine(self, x: float, y: float) -> Point:
-        """Transform a point from world space to machine space."""
-        matrix = self.get_world_to_machine_matrix()
-        result = matrix @ np.array([x, y, 0.0, 1.0])
-        return float(result[0]), float(result[1])
+        """Transform a point from WORLD space to MACHINE space."""
+        return self.space.world_point_to_machine(x, y)
 
     def machine_point_to_world(self, x: float, y: float) -> Point:
-        """Transform a point from machine space to world space."""
-        matrix = self.get_machine_to_world_matrix()
-        result = matrix @ np.array([x, y, 0.0, 1.0])
-        return float(result[0]), float(result[1])
+        """Transform a point from MACHINE space to WORLD space."""
+        return self.space.machine_point_to_world(x, y)
 
     def world_item_to_machine(
         self,
         pos: Point,
         size: tuple[float, float],
     ) -> Point:
-        """Convert item position from world space to machine space."""
-        wx, wy = pos
+        """Convert item position from WORLD space to MACHINE space."""
+        return self.space.world_item_to_machine(pos, size)
+
+    def machine_item_to_world(
+        self,
+        pos: Point,
+        size: tuple[float, float],
+    ) -> Point:
+        """Convert item position from MACHINE space to WORLD space."""
+        return self.space.machine_item_to_world(pos, size)
+
+    def get_panel_to_machine_matrix(self) -> np.ndarray:
+        """Full PANEL-to-MACHINE matrix, including panel rotation."""
+        return (
+            self.space.get_world_to_machine_matrix()
+            @ self._panel_to_world_matrix
+        )
+
+    def get_machine_to_panel_matrix(self) -> np.ndarray:
+        """Inverse of get_panel_to_machine_matrix()."""
+        return np.linalg.inv(self.get_panel_to_machine_matrix())
+
+    def panel_point_to_machine(self, x: float, y: float) -> Point:
+        """Transform a point from PANEL space to MACHINE space."""
+        matrix = self.get_panel_to_machine_matrix()
+        result = matrix @ np.array([x, y, 0.0, 1.0])
+        return float(result[0]), float(result[1])
+
+    def machine_point_to_panel(self, x: float, y: float) -> Point:
+        """Transform a point from MACHINE space to PANEL space."""
+        matrix = self.get_machine_to_panel_matrix()
+        result = matrix @ np.array([x, y, 0.0, 1.0])
+        return float(result[0]), float(result[1])
+
+    def panel_item_to_machine(
+        self,
+        pos: Point,
+        size: tuple[float, float],
+    ) -> Point:
+        """Convert item position from PANEL space to MACHINE space."""
+        px, py = pos
         w, h = size
         corners = (
-            self.world_point_to_machine(wx, wy),
-            self.world_point_to_machine(wx + w, wy),
-            self.world_point_to_machine(wx, wy + h),
-            self.world_point_to_machine(wx + w, wy + h),
+            self.panel_point_to_machine(px, py),
+            self.panel_point_to_machine(px + w, py),
+            self.panel_point_to_machine(px, py + h),
+            self.panel_point_to_machine(px + w, py + h),
         )
         xs = [c[0] for c in corners]
         ys = [c[1] for c in corners]
@@ -389,12 +483,12 @@ class MachinePanel:
         my = max(ys) if self.space.reverse_y else min(ys)
         return mx, my
 
-    def machine_item_to_world(
+    def machine_item_to_panel(
         self,
         pos: Point,
         size: tuple[float, float],
     ) -> Point:
-        """Convert item position from machine space to world space."""
+        """Convert item position from MACHINE space to PANEL space."""
         mx, my = pos
         w, h = size
         if self._orientation != PanelOrientation.NATIVE:
@@ -408,10 +502,10 @@ class MachinePanel:
         else:
             y_min, y_max = my, my + h
         corners = (
-            self.machine_point_to_world(x_min, y_min),
-            self.machine_point_to_world(x_max, y_min),
-            self.machine_point_to_world(x_min, y_max),
-            self.machine_point_to_world(x_max, y_max),
+            self.machine_point_to_panel(x_min, y_min),
+            self.machine_point_to_panel(x_max, y_min),
+            self.machine_point_to_panel(x_min, y_max),
+            self.machine_point_to_panel(x_max, y_max),
         )
         return min(c[0] for c in corners), min(c[1] for c in corners)
 
@@ -420,10 +514,10 @@ class MachinePanel:
     ) -> dict[Axis, float]:
         """Translate a visual jog direction into native axis deltas.
 
-        Visual directions are expressed in presented (rotated)
-        coordinates, so the composed world-to-machine matrix rotates the
-        delta vector: on a ROTATED_RIGHT bed a visual east jog drives
-        the native Y axis. UP/DOWN are pinned to Axis.Z and delegated to
+        Visual directions are expressed in PANEL (presented, rotated)
+        coordinates, so the PANEL-to-MACHINE matrix rotates the delta
+        vector: on a ROTATED_RIGHT bed a visual east jog drives the
+        native Y axis. UP/DOWN are pinned to Axis.Z and delegated to
         the machine, which has no rotation knowledge.
         """
         # Local import: machine.py imports this module before JogDirection
@@ -439,7 +533,7 @@ class MachinePanel:
             JogDirection.SOUTH: (0.0, -distance),
         }
         dx, dy = presented_deltas[direction]
-        machine_delta = self.get_world_to_machine_matrix() @ np.array(
+        machine_delta = self.get_panel_to_machine_matrix() @ np.array(
             [dx, dy, 0.0, 0.0]
         )
         result: dict[Axis, float] = {}
@@ -452,10 +546,14 @@ class MachinePanel:
     # -- Rect / position / label helpers ------------------------------
 
     def get_workarea_world_rect(self) -> Rect:
-        """Work area boundary as a Rect in world space."""
+        """Work area boundary as a Rect in WORLD space (native)."""
+        return self.space.get_workarea_world_rect()
+
+    def get_workarea_panel_rect(self) -> Rect:
+        """Work area boundary as a Rect in PANEL space."""
         pos = self.space.get_workarea_origin_in_machine()
         w, h = self.workarea_size
-        wx, wy = self.machine_item_to_world(pos, (w, h))
+        wx, wy = self.machine_item_to_panel(pos, (w, h))
         return (wx, wy, w, h)
 
     def world_position_from_origin(
@@ -464,7 +562,17 @@ class MachinePanel:
         ref_y: float,
         size: tuple[float, float],
     ) -> Point:
-        """Convert a reference position at the origin corner to world
+        """Convert a reference position at the origin corner to WORLD
+        coordinates."""
+        return self.space.world_position_from_origin(ref_x, ref_y, size)
+
+    def panel_position_from_origin(
+        self,
+        ref_x: float,
+        ref_y: float,
+        size: tuple[float, float],
+    ) -> Point:
+        """Convert a reference position at the origin corner to PANEL
         coordinates."""
         width, height = size
 
@@ -510,23 +618,37 @@ class MachinePanel:
 
     @property
     def reference_position_world(self) -> Point:
-        """The reference origin position in world coordinates.
+        """The reference origin position in WORLD coordinates.
 
         Combines the machine's reference offset (WCS or workarea origin,
-        in machine coordinates) with the machine→world transform.
+        in machine coordinates) with the native machine→world transform.
         """
         offset_x, offset_y, _ = self._machine.get_reference_offset()
         return self.machine_point_to_world(offset_x, offset_y)
 
+    @property
+    def reference_position_panel(self) -> Point:
+        """The reference origin position in PANEL coordinates."""
+        offset_x, offset_y, _ = self._machine.get_reference_offset()
+        return self.machine_point_to_panel(offset_x, offset_y)
+
     def work_area_center(self) -> Point:
         """Center of the work-area-sized box anchored at the reference
-        origin, in world coordinates.
+        origin, in WORLD coordinates.
 
         When the WCS is not the workarea origin, the reference anchor is
         the active WCS position; the returned point is the center of a
         work-area-sized box placed with its origin corner there.
         """
         ref_x, ref_y = self.reference_position_world
-        w, h = self.workarea_size
+        w, h = self.space.workarea_size
         ox, oy = self.world_position_from_origin(ref_x, ref_y, (w, h))
+        return (ox + w / 2.0, oy + h / 2.0)
+
+    def work_area_center_panel(self) -> Point:
+        """Center of the work-area-sized box anchored at the reference
+        origin, in PANEL coordinates."""
+        ref_x, ref_y = self.reference_position_panel
+        w, h = self.workarea_size
+        ox, oy = self.panel_position_from_origin(ref_x, ref_y, (w, h))
         return (ox + w / 2.0, oy + h / 2.0)

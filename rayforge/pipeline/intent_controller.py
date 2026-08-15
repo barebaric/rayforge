@@ -45,7 +45,11 @@ from raygeo.cnc.execution.intent import (
 from raygeo.pipeline.execute import Pipeline as RaygeoPipeline
 from raygeo.pipeline.request import NodeRequest
 
-from .intent_builder import IntentBuilder, parse_workpiece_key
+from .intent_builder import (
+    IntentBuilder,
+    UnsupportedRotaryPanelOrientationError,
+    parse_workpiece_key,
+)
 from .status_messages import status_message_for_key
 
 if TYPE_CHECKING:
@@ -334,7 +338,22 @@ class IntentController:
                 generation_id=gen,
                 loop=getattr(self._task_manager, "loop", None),
             )
-            nodes = builder.build(self._doc)
+            try:
+                nodes = builder.build(self._doc)
+            except UnsupportedRotaryPanelOrientationError as exc:
+                logger.warning("Unsupported panel configuration: %s", exc)
+                self._refresh_key_to_item_map([])
+                empty_intent = create_intent_from_nodes([])
+                if self._intent is None:
+                    self._intent = empty_intent
+                else:
+                    self._intent.update(
+                        empty_intent, pipeline=self._raygeo_pipeline
+                    )
+                self._task_manager.schedule_on_main_thread(
+                    self._emit_configuration_error, str(exc)
+                )
+                return
             self._refresh_key_to_item_map(nodes)
             new_intent = create_intent_from_nodes(nodes)
             if self._intent is None:
@@ -374,6 +393,11 @@ class IntentController:
     def _emit_pipeline_error(self, error_kind: ErrorKind) -> None:
         """Emit ``pipeline_error`` on the main thread."""
         self.pipeline_error.send(self, error_kind=error_kind)
+
+    def _emit_configuration_error(self, message: str) -> None:
+        """Emit a user-actionable configuration error on the main
+        thread."""
+        self.pipeline_error.send(self, message=message)
 
     def _emit_pipeline_warnings(self, warnings: list) -> None:
         """Emit ``pipeline_warnings`` on the main thread."""
