@@ -335,3 +335,86 @@ def test_resolution_settings_changed_signal():
 
     camera.resolution = None
     assert len(signal_received) == 2
+
+
+def _camera_with_alignment(
+    calibration: datetime | None, alignment: datetime | None
+) -> Camera:
+    camera = Camera("Test", "0")
+    camera._calibration_date = calibration
+    camera._alignment_date = alignment
+    camera._image_to_world = (
+        ((0.0, 0.0), (1.0, 1.0), (2.0, 2.0), (3.0, 3.0)),
+        ((0.0, 0.0), (1.0, 1.0), (2.0, 2.0), (3.0, 3.0)),
+    )
+    return camera
+
+
+def test_alignment_valid_naive_calibration_interpreted_as_utc():
+    """A naive stored calibration date must compare against the aware
+    UTC alignment timestamp without raising."""
+    camera = _camera_with_alignment(
+        calibration=datetime.fromisoformat("2024-01-15T10:30:00"),
+        alignment=datetime(2026, 1, 15, 10, 30, 0, tzinfo=timezone.utc),
+    )
+    assert camera.alignment_valid is True
+
+
+def test_alignment_valid_naive_alignment_interpreted_as_utc():
+    camera = _camera_with_alignment(
+        calibration=datetime(2026, 1, 15, 10, 30, 0, tzinfo=timezone.utc),
+        alignment=datetime.fromisoformat("2024-01-15T10:30:00"),
+    )
+    assert camera.alignment_valid is False
+
+
+def test_alignment_valid_missing_calibration_is_valid():
+    camera = _camera_with_alignment(calibration=None, alignment=None)
+    assert camera.alignment_valid is True
+
+
+def test_calibration_result_default_date_is_aware():
+    result = CalibrationResult(
+        camera_matrix=np.eye(3),
+        distortion_coeffs=np.zeros(5),
+        rms_error=0.5,
+        image_size=(640, 480),
+        num_frames_used=10,
+    )
+    assert result.calibration_date.tzinfo is not None
+
+
+def test_calibration_result_round_trip_naive_date():
+    data = {
+        "camera_matrix": np.eye(3).tolist(),
+        "distortion_coeffs": np.zeros(5).tolist(),
+        "rms_error": 0.5,
+        "image_size": [640, 480],
+        "num_frames_used": 10,
+        "reprojection_errors": [],
+        "calibration_date": "2024-01-15T10:30:00",
+    }
+    result = CalibrationResult.from_dict(data)
+    assert result.calibration_date.tzinfo is not None
+
+
+def test_from_dict_naive_dates_become_aware():
+    data = {
+        "name": "Test",
+        "device_id": "0",
+        "enabled": True,
+        "image_to_world": [
+            {"image": "0.0, 0.0", "world": "0.0, 0.0"},
+            {"image": "1.0, 1.0", "world": "1.0, 1.0"},
+            {"image": "2.0, 2.0", "world": "2.0, 2.0"},
+            {"image": "3.0, 3.0", "world": "3.0, 3.0"},
+        ],
+        "calibration_date": "2024-01-15T10:30:00",
+        "alignment_date": "2024-01-15T10:30:00",
+    }
+    camera = Camera.from_dict(data)
+    assert camera._calibration_date is not None
+    assert camera._calibration_date.tzinfo is not None
+    assert camera._alignment_date is not None
+    assert camera._alignment_date.tzinfo is not None
+    assert camera.alignment_valid is True

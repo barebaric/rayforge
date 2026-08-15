@@ -19,6 +19,7 @@ class ViewportContext:
         self,
         *,
         model_matrix: np.ndarray | None = None,
+        world_to_panel: np.ndarray | None = None,
         margin_shift: np.ndarray | None = None,
         wcs_offset_mm: tuple[float, float, float] | None = None,
         x_right: bool = False,
@@ -27,6 +28,9 @@ class ViewportContext:
     ):
         identity = np.eye(4, dtype=np.float32)
         self.model_matrix = identity if model_matrix is None else model_matrix
+        self.world_to_panel = (
+            identity if world_to_panel is None else world_to_panel
+        )
         self.margin_shift = identity if margin_shift is None else margin_shift
         self.wcs_offset_mm = (
             (0.0, 0.0, 0.0) if wcs_offset_mm is None else wcs_offset_mm
@@ -39,6 +43,7 @@ class ViewportContext:
         """Recomputes the viewport section from the current frame inputs."""
         viewport = frame.viewport
         self.model_matrix = viewport.model_matrix
+        self.world_to_panel = viewport.world_to_panel
         self.margin_shift = viewport.margin_shift
         self.wcs_offset_mm = viewport.wcs_offset_mm
         self.x_right = viewport.x_right

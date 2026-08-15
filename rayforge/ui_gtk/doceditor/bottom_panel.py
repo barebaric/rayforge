@@ -552,17 +552,27 @@ class BottomPanel(Gtk.Box):
 
         min_x, min_y, max_x, max_y = bounds
 
+        # The bounds are in WORLD coordinates while the buttons refer to
+        # the presented (PANEL) corners, so project the selection into
+        # PANEL space before picking the corner.
+        panel = self.machine.panel
+        panel_min_x, panel_min_y, panel_max_x, panel_max_y = (
+            panel.world_bbox_to_panel((min_x, min_y, max_x, max_y))
+        )
+
         if position == "ll":
-            world_x, world_y = min_x, min_y
+            panel_x, panel_y = panel_min_x, panel_min_y
         elif position == "center":
-            world_x, world_y = (min_x + max_x) / 2, (min_y + max_y) / 2
+            panel_x, panel_y = (
+                (panel_min_x + panel_max_x) / 2,
+                (panel_min_y + panel_max_y) / 2,
+            )
         elif position == "ur":
-            world_x, world_y = max_x, max_y
+            panel_x, panel_y = panel_max_x, panel_max_y
         else:
             return
 
-        panel = self.machine.panel
-        machine_x, machine_y = panel.world_point_to_machine(world_x, world_y)
+        machine_x, machine_y = panel.panel_point_to_machine(panel_x, panel_y)
         wcs_offset = self.machine.get_active_wcs_offset()
         x_off, y_off, _ = panel.get_command_offset(
             wcs_offset=wcs_offset,

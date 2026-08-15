@@ -163,7 +163,7 @@ class KinematicsContext:
         if op_player and rotary_axis is not None and has_rotary:
             cyl_angle = math.radians(state.axes.get(rotary_axis, 0.0))
 
-        margin_shift = viewport.margin_shift
+        physical_to_visual = viewport.margin_shift @ viewport.world_to_panel
         cylinder_transform = (
             frame.cylinder_transform
             if frame.cylinder_transform is not None
@@ -171,13 +171,13 @@ class KinematicsContext:
         )
         cyl_base_mvp = (
             mvp_ui.astype(np.float64)
-            @ margin_shift.astype(np.float64)
+            @ physical_to_visual.astype(np.float64)
             @ cylinder_transform
         )
         rot_4x4 = rotation_4x4(_VIS_ROT_AXIS, cyl_angle)
         mvp_rot = (cyl_base_mvp @ rot_4x4).astype(np.float32)
         cyl_mesh_mvp = (
-            mvp_ui @ margin_shift @ cylinder_transform @ rot_4x4
+            mvp_ui @ physical_to_visual @ cylinder_transform @ rot_4x4
         ).astype(np.float32)
 
         self._mvp_ui = mvp_ui
