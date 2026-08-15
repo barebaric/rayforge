@@ -2,7 +2,14 @@ from unittest.mock import MagicMock
 
 from rayforge.core.capability import MachineCapability
 from rayforge.machine.driver.driver import PWMParams
-from rayforge.machine.models.laser import Laser, LaserHead, LaserType
+from rayforge.machine.models.head import Head
+from rayforge.machine.models.laser import (
+    DEFAULT_FOCAL_DISTANCE_MM,
+    Laser,
+    LaserHead,
+    LaserType,
+    effective_focal_distance,
+)
 
 
 def test_laser_initialization():
@@ -16,6 +23,23 @@ def test_laser_initialization():
     assert laser.focus_power_percent == 0
     assert laser.spot_size_mm == (0.1, 0.1)
     assert laser.uid is not None
+
+
+def test_effective_focal_distance_uses_configured_value():
+    laser = LaserHead()
+    laser.focal_distance = 30.0
+    assert effective_focal_distance(laser) == 30.0
+
+
+def test_effective_focal_distance_defaults_for_laser_head():
+    laser = LaserHead()
+    laser.focal_distance = 0.0
+    assert effective_focal_distance(laser) == DEFAULT_FOCAL_DISTANCE_MM
+
+
+def test_effective_focal_distance_zero_for_non_laser():
+    assert effective_focal_distance(Head()) == 0.0
+    assert effective_focal_distance(None) == 0.0
 
 
 def test_set_focus_power():

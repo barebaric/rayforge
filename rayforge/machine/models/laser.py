@@ -21,6 +21,26 @@ class LaserType(Enum):
 # by the spot size.
 MIN_SPOT_SIZE_MM = 0.1
 
+# Default focal distance in mm used for 3D visuals when a laser head
+# has no positive focal distance configured.  The beam renderer and the
+# head-model placement must agree on this value so the beam spans
+# exactly from the workpiece to the head's nozzle.
+DEFAULT_FOCAL_DISTANCE_MM = 50.0
+
+
+def effective_focal_distance(head: Head | None) -> float:
+    """The focal distance used for 3D visuals for a laser head.
+
+    Returns the head's configured focal distance when positive, the
+    shared default otherwise.  Non-laser heads (e.g. spindles) have no
+    focal distance and yield ``0.0``.
+    """
+    if not isinstance(head, LaserHead):
+        return 0.0
+    if head.focal_distance and head.focal_distance > 0:
+        return head.focal_distance
+    return DEFAULT_FOCAL_DISTANCE_MM
+
 
 class LaserHead(Head):
     """A laser head, implying the LASER machine capability."""

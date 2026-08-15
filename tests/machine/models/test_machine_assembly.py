@@ -6,7 +6,7 @@ from raygeo.ops.axis import Axis
 from rayforge.context import RayforgeContext
 from rayforge.core.layer import Layer
 from rayforge.machine.assembly import LinkRole
-from rayforge.machine.models.laser import Laser
+from rayforge.machine.models.laser import Laser, LaserHead
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.rotary_module import RotaryModule
 from rayforge.simulator.machine_state import MachineState
@@ -133,6 +133,25 @@ class TestAssemblyHeadLinks:
         positions = machine.assembly.head_positions(state)
         assert "head_0" in positions
         assert positions["head_0"] == (10.0, 20.0, 5.0)
+
+    def test_head_spec_offset_uses_configured_focal(self):
+        machine = _make_machine()
+        head = machine.heads[0]
+        assert isinstance(head, LaserHead)
+        head.focal_distance = 30.0
+        transform = machine.get_head_specs()[0][1]
+        assert transform[2, 3] == 30.0
+
+    def test_head_spec_offset_defaults_for_unset_focal(self):
+        """An unconfigured focal distance must offset the head model by
+        the same default the beam renderer uses, so the beam never
+        spans up through the head model."""
+        machine = _make_machine()
+        head = machine.heads[0]
+        assert isinstance(head, LaserHead)
+        head.focal_distance = 0.0
+        transform = machine.get_head_specs()[0][1]
+        assert transform[2, 3] == 50.0
 
 
 class TestAssemblyInvalidation:

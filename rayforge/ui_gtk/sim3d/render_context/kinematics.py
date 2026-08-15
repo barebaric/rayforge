@@ -13,7 +13,11 @@ from typing import TYPE_CHECKING, Optional
 import numpy as np
 
 from ....core.color import hex_to_rgba
-from ....machine.models.laser import LaserHead
+from ....machine.models.laser import (
+    DEFAULT_FOCAL_DISTANCE_MM,
+    LaserHead,
+    effective_focal_distance,
+)
 from ....simulator.machine_state import MachineState
 from ..gl_utils import rotation_4x4
 
@@ -27,7 +31,6 @@ if TYPE_CHECKING:
     from .camera import CameraContext
     from .viewport import ViewportContext
 
-_DEFAULT_FOCAL_DISTANCE = 50.0
 _VIS_ROT_AXIS = np.array([1.0, 0.0, 0.0], dtype=np.float64)
 
 
@@ -229,17 +232,15 @@ def _head_focal_distance(
 ) -> float:
     """Return the focal distance of the named laser head."""
     if machine is None or not head_name.startswith("head_"):
-        return _DEFAULT_FOCAL_DISTANCE
+        return DEFAULT_FOCAL_DISTANCE_MM
     try:
         idx = int(head_name.split("_")[1])
         laser = machine.heads[idx]
     except (ValueError, IndexError, TypeError, AttributeError):
-        return _DEFAULT_FOCAL_DISTANCE
+        return DEFAULT_FOCAL_DISTANCE_MM
     if not isinstance(laser, LaserHead):
-        return _DEFAULT_FOCAL_DISTANCE
-    if laser.focal_distance and laser.focal_distance > 0:
-        return laser.focal_distance
-    return _DEFAULT_FOCAL_DISTANCE
+        return DEFAULT_FOCAL_DISTANCE_MM
+    return effective_focal_distance(laser)
 
 
 def _focused_rotary_head_positions(
@@ -269,7 +270,7 @@ def _focused_rotary_head_positions(
 def _head_config(machine: Optional["Machine"], head_name: str) -> HeadConfig:
     """Return the beam config for the named head link."""
     default = HeadConfig(
-        beam_height=_DEFAULT_FOCAL_DISTANCE,
+        beam_height=DEFAULT_FOCAL_DISTANCE_MM,
         beam_color=(1.0, 0.3, 0.1, 1.0),
     )
     if machine is None or not head_name.startswith("head_"):
@@ -281,15 +282,11 @@ def _head_config(machine: Optional["Machine"], head_name: str) -> HeadConfig:
         return default
     if not isinstance(laser, LaserHead):
         return HeadConfig(
-            beam_height=_DEFAULT_FOCAL_DISTANCE,
+            beam_height=DEFAULT_FOCAL_DISTANCE_MM,
             beam_color=(1.0, 0.3, 0.1, 1.0),
             valid=False,
         )
-    beam_height = (
-        laser.focal_distance
-        if laser.focal_distance and laser.focal_distance > 0
-        else _DEFAULT_FOCAL_DISTANCE
-    )
     return HeadConfig(
-        beam_height=beam_height, beam_color=hex_to_rgba(laser.cut_color)
+        beam_height=effective_focal_distance(laser),
+        beam_color=hex_to_rgba(laser.cut_color),
     )
