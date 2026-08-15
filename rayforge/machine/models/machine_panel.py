@@ -214,6 +214,18 @@ class MachinePanel:
             )
         return Matrix.identity()
 
+    def panel_delta_to_world(self, dx: float, dy: float) -> Point:
+        """Rotate a PANEL-space movement vector into WORLD space.
+
+        The 2D canvas presents document (WORLD) content rotated into
+        PANEL space, so interaction deltas arrive in the on-screen
+        (PANEL) direction. Operations that write to an item's canonical
+        WORLD matrix (e.g. arrow-key nudging) must un-rotate the delta
+        through the presentation first.
+        """
+        result = self._panel_to_world_matrix @ np.array([dx, dy, 0.0, 0.0])
+        return float(result[0]), float(result[1])
+
     def _world_point_to_panel(self, x: float, y: float) -> Point:
         """Project a WORLD point into panel coordinates.
 

@@ -875,6 +875,35 @@ class TestMachinePanelWorldToPanel:
         panel = self._panel(PanelOrientation.NATIVE)
         assert panel.get_world_to_panel_2d().is_identity()
 
+    @pytest.mark.parametrize(
+        "orientation, delta, expected",
+        [
+            (PanelOrientation.NATIVE, (10.0, -5.0), (10.0, -5.0)),
+            (PanelOrientation.ROTATED_RIGHT, (10.0, -5.0), (5.0, 10.0)),
+            (PanelOrientation.ROTATED_LEFT, (10.0, -5.0), (-5.0, -10.0)),
+        ],
+    )
+    def test_panel_delta_to_world(self, orientation, delta, expected):
+        """A presented movement vector un-rotates into WORLD space."""
+        panel = self._panel(orientation)
+        dx, dy = delta
+        assert panel.panel_delta_to_world(dx, dy) == pytest.approx(expected)
+
+    @pytest.mark.parametrize(
+        "orientation",
+        [
+            PanelOrientation.NATIVE,
+            PanelOrientation.ROTATED_LEFT,
+            PanelOrientation.ROTATED_RIGHT,
+        ],
+    )
+    def test_panel_delta_round_trip_via_2d(self, orientation):
+        """panel_delta_to_world inverts the canvas world→panel matrix."""
+        panel = self._panel(orientation)
+        dx, dy = panel.panel_delta_to_world(3.0, 7.0)
+        rotated = panel.get_world_to_panel_2d().transform_vector((dx, dy))
+        assert rotated == pytest.approx((3.0, 7.0))
+
 
 class TestMachinePanelSpaceSplit:
     """WORLD (native) vs PANEL (rotated) API split."""
