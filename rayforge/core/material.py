@@ -3,7 +3,7 @@
 import logging
 import re
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
 import yaml
@@ -304,6 +304,8 @@ class Material:
         path = Path(name)
         return (
             not path.is_absolute()
+            and not PurePosixPath(name).is_absolute()
+            and not PureWindowsPath(name).root
             and path.suffix.lower() == TEXTURE_EXTENSION
             and ".." not in path.parts
         )

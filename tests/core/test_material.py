@@ -462,9 +462,10 @@ class TestMaterialTexture:
 
     def test_texture_path_rejects_absolute(self, tmp_path):
         """Test rejecting absolute texture paths."""
-        material = self._material_in_dir(
-            tmp_path,
-            appearance=MaterialAppearance(texture="/etc/evil.webp"),
-        )
+        for texture in ("/etc/evil.webp", "C:\\evil.webp", "\\evil.webp"):
+            material = self._material_in_dir(
+                tmp_path,
+                appearance=MaterialAppearance(texture=texture),
+            )
 
-        assert material.get_texture_path() is None
+            assert material.get_texture_path() is None
